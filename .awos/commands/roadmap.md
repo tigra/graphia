@@ -69,7 +69,8 @@ Follow this logic precisely.
 5.  **Maintain Consistency and Structure (Your Core Responsibility):**
     - **Logical Order:** Politely question any user request that seems to break a logical dependency (e.g., placing reporting before data entry).
     - **Template Adherence:** Ensure all modifications **preserve the markdown structure and formatting** (nesting, checklists, headings) as defined by the original template.
-6.  **Finalize:** When the user is finished with their changes, proceed to **Step 3: Finalization**.
+6.  **Offer Change Request (optional):** When the user is finished with their changes, follow the instructions in `.awos/commands/change-request.md` to optionally log a change request capturing what drove this roadmap update. Pass a short note as `<user_prompt>` describing the trigger, e.g. `"roadmap.md — moved [item] from Phase [N] to Phase [M]"`. The change-request skill itself opens with an `AskUserQuestion` skip option, so simply invoke it; the user may decline at that prompt. After it returns, proceed to **Step 3: Finalization**.
+7.  **Finalize:** Proceed to **Step 3: Finalization**.
 
 ---
 

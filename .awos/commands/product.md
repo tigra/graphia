@@ -51,7 +51,8 @@ First, check if the file `context/product/product-definition.md` exists.
 1.  **Acknowledge and Read:** Inform the user you've found an existing definition. Say: "Welcome back! I've found your existing product definition at `context/product/product-definition.md`. Let's update it." Read its contents into your memory.
 2.  **Display Menu:** Ask the user, "**Which section would you like to update?**" and present a numbered list of the main sections from their document.
 3.  **Execute Update:** Once the user chooses a section, jump to the corresponding logic in the "Creation Mode" steps below to ask questions and refine only that part of the document.
-4.  **Loop or Finish:** After updating a section, ask: "Great, I've updated that. Would you like to change another section or are you ready to save?" If they are done, proceed to **Step 3: File Generation**.
+4.  **Loop or Finish:** After updating a section, ask: "Great, I've updated that. Would you like to change another section or are you ready to save?" If they are done, proceed to **Step 2A.5**.
+5.  **Offer Change Request (optional):** Before saving, follow the instructions in `.awos/commands/change-request.md` to optionally log a change request capturing what drove this update. Pass a short note as `<user_prompt>` describing the trigger, e.g. `"product-definition.md §[section] — [one-line summary]"`. The change-request skill itself opens with an `AskUserQuestion` skip option, so simply invoke it; the user may decline at that prompt. After it returns (whether logged, skipped, or deferred), proceed to **Step 3: File Generation**.
 
 ---
 
