@@ -1,0 +1,97 @@
+flowchart TB
+    classDef state fill:#fff4e6,stroke:#b36b00,color:#333
+    classDef llm fill:#e7f5ff,stroke:#1971c2,color:#333
+    classDef router fill:#fff0f6,stroke:#a61e4d,color:#333
+    classDef node fill:#ebfbee,stroke:#2b8a3e,color:#333
+    classDef terminal fill:#f1f3f5,stroke:#495057,color:#333
+
+    subgraph STATE ["GameState (TypedDict, total=False) — one snapshot per super-step"]
+        direction LR
+        SM["<b>messages</b><br/>list[AnyMessage]<br/><i>reducer: add_messages</i>"]:::state
+        SP["<b>players</b><br/>dict[id → PlayerState]<br/><i>replace</i>"]:::state
+        SH["<b>human_id</b>: str<br/><i>replace</i>"]:::state
+        SPH["<b>phase</b>: setup|night|day|end<br/><i>replace</i>"]:::state
+        SC["<b>cycle</b>: int<br/><i>replace</i>"]:::state
+        SNP["<b>night_picks</b><br/>dict[mafia_id → target_id]<br/><i>replace</i>"]:::state
+        SDO["<b>day_order</b>: list[player_id]<br/><i>replace</i>"]:::state
+        SDT["<b>day_turn_index</b>: int<br/><i>replace</i>"]:::state
+        SDR["<b>day_rounds</b>: int<br/><i>replace</i>"]:::state
+        SDV["<b>day_votes_called</b>: int<br/><i>replace</i>"]:::state
+        SAV["<b>active_vote</b>: ActiveVote|None<br/><i>{initiator, target,<br/>ballots, pending}</i>"]:::state
+        SKL["<b>kill_log</b><br/>list[KillRecord]<br/><i>reducer: operator.add</i>"]:::state
+        SW["<b>winner</b>: law_abiding|mafia|draw|None<br/><i>replace</i>"]:::state
+    end
+
+    STATE ~~~ GRAPH
+
+    subgraph GRAPH ["StateGraph(GameState) — compiled with SqliteSaver(.graphia/checkpoints/&lt;thread_id&gt;.sqlite)"]
+        direction TB
+        GST([START]):::terminal --> CN["<b>collect_name</b><br/><i>interrupt(kind=name)</i>"]:::node
+        CN --> GR["<b>generate_roster</b><br/><i>Haiku → Roster (6 distinct names);<br/>retry once on ValidationError</i>"]:::node
+        GR --> AR["<b>assign_roles</b><br/><i>seeded shuffle:<br/>2×Mafia + 5×Law-abiding</i>"]:::node
+        AR --> IR["<b>introduce_roster</b><br/><i>public Moderator line</i>"]:::node
+        IR --> RR["<b>reveal_role</b><br/><i>private message to human</i>"]:::node
+        RR --> FN["<b>first_night_mafia_intros</b><br/><i>cycle == 1 only;<br/>private to each Mafia</i>"]:::node
+        FN --> NO["<b>night_open</b><br/><i>'Night falls';<br/>cycle++ on re-entry from Day</i>"]:::node
+
+        NO --> RNO{{"<b>route_after_night_open</b><br/>cycle ≥ 20 → draw"}}:::router
+        RNO -- "draw" --> ES["<b>end_screen</b><br/><i>winner line +<br/>kill_log + roster reveal</i>"]:::node
+        RNO -- "else" --> MP["<b>mafia_pointing</b><br/><i>sequential per Mafia;<br/>interrupt(kind=point) for human;<br/>Sonnet → Pointing for AI;<br/>seeded fallback on retry fail</i>"]:::node
+
+        MP --> RNK["<b>resolve_night_kill</b><br/><i>strict majority +<br/>random tie-break;<br/>flips is_alive,<br/>kill_log += record (role hidden)</i>"]:::node
+        RNK --> CWN["<b>check_win_night</b>"]:::node
+        CWN --> RWN{{"<b>route_after_win_night</b><br/>winner set?"}}:::router
+        RWN -- "yes" --> ES
+        RWN -- "no" --> NC["<b>night_close</b>"]:::node
+
+        NC --> DO["<b>day_open</b><br/><i>reveal last Night's victim role;<br/>seeded shuffle day_order;<br/>reset turn/round/vote counters</i>"]:::node
+        DO --> DT["<b>day_turn</b><br/><i>one player / super-step;<br/>interrupt(kind=day_turn) for human;<br/>Sonnet → DayAction for AI;<br/>/vote &lt;name&gt; sets active_vote</i>"]:::node
+
+        DT --> RDT{{"<b>route_day_turn_or_vote</b><br/>active_vote set? /<br/>day_rounds ≥ 6?"}}:::router
+        RDT -- "vote called" --> VP["<b>vote_prompt</b><br/><i>'X has called for a vote<br/>to execute Y'</i>"]:::node
+        RDT -- "more turns" --> DT
+        RDT -- "6-round cap" --> DC["<b>day_close</b><br/><i>'Day ends with no execution'<br/>(suppressed if just executed)</i>"]:::node
+
+        VP --> CV["<b>collect_votes</b><br/><i>one voter / super-step;<br/>interrupt(kind=vote) for human;<br/>Sonnet → Ballot for AI</i>"]:::node
+        CV --> RCV{{"<b>route_collect_votes</b><br/>pending empty?"}}:::router
+        RCV -- "more voters" --> CV
+        RCV -- "all cast" --> RV["<b>resolve_vote</b><br/><i>strict majority Yes → execute;<br/>reveal role + append kill_log;<br/>else day_votes_called++</i>"]:::node
+
+        RV --> CWD["<b>check_win_day</b>"]:::node
+        CWD --> RWD{{"<b>route_after_win_day</b><br/>winner? /<br/>executed-this-cycle? /<br/>day_votes_called ≥ 3?"}}:::router
+        RWD -- "winner" --> ES
+        RWD -- "executed or 3-cap" --> DC
+        RWD -- "vote failed; loop" --> DT
+
+        DC --> NO
+        ES --> GEN([END]):::terminal
+
+        SON["<b>get_sonnet()</b><br/>ChatBedrockConverse<br/><i>eu.anthropic.claude-sonnet-4-5</i>"]:::llm
+        HAI["<b>get_haiku()</b><br/>ChatBedrockConverse<br/><i>eu.anthropic.claude-haiku-4-5</i>"]:::llm
+
+        GR -. "with_structured_output(Roster)" .-> HAI
+        MP -. "with_structured_output(Pointing)" .-> SON
+        DT -. "with_structured_output(DayAction)" .-> SON
+        CV -. "with_structured_output(Ballot)" .-> SON
+    end
+
+    %% writes to state (dashed, cross-cluster — selective)
+    CN -. "human_id, players[human], phase, cycle" .-> SP
+    CN -. "{messages: [SystemMessage]}" .-> SM
+    GR -. "players += 6 AI" .-> SP
+    AR -. "players (roles assigned)" .-> SP
+    IR -. "{messages: [SystemMessage]}" .-> SM
+    RR -. "{messages: [private SystemMessage]}" .-> SM
+    NO -. "phase=night, cycle, night_picks={}" .-> SPH
+    NO -. "winner=draw (if cycle≥20)" .-> SW
+    MP -. "night_picks" .-> SNP
+    RNK -. "players[victim].is_alive=False" .-> SP
+    RNK -. "kill_log += KillRecord" .-> SKL
+    DO -. "day_order, day_turn_index=0,<br/>day_rounds=0, day_votes_called=0" .-> SDO
+    DT -. "active_vote (on /vote)" .-> SAV
+    DT -. "day_turn_index, day_rounds (round wrap)" .-> SDT
+    CV -. "active_vote.ballots, .pending" .-> SAV
+    RV -. "players, kill_log,<br/>active_vote=None, day_votes_called++,<br/>day_order reshuffled" .-> SAV
+    CWN -. "winner (if condition met)" .-> SW
+    CWD -. "winner (if condition met)" .-> SW
+    ES -. "phase=end, {messages: [final SystemMessage]}" .-> SM
