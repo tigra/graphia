@@ -23,7 +23,20 @@ _A true skeleton: a playable end-to-end game on a fixed preset lineup, with the 
 
 ### Phase 2
 
-_With a working skeleton in place, add the configurability and richer consensus mechanics the product definition calls for._
+_Before layering on richer game features, give players a real choice in **where and how Graphia runs** so the project meets each user's access and budget situation. A contributor running on a personal laptop with no cloud account, an engineer using their everyday corporate AWS profile, and a workshop attendee using a short-lived Bedrock bearer should all be first-class options — and a hosted deployment path should exist for those who want shareable, server-side play._
+
+- [ ] **AI Provider Flexibility**
+  - [ ] **AWS Profile / SSO Credentials:** Let the player run Graphia against standard AWS credentials (named profile, SSO-backed AssumeRole, environment variables) — the same identity already used for other corporate AWS tooling — as an alternative to a Bedrock bearer token. This makes the game usable by engineers who already have an AWS profile but no separate workshop bearer.
+  - [ ] **Local Ollama Provider:** Add support for running Graphia entirely against a local Ollama-served model, so a contributor with no cloud access (or who simply doesn't want to spend on cloud inference) can develop, demo, and play offline at zero per-token cost.
+
+- [ ] **Hosted Deployment**
+  - [ ] **Bedrock AgentCore Deployment:** Package Graphia's game-engine core (the LangGraph state machine and LLM-driven nodes, separated from the local Textual UI) as a Bedrock AgentCore Runtime workload so the game can also run as a hosted, multi-tenant agent service for users who'd rather pay for an always-on remote instance than configure local credentials. This also lays the groundwork for any future networked play.
+
+---
+
+### Phase 3
+
+_With the provider and deployment foundation in place, add the configurability and richer consensus mechanics the product definition calls for._
 
 - [ ] **Setup Flexibility**
   - [ ] **Configurable Role Counts:** Replace the fixed lineup with startup prompts asking the human for the number of Law-abiding Citizens and Mafiosos, then randomly assign roles so every run starts fresh.
@@ -33,7 +46,7 @@ _With a working skeleton in place, add the configurability and richer consensus 
 
 ---
 
-### Phase 3
+### Phase 4
 
 _Once the game mechanics are solid, layer in the features that make Graphia feel alive and showcase the advanced LangGraph patterns the project is really about._
 
@@ -51,7 +64,7 @@ _Once the game mechanics are solid, layer in the features that make Graphia feel
 
 ---
 
-### Phase 4
+### Phase 5
 
 _Features planned for future consideration — explicitly deferred from v1 per the product definition. Priority and scope may be refined based on what we learn from earlier phases._
 
