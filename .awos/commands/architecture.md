@@ -81,11 +81,19 @@ Follow this logic precisely.
 
 1.  **Confirm:** State clearly: "Great! I am now saving the architecture document."
 2.  **Save File:** Write the final, complete content to `context/product/architecture.md`.
-3.  **Proceed** to Step 4: Review Subagent Coverage.
+3.  **Proceed** to Step 4: Offer ADR.
 
 ---
 
-### Step 4: Review Subagent Coverage
+### Step 4: Offer ADR (optional)
+
+If the architecture was meaningfully changed (creation mode, or a material update — not a typo fix), follow the instructions in `.awos/commands/adr.md` to optionally log one or more ADRs capturing the architectural decisions just made (e.g., the chosen tech stack components, deployment target, data store, security posture, region — anything where a real alternative was considered). Pass a short note as `<user_prompt>` describing the trigger, e.g. `"architecture.md §[section] — chose [tech/pattern] over [alternative]"`. The ADR skill itself opens with an `AskUserQuestion` skip option, so simply invoke it; the user may decline or defer at that prompt. After it returns (whether logged, skipped, or deferred), proceed to **Step 5: Review Subagent Coverage**.
+
+If multiple distinct decisions were made (e.g., picked the backend framework *and* picked the deployment target), invoke the ADR skill once per decision — one ADR per decision keeps each rationale crisp. The user can skip any subset.
+
+---
+
+### Step 5: Review Subagent Coverage
 
 After saving, analyze the architecture decisions and the Task tool definition to extract all available subagent_type values with their descriptions to check if appropriate subagents exist:
 
