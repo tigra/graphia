@@ -9,8 +9,8 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from graphia.config import load_config
 
-_SONNET_MODEL_ID = "eu.anthropic.claude-sonnet-4-5-20250929-v1:0"
-_HAIKU_MODEL_ID = "eu.anthropic.claude-haiku-4-5-20251001-v1:0"
+_SONNET_MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+_HAIKU_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 
 _sonnet: ChatBedrockConverse | None = None
 _haiku: ChatBedrockConverse | None = None

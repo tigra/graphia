@@ -14,7 +14,7 @@ The repo also predates Graphia: `adventure.py`, `support_agent.py`, `main.py`, a
 - **Tests:** `uv run pytest -q` (fast, all-mocked) — the autouse `safe_llm` fixture in `tests/conftest.py` patches every LLM call site to fail loudly if a test forgets to install `fake_haiku` / `fake_sonnet*`. Real Bedrock must never be reached from the suite.
 - **Single test:** `uv run pytest tests/test_slice7_vote.py::test_name -q`.
 - **Deterministic seed:** `GRAPHIA_SEED=1234 uv run python -m graphia` for reproducible role assignment and tie-breaks.
-- **Required env (in `.env`):** `AWS_BEARER_TOKEN_BEDROCK` (required), `AWS_REGION` (default `eu-north-1`), `GRAPHIA_LOG_FILE`, `GRAPHIA_CHECKPOINT_DIR`, `GRAPHIA_SEED`.
+- **Required env (in `.env`):** `AWS_BEARER_TOKEN_BEDROCK` (required), `AWS_REGION` (default `us-east-1`), `GRAPHIA_LOG_FILE`, `GRAPHIA_CHECKPOINT_DIR`, `GRAPHIA_SEED`.
 - **Dependencies:** `uv add <pkg>` into `pyproject.toml`. Do **not** use PEP 723 inline `# /// script` headers — even though `main.py` (a leftover) still uses one, all new code goes through the standard uv project flow.
 
 ## Architecture (the parts that span files)
@@ -49,6 +49,11 @@ This project uses **AWOS** (provectus AI workflow) for spec-driven development. 
 | Implement      | `/awos:implement`    | next `[ ]` task — delegates to assigned subagent    | code + flips `[ ]` → `[x]` in `tasks.md`            |
 | Verify         | `/awos:verify`       | tasks all `[x]` + functional-spec acceptance        | flips Status → Completed in spec + roadmap          |
 
+Two **optional logging skills** sit alongside the main flow and are invoked from the chained commands (or directly):
+
+- **`/awos:change-request`** — logs a CR under `context/change-requests/NNN-<slug>.md` whenever a previously-agreed *requirement* shifts (scope, roadmap order, success criteria). Auto-offered after `/awos:product`, `/awos:roadmap`, and `/awos:spec` updates.
+- **`/awos:adr`** — logs an Architecture Decision Record under `context/adr/NNN-<slug>.md` whenever an *architectural* choice is made or revised (tech stack, deployment target, region, data store, security posture, vendor lock-in trade-off). Auto-offered after `/awos:architecture` and `/awos:tech`, and listed as a follow-up suggestion in `/awos:change-request` when the change touches architecture. ADRs capture *Context, Alternatives, Decision, Rationale, Consequences*; they live below the architecture doc and survive its rewrites.
+
 Important rules baked into these commands:
 
 - **`/awos:implement` does not write code.** It identifies the next unchecked task in the lowest-numbered spec dir, extracts the `**[Agent: <name>]**` tag from the task line, and dispatches to that subagent with full context. Mark only the specific sub-item complete; promote the parent to `[x]` only when all its children are.
@@ -57,12 +62,13 @@ Important rules baked into these commands:
 
 ## Specialist subagents (delegate, don't reimplement)
 
-`.claude/agents/` defines four Graphia-specific agents. Use them via the Agent tool when work clearly falls in their lane:
+`.claude/agents/` defines five agents. Use them via the Agent tool when work clearly falls in their lane:
 
-- **`langgraph-agentic`** — StateGraph design, reducers, `interrupt()`/resume, `SqliteSaver`, `ChatBedrockConverse`. Ignore the AgentCore-specific guidance from its bundled `langgraph-agentcore` skill; Graphia is local-only.
+- **`langgraph-agentic`** — StateGraph design, reducers, `interrupt()`/resume, `SqliteSaver`, `ChatBedrockConverse` (us-east-1 / `us.` inference profile), and the **AgentCore application-side code** (Runtime entrypoint, Gateway-fronted diary tools, AgentCore Memory schemas for per-game diaries and long-term cross-game stats). Bundled `langgraph-agentcore` skill is **active** as of ADR 001; the prior "Graphia is local-only" stance is gone — both local and remote modes are first-class.
 - **`textual-tui`** — Textual app/widgets, async event-loop integration, vote-locks-chat transitions. No specialist Textual skill is installed; agent uses the `context7` MCP to fetch current Textual docs when uncertain.
 - **`python-backend`** — uv/pyproject, type hints, asyncio patterns, `python-dotenv`, non-LangGraph/non-UI Python.
 - **`testing`** — pytest suites, fixtures, mocking Bedrock at the `ChatBedrockConverse` boundary, deterministic runs via `GRAPHIA_SEED`, Textual `App.run_test()` snapshots.
+- **`terraform-aws`** — Research → Design → Implement → Validate workflow for Terraform code that provisions Graphia's AgentCore Runtime / Gateway / Memory / Observability resources in `us-east-1`. Bundled `terraform-conventions` skill enforces the configured IaC house style. Uses the `terraform-mcp-server` (Registry lookup), `aws-knowledge-mcp-server` (AWS docs / Well-Architected), and `aws-api-mcp-server` (live API ground-truth) MCPs. Always plans before applying.
 
 ## Test conventions worth knowing
 

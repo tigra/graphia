@@ -1,6 +1,6 @@
 # Product Definition: Graphia
 
-- **Version:** 1.2
+- **Version:** 1.3
 - **Status:** Proposed
 
 ---
@@ -9,11 +9,11 @@
 
 ### 1.1. Project Vision & Purpose
 
-Graphia is a runnable console Mafia game that doubles as a personal reference implementation of modern agentic-AI patterns on AWS — multi-agent LangGraph orchestration with private per-agent state, asynchronous chat, human-in-the-loop interrupts, live streaming to a terminal UI, **LangGraph tool-use by AI players**, and **production deployment on Amazon Bedrock AgentCore** (Runtime, Gateway, Memory, Observability). The north star is a short game session that is genuinely fun to play and, from a single codebase, makes each advanced LangGraph and AgentCore concept easy to locate, run, and lift into a real project.
+Graphia is a runnable console Mafia game that doubles as a personal reference implementation of modern agentic-AI patterns on AWS — multi-agent LangGraph orchestration with private per-agent state, asynchronous chat, human-in-the-loop interrupts, live streaming to a terminal UI, and **production deployment on Amazon Bedrock AgentCore** (Runtime, Gateway, per-game and long-term Memory, Observability). The north star is a short game session that is genuinely fun to play and, from a single codebase, makes each advanced LangGraph and AgentCore concept easy to locate, run, and lift into a real project.
 
 ### 1.2. Target Audience
 
-The primary audience is the author, using Graphia as a personal reference project to explore and revisit advanced LangGraph capabilities **and Bedrock AgentCore deployment patterns**. A secondary audience is any Python developer evaluating LangGraph + AgentCore who stumbles on the repo and wants a non-trivial, end-to-end example of async multi-agent gameplay where AI agents actually call tools and run on a managed cloud runtime.
+The primary audience is the author, using Graphia as a personal reference project to explore and revisit advanced LangGraph capabilities **and Bedrock AgentCore deployment patterns**. A secondary audience is any Python developer evaluating LangGraph + AgentCore who stumbles on the repo and wants a non-trivial, end-to-end example of async multi-agent gameplay running on a managed cloud runtime with cross-session Memory.
 
 ### 1.3. User Personas
 
@@ -24,17 +24,16 @@ The primary audience is the author, using Graphia as a personal reference projec
 
 - **Persona 2: "Curious Dev" — the drop-in reader**
   - **Role:** Python developer comfortable with LangChain basics, evaluating whether LangGraph + Bedrock AgentCore is worth adopting.
-  - **Goal:** Run one command locally, see a multi-agent system work end-to-end with real tool calls, then run `terraform apply` and play the same game against a hosted AgentCore Runtime.
-  - **Frustration:** Most multi-agent examples are synthetic toy tasks with no tools, no deployment story, and no observability hooks.
+  - **Goal:** Run one command locally, see a multi-agent system work end-to-end, then run `terraform apply` and play the same game against a hosted AgentCore Runtime that retains career stats across sessions.
+  - **Frustration:** Most multi-agent examples are synthetic toy tasks with no real deployment story and no observability hooks.
 
 ### 1.4. Success Metrics
 
 - A full game (Night → Day → Night → … → end state) finishes from a single `uv run` command in **local mode** without stack traces, on the default configuration.
 - A full game also finishes when launched against the **deployed AgentCore Runtime** (provisioned via the included Terraform), via `uv run python -m graphia --remote`.
-- The day-chat display remains readable throughout a full Day phase: AI "typing" output, tool-call beats, and human input do not corrupt each other's lines in the terminal.
-- AI tool calls (investigation, evidence-building) visibly influence Day-phase decisions — the recap can point to at least one accusation that was grounded in a tool result.
+- The day-chat display remains readable throughout a full Day phase: AI "typing" output and human input do not corrupt each other's lines in the terminal.
 - The end-of-game Moderator recap feels satisfying — it visibly draws on the dead players' private diaries and the vote logs, and reveals information the human didn't have during play.
-- Opening the source, each advertised concept — multi-agent nodes, private per-agent state, async chat coordination, human interrupts, streaming, LangGraph tool calls, AgentCore Runtime entrypoint, Gateway-registered tools, per-game Memory reads/writes, long-term cross-session Memory reads/writes, observability traces — is locatable in a few minutes.
+- Opening the source, each advertised concept — multi-agent nodes, private per-agent state, async chat coordination, human interrupts, streaming, AgentCore Runtime entrypoint, Gateway-fronted diary surface, per-game Memory reads/writes, long-term cross-session Memory reads/writes, observability traces — is locatable in a few minutes.
 - After first game, the pre-game greeting and post-game career-stats panel both show accurate cumulative counts that reflect the games actually played — including the just-finished one — in both local mode (file-backed) and remote mode (AgentCore long-term Memory).
 
 ---
@@ -47,19 +46,17 @@ The primary audience is the author, using Graphia as a personal reference projec
 - **AI character generation** — a creative LLM generates a distinct personality and backstory for each AI player at the start, persisted for the whole game.
 - **Night phase with private Mafia consensus** — Mafiosos are introduced to each other on the first Night via private communication from the Moderator; on every Night they choose a victim by pointing (no chat), iterating rounds until consensus or falling back to majority vote with random tie-break.
 - **Day phase with asynchronous discussion** — surviving players chat in a shared day channel; the human types freely, AI players post rate-limited messages; Mafiosos pose as Citizens. Any player can *initiate a vote* to execute a specific person; once a vote is open no further chat is allowed until all alive players have voted. Majority-to-execute ends the Day; otherwise discussion resumes. Up to three votes per Day, then the Day ends regardless.
-- **AI tool use during Day phase** — AI players can call tools mid-discussion to ground their statements: an **investigation tool** that returns a target player's prior public statements and vote record, and an **evidence-builder tool** that compiles a structured case against a suspect from the day-chat and night-kill logs. Tool calls are visible as short beats in the chat ("Alice consults her notes…") so the human can see when an AI is reasoning from data.
-- **Moderator tools** — the Moderator uses tools (not free-form LLM calls) for mechanical work: summarising the kill log, fetching dead players' diaries from the configured diary store, and assembling the end-of-game recap inputs.
 - **Live "typing" day chat with concurrent human input** — AI messages stream to the console as they're produced while the human can type their own message at the same time, without display corruption.
-- **Private diaries** — before each Night, each surviving AI player writes a short diary entry under a per-player namespace; entries are queryable as a tool by the owning agent, and revealed in bulk to the Moderator at end-of-game. In remote mode the diary store is AgentCore Memory; in local mode the diaries live in the game's own state.
+- **Private diaries** — before each Night, each surviving AI player writes a short diary entry under a per-player namespace; entries are visible only to the owning agent during play, and revealed in bulk to the Moderator at end-of-game. In remote mode the diary store is AgentCore Memory (read/write through an AgentCore Gateway-fronted surface); in local mode the diaries live in the game's own state.
 - **End-of-game Moderator story** — when a win condition is met, the Moderator pulls the diaries of all dead players plus the day-chat logs and the night-kill vote logs, and delivers a short creative recap that reveals the hidden twists.
 - **Win conditions** — Law-abiding win when all Mafia are eliminated; Mafia win when their count equals or exceeds the Law-abiding count.
-- **Bedrock AgentCore deployment** — a Terraform module provisions an AgentCore Runtime hosting the game agent, an AgentCore Gateway exposing the in-game tools (investigation, evidence-builder, Moderator helpers, diary read/write) over MCP, an AgentCore Memory store used both for per-game diaries and for long-term cross-game stats, and AgentCore observability emitting traces to CloudWatch.
+- **Bedrock AgentCore deployment** — a Terraform module provisions an AgentCore Runtime hosting the game agent, an AgentCore Gateway exposing the per-game diary read/write surface over MCP, an AgentCore Memory store used both for per-game diaries and for long-term cross-game stats, and AgentCore observability emitting traces to CloudWatch.
 - **Cross-game career and aggregate statistics** — across game sessions, Graphia accumulates counts of night-kill initiations and votes, day-execution initiations and votes, game outcomes, and human-player career stats by role (Mafia / Law-abiding). The pre-game opener greets the human with a one-paragraph cumulative summary; the post-game wrap-up appends a career-stats panel showing the updated career numbers and the deltas from the just-finished game. In remote mode the long-term store is **AgentCore Memory** (the explicit demonstration of long-term cross-session Memory); in local mode the same data lives in a file in the game's local data directory.
 - **Local mode retained for dev** — the game can still run fully locally for game-mechanics development, with no AgentCore (Runtime, Gateway, or Memory) calls. The LLM is reached through whichever provider is configured at the time — Bedrock at v1.1; the future Ollama provider on the roadmap is what eventually enables truly offline play. A single flag toggles between local and remote (AgentCore-hosted) execution.
 
 ### 2.2. User Journey
 
-The human first runs `terraform apply` from the included module to provision the AgentCore Runtime, Gateway, and Memory store. They then launch the game from the terminal — either `uv run python -m graphia` for local mode (game mechanics development) or `uv run python -m graphia --remote` to invoke the deployed AgentCore Runtime. On launch — before the role-count prompts — the game greets them with a one-paragraph career summary drawn from the cross-game stats store: how many games they've played, win rate by role, kills attempted vs. successful, votes initiated, etc. (empty on the very first run). They then answer a couple of prompts for the number of Law-abiding Citizens and Mafiosos, and watch the Moderator announce the opening. The game begins with Night: if the human drew Mafia, the Moderator privately introduces them to their teammates and walks them through a pointing-based consensus on a target; if not, they see only a brief "night falls" message. Morning arrives, the Moderator announces who was killed, and the Day chat opens. AI players post messages over time, occasionally pausing to call an investigation or evidence-building tool whose result feeds their next utterance; the human can type their own messages concurrently. At any point any player may call a vote to execute someone, at which point the chat locks and everyone votes. Days alternate with Nights — with each AI writing a fresh diary before nightfall — until a win condition triggers, after which the Moderator delivers a final creative recap drawing on each dead player's stored diary. The recap is followed by a brief career-stats panel that updates the cumulative numbers and shows the deltas from this game (e.g., *"You initiated 1 day-vote today — career total: 6"*).
+The human first runs `terraform apply` from the included module to provision the AgentCore Runtime, Gateway, and Memory store. They then launch the game from the terminal — either `uv run python -m graphia` for local mode (game mechanics development) or `uv run python -m graphia --remote` to invoke the deployed AgentCore Runtime. On launch — before the role-count prompts — the game greets them with a one-paragraph career summary drawn from the cross-game stats store: how many games they've played, win rate by role, kills attempted vs. successful, votes initiated, etc. (empty on the very first run). They then answer a couple of prompts for the number of Law-abiding Citizens and Mafiosos, and watch the Moderator announce the opening. The game begins with Night: if the human drew Mafia, the Moderator privately introduces them to their teammates and walks them through a pointing-based consensus on a target; if not, they see only a brief "night falls" message. Morning arrives, the Moderator announces who was killed, and the Day chat opens. AI players post messages over time; the human can type their own messages concurrently. At any point any player may call a vote to execute someone, at which point the chat locks and everyone votes. Days alternate with Nights — with each AI writing a fresh diary before nightfall — until a win condition triggers, after which the Moderator delivers a final creative recap drawing on each dead player's stored diary. The recap is followed by a brief career-stats panel that updates the cumulative numbers and shows the deltas from this game (e.g., *"You initiated 1 day-vote today — career total: 6"*).
 
 ---
 
@@ -76,12 +73,10 @@ The human first runs `terraform apply` from the included module to provision the
 - Asynchronous Day chat with per-AI rate limiting, concurrent human input, and live streaming display.
 - Vote-to-execute flow: any player can initiate; chat locks; everyone votes; majority kills the target or Day continues; three-vote cap per Day.
 - Per-AI private diaries written before each Night and persisted (in AgentCore Memory in remote mode, in-process state in local mode) until end of game.
-- LangGraph tool calls by AI players: investigation tool (read prior statements / votes), evidence-builder tool (assemble structured accusation).
-- LangGraph tool calls by the Moderator for mechanical work (kill-log summary, diary fetch, recap assembly).
-- End-of-game Moderator recap that uses diaries and logs to tell a creative story with twists.
+- End-of-game Moderator recap that reads diaries and logs directly and uses them to tell a creative story with twists.
 - LangGraph implementation with clearly identifiable multi-agent, private-state, interrupt, and streaming constructs.
 - **Bedrock AgentCore Runtime** hosting the game agent, deployable via the included Terraform module.
-- **Bedrock AgentCore Gateway** registering each in-game tool and exposing them over MCP for the agents to call.
+- **Bedrock AgentCore Gateway** registering the per-game diary read/write surface and exposing it over MCP for the owning agents to call. (The richer AI-player and Moderator tool surface is deferred to Phase 7 per the roadmap.)
 - **Bedrock AgentCore Memory** as both the per-game diary store and the long-term cross-game stats store in remote mode.
 - **AgentCore observability** emitting traces to CloudWatch for inspection.
 - Cross-game career and aggregate statistics — night-kill initiations and votes, day-execution initiations and votes, game outcomes, and per-role breakdowns accumulated across all played sessions.
@@ -95,7 +90,8 @@ The human first runs `terraform apply` from the included module to provision the
 - GUI, web UI, or non-console front ends.
 - Multi-human or networked multiplayer; no remote players.
 - Persistent storage of *full* game transcripts, diaries, or vote-by-vote replays across separate game sessions — only game stats summaries (the data needed for the career-stats and aggregate views) are persisted to the cross-game store. Each in-progress game is still a fresh LangGraph thread; no save/load of in-progress games.
-- Web search / external research tools for AI players or the Moderator — all in-game tools read game state only, keeping the game self-contained and deterministic to reason about.
+- Rich AI tool-use during the Day phase (investigation tool, evidence-builder tool) and structured Moderator helper tools (kill-log summary, diary fetch, recap-input assembly) — deferred to Phase 7 further-improvement possibilities (per CR 002 amendment, applying the *design-driven-by-realistic-needs* principle: Mafia game-design cases for these tools are mostly degenerate vs. structured output). The v1.x Moderator end-of-game recap reads state directly rather than via tool calls. The Gateway-fronted diary read/write surface remains in scope as the v1.x AgentCore Gateway demonstration.
+- Web search / external research tools for AI players or the Moderator — all in-game data access reads game state only, keeping the game self-contained and deterministic to reason about.
 - Tutorial document, narrated walkthrough, or per-concept commentary beyond what lives in the source and the Terraform module.
 - Tooling beyond the game itself (leaderboards, replays, analytics, packaging for distribution).
   - A dedicated `graphia stats` standalone CLI command — career and aggregate stats surface only via the pre-game greeting and the post-game panel within a normal game launch.

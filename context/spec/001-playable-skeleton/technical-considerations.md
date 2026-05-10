@@ -186,7 +186,7 @@ Env vars consumed at startup (via `config.py`):
 | Name                        | Required | Default                         | Purpose                                      |
 | --------------------------- | -------- | ------------------------------- | -------------------------------------------- |
 | `AWS_BEARER_TOKEN_BEDROCK`  | yes      | —                               | Bedrock auth.                                |
-| `AWS_REGION`                | no       | `eu-north-1`                    | Bedrock region.                              |
+| `AWS_REGION`                | no       | `us-west-2`                     | Bedrock region.                              |
 | `GRAPHIA_LOG_FILE`          | no       | `./.graphia/graphia.log`        | JSONL streaming trace file.                  |
 | `GRAPHIA_SEED`              | no       | current time (ns) cast to int   | Seeds `random.Random` for reproducibility.   |
 | `GRAPHIA_CHECKPOINT_DIR`    | no       | `./.graphia/checkpoints`        | Sqlite checkpoint directory.                 |
@@ -197,7 +197,7 @@ Env vars consumed at startup (via `config.py`):
 
 ### System Dependencies
 
-- **AWS Bedrock** — Sonnet 4.5 and Haiku 4.5 inference profiles must be available in `eu-north-1`. If either is unavailable, the game cannot start.
+- **AWS Bedrock** — Sonnet 4.5 and Haiku 4.5 inference profiles must be available in `us-west-2`. If either is unavailable, the game cannot start.
 - **Textual** — requires a UTF-8 terminal with ANSI support and a TTY. Running under PyCharm's "Run" console (non-TTY) will not work; the launcher must detect this and print a clear message directing the user to use a real terminal.
 - **LangGraph 1.x** — `SqliteSaver` comes from the separate `langgraph-checkpoint-sqlite` package, not the core `langgraph` wheel. If the user upgrades only `langgraph` without this sibling, checkpointing breaks.
 
