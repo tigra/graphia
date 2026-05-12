@@ -1,0 +1,435 @@
+# Tutorial 001: Playable Skeleton
+
+- **Spec:** [`context/spec/001-playable-skeleton/`](../../spec/001-playable-skeleton/)
+- **Status:** Draft
+- **Author:** Poe (on behalf of the project owner)
+- **Date:** 2026-05-11
+- **Prerequisites:** none — this is the first tutorial in the chain.
+
+---
+
+## Overview
+
+Graphia is a single-player console Mafia game where the player participates among five AI characters, a Moderator narrates the game in prose, AI players reason in machine-readable structured output, and the whole thing runs end-to-end on a developer's laptop against AWS Bedrock for the language model. This first increment — the **Playable Skeleton** — builds the minimum complete loop: role assignment, Night kills, Day discussion and execution votes, win detection.
+
+The interesting design problem is: **how do you organize a turn-based multi-agent program where the flow branches based on state, one of the players is a real human whose response you have to wait for, and you want the whole thing to be inspectable, restartable, and pluggable into a TUI?** That problem is what **state graphs** are designed for, and the central technology this project demonstrates is **LangGraph** — a Python framework that gives you exactly that: a typed shared-state container, a topology of nodes (state-transition functions) and edges (linear and conditional), a checkpointed execution model, and clean seams for plugging an LLM in at specific transition points.
+
+This tutorial teaches the design **from the core outward**. The deepest concept is the state graph itself, so we start there. We then add the structural concepts that flow from it (typed state, branching), the execution mechanics (interrupt-and-resume, checkpointing), the external integration (Bedrock LLM with structured output), the observability layer, and finally the decorative parts — the TUI plumbing, the project boilerplate — for completeness. By the end you should understand both the design *and* the LangGraph and Bedrock features that make it work, in roughly the order a thoughtful engineer would reach for them.
+
+---
+
+## Concepts already covered (referenced, not re-taught)
+
+_None — this is the first tutorial in the chain. The eighteen concepts introduced below all originate here._
+
+---
+
+## What's new this increment
+
+(Flat index — full Socratic explanations live in the depth-ordered Walkthrough below.)
+
+### Orchestration (LangGraph) — the spine
+- [**Typed state with field-level reducers**](#1-the-state-graph-structure-state-branching) — One `TypedDict` for the whole game; field-level reducers control merge semantics.
+- [**Streaming graph updates**](#1-the-state-graph-structure-state-branching) — `graph.stream(..., stream_mode="updates")` emits one `{node: update}` per super-step.
+- [**Conditional edges with a routing function**](#1-the-state-graph-structure-state-branching) — Branching is a router function plus an `add_conditional_edges` mapping.
+- [**One function, two node names for fan-out**](#1-the-state-graph-structure-state-branching) — One pure read function powers two fan-out sites by being registered under two node names.
+- [**Cycle tail edge**](#1-the-state-graph-structure-state-branching) — Day → Night loops via a single tail edge; the cycle counter bumps on re-entry.
+
+### Human-in-the-loop
+- [**Replay-safe interrupt placement**](#2-the-human-in-the-loop-pausing-the-graph-for-a-real-player) — `interrupt()` opens any human-facing node so resume re-runs the whole node cleanly.
+- [**Resume via Command payload**](#2-the-human-in-the-loop-pausing-the-graph-for-a-real-player) — `Command(resume=value)` hands the user's input back to the paused graph.
+
+### Persistence
+- [**Per-game sqlite checkpointer**](#3-state-that-survives-the-pause-checkpointing) — Per-game sqlite checkpoint; connection opened directly so it lives the whole game.
+
+### Bedrock LLM integration
+- [**LLM client singletons**](#4-talking-to-the-llm-structured-output) — Two long-lived clients (Sonnet for gameplay, Haiku for mechanical work).
+- [**Flat structured-output schemas**](#4-talking-to-the-llm-structured-output) — `with_structured_output(<flat schema>)`; Bedrock Converse rejects discriminated unions.
+- [**Regional inference-profile prefix**](#4-talking-to-the-llm-structured-output) — `us.anthropic.…` prefix targets the US inference-profile family.
+- [**Single retry on validation error**](#5-when-the-llm-gets-it-wrong-one-retry-with-corrective-feedback) — `ValidationError` triggers one retry with a corrective system message.
+
+### Observability
+- [**JSONL super-step trace logger**](#6-watching-the-graph-think-observability) — One JSONL line per super-step in `GRAPHIA_LOG_FILE`.
+
+### Decorating with a TUI (lighter)
+- [**Async-to-thread sync-stream bridge**](#7-decorating-with-a-tui-bridging-an-async-ui-to-a-sync-graph) — Sync graph stream runs in a worker thread; results flow through an `asyncio.Queue`.
+- [**Dual public/private log panes**](#7-decorating-with-a-tui-bridging-an-async-ui-to-a-sync-graph) — Two log panes; private messages route by sentinel `additional_kwargs`.
+- [**Interrupt payload → modal dispatch**](#7-decorating-with-a-tui-bridging-an-async-ui-to-a-sync-graph) — `payload["kind"]` selects which modal opens.
+- [**Message-ID dedup on render**](#7-decorating-with-a-tui-bridging-an-async-ui-to-a-sync-graph) — Track rendered message IDs to defeat duplicate emission.
+
+### For completeness — project plumbing (briefest)
+- [**`.env` config with typed validation**](#8-for-completeness-project-plumbing) — `.env` → typed `GraphiaConfig` with required-field validation.
+- [**UTF-8 stdio reconfig at entry**](#8-for-completeness-project-plumbing) — UTF-8 stdio reconfig must run before any other import.
+
+---
+
+## Diagram
+
+The compiled state graph for the playable skeleton. Solid arrows are unconditional edges; dotted arrows are conditional branches via router functions. Keep this picture handy — the Walkthrough below refers back to its parts repeatedly.
+
+```mermaid
+flowchart TD
+    START([START])
+    cn[collect_name]
+    gr[generate_roster]
+    ar[assign_roles]
+    ir[introduce_roster]
+    rr[reveal_role]
+    fnmi[first_night_mafia_intros]
+    no[night_open]
+    mp[mafia_pointing]
+    rnk[resolve_night_kill]
+    cwn{check_win_night}
+    nc[night_close]
+    do[day_open]
+    dt[day_turn]
+    vp[vote_prompt]
+    cv[collect_votes]
+    rv[resolve_vote]
+    cwd{check_win_day}
+    dc[day_close]
+    es[end_screen]
+    ENDN([END])
+
+    START --> cn --> gr --> ar --> ir --> rr --> fnmi --> no
+    no -. end_screen .-> es
+    no -. mafia_pointing .-> mp
+    mp --> rnk --> cwn
+    cwn -. end_screen .-> es
+    cwn -. night_close .-> nc
+    nc --> do --> dt
+    dt -. vote_prompt .-> vp
+    dt -. day_turn loop .-> dt
+    dt -. day_close .-> dc
+    vp --> cv
+    cv -. collect_votes loop .-> cv
+    cv -. resolve_vote .-> rv
+    rv --> cwd
+    cwd -. end_screen .-> es
+    cwd -. day_turn .-> dt
+    cwd -. day_close .-> dc
+    dc -. cycle bump .-> no
+    es --> ENDN
+```
+
+---
+
+## Walkthrough
+
+### 1. The state graph: structure, state, branching
+
+**The design question.** How would you organize a turn-based multi-agent program where (a) each turn is a state transition, (b) the flow branches based on who's alive and what just happened, and (c) one of the actors might pause the whole thing for several seconds while it thinks (an LLM call) or several minutes (a human player)?
+
+**LangGraph's answer.** A **state graph**. You declare a single shared-state schema (typed), define a topology of *nodes* (pure-ish functions that take state and return a partial-state delta) connected by *edges* (linear or conditional), and compile it. Running the graph means iterating it one node at a time — each iteration is a **super-step**: pick the next node, run it, merge its delta back into shared state, advance.
+
+The framework gives you four primitives:
+
+- A **typed shared state** that travels through the whole graph.
+- **Nodes** that read state and return a delta.
+- **Edges** — linear (`add_edge`) and conditional (`add_conditional_edges` + a router function).
+- A **streaming execution model** (`graph.stream`) that yields one event per super-step, so the outside world can drive the graph and observe each transition.
+
+Graphia's whole topology — the picture in the [Diagram](#diagram) above — is built in `build_graph` in `src/graphia/graph.py`. The nodes are added, the edges are wired, then `builder.compile(checkpointer=saver)` produces a runnable graph.
+
+**The state's shape.** The state schema is the foundation of everything else. The design question inside the state graph is: **how do partial updates from different nodes merge into a shared object without each node knowing about every other?** LangGraph's answer is **typed state with field-level reducers** — a `TypedDict` where each field can carry an `Annotated[..., <reducer>]` declaring how to combine updates with the existing value.
+
+```python
+# src/graphia/state.py — the GameState TypedDict
+class GameState(TypedDict, total=False):
+    messages: Annotated[list[AnyMessage], add_messages]
+    players: dict[str, PlayerState]
+    human_id: str
+    phase: Literal["setup", "night", "day", "end"]
+    cycle: int
+    night_picks: dict[str, str]
+    ...
+    kill_log: Annotated[list[KillRecord], operator.add]
+    winner: Literal["law_abiding", "mafia", "draw"] | None
+```
+
+Three reducer choices show up there. `messages` uses LangGraph's `add_messages` reducer — appending, deduplicating by ID. `kill_log` uses `operator.add` on a list — plain concatenation. Everything else has no reducer at all, which is shorthand for "last writer wins" — exactly right for scalars like `phase`, `cycle`, `winner`, where there's one source of truth per field per super-step. The reducer is the design choice; the field type is just the carrier.
+
+**Branching the flow.** The next question: *after the Night kill resolves, the game either ends (someone won) or moves into the Day. How is that choice expressed in the graph?* LangGraph's answer is **conditional edges with a routing function** — `add_conditional_edges(source, router_fn, {key: destination})`. The router is a small pure function that reads state and returns a string key; the lookup table maps each possible key to a destination node.
+
+```python
+# src/graphia/graph.py — build_graph(), the check_win_night conditional fan-out
+builder.add_conditional_edges(
+    "check_win_night",
+    route_after_win_night,
+    {
+        "end_screen": "end_screen",
+        "night_close": "night_close",
+    },
+)
+```
+
+This makes branching *explicit* and *local* to the fan-out site. A reader scanning `build_graph()` can see every outgoing path without chasing Python control flow elsewhere.
+
+**A small trick that keeps fan-out clean.** Graphia checks the win condition at two points in the graph: after the Night kill, and after the Day execution. The pure read function `check_win_condition` is the same in both cases — but LangGraph's conditional edges are owned by the *source* node, and each source needs its own destination identity to attach its own conditional fan-out. The clean fix is **one function, two node names for fan-out**:
+
+```python
+# src/graphia/graph.py — build_graph(), check_win_condition registered twice
+builder.add_node("check_win_night", check_win_condition)
+builder.add_node("check_win_day", check_win_condition)
+```
+
+Same function body, two registered names. `check_win_night` fans out to `{end_screen, night_close}`; `check_win_day` fans out to `{end_screen, day_turn, day_close}`. The cost is one extra `add_node` line; the win is that every fan-out site keeps its branching table local.
+
+**Closing the loop.** Finally, the Day → Night cycle: how does the graph loop? Not via a loop-control node, but via a single tail edge — that's the **cycle tail edge** pattern:
+
+```python
+# src/graphia/graph.py — build_graph(), the day_close → night_open tail edge
+# Day → Night cycle. night_open bumps cycle on re-entry.
+builder.add_edge("day_close", "night_open")
+```
+
+This composes cleanly with **typed state with field-level reducers**: because `cycle` is a plain replace-semantics field (no reducer), `night_open` can rewrite it freely on re-entry. The topology is the loop; the state field is the counter; one tail edge ties them together.
+
+**Driving the graph from outside.** Compiling a graph gives you a runnable; *running* it is `graph.stream(payload, run_config, stream_mode="updates")`. That's **streaming graph updates** — each iteration yields one `{node_name: update_dict}` chunk per node finish. The chunk carries the *delta* a node returned, **not** the merged state after reducers ran. The driver consumes those chunks one at a time:
+
+```python
+# src/graphia/driver.py — _producer() worker
+def _producer(...) -> None:
+    """Iterate the sync graph stream in a worker thread, pushing chunks live."""
+    try:
+        for chunk in graph.stream(payload, run_config, stream_mode="updates"):
+            loop.call_soon_threadsafe(queue.put_nowait, chunk)
+```
+
+By the end of this section you have the spine: a typed-state container, a topology of nodes and edges (with conditional branches), and a streaming execution model. Everything else in the tutorial is a tool that snaps into this spine.
+
+### 2. The human in the loop: pausing the graph for a real player
+
+**The design question.** One of the players in this game is a real human. The graph needs to ask them for a name, ask them to point at a Night-kill target, ask them to vote on a Day execution — and wait for their answer for however long they take. **How do you pause a running graph mid-super-step and resume it when input is ready?**
+
+**LangGraph's answer.** A pair of primitives: `interrupt(value)` inside a node, and `Command(resume=value)` from the driver. When a node calls `interrupt(payload)`, the graph halts at that super-step boundary. The driver receives the payload (it's part of the stream chunk), does whatever it needs to do to gather user input — open a modal, wait for the response — and then drives the graph forward by passing `Command(resume=value)` as the next stream payload. From the node's perspective, `interrupt(...)` simply returns `value`.
+
+The subtlety is in *how resume works*. When the graph re-enters the paused node, it re-executes the **whole node from the top** — not just the line after `interrupt()`. Any code that ran before `interrupt()` runs again. So the discipline is **replay-safe interrupt placement**: `interrupt()` is the *first statement* of any node that prompts the human. No setup work, no logging, no LLM calls before it.
+
+```python
+# src/graphia/nodes/setup.py — collect_name() node
+def collect_name(state: GameState) -> dict:
+    value = interrupt({"kind": "name"})
+    name = value.strip() if isinstance(value, str) else ""
+    if not name:
+        name = "Player"
+    player_id = str(uuid.uuid4())
+    human = PlayerState(...)
+    return {...}
+```
+
+If `interrupt()` weren't the first statement, the `uuid` generated above it would change between the first call and the resume — the side-effect would double. By making `interrupt()` line 1, the first pass through the node does *only* the interrupt; the rest runs only after the user has supplied input.
+
+**The driver side.** The other half of the pattern is **resume via Command payload**, which lives in the outer loop of `drive_graph` in `src/graphia/driver.py`:
+
+```python
+# src/graphia/driver.py — drive_graph() resume hand-off
+resume_value = await request_resume(interrupts[0].value)
+payload = Command(resume=resume_value)
+```
+
+`request_resume` is an async callback injected by the Textual app. It receives the interrupt's payload dict, dispatches on its `kind` field to open the right modal, waits for the user's response, and returns the value. The driver wraps the response in `Command(resume=...)` and re-streams the graph. The graph itself never knows it was paused — from inside `collect_name`, `interrupt(...)` "simply returned" the name the user typed.
+
+The composition: **replay-safe interrupt placement** is the node-side discipline; **resume via Command payload** is the driver-side machinery. Neither does the job alone, and the seam between them is the small payload dict (`{"kind": "name"}`) that names what kind of input is needed.
+
+### 3. State that survives the pause: checkpointing
+
+**The design question.** When the graph pauses for a human, you can't lose state. A human might take seconds, minutes, or — let's be honest — go get coffee. What if the process restarts mid-pause? **How does the state graph survive being torn down and resumed later?**
+
+**LangGraph's answer.** A **checkpointer**. You hand the graph a saver object at compile time; the framework persists state at every super-step boundary. A paused (or crashed) graph can resume exactly where it left off as long as the checkpointer can be reopened against the same thread.
+
+Graphia uses `SqliteSaver` and creates **one sqlite file per game** — that's the **per-game sqlite checkpointer** pattern:
+
+```python
+# src/graphia/graph.py — build_graph(), checkpointer construction
+config.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+thread_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+db_path = config.checkpoint_dir / f"{thread_id}.sqlite"
+
+# Open the connection directly rather than via from_conn_string's context
+# manager, which would close the DB as soon as this frame goes out of scope.
+# The graph process owns the lifetime for the duration of the game.
+conn = sqlite3.connect(str(db_path), check_same_thread=False)
+saver = SqliteSaver(conn)
+```
+
+The non-obvious move is the comment. The "natural" construction `SqliteSaver.from_conn_string(...)` is a context manager — fine for a one-shot script that runs the graph once and exits, but fatal for a game that needs the connection to live across many super-steps and a long human-input pause. Opening the connection directly hands the lifetime to the OS rather than to a `with` block. The `check_same_thread=False` flag is there because the producer thread (from the async-to-thread bridge we'll meet in section 7) uses the connection from a worker thread distinct from the one that opened it.
+
+The composition matters. **Replay-safe interrupt placement** is what lets `interrupt()` pause cleanly; **per-game sqlite checkpointer** is what lets the paused state survive arbitrarily long; **resume via Command payload** is what restarts execution. The three together are the project's complete HITL story. None of them does the job alone.
+
+### 4. Talking to the LLM: structured output
+
+**The design question.** AI players have to think — but their thoughts have to *do* something in the game. They can't reply in free-form prose ("I think we should kill Bob") and expect the game logic to parse it. **How do you call an LLM and get back a machine-readable answer that fits a game-defined schema?**
+
+**LangChain + Bedrock's answer.** A `ChatBedrockConverse` client plus `with_structured_output(<Pydantic schema>)`. The schema is bound to the call; the model is constrained to return JSON that validates against it. LangChain handles the round-trip.
+
+Graphia has two such clients — `get_sonnet()` for gameplay reasoning and `get_haiku()` for cheap mechanical work like generating distinct AI player names. The **LLM client singletons** pattern says: keep both as module-level singletons, vary behaviour via system prompts and `temperature=`, never by spinning up additional model variants.
+
+```python
+# src/graphia/llm.py — get_sonnet() factory and the model-ID constants at module top
+_SONNET_MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+_HAIKU_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+
+def get_sonnet() -> ChatBedrockConverse:
+    global _sonnet
+    if _sonnet is None:
+        _sonnet = ChatBedrockConverse(
+            model=_SONNET_MODEL_ID,
+            region_name=load_config().aws_region,
+            temperature=0.7,
+        )
+    return _sonnet
+```
+
+Notice the `us.` prefix on each model ID — that's the **regional inference-profile prefix**. Bedrock model IDs aren't bare model names; they're regional inference profiles. The `us.` prefix routes inference through the US regional family, so switching `AWS_REGION` between US regions (`us-east-1` ↔ `us-west-2`) is fine without touching the model ID. Crossing to EU would require both edits: `us.` → `eu.` *and* the region swap.
+
+**Schema design under a Bedrock quirk.** Now the schema side. Bedrock Converse rejects *discriminated unions* — schemas where a `Literal` discriminator picks among a union of payload types. That's the natural Pythonic way to model "either speak this text *or* call a vote against this target", but Bedrock won't accept it. So Graphia uses **flat structured-output schemas**: one Pydantic class with primitive fields side by side, plus a `model_validator` that enforces the multi-field invariants *after* the model returns:
+
+```python
+# src/graphia/llm.py — DayAction Pydantic model
+class DayAction(BaseModel):
+    kind: Literal["speak", "vote"]
+    text: str | None = None
+    target_id: str | None = None
+
+    @model_validator(mode="after")
+    def _check_kind(self) -> "DayAction":
+        # speak requires non-empty text; vote requires non-empty target_id
+        ...
+```
+
+`text` and `target_id` are siblings, only one of which is meaningful at a time. The validator catches the wrong combination. Ugly to a Python eye, but it survives Bedrock Converse cleanly.
+
+Putting `get_haiku()` and `Roster` together in `generate_roster`, the LLM call looks like:
+
+```python
+# src/graphia/nodes/setup.py — _generate_names() helper
+def _generate_names() -> Roster:
+    llm = get_haiku().with_structured_output(Roster)
+    messages: list = [
+        SystemMessage(content=NAME_GEN_SYSTEM),
+        HumanMessage(content=NAME_GEN_USER),
+    ]
+    return llm.invoke(messages)
+```
+
+One call, schema-bound, returns a `Roster` instance. The composition: **LLM client singletons** + **regional inference-profile prefix** (where to send the request) + **flat structured-output schemas** (how to constrain the answer) is the project's whole "talk to an LLM" story.
+
+### 5. When the LLM gets it wrong: one retry with corrective feedback
+
+**The design question.** Even with a constrained schema, the model occasionally returns content that *parses* but doesn't *validate* — duplicate names in a distinct-list, empty strings where a value was required, etc. **How do you handle that without either failing the whole game or papering over real model regressions?**
+
+**The pattern.** Catch the `ValidationError`, append a corrective message to the conversation, retry once, then bail loudly if the second attempt also fails. That's **single retry on validation error**:
+
+```python
+# src/graphia/nodes/setup.py — _generate_names() retry branch
+try:
+    return llm.invoke(messages)
+except ValidationError:
+    retry_messages = [
+        SystemMessage(content=NAME_GEN_SYSTEM),
+        HumanMessage(content=NAME_GEN_USER),
+        HumanMessage(
+            content="Those names were invalid: must be 6 distinct non-empty "
+            "strings. Try again."
+        ),
+    ]
+    return llm.invoke(retry_messages)
+```
+
+The composition is exact: **flat structured-output schemas** define the *shape*, the `field_validator` / `model_validator` define the *content rules*, and **single retry on validation error** handles the gap where the model produced shape-valid but content-invalid output. One retry is the cap. If the second attempt also fails, the exception propagates and the game halts loudly (Textual surfaces the traceback as a banner pointing at the log file). The pattern is "best-effort once more, then bail" — not infinite retry loops that hide regressions.
+
+### 6. Watching the graph think: observability
+
+**The design question.** Once the graph is running, you need to be able to see what it's doing — to debug, to learn, to build intuition. **What's the smallest thing that gives you a complete, after-the-fact record of every super-step?**
+
+**The answer composes two pieces already in play.** **Streaming graph updates** (section 1) already gives the driver one chunk per super-step. We just need a place to write each chunk. That place is the **JSONL super-step trace logger** — `StreamTraceLogger.record(event_dict)` appends one JSON line per event to `GRAPHIA_LOG_FILE`:
+
+```python
+# src/graphia/driver.py — _consume_stream() trace-record block
+for node_name, update in item.items():
+    snapshot = graph.get_state(run_config)
+    logger.record(
+        {
+            "node": node_name,
+            "keys": list(update.keys()) if isinstance(update, dict) else [],
+            "cycle": snapshot.values.get("cycle"),
+            "phase": snapshot.values.get("phase"),
+        }
+    )
+```
+
+Three things to notice. First, each line names the node that fired, the *delta keys* the node returned, and the *post-reducer* `cycle` and `phase`. That's how the trace stays compact yet informative — you don't need the full state on every line because reducers and replace-semantics tell you what happened. Second, the composition with **typed state with field-level reducers** is what makes "delta keys" different from "full state" — the chunk carries the node's return value, while `graph.get_state(run_config)` returns the merged result. Third, the trace lives entirely in a file, never in the UI — the gameplay terminal stays clean, and a separate `tail -f` on the log gives you the running play-by-play.
+
+### 7. Decorating with a TUI: bridging an async UI to a sync graph
+
+This is the first peripheral section — Textual is decoration, not paradigm. The patterns here are real but secondary to the LangGraph + Bedrock material above.
+
+**The design question.** Textual's event loop is asyncio-native; LangGraph's `graph.stream` is synchronous. **How do you connect them without blocking the UI on every LLM call?**
+
+**Python's answer.** `asyncio.to_thread` wraps a sync callable in an awaitable that runs it in the default executor. Pipe results back through an `asyncio.Queue` for the UI to consume. That's the **async-to-thread sync-stream bridge**:
+
+```python
+# src/graphia/driver.py — _consume_stream() producer setup
+producer_task = asyncio.create_task(
+    asyncio.to_thread(_producer, graph, payload, run_config, loop, queue)
+)
+```
+
+`loop.call_soon_threadsafe(queue.put_nowait, chunk)` (back inside `_producer`) is the thread-safe way to push items onto the main loop's queue. Future phases may switch to LangGraph's native `graph.astream` once the codebase is comfortable with full async; for now the threaded bridge is the simplest thing that works.
+
+**Three smaller TUI patterns, briefly:**
+
+- **Dual public/private log panes** — the Textual UI has two `RichLog` widgets (public + private). Messages whose `additional_kwargs` contains `{"private_to": <human_id>}` route to the private pane; everything else to the public. "Private state" is render-time routing, not structurally separate state — it composes with **typed state with field-level reducers** by leaning on the same accumulating `messages` field.
+- **Interrupt payload → modal dispatch** — the interrupt payload's `kind` field is the contract between graph and UI. `{"kind": "name"}` opens the name-prompt modal; `{"kind": "point", ...}` opens the night-pointing modal; `{"kind": "vote", ...}` opens the vote modal. Growing the contract is how new HITL surfaces get added.
+- **Message-ID dedup on render** — messages can occasionally surface twice in stream chunks around resume boundaries (a non-deterministic property of how reducers and checkpointing interact). The driver tracks every `BaseMessage.id` it has already forwarded to the UI and silently skips duplicates. Defensive plumbing, but worth knowing about.
+
+### 8. For completeness: project plumbing
+
+The final two concepts are project boilerplate. They keep the program runnable across hosts but don't bear on the design.
+
+- **`.env` config with typed validation** — `python-dotenv`'s `load_dotenv()` runs in `__main__.py`, populating `os.environ`. The codebase never reads `os.environ` directly; a typed `GraphiaConfig` dataclass exposes the values through a single `load_config()` accessor and raises an actionable error when a required variable is missing.
+- **UTF-8 stdio reconfig at entry** — the very first thing `__main__.py` does, *before* any other import, is reconfigure `sys.stdin/stdout/stderr` to UTF-8. The order is critical: as soon as any imported module emits output through these streams, the encoding is locked in. The `try/except (AttributeError, OSError)` is defensive — some Python streams (test harnesses, embedded interpreters) don't support `reconfigure`; if so, they keep their defaults.
+
+Real, but peripheral. You can build a different Graphia with different stdio handling; the design above doesn't change.
+
+---
+
+## A turn in motion: how the concepts compose
+
+To close, watch a single Night-into-Day turn play out and notice how many concepts are active at once.
+
+The cycle starts at `night_open`. Its job is to set `phase = "night"` and bump the `cycle` counter — the **cycle tail edge** is what got us here from `day_close`, and **typed state with field-level reducers** is what lets `cycle` be a plain integer replace each time. Every super-step that follows produces a chunk via **streaming graph updates**; the driver records each chunk to JSONL via the **JSONL super-step trace logger**.
+
+Now suppose the human plays a Day vote against Bob. `day_turn` fires; it calls `interrupt({"kind": "day_turn"})` (**replay-safe interrupt placement**); the driver dispatches that payload through **interrupt payload → modal dispatch** to open the right modal; the human types `/vote Bob`; the driver wraps the response in `Command(resume=value)` (**resume via Command payload**). `day_turn` re-enters, this time `interrupt(...)` returns the typed input, the rest of the node runs, and it returns a state delta `{"active_vote": {...}}`. The router function `route_day_turn_or_vote` reads the merged state and returns `"vote_prompt"`; the **conditional edges with a routing function** table sends control there.
+
+`vote_prompt` → `collect_votes` → `resolve_vote`. The result fans into `check_win_day` — one half of **one function, two node names for fan-out** — whose router table says "if there's a winner, go to `end_screen`; else route by `route_after_win_day`". If Bob was Mafia and there's no Mafia left, the graph short-circuits to `end_screen`. Otherwise it returns to `day_turn` for more discussion, or to `day_close` if the three-vote cap has been reached.
+
+Six compositions playing out at once:
+
+- `interrupt()` pause → `Command(resume=...)` injection → typed-state delta returned → reducer-merged result;
+- the merged result drives a router function which selects an outgoing edge via the conditional-edges table;
+- the same win-check function is reached from two different fan-out sites, each with its own table;
+- every super-step is checkpointed to sqlite (the connection of which lives through the whole game because we opened it directly);
+- the entire stream of events is JSONL-traced for post-mortem and educational re-reading;
+- and the human's messages flow through the dual-pane UI according to their private/public `additional_kwargs`.
+
+No single concept makes the game work. The skeleton is the *composition* — and the conceptual depth tree we just walked through is exactly the order in which those concepts compose.
+
+---
+
+## Try it
+
+1. Set `AWS_BEARER_TOKEN_BEDROCK` (and optionally `AWS_REGION`, `GRAPHIA_SEED`) in your `.env`.
+2. From the project root: `uv run python -m graphia`.
+3. Enter a name when prompted, then play through. You'll get a private role reveal, then alternate Night → Day until one side wins.
+4. While playing, in another terminal: `tail -f .graphia/graphia.log` — watch the JSONL trace fill in real time. Each line names the node that fired, which keys it updated, and the post-reducer `cycle`/`phase`. Diff it against the [Diagram](#diagram) above to see the topology come alive.
+5. The full slice-test suite: `uv run pytest -q` — `tests/test_slice2_roster.py` … `tests/test_slice9_polish.py` map 1:1 to the vertical slices in [`tasks.md`](../../spec/001-playable-skeleton/tasks.md). Each slice test exercises one chunk of the topology in isolation; reading them is a second pass through the same Walkthrough.
+
+---
+
+## Where to go next
+
+- The next roadmap item is **Phase 2 — Hosted AgentCore Deployment** (spec at [`context/spec/002-hosted-agentcore-deployment/`](../../spec/002-hosted-agentcore-deployment/), `Status: Draft` at the time of this tutorial). Once that spec is implemented and verified, running `/awos:tutorial 002-hosted-agentcore-deployment` will read this tutorial's `concepts.md` and *not* re-teach the eighteen concepts above — it will reference them and layer new ones (Runtime invocation, Gateway-fronted Memory, the `--remote` toggle, IaC provisioning, CloudWatch trace destination) onto this foundation.
+- Architectural rationale for the dual-mode posture this skeleton anchors: [ADR 001 — Hosted AgentCore Runtime with Preserved Local Mode](../../adr/001-hosted-agentcore-with-local-mode.md).
+- Scope changes that brought AgentCore + cross-game stats into the v1.x picture: [CR 001](../../change-requests/001-agentcore-and-tools-in-scope.md), [CR 002](../../change-requests/002-long-term-memory-for-cross-game-stats.md).
