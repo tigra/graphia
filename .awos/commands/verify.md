@@ -75,5 +75,5 @@ Check if `context/product/` documents need updates based on what was learned dur
 
 ### Step 6: Announce
 
-- Success: "Spec verified and marked complete. All acceptance criteria met."
+- Success: "Spec verified and marked complete. All acceptance criteria met. Now capture a learning tutorial for this increment with `/awos:tutorial NNN-<slug>`."
 - Failure: "Verification failed. The following criteria are not met: [list]"

@@ -48,6 +48,7 @@ This project uses **AWOS** (provectus AI workflow) for spec-driven development. 
 | Tasks          | `/awos:tasks`        | functional-spec + technical-considerations          | `context/spec/NNN-<slug>/tasks.md` (vertical slices)|
 | Implement      | `/awos:implement`    | next `[ ]` task — delegates to assigned subagent    | code + flips `[ ]` → `[x]` in `tasks.md`            |
 | Verify         | `/awos:verify`       | tasks all `[x]` + functional-spec acceptance        | flips Status → Completed in spec + roadmap          |
+| Tutorial       | `/awos:tutorial`     | completed spec + prior `concepts.md`s + git history | `context/tutorials/NNN-<slug>/{tutorial.md, concepts.md}` |
 
 Two **optional logging skills** sit alongside the main flow and are invoked from the chained commands (or directly):
 
