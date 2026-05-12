@@ -72,7 +72,9 @@ Both implementations are selected at runtime in the graph's setup phase by a sma
 The Runtime workload is a containerised Python application packaged from `src/graphia/`. The entry-point (`src/graphia/runtime/__main__.py`) does three things:
 
 1. **Build the compiled `StateGraph`** the same way the local app does, but configured for remote-mode persistence — the `SqliteSaver` writes to a Runtime-local path (e.g., `/tmp/graphia/checkpoints/`). Sessions are ephemeral (single-game scope); we accept that a crash mid-game cannot be resumed in a new session.
-2. **Wrap the compiled graph** in `AgentCoreApp(graph)` from `bedrock_agentcore.runtime`. The Runtime invokes this app for each session.
+2. **Wrap the compiled graph** in `BedrockAgentCoreApp` from `bedrock_agentcore` (top-level re-export of `bedrock_agentcore.runtime.app.BedrockAgentCoreApp`). Register the handler via `@app.entrypoint` and start the server with `app.run(host="0.0.0.0")`. The Runtime invokes this app for each session.
+
+   The explicit `host="0.0.0.0"` is load-bearing: the SDK auto-detects "am I in a container?" by looking for `/.dockerenv` or `DOCKER_CONTAINER=1`, and binds to `127.0.0.1` otherwise. Podman doesn't create `/.dockerenv`, so without the explicit host the container would bind to localhost and external probes (including AgentCore's health-check) get "empty reply from server". Binding to `0.0.0.0` works in every container runtime and removes the implicit dependency on Docker-specific filesystem heuristics.
 3. **Expose a small HTTP surface** alongside the agent invocation (still inside the same container) that publishes the diary read/write endpoints (`POST /tools/diary/write`, `POST /tools/diary/read`). The Gateway registers these as `api`-type MCP targets — see §2.7. This means the *same* container handles both agent execution and tool execution; Gateway's role becomes routing + MCP envelope + Cedar-policy plane (Cedar is out-of-scope for v1.x per CR 001 amendment, but Gateway's MCP envelope and centralised auditing remain).
 
 The Runtime's IAM execution role is provisioned by the Terraform module and has permissions for: Bedrock model invocation (the agent makes LLM calls), AgentCore Memory read/write, and CloudWatch logs write. The Runtime makes Bedrock calls via the boto3 default chain — `ChatBedrockConverse` is constructed with no explicit profile, and boto3 finds the execution role's credentials automatically.
@@ -120,28 +122,71 @@ When `uv run python -m graphia --remote`:
 
 ### 2.9 Terraform module structure
 
-`infra/terraform/` (new) contains the standard layout per the `terraform-conventions` skill installed via `/awos:hire`:
+`infra/terraform/` contains the standard layout per the `terraform-conventions` skill installed via `/awos:hire`:
 
 ```
 infra/terraform/
-├── versions.tf      # pinned terraform + provider versions
-├── main.tf          # the four AgentCore resources + Lambda-less Gateway routing
-├── variables.tf     # region, account, profile, environment, owner, agent_id
-├── outputs.tf       # runtime invocation URL, CloudWatch log group, Memory namespace
-├── locals.tf        # tag map, computed names
-└── README.md        # apply / destroy invocations
+├── versions.tf      # pinned terraform >= 1.13.0 + hashicorp/aws = 6.44.0
+├── main.tf          # AgentCore resources + IAM + CW log group + ECR
+├── variables.tf     # region, account_id, environment, owner, agent_id, image_tag, ecr_force_delete
+├── outputs.tf       # runtime ARN, log group, ECR repo URL + image URI, Memory namespace
+├── locals.tf        # tag map, computed names (name_prefix + runtime_name variants)
+├── README.md        # Makefile-driven apply / destroy procedures
+├── RESEARCH.md      # Registry + AWS-docs cross-checks for AgentCore resources
+└── tf               # Container-runtime wrapper script (runs hashicorp/terraform:1.13.1)
 ```
 
-Key resources (exact provider resource names to be confirmed via `terraform-mcp-server` MCP during `/awos:tasks`, since AWS provider AgentCore resource naming is still settling):
+**No `profile` variable** — the standard AWS credential chain (e.g., `AWS_PROFILE` resolving an SSO profile) is the only auth path. Per the `project_aws_account` memory, the profile name is never hardcoded in source.
 
-- `aws_bedrockagentcore_runtime` (or equivalent) — the containerised Runtime, pointed at the published image (ECR), with environment vars (`AWS_REGION`, agent identity), execution role attached.
-- `aws_bedrockagentcore_gateway` + `aws_bedrockagentcore_gateway_target` × 2 — the two MCP tool targets pointing back at the Runtime's `/tools/diary/*` endpoints.
-- `aws_bedrockagentcore_memory` — the Memory store keyed by `agent_id`.
-- `aws_cloudwatch_log_group` with `retention_in_days = 30` for the Runtime's structured trace destination; AgentCore Observability is enabled on the Runtime resource itself.
-- IAM execution role for the Runtime (`AssumeRolePolicyDocument` allowing `bedrock-agentcore.amazonaws.com`); inline policies for Bedrock invoke + AgentCore Memory R/W + CloudWatch logs write.
-- ECR repository for the Runtime image; image push is a `terraform apply`-prerequisite (a small wrapper script + README documents the build-and-push step).
+Resource names confirmed against the Registry + AWS docs (see RESEARCH.md §6–§7):
 
-Required AWS resource tags on every taggable resource: `Project=Graphia`, `ManagedBy=Terraform`, plus `Environment` and `Owner` (Terraform variables; defaults to be set when the developer first applies — recommended `Environment=demo`, `Owner=<their email>`).
+- **`aws_bedrockagentcore_agent_runtime`** — the containerised Runtime. Note the `_agent_` infix in the resource name (CloudFormation calls the same thing `AWS::BedrockAgentCore::Runtime`, without "Agent"; same resource, different naming convention). Pointed at the published ECR image, with `network_mode = "PUBLIC"` and the IAM execution role attached. **The resource exposes no `invocation_url` attribute**; clients invoke via `InvokeAgentRuntime` against the ARN.
+- `aws_bedrockagentcore_gateway` + `aws_bedrockagentcore_gateway_target` × 2 — the two MCP tool targets pointing back at the Runtime's `/tools/diary/*` endpoints (Slice 7).
+- `aws_bedrockagentcore_memory` — the Memory store keyed by `agent_id` (Slice 6).
+- `aws_cloudwatch_log_group` with `retention_in_days = 30` — provisioned in **Slice 3** (not deferred to Slice 8) because the Runtime needs a write destination from boot. Slice 8 layers metric filters + the Textual failure modal on top.
+- IAM execution role for the Runtime (`AssumeRolePolicyDocument` allowing `bedrock-agentcore.amazonaws.com`); inline policy for Bedrock invoke + AgentCore Memory R/W + CloudWatch logs write.
+- ECR repository for the Runtime image; image push is an `apply`-prerequisite (see §2.12 below).
+
+#### Resource naming convention
+
+All resources derive their name from `local.name_prefix = "graphia-${var.environment}"` (capped at 80 chars). For `var.environment = demo`:
+
+| Resource | Name | Notes |
+|---|---|---|
+| `aws_ecr_repository.runtime` | `graphia-demo-runtime` | |
+| `aws_cloudwatch_log_group.runtime` | `/aws/bedrock-agentcore/graphia-demo-runtime` | |
+| `aws_iam_role.runtime` | `graphia-demo-runtime` | Same bare name as the ECR repo — disambiguated by ARN-type namespacing. |
+| `aws_iam_role_policy.runtime` | `graphia-demo-runtime-inline` | |
+| `aws_bedrockagentcore_agent_runtime.this` | `graphia_demo_runtime` | **Underscores**, max 48 chars (control-plane regex `[a-zA-Z][a-zA-Z0-9_]{0,47}` — dashes forbidden). Service appends a 10-char suffix at create time (e.g. `graphia_demo_runtime-C3WHk2BtFS`). |
+
+`locals.runtime_name` derives the underscore variant by `replace(local.name_prefix, "-", "_") + "_runtime"`, truncated to 48 chars. Tooling that cross-correlates ECR/IAM names with the Runtime name applies `s/-/_/g`.
+
+#### ECR `force_delete` safeguard
+
+The ECR resource's `force_delete` attribute is wired to `var.ecr_force_delete` (default `false`). Default-off prevents accidental image purge on routine `terraform destroy` invocations — a familiar foot-gun where a `make destroy` after a long demo session would wipe months of pushed image history.
+
+To override (Slice 10 cleanup verification + dev cycle resets), the override path is **two-step** because the AWS provider reads `force_delete` from prior state at destroy time (not from the current config or `-var`):
+
+```bash
+# 1. Targeted apply flips force_delete: false → true in state.
+./tf apply -target=aws_ecr_repository.runtime \
+           -var environment=demo -var owner=$(git config user.email) \
+           -var ecr_force_delete=true
+
+# 2. Destroy reads true from state and sends Force=true.
+make tf-destroy ECR_FORCE_DELETE=true
+```
+
+#### Default tags (applied via the provider's `default_tags` block)
+
+| Tag | Value | Source |
+|---|---|---|
+| `Project` | `Graphia` | constant in `local.common_tags` |
+| `ManagedBy` | `Terraform` | constant in `local.common_tags` |
+| `Environment` | `<env>` | `var.environment` (required input) |
+| `Owner` | `<email>` | `var.owner` (required input; Makefile defaults to `git config user.email`) |
+
+PascalCase casing matches the org's de-facto canonical (per `infrastructure-research.md` §1.3 — multiple casings coexist in the account; PascalCase is the dominant form to pick).
 
 ### 2.10 UI changes (lighter — Textual is decorative)
 
@@ -154,14 +199,54 @@ Two small additions to `src/graphia/ui/`:
 
 Per the design decision in this turn:
 
-- **AgentCore Observability** (enabled on the Runtime resource via Terraform) emits structured traces to the CloudWatch log group whose name is exposed as a Terraform output. Trace events include Runtime session lifecycle, Gateway tool invocations, Memory read/write operations, and agent decision steps.
+- **AgentCore Observability** (enabled on the Runtime resource via Terraform) emits structured traces to the CloudWatch log group whose name is exposed as a Terraform output. The log group is provisioned in **Slice 3** (alongside the Runtime + IAM role), not deferred to Slice 8 — the Runtime needs a write destination from its first boot. Slice 8 adds the *agent-side* trace-event emission with `thread_id` correlation and the Textual failure modal that surfaces a log-group filter when a remote game crashes. Trace events include Runtime session lifecycle, Gateway tool invocations, Memory read/write operations, and agent decision steps.
 - **Bedrock model-invocation tracing** is *not* custom-instrumented in Phase 2. Model-call boundaries are visible in the AgentCore agent-decision traces (you see the agent invoking the model and the response coming back); full prompt/response capture is available via an opt-in LangSmith path if `LANGSMITH_API_KEY` is set in the Runtime's environment. The codebase does not assume LangSmith's presence (existing convention from spec 001).
 - **Local-mode** observability is unchanged: JSONL trace to `GRAPHIA_LOG_FILE` only; no CloudWatch.
 - **30-day CloudWatch retention** is set explicitly via the `aws_cloudwatch_log_group` resource (`retention_in_days = 30`).
 
----
+### 2.12 Deployment workflow (Makefile task-runner)
 
-## 3. Impact and Risk Analysis
+The repo-root `Makefile` is the project's task-runner: it orchestrates the underlying tools — `./tf` (Terraform-in-container; see §2.9), `podman` / `docker` (image build, runtime-agnostic per the `project_terraform_container` memory), and the AWS CLI (ECR auth) — into named workflows. READMEs and tasks.md reference `make <target>`; raw multi-step shell sequences are not the contract. `make help` is the discoverable surface.
+
+#### Canonical targets
+
+| Target | Phase | What it runs |
+|---|---|---|
+| `make build` | dev | Build the runtime container image for `linux/arm64` (AgentCore Runtime contract); tag `:<git_sha>` and `:latest`. |
+| `make run` | dev | Build then run the container locally on port 8080. |
+| `make push` | dev | Build → ECR login → tag → push both `:<git_sha>` and `:latest` to the ECR repo. |
+| `make tf-plan` / `tf-apply` / `tf-destroy` | IaC | Inspection / apply / destroy with `environment`, `owner`, `image_tag` plumbed automatically. |
+| `make deploy` | first-time | `tf-init → tf-ecr-bootstrap → push → tf-apply`. |
+| `make redeploy` | steady-state | `push → tf-apply` with the current SHA as `image_tag`. |
+| `make destroy` | teardown | Alias for `tf-destroy`. Default-safeguarded against ECR purge (see §2.9). |
+
+#### Default values (overridable via `make <target> FOO=bar`)
+
+| Variable | Default | Comes from |
+|---|---|---|
+| `TAG` | `$(git rev-parse --short HEAD)` | local git state |
+| `OWNER` | `$(git config user.email)` | local git config |
+| `ENVIRONMENT` | `demo` | project default |
+| `PLATFORM` | `linux/arm64` | AgentCore Runtime requirement |
+| `AWS_REGION` | `us-east-1` | `project_aws_region` memory |
+| `AWS_ACCOUNT` | `123456789012` | `project_aws_account` memory |
+| `CONTAINER` | auto-detect `podman` then `docker` | `project_terraform_container` memory |
+| `ECR_FORCE_DELETE` | `false` | safeguard against accidental image purge on destroy |
+
+#### Image-driven deploys
+
+`var.image_tag` is what makes the AgentCore Runtime roll: the resource's `container_uri` interpolates `"${aws_ecr_repository.runtime.repository_url}:${var.image_tag}"`, so changing the tag is the change Terraform sees. Pushing the same git SHA twice without bumping the tag is a no-op for the Runtime resource even if ECR's image digest changed. `make redeploy` always passes `-var image_tag=$(git rev-parse --short HEAD)`, so each commit's image is identifiable in CloudWatch logs by its git SHA.
+
+#### Bootstrap-then-apply (chicken-and-egg)
+
+Creating an `aws_bedrockagentcore_agent_runtime` resource requires the ECR image to already exist — the control-plane API pulls the image at create-time and reports a failure if the tag is absent. But the ECR repo is itself a Terraform-managed resource. The first deploy resolves this by:
+
+1. `tf-init` — initialise the module.
+2. `tf-ecr-bootstrap` — `./tf apply -target=aws_ecr_repository.runtime`, which provisions *only* the ECR repo (4 other resources skipped via `-target`).
+3. `push` — build and push the image to the now-existing ECR.
+4. `tf-apply` — full apply with all 5 resources; the Runtime can now pull the image at create-time.
+
+Subsequent deploys collapse to `push + tf-apply` (`make redeploy`) — ECR + log group + IAM role are already in state and the apply diff is image-tag-only.
 
 ### 3.1 System Dependencies
 

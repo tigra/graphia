@@ -32,9 +32,9 @@ is `null` until then).
 **Image-push prerequisite:** the Runtime resource references an image URI
 in ECR. `terraform plan` does not validate that the image exists, but
 `terraform apply` will fail to create the Runtime if the tag has not been
-pushed. The build-and-push workflow is wrapped in the repo-root `Makefile`
-(see `make help`); the canonical bootstrap-then-apply sequence is documented
-in the [Apply procedure](#apply-procedure) below.
+pushed. The whole workflow — image build, ECR auth, push, and Terraform
+apply — is wrapped in the repo-root `Makefile`; the canonical end-to-end
+target is `make deploy` (see [Apply procedure](#apply-procedure) below).
 
 ## Prerequisites
 
@@ -52,51 +52,72 @@ the `./tf` wrapper, which runs `hashicorp/terraform:1.13.1` inside your
 chosen container runtime. This guarantees every developer (and CI) executes
 against the exact same Terraform + provider versions.
 
+**`./tf` is the tool wrapper; the `Makefile` is the workflow front door.**
+Day-to-day, prefer the Makefile targets at the repo root (`make deploy`,
+`make redeploy`, `make tf-plan`, etc.) — they fill in `environment`,
+`owner` (from `git config user.email`), and `image_tag` (from
+`git rev-parse --short HEAD`) automatically. `./tf` is reserved for
+inspection (`./tf show`, `./tf state list`, `./tf output …`) and
+escape-hatch operations not covered by a Makefile target.
+
 ## Apply procedure
 
-The Runtime resource depends on an ECR image. The image is built from the
-project root via the repo-root `Makefile` (`make build` / `make push`) and
-pushed to the ECR repo this module creates. Because the repo doesn't exist
-before first apply, the bootstrap sequence is three steps:
+The Runtime resource depends on an ECR image, so the very first deploy is
+three logical steps: provision ECR → push image → apply the rest. The
+`Makefile` chains them into one target:
 
 ```bash
-# From the project root throughout.
+# From the project root.
 
-# 0. Authenticate against your SSO profile (and export it for the credential chain).
+# 0. Authenticate against your SSO profile.
 aws sso login --profile <your-profile>
 export AWS_PROFILE=<your-profile>
 
-# 1. Provision just the ECR repo so we have somewhere to push to.
-cd infra/terraform
-./tf init
-./tf apply -target=aws_ecr_repository.runtime \
-           -var environment=demo -var owner=<your-email>
-cd ../..
-
-# 2. Build the image and push it (tagged by git SHA + :latest).
-make push
-# (Override-friendly: make push ENVIRONMENT=demo AWS_ACCOUNT=... AWS_REGION=...)
-
-# 3. Apply the rest of the module with the same git-SHA image tag.
-cd infra/terraform
-./tf apply -var environment=demo \
-           -var owner=<your-email> \
-           -var image_tag=$(git -C ../.. rev-parse --short HEAD)
+# 1. One-shot deploy. Runs: tf-init → tf-ecr-bootstrap → push → tf-apply.
+make deploy
 ```
 
-Subsequent updates only need steps 2 + 3 — `make push` then `./tf apply
--var image_tag=$(git rev-parse --short HEAD)`. Bumping the tag is what
-tells AgentCore Runtime to roll the deployment; pushing the same tag string
-without changing `var.image_tag` is a no-op from Terraform's perspective.
+Subsequent code-change cycles use the steady-state target:
 
-After apply succeeds, `./tf output` names the deployed Runtime's ARN, the
-CloudWatch log group receiving observability traces, the ECR repository,
-and the resolved image URI.
+```bash
+make redeploy   # push the new image, then tf-apply with the new git SHA
+```
+
+Bumping `image_tag` (the git SHA) is what tells AgentCore Runtime to roll
+the deployment; pushing the same SHA twice without changing `image_tag` is
+a Terraform-side no-op. After apply succeeds, `make tf-output` or
+`cd infra/terraform && ./tf output` names the deployed Runtime's ARN, the
+CloudWatch log group, the ECR repository, and the resolved image URI.
+
+If you need the manual three-step form (e.g., for debugging a stuck
+target), every step the composites run is also exposed as its own target:
+`make tf-init`, `make tf-ecr-bootstrap`, `make push`, `make tf-apply`.
 
 ## Destroy procedure
 
+Default destroy refuses to remove the ECR repo while it still contains
+images — a safeguard against accidental image loss:
+
 ```bash
-./tf destroy -var environment=demo -var owner=<your-email>
+make destroy
+```
+
+To purge the images alongside the repo, override the safeguard. Because
+the AWS provider reads `force_delete` from prior **state** at destroy
+time (not from the current config or `-var`), enabling the flag is a
+**two-step** operation:
+
+```bash
+# 1. Targeted apply to update the ECR resource's force_delete attribute in state.
+cd infra/terraform
+./tf apply -target=aws_ecr_repository.runtime \
+           -var environment=demo \
+           -var owner=$(git config user.email) \
+           -var ecr_force_delete=true
+cd ../..
+
+# 2. Destroy with the override still set (now reads true from state).
+make tf-destroy ECR_FORCE_DELETE=true
 ```
 
 Destroying the module removes all AgentCore resources, including the
@@ -133,6 +154,7 @@ gone, records are unreachable). See RESEARCH.md §6 Q1.
 | `owner`       | string | _required_            | Owner of the deployment (typically the developer email). |
 | `agent_id`    | string | `graphia-mafia-agent` | Logical agent identifier for memory namespacing.         |
 | `image_tag`   | string | `latest`              | ECR image tag for the Runtime container; override with a git SHA at apply time. |
+| `ecr_force_delete` | bool | `false`            | Safeguard: if `false`, `terraform destroy` refuses to delete the ECR repo while it has images. Set `true` (via two-step destroy — see [Destroy procedure](#destroy-procedure)) for intentional teardown. |
 
 ## Outputs
 

@@ -31,6 +31,13 @@ resource "aws_ecr_repository" "runtime" {
   # the personal reference project that ADR 001 describes, MUTABLE is fine.
   image_tag_mutability = "MUTABLE"
 
+  # Default off as a safeguard: `terraform destroy` will refuse to drop the
+  # repo while it contains images, surfacing the destructive operation
+  # rather than silently purging pushed layers. Override at destroy time
+  # via `make tf-destroy ECR_FORCE_DELETE=true` when intentional teardown
+  # is wanted (Slice 10's destroy verification, dev cycle resets, etc.).
+  force_delete = var.ecr_force_delete
+
   image_scanning_configuration {
     scan_on_push = true
   }

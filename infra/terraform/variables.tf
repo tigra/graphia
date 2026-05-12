@@ -31,3 +31,9 @@ variable "image_tag" {
   type        = string
   default     = "latest"
 }
+
+variable "ecr_force_delete" {
+  description = "If true, terraform destroy purges all images from the ECR repo alongside the repo. Default off as a safeguard against accidental image loss; override at destroy time (e.g. via `make tf-destroy ECR_FORCE_DELETE=true`)."
+  type        = bool
+  default     = false
+}
