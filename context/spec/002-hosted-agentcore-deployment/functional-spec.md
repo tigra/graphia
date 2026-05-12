@@ -25,10 +25,10 @@ The richer gameplay value of the Memory + Gateway surface — AI players writing
 - **As a developer**, **I want to** provision Graphia's hosted AgentCore stack with one Terraform command, **so that I can** start playing the game against a real hosted runtime without manual cloud configuration.
   - **Acceptance Criteria:**
     - [ ] The repository contains a Terraform module (one root module + supporting files) at a discoverable path.
-    - [ ] Running `aws sso login --profile my-aws-profile` followed by `terraform init` and `terraform apply` provisions all four AgentCore services from a fresh state: AgentCore Runtime, AgentCore Gateway, AgentCore Memory store, and AgentCore Observability wiring.
-    - [ ] The Terraform module pins region to `us-east-1` and uses the `my-aws-profile` AWS profile, with both exposed as variables that default to those values.
+    - [ ] Running `aws sso login` against the developer's configured SSO profile (project's documented default: `my-aws-profile`) followed by `terraform init` and `terraform apply` provisions all four AgentCore services from a fresh state: AgentCore Runtime, AgentCore Gateway, AgentCore Memory store, and AgentCore Observability wiring.
+    - [ ] The Terraform module's region and AWS credentials are configurable inputs (no profile name is hardcoded in source); the project's documented defaults are region `us-east-1` and SSO profile `my-aws-profile`. The module relies on the standard AWS credential chain — typically `AWS_PROFILE` in the environment — rather than embedding a profile name.
     - [ ] After `terraform apply` succeeds, the developer sees a clearly formatted summary at the end of the output naming the deployed Runtime's invocation address (or comparable identifier) and a single-line "next step" hint pointing them to `uv run python -m graphia --remote`.
-    - [ ] If the developer runs `terraform apply` without an active SSO session (or with an expired token), Terraform fails with an error message that names the missing credentials and tells the developer the exact command to run: `aws sso login --profile my-aws-profile`.
+    - [ ] If the developer runs `terraform apply` without an active SSO session (or with an expired token), Terraform fails with an error message that names the missing credentials and tells the developer the exact command to run for their configured SSO profile (e.g., `aws sso login --profile my-aws-profile` for the project's documented default).
     - [ ] All taggable AWS resources are tagged with `Project=Graphia`, `ManagedBy=Terraform`, plus `Environment` and `Owner` tags (values surfaced as Terraform variables).
 
 ### 2.2 Launching the game in remote mode
@@ -38,7 +38,7 @@ The richer gameplay value of the Memory + Gateway surface — AI players writing
     - [ ] Running `uv run python -m graphia --remote` opens the same Textual console interface as local mode.
     - [ ] A persistent `[remote]` badge is visible in a corner of the Textual UI throughout the entire game (welcome screen, Night, Day, end-of-game) so the player always knows they're connected to the hosted runtime. The badge does not obstruct gameplay text.
     - [ ] When local mode is active (no `--remote` flag), the same corner shows a `[local]` badge instead, in the same position and visual style.
-    - [ ] If the developer launches with `--remote` without an active SSO session (or with an expired token), the game refuses to start and prints a single clear error message that names the issue ("AgentCore session not authenticated") and the exact command to fix it ("Run `aws sso login --profile my-aws-profile`").
+    - [ ] If the developer launches with `--remote` without an active SSO session (or with an expired token), the game refuses to start and prints a single clear error message that names the issue ("AgentCore session not authenticated") and the exact command to fix it for the SSO profile the developer configured (e.g., `aws sso login --profile my-aws-profile` for the project's documented default). The profile name surfaces from the runtime's configuration (`AWS_PROFILE` env or the relevant `GraphiaConfig` field) — it is not hardcoded in the error-message source.
     - [ ] If the developer launches with `--remote` but no AgentCore deployment is reachable in the configured region, the game refuses to start and prints a clear error message naming the issue ("No deployed AgentCore Runtime reachable in `us-east-1`") and the exact command to fix it ("Run `terraform apply` from the included module").
 
 ### 2.3 Playing a game against the hosted runtime
@@ -75,7 +75,7 @@ The richer gameplay value of the Memory + Gateway surface — AI players writing
 - **As a developer**, **I want to** continue running Graphia entirely locally with no AgentCore touches, **so that I can** develop game mechanics without paying for or depending on a deployed runtime.
   - **Acceptance Criteria:**
     - [ ] Running `uv run python -m graphia` (no `--remote`) plays a complete game end-to-end identical to the spec-001 baseline — no AgentCore Runtime invocation, no AgentCore Gateway calls, no AgentCore Memory writes.
-    - [ ] Local mode does not require an active AWS SSO session — bearer-token Bedrock auth via `AWS_BEARER_TOKEN_BEDROCK` continues to work as in Phase 1. Alternatively the `my-aws-profile` SSO profile may be used for Bedrock invocation; both paths work.
+    - [ ] Local mode authenticates Bedrock via the standard AWS credential chain — boto3 resolves credentials in the usual way from `AWS_PROFILE` in the environment (the project's documented default profile is `my-aws-profile`; any other SSO profile pointing at a Bedrock-enabled account works the same way). The legacy `AWS_BEARER_TOKEN_BEDROCK` bearer-token path continues to work as a fallback for short-lived workshop tokens, but is no longer the assumed default; it is not required.
     - [ ] Per-AI diaries in local mode (the Phase 2 placeholder version of §2.4) live in the in-process LangGraph state, not in any local file. The `[local]` badge is visible in the corner.
     - [ ] All spec-001 acceptance criteria continue to hold unchanged in local mode.
 
@@ -85,7 +85,7 @@ The richer gameplay value of the Memory + Gateway surface — AI players writing
   - **Acceptance Criteria:**
     - [ ] Running `terraform destroy` from the included module removes every resource provisioned by `terraform apply`: Runtime, Gateway, Memory store, Observability wiring, IAM roles/policies, and any supporting resources.
     - [ ] All data stored in AgentCore Memory by Phase 2 — every per-game diary entry written during play — is removed by `terraform destroy`. There are no manual cleanup steps required to wipe Memory data.
-    - [ ] After `terraform destroy` succeeds, no Graphia-specific AgentCore resources remain in AWS account `123456789012` for region `us-east-1`. Re-running `terraform apply` from a clean state must succeed without naming-conflict errors against the prior deployment.
+    - [ ] After `terraform destroy` succeeds, no Graphia-specific AgentCore resources remain in the AWS account / region the module was deployed to (per the project's documented defaults: account `123456789012`, region `us-east-1` — both configurable via Terraform inputs). Re-running `terraform apply` from a clean state must succeed without naming-conflict errors against the prior deployment.
     - [ ] Local-mode artifacts (`./.graphia/checkpoints/`, JSONL trace logs, the local cross-game stats file once Phase 3 lands) are not touched by `terraform destroy` — they're outside Terraform's scope.
 
 ---
@@ -94,7 +94,7 @@ The richer gameplay value of the Memory + Gateway surface — AI players writing
 
 ### In-Scope
 
-- The Terraform module that provisions Runtime, Gateway, Memory, and Observability in `us-east-1` for AWS account `123456789012`.
+- The Terraform module that provisions Runtime, Gateway, Memory, and Observability — region and AWS account are configurable inputs (no profile name hardcoded in source); the project's documented defaults are region `us-east-1`, account `123456789012`, SSO profile `my-aws-profile`.
 - The runtime-side application code that serves the game from inside the deployed AgentCore Runtime.
 - The Gateway-fronted MCP surface for per-game diary read/write.
 - The AgentCore Memory schema and namespacing for per-game diary entries (game-lifetime scope).

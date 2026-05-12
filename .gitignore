@@ -31,3 +31,19 @@ Thumbs.db
 # Claude Code per-user overrides (settings.json is shared; .local.json is per-user)
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+
+# Terraform — local working state (provider plugins, state, var files).
+# The lockfile (.terraform.lock.hcl) IS committed; everything else is not.
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+!terraform.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json

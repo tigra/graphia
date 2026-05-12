@@ -12,6 +12,9 @@ for _stream in (sys.stdin, sys.stdout, sys.stderr):
     except (AttributeError, OSError):
         pass
 
+import argparse
+import os
+
 from dotenv import load_dotenv
 
 from graphia.ui.app import GraphiaApp
@@ -19,5 +22,21 @@ from graphia.ui.app import GraphiaApp
 load_dotenv()
 
 
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        prog="graphia",
+        description="Launch Graphia. Use --remote to run against a deployed AgentCore Runtime.",
+    )
+    parser.add_argument(
+        "--remote",
+        action="store_true",
+        help="Run against the deployed AgentCore Runtime instead of local mode.",
+    )
+    return parser.parse_args(argv)
+
+
 if __name__ == "__main__":
+    args = _parse_args()
+    if args.remote:
+        os.environ["GRAPHIA_REMOTE"] = "1"
     GraphiaApp().run()
