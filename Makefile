@@ -22,7 +22,7 @@ TF_APPLY_VARS = $(TF_VARS) -var image_tag=$(TAG)
 
 .PHONY: help check-container build run shell clean login-ecr push \
         tf-init tf-fmt tf-validate tf-plan tf-ecr-bootstrap tf-apply tf-destroy \
-        deploy redeploy destroy
+        wire-env deploy redeploy destroy inspect-diary play play-remote
 
 help:
 	@echo "Container image targets:"
@@ -43,9 +43,17 @@ help:
 	@echo "  make tf-destroy         Destroy the whole stack."
 	@echo ""
 	@echo "Workflow composites:"
-	@echo "  make deploy             First-time: tf-init + tf-ecr-bootstrap + push + tf-apply."
-	@echo "  make redeploy           Steady-state code update: push + tf-apply."
+	@echo "  make deploy             First-time: tf-init + tf-ecr-bootstrap + push + tf-apply + wire-env."
+	@echo "  make redeploy           Steady-state code update: push + tf-apply + wire-env."
+	@echo "  make wire-env           Pull GRAPHIA_RUNTIME_URL + GRAPHIA_MEMORY_ID from tf outputs into .env."
 	@echo "  make destroy            Alias for tf-destroy."
+	@echo ""
+	@echo "Play:"
+	@echo "  make play               uv run python -m graphia (local mode). Forward args: ARGS=\"--…\"."
+	@echo "  make play-remote        uv run python -m graphia --remote (hits the deployed Runtime; uses .env)."
+	@echo ""
+	@echo "Inspection:"
+	@echo "  make inspect-diary      Pretty-print diary entries from the deployed Memory (uses .env)."
 	@echo ""
 	@echo "Overrides:"
 	@echo "  CONTAINER=docker|podman  IMAGE=...  TAG=...  PLATFORM=linux/amd64  PORT=..."
@@ -108,13 +116,52 @@ tf-destroy:
 
 # --- Workflow composites.
 
-deploy: tf-init tf-ecr-bootstrap push tf-apply
+# Idempotent: replaces any existing GRAPHIA_RUNTIME_URL / GRAPHIA_MEMORY_ID
+# lines in .env in place, preserves every other line. Creates .env if it
+# doesn't exist. Both `./tf output -raw` calls run inside the container
+# wrapper, so the SSO session has to be live.
+wire-env:
+	@set -e; \
+	RUNTIME_URL=$$(cd $(TF_DIR) && ./tf output -raw runtime_invocation_url); \
+	MEMORY_ID=$$(cd $(TF_DIR) && ./tf output -raw memory_id); \
+	touch .env; \
+	awk -v ru="GRAPHIA_RUNTIME_URL=$$RUNTIME_URL" \
+	    -v mi="GRAPHIA_MEMORY_ID=$$MEMORY_ID" \
+	    'BEGIN { rseen=0; mseen=0 } \
+	     /^GRAPHIA_RUNTIME_URL=/ { print ru; rseen=1; next } \
+	     /^GRAPHIA_MEMORY_ID=/   { print mi; mseen=1; next } \
+	     { print } \
+	     END { if (!rseen) print ru; if (!mseen) print mi }' \
+	    .env > .env.tmp && mv .env.tmp .env
+	@echo ""
+	@echo "Wired into .env from Terraform outputs:"
+	@grep -E '^GRAPHIA_(RUNTIME_URL|MEMORY_ID)=' .env
+
+deploy: tf-init tf-ecr-bootstrap push tf-apply wire-env
 	@echo ""
 	@echo "Deploy complete. Runtime invocation URL:"
 	@cd $(TF_DIR) && ./tf output runtime_invocation_url
 
-redeploy: push tf-apply
+redeploy: push tf-apply wire-env
 	@echo ""
 	@echo "Redeploy complete with image tag $(TAG)."
 
 destroy: tf-destroy
+
+# Play the game in local mode (default) or against the deployed Runtime.
+# Both forward extra CLI args via $(ARGS) for flags like --seed.
+#   make play
+#   make play-remote
+#   make play ARGS="--seed 42"
+play:
+	uv run python -m graphia $(ARGS)
+
+play-remote:
+	uv run python -m graphia --remote $(ARGS)
+
+# Pretty-print diary entries from the deployed Memory. Forwards extra
+# CLI args (--game-id ..., --player-id ..., --json) via $(ARGS):
+#   make inspect-diary
+#   make inspect-diary ARGS="--game-id <thread> --json"
+inspect-diary:
+	uv run python -m graphia.tools.inspect_diary $(ARGS)

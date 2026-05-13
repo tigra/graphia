@@ -229,14 +229,17 @@ def _entry_from_event(event: dict) -> DiaryEntry | None:
 
 
 def make_diary_store(config: "GraphiaConfig") -> DiaryStore:
-    """Select the diary store implementation for the active run mode."""
-    if config.remote_mode:
-        if not config.memory_id:
-            raise SystemExit(
-                "Remote mode requested but GRAPHIA_MEMORY_ID is not set. "
-                "Run `terraform output memory_id` from infra/terraform/ "
-                "and add the value to .env as `GRAPHIA_MEMORY_ID=...`."
-            )
+    """Select the diary store implementation based on whether a Memory is configured.
+
+    Gates on ``config.memory_id`` (the actual signal — "does this process
+    have access to an AgentCore Memory resource?") rather than on
+    ``config.remote_mode`` (which means "is the local UI invoking a remote
+    Runtime?"). The two concerns are orthogonal: a Runtime container has
+    ``memory_id`` set but never knows nor cares about ``remote_mode``; a
+    local-mode developer might point at a real Memory for ad-hoc inspection
+    by setting ``GRAPHIA_MEMORY_ID`` without flipping ``--remote``.
+    """
+    if config.memory_id:
         return AgentCoreMemoryDiaryStore(
             memory_id=config.memory_id, region_name=config.aws_region
         )
