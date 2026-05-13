@@ -31,14 +31,19 @@ locals {
   runtime_log_group = "/aws/bedrock-agentcore/${local.name_prefix}-runtime"
 
   # Bedrock model ARN patterns the Runtime is allowed to invoke. Graphia
-  # calls Anthropic Claude foundation models directly (no inference-profile
-  # fan-out) — pinned to ${var.region} so the role can only invoke in the
-  # one region where the account has Marketplace subscription enabled.
-  # The cross-region `us.*` inference profile was tried first; it fanned
-  # out to us-east-2 / us-west-2 where the role couldn't auto-subscribe via
-  # Marketplace, so we rolled back to single-region direct invocation.
+  # calls Amazon Nova foundation models directly (Nova Pro for gameplay,
+  # Nova Lite for roster generation) — pinned to ${var.region}.
+  #
+  # Why Nova instead of Anthropic Claude: across the entire current Claude
+  # family on Bedrock, only Claude 3 Haiku (`20240307`) still supports
+  # direct on-demand invocation in us-east-1. Claude 3 Sonnet is legacy +
+  # inactive, Claude 3 Opus / 3.5 Sonnet (v1, v2) / 3.7 Sonnet are
+  # end-of-life, Claude 3.5 Haiku + Claude 4.x are inference-profile-only.
+  # Going via the `us.*` system profile would solve the on-demand
+  # constraint but pulls in cross-region routing (us-east-2, us-west-2)
+  # where the role can't auto-subscribe via Marketplace. Nova models
+  # support direct on-demand in us-east-1 today, no profile required.
   bedrock_invoke_resources = [
-    "arn:aws:bedrock:${var.region}::foundation-model/anthropic.claude-sonnet-*",
-    "arn:aws:bedrock:${var.region}::foundation-model/anthropic.claude-haiku-*",
+    "arn:aws:bedrock:${var.region}::foundation-model/amazon.nova-*",
   ]
 }
