@@ -350,6 +350,7 @@ class GraphiaApp(App[None]):
                 logger=self.logger,
                 on_message=self._handle_graph_message,
                 request_resume=self._request_resume,
+                config=self.config,
             )
             self._game_over = True
             log.write(

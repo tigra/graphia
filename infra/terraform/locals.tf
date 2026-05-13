@@ -30,15 +30,15 @@ locals {
   # subpath so multiple environments in the same account stay separated.
   runtime_log_group = "/aws/bedrock-agentcore/${local.name_prefix}-runtime"
 
-  # Bedrock model / inference-profile ARN patterns the Runtime is allowed to
-  # invoke. Graphia uses the US regional inference profiles
-  # (us.anthropic.claude-sonnet-* and us.anthropic.claude-haiku-*) per the
-  # project_aws_region memory. Foundation-model ARNs are account-less; the
-  # inference-profile ARNs include the account ID.
+  # Bedrock model ARN patterns the Runtime is allowed to invoke. Graphia
+  # calls Anthropic Claude foundation models directly (no inference-profile
+  # fan-out) — pinned to ${var.region} so the role can only invoke in the
+  # one region where the account has Marketplace subscription enabled.
+  # The cross-region `us.*` inference profile was tried first; it fanned
+  # out to us-east-2 / us-west-2 where the role couldn't auto-subscribe via
+  # Marketplace, so we rolled back to single-region direct invocation.
   bedrock_invoke_resources = [
     "arn:aws:bedrock:${var.region}::foundation-model/anthropic.claude-sonnet-*",
     "arn:aws:bedrock:${var.region}::foundation-model/anthropic.claude-haiku-*",
-    "arn:aws:bedrock:${var.region}:${var.account_id}:inference-profile/us.anthropic.claude-sonnet-*",
-    "arn:aws:bedrock:${var.region}:${var.account_id}:inference-profile/us.anthropic.claude-haiku-*",
   ]
 }
