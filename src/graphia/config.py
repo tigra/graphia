@@ -21,6 +21,15 @@ class GraphiaConfig:
     remote_mode: bool
     runtime_invocation_url: str | None
     memory_id: str | None
+    # Gateway plumbing (Slice 7 sub-task 3). Both fields are normally
+    # only populated inside the Runtime container — Terraform sets
+    # ``GRAPHIA_GATEWAY_ID`` on the Runtime resource's environment_variables
+    # map. ``gateway_url`` is a convenience derivation for clients that want
+    # to point a streamable-HTTP MCP client at the Gateway without
+    # reassembling the URL pattern; local-mode developers can also set
+    # ``GRAPHIA_GATEWAY_URL`` directly for ad-hoc Gateway probing.
+    gateway_id: str | None
+    gateway_url: str | None
 
 
 def _env_truthy(name: str) -> bool:
@@ -45,6 +54,16 @@ def load_config() -> GraphiaConfig:
     remote_mode = _env_truthy("GRAPHIA_REMOTE")
     runtime_invocation_url = os.environ.get("GRAPHIA_RUNTIME_URL") or None
     memory_id = os.environ.get("GRAPHIA_MEMORY_ID") or None
+    gateway_id = os.environ.get("GRAPHIA_GATEWAY_ID") or None
+    # Prefer an explicitly supplied URL (useful for local-mode probing
+    # against a deployed Gateway) but derive it from the id + region when
+    # the Runtime container is configured with only ``GRAPHIA_GATEWAY_ID``.
+    gateway_url = os.environ.get("GRAPHIA_GATEWAY_URL") or None
+    if gateway_url is None and gateway_id is not None:
+        gateway_url = (
+            f"https://{gateway_id}.gateway.bedrock-agentcore."
+            f"{aws_region}.amazonaws.com/mcp"
+        )
 
     if remote_mode and not runtime_invocation_url:
         raise SystemExit(
@@ -76,4 +95,6 @@ def load_config() -> GraphiaConfig:
         remote_mode=remote_mode,
         runtime_invocation_url=runtime_invocation_url,
         memory_id=memory_id,
+        gateway_id=gateway_id,
+        gateway_url=gateway_url,
     )

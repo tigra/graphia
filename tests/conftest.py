@@ -99,6 +99,55 @@ class _LoudFailureMemoryClient:
         self._explode("list_events")
 
 
+class _LoudFailureStreamableHTTPClient:
+    """Default stand-in for ``mcp.client.streamable_http.streamablehttp_client``.
+
+    Mirrors the ``safe_llm`` / ``safe_memory_client`` pattern at the
+    third-party import boundary. Without this safety net, a test that
+    accidentally exercises :class:`graphia.diary_store.GatewayMCPDiaryStore`
+    would fall through to the real ``streamablehttp_client``, which would
+    try to open a real httpx connection to whatever the Gateway URL points
+    at — racing against ``boto3.Session().get_credentials()`` and almost
+    certainly hanging on connect timeouts. Raising loudly at the boundary
+    surfaces the missing stub immediately.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        raise RuntimeError(
+            "Unstubbed Gateway MCP call. Tests that exercise "
+            "GatewayMCPDiaryStore must install a fake streamablehttp_client "
+            "via `monkeypatch.setattr("
+            "'mcp.client.streamable_http.streamablehttp_client', "
+            "fake_factory)`. Real MCP / Gateway must never be reached "
+            "from the suite. "
+            f"(called with args={args!r}, kwargs={list(kwargs)})"
+        )
+
+
+@pytest.fixture(autouse=True)
+def safe_gateway_mcp_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Autouse safety net: unstubbed MCP-over-HTTP calls raise immediately.
+
+    Mirrors :func:`safe_memory_client`'s import-boundary pattern.
+    :class:`GatewayMCPDiaryStore._call_tool` does a local
+    ``from mcp.client.streamable_http import streamablehttp_client`` on
+    every call, so the canonical patchable seam is the source attribute
+    on the ``mcp.client.streamable_http`` module — patching that covers
+    every future call site too.
+
+    Tests that *do* want a working fake override this by replacing the
+    same attribute with their own factory (see Slice 7 sub-task 4's
+    ``test_gateway_mcp_smoke.py`` for the pattern).
+    """
+    import mcp.client.streamable_http as _streamable_http
+
+    monkeypatch.setattr(
+        _streamable_http,
+        "streamablehttp_client",
+        _LoudFailureStreamableHTTPClient,
+    )
+
+
 @pytest.fixture(autouse=True)
 def safe_memory_client(monkeypatch: pytest.MonkeyPatch) -> None:
     """Autouse safety net: unstubbed AgentCore Memory calls raise immediately.

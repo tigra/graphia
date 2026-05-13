@@ -33,6 +33,15 @@ locals {
   # `graphia_demo_memory` (19 chars, well within the cap).
   memory_name = substr(replace("${local.name_prefix}_memory", "-", "_"), 0, 48)
 
+  # AgentCore Gateway names per the CreateGateway API: same family as Memory's
+  # `name` pattern — `[a-zA-Z][a-zA-Z0-9-_]{0,99}` (alphanumerics + `-_`, max
+  # 100 chars). Gateway is **more permissive than Runtime**: dashes are
+  # allowed, and the cap is 100, not 48. We keep the dash form for readability
+  # since `name_prefix` already uses dashes. For `environment=demo` this
+  # resolves to `graphia-demo-gateway` (20 chars, well within cap). See
+  # RESEARCH.md §9 for the constraint source.
+  gateway_name = substr("${local.name_prefix}-gateway", 0, 100)
+
   # CloudWatch log group path for AgentCore Runtime traces / logs. AgentCore
   # writes to /aws/bedrock-agentcore/* by default; we use a Graphia-namespaced
   # subpath so multiple environments in the same account stay separated.

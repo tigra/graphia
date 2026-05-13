@@ -461,3 +461,78 @@ The implicit `aws_bedrockagentcore_memory.this.id` reference establishes the Mem
 - The Runtime's `environment_variables` map is server-side — updating it bumps `agent_runtime_version`. Sub-task 3's diary-write integration triggers no Terraform redeploy as long as the env-var name + value-source don't change; only image pushes / IAM-policy edits will trigger Runtime re-versioning beyond the one-time bump in this sub-task's plan.
 - The `bedrock-agentcore:CreateEvent` action supports two scope-restricting condition keys — `bedrock-agentcore:sessionId` and `bedrock-agentcore:actorId` (service-authorization reference). Sub-task 3 does not need them — the application already scopes calls with the correct keys at the SDK call site, and the resource-level scoping above is already minimal — but if a future hardening pass wants to assert *defence-in-depth*, those conditions are the lever.
 
+---
+
+## 9. Slice 7 sub-task 2 addendum — AgentCore Gateway + Gateway targets
+
+Provisions a single Gateway in front of the Runtime with IAM-authorized inbound auth, and two `mcp_server`-typed targets that surface the diary tools. The work also re-derives §6 Q5 (the Gateway target shape question) against the live target-type taxonomy and corrects the prior `open_api_schema` recommendation.
+
+### Gateway resource shape (provider 6.44.0)
+
+Required top-level args (per Registry doc id `12200500`, re-fetched 2026-05-13):
+
+| Field | Required | Value used | Notes |
+|---|---|---|---|
+| `name` | Yes | `local.gateway_name` (= `graphia-demo-gateway` for `environment=demo`) | Pattern is the **Memory-style family** (`[a-zA-Z][a-zA-Z0-9-_]{0,99}`) — dashes are allowed and the cap is 100 chars, both stricter-than-Runtime. We keep the dash form for readability and parity with `name_prefix`. |
+| `role_arn` | Yes | `aws_iam_role.gateway.arn` | Dedicated execution role with `sts:AssumeRole` trust for `bedrock-agentcore.amazonaws.com`. |
+| `authorizer_type` | Yes | `AWS_IAM` | See "Inbound auth choice" below. |
+| `protocol_type` | Yes | `MCP` | Only value the provider accepts in 6.44.0. |
+| `description` | Optional | Short human-readable string | Surfaces in the AWS console + control-plane responses. |
+| `authorizer_configuration` | Conditional (Required iff `authorizer_type=CUSTOM_JWT`) | **Omitted** for `AWS_IAM` | Cognito user-pool dependency only kicks in if we go JWT. |
+| `protocol_configuration.mcp` | Optional | **Omitted** | Defaults are fine for v1.x. Sub-block carries `instructions`, `search_type=SEMANTIC`, `supported_versions`. |
+
+Exported attributes used downstream: `gateway_arn`, `gateway_id`, `gateway_url`.
+
+### Inbound auth choice — AWS_IAM (not CUSTOM_JWT)
+
+The AgentCore Gateway inbound-auth documentation (<https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-inbound-auth.html>) describes IAM-based inbound auth as a first-class option: any IAM identity with `bedrock-agentcore:InvokeGateway` on the gateway ARN can call the Gateway with SigV4-signed requests. For Graphia's single-developer footprint this is the lowest-friction choice — the Runtime's execution role and the developer's local SSO session (used by local-mode through the standard credential chain) both already authenticate against AWS the same way. CUSTOM_JWT would force a Cognito user pool plus a token-minting dance that doesn't earn its complexity for a personal reference project. Confirmed: the provider's `authorizer_configuration` block is **only required when `authorizer_type=CUSTOM_JWT`**, so `AWS_IAM` works with no further config.
+
+### Gateway target shape — `mcp_server`, not `open_api_schema` (corrects §6 Q5)
+
+Re-deriving §6 Q5 against the live `gateway-target-MCPservers` doc and the corresponding `aws_bedrockagentcore_gateway_target` provider schema (Registry doc id `12200501`):
+
+- The target-config oneOf inside `target_configuration.mcp` lists five variants: `api_gateway`, `lambda`, `mcp_server`, `open_api_schema`, `smithy_model`.
+- AgentCore documents that **MCP servers hosted on AgentCore Runtime are a first-class supported target** via the `mcp_server` variant with IAM (SigV4) outbound authorization. The Runtime's MCP endpoint URL pattern is `https://bedrock-agentcore.${region}.amazonaws.com/runtimes/${URL_ENCODED_ARN}/invocations`.
+- `open_api_schema` would still work in principle, but it requires the Runtime to expose a *real* HTTPS endpoint resolvable from the Gateway service — which AgentCore Runtime data-plane invokes don't — *or* an inline/S3 OpenAPI doc plus a custom HTTP endpoint. `mcp_server` skips that whole detour by using the Runtime's documented MCP contract.
+- **ADR 002 contract drift to flag**: the spec brief describes `/tools/diary/{write,read}` HTTP routes on the Runtime container. The `mcp_server` target type instead requires the Runtime container to speak MCP at `/mcp` (path is fixed by AgentCore — see `runtime-mcp.html`). Sub-task 3 must therefore re-implement the diary endpoints as MCP tools (FastMCP / `@mcp.tool()`) rather than custom Starlette routes. This is documented as a comment on the Gateway-target resource blocks in `main.tf`.
+
+Each Gateway target carries:
+
+| Field | Value |
+|---|---|
+| `name` | `graphia-diary-write` / `graphia-diary-read` — Gateway-target name regex is `^([0-9a-zA-Z][-]?){1,100}$` (verified by `terraform validate` error message — strictly alphanumerics + optional single dash separator, **no underscores**, distinct from both Gateway's and Memory's regex). Hyphens are used for readability and parity with `name_prefix`. |
+| `gateway_identifier` | `aws_bedrockagentcore_gateway.this.gateway_id` |
+| `target_configuration.mcp.mcp_server.endpoint` | The Runtime's MCP invocation URL — built once in `locals.runtime_mcp_endpoint` using `urlencode(aws_bedrockagentcore_agent_runtime.this.agent_runtime_arn)`. |
+| `credential_provider_configuration.gateway_iam_role {}` | Empty block — Gateway uses its own execution role to SigV4-sign the outbound request against the Runtime ARN. This is the supported pairing for Runtime-hosted MCP servers per the `gateway-target-MCPservers` doc's "Authorization strategy" table. |
+| `description` | Human-readable summary of the tool's request/response shape (per the brief). |
+
+Tool schemas are *not* declared inline on the target — Gateway's **implicit synchronization** (on `CreateGatewayTarget`) calls `tools/list` against the Runtime MCP server and caches the schema. Sub-task 3 owns the FastMCP `@mcp.tool()` decorations that define the request/response shapes.
+
+### IAM action names (verified against AWS docs)
+
+| Direction | Action | Scope | Source |
+|---|---|---|---|
+| Caller (Runtime / local-mode) → Gateway | `bedrock-agentcore:InvokeGateway` | `aws_bedrockagentcore_gateway.this.gateway_arn` | `gateway-inbound-auth.html` example IAM policy. |
+| Gateway → Runtime (target outbound) | `bedrock-agentcore:InvokeAgentRuntime` | `aws_bedrockagentcore_agent_runtime.this.agent_runtime_arn` | `API_InvokeAgentRuntime.html` operation reference + AgentCore service-authorization page. |
+
+### Bullet-point findings for the next sub-task (Slice 7 sub-task 3)
+
+- **Switch the diary endpoints to MCP**: the Runtime container's diary surface must be an MCP server (`FastMCP(host="0.0.0.0", stateless_http=True)`) exposing `diary_write(game_id, player_id, night_index, content)` and `diary_read(game_id, player_id)` as `@mcp.tool()`s — NOT `/tools/diary/*` Starlette HTTP routes. The Runtime's MCP path is fixed at `/mcp` by the AgentCore runtime-MCP contract.
+- **Set the Runtime's `protocol_configuration.server_protocol = "MCP"`**: a follow-up Terraform change on `aws_bedrockagentcore_agent_runtime.this` configures the Runtime to expect MCP on inbound invocations. Skipping it makes the Gateway target's `tools/list` sync fail at `CreateGatewayTarget` time. Either land this in sub-task 3's TF delta, or revisit the protocol attribute alongside the agent-side refactor.
+- **Gateway invocation URL shape**: `gateway_url` exported attribute resolves to `https://${gateway-id}.gateway.bedrock-agentcore.${region}.amazonaws.com/mcp` (verified by reading provider `Attribute Reference`). The agent's in-container MCP client (`streamablehttp_client`) points at this URL with SigV4 auth.
+- **`GRAPHIA_GATEWAY_ID` env var** carries the Gateway ID into the Runtime container; the agent uses it (plus `var.region`) to construct the gateway URL. Alternative: surface the full URL as `GRAPHIA_GATEWAY_URL` instead — slightly cleaner for the application, but couples the env-var value to a service-managed URL format that could change. Stick with the ID and let the application build the URL.
+- **MCP-session pass-through**: per the `gateway-target-MCPservers` "Tip", add `Mcp-Session-Id` to the target's `metadataConfiguration` (or enable Gateway sessions on the Gateway resource) for lower latency. Not blocking sub-task 3 — fall-forward optimisation.
+- **Implicit sync caveat**: `CreateGatewayTarget` synchronously calls `tools/list` against the Runtime MCP endpoint. On first apply, the Runtime must already be alive *and* speaking MCP. If sub-task 3's container image hasn't been pushed before sub-task 6's `terraform apply`, the gateway-target creation will fail. Sequencing: push image first (`make push`), then `terraform apply`.
+
+### Sources (this section)
+
+| Topic | URL |
+|---|---|
+| `aws_bedrockagentcore_gateway` schema | <https://registry.terraform.io/v2/provider-docs/12200500> (provider 6.44.0) |
+| `aws_bedrockagentcore_gateway_target` schema | <https://registry.terraform.io/v2/provider-docs/12200501> (provider 6.44.0) |
+| AgentCore Gateway inbound auth | <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-inbound-auth.html> |
+| AgentCore Gateway permissions setup | <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-prerequisites-permissions.html> |
+| MCP-server targets (Runtime-as-MCP-server, IAM outbound) | <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-target-MCPservers.html> |
+| Deploy MCP servers in AgentCore Runtime (MCP URL pattern, `/mcp` path) | <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-mcp.html> |
+| `InvokeAgentRuntime` data-plane API | <https://docs.aws.amazon.com/bedrock-agentcore/latest/APIReference/API_InvokeAgentRuntime.html> |
+

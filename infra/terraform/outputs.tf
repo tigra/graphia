@@ -27,3 +27,18 @@ output "memory_id" {
   description = "AgentCore Memory identifier passed to the Runtime via the `GRAPHIA_MEMORY_ID` env var. This is the value `MemoryClient.create_event(memory_id=...)` and `list_events(memory_id=...)` expect — surfaced here so local-mode workflows / debugging can target the same Memory without poking at the Runtime container."
   value       = aws_bedrockagentcore_memory.this.id
 }
+
+output "gateway_id" {
+  description = "AgentCore Gateway identifier passed to the Runtime via the `GRAPHIA_GATEWAY_ID` env var. Sub-task 3's in-container MCP client uses it to construct the Gateway invocation URL when routing diary calls through Gateway-MCP."
+  value       = aws_bedrockagentcore_gateway.this.gateway_id
+}
+
+output "gateway_arn" {
+  description = "AgentCore Gateway ARN — the scope of the Runtime IAM role's `bedrock-agentcore:InvokeGateway` permission. Useful for cross-account / cross-stack references and for the gateway resource-based-policy work Phase 7 will layer on."
+  value       = aws_bedrockagentcore_gateway.this.gateway_arn
+}
+
+output "gateway_invocation_url" {
+  description = "Gateway MCP URL — `https://<gateway-id>.gateway.bedrock-agentcore.<region>.amazonaws.com/mcp`. MCP clients (the agent inside the Runtime in sub-task 3; local-mode flows for debugging) point a streamable-HTTP MCP client at this URL using SigV4-signed requests against the gateway ARN."
+  value       = aws_bedrockagentcore_gateway.this.gateway_url
+}

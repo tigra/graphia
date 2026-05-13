@@ -737,6 +737,8 @@ async def test_remote_mode_driver_detects_interrupt_from_stream_not_local_state(
         remote_mode=True,
         runtime_invocation_url=FAKE_RUNTIME_ARN,
         memory_id=None,
+        gateway_id=None,
+        gateway_url=None,
     )
 
     # --- Drive --------------------------------------------------------
@@ -1011,6 +1013,8 @@ async def test_remote_mode_consumer_receives_basemessage_from_scripted_sse(
         remote_mode=True,
         runtime_invocation_url=FAKE_RUNTIME_ARN,
         memory_id=None,
+        gateway_id=None,
+        gateway_url=None,
     )
 
     await drive_graph(

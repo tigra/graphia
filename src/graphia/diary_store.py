@@ -37,12 +37,16 @@ graph's checkpoint.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import threading
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
+    import httpx
+
     from graphia.config import GraphiaConfig
 
 
@@ -226,6 +230,228 @@ def _entry_from_event(event: dict) -> DiaryEntry | None:
             continue
         return DiaryEntry(night_index=night_index, content=content)
     return None
+
+
+# ---------------------------------------------------------------------------
+# Gateway-MCP-fronted diary store (Slice 7 sub-task 3).
+#
+# The agent running inside the Runtime container no longer talks to
+# AgentCore Memory directly — it invokes Gateway-published MCP tools
+# (``graphia.diary.write`` / ``graphia.diary.read``) over a streamable-HTTP
+# MCP client. Gateway is the front door; it forwards the call to the
+# Runtime's own MCP server (mounted at ``/mcp`` by ``graphia.runtime``),
+# which delegates to ``AgentCoreMemoryDiaryStore`` against the same Memory
+# resource. ADR 002 ("runtime-embedded handlers") is what makes this loop
+# back into the same container, but from the agent's perspective the
+# Gateway is just an MCP endpoint with SigV4 inbound auth.
+#
+# The MCP client is async; the engine's ``night_close`` call site is sync
+# (the Runtime's ``graph.stream`` worker is synchronous). We bridge with
+# ``asyncio.run`` per call — diary writes happen once per surviving AI per
+# Night, so the per-call event-loop spin-up cost is dominated by network
+# latency. A long-lived background loop is out of scope for v1.
+# ---------------------------------------------------------------------------
+
+
+class _SigV4HttpxAuth:
+    """``httpx.Auth``-style hook that SigV4-signs each request.
+
+    The MCP ``streamablehttp_client`` accepts a ``httpx.Auth`` instance via
+    its ``auth=`` parameter. ``httpx`` invokes the auth flow as a generator
+    that yields requests to send and receives back the response — for SigV4
+    we only need the first yield (we sign the outbound request once; no
+    retry-on-401 dance is required because Gateway's inbound IAM check is
+    deterministic given a valid signature).
+
+    Credentials come from the caller-supplied ``botocore`` credentials object,
+    refreshed by ``boto3.Session().get_credentials()`` lazily on construction.
+    Service name is ``bedrock-agentcore`` per the AgentCore Gateway IAM
+    documentation; the signing region matches the Gateway's region.
+    """
+
+    def __init__(
+        self,
+        *,
+        region: str,
+        credentials: Any,
+        service_name: str = "bedrock-agentcore",
+    ) -> None:
+        # Lazy-import botocore so ``import graphia.diary_store`` stays free
+        # of an AWS-SDK dependency for the dict-backed local-mode flow.
+        from botocore.auth import SigV4Auth
+
+        self._signer = SigV4Auth(credentials, service_name, region)
+
+    def auth_flow(
+        self, request: "httpx.Request"
+    ) -> "AsyncGenerator[httpx.Request, httpx.Response]":
+        # ``httpx.Auth.auth_flow`` is a generator; yielding the (mutated)
+        # request once is sufficient for non-challenge auth schemes.
+        return self._sync_flow(request)
+
+    def sync_auth_flow(
+        self, request: "httpx.Request"
+    ) -> "AsyncGenerator[httpx.Request, httpx.Response]":
+        return self._sync_flow(request)
+
+    def _sync_flow(self, request: "httpx.Request"):
+        from botocore.awsrequest import AWSRequest
+
+        body = request.read()
+        aws_req = AWSRequest(
+            method=request.method,
+            url=str(request.url),
+            data=body,
+            headers=dict(request.headers),
+        )
+        # SigV4 requires the host header; httpx already populates it, but the
+        # signer reads from the AWSRequest copy we just built.
+        self._signer.add_auth(aws_req)
+        for header_name, header_value in aws_req.headers.items():
+            request.headers[header_name] = header_value
+        yield request
+
+
+class GatewayMCPDiaryStore:
+    """DiaryStore impl that calls Gateway-published MCP tools.
+
+    Constructed by the Runtime entry-point with the Gateway URL pulled from
+    the container's ``GRAPHIA_GATEWAY_ID`` env var. Each ``write`` /
+    ``read`` opens a short-lived streamable-HTTP MCP session, calls the
+    appropriate tool, and tears the session down. Gateway sees one
+    SigV4-signed request per call; the Runtime's MCP server receives a
+    standard MCP ``tools/call`` payload and routes into the underlying
+    ``AgentCoreMemoryDiaryStore`` (per ADR 002).
+
+    The two MCP tool names are fixed by ``graphia.runtime.__main__`` and
+    match the Gateway targets Terraform creates (``graphia-diary-write`` /
+    ``graphia-diary-read``).
+    """
+
+    WRITE_TOOL_NAME = "diary_write"
+    READ_TOOL_NAME = "diary_read"
+
+    def __init__(self, gateway_url: str, region: str) -> None:
+        if not gateway_url:
+            raise ValueError("gateway_url is required for GatewayMCPDiaryStore")
+        if not region:
+            raise ValueError("region is required for GatewayMCPDiaryStore")
+        self._gateway_url = gateway_url
+        self._region = region
+
+    # -- public API ----------------------------------------------------
+
+    def write(
+        self, game_id: str, player_id: str, night_index: int, content: str
+    ) -> None:
+        asyncio.run(
+            self._call_tool(
+                self.WRITE_TOOL_NAME,
+                {
+                    "game_id": game_id,
+                    "player_id": player_id,
+                    "night_index": night_index,
+                    "content": content,
+                },
+            )
+        )
+
+    def read(self, game_id: str, player_id: str) -> list[DiaryEntry]:
+        result = asyncio.run(
+            self._call_tool(
+                self.READ_TOOL_NAME,
+                {"game_id": game_id, "player_id": player_id},
+            )
+        )
+        entries_raw = (result or {}).get("entries", [])
+        entries = [
+            DiaryEntry(
+                night_index=int(e["night_index"]),
+                content=str(e["content"]),
+            )
+            for e in entries_raw
+            if isinstance(e, dict) and "night_index" in e and "content" in e
+        ]
+        return sorted(entries, key=lambda e: e.night_index)
+
+    # -- internals -----------------------------------------------------
+
+    def _build_auth(self) -> _SigV4HttpxAuth:
+        # Resolve credentials at call time via the standard chain so the
+        # signer always sees fresh creds (relevant when the Runtime's
+        # execution role rotates the assumed-role session).
+        import boto3
+
+        session = boto3.Session()
+        credentials = session.get_credentials()
+        if credentials is None:
+            raise RuntimeError(
+                "No AWS credentials resolved via boto3.Session().get_credentials(); "
+                "GatewayMCPDiaryStore cannot SigV4-sign the MCP request."
+            )
+        return _SigV4HttpxAuth(region=self._region, credentials=credentials)
+
+    async def _call_tool(self, tool_name: str, arguments: dict) -> dict:
+        # Local import keeps the dict-backed store free of an mcp dep when
+        # ``GatewayMCPDiaryStore`` is never constructed.
+        from mcp import ClientSession
+        from mcp.client.streamable_http import streamablehttp_client
+
+        auth = self._build_auth()
+        async with streamablehttp_client(
+            self._gateway_url,
+            auth=auth,
+        ) as (read_stream, write_stream, _get_session_id):
+            async with ClientSession(read_stream, write_stream) as session:
+                await session.initialize()
+                response = await session.call_tool(tool_name, arguments)
+        return _parse_mcp_tool_result(response)
+
+
+def _parse_mcp_tool_result(response: Any) -> dict:
+    """Pull the structured payload out of an MCP ``CallToolResult``.
+
+    FastMCP serialises a Python ``dict`` return value into a structured
+    content block on the result; older MCP versions surface it as the
+    parsed JSON body of a ``TextContent`` item. We accept both shapes so a
+    runtime / library version skew doesn't silently break diary reads.
+
+    An MCP ``isError=True`` result raises :class:`RuntimeError` — Gateway /
+    tool-side failures must surface to the caller (e.g. ``night_close``)
+    rather than be silently parsed as a success dict. The error message
+    pulls from the first ``TextContent`` item if present, falling back to
+    the response's ``repr`` so the failure isn't structurally invisible.
+    """
+    if getattr(response, "isError", False):
+        message = ""
+        content = getattr(response, "content", None) or []
+        for item in content:
+            text = getattr(item, "text", None)
+            if text:
+                message = text
+                break
+        raise RuntimeError(
+            f"MCP tool returned isError=True: {message or repr(response)}"
+        )
+
+    # Newer MCP: structured content block on the result.
+    structured = getattr(response, "structuredContent", None)
+    if isinstance(structured, dict):
+        return structured
+
+    # Fallback: parse the first text content block as JSON.
+    content = getattr(response, "content", None) or []
+    for item in content:
+        text = getattr(item, "text", None)
+        if not text:
+            continue
+        try:
+            parsed = json.loads(text)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(parsed, dict):
+            return parsed
+    return {}
 
 
 def make_diary_store(config: "GraphiaConfig") -> DiaryStore:

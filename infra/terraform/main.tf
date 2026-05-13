@@ -142,6 +142,20 @@ data "aws_iam_policy_document" "runtime_inline" {
     ]
     resources = [aws_bedrockagentcore_memory.this.arn]
   }
+
+  # AgentCore Gateway — the agent inside the Runtime invokes its own diary
+  # tools through the Gateway-MCP front door (per ADR 002). The data-plane
+  # action `bedrock-agentcore:InvokeGateway` is documented in the AgentCore
+  # IAM reference (see RESEARCH.md §9) and is scoped here to the single
+  # Gateway resource this stack creates. Inbound auth on the Gateway is
+  # `AWS_IAM`, so the Runtime's SigV4-signed call against this ARN is the
+  # caller identity the Gateway authorizes.
+  statement {
+    sid       = "AgentCoreGatewayInvoke"
+    effect    = "Allow"
+    actions   = ["bedrock-agentcore:InvokeGateway"]
+    resources = [aws_bedrockagentcore_gateway.this.gateway_arn]
+  }
 }
 
 resource "aws_iam_role" "runtime" {
@@ -204,18 +218,187 @@ resource "aws_bedrockagentcore_agent_runtime" "this" {
     network_mode = "PUBLIC"
   }
 
-  # Plumb the Memory resource's ID into the container as `GRAPHIA_MEMORY_ID`.
-  # `src/graphia/config.py::load_config()` reads this env var, and
-  # `make_diary_store(config)` passes it to `MemoryClient.create_event(memory_id=...)`.
-  # Referencing `aws_bedrockagentcore_memory.this.id` implicitly orders Memory
-  # before Runtime — first-time deploys provision Memory first without an
-  # explicit `depends_on`.
+  # Advertise MCP so the AgentCore Gateway target's synchronous tools/list
+  # probe (run at gateway-target create time) talks to the Runtime's
+  # FastMCP server at /mcp instead of attempting to invoke the agent
+  # entrypoint as a generic Runtime. Required by Slice 7 sub-task 3's
+  # Gateway-MCP refactor — without this block, CreateGatewayTarget fails
+  # at terraform apply time.
+  protocol_configuration {
+    server_protocol = "MCP"
+  }
+
+  # Plumb the Memory ID and the Gateway identifier into the container.
+  # - `GRAPHIA_MEMORY_ID`: `src/graphia/config.py::load_config()` reads it,
+  #   and `make_diary_store(config)` passes it to
+  #   `MemoryClient.create_event(memory_id=...)`.
+  # - `GRAPHIA_GATEWAY_ID`: Slice 7 sub-task 3's refactor of the agent's diary
+  #   call path through Gateway-MCP reads this to build the Gateway invocation
+  #   URL (`https://bedrock-agentcore.${region}.amazonaws.com/...`) for the
+  #   in-container MCP client. The `id` is the canonical handle the
+  #   service-name lookup needs; the Gateway URL itself is also published as
+  #   the `gateway_invocation_url` output so external local-mode flows can
+  #   point at the same Gateway.
+  # Implicit references to the Memory and Gateway resources establish the
+  # correct ordering — no `depends_on` needed for those two specifically.
   environment_variables = {
-    GRAPHIA_MEMORY_ID = aws_bedrockagentcore_memory.this.id
+    GRAPHIA_MEMORY_ID  = aws_bedrockagentcore_memory.this.id
+    GRAPHIA_GATEWAY_ID = aws_bedrockagentcore_gateway.this.gateway_id
   }
 
   # Ensure the inline policy is in place before the Runtime is created;
   # `role_arn` only requires the role to exist, not its permissions, but
   # AgentCore fails on first model-invoke if the policy isn't attached yet.
   depends_on = [aws_iam_role_policy.runtime]
+}
+
+# ---------------------------------------------------------------------------
+# AgentCore Gateway — single MCP front door for the agent's diary tools.
+# Inbound auth is AWS_IAM so the Runtime (and any local-mode caller using
+# the standard credential chain) can SigV4-sign requests against the Gateway
+# ARN without the Cognito user-pool dependency that CUSTOM_JWT would pull
+# in. Outbound auth on each target is the Gateway's own IAM role (SigV4
+# against the Runtime's data-plane endpoint — see Gateway target blocks
+# below). See RESEARCH.md §9 for the auth-model rationale.
+# ---------------------------------------------------------------------------
+
+data "aws_iam_policy_document" "gateway_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["bedrock-agentcore.amazonaws.com"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "gateway_inline" {
+  # Outbound: the Gateway invokes the Runtime's MCP endpoint via SigV4
+  # using its execution role. The action is `bedrock-agentcore:InvokeAgentRuntime`
+  # scoped to **all Runtime ARNs starting with `local.runtime_name`** — we
+  # use the name-derived ARN pattern (not the resource attribute) to break a
+  # Terraform dependency cycle: the Runtime references the Gateway (env var),
+  # the Gateway role-policy references the Runtime (this statement). The
+  # Runtime ARN shape is `arn:aws:bedrock-agentcore:${region}:${account}:runtime/${name}-<random>`
+  # — see `runtime-mcp.html` example ARNs. The wildcard suffix matches the
+  # service-generated random 10-char suffix that AgentCore appends to the
+  # user-supplied name.
+  statement {
+    sid       = "InvokeAgentRuntime"
+    effect    = "Allow"
+    actions   = ["bedrock-agentcore:InvokeAgentRuntime"]
+    resources = ["arn:aws:bedrock-agentcore:${var.region}:${var.account_id}:runtime/${local.runtime_name}-*"]
+  }
+
+  # CloudWatch Logs — the Gateway writes its own access / authorization
+  # decision logs to a `/aws/bedrock-agentcore/${name}-gateway*` log group
+  # (service-default destination, no explicit log-group resource needed at
+  # this phase — Slice 8 sub-task 1 expands observability). We grant the
+  # write surface preemptively, scoped to the Graphia AgentCore log prefix.
+  statement {
+    sid    = "CloudWatchLogsWrite"
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+    resources = ["arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/bedrock-agentcore/*:*"]
+  }
+}
+
+resource "aws_iam_role" "gateway" {
+  name               = "${local.name_prefix}-gateway"
+  assume_role_policy = data.aws_iam_policy_document.gateway_assume_role.json
+}
+
+resource "aws_iam_role_policy" "gateway" {
+  name   = "${local.name_prefix}-gateway-inline"
+  role   = aws_iam_role.gateway.id
+  policy = data.aws_iam_policy_document.gateway_inline.json
+}
+
+resource "aws_bedrockagentcore_gateway" "this" {
+  name            = local.gateway_name
+  role_arn        = aws_iam_role.gateway.arn
+  protocol_type   = "MCP"
+  authorizer_type = "AWS_IAM"
+
+  description = "Graphia diary-tool front door. Fronts the Runtime's two MCP tool endpoints (diary.write, diary.read) per ADR 002."
+
+  # Ensure the Gateway's execution role has its inline policy attached
+  # before the Gateway resource is created; the gateway control-plane
+  # validates the role can SigV4-sign against the target Runtime at creation
+  # time on some target types.
+  depends_on = [aws_iam_role_policy.gateway]
+}
+
+# ---------------------------------------------------------------------------
+# Gateway targets — one per diary tool, both pointing at the Runtime's MCP
+# endpoint. The Runtime exposes its MCP server at
+# `https://bedrock-agentcore.${region}.amazonaws.com/runtimes/${ARN}/invocations`;
+# the Gateway target's `mcp_server.endpoint` field carries that URL. The
+# Runtime's MCP server is expected to advertise the two diary tools (write,
+# read) via `tools/list`; Gateway's implicit sync indexes them on target
+# creation.
+#
+# NOTE on ADR 002 contract drift: the brief describes HTTP routes
+# `/tools/diary/{write,read}` on the Runtime, but Gateway's `mcp_server`
+# target type requires the Runtime to speak MCP at `/mcp` (path is fixed by
+# the AgentCore runtime-MCP contract). Sub-task 3 must therefore switch the
+# Runtime container from custom HTTP routes to an MCP server exposing
+# `diary_write` and `diary_read` as MCP tools (FastMCP / `@mcp.tool()`).
+# This is the cleanest target type — `open_api_schema` would force adding a
+# real API Gateway in front, which contradicts ADR 002's "runtime-embedded"
+# stance. See RESEARCH.md §9 for the analysis.
+# ---------------------------------------------------------------------------
+
+locals {
+  # Runtime's MCP invocation URL. The ARN is URL-encoded per the data-plane
+  # contract (`/runtimes/{URL_ENCODED_ARN}/invocations`). Terraform's
+  # `urlencode()` does the `:` → `%3A` and `/` → `%2F` substitution the
+  # AgentCore documentation example does manually.
+  runtime_mcp_endpoint = "https://bedrock-agentcore.${var.region}.amazonaws.com/runtimes/${urlencode(aws_bedrockagentcore_agent_runtime.this.agent_runtime_arn)}/invocations"
+}
+
+resource "aws_bedrockagentcore_gateway_target" "diary_write" {
+  name               = "graphia-diary-write"
+  gateway_identifier = aws_bedrockagentcore_gateway.this.gateway_id
+
+  description = "Append one diary entry for the given (game_id, player_id, night_index). Request: {game_id, player_id, night_index>=0, content}. Response: {ok: true}."
+
+  target_configuration {
+    mcp {
+      mcp_server {
+        endpoint = local.runtime_mcp_endpoint
+      }
+    }
+  }
+
+  # Gateway uses its execution role (SigV4) to invoke the Runtime MCP
+  # endpoint. This is the supported pairing for AgentCore-Runtime-hosted
+  # MCP servers per the AgentCore Gateway target-type documentation.
+  credential_provider_configuration {
+    gateway_iam_role {}
+  }
+}
+
+resource "aws_bedrockagentcore_gateway_target" "diary_read" {
+  name               = "graphia-diary-read"
+  gateway_identifier = aws_bedrockagentcore_gateway.this.gateway_id
+
+  description = "Read all diary entries for the given (game_id, player_id). Request: {game_id, player_id}. Response: {entries: [{night_index, content}, ...]}."
+
+  target_configuration {
+    mcp {
+      mcp_server {
+        endpoint = local.runtime_mcp_endpoint
+      }
+    }
+  }
+
+  credential_provider_configuration {
+    gateway_iam_role {}
+  }
 }
