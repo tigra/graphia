@@ -9,6 +9,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.types import interrupt
 
 from graphia.config import load_config
+from graphia.diary_store import DiaryStore
 from graphia.llm import Pointing, get_sonnet
 from graphia.prompts import (
     MAFIA_POINT_SYSTEM,
@@ -238,8 +239,31 @@ def resolve_night_kill(state: GameState) -> dict:
     }
 
 
-def night_close(state: GameState) -> dict:
+def night_close(
+    state: GameState,
+    *,
+    diary_store: DiaryStore | None = None,
+    game_id: str | None = None,
+) -> dict:
     cycle = state.get("cycle", 1)
+
+    # Slice 6 smoke-test placeholder (spec 002 §2.4): one diary entry per
+    # surviving AI player per Night. The content is intentionally trivial —
+    # Phase 6 will replace it with the AI's actual private reflection.
+    # In remote mode this fires real ``bedrock-agentcore:CreateEvent`` calls
+    # against AgentCore Memory; in local mode it appends to the dict-backed
+    # ``InProcessDiaryStore``. Same call site, parallel implementations.
+    if diary_store is not None and game_id is not None:
+        players = state.get("players", {})
+        for player in players.values():
+            if player.is_alive and not player.is_human:
+                diary_store.write(
+                    game_id=game_id,
+                    player_id=player.id,
+                    night_index=cycle,
+                    content=f"Night {cycle} diary placeholder for {player.id}",
+                )
+
     return {
         "messages": [SystemMessage(content=f"Night {cycle} ends.")],
         "phase": "day",

@@ -25,6 +25,14 @@ locals {
   # underscores and truncating to 48 chars.
   runtime_name = substr(replace("${local.name_prefix}_runtime", "-", "_"), 0, 48)
 
+  # AgentCore Memory names share the Runtime regex `[a-zA-Z][a-zA-Z0-9_]{0,47}`
+  # (verified against the CreateMemory API; see RESEARCH.md §8). Same
+  # underscores-only, 48-char-cap constraint — we apply the same dash→underscore
+  # replacement and truncation as for the Runtime name to derive a Memory name
+  # from `name_prefix`. For `environment=demo` this resolves to
+  # `graphia_demo_memory` (19 chars, well within the cap).
+  memory_name = substr(replace("${local.name_prefix}_memory", "-", "_"), 0, 48)
+
   # CloudWatch log group path for AgentCore Runtime traces / logs. AgentCore
   # writes to /aws/bedrock-agentcore/* by default; we use a Graphia-namespaced
   # subpath so multiple environments in the same account stay separated.

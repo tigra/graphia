@@ -19,12 +19,14 @@ exercised by spec-002 §4 integration tests.
 from __future__ import annotations
 
 import sqlite3
+from functools import partial
 from pathlib import Path
 
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
+from graphia.diary_store import DiaryStore, InProcessDiaryStore
 from graphia.nodes import (
     assign_roles,
     check_win_condition,
@@ -54,14 +56,26 @@ from graphia.state import GameState
 
 
 def build_runtime_graph(
-    thread_id: str, checkpoint_dir: Path
+    thread_id: str,
+    checkpoint_dir: Path,
+    diary_store: DiaryStore | None = None,
 ) -> CompiledStateGraph:
     """Compile the Graphia StateGraph with a caller-supplied thread_id.
 
     The SqliteSaver writes to ``<checkpoint_dir>/<thread_id>.sqlite``.
     The connection's lifetime is bound to the returned graph; the
     Runtime process owns it until the session terminates.
+
+    ``diary_store`` is bound into the ``night_close`` node so the per-Night
+    placeholder writes route to the right impl (AgentCore Memory in remote
+    mode, in-process dict in local mode). The Runtime entrypoint supplies
+    one constructed via :func:`graphia.diary_store.make_diary_store`; tests
+    that compile this graph directly can leave it ``None`` and an
+    in-process fallback is used.
     """
+    if diary_store is None:
+        diary_store = InProcessDiaryStore()
+
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     db_path = checkpoint_dir / f"{thread_id}.sqlite"
 
@@ -78,7 +92,10 @@ def build_runtime_graph(
     builder.add_node("night_open", night_open)
     builder.add_node("mafia_pointing", mafia_pointing)
     builder.add_node("resolve_night_kill", resolve_night_kill)
-    builder.add_node("night_close", night_close)
+    builder.add_node(
+        "night_close",
+        partial(night_close, diary_store=diary_store, game_id=thread_id),
+    )
     builder.add_node("day_open", day_open)
     builder.add_node("day_turn", day_turn)
     builder.add_node("vote_prompt", vote_prompt)

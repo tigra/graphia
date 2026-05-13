@@ -18,6 +18,7 @@ from graphia.config import GraphiaConfig, load_config
 from graphia.driver import drive_graph
 from graphia.graph import build_graph, make_run_config
 from graphia.logging import StreamTraceLogger, setup_logger
+from graphia.ui.badge import CornerBadge
 from graphia.ui.widgets import PointingModal, VoteModal
 
 
@@ -51,7 +52,7 @@ def _speaker_of(msg: AIMessage) -> str:
 
 class GraphiaApp(App[None]):
     CSS = """
-    Screen { layout: vertical; }
+    Screen { layout: vertical; layers: base overlay; }
 
     #header-bar {
         height: 1;
@@ -89,6 +90,9 @@ class GraphiaApp(App[None]):
 
     def __init__(self) -> None:
         super().__init__()
+        # Loaded eagerly so `compose()` can read `remote_mode` for the badge
+        # label. `on_mount` reuses the same instance instead of reloading.
+        self.config = load_config()
         self._pending_resume: asyncio.Future[Any] | None = None
         self._human_id: str | None = None
         self._graph: CompiledStateGraph | None = None
@@ -110,6 +114,8 @@ class GraphiaApp(App[None]):
         self._spectator: bool = False
 
     def compose(self) -> ComposeResult:
+        label = "[remote]" if self.config.remote_mode else "[local]"
+        yield CornerBadge(label)
         with Vertical():
             yield Static("[b]Graphia[/b] [dim]Mafia, by candlelight[/dim]", id="header-bar")
             yield RichLog(id="private-log", highlight=False, markup=False, wrap=True)
@@ -117,7 +123,6 @@ class GraphiaApp(App[None]):
             yield Input(placeholder="…", id="player-input", disabled=True)
 
     def on_mount(self) -> None:
-        self.config = load_config()
         self.logger = setup_logger(self.config)
         private = self.query_one("#private-log", RichLog)
         private.border_title = "Whispers (only you see this)"

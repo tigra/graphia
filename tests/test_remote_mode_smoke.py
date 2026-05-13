@@ -187,6 +187,12 @@ def remote_env(env: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """
     monkeypatch.setenv("GRAPHIA_REMOTE", "1")
     monkeypatch.setenv("GRAPHIA_RUNTIME_URL", FAKE_RUNTIME_ARN)
+    # Slice 6: ``make_diary_store(config)`` (called inside ``build_graph``)
+    # raises SystemExit in remote mode if ``GRAPHIA_MEMORY_ID`` is unset.
+    # The actual store is replaced with ``InProcessDiaryStore`` by the
+    # ``patched_agentcore_client`` fixture's ``_wrapped_build_graph``, so
+    # this env var only has to be non-empty to satisfy the factory's guard.
+    monkeypatch.setenv("GRAPHIA_MEMORY_ID", "fake-memory-id-for-tests")
     return env
 
 
@@ -200,6 +206,7 @@ def local_env(env: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """
     monkeypatch.delenv("GRAPHIA_REMOTE", raising=False)
     monkeypatch.delenv("GRAPHIA_RUNTIME_URL", raising=False)
+    monkeypatch.delenv("GRAPHIA_MEMORY_ID", raising=False)
     return env
 
 
@@ -221,11 +228,19 @@ def patched_agentcore_client(
     FakeAgentCoreClient.captured_graph = None
 
     import graphia.ui.app as app_module
+    from graphia.diary_store import InProcessDiaryStore
 
     real_build_graph = app_module.build_graph
 
     def _wrapped_build_graph(config):
-        graph, thread_id = real_build_graph(config)
+        # Force the in-process diary store so the proxied local graph never
+        # tries to reach AgentCore Memory via boto3 — even when the env
+        # asks for remote mode. Slice 6 sub-task 4 adds the dedicated
+        # diary-store equivalence tests; here we just keep this smoke run
+        # boto3-free.
+        graph, thread_id = real_build_graph(
+            config, diary_store=InProcessDiaryStore()
+        )
         FakeAgentCoreClient.captured_graph = graph
         return graph, thread_id
 
@@ -721,6 +736,7 @@ async def test_remote_mode_driver_detects_interrupt_from_stream_not_local_state(
         checkpoint_dir=tmp_path / "checkpoints",
         remote_mode=True,
         runtime_invocation_url=FAKE_RUNTIME_ARN,
+        memory_id=None,
     )
 
     # --- Drive --------------------------------------------------------
@@ -994,6 +1010,7 @@ async def test_remote_mode_consumer_receives_basemessage_from_scripted_sse(
         checkpoint_dir=tmp_path / "checkpoints",
         remote_mode=True,
         runtime_invocation_url=FAKE_RUNTIME_ARN,
+        memory_id=None,
     )
 
     await drive_graph(

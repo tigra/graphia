@@ -23,7 +23,7 @@ output "cloudwatch_log_group" {
   value       = aws_cloudwatch_log_group.runtime.name
 }
 
-output "memory_namespace" {
-  description = "AgentCore Memory namespace identifier used for per-game diary entries. Populated by Slice 6 once the Memory resource is declared."
-  value       = null
+output "memory_id" {
+  description = "AgentCore Memory identifier passed to the Runtime via the `GRAPHIA_MEMORY_ID` env var. This is the value `MemoryClient.create_event(memory_id=...)` and `list_events(memory_id=...)` expect — surfaced here so local-mode workflows / debugging can target the same Memory without poking at the Runtime container."
+  value       = aws_bedrockagentcore_memory.this.id
 }

@@ -377,3 +377,87 @@ Source: Registry doc id `12200495` Attribute Reference section.
 
 All five carry `Project=Graphia`, `ManagedBy=Terraform`, `Environment=<env>`, `Owner=<email>` via the provider's `default_tags` block.
 
+---
+
+## 8. Slice 6 sub-task 2 addendum — AgentCore Memory resource shape & IAM action set
+
+Slice 6 sub-task 1 implemented `AgentCoreMemoryDiaryStore` against the actual `bedrock_agentcore.memory.MemoryClient` API in `bedrock-agentcore==1.9.0` (methods `create_event` / `list_events`), not the `AgentCoreMemory` + `store` / `search` surface the `langgraph-agentcore` skill references — the skill is stale. This sub-task provisions the Memory resource the client points at, grants least-privilege IAM access, and plumbs the ID into the Runtime container.
+
+### Memory resource shape (provider 6.44.0)
+
+The `aws_bedrockagentcore_memory` argument schema differs in two ways from §6 Q3's assumptions:
+
+| Field | Required? | Constraint | Notes |
+|---|---|---|---|
+| `name` | Yes | regex `[a-zA-Z][a-zA-Z0-9_]{0,47}` | Same family as Runtime — underscores only, no dashes, max **48 chars**. |
+| `event_expiry_duration` | Yes | integer, **7–365** days (provider validation) | AWS API doc lists range 3–365 but the Terraform schema clamps to 7. We picked **90** days (Microgrid precedent; gives developers headroom for post-game inspection; Slice 10 `terraform destroy` drops the resource anyway). |
+| `description` | No | string ≤ 4096 chars | We set a human-readable description. |
+| `encryption_key_arn` | No | KMS key ARN | Omitted → AWS-managed encryption (the personal-reference-project posture from ADR 001). |
+| `memory_execution_role_arn` | No | IAM role ARN | Omitted — required only when a memory strategy invokes a Bedrock model on the Memory's behalf, which we don't use. |
+| `memory_strategies` | **N/A — not a field on this resource** | — | Strategies are a *separate* resource (`aws_bedrockagentcore_memory_strategy`). To get the "raw events only" mode the SDK needs, simply **don't declare a strategy resource**. This is cleaner than the spec brief's "minimum memory_strategies" hedge. |
+
+Exports: `arn` (used in the IAM statement below), `id` (used in the Runtime env var + the `memory_id` output). The `id` is the canonical identifier — it's the value `MemoryClient.create_event(memory_id=...)` and `list_events(memory_id=...)` accept.
+
+### Local: `memory_name`
+
+```hcl
+memory_name = substr(replace("${local.name_prefix}_memory", "-", "_"), 0, 48)
+```
+
+Same dash→underscore + 48-char-truncate transform as `runtime_name`. For `environment=demo` resolves to `graphia_demo_memory` (19 chars).
+
+### IAM action set granted to the Runtime role on the Memory ARN
+
+```hcl
+statement {
+  sid     = "AgentCoreMemoryReadWrite"
+  effect  = "Allow"
+  actions = [
+    "bedrock-agentcore:CreateEvent",
+    "bedrock-agentcore:ListEvents",
+  ]
+  resources = [aws_bedrockagentcore_memory.this.arn]
+}
+```
+
+Verified against:
+
+- `bedrock-agentcore:CreateEvent` — service-authorization reference; resource type `memory`; required permission per the boto3 `create_event` API doc: <https://docs.aws.amazon.com/boto3/latest/reference/services/bedrock-agentcore/client/create_event.html>
+- `bedrock-agentcore:ListEvents` — same reference; resource type `memory`; required permission per the boto3 `list_events` API doc: <https://docs.aws.amazon.com/boto3/latest/reference/services/bedrock-agentcore/client/list_events.html>
+- Memory resource-type ARN: `arn:${Partition}:bedrock-agentcore:${Region}:${Account}:memory/${MemoryId}` — service-authorization reference §"Resource types defined by Amazon Bedrock Agentcore".
+
+**Actions explicitly NOT granted** (and why) — these are the §6 Q3 action set, which targets a *different* surface than the SDK uses:
+
+- `bedrock-agentcore:BatchCreateMemoryRecords` / `BatchUpdateMemoryRecords` / `BatchDeleteMemoryRecords` / `RetrieveMemoryRecords` / `ListMemoryRecords` / `GetMemoryRecord` — these manipulate the *memory records* surface that backs strategy-extracted memories (semantic, summarisation, etc.). Our application uses raw events, not records. Granting them would be unused least-privilege bloat.
+
+The deprecation of the §6 Q3 action set is the headline correction this sub-task adds over the spec-time research.
+
+### Runtime `environment_variables` plumbing
+
+`aws_bedrockagentcore_agent_runtime` exposes a native `environment_variables` field (`map(string)`). We populate:
+
+```hcl
+environment_variables = {
+  GRAPHIA_MEMORY_ID = aws_bedrockagentcore_memory.this.id
+}
+```
+
+The implicit `aws_bedrockagentcore_memory.this.id` reference establishes the Memory → Runtime ordering Terraform needs (no explicit `depends_on` necessary). No fallback (S3, image-bake, redeploy step) needed — native plumbing works.
+
+`src/graphia/config.py::load_config()` reads `GRAPHIA_MEMORY_ID`; `make_diary_store(config)` passes it to `AgentCoreMemoryDiaryStore(memory_id=...)`.
+
+### Plan delta (Slice 6 sub-task 2)
+
+`./tf plan -var environment=demo -var owner=<email>` produces **1 to add, 2 to change, 0 to destroy** on top of the deployed Slice 3 baseline:
+
+1. **add** `aws_bedrockagentcore_memory.this` — `graphia_demo_memory`, 90-day expiry.
+2. **change (in-place)** `aws_iam_role_policy.runtime` — adds the `AgentCoreMemoryReadWrite` statement.
+3. **change (in-place)** `aws_bedrockagentcore_agent_runtime.this` — adds `environment_variables = { GRAPHIA_MEMORY_ID = ... }`. The Runtime's `agent_runtime_version` rolls forward as a side effect, which is expected — AgentCore versions any change to the Runtime resource.
+4. **add** `output.memory_id`.
+
+### Quirks the next sub-task (3) needs to know
+
+- The `memory_id` returned by the Terraform `id` attribute has the shape `${name}-${10charRandomSuffix}` (e.g. `graphia_demo_memory-AbCdEfGhIj`) — the SDK accepts this as-is, no parsing needed. `make redeploy` should pipe `terraform output -raw memory_id` straight into the `.env` line for local-mode parity.
+- The Runtime's `environment_variables` map is server-side — updating it bumps `agent_runtime_version`. Sub-task 3's diary-write integration triggers no Terraform redeploy as long as the env-var name + value-source don't change; only image pushes / IAM-policy edits will trigger Runtime re-versioning beyond the one-time bump in this sub-task's plan.
+- The `bedrock-agentcore:CreateEvent` action supports two scope-restricting condition keys — `bedrock-agentcore:sessionId` and `bedrock-agentcore:actorId` (service-authorization reference). Sub-task 3 does not need them — the application already scopes calls with the correct keys at the SDK call site, and the resource-level scoping above is already minimal — but if a future hardening pass wants to assert *defence-in-depth*, those conditions are the lever.
+

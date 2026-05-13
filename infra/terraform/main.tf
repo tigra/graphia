@@ -123,6 +123,25 @@ data "aws_iam_policy_document" "runtime_inline" {
     ]
     resources = ["${aws_cloudwatch_log_group.runtime.arn}:*"]
   }
+
+  # AgentCore Memory — data-plane read/write actions scoped to the single
+  # Memory resource provisioned below. The application calls
+  # `MemoryClient.create_event` (Write) and `MemoryClient.list_events` (List)
+  # against this Memory only. Action names verified against the AWS
+  # service-authorization reference (see RESEARCH.md §8 for citations); the
+  # spec brief's `bedrock-agentcore:BatchCreate/Update/Delete/Retrieve/...
+  # MemoryRecords` action names are for the *records* surface that
+  # `MemoryClient` does not use — granting them would be unused
+  # least-privilege violations.
+  statement {
+    sid    = "AgentCoreMemoryReadWrite"
+    effect = "Allow"
+    actions = [
+      "bedrock-agentcore:CreateEvent",
+      "bedrock-agentcore:ListEvents",
+    ]
+    resources = [aws_bedrockagentcore_memory.this.arn]
+  }
 }
 
 resource "aws_iam_role" "runtime" {
@@ -134,6 +153,35 @@ resource "aws_iam_role_policy" "runtime" {
   name   = "${local.name_prefix}-runtime-inline"
   role   = aws_iam_role.runtime.id
   policy = data.aws_iam_policy_document.runtime_inline.json
+}
+
+# ---------------------------------------------------------------------------
+# AgentCore Memory — per-game diary store. Each diary entry is one Memory
+# *event* keyed by (actor_id=player_id, session_id=game_id); raw events only,
+# no extraction strategies (the application uses `MemoryClient.create_event`
+# / `list_events` directly and parses the JSON payload itself — see
+# `src/graphia/diary_store.py::AgentCoreMemoryDiaryStore`). Tags inherit
+# from the provider's default_tags block. See RESEARCH.md §8 for the field
+# rationale.
+# ---------------------------------------------------------------------------
+
+resource "aws_bedrockagentcore_memory" "this" {
+  name = local.memory_name
+
+  # Days after which Memory events expire. Spec 002 doesn't specify; 90
+  # days matches the Microgrid precedent (infrastructure-research.md §1.5)
+  # and gives developers time to inspect post-game without manual cleanup.
+  # Slice 10 (`terraform destroy`) drops the whole resource anyway, so the
+  # expiry is primarily for in-life cleanup. Valid range per the provider:
+  # 7–365.
+  event_expiry_duration = 90
+
+  description = "Graphia per-game diary store — one event per AI player's nightly diary entry, keyed by (player_id, game_id)."
+
+  # No `memory_strategies` block: the application uses raw events end-to-end
+  # (`create_event` / `list_events`), no semantic / summarisation / extraction
+  # processing required. The provider models strategies as a separate
+  # `aws_bedrockagentcore_memory_strategy` resource — we declare none.
 }
 
 # ---------------------------------------------------------------------------
@@ -154,6 +202,16 @@ resource "aws_bedrockagentcore_agent_runtime" "this" {
 
   network_configuration {
     network_mode = "PUBLIC"
+  }
+
+  # Plumb the Memory resource's ID into the container as `GRAPHIA_MEMORY_ID`.
+  # `src/graphia/config.py::load_config()` reads this env var, and
+  # `make_diary_store(config)` passes it to `MemoryClient.create_event(memory_id=...)`.
+  # Referencing `aws_bedrockagentcore_memory.this.id` implicitly orders Memory
+  # before Runtime — first-time deploys provision Memory first without an
+  # explicit `depends_on`.
+  environment_variables = {
+    GRAPHIA_MEMORY_ID = aws_bedrockagentcore_memory.this.id
   }
 
   # Ensure the inline policy is in place before the Runtime is created;

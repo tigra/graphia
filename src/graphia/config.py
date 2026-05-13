@@ -20,6 +20,7 @@ class GraphiaConfig:
     checkpoint_dir: Path
     remote_mode: bool
     runtime_invocation_url: str | None
+    memory_id: str | None
 
 
 def _env_truthy(name: str) -> bool:
@@ -43,6 +44,7 @@ def load_config() -> GraphiaConfig:
 
     remote_mode = _env_truthy("GRAPHIA_REMOTE")
     runtime_invocation_url = os.environ.get("GRAPHIA_RUNTIME_URL") or None
+    memory_id = os.environ.get("GRAPHIA_MEMORY_ID") or None
 
     if remote_mode and not runtime_invocation_url:
         raise SystemExit(
@@ -73,4 +75,5 @@ def load_config() -> GraphiaConfig:
         checkpoint_dir=checkpoint_dir,
         remote_mode=remote_mode,
         runtime_invocation_url=runtime_invocation_url,
+        memory_id=memory_id,
     )

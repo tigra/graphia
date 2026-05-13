@@ -66,6 +66,65 @@ def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
+class _LoudFailureMemoryClient:
+    """Default AgentCore Memory client stand-in installed by ``safe_memory_client``.
+
+    Any attempt to call through an unstubbed ``MemoryClient`` raises
+    ``RuntimeError`` with a pointer to the right test pattern. The
+    ``AgentCoreMemoryDiaryStore`` lazily imports ``MemoryClient`` from
+    ``graphia.diary_store`` at first ``write``/``read`` — patching the
+    import binding at module scope and substituting a loud-failure default
+    ensures a test that forgets to install a working fake fails immediately
+    instead of falling through to ``boto3.client('bedrock-agentcore')`` and
+    triggering an SDK retry loop against dummy credentials.
+    """
+
+    def __init__(self, *args, **kwargs) -> None:  # noqa: D401, ANN002, ANN003
+        self._args = args
+        self._kwargs = kwargs
+
+    def _explode(self, op: str) -> None:
+        raise RuntimeError(
+            f"Unstubbed AgentCore MemoryClient.{op} call. Tests that exercise "
+            "AgentCoreMemoryDiaryStore must install a FakeMemoryClient via "
+            "`monkeypatch.setattr('graphia.diary_store.MemoryClient', "
+            "FakeMemoryClient)`. Real Bedrock AgentCore Memory must never "
+            "be reached from the suite."
+        )
+
+    def create_event(self, *args, **kwargs):  # noqa: ANN002, ANN003, ANN201
+        self._explode("create_event")
+
+    def list_events(self, *args, **kwargs):  # noqa: ANN002, ANN003, ANN201
+        self._explode("list_events")
+
+
+@pytest.fixture(autouse=True)
+def safe_memory_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Autouse safety net: unstubbed AgentCore Memory calls raise immediately.
+
+    Mirrors ``safe_llm``'s import-boundary pattern. ``AgentCoreMemoryDiaryStore``
+    instantiates ``MemoryClient`` via the import binding at
+    ``graphia.diary_store.MemoryClient``; patching that binding to a loud-
+    failure default means a test that forgets to install ``FakeMemoryClient``
+    fails immediately rather than hanging in boto3 retry loops.
+
+    Tests that *do* want a working fake override this via
+    ``monkeypatch.setattr('graphia.diary_store.MemoryClient', FakeMemoryClient)``
+    after ``safe_memory_client`` has run.
+    """
+    # ``AgentCoreMemoryDiaryStore._get_client`` performs a local
+    # ``from bedrock_agentcore.memory import MemoryClient`` so the canonical
+    # patchable seam is the source attribute itself, not a copy on the
+    # diary_store module. Patching ``bedrock_agentcore.memory.MemoryClient``
+    # covers every future call site too.
+    import bedrock_agentcore.memory as _agentcore_memory
+
+    monkeypatch.setattr(
+        _agentcore_memory, "MemoryClient", _LoudFailureMemoryClient
+    )
+
+
 class FakeHaiku:
     """Stand-in for ``ChatBedrockConverse`` used inside ``generate_roster``.
 

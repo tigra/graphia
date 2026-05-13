@@ -64,13 +64,18 @@ from bedrock_agentcore import BedrockAgentCoreApp
 from langchain_core.load import dumpd
 from langgraph.types import Command
 
-from graphia.runtime.diary_store import InRuntimeDiaryStore
+from graphia.config import load_config
+from graphia.diary_store import make_diary_store
 from graphia.runtime.graph_builder import build_runtime_graph
 
-# Slice 4 placeholder — Slice 6 swaps this for the AgentCore-Memory-backed
-# store behind a ``DiaryStore`` Protocol. Lives at module scope so its
-# lifetime matches the Runtime process / microVM session.
-_diary_store = InRuntimeDiaryStore()
+# In remote mode the Runtime container's env has ``GRAPHIA_REMOTE=1`` (set
+# by Terraform via ``environment_variables`` on the Runtime resource) plus
+# ``GRAPHIA_MEMORY_ID`` pointing at the provisioned AgentCore Memory
+# resource, so the factory selects ``AgentCoreMemoryDiaryStore``. In local
+# mode (developer running ``uv run python -m graphia`` without ``--remote``)
+# this same factory call returns the dict-backed ``InProcessDiaryStore``.
+# The Night-close node calls ``.write(...)`` on whichever impl lands here.
+_diary_store = make_diary_store(load_config())
 
 # Runtime sessions are ephemeral (up to 8h microVMs per spec-002 §2.5).
 # tmpfs is the right home for per-session SQLite checkpoints — they
@@ -170,7 +175,7 @@ async def handler(payload: dict) -> AsyncIterator[dict]:
     logger.info("invocation action=%s thread_id=%s", action, thread_id)
 
     try:
-        graph = build_runtime_graph(thread_id, _CHECKPOINT_DIR)
+        graph = build_runtime_graph(thread_id, _CHECKPOINT_DIR, _diary_store)
     except Exception as exc:  # noqa: BLE001
         logger.exception("graph compilation failed")
         yield {"event": "error", "error": f"graph compile failed: {exc!r}"}

@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import sqlite3
 from datetime import datetime, timezone
+from functools import partial
 
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from graphia.config import GraphiaConfig
+from graphia.diary_store import DiaryStore, make_diary_store
 from graphia.nodes import (
     assign_roles,
     check_win_condition,
@@ -38,7 +40,17 @@ from graphia.nodes import (
 from graphia.state import GameState
 
 
-def build_graph(config: GraphiaConfig) -> tuple[CompiledStateGraph, str]:
+def build_graph(
+    config: GraphiaConfig,
+    *,
+    diary_store: DiaryStore | None = None,
+) -> tuple[CompiledStateGraph, str]:
+    # Slice 6 sub-task 3: bind a ``DiaryStore`` into the Night-close write
+    # site. Tests that don't care can leave ``diary_store=None`` and the
+    # factory picks the right impl per :attr:`GraphiaConfig.remote_mode`.
+    if diary_store is None:
+        diary_store = make_diary_store(config)
+
     config.checkpoint_dir.mkdir(parents=True, exist_ok=True)
     thread_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
     db_path = config.checkpoint_dir / f"{thread_id}.sqlite"
@@ -59,7 +71,12 @@ def build_graph(config: GraphiaConfig) -> tuple[CompiledStateGraph, str]:
     builder.add_node("night_open", night_open)
     builder.add_node("mafia_pointing", mafia_pointing)
     builder.add_node("resolve_night_kill", resolve_night_kill)
-    builder.add_node("night_close", night_close)
+    # ``night_close`` closes over the diary store + game id so the per-Night
+    # placeholder writes don't need to reach into module-level singletons.
+    builder.add_node(
+        "night_close",
+        partial(night_close, diary_store=diary_store, game_id=thread_id),
+    )
     builder.add_node("day_open", day_open)
     builder.add_node("day_turn", day_turn)
     builder.add_node("vote_prompt", vote_prompt)
