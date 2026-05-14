@@ -42,3 +42,13 @@ output "gateway_invocation_url" {
   description = "Gateway MCP URL — `https://<gateway-id>.gateway.bedrock-agentcore.<region>.amazonaws.com/mcp`. MCP clients (the agent inside the Runtime in sub-task 3; local-mode flows for debugging) point a streamable-HTTP MCP client at this URL using SigV4-signed requests against the gateway ARN."
   value       = aws_bedrockagentcore_gateway.this.gateway_url
 }
+
+output "diary_write_lambda_arn" {
+  description = "ARN of the Gateway-fronted diary_write Lambda. Useful for ad-hoc smoke tests via `aws lambda invoke` outside the Gateway path."
+  value       = aws_lambda_function.diary_write.arn
+}
+
+output "diary_read_lambda_arn" {
+  description = "ARN of the Gateway-fronted diary_read Lambda."
+  value       = aws_lambda_function.diary_read.arn
+}

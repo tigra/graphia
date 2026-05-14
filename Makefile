@@ -20,9 +20,19 @@ TF_DIR        = infra/terraform
 TF_VARS       = -var environment=$(ENVIRONMENT) -var owner=$(OWNER) -var ecr_force_delete=$(ECR_FORCE_DELETE)
 TF_APPLY_VARS = $(TF_VARS) -var image_tag=$(TAG)
 
+LAMBDA_DIR    = infra/lambda
+LAMBDA_BUILD  = $(LAMBDA_DIR)/.build
+LAMBDA_FNS    = diary_write diary_read
+
+# Lambda zips are produced by `make build-lambdas`. Each zip vendors the
+# function's `requirements.txt` (bedrock-agentcore SDK) alongside
+# `lambda_function.py`, ready for `aws_lambda_function.filename` to consume.
+LAMBDA_ZIPS   = $(addprefix $(LAMBDA_BUILD)/,$(addsuffix .zip,$(LAMBDA_FNS)))
+
 .PHONY: help check-container build run shell clean login-ecr push \
         tf-init tf-fmt tf-validate tf-plan tf-ecr-bootstrap tf-apply tf-destroy \
-        wire-env deploy redeploy destroy inspect-diary play play-remote
+        wire-env deploy redeploy destroy inspect-diary play play-remote \
+        build-lambdas clean-lambdas
 
 help:
 	@echo "Container image targets:"
@@ -42,9 +52,13 @@ help:
 	@echo "  make tf-apply           Full apply with image_tag=\$$TAG."
 	@echo "  make tf-destroy         Destroy the whole stack."
 	@echo ""
+	@echo "Lambda zip-build (ADR 005 — Gateway → Lambda diary tools):"
+	@echo "  make build-lambdas      Pip-install + zip each function under $(LAMBDA_BUILD)/."
+	@echo "  make clean-lambdas      Remove $(LAMBDA_BUILD)/."
+	@echo ""
 	@echo "Workflow composites:"
-	@echo "  make deploy             First-time: tf-init + tf-ecr-bootstrap + push + tf-apply + wire-env."
-	@echo "  make redeploy           Steady-state code update: push + tf-apply + wire-env."
+	@echo "  make deploy             First-time: build-lambdas + tf-init + tf-ecr-bootstrap + push + tf-apply + wire-env."
+	@echo "  make redeploy           Steady-state code update: build-lambdas + push + tf-apply + wire-env."
 	@echo "  make wire-env           Pull GRAPHIA_RUNTIME_URL + GRAPHIA_MEMORY_ID from tf outputs into .env."
 	@echo "  make destroy            Alias for tf-destroy."
 	@echo ""
@@ -137,14 +151,46 @@ wire-env:
 	@echo "Wired into .env from Terraform outputs:"
 	@grep -E '^GRAPHIA_(RUNTIME_URL|MEMORY_ID)=' .env
 
-deploy: tf-init tf-ecr-bootstrap push tf-apply wire-env
+deploy: build-lambdas tf-init tf-ecr-bootstrap push tf-apply wire-env
 	@echo ""
 	@echo "Deploy complete. Runtime invocation URL:"
 	@cd $(TF_DIR) && ./tf output runtime_invocation_url
 
-redeploy: push tf-apply wire-env
+redeploy: build-lambdas push tf-apply wire-env
 	@echo ""
 	@echo "Redeploy complete with image tag $(TAG)."
+
+# --- Lambda zip-build pipeline (ADR 005).
+#
+# Each function dir under $(LAMBDA_DIR)/ owns its own `requirements.txt`
+# and `lambda_function.py`. The build step pip-installs the requirements
+# into a per-function staging dir, copies the handler alongside, and zips
+# the contents (NOT the parent dir) so the resulting archive layout matches
+# what AWS Lambda's Python runtime expects: `lambda_function.py` and the
+# vendored packages all at the zip root.
+#
+# Idempotent: each rule cleans its staging dir before re-installing, so
+# stale package state doesn't leak between builds. Uses the host's `pip3`;
+# this is a sub-second smoke-test build path, not a CI-grade reproducible
+# build (no platform pinning, no `--python-version` switch). For the
+# personal-reference project ADR 005 targets, the simple flow is fine.
+build-lambdas: $(LAMBDA_ZIPS)
+	@echo ""
+	@echo "Built Lambda zips:"
+	@ls -lh $(LAMBDA_ZIPS)
+
+# Pattern rule: $(LAMBDA_BUILD)/<name>.zip depends on the function's
+# lambda_function.py and requirements.txt; rebuilds whenever either changes.
+$(LAMBDA_BUILD)/%.zip: $(LAMBDA_DIR)/%/lambda_function.py $(LAMBDA_DIR)/%/requirements.txt
+	@mkdir -p $(LAMBDA_BUILD)
+	rm -rf $(LAMBDA_BUILD)/$*
+	mkdir -p $(LAMBDA_BUILD)/$*
+	pip3 install --quiet -r $(LAMBDA_DIR)/$*/requirements.txt -t $(LAMBDA_BUILD)/$*
+	cp $(LAMBDA_DIR)/$*/lambda_function.py $(LAMBDA_BUILD)/$*/
+	cd $(LAMBDA_BUILD)/$* && zip -qr ../$*.zip .
+
+clean-lambdas:
+	rm -rf $(LAMBDA_BUILD)
 
 destroy: tf-destroy
 

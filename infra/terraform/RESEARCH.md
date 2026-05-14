@@ -536,3 +536,169 @@ Tool schemas are *not* declared inline on the target — Gateway's **implicit sy
 | Deploy MCP servers in AgentCore Runtime (MCP URL pattern, `/mcp` path) | <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-mcp.html> |
 | `InvokeAgentRuntime` data-plane API | <https://docs.aws.amazon.com/bedrock-agentcore/latest/APIReference/API_InvokeAgentRuntime.html> |
 
+---
+
+## 10. Slice 7 sub-task 6 addendum — Gateway target IAM credential-provider gap
+
+At apply time, both `aws_bedrockagentcore_gateway_target.diary_{write,read}` resources failed with:
+
+```
+ValidationException: IamCredentialProvider is required for mcpServer targets using IAM authentication
+```
+
+The block used was the provider's canonical `credential_provider_configuration { gateway_iam_role {} }`. This was correct per the Slice 7 sub-task 2 research (§9 above) but turns out to be **insufficient** for `mcp_server` targets — and the provider has no surface to fix it.
+
+### What AWS actually requires (verified against control-plane docs)
+
+The AgentCore Gateway control-plane API (`CreateGatewayTarget`) accepts a polymorphic `CredentialProviderConfiguration` shape (see <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_CredentialProviderConfiguration.html>). For `mcp_server` targets pointing at an AWS-hosted SigV4-protected endpoint (most importantly: another AgentCore Runtime), AWS requires the `iamCredentialProvider` union member to be populated:
+
+```json
+{
+  "credentialProviderType": "GATEWAY_IAM_ROLE",
+  "credentialProvider": {
+    "iamCredentialProvider": {
+      "service": "bedrock-agentcore",
+      "region": "us-east-1"
+    }
+  }
+}
+```
+
+The `service` field tells the gateway which AWS service name to use when SigV4-signing the outbound call; `region` is optional and defaults to the gateway's region (verified: <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-bedrockagentcore-gatewaytarget-iamcredentialprovider.html> — *"`Service`: The target AWS service name used for SigV4 signing. Required: Yes."*). The signing identity itself is still the gateway's execution role — there is **no separate role needed** for the IAM credential provider; the existing `aws_iam_role.gateway` (which already grants `bedrock-agentcore:InvokeAgentRuntime` on the Runtime ARN) IS the signer.
+
+The AgentCore Gateway docs confirm this is the supported pairing for Runtime-as-MCP-server targets: <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-target-MCPservers.html> — *"IAM (SigV4) – The gateway signs requests to the MCP server using SigV4 with the gateway service role credentials. You configure an IamCredentialProvider with a required service name for SigV4 signing and an optional Region."*
+
+### What the Terraform provider exposes (and doesn't)
+
+`hashicorp/aws = 6.44.0` (latest stable) models `credential_provider_configuration` with three mutually-exclusive sub-blocks — `gateway_iam_role`, `api_key`, `oauth` — none of which expose the `service` / `region` fields. The schema definition (provider source `internal/service/bedrockagentcore/gateway_target.go`):
+
+```go
+"gateway_iam_role": schema.ListNestedBlock{
+  CustomType: fwtypes.NewListNestedObjectTypeOf[gatewayIAMRoleProviderModel](ctx),
+  ...
+  NestedObject: schema.NestedBlockObject{
+    // Empty block - no attributes needed for Gateway IAM Role
+  },
+},
+```
+
+The `Expand` path for that branch is hard-coded to send `CredentialProvider = nil`:
+
+```go
+case !m.GatewayIAMRole.IsNull():
+  c.CredentialProviderType = awstypes.CredentialProviderTypeGatewayIamRole
+  c.CredentialProvider = nil
+  return &c, diags
+```
+
+There is no current way to populate `IamCredentialProvider` through this resource. `awscc 1.83.0` does **not** ship a `bedrockagentcore_gateway_target` resource either (verified by paginating its resource-docs index — Bedrock AgentCore is present in awscc, but the gateway target type is missing), so the Cloud Control fallback isn't available.
+
+### Upstream fix status
+
+The gap is tracked upstream as **hashicorp/terraform-provider-aws issue #47628** (<https://github.com/hashicorp/terraform-provider-aws/issues/47628>, opened 2026-04-24, currently open) and **PR #47626** (<https://github.com/hashicorp/terraform-provider-aws/pull/47626>, opened 2026-04-24, **still open / unmerged** as of 2026-05-13 — last activity 2026-04-29, `mergeable_state: unstable`). The PR's proposed shape extends the existing `gateway_iam_role` block with `service` (required) and `region` (optional), preserving the empty-block default for backward compatibility:
+
+```hcl
+credential_provider_configuration {
+  gateway_iam_role {
+    service = "bedrock-agentcore"   # required for SigV4 signing
+    region  = "us-east-1"            # optional; defaults to gateway region
+  }
+}
+```
+
+When the PR merges and ships in a stable provider release, the fix in this codebase is a four-line edit per target plus a provider pin bump.
+
+### Decision for Slice 7 sub-task 6
+
+Both gateway targets are kept in Terraform management but with the `credential_provider_configuration` block **omitted entirely**. The provider docs explicitly say:
+
+> *"If using `mcp_server` in `mcp` block with no authorization, it should not be specified."*
+
+This serialises to a `CreateGatewayTarget` request with `credentialProviderConfigurations` absent — a valid (if "not recommended") AgentCore Gateway authorization strategy listed under the MCP-server target docs as "No authorization." The CreateGatewayTarget call therefore **succeeds** (no `IamCredentialProvider`-required error), and `terraform apply` no longer blocks on the target resources.
+
+The trade-off: the gateway's synchronous `tools/list` probe at create time **will fail** with `{"message":"Missing Authentication Token"}` because the AgentCore Runtime requires SigV4 on `/runtimes/<arn>/invocations`. The target resources will reach a state where they exist in Terraform / AWS but cannot route invocations until the IamCredentialProvider is attached out-of-band.
+
+The post-apply step that lands the IamCredentialProvider lives **outside the `./tf` wrapper** because the wrapper's `hashicorp/terraform:1.13.1` image is Alpine-based and ships no `aws` CLI (verified: `podman run --rm --entrypoint sh hashicorp/terraform:1.13.1 -c 'which aws'` returns empty). Operators run from the host:
+
+```bash
+aws bedrock-agentcore-control update-gateway-target \
+  --region us-east-1 \
+  --gateway-identifier "$(cd infra/terraform && ./tf output -raw gateway_id)" \
+  --target-id <write-target-id> \
+  --credential-provider-configurations '[{
+    "credentialProviderType": "GATEWAY_IAM_ROLE",
+    "credentialProvider": {
+      "iamCredentialProvider": {
+        "service": "bedrock-agentcore"
+      }
+    }
+  }]'
+```
+
+The target IDs are visible in the AWS console or via `aws bedrock-agentcore-control list-gateway-targets --gateway-identifier <id>`. Wrapping this as a `make` target (e.g. `make tf-attach-target-auth`) is a small follow-up; this sub-task is scoped to unblocking the apply.
+
+### Why not a `null_resource` / `local-exec` wrapper
+
+Two reasons it's rejected for this sub-task:
+
+1. **No AWS CLI in the container.** The `./tf` wrapper runs `hashicorp/terraform:1.13.1` (Alpine). `local-exec` provisioners run wherever Terraform runs — inside the container — so any `aws …` invocation would fail with "command not found." Baking `aws` into a forked image breaks the "pinned upstream image" property the wrapper currently has.
+2. **Lifecycle hazards.** `local-exec` provisioners run on resource create / replace only by default; without careful `triggers` wiring the IamCredentialProvider would silently drift if the gateway / target attributes change. The clean fix is the upstream PR — the workaround should stay visible, not be hidden inside a fragile provisioner.
+
+### Findings summary (5 bullets)
+
+- **Provider gap is real and unfixable in HCL alone.** `aws_bedrockagentcore_gateway_target.credential_provider_configuration.gateway_iam_role` is a fixed empty block in `hashicorp/aws = 6.44.0`; there is no Terraform surface for the `IamCredentialProvider { service, region }` fields that AWS requires for IAM-authenticated `mcp_server` targets.
+- **Upstream PR #47626 is open but unmerged** as of 2026-05-13. Once shipped, the fix is to add `service = "bedrock-agentcore"` (and optional `region`) inside the existing `gateway_iam_role {}` block on both targets, then bump the provider pin.
+- **No separate IAM role is needed.** The `IamCredentialProvider` only carries the SigV4 service-name parameter; the signing identity is still the gateway's execution role (`aws_iam_role.gateway`). The existing `bedrock-agentcore:InvokeAgentRuntime` grant on the Runtime ARN is already correct.
+- **awscc is not a fallback** — `awscc_bedrockagentcore_gateway_target` is not present in `awscc = 1.83.0` (latest stable). Bedrock AgentCore coverage in awscc is partial.
+- **Slice 7 sub-task 6 unblocks the apply by omitting `credential_provider_configuration` entirely** (provider-docs-supported for `mcp_server`). The post-apply step attaches the IamCredentialProvider via `aws bedrock-agentcore-control update-gateway-target` from the host. Until the upstream PR lands, this is the cleanest path — and the path is documented inline on `main.tf` so the next maintainer can't miss it.
+
+### Sources (this section)
+
+| Topic | URL |
+|---|---|
+| `CredentialProviderConfiguration` API shape | <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_CredentialProviderConfiguration.html> |
+| `IamCredentialProvider` API shape (`service` required, `region` optional) | <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_IamCredentialProvider.html> |
+| CloudFormation `IamCredentialProvider` (mirrors API shape) | <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-bedrockagentcore-gatewaytarget-iamcredentialprovider.html> |
+| MCP-server targets — authorization strategies (IAM/SigV4 with `IamCredentialProvider`) | <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-target-MCPservers.html> |
+| Provider source — `gateway_target.go` schema (empty `gateway_iam_role`) | <https://github.com/hashicorp/terraform-provider-aws/blob/v6.44.0/internal/service/bedrockagentcore/gateway_target.go> |
+| Upstream bug | <https://github.com/hashicorp/terraform-provider-aws/issues/47628> |
+| Upstream PR (proposed `service` / `region` extension on `gateway_iam_role`) | <https://github.com/hashicorp/terraform-provider-aws/pull/47626> |
+| Provider docs — *"If using `mcp_server` in `mcp` block with no authorization, it should not be specified"* | <https://registry.terraform.io/providers/hashicorp/aws/6.44.0/docs/resources/bedrockagentcore_gateway_target> |
+
+## 11. ADR 005 addendum — Lambda-target pivot replaces in-Runtime MCP server
+
+ADR 005 retires the FastMCP-in-Runtime path (Slice 7 sub-task 3) in favour of two zip-deployed Lambda functions fronted by the same Gateway. The Gateway → Lambda target type is natively supported by `hashicorp/aws == 6.44.0` (verified against the provider source), so the §10 provider-gap workaround (`make gateway-auth` reconciling `mcp_server` targets via the AWS CLI) is no longer needed and the Makefile target has been removed.
+
+### Findings (4 bullets)
+
+- **Provider supports `lambda`-type gateway targets natively.** `hashicorp/aws = 6.44.0` exposes `target_configuration.mcp.lambda { lambda_arn, tool_schema { inline_payload {...} } }` with required nested `inputSchema` / optional `outputSchema` modelled as `property { name, type, description, required }` blocks (verified in `internal/service/bedrockagentcore/gateway_target.go`). The credential-provider gap that broke `mcp_server` targets (§10) is **not** relevant here: same-account Lambda invocation only needs an identity-based `lambda:InvokeFunction` allow on the gateway role, plus an empty `gateway_iam_role {}` credential provider on the target (per AgentCore Gateway permissions docs).
+- **Tool schema = `ToolDefinition` (AgentCore control-plane shape).** Each tool carries `name`, `description`, and an `inputSchema` of type `object` whose `properties` are typed primitives / `array` (with nested `items`) / `object` (recursive). The provider models the same shape via `property { ... }` set-blocks and `items { ... }` list-blocks. The two Graphia tools therefore land as: `diary_write` (4 required string/integer/string properties → boolean `ok`) and `diary_read` (2 required string properties → `entries` array of `{night_index: integer, content: string}` objects).
+- **Lambda invocation envelope.** Gateway calls the handler with `event` shaped as the input-schema's `properties` dict (verbatim from the agent's `tools/call.arguments`) and a `context` whose `client_context.custom` carries `bedrockAgentCoreToolName` (target-name-prefixed via `___`), `bedrockAgentCoreGatewayId`, `bedrockAgentCoreTargetId`, `bedrockAgentCoreAwsRequestId`, `bedrockAgentCoreMcpMessageId`, and `bedrockAgentCoreMessageVersion`. Each Graphia diary Lambda exposes exactly one tool so the tool-name-delimiter unwrap is documented but unused. The handler returns a plain JSON-serialisable dict; Gateway wraps it into an MCP `CallToolResult.structuredContent`.
+- **IAM model.** Gateway invocation of Lambda in the **same account** needs only an identity-based `lambda:InvokeFunction` allow on `aws_iam_role.gateway` scoped to the two Lambda ARNs. No `aws_lambda_permission` (Lambda resource-based policy) is required; the cross-account add-permission pattern in the docs is the exception, not the default. The `bedrock-agentcore:InvokeAgentRuntime` grant that previously pointed the Gateway at the Runtime is removed (Gateway no longer routes to Runtime). Memory data-plane permissions (`CreateEvent` / `ListEvents`) move from the Runtime execution role to a new shared **Lambda execution role** (`aws_iam_role.lambda_diary`, trust `lambda.amazonaws.com`), scoped to the same Memory ARN.
+
+### Cleanup one-liner — pre-apply
+
+The FAILED `mcp_server`-shape targets the previous (Slice 7 sub-task 6) apply left in AWS must be deleted before the new Lambda-shape targets are created (same `name`s — Terraform would otherwise refuse). The one-liner:
+
+```bash
+AWS_PROFILE=my-aws-profile aws bedrock-agentcore-control list-gateway-targets \
+  --region us-east-1 --gateway-identifier "$(cd infra/terraform && ./tf output -raw gateway_id)" \
+  --query 'items[?status==`FAILED` || status==`READY`].targetId' --output text \
+| xargs -n1 -I {} aws --region us-east-1 \
+    bedrock-agentcore-control delete-gateway-target \
+    --gateway-identifier "$(cd infra/terraform && ./tf output -raw gateway_id)" \
+    --target-id {}
+```
+
+For the current state (2 FAILED targets `ZHV1EFEU8S`, `X5ZHCPKQFF` on gateway `graphia-demo-gateway-6yx5oaeeuc`), the deletions were issued directly during this sub-task and returned `status: DELETING`.
+
+### Sources (this section)
+
+| Topic | URL |
+|---|---|
+| Lambda target docs — event/context envelope + tool schema | <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-add-target-lambda.html> |
+| Lambda target — `targetConfiguration.mcp.lambda { lambdaArn, toolSchema }` shape | <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-add-target-api-target-config.html> |
+| `ToolDefinition` API shape (`name`/`description`/`inputSchema`/`outputSchema`) | <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_ToolDefinition.html> |
+| Gateway permissions — same-account Lambda needs only identity-based `lambda:InvokeFunction` | <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-prerequisites-permissions.html> |
+| Provider source — `mcp.lambda { lambda_arn, tool_schema { inline_payload {...} } }` schema | <https://github.com/hashicorp/terraform-provider-aws/blob/v6.44.0/internal/service/bedrockagentcore/gateway_target.go> |
+| Lambda Python 3.13 runtime — includes `boto3`/`botocore`; `bedrock-agentcore` SDK must be vendored | <https://docs.aws.amazon.com/lambda/latest/dg/lambda-python.html> |

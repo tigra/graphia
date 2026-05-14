@@ -32,10 +32,19 @@ fi
 # Pinned image; override with TERRAFORM_IMAGE env var if needed.
 image="${TERRAFORM_IMAGE:-docker.io/hashicorp/terraform:1.13.1}"
 
-# Mount the workspace + AWS config (read-only) and forward the relevant env vars
-# so the standard credential chain resolves the developer's SSO profile.
+# Mount the repo root (not just `infra/terraform/`) so resources can reference
+# sibling-directory artifacts via `path.module`-relative paths — most notably
+# `aws_lambda_function.filename` pointing at `../lambda/.build/*.zip` (ADR
+# 005). Computing the repo root from `tf`'s own location keeps the wrapper
+# usable whether you invoke it as `./tf …` or via `make tf-…`.
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$script_dir/../.." && pwd)"
+rel_dir="${script_dir#$repo_root/}"
+
+# Mount the repo root + AWS config (read-only) and forward the relevant env
+# vars so the standard credential chain resolves the developer's SSO profile.
 exec "$runtime" run --rm -it \
-  -v "$(pwd):/workspace" -w /workspace \
+  -v "$repo_root:/workspace" -w "/workspace/$rel_dir" \
   -v "$HOME/.aws:/root/.aws:ro" \
   -e AWS_PROFILE -e AWS_REGION -e AWS_DEFAULT_REGION \
   "$image" "$@"

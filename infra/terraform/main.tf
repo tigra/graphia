@@ -124,25 +124,6 @@ data "aws_iam_policy_document" "runtime_inline" {
     resources = ["${aws_cloudwatch_log_group.runtime.arn}:*"]
   }
 
-  # AgentCore Memory — data-plane read/write actions scoped to the single
-  # Memory resource provisioned below. The application calls
-  # `MemoryClient.create_event` (Write) and `MemoryClient.list_events` (List)
-  # against this Memory only. Action names verified against the AWS
-  # service-authorization reference (see RESEARCH.md §8 for citations); the
-  # spec brief's `bedrock-agentcore:BatchCreate/Update/Delete/Retrieve/...
-  # MemoryRecords` action names are for the *records* surface that
-  # `MemoryClient` does not use — granting them would be unused
-  # least-privilege violations.
-  statement {
-    sid    = "AgentCoreMemoryReadWrite"
-    effect = "Allow"
-    actions = [
-      "bedrock-agentcore:CreateEvent",
-      "bedrock-agentcore:ListEvents",
-    ]
-    resources = [aws_bedrockagentcore_memory.this.arn]
-  }
-
   # AgentCore Gateway — the agent inside the Runtime invokes its own diary
   # tools through the Gateway-MCP front door (per ADR 002). The data-plane
   # action `bedrock-agentcore:InvokeGateway` is documented in the AgentCore
@@ -150,6 +131,12 @@ data "aws_iam_policy_document" "runtime_inline" {
   # Gateway resource this stack creates. Inbound auth on the Gateway is
   # `AWS_IAM`, so the Runtime's SigV4-signed call against this ARN is the
   # caller identity the Gateway authorizes.
+  #
+  # Note: the previous `bedrock-agentcore:CreateEvent` / `ListEvents` Memory
+  # grant on this role was removed in ADR 005 — the agent inside the Runtime
+  # no longer talks directly to Memory; it now goes Gateway → Lambda → Memory,
+  # and the Lambda execution role (not the Runtime role) carries the Memory
+  # write/list permissions. See RESEARCH.md §11.
   statement {
     sid       = "AgentCoreGatewayInvoke"
     effect    = "Allow"
@@ -218,27 +205,20 @@ resource "aws_bedrockagentcore_agent_runtime" "this" {
     network_mode = "PUBLIC"
   }
 
-  # Advertise MCP so the AgentCore Gateway target's synchronous tools/list
-  # probe (run at gateway-target create time) talks to the Runtime's
-  # FastMCP server at /mcp instead of attempting to invoke the agent
-  # entrypoint as a generic Runtime. Required by Slice 7 sub-task 3's
-  # Gateway-MCP refactor — without this block, CreateGatewayTarget fails
-  # at terraform apply time.
-  protocol_configuration {
-    server_protocol = "MCP"
-  }
+  # Default protocol (HTTP) — the Runtime hosts only the Slice 4 agent
+  # stream surface at `/invocations`. Diary tools live in Lambda functions
+  # behind the Gateway (per ADR 005), not in this container.
 
   # Plumb the Memory ID and the Gateway identifier into the container.
-  # - `GRAPHIA_MEMORY_ID`: `src/graphia/config.py::load_config()` reads it,
-  #   and `make_diary_store(config)` passes it to
-  #   `MemoryClient.create_event(memory_id=...)`.
-  # - `GRAPHIA_GATEWAY_ID`: Slice 7 sub-task 3's refactor of the agent's diary
-  #   call path through Gateway-MCP reads this to build the Gateway invocation
-  #   URL (`https://bedrock-agentcore.${region}.amazonaws.com/...`) for the
-  #   in-container MCP client. The `id` is the canonical handle the
-  #   service-name lookup needs; the Gateway URL itself is also published as
-  #   the `gateway_invocation_url` output so external local-mode flows can
-  #   point at the same Gateway.
+  # - `GRAPHIA_MEMORY_ID`: `src/graphia/config.py::load_config()` reads it.
+  #   The deployed Runtime never instantiates `AgentCoreMemoryDiaryStore`
+  #   directly (the gateway-first factory branch takes precedence), but
+  #   the var is still plumbed so ad-hoc local Memory inspection from the
+  #   container works when Gateway is unset.
+  # - `GRAPHIA_GATEWAY_ID`: the agent's diary call path goes through
+  #   Gateway-MCP. `make_diary_store(config)` reads this and constructs a
+  #   `GatewayMCPDiaryStore` pointing at the Gateway's MCP endpoint; the
+  #   Gateway forwards calls to the Lambda diary handlers.
   # Implicit references to the Memory and Gateway resources establish the
   # correct ordering — no `depends_on` needed for those two specifically.
   environment_variables = {
@@ -275,21 +255,23 @@ data "aws_iam_policy_document" "gateway_assume_role" {
 }
 
 data "aws_iam_policy_document" "gateway_inline" {
-  # Outbound: the Gateway invokes the Runtime's MCP endpoint via SigV4
-  # using its execution role. The action is `bedrock-agentcore:InvokeAgentRuntime`
-  # scoped to **all Runtime ARNs starting with `local.runtime_name`** — we
-  # use the name-derived ARN pattern (not the resource attribute) to break a
-  # Terraform dependency cycle: the Runtime references the Gateway (env var),
-  # the Gateway role-policy references the Runtime (this statement). The
-  # Runtime ARN shape is `arn:aws:bedrock-agentcore:${region}:${account}:runtime/${name}-<random>`
-  # — see `runtime-mcp.html` example ARNs. The wildcard suffix matches the
-  # service-generated random 10-char suffix that AgentCore appends to the
-  # user-supplied name.
+  # Outbound: per ADR 005, the Gateway's only targets are the two diary
+  # Lambdas. The `bedrock-agentcore:InvokeAgentRuntime` statement that
+  # pointed at the Runtime was removed when the Runtime stopped serving as
+  # an MCP-server target. Same-account Lambda invocation needs only an
+  # identity-based policy on the gateway role (per
+  # gateway-prerequisites-permissions.html), so no resource-based
+  # `aws_lambda_permission` is required.
   statement {
-    sid       = "InvokeAgentRuntime"
-    effect    = "Allow"
-    actions   = ["bedrock-agentcore:InvokeAgentRuntime"]
-    resources = ["arn:aws:bedrock-agentcore:${var.region}:${var.account_id}:runtime/${local.runtime_name}-*"]
+    sid    = "GatewayInvokeDiaryLambdas"
+    effect = "Allow"
+    actions = [
+      "lambda:InvokeFunction",
+    ]
+    resources = [
+      aws_lambda_function.diary_write.arn,
+      aws_lambda_function.diary_read.arn,
+    ]
   }
 
   # CloudWatch Logs — the Gateway writes its own access / authorization
@@ -335,70 +317,282 @@ resource "aws_bedrockagentcore_gateway" "this" {
 }
 
 # ---------------------------------------------------------------------------
-# Gateway targets — one per diary tool, both pointing at the Runtime's MCP
-# endpoint. The Runtime exposes its MCP server at
-# `https://bedrock-agentcore.${region}.amazonaws.com/runtimes/${ARN}/invocations`;
-# the Gateway target's `mcp_server.endpoint` field carries that URL. The
-# Runtime's MCP server is expected to advertise the two diary tools (write,
-# read) via `tools/list`; Gateway's implicit sync indexes them on target
-# creation.
+# Diary Lambdas (ADR 005) — two zip-deployed Python functions, one per diary
+# tool. The Gateway forwards MCP `tools/call` invocations to these functions,
+# which delegate to AgentCore Memory via the `bedrock-agentcore` SDK. The zip
+# files are produced by `make build-lambdas` (vendors the SDK alongside
+# `lambda_function.py`); the build command is intentionally **out-of-band**
+# from `terraform apply` so the container-less Terraform wrapper does not
+# need pip available. `source_code_hash` ties the deployed package to the
+# zip contents so a re-`apply` after a `make build-lambdas` rebuilds the
+# function in-place.
 #
-# NOTE on ADR 002 contract drift: the brief describes HTTP routes
-# `/tools/diary/{write,read}` on the Runtime, but Gateway's `mcp_server`
-# target type requires the Runtime to speak MCP at `/mcp` (path is fixed by
-# the AgentCore runtime-MCP contract). Sub-task 3 must therefore switch the
-# Runtime container from custom HTTP routes to an MCP server exposing
-# `diary_write` and `diary_read` as MCP tools (FastMCP / `@mcp.tool()`).
-# This is the cleanest target type — `open_api_schema` would force adding a
-# real API Gateway in front, which contradicts ADR 002's "runtime-embedded"
-# stance. See RESEARCH.md §9 for the analysis.
+# Per the AgentCore Lambda-target docs the function receives `event` shaped
+# as the `inputSchema.properties` dict; tool name is in
+# `context.client_context.custom['bedrockAgentCoreToolName']` (target-name
+# prefixed with `___`). Each handler currently exposes one tool, so the
+# delimiter-stripping pattern in the docs is left for the day a target
+# exposes multiple tools.
 # ---------------------------------------------------------------------------
 
-locals {
-  # Runtime's MCP invocation URL. The ARN is URL-encoded per the data-plane
-  # contract (`/runtimes/{URL_ENCODED_ARN}/invocations`). Terraform's
-  # `urlencode()` does the `:` → `%3A` and `/` → `%2F` substitution the
-  # AgentCore documentation example does manually.
-  runtime_mcp_endpoint = "https://bedrock-agentcore.${var.region}.amazonaws.com/runtimes/${urlencode(aws_bedrockagentcore_agent_runtime.this.agent_runtime_arn)}/invocations"
+# Shared execution role for both diary Lambdas. Trust principal is
+# `lambda.amazonaws.com`; the inline policy grants the bedrock-agentcore
+# Memory data-plane permissions the handlers need plus CloudWatch Logs
+# write to the per-function log groups.
+data "aws_iam_policy_document" "lambda_diary_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
 }
 
-resource "aws_bedrockagentcore_gateway_target" "diary_write" {
-  name               = "graphia-diary-write"
-  gateway_identifier = aws_bedrockagentcore_gateway.this.gateway_id
+data "aws_iam_policy_document" "lambda_diary_inline" {
+  # AgentCore Memory — the handlers call `MemoryClient.create_event` (Write)
+  # and `MemoryClient.list_events` (List). These are the same two actions
+  # the Runtime role previously held; per ADR 005 they move here, scoped to
+  # the same single Memory resource.
+  statement {
+    sid    = "AgentCoreMemoryReadWrite"
+    effect = "Allow"
+    actions = [
+      "bedrock-agentcore:CreateEvent",
+      "bedrock-agentcore:ListEvents",
+    ]
+    resources = [aws_bedrockagentcore_memory.this.arn]
+  }
 
-  description = "Append one diary entry for the given (game_id, player_id, night_index). Request: {game_id, player_id, night_index>=0, content}. Response: {ok: true}."
+  # CloudWatch Logs — stream creation + log writes, scoped to both diary
+  # Lambda log groups (one per function).
+  statement {
+    sid    = "CloudWatchLogsWrite"
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+    resources = [
+      "${aws_cloudwatch_log_group.diary_write.arn}:*",
+      "${aws_cloudwatch_log_group.diary_read.arn}:*",
+    ]
+  }
+}
 
-  target_configuration {
-    mcp {
-      mcp_server {
-        endpoint = local.runtime_mcp_endpoint
-      }
+resource "aws_iam_role" "lambda_diary" {
+  name               = "${local.name_prefix}-lambda-diary"
+  assume_role_policy = data.aws_iam_policy_document.lambda_diary_assume_role.json
+}
+
+resource "aws_iam_role_policy" "lambda_diary" {
+  name   = "${local.name_prefix}-lambda-diary-inline"
+  role   = aws_iam_role.lambda_diary.id
+  policy = data.aws_iam_policy_document.lambda_diary_inline.json
+}
+
+# Pre-create log groups (instead of letting Lambda auto-create them on
+# first invoke) so retention is explicit and tags inherit from default_tags.
+resource "aws_cloudwatch_log_group" "diary_write" {
+  name              = "/aws/lambda/${local.name_prefix}-diary-write"
+  retention_in_days = 30
+}
+
+resource "aws_cloudwatch_log_group" "diary_read" {
+  name              = "/aws/lambda/${local.name_prefix}-diary-read"
+  retention_in_days = 30
+}
+
+resource "aws_lambda_function" "diary_write" {
+  function_name = "${local.name_prefix}-diary-write"
+  role          = aws_iam_role.lambda_diary.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.13"
+  architectures = ["x86_64"]
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = "${path.module}/../lambda/.build/diary_write.zip"
+  source_code_hash = filebase64sha256("${path.module}/../lambda/.build/diary_write.zip")
+
+  environment {
+    variables = {
+      GRAPHIA_MEMORY_ID = aws_bedrockagentcore_memory.this.id
     }
   }
 
-  # Gateway uses its execution role (SigV4) to invoke the Runtime MCP
-  # endpoint. This is the supported pairing for AgentCore-Runtime-hosted
-  # MCP servers per the AgentCore Gateway target-type documentation.
+  depends_on = [
+    aws_iam_role_policy.lambda_diary,
+    aws_cloudwatch_log_group.diary_write,
+  ]
+}
+
+resource "aws_lambda_function" "diary_read" {
+  function_name = "${local.name_prefix}-diary-read"
+  role          = aws_iam_role.lambda_diary.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.13"
+  architectures = ["x86_64"]
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = "${path.module}/../lambda/.build/diary_read.zip"
+  source_code_hash = filebase64sha256("${path.module}/../lambda/.build/diary_read.zip")
+
+  environment {
+    variables = {
+      GRAPHIA_MEMORY_ID = aws_bedrockagentcore_memory.this.id
+    }
+  }
+
+  depends_on = [
+    aws_iam_role_policy.lambda_diary,
+    aws_cloudwatch_log_group.diary_read,
+  ]
+}
+
+# ---------------------------------------------------------------------------
+# Gateway targets — one per diary Lambda. The provider in 6.44.0 exposes the
+# `target_configuration.mcp.lambda` block natively (verified against
+# `internal/service/bedrockagentcore/gateway_target.go`: `tool_schema {
+# inline_payload {...} }` with required `name`, `description`, `input_schema`).
+# Same-account Lambda invocation uses `credential_provider_configuration {
+# gateway_iam_role {} }`; the empty block is the documented Lambda shape
+# (the `service` attribute the `mcp_server` shape needs is Lambda-irrelevant
+# and not exposed by the provider). See RESEARCH.md §11.
+# ---------------------------------------------------------------------------
+
+resource "aws_bedrockagentcore_gateway_target" "diary_write" {
+  gateway_identifier = aws_bedrockagentcore_gateway.this.gateway_id
+  name               = "graphia-diary-write"
+  description        = "Append one diary entry — Gateway-routed Lambda tool."
+
   credential_provider_configuration {
     gateway_iam_role {}
+  }
+
+  target_configuration {
+    mcp {
+      lambda {
+        lambda_arn = aws_lambda_function.diary_write.arn
+
+        tool_schema {
+          inline_payload {
+            name        = "diary_write"
+            description = "Append one diary entry for (game_id, player_id) at the given night_index."
+
+            input_schema {
+              type = "object"
+
+              property {
+                name        = "game_id"
+                type        = "string"
+                description = "Game / thread identifier — scopes the entry to one game."
+                required    = true
+              }
+              property {
+                name        = "player_id"
+                type        = "string"
+                description = "Player identifier owning the diary entry."
+                required    = true
+              }
+              property {
+                name        = "night_index"
+                type        = "integer"
+                description = "Zero-based night index when the entry was written."
+                required    = true
+              }
+              property {
+                name        = "content"
+                type        = "string"
+                description = "The diary entry text — free-form private reasoning."
+                required    = true
+              }
+            }
+
+            output_schema {
+              type = "object"
+
+              property {
+                name        = "ok"
+                type        = "boolean"
+                description = "Always true on success; failures surface as MCP isError=true."
+                required    = true
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 
 resource "aws_bedrockagentcore_gateway_target" "diary_read" {
-  name               = "graphia-diary-read"
   gateway_identifier = aws_bedrockagentcore_gateway.this.gateway_id
-
-  description = "Read all diary entries for the given (game_id, player_id). Request: {game_id, player_id}. Response: {entries: [{night_index, content}, ...]}."
-
-  target_configuration {
-    mcp {
-      mcp_server {
-        endpoint = local.runtime_mcp_endpoint
-      }
-    }
-  }
+  name               = "graphia-diary-read"
+  description        = "List diary entries — Gateway-routed Lambda tool."
 
   credential_provider_configuration {
     gateway_iam_role {}
+  }
+
+  target_configuration {
+    mcp {
+      lambda {
+        lambda_arn = aws_lambda_function.diary_read.arn
+
+        tool_schema {
+          inline_payload {
+            name        = "diary_read"
+            description = "List all diary entries for (game_id, player_id), sorted by night_index."
+
+            input_schema {
+              type = "object"
+
+              property {
+                name        = "game_id"
+                type        = "string"
+                description = "Game / thread identifier — scopes the result to one game."
+                required    = true
+              }
+              property {
+                name        = "player_id"
+                type        = "string"
+                description = "Player identifier whose entries to list."
+                required    = true
+              }
+            }
+
+            output_schema {
+              type = "object"
+
+              property {
+                name        = "entries"
+                type        = "array"
+                description = "Diary entries sorted by night_index. Empty when the (game_id, player_id) pair has none."
+                required    = true
+
+                items {
+                  type = "object"
+
+                  property {
+                    name        = "night_index"
+                    type        = "integer"
+                    description = "Zero-based night index when the entry was written."
+                  }
+                  property {
+                    name        = "content"
+                    type        = "string"
+                    description = "The diary entry text."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

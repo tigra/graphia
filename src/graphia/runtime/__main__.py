@@ -11,6 +11,12 @@ which:
    streams ``graph.stream(..., stream_mode="updates")`` chunks back to
    the caller as SSE.
 
+The Runtime is HTTP-only (per ADR 005): the diary tool surface lives in
+Lambda functions behind the Gateway, not in this container. The agent's
+diary writes route through ``make_diary_store(load_config())`` — when
+``GRAPHIA_GATEWAY_ID`` is set (deployed Runtime), that resolves to a
+``GatewayMCPDiaryStore`` invoking the Gateway-fronted Lambda tools.
+
 Payload contract (the wire-level agent invocation API for this Runtime):
 
     Start a new game
@@ -54,7 +60,6 @@ inside the graph surface as a ``producer_error`` event.
 
 from __future__ import annotations
 
-import contextlib
 import json
 import logging
 import os
@@ -64,85 +69,12 @@ from typing import Any, AsyncIterator
 from bedrock_agentcore import BedrockAgentCoreApp
 from langchain_core.load import dumpd
 from langgraph.types import Command
-from mcp.server.fastmcp import FastMCP
-from starlette.routing import Mount
 
-from graphia.diary_store import (
-    AgentCoreMemoryDiaryStore,
-    GatewayMCPDiaryStore,
-    InProcessDiaryStore,
-)
+from graphia.config import load_config
+from graphia.diary_store import make_diary_store
 from graphia.runtime.graph_builder import build_runtime_graph
 
-# ---------------------------------------------------------------------------
-# Two-store split (Slice 7 sub-task 3):
-#
-# ``_impl_diary_store`` is the MCP tool implementation — the FastMCP
-#   ``diary_write`` / ``diary_read`` handlers below delegate straight into
-#   this store. In a deployed Runtime container this is the
-#   ``AgentCoreMemoryDiaryStore`` against the provisioned Memory resource;
-#   in local container runs without ``GRAPHIA_MEMORY_ID`` it falls back to
-#   ``InProcessDiaryStore`` so the container starts cleanly even without
-#   AWS access (useful for the smoke-test ``podman run`` in CI).
-#
-# ``_agent_diary_store`` is the agent's *client* — the night_close node
-#   inside the graph calls ``.write(...)`` on this one. In remote mode it's
-#   a ``GatewayMCPDiaryStore`` that pushes the call through the Gateway-MCP
-#   front door (per ADR 002 — runtime-embedded handlers); Gateway then
-#   forwards back into THIS container's MCP server, which uses
-#   ``_impl_diary_store`` to persist. If ``GRAPHIA_GATEWAY_ID`` is not set
-#   the agent talks to the impl store directly (handy for local container
-#   runs and the test suite).
-# ---------------------------------------------------------------------------
-
-_AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
-_MEMORY_ID = os.environ.get("GRAPHIA_MEMORY_ID") or None
-_GATEWAY_ID = os.environ.get("GRAPHIA_GATEWAY_ID") or None
-_GATEWAY_URL_ENV = os.environ.get("GRAPHIA_GATEWAY_URL") or None
-
-
-def _resolve_gateway_url() -> str | None:
-    """Derive the Gateway MCP endpoint URL, honouring an explicit override.
-
-    ``GRAPHIA_GATEWAY_URL`` wins when supplied (useful for tests pointing
-    at a fake MCP server). Otherwise the URL is built from
-    ``GRAPHIA_GATEWAY_ID`` + ``AWS_REGION`` using the AgentCore Gateway
-    URL pattern documented in the provider's attribute reference.
-    """
-    if _GATEWAY_URL_ENV:
-        return _GATEWAY_URL_ENV
-    if _GATEWAY_ID:
-        return (
-            f"https://{_GATEWAY_ID}.gateway.bedrock-agentcore."
-            f"{_AWS_REGION}.amazonaws.com/mcp"
-        )
-    return None
-
-
-def _make_impl_diary_store():
-    """Construct the store the MCP tool handlers persist into."""
-    if _MEMORY_ID:
-        return AgentCoreMemoryDiaryStore(
-            memory_id=_MEMORY_ID, region_name=_AWS_REGION
-        )
-    return InProcessDiaryStore()
-
-
-def _make_agent_diary_store(impl_store):
-    """Construct the store the in-graph agent calls.
-
-    When ``GRAPHIA_GATEWAY_ID`` (or an explicit URL) is set, the agent goes
-    out through Gateway-MCP. Otherwise it short-circuits straight to the
-    impl store — keeping non-Terraform container runs (and tests) sane.
-    """
-    gateway_url = _resolve_gateway_url()
-    if gateway_url:
-        return GatewayMCPDiaryStore(gateway_url=gateway_url, region=_AWS_REGION)
-    return impl_store
-
-
-_impl_diary_store = _make_impl_diary_store()
-_agent_diary_store = _make_agent_diary_store(_impl_diary_store)
+_diary_store = make_diary_store(load_config())
 
 # Runtime sessions are ephemeral (up to 8h microVMs per spec-002 §2.5).
 # tmpfs is the right home for per-session SQLite checkpoints — they
@@ -154,78 +86,7 @@ _CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
 logger = logging.getLogger("graphia.runtime")
 
-# ---------------------------------------------------------------------------
-# FastMCP server — diary tool surface mounted at ``/mcp``.
-#
-# AgentCore Gateway's ``mcp_server`` target type requires the upstream to
-# speak MCP at ``/mcp`` (per the runtime-MCP contract; see infra/terraform/
-# RESEARCH.md §9). FastMCP's default ``streamable_http_path="/mcp"`` is
-# inverted here — we set it to ``/`` and ``Mount`` the sub-app at ``/mcp``
-# so the endpoint lands at exactly ``/mcp`` (not ``/mcp/mcp``). The MCP
-# session manager runs as part of the Starlette lifespan so the long-lived
-# stateless transport machinery is bootstrapped on app startup.
-# ---------------------------------------------------------------------------
-
-mcp = FastMCP(
-    name="graphia-diary",
-    stateless_http=True,
-    json_response=True,
-    streamable_http_path="/",
-)
-
-
-@mcp.tool()
-def diary_write(
-    game_id: str, player_id: str, night_index: int, content: str
-) -> dict:
-    """Persist one diary entry for ``(game_id, player_id, night_index)``.
-
-    Used by the agent (running inside this same Runtime container) via
-    Gateway-MCP. Returns ``{"ok": True}`` on success; argument validation
-    happens client-side / on the Gateway via MCP's tools/list schema.
-    """
-    _impl_diary_store.write(
-        game_id=game_id,
-        player_id=player_id,
-        night_index=night_index,
-        content=content,
-    )
-    return {"ok": True}
-
-
-@mcp.tool()
-def diary_read(game_id: str, player_id: str) -> dict:
-    """Return all diary entries for ``(game_id, player_id)`` ascending.
-
-    Empty pairs return ``{"entries": []}``. The structured response shape
-    mirrors :class:`graphia.diary_store.DiaryEntry`'s public fields.
-    """
-    entries = _impl_diary_store.read(game_id=game_id, player_id=player_id)
-    return {
-        "entries": [
-            {"night_index": e.night_index, "content": e.content}
-            for e in entries
-        ]
-    }
-
-
-@contextlib.asynccontextmanager
-async def _lifespan(_app):
-    """Drive the FastMCP session manager for the lifetime of the app.
-
-    ``stateless_http=True`` still requires the session manager to be
-    running — it owns the streamable-HTTP transport's task group.
-    """
-    async with mcp.session_manager.run():
-        yield
-
-
-app = BedrockAgentCoreApp(lifespan=_lifespan)
-# Mount the FastMCP sub-app at ``/mcp``. With ``streamable_http_path="/"``
-# above, this lands the streamable-HTTP endpoint at exactly ``/mcp`` —
-# which is what the AgentCore Gateway target's ``mcp_server.endpoint``
-# expects.
-app.router.routes.append(Mount("/mcp", app=mcp.streamable_http_app()))
+app = BedrockAgentCoreApp()
 
 
 def _make_config(thread_id: str) -> dict:
@@ -314,7 +175,7 @@ async def handler(payload: dict) -> AsyncIterator[dict]:
 
     try:
         graph = build_runtime_graph(
-            thread_id, _CHECKPOINT_DIR, _agent_diary_store
+            thread_id, _CHECKPOINT_DIR, _diary_store
         )
     except Exception as exc:  # noqa: BLE001
         logger.exception("graph compilation failed")

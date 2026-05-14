@@ -1,25 +1,21 @@
-"""Slice 7 sub-task 4: smoke tests for the Runtime MCP tool surface.
+"""Smoke tests for the agent-side Gateway-MCP diary client.
 
-Three concerns, ordered by fragility:
+Two concerns, ordered by fragility:
 
 1. ``_parse_mcp_tool_result`` parses both the modern (``structuredContent``)
    and legacy (``TextContent`` with JSON body) MCP ``CallToolResult``
    shapes. This is the bit most likely to silently break under
    ``mcp`` package upgrades, so it gets a focused unit test.
 
-2. The FastMCP server mounted at ``/mcp`` by ``graphia.runtime.__main__``
-   exposes exactly two tools (``diary_write`` / ``diary_read``) whose
-   handlers delegate into the module-level ``_impl_diary_store``. We
-   invoke them through FastMCP's own tool-manager (bypassing the HTTP
-   transport entirely) so the delegation logic is exercised in-process
-   with no network involved.
-
-3. :class:`GatewayMCPDiaryStore` calls the correct MCP tool names, with
+2. :class:`GatewayMCPDiaryStore` calls the correct MCP tool names, with
    the correct arguments, wires SigV4 auth into the transport, and
    round-trips a real ``CallToolResult`` back into a sorted
    ``list[DiaryEntry]``. The transport is replaced with a fake at the
    ``streamablehttp_client`` factory boundary — the same seam the
    autouse ``safe_gateway_mcp_client`` guards.
+
+The server-side handlers now live in Lambda functions (per ADR 005), not
+the Runtime container; tests for those belong in the Lambda sub-task.
 """
 
 from __future__ import annotations
@@ -165,130 +161,7 @@ def test_parse_mcp_tool_result_raises_on_is_error_without_text() -> None:
 
 
 # --------------------------------------------------------------------------
-# 2. End-to-end MCP server smoke — FastMCP handler delegation
-# --------------------------------------------------------------------------
-
-
-@pytest.fixture
-def runtime_module(monkeypatch: pytest.MonkeyPatch):
-    """Return the Runtime module with a fresh ``InProcessDiaryStore`` impl.
-
-    ``graphia.runtime.__main__`` constructs its module-level
-    ``_impl_diary_store`` exactly once on import (FastMCP tools close
-    over that reference). To keep tests isolated we swap in a new
-    ``InProcessDiaryStore`` per test and restore the original on
-    teardown via ``monkeypatch``. The fresh store guarantees one test
-    cannot read another test's writes through the global handler.
-    """
-    from graphia.diary_store import InProcessDiaryStore
-    from graphia.runtime import __main__ as runtime_main
-
-    fresh = InProcessDiaryStore()
-    monkeypatch.setattr(runtime_main, "_impl_diary_store", fresh)
-    return runtime_main
-
-
-async def test_mcp_server_lists_exactly_diary_write_and_diary_read(
-    runtime_module,
-) -> None:
-    """FastMCP exposes exactly two tools, with the right input schemas."""
-    tools = await runtime_module.mcp.list_tools()
-
-    by_name = {t.name: t for t in tools}
-    assert set(by_name) == {"diary_write", "diary_read"}
-
-    write_schema = by_name["diary_write"].inputSchema
-    assert set(write_schema["required"]) == {
-        "game_id",
-        "player_id",
-        "night_index",
-        "content",
-    }
-    assert write_schema["properties"]["night_index"]["type"] == "integer"
-    for field in ("game_id", "player_id", "content"):
-        assert write_schema["properties"][field]["type"] == "string"
-
-    read_schema = by_name["diary_read"].inputSchema
-    assert set(read_schema["required"]) == {"game_id", "player_id"}
-
-
-async def _invoke_tool(runtime_module, name: str, args: dict) -> Any:
-    """Call a FastMCP tool and return the raw Python return value.
-
-    FastMCP's public ``call_tool`` serialises the return value into a
-    ``list[ContentBlock]`` for over-the-wire shipping. We instead route
-    through the tool manager with ``convert_result=False`` so the
-    test sees the actual dict the handler returned. This is the same
-    value the Runtime ships through ``structuredContent`` in the
-    streamable-HTTP transport.
-    """
-    context = runtime_module.mcp.get_context()
-    return await runtime_module.mcp._tool_manager.call_tool(
-        name, args, context=context, convert_result=False
-    )
-
-
-async def test_mcp_diary_write_delegates_into_impl_store(runtime_module) -> None:
-    """A ``diary_write`` tool-call lands in ``_impl_diary_store`` verbatim."""
-    result = await _invoke_tool(
-        runtime_module,
-        "diary_write",
-        {
-            "game_id": "g-1",
-            "player_id": "p-1",
-            "night_index": 0,
-            "content": "first entry",
-        },
-    )
-    assert result == {"ok": True}
-
-    entries = runtime_module._impl_diary_store.read("g-1", "p-1")
-    assert entries == [DiaryEntry(night_index=0, content="first entry")]
-
-
-async def test_mcp_diary_read_returns_entries_sorted_by_night_index(
-    runtime_module,
-) -> None:
-    """``diary_read`` surfaces all entries for a pair, sorted ascending."""
-    for ni, content in [(2, "third"), (0, "first"), (1, "second")]:
-        await _invoke_tool(
-            runtime_module,
-            "diary_write",
-            {
-                "game_id": "g-1",
-                "player_id": "p-1",
-                "night_index": ni,
-                "content": content,
-            },
-        )
-
-    result = await _invoke_tool(
-        runtime_module, "diary_read", {"game_id": "g-1", "player_id": "p-1"}
-    )
-
-    assert result == {
-        "entries": [
-            {"night_index": 0, "content": "first"},
-            {"night_index": 1, "content": "second"},
-            {"night_index": 2, "content": "third"},
-        ]
-    }
-
-
-async def test_mcp_diary_read_unknown_pair_returns_empty_entries(
-    runtime_module,
-) -> None:
-    """Reading a never-written pair returns ``{"entries": []}`` — no crash."""
-    result = await _invoke_tool(
-        runtime_module,
-        "diary_read",
-        {"game_id": "g-missing", "player_id": "p-missing"},
-    )
-    assert result == {"entries": []}
-
-
-# --------------------------------------------------------------------------
-# 3. GatewayMCPDiaryStore client-side — mocked transport + session
+# 2. GatewayMCPDiaryStore client-side — mocked transport + session
 # --------------------------------------------------------------------------
 
 
@@ -444,26 +317,48 @@ def test_gateway_store_write_sends_correct_tool_name_and_arguments(
     ]
 
 
-def test_gateway_store_write_uses_class_level_tool_name_constant(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The MCP tool name comes from ``WRITE_TOOL_NAME`` and matches the server.
+def test_gateway_store_write_uses_class_level_tool_name_constant() -> None:
+    """The MCP tool names are pinned constants matching the Lambda handlers.
 
-    Pinning this couples the client's tool name to the FastMCP-registered
-    tool exposed by ``graphia.runtime.__main__`` — a rename in one place
-    would break this test rather than silently mis-routing diary writes
-    at runtime.
+    A rename on either side (here, or in the Lambda handler sub-task)
+    would diverge from the Gateway target names Terraform creates
+    (``graphia-diary-write`` / ``graphia-diary-read``). Pinning here
+    catches client-side drift; the Lambda sub-task pins the server side.
     """
     assert GatewayMCPDiaryStore.WRITE_TOOL_NAME == "diary_write"
     assert GatewayMCPDiaryStore.READ_TOOL_NAME == "diary_read"
 
-    from graphia.runtime import __main__ as runtime_main
-    import asyncio
 
-    tools = asyncio.run(runtime_main.mcp.list_tools())
-    names = {t.name for t in tools}
-    assert GatewayMCPDiaryStore.WRITE_TOOL_NAME in names
-    assert GatewayMCPDiaryStore.READ_TOOL_NAME in names
+async def test_gateway_store_write_works_inside_running_event_loop(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Sync ``write`` succeeds when the caller is already inside a running loop.
+
+    The Runtime's ``@app.entrypoint`` is an async coroutine; inside it,
+    ``graph.stream`` runs sync, ``night_close`` runs sync, and finally
+    ``GatewayMCPDiaryStore.write`` runs sync. A naïve ``asyncio.run`` here
+    raises ``RuntimeError: asyncio.run() cannot be called from a running
+    event loop``. The store's ``_run_sync`` helper detects the running loop
+    and offloads the coroutine to a fresh loop in a dedicated thread.
+
+    This test marks ``async def`` so pytest-asyncio puts us in an event
+    loop, then exercises the sync ``.write`` directly. Without the
+    ``_run_sync`` shim this would raise; the assertion is just that no
+    exception escapes.
+    """
+    scripted = {
+        "diary_write": CallToolResult(
+            content=[TextContent(type="text", text='{"ok": true}')],
+            structuredContent={"ok": True},
+        )
+    }
+    _install_fake_mcp(monkeypatch, scripted)
+
+    store = GatewayMCPDiaryStore(
+        gateway_url="https://gw.example.test/mcp", region="us-east-1"
+    )
+    # Called from inside the test's running asyncio loop — must not raise.
+    store.write(game_id="g-1", player_id="p-1", night_index=0, content="hi")
 
 
 def test_gateway_store_read_parses_modern_response_into_diary_entries(

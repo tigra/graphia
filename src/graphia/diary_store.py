@@ -233,17 +233,15 @@ def _entry_from_event(event: dict) -> DiaryEntry | None:
 
 
 # ---------------------------------------------------------------------------
-# Gateway-MCP-fronted diary store (Slice 7 sub-task 3).
+# Gateway-MCP-fronted diary store.
 #
-# The agent running inside the Runtime container no longer talks to
-# AgentCore Memory directly — it invokes Gateway-published MCP tools
-# (``graphia.diary.write`` / ``graphia.diary.read``) over a streamable-HTTP
-# MCP client. Gateway is the front door; it forwards the call to the
-# Runtime's own MCP server (mounted at ``/mcp`` by ``graphia.runtime``),
-# which delegates to ``AgentCoreMemoryDiaryStore`` against the same Memory
-# resource. ADR 002 ("runtime-embedded handlers") is what makes this loop
-# back into the same container, but from the agent's perspective the
-# Gateway is just an MCP endpoint with SigV4 inbound auth.
+# The agent invokes Gateway-published MCP tools (``diary_write`` /
+# ``diary_read``) over a streamable-HTTP MCP client. Gateway is the front
+# door; per ADR 005 it forwards each call to a Lambda function that
+# instantiates ``AgentCoreMemoryDiaryStore`` against the provisioned Memory
+# resource. From the agent's perspective the Gateway is just an MCP
+# endpoint with SigV4 inbound auth — Lambda-vs-Runtime-loopback is invisible
+# here.
 #
 # The MCP client is async; the engine's ``night_close`` call site is sync
 # (the Runtime's ``graph.stream`` worker is synchronous). We bridge with
@@ -315,16 +313,15 @@ class _SigV4HttpxAuth:
 class GatewayMCPDiaryStore:
     """DiaryStore impl that calls Gateway-published MCP tools.
 
-    Constructed by the Runtime entry-point with the Gateway URL pulled from
-    the container's ``GRAPHIA_GATEWAY_ID`` env var. Each ``write`` /
+    Constructed by the Runtime entry-point (or local-mode caller) with the
+    Gateway URL derived from ``GRAPHIA_GATEWAY_ID``. Each ``write`` /
     ``read`` opens a short-lived streamable-HTTP MCP session, calls the
     appropriate tool, and tears the session down. Gateway sees one
-    SigV4-signed request per call; the Runtime's MCP server receives a
-    standard MCP ``tools/call`` payload and routes into the underlying
-    ``AgentCoreMemoryDiaryStore`` (per ADR 002).
+    SigV4-signed request per call and (per ADR 005) routes it to a Lambda
+    function that delegates into ``AgentCoreMemoryDiaryStore``.
 
-    The two MCP tool names are fixed by ``graphia.runtime.__main__`` and
-    match the Gateway targets Terraform creates (``graphia-diary-write`` /
+    The two MCP tool names are fixed by the Lambda handlers and match the
+    Gateway targets Terraform creates (``graphia-diary-write`` /
     ``graphia-diary-read``).
     """
 
@@ -344,7 +341,7 @@ class GatewayMCPDiaryStore:
     def write(
         self, game_id: str, player_id: str, night_index: int, content: str
     ) -> None:
-        asyncio.run(
+        self._run_sync(
             self._call_tool(
                 self.WRITE_TOOL_NAME,
                 {
@@ -357,7 +354,7 @@ class GatewayMCPDiaryStore:
         )
 
     def read(self, game_id: str, player_id: str) -> list[DiaryEntry]:
-        result = asyncio.run(
+        result = self._run_sync(
             self._call_tool(
                 self.READ_TOOL_NAME,
                 {"game_id": game_id, "player_id": player_id},
@@ -375,6 +372,28 @@ class GatewayMCPDiaryStore:
         return sorted(entries, key=lambda e: e.night_index)
 
     # -- internals -----------------------------------------------------
+
+    @staticmethod
+    def _run_sync(coro):
+        """Run an async coroutine from a sync caller, even inside an event loop.
+
+        ``night_close`` calls ``write`` synchronously from inside
+        ``graph.stream``, which itself runs inside the Runtime's
+        ``@app.entrypoint`` async coroutine. ``asyncio.run`` raises
+        ``RuntimeError: asyncio.run() cannot be called from a running event
+        loop`` in that context. We detect the running loop and, when one
+        exists, run the coroutine on a fresh loop in a dedicated thread —
+        otherwise the simpler ``asyncio.run`` path applies (local-mode
+        usage, tests).
+        """
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(coro)
+        import concurrent.futures
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            return executor.submit(asyncio.run, coro).result()
 
     def _build_auth(self) -> _SigV4HttpxAuth:
         # Resolve credentials at call time via the standard chain so the
@@ -455,16 +474,25 @@ def _parse_mcp_tool_result(response: Any) -> dict:
 
 
 def make_diary_store(config: "GraphiaConfig") -> DiaryStore:
-    """Select the diary store implementation based on whether a Memory is configured.
+    """Select the diary store implementation by precedence.
 
-    Gates on ``config.memory_id`` (the actual signal — "does this process
-    have access to an AgentCore Memory resource?") rather than on
-    ``config.remote_mode`` (which means "is the local UI invoking a remote
-    Runtime?"). The two concerns are orthogonal: a Runtime container has
-    ``memory_id`` set but never knows nor cares about ``remote_mode``; a
-    local-mode developer might point at a real Memory for ad-hoc inspection
-    by setting ``GRAPHIA_MEMORY_ID`` without flipping ``--remote``.
+    Order matters: the deployed Runtime container has both ``gateway_url``
+    *and* ``memory_id`` set (Terraform plumbs both env vars). Gating on
+    gateway first picks the Gateway-MCP path — the intended remote-mode
+    route per ADR 005, where Gateway fronts Lambda-hosted diary tools.
+
+    ``memory_id`` alone (no Gateway) covers ad-hoc local Memory inspection:
+    a developer points at a real Memory by exporting ``GRAPHIA_MEMORY_ID``
+    without provisioning a Gateway. The Lambda handler (separate sub-task)
+    also uses this branch — it instantiates ``AgentCoreMemoryDiaryStore``
+    directly, no Gateway loopback.
+
+    Neither set → ``InProcessDiaryStore`` (pure local mode).
     """
+    if config.gateway_url:
+        return GatewayMCPDiaryStore(
+            gateway_url=config.gateway_url, region=config.aws_region
+        )
     if config.memory_id:
         return AgentCoreMemoryDiaryStore(
             memory_id=config.memory_id, region_name=config.aws_region

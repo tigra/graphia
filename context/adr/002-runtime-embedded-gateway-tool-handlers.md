@@ -2,7 +2,7 @@
 
 - **ADR Number:** 002
 - **Title:** Runtime-embedded Gateway Tool Handlers (vs. Lambda Targets)
-- **Status:** Accepted
+- **Status:** **Superseded by [ADR 005](005-gateway-tools-via-lambda-targets.md) (2026-05-14)** — the runtime-embedded pattern this ADR chose turned out to be incompatible with AgentCore Runtime's mutually-exclusive `protocol_configuration` (`HTTP` vs `MCP`), which only surfaced during Slice 7's implementation. ADR 005 records the discovery and the pivot to Lambda-target Gateway tools (the alternative this ADR originally rejected).
 - **Date:** 2026-05-12
 - **Authors:** Alexey Tigarev
 
