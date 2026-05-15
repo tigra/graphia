@@ -20,6 +20,7 @@ import logging
 import pytest
 
 from graphia.runtime.observability import (
+    SESSION_ID_BAGGAGE_KEY,
     THREAD_ID_FIELD,
     JsonLogFormatter,
     ThreadIdLogFilter,
@@ -191,15 +192,45 @@ def test_configure_runtime_observability_is_idempotent() -> None:
                 root.removeHandler(h)
 
 
-def test_stamp_trace_thread_id_is_a_safe_noop_without_otel() -> None:
-    """Without an OTEL SDK on the path, the trace stamp must not raise.
+def test_stamp_trace_thread_id_never_raises() -> None:
+    """The trace stamp must degrade silently regardless of OTEL state.
 
-    The deployed image runs ``python -m graphia.runtime`` with no ADOT
-    wrapper, so the OTEL import fails — and the JSON-log path is what the
-    failure modal relies on. The trace stamp must degrade silently.
+    Telemetry must never break a game. Whether or not an OTEL SDK is on
+    the path — and whether or not the ADOT ``opentelemetry-instrument``
+    wrapper has configured a real exporter — calling the stamp must be a
+    safe operation. (In the test environment ``aws-opentelemetry-distro``
+    is installed but no exporter is configured, so the no-op
+    ``ProxyTracerProvider`` is active and nothing is exported.)
     """
-    # Must not raise regardless of OTEL availability.
+    # Must not raise regardless of OTEL availability / exporter config.
     stamp_trace_thread_id("game-no-otel")
+
+
+def test_stamp_trace_thread_id_places_session_id_in_baggage() -> None:
+    """CR 003: the game's thread_id lands in OTEL baggage as ``session.id``.
+
+    AWS GenAI Observability groups a session's spans into one navigable
+    trace tree by the ``session.id`` baggage entry. Stamping it to the
+    LangGraph thread_id is what makes one game render as exactly one
+    session in the console. The raw ``thread_id`` key is also placed so a
+    custom span can read the unaliased game id.
+
+    This test is meaningful only when an OTEL SDK is importable; when it
+    is not (no ADOT on the path) the stamp is a no-op by design and the
+    assertions are skipped.
+    """
+    try:
+        from opentelemetry import baggage, context
+    except ImportError:  # pragma: no cover - ADOT is a project dependency
+        pytest.skip("no OpenTelemetry SDK on the path")
+
+    token = context.attach(context.Context())  # isolate baggage for this test
+    try:
+        stamp_trace_thread_id("20260515T101530")
+        assert baggage.get_baggage(SESSION_ID_BAGGAGE_KEY) == "20260515T101530"
+        assert baggage.get_baggage(THREAD_ID_FIELD) == "20260515T101530"
+    finally:
+        context.detach(token)
 
 
 # --------------------------------------------------------------------------

@@ -44,13 +44,18 @@ Mechanism
   record as a one-line JSON object — the shape the CloudWatch
   ``{ $.thread_id = "..." }`` filter matches.
 
-The trace half (OTEL spans) is *best-effort*: if an OpenTelemetry SDK is
-present on the path (e.g. a future deploy task adds the ADOT
-``opentelemetry-instrument`` wrapper), :func:`stamp_trace_thread_id`
-also sets ``thread_id`` as an attribute on the current span. When OTEL
-is absent — as in this image today and in the test environment — it is a
-silent no-op and adds no dependency. The JSON-log path above is the one
-the failure-modal filter depends on, and it works with zero extra deps.
+The trace half (OTEL spans) is now live on the deployed Runtime image
+(CR 003): the container starts under the ADOT ``opentelemetry-instrument``
+auto-instrumentation wrapper, so an OpenTelemetry SDK *is* on the path
+there. :func:`stamp_trace_thread_id` puts the game's ``thread_id`` into
+OTEL baggage under the key AWS GenAI Observability groups a session's
+spans by (``session.id``) and also stamps it as an attribute on the
+current span. That makes the per-session trace tree both navigable
+(grouped as one session) and filterable by game. The import is still
+guarded so local mode and the test environment — neither of which runs
+the ADOT wrapper — see a silent no-op and pull in no OTEL runtime
+behaviour. The JSON-log path above is independent of all this and keeps
+working with zero extra deps.
 
 Local mode is untouched
 -----------------------
@@ -80,6 +85,14 @@ _THREAD_ID: contextvars.ContextVar[str | None] = contextvars.ContextVar(
 # matches against. Kept as a named constant so the failure modal (a later
 # Slice-8 sub-task) and any tests reference one source of truth.
 THREAD_ID_FIELD = "thread_id"
+
+# OTEL baggage key AWS GenAI Observability groups a trace's spans into a
+# single navigable *session* by. ADOT's AWS configurator reads ``session.id``
+# from baggage and promotes it onto the spans / X-Ray segments, which is what
+# makes the GenAI Observability "Sessions" view collapse one game's spans
+# into one tree. Setting it to the LangGraph ``thread_id`` means one game ==
+# one session in the console.
+SESSION_ID_BAGGAGE_KEY = "session.id"
 
 
 def bind_thread_id(thread_id: str) -> contextvars.Token:
@@ -224,32 +237,62 @@ def configure_runtime_observability() -> None:
 
 
 def stamp_trace_thread_id(thread_id: str) -> None:
-    """Best-effort: set ``thread_id`` as an attribute on the current OTEL span.
+    """Attach the game's ``thread_id`` to this invocation's OTEL spans.
 
-    The AgentCore Runtime captures OTEL spans as the ``TRACES`` telemetry
-    stream. If an OpenTelemetry SDK is on the path (e.g. a future deploy
-    task wraps the container start in ``opentelemetry-instrument`` with
-    ``aws-opentelemetry-distro``), stamping the session root span makes
-    the *trace* half filterable by ``thread_id`` too.
+    The deployed Runtime image starts under the ADOT
+    ``opentelemetry-instrument`` wrapper (see ``Dockerfile``), so an
+    OpenTelemetry SDK is on the path there and AgentCore captures the
+    emitted spans as the ``TRACES`` telemetry stream. This function does
+    two things, both best-effort:
 
-    OTEL is **not** a hard dependency of Graphia — this image runs
-    ``python -m graphia.runtime`` with no ADOT wrapper today — so the
-    import is guarded. When OTEL is absent this is a silent no-op and the
-    JSON-log path above is what the failure-modal filter relies on.
+    * **Session grouping.** It puts ``thread_id`` into OTEL *baggage*
+      under :data:`SESSION_ID_BAGGAGE_KEY` (``"session.id"``) and attaches
+      that context. ADOT's AWS configurator reads ``session.id`` from
+      baggage and promotes it onto every span produced for the rest of
+      the invocation — including the child spans the auto-instrumented
+      LangGraph / Bedrock / Gateway-MCP calls create. That is what makes
+      AgentCore GenAI Observability collapse one game's spans into a
+      single navigable per-session **trace tree** (CR 003).
+    * **Per-game filtering.** It also sets ``thread_id`` as an attribute
+      on the current span so the trace half is filterable by the same
+      game identifier the structured logs already carry.
+
+    The ``context.attach`` token is intentionally not reset: AgentCore
+    microVMs are single-session, the handler runs once per microVM, and
+    the baggage must stay live for the whole invocation so every
+    downstream child span inherits it.
+
+    OTEL is **not** a hard dependency of Graphia at *runtime* in local
+    mode — local mode never imports this module and never runs the ADOT
+    wrapper — so the import is still guarded. When the OTEL SDK is absent
+    (local mode, the all-mocked test suite) this is a silent no-op and
+    the JSON-log path above is unaffected. Telemetry must never break a
+    game, so every step is also wrapped defensively.
     """
     try:
         from opentelemetry import baggage, context, trace
     except ImportError:
-        return  # No OTEL SDK on this image — JSON-log path is sufficient.
+        return  # No OTEL SDK on the path — nothing to stamp.
 
-    span = trace.get_current_span()
+    # Group this invocation's spans into one navigable session. AWS GenAI
+    # Observability keys the Sessions/Trace view off the ``session.id``
+    # baggage entry; setting it to the LangGraph thread_id means one game
+    # renders as exactly one session tree.
     try:
-        span.set_attribute(THREAD_ID_FIELD, thread_id)
+        context.attach(
+            baggage.set_baggage(SESSION_ID_BAGGAGE_KEY, thread_id)
+        )
     except Exception:  # noqa: BLE001 - telemetry must never break the game
         pass
-    # Also place it in OTEL baggage so any child spans created downstream
-    # (e.g. by an auto-instrumented Bedrock call) can pick it up.
+    # Also place thread_id itself in baggage so any custom span that wants
+    # the raw game id (not the session.id alias) can read it.
     try:
         context.attach(baggage.set_baggage(THREAD_ID_FIELD, thread_id))
+    except Exception:  # noqa: BLE001
+        pass
+    # Stamp the current span so the trace half is filterable by thread_id,
+    # mirroring the field the structured JSON logs carry.
+    try:
+        trace.get_current_span().set_attribute(THREAD_ID_FIELD, thread_id)
     except Exception:  # noqa: BLE001
         pass

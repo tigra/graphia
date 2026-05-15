@@ -140,6 +140,13 @@ _Spec 002 §2.5: structured traces in CloudWatch for every remote-mode session, 
 - [ ] Rebuild Runtime image and `terraform apply`. **[Agent: terraform-aws]**
 - [ ] **USER:** Manual smoke test — play a `--remote` game to completion, then open the CloudWatch log group whose name is in the Terraform output. Confirm structured trace events are present, the `thread_id` correlation id appears, and the log group has `retention_in_days = 30`. Then deliberately misconfigure (e.g., point `GRAPHIA_RUNTIME_URL` at a non-existent URL) to trigger the failure modal; confirm it renders with a valid CloudWatch link/filter. _(User-performed; mixed AWS state + UI smoke.)_
 
+### Slice 8 follow-on: OpenTelemetry instrumentation for navigable trace trees (CR 003)
+
+_[CR 003](../../change-requests/003-observability-navigable-trace-trees.md): the Slice 8 deployment smoke test showed AgentCore Observability delivers flat, session-correlated application logs but no navigable span tree — the Runtime container is not OpenTelemetry-instrumented. This subsection adds the instrumentation so the GenAI Observability console renders a per-session trace tree._
+
+- [ ] Instrument the deployed Runtime with OpenTelemetry (ADOT) so AgentCore Observability renders a navigable per-session trace tree — graph invocation, per-turn model calls, Gateway tool calls — correlated by `thread_id` (activates `observability.py`'s `stamp_trace_thread_id`). Local mode unaffected; test suite stays green. **[Agent: langgraph-agentic]**
+- [ ] Rebuild Runtime image and `terraform apply`; confirm the trace tree appears in the AgentCore GenAI Observability console for a `--remote` game. Sync the CR 003 shift into `functional-spec.md` §2.5, `technical-considerations.md` §2.11, and `roadmap.md` Phase 2 wording. **[Agent: terraform-aws]**
+
 ---
 
 ## Slice 9: Equivalence tests + end-to-end smoke
