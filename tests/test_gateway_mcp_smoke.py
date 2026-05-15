@@ -277,9 +277,9 @@ def _install_fake_mcp(
 def test_gateway_store_write_sends_correct_tool_name_and_arguments(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """``write`` invokes the ``diary_write`` tool with the four expected fields."""
+    """``write`` invokes the diary-write tool with the four expected fields."""
     scripted = {
-        "diary_write": CallToolResult(
+        GatewayMCPDiaryStore.WRITE_TOOL_NAME: CallToolResult(
             content=[TextContent(type="text", text='{"ok": true}')],
             structuredContent={"ok": True},
         )
@@ -306,7 +306,7 @@ def test_gateway_store_write_sends_correct_tool_name_and_arguments(
     assert session.initialize_calls == 1
     assert session.tool_calls == [
         (
-            "diary_write",
+            GatewayMCPDiaryStore.WRITE_TOOL_NAME,
             {
                 "game_id": "g-1",
                 "player_id": "p-1",
@@ -317,16 +317,25 @@ def test_gateway_store_write_sends_correct_tool_name_and_arguments(
     ]
 
 
-def test_gateway_store_write_uses_class_level_tool_name_constant() -> None:
-    """The MCP tool names are pinned constants matching the Lambda handlers.
+def test_gateway_store_uses_gateway_namespaced_tool_names() -> None:
+    """The MCP tool names are the Gateway-namespaced ``<target>___<tool>`` forms.
 
-    A rename on either side (here, or in the Lambda handler sub-task)
-    would diverge from the Gateway target names Terraform creates
-    (``graphia-diary-write`` / ``graphia-diary-read``). Pinning here
-    catches client-side drift; the Lambda sub-task pins the server side.
+    AgentCore Gateway exposes each target's tools as
+    ``<target-name>___<tool-name>`` (triple underscore). The Terraform
+    targets are ``graphia-diary-write`` / ``graphia-diary-read`` and each
+    declares a ``diary_write`` / ``diary_read`` tool, so the Gateway
+    catalog advertises the prefixed names below — verified via a live
+    ``tools/list`` against the deployed Gateway. A bare-name regression
+    (calling ``diary_write`` directly) fails with ``McpError('Unknown
+    tool: diary_write')``; pinning the prefixed form catches that.
     """
-    assert GatewayMCPDiaryStore.WRITE_TOOL_NAME == "diary_write"
-    assert GatewayMCPDiaryStore.READ_TOOL_NAME == "diary_read"
+    assert (
+        GatewayMCPDiaryStore.WRITE_TOOL_NAME
+        == "graphia-diary-write___diary_write"
+    )
+    assert (
+        GatewayMCPDiaryStore.READ_TOOL_NAME == "graphia-diary-read___diary_read"
+    )
 
 
 async def test_gateway_store_write_works_inside_running_event_loop(
@@ -347,7 +356,7 @@ async def test_gateway_store_write_works_inside_running_event_loop(
     exception escapes.
     """
     scripted = {
-        "diary_write": CallToolResult(
+        GatewayMCPDiaryStore.WRITE_TOOL_NAME: CallToolResult(
             content=[TextContent(type="text", text='{"ok": true}')],
             structuredContent={"ok": True},
         )
@@ -366,7 +375,7 @@ def test_gateway_store_read_parses_modern_response_into_diary_entries(
 ) -> None:
     """``read`` decodes a modern ``structuredContent`` response into entries."""
     scripted = {
-        "diary_read": CallToolResult(
+        GatewayMCPDiaryStore.READ_TOOL_NAME: CallToolResult(
             content=[],
             structuredContent={
                 "entries": [
@@ -391,7 +400,7 @@ def test_gateway_store_read_parses_modern_response_into_diary_entries(
         DiaryEntry(night_index=2, content="third"),
     ]
     assert sessions[0].tool_calls == [
-        ("diary_read", {"game_id": "g-1", "player_id": "p-1"})
+        (GatewayMCPDiaryStore.READ_TOOL_NAME, {"game_id": "g-1", "player_id": "p-1"})
     ]
 
 
@@ -407,7 +416,7 @@ def test_gateway_store_read_parses_legacy_text_content_response(
     surface the legacy shape would fail this test.
     """
     scripted = {
-        "diary_read": CallToolResult(
+        GatewayMCPDiaryStore.READ_TOOL_NAME: CallToolResult(
             content=[
                 TextContent(
                     type="text",
@@ -432,7 +441,7 @@ def test_gateway_store_read_returns_empty_list_for_unknown_pair(
 ) -> None:
     """``read`` against a never-written pair returns ``[]`` cleanly."""
     scripted = {
-        "diary_read": CallToolResult(
+        GatewayMCPDiaryStore.READ_TOOL_NAME: CallToolResult(
             content=[], structuredContent={"entries": []}
         )
     }

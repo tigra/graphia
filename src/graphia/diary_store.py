@@ -333,8 +333,15 @@ class GatewayMCPDiaryStore:
     ``graphia-diary-read``).
     """
 
-    WRITE_TOOL_NAME = "diary_write"
-    READ_TOOL_NAME = "diary_read"
+    # AgentCore Gateway namespaces each target's tools as
+    # `<target-name>___<tool-name>` (triple underscore). The Terraform
+    # gateway targets are named `graphia-diary-write` / `graphia-diary-read`
+    # and each declares a single tool (`diary_write` / `diary_read`), so the
+    # Gateway-discoverable names are the prefixed forms below. Verified via a
+    # live `tools/list` against the deployed Gateway. If the target names in
+    # `infra/terraform/main.tf` change, these constants must change in step.
+    WRITE_TOOL_NAME = "graphia-diary-write___diary_write"
+    READ_TOOL_NAME = "graphia-diary-read___diary_read"
 
     def __init__(self, gateway_url: str, region: str) -> None:
         if not gateway_url:
