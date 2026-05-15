@@ -739,6 +739,7 @@ async def test_remote_mode_driver_detects_interrupt_from_stream_not_local_state(
         memory_id=None,
         gateway_id=None,
         gateway_url=None,
+        cloudwatch_log_group=None,
     )
 
     # --- Drive --------------------------------------------------------
@@ -1015,6 +1016,7 @@ async def test_remote_mode_consumer_receives_basemessage_from_scripted_sse(
         memory_id=None,
         gateway_id=None,
         gateway_url=None,
+        cloudwatch_log_group=None,
     )
 
     await drive_graph(
@@ -1126,6 +1128,7 @@ async def test_drive_graph_on_state_receives_human_id_from_collect_name_chunk(
         memory_id=None,
         gateway_id=None,
         gateway_url=None,
+        cloudwatch_log_group=None,
     )
 
     await drive_graph(

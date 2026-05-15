@@ -19,6 +19,7 @@ from graphia.driver import drive_graph
 from graphia.graph import build_graph, make_run_config
 from graphia.logging import StreamTraceLogger, setup_logger
 from graphia.ui.badge import CornerBadge
+from graphia.ui.failure_modal import FailureModal
 from graphia.ui.widgets import PointingModal, VoteModal
 
 
@@ -97,6 +98,11 @@ class GraphiaApp(App[None]):
         self._human_id: str | None = None
         self._graph: CompiledStateGraph | None = None
         self._run_config: dict | None = None
+        # LangGraph thread_id for this session, set in `_drive` once
+        # `build_graph` returns it. Used by the remote-mode crash handler to
+        # build the CloudWatch `{ $.thread_id = "<thread>" }` filter. None
+        # until the graph is built (a crash that early shows no thread id).
+        self._thread_id: str | None = None
         self._private_buffer: list[BaseMessage] = []
         # Running mirror of graph state, fed by the driver's on_state callback
         # from each super-step's update delta. Mode-agnostic: the streamed
@@ -343,6 +349,7 @@ class GraphiaApp(App[None]):
         log = self.query_one("#public-log", RichLog)
         try:
             graph, thread_id = build_graph(self.config)
+            self._thread_id = thread_id
             run_config = make_run_config(thread_id)
             self._graph = graph
             self._run_config = run_config
@@ -365,9 +372,46 @@ class GraphiaApp(App[None]):
                 {"error": repr(exc), "traceback": traceback.format_exc()}
             )
             self._game_over = True
-            log.write(
-                Text.from_markup(
-                    f"[bold red]Error — see {self.config.log_file}[/] "
-                    "Press any key to exit."
+            if self.config.remote_mode:
+                # Remote crash: the graph ran in the deployed Runtime, so the
+                # local JSONL log only has the client-side stack. Hand the
+                # player the CloudWatch coordinates (log group + per-session
+                # `{ $.thread_id = ... }` filter) via a self-contained modal.
+                # Keep a one-line banner too so the screen behind the modal
+                # still reads as an error state after dismissal.
+                log.write(
+                    Text.from_markup(
+                        "[bold red]Remote game error.[/] "
+                        "Press any key to exit."
+                    )
+                )
+                self._show_failure_modal(exc)
+            else:
+                # Local mode: unchanged — banner + JSONL log-file pointer.
+                log.write(
+                    Text.from_markup(
+                        f"[bold red]Error — see {self.config.log_file}[/] "
+                        "Press any key to exit."
+                    )
+                )
+
+    def _show_failure_modal(self, exc: BaseException) -> None:
+        """Push the remote-mode :class:`FailureModal` for an unhandled crash.
+
+        The thread id may be ``None`` if the crash happened before
+        ``build_graph`` returned; fall back to a placeholder so the filter
+        expression is still well-formed and the modal never shows "None".
+        Wrapped defensively — if the modal itself cannot be pushed (e.g. the
+        screen stack is already torn down) the banner above still stands.
+        """
+        thread_id = self._thread_id or "<unknown>"
+        try:
+            self.push_screen(
+                FailureModal(
+                    thread_id=thread_id,
+                    log_group=self.config.cloudwatch_log_group,
+                    error_summary=f"{type(exc).__name__}: {exc}",
                 )
             )
+        except Exception:  # noqa: BLE001
+            self.logger.record({"failure_modal_error": True})

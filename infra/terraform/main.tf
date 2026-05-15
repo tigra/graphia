@@ -49,10 +49,10 @@ resource "aws_ecr_repository" "runtime" {
 }
 
 # ---------------------------------------------------------------------------
-# CloudWatch log group — receives AgentCore Runtime traces / logs. The log
-# group must exist before the Runtime resource is created so the Runtime's
-# execution role can write to it. Slice 8 expands observability; the log
-# group itself is created here.
+# CloudWatch log group — receives AgentCore Runtime application logs via the
+# vended-log-delivery pipeline declared further below. The log group must
+# exist before the Runtime resource is created so the Runtime's execution
+# role can write to it. 30-day retention.
 # ---------------------------------------------------------------------------
 
 resource "aws_cloudwatch_log_group" "runtime" {
@@ -230,6 +230,74 @@ resource "aws_bedrockagentcore_agent_runtime" "this" {
   # `role_arn` only requires the role to exist, not its permissions, but
   # AgentCore fails on first model-invoke if the policy isn't attached yet.
   depends_on = [aws_iam_role_policy.runtime]
+}
+
+# ---------------------------------------------------------------------------
+# AgentCore Observability — Runtime vended log delivery (Slice 8 sub-task 1).
+#
+# AgentCore Observability has NO dedicated argument on the
+# `aws_bedrockagentcore_agent_runtime` resource (provider 6.44.0 exposes only
+# region / description / environment_variables / authorizer_configuration /
+# lifecycle_configuration / protocol_configuration / request_header_configuration
+# / tags — none observability-related). The console "Log delivery" + "Tracing"
+# widgets map to the CloudWatch Logs *vended log delivery* pipeline: a
+# delivery source (one per log type) connected to a delivery destination via
+# a delivery. The AWS SDK form is `put_delivery_source` / `put_delivery_destination`
+# / `create_delivery` (see RESEARCH.md §12). The provider exposes all three as
+# first-class resources, so the Runtime-scoped half of Observability IS
+# Terraform-expressible — declared below.
+#
+# The account-level half (CloudWatch Transaction Search) is a provider gap —
+# see RESEARCH.md §12 for the out-of-band CLI workaround.
+
+# Delivery source: APPLICATION_LOGS — the Runtime's stdout/stderr application
+# logs. `resource_arn` is the Runtime ARN; `log_type` is the only value
+# AgentCore (a Bedrock service) accepts for the logs stream.
+resource "aws_cloudwatch_log_delivery_source" "runtime_logs" {
+  name         = "${local.name_prefix}-runtime-logs"
+  log_type     = "APPLICATION_LOGS"
+  resource_arn = aws_bedrockagentcore_agent_runtime.this.agent_runtime_arn
+}
+
+# Delivery source: TRACES — the Runtime's OpenTelemetry spans. AgentCore
+# Runtime auto-instruments the container; this source surfaces those spans
+# to the trace pipeline.
+resource "aws_cloudwatch_log_delivery_source" "runtime_traces" {
+  name         = "${local.name_prefix}-runtime-traces"
+  log_type     = "TRACES"
+  resource_arn = aws_bedrockagentcore_agent_runtime.this.agent_runtime_arn
+}
+
+# Delivery destination for logs — the 30-day-retention CloudWatch log group
+# declared above. `delivery_destination_type` is computed as `CWL` from the
+# log-group ARN.
+resource "aws_cloudwatch_log_delivery_destination" "runtime_logs" {
+  name = "${local.name_prefix}-runtime-logs"
+
+  delivery_destination_configuration {
+    destination_resource_arn = aws_cloudwatch_log_group.runtime.arn
+  }
+}
+
+# Delivery destination for traces — X-Ray. Spans land in the account's
+# `aws/spans` log group once CloudWatch Transaction Search is enabled at the
+# account level (RESEARCH.md §12). `delivery_destination_type = "XRAY"` takes
+# no `delivery_destination_configuration` block (provider-documented shape).
+resource "aws_cloudwatch_log_delivery_destination" "runtime_traces" {
+  name                      = "${local.name_prefix}-runtime-traces"
+  delivery_destination_type = "XRAY"
+}
+
+# Delivery: connect the APPLICATION_LOGS source to the CloudWatch log group.
+resource "aws_cloudwatch_log_delivery" "runtime_logs" {
+  delivery_source_name     = aws_cloudwatch_log_delivery_source.runtime_logs.name
+  delivery_destination_arn = aws_cloudwatch_log_delivery_destination.runtime_logs.arn
+}
+
+# Delivery: connect the TRACES source to the X-Ray destination.
+resource "aws_cloudwatch_log_delivery" "runtime_traces" {
+  delivery_source_name     = aws_cloudwatch_log_delivery_source.runtime_traces.name
+  delivery_destination_arn = aws_cloudwatch_log_delivery_destination.runtime_traces.arn
 }
 
 # ---------------------------------------------------------------------------

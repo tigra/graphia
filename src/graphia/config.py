@@ -30,6 +30,13 @@ class GraphiaConfig:
     # ``GRAPHIA_GATEWAY_URL`` directly for ad-hoc Gateway probing.
     gateway_id: str | None
     gateway_url: str | None
+    # CloudWatch log group carrying the deployed Runtime's logs/traces
+    # (Slice 8). Read from ``GRAPHIA_LOG_GROUP``; ``make wire-env`` pulls it
+    # from the ``cloudwatch_log_group`` Terraform output. Normally only set
+    # for remote play — the remote-mode crash modal uses it to point the
+    # player at the failed session's CloudWatch coordinates. ``None`` is
+    # tolerated: the modal degrades to showing the filter expression alone.
+    cloudwatch_log_group: str | None
 
 
 def _env_truthy(name: str) -> bool:
@@ -54,6 +61,7 @@ def load_config() -> GraphiaConfig:
     remote_mode = _env_truthy("GRAPHIA_REMOTE")
     runtime_invocation_url = os.environ.get("GRAPHIA_RUNTIME_URL") or None
     memory_id = os.environ.get("GRAPHIA_MEMORY_ID") or None
+    cloudwatch_log_group = os.environ.get("GRAPHIA_LOG_GROUP") or None
     gateway_id = os.environ.get("GRAPHIA_GATEWAY_ID") or None
     # Prefer an explicitly supplied URL (useful for local-mode probing
     # against a deployed Gateway) but derive it from the id + region when
@@ -97,4 +105,5 @@ def load_config() -> GraphiaConfig:
         memory_id=memory_id,
         gateway_id=gateway_id,
         gateway_url=gateway_url,
+        cloudwatch_log_group=cloudwatch_log_group,
     )

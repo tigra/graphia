@@ -59,7 +59,7 @@ help:
 	@echo "Workflow composites:"
 	@echo "  make deploy             First-time: build-lambdas + tf-init + tf-ecr-bootstrap + push + tf-apply + wire-env."
 	@echo "  make redeploy           Steady-state code update: build-lambdas + push + tf-apply + wire-env."
-	@echo "  make wire-env           Pull GRAPHIA_RUNTIME_URL + GRAPHIA_MEMORY_ID from tf outputs into .env."
+	@echo "  make wire-env           Pull GRAPHIA_RUNTIME_URL + GRAPHIA_MEMORY_ID + GRAPHIA_LOG_GROUP from tf outputs into .env."
 	@echo "  make destroy            Alias for tf-destroy."
 	@echo ""
 	@echo "Play:"
@@ -130,26 +130,29 @@ tf-destroy:
 
 # --- Workflow composites.
 
-# Idempotent: replaces any existing GRAPHIA_RUNTIME_URL / GRAPHIA_MEMORY_ID
-# lines in .env in place, preserves every other line. Creates .env if it
-# doesn't exist. Both `./tf output -raw` calls run inside the container
-# wrapper, so the SSO session has to be live.
+# Idempotent: replaces any existing GRAPHIA_RUNTIME_URL / GRAPHIA_MEMORY_ID /
+# GRAPHIA_LOG_GROUP lines in .env in place, preserves every other line.
+# Creates .env if it doesn't exist. All `./tf output -raw` calls run inside
+# the container wrapper, so the SSO session has to be live.
 wire-env:
 	@set -e; \
 	RUNTIME_URL=$$(cd $(TF_DIR) && ./tf output -raw runtime_invocation_url); \
 	MEMORY_ID=$$(cd $(TF_DIR) && ./tf output -raw memory_id); \
+	LOG_GROUP=$$(cd $(TF_DIR) && ./tf output -raw cloudwatch_log_group); \
 	touch .env; \
 	awk -v ru="GRAPHIA_RUNTIME_URL=$$RUNTIME_URL" \
 	    -v mi="GRAPHIA_MEMORY_ID=$$MEMORY_ID" \
-	    'BEGIN { rseen=0; mseen=0 } \
+	    -v lg="GRAPHIA_LOG_GROUP=$$LOG_GROUP" \
+	    'BEGIN { rseen=0; mseen=0; lseen=0 } \
 	     /^GRAPHIA_RUNTIME_URL=/ { print ru; rseen=1; next } \
 	     /^GRAPHIA_MEMORY_ID=/   { print mi; mseen=1; next } \
+	     /^GRAPHIA_LOG_GROUP=/   { print lg; lseen=1; next } \
 	     { print } \
-	     END { if (!rseen) print ru; if (!mseen) print mi }' \
+	     END { if (!rseen) print ru; if (!mseen) print mi; if (!lseen) print lg }' \
 	    .env > .env.tmp && mv .env.tmp .env
 	@echo ""
 	@echo "Wired into .env from Terraform outputs:"
-	@grep -E '^GRAPHIA_(RUNTIME_URL|MEMORY_ID)=' .env
+	@grep -E '^GRAPHIA_(RUNTIME_URL|MEMORY_ID|LOG_GROUP)=' .env
 
 deploy: build-lambdas tf-init tf-ecr-bootstrap push tf-apply wire-env
 	@echo ""

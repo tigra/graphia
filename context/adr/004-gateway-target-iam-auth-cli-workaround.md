@@ -2,7 +2,7 @@
 
 - **ADR Number:** 004
 - **Title:** Gateway Target IAM Auth via AWS-CLI Post-Apply Workaround
-- **Status:** Accepted
+- **Status:** **Superseded by [ADR 005](005-gateway-tools-via-lambda-targets.md) (2026-05-15)** — this ADR worked around a `hashicorp/aws 6.44.0` provider gap specific to `mcp_server` Gateway targets. ADR 005's pivot to `lambda`-type targets removed `mcp_server` targets entirely; implementation then confirmed `lambda`-type targets carry *no* equivalent provider gap, so Terraform manages them natively and the `make gateway-auth` workaround was deleted. The decision recorded here no longer applies to any live code. Retained for the provider-gap history and the §7 pivot narrative. See the §8 addendum below.
 - **Date:** 2026-05-13
 - **Authors:** Alexey Tigarev
 
@@ -148,3 +148,13 @@ The original implementation (this ADR's §3 as first written) attempted "Terrafo
 **§5 unwind path revised**: when PR #47626 ships and `hashicorp/aws` exposes `IamCredentialProvider { service }`, re-introduce `aws_bedrockagentcore_gateway_target.diary_write` + `.diary_read` in `main.tf` with the credential config inline; delete `make gateway-auth`'s create-or-update body (or shrink it to a no-op); the next `terraform apply` adopts the existing targets via `terraform import` (or fresh-creates them after a manual delete). Diff size remains in the ~20-line range, slightly larger than the §5 estimate but still concentrated.
 
 The architectural decision (separation of Terraform's declarative posture from the Makefile's operational glue) is unchanged. The implementation pivoted further down: Terraform stopped pretending to manage targets at all, rather than managing them with an incomplete config.
+
+## 8. Addendum (2026-05-15) — Superseded: Lambda targets have no provider gap
+
+ADR 005 pivoted the Gateway tool surface from `mcp_server` targets to `lambda` targets. That pivot dissolves this ADR's premise rather than adjusting it:
+
+- The `hashicorp/aws 6.44.0` provider gap this ADR worked around (`IamCredentialProvider` not expressible for `mcpServer` targets) is **specific to `mcp_server` targets**. `aws_bedrockagentcore_gateway_target` of `target_type = lambda` is fully expressible in the provider — credential configuration and all — so Terraform owns the targets declaratively again.
+- `make gateway-auth` was **removed** from the Makefile. Neither the two-step apply (this ADR's §3) nor the Make-owns-targets pivot (§7) survives in live code.
+- ADR 005 §5 had flagged this as an open item ("whether the same gap exists for Lambda targets ... to be verified during implementation"). The implementation answered it: **no gap**.
+
+This ADR is retained as the historical record of the `mcp_server` provider gap and the workaround iterations it drove. It is not a live decision. The unwind path in §5 / §7 is moot — there is nothing to unwind, because `lambda` targets never needed the workaround.

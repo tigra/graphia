@@ -103,7 +103,7 @@ Primary rationale category: **consistency with existing system** (AgentCore's do
 - **Cedar policy enforcement (Phase 7) has a real cross-service boundary now.** Cedar policies bind to Gateway tool-invocation events; the events trace `agent → Gateway → Lambda` (three distinct identities; Cedar can authorise at each hop). Under ADR 002's runtime-embedded shape, the trace was `agent → Gateway → same-container` (Cedar's value was reduced because there was no real boundary).
 - **Phase 7's richer tools (investigation, evidence-builder, Moderator helpers) follow this same pattern by default.** ADR 002 §5 framed runtime-embedded handlers as the *v1.x default* with Lambda targets reserved for richer Phase 7 tools; that framing flips — Lambda targets become the universal default; runtime-embedded is no longer demonstrated.
 - **The Runtime container can shrink slightly** — without FastMCP and its transitive deps, the runtime image's footprint reduces; not material in absolute terms (~1–2 MB out of 330 MB), but worth noting.
-- **ADR 004 (the IAM-credential-provider workaround) remains in force for the gateway-itself permissions** — but its scope changes: the `make gateway-auth` target now creates `target_type=lambda` targets instead of `mcp_server` targets. The provider gap for `mcp_server` targets is moot; whether the same gap exists for Lambda targets depends on `hashicorp/aws 6.44.0`'s coverage, to be verified during implementation.
+- **ADR 004 (the IAM-credential-provider workaround) is superseded by this ADR.** It was pre-implementation-uncertain whether `lambda`-type targets shared the `mcp_server` provider gap; implementation confirmed they do not (see §7). `make gateway-auth` was removed; Terraform owns the Lambda targets declaratively. ADR 004 is retained only as provider-gap history.
 
 **Technical debt incurred:**
 
@@ -117,7 +117,7 @@ Primary rationale category: **consistency with existing system** (AgentCore's do
 
 - Related ADRs:
   - **[ADR 002 — Runtime-Embedded Gateway Tool Handlers (Superseded by ADR 005)](002-runtime-embedded-gateway-tool-handlers.md)** — the now-superseded decision. ADR 002's status flips to "Superseded by ADR 005" with a back-reference in its §7.
-  - [ADR 004 — Gateway Target IAM Auth via AWS-CLI Post-Apply Workaround](004-gateway-target-iam-auth-cli-workaround.md) — the provider-gap workaround for `mcp_server` targets; remains in force as a pattern but its specific target type changes (mcp_server → lambda) during this ADR's implementation. Verify whether `hashicorp/aws` exposes `lambda`-type gateway targets cleanly; if so, ADR 004's CLI workaround can shrink scope.
+  - [ADR 004 — Gateway Target IAM Auth via AWS-CLI Post-Apply Workaround](004-gateway-target-iam-auth-cli-workaround.md) — the provider-gap workaround for `mcp_server` targets; **superseded by this ADR**. Implementation confirmed `lambda`-type Gateway targets have no equivalent gap, so the workaround (and `make gateway-auth`) was removed (see §7).
 - Related specs:
   - [Spec 002 functional spec §2.4](../spec/002-hosted-agentcore-deployment/functional-spec.md) — the Gateway-fronted MCP demonstration the slice promises.
   - [Spec 002 technical considerations §2.7](../spec/002-hosted-agentcore-deployment/technical-considerations.md) — describes the runtime-embedded handler shape; superseded by this ADR's Lambda shape.
@@ -125,3 +125,13 @@ Primary rationale category: **consistency with existing system** (AgentCore's do
   - [Deploy MCP servers in AgentCore Runtime](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-mcp.html) — the protocol-exclusivity constraint that forced this ADR. Quotes the `0.0.0.0:8000/mcp` requirement that conflicts with the agent's `8080/invocations` surface.
   - [Gateway → MCP servers (AgentCore developer guide)](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-target-MCPservers.html) — the source of the `IamCredentialProvider` requirement (covered in ADR 004); confirms `IAM (SigV4)` outbound auth is supported for AgentCore-Runtime-hosted MCP servers.
   - [`langgraph-agentcore` skill `references/agentcore-deployment.md`](../../.claude/skills/langgraph-agentcore/references/agentcore-deployment.md) — the canonical Lambda-target Gateway pattern this ADR returns to.
+
+---
+
+## 7. Addendum (2026-05-15) — Implementation outcome
+
+Slice 7's Lambda-target implementation closed the open questions this ADR left for "verification during implementation":
+
+- **`lambda`-type Gateway targets have no provider gap.** `aws_bedrockagentcore_gateway_target` with `target_type = lambda` is fully expressible in `hashicorp/aws 6.44.0`, credential configuration included. Terraform owns the two targets declaratively; **ADR 004's `make gateway-auth` workaround was removed entirely** and ADR 004's status flips to "Superseded by ADR 005".
+- **The decision shape held; the path to a working deploy did not stop at the pivot.** Five remote-Runtime-only defects surfaced *after* the Lambda targets were wired (none reproducible under the all-mocked test suite): an `asyncio.run()`-inside-running-loop crash in the agent's MCP client, an `httpx.Auth` `isinstance` check added in `mcp 1.27+`, Gateway's `<target>___<tool>` tool-name namespacing, macOS-arm64 wheels shipped in the Lambda zips, and three remote-mode UI methods reading an empty local `graph.get_state()`. All are implementation-level (recorded in `context/spec/002-hosted-agentcore-deployment/tasks.md` "Slice 7 follow-on"), not architectural — they did not revise this ADR's decision.
+- **End-to-end verified.** A full `--remote` game plays through the `agent → Gateway → Lambda → Memory` chain; diary entries are visible via `make inspect-diary`; 83/83 tests pass.

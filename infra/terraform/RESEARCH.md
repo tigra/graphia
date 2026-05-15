@@ -702,3 +702,165 @@ For the current state (2 FAILED targets `ZHV1EFEU8S`, `X5ZHCPKQFF` on gateway `g
 | Gateway permissions — same-account Lambda needs only identity-based `lambda:InvokeFunction` | <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-prerequisites-permissions.html> |
 | Provider source — `mcp.lambda { lambda_arn, tool_schema { inline_payload {...} } }` schema | <https://github.com/hashicorp/terraform-provider-aws/blob/v6.44.0/internal/service/bedrockagentcore/gateway_target.go> |
 | Lambda Python 3.13 runtime — includes `boto3`/`botocore`; `bedrock-agentcore` SDK must be vendored | <https://docs.aws.amazon.com/lambda/latest/dg/lambda-python.html> |
+
+---
+
+## 12. Slice 8 sub-task 1 addendum — AgentCore Observability on the Runtime
+
+Slice 8 sub-task 1 enables AgentCore Observability for the Runtime. The
+CloudWatch log group (`aws_cloudwatch_log_group.runtime`, 30-day retention)
+and the `cloudwatch_log_group` (name) output already existed from Slice 3;
+this sub-task adds the genuinely new parts — the vended-log-delivery pipeline
+that routes Runtime logs/traces into observability, and a `cloudwatch_log_group_arn`
+output. It also re-derives §2's "no dedicated Observability resource" finding
+against the live provider schema and AWS docs, splitting Observability into
+its two real halves.
+
+### How AgentCore Observability is actually enabled (two halves)
+
+AWS docs (`observability-configure.html`, `observability-get-started.html`)
+make clear there is **no single "enable observability" switch**. For a
+Runtime-hosted agent, Observability is two independent things:
+
+1. **Per-Runtime vended log delivery** — equivalent to the AgentCore console's
+   "Log delivery" and "Tracing → Enable" widgets. This is the CloudWatch Logs
+   *vended log delivery* pipeline: a delivery **source** (one per log type)
+   wired to a delivery **destination** through a **delivery**. The AWS SDK
+   form is `logs.put_delivery_source` / `put_delivery_destination` /
+   `create_delivery` (the exact code AWS publishes — see source URL below).
+   **This half IS Terraform-expressible** and is implemented in this sub-task.
+
+2. **Account-level CloudWatch Transaction Search** — a one-time, per-account
+   setup that makes spans/traces searchable in the CloudWatch GenAI
+   Observability console. It is an X-Ray account setting, **not** a property
+   of any AgentCore resource. **This half hits a provider gap** — see below.
+
+### No Observability argument on `aws_bedrockagentcore_agent_runtime`
+
+Re-verified against Registry doc id `12200495` (provider 6.44.0): the
+Runtime resource's complete optional argument set is `region`, `description`,
+`environment_variables`, `authorizer_configuration`, `lifecycle_configuration`,
+`protocol_configuration`, `request_header_configuration`, `tags`. **None is
+observability/trace/OTEL-related.** §2's "configured via arguments on Runtime"
+hedge was wrong — there are no such arguments. Observability is configured
+*alongside* the Runtime via separate CloudWatch resources, never *on* it.
+AgentCore Runtime auto-instruments the container with OpenTelemetry (no
+`opentelemetry-instrument` entry-point or ADOT dependency needed in the image
+— that step is only for non-Runtime-hosted agents).
+
+### What this sub-task implements (Terraform-expressible — half 1)
+
+Six new resources in `main.tf`, all in `hashicorp/aws = 6.44.0`:
+
+| Resource | Purpose |
+|---|---|
+| `aws_cloudwatch_log_delivery_source.runtime_logs` | `log_type = APPLICATION_LOGS`, `resource_arn` = Runtime ARN — the Runtime's application-log stream. |
+| `aws_cloudwatch_log_delivery_source.runtime_traces` | `log_type = TRACES`, `resource_arn` = Runtime ARN — the Runtime's OpenTelemetry spans. |
+| `aws_cloudwatch_log_delivery_destination.runtime_logs` | CWL destination — `destination_resource_arn` = `aws_cloudwatch_log_group.runtime.arn` (the existing 30-day log group). `delivery_destination_type` computes to `CWL`. |
+| `aws_cloudwatch_log_delivery_destination.runtime_traces` | `delivery_destination_type = "XRAY"` — no `delivery_destination_configuration` block (provider-documented shape for X-Ray destinations). |
+| `aws_cloudwatch_log_delivery.runtime_logs` | Connects the APPLICATION_LOGS source to the CWL destination. |
+| `aws_cloudwatch_log_delivery.runtime_traces` | Connects the TRACES source to the X-Ray destination. |
+
+`log_type` valid value for a Bedrock service is `APPLICATION_LOGS` (provider
+docs, `aws_cloudwatch_log_delivery_source`); `TRACES` is the trace stream used
+by the SDK example. All six resources inherit the four required tags via the
+provider `default_tags` block (where the resource is taggable).
+
+Plus one new output: `cloudwatch_log_group_arn` — the existing
+`cloudwatch_log_group` (name) output is kept.
+
+### Provider gap — CloudWatch Transaction Search (half 2)
+
+`aws_xray_trace_segment_destination` **does not exist in `hashicorp/aws = 6.44.0`**
+(verified against the Registry resource-docs index — only `aws_xray_resource_policy`
+is present). Transaction Search requires two steps:
+
+1. An X-Ray resource policy granting `xray.amazonaws.com` `logs:PutLogEvents`
+   on `aws/spans` + `/aws/application-signals/data` — expressible via
+   `aws_xray_resource_policy` (the policy *content* would be an
+   `aws_iam_policy_document`).
+2. `UpdateTraceSegmentDestination --destination CloudWatchLogs` — **no
+   Terraform resource exists for this**. This is the gap.
+
+This mirrors the ADR 004 / §10 precedent: where the provider genuinely cannot
+express an AgentCore-adjacent setting, we do **not** invent a fake field or
+hide it in a fragile `null_resource`/`local-exec` provisioner (the `./tf`
+container image ships no `aws` CLI — see §10). Transaction Search is also a
+**one-time, account-wide** setting, not a per-deploy resource, so leaving it
+out-of-band is the correct call regardless of the provider gap.
+
+**Out-of-band workaround** — run once per AWS account, from the host (the
+account's profile is env-driven, never hardcoded — see the `project_aws_account`
+memory):
+
+```bash
+# 1. Grant X-Ray permission to write spans to CloudWatch Logs.
+aws logs put-resource-policy \
+  --policy-name AgentCoreTransactionSearch \
+  --policy-document '{
+    "Version": "2012-10-17",
+    "Statement": [{
+      "Sid": "TransactionSearchXRayAccess",
+      "Effect": "Allow",
+      "Principal": { "Service": "xray.amazonaws.com" },
+      "Action": "logs:PutLogEvents",
+      "Resource": [
+        "arn:aws:logs:us-east-1:123456789012:log-group:aws/spans:*",
+        "arn:aws:logs:us-east-1:123456789012:log-group:/aws/application-signals/data:*"
+      ],
+      "Condition": {
+        "ArnLike": { "aws:SourceArn": "arn:aws:xray:us-east-1:123456789012:*" },
+        "StringEquals": { "aws:SourceAccount": "123456789012" }
+      }
+    }]
+  }'
+
+# 2. Route X-Ray trace segments to CloudWatch Logs (the gap step).
+aws xray update-trace-segment-destination --destination CloudWatchLogs
+
+# 3. (Optional) Set the span-indexing sample rate (1% is free).
+aws xray update-indexing-rule --name "Default" \
+  --rule '{"Probabilistic": {"DesiredSamplingPercentage": 1}}'
+```
+
+A `make tf-enable-transaction-search` target wrapping these three commands is
+a reasonable small follow-up, parallel to the §10 `update-gateway-target`
+pattern; this sub-task is scoped to the in-module Terraform change. Until
+Transaction Search is enabled, the vended-log-delivery pipeline still
+delivers Runtime **application logs** to the CloudWatch log group correctly —
+only the searchable **trace/span** view in the GenAI Observability console
+depends on the account-level step.
+
+### Findings summary (4 bullets)
+
+- **Observability is two halves, not one switch.** Per-Runtime vended log
+  delivery (logs + traces) IS Terraform-expressible via
+  `aws_cloudwatch_log_delivery_{source,destination}` + `aws_cloudwatch_log_delivery`
+  — six resources, all native to `hashicorp/aws = 6.44.0`. The account-level
+  CloudWatch Transaction Search half is not.
+- **No Observability field on the Runtime resource.** `aws_bedrockagentcore_agent_runtime`
+  in 6.44.0 has no observability/trace/OTEL argument; §2's "Runtime arguments"
+  phrasing is corrected here. Observability resources sit *beside* the Runtime,
+  referencing its ARN.
+- **Provider gap: `aws_xray_trace_segment_destination` does not exist.** The
+  `UpdateTraceSegmentDestination → CloudWatchLogs` step has no Terraform
+  surface. Documented above with a host-run CLI workaround; not faked, not
+  wrapped in a `local-exec` provisioner (no `aws` CLI in the `./tf` image).
+  It is also a one-time account-wide setting, so out-of-band is correct
+  independent of the gap.
+- **The 30-day log group + name output already existed** (Slice 3). This
+  sub-task adds the delivery pipeline that feeds it and a
+  `cloudwatch_log_group_arn` output; the `cloudwatch_log_group` name output
+  is unchanged.
+
+### Sources (this section)
+
+| Topic | URL |
+|---|---|
+| AgentCore Observability — configure (vended log delivery, SDK `put_delivery_*` example) | <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/observability-configure.html> |
+| AgentCore Observability — get started (Transaction Search, auto-instrumentation for Runtime-hosted) | <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/observability-get-started.html> |
+| CloudWatch Transaction Search enablement | <https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Enable-TransactionSearch.html> |
+| `aws_bedrockagentcore_agent_runtime` schema (no observability arg) | <https://registry.terraform.io/providers/hashicorp/aws/6.44.0/docs/resources/bedrockagentcore_agent_runtime> |
+| `aws_cloudwatch_log_delivery_source` schema (`log_type` valid values) | <https://registry.terraform.io/providers/hashicorp/aws/6.44.0/docs/resources/cloudwatch_log_delivery_source> |
+| `aws_cloudwatch_log_delivery_destination` schema (`XRAY` / `CWL` types) | <https://registry.terraform.io/providers/hashicorp/aws/6.44.0/docs/resources/cloudwatch_log_delivery_destination> |
+| `aws_cloudwatch_log_delivery` schema | <https://registry.terraform.io/providers/hashicorp/aws/6.44.0/docs/resources/cloudwatch_log_delivery> |

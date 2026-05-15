@@ -73,6 +73,19 @@ from langgraph.types import Command
 from graphia.config import load_config
 from graphia.diary_store import make_diary_store
 from graphia.runtime.graph_builder import build_runtime_graph
+from graphia.runtime.observability import (
+    bind_thread_id,
+    configure_runtime_observability,
+    stamp_trace_thread_id,
+)
+
+# Install JSON-structured, thread-id-stamped logging before anything else
+# logs. After this, every ``logging`` call in the process — this module,
+# the LangGraph nodes, third-party libs — lands on stdout as a one-line
+# JSON object; AgentCore Runtime ships that stdout to CloudWatch as
+# ``APPLICATION_LOGS``. Local mode never imports this module, so its
+# JSONL-to-``GRAPHIA_LOG_FILE`` behaviour is untouched.
+configure_runtime_observability()
 
 _diary_store = make_diary_store(load_config())
 
@@ -171,14 +184,32 @@ async def handler(payload: dict) -> AsyncIterator[dict]:
         return
 
     action, thread_id, body = parsed
-    logger.info("invocation action=%s thread_id=%s", action, thread_id)
+
+    # Establish the LangGraph thread_id as this invocation's correlation
+    # id *before* any further work logs. ``bind_thread_id`` sets a
+    # ContextVar that ``ThreadIdLogFilter`` reads on every subsequent log
+    # record, so every JSON line emitted for the rest of this invocation
+    # — including from inside the graph's nodes — carries
+    # ``"thread_id": "<thread>"``. A CloudWatch ``{ $.thread_id = "..." }``
+    # filter then selects exactly this game's events. ``stamp_trace_thread_id``
+    # mirrors the id onto the current OTEL span when an OTEL SDK is present
+    # (best-effort; no-op on this image).
+    bind_thread_id(thread_id)
+    stamp_trace_thread_id(thread_id)
+    logger.info(
+        "runtime invocation start",
+        extra={"event": "invocation_start", "action": action},
+    )
 
     try:
         graph = build_runtime_graph(
             thread_id, _CHECKPOINT_DIR, _diary_store
         )
     except Exception as exc:  # noqa: BLE001
-        logger.exception("graph compilation failed")
+        logger.exception(
+            "graph compilation failed",
+            extra={"event": "graph_compile_error"},
+        )
         yield {"event": "error", "error": f"graph compile failed: {exc!r}"}
         return
 
@@ -194,9 +225,22 @@ async def handler(payload: dict) -> AsyncIterator[dict]:
             graph_payload, run_config, stream_mode="updates"
         ):
             for event in _serialise_chunk(chunk):
+                # One structured trace record per graph super-step. The
+                # ThreadIdLogFilter stamps thread_id, so these lines are
+                # the per-node ("Runtime invocation ... model-invocation
+                # roundtrips ... win-condition outcome", spec-002 §2.5)
+                # events a CloudWatch thread_id filter picks up.
+                logger.info(
+                    "graph super-step",
+                    extra={"event": "graph_step", "node": event["node"]},
+                )
                 yield event
     except Exception as exc:  # noqa: BLE001
-        logger.exception("graph.stream failed")
+        # A crashed remote game must leave a full traceback in CloudWatch,
+        # still carrying thread_id so the failure modal's filter selects it.
+        logger.exception(
+            "graph.stream failed", extra={"event": "graph_stream_error"}
+        )
         yield {"event": "error", "error": repr(exc)}
         return
 
@@ -218,7 +262,18 @@ async def handler(payload: dict) -> AsyncIterator[dict]:
                 "value": safe_value,
                 "thread_id": thread_id,
             }
+        logger.info(
+            "runtime invocation paused on interrupt",
+            extra={
+                "event": "invocation_interrupt",
+                "interrupt_count": len(interrupts),
+            },
+        )
     else:
+        logger.info(
+            "runtime invocation done",
+            extra={"event": "invocation_done"},
+        )
         yield {"event": "done", "thread_id": thread_id}
 
 

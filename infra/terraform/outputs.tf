@@ -19,8 +19,13 @@ output "ecr_image_uri" {
 }
 
 output "cloudwatch_log_group" {
-  description = "CloudWatch log group name receiving AgentCore Runtime traces / logs."
+  description = "CloudWatch log group name receiving AgentCore Runtime application logs via the vended-log-delivery pipeline."
   value       = aws_cloudwatch_log_group.runtime.name
+}
+
+output "cloudwatch_log_group_arn" {
+  description = "ARN of the CloudWatch log group receiving AgentCore Runtime application logs. The vended-log-delivery destination points at this ARN; the Slice 8 failure-modal work and the USER smoke test use it to locate Runtime logs."
+  value       = aws_cloudwatch_log_group.runtime.arn
 }
 
 output "memory_id" {
