@@ -98,6 +98,11 @@ class GraphiaApp(App[None]):
         self._graph: CompiledStateGraph | None = None
         self._run_config: dict | None = None
         self._private_buffer: list[BaseMessage] = []
+        # Running mirror of graph state, fed by the driver's on_state callback
+        # from each super-step's update delta. Mode-agnostic: the streamed
+        # chunks carry the same data locally and remotely, so reading the
+        # mirror works even though graph.get_state() is empty in remote mode.
+        self._latest_state: dict = {}
         # Track the cycle we last showed the "/vote <name>" hint for, so we
         # print it at most once per Day. None until the first observation.
         self._vote_hint_shown_for_cycle: int | None = None
@@ -128,17 +133,20 @@ class GraphiaApp(App[None]):
         private.border_title = "Whispers (only you see this)"
         self.run_worker(self._drive(), exclusive=True, name="graphia-drive")
 
+    async def _on_graph_state(self, update: dict) -> None:
+        """Mirror a streamed super-step update delta into ``_latest_state``.
+
+        Shallow merge is correct: ``human_id`` and ``players`` are both
+        whole-value-replace channels (no reducer accumulation), so each
+        chunk carries the complete current value for any key it touches.
+        """
+        self._latest_state.update(update)
+
     def _refresh_human_id(self) -> None:
-        """Peek at graph state to pick up `human_id` as soon as it's set."""
+        """Pick up `human_id` from the streamed-state mirror as soon as it's set."""
         if self._human_id is not None:
             return
-        if self._graph is None or self._run_config is None:
-            return
-        try:
-            snapshot = self._graph.get_state(self._run_config)
-        except Exception:  # noqa: BLE001
-            return
-        value = snapshot.values.get("human_id")
+        value = self._latest_state.get("human_id")
         if isinstance(value, str) and value:
             self._human_id = value
             # Flush any private-tagged messages that arrived before we knew the id.
@@ -165,7 +173,7 @@ class GraphiaApp(App[None]):
         log.write(Text.from_markup(markup))
 
     def _check_spectator_transition(self) -> None:
-        """Detect the human's death by peeking at graph state.
+        """Detect the human's death from the streamed-state mirror.
 
         Inspecting ``PlayerState.is_alive`` is more robust than scanning
         messages because the authoritative flip happens inside the night
@@ -174,13 +182,7 @@ class GraphiaApp(App[None]):
         """
         if self._spectator or self._human_id is None:
             return
-        if self._graph is None or self._run_config is None:
-            return
-        try:
-            snapshot = self._graph.get_state(self._run_config)
-        except Exception:  # noqa: BLE001
-            return
-        players = snapshot.values.get("players")
+        players = self._latest_state.get("players")
         if not isinstance(players, dict):
             return
         me = players.get(self._human_id)
@@ -244,19 +246,15 @@ class GraphiaApp(App[None]):
         return value if isinstance(value, str) else str(value)
 
     def _current_cycle(self) -> int | None:
-        """Peek at graph state for the current ``cycle`` (1-based Day index).
+        """Read the current ``cycle`` (1-based Day index) from the streamed state.
 
-        Returns None if the graph/state is not yet available. Used to gate
-        the once-per-Day ``/vote`` hint without threading cycle through
-        every interrupt payload.
+        Returns None if no cycle has streamed yet. Sourced from
+        ``_latest_state`` (mirrored from graph stream chunks) rather than
+        ``graph.get_state`` so it works in remote mode too — the local
+        graph is empty when the game runs in the deployed Runtime. Used to
+        gate the once-per-Day ``/vote`` hint.
         """
-        if self._graph is None or self._run_config is None:
-            return None
-        try:
-            snapshot = self._graph.get_state(self._run_config)
-        except Exception:  # noqa: BLE001
-            return None
-        value = snapshot.values.get("cycle")
+        value = self._latest_state.get("cycle")
         return value if isinstance(value, int) else None
 
     async def _request_resume(self, payload: dict) -> Any:
@@ -356,6 +354,7 @@ class GraphiaApp(App[None]):
                 on_message=self._handle_graph_message,
                 request_resume=self._request_resume,
                 config=self.config,
+                on_state=self._on_graph_state,
             )
             self._game_over = True
             log.write(

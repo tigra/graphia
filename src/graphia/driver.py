@@ -65,6 +65,7 @@ async def _consume_stream(
     logger: StreamTraceLogger,
     on_message: Callable[[BaseMessage], Awaitable[None]],
     seen_message_ids: set[str],
+    on_state: Callable[[dict], Awaitable[None]] | None = None,
 ) -> list[Interrupt]:
     """Consume one super-step stream, capturing any interrupts inline.
 
@@ -128,6 +129,12 @@ async def _consume_stream(
                         "phase": snapshot.values.get("phase"),
                     }
                 )
+                # Surface chunk state to the UI mirror *before* dispatching the
+                # chunk's messages: a collect_name chunk carries both human_id
+                # and the welcome message, and _handle_graph_message must see
+                # the id when it routes that message's private_to addressing.
+                if on_state is not None and isinstance(update, dict):
+                    await on_state(update)
                 if isinstance(update, dict) and "messages" in update:
                     for msg in update["messages"]:
                         msg_id = getattr(msg, "id", None) or str(id(msg))
@@ -148,6 +155,7 @@ async def drive_graph(
     on_message: Callable[[BaseMessage], Awaitable[None]],
     request_resume: Callable[[dict], Awaitable[Any]],
     config: GraphiaConfig | None = None,
+    on_state: Callable[[dict], Awaitable[None]] | None = None,
 ) -> None:
     """Drive the compiled graph, flushing each super-step to the UI as it arrives.
 
@@ -186,7 +194,7 @@ async def drive_graph(
 
     while True:
         captured_interrupts = await _consume_stream(
-            graph, client, payload, run_config, logger, on_message, seen
+            graph, client, payload, run_config, logger, on_message, seen, on_state
         )
 
         if client is not None:

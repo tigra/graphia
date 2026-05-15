@@ -1039,3 +1039,220 @@ async def test_remote_mode_consumer_receives_basemessage_from_scripted_sse(
     )
     assert isinstance(received, HumanMessage)
     assert received.content == "Wire reconstruction works."
+
+
+# --------------------------------------------------------------------------
+# Regression: remote-mode private whispers reach the private pane
+# --------------------------------------------------------------------------
+#
+# Background: the UI's ``_refresh_human_id`` / ``_check_spectator_transition``
+# used to call ``graph.get_state(run_config)`` on the *local* compiled graph.
+# In remote mode that graph never runs — the work happens server-side — so
+# the snapshot is empty, ``_human_id`` stays None forever, and every
+# ``additional_kwargs={"private_to": ...}`` message lands in the unflushable
+# ``_private_buffer``: the Moderator's private whispers vanish.
+#
+# The fix surfaces each super-step's update delta to the UI via an
+# ``on_state`` callback (``drive_graph(..., on_state=...)``); the UI mirrors
+# it into ``_latest_state`` and reads ``human_id`` from there. The two tests
+# below pin both halves: the driver plumbing and the end-to-end render.
+
+
+async def test_drive_graph_on_state_receives_human_id_from_collect_name_chunk(
+    remote_env: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Unit: ``on_state`` is invoked with the per-node update delta.
+
+    A ``collect_name``-shaped chunk carries ``human_id``; the driver must
+    hand that delta to the ``on_state`` callback so the UI mirror can pick
+    up the id without touching local graph state. Pre-fix there is no
+    ``on_state`` parameter, so this test does not even compile against the
+    old signature.
+    """
+    from langgraph.checkpoint.memory import InMemorySaver
+    from langgraph.graph import END, START, StateGraph
+
+    from graphia.config import GraphiaConfig
+    from graphia.driver import drive_graph
+    from graphia.logging import StreamTraceLogger
+
+    import boto3 as _boto3
+
+    def _explode_boto3_client(*args: Any, **kwargs: Any) -> Any:
+        raise AssertionError("boto3.client() must not be called in this test")
+
+    monkeypatch.setattr(_boto3, "client", _explode_boto3_client)
+
+    def _noop(state: dict) -> dict:
+        return {}
+
+    builder: StateGraph = StateGraph(dict)
+    builder.add_node("noop", _noop)
+    builder.add_edge(START, "noop")
+    builder.add_edge("noop", END)
+    graph = builder.compile(checkpointer=InMemorySaver())
+
+    scripted = ScriptedAgentCoreClient(
+        scripts=[
+            [
+                {"collect_name": {"human_id": "h-789", "cycle": 1}},
+            ],
+        ]
+    )
+    monkeypatch.setattr("graphia.driver.AgentCoreClient", scripted)
+
+    state_updates: list[dict] = []
+
+    async def _on_state(update: dict) -> None:
+        state_updates.append(update)
+
+    async def _on_message(msg: Any) -> None:
+        pass
+
+    async def _request_resume(payload: dict) -> Any:
+        raise AssertionError("no interrupt scripted; request_resume must not run")
+
+    logger = StreamTraceLogger(tmp_path / "on-state.log")
+    config = GraphiaConfig(
+        bearer_token=None,
+        aws_region="us-east-1",
+        log_file=tmp_path / "on-state.log",
+        seed=0,
+        checkpoint_dir=tmp_path / "checkpoints",
+        remote_mode=True,
+        runtime_invocation_url=FAKE_RUNTIME_ARN,
+        memory_id=None,
+        gateway_id=None,
+        gateway_url=None,
+    )
+
+    await drive_graph(
+        graph=graph,
+        run_config={"configurable": {"thread_id": "on-state-test"}},
+        initial={"messages": []},
+        logger=logger,
+        on_message=_on_message,
+        request_resume=_request_resume,
+        config=config,
+        on_state=_on_state,
+    )
+
+    assert state_updates, "on_state should have been called for the chunk"
+    assert state_updates[0].get("human_id") == "h-789", (
+        f"on_state should receive the collect_name update delta verbatim; "
+        f"got {state_updates[0]!r}"
+    )
+
+
+def _private_log_text(app: GraphiaApp) -> str:
+    """Flatten the rendered #private-log RichLog into a plain string."""
+    private_log = app.query_one("#private-log", RichLog)
+    parts: list[str] = []
+    for line in private_log.lines:
+        text_obj = getattr(line, "text", None)
+        if text_obj is None:
+            text_obj = str(line)
+        if isinstance(text_obj, Text):
+            parts.append(text_obj.plain)
+        else:
+            parts.append(str(text_obj))
+    return "\n".join(parts)
+
+
+async def test_remote_mode_private_whisper_renders_in_private_pane(
+    remote_env: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Regression: a ``private_to`` whisper reaches #private-log in remote mode.
+
+    Drives ``GraphiaApp`` with a :class:`ScriptedAgentCoreClient` that emits,
+    across two super-steps, (1) a ``collect_name`` chunk carrying ``human_id``
+    and (2) a ``reveal_role`` chunk carrying a SystemMessage tagged
+    ``additional_kwargs={"private_to": <human_id>}``. The scripted client
+    yields hand-crafted chunks with **no** local graph state, so the pre-fix
+    UI — which read ``graph.get_state`` for ``human_id`` — would never learn
+    the id, leaving the whisper stuck in ``_private_buffer`` and absent from
+    every pane.
+
+    Post-fix the ``on_state`` mirror picks up ``human_id`` from the
+    ``collect_name`` chunk; when the ``reveal_role`` chunk's message routes,
+    ``_human_id`` is set and the whisper renders in #private-log — not the
+    public pane.
+    """
+    from langchain_core.messages import SystemMessage
+
+    import boto3 as _boto3
+
+    def _explode_boto3_client(*args: Any, **kwargs: Any) -> Any:
+        raise AssertionError("boto3.client() must not be called in this test")
+
+    monkeypatch.setattr(_boto3, "client", _explode_boto3_client)
+
+    HUMAN_ID = "human-uuid-abc"
+    WHISPER_BODY = "You are Alice. Your role is Law-abiding."
+
+    # Two super-steps in one stream: collect_name (human_id) then reveal_role
+    # (the private whisper). The graph reaches END after — no interrupt.
+    scripts = [
+        [
+            {
+                "collect_name": {
+                    "human_id": HUMAN_ID,
+                    "cycle": 1,
+                    "messages": [SystemMessage(content="A new game begins.")],
+                }
+            },
+            {
+                "reveal_role": {
+                    "messages": [
+                        SystemMessage(
+                            content=WHISPER_BODY,
+                            additional_kwargs={"private_to": HUMAN_ID},
+                        )
+                    ]
+                }
+            },
+        ],
+    ]
+
+    def _client_factory(*, runtime_arn: str, region: str, boto3_client=None):
+        if boto3_client is not None:
+            raise AssertionError("scripted client must never receive a boto3 client")
+        return ScriptedAgentCoreClient(scripts=scripts)
+
+    monkeypatch.setattr("graphia.driver.AgentCoreClient", _client_factory)
+
+    app = GraphiaApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        # Drive runs the whole scripted stream (no interrupt) to completion.
+        for _ in range(100):
+            if app._game_over:
+                break
+            await pilot.pause(0.05)
+        assert app._game_over, "scripted remote run never reached Game over."
+
+        private_text = _private_log_text(app)
+        public_text = _public_log_text(app)
+
+        # The whisper rendered in the private pane...
+        assert WHISPER_BODY in private_text, (
+            "private whisper missing from #private-log — the on_state mirror "
+            f"failed to surface human_id. Private pane was:\n{private_text}"
+        )
+        # ...and did NOT leak into the public pane.
+        assert WHISPER_BODY not in public_text, (
+            f"private whisper leaked into #public-log:\n{public_text}"
+        )
+        # The UI learned the human id from the stream, not local graph state.
+        assert app._human_id == HUMAN_ID, (
+            f"_human_id should be mirrored from the collect_name chunk; "
+            f"got {app._human_id!r}"
+        )
+
+        await pilot.press("x")
+
+    assert app.is_running is False
