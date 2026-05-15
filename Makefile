@@ -179,13 +179,26 @@ build-lambdas: $(LAMBDA_ZIPS)
 	@echo "Built Lambda zips:"
 	@ls -lh $(LAMBDA_ZIPS)
 
+# Lambda runtime target. The functions are `runtime = "python3.13"` with
+# the default x86_64 architecture, so deps must be Linux x86_64 wheels —
+# NOT the host's wheels (a macOS / arm64 dev box would otherwise ship a
+# `pydantic_core` .so that can't load on Lambda: `No module named
+# 'pydantic_core._pydantic_core'`). `--platform` + `--only-binary=:all:`
+# forces pip to download the manylinux wheels regardless of build host.
+LAMBDA_PY_PLATFORM ?= manylinux2014_x86_64
+LAMBDA_PY_VERSION  ?= 3.13
+
 # Pattern rule: $(LAMBDA_BUILD)/<name>.zip depends on the function's
 # lambda_function.py and requirements.txt; rebuilds whenever either changes.
 $(LAMBDA_BUILD)/%.zip: $(LAMBDA_DIR)/%/lambda_function.py $(LAMBDA_DIR)/%/requirements.txt
 	@mkdir -p $(LAMBDA_BUILD)
 	rm -rf $(LAMBDA_BUILD)/$*
 	mkdir -p $(LAMBDA_BUILD)/$*
-	pip3 install --quiet -r $(LAMBDA_DIR)/$*/requirements.txt -t $(LAMBDA_BUILD)/$*
+	pip3 install --quiet -r $(LAMBDA_DIR)/$*/requirements.txt -t $(LAMBDA_BUILD)/$* \
+		--platform $(LAMBDA_PY_PLATFORM) \
+		--python-version $(LAMBDA_PY_VERSION) \
+		--implementation cp \
+		--only-binary=:all:
 	cp $(LAMBDA_DIR)/$*/lambda_function.py $(LAMBDA_BUILD)/$*/
 	cd $(LAMBDA_BUILD)/$* && zip -qr ../$*.zip .
 
