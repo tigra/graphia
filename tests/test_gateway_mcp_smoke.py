@@ -490,6 +490,23 @@ def test_gateway_store_constructor_validates_required_fields() -> None:
         GatewayMCPDiaryStore(gateway_url="https://gw.example.test/mcp", region="")
 
 
+def test_sigv4_auth_is_httpx_auth_subclass() -> None:
+    """``_SigV4HttpxAuth`` must subclass ``httpx.Auth``, not just duck-type it.
+
+    MCP's ``streamablehttp_client(auth=...)`` does an
+    ``isinstance(auth, httpx.Auth)`` check as of mcp 1.27+; a duck-typed
+    object raises ``TypeError: Invalid "auth" argument`` and the diary
+    write call fails at the Gateway boundary. Pinning the inheritance
+    here catches a future "let's drop the base class" simplification.
+    """
+    import httpx
+    from botocore.credentials import Credentials
+
+    creds = Credentials(access_key="AKIA", secret_key="secret")
+    auth = _SigV4HttpxAuth(region="us-east-1", credentials=creds)
+    assert isinstance(auth, httpx.Auth)
+
+
 def test_sigv4_auth_signs_request_with_bedrock_agentcore_service() -> None:
     """``_SigV4HttpxAuth`` produces an ``Authorization`` header with the right scope.
 

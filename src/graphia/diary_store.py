@@ -251,15 +251,23 @@ def _entry_from_event(event: dict) -> DiaryEntry | None:
 # ---------------------------------------------------------------------------
 
 
-class _SigV4HttpxAuth:
-    """``httpx.Auth``-style hook that SigV4-signs each request.
+import httpx as _httpx
 
-    The MCP ``streamablehttp_client`` accepts a ``httpx.Auth`` instance via
-    its ``auth=`` parameter. ``httpx`` invokes the auth flow as a generator
-    that yields requests to send and receives back the response — for SigV4
-    we only need the first yield (we sign the outbound request once; no
-    retry-on-401 dance is required because Gateway's inbound IAM check is
-    deterministic given a valid signature).
+
+class _SigV4HttpxAuth(_httpx.Auth):
+    """``httpx.Auth`` subclass that SigV4-signs each request.
+
+    The MCP ``streamablehttp_client`` does an ``isinstance(auth, httpx.Auth)``
+    type-check on its ``auth=`` parameter as of mcp 1.27+ — duck-typed objects
+    are rejected with ``TypeError: Invalid "auth" argument``. We inherit so
+    the type-check passes; the auth-flow generator still does the actual
+    SigV4 signing.
+
+    ``httpx`` invokes the auth flow as a generator that yields requests to
+    send and receives back the response — for SigV4 we only need the first
+    yield (we sign the outbound request once; no retry-on-401 dance is
+    required because Gateway's inbound IAM check is deterministic given a
+    valid signature).
 
     Credentials come from the caller-supplied ``botocore`` credentials object,
     refreshed by ``boto3.Session().get_credentials()`` lazily on construction.
