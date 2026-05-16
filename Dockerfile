@@ -23,22 +23,33 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH="/app/.venv/bin:$PATH"
 
 # --- AgentCore Observability (CR 003) ----------------------------------
-# Graphia's game engine runs as a Bedrock AgentCore **Runtime-hosted**
-# workload. AgentCore auto-instruments Runtime-hosted containers — it
-# injects the OpenTelemetry SDK + OTLP exporter and ships the emitted spans
-# to CloudWatch as the ``TRACES`` stream — so the image must NOT run under
-# the ``opentelemetry-instrument`` launch wrapper, and must NOT set the
-# manual ``OTEL_*`` / ``AGENT_OBSERVABILITY_ENABLED`` env block: that recipe
-# is for *non-Runtime-hosted* agents and conflicts with the platform
-# instrumentation (it suppressed all in-app telemetry on image 4f164f3).
-# See ``infra/terraform/RESEARCH.md`` §12.
+# The navigable per-session trace tree needs three things, and a hand-built
+# image (Graphia writes its own Dockerfile rather than using the agentcore
+# starter-toolkit) must supply all three:
 #
-# The framework spans the navigable per-session trace tree is built from
-# (LangGraph node execution + per-turn ChatBedrockConverse model calls) come
-# from an explicit instrumentor — ``openinference-instrumentation-langchain``
-# — activated programmatically in ``graphia.runtime.observability``'s
-# ``configure_runtime_observability()``. Generic ADOT does not instrument
-# LangGraph/LangChain; there is no ``aws_langchain`` auto-instrumentor.
+# 1. An OpenTelemetry SDK + TracerProvider. The ``bedrock-agentcore`` SDK
+#    does NOT create one — ``runtime/app.py`` explicitly comments that "in
+#    the managed runtime ADOT sets up the TracerProvider before __init__
+#    runs". ADOT = the ``opentelemetry-instrument`` launch wrapper below
+#    (with ``aws-opentelemetry-distro``). Without it every span lands on
+#    OpenTelemetry's no-op default provider and is exported nowhere — the
+#    cause of the flat trajectory on image 89deed3.
+# 2. The framework instrumentor for the LangGraph node / ChatBedrockConverse
+#    model spans — ``openinference-instrumentation-langchain``, activated
+#    programmatically in ``graphia.runtime.observability``'s
+#    ``configure_runtime_observability()``. Generic ADOT does not instrument
+#    LangGraph; there is no ``aws_langchain`` auto-instrumentor.
+# 3. A per-invocation root span (``runtime_invocation_span`` in the entry
+#    point) so node/model/tool spans nest into one tree.
+#
+# OTEL_RESOURCE_ATTRIBUTES is deliberately NOT set here: the managed runtime
+# injects it carrying ``cloud.resource_id`` (the runtime ARN the SDK parses
+# at app.py:_parse_runtime_arn). Hardcoding it would clobber that value.
+# See ``infra/terraform/RESEARCH.md`` §12.
+ENV AGENT_OBSERVABILITY_ENABLED=true \
+    OTEL_PYTHON_DISTRO=aws_distro \
+    OTEL_PYTHON_CONFIGURATOR=aws_configurator
+
 WORKDIR /app
 
 COPY --from=builder /app/.venv /app/.venv
@@ -46,7 +57,8 @@ COPY src ./src
 
 EXPOSE 8080
 
-# Runtime-hosted recipe: run the module directly. AgentCore's platform
-# auto-instrumentation wraps the process; the in-code LangChain instrumentor
-# (loaded by ``configure_runtime_observability()``) emits the framework spans.
-CMD ["python", "-m", "graphia.runtime"]
+# Run under the ADOT auto-instrumentation wrapper — it configures the OTEL
+# SDK / TracerProvider the bedrock-agentcore SDK and the in-code LangChain
+# instrumentor both depend on. The runtime module's app.run(host=0.0.0.0)
+# is unchanged; opentelemetry-instrument only sets up the SDK before exec.
+CMD ["opentelemetry-instrument", "python", "-m", "graphia.runtime"]

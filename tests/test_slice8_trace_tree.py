@@ -277,3 +277,43 @@ async def test_runtime_invocation_produces_a_nested_span_tree(
         f"the invocation root span {root.name!r} is not stamped with the "
         f"game's thread_id; the session tree cannot be selected by game id."
     )
+
+
+# --------------------------------------------------------------------------
+# Deployment guard — the image must run under the ADOT wrapper.
+# --------------------------------------------------------------------------
+
+
+def test_dockerfile_runs_runtime_under_adot_wrapper() -> None:
+    """The Runtime image's CMD must start under ``opentelemetry-instrument``.
+
+    The span-tree test above runs in-process and installs its *own*
+    ``TracerProvider`` — so it cannot catch a deployment that has no provider
+    at all. Production gets its provider from ADOT: ``bedrock-agentcore``'s
+    ``runtime/app.py`` explicitly relies on "ADOT [setting] up the
+    TracerProvider before __init__ runs", and a hand-built image supplies
+    ADOT only by launching under the ``opentelemetry-instrument`` wrapper.
+
+    Image ``89deed3`` dropped that wrapper; every span then landed on
+    OpenTelemetry's no-op default provider and the deployed trajectory went
+    flat. This test guards the wrapper so the regression cannot recur
+    silently — it is the deployment-shape check the in-process test can't be.
+    """
+    from pathlib import Path
+
+    dockerfile = Path(__file__).resolve().parents[1] / "Dockerfile"
+    text = dockerfile.read_text(encoding="utf-8")
+
+    cmd_lines = [
+        ln.strip() for ln in text.splitlines() if ln.strip().startswith("CMD")
+    ]
+    assert len(cmd_lines) == 1, (
+        f"expected exactly one CMD instruction in the Dockerfile; "
+        f"found {len(cmd_lines)}: {cmd_lines!r}"
+    )
+    assert "opentelemetry-instrument" in cmd_lines[0], (
+        "the Runtime image CMD must run under the `opentelemetry-instrument` "
+        "ADOT wrapper — the bedrock-agentcore SDK depends on ADOT to set up "
+        "the OpenTelemetry TracerProvider; without it the deployed trace tree "
+        f"is empty. CMD was: {cmd_lines[0]!r}"
+    )
