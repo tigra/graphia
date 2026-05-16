@@ -301,6 +301,68 @@ resource "aws_cloudwatch_log_delivery" "runtime_traces" {
 }
 
 # ---------------------------------------------------------------------------
+# CloudWatch Transaction Search — step 1 of 3 (RESEARCH.md §12).
+#
+# CloudWatch Transaction Search makes Runtime spans searchable in the GenAI
+# Observability console. It is account-wide and split across three actions
+# (RESEARCH.md §12): only the first — a CloudWatch Logs *resource* policy
+# letting `xray.amazonaws.com` write spans into the AWS-managed Transaction
+# Search log groups — has a provider surface. The CLI form is
+# `aws logs put-resource-policy`, which maps to
+# `aws_cloudwatch_log_resource_policy` (a CloudWatch Logs resource policy —
+# NOT `aws_xray_resource_policy`, which is a different X-Ray-side resource).
+#
+# Steps 2 (`xray update-trace-segment-destination`) and 3
+# (`xray update-indexing-rule`) have no provider resource in 6.44.0 and stay
+# as the host-run CLI workaround documented in §12.
+#
+# The two target log groups (`aws/spans`, `/aws/application-signals/data`)
+# are created by AWS when Transaction Search is enabled — not by this module —
+# so they are referenced by constructed ARN string, never as
+# `aws_cloudwatch_log_group` resources here. Account id comes from
+# `data.aws_caller_identity.current` and region from `var.region`; neither is
+# hardcoded. This is a region/account-scoped resource policy with no stored
+# data, so a fresh `terraform apply` recreates it cleanly (Slice 10 destroy/
+# redeploy test).
+# ---------------------------------------------------------------------------
+
+data "aws_caller_identity" "current" {}
+
+data "aws_iam_policy_document" "transaction_search" {
+  statement {
+    sid     = "TransactionSearchXRayAccess"
+    effect  = "Allow"
+    actions = ["logs:PutLogEvents"]
+    resources = [
+      "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:aws/spans:*",
+      "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/application-signals/data:*",
+    ]
+
+    principals {
+      type        = "Service"
+      identifiers = ["xray.amazonaws.com"]
+    }
+
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = ["arn:aws:xray:${var.region}:${data.aws_caller_identity.current.account_id}:*"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+}
+
+resource "aws_cloudwatch_log_resource_policy" "transaction_search" {
+  policy_name     = "${local.name_prefix}-transaction-search"
+  policy_document = data.aws_iam_policy_document.transaction_search.json
+}
+
+# ---------------------------------------------------------------------------
 # AgentCore Gateway — single MCP front door for the agent's diary tools.
 # Inbound auth is AWS_IAM so the Runtime (and any local-mode caller using
 # the standard credential chain) can SigV4-sign requests against the Gateway

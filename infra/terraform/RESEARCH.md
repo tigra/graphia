@@ -771,49 +771,47 @@ Plus one new output: `cloudwatch_log_group_arn` — the existing
 
 ### Provider gap — CloudWatch Transaction Search (half 2)
 
-`aws_xray_trace_segment_destination` **does not exist in `hashicorp/aws = 6.44.0`**
-(verified against the Registry resource-docs index — only `aws_xray_resource_policy`
-is present). Transaction Search requires two steps:
+Transaction Search is account-wide and split across three steps. The first is
+genuinely Terraform-expressible and is **now implemented in this module**; the
+remaining two are the real provider gap.
 
-1. An X-Ray resource policy granting `xray.amazonaws.com` `logs:PutLogEvents`
-   on `aws/spans` + `/aws/application-signals/data` — expressible via
-   `aws_xray_resource_policy` (the policy *content* would be an
-   `aws_iam_policy_document`).
+1. **Terraform-managed** — a CloudWatch Logs **resource policy** granting
+   `xray.amazonaws.com` `logs:PutLogEvents` on `aws/spans` +
+   `/aws/application-signals/data`. The CLI form is `aws logs put-resource-policy`
+   (a *CloudWatch Logs* resource policy), so the matching provider resource is
+   **`aws_cloudwatch_log_resource_policy`** — **not** `aws_xray_resource_policy`,
+   which is a different, X-Ray-side resource and was a mislabel in an earlier
+   draft of this section. The policy *content* is built by an
+   `aws_iam_policy_document` data source. This is implemented in `main.tf` as
+   `aws_cloudwatch_log_resource_policy.transaction_search` (fed by
+   `data.aws_iam_policy_document.transaction_search`), with account id from
+   `data.aws_caller_identity.current` and region from `var.region` — nothing
+   hardcoded. It is a region/account-scoped policy with no stored data, so a
+   fresh `terraform apply` recreates it cleanly (Slice 10 destroy/redeploy).
 2. `UpdateTraceSegmentDestination --destination CloudWatchLogs` — **no
-   Terraform resource exists for this**. This is the gap.
+   Terraform resource exists for this** (`aws_xray_trace_segment_destination`
+   **does not exist in `hashicorp/aws = 6.44.0`** — verified against the
+   Registry resource-docs index). This is the genuine gap.
+3. `UpdateIndexingRule` (optional span-indexing sample rate) — likewise has no
+   provider resource.
 
-This mirrors the ADR 004 / §10 precedent: where the provider genuinely cannot
-express an AgentCore-adjacent setting, we do **not** invent a fake field or
-hide it in a fragile `null_resource`/`local-exec` provisioner (the `./tf`
-container image ships no `aws` CLI — see §10). Transaction Search is also a
-**one-time, account-wide** setting, not a per-deploy resource, so leaving it
+For steps 2–3 this mirrors the ADR 004 / §10 precedent: where the provider
+genuinely cannot express an AgentCore-adjacent setting, we do **not** invent a
+fake field or hide it in a fragile `null_resource`/`local-exec` provisioner
+(the `./tf` container image ships no `aws` CLI — see §10). They are also
+**one-time, account-wide** settings, not per-deploy resources, so leaving them
 out-of-band is the correct call regardless of the provider gap.
 
-**Out-of-band workaround** — run once per AWS account, from the host (the
-account's profile is env-driven, never hardcoded — see the `project_aws_account`
-memory):
+**Out-of-band workaround** — step 1 is now Terraform-managed (see above), so
+the host-run CLI workaround reduces to steps 2–3 below. Run once per AWS
+account, from the host, after `terraform apply` has created the resource
+policy (the account's profile is env-driven, never hardcoded — see the
+`project_aws_account` memory):
 
 ```bash
 # 1. Grant X-Ray permission to write spans to CloudWatch Logs.
-aws logs put-resource-policy \
-  --policy-name AgentCoreTransactionSearch \
-  --policy-document '{
-    "Version": "2012-10-17",
-    "Statement": [{
-      "Sid": "TransactionSearchXRayAccess",
-      "Effect": "Allow",
-      "Principal": { "Service": "xray.amazonaws.com" },
-      "Action": "logs:PutLogEvents",
-      "Resource": [
-        "arn:aws:logs:us-east-1:123456789012:log-group:aws/spans:*",
-        "arn:aws:logs:us-east-1:123456789012:log-group:/aws/application-signals/data:*"
-      ],
-      "Condition": {
-        "ArnLike": { "aws:SourceArn": "arn:aws:xray:us-east-1:123456789012:*" },
-        "StringEquals": { "aws:SourceAccount": "123456789012" }
-      }
-    }]
-  }'
+#    NOW TERRAFORM-MANAGED — `aws_cloudwatch_log_resource_policy.transaction_search`
+#    in main.tf. No longer a CLI step.
 
 # 2. Route X-Ray trace segments to CloudWatch Logs (the gap step).
 aws xray update-trace-segment-destination --destination CloudWatchLogs
@@ -823,13 +821,13 @@ aws xray update-indexing-rule --name "Default" \
   --rule '{"Probabilistic": {"DesiredSamplingPercentage": 1}}'
 ```
 
-A `make tf-enable-transaction-search` target wrapping these three commands is
-a reasonable small follow-up, parallel to the §10 `update-gateway-target`
-pattern; this sub-task is scoped to the in-module Terraform change. Until
-Transaction Search is enabled, the vended-log-delivery pipeline still
-delivers Runtime **application logs** to the CloudWatch log group correctly —
-only the searchable **trace/span** view in the GenAI Observability console
-depends on the account-level step.
+A `make tf-enable-transaction-search` target wrapping these two remaining
+commands is a reasonable small follow-up, parallel to the §10
+`update-gateway-target` pattern; this sub-task is scoped to the in-module
+Terraform change. Until Transaction Search is enabled, the vended-log-delivery
+pipeline still delivers Runtime **application logs** to the CloudWatch log
+group correctly — only the searchable **trace/span** view in the GenAI
+Observability console depends on the account-level steps.
 
 ### Findings summary (4 bullets)
 
@@ -842,12 +840,22 @@ depends on the account-level step.
   in 6.44.0 has no observability/trace/OTEL argument; §2's "Runtime arguments"
   phrasing is corrected here. Observability resources sit *beside* the Runtime,
   referencing its ARN.
+- **Transaction Search step 1 is now Terraform-managed.** The CloudWatch Logs
+  resource policy letting `xray.amazonaws.com` write spans to `aws/spans` +
+  `/aws/application-signals/data` is implemented in `main.tf` as
+  `aws_cloudwatch_log_resource_policy.transaction_search` (fed by an
+  `aws_iam_policy_document`). The matching provider resource is
+  `aws_cloudwatch_log_resource_policy` — an earlier draft mislabelled it
+  `aws_xray_resource_policy`; the CLI command is `aws logs put-resource-policy`,
+  a CloudWatch Logs resource policy. Account id / region come from
+  `data.aws_caller_identity.current` / `var.region`, nothing hardcoded.
 - **Provider gap: `aws_xray_trace_segment_destination` does not exist.** The
-  `UpdateTraceSegmentDestination → CloudWatchLogs` step has no Terraform
-  surface. Documented above with a host-run CLI workaround; not faked, not
-  wrapped in a `local-exec` provisioner (no `aws` CLI in the `./tf` image).
-  It is also a one-time account-wide setting, so out-of-band is correct
-  independent of the gap.
+  `UpdateTraceSegmentDestination → CloudWatchLogs` step (and the optional
+  `UpdateIndexingRule`) have no Terraform surface. Documented above with a
+  host-run CLI workaround reduced to steps 2–3; not faked, not wrapped in a
+  `local-exec` provisioner (no `aws` CLI in the `./tf` image). These are also
+  one-time account-wide settings, so out-of-band is correct independent of
+  the gap.
 - **The 30-day log group + name output already existed** (Slice 3). This
   sub-task adds the delivery pipeline that feeds it and a
   `cloudwatch_log_group_arn` output; the `cloudwatch_log_group` name output
