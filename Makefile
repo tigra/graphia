@@ -32,7 +32,7 @@ LAMBDA_ZIPS   = $(addprefix $(LAMBDA_BUILD)/,$(addsuffix .zip,$(LAMBDA_FNS)))
 .PHONY: help check-container build run shell clean login-ecr push \
         tf-init tf-fmt tf-validate tf-plan tf-ecr-bootstrap tf-apply tf-destroy \
         wire-env deploy redeploy destroy inspect-diary play play-remote \
-        build-lambdas clean-lambdas
+        build-lambdas clean-lambdas enable-transaction-search
 
 help:
 	@echo "Container image targets:"
@@ -68,6 +68,9 @@ help:
 	@echo ""
 	@echo "Inspection:"
 	@echo "  make inspect-diary      Pretty-print diary entries from the deployed Memory (uses .env)."
+	@echo ""
+	@echo "Observability (one-time, per AWS account):"
+	@echo "  make enable-transaction-search  Turn on CloudWatch Transaction Search for the trace tree."
 	@echo ""
 	@echo "Overrides:"
 	@echo "  CONTAINER=docker|podman  IMAGE=...  TAG=...  PLATFORM=linux/amd64  PORT=..."
@@ -227,3 +230,28 @@ play-remote:
 #   make inspect-diary ARGS="--game-id <thread> --json"
 inspect-diary:
 	uv run python -m graphia.tools.inspect_diary $(ARGS)
+
+# --- CloudWatch Transaction Search (one-time, per AWS account).
+#
+# AgentCore Observability's trace-tree view depends on CloudWatch Transaction
+# Search. Its enablement is three steps (infra/terraform/RESEARCH.md §12):
+# step 1 (the X-Ray -> CloudWatch Logs resource policy) is Terraform-managed
+# (aws_cloudwatch_log_resource_policy); steps 2-3 below have no resource in
+# ANY hashicorp/aws release, so they live here as host-run AWS CLI calls.
+#
+# Indexing is set to 100%, not the high-volume default of 1%: Graphia is
+# low-traffic, so 1% probabilistic indexing would leave most games unindexed
+# and absent from the searchable Sessions view. At Graphia's span volume the
+# cost of 100% indexing is negligible.
+#
+# Idempotent — safe to re-run. Uses the standard AWS credential chain
+# (set AWS_PROFILE in the environment), same as `make login-ecr`.
+enable-transaction-search:
+	@if [ "$$(aws xray get-trace-segment-destination --region $(AWS_REGION) --query Destination --output text 2>/dev/null)" = "CloudWatchLogs" ]; then \
+	    echo "Trace segment destination already CloudWatchLogs — skipping step 2."; \
+	else \
+	    aws xray update-trace-segment-destination --destination CloudWatchLogs --region $(AWS_REGION); \
+	fi
+	aws xray update-indexing-rule --name "Default" --rule '{"Probabilistic": {"DesiredSamplingPercentage": 100}}' --region $(AWS_REGION)
+	@echo ""
+	@echo "CloudWatch Transaction Search enabled in $(AWS_REGION): trace segments -> CloudWatch Logs, 100% span indexing."

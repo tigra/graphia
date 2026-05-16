@@ -808,26 +808,36 @@ account, from the host, after `terraform apply` has created the resource
 policy (the account's profile is env-driven, never hardcoded — see the
 `project_aws_account` memory):
 
+Steps 2–3 are wrapped in the **`make enable-transaction-search`** target
+(repo-root `Makefile`) — the project's task-runner pattern, parallel to the
+§10 `update-gateway-target` workaround. Run it once per AWS account, from the
+host, after `terraform apply` has created the resource policy (the account's
+profile is env-driven, never hardcoded — see the `project_aws_account`
+memory):
+
 ```bash
 # 1. Grant X-Ray permission to write spans to CloudWatch Logs.
 #    NOW TERRAFORM-MANAGED — `aws_cloudwatch_log_resource_policy.transaction_search`
 #    in main.tf. No longer a CLI step.
 
-# 2. Route X-Ray trace segments to CloudWatch Logs (the gap step).
+# 2 + 3. make enable-transaction-search  — runs:
 aws xray update-trace-segment-destination --destination CloudWatchLogs
-
-# 3. (Optional) Set the span-indexing sample rate (1% is free).
 aws xray update-indexing-rule --name "Default" \
-  --rule '{"Probabilistic": {"DesiredSamplingPercentage": 1}}'
+  --rule '{"Probabilistic": {"DesiredSamplingPercentage": 100}}'
 ```
 
-A `make tf-enable-transaction-search` target wrapping these two remaining
-commands is a reasonable small follow-up, parallel to the §10
-`update-gateway-target` pattern; this sub-task is scoped to the in-module
-Terraform change. Until Transaction Search is enabled, the vended-log-delivery
-pipeline still delivers Runtime **application logs** to the CloudWatch log
-group correctly — only the searchable **trace/span** view in the GenAI
-Observability console depends on the account-level steps.
+**Span indexing is set to 100%, not the AWS default of 1%.** The 1% default
+is tuned for high-volume production fleets ("first 1% of indexed spans is
+free"). Graphia is the opposite — a developer plays the occasional game, tens
+of spans each — so 1% probabilistic indexing would leave most games unindexed
+and absent from the searchable GenAI Observability **Sessions** view. At
+Graphia's absolute span volume the cost of 100% indexing is negligible. The
+target hardcodes 100% for that reason.
+
+Until Transaction Search is enabled, the vended-log-delivery pipeline still
+delivers Runtime **application logs** to the CloudWatch log group correctly —
+only the searchable **trace/span** view in the GenAI Observability console
+depends on these account-level steps.
 
 ### Findings summary (4 bullets)
 
