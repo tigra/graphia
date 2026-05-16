@@ -112,16 +112,82 @@ data "aws_iam_policy_document" "runtime_inline" {
     resources = local.bedrock_invoke_resources
   }
 
-  # CloudWatch Logs — stream creation + log writes, scoped to the Runtime
-  # log group's ARN.
+  # CloudWatch Logs + X-Ray + metrics — the AgentCore Runtime execution-role
+  # observability permissions, taken from the AWS "IAM Permissions for
+  # AgentCore Runtime" doc (devguide: runtime-permissions, "AgentCore Runtime
+  # execution role"). The Runtime writes its container / service logs to the
+  # platform-managed group `/aws/bedrock-agentcore/runtimes/<runtime-id>-DEFAULT`,
+  # which it creates on first run — so the role needs CreateLogGroup +
+  # CreateLogStream + PutLogEvents on that path. The X-Ray grant is what lets
+  # the in-Runtime ADOT exporter ship trace segments; without it the GenAI
+  # Observability trace tree is empty.
+  #
+  # The prior single `CloudWatchLogsWrite` statement was the root-cause bug:
+  # scoped only to the Terraform-made `aws_cloudwatch_log_group.runtime`
+  # (`/aws/bedrock-agentcore/graphia-demo-runtime`), with no CreateLogGroup and
+  # no X-Ray — so the platform could neither create the runtimes log group
+  # (it never appeared, while every other runtime's did) nor export spans.
+  # The runtime role does not need write access to the vended-delivery group:
+  # that delivery is handled by the CloudWatch Logs vended-delivery pipeline,
+  # not by this role.
   statement {
-    sid    = "CloudWatchLogsWrite"
+    sid    = "CloudWatchLogGroup"
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:DescribeLogStreams",
+    ]
+    resources = [
+      "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/bedrock-agentcore/runtimes/*",
+    ]
+  }
+
+  statement {
+    sid       = "CloudWatchDescribeLogGroups"
+    effect    = "Allow"
+    actions   = ["logs:DescribeLogGroups"]
+    resources = ["arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:*"]
+  }
+
+  statement {
+    sid    = "CloudWatchLogStreamWrite"
     effect = "Allow"
     actions = [
       "logs:CreateLogStream",
       "logs:PutLogEvents",
     ]
-    resources = ["${aws_cloudwatch_log_group.runtime.arn}:*"]
+    resources = [
+      "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/bedrock-agentcore/runtimes/*:log-stream:*",
+    ]
+  }
+
+  # X-Ray — the in-Runtime ADOT / OpenTelemetry exporter ships trace segments
+  # to X-Ray; CloudWatch Transaction Search then surfaces them in `aws/spans`
+  # and the GenAI Observability trace tree. AWS scopes these actions to "*".
+  statement {
+    sid    = "XRayTraceExport"
+    effect = "Allow"
+    actions = [
+      "xray:PutTraceSegments",
+      "xray:PutTelemetryRecords",
+      "xray:GetSamplingRules",
+      "xray:GetSamplingTargets",
+    ]
+    resources = ["*"]
+  }
+
+  # CloudWatch custom metrics — AgentCore emits operational metrics under the
+  # `bedrock-agentcore` namespace; the condition keeps the grant scoped to it.
+  statement {
+    sid       = "CloudWatchMetrics"
+    effect    = "Allow"
+    actions   = ["cloudwatch:PutMetricData"]
+    resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "cloudwatch:namespace"
+      values   = ["bedrock-agentcore"]
+    }
   }
 
   # AgentCore Gateway — the agent inside the Runtime invokes its own diary
