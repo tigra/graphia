@@ -44,18 +44,44 @@ Mechanism
   record as a one-line JSON object — the shape the CloudWatch
   ``{ $.thread_id = "..." }`` filter matches.
 
-The trace half (OTEL spans) is now live on the deployed Runtime image
-(CR 003): the container starts under the ADOT ``opentelemetry-instrument``
-auto-instrumentation wrapper, so an OpenTelemetry SDK *is* on the path
-there. :func:`stamp_trace_thread_id` puts the game's ``thread_id`` into
-OTEL baggage under the key AWS GenAI Observability groups a session's
-spans by (``session.id``) and also stamps it as an attribute on the
-current span. That makes the per-session trace tree both navigable
-(grouped as one session) and filterable by game. The import is still
-guarded so local mode and the test environment — neither of which runs
-the ADOT wrapper — see a silent no-op and pull in no OTEL runtime
-behaviour. The JSON-log path above is independent of all this and keeps
-working with zero extra deps.
+The trace half (OTEL spans) — CR 003
+------------------------------------
+
+CR 003 requires the remote Runtime to render a navigable per-session
+**trace tree** in AgentCore GenAI Observability — a parent/child span
+hierarchy of one game (Runtime-invocation root -> per-node graph
+execution -> per-turn model calls), not a flat list of log entries.
+
+A trace tree is built from OpenTelemetry spans. Producing the
+``gen_ai.*``-semantic agent/LLM spans the GenAI trajectory view is built
+from requires an **explicit framework instrumentor** — generic ADOT does
+*not* instrument LangGraph/LangChain (there is no ``aws_langchain``
+instrumentor; that earlier assumption was the CR 003 defect). AWS lists
+OpenInference first among the instrumentation libraries AgentCore GenAI
+Observability consumes (see ``observability-configure.html`` →
+"Enabling observability in agent code for AgentCore-hosted agents"), so
+:func:`configure_runtime_observability` programmatically activates
+``openinference-instrumentation-langchain``'s ``LangChainInstrumentor``.
+Because it is wired in code (not via a launch wrapper), the *same*
+instrumentation path runs in production and under test.
+
+The deployed Runtime is **Runtime-hosted**, so AgentCore auto-instruments
+the container and injects the OTLP exporter — the image must NOT run
+under the ``opentelemetry-instrument`` wrapper (that recipe is for
+*non-Runtime-hosted* agents and conflicts with the platform
+instrumentation; see ``infra/terraform/RESEARCH.md`` §12). The container
+just runs ``python -m graphia.runtime``; this module's
+``LangChainInstrumentor`` then emits the framework spans the platform
+exporter ships.
+
+:func:`stamp_trace_thread_id` puts the game's ``thread_id`` into OTEL
+baggage under the key AWS GenAI Observability groups a session's spans by
+(``session.id``) and also stamps it as an attribute on the current span.
+That makes the per-session trace tree both navigable (grouped as one
+session) and filterable by game. Every OTEL import is guarded so local
+mode and the all-mocked test suite see a silent no-op and pull in no OTEL
+runtime behaviour. The JSON-log path above is independent of all this and
+keeps working with zero extra deps.
 
 Local mode is untouched
 -----------------------
@@ -68,10 +94,12 @@ never imports anything here.
 
 from __future__ import annotations
 
+import contextlib
 import contextvars
 import json
 import logging
 import sys
+from collections.abc import Iterator
 from datetime import datetime, timezone
 
 # The correlation id for the in-flight invocation. Set once at the top of
@@ -93,6 +121,66 @@ THREAD_ID_FIELD = "thread_id"
 # into one tree. Setting it to the LangGraph ``thread_id`` means one game ==
 # one session in the console.
 SESSION_ID_BAGGAGE_KEY = "session.id"
+
+# Name of the per-invocation root span opened by the Runtime entry-point.
+# Every graph-node / model-call / tool-call span the LangChain instrumentor
+# produces nests under a span of this name, giving the GenAI Observability
+# trajectory view a single root to build the per-session tree from.
+RUNTIME_ROOT_SPAN_NAME = "graphia.runtime.invocation"
+
+# Module-level guard so :func:`configure_runtime_observability` installs the
+# LangChain/LangGraph instrumentor exactly once even across re-imports during
+# test collection. ``LangChainInstrumentor`` is itself idempotent, but the
+# flag keeps the import + instrument cost off the second call entirely.
+_LANGCHAIN_INSTRUMENTED = False
+
+
+def _install_langgraph_instrumentor() -> None:
+    """Activate the LangChain/LangGraph GenAI instrumentor, programmatically.
+
+    CR 003: the navigable per-session trace tree is built from OpenTelemetry
+    ``gen_ai.*``-semantic spans for graph-node execution and per-turn model
+    calls. Generic ADOT does **not** instrument LangGraph/LangChain — an
+    explicit framework instrumentor is required. AWS lists OpenInference
+    first among the instrumentation libraries AgentCore GenAI Observability
+    consumes, so this installs ``openinference-instrumentation-langchain``'s
+    :class:`LangChainInstrumentor`.
+
+    ``LangChainInstrumentor`` hooks the LangChain callback system, so once
+    ``.instrument()`` has run, **every** LangGraph node execution and every
+    LangChain ``Runnable`` invocation (including the ``ChatBedrockConverse``
+    model calls ``langchain-aws`` makes underneath) emits a span — nested
+    under whatever span is active when the graph runs. The Runtime entry-point
+    opens that enclosing root span, so the spans form one tree per game.
+
+    Doing this in code (not via a ``opentelemetry-instrument`` launch
+    wrapper) means the identical instrumentation path runs in production and
+    under test — the test suite drives the real handler and sees the real
+    spans.
+
+    Guarded and best-effort: telemetry must never break a game. If the
+    instrumentor package is somehow absent this is a silent no-op; the
+    structured-log path is unaffected either way.
+    """
+    global _LANGCHAIN_INSTRUMENTED
+    if _LANGCHAIN_INSTRUMENTED:
+        return
+    try:
+        from openinference.instrumentation.langchain import (
+            LangChainInstrumentor,
+        )
+    except ImportError:
+        return  # Instrumentor package not on the path — nothing to install.
+    try:
+        # No explicit ``tracer_provider=`` — the instrumentor resolves the
+        # process-global provider via ``opentelemetry.trace.get_tracer_provider``.
+        # On the deployed Runtime that is the provider AgentCore's platform
+        # auto-instrumentation configures (with the OTLP exporter wired in);
+        # under test it is whatever provider the test harness has installed.
+        LangChainInstrumentor().instrument()
+        _LANGCHAIN_INSTRUMENTED = True
+    except Exception:  # noqa: BLE001 - telemetry must never break the game
+        pass
 
 
 def bind_thread_id(thread_id: str) -> contextvars.Token:
@@ -208,23 +296,38 @@ class JsonLogFormatter(logging.Formatter):
 
 
 def configure_runtime_observability() -> None:
-    """Install JSON-structured, thread-id-stamped logging on the root logger.
+    """Install the Runtime's observability: JSON logging **and** trace spans.
 
-    Idempotent: a second call is a no-op (guarded by a marker attribute
-    on the installed handler) so re-imports during test collection do not
-    stack handlers.
+    Two halves, both idempotent:
 
-    After this runs, every :mod:`logging` call anywhere in the process —
-    ``graphia.runtime``, the LangGraph nodes, third-party libraries —
-    lands on stdout as a single-line JSON object carrying ``thread_id``.
-    AgentCore Runtime captures that stdout as ``APPLICATION_LOGS`` and the
-    Slice-8 vended-log-delivery pipeline ships it to CloudWatch, where
-    ``{ $.thread_id = "<thread>" }`` selects exactly one game's events.
+    * **Structured logs.** A JSON-structured, thread-id-stamped handler on
+      the root logger. After this runs, every :mod:`logging` call anywhere
+      in the process — ``graphia.runtime``, the LangGraph nodes, third-party
+      libraries — lands on stdout as a single-line JSON object carrying
+      ``thread_id``. AgentCore Runtime captures that stdout as
+      ``APPLICATION_LOGS`` and the Slice-8 vended-log-delivery pipeline ships
+      it to CloudWatch, where ``{ $.thread_id = "<thread>" }`` selects
+      exactly one game's events.
+    * **Trace spans (CR 003).** The LangChain/LangGraph GenAI instrumentor,
+      activated programmatically via :func:`_install_langgraph_instrumentor`.
+      This is what produces the ``gen_ai.*``-semantic spans the navigable
+      per-session trace tree is built from — graph-node execution and
+      per-turn ``ChatBedrockConverse`` model calls.
+
+    Idempotent across re-imports during test collection: the log handler is
+    guarded by a marker attribute, the instrumentor by a module-level flag.
+    The instrumentor install always runs even when the log handler is
+    already present, so neither half can be skipped because the other was
+    already done.
     """
+    # --- Trace half (CR 003): always (re-)attempt; self-guarded. ----------
+    _install_langgraph_instrumentor()
+
+    # --- Log half: install exactly one JSON handler. ----------------------
     root = logging.getLogger()
     for existing in root.handlers:
         if getattr(existing, "_graphia_json_handler", False):
-            return  # already configured
+            return  # log handler already configured
 
     handler = logging.StreamHandler(stream=sys.stdout)
     handler.setFormatter(JsonLogFormatter())
@@ -239,11 +342,12 @@ def configure_runtime_observability() -> None:
 def stamp_trace_thread_id(thread_id: str) -> None:
     """Attach the game's ``thread_id`` to this invocation's OTEL spans.
 
-    The deployed Runtime image starts under the ADOT
-    ``opentelemetry-instrument`` wrapper (see ``Dockerfile``), so an
-    OpenTelemetry SDK is on the path there and AgentCore captures the
-    emitted spans as the ``TRACES`` telemetry stream. This function does
-    two things, both best-effort:
+    The deployed Runtime is Runtime-hosted: AgentCore auto-instruments the
+    container with an OpenTelemetry SDK + OTLP exporter and captures the
+    emitted spans as the ``TRACES`` telemetry stream — no
+    ``opentelemetry-instrument`` launch wrapper is involved (that recipe is
+    for non-Runtime-hosted agents). This function does two things, both
+    best-effort:
 
     * **Session grouping.** It puts ``thread_id`` into OTEL *baggage*
       under :data:`SESSION_ID_BAGGAGE_KEY` (``"session.id"``) and attaches
@@ -263,11 +367,10 @@ def stamp_trace_thread_id(thread_id: str) -> None:
     downstream child span inherits it.
 
     OTEL is **not** a hard dependency of Graphia at *runtime* in local
-    mode — local mode never imports this module and never runs the ADOT
-    wrapper — so the import is still guarded. When the OTEL SDK is absent
-    (local mode, the all-mocked test suite) this is a silent no-op and
-    the JSON-log path above is unaffected. Telemetry must never break a
-    game, so every step is also wrapped defensively.
+    mode — local mode never imports this module — so the import is still
+    guarded. When the OTEL SDK is absent (local mode) this is a silent
+    no-op and the JSON-log path above is unaffected. Telemetry must never
+    break a game, so every step is also wrapped defensively.
     """
     try:
         from opentelemetry import baggage, context, trace
@@ -296,3 +399,52 @@ def stamp_trace_thread_id(thread_id: str) -> None:
         trace.get_current_span().set_attribute(THREAD_ID_FIELD, thread_id)
     except Exception:  # noqa: BLE001
         pass
+
+
+@contextlib.contextmanager
+def runtime_invocation_span(thread_id: str) -> Iterator[None]:
+    """Open the per-invocation **root span** for one Runtime invocation.
+
+    CR 003: a navigable trace tree needs a single root the graph-node,
+    model-call and tool-call spans nest under. The LangChain instrumentor
+    only ever creates spans as *children of whatever span is active* — with
+    no enclosing span, each graph run starts its own disconnected trace and
+    the GenAI Observability view shows a flat trajectory.
+
+    Used as the outermost ``with`` block of the ``@app.entrypoint`` handler::
+
+        with runtime_invocation_span(thread_id):
+            stamp_trace_thread_id(thread_id)
+            for chunk in graph.stream(...):
+                ...
+
+    Because the ``with`` body is the active OTEL context while ``graph.stream``
+    runs, every span the instrumented LangGraph / LangChain calls emit attaches
+    under this root — yielding the one-root, depth>1 tree per game.
+
+    The span is named :data:`RUNTIME_ROOT_SPAN_NAME` and stamped with the
+    game's ``thread_id`` (and ``session.id``) so the session view can select
+    the whole tree by game identifier.
+
+    Best-effort and OTEL-optional: when no OpenTelemetry SDK is importable
+    (local mode) this is a transparent no-op ``with`` block — the graph still
+    runs, telemetry is simply absent. Any failure inside the tracing calls is
+    swallowed; telemetry must never break a game.
+    """
+    try:
+        from opentelemetry import trace
+    except ImportError:
+        # No OTEL SDK — run the body with no span. Local mode never reaches
+        # here (it does not import this module), but the guard keeps the
+        # context manager safe in any environment.
+        yield
+        return
+
+    tracer = trace.get_tracer("graphia.runtime")
+    with tracer.start_as_current_span(RUNTIME_ROOT_SPAN_NAME) as span:
+        try:
+            span.set_attribute(THREAD_ID_FIELD, thread_id)
+            span.set_attribute(SESSION_ID_BAGGAGE_KEY, thread_id)
+        except Exception:  # noqa: BLE001 - telemetry must never break the game
+            pass
+        yield

@@ -76,6 +76,7 @@ from graphia.runtime.graph_builder import build_runtime_graph
 from graphia.runtime.observability import (
     bind_thread_id,
     configure_runtime_observability,
+    runtime_invocation_span,
     stamp_trace_thread_id,
 )
 
@@ -169,42 +170,22 @@ def _serialise_chunk(chunk: dict) -> list[dict]:
     return events
 
 
-@app.entrypoint
-async def handler(payload: dict) -> AsyncIterator[dict]:
-    """Async-generator entry-point that streams graph super-steps.
+async def _run_invocation(
+    action: str, thread_id: str, body: Any
+) -> AsyncIterator[dict]:
+    """Drive one validated invocation, yielding stream events.
 
-    The SDK detects async generators and wraps their output in a
-    ``StreamingResponse`` (``text/event-stream``). Each ``yield`` lands
-    on the wire as one SSE ``data:`` frame.
+    Split out of :func:`handler` so the whole graph run — compilation,
+    ``graph.stream``, and the post-stream interrupt/done snapshot — sits
+    inside a single ``with runtime_invocation_span(...)`` block in the
+    handler. Keeping that block thin (it just iterates this generator)
+    avoids re-indenting the streaming logic while still guaranteeing the
+    invocation root span is the active OTEL context for every super-step:
+    the LangChain instrumentor only nests child spans under the active
+    span, so the graph-node and model-call spans land in one tree (CR 003).
     """
-    parsed = _validate(payload)
-    if isinstance(parsed, dict):
-        # Validation failed — emit the error event and stop.
-        yield parsed
-        return
-
-    action, thread_id, body = parsed
-
-    # Establish the LangGraph thread_id as this invocation's correlation
-    # id *before* any further work logs. ``bind_thread_id`` sets a
-    # ContextVar that ``ThreadIdLogFilter`` reads on every subsequent log
-    # record, so every JSON line emitted for the rest of this invocation
-    # — including from inside the graph's nodes — carries
-    # ``"thread_id": "<thread>"``. A CloudWatch ``{ $.thread_id = "..." }``
-    # filter then selects exactly this game's events. ``stamp_trace_thread_id``
-    # mirrors the id onto the current OTEL span when an OTEL SDK is present
-    # (best-effort; no-op on this image).
-    bind_thread_id(thread_id)
-    stamp_trace_thread_id(thread_id)
-    logger.info(
-        "runtime invocation start",
-        extra={"event": "invocation_start", "action": action},
-    )
-
     try:
-        graph = build_runtime_graph(
-            thread_id, _CHECKPOINT_DIR, _diary_store
-        )
+        graph = build_runtime_graph(thread_id, _CHECKPOINT_DIR, _diary_store)
     except Exception as exc:  # noqa: BLE001
         logger.exception(
             "graph compilation failed",
@@ -275,6 +256,50 @@ async def handler(payload: dict) -> AsyncIterator[dict]:
             extra={"event": "invocation_done"},
         )
         yield {"event": "done", "thread_id": thread_id}
+
+
+@app.entrypoint
+async def handler(payload: dict) -> AsyncIterator[dict]:
+    """Async-generator entry-point that streams graph super-steps.
+
+    The SDK detects async generators and wraps their output in a
+    ``StreamingResponse`` (``text/event-stream``). Each ``yield`` lands
+    on the wire as one SSE ``data:`` frame.
+    """
+    parsed = _validate(payload)
+    if isinstance(parsed, dict):
+        # Validation failed — emit the error event and stop.
+        yield parsed
+        return
+
+    action, thread_id, body = parsed
+
+    # Establish the LangGraph thread_id as this invocation's correlation
+    # id *before* any further work logs. ``bind_thread_id`` sets a
+    # ContextVar that ``ThreadIdLogFilter`` reads on every subsequent log
+    # record, so every JSON line emitted for the rest of this invocation
+    # — including from inside the graph's nodes — carries
+    # ``"thread_id": "<thread>"``. A CloudWatch ``{ $.thread_id = "..." }``
+    # filter then selects exactly this game's events.
+    bind_thread_id(thread_id)
+
+    # Open the per-invocation OTEL **root span** (CR 003). Keeping the whole
+    # graph run inside this ``with`` block means the root span is the active
+    # OTEL context while ``graph.stream`` executes, so every graph-node and
+    # ``ChatBedrockConverse`` model-call span the LangChain instrumentor
+    # emits nests under it — producing one navigable per-session trace tree
+    # instead of a flat list. ``stamp_trace_thread_id`` then mirrors the game
+    # id into OTEL baggage (``session.id``) and onto the root span so the
+    # GenAI Observability session view can select the tree by game. Both are
+    # transparent no-ops when no OTEL SDK is present (local mode).
+    with runtime_invocation_span(thread_id):
+        stamp_trace_thread_id(thread_id)
+        logger.info(
+            "runtime invocation start",
+            extra={"event": "invocation_start", "action": action},
+        )
+        async for event in _run_invocation(action, thread_id, body):
+            yield event
 
 
 if __name__ == "__main__":
