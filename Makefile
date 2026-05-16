@@ -32,7 +32,7 @@ LAMBDA_ZIPS   = $(addprefix $(LAMBDA_BUILD)/,$(addsuffix .zip,$(LAMBDA_FNS)))
 .PHONY: help check-container build run shell clean login-ecr push \
         tf-init tf-fmt tf-validate tf-plan tf-ecr-bootstrap tf-apply tf-destroy \
         wire-env deploy redeploy destroy inspect-diary play play-remote \
-        build-lambdas clean-lambdas enable-transaction-search
+        build-lambdas clean-lambdas enable-transaction-search verify-observability
 
 help:
 	@echo "Container image targets:"
@@ -71,6 +71,9 @@ help:
 	@echo ""
 	@echo "Observability (one-time, per AWS account):"
 	@echo "  make enable-transaction-search  Turn on CloudWatch Transaction Search for the trace tree."
+	@echo ""
+	@echo "Observability verification (live — drives the deployed Runtime):"
+	@echo "  make verify-observability       Drive the deployed Runtime + inspect real CloudWatch telemetry."
 	@echo ""
 	@echo "Overrides:"
 	@echo "  CONTAINER=docker|podman  IMAGE=...  TAG=...  PLATFORM=linux/amd64  PORT=..."
@@ -255,3 +258,14 @@ enable-transaction-search:
 	aws xray update-indexing-rule --name "Default" --rule '{"Probabilistic": {"DesiredSamplingPercentage": 100}}' --region $(AWS_REGION)
 	@echo ""
 	@echo "CloudWatch Transaction Search enabled in $(AWS_REGION): trace segments -> CloudWatch Logs, 100% span indexing."
+
+# --- Live observability verification.
+#
+# Drives the *deployed* Runtime with a partial scripted game, then polls
+# CloudWatch (aws/spans + the runtime log group) and reports exactly what
+# telemetry was recorded — the iteration loop for the trace-tree work.
+# Opt-in: the test module skips unless GRAPHIA_LIVE_OBSERVABILITY_TEST=1, so
+# the normal `uv run pytest -q` suite never touches AWS. Needs a deployed
+# Runtime (GRAPHIA_RUNTIME_URL in .env) and a live SSO session.
+verify-observability:
+	GRAPHIA_LIVE_OBSERVABILITY_TEST=1 uv run pytest tests/test_remote_observability_live.py -s -v
