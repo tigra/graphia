@@ -23,32 +23,23 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH="/app/.venv/bin:$PATH"
 
 # --- AgentCore Observability (CR 003) ----------------------------------
-# The navigable per-session trace tree needs three things, and a hand-built
-# image (Graphia writes its own Dockerfile rather than using the agentcore
-# starter-toolkit) must supply all three:
+# The Runtime image runs under the ADOT ``opentelemetry-instrument`` launch
+# wrapper (CMD below). The wrapper is load-bearing: the ``bedrock-agentcore``
+# SDK does not create an OpenTelemetry TracerProvider itself — ``runtime/
+# app.py`` notes that "in the managed runtime ADOT sets up the TracerProvider
+# before __init__ runs". The wrapper also auto-loads the LangChain GenAI
+# instrumentor (the ``langchain`` entry point resolves to openinference's
+# ``LangChainInstrumentor``), which produces the graph-node / ChatBedrockConverse
+# span tree; ``graphia.runtime.observability`` opens the per-invocation root
+# span those spans nest under.
 #
-# 1. An OpenTelemetry SDK + TracerProvider. The ``bedrock-agentcore`` SDK
-#    does NOT create one — ``runtime/app.py`` explicitly comments that "in
-#    the managed runtime ADOT sets up the TracerProvider before __init__
-#    runs". ADOT = the ``opentelemetry-instrument`` launch wrapper below
-#    (with ``aws-opentelemetry-distro``). Without it every span lands on
-#    OpenTelemetry's no-op default provider and is exported nowhere — the
-#    cause of the flat trajectory on image 89deed3.
-# 2. The framework instrumentor for the LangGraph node / ChatBedrockConverse
-#    model spans — ``openinference-instrumentation-langchain``, activated
-#    programmatically in ``graphia.runtime.observability``'s
-#    ``configure_runtime_observability()``. Generic ADOT does not instrument
-#    LangGraph; there is no ``aws_langchain`` auto-instrumentor.
-# 3. A per-invocation root span (``runtime_invocation_span`` in the entry
-#    point) so node/model/tool spans nest into one tree.
-#
-# OTEL_RESOURCE_ATTRIBUTES is deliberately NOT set here: the managed runtime
-# injects it carrying ``cloud.resource_id`` (the runtime ARN the SDK parses
-# at app.py:_parse_runtime_arn). Hardcoding it would clobber that value.
+# The ADOT ``OTEL_*`` environment (``AGENT_OBSERVABILITY_ENABLED``,
+# ``OTEL_PYTHON_DISTRO``, ``OTEL_PYTHON_CONFIGURATOR``, ``OTEL_RESOURCE_ATTRIBUTES``,
+# the OTLP exporter endpoint) is injected by the managed AgentCore Runtime for
+# a Runtime-hosted agent — it is deliberately NOT hardcoded here. Setting it in
+# the image is redundant and risks clobbering the platform values (notably
+# ``OTEL_RESOURCE_ATTRIBUTES``, which carries the runtime ARN the SDK parses).
 # See ``infra/terraform/RESEARCH.md`` §12.
-ENV AGENT_OBSERVABILITY_ENABLED=true \
-    OTEL_PYTHON_DISTRO=aws_distro \
-    OTEL_PYTHON_CONFIGURATOR=aws_configurator
 
 WORKDIR /app
 

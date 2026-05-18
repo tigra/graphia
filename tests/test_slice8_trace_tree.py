@@ -71,6 +71,11 @@ def span_exporter(monkeypatch: pytest.MonkeyPatch) -> InMemorySpanExporter:
     The exporter is paired with a ``SimpleSpanProcessor`` so every span is
     exported synchronously on ``end()`` — by the time the handler returns,
     every span it produced is already in :meth:`get_finished_spans`.
+
+    The LangChain GenAI instrumentor is installed here too. On the deployed
+    Runtime the ADOT ``opentelemetry-instrument`` wrapper auto-loads it, but
+    pytest runs without that wrapper — so the test harness installs it itself,
+    against this fixture's provider, and uninstruments on teardown.
     """
     provider = TracerProvider()
     exporter = InMemorySpanExporter()
@@ -78,7 +83,13 @@ def span_exporter(monkeypatch: pytest.MonkeyPatch) -> InMemorySpanExporter:
 
     prior = trace_api._TRACER_PROVIDER  # type: ignore[attr-defined]
     monkeypatch.setattr(trace_api, "_TRACER_PROVIDER", provider, raising=False)
+
+    from openinference.instrumentation.langchain import LangChainInstrumentor
+
+    instrumentor = LangChainInstrumentor()
+    instrumentor.instrument(tracer_provider=provider)
     yield exporter
+    instrumentor.uninstrument()
     # Restore so other tests see the process default again.
     monkeypatch.setattr(
         trace_api, "_TRACER_PROVIDER", prior, raising=False
@@ -156,9 +167,10 @@ async def test_runtime_invocation_produces_a_nested_span_tree(
         configure_runtime_observability,
     )
 
-    # Production path: install the JSON logging + the LangGraph/LangChain
-    # GenAI instrumentor. The CR 003 fix makes this method load the
-    # instrumentor; pre-fix it installs only the log handler.
+    # Install the Runtime's structured JSON logging. The LangChain GenAI
+    # instrumentor is installed by the `span_exporter` fixture — in production
+    # the ADOT `opentelemetry-instrument` wrapper auto-loads it; pytest has no
+    # wrapper, so the harness installs it itself.
     configure_runtime_observability()
 
     # The handler compiles the game graph via ``build_runtime_graph``. Swap in

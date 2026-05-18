@@ -128,59 +128,13 @@ SESSION_ID_BAGGAGE_KEY = "session.id"
 # trajectory view a single root to build the per-session tree from.
 RUNTIME_ROOT_SPAN_NAME = "graphia.runtime.invocation"
 
-# Module-level guard so :func:`configure_runtime_observability` installs the
-# LangChain/LangGraph instrumentor exactly once even across re-imports during
-# test collection. ``LangChainInstrumentor`` is itself idempotent, but the
-# flag keeps the import + instrument cost off the second call entirely.
-_LANGCHAIN_INSTRUMENTED = False
-
-
-def _install_langgraph_instrumentor() -> None:
-    """Activate the LangChain/LangGraph GenAI instrumentor, programmatically.
-
-    CR 003: the navigable per-session trace tree is built from OpenTelemetry
-    ``gen_ai.*``-semantic spans for graph-node execution and per-turn model
-    calls. Generic ADOT does **not** instrument LangGraph/LangChain — an
-    explicit framework instrumentor is required. AWS lists OpenInference
-    first among the instrumentation libraries AgentCore GenAI Observability
-    consumes, so this installs ``openinference-instrumentation-langchain``'s
-    :class:`LangChainInstrumentor`.
-
-    ``LangChainInstrumentor`` hooks the LangChain callback system, so once
-    ``.instrument()`` has run, **every** LangGraph node execution and every
-    LangChain ``Runnable`` invocation (including the ``ChatBedrockConverse``
-    model calls ``langchain-aws`` makes underneath) emits a span — nested
-    under whatever span is active when the graph runs. The Runtime entry-point
-    opens that enclosing root span, so the spans form one tree per game.
-
-    Doing this in code (not via a ``opentelemetry-instrument`` launch
-    wrapper) means the identical instrumentation path runs in production and
-    under test — the test suite drives the real handler and sees the real
-    spans.
-
-    Guarded and best-effort: telemetry must never break a game. If the
-    instrumentor package is somehow absent this is a silent no-op; the
-    structured-log path is unaffected either way.
-    """
-    global _LANGCHAIN_INSTRUMENTED
-    if _LANGCHAIN_INSTRUMENTED:
-        return
-    try:
-        from openinference.instrumentation.langchain import (
-            LangChainInstrumentor,
-        )
-    except ImportError:
-        return  # Instrumentor package not on the path — nothing to install.
-    try:
-        # No explicit ``tracer_provider=`` — the instrumentor resolves the
-        # process-global provider via ``opentelemetry.trace.get_tracer_provider``.
-        # On the deployed Runtime that is the provider AgentCore's platform
-        # auto-instrumentation configures (with the OTLP exporter wired in);
-        # under test it is whatever provider the test harness has installed.
-        LangChainInstrumentor().instrument()
-        _LANGCHAIN_INSTRUMENTED = True
-    except Exception:  # noqa: BLE001 - telemetry must never break the game
-        pass
+# Note on the LangChain/LangGraph GenAI instrumentor (CR 003): it is NOT
+# installed by this module. On the deployed Runtime the ADOT
+# ``opentelemetry-instrument`` launch wrapper auto-loads it — the ``langchain``
+# entry point in the ``opentelemetry_instrumentor`` group resolves to
+# openinference's ``LangChainInstrumentor`` — so a programmatic install here
+# would only double-instrument and log an "already instrumented" warning.
+# The in-process trace test installs the instrumentor in its own fixture.
 
 
 def bind_thread_id(thread_id: str) -> contextvars.Token:
@@ -296,34 +250,25 @@ class JsonLogFormatter(logging.Formatter):
 
 
 def configure_runtime_observability() -> None:
-    """Install the Runtime's observability: JSON logging **and** trace spans.
+    """Install the Runtime's structured JSON logging.
 
-    Two halves, both idempotent:
+    A JSON-structured, thread-id-stamped handler on the root logger. After
+    this runs, every :mod:`logging` call anywhere in the process —
+    ``graphia.runtime``, the LangGraph nodes, third-party libraries — lands
+    on stdout as a single-line JSON object carrying ``thread_id``. AgentCore
+    Runtime captures that stdout and ships it to CloudWatch, where
+    ``{ $.thread_id = "<thread>" }`` selects exactly one game's events.
 
-    * **Structured logs.** A JSON-structured, thread-id-stamped handler on
-      the root logger. After this runs, every :mod:`logging` call anywhere
-      in the process — ``graphia.runtime``, the LangGraph nodes, third-party
-      libraries — lands on stdout as a single-line JSON object carrying
-      ``thread_id``. AgentCore Runtime captures that stdout as
-      ``APPLICATION_LOGS`` and the Slice-8 vended-log-delivery pipeline ships
-      it to CloudWatch, where ``{ $.thread_id = "<thread>" }`` selects
-      exactly one game's events.
-    * **Trace spans (CR 003).** The LangChain/LangGraph GenAI instrumentor,
-      activated programmatically via :func:`_install_langgraph_instrumentor`.
-      This is what produces the ``gen_ai.*``-semantic spans the navigable
-      per-session trace tree is built from — graph-node execution and
-      per-turn ``ChatBedrockConverse`` model calls.
+    Trace spans are **not** set up here. On the deployed Runtime the ADOT
+    ``opentelemetry-instrument`` wrapper auto-loads the LangChain GenAI
+    instrumentor, and the entry-point opens the per-invocation root span via
+    :func:`runtime_invocation_span`. The in-process trace test installs the
+    instrumentor in its own fixture.
 
-    Idempotent across re-imports during test collection: the log handler is
-    guarded by a marker attribute, the instrumentor by a module-level flag.
-    The instrumentor install always runs even when the log handler is
-    already present, so neither half can be skipped because the other was
-    already done.
+    Idempotent across re-imports during test collection — the JSON handler
+    is guarded by a marker attribute.
     """
-    # --- Trace half (CR 003): always (re-)attempt; self-guarded. ----------
-    _install_langgraph_instrumentor()
-
-    # --- Log half: install exactly one JSON handler. ----------------------
+    # Install exactly one JSON handler.
     root = logging.getLogger()
     for existing in root.handlers:
         if getattr(existing, "_graphia_json_handler", False):
