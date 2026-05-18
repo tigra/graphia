@@ -94,8 +94,25 @@ TELEMETRY_POLL_TIMEOUT_S = 240
 TELEMETRY_POLL_INTERVAL_S = 25
 
 # CloudWatch log groups carrying the deployed Runtime's telemetry (us-east-1).
+# Spans (Transaction Search) land in a fixed group; the container's stdout /
+# application logs land in a per-runtime platform group derived from the ARN.
 SPANS_LOG_GROUP = "aws/spans"
-RUNTIME_LOG_GROUP = "/aws/bedrock-agentcore/graphia-demo-runtime"
+
+
+def _container_log_group(runtime_arn: str) -> str:
+    """Derive the Runtime's container-stdout log group from its ARN.
+
+    AgentCore writes a Runtime's container / service logs (the structured
+    application logs included) to a platform-managed group
+    ``/aws/bedrock-agentcore/runtimes/<runtime-id>-DEFAULT`` — the ``DEFAULT``
+    suffix is the runtime endpoint name, and the runtime id is the last
+    segment of the runtime ARN. This is NOT the Terraform-made vended-delivery
+    group ``/aws/bedrock-agentcore/graphia-demo-runtime`` (which only receives
+    the platform's invocation records); querying that group for application
+    logs was the original mistake this test made.
+    """
+    runtime_id = runtime_arn.rstrip("/").split("/")[-1]
+    return f"/aws/bedrock-agentcore/runtimes/{runtime_id}-DEFAULT"
 
 # The platform-only span name — these have `scope: null` / `parentSpanId: null`
 # and are NOT what we want. In-app (instrumented) spans have a populated scope.
@@ -257,7 +274,7 @@ def _fetch_log_records(
 
 
 def _poll_for_telemetry(
-    logs_client: Any, thread_id: str, start_ms: int
+    logs_client: Any, thread_id: str, start_ms: int, runtime_log_group: str
 ) -> tuple[list[dict], list[dict]]:
     """Poll both CloudWatch log groups until span data appears (or timeout).
 
@@ -277,7 +294,7 @@ def _poll_for_telemetry(
             logs_client, SPANS_LOG_GROUP, thread_id, start_ms
         )
         runtime_records = _fetch_log_records(
-            logs_client, RUNTIME_LOG_GROUP, thread_id, start_ms
+            logs_client, runtime_log_group, thread_id, start_ms
         )
         print(
             f"  poll #{attempt}: aws/spans={len(span_records)} record(s), "
@@ -365,14 +382,16 @@ def _print_span_report(span_records: list[dict]) -> dict[str, Any]:
     }
 
 
-def _print_runtime_log_report(runtime_records: list[dict]) -> dict[str, Any]:
+def _print_runtime_log_report(
+    runtime_records: list[dict], runtime_log_group: str
+) -> dict[str, Any]:
     """Print runtime-log-group findings; return a summary dict.
 
     Distinguishes Graphia *app logs* (a JSON line with a top-level
     ``thread_id`` field — emitted by the container's structured logger) from
     platform ``InvokeAgentRuntime`` records.
     """
-    print(f"\n--- {RUNTIME_LOG_GROUP} (Runtime log group) ---")
+    print(f"\n--- {runtime_log_group} (Runtime container log group) ---")
     print(f"total records: {len(runtime_records)}")
 
     app_logs: list[dict] = []
@@ -456,8 +475,9 @@ def test_remote_runtime_records_nested_trace_tree() -> None:
     # --- Wait for telemetry to propagate, then query CloudWatch ------
     print("\n--- polling CloudWatch for telemetry ---")
     logs_client = boto3.client("logs", region_name=region)
+    runtime_log_group = _container_log_group(config.runtime_invocation_url)
     span_records, runtime_records = _poll_for_telemetry(
-        logs_client, thread_id, start_ms
+        logs_client, thread_id, start_ms, runtime_log_group
     )
 
     # --- Print everything found — ALWAYS, pass or fail ---------------
@@ -465,7 +485,7 @@ def test_remote_runtime_records_nested_trace_tree() -> None:
     print(f"TELEMETRY REPORT — thread_id={thread_id}, invocations={invocations}")
     print("=" * 72)
     span_summary = _print_span_report(span_records)
-    runtime_summary = _print_runtime_log_report(runtime_records)
+    runtime_summary = _print_runtime_log_report(runtime_records, runtime_log_group)
     print("=" * 72 + "\n")
 
     # --- Assert the trace-tree contract on the LIVE data -------------
@@ -489,7 +509,7 @@ def test_remote_runtime_records_nested_trace_tree() -> None:
     )
     assert runtime_summary["app_logs"], (
         f"No Graphia application logs (JSON lines with a top-level 'thread_id') "
-        f"reached '{RUNTIME_LOG_GROUP}' for thread {thread_id}. Only platform "
+        f"reached '{runtime_log_group}' for thread {thread_id}. Only platform "
         "records were found — the container's structured app logs are not "
         "being delivered to the runtime log group."
     )
