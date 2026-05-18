@@ -173,6 +173,19 @@ e- [x] Run `terraform destroy` against the live deployment from a clean state. U
 
 ---
 
+## Slice 11: Post-verification remediation — diary round-trip + graceful fallback + deploy hint (CR 004)
+
+_`/awos:verify` of spec 002 found three unsatisfied acceptance criteria. §2.4.2 (gameplay diary read-back) and §2.4.5 (graceful diary-write fallback) are genuine implementation gaps — the §2.4 write/read **round-trip** is only half-wired (write-only) and the write loop in `night_close` is unguarded, so a failed write crashes the game. §2.1.4 was revised by [CR 004](../../change-requests/004-revise-launch-error-handling-criteria.md) to point the post-`terraform apply` next-step hint at `make play-remote`. This slice closes all three so spec 002 can be re-verified._
+
+- [ ] Guard the Night-phase diary write — each per-player `diary_store.write(...)` is wrapped so a failure (e.g. Gateway / AgentCore Memory unreachable) is caught, logged, and gameplay continues without that entry rather than crashing the node. One write failing must not skip the remaining players. Satisfies §2.4.5. **[Agent: langgraph-agentic]**
+- [ ] Add a gameplay-time diary **read-back** — on Night 2 and later, the Night-phase logic calls `diary_store.read(game_id, player_id)` for each surviving AI player, exercising the write/read round-trip §2.4.2 requires in both modes (local `InProcessDiaryStore`; remote `AgentCoreMemoryDiaryStore` via the Gateway-fronted Lambda). Phase-2 use of the read result is a placeholder — the criterion is path correctness. The read is guarded like the write. Satisfies §2.4.2. **[Agent: langgraph-agentic]**
+- [ ] Add the post-deploy next-step hint to `make deploy`'s output — a single line pointing the developer at `make play-remote` as the canonical way to launch a remote game. Satisfies §2.1.4 as revised by CR 004. **[Agent: python-backend]**
+- [ ] Extend the test suite — assert the Night-2+ read-back fires and round-trips correctly against both `DiaryStore` implementations (extend `test_diary_store.py` / `test_dual_mode_smoke.py`); assert a write whose store raises is swallowed and the game still runs to a decisive ending (a failing-store test). **[Agent: testing]**
+- [ ] Verify the full suite passes: `uv run pytest -q`. Spec-001 and spec-002 slice tests must remain green. **[Agent: testing]**
+- [ ] **USER:** Redeploy (`make redeploy` — the read-back + fallback are Runtime code) and play a `--remote` game. Confirm the diary write/read round-trip runs (entries written and read back, visible via `make inspect-diary`), the game survives a diary-write hiccup, and `make deploy` prints the `make play-remote` next-step hint. Then re-run `/awos:verify` for spec 002. _(User-performed; closes the spec.)_
+
+---
+
 ## Coverage / agent assignment summary
 
 All sub-tasks above are assigned to specialist subagents (no `general-purpose` fallback used). MCPs required for verification:
