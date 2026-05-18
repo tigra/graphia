@@ -882,3 +882,68 @@ depends on these account-level steps.
 | `aws_cloudwatch_log_delivery_source` schema (`log_type` valid values) | <https://registry.terraform.io/providers/hashicorp/aws/6.44.0/docs/resources/cloudwatch_log_delivery_source> |
 | `aws_cloudwatch_log_delivery_destination` schema (`XRAY` / `CWL` types) | <https://registry.terraform.io/providers/hashicorp/aws/6.44.0/docs/resources/cloudwatch_log_delivery_destination> |
 | `aws_cloudwatch_log_delivery` schema | <https://registry.terraform.io/providers/hashicorp/aws/6.44.0/docs/resources/cloudwatch_log_delivery> |
+
+---
+
+## 13. Slice 8 root cause — the Runtime execution-role observability IAM gap (CR 003)
+
+§12 set up the vended log delivery and Transaction Search, and the Runtime
+image was instrumented with ADOT + `openinference-instrumentation-langchain`.
+The AgentCore GenAI Observability trace tree still came back **flat** — only
+the platform's own `AgentCore.Runtime.Invoke` spans, zero in-app spans, and no
+Graphia container logs anywhere in CloudWatch.
+
+### The finding
+
+`aws logs describe-log-groups --log-group-name-prefix /aws/bedrock-agentcore`
+showed every *other* AgentCore runtime in the account had a
+`/aws/bedrock-agentcore/runtimes/<id>-DEFAULT` container log group — **Graphia
+had none**. AWS's "Enabling observability for AgentCore runtime ... resources"
+doc states the runtime *creates that group by default* on first boot. It never
+appeared because the Runtime execution role could not create it.
+
+The role's inline policy (hand-written in Slice 3) had a single CloudWatch
+statement — `logs:CreateLogStream` + `PutLogEvents`, scoped only to the
+Terraform-made `/aws/bedrock-agentcore/graphia-demo-runtime` group — with **no
+`logs:CreateLogGroup` and no X-Ray actions at all**.
+
+### What an AgentCore Runtime execution role actually needs
+
+Per the AWS "IAM Permissions for AgentCore Runtime" doc
+(<https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-permissions.html>,
+"AgentCore Runtime execution role") the observability-relevant statements are:
+
+- `logs:CreateLogGroup` + `logs:DescribeLogStreams` on
+  `arn:aws:logs:<region>:<account>:log-group:/aws/bedrock-agentcore/runtimes/*`
+- `logs:CreateLogStream` + `logs:PutLogEvents` on the same path with
+  `:log-stream:*`
+- `logs:DescribeLogGroups` on `log-group:*`
+- `xray:PutTraceSegments`, `xray:PutTelemetryRecords`, `xray:GetSamplingRules`,
+  `xray:GetSamplingTargets` on `*`
+- `cloudwatch:PutMetricData` on `*`, conditioned to the `bedrock-agentcore`
+  namespace
+
+Without the X-Ray actions the in-Runtime ADOT exporter cannot ship trace
+segments — so no in-app spans reach `aws/spans` and the trace tree is empty.
+Without the logs actions the container's service log group is never created.
+
+### Resolution
+
+`data.aws_iam_policy_document.runtime_inline` in `main.tf` gained the five
+statements above (`CloudWatchLogGroup`, `CloudWatchDescribeLogGroups`,
+`CloudWatchLogStreamWrite`, `XRayTraceExport`, `CloudWatchMetrics`), replacing
+the single narrow `CloudWatchLogsWrite` statement. Region and account come
+from `var.region` / `data.aws_caller_identity.current`. IAM-only change — no
+image rebuild; IAM is evaluated at call time, so the deployed Runtime picked
+the grants up on its next invocation.
+
+Verified live (`make verify-observability`): a `--remote` game then produced
+~544 spans, 542 nested, in `aws/spans`, and the
+`/aws/bedrock-agentcore/runtimes/graphia_demo_runtime-<suffix>-DEFAULT`
+container log group was created.
+
+### Sources (this section)
+
+| Topic | URL |
+|---|---|
+| IAM Permissions for AgentCore Runtime (execution role policy) | <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-permissions.html> |

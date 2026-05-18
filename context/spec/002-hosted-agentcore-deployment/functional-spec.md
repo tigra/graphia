@@ -66,6 +66,7 @@ The richer gameplay value of the Memory + Gateway surface — AI players writing
   - **Acceptance Criteria:**
     - [ ] After a remote-mode game finishes, the developer can navigate to a CloudWatch log group whose name is exposed as a Terraform output and find structured trace events for the just-finished session, identifiable by a session/game identifier surfaced in the local UI's failure / completion panel.
     - [ ] The trace events include at minimum: Runtime invocation start/finish, each Gateway-fronted diary write and read, the model-invocation roundtrips for AI turns, and the game's win-condition outcome.
+    - [ ] _(Added per CR 003.)_ The trace events form a navigable per-session **trace tree** in the AgentCore GenAI Observability console — a nested span hierarchy (Runtime invocation → graph-node execution → per-turn model calls → Gateway tool calls) grouped by the game's session identifier — not a flat list of unparented events.
     - [ ] If a remote-mode game crashes, the CloudWatch traces include a full traceback at the point of failure, and the local Textual UI shows a short failure modal pointing to the CloudWatch log group + filter for the failed session.
     - [ ] Local-mode games do **not** emit anything to CloudWatch — local mode keeps its JSONL trace at `GRAPHIA_LOG_FILE` only.
     - [ ] CloudWatch log retention is set explicitly via Terraform (not "Never expire") to 30 days

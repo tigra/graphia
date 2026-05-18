@@ -29,7 +29,7 @@ _Hard scope for v1.1. The reference project must demonstrate Bedrock AgentCore a
   - [ ] **Bedrock AgentCore Runtime Hosting:** Package Graphia's game-engine core as a Bedrock AgentCore Runtime workload so a full game can be played end-to-end against a hosted runtime, not just on a laptop. This is the headline demonstration of AgentCore as a managed agent runtime.
   - [ ] **AgentCore Gateway-Fronted Tool Surface:** Register the in-game tools (the per-game diary read/write surface, plus any future game-state tools) with AgentCore Gateway and reach them over MCP, so the agents in the hosted runtime call tools through the same governance layer a real product would.
   - [ ] **AgentCore Memory for Per-Game State:** Use AgentCore Memory in remote mode as the per-game diary store, with each diary scoped to its owning agent's namespace and the game's lifetime.
-  - [ ] **AgentCore Observability:** Emit traces from the hosted runtime so a player or operator can inspect what the agents did during a game.
+  - [ ] **AgentCore Observability:** Emit traces from the hosted runtime — a navigable per-session trace tree — so a player or operator can inspect what the agents did during a game.
   - [ ] **Terraform Provisioning:** Ship an infrastructure-as-code package that stands up the Runtime + Gateway + Memory + Observability set with one command.
   - [ ] **Local Mode Preserved:** Keep `uv run python -m graphia` runnable with no AgentCore calls (tools resolved in-process, diaries held in the game's own state) so game-mechanics development continues to work offline-of-AgentCore.
 

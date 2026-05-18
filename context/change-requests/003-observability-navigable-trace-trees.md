@@ -82,7 +82,21 @@ Sharpens the §2.5 observability success criterion and the Slice 8 "Enable Agent
 
 ## 7. Follow-up Actions
 
-- [ ] Update `functional-spec.md` §2.5, `technical-considerations.md` §2.11, `tasks.md` Slice 8, and `roadmap.md` Phase 2 wording to reflect the trace-tree criterion.
-- [ ] Implement the OpenTelemetry instrumentation of the Runtime under Slice 8 and redeploy.
-- [ ] Consider `/awos:adr` to record OpenTelemetry as the tracing mechanism for AgentCore Observability.
-- [ ] Re-run `/awos:verify` for spec 002 once the shifted §2.5 criteria are met.
+- [x] Update `functional-spec.md` §2.5, `technical-considerations.md` §2.11, `tasks.md` Slice 8, and `roadmap.md` Phase 2 wording to reflect the trace-tree criterion. _(Done — see §8.)_
+- [x] Implement the OpenTelemetry instrumentation of the Runtime under Slice 8 and redeploy. _(Done — together with the IAM root-cause fix; see §8.)_
+- [ ] Consider `/awos:adr` to record OpenTelemetry as the tracing mechanism for AgentCore Observability. _(Not needed — ADOT + the Runtime execution-role IAM are the AWS-documented recipe, not a novel architectural choice; captured in technical-considerations §2.11 and `infra/terraform/RESEARCH.md` instead.)_
+- [ ] Re-run `/awos:verify` for spec 002 once all Slice 8 work is complete.
+
+---
+
+## 8. Addendum (2026-05-18) — Implementation outcome: the root cause was IAM, not the instrumentation recipe
+
+CR 003 was logged on the assumption that the flat trajectory would be fixed by correcting the Runtime's OpenTelemetry instrumentation recipe. Implementation proved that assumption only half-right.
+
+**What the instrumentation needed.** Three iterations were deployed before any in-app span appeared: the ADOT distro plus a real LangGraph GenAI instrumentor (`openinference-instrumentation-langchain`) initialised programmatically; a per-invocation root span; and the `opentelemetry-instrument` ADOT wrapper in the Dockerfile (the `bedrock-agentcore` SDK relies on ADOT having set up the `TracerProvider` before the app starts). All genuinely required — but none of it produced a single span on its own.
+
+**The actual root cause — a missing IAM grant.** The Runtime's execution role was scoped (in Slice 3) to write CloudWatch Logs only to the Terraform-made `graphia-demo-runtime` log group, with no `logs:CreateLogGroup` and **no X-Ray permissions at all**. Per the AWS "IAM Permissions for AgentCore Runtime" doc, an AgentCore Runtime execution role needs `xray:PutTraceSegments` / `PutTelemetryRecords` / sampling reads, plus `logs:CreateLogGroup` + `CreateLogStream` + `PutLogEvents` on `/aws/bedrock-agentcore/runtimes/*`. Without the X-Ray grant the in-Runtime exporter could not ship spans; without the logs grant the container's own service log group was never created. The fix was a Terraform IAM-policy change — no image rebuild.
+
+**Outcome — delivered.** A real `--remote` game now produces a navigable per-session trace tree: ~544 spans, deeply nested (root `graphia.runtime.invocation` → LangGraph node spans → `ChatBedrockConverse` / Nova model-call spans), scopes `openinference.instrumentation.langchain` + `botocore` + `graphia.runtime`, visible in the AgentCore GenAI Observability console. A live verification harness (`tests/test_remote_observability_live.py`, `make verify-observability`) drives the deployed Runtime and asserts the trace-tree contract against real `aws/spans` data.
+
+**Lesson.** The instrumentation recipe and the IAM grant were *both* required; the recipe lived in code and drew the attention, while the IAM gap was the silent blocker. It surfaced only by diagnosing against real deployed state — a log group every other runtime in the account had and Graphia did not — not by reasoning from docs.

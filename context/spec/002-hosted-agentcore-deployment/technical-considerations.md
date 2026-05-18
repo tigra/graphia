@@ -197,12 +197,42 @@ Two small additions to `src/graphia/ui/`:
 
 ### 2.11 Observability wiring
 
-Per the design decision in this turn:
+_Updated per CR 003 — the Phase 2 observability deliverable is a navigable
+per-session **trace tree** in the AgentCore GenAI Observability console, not
+only structured log events. It is **two independent halves**, both required;
+the original "enabled on the Runtime resource via Terraform" framing was
+wrong (the `aws_bedrockagentcore_agent_runtime` resource has no observability
+argument)._
 
-- **AgentCore Observability** (enabled on the Runtime resource via Terraform) emits structured traces to the CloudWatch log group whose name is exposed as a Terraform output. The log group is provisioned in **Slice 3** (alongside the Runtime + IAM role), not deferred to Slice 8 — the Runtime needs a write destination from its first boot. Slice 8 adds the *agent-side* trace-event emission with `thread_id` correlation and the Textual failure modal that surfaces a log-group filter when a remote game crashes. Trace events include Runtime session lifecycle, Gateway tool invocations, Memory read/write operations, and agent decision steps.
-- **Bedrock model-invocation tracing** is *not* custom-instrumented in Phase 2. Model-call boundaries are visible in the AgentCore agent-decision traces (you see the agent invoking the model and the response coming back); full prompt/response capture is available via an opt-in LangSmith path if `LANGSMITH_API_KEY` is set in the Runtime's environment. The codebase does not assume LangSmith's presence (existing convention from spec 001).
-- **Local-mode** observability is unchanged: JSONL trace to `GRAPHIA_LOG_FILE` only; no CloudWatch.
-- **30-day CloudWatch retention** is set explicitly via the `aws_cloudwatch_log_group` resource (`retention_in_days = 30`).
+- **Vended log delivery — Terraform.** A CloudWatch `log-delivery-source` /
+  `-destination` / `-delivery` pipeline routes the Runtime's `APPLICATION_LOGS`
+  and `TRACES` streams; a 30-day-retention `aws_cloudwatch_log_group` plus the
+  account-level **CloudWatch Transaction Search** setting (a provider gap —
+  enabled via `make enable-transaction-search`, see `infra/terraform/RESEARCH.md`
+  §12) make spans queryable in the `aws/spans` log group.
+- **In-Runtime instrumentation — the container image.** The Runtime image runs
+  under the ADOT `opentelemetry-instrument` wrapper (`aws-opentelemetry-distro`)
+  — the `bedrock-agentcore` SDK relies on ADOT having set up the OpenTelemetry
+  `TracerProvider` before the app starts. `openinference-instrumentation-langchain`
+  emits GenAI-convention spans for every LangGraph node and `ChatBedrockConverse`
+  model call; `graphia.runtime.observability` opens a per-invocation root span
+  and stamps the LangGraph `thread_id` (as `session.id` baggage and a span
+  attribute) so one game's spans group into one trajectory.
+- **Runtime execution-role IAM.** The role must carry the AgentCore
+  observability permissions — `xray:PutTraceSegments` / `PutTelemetryRecords` /
+  sampling reads, and `logs:CreateLogGroup` + `CreateLogStream` + `PutLogEvents`
+  on `/aws/bedrock-agentcore/runtimes/*` — per the AWS "IAM Permissions for
+  AgentCore Runtime" doc. Their absence was the Slice-8 root-cause bug (CR 003
+  §8): no X-Ray grant ⇒ the exporter cannot ship spans; no logs grant ⇒ the
+  Runtime's container log group (`/aws/bedrock-agentcore/runtimes/<id>-DEFAULT`,
+  created on first boot) never appears.
+- **`thread_id` correlation + failure modal.** `graphia.runtime.observability`
+  renders every log record as single-line JSON with `thread_id` as a top-level
+  key, so one game is filterable across both logs and traces. A Textual failure
+  modal surfaces the CloudWatch log group + a `thread_id` filter when a remote
+  game crashes.
+- **Local-mode** observability is unchanged: a JSONL trace to `GRAPHIA_LOG_FILE`
+  only — no CloudWatch, no ADOT (the wrapper and instrumentor are image-only).
 
 ### 2.12 Deployment workflow (Makefile task-runner)
 
