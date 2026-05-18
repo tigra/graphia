@@ -444,3 +444,139 @@ def test_agentcore_read_ignores_non_diary_events(
     ]
 
     assert store.read("g1", "p1") == []
+
+
+# --------------------------------------------------------------------------
+# Slice 9 sub-task 1: explicit impl-vs-impl equivalence.
+#
+# The Slice-6 tests above are parametrised across both stores: each one runs
+# on each implementation and asserts *that* implementation is independently
+# correct. They never compare the two implementations to *each other* — so a
+# drift that happened to keep each store internally self-consistent (e.g.
+# both stores agreeing on a wrong-but-consistent behaviour, or a scenario the
+# Slice-6 assertions don't pin precisely) could slip through.
+#
+# Spec 002 §4 risk: "two parallel DiaryStore impls drift out of sync
+# semantically." The defence below is the sharper check: one fixed scenario
+# set is run against a fresh ``InProcessDiaryStore`` and a fresh
+# ``AgentCoreMemoryDiaryStore`` (Memory SDK mocked), and the two stores'
+# observable outputs are asserted equal **to each other**. Any semantic
+# divergence — different ordering, different empty-read behaviour, different
+# isolation — fails the equality directly, naming both sides in the diff.
+#
+# DiaryEntry comparison
+# ---------------------
+# ``DiaryEntry`` is a ``frozen=True`` dataclass carrying only ``night_index``
+# and ``content`` — no store-specific field — so two entries are directly
+# ``==``-comparable and could be compared as-is. We nonetheless project each
+# read result to a list of ``(night_index, content)`` tuples via
+# ``_observable`` before comparing. Rationale: the projection is the explicit
+# *observable contract* of ``read`` (the tuple a caller can actually act on),
+# it keeps the equivalence assertion independent of any future store-specific
+# field added to the dataclass, and a tuple-list diff reads more clearly in
+# the failure output than a dataclass-repr diff. ``game_id`` / ``player_id``
+# are deliberately absent from the tuple: they are *inputs* to ``read``, not
+# fields of an entry — scoping/isolation is exercised by the read *keys* used
+# in the scenarios, not by per-entry fields.
+# --------------------------------------------------------------------------
+
+
+def _observable(entries: list[DiaryEntry]) -> list[tuple[int, str]]:
+    """Project a ``read`` result to its store-agnostic observable form.
+
+    See the section comment above for why this is ``(night_index, content)``
+    and not the full dataclass.
+    """
+    return [(e.night_index, e.content) for e in entries]
+
+
+def _run_equivalence_scenarios(store: DiaryStore) -> dict[str, list[tuple[int, str]]]:
+    """Run the fixed scenario set against one store, returning observable results.
+
+    The same three scenarios run identically against whichever store is
+    passed; the caller compares two stores' returned dicts for equality.
+
+    Scenarios:
+
+    - ``written``: write three entries (deliberately out of night_index
+      order) for one ``(game, player)`` pair, then read them back. Exercises
+      round-trip, append fan-in, and client-side sort in one shot.
+    - ``empty``: read a ``(game, player)`` pair that was never written.
+      Exercises the unknown-pair empty-read contract.
+    - ``other_player``: read a *different* ``player_id`` than the one written
+      to (same ``game_id``). Exercises per-player isolation — a leak would
+      surface here as a non-empty result.
+    """
+    # Scenario (a): three entries for one pair, written out of order.
+    store.write("equiv-game", "equiv-player", 2, "night two")
+    store.write("equiv-game", "equiv-player", 0, "night zero")
+    store.write("equiv-game", "equiv-player", 1, "night one")
+    written = _observable(store.read("equiv-game", "equiv-player"))
+
+    # Scenario (b): a pair that was never written to.
+    empty = _observable(store.read("equiv-game-unwritten", "equiv-player-unwritten"))
+
+    # Scenario (c): a different player_id in the same game as scenario (a).
+    other_player = _observable(store.read("equiv-game", "different-player"))
+
+    return {"written": written, "empty": empty, "other_player": other_player}
+
+
+def test_implementations_are_observably_equivalent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Both DiaryStore impls produce identical observable output for one scenario set.
+
+    This is the explicit impl-vs-impl comparison the Slice-6 parametrised
+    tests do not make. The same three scenarios run against a fresh
+    ``InProcessDiaryStore`` and a fresh ``AgentCoreMemoryDiaryStore`` (Memory
+    SDK mocked via :class:`FakeMemoryClient`), and the two stores' results
+    are asserted equal to each other — semantic drift between the parallel
+    implementations fails here.
+    """
+    in_process = _make_in_process(monkeypatch)
+    agentcore = _make_agentcore_memory(monkeypatch)
+
+    in_process_results = _run_equivalence_scenarios(in_process)
+    agentcore_results = _run_equivalence_scenarios(agentcore)
+
+    # Single equality over all three scenarios at once: a diff names exactly
+    # which scenario diverged and shows both sides.
+    assert in_process_results == agentcore_results
+
+    # Pin the observable contract itself, so a *consistent* drift — both
+    # stores agreeing on a wrong behaviour — is also caught. (Equality above
+    # only proves the two agree; these assert they agree on the *right*
+    # answer.)
+    assert in_process_results["written"] == [
+        (0, "night zero"),
+        (1, "night one"),
+        (2, "night two"),
+    ]
+    assert in_process_results["empty"] == []
+    assert in_process_results["other_player"] == []
+
+
+@pytest.mark.parametrize(
+    "scenario",
+    ["written", "empty", "other_player"],
+)
+def test_implementations_equivalent_per_scenario(
+    monkeypatch: pytest.MonkeyPatch, scenario: str
+) -> None:
+    """Per-scenario impl-vs-impl equivalence — one parametrised case per scenario.
+
+    Functionally a finer-grained slice of
+    :func:`test_implementations_are_observably_equivalent`: it isolates each
+    scenario into its own case so a failure's parametrise id (``written`` /
+    ``empty`` / ``other_player``) names the diverging scenario directly,
+    matching the per-scenario style of the Slice-6 tests in this file. Each
+    case builds its own fresh pair of stores — no shared state across cases.
+    """
+    in_process = _make_in_process(monkeypatch)
+    agentcore = _make_agentcore_memory(monkeypatch)
+
+    in_process_results = _run_equivalence_scenarios(in_process)
+    agentcore_results = _run_equivalence_scenarios(agentcore)
+
+    assert in_process_results[scenario] == agentcore_results[scenario]
