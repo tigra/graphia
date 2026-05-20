@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import random
 from collections import Counter
 
@@ -17,6 +18,8 @@ from graphia.prompts import (
     MAFIA_TEAMMATE_INTRO_TEMPLATE,
 )
 from graphia.state import GameState, KillRecord, PlayerState
+
+logger = logging.getLogger(__name__)
 
 
 def first_night_mafia_intros(state: GameState) -> dict:
@@ -247,6 +250,38 @@ def night_close(
 ) -> dict:
     cycle = state.get("cycle", 1)
 
+    # Slice 11 read-back (spec 002 §2.4.2): on Night 2+ each surviving AI
+    # player reads back its own prior diary entries before this Night's write.
+    # Running the read before the write means on Night N it reads cycles
+    # 1..N-1 and then writes cycle N — exercising the genuine write/read
+    # round-trip in both modes (local ``InProcessDiaryStore``; remote
+    # ``AgentCoreMemoryDiaryStore`` via the Gateway-fronted Lambda). The
+    # Phase-2 use of the result is a placeholder log of the entry count —
+    # Phase 6 will feed the entries into the AI's reasoning. Like the write,
+    # each read is guarded so a persistence failure never crashes gameplay.
+    if diary_store is not None and game_id is not None and cycle >= 2:
+        players = state.get("players", {})
+        for player in players.values():
+            if player.is_alive and not player.is_human:
+                try:
+                    entries = diary_store.read(
+                        game_id=game_id,
+                        player_id=player.id,
+                    )
+                    logger.info(
+                        "Read %s prior diary entries for player %s on night %s.",
+                        len(entries),
+                        player.id,
+                        cycle,
+                    )
+                except Exception:
+                    logger.exception(
+                        "Diary read failed for player %s on night %s; "
+                        "continuing without those entries.",
+                        player.id,
+                        cycle,
+                    )
+
     # Slice 6 smoke-test placeholder (spec 002 §2.4): one diary entry per
     # surviving AI player per Night. The content is intentionally trivial —
     # Phase 6 will replace it with the AI's actual private reflection.
@@ -257,12 +292,25 @@ def night_close(
         players = state.get("players", {})
         for player in players.values():
             if player.is_alive and not player.is_human:
-                diary_store.write(
-                    game_id=game_id,
-                    player_id=player.id,
-                    night_index=cycle,
-                    content=f"Night {cycle} diary placeholder for {player.id}",
-                )
+                # A diary write can hit AgentCore Memory / the Gateway in
+                # remote mode and so can raise (e.g. Gateway unreachable).
+                # Persistence must never crash gameplay: catch broadly, log,
+                # and continue so one player's failure doesn't skip the rest
+                # (Functional §2.4.5).
+                try:
+                    diary_store.write(
+                        game_id=game_id,
+                        player_id=player.id,
+                        night_index=cycle,
+                        content=f"Night {cycle} diary placeholder for {player.id}",
+                    )
+                except Exception:
+                    logger.exception(
+                        "Diary write failed for player %s on night %s; "
+                        "continuing without that entry.",
+                        player.id,
+                        cycle,
+                    )
 
     return {
         "messages": [SystemMessage(content=f"Night {cycle} ends.")],

@@ -164,10 +164,16 @@ deploy: build-lambdas tf-init tf-ecr-bootstrap push tf-apply wire-env
 	@echo ""
 	@echo "Deploy complete. Runtime invocation URL:"
 	@cd $(TF_DIR) && ./tf output runtime_invocation_url
+	@echo ""
+	@echo "Next: launch a game against the deployed Runtime with:"
+	@echo "  make play-remote"
 
 redeploy: build-lambdas push tf-apply wire-env
 	@echo ""
 	@echo "Redeploy complete with image tag $(TAG)."
+	@echo ""
+	@echo "Next: launch a game against the deployed Runtime with:"
+	@echo "  make play-remote"
 
 # --- Lambda zip-build pipeline (ADR 005).
 #

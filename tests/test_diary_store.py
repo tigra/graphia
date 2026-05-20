@@ -580,3 +580,300 @@ def test_implementations_equivalent_per_scenario(
     agentcore_results = _run_equivalence_scenarios(agentcore)
 
     assert in_process_results[scenario] == agentcore_results[scenario]
+
+
+# --------------------------------------------------------------------------
+# Slice 11 sub-task 4: Night-2+ read-back + failing-store-write swallowing.
+#
+# Slices 11 sub-tasks 1 + 2 added two pieces of behaviour to ``night_close``:
+#
+# 1. A per-player ``try/except``-guarded diary ``write`` — a raised
+#    ``diary_store.write(...)`` is ``logger.exception(...)``-logged and the
+#    loop continues to the next player (Functional §2.4.5).
+# 2. A gameplay-time read-back block before the write block, gated on
+#    ``cycle >= 2``: for each surviving non-human player,
+#    ``diary_store.read(game_id, player.id)`` is called inside a
+#    ``try/except``; on success the entry count is recorded via
+#    ``logger.info("Read %s prior diary entries ...")`` (placeholder use —
+#    Phase 6 will consume the content); on failure ``logger.exception(...)``
+#    runs and the loop continues (§2.4.2).
+#
+# The tests below assert all three contract points: the read-back fires and
+# round-trips correctly against both ``DiaryStore`` impls; the read is
+# skipped on Night 1; and a write whose store raises is swallowed so
+# ``night_close`` returns normally.
+#
+# Evidence capture: pytest's ``caplog`` is the natural seam — the
+# production code emits exactly one ``INFO`` per successful read and one
+# ``ERROR`` per swallowed write. Asserting on the formatted log message
+# pins the entry-count + ``(player_id, night)`` triple without coupling
+# the test to internal call counts on the store.
+# --------------------------------------------------------------------------
+
+
+import logging
+
+from langchain_core.messages import SystemMessage
+
+from graphia.nodes.night import night_close
+from graphia.state import PlayerState
+
+
+def _state_with_players(
+    *,
+    cycle: int,
+    players: dict[str, PlayerState],
+) -> dict:
+    """Build a minimal ``GameState``-shaped dict for driving ``night_close`` directly.
+
+    ``night_close`` only inspects ``cycle`` and ``players`` — every other
+    field is irrelevant to the read-back / write loops. Keeping the dict
+    deliberately narrow stops a future, unrelated ``GameState`` field
+    change from breaking these tests.
+    """
+    return {"cycle": cycle, "players": players}
+
+
+def _three_player_setup() -> dict[str, PlayerState]:
+    """Three players: one human + two surviving AI players.
+
+    The human is included on purpose — the read-back and write loops both
+    gate on ``not player.is_human``, so a passing test must show the human
+    is *skipped* (no INFO/ERROR for the human's id) while both AI players
+    are visited.
+    """
+    return {
+        "human": PlayerState(
+            id="human", name="Alice", role="law_abiding", is_human=True, is_alive=True
+        ),
+        "ai-1": PlayerState(
+            id="ai-1", name="Bob", role="law_abiding", is_human=False, is_alive=True
+        ),
+        "ai-2": PlayerState(
+            id="ai-2", name="Carol", role="mafia", is_human=False, is_alive=True
+        ),
+    }
+
+
+def _read_info_records(caplog: pytest.LogCaptureFixture) -> list[logging.LogRecord]:
+    """Filter ``caplog`` down to the read-back ``INFO`` records only.
+
+    The production code's ``logger.info("Read %s prior diary entries ...")``
+    is the cleanest signal that the read-back fired. Other log records
+    (e.g. swallowed-exception ``ERROR`` lines from the write block) are
+    excluded so the count and message-shape assertions stay narrow.
+    """
+    return [
+        r
+        for r in caplog.records
+        if r.levelno == logging.INFO
+        and r.name == "graphia.nodes.night"
+        and r.getMessage().startswith("Read ")
+    ]
+
+
+def test_night_close_reads_back_prior_entries_for_each_ai(
+    store: DiaryStore,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Night 2 read-back fires for each surviving AI and returns prior entries.
+
+    Seeds the store with two prior nights of entries for each AI player,
+    then drives ``night_close`` directly at ``cycle=3``. Asserts:
+
+    * One ``INFO`` log record per surviving AI player (two here) — the
+      human is *skipped* by the ``not is_human`` guard.
+    * Each record's formatted message names that player's id, the right
+      cycle, and the count of prior entries actually written (round-trip
+      via the store).
+    * The node returns normally with the expected ``phase`` transition.
+
+    Runs against both ``DiaryStore`` impls via the parametrised ``store``
+    fixture — a divergence between the in-process and AgentCore-Memory
+    impls (e.g. one returning the wrong count) would fail under exactly
+    one parameter id.
+    """
+    game_id = "game-readback"
+    players = _three_player_setup()
+
+    # Seed two prior nights of entries for each AI player. The human
+    # explicitly has zero entries — they're a player, but the diary store
+    # was never written for them.
+    for player_id in ("ai-1", "ai-2"):
+        store.write(game_id, player_id, 1, f"night 1 thoughts for {player_id}")
+        store.write(game_id, player_id, 2, f"night 2 thoughts for {player_id}")
+
+    caplog.set_level(logging.INFO, logger="graphia.nodes.night")
+
+    result = night_close(
+        _state_with_players(cycle=3, players=players),
+        diary_store=store,
+        game_id=game_id,
+    )
+
+    # The node still returns its normal phase transition — the read-back
+    # block is additive, not a replacement.
+    assert result["phase"] == "day"
+
+    # Exactly one INFO record per surviving AI player (no human, no
+    # double-fire).
+    read_records = _read_info_records(caplog)
+    assert len(read_records) == 2
+
+    # Each record names the right player + cycle + entry count. Two AI
+    # players each had two entries seeded; the read-back must surface
+    # that count round-tripped through the store.
+    messages_by_player = {r.args[1]: r.getMessage() for r in read_records}
+    assert set(messages_by_player) == {"ai-1", "ai-2"}
+    assert messages_by_player["ai-1"] == (
+        "Read 2 prior diary entries for player ai-1 on night 3."
+    )
+    assert messages_by_player["ai-2"] == (
+        "Read 2 prior diary entries for player ai-2 on night 3."
+    )
+
+    # Pin the non-leak: the human's id never appears in a read-back log
+    # line. (The ``not is_human`` guard is the only thing keeping a
+    # human's never-written diary from surfacing as a confusing "Read 0
+    # prior diary entries" line.)
+    assert all("human" not in r.getMessage() for r in read_records)
+
+
+def test_night_close_skips_readback_on_night_one(
+    store: DiaryStore,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Night 1 (``cycle == 1``) does NOT trigger the read-back.
+
+    The ``cycle >= 2`` gate is part of the contract: on the very first
+    Night there is nothing to read back, so the loop must be skipped
+    entirely — not entered with an empty result. The cleanest evidence
+    is the absence of the ``Read N prior diary entries`` ``INFO`` log
+    line for every surviving AI player.
+
+    Runs against both store impls via the parametrised fixture so a
+    drift where one impl skipped the gate and the other didn't would
+    surface here.
+    """
+    game_id = "game-night1"
+    players = _three_player_setup()
+
+    caplog.set_level(logging.INFO, logger="graphia.nodes.night")
+
+    result = night_close(
+        _state_with_players(cycle=1, players=players),
+        diary_store=store,
+        game_id=game_id,
+    )
+
+    # The node still transitions to day — the gate only skips the read
+    # block, not the rest of ``night_close``.
+    assert result["phase"] == "day"
+
+    # No read-back INFO records were emitted.
+    assert _read_info_records(caplog) == []
+
+
+class _RaisingWriteDiaryStore:
+    """``DiaryStore`` whose ``write`` always raises; ``read`` returns ``[]``.
+
+    Used to exercise the per-player ``try/except`` around the write loop
+    inside ``night_close``. A raised write must be ``logger.exception``-logged
+    and the loop must continue to the next player — gameplay never crashes
+    because persistence failed.
+
+    ``read`` is a benign empty-list return so this same fake can be reused
+    on Night 2+ paths without also derailing the read-back block. The
+    failing-write contract is the one being pinned here.
+    """
+
+    class WriteFailure(RuntimeError):
+        """Sentinel raised by ``write`` — narrow enough to assert on."""
+
+    def __init__(self) -> None:
+        self.write_calls: list[tuple[str, str, int, str]] = []
+        self.read_calls: list[tuple[str, str]] = []
+
+    def write(
+        self, game_id: str, player_id: str, night_index: int, content: str
+    ) -> None:
+        self.write_calls.append((game_id, player_id, night_index, content))
+        raise self.WriteFailure(
+            f"simulated persistence failure for {player_id} on night {night_index}"
+        )
+
+    def read(self, game_id: str, player_id: str) -> list[DiaryEntry]:
+        self.read_calls.append((game_id, player_id))
+        return []
+
+
+def test_night_close_swallows_failing_store_write(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A ``DiaryStore`` whose ``write`` raises must not crash ``night_close``.
+
+    Functional §2.4.5: persistence failures are best-effort — a raised
+    ``write`` is ``logger.exception``-logged and the loop continues. The
+    node still returns its normal ``{"phase": "day", "messages": [...]}``
+    delta and the game can proceed to Day.
+
+    Asserts:
+
+    * ``night_close`` returns normally (no exception propagates out).
+    * The return value still carries the normal ``phase`` transition.
+    * Both surviving AI players were attempted — a swallowed failure on
+      ``ai-1`` does not skip ``ai-2``.
+    * One ``ERROR`` log per failed write, with stack info attached
+      (``logger.exception`` rather than ``logger.error``).
+    """
+    game_id = "game-failing-write"
+    players = _three_player_setup()
+    failing_store = _RaisingWriteDiaryStore()
+
+    caplog.set_level(logging.ERROR, logger="graphia.nodes.night")
+
+    # Cycle 1 isolates this test to the write loop only — the cycle-gated
+    # read-back block is skipped, so the only ``try/except`` exercised is
+    # the one around ``write``. A future test could parameterise this
+    # over cycle to also cover Night 2+, but the write-guard contract is
+    # independent of the read-back gate and is cleanest pinned in
+    # isolation.
+    result = night_close(
+        _state_with_players(cycle=1, players=players),
+        diary_store=failing_store,
+        game_id=game_id,
+    )
+
+    # The node returned normally — no exception escaped the write loop.
+    # If this assertion ever fires, ``night.py`` lost its per-player
+    # ``try/except`` and the test should stay red until that is restored
+    # (do not soften this to ``pytest.raises``).
+    assert result["phase"] == "day"
+    assert any(
+        isinstance(m, SystemMessage) and "Night 1 ends" in m.content
+        for m in result["messages"]
+    )
+
+    # Both AI players were attempted, in order. The human is skipped by
+    # the ``not is_human`` guard, so only two ``write`` calls fire.
+    assert [c[1] for c in failing_store.write_calls] == ["ai-1", "ai-2"]
+    assert all(c[0] == game_id for c in failing_store.write_calls)
+    assert all(c[2] == 1 for c in failing_store.write_calls)
+
+    # One ERROR record per swallowed failure, with stack info attached
+    # — that's the ``logger.exception`` signature, distinct from a plain
+    # ``logger.error``.
+    error_records = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.ERROR and r.name == "graphia.nodes.night"
+    ]
+    assert len(error_records) == 2
+    assert all(r.exc_info is not None for r in error_records), (
+        "expected logger.exception (carries exc_info), not logger.error"
+    )
+    # The failure context names the player and night so an operator
+    # tailing logs can identify the affected player + cycle.
+    messages = [r.getMessage() for r in error_records]
+    assert any("player ai-1" in m and "night 1" in m for m in messages)
+    assert any("player ai-2" in m and "night 1" in m for m in messages)
