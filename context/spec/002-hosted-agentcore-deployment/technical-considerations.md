@@ -1,7 +1,7 @@
 # Technical Specification: Hosted AgentCore Deployment
 
 - **Functional Specification:** [`context/spec/002-hosted-agentcore-deployment/functional-spec.md`](./functional-spec.md)
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Poe (on behalf of the project owner)
 
 ---
