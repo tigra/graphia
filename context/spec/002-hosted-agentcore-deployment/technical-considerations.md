@@ -10,7 +10,7 @@
 
 Phase 2 ships **two parallel run modes** behind the same LangGraph topology: the existing local-only mode (unchanged behaviourally from spec 001) plus a new **remote** mode in which the compiled `StateGraph` *runs inside* a Bedrock AgentCore Runtime workload deployed to `us-east-1`. The local Textual UI is the same in both modes; in remote mode it acts as an AgentCore *client* that invokes the deployed Runtime, streams super-step events back through the existing message-rendering pipeline, and round-trips `interrupt()` / `Command(resume=…)` for the human's turns. Two parallel implementations of a new `DiaryStore` interface sit behind the same gameplay code: an in-process implementation for local mode, and an AgentCore-Memory-backed implementation (one record per diary entry) for remote mode. The remote-mode Memory access is routed through an AgentCore Gateway-fronted MCP surface whose handlers are *Runtime-embedded* — i.e., the same containerised Runtime workload exposes both the agent invocation API and a small HTTP surface that the Gateway publishes as MCP tools.
 
-Infrastructure is provisioned via a Terraform module (`infra/terraform/`) that stands up the Runtime, the Gateway, the Memory store, and CloudWatch observability + 30-day log retention. The module relies on the standard AWS credential chain — region and account are configurable inputs with the project's documented defaults (`us-east-1`, account `123456789012`, SSO profile `my-aws-profile`); no profile name is hardcoded in source. The legacy `AWS_BEARER_TOKEN_BEDROCK` bearer-token auth path is demoted to an optional fallback; `GraphiaConfig` is refactored to make it optional and surface a typed run-mode field.
+Infrastructure is provisioned via a Terraform module (`infra/terraform/`) that stands up the Runtime, the Gateway, the Memory store, and CloudWatch observability + 30-day log retention. The module relies on the standard AWS credential chain — the region is a configurable input (default `us-east-1`) and the AWS account ID is derived from the active profile via `data.aws_caller_identity`; no profile name is hardcoded in source. The legacy `AWS_BEARER_TOKEN_BEDROCK` bearer-token auth path is demoted to an optional fallback; `GraphiaConfig` is refactored to make it optional and surface a typed run-mode field.
 
 Three of Graphia's existing concerns continue to work unchanged in both modes: `add_messages` accumulating the message log, the streaming-updates iteration model, and the `interrupt()` / `Command(resume=…)` HITL pattern. The Runtime's session model (microVM per session, up to 8h, bidirectional streaming) accommodates Phase 2's single-session-per-game scope without needing a durable cross-session checkpointer; the existing per-thread `SqliteSaver` is reused, writing to the Runtime's session-local filesystem in remote mode.
 
@@ -259,7 +259,7 @@ The repo-root `Makefile` is the project's task-runner: it orchestrates the under
 | `ENVIRONMENT` | `demo` | project default |
 | `PLATFORM` | `linux/arm64` | AgentCore Runtime requirement |
 | `AWS_REGION` | `us-east-1` | `project_aws_region` memory |
-| `AWS_ACCOUNT` | `123456789012` | `project_aws_account` memory |
+| `AWS_ACCOUNT` | _derived from `aws sts get-caller-identity`_ | active AWS profile |
 | `CONTAINER` | auto-detect `podman` then `docker` | `project_terraform_container` memory |
 | `ECR_FORCE_DELETE` | `false` | safeguard against accidental image purge on destroy |
 

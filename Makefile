@@ -4,7 +4,10 @@ TAG         ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo latest)
 PLATFORM    ?= linux/arm64
 PORT        ?= 8080
 
-AWS_ACCOUNT ?= 123456789012
+# AWS_PROFILE drives auth. Configure it once (`aws configure sso` / `aws configure`)
+# and set `AWS_PROFILE=<your-profile>` in `.env` — the account ID is derived from
+# `aws sts get-caller-identity`, no separate AWS_ACCOUNT env var needed.
+AWS_ACCOUNT := $(shell aws sts get-caller-identity --query Account --output text 2>/dev/null)
 AWS_REGION  ?= us-east-1
 ENVIRONMENT ?= demo
 OWNER       ?= $(shell git config user.email 2>/dev/null || echo unknown)
@@ -77,7 +80,7 @@ help:
 	@echo ""
 	@echo "Overrides:"
 	@echo "  CONTAINER=docker|podman  IMAGE=...  TAG=...  PLATFORM=linux/amd64  PORT=..."
-	@echo "  AWS_ACCOUNT=...  AWS_REGION=...  ENVIRONMENT=...  OWNER=...  ECR_REPO=...  REMOTE=..."
+	@echo "  AWS_REGION=...  ENVIRONMENT=...  OWNER=...  ECR_REPO=...  REMOTE=..."
 
 check-container:
 	@if [ -z "$(CONTAINER)" ]; then \

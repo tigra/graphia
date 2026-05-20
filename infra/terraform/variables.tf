@@ -4,12 +4,6 @@ variable "region" {
   default     = "us-east-1"
 }
 
-variable "account_id" {
-  description = "AWS account ID that owns the AgentCore stack. Defaults to the Graphia demo account."
-  type        = string
-  default     = "123456789012"
-}
-
 variable "environment" {
   description = "Deployment environment name (e.g. demo, dev, staging, prod). Used in resource naming and tags."
   type        = string

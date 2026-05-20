@@ -313,8 +313,8 @@ The seam that v1 of this tutorial called "partial" is now wired: typing `--remot
 
 ```bash
 # 0. Authenticate.
-aws sso login --profile my-aws-profile
-export AWS_PROFILE=my-aws-profile
+aws sso login --profile <your-aws-profile>
+export AWS_PROFILE=<your-aws-profile>
 
 # 1. First-time deploy. Builds the image, bootstraps ECR, pushes, then applies.
 make deploy

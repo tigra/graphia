@@ -681,7 +681,7 @@ ADR 005 retires the FastMCP-in-Runtime path (Slice 7 sub-task 3) in favour of tw
 The FAILED `mcp_server`-shape targets the previous (Slice 7 sub-task 6) apply left in AWS must be deleted before the new Lambda-shape targets are created (same `name`s — Terraform would otherwise refuse). The one-liner:
 
 ```bash
-AWS_PROFILE=my-aws-profile aws bedrock-agentcore-control list-gateway-targets \
+AWS_PROFILE=<your-aws-profile> aws bedrock-agentcore-control list-gateway-targets \
   --region us-east-1 --gateway-identifier "$(cd infra/terraform && ./tf output -raw gateway_id)" \
   --query 'items[?status==`FAILED` || status==`READY`].targetId' --output text \
 | xargs -n1 -I {} aws --region us-east-1 \

@@ -12,7 +12,7 @@
 
 Graphia's v1.1 / v1.2 hard scope (per CR 001 + CR 002 amendment) requires demonstrating Bedrock AgentCore — Runtime, Gateway, Memory, Observability — as a real production-deployment target. The decision of *how* to deliver that demonstration was driven by four forcing functions, all of which had to be satisfied simultaneously:
 
-- **the project stakeholder's ask.** the project stakeholder asked the project to demonstrate AgentCore deployment patterns end-to-end. Without this ask, no hosted deployment would be in v1.x scope at all — this is the upstream driver from CR 001.
+- **The project stakeholder's ask.** The project stakeholder asked the project to demonstrate AgentCore deployment patterns end-to-end. Without this ask, no hosted deployment would be in v1.x scope at all — this is the upstream driver from CR 001.
 - **Don't invalidate completed spec 001.** Spec 001 has 65/65 tasks `[x]` and represents real working game mechanics. Any architectural choice that retired or rewrote it would throw away shipped value.
 - **Realistic-needs filter applied to the demonstration scope.** Per Graphia's design-driven-by-realistic-needs principle: a reference project that *mocks* AgentCore would mis-represent real practice. The decision had to actually deploy to AgentCore, not simulate it.
 - **Fast dev inner loop without AWS round-trips.** Game-mechanics development needs to iterate fast and offline-of-AgentCore; round-tripping through a hosted runtime on every change would slow dev to a crawl and cost money on every test run. This will become *cheaper* still once the Phase 4 Ollama provider lands (no Bedrock cost in pure-local-with-Ollama mode).
@@ -111,7 +111,7 @@ Concretely:
 
 The rationale for picking Alt 1 over the alternatives sits at the intersection of four categories, ranked here in order of weight:
 
-1. **Stakeholder mandate.** the project stakeholder asked the project to demonstrate AgentCore. Alts 3 / 4 / 5 fail that ask in different ways: Alt 3 doesn't deploy at all; Alts 4 / 5 deploy but to non-AgentCore targets, so they don't demonstrate the patterns the project stakeholder wants the project to cover. Alts 1 and 2 both satisfy the ask; the next category broke the tie.
+1. **Stakeholder mandate.** The project stakeholder asked the project to demonstrate AgentCore. Alts 3 / 4 / 5 fail that ask in different ways: Alt 3 doesn't deploy at all; Alts 4 / 5 deploy but to non-AgentCore targets, so they don't demonstrate the patterns the stakeholder wants the project to cover. Alts 1 and 2 both satisfy the ask; the next category broke the tie.
 2. **Consistency with existing system.** Spec 001's local skeleton is shipped (65/65 `[x]`) and represents real working game mechanics. Alt 2 (cloud-only) would invalidate that work; Alt 1 preserves it intact as the local-mode baseline.
 3. **Default tooling choice.** AgentCore Runtime is AWS's purpose-built agent-hosting service — the AWS-recommended way to host an agent workload in 2026. Alts 4 / 5 (Lambda / Fargate / EKS) are technically viable but go off-piste relative to the platform's own default; for a *reference* project that aims to look like real practice, the default is the right call.
 4. **Best fit for the realistic-needs case.** A reference project that mocks AgentCore would mis-represent real practice; a reference project that hand-rolls Memory / Gateway / Observability on Lambda or Fargate would mis-represent the patterns AgentCore is purpose-built for. Only Alt 1 actually shows the AgentCore practice the project is supposed to demonstrate.

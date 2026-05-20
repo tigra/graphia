@@ -81,20 +81,22 @@ Before the first deploy, confirm each of the following.
 3. **AWS CLI v2** — used by `make login-ecr`, `make wire-env`, and
    `make enable-transaction-search`.
    - Install: <https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html>
-4. **An active AWS SSO session.** Authenticate, then export the profile so
-   every subsequent `make` / `aws` / `./tf` call uses it:
+4. **An active AWS SSO session.** Configure your profile once (`aws configure
+   sso` for SSO accounts, or `aws configure` for static credentials) so that
+   `~/.aws/config` knows about it, then set `AWS_PROFILE` in `.env` (or export
+   it in your shell):
 
    ```bash
    aws sso login --profile <your-profile>
    export AWS_PROFILE=<your-profile>
    ```
 
-   The project's documented default profile is `my-aws-profile`
-   (SSO, account `123456789012`, region `us-east-1`). It is the
-   *default*, not a hardcoded requirement — any profile pointing at a
-   Bedrock-enabled account works, and the profile name is never baked into
-   source. SSO tokens cache under `~/.aws/sso/cache/` and expire after
-   ~8 hours; re-run `aws sso login` when they lapse.
+   The profile name is never baked into source — any profile pointing at a
+   Bedrock-enabled account works. The AWS account ID is derived from the
+   profile at apply/build time (`aws sts get-caller-identity` in the Makefile,
+   `data.aws_caller_identity.current` in Terraform), so there is no separate
+   `AWS_ACCOUNT` env var to set. SSO tokens cache under `~/.aws/sso/cache/`
+   and expire after ~8 hours; re-run `aws sso login` when they lapse.
 5. **Required Terraform variables.** Two variables have no default and must
    be supplied on every apply/destroy:
    - `environment` — deployment environment name (e.g. `demo`, `dev`,
@@ -356,7 +358,6 @@ The Terraform-managed `/aws/bedrock-agentcore/<name_prefix>-runtime` group
 | Name          | Type   | Default               | Description                                              |
 | ------------- | ------ | --------------------- | -------------------------------------------------------- |
 | `region`      | string | `us-east-1`           | AWS region into which the AgentCore stack is deployed.   |
-| `account_id`  | string | `123456789012`        | AWS account ID that owns the AgentCore stack.            |
 | `environment` | string | _required_            | Deployment environment name (e.g. `demo`, `dev`, `prod`).|
 | `owner`       | string | _required_            | Owner of the deployment (typically the developer email). |
 | `agent_id`    | string | `graphia-mafia-agent` | Logical agent identifier for memory namespacing.         |

@@ -48,13 +48,13 @@ Graphia ships with **two parallel run modes**, selected via a `--remote` flag at
   - **Scale:** AgentCore Runtime is consumption-based (per-second CPU + memory; idle / IO-wait free) — scale-to-zero by default in `us-east-1`. No fixed monthly floor.
 - **Terminal Requirements (both modes):** UTF-8 terminal with ANSI support (Textual requires this). `stdin/stdout/stderr` are reconfigured to `encoding="utf-8", errors="replace"` at startup to defend against non-UTF-8 default locales.
 - **Secrets & Config via `.env`:**
-  - `AWS_BEARER_TOKEN_BEDROCK` (current default for Bedrock model invocation) **or** `AWS_PROFILE=my-aws-profile` (SSO path — either works for Bedrock).
+  - `AWS_BEARER_TOKEN_BEDROCK` (legacy default for Bedrock model invocation) **or** `AWS_PROFILE=<your-aws-profile>` (SSO path — either works for Bedrock; SSO is now the canonical path).
   - `AWS_REGION=us-east-1`.
   - `GRAPHIA_LOG_FILE` — path for the streaming trace log (default `./.graphia/graphia.log`).
   - `GRAPHIA_SEED` (optional) — seeds the game's `Random` for reproducible sessions.
   - `GRAPHIA_CHECKPOINT_DIR` (optional) — overrides the checkpoint sqlite location.
   - `--remote` CLI flag toggles remote-mode invocation.
-- **AWS Account & Profile:** AWS account `123456789012`, accessed via the AWS CLI profile `my-aws-profile` (IAM Identity Center, AdministratorAccess role). `aws sso login --profile my-aws-profile` is required before AgentCore deployment / remote-mode invocation; not needed for local mode if the bearer-token Bedrock auth path is used.
+- **AWS Account & Profile:** The developer's AWS account, accessed via an AWS CLI SSO profile they configure once with `aws configure sso` (and set as `AWS_PROFILE=<your-profile>` in `.env`). The account ID is derived from the active profile (`aws sts get-caller-identity` / `data.aws_caller_identity`), not pinned in source. `aws sso login --profile <your-profile>` is required before AgentCore deployment / remote-mode invocation; not needed for local mode if the bearer-token Bedrock auth path is used.
 
 ---
 
@@ -75,8 +75,8 @@ Graphia ships with **two parallel run modes**, selected via a `--remote` flag at
   - **AgentCore Observability:** emits structured traces from the hosted runtime to CloudWatch Logs. Default retention; tune via Terraform if needed.
 
 - **Authentication:**
-  - **Bedrock model invocation:** Bearer-token (`AWS_BEARER_TOKEN_BEDROCK`) — auto-picked up by boto3 ≥ 1.39's `bedrock-runtime` client. SSO profile `my-aws-profile` is the alternative path; both work.
-  - **AgentCore deployment & runtime invocation:** SSO profile `my-aws-profile` (`aws sso login --profile my-aws-profile` before each session). Bearer tokens are not used for AgentCore.
+  - **Bedrock model invocation:** Bearer-token (`AWS_BEARER_TOKEN_BEDROCK`) — auto-picked up by boto3 ≥ 1.39's `bedrock-runtime` client. The developer's SSO profile is the alternative (and now canonical) path; both work.
+  - **AgentCore deployment & runtime invocation:** the developer's SSO profile (`aws sso login --profile <your-profile>` before each session). Bearer tokens are not used for AgentCore.
 
 - **No Other External Services:** No standalone database service, no external message broker, no object storage, no auth provider, no email/notification channels. AgentCore Memory is the only managed-state service (and only in remote mode). Local mode hits AWS only for Bedrock model invocation.
 
