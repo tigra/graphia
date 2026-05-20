@@ -3,7 +3,7 @@
 A high-level history of the project, reconstructed from `git log` and the
 `context/` artifacts: how scope changed (Change Requests), how the architecture
 was decided (Architecture Decision Records), and how the work was executed (specs
-broken into vertical slices). Covers **2026-04-29 → 2026-05-15**.
+broken into vertical slices). Covers **2026-04-29 → 2026-05-20**.
 
 Graphia is built with the **AWOS spec-driven workflow** — every increment flows
 `product → roadmap → architecture → spec → tech → tasks → implement → verify → tutorial`,
@@ -34,6 +34,8 @@ gantt
     ADR 003 — Bedrock Nova over Claude                   :milestone, done, a3, 2026-05-13, 0d
     ADR 004 — Gateway IAM-auth workaround                :milestone, crit, a4, 2026-05-13, 0d
     ADR 005 — Gateway tools via Lambda targets           :milestone, done, a5, 2026-05-14, 0d
+    CR 003 — Observability trace trees                   :milestone, done, c3, 2026-05-15, 0d
+    CR 004 — Revise launch criteria                      :milestone, done, c4, 2026-05-18, 0d
     Slices 1-3 — Auth · Terraform · Runtime image        :done, s13, 2026-05-12, 1d
     Slice 3 follow-on — Makefile task-runner             :done, s3f, 2026-05-12, 1d
     Slice 4 — Full remote game · HITL over the wire      :done, s4, 2026-05-13, 1d
@@ -41,16 +43,22 @@ gantt
     Slice 6 follow-on — DiaryStore factory fix           :done, s6f, 2026-05-13, 1d
     Slice 7 — Gateway tools · ADR 002 to 005 pivot       :done, s7, 2026-05-13, 3d
     Slice 7 follow-on — 5 remote-only bug fixes          :done, fix, 2026-05-15, 1d
-    Slices 8-10 — Observability · tests · destroy        :active, s810, 2026-05-15, 4d
+    Slice 8 — Observability + remote-mode failure modal  :done, s8, 2026-05-15, 1d
+    CR 003 follow-ons — OTEL recipe · IAM · Tx Search    :done, s8f, 2026-05-16, 1d
+    Slice 9 — local/remote equivalence tests             :done, s9, 2026-05-18, 1d
+    Slice 10 — destroy verification + README             :done, s10, 2026-05-18, 1d
+    Slice 11 — Diary round-trip · fallback · deploy hint :done, s11, 2026-05-20, 1d
+    Spec 002 verified Completed                          :milestone, done, sp2v, 2026-05-20, 0d
+    Tutorial 002 published                               :milestone, done, sp2t, 2026-05-20, 0d
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:
 
-- **Colour = status.** Green = completed / accepted / in effect · Red = superseded · Orange = pending.
+- **Colour = status.** Green = completed / accepted / in effect · Red = superseded · Orange = pending or in-flight (none on this chart now Phase 2 is closed; reserved for the next active phase).
 - **Shape = kind.** Diamonds are point events (CRs, ADRs, spec milestones); bars are executed slice work spanning real days.
 - **Sections = project phase.** ADRs are listed first within Phase 2, then the slice bars, so a superseded ADR (red diamond) is never mistaken for blocked work.
 
-So the only red marks are the two superseded ADRs (002, 004); CRs are green because their scope changes stand; the one orange bar is the work still ahead.
+So the only red marks are the two superseded ADRs (002, 004); the CRs are green because — even though CR 001 and 002 carried `Proposed` for a while — the scope changes were fully executed and have now been formally Accepted. No orange remains until Phase 3 begins.
 
 ---
 
@@ -70,22 +78,30 @@ tree root.)
 ### Spec 001 — Playable Skeleton
 
 ```mermaid
-flowchart TD
+flowchart TB
     S1["Spec 001 — Playable Skeleton<br/>Status: Completed · 9 slices"]:::spec
-    S1 --> G11["1.1 Bootstrap & Roster"]:::area
-    S1 --> G12["1.2 Core Game Loop"]:::area
-    S1 --> G13["1.3 Endgame & Polish"]:::area
-    G11 --> T1["Slice 1 — App boot, name entry, logging"]:::done
-    G11 --> T2["Slice 2 — Roster + public Moderator intro"]:::done
-    G11 --> T3["Slice 3 — Live AI names via Haiku"]:::done
-    G11 --> T4["Slice 4 — Role assignment + private reveal"]:::done
-    G12 --> T5["Slice 5 — Night 1 end-to-end"]:::done
-    G12 --> T6["Slice 6 — Day 1 speaking + victim reveal"]:::done
-    G12 --> T7["Slice 7 — Vote-to-execute mechanics"]:::done
-    G13 --> T8["Slice 8 — Win detection + end-of-game screen"]:::done
-    G13 --> T9["Slice 9 — Polish: spectator, Ctrl-C, draw cap"]:::done
+    subgraph G11 ["1.1 Bootstrap & Roster"]
+        direction TB
+        T1["Slice 1 — App boot, name entry, logging"]:::done
+        T2["Slice 2 — Roster + public Moderator intro"]:::done
+        T3["Slice 3 — Live AI names via Haiku"]:::done
+        T4["Slice 4 — Role assignment + private reveal"]:::done
+    end
+    subgraph G12 ["1.2 Core Game Loop"]
+        direction TB
+        T5["Slice 5 — Night 1 end-to-end"]:::done
+        T6["Slice 6 — Day 1 speaking + victim reveal"]:::done
+        T7["Slice 7 — Vote-to-execute mechanics"]:::done
+    end
+    subgraph G13 ["1.3 Endgame & Polish"]
+        direction TB
+        T8["Slice 8 — Win detection + end-of-game screen"]:::done
+        T9["Slice 9 — Polish: spectator, Ctrl-C, draw cap"]:::done
+    end
+    S1 --> G11
+    S1 --> G12
+    S1 --> G13
     classDef spec fill:#3d85c6,stroke:#0b5394,color:#fff
-    classDef area fill:#d9d9d9,stroke:#999999,color:#000
     classDef done fill:#6aa84f,stroke:#38761d,color:#fff
     classDef pending fill:#e69138,stroke:#b45f06,color:#fff
 ```
@@ -119,14 +135,20 @@ gantt
     Slice 7 follow-on — Lambda pivot + 5 remote fixes  :done, 2026-05-15, 1d
 
     section 2.5 Hardening & Teardown
-    Slice 8 — Observability + retention + modal        :active, 2026-05-15, 2d
-    Slice 9 — Equivalence tests + end-to-end smoke     :active, 2026-05-17, 2d
-    Slice 10 — terraform destroy verification + README :active, 2026-05-19, 2d
+    Slice 8 — Observability + remote-mode failure modal :done, 2026-05-15, 1d
+    CR 003 follow-ons — OTEL fix · IAM · Tx Search      :done, 2026-05-16, 1d
+    Slice 9 — local/remote equivalence tests            :done, 2026-05-18, 1d
+    Slice 10 — destroy verification + README            :done, 2026-05-18, 1d
+
+    section 2.6 Verify & Close
+    Slice 11 — Diary round-trip · fallback · deploy hint :done, 2026-05-20, 1d
+    Spec 002 verified Completed                          :milestone, done, 2026-05-20, 0d
+    Tutorial 002 published                               :milestone, done, 2026-05-20, 0d
 ```
 
-_Colour scheme matches the timeline: green = done, orange = pending. Dates for
-Slices 8-10 are projected, not actual. The Spec 001 flowchart uses blue for the
-spec (WBS root) and grey for a work area (a grouping, not itself executable)._
+_Colour scheme matches the timeline: green = done. All Spec 002 slice dates are
+now actual. The Spec 001 flowchart uses blue for the spec (WBS root) and grey for
+a work area (a grouping, not itself executable)._
 
 ---
 
@@ -158,9 +180,9 @@ Deployment, **Phase 3** = Long-Term Cross-Game Memory, **Phase 7** = AI Tool-Use
 Between the CRs and the first Phase 2 code, the spec was authored and a
 specialist **`terraform-aws` agent was hired** (2026-05-10) to own the IaC.
 
-### Act 3 — Phase 2: hosting Graphia on AgentCore (2026-05-12 → 05-15, ongoing)
+### Act 3 — Phase 2: hosting Graphia on AgentCore (2026-05-12 → 05-20)
 
-**Spec 002 — Hosted AgentCore Deployment** is being executed slice by slice:
+**Spec 002 — Hosted AgentCore Deployment** shipped slice by slice over nine days:
 
 - **ADR 001** set the foundational shape: run the same LangGraph topology in two
   modes — a hosted AgentCore Runtime *and* a no-AWS local mode.
@@ -187,11 +209,36 @@ specialist **`terraform-aws` agent was hired** (2026-05-10) to own the IaC.
   Runtime fell back to an in-process store and diary writes vanished when the
   microVM cycled.
 - **Slice 7** (05-13 → 05-15) was the hard one — see below.
-
-**Current state:** Slices 1-7 complete and verified — a full `--remote` game plays
-end-to-end through `agent → Gateway → Lambda → Memory`, **83/83 tests pass**,
-**61/76 task items done**. Slices 8-10 remain. Spec 002 is still `Draft` — not yet
-`/awos:verify`-ed.
+- **Slice 8** (05-15) wired AgentCore Observability and the remote-mode failure
+  modal: structured trace events, a 30-day CloudWatch retention policy, and a UI
+  surface so a remote-only error reaches the human instead of dying silently.
+- **CR 003** (05-15) — written the same day as Slice 8 landed — sharpened the
+  observability acceptance criterion from "structured logs exist" to "a navigable
+  per-session trace tree exists in CloudWatch Transaction Search". The next day
+  (05-16) the trace tree was still flat, which forced three follow-on fixes: the
+  Runtime's OpenTelemetry / OpenInference LangChain instrumentation recipe was
+  corrected, the execution role gained the missing observability permissions
+  (the real root cause), and the Transaction Search log resource policy was
+  brought under Terraform management.
+- **Slice 9** (05-18) added the local↔remote equivalence test suite — same
+  initial state played through both drivers produces the same node sequence and
+  end-game state, guarding against silent mode drift.
+- **Slice 10** (05-18) closed teardown: a `terraform destroy` cycle verified
+  against live AWS state, an `aws-inventory` harness that lists every Graphia
+  resource by tag, and a README walkthrough for the deploy/destroy loop.
+- **CR 004** (05-18) was authored *by* the first `/awos:verify` pass — three
+  §2.1/§2.2 acceptance criteria described error behaviour the delivered design
+  intentionally handled differently (collapsed config errors, hint-driven setup
+  flow), and §2.4.2 promised a diary write/read **round-trip** but only the
+  write half was wired. CR 004 revised the launch criteria *and* planned Slice
+  11 to close the §2.4.2 gap.
+- **Slice 11** (05-20) added the gameplay-time diary read-back, a graceful
+  Memory fallback so a transient Memory outage degrades instead of crashing, and
+  a deploy-hint banner that prints the exact next command when remote config is
+  missing. With Slice 11 in, **`/awos:verify` flipped Spec 002 to Completed** the
+  same day, and **Tutorial 002** — a single depth-first walkthrough covering all
+  eleven slices — was published. **107/107 tests pass**, **85/85 task items
+  done**, Phase 2 closed.
 
 ---
 
@@ -222,21 +269,33 @@ tool handlers — one container hosting both the agent and the MCP tool server.
 
 ## Spec 002 slice ledger
 
-| Date  | Increment              | What shipped                                          | Tests | Tasks   |
-| ----- | ---------------------- | ----------------------------------------------------- | ----- | ------- |
-| 05-12 | Slices 1-3             | Auth refactor · Terraform skeleton · Runtime image    | —     | 15/59   |
-| 05-12 | Slice 3 follow-on      | Makefile task-runner · ECR force-delete safeguard     | —     | 23/67   |
-| 05-13 | Slice 4                | Full game vs hosted Runtime · HITL over the wire      | 42    | 38/67   |
-| 05-13 | Nova switch (ADR 003)  | Anthropic Claude → Amazon Nova Pro/Lite               | 41    | —       |
-| 05-13 | Slices 5-6             | `[local]`/`[remote]` badge · AgentCore Memory diary   | 62    | 40/66   |
-| 05-13 | Slice 6 follow-on      | DiaryStore factory fix · `inspect-diary` utility      | 62    | —       |
-| 05-13 | Slice 7 (1st attempt)  | FastMCP server + Gateway resources (ADR 002 shape)    | 83    | 47/66   |
-| 05-14 | Slice 7 pivot (ADR 005)| Lambda-target Gateway tools; FastMCP server removed   | 80    | —       |
-| 05-15 | Slice 7 bug fixes      | 5 remote-only defects fixed                           | 83    | 61/76   |
+| Date  | Increment                | What shipped                                          | Tests | Tasks   |
+| ----- | ------------------------ | ----------------------------------------------------- | ----- | ------- |
+| 05-12 | Slices 1-3               | Auth refactor · Terraform skeleton · Runtime image    | —     | 15/59   |
+| 05-12 | Slice 3 follow-on        | Makefile task-runner · ECR force-delete safeguard     | —     | 23/67   |
+| 05-13 | Slice 4                  | Full game vs hosted Runtime · HITL over the wire      | 42    | 38/67   |
+| 05-13 | Nova switch (ADR 003)    | Anthropic Claude → Amazon Nova Pro/Lite               | 41    | —       |
+| 05-13 | Slices 5-6               | `[local]`/`[remote]` badge · AgentCore Memory diary   | 62    | 40/66   |
+| 05-13 | Slice 6 follow-on        | DiaryStore factory fix · `inspect-diary` utility      | 62    | —       |
+| 05-13 | Slice 7 (1st attempt)    | FastMCP server + Gateway resources (ADR 002 shape)    | 83    | 47/66   |
+| 05-14 | Slice 7 pivot (ADR 005)  | Lambda-target Gateway tools; FastMCP server removed   | 80    | —       |
+| 05-15 | Slice 7 bug fixes        | 5 remote-only defects fixed                           | 83    | 61/76   |
+| 05-15 | Slice 8                  | Observability + 30-day retention + failure modal      | 92    | 70/76   |
+| 05-16 | CR 003 follow-ons        | OTEL recipe fix · IAM permissions · Tx Search policy  | 93    | —       |
+| 05-18 | Slice 9                  | local↔remote equivalence test suite                   | 100   | 76/82   |
+| 05-18 | Slice 10                 | `terraform destroy` verification · README walkthrough | 102   | 80/82   |
+| 05-18 | CR 004 / Slice 11 plan   | Revised §2.1/§2.2 launch criteria; §2.4.2 read-back   | 102   | 80/85   |
+| 05-20 | Slice 11                 | Diary round-trip · Memory fallback · deploy hint      | 107   | 85/85   |
+| 05-20 | Spec 002 Verified         | `/awos:verify` flipped Status → Completed             | 107   | 85/85   |
+| 05-20 | Tutorial 002              | Full 7-section walkthrough + companion concept ledger | 107   | 85/85   |
 
-_The task denominator drifts (59 → 67 → 66 → 76) because each slice's planning and
-its follow-on subsections add or revise sub-tasks. The test count dips 83 → 80 at
-the ADR-005 pivot — the pivot deleted four obsolete FastMCP server-side tests._
+_The task denominator drifts (59 → 67 → 66 → 76 → 82 → 85) because each slice's
+planning and its follow-on subsections add or revise sub-tasks; the final 85
+covers Slices 1-11. The test count dips twice — 42 → 41 at the Nova switch (one
+prompt-pinned test referenced a Claude-specific schema and was retired) and
+83 → 80 at the ADR-005 pivot (four obsolete FastMCP server-side tests deleted) —
+then climbs to 107 as Slices 8-11 add observability, equivalence, and round-trip
+coverage._
 
 ---
 
@@ -245,8 +304,11 @@ the ADR-005 pivot — the pivot deleted four obsolete FastMCP server-side tests.
 - **Real deploys find what mocked tests can't.** Every Phase 2 slice with cloud
   surface area spawned a "follow-on" of bug fixes that only a real `terraform
   apply` + `--remote` game surfaced: the Slice 3 deploy/destroy cycle, the Slice 6
-  vanishing-diary factory bug, the Slice 7 five-bug chain. The all-mocked pytest
-  suite stays green throughout — it guards regressions, not integration reality.
+  vanishing-diary factory bug, the Slice 7 five-bug chain, the Slice 8 flat
+  trace tree (fixed by IAM permissions, not by the OTEL recipe — the natural
+  first guess), and the §2.4.2 round-trip gap that `/awos:verify` itself caught
+  *after* all the slice-level checks were green. The all-mocked pytest suite
+  stays green throughout — it guards regressions, not integration reality.
 - **The workflow tooling was built alongside the project.** The AWOS commands
   themselves were authored mid-stream: `/awos:change-request` (05-05),
   `/awos:adr` (05-10), `/awos:tutorial` (05-12). The process and the product
@@ -256,10 +318,12 @@ the ADR-005 pivot — the pivot deleted four obsolete FastMCP server-side tests.
 
 ## Change Requests
 
-| CR  | Date       | Title                                                          | Status   |
-| --- | ---------- | -------------------------------------------------------------- | -------- |
-| 001 | 2026-05-05 | AgentCore deployment + AI tool-use promoted to v1.1 scope      | Proposed |
-| 002 | 2026-05-06 | Long-term AgentCore Memory in; AI tool-use demoted to Phase 7  | Proposed |
+| CR  | Date       | Title                                                              | Status   |
+| --- | ---------- | ------------------------------------------------------------------ | -------- |
+| 001 | 2026-05-05 | AgentCore deployment + AI tool-use promoted to v1.1 scope          | Accepted |
+| 002 | 2026-05-06 | Long-term AgentCore Memory in; AI tool-use demoted to Phase 7      | Accepted |
+| 003 | 2026-05-15 | AgentCore Observability delivers navigable per-session trace trees | Accepted |
+| 004 | 2026-05-18 | Revise §2.2 launch error handling and the §2.1 next-step hint      | Accepted |
 
 ## Architecture Decision Records
 
@@ -273,24 +337,22 @@ the ADR-005 pivot — the pivot deleted four obsolete FastMCP server-side tests.
 
 ## Specs & tutorials
 
-| Spec | Title                       | Slices | Status                              |
-| ---- | --------------------------- | ------ | ----------------------------------- |
-| 001  | Playable Skeleton           | 9      | Completed                           |
-| 002  | Hosted AgentCore Deployment | 10     | Draft — slices 1-7 done, 8-10 to go |
+| Spec | Title                       | Slices | Status    |
+| ---- | --------------------------- | ------ | --------- |
+| 001  | Playable Skeleton           | 9      | Completed |
+| 002  | Hosted AgentCore Deployment | 11     | Completed |
 
-Per-increment learning tutorials live under `context/tutorials/`: `001`, an
-interim `002` (Slices 1-3), and `002-v2` (Slices 1-4 + the Nova switch) — the
-latter now partly stale after the ADR-005 Lambda pivot.
+Per-increment learning tutorials live under `context/tutorials/`: `001` and the
+final `002` (depth-first walkthrough of all eleven Spec 002 slices, published
+2026-05-20). An interim `002-hosted-agentcore-deployment-v2` draft (Slices 1-4 +
+the Nova switch, pre-Lambda-pivot) sits next to it as a historical artifact and
+will be removed when no longer interesting.
 
 ---
 
 ## What's next
 
-1. **Slices 8-10** of Spec 002 — AgentCore Observability + 30-day log retention +
-   a failure modal; equivalence tests (local vs remote parity); `terraform
-   destroy` cleanup verification.
-2. **`/awos:verify`** Spec 002 once all 15 remaining task items are `[x]`,
-   flipping it to Completed.
-3. **Regenerate Tutorial 002** — the ADR-005 Lambda pivot left the current
-   tutorial describing a runtime-embedded shape that no longer exists.
-4. **Phase 3** — Long-Term Cross-Game Memory (career stats), per the roadmap.
+With Phase 2 closed (Spec 002 verified, Tutorial 002 published), the roadmap's
+next item is **Phase 3 — Long-Term Cross-Game Memory & Career Stats**, started
+via `/awos:spec`. From the AWOS chain that means: spec → tech → tasks →
+implement-by-slice → verify → tutorial, with CRs and ADRs logged along the way.

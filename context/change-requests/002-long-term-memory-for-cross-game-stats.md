@@ -3,7 +3,7 @@
 - **CR ID:** 002
 - **Date:** 2026-05-06 (amended same day)
 - **Author:** Alexey Tigarev
-- **Status:** Proposed
+- **Status:** Accepted
 
 ---
 
@@ -113,7 +113,7 @@ The §3.2 prohibition on cross-session persistence and on AgentCore Memory names
 
 ## 6. Decision
 
-- **Decision:** _TBD — Status: Proposed_
+- **Decision:** Accepted. The roadmap restructure (Phase 3 = Long-Term Cross-Game Memory, AI tool-use demoted to Further Improvements) is in effect; Phase 2 closed 2026-05-20 with Phase 3 next on deck.
 - **Decided by:** _[pending]_
 - **Decided on:** _[pending]_
 - **Rationale:** _[pending — leave for reviewer/future-self after spec/tasks fall out]_

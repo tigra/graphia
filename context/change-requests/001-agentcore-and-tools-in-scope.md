@@ -3,7 +3,7 @@
 - **CR ID:** 001
 - **Date:** 2026-05-05
 - **Author:** Alexey Tigarev
-- **Status:** Proposed
+- **Status:** Accepted
 
 ---
 
@@ -84,7 +84,7 @@ The local-only-no-cloud-no-tools posture is overridden. The tool-use additions r
 
 ## 6. Decision
 
-- **Decision:** _TBD — Status: Proposed_
+- **Decision:** Accepted. Phase 2 (Hosted AgentCore Deployment) was authored, executed across eleven slices, and verified Completed on 2026-05-20 — the scope change defined here is fully in effect.
 - **Decided by:** _[pending]_
 - **Decided on:** _[pending]_
 - **Rationale:** _[pending — leave for reviewer/future-self after spec/tasks fall out]_
