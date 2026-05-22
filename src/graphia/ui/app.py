@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import os
+import threading
 import traceback
 from typing import Any
 
@@ -12,6 +14,7 @@ from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Vertical
+from textual.screen import ModalScreen
 from textual.widgets import Input, RichLog, Static
 
 from graphia.config import GraphiaConfig, load_config
@@ -20,6 +23,7 @@ from graphia.graph import build_graph, make_run_config
 from graphia.logging import StreamTraceLogger, setup_logger
 from graphia.ui.badge import CornerBadge
 from graphia.ui.failure_modal import FailureModal
+from graphia.ui.quit_modal import QuitModal
 from graphia.ui.widgets import PointingModal, VoteModal
 
 
@@ -82,7 +86,7 @@ class GraphiaApp(App[None]):
     """
 
     BINDINGS = [
-        Binding("q", "quit", "Quit", show=True),
+        Binding("escape", "request_quit", "Quit", show=True, priority=True),
         Binding("ctrl+c", "abort", "Abort", show=False, priority=True),
     ]
 
@@ -201,6 +205,9 @@ class GraphiaApp(App[None]):
                 "[bold yellow]You have been killed. "
                 "Watching as a spectator.[/]"
             )
+        )
+        private.write(
+            Text.from_markup("[dim](Press Esc to exit.)[/dim]")
         )
         public = self.query_one("#public-log", RichLog)
         public.write(Text.from_markup("[dim](You are now spectating.)[/dim]"))
@@ -332,7 +339,101 @@ class GraphiaApp(App[None]):
             # Widget might not be mounted yet (ctrl+c pressed before mount
             # completes). Fall through to exit regardless.
             pass
+        # Wake any parked resume future so the driver worker unwinds even
+        # if it was awaiting human input when Ctrl+C arrived. Mirrors the
+        # _on_quit_decision cancellation; without it, a Ctrl+C during a
+        # PointingModal / VoteModal would leave the worker hanging until
+        # the daemon-Timer fallback fires.
+        pending = self._pending_resume
+        if pending is not None and not pending.done():
+            pending.cancel()
         self.exit()
+        # Fallback: same rationale as _on_quit_decision — guards against
+        # a producer thread parked inside an in-flight Bedrock call.
+        self._arm_hard_exit_fallback()
+
+    def action_request_quit(self) -> None:
+        """Esc: push the :class:`QuitModal` to confirm before exiting.
+
+        Guards against double-stacking when a modal (e.g. ``QuitModal``
+        itself, ``FailureModal``, ``PointingModal``, ``VoteModal``) is
+        already on screen — those modals own their own Esc handling.
+        Raising :class:`SkipAction` (instead of returning) yields the
+        keystroke back to Textual's binding chain so the modal's own
+        ``escape`` binding can dismiss it; a bare ``return`` is treated
+        by the dispatcher as "handled" and would swallow the key.
+        """
+        from textual.actions import SkipAction
+
+        if isinstance(self.screen, ModalScreen):
+            raise SkipAction()
+        self.push_screen(QuitModal(), self._on_quit_decision)
+
+    def _arm_hard_exit_fallback(self, delay: float = 0.5) -> None:
+        """Arm a daemon ``threading.Timer`` that ``os._exit(0)``s after ``delay`` seconds.
+
+        Defensive guard against a producer thread still parked inside a
+        Bedrock LLM call when the user requests quit. ``asyncio.to_thread``
+        uses the default ``ThreadPoolExecutor`` whose workers are non-daemon,
+        so interpreter exit blocks until they finish — which can be the
+        full 1–10s of the in-flight model invocation. The driver's cancel-
+        without-await pattern handles the asyncio side, but the underlying
+        thread cannot be cancelled from Python.
+
+        If Textual + the cleaned-up driver shut down within ``delay`` (the
+        common case), ``os._exit`` never fires because the interpreter is
+        already gone. If something still hangs, the user gets a clean
+        process death within half a second.
+
+        Skipped when ``PYTEST_CURRENT_TEST`` is set so the test suite is
+        never killed mid-run by a stray fallback Timer.
+        """
+        if os.environ.get("PYTEST_CURRENT_TEST"):
+            return
+        timer = threading.Timer(delay, lambda: os._exit(0))
+        timer.daemon = True
+        timer.start()
+
+    def _on_quit_decision(self, confirm: bool | None) -> None:
+        """Dismiss callback for :class:`QuitModal` — exit only on ``True``.
+
+        ``False`` (player picked **No** / pressed ``n`` / pressed Esc) and
+        ``None`` (modal dismissed without a value) both fall through so
+        the player stays in the running game.
+
+        On confirm we must do two things, in order, to avoid a hung
+        process in a real terminal (test-mode pilots tick synchronously
+        and never hit this hang, which is why the suite stays green):
+
+        1. **Wake the driver worker.** ``_drive`` is almost always
+           parked on ``await self._pending_resume`` inside
+           ``_prompt_via_input`` / a ``push_screen_wait`` modal. Cancelling
+           that future raises :class:`asyncio.CancelledError` —
+           a :class:`BaseException`, not a :class:`Exception`, so the
+           worker's broad ``except Exception`` handler does **not**
+           swallow it. The cancellation propagates out, the worker
+           unwinds, and Textual is free to shut down.
+        2. **Defer ``exit()`` until after the modal teardown tick.**
+           Calling ``self.exit()`` synchronously from the dismiss
+           callback races the modal's own ``_pop_screen`` and leaves the
+           screen stack half-torn-down — the UI disappears but the
+           process never reaches a clean shutdown. ``call_after_refresh``
+           schedules ``exit`` after the next refresh, by which point the
+           modal is fully popped and the worker cancellation above has
+           had a chance to propagate.
+        """
+        if not confirm:
+            return
+        pending = self._pending_resume
+        if pending is not None and not pending.done():
+            pending.cancel()
+        self.call_after_refresh(self.exit)
+        # Fallback: if the producer thread is parked inside a Bedrock LLM
+        # call, the asyncio cancel-without-await in driver._consume_stream
+        # cannot stop the underlying non-daemon worker, and the interpreter
+        # would block waiting for it. The daemon Timer guarantees process
+        # death within ~0.5s regardless. See _arm_hard_exit_fallback.
+        self._arm_hard_exit_fallback()
 
     def on_key(self, event: Any) -> None:
         """Exit on any keypress once the game has ended.

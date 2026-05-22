@@ -195,6 +195,12 @@ async def test_spectator_view_when_human_dies_midgame(
             f"expected 'Watching as a spectator.' in #private-log; got:\n"
             f"{private_text!r}"
         )
+        # Spec 003 / Sub 3.1 hint line — points the spectator at the
+        # canonical exit keys so they aren't stuck watching forever.
+        assert "(Press Esc to exit.)" in private_text, (
+            f"expected '(Press Esc to exit.)' hint in #private-log; got:\n"
+            f"{private_text!r}"
+        )
         assert "(You are now spectating.)" in public_text, (
             f"expected '(You are now spectating.)' in #public-log; got:\n"
             f"{public_text!r}"

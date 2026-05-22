@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from typing import Any, Awaitable, Callable, Iterator
 
 from langchain_core.messages import BaseMessage
@@ -14,6 +15,17 @@ from graphia.config import GraphiaConfig
 from graphia.logging import StreamTraceLogger
 
 _SENTINEL = object()
+
+
+def _swallow_task_result(task: asyncio.Task) -> None:
+    """Done-callback that consumes a task's result/exception silently.
+
+    Attached to the producer task on user-cancelled exit so asyncio does
+    not emit ``Task exception was never retrieved`` warnings when the
+    producer eventually finishes (or raises) after we detach from it.
+    """
+    with contextlib.suppress(BaseException):
+        task.exception()
 
 
 def _make_stream_iterator(
@@ -93,9 +105,20 @@ async def _consume_stream(
     )
 
     captured_interrupts: list[Interrupt] = []
+    consumer_cancelled = False
     try:
         while True:
-            item = await queue.get()
+            try:
+                item = await queue.get()
+            except asyncio.CancelledError:
+                # Quit was requested (Esc → QuitModal → exit, or Ctrl+C).
+                # We must not block on the producer thread — it may be
+                # mid-Bedrock-call (1–10s) and awaiting it would keep the
+                # Python process alive after Textual has already torn the
+                # UI down. Flag the cancellation so the finally block
+                # cancels the task without awaiting it, and re-raise.
+                consumer_cancelled = True
+                raise
             if item is _SENTINEL:
                 logger.record({"driver": "sentinel"})
                 break
@@ -143,7 +166,23 @@ async def _consume_stream(
                         seen_message_ids.add(msg_id)
                         await on_message(msg)
     finally:
-        await producer_task
+        if consumer_cancelled:
+            # User-requested exit: cancel the producer task but do NOT
+            # await it. The asyncio.to_thread worker is wrapping a
+            # synchronous graph.stream() iteration that may be parked
+            # inside a Bedrock call; awaiting would block the event-loop
+            # teardown until that call returns. The underlying thread
+            # cannot be cancelled from Python; it will run to completion
+            # of the current super-step in the background. The daemon-
+            # Timer fallback in GraphiaApp._on_quit_decision guarantees
+            # process exit even if the thread is still alive. Mark the
+            # task's result as consumed so asyncio doesn't warn about an
+            # un-retrieved exception on a cancelled-but-still-pending task.
+            if not producer_task.done():
+                producer_task.cancel()
+            producer_task.add_done_callback(_swallow_task_result)
+        else:
+            await producer_task
     return captured_interrupts
 
 
