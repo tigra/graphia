@@ -89,20 +89,40 @@ The suite is fully mocked at the `ChatBedrockConverse` boundary (an autouse fixt
 
 ## How it works
 
-```
-GraphiaApp (Textual)  ──drives──▶  drive_graph()  ──iterates──▶  StateGraph
-      │                                                              │
-      │  interrupt()/resume for human turns                         │  nodes grouped by phase:
-      │  streams super-step updates to the UI                       │  setup · night · day · endgame
-      ▼                                                              ▼
-  local mode: in-process graph + in-memory diary store
-  remote mode: invokes a hosted AgentCore Runtime running the same graph,
-               with diaries in AgentCore Memory via a Gateway-fronted tool
+```mermaid
+flowchart LR
+    subgraph client["Local machine"]
+        UI["GraphiaApp<br/>(Textual TUI)"]
+        DRV["drive_graph()<br/>resume pump + super-step stream"]
+        UI <-->|"interrupt() / Command(resume=…)"| DRV
+    end
+
+    subgraph localmode["Local mode"]
+        G1["StateGraph<br/>setup · night · day · endgame"]
+        DS1["in-process<br/>diary store"]
+        G1 --- DS1
+    end
+
+    subgraph remotemode["Remote mode (AWS)"]
+        RT["AgentCore Runtime<br/>(same StateGraph)"]
+        GW["AgentCore Gateway<br/>→ Lambda diary tools"]
+        MEM["AgentCore Memory"]
+        RT --> GW --> MEM
+    end
+
+    DRV -->|"local"| G1
+    DRV -->|"--remote"| RT
 ```
 
 - **Graph topology** lives in `src/graphia/graph.py`; nodes are grouped by phase under `src/graphia/nodes/`.
 - **State** is one `GameState` `TypedDict` with reducers (`src/graphia/state.py`); "private" messages are a convention carried in message metadata and filtered by the UI.
 - **The driver** (`src/graphia/driver.py`) iterates the synchronous graph stream inside a worker thread so it never blocks Textual's event loop, and pumps one resume value per super-step.
+
+**For the detailed, current diagrams** (kept up to date in the per-increment tutorials):
+
+- **Full compiled-graph topology** — every phase, node, and conditional edge of the game loop: [Tutorial 001 → Diagram](context/tutorials/001-playable-skeleton/tutorial.md#diagram).
+- **Hosted AgentCore deployment topology** — Client → Runtime → Gateway → Lambda → Memory, end to end: [Tutorial 002 → Diagram](context/tutorials/002-hosted-agentcore-deployment/tutorial.md#diagram).
+- **The `/vote` re-prompt control flow** — single-interrupt-per-node loop: [Tutorial 004 → Diagram](context/tutorials/004-robust-vote-input-validation/tutorial.md#diagram).
 
 ---
 
