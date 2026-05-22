@@ -24,7 +24,7 @@ No new external services. Two amendments to `context/product/architecture.md` la
 
 ### 2.2 Source layout
 
-New package, created as a directory alongside the existing `adventure.py`:
+New package under `src/`:
 
 | Path                                   | Responsibility                                                                                   |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------ |
@@ -43,8 +43,6 @@ New package, created as a directory alongside the existing `adventure.py`:
 | `src/graphia/ui/widgets.py`            | `PublicLog`, `PrivateLog`, `InputBar`, `VoteModal`, `PointingModal`.                              |
 | `src/graphia/logging.py`               | JSONL streaming-trace writer.                                                                    |
 | `tests/…`                              | pytest suite (see §4).                                                                           |
-
-The existing `adventure.py` and `main.py` are untouched.
 
 ### 2.3 Data model (graph state)
 
@@ -211,7 +209,7 @@ Env vars consumed at startup (via `config.py`):
 | **Human types `/vote <name>` with a name that doesn't match.** | Fuzzy-match against alive-player names; if no unique match, prompt "No such player. Try again." without consuming the turn. |
 | **AI never calls a vote, leading to endless Day.** | The 6-round-without-vote safety cap in the functional spec handles this. Additionally, the AI system prompt nudges toward proposing a vote on rounds ≥ 3 when evidence is weak. |
 | **Checkpoint sqlite file accumulates across runs, consuming disk.** | `__main__.py` prunes `.graphia/checkpoints/` entries older than 7 days on startup. Each game is safe to interrupt+resume within its session; we do not promise cross-session resume. |
-| **Non-UTF-8 terminal locale.** | `__main__.py` reconfigures `sys.stdin/stdout/stderr` to `encoding="utf-8", errors="replace"` before Textual starts (same workaround already validated in `adventure.py`). |
+| **Non-UTF-8 terminal locale.** | `__main__.py` reconfigures `sys.stdin/stdout/stderr` to `encoding="utf-8", errors="replace"` before Textual starts. |
 | **Ctrl-C during a Bedrock call.** `asyncio.to_thread` can swallow `KeyboardInterrupt`. | Textual's default `Ctrl+C` binding sets a cancellation flag that `drive_graph()` checks between super-steps. A "Game aborted." banner renders and the app exits cleanly. |
 
 ---
