@@ -2,6 +2,10 @@
 .env
 .env.*
 !.env.example
+*.env
+
+# Local verification / scratch artifacts (may contain account ids, ARNs, profiles)
+obs_log.txt
 
 # Python
 __pycache__/
