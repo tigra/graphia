@@ -73,7 +73,7 @@ help:
 	@echo "Workflow composites:"
 	@echo "  make deploy             First-time: build-lambdas + tf-init + tf-ecr-bootstrap + push + tf-apply + wire-env."
 	@echo "  make redeploy           Steady-state code update: build-lambdas + push + tf-apply + wire-env."
-	@echo "  make wire-env           Pull GRAPHIA_RUNTIME_URL + GRAPHIA_MEMORY_ID + GRAPHIA_LOG_GROUP from tf outputs into .env."
+	@echo "  make wire-env           Discover the deployed Runtime URL + Memory id + log group via the AWS API and write them into .env (no Terraform state needed)."
 	@echo "  make destroy            Alias for tf-destroy."
 	@echo ""
 	@echo "Play:"
@@ -164,13 +164,29 @@ tf-destroy:
 
 # Idempotent: replaces any existing GRAPHIA_RUNTIME_URL / GRAPHIA_MEMORY_ID /
 # GRAPHIA_LOG_GROUP lines in .env in place, preserves every other line.
-# Creates .env if it doesn't exist. All `./tf output -raw` calls run inside
-# the container wrapper, so the SSO session has to be live.
+# Creates .env if it doesn't exist.
+#
+# State-independent: instead of reading `./tf output` (which needs local
+# Terraform state, so only works on the machine that deployed), it discovers
+# the deployed resources via the AWS API by their conventional names. This
+# means anyone with profile access can wire .env from a fresh clone. The
+# names mirror infra/terraform/locals.tf: runtime/memory replace dashes with
+# underscores (AgentCore name constraint); the log group keeps dashes.
+# Requires a live SSO session for the active AWS profile.
 wire-env:
 	@set -e; \
-	RUNTIME_URL=$$(cd $(TF_DIR) && ./tf output -raw runtime_invocation_url); \
-	MEMORY_ID=$$(cd $(TF_DIR) && ./tf output -raw memory_id); \
-	LOG_GROUP=$$(cd $(TF_DIR) && ./tf output -raw cloudwatch_log_group); \
+	RUNTIME_NAME=$$(printf 'graphia-%s_runtime' "$(ENVIRONMENT)" | tr '-' '_' | cut -c1-48); \
+	MEMORY_PREFIX=$$(printf 'graphia-%s_memory' "$(ENVIRONMENT)" | tr '-' '_' | cut -c1-48); \
+	LOG_GROUP="/aws/bedrock-agentcore/graphia-$(ENVIRONMENT)-runtime"; \
+	RUNTIME_URL=$$(aws --region $(AWS_REGION) bedrock-agentcore-control list-agent-runtimes \
+	    --query "agentRuntimes[?agentRuntimeName=='$$RUNTIME_NAME'].agentRuntimeArn | [0]" --output text); \
+	MEMORY_ID=$$(aws --region $(AWS_REGION) bedrock-agentcore-control list-memories \
+	    --query "memories[?starts_with(id, '$$MEMORY_PREFIX')].id | [0]" --output text); \
+	if [ -z "$$RUNTIME_URL" ] || [ "$$RUNTIME_URL" = "None" ]; then \
+	  echo "ERROR: no AgentCore runtime named '$$RUNTIME_NAME' found in $(AWS_REGION)."; \
+	  echo "       Is the stack deployed for ENVIRONMENT=$(ENVIRONMENT)? Run 'make deploy' (or set the right ENVIRONMENT)."; \
+	  exit 1; \
+	fi; \
 	touch .env; \
 	awk -v ru="GRAPHIA_RUNTIME_URL=$$RUNTIME_URL" \
 	    -v mi="GRAPHIA_MEMORY_ID=$$MEMORY_ID" \
@@ -183,7 +199,7 @@ wire-env:
 	     END { if (!rseen) print ru; if (!mseen) print mi; if (!lseen) print lg }' \
 	    .env > .env.tmp && mv .env.tmp .env
 	@echo ""
-	@echo "Wired into .env from Terraform outputs:"
+	@echo "Wired into .env (discovered via the AWS API — no Terraform state needed):"
 	@grep -E '^GRAPHIA_(RUNTIME_URL|MEMORY_ID|LOG_GROUP)=' .env
 
 deploy: build-lambdas tf-init tf-ecr-bootstrap push tf-apply wire-env
