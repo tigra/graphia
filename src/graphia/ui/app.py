@@ -277,6 +277,10 @@ class GraphiaApp(App[None]):
         if kind == "day_turn":
             speaker_name = str(payload.get("speaker_name") or "You")
             log = self.query_one("#public-log", RichLog)
+            raw_error = payload.get("error")
+            error = raw_error if isinstance(raw_error, str) and raw_error else None
+            if error:
+                log.write(Text.from_markup(f"[bold red]{error}[/]"))
             log.write(
                 Text.from_markup(f"[dim]It's your turn, {speaker_name}.[/dim]")
             )

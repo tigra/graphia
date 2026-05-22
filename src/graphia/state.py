@@ -45,5 +45,14 @@ class GameState(TypedDict, total=False):
     day_rounds: int
     day_votes_called: int
     active_vote: ActiveVote | None
+    # Carries a validation error (e.g. a bad ``/vote`` target) forward to the
+    # NEXT ``day_turn`` execution so the human can be re-prompted with the hint
+    # via a single ``interrupt()`` per node execution. A graph loop — not a
+    # second in-node ``interrupt()`` — drives the re-prompt; this keeps
+    # ``snapshot.next`` reliable for the driver (a second in-node interrupt
+    # empties ``snapshot.next`` while the interrupt is still pending, which the
+    # driver misreads as game-over). Cleared (set to None) on any accepted
+    # human turn.
+    day_turn_error: str | None
     kill_log: Annotated[list[KillRecord], operator.add]
     winner: Literal["law_abiding", "mafia", "draw"] | None

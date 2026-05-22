@@ -169,6 +169,7 @@ def day_open(state: GameState) -> dict:
         "day_rounds": 0,
         "day_votes_called": 0,
         "active_vote": None,
+        "day_turn_error": None,
         "phase": "day",
     }
 
@@ -317,7 +318,18 @@ def day_turn(state: GameState) -> dict:
     # Human turn: may either speak or begin with `/vote <name>`.
     # --------------------------------------------------------------
     if player.is_human:
-        base_payload: dict = {
+        # Single ``interrupt()`` per node execution (interrupt-as-first-
+        # statement discipline). On an invalid ``/vote`` we do NOT call
+        # ``interrupt()`` a second time inside this node — that would empty
+        # ``snapshot.next`` while the second interrupt is still pending, and
+        # the driver (which checks ``snapshot.next`` before interrupts) would
+        # misread the pause as game-over and end the game. Instead we carry
+        # the error forward in ``day_turn_error`` and return a state update
+        # with no turn advance; the conditional edge loops back to a FRESH
+        # ``day_turn`` execution, which surfaces the hint on its single
+        # interrupt. This keeps exactly one interrupt per super-step.
+        prior_error = state.get("day_turn_error")
+        payload: dict = {
             "kind": "day_turn",
             "speaker_id": player.id,
             "speaker_name": player.name,
@@ -325,41 +337,43 @@ def day_turn(state: GameState) -> dict:
                 p.name for p in players.values() if p.is_alive
             ],
         }
+        if prior_error:
+            payload["error"] = prior_error
 
-        # Re-interrupt loop for invalid `/vote` targets. Each iteration is a
-        # fresh interrupt() call so the UI can display the last error; we do
-        # NOT advance turn_index on a failed vote attempt — the turn is not
-        # consumed.
-        payload = base_payload
-        while True:
-            raw = interrupt(payload)
-            text = raw.strip() if isinstance(raw, str) else ""
-            lowered = text.lower()
-            if lowered.startswith("/vote"):
-                # Tolerate "/vote foo", "/vote  foo", or bare "/vote".
-                remainder = text[len("/vote"):].strip()
-                target_id = _fuzzy_match_alive(players, remainder)
-                if target_id is None:
-                    payload = {
-                        **base_payload,
-                        "error": "No such player. Try again.",
-                    }
-                    continue
-                active = _begin_vote(player.id, target_id, players)
-                # Do NOT advance turn_index — the turn is consumed by the
-                # vote flow, but we want to resume speech rotation from the
-                # same position after the vote resolves.
-                return {"active_vote": active}
+        raw = interrupt(payload)
+        text = raw.strip() if isinstance(raw, str) else ""
+        lowered = text.lower()
+        tokens = lowered.split(maxsplit=1)
+        if tokens and tokens[0] == "/vote":
+            # Strict: only recognise "/vote" as a slash-command when it is
+            # the whole input or followed by whitespace. Inputs like
+            # "/voted", "/votefor Alice" fall through to the speech path.
+            # Bare "/vote" (no target) emits a distinct usage hint.
+            remainder = text[len("/vote"):].strip()
+            if not remainder:
+                # Re-prompt via a graph loop, not a second interrupt. Turn is
+                # NOT consumed (turn_index unchanged).
+                return {"day_turn_error": "Usage: /vote <name>"}
+            target_id = _fuzzy_match_alive(players, remainder)
+            if target_id is None:
+                return {"day_turn_error": "No such player. Try again."}
+            active = _begin_vote(player.id, target_id, players)
+            # Do NOT advance turn_index — the turn is consumed by the
+            # vote flow, but we want to resume speech rotation from the
+            # same position after the vote resolves. Clear any pending error.
+            return {"active_vote": active, "day_turn_error": None}
 
-            if not text:
-                text = "(stays silent.)"
-            break
+        if not text:
+            text = "(stays silent.)"
 
         msg = AIMessage(
             content=text,
             name=player.name,
             additional_kwargs={"speaker": player.name},
         )
+        # Accepted human speech consumes the turn — clear any pending
+        # re-prompt error so it doesn't resurface on the human's next turn.
+        clear_error: dict = {"day_turn_error": None}
     else:
         # --------------------------------------------------------------
         # AI turn: may either speak or initiate a vote via DayAction.
@@ -376,6 +390,7 @@ def day_turn(state: GameState) -> dict:
             name=player.name,
             additional_kwargs={"speaker": player.name},
         )
+        clear_error = {}
 
     new_turn_index = turn_index + 1
     if new_turn_index >= len(order):
@@ -387,11 +402,13 @@ def day_turn(state: GameState) -> dict:
             "day_turn_index": 0,
             "day_rounds": new_rounds,
             "day_order": next_order,
+            **clear_error,
         }
 
     return {
         "messages": [msg],
         "day_turn_index": new_turn_index,
+        **clear_error,
     }
 
 
@@ -674,6 +691,12 @@ def route_day_turn_or_vote(state: GameState) -> str:
     """
     if state.get("active_vote"):
         return "vote_prompt"
+    # A pending re-prompt error means the human's turn was rejected (bad
+    # /vote) and NOT consumed — loop straight back to day_turn to re-prompt,
+    # even if the round cap would otherwise close the Day. The turn index
+    # was not advanced, so we have not actually completed the round.
+    if state.get("day_turn_error"):
+        return "day_turn"
     if state.get("day_rounds", 0) >= DAY_MAX_ROUNDS:
         return "day_close"
     return "day_turn"
