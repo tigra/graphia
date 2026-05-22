@@ -161,6 +161,16 @@ Three skills were added on top of the base chain and are a core part of how this
 
 How they relate: a **CR** records *what* changed in the requirements and *why*; an **ADR** records *how* an architectural question was settled; a **tutorial** explains, after the fact, *how the result works* so a returning reader (or a curious dev) can learn the pattern without reading every commit.
 
+### Also a spec-driven coding experiment
+
+Beyond the LangGraph/AgentCore content, Graphia was a deliberate experiment in **how far the usually-tedious lifecycle paperwork can be automated** when an AI assistant drives a spec-driven workflow. The verdict — at least for a greenfield project like this one — is that the "bureaucratic" steps that teams routinely skip or defer came out roughly **90% automated**:
+
+- **ADRs and CRs** fall out of the moment a decision or a requirement actually changes, captured in the same conversation that made the change — rather than being reconstructed weeks later (when the rationale has evaporated) or never written at all.
+- **Documentation and per-increment tutorials** are the clearest win. It's normally hard to remember every gotcha worth writing down — the subtle interrupt/resume contract, the IAM permission that was the *real* root cause behind a flat trace tree, the bug a mocked test structurally couldn't catch. Generated alongside the work, from the spec + the diff + the surprises hit on the way, the tutorials capture those lessons while they're still fresh.
+- **The project timeline** ([`context/project-timeline.md`](context/project-timeline.md)) stays current as a side effect of the same flow, instead of being a stale doc nobody updates.
+
+The artifacts in [`context/`](context/) aren't decoration after the fact — they're the running record the workflow produced as the code was written. That's the experiment: keep the engineering legible without the legibility being a chore.
+
 ---
 
 ## Status
