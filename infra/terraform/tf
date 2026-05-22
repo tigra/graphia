@@ -10,6 +10,24 @@ set -euo pipefail
 # supported. Whichever the developer has installed is used. Set
 # TERRAFORM_IMAGE to override the pinned image tag.
 
+# Validate that an AWS profile is selected — the AWS provider inside the
+# container relies on the standard credential chain resolving via AWS_PROFILE.
+# Without this guard the user sees Terraform's generic "No valid credential
+# sources" message and has to figure out the cause themselves.
+if [ -z "${AWS_PROFILE:-}" ]; then
+  cat <<EOF >&2
+ERROR: AWS_PROFILE is not set.
+
+Configure it once:
+  - Add AWS_PROFILE=<your-profile> to .env at the repo root, OR
+  - Export it in your shell: export AWS_PROFILE=<your-profile>
+
+Then refresh credentials before invoking terraform:
+  aws sso login --profile <your-profile>
+EOF
+  exit 1
+fi
+
 # Detect container runtime: prefer podman, fall back to docker.
 # Both runtimes are explicitly supported (per project_terraform_container memory);
 # whichever the developer has installed is fine.

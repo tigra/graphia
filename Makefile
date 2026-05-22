@@ -1,3 +1,12 @@
+# Auto-load .env so AWS_PROFILE (and other vars set there) flow into make and
+# onward to ./tf, the aws CLI, and any spawned shells. The .env file is
+# user-local and gitignored; create it via `make wire-env` after a deploy, or
+# hand-edit it to set AWS_PROFILE before the first deploy.
+ifneq (,$(wildcard .env))
+include .env
+export
+endif
+
 CONTAINER   ?= $(shell command -v podman >/dev/null 2>&1 && echo podman || (command -v docker >/dev/null 2>&1 && echo docker || echo ""))
 IMAGE       ?= graphia-runtime
 TAG         ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo latest)
@@ -7,7 +16,9 @@ PORT        ?= 8080
 # AWS_PROFILE drives auth. Configure it once (`aws configure sso` / `aws configure`)
 # and set `AWS_PROFILE=<your-profile>` in `.env` — the account ID is derived from
 # `aws sts get-caller-identity`, no separate AWS_ACCOUNT env var needed.
-AWS_ACCOUNT := $(shell aws sts get-caller-identity --query Account --output text 2>/dev/null)
+# Note: AWS_PROFILE is passed inline because Make's $(shell ...) runs in Make's
+# invocation environment, not in Make's exported-variable scope.
+AWS_ACCOUNT := $(shell AWS_PROFILE=$(AWS_PROFILE) aws sts get-caller-identity --query Account --output text 2>/dev/null)
 AWS_REGION  ?= us-east-1
 ENVIRONMENT ?= demo
 OWNER       ?= $(shell git config user.email 2>/dev/null || echo unknown)
@@ -135,6 +146,18 @@ tf-apply:
 	cd $(TF_DIR) && ./tf apply $(TF_APPLY_VARS)
 
 tf-destroy:
+	@# Terraform evaluates filebase64sha256() on the Lambda zips even during destroy.
+	@# Create empty placeholders with an epoch-0 mtime if the real zips aren't around,
+	@# so destroy doesn't need a prior `make build-lambdas` AND a subsequent
+	@# build-lambdas still triggers a real rebuild (sources stay newer than the
+	@# placeholder).
+	@mkdir -p $(LAMBDA_BUILD)
+	@for f in $(LAMBDA_ZIPS); do \
+	  if [ ! -e "$$f" ]; then \
+	    touch "$$f"; \
+	    touch -t 197001020000 "$$f"; \
+	  fi; \
+	done
 	cd $(TF_DIR) && ./tf destroy $(TF_VARS)
 
 # --- Workflow composites.
@@ -223,7 +246,14 @@ $(LAMBDA_BUILD)/%.zip: $(LAMBDA_DIR)/%/lambda_function.py $(LAMBDA_DIR)/%/requir
 clean-lambdas:
 	rm -rf $(LAMBDA_BUILD)
 
-destroy: tf-destroy
+destroy:
+	@# ECR's force_delete attribute is read from SAVED STATE at destroy time —
+	@# passing -var ecr_force_delete=true on the destroy line alone is not enough.
+	@# Two-step: targeted apply (auto-approved, single resource) flips the saved
+	@# state's force_delete to true, then the real destroy can purge images and
+	@# repository together. Same shape as the README's "Destroy procedure".
+	cd $(TF_DIR) && ./tf apply -target=aws_ecr_repository.runtime -var environment=$(ENVIRONMENT) -var owner=$(OWNER) -var ecr_force_delete=true
+	@$(MAKE) tf-destroy ECR_FORCE_DELETE=true
 
 # Play the game in local mode (default) or against the deployed Runtime.
 # Both forward extra CLI args via $(ARGS) for flags like --seed.
