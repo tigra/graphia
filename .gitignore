@@ -7,6 +7,9 @@
 # Local verification / scratch artifacts (may contain account ids, ARNs, profiles)
 obs_log.txt
 
+# Local-only notes (internal account/profile details — never committed)
+*.local.md
+
 # Python
 __pycache__/
 *.py[cod]
