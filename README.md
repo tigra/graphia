@@ -75,6 +75,8 @@ make destroy       # tear it all down
 
 The AWS account ID is derived from your active profile; no account or profile names are baked into source. See [`infra/terraform/README.md`](infra/terraform/README.md) for prerequisites and the full deploy/destroy walkthrough.
 
+**Terraform runs inside a container — you don't install it.** Every `terraform` invocation goes through the [`infra/terraform/tf`](infra/terraform/tf) wrapper, which auto-detects **Podman or Docker** (either works) and runs a **pinned `hashicorp/terraform:1.13.1`** image, mounting the repo and your `~/.aws` config and forwarding `AWS_PROFILE`. The only host prerequisite for the IaC layer is a container runtime — no local Terraform install, and no "works on my Terraform version" drift: everyone and CI run the exact same Terraform + provider versions. The `make` targets call `./tf` for you, so you rarely invoke it directly.
+
 ---
 
 ## Testing
