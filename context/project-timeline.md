@@ -3,7 +3,7 @@
 A high-level history of the project, reconstructed from `git log` and the
 `context/` artifacts: how scope changed (Change Requests), how the architecture
 was decided (Architecture Decision Records), and how the work was executed (specs
-broken into vertical slices). Covers **2026-04-29 → 2026-05-20**.
+broken into vertical slices). Covers **2026-04-29 → 2026-05-22**.
 
 Graphia is built with the **AWOS spec-driven workflow** — every increment flows
 `product → roadmap → architecture → spec → tech → tasks → implement → verify → tutorial`,
@@ -48,111 +48,28 @@ gantt
     Slice 9 — local/remote equivalence tests             :done, s9, 2026-05-18, 1d
     Slice 10 — destroy verification + README             :done, s10, 2026-05-18, 1d
     Slice 11 — Diary round-trip · fallback · deploy hint :done, s11, 2026-05-20, 1d
-    Spec 002 verified Completed                          :milestone, done, sp2v, 2026-05-20, 0d
-    Tutorial 002 published                               :milestone, done, sp2t, 2026-05-20, 0d
+    Spec 002 verified Completed                          :milestone, done, sp2v, after s11, 0d
+    Tutorial 002 published                               :milestone, done, sp2t, after sp2v, 0d
+
+    section Polish & publish (v1.1.x)
+    Spec 003 — Reliable game exit (Esc quit modal)       :done, sp3, 2026-05-22, 1d
+    Spec 004 — Robust /vote validation + driver fix      :done, sp4, 2026-05-22, 1d
+    Spec 005 — Play-as-role (functional spec only)       :active, sp5, 2026-05-22, 1d
+    Tutorial 004 published                               :milestone, done, t4, after sp4, 0d
+    Published to GitHub (tigra/graphia) + README         :milestone, done, pub, after sp5, 0d
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:
 
-- **Colour = status.** Green = completed / accepted / in effect · Red = superseded · Orange = pending or in-flight (none on this chart now Phase 2 is closed; reserved for the next active phase).
+- **Colour = status.** Green = completed / accepted / in effect · Red = superseded · Orange = pending or in-flight.
 - **Shape = kind.** Diamonds are point events (CRs, ADRs, spec milestones); bars are executed slice work spanning real days.
 - **Sections = project phase.** ADRs are listed first within Phase 2, then the slice bars, so a superseded ADR (red diamond) is never mistaken for blocked work.
 
-So the only red marks are the two superseded ADRs (002, 004); the CRs are green because — even though CR 001 and 002 carried `Proposed` for a while — the scope changes were fully executed and have now been formally Accepted. No orange remains until Phase 3 begins.
+So the only red marks are the two superseded ADRs (002, 004); the CRs are green because — even though CR 001 and 002 carried `Proposed` for a while — the scope changes were fully executed and have now been formally Accepted. The one orange bar is **Spec 005**, in flight (functional spec written, implementation pending).
 
 ---
 
-## Work breakdown structure
-
-The timeline above shows *when*; this shows *what* — each spec decomposed into
-work areas and the vertical slices under them. Slice level is the leaf here; every
-slice decomposes further into the sub-task checklist in its spec's `tasks.md`.
-
-A WBS can be drawn two ways here. **Spec 001** uses a flowchart tree — it shipped
-in a single commit, so there is no per-slice schedule to plot. **Spec 002** uses a
-*gantt* instead: gantt sections carry the WBS work areas and the slice tasks carry
-real dates, so the same breakdown doubles as a schedule. (A gantt nests only two
-levels — section → task — so the spec name sits in the title rather than as a
-tree root.)
-
-### Spec 001 — Playable Skeleton
-
-```mermaid
-flowchart TB
-    S1["Spec 001 — Playable Skeleton<br/>Status: Completed · 9 slices"]:::spec
-    subgraph G11 ["1.1 Bootstrap & Roster"]
-        direction TB
-        T1["Slice 1 — App boot, name entry, logging"]:::done
-        T2["Slice 2 — Roster + public Moderator intro"]:::done
-        T3["Slice 3 — Live AI names via Haiku"]:::done
-        T4["Slice 4 — Role assignment + private reveal"]:::done
-    end
-    subgraph G12 ["1.2 Core Game Loop"]
-        direction TB
-        T5["Slice 5 — Night 1 end-to-end"]:::done
-        T6["Slice 6 — Day 1 speaking + victim reveal"]:::done
-        T7["Slice 7 — Vote-to-execute mechanics"]:::done
-    end
-    subgraph G13 ["1.3 Endgame & Polish"]
-        direction TB
-        T8["Slice 8 — Win detection + end-of-game screen"]:::done
-        T9["Slice 9 — Polish: spectator, Ctrl-C, draw cap"]:::done
-    end
-    S1 --> G11
-    S1 --> G12
-    S1 --> G13
-    classDef spec fill:#3d85c6,stroke:#0b5394,color:#fff
-    classDef done fill:#6aa84f,stroke:#38761d,color:#fff
-    classDef pending fill:#e69138,stroke:#b45f06,color:#fff
-```
-
-### Spec 002 — Hosted AgentCore Deployment (WBS as a gantt)
-
-Sections are the WBS work areas; tasks are the slices, carrying real dates.
-
-```mermaid
-%%{init: {'themeVariables': {'doneTaskBkgColor': '#6aa84f', 'doneTaskBorderColor': '#38761d', 'activeTaskBkgColor': '#e69138', 'activeTaskBorderColor': '#b45f06'}}}%%
-gantt
-    title Spec 002 WBS — Hosted AgentCore Deployment
-    dateFormat YYYY-MM-DD
-    axisFormat %b %d
-
-    section 2.1 Foundation
-    Slice 1 — Config refactor + auth posture           :done, 2026-05-12, 1d
-    Slice 2 — Resource discovery + Terraform skeleton  :done, 2026-05-12, 1d
-    Slice 3 — Runtime container image + resource       :done, 2026-05-12, 1d
-    Slice 3 follow-on — Makefile task-runner           :done, 2026-05-12, 1d
-
-    section 2.2 Remote Execution
-    Slice 4 — AgentCore client + full remote game      :done, 2026-05-13, 1d
-
-    section 2.3 UI & Memory
-    Slice 5 — local / remote corner badge              :done, 2026-05-13, 1d
-    Slice 6 — AgentCore Memory diary store + resource  :done, 2026-05-13, 1d
-
-    section 2.4 Gateway Tool Surface
-    Slice 7 — Gateway tool surface (ADR 002 to 005)    :done, 2026-05-13, 3d
-    Slice 7 follow-on — Lambda pivot + 5 remote fixes  :done, 2026-05-15, 1d
-
-    section 2.5 Hardening & Teardown
-    Slice 8 — Observability + remote-mode failure modal :done, 2026-05-15, 1d
-    CR 003 follow-ons — OTEL fix · IAM · Tx Search      :done, 2026-05-16, 1d
-    Slice 9 — local/remote equivalence tests            :done, 2026-05-18, 1d
-    Slice 10 — destroy verification + README            :done, 2026-05-18, 1d
-
-    section 2.6 Verify & Close
-    Slice 11 — Diary round-trip · fallback · deploy hint :done, 2026-05-20, 1d
-    Spec 002 verified Completed                          :milestone, done, 2026-05-20, 0d
-    Tutorial 002 published                               :milestone, done, 2026-05-20, 0d
-```
-
-_Colour scheme matches the timeline: green = done. All Spec 002 slice dates are
-now actual. The Spec 001 flowchart uses blue for the spec (WBS root) and grey for
-a work area (a grouping, not itself executable)._
-
----
-
-## What was going on — three acts
+## What was going on — four acts
 
 ### Act 1 — Phase 1: a playable skeleton (2026-04-29)
 
@@ -239,6 +156,36 @@ specialist **`terraform-aws` agent was hired** (2026-05-10) to own the IaC.
   same day, and **Tutorial 002** — a single depth-first walkthrough covering all
   eleven slices — was published. **107/107 tests pass**, **85/85 task items
   done**, Phase 2 closed.
+
+### Act 4 — Polish, hardening, and going public (2026-05-20 → 05-22)
+
+With Phase 2 closed, three small specs and a public release followed:
+
+- **Spec 003 — Reliable Game Exit Controls** (05-22): `Esc` opens a quit-confirm
+  modal; `q` is deliberately left unbound so words starting with "q" can be typed
+  in day chat; `Ctrl+C` still force-quits. Fixed an "Esc closes the UI but the
+  process hangs" defect — the LangGraph stream thread could be parked mid-Bedrock
+  call, so a cancel-pending-future plus a 0.5s daemon `os._exit` fallback
+  guarantees a clean exit. Verified Completed.
+- **Spec 004 — Robust /vote Input Validation** (05-22): strict slash-command
+  parsing (`/voted`, `/votefor` are speech; bare `/vote` shows a usage hint) plus
+  a real bug fix — a bad `/vote` *ended the game* because the re-prompt called
+  `interrupt()` twice in one node execution, and the driver returns on an empty
+  `snapshot.next` before it inspects pending interrupts. Restructured to one
+  interrupt per node, re-prompting via a `day_turn_error` state channel and a
+  conditional-edge loop; a driver-level regression test (running the real
+  `drive_graph`, not a hand-driven `graph.stream`) locks it. Verified Completed;
+  **Tutorial 004** published. (No Tutorial 003 — that slot is intentionally left
+  open.)
+- **Spec 005 — Play-as-role** (05-22, in flight): a `GRAPHIA_ROLE` env var to pin
+  the human's side (mafia / law-abiding) for testing, composing with `make play`.
+  Functional spec written; tech + implementation still to come.
+- **Going public** (05-22): the repo was published to
+  **github.com/tigra/graphia** with a README (mermaid architecture diagram,
+  make-first workflow, AWOS-extension links). Tooling was hardened in passing —
+  the Makefile auto-loads `.env`, derives the AWS account from the active profile,
+  runs a safe two-step `terraform destroy`, and `make wire-env` now discovers
+  deployed resources via the AWS API (no Terraform state needed).
 
 ---
 
@@ -337,22 +284,33 @@ coverage._
 
 ## Specs & tutorials
 
-| Spec | Title                       | Slices | Status    |
-| ---- | --------------------------- | ------ | --------- |
-| 001  | Playable Skeleton           | 9      | Completed |
-| 002  | Hosted AgentCore Deployment | 11     | Completed |
+| Spec | Title                         | Slices | Status                    |
+| ---- | ----------------------------- | ------ | ------------------------- |
+| 001  | Playable Skeleton             | 9      | Completed                 |
+| 002  | Hosted AgentCore Deployment   | 11     | Completed                 |
+| 003  | Reliable Game Exit Controls   | 3      | Completed                 |
+| 004  | Robust /vote Input Validation | 4      | Completed                 |
+| 005  | Play-as-role                  | —      | Draft (functional spec)   |
 
-Per-increment learning tutorials live under `context/tutorials/`: `001` and the
-final `002` (depth-first walkthrough of all eleven Spec 002 slices, published
-2026-05-20). An interim `002-hosted-agentcore-deployment-v2` draft (Slices 1-4 +
-the Nova switch, pre-Lambda-pivot) sits next to it as a historical artifact and
-will be removed when no longer interesting.
+Per-increment learning tutorials live under `context/tutorials/`: `001`, the
+final `002` (depth-first walkthrough of all eleven Spec 002 slices), and `004`
+(the LangGraph interrupt/resume-pump gotcha). Tutorial `003` was intentionally
+skipped — that index is left open. An interim `002-hosted-agentcore-deployment-v2`
+draft (Slices 1-4 + the Nova switch, pre-Lambda-pivot) sits alongside as a
+historical artifact and will be removed when no longer interesting.
 
 ---
 
 ## What's next
 
-With Phase 2 closed (Spec 002 verified, Tutorial 002 published), the roadmap's
-next item is **Phase 3 — Long-Term Cross-Game Memory & Career Stats**, started
-via `/awos:spec`. From the AWOS chain that means: spec → tech → tasks →
-implement-by-slice → verify → tutorial, with CRs and ADRs logged along the way.
+Two threads are open:
+
+1. **Finish Spec 005 (Play-as-role)** — the functional spec is written; it needs
+   `/awos:tech` → tasks → implement → verify to land the `GRAPHIA_ROLE` pin.
+2. **Phase 3 — Long-Term Cross-Game Memory & Career Stats** — the next big
+   roadmap item, started via `/awos:spec`. From the AWOS chain that means: spec →
+   tech → tasks → implement-by-slice → verify → tutorial, with CRs and ADRs logged
+   along the way.
+
+The repo is now public at **github.com/tigra/graphia**, so future increments
+ship in the open.
