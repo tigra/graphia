@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Graphia** — a single-player console Mafia game built as a personal reference implementation of advanced LangGraph patterns (multi-agent orchestration, private per-agent state, human-in-the-loop interrupts, async streaming). The package lives in `src/graphia/`; entry point is `python -m graphia`.
 
-The repo also predates Graphia: `adventure.py`, `support_agent.py`, `main.py`, and `TUTORIAL.md` are unrelated learning artifacts kept for reference. New work should go inside `src/graphia/` unless explicitly told otherwise.
+Earlier root-level learning artifacts (a pirate RPG, a support-ticket agent, a Bedrock smoke-test, and their tutorial) have been extracted into their own sibling repositories — the repo is now Graphia-only. New work should go inside `src/graphia/` unless explicitly told otherwise.
 
 ## Running and testing
 
@@ -15,7 +15,7 @@ The repo also predates Graphia: `adventure.py`, `support_agent.py`, `main.py`, a
 - **Single test:** `uv run pytest tests/test_slice7_vote.py::test_name -q`.
 - **Deterministic seed:** `GRAPHIA_SEED=1234 uv run python -m graphia` for reproducible role assignment and tie-breaks.
 - **Required env (in `.env`):** `AWS_BEARER_TOKEN_BEDROCK` (required), `AWS_REGION` (default `us-east-1`), `GRAPHIA_LOG_FILE`, `GRAPHIA_CHECKPOINT_DIR`, `GRAPHIA_SEED`.
-- **Dependencies:** `uv add <pkg>` into `pyproject.toml`. Do **not** use PEP 723 inline `# /// script` headers — even though `main.py` (a leftover) still uses one, all new code goes through the standard uv project flow.
+- **Dependencies:** `uv add <pkg>` into `pyproject.toml`. Do **not** use PEP 723 inline `# /// script` headers; all code goes through the standard uv project flow.
 
 ## Architecture (the parts that span files)
 

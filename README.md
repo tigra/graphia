@@ -176,5 +176,3 @@ The artifacts in [`context/`](context/) aren't decoration after the fact — the
 ## Status
 
 Graphia is built incrementally and is an active personal reference project. Phases 1–2 (playable skeleton + hosted AgentCore deployment) are complete; later phases (long-term cross-game memory, AI provider flexibility, richer night resolution, personas) are tracked in [`context/product/roadmap.md`](context/product/roadmap.md).
-
-*The `adventure.py`, `support_agent.py`, `main.py`, and `TUTORIAL.md` files at the repo root predate Graphia and are unrelated learning artifacts kept for reference.*
