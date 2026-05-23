@@ -7,7 +7,7 @@
 - **Language & Runtime:** Python 3.10+ (LangGraph 1.x drops 3.9; modern union syntax is useful).
 - **Dependency & Project Management:** `uv` with `pyproject.toml` and `uv.lock`. Scripts run via `uv run python -m graphia`; no PEP 723 inline script metadata.
 - **Orchestration Framework:** LangGraph 1.x (`StateGraph`, `interrupt()`/`Command(resume=…)`, reducers, structured-output schemas via `with_structured_output`). `ToolNode` and `bind_tools` are **deferred to Phase 7** — v1.x uses structured output rather than agentic tool calls (per CR 002 amendment, applying the *design-driven-by-realistic-needs* principle: Mafia game-design tool-call cases are mostly degenerate vs. structured output).
-- **LLM Client:** `langchain-aws` `ChatBedrockConverse`. Two singletons (Sonnet 4.5 + Haiku 4.5) — see §4.
+- **LLM Client:** `langchain-aws` `ChatBedrockConverse`. Two singletons in a two-tier pattern — a heavyweight LLM for gameplay and a lightweight LLM for short mechanical calls — see §4.
 - **Console UI:** Textual (TUI framework on top of Rich). Chosen for the Phase 6 requirement that AI players "type" into a shared chat panel while the human types into a pinned input line without stream collisions.
 - **Concurrency Model:**
   - **Phases 1–5:** synchronous LangGraph execution (`graph.invoke`, `graph.stream`). Because Textual runs its own asyncio event loop, sync LangGraph calls are dispatched via `asyncio.to_thread` so they don't block the UI.
@@ -58,11 +58,11 @@ Graphia ships with **two parallel run modes**, selected via a `--remote` flag at
 
 ## 4. External Services & APIs
 
-- **LLM Provider:** AWS Bedrock, region `us-east-1` (US inference profiles). Two `ChatBedrockConverse` instances:
-  - **Primary (Sonnet 4.5):** model ID `us.anthropic.claude-sonnet-4-5-20250929-v1:0`. Used for all gameplay roles — Moderator narrative announcements, AI player turns (pointing, speaking, voting), character-sheet generation (Phase 6), and the end-of-game creative recap (Phase 6).
-  - **Secondary (Haiku 4.5):** model ID `us.anthropic.claude-haiku-4-5-20251001-v1:0`. Used only for short, mechanical calls where Sonnet latency/cost is overkill. Current use: start-of-game AI player name generation in a single call.
+- **LLM Provider:** AWS Bedrock, region `us-east-1` (US inference profiles). Two `ChatBedrockConverse` instances in a two-tier pattern:
+  - **Primary (heavyweight LLM):** used for all gameplay roles — Moderator narrative announcements, AI player turns (pointing, speaking, voting), character-sheet generation (Phase 6), and the end-of-game creative recap (Phase 6).
+  - **Secondary (lightweight LLM):** used only for short, mechanical calls where the heavyweight tier's latency/cost is overkill. Current use: start-of-game AI player name generation in a single call.
 
-  Behavioral variation within each tier comes from system prompts, temperature, and structured-output schemas — **not** from adding more models. Two models is the cap for this project.
+  Behavioural variation within each tier comes from system prompts, temperature, and structured-output schemas — **not** from adding more models. Two LLM tiers is the cap for this project; the specific model identities (family, version, region-prefix) are operational and cost choices captured in code and in the relevant ADR, not architectural pins of this document.
 
 - **Bedrock AgentCore (remote mode only — Phase 2 + Phase 3 scope):**
   - **AgentCore Runtime:** hosts the LangGraph game-engine core; consumption-based per-second pricing, scale-to-zero in `us-east-1`.
@@ -96,7 +96,7 @@ Graphia ships with **two parallel run modes**, selected via a `--remote` flag at
 
 ## 6. Determinism Posture & Testing Conventions
 
-- **LLM outputs are accepted as variable.** Graphia's AI players are Sonnet-driven and the start-of-game AI roster names are Haiku-driven. Both are inherently non-reproducible across runs — even pinning `temperature` to `0` only *lowers* the variance, it does not eliminate it. The project does not attempt to bridge this gap: there is no replay-from-transcript layer, no LLM-output caching for determinism, no temperature-zero shim that pretends to deliver replay-determinism. Two runs of the same game are *expected* to produce different AI names, different dialogue, and different outcomes. Tests and assertions therefore must not depend on textual equality of LLM-generated content; behavioural tests assert structural invariants (a vote was opened, exactly one player was executed, the winner field holds a valid value) rather than verbatim transcripts.
+- **LLM outputs are accepted as variable.** Graphia's AI player behaviour comes from the heavyweight LLM and the start-of-game AI roster names come from the lightweight LLM (see §4). Both are inherently non-reproducible across runs — even pinning `temperature` to `0` only *lowers* the variance, it does not eliminate it. The project does not attempt to bridge this gap: there is no replay-from-transcript layer, no LLM-output caching for determinism, no temperature-zero shim that pretends to deliver replay-determinism. Two runs of the same game are *expected* to produce different AI names, different dialogue, and different outcomes. Tests and assertions therefore must not depend on textual equality of LLM-generated content; behavioural tests assert structural invariants (a vote was opened, exactly one player was executed, the winner field holds a valid value) rather than verbatim transcripts.
 
 - **Direct intent expression in automated tests over fragile mechanisms.** Test scenarios are expressed by directly setting the state the test cares about — for example, setting the `GRAPHIA_ROLE` developer-appliance env var to pin which side the human is on — not by tunnelling intent through unrelated mechanisms that happen to have the desired side-effect (e.g., picking a stdlib-RNG seed value that incidentally deals the desired role assignment). The mechanism a test uses must read, at the call site, as what it does; the test's intent must be visible without one indirection into a magic-constant lookup. The cross-cutting principle: tunnelling intent through unrelated mechanisms causes opacity, opacity causes fragility under refactor, and fragility causes coupled-tests-that-pretend-to-be-independent. See ADR-006 "Test role-pinning convention: `GRAPHIA_ROLE` replaces magic-seed-for-role" for the concrete instantiation in spec 005's Slice 3.
 
