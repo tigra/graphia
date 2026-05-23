@@ -35,26 +35,27 @@ This adds an optional setting, the `GRAPHIA_ROLE` environment variable, that pin
     - [ ] When `GRAPHIA_ROLE=mafia`, the human takes one Mafia seat and the remaining six players are dealt the other one Mafia + five Law-abiding cards.
     - [ ] When `GRAPHIA_ROLE=law-abiding`, the human takes one Law-abiding seat and the remaining six players are dealt two Mafia + four Law-abiding cards.
 
-### 2.3 Reproducibility under a seed
-
-- **As a** developer, **I want** `GRAPHIA_ROLE` combined with `GRAPHIA_SEED` to produce the same full game every time, **so that** I can reproduce a specific scenario deterministically.
-  - **Acceptance Criteria:**
-    - [ ] With the same seed and the same `GRAPHIA_ROLE`, every launch produces the identical role assignment for all seven players (not just the human).
-    - [ ] Changing only the seed (same `GRAPHIA_ROLE`) reshuffles the non-human players' roles while keeping the human's pinned role fixed.
-
-### 2.4 Default behaviour unchanged when the variable is unset
+### 2.3 Default behaviour unchanged when the variable is unset
 
 - **As a** player who doesn't set the variable, **I want** the role deal to work exactly as it does today, **so that** the normal game is untouched.
   - **Acceptance Criteria:**
     - [ ] With `GRAPHIA_ROLE` unset, all seven roles are dealt at random (seeded by `GRAPHIA_SEED` as today), with the human's role unconstrained.
     - [ ] No new prompt, message, or visible change appears in the default (unset) launch.
 
-### 2.5 Convenient launch via `make play`
+### 2.4 Convenient launch via `make play`
 
 - **As a** developer who launches through the Makefile, **I want to** set the role without editing `.env` every time, **so that** trying a role is a one-liner.
   - **Acceptance Criteria:**
     - [ ] `make play ROLE=mafia` (and `make play-remote ROLE=mafia`) launches the game with the human seated as Mafia; `ROLE=law-abiding` seats them Law-abiding.
     - [ ] Omitting `ROLE` from the `make play` invocation falls back to whatever `GRAPHIA_ROLE` is in `.env` (if anything), and if that too is unset, to the random default.
+
+### 2.5 Tests pin the human's role via `GRAPHIA_ROLE`, not via magic seeds
+
+- **As a** contributor writing or reading tests, **I want** role-dependent tests to pin the human's role by setting `GRAPHIA_ROLE` directly rather than by setting `GRAPHIA_SEED` to a magic value that happens to deal the desired role, **so that** the test's intent is self-documenting and decoupled from the RNG's behaviour.
+  - **Acceptance Criteria:**
+    - [ ] Existing tests that today reach for `SEED_MAFIA` / `SEED_LAW_ABIDING`-style constants solely to control the human's role pin via `monkeypatch.setenv("GRAPHIA_ROLE", "mafia")` / `"law-abiding"` instead. `GRAPHIA_SEED` is retained only where the test asserts mechanical-RNG behaviour beyond role assignment (speech order, vote tie-breaks, mafia-pointing target choice).
+    - [ ] The `SEED_MAFIA` / `SEED_MAFIA_HUMAN` / `SEED_LAW_ABIDING` constants are removed from every test file *except* the one whose explicit subject is the unset-path seed-→role mapping (`tests/test_slice4_role_reveal.py`), where the constants document today's RNG behaviour and the parametrised cases are the regression-guard.
+    - [ ] `uv run pytest -q` stays green across the migration.
 
 ---
 
@@ -64,9 +65,9 @@ This adds an optional setting, the `GRAPHIA_ROLE` environment variable, that pin
 
 - A single setting, `GRAPHIA_ROLE`, read from the environment / `.env`, accepting exactly `mafia` or `law-abiding` (case-insensitive).
 - Pinning the human's role while preserving the fixed 2-Mafia / 5-Law-abiding composition.
-- Deterministic full assignment when combined with a seed.
 - An error-and-refuse-to-start path for invalid values.
 - A `ROLE=` passthrough on the `make play` / `make play-remote` targets.
+- Migrating the existing test suite from magic-seed role-pinning to `GRAPHIA_ROLE`-based role-pinning, retaining `GRAPHIA_SEED` only for genuine mechanical-RNG determinism.
 
 ### Out-of-Scope
 
@@ -77,3 +78,4 @@ This adds an optional setting, the `GRAPHIA_ROLE` environment variable, that pin
 - New roles beyond Mafia / Law-abiding (Phase 8 Expanded Roster).
 - Changing the role-reveal message wording or the private Mafia-intro flow.
 - All other remaining roadmap items.
+what

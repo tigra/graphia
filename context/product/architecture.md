@@ -13,7 +13,6 @@
   - **Phases 1–5:** synchronous LangGraph execution (`graph.invoke`, `graph.stream`). Because Textual runs its own asyncio event loop, sync LangGraph calls are dispatched via `asyncio.to_thread` so they don't block the UI.
   - **Phase 6:** native async (`graph.astream`) with per-AI-player async tasks publishing to a shared in-process message bus (`asyncio.Queue` + a `messages` state reducer). A vote-open signal closes the bus and transitions all players into a synchronous vote step.
 - **Configuration Loader:** `python-dotenv` for `.env` files.
-- **Randomness:** `random.Random` seeded per-run (seed optionally from env) so night-kill tie-breaks and AI turn ordering can be reproduced when debugging.
 - **Infrastructure-as-Code:** Terraform module (delivered with Phase 2 / v1.1) provisions the AgentCore Runtime + Gateway + Memory + Observability set with one `terraform apply`.
 
 ---
@@ -51,7 +50,6 @@ Graphia ships with **two parallel run modes**, selected via a `--remote` flag at
   - `AWS_BEARER_TOKEN_BEDROCK` (legacy default for Bedrock model invocation) **or** `AWS_PROFILE=<your-aws-profile>` (SSO path — either works for Bedrock; SSO is now the canonical path).
   - `AWS_REGION=us-east-1`.
   - `GRAPHIA_LOG_FILE` — path for the streaming trace log (default `./.graphia/graphia.log`).
-  - `GRAPHIA_SEED` (optional) — seeds the game's `Random` for reproducible sessions.
   - `GRAPHIA_CHECKPOINT_DIR` (optional) — overrides the checkpoint sqlite location.
   - `--remote` CLI flag toggles remote-mode invocation.
 - **AWS Account & Profile:** The developer's AWS account, accessed via an AWS CLI SSO profile they configure once with `aws configure sso` (and set as `AWS_PROFILE=<your-profile>` in `.env`). The account ID is derived from the active profile (`aws sts get-caller-identity` / `data.aws_caller_identity`), not pinned in source. `aws sso login --profile <your-profile>` is required before AgentCore deployment / remote-mode invocation; not needed for local mode if the bearer-token Bedrock auth path is used.
@@ -93,3 +91,13 @@ Graphia ships with **two parallel run modes**, selected via a `--remote` flag at
   - **Local mode:** Unhandled exceptions inside graph nodes are caught at the Textual app boundary, written to the log file with a full traceback, and surfaced to the user as a modal with a short friendly message plus the log file path.
   - **Remote mode:** The runtime's full traceback is wired to CloudWatch; a short failure summary is returned to the local client and surfaced via the same Textual modal pattern with a CloudWatch log link.
 - **No External Telemetry beyond CloudWatch:** LangSmith / OpenTelemetry / metrics backends are intentionally not wired up. If a user wants LangSmith tracing, they can enable `LANGSMITH_API_KEY` manually; the code does not assume its presence. Bedrock Guardrails was deliberately descoped (per CR 001 amendment) — no content-filtering layer is wired into the model calls in v1.x.
+
+---
+
+## 6. Determinism Posture & Testing Conventions
+
+- **LLM outputs are accepted as variable.** Graphia's AI players are Sonnet-driven and the start-of-game AI roster names are Haiku-driven. Both are inherently non-reproducible across runs — even pinning `temperature` to `0` only *lowers* the variance, it does not eliminate it. The project does not attempt to bridge this gap: there is no replay-from-transcript layer, no LLM-output caching for determinism, no temperature-zero shim that pretends to deliver replay-determinism. Two runs of the same game are *expected* to produce different AI names, different dialogue, and different outcomes. Tests and assertions therefore must not depend on textual equality of LLM-generated content; behavioural tests assert structural invariants (a vote was opened, exactly one player was executed, the winner field holds a valid value) rather than verbatim transcripts.
+
+- **Direct intent expression in automated tests over fragile mechanisms.** Test scenarios are expressed by directly setting the state the test cares about — for example, setting the `GRAPHIA_ROLE` developer-appliance env var to pin which side the human is on — not by tunnelling intent through unrelated mechanisms that happen to have the desired side-effect (e.g., picking a stdlib-RNG seed value that incidentally deals the desired role assignment). The mechanism a test uses must read, at the call site, as what it does; the test's intent must be visible without one indirection into a magic-constant lookup. The cross-cutting principle: tunnelling intent through unrelated mechanisms causes opacity, opacity causes fragility under refactor, and fragility causes coupled-tests-that-pretend-to-be-independent. See ADR-006 "Test role-pinning convention: `GRAPHIA_ROLE` replaces magic-seed-for-role" for the concrete instantiation in spec 005's Slice 3.
+
+- **Mechanical decisions use stdlib `random.Random`.** Night-kill tie-breaks (when two pointing-vote tallies tie), the mafia-pointing fallback round, and per-cycle day-speaking order are decided by stdlib RNG. Their outcomes are accepted as non-replayable across runs on the same footing as LLM outputs above. Tests that need a specific mechanical outcome **pin it via targeted monkeypatching of the RNG-using helper** — substitute the tie-break selector with a deterministic stub, replace the order-shuffling function with a hand-written sequence, or inject a test-double for the surrounding function — *not* by hunting for a seed value that incidentally produces the desired draw. This extends the project's existing `fake_*` / `dynamic_*` fixture pattern (see `tests/conftest.py`'s LLM-boundary fakes such as `fake_sonnet_pointing` and `target_human_pointing`) from the LLM boundary down to the stdlib-RNG layer; the same reasoning that drives ADR-006 for role-pinning applies here.
