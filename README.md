@@ -53,11 +53,7 @@ aws sso login --profile <your-aws-profile>     # if using SSO
 make play
 ```
 
-`make play` runs `uv run python -m graphia` under the hood. Graphia is a Textual app — run it in a real terminal, not an IDE "run" console. For a reproducible game (fixed role assignment and tie-breaks), set a seed in `.env` or inline:
-
-```bash
-GRAPHIA_SEED=1234 make play
-```
+`make play` runs `uv run python -m graphia` under the hood. Graphia is a Textual app — run it in a real terminal, not an IDE "run" console. Each game is fresh-random: role assignment, day-speech order, mafia-pointing fallbacks, and tie-breaks all draw from a non-seeded RNG (and AI dialogue is LLM-generated, which is inherently non-reproducible anyway).
 
 **Controls:** type to speak on your turn; `/vote <name>` to call a vote to execute someone; `Esc` to quit (with a confirmation), `Ctrl+C` to force-quit.
 

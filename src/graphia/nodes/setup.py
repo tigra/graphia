@@ -80,7 +80,6 @@ def generate_roster(state: GameState) -> dict:
 
 def assign_roles(state: GameState) -> dict:
     config = load_config()
-    rng = random.Random(config.seed)
     deck: list[str] = [
         "mafia",
         "mafia",
@@ -90,14 +89,23 @@ def assign_roles(state: GameState) -> dict:
         "law_abiding",
         "law_abiding",
     ]
-    rng.shuffle(deck)
+    if config.human_role is None:
+        random.shuffle(deck)
+        roles = deck
+    else:
+        # Human is always the first inserted player; surface mis-seating loudly.
+        assert state["human_id"] == next(iter(state["players"]))
+        pinned_role = config.human_role
+        deck.remove(pinned_role)
+        random.shuffle(deck)
+        roles = [pinned_role, *deck]
     existing = state.get("players", {})
     updated: dict[str, PlayerState] = {}
     for index, (pid, player) in enumerate(existing.items()):
         updated[pid] = PlayerState(
             id=player.id,
             name=player.name,
-            role=deck[index],  # type: ignore[arg-type]
+            role=roles[index],  # type: ignore[arg-type]
             is_human=player.is_human,
             is_alive=player.is_alive,
         )

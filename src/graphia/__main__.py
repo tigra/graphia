@@ -17,6 +17,7 @@ import os
 
 from dotenv import load_dotenv
 
+from graphia.config import load_config
 from graphia.ui.app import GraphiaApp
 
 load_dotenv()
@@ -39,4 +40,6 @@ if __name__ == "__main__":
     args = _parse_args()
     if args.remote:
         os.environ["GRAPHIA_REMOTE"] = "1"
+    # Surface invalid GRAPHIA_ROLE / missing GRAPHIA_RUNTIME_URL on stderr before Textual takes the screen.
+    load_config()
     GraphiaApp().run()

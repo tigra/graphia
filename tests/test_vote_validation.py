@@ -45,14 +45,104 @@ import pytest
 from langchain_core.messages import AIMessage
 from langgraph.types import Command
 
+import graphia.nodes.day as day_nodes
 from graphia.config import load_config
 from graphia.graph import build_graph, make_run_config
 from graphia.llm import Ballot, DayAction, Pointing
 
-# Mirror Slice 7's seed/roster pinning so role assignment is deterministic.
-SEED_LAW_ABIDING = 0
+# Role assignment is pinned via ``GRAPHIA_ROLE`` per ADR-006. The human is
+# always Law-abiding here so the test never has to answer a ``kind="point"``
+# Mafia-night interrupt before reaching the human's first Day turn.
 AI_NAMES = ["Aarav", "Bianca", "Chiko", "Daria", "Elias", "Finn"]
 HUMAN_NAME = "Alice"
+
+
+# --------------------------------------------------------------------------
+# Day-1 speaker-order stub.
+#
+# Each test in this file drives the graph until the human's first Day-1
+# ``day_turn`` interrupt surfaces via ``_advance_until_human_day_turn``.
+# That helper walks the graph forward one super-step at a time, capped by
+# its own 20-iteration budget and LangGraph's ``recursion_limit=50``. With
+# production's ``_shuffle_order`` running against the module-global RNG, the
+# human can land anywhere in the speaker order; if late, a single
+# ``_drive(Command(resume=...))`` after the human's turn may need to
+# traverse many AI speakers + a fresh round shuffle before pausing again,
+# occasionally exceeding the recursion budget and raising
+# ``GraphRecursionError`` mid-test.
+#
+# Per architecture §6 "Determinism Posture & Testing Conventions" bullet 3,
+# we monkeypatch ``_shuffle_order`` with a deterministic stub that pins the
+# human at a known position (index 1). We deliberately avoid index 0 here:
+# tests that observe post-human state changes (e.g. ``day_turn_index``
+# advancing past ``pre_turn_index``, or a ``day_turn`` chunk firing after
+# the human's failed vote reshuffles back to index 0) rely on at least one
+# AI super-step running before the human's interrupt surfaces. With the
+# human at index 1, exactly one AI speaker fires before the first human
+# pause and at least one AI ``day_turn`` chunk also appears on the
+# resolution path — keeping the recursion budget bounded while preserving
+# every assertion about post-turn graph activity.
+# --------------------------------------------------------------------------
+
+
+def _human_first_factory():
+    """Build a stateful ``_shuffle_order`` replacement that varies per call.
+
+    The stub places the human at index 1 on the FIRST call and at index 2
+    on every subsequent call. This shape satisfies three constraints
+    simultaneously:
+
+    1. **Recursion budget.** On the Day-1 entry shuffle (the first call),
+       the human sits at index 1 — exactly one AI super-step runs before
+       the helper hits the human's interrupt. ``_advance_until_human_day_turn``
+       therefore pauses in two ``_drive`` cycles, well below the 50
+       super-step ``recursion_limit`` even on the slowest test.
+    2. **Post-resolution ``day_turn`` chunk.** The self-vote-fails test
+       asserts that ``day_turn`` re-fires after the failed vote
+       reshuffles back to round-start. With the human at index 2 on the
+       second call (the reshuffle inside ``resolve_vote``'s failure
+       branch), two AI ``day_turn`` chunks emit before the human's
+       interrupt — preserving the assertion's behaviour.
+    3. **"Turn was consumed" assertions.** The speech tests assert
+       ``day_turn_index != pre_turn_index`` after the human's speech is
+       captured. ``pre_turn_index`` is observed as 1 (the human's index
+       on call #1). After speech, the round wraps, ``day_turn_index``
+       resets to 0, a fresh ``_shuffle_order`` call returns the human at
+       index 2, and the helper pauses with ``day_turn_index = 2`` — so
+       the post-snapshot is 2, never equal to pre-snapshot 1.
+
+    The factory pattern keeps the per-test counter isolated: each test
+    installs its own instance via ``monkeypatch.setattr``, so call counts
+    never leak between tests.
+    """
+
+    call_count = {"n": 0}
+
+    def _shuffle(players):
+        call_count["n"] += 1
+        n = call_count["n"]
+        alive = [pid for pid, p in players.items() if p.is_alive]
+        human_id = next(
+            (pid for pid, p in players.items() if p.is_human),
+            None,
+        )
+        if human_id is None or human_id not in alive:
+            # Defensive: human dead or not yet rostered; fall back to
+            # roster order so the stub never raises.
+            return alive
+        others = [pid for pid in alive if pid != human_id]
+        if not others:
+            return [human_id]
+        # Place the human at index 1 on call #1, at index 2 on calls #2+.
+        # See the docstring above for why these positions are chosen.
+        if n == 1:
+            return [others[0], human_id, *others[1:]]
+        if len(others) >= 2:
+            return [others[0], others[1], human_id, *others[2:]]
+        # Only one other player alive — fall back to "human second".
+        return [others[0], human_id]
+
+    return _shuffle
 
 
 # --------------------------------------------------------------------------
@@ -179,7 +269,10 @@ def test_vote_empty_name_shows_usage_hint(
     rejected input. The re-issued day_turn interrupt payload carries
     ``error == "Usage: /vote <name>"`` so the UI can surface the hint.
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+    # Pin the Day-1 speaker order so the human's day_turn surfaces on the
+    # first super-step after the name resume.
+    monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
     fake_haiku(AI_NAMES)
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
 
@@ -247,7 +340,10 @@ def test_voted_yesterday_is_speech(
     ``active_vote`` is set and the human's turn advances (consumed by
     speech, not by a vote ritual).
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+    # Pin the Day-1 speaker order so the human's day_turn surfaces on the
+    # first super-step after the name resume.
+    monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
     fake_haiku(AI_NAMES)
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
 
@@ -306,7 +402,10 @@ def test_votefor_alice_is_speech(
     falls through to the speech path — even though the substring ``/vote``
     is a prefix of it. No vote is initiated.
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+    # Pin the Day-1 speaker order so the human's day_turn surfaces on the
+    # first super-step after the name resume.
+    monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
     fake_haiku(AI_NAMES)
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
 
@@ -386,17 +485,20 @@ def test_vote_against_self_passes_executes_human(
     5. ``resolve_vote`` flips the human's ``is_alive`` to False, appends a
        single ``KillRecord`` with ``cause='execution'`` and the human's
        name, and clears ``active_vote``.
-    6. ``check_win_day`` fires exactly once on the resolution path. At
-       seed 0 the post-execution alive count is 2 Mafia vs 3 Law-abiding
-       (no winner yet), so the graph routes to ``day_close`` and the game
-       continues; an immediate END is equally well-formed if the win
-       check finds parity — the test accepts either outcome.
+    6. ``check_win_day`` fires exactly once on the resolution path. The
+       post-execution parity depends on RNG-driven AI role placement;
+       both routes — game continues via ``day_close`` (no winner yet)
+       and immediate END (win check finds parity) — are well-formed,
+       and the test accepts either outcome.
 
     No production code is modified by this test. If the assertions fail,
     the failure pinpoints a real self-vote bug — fixing it is Sub 2.4's
     job.
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+    # Pin the Day-1 speaker order so the human's day_turn surfaces on the
+    # first super-step after the name resume.
+    monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
     fake_haiku(AI_NAMES)
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
 
@@ -561,7 +663,10 @@ def test_vote_against_self_fails_human_survives(
     the failure pinpoints a real self-vote-fail bug — fixing it is
     Sub 2.4's job.
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+    # Pin the Day-1 speaker order so the human's day_turn surfaces on the
+    # first super-step after the name resume.
+    monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
     fake_haiku(AI_NAMES)
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
 
@@ -714,7 +819,10 @@ def test_vote_nonexistent_name_reprompts(
     ``day_rounds``, and ``active_vote`` are all unchanged from before the
     rejected input.
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+    # Pin the Day-1 speaker order so the human's day_turn surfaces on the
+    # first super-step after the name resume.
+    monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
     fake_haiku(AI_NAMES)
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
 
@@ -801,7 +909,10 @@ def test_vote_dead_player_reprompts(
     again."``, ``day_turn_index`` / ``day_rounds`` / ``active_vote`` are
     all unchanged from before the rejected input (turn not consumed).
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+    # Pin the Day-1 speaker order so the human's day_turn surfaces on the
+    # first super-step after the name resume.
+    monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
     fake_haiku(AI_NAMES)
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
 
@@ -817,12 +928,12 @@ def test_vote_dead_player_reprompts(
     # the dataclass field — without fighting LangGraph's checkpointer over
     # how to update a dict-reducer channel mid-interrupt.
     #
-    # We pick the dead-target NAME from the deterministic roster — at seed 0
-    # we know exactly which AI names are assigned. We use "Finn" because it's
-    # at the tail of ``AI_NAMES``, won't collide with the Law-abiding AI that
-    # night-1 targets via ``_invoke_with_live_pointing`` (different role
-    # class — the night kill never lands on Finn under seed 0), and isn't
-    # the favourite of any other test's ballot/order assertions.
+    # We pick the dead-target NAME from the fixed ``AI_NAMES`` roster handed
+    # to ``fake_haiku`` above — "Finn" is guaranteed to be present regardless
+    # of how RNG assigns roles. The ``_fuzzy_match_alive`` wrapper below
+    # shadows Finn as dead in a local copy of the players dict; the live
+    # state's actual is_alive flag for Finn doesn't matter (the shadow path
+    # always wins inside the helper).
     dead_target_name = "Finn"
 
     import graphia.nodes.day as day_module
@@ -872,7 +983,7 @@ def test_vote_dead_player_reprompts(
     # rejection).
     roster_names = [p.name for p in pre_state["players"].values()]
     assert dead_target_name in roster_names, (
-        f"sanity: '{dead_target_name}' should be in the seed-0 roster; "
+        f"sanity: '{dead_target_name}' should be in the roster; "
         f"got {roster_names!r}"
     )
 

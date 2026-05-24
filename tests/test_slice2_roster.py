@@ -74,13 +74,11 @@ async def test_roster_intro_contains_all_seven_names_in_one_line(
     fake_sonnet,
     monkeypatch,
 ) -> None:
-    # Pin GRAPHIA_SEED=0 so the human is Law-abiding (roster slot 0) and
-    # the ``mafia_pointing`` super-step never blocks on the human-Mafia
-    # modal interrupt. Without this, the default seed is
-    # ``time.time_ns()``; a random Mafia draw makes the worker wait on a
-    # modal the test never drives, which strands the producer thread and
-    # bloats teardown by up to 300s.
-    monkeypatch.setenv("GRAPHIA_SEED", "0")
+    # Pin the human as Law-abiding so the ``mafia_pointing`` super-step never
+    # blocks on the human-Mafia modal interrupt. Without this pin, a random
+    # Mafia draw makes the worker wait on a modal the test never drives,
+    # which strands the producer thread and bloats teardown by up to 300s.
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     # Slice 3 replaced the hardcoded list with a live Haiku call. Pin the
     # fake to the original Slice-2 names so the rest of this test's
     # assertions still hold.
@@ -90,7 +88,7 @@ async def test_roster_intro_contains_all_seven_names_in_one_line(
     # reach real Bedrock with dummy creds, triggering boto3 retries that
     # keep an executor thread alive past ``app.exit()`` and blocking
     # pytest teardown on the 300s executor-join timeout.
-    # A placeholder ``Pointing`` triggers the production seeded fallback
+    # A placeholder ``Pointing`` triggers the production random fallback
     # in ``_ai_pick_target`` — safer than racing to script real target
     # ids before the worker invokes Sonnet. FakeSonnetUnified replays the
     # last popped value on subsequent invocations.

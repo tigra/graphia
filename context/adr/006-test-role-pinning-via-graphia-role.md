@@ -57,7 +57,11 @@ Tests set `monkeypatch.setenv("GRAPHIA_ROLE", "mafia")` (or `"law-abiding"`) dir
 
 Adopt **Alternative 2**. Migrate every existing test that uses `SEED_MAFIA` / `SEED_MAFIA_HUMAN` / `SEED_LAW_ABIDING` constants for role-pinning to `monkeypatch.setenv("GRAPHIA_ROLE", "<role>")`. Drop `GRAPHIA_SEED` from migrated tests entirely unless a test asserts mechanical-RNG behaviour (speech order, tie-breaks, mafia-pointing target), in which case retain the setenv with a comment explaining what the specific seed value pins.
 
-The single deliberate exception is `tests/test_slice4_role_reveal.py`, where the parametrisation on `(SEED_LAW_ABIDING=0, "Law-abiding Citizen", ...)` and `(SEED_MAFIA=3, "Mafia", ...)` IS the test — it's the regression-guard for the unset-path seed-→role mapping that spec 005 §2.3 "Default behaviour unchanged when the variable is unset" promises. Its constants stay; an inline comment explains why.
+**Subsequent amendment — Slice 5 (2026-05-24).** Spec 005 Slice 5 widened the scope from "testing convention" to also retire the seed mechanism from production: `GraphiaConfig.seed` field, `GRAPHIA_SEED` parsing, and the per-call salt-arithmetic pattern in `src/graphia/nodes/day.py` / `night.py` / `setup.py` were all removed. Production RNG now uses module-global `random.shuffle` / `random.choice` directly. `tests/test_slice4_role_reveal.py` was deleted along with the env var (its subject — the seed-→role mapping — no longer exists). The cross-mode byte-equality test in `tests/test_dual_mode_smoke.py` — the second sanctioned `GRAPHIA_SEED` user when this ADR was first written — moved its determinism pin into the test body via `random.seed(SEED_DUAL_MODE_DETERMINISTIC_TRAJECTORY)` called once at the start of each mode's run.
+
+**Alternatives considered for the production-side retirement:** (a) keep `GRAPHIA_SEED` and `config.seed` for the dual-mode test's sake; (b) drop the seed and downgrade the dual-mode test from byte-equality to structural equality (loses the strongest cross-mode regression signal); (c) drop the seed and pin the dual-mode test via in-test `random.seed(...)` — **chosen**, because byte-equality survives (same Python process, same code path, same RNG sequence across modes) without a process-wide env-var protocol that surfaced nowhere else in the codebase.
+
+The ADR's core decision (`GRAPHIA_ROLE` is the role-pinning mechanism in tests; magic seeds are retired) stands unchanged; the exception list is now empty.
 
 ---
 
@@ -85,7 +89,7 @@ Two facets reinforce this. First, with `GRAPHIA_ROLE` having landed in spec 005 
 
 **Technical debt incurred:**
 
-- No material debt — once Slice 3 of spec 005 ships, the test suite is in its target state.
+- No material debt — Slices 3–5 of spec 005 together brought the test suite (and, per the §3 amendment, the production code) to its target state.
 
 ---
 
@@ -93,4 +97,4 @@ Two facets reinforce this. First, with `GRAPHIA_ROLE` having landed in spec 005 
 
 - Architecture: `context/product/architecture.md` §6 "Determinism Posture & Testing Conventions" — captures the two principles this ADR concretely instantiates (LLM outputs accepted as variable; direct intent expression in tests over fragile mechanisms).
 - Related specs: `context/spec/005-play-as-role/` — the spec that introduces `GRAPHIA_ROLE` and whose Slice 3 "Migrate magic-seed role-pinning tests to `GRAPHIA_ROLE`" executes this migration.
-- Related code: `tests/conftest.py` — the `safe_llm` autouse fixture and the default `GRAPHIA_SEED` delenv that establishes "seed is unset unless a test opts in" as the existing convention.
+- Related code: `tests/conftest.py` — the `safe_llm` autouse fixture that blocks accidental Bedrock calls in the test suite. (The `GRAPHIA_SEED` autouse delenv referenced here when this ADR was first written was removed in spec 005 Slice 5 along with the env var itself.)

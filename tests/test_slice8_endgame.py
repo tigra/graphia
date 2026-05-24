@@ -48,22 +48,6 @@ from graphia.ui.app import GraphiaApp
 HUMAN_NAME = "Alice"
 AI_NAMES = ["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"]
 
-# Seed 0 → human is Law-abiding; exact role deck (shuffled from the setup
-# node's seeded RNG) for the 7-card deck is:
-#   slot 0 (human Alice):   law_abiding
-#   slot 1 (Ivy):           law_abiding
-#   slot 2 (Marco):         mafia
-#   slot 3 (Priya):         mafia
-#   slot 4 (Silas):         law_abiding
-#   slot 5 (Yuki):          law_abiding
-#   slot 6 (Aarav):         law_abiding
-SEED_LAW_ABIDING = 0
-
-# Seed 3 → human is Mafia; two Mafia total (human + 1 AI = Aarav), 5 Law-
-# abiding AIs. Ideal for scripting a parity-reached Mafia win — 3 Night
-# kills drops Law-abiding from 5 to 2, matching the 2 surviving Mafia.
-SEED_MAFIA_HUMAN = 3
-
 
 # --------------------------------------------------------------------------
 # Helpers (mirrored from test_slice7_vote.py)
@@ -172,7 +156,7 @@ def test_law_abiding_wins_when_all_mafia_executed(
     first Mafia → Night 2 kills another Law-abiding → Day 2 executes
     second Mafia → ``check_win_day`` sees no Mafia alive → end_screen.
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(AI_NAMES)
 
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
@@ -222,7 +206,7 @@ def test_law_abiding_wins_when_all_mafia_executed(
         if kind == "vote":
             return "yes"
         if kind == "point":
-            # Human is Law-abiding at seed 0 — this should never fire.
+            # Human is Law-abiding (pinned via GRAPHIA_ROLE) — this should never fire.
             options = iv.get("options") or []
             return options[0]["id"] if options else ""
         raise AssertionError(f"Unexpected interrupt kind: {kind!r}")
@@ -325,14 +309,15 @@ def test_mafia_wins_when_parity_reached(
 ) -> None:
     """Night kills bring Mafia to parity with Law-abiding → Mafia wins.
 
-    At seed 3 the human is Mafia; there are 2 Mafia + 5 Law-abiding. Three
-    Night kills (each removing one Law-abiding) drop the count to 2 vs 2,
-    triggering the Mafia-win branch at ``check_win_night``.
+    With the human pinned as Mafia there are 2 Mafia + 5 Law-abiding
+    (the deck always holds exactly 2 mafia cards). Three Night kills
+    (each removing one Law-abiding) drop the count to 2 vs 2, triggering
+    the Mafia-win branch at ``check_win_night``.
 
     Day votes are scripted to always target Law-abiding (and fail — all
     No ballots from AIs, human votes No) so no Mafia ever dies.
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_MAFIA_HUMAN))
+    monkeypatch.setenv("GRAPHIA_ROLE", "mafia")
     fake_haiku(AI_NAMES)
 
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
@@ -446,7 +431,7 @@ def test_endgame_message_contains_kill_log_and_roster(
     ``KillRecord`` entry in chronological order AND the full roster with
     role labels for every player (alive and dead).
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(AI_NAMES)
 
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
@@ -559,13 +544,14 @@ async def test_end_screen_visible_in_ui(
 ) -> None:
     """Pilot smoke test: end screen lands in #public-log; any key exits.
 
-    Uses seed 0 (human Law-abiding) so the test never has to respond to a
-    ``kind="point"`` modal interrupt. AIs always *speak* (never vote), so
-    no ``VoteModal`` ever pops up and the pilot never has to disambiguate
-    modal vs Input focus. Each Day ends after 6 no-vote rounds via the
-    ``DAY_MAX_ROUNDS`` cap; each Night kills one Law-abiding AI.
+    Pins the human as Law-abiding via ``GRAPHIA_ROLE`` so the test never
+    has to respond to a ``kind="point"`` modal interrupt. AIs always
+    *speak* (never vote), so no ``VoteModal`` ever pops up and the pilot
+    never has to disambiguate modal vs Input focus. Each Day ends after 6
+    no-vote rounds via the ``DAY_MAX_ROUNDS`` cap; each Night kills one
+    Law-abiding AI.
 
-    Expected trajectory (at seed 0 with 2 Mafia AI, 4 Law-abiding AI, 1
+    Expected trajectory (with 2 Mafia AI, 4 Law-abiding AI, 1
     Law-abiding human — 5 Law-abiding total):
       - Night 1: AI Mafia kills Law-abiding #1 → 2M, 4L (no win).
       - Day 1: 6 rounds, no vote → day_close.
@@ -582,7 +568,7 @@ async def test_end_screen_visible_in_ui(
     from rich.text import Text
     from textual.widgets import Input, RichLog
 
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(AI_NAMES)
 
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])

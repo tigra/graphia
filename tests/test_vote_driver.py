@@ -40,7 +40,6 @@ from graphia.graph import build_graph, make_run_config
 from graphia.llm import DayAction, Pointing
 from graphia.logging import StreamTraceLogger
 
-SEED = 0
 AI_NAMES = ["Aarav", "Bianca", "Chiko", "Daria", "Elias", "Finn"]
 HUMAN_NAME = "Alice"
 
@@ -167,7 +166,7 @@ async def test_bad_vote_through_driver_reprompts_not_ends(
     bad-vote super-step (because the second in-node ``interrupt()`` emptied
     ``snapshot.next``), so the human was never re-prompted.
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(AI_NAMES)
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
 

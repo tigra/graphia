@@ -35,15 +35,11 @@ from langchain_core.messages import AIMessage, SystemMessage
 from langgraph.types import Command
 from textual.widgets import Input, RichLog
 
+import graphia.nodes.day as day_nodes
 from graphia.config import load_config
 from graphia.graph import build_graph, make_run_config
 from graphia.llm import DayAction, Pointing
 from graphia.ui.app import GraphiaApp
-
-# Seed 0 places the human in insertion-order slot 0 as Law-abiding (verified
-# in Slice 4 and Slice 5 tests). We reuse it everywhere to keep the AI Mafia
-# layout deterministic.
-SEED_LAW_ABIDING = 0
 
 AI_NAMES = ["Aarav", "Bianca", "Chiko", "Daria", "Elias", "Finn"]
 HUMAN_NAME = "Alice"
@@ -138,7 +134,11 @@ async def test_day_opens_with_victim_role_reveal(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Day-open line reveals the victim's role; night-kill line does not."""
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    # Role-pin only: the test reads ``law_abiding_ids[0]`` from live state
+    # and asserts the victim's name (whoever it is) appears in the
+    # role-reveal line. No RNG-driven ordering is asserted, so the role
+    # pin is the only setup required.
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(AI_NAMES)
     # Unified Sonnet fake handles Day-speaking (and Ballot if a vote
     # happens). Day fake is installed first; then we immediately override
@@ -240,7 +240,19 @@ async def test_day_rounds_shuffle_and_players_speak(
     and their scripted text. We poll graph state (not the log) to avoid
     depending on exact rendering behaviour.
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+
+    # Pin the Day-1 speech-order so the human lands at index 3, letting >=3
+    # AI players speak before the human-turn interrupt halts the worker.
+    # Without this pin, the human could be first in order and the "at least
+    # 3 AI spoke" assertion below would flake.
+    def _human_at_index_three(players):
+        alive = [pid for pid, p in players.items() if p.is_alive]
+        human_id = next(pid for pid, p in players.items() if p.is_human)
+        ai_ids = [pid for pid in alive if pid != human_id]
+        return [*ai_ids[:3], human_id, *ai_ids[3:]]
+
+    monkeypatch.setattr(day_nodes, "_shuffle_order", _human_at_index_three)
     fake_haiku(AI_NAMES)
 
     scripted_texts = [f"msg-from-AI-{i}" for i in range(1, 41)]
@@ -271,12 +283,12 @@ async def test_day_rounds_shuffle_and_players_speak(
         target_id = law_abiding_ids[0]
 
         # After the night, 5 AI players are alive. The human takes a slot
-        # somewhere in the shuffled round-1 order, so at minimum 0 AI turns
-        # precede the human's turn; at maximum 5 AI turns precede it. In
-        # practice seed=0 places the human mid-order, so we expect at
-        # least 3 distinct AI speakers before the worker errors out on the
-        # unimplemented human-turn interrupt. Any number < 3 would suggest
-        # the round-robin speaking isn't advancing at all.
+        # somewhere in the round-1 order, so at minimum 0 AI turns precede
+        # the human's turn; at maximum 5 AI turns precede it. The
+        # ``_shuffle_order`` stub above places the human at index 3, so we
+        # expect at least 3 distinct AI speakers before the worker errors
+        # out on the unimplemented human-turn interrupt. Any number < 3
+        # would suggest the round-robin speaking isn't advancing at all.
         alive_ai_names_after_night = {
             p.name
             for pid, p in players.items()
@@ -382,7 +394,12 @@ def test_six_rounds_without_vote_ends_day(
     run. Streaming the compiled graph ourselves lets us resume each
     interrupt with a scripted value and stop the moment the Day closes.
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    # Role-pin only: the test counts day_rounds and asserts the Day-close
+    # line appears after 6 rounds. The infinite-sonnet fakes always
+    # "speak" (never "vote"), and the human's role pin (law-abiding)
+    # keeps the "point" interrupt suppressed — no RNG-driven ordering or
+    # tie-break behaviour is asserted, so no RNG pinning is required.
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(AI_NAMES)
 
     # Patch the sonnet bindings directly with inline callables — the
@@ -498,7 +515,7 @@ def test_six_rounds_without_vote_ends_day(
         elif kind == "day_turn":
             resume_value = "I speak briefly."
         elif kind == "point":
-            # Human is Law-abiding at seed=0, so this shouldn't fire. Guard.
+            # Human is pinned Law-abiding via GRAPHIA_ROLE, so this shouldn't fire. Guard.
             options = interrupt_value.get("options") or []
             resume_value = options[0]["id"] if options else _live_victim()
         else:

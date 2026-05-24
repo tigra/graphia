@@ -40,6 +40,7 @@ import pytest
 from langchain_core.messages import SystemMessage
 from langgraph.types import Command
 
+import graphia.nodes.day as day_nodes
 from graphia.config import load_config
 from graphia.graph import build_graph, make_run_config
 from graphia.llm import Ballot, DayAction, Pointing
@@ -50,15 +51,67 @@ from graphia.prompts import (
     VOTE_INITIATE_ANNOUNCE_TEMPLATE,
 )
 
-# Seed 0 places the human in insertion-order slot 0 as Law-abiding, mirrored
-# from Slice 4/5/6 tests. AI slots 1..6 are deterministic once the Haiku
-# roster is fixed.
-SEED_LAW_ABIDING = 0
-
 AI_NAMES = ["Aarav", "Bianca", "Chiko", "Daria", "Elias", "Finn"]
 HUMAN_NAME = "Alice"
 
 DAY_CLOSE_NO_EXEC_LINE = "The Day ends with no one executed."
+
+
+# --- Day-1 speaker-order stubs -------------------------------------------
+#
+# Tests 1-3 each script a ``DayAction(kind="vote", target_id=<some_AI>)``,
+# but the scripted DayAction queue is only populated AFTER the test pauses
+# on the first interrupt (the human's day_turn) — any AI day_turn fired
+# BEFORE that point hits an empty queue and falls back to a generic speak,
+# silently consuming nothing from the queue.  The first AI to consume the
+# queued vote action must therefore be (a) the AI immediately following the
+# human in the speaker order, AND (b) NOT itself the vote target (otherwise
+# ``_ai_day_action`` rejects the self-targeted vote and falls back to a
+# generic speak, dropping the scripted vote).
+#
+# The stubs below replace ``graphia.nodes.day._shuffle_order`` to place the
+# human at index 0 and a known non-target AI at index 1, guaranteeing the
+# scripted vote action lands on a non-target speaker on the first try.
+
+
+def _human_then_law_abiding(players):
+    """Speaker order: human at index 0, Law-abiding AI at index 1.
+
+    Used when the scripted vote target is a Mafia AI: the first AI to act
+    after the human's turn must NOT be the target, so a Law-abiding AI is
+    forced into the slot immediately after the human.
+    """
+    alive = [pid for pid, p in players.items() if p.is_alive]
+    human_id = next(pid for pid, p in players.items() if p.is_human)
+    la_ai_ids = [
+        pid
+        for pid, p in players.items()
+        if p.is_alive and p.role == "law_abiding" and not p.is_human
+    ]
+    assert la_ai_ids, "expected at least one alive Law-abiding AI"
+    second = la_ai_ids[0]
+    rest = [pid for pid in alive if pid not in (human_id, second)]
+    return [human_id, second, *rest]
+
+
+def _human_then_mafia(players):
+    """Speaker order: human at index 0, Mafia AI at index 1.
+
+    Used when the scripted vote target is a Law-abiding AI: the first AI to
+    act after the human's turn must NOT be the target, so a Mafia AI is
+    forced into the slot immediately after the human.
+    """
+    alive = [pid for pid, p in players.items() if p.is_alive]
+    human_id = next(pid for pid, p in players.items() if p.is_human)
+    mafia_ai_ids = [
+        pid
+        for pid, p in players.items()
+        if p.is_alive and p.role == "mafia" and not p.is_human
+    ]
+    assert mafia_ai_ids, "expected at least one alive Mafia AI"
+    second = mafia_ai_ids[0]
+    rest = [pid for pid in alive if pid not in (human_id, second)]
+    return [human_id, second, *rest]
 
 
 # --------------------------------------------------------------------------
@@ -209,7 +262,13 @@ def test_successful_execution_ends_day_and_reveals_role(
       the graph only far enough to resolve roles, then re-arm the fake with
       a Pointing + a DayAction(kind="vote") whose target we now know.
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+    # Put the human at index 0 (so the drive pauses before any AI consumes
+    # the still-empty DayAction queue) and a Law-abiding AI at index 1 so
+    # the first AI to consume the scripted vote action is NOT the Mafia
+    # target — otherwise _ai_day_action rejects the self-targeted vote and
+    # the scripted DayAction(kind="vote") never fires.
+    monkeypatch.setattr(day_nodes, "_shuffle_order", _human_then_law_abiding)
     fake_haiku(AI_NAMES)
 
     # Initial fake has no scripted outputs yet — we'll reconfigure it once
@@ -292,11 +351,10 @@ def test_successful_execution_ends_day_and_reveals_role(
     fake._last.pop(Ballot, None)
 
     # Now drive: the graph is currently paused on the first Day-1 day_turn
-    # interrupt. We need to resume it with something — but it's the human's
-    # turn only if the human's slot is slot 0 in the shuffled day_order.
-    # The shuffle seed differs from role-assignment seed, so the human
-    # may be anywhere in the order. Handle both cases generically via the
-    # interrupt kind in the responder.
+    # interrupt. The `_human_then_law_abiding` shuffle stub above places the
+    # human at slot 0 deterministically, but we still handle every interrupt
+    # kind generically in the responder so the test remains resilient if a
+    # future change reorders the day_order shape.
 
     def _respond(iv: dict[str, Any]) -> str:
         kind = iv.get("kind")
@@ -306,7 +364,7 @@ def test_successful_execution_ends_day_and_reveals_role(
         if kind == "vote":
             return "yes"
         if kind == "point":
-            # Shouldn't fire — human is Law-abiding at seed 0.
+            # Shouldn't fire — human is pinned Law-abiding via GRAPHIA_ROLE.
             return ""
         raise AssertionError(f"Unexpected interrupt kind: {kind!r}")
 
@@ -392,7 +450,13 @@ def test_failed_vote_continues_day_and_counts_against_cap(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A vote is called but mostly-No ballots defeat it; Day continues."""
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+    # Put the human at index 0 (so the drive pauses before any AI consumes
+    # the still-empty DayAction queue) and a Mafia AI at index 1 so the
+    # first AI to consume the scripted vote action is NOT the Law-abiding
+    # target — otherwise _ai_day_action rejects the self-targeted vote and
+    # the scripted DayAction(kind="vote") never fires.
+    monkeypatch.setattr(day_nodes, "_shuffle_order", _human_then_mafia)
     fake_haiku(AI_NAMES)
 
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
@@ -498,7 +562,13 @@ def test_three_failed_votes_ends_day(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """After three failed votes, day_close fires and Night 2 opens."""
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+    # Put the human at index 0 (so the drive pauses before any AI consumes
+    # the still-empty DayAction queue) and a Mafia AI at index 1 so each of
+    # the three consecutive scripted vote actions lands on a non-target AI
+    # speaker — otherwise the vote is rejected, falls back to speak, and
+    # the test never sees 3 fails.
+    monkeypatch.setattr(day_nodes, "_shuffle_order", _human_then_mafia)
     fake_haiku(AI_NAMES)
 
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
@@ -547,8 +617,8 @@ def test_three_failed_votes_ends_day(
         if kind == "vote":
             return "no"
         if kind == "point":
-            # Night 2 human-mafia interrupt (N/A at seed 0 — human is
-            # Law-abiding — but guard defensively so the graph never hangs).
+            # Night 2 human-mafia interrupt (N/A under GRAPHIA_ROLE=law-abiding,
+            # but guard defensively so the graph never hangs).
             options = iv.get("options") or []
             return options[0]["id"] if options else ""
         raise AssertionError(f"Unexpected interrupt kind: {kind!r}")
@@ -632,7 +702,7 @@ def test_human_slash_vote_is_parsed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Human types ``/vote <prefix>`` → the correct VOTE_INITIATE fires."""
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(AI_NAMES)
 
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
@@ -749,12 +819,22 @@ def test_human_slash_vote_ambiguous_re_interrupts(
 ) -> None:
     """Ambiguous substring → re-interrupt with 'error'; turn index unchanged.
 
-    We reuse the standard ``AI_NAMES`` roster — at seed 0 the substring
-    ``"ia"`` matches two alive players (Bianca and Elias) after Night 1,
-    which gives us the ambiguity we need without bespoke haiku names that
-    happen to be fragile under certain test orderings.
+    We reuse the standard ``AI_NAMES`` roster — the substring ``"ia"``
+    matches two alive players (Bianca and Elias) after Night 1, which
+    gives us the ambiguity we need without bespoke haiku names that
+    happen to be fragile under certain test orderings. The Night-1
+    pointing fake below steers the Mafia kill to a non-"ia" target, so
+    both candidates survive regardless of the role shuffle.
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+    # Both Bianca and Elias must be alive after Night 1 for the "ia"
+    # substring to be genuinely ambiguous. The patched ``fake._invoke``
+    # below (see ``_invoke_with_live_pointing``) makes the Night-1 Mafia
+    # pointing deterministically target a non-"ia" Law-abiding AI, so
+    # Bianca/Elias survive Night 1 regardless of which roles they were
+    # dealt (Mafia don't kill themselves; the kill is aimed at a non-"ia"
+    # name). The role-deck shuffle therefore has no effect on the
+    # invariant this test depends on, and no RNG pinning is required.
     fake_haiku(AI_NAMES)
 
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])

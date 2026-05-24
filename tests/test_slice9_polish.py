@@ -3,7 +3,7 @@
 Four scenarios cover the polish layer that landed in Slice 9:
 
 1. ``test_spectator_view_when_human_dies_midgame`` — Textual pilot. The
-   human is Law-abiding (seed 0). Night-1 pointing is hijacked to target
+   human is pinned Law-abiding via ``GRAPHIA_ROLE``. Night-1 pointing is hijacked to target
    the human; after the kill resolves the app flips into spectator mode,
    writes the yellow "You have been killed." whisper, dims a
    "(You are now spectating.)" line to the public log, disables the
@@ -55,9 +55,9 @@ from graphia.prompts import (
 from graphia.state import KillRecord, PlayerState
 from graphia.ui.app import GraphiaApp
 
-# Seed 0 places the human in insertion-order slot 0 as Law-abiding. The
-# Slice 4/5/6/7/8 suites all rely on this — consistent across Slice 9 too.
-SEED_LAW_ABIDING = 0
+# Role assignment is pinned via ``GRAPHIA_ROLE`` per ADR-006. These tests
+# need the human to be Law-abiding so the Night phase does not pause the
+# UI on a ``kind="point"`` interrupt (which only Mafia humans see).
 
 AI_NAMES = ["Aarav", "Bianca", "Chiko", "Daria", "Elias", "Finn"]
 HUMAN_NAME = "Alice"
@@ -129,7 +129,7 @@ async def test_spectator_view_when_human_dies_midgame(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Human dies Night 1 → app flips into spectator mode; game continues."""
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(AI_NAMES)
 
     # Script Day speeches so AIs keep the game going after the human dies.
@@ -159,7 +159,7 @@ async def test_spectator_view_when_human_dies_midgame(
         await pilot.press("enter")
 
         # Wait for the spectator flip. The night kill is the only thing
-        # that can flip _spectator at seed 0 (human is Law-abiding, so no
+        # that can flip _spectator (human is pinned Law-abiding, so no
         # human-Mafia pointing interrupt blocks the flow). Sample the
         # graph's message count the very first tick where _spectator is
         # True — needed so the "more messages land afterwards" assertion
@@ -230,10 +230,11 @@ async def test_spectator_view_when_human_dies_midgame(
 
         # The graph continued past the human's death — assert by locating
         # the human-kill announcement in the message log and confirming
-        # there are additional public/AI messages following it. Seed 0
-        # kills the human on Night 1 so the line appears early; by the
-        # time the test resumes the graph typically has 50+ more messages
-        # (further Night kills, Day speeches, endgame reveal).
+        # there are additional public/AI messages following it. The
+        # ``target_human_pointing`` fake kills the human on Night 1 so
+        # the line appears early; by the time the test resumes the graph
+        # typically has 50+ more messages (further Night kills, Day
+        # speeches, endgame reveal).
         state = app._graph.get_state(app._run_config).values
         human_id = state["human_id"]
         human_name = state["players"][human_id].name
@@ -282,15 +283,20 @@ async def test_ctrl_c_shows_aborted_banner(
     env: Path,
     fake_haiku,
     fake_sonnet,
+    dynamic_night_pointing,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Pressing ctrl+c mid-game writes 'Game aborted.' to #public-log and exits."""
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(AI_NAMES)
     fake_sonnet(
-        # Placeholder pointing — the fake unified queue replays its last
-        # output when empty, which is fine because we abort before any
-        # second Night runs. Day actions cover the entire pre-abort window.
+        # Pointings live behind ``dynamic_night_pointing`` (race-safe — it
+        # resolves an alive non-human Law-abiding target at invoke time).
+        # ``fake_sonnet`` still owns the Day/Ballot bindings; the
+        # ``dynamic_night_pointing`` install below overrides the Night
+        # ``get_sonnet`` binding so Night 1 never falls back to the
+        # random pick (which can target the human and flip
+        # the game into spectator → end-of-game within the 0.2 s pause).
         pointings=[],
         day_actions=[
             DayAction(kind="speak", text=f"early-talk-{i}") for i in range(6)
@@ -299,6 +305,19 @@ async def test_ctrl_c_shows_aborted_banner(
 
     app = GraphiaApp()
     async with app.run_test() as pilot:
+        # Pin Night-1 mafia pointing to a non-human Law-abiding target so
+        # Alice (Law-abiding human) survives the first Night. Without
+        # this, the random fallback inside ``_ai_pick_target``
+        # (per ADR-006 / Slice 4) on ~10 % of runs picks Alice — she
+        # dies, the app flips to spectator, the graph races through to
+        # a Mafia win before the 0.2 s pause elapses, and the
+        # ``_game_over is False`` precondition fails. The dynamic fake
+        # resolves an alive AI Law-abiding id at invoke time so it
+        # works without pre-knowing role assignments.
+        dynamic_night_pointing(
+            lambda: app._graph.get_state(app._run_config).values
+        )
+
         # Submit the human name so we're past the first interrupt.
         prompt = await _wait_for_input_enabled(app, pilot)
         prompt.focus()

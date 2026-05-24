@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import os
-import sys
-import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -16,8 +14,8 @@ class GraphiaConfig:
     bearer_token: str | None
     aws_region: str
     log_file: Path
-    seed: int
     checkpoint_dir: Path
+    human_role: str | None
     remote_mode: bool
     runtime_invocation_url: str | None
     memory_id: str | None
@@ -73,6 +71,20 @@ def load_config() -> GraphiaConfig:
             f"{aws_region}.amazonaws.com/mcp"
         )
 
+    role_raw = os.environ.get("GRAPHIA_ROLE")
+    if role_raw is None or not role_raw.strip():
+        human_role: str | None = None
+    else:
+        match role_raw.strip().lower():
+            case "mafia":
+                human_role = "mafia"
+            case "law-abiding":
+                human_role = "law_abiding"
+            case _:
+                raise SystemExit(
+                    f"GRAPHIA_ROLE must be 'mafia' or 'law-abiding' (got {role_raw!r})."
+                )
+
     if remote_mode and not runtime_invocation_url:
         raise SystemExit(
             "Remote mode requested (--remote / GRAPHIA_REMOTE=1) but "
@@ -81,25 +93,12 @@ def load_config() -> GraphiaConfig:
             "and add the value to .env as `GRAPHIA_RUNTIME_URL=...`."
         )
 
-    seed_raw = os.environ.get("GRAPHIA_SEED")
-    if seed_raw is None:
-        seed = time.time_ns()
-    else:
-        try:
-            seed = int(seed_raw)
-        except ValueError:
-            print(
-                f"GRAPHIA_SEED must be an integer, got {seed_raw!r}. Using time-based seed.",
-                file=sys.stderr,
-            )
-            seed = time.time_ns()
-
     return GraphiaConfig(
         bearer_token=bearer_token,
         aws_region=aws_region,
         log_file=log_file,
-        seed=seed,
         checkpoint_dir=checkpoint_dir,
+        human_role=human_role,
         remote_mode=remote_mode,
         runtime_invocation_url=runtime_invocation_url,
         memory_id=memory_id,

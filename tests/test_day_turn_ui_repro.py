@@ -63,7 +63,9 @@ async def test_ui_unfreezes_after_first_day_turn(
     unstubbed on the first Night's path, which could strand a boto3 retry
     thread past ``app.exit()``.
     """
-    monkeypatch.setenv("GRAPHIA_SEED", "0")
+    # Pin the human as Law-abiding so a random Mafia draw cannot strand the
+    # worker on the human-Mafia modal interrupt during teardown.
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(AI_NAMES)
     # Install the unified Sonnet fake up front — DayAction queue carries
     # 80 scripted lines so the Day loop has plenty to consume before the

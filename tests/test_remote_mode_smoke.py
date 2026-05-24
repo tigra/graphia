@@ -56,11 +56,11 @@ from graphia.llm import Ballot, DayAction, Pointing
 from graphia.prompts import ENDGAME_WINNER_LAW, ENDGAME_WINNER_MAFIA
 from graphia.ui.app import GraphiaApp
 
-# Seed 0 puts the human in slot 0 as Law-abiding — the test never has to
-# answer a ``kind="point"`` interrupt (no PointingModal). Same seed used by
-# the Slice 8 end-screen pilot test, so the trajectory through 2 Mafia AIs
-# + 4 Law-abiding AIs + 1 Law-abiding human is well-trodden territory.
-SEED_LAW_ABIDING = 0
+# Role assignment is pinned via ``GRAPHIA_ROLE`` per ADR-006. The human is
+# always Law-abiding so the test never has to answer a ``kind="point"``
+# interrupt (no PointingModal). The trajectory through 2 Mafia AIs + 4
+# Law-abiding AIs + 1 Law-abiding human is well-trodden by the Slice 8
+# end-screen pilot test as well.
 
 AI_NAMES = ["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"]
 HUMAN_NAME = "Alice"
@@ -260,13 +260,14 @@ async def _run_full_game(
 ) -> str:
     """Drive ``app`` from boot through end-of-game, returning the final log.
 
-    The scripted scenario at seed 0 produces a Mafia win via the
-    DAY_MAX_ROUNDS no-vote cap on each Day: every Night the AI Mafia
-    kills one Law-abiding citizen, every Day AIs speak (never call a
-    vote), and after enough Nights the parity check at
-    ``check_win_night`` routes to ``end_screen``. The same trajectory
-    is used by the Slice 8 pilot test, so the assertions on
-    ``Game over.`` and the winner line are well-trodden territory.
+    The scripted scenario produces a Mafia win via the DAY_MAX_ROUNDS
+    no-vote cap on each Day: every Night the AI Mafia kills one
+    Law-abiding citizen (the Pointing fake always targets the first
+    alive Law-abiding AI), every Day AIs speak (never call a vote),
+    and after enough Nights the parity check at ``check_win_night``
+    routes to ``end_screen``. The same trajectory is used by the
+    Slice 8 pilot test, so the assertions on ``Game over.`` and the
+    winner line are well-trodden territory.
     """
     async with app.run_test() as pilot:
         await pilot.pause()
@@ -382,7 +383,7 @@ async def test_remote_mode_drives_full_game_through_fake_agentcore_client(
     """
     from langgraph.types import Command
 
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(AI_NAMES)
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
 
@@ -405,7 +406,7 @@ async def test_remote_mode_drives_full_game_through_fake_agentcore_client(
     assert client.region == "us-east-1"
 
     # At minimum: one start + one resume after the name interrupt. In
-    # practice the seed-0 trajectory drives many more (one per human-
+    # practice the full game drives many more (one per human-
     # facing interrupt across two Days + multiple Nights), so we
     # assert a generous lower bound rather than an exact count.
     assert client.call_count >= 2, (
@@ -466,16 +467,19 @@ async def test_local_and_remote_render_equivalent_winner(
     else:
         request.getfixturevalue("local_env")
 
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(AI_NAMES)
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
 
     app = GraphiaApp()
     rendered = await _run_full_game(app, fake)
 
-    # Same winner line lands in both modes (seed-0 trajectory → Mafia win).
+    # Same winner line lands in both modes. The scripted trajectory
+    # (Mafia always points at the first alive Law-abiding AI, AIs never
+    # vote, ballots are unanimous No) drives the parity check to a
+    # Mafia win after enough Nights regardless of RNG order.
     assert ENDGAME_WINNER_MAFIA in rendered, (
-        f"[{mode}] expected Mafia win at seed 0; got:\n{rendered}"
+        f"[{mode}] expected Mafia win; got:\n{rendered}"
     )
     assert "Game over." in rendered, (
         f"[{mode}] missing 'Game over.' banner; got:\n{rendered}"
@@ -732,7 +736,6 @@ async def test_remote_mode_driver_detects_interrupt_from_stream_not_local_state(
         bearer_token=None,
         aws_region="us-east-1",
         log_file=tmp_path / "regression.log",
-        seed=0,
         checkpoint_dir=tmp_path / "checkpoints",
         remote_mode=True,
         runtime_invocation_url=FAKE_RUNTIME_ARN,
@@ -740,6 +743,7 @@ async def test_remote_mode_driver_detects_interrupt_from_stream_not_local_state(
         gateway_id=None,
         gateway_url=None,
         cloudwatch_log_group=None,
+        human_role=None,
     )
 
     # --- Drive --------------------------------------------------------
@@ -1009,7 +1013,6 @@ async def test_remote_mode_consumer_receives_basemessage_from_scripted_sse(
         bearer_token=None,
         aws_region="us-east-1",
         log_file=tmp_path / "wire-format.log",
-        seed=0,
         checkpoint_dir=tmp_path / "checkpoints",
         remote_mode=True,
         runtime_invocation_url=FAKE_RUNTIME_ARN,
@@ -1017,6 +1020,7 @@ async def test_remote_mode_consumer_receives_basemessage_from_scripted_sse(
         gateway_id=None,
         gateway_url=None,
         cloudwatch_log_group=None,
+        human_role=None,
     )
 
     await drive_graph(
@@ -1121,7 +1125,6 @@ async def test_drive_graph_on_state_receives_human_id_from_collect_name_chunk(
         bearer_token=None,
         aws_region="us-east-1",
         log_file=tmp_path / "on-state.log",
-        seed=0,
         checkpoint_dir=tmp_path / "checkpoints",
         remote_mode=True,
         runtime_invocation_url=FAKE_RUNTIME_ARN,
@@ -1129,6 +1132,7 @@ async def test_drive_graph_on_state_receives_human_id_from_collect_name_chunk(
         gateway_id=None,
         gateway_url=None,
         cloudwatch_log_group=None,
+        human_role=None,
     )
 
     await drive_graph(

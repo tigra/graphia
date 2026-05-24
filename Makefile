@@ -277,10 +277,10 @@ destroy:
 #   make play-remote
 #   make play ARGS="--seed 42"
 play:
-	uv run python -m graphia $(ARGS)
+	$(if $(ROLE),GRAPHIA_ROLE=$(ROLE) )uv run python -m graphia $(ARGS)
 
 play-remote:
-	uv run python -m graphia --remote $(ARGS)
+	$(if $(ROLE),GRAPHIA_ROLE=$(ROLE) )uv run python -m graphia --remote $(ARGS)
 
 # Pretty-print diary entries from the deployed Memory. Forwards extra
 # CLI args (--game-id ..., --player-id ..., --json) via $(ARGS):

@@ -16,12 +16,12 @@ The thing under test (built by Slice 1 Subs 1.1 and 1.2; Slice 2's
 
 These tests drive the real ``GraphiaApp`` through Textual's ``App.run_test``
 pilot. To keep them fast and deterministic the LangGraph startup path is
-short-circuited: ``GRAPHIA_SEED=0`` pins role assignment, ``fake_haiku``
-covers the roster generation, and ``fake_sonnet`` pre-loads scripted
-day/night outputs so the driver never reaches real Bedrock. No test
-submits the human's name — pausing the worker on the very first
-``interrupt()`` (the name prompt) is enough for the modal to be opened
-against a live, idle game.
+short-circuited: ``GRAPHIA_ROLE=law-abiding`` pins the human's role
+(ADR-006), ``fake_haiku`` covers the roster generation, and
+``fake_sonnet`` pre-loads scripted day/night outputs so the driver never
+reaches real Bedrock. No test submits the human's name — pausing the
+worker on the very first ``interrupt()`` (the name prompt) is enough for
+the modal to be opened against a live, idle game.
 """
 
 from __future__ import annotations
@@ -38,11 +38,9 @@ from graphia.ui.app import GraphiaApp
 from graphia.ui.failure_modal import FailureModal
 from graphia.ui.quit_modal import QuitModal
 
-# Seed 0 pins the human as Law-abiding (matches the rest of the suite).
-# We never advance past the name prompt in these tests, but the seed is
-# still set so role assignment is fully deterministic if any future code
-# path samples it during boot.
-SEED_LAW_ABIDING = 0
+# ``GRAPHIA_ROLE`` pins the human as Law-abiding per ADR-006. We never
+# advance past the name prompt in these tests, but the role is still set
+# so the modal interaction runs against a fully-determined boot path.
 
 # Roster names handed to the Haiku fake. Six AIs + the human round out
 # the seven-player table; the human's name is never submitted in any of
@@ -120,12 +118,12 @@ def booted_app(
     """Build a ``GraphiaApp`` with the LLM surface pre-stubbed.
 
     Returned ready-to-go but NOT yet running — the caller wraps it in
-    ``app.run_test()`` to start the pilot. Pinning the seed and stubbing
+    ``app.run_test()`` to start the pilot. Pinning the role and stubbing
     both LLMs is defensive: a Mafia-pointing super-step may begin before
     the test's modal interactions land, and an unstubbed Sonnet call
     would fail loudly via the autouse ``safe_llm`` net.
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(AI_NAMES)
     # Empty scripted queues are fine: ``FakeSonnetUnified`` will only be
     # invoked if the worker gets past the name prompt, which it never

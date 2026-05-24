@@ -35,11 +35,6 @@ from graphia.ui.app import GraphiaApp
 from graphia.ui.widgets import PointingModal
 
 
-# From Slice 4: seed 0 makes the human (insertion-order slot 0)
-# ``law_abiding``; seed 3 makes the human ``mafia``.
-SEED_LAW_ABIDING = 0
-SEED_MAFIA = 3
-
 AI_NAMES = ["Aarav", "Bianca", "Chiko", "Daria", "Elias", "Finn"]
 HUMAN_NAME = "Alice"
 
@@ -139,7 +134,7 @@ async def test_night1_human_law_abiding_kill_announced(
     - ``kill_log`` has the expected cycle-1 Night record.
     - The human's private panel shows their role reveal but no Mafia intro.
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_LAW_ABIDING))
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(AI_NAMES)
 
     # Unified Sonnet fake handles Day speaking / Ballot. Night pointing
@@ -175,7 +170,7 @@ async def test_night1_human_law_abiding_kill_announced(
             if p.role == "law_abiding" and not p.is_human
         ]
         assert len(mafia_ids) == 2, (
-            f"expected 2 AI mafia at seed {SEED_LAW_ABIDING}, got {mafia_ids}"
+            f"expected 2 AI mafia when GRAPHIA_ROLE=law-abiding, got {mafia_ids}"
         )
         assert law_abiding_ids, "no AI law-abiding player to victimise"
 
@@ -261,7 +256,7 @@ async def test_night1_human_mafia_picks_target_via_modal(
     the public kill announcement, the recorded ``night_picks``, and the
     victim's ``is_alive`` flipping to ``False``.
     """
-    monkeypatch.setenv("GRAPHIA_SEED", str(SEED_MAFIA))
+    monkeypatch.setenv("GRAPHIA_ROLE", "mafia")
     fake_haiku(AI_NAMES)
 
     # Install LLM stubs BEFORE ``run_test`` — once the worker starts it can
@@ -289,7 +284,7 @@ async def test_night1_human_mafia_picks_target_via_modal(
 
         human_id = app._graph.get_state(app._run_config).values["human_id"]
         assert players[human_id].role == "mafia", (
-            f"expected seed {SEED_MAFIA} to make the human Mafia; "
+            f"expected GRAPHIA_ROLE=mafia to make the human Mafia; "
             f"got {players[human_id].role}"
         )
 

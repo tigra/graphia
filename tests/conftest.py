@@ -256,7 +256,6 @@ def env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[Path]:
       the developer's real log.
     - Points the checkpoint dir at ``tmp_path / checkpoints`` so each test gets
       a fresh SqliteSaver backing store.
-    - Ensures GRAPHIA_SEED is unset unless a test opts in.
 
     Yields the log-file path for tests that want to read emitted events.
     """
@@ -265,7 +264,6 @@ def env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[Path]:
     monkeypatch.setenv("AWS_BEARER_TOKEN_BEDROCK", "dummy")
     monkeypatch.setenv("GRAPHIA_LOG_FILE", str(log_file))
     monkeypatch.setenv("GRAPHIA_CHECKPOINT_DIR", str(checkpoint_dir))
-    monkeypatch.delenv("GRAPHIA_SEED", raising=False)
     yield log_file
 
 
@@ -275,7 +273,7 @@ class FakeSonnet:
     The production call is
     ``get_sonnet().with_structured_output(Pointing).invoke(msgs)``. This fake
     collapses that into a queue of scripted ``Pointing`` outputs (or
-    exceptions to exercise the retry / seeded-fallback path).
+    exceptions to exercise the retry / random-fallback path).
 
     Attributes:
         call_count: Number of times ``.invoke`` was called — useful for

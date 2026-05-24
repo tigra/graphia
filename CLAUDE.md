@@ -13,8 +13,8 @@ All code lives under `src/graphia/`; new work should go there unless explicitly 
 - **Run the game:** `uv run python -m graphia` (Textual TUI; needs a real terminal, not PyCharm's "Run" console).
 - **Tests:** `uv run pytest -q` (fast, all-mocked) — the autouse `safe_llm` fixture in `tests/conftest.py` patches every LLM call site to fail loudly if a test forgets to install `fake_haiku` / `fake_sonnet*`. Real Bedrock must never be reached from the suite.
 - **Single test:** `uv run pytest tests/test_slice7_vote.py::test_name -q`.
-- **Deterministic seed:** `GRAPHIA_SEED=1234 uv run python -m graphia` for reproducible role assignment and tie-breaks.
-- **Required env (in `.env`):** `AWS_BEARER_TOKEN_BEDROCK` (required), `AWS_REGION` (default `us-east-1`), `GRAPHIA_LOG_FILE`, `GRAPHIA_CHECKPOINT_DIR`, `GRAPHIA_SEED`.
+- **Determinism posture:** there is no seed env var. Mechanical-RNG decisions (role deal, day-speech order, tie-breaks) use module-global `random` and vary across runs; LLM-driven decisions (AI dialogue, name generation) are inherently non-reproducible. See architecture §6.
+- **Required env (in `.env`):** `AWS_BEARER_TOKEN_BEDROCK` or `AWS_PROFILE` (one is required for Bedrock), `AWS_REGION` (default `us-east-1`), `GRAPHIA_LOG_FILE`, `GRAPHIA_CHECKPOINT_DIR`.
 - **Dependencies:** `uv add <pkg>` into `pyproject.toml`. Do **not** use PEP 723 inline `# /// script` headers; all code goes through the standard uv project flow.
 
 ## Architecture (the parts that span files)
@@ -68,7 +68,7 @@ Important rules baked into these commands:
 - **`langgraph-agentic`** — StateGraph design, reducers, `interrupt()`/resume, `SqliteSaver`, `ChatBedrockConverse` (us-east-1 / `us.` inference profile), and the **AgentCore application-side code** (Runtime entrypoint, Gateway-fronted diary tools, AgentCore Memory schemas for per-game diaries and long-term cross-game stats). Bundled `langgraph-agentcore` skill is **active** as of ADR 001; the prior "Graphia is local-only" stance is gone — both local and remote modes are first-class.
 - **`textual-tui`** — Textual app/widgets, async event-loop integration, vote-locks-chat transitions. No specialist Textual skill is installed; agent uses the `context7` MCP to fetch current Textual docs when uncertain.
 - **`python-backend`** — uv/pyproject, type hints, asyncio patterns, `python-dotenv`, non-LangGraph/non-UI Python.
-- **`testing`** — pytest suites, fixtures, mocking Bedrock at the `ChatBedrockConverse` boundary, deterministic runs via `GRAPHIA_SEED`, Textual `App.run_test()` snapshots.
+- **`testing`** — pytest suites, fixtures, mocking Bedrock at the `ChatBedrockConverse` boundary, monkeypatching `_shuffle_order` / pointing helpers for deterministic test trajectories, Textual `App.run_test()` snapshots.
 - **`terraform-aws`** — Research → Design → Implement → Validate workflow for Terraform code that provisions Graphia's AgentCore Runtime / Gateway / Memory / Observability resources in `us-east-1`. Bundled `terraform-conventions` skill enforces the configured IaC house style. Uses the `terraform-mcp-server` (Registry lookup), `aws-knowledge-mcp-server` (AWS docs / Well-Architected), and `aws-api-mcp-server` (live API ground-truth) MCPs. Always plans before applying.
 
 ## Test conventions worth knowing

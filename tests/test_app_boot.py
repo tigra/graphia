@@ -27,13 +27,14 @@ async def test_ctrl_c_exits_cleanly(
     env: Path, fake_haiku, fake_sonnet, monkeypatch
 ) -> None:
     """Submitting a name then pressing ctrl+c should end the app cleanly."""
-    # Pin seed so the human is Law-abiding — avoids the human-Mafia modal
-    # interrupt, which would leave the producer thread blocked awaiting a
-    # resume the test never sends and drag out pytest teardown.
-    monkeypatch.setenv("GRAPHIA_SEED", "0")
+    # Pin the human as Law-abiding so the ``mafia_pointing`` super-step never
+    # raises the human-Mafia modal interrupt — that modal would leave the
+    # producer thread blocked awaiting a resume the test never sends and
+    # drag out pytest teardown.
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"])
     fake_sonnet(
-        # A placeholder ``Pointing`` triggers ``_ai_pick_target``'s seeded
+        # A placeholder ``Pointing`` triggers ``_ai_pick_target``'s random
         # fallback — a single scripted entry is enough because
         # ``FakeSonnetUnified`` replays the last popped value for all
         # subsequent invocations.
@@ -52,7 +53,9 @@ async def test_ctrl_c_exits_cleanly(
 async def test_log_file_contains_app_start_event(
     env: Path, fake_haiku, fake_sonnet, monkeypatch
 ) -> None:
-    monkeypatch.setenv("GRAPHIA_SEED", "0")
+    # Pin the human as Law-abiding to avoid the human-Mafia modal interrupt —
+    # see ``test_ctrl_c_exits_cleanly`` for the teardown-hang rationale.
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"])
     fake_sonnet(
         pointings=[Pointing(target_id="p-1")],

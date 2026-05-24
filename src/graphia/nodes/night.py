@@ -9,7 +9,6 @@ from collections import Counter
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.types import interrupt
 
-from graphia.config import load_config
 from graphia.diary_store import DiaryStore
 from graphia.llm import Pointing, get_sonnet
 from graphia.prompts import (
@@ -97,9 +96,6 @@ def _roster_lines(alive_law_abiding: list[PlayerState]) -> str:
 def _ai_pick_target(
     alive_law_abiding: list[PlayerState],
     mafia: PlayerState,
-    cycle: int,
-    mafia_index: int,
-    seed: int,
 ) -> str:
     valid_ids = {p.id for p in alive_law_abiding}
     valid_ids_list = sorted(valid_ids)
@@ -135,15 +131,12 @@ def _ai_pick_target(
     except Exception:
         pass
 
-    # Fall back to a deterministic random choice so the game doesn't stall.
-    rng = random.Random(seed + cycle + mafia_index)
-    return rng.choice(alive_law_abiding).id
+    # Fall back to a random choice so the game doesn't stall.
+    return random.choice(alive_law_abiding).id
 
 
 def mafia_pointing(state: GameState) -> dict:
-    config = load_config()
     players = state.get("players", {})
-    cycle = state.get("cycle", 1)
 
     # Preserve roster order from the players dict.
     alive_mafia = [
@@ -163,7 +156,7 @@ def mafia_pointing(state: GameState) -> dict:
         return {"messages": [SystemMessage(content="No Mafia targets remain.")]}
 
     picks: dict[str, str] = {}
-    for mafia_index, mafia in enumerate(alive_mafia):
+    for mafia in alive_mafia:
         if mafia.is_human:
             value = interrupt(
                 {
@@ -177,23 +170,18 @@ def mafia_pointing(state: GameState) -> dict:
             if target_id not in valid_ids:
                 # UI is responsible for returning valid ids; fall back rather
                 # than hang if something slips through.
-                rng = random.Random(config.seed + cycle + mafia_index)
-                target_id = rng.choice(alive_law_abiding).id
+                target_id = random.choice(alive_law_abiding).id
             picks[mafia.id] = target_id
         else:
             picks[mafia.id] = _ai_pick_target(
                 alive_law_abiding=alive_law_abiding,
                 mafia=mafia,
-                cycle=cycle,
-                mafia_index=mafia_index,
-                seed=config.seed,
             )
 
     return {"night_picks": picks}
 
 
 def resolve_night_kill(state: GameState) -> dict:
-    config = load_config()
     cycle = state.get("cycle", 1)
     night_picks = state.get("night_picks", {})
     players = state.get("players", {})
@@ -209,8 +197,7 @@ def resolve_night_kill(state: GameState) -> dict:
     counts = Counter(night_picks.values())
     top_count = max(counts.values())
     tied = [tid for tid, c in counts.items() if c == top_count]
-    rng = random.Random(config.seed + cycle * 31)
-    victim_id = rng.choice(tied) if len(tied) > 1 else tied[0]
+    victim_id = random.choice(tied) if len(tied) > 1 else tied[0]
 
     victim = players[victim_id]
     updated: dict[str, PlayerState] = {}

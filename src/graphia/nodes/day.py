@@ -11,7 +11,7 @@ Topology contract (Slice 7):
   may return ``DayAction(kind="vote", target_id=...)``.
 - When a round completes (turn index wraps back to 0), ``day_turn`` itself
   bumps ``day_rounds`` and reshuffles ``day_order`` for the next round using
-  a seeded RNG keyed on ``cycle`` and the new ``day_rounds`` value.
+  the module-global ``random`` RNG.
 - On vote initiation, ``day_turn`` sets ``active_vote`` and routes to
   ``vote_prompt``, which announces the vote. ``collect_votes`` then polls
   each alive player in roster order, ONE voter per super-step, and
@@ -30,7 +30,6 @@ from typing import cast
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.types import interrupt
 
-from graphia.config import load_config
 from graphia.llm import Ballot, DayAction, get_sonnet
 from graphia.prompts import (
     AI_VOTE_SYSTEM,
@@ -71,15 +70,10 @@ def _find_last_night_victim(
     return None
 
 
-def _shuffle_order(players: dict[str, PlayerState], seed: int) -> list[str]:
-    """Produce a shuffled list of alive-player ids using ``seed``.
-
-    Using a dedicated ``random.Random`` keeps the shuffle deterministic per
-    (cycle, round) without disturbing the process-global RNG.
-    """
+def _shuffle_order(players: dict[str, PlayerState]) -> list[str]:
+    """Return a shuffled list of alive-player ids."""
     ids = [p.id for p in players.values() if p.is_alive]
-    rng = random.Random(seed)
-    rng.shuffle(ids)
+    random.shuffle(ids)
     return ids
 
 
@@ -136,7 +130,6 @@ def _fuzzy_match_alive(
 
 def day_open(state: GameState) -> dict:
     """Open the Day: reveal last-night's victim and seed the speaking order."""
-    config = load_config()
     cycle = state.get("cycle", 1)
     players = state.get("players", {})
     kill_log = state.get("kill_log", [])
@@ -157,10 +150,7 @@ def day_open(state: GameState) -> dict:
     else:
         content = DAY_OPEN_NO_VICTIM_TEMPLATE
 
-    # Seed the first round's order; keyed on cycle * 1009 so shuffles between
-    # days and between rounds don't alias.
-    order_seed = config.seed + cycle * 1009
-    order = _shuffle_order(players, order_seed)
+    order = _shuffle_order(players)
 
     return {
         "messages": [SystemMessage(content=content)],
@@ -278,18 +268,15 @@ def day_turn(state: GameState) -> dict:
     conditional edge then decides between looping, voting, or transitioning
     to ``day_close``.
     """
-    config = load_config()
     players = state.get("players", {})
     order: list[str] = list(state.get("day_order", []))
     turn_index = state.get("day_turn_index", 0)
     rounds = state.get("day_rounds", 0)
-    cycle = state.get("cycle", 1)
 
     if not order or turn_index >= len(order):
         # Defensive: empty or out-of-bounds order; treat the round as complete.
         new_rounds = rounds + 1
-        next_seed = config.seed + cycle * 1009 + new_rounds * 17
-        next_order = _shuffle_order(players, next_seed)
+        next_order = _shuffle_order(players)
         return {
             "day_turn_index": 0,
             "day_rounds": new_rounds,
@@ -305,8 +292,7 @@ def day_turn(state: GameState) -> dict:
         new_turn_index = turn_index + 1
         if new_turn_index >= len(order):
             new_rounds = rounds + 1
-            next_seed = config.seed + cycle * 1009 + new_rounds * 17
-            next_order = _shuffle_order(players, next_seed)
+            next_order = _shuffle_order(players)
             return {
                 "day_turn_index": 0,
                 "day_rounds": new_rounds,
@@ -395,8 +381,7 @@ def day_turn(state: GameState) -> dict:
     new_turn_index = turn_index + 1
     if new_turn_index >= len(order):
         new_rounds = rounds + 1
-        next_seed = config.seed + cycle * 1009 + new_rounds * 17
-        next_order = _shuffle_order(players, next_seed)
+        next_order = _shuffle_order(players)
         return {
             "messages": [msg],
             "day_turn_index": 0,
@@ -562,7 +547,6 @@ def resolve_vote(state: GameState) -> dict:
     The router will loop back to ``day_turn`` unless ``day_votes_called``
     has hit the cap.
     """
-    config = load_config()
     active = state.get("active_vote")
     if not active:
         return {}
@@ -629,14 +613,7 @@ def resolve_vote(state: GameState) -> dict:
     # Vote failed: bump counter, reshuffle, reset turn index.
     messages.append(SystemMessage(content=VOTE_FAILED_TEMPLATE))
     votes_called = state.get("day_votes_called", 0) + 1
-    rounds = state.get("day_rounds", 0)
-    next_seed = (
-        config.seed
-        + cycle * 1009
-        + rounds * 17
-        + votes_called * 71
-    )
-    next_order = _shuffle_order(players, next_seed)
+    next_order = _shuffle_order(players)
     return {
         "messages": messages,
         "active_vote": None,

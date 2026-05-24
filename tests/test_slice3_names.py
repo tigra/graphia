@@ -32,7 +32,7 @@ def _install_sonnet_defaults(fake_sonnet) -> None:
 
     A placeholder ``Pointing`` (invalid UUID) is enough: the production
     ``_ai_pick_target`` treats an unrecognised target id as invalid and
-    falls back to a seeded deterministic pick from the real roster, so the
+    falls back to a random pick from the real roster, so the
     graph advances. ``FakeSonnetUnified`` replays the last popped value
     once its queue drains, which covers both AI-Mafia invocations on
     Night 1 plus any subsequent nights.
@@ -111,13 +111,12 @@ async def test_roster_uses_haiku_generated_names(
     env: Path, fake_haiku, fake_sonnet, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Names actually come from the (stubbed) Haiku call, not the Slice 2 list."""
-    # Pin GRAPHIA_SEED so the human is Law-abiding (seed 0, slot 0) and the
-    # ``mafia_pointing`` super-step never raises the human-Mafia modal
-    # interrupt. Without a pinned seed the default is ``time.time_ns()``;
-    # when the random draw makes the human Mafia, the worker stalls on the
-    # modal awaiting a resume the test never sends, which then stretches
-    # teardown by up to 300s as the pilot cleanup waits for the worker.
-    monkeypatch.setenv("GRAPHIA_SEED", "0")
+    # Pin the human as Law-abiding so the ``mafia_pointing`` super-step never
+    # raises the human-Mafia modal interrupt. Without this pin, a random
+    # Mafia draw makes the worker stall on the modal awaiting a resume the
+    # test never sends, which stretches teardown by up to 300s as the pilot
+    # cleanup waits for the worker.
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     ai_names = ["Bianca", "Chiko", "Daria", "Elias", "Farah", "Gus"]
     fake = fake_haiku(ai_names)
     _install_sonnet_defaults(fake_sonnet)
@@ -166,8 +165,9 @@ async def test_different_names_across_runs(
     The real "two runs produce different names" guarantee comes from Haiku at
     runtime; here we simply demonstrate the stub's per-run names reach the UI.
     """
-    # Seed 0 keeps the human Law-abiding; see sibling test for rationale.
-    monkeypatch.setenv("GRAPHIA_SEED", "0")
+    # Pin the human as Law-abiding to avoid the Mafia-modal stall; see sibling
+    # test for the teardown-hang rationale.
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_haiku(ai_names)
     _install_sonnet_defaults(fake_sonnet)
 
@@ -197,8 +197,9 @@ async def test_retry_on_validation_failure(
     env: Path, fake_haiku, fake_sonnet, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """First Haiku response fails validation; second succeeds; app recovers."""
-    # Seed 0 keeps the human Law-abiding; see sibling test for rationale.
-    monkeypatch.setenv("GRAPHIA_SEED", "0")
+    # Pin the human as Law-abiding to avoid the Mafia-modal stall; see sibling
+    # test for the teardown-hang rationale.
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     # A synthetic ValidationError for the Roster schema — we cannot easily
     # build one by hand, so force validation by feeding Roster an invalid
     # list inside ``pytest.raises`` and capture the exception.
