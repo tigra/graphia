@@ -3,7 +3,7 @@
 A high-level history of the project, reconstructed from `git log` and the
 `context/` artifacts: how scope changed (Change Requests), how the architecture
 was decided (Architecture Decision Records), and how the work was executed (specs
-broken into vertical slices). Covers **2026-04-29 → 2026-05-22**.
+broken into vertical slices). Covers **2026-04-29 → 2026-05-24**.
 
 Graphia is built with the **AWOS spec-driven workflow** — every increment flows
 `product → roadmap → architecture → spec → tech → tasks → implement → verify → tutorial`,
@@ -54,9 +54,16 @@ gantt
     section Polish & publish (v1.1.x)
     Spec 003 — Reliable game exit (Esc quit modal)       :done, sp3, 2026-05-22, 1d
     Spec 004 — Robust /vote validation + driver fix      :done, sp4, 2026-05-22, 1d
-    Spec 005 — Play-as-role (functional spec only)       :active, sp5, 2026-05-22, 1d
     Tutorial 004 published                               :milestone, done, t4, after sp4, 0d
-    Published to GitHub (tigra/graphia) + README         :milestone, done, pub, after sp5, 0d
+    Published to GitHub (tigra/graphia) + README         :milestone, done, pub, 2026-05-22, 1d
+
+    section Spec 005 — Play-as-role + determinism posture
+    Slices 1-2 — GRAPHIA_ROLE feature + make passthrough :done, sp5s12, 2026-05-23, 1d
+    ADR 006 — Test role-pinning via GRAPHIA_ROLE         :milestone, done, a6, 2026-05-23, 0d
+    Slices 3-4 — Test-suite migration to GRAPHIA_ROLE    :done, sp5s34, 2026-05-23, 2d
+    Slice 5 — Retire GRAPHIA_SEED from production        :done, sp5s5, 2026-05-24, 1d
+    Spec 005 verified Completed                          :milestone, done, sp5v, after sp5s5, 0d
+    Tutorial 005 published                               :milestone, done, t5, after sp5v, 0d
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:
@@ -65,11 +72,11 @@ gantt
 - **Shape = kind.** Diamonds are point events (CRs, ADRs, spec milestones); bars are executed slice work spanning real days.
 - **Sections = project phase.** ADRs are listed first within Phase 2, then the slice bars, so a superseded ADR (red diamond) is never mistaken for blocked work.
 
-So the only red marks are the two superseded ADRs (002, 004); the CRs are green because — even though CR 001 and 002 carried `Proposed` for a while — the scope changes were fully executed and have now been formally Accepted. The one orange bar is **Spec 005**, in flight (functional spec written, implementation pending).
+The only red marks are the two superseded ADRs (002, 004); the CRs are green because — even though CR 001 and 002 carried `Proposed` for a while — the scope changes were fully executed and have now been formally Accepted. All bars and milestones are now green: every spec is Completed and every tutorial is published.
 
 ---
 
-## What was going on — four acts
+## What was going on — five acts
 
 ### Act 1 — Phase 1: a playable skeleton (2026-04-29)
 
@@ -159,7 +166,7 @@ specialist **`terraform-aws` agent was hired** (2026-05-10) to own the IaC.
 
 ### Act 4 — Polish, hardening, and going public (2026-05-20 → 05-22)
 
-With Phase 2 closed, three small specs and a public release followed:
+With Phase 2 closed, two small specs and a public release followed:
 
 - **Spec 003 — Reliable Game Exit Controls** (05-22): `Esc` opens a quit-confirm
   modal; `q` is deliberately left unbound so words starting with "q" can be typed
@@ -177,15 +184,71 @@ With Phase 2 closed, three small specs and a public release followed:
   `drive_graph`, not a hand-driven `graph.stream`) locks it. Verified Completed;
   **Tutorial 004** published. (No Tutorial 003 — that slot is intentionally left
   open.)
-- **Spec 005 — Play-as-role** (05-22, in flight): a `GRAPHIA_ROLE` env var to pin
-  the human's side (mafia / law-abiding) for testing, composing with `make play`.
-  Functional spec written; tech + implementation still to come.
 - **Going public** (05-22): the repo was published to
   **github.com/tigra/graphia** with a README (mermaid architecture diagram,
   make-first workflow, AWOS-extension links). Tooling was hardened in passing —
   the Makefile auto-loads `.env`, derives the AWS account from the active profile,
   runs a safe two-step `terraform destroy`, and `make wire-env` now discovers
   deployed resources via the AWS API (no Terraform state needed).
+
+### Act 5 — Determinism posture: GRAPHIA_ROLE feature and the seed retirement (2026-05-23 → 05-24)
+
+**Spec 005 — Play-As-Role via Environment Variable** opened as a small developer
+affordance — a `GRAPHIA_ROLE` env var to pin the human's side at launch so the
+author could exercise Mafia-only or Law-abiding-only flows without relaunching
+until the random deal cooperated. But drafting it exposed a much bigger
+question: the test suite was already pinning roles indirectly, via `GRAPHIA_SEED`
+magic values like `SEED_MAFIA = 3` and `SEED_LAW_ABIDING = 0` that incidentally
+dealt the desired side. That pattern was opaque (the seed value's effect needed
+a constant lookup to understand), fragile (any refactor of `assign_roles` would
+silently break the seed-→role mapping), and — once `GRAPHIA_ROLE` arrived —
+obviously redundant. The spec grew across five slices:
+
+- **Slices 1-2** (05-23): the user-facing feature. `GRAPHIA_ROLE` parsed in
+  `GraphiaConfig.load_config()`, applied inside `assign_roles` via a
+  **pop-then-shuffle** strategy that preserves the 2-Mafia / 5-Law-abiding
+  composition by construction, surfaced via a `make play ROLE=mafia` Makefile
+  passthrough, and validated at startup (in `__main__.py`) so invalid values
+  raise `SystemExit` on stderr before Textual takes the alternate screen.
+- **ADR 006 — Test role-pinning convention** (05-23): captured the architectural
+  decision — `GRAPHIA_ROLE` setenv is the role-pinning mechanism in tests;
+  magic-seed-for-role is retired. The alternatives (status quo vs the chosen
+  convention) and their trade-offs are recorded in the ADR.
+- **Slice 3** (05-23): migrated ~33 call sites across 10 test files from
+  magic-seed-for-role to `monkeypatch.setenv("GRAPHIA_ROLE", "<role>")`. Several
+  sites turned out to have a hidden second dependency on the seed value beyond
+  role-pinning (typically a specific day-speech order), and those sites kept the
+  seed with a renamed descriptive constant — `SEED_HUMAN_MID_DAY_ORDER`,
+  `SEED_DAY1_SPEAKER_ORDER_LETS_AI_INITIATE_VOTE`, etc. — pending Slice 4.
+- **Slice 4** (05-23 → 05-24): refactored the 5 remaining seed-dependent test
+  sites to monkeypatch the production helper directly (`monkeypatch.setattr(
+  graphia.nodes.day, "_shuffle_order", <stub>)`) rather than nudging via
+  `GRAPHIA_SEED`. The renamed-descriptive constants disappeared along with their
+  setenvs. Architecture.md gained §6 "Determinism Posture & Testing Conventions"
+  codifying the three principles: LLM outputs accepted as variable; direct intent
+  expression over fragile mechanisms; mechanical-RNG decisions pinned via
+  targeted monkeypatching.
+- **Slice 5** (05-24): the cleanup arc. With the testing convention in place, a
+  grep across the codebase found two surviving `GRAPHIA_SEED` consumers: the
+  seed-→role mapping test itself (whose subject was now gone — file deleted) and
+  the dual-mode cross-mode byte-equality test in `tests/test_dual_mode_smoke.py`
+  (a real regression-guard worth preserving). The byte-equality test moved its
+  determinism mechanism into the test body via `random.seed(...)`, and the seed
+  was retired from production entirely: `GraphiaConfig.seed`, `GRAPHIA_SEED`
+  parsing, and the per-call salt arithmetic (`config.seed + cycle * 1009`-style)
+  in `day.py` / `night.py` / `setup.py` are all gone. Production RNG uses
+  module-global `random.shuffle` / `random.choice`. ADR-006 was amended to
+  cover the production-side retirement and to record why we kept the byte-equality
+  test rather than downgrading it to structural equality (the alternative we
+  weren't happy with).
+
+Verified Completed (29/29 acceptance criteria); **Tutorial 005** published with
+a depth-first Socratic walkthrough of the determinism posture as the conceptual
+spine. The full test suite ended at **129 passed, 1 skipped** (down from 132 —
+three deletions: the seed-→role mapping test, the unset-path frozen-list
+regression test, and the cross-parametrize identity test refactored to a
+parsing-layer assertion that needs no RNG). Zero `GRAPHIA_SEED` hits anywhere in
+the repo's `*.py` files.
 
 ---
 
@@ -274,43 +337,46 @@ coverage._
 
 ## Architecture Decision Records
 
-| ADR | Date       | Title                                              | Status                |
-| --- | ---------- | -------------------------------------------------- | --------------------- |
-| 001 | 2026-05-07 | Hosted AgentCore Runtime with preserved local mode | Accepted              |
-| 002 | 2026-05-12 | Runtime-embedded Gateway tool handlers             | Superseded by ADR 005 |
-| 003 | 2026-05-13 | Bedrock model family — Amazon Nova over Claude     | Accepted              |
-| 004 | 2026-05-13 | Gateway target IAM-auth via CLI workaround         | Superseded by ADR 005 |
-| 005 | 2026-05-14 | Gateway tools via Lambda targets                   | Accepted              |
+| ADR | Date       | Title                                                   | Status                |
+| --- | ---------- | ------------------------------------------------------- | --------------------- |
+| 001 | 2026-05-07 | Hosted AgentCore Runtime with preserved local mode      | Accepted              |
+| 002 | 2026-05-12 | Runtime-embedded Gateway tool handlers                  | Superseded by ADR 005 |
+| 003 | 2026-05-13 | Bedrock model family — Amazon Nova over Claude          | Accepted              |
+| 004 | 2026-05-13 | Gateway target IAM-auth via CLI workaround              | Superseded by ADR 005 |
+| 005 | 2026-05-14 | Gateway tools via Lambda targets                        | Accepted              |
+| 006 | 2026-05-23 | Test role-pinning via `GRAPHIA_ROLE` (amended Slice 5)  | Proposed              |
 
 ## Specs & tutorials
 
-| Spec | Title                         | Slices | Status                    |
-| ---- | ----------------------------- | ------ | ------------------------- |
-| 001  | Playable Skeleton             | 9      | Completed                 |
-| 002  | Hosted AgentCore Deployment   | 11     | Completed                 |
-| 003  | Reliable Game Exit Controls   | 3      | Completed                 |
-| 004  | Robust /vote Input Validation | 4      | Completed                 |
-| 005  | Play-as-role                  | —      | Draft (functional spec)   |
+| Spec | Title                                | Slices | Status    |
+| ---- | ------------------------------------ | ------ | --------- |
+| 001  | Playable Skeleton                    | 9      | Completed |
+| 002  | Hosted AgentCore Deployment          | 11     | Completed |
+| 003  | Reliable Game Exit Controls          | 3      | Completed |
+| 004  | Robust /vote Input Validation        | 4      | Completed |
+| 005  | Play-As-Role via Environment Variable | 5      | Completed |
 
 Per-increment learning tutorials live under `context/tutorials/`: `001`, the
-final `002` (depth-first walkthrough of all eleven Spec 002 slices), and `004`
-(the LangGraph interrupt/resume-pump gotcha). Tutorial `003` was intentionally
-skipped — that index is left open. An interim `002-hosted-agentcore-deployment-v2`
-draft (Slices 1-4 + the Nova switch, pre-Lambda-pivot) sits alongside as a
-historical artifact and will be removed when no longer interesting.
+final `002` (depth-first walkthrough of all eleven Spec 002 slices), `004`
+(the LangGraph interrupt/resume-pump gotcha), and `005` (the determinism
+posture as the conceptual spine — `GRAPHIA_ROLE` and the seed retirement).
+Tutorial `003` was intentionally skipped — that index is left open. An interim
+`002-hosted-agentcore-deployment-v2` draft (Slices 1-4 + the Nova switch,
+pre-Lambda-pivot) sits alongside as a historical artifact and will be removed
+when no longer interesting.
 
 ---
 
 ## What's next
 
-Two threads are open:
+**Phase 3 — Long-Term Cross-Game Memory & Career Stats** is the next big roadmap
+item, started via `/awos:spec`. It would introduce the cross-session AgentCore
+Memory pattern as a counterpoint to the per-game Memory pattern from Phase 2 —
+persisting career-stats summaries across game sessions (night-kill initiations
+and votes, day-execution initiations and votes, win rates by role, etc.), with
+a pre-game career-summary greeting and a post-game career-stats panel. From the
+AWOS chain that means: spec → tech → tasks → implement-by-slice → verify →
+tutorial, with CRs and ADRs logged along the way.
 
-1. **Finish Spec 005 (Play-as-role)** — the functional spec is written; it needs
-   `/awos:tech` → tasks → implement → verify to land the `GRAPHIA_ROLE` pin.
-2. **Phase 3 — Long-Term Cross-Game Memory & Career Stats** — the next big
-   roadmap item, started via `/awos:spec`. From the AWOS chain that means: spec →
-   tech → tasks → implement-by-slice → verify → tutorial, with CRs and ADRs logged
-   along the way.
-
-The repo is now public at **github.com/tigra/graphia**, so future increments
-ship in the open.
+The repo is public at **github.com/tigra/graphia**, so future increments ship
+in the open.
