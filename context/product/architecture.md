@@ -25,7 +25,7 @@
   - **Remote mode:** AgentCore Memory under a per-player namespace, scoped to the game's lifetime, accessed through an AgentCore Gateway-fronted MCP surface (this Gateway-fronted surface is the v1.x Gateway demonstration; the richer tool surface deferred per §1).
   - **Local mode:** in-process LangGraph state (`PlayerState.diary_entries: list[str]`); no Gateway, no AWS calls.
 - **Long-Term Cross-Game Stats Store (Phase 3 scope):** End-of-game stats summaries — night-kill initiations and votes, day-execution initiations and votes, game outcomes, role-broken-down counts, human-player career data — are persisted across game sessions via two parallel implementations:
-  - **Remote mode:** AgentCore Memory at long-term scope (the explicit demonstration of cross-session AgentCore Memory).
+  - **Remote mode:** a single self-authored AgentCore Memory **long-term memory record** under a self-managed (custom) strategy — written via the batch-record APIs, read deterministically by namespace (the explicit demonstration of cross-session AgentCore long-term Memory). Exact counters require self-authored records, not built-in semantic/summarization extraction. See ADR 007.
   - **Local mode:** a small file in the game's local data directory.
   - **Stored data is bounded:** counters and outcome summaries only. Full game transcripts, diaries, and vote-by-vote replays remain non-persistent across sessions (per product-definition §3.2).
   - **The local file is the only persistent state that crosses sessions in local mode** — game state, checkpoints, and per-game diaries are all wiped between runs.
