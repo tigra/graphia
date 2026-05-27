@@ -13,7 +13,7 @@ with CRs logging scope shifts and ADRs logging architectural decisions along the
 
 ## Timeline
 
-> **Interactive (clickable) version:** [open the timeline as a live HTML page](https://rawcdn.githack.com/tigra/graphia/main/context/project-timeline.html) — clicking any milestone or slice bar opens its source artifact on GitHub. (GitHub blocks click-through navigation from mermaid diagrams embedded in markdown, so the HTML rendering is the workaround.)
+> **Interactive (clickable) version:** [open the timeline as a live HTML page](https://raw.githack.com/tigra/graphia/main/context/project-timeline.html) — clicking any milestone or slice bar opens its source artifact on GitHub. (GitHub blocks click-through navigation from mermaid diagrams embedded in markdown, so the HTML rendering is the workaround.)
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'background': '#2d2d2d', 'textColor': '#e6e6e6', 'sectionBkgColor': '#3c3c3c', 'altSectionBkgColor': '#333333', 'gridColor': '#555555', 'doneTaskBkgColor': '#6aa84f', 'doneTaskBorderColor': '#38761d', 'activeTaskBkgColor': '#e69138', 'activeTaskBorderColor': '#b45f06', 'excludeBkgColor': '#7d5630', 'taskTextColor': '#e6e6e6', 'taskTextLightColor': '#ffffff', 'taskTextDarkColor': '#ffffff', 'taskTextClickableColor': '#9ecbff', 'taskTextOutsideColor': '#e6e6e6'}}}%%
