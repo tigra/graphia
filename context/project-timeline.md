@@ -13,12 +13,15 @@ with CRs logging scope shifts and ADRs logging architectural decisions along the
 
 ## Timeline
 
+> **Interactive (clickable) version:** [open the timeline as a live HTML page](https://rawcdn.githack.com/tigra/graphia/main/context/project-timeline.html) — clicking any milestone or slice bar opens its source artifact on GitHub. (GitHub blocks click-through navigation from mermaid diagrams embedded in markdown, so the HTML rendering is the workaround.)
+
 ```mermaid
-%%{init: {'themeVariables': {'doneTaskBkgColor': '#6aa84f', 'doneTaskBorderColor': '#38761d', 'activeTaskBkgColor': '#e69138', 'activeTaskBorderColor': '#b45f06'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#2d2d2d', 'textColor': '#e6e6e6', 'sectionBkgColor': '#3c3c3c', 'altSectionBkgColor': '#333333', 'gridColor': '#555555', 'doneTaskBkgColor': '#6aa84f', 'doneTaskBorderColor': '#38761d', 'activeTaskBkgColor': '#e69138', 'activeTaskBorderColor': '#b45f06', 'excludeBkgColor': '#7d5630', 'taskTextColor': '#e6e6e6', 'taskTextLightColor': '#ffffff', 'taskTextDarkColor': '#ffffff', 'taskTextClickableColor': '#9ecbff', 'taskTextOutsideColor': '#e6e6e6'}}}%%
 gantt
     title Graphia — CRs, ADRs, and Spec Execution
     dateFormat YYYY-MM-DD
     axisFormat %b %d
+    excludes weekends
 
     section Phase 1 (v1.0)
     Spec 001 — Playable Skeleton · 9 slices             :milestone, done, sp1, 2026-04-29, 0d
@@ -64,6 +67,42 @@ gantt
     Slice 5 — Retire GRAPHIA_SEED from production        :done, sp5s5, 2026-05-24, 1d
     Spec 005 verified Completed                          :milestone, done, sp5v, after sp5s5, 0d
     Tutorial 005 published                               :milestone, done, t5, after sp5v, 0d
+
+    click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
+    click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
+    click m2 href "https://github.com/tigra/graphia/blob/main/context/change-requests/002-long-term-memory-for-cross-game-stats.md"
+    click a1 href "https://github.com/tigra/graphia/blob/main/context/adr/001-hosted-agentcore-with-local-mode.md"
+    click sp2 href "https://github.com/tigra/graphia/tree/main/context/spec/002-hosted-agentcore-deployment"
+    click a2 href "https://github.com/tigra/graphia/blob/main/context/adr/002-runtime-embedded-gateway-tool-handlers.md"
+    click a3 href "https://github.com/tigra/graphia/blob/main/context/adr/003-bedrock-nova-over-claude.md"
+    click a4 href "https://github.com/tigra/graphia/blob/main/context/adr/004-gateway-target-iam-auth-cli-workaround.md"
+    click a5 href "https://github.com/tigra/graphia/blob/main/context/adr/005-gateway-tools-via-lambda-targets.md"
+    click c3 href "https://github.com/tigra/graphia/blob/main/context/change-requests/003-observability-navigable-trace-trees.md"
+    click c4 href "https://github.com/tigra/graphia/blob/main/context/change-requests/004-revise-launch-error-handling-criteria.md"
+    click s13 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s3f href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s4 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s56 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s6f href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s7 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click fix href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s8 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s8f href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s9 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s10 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s11 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click sp2v href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/functional-spec.md"
+    click sp2t href "https://github.com/tigra/graphia/blob/main/context/tutorials/002-hosted-agentcore-deployment/tutorial.md"
+    click sp3 href "https://github.com/tigra/graphia/tree/main/context/spec/003-reliable-game-exit"
+    click sp4 href "https://github.com/tigra/graphia/tree/main/context/spec/004-robust-vote-input-validation"
+    click t4 href "https://github.com/tigra/graphia/blob/main/context/tutorials/004-robust-vote-input-validation/tutorial.md"
+    click pub href "https://github.com/tigra/graphia"
+    click sp5s12 href "https://github.com/tigra/graphia/tree/main/context/spec/005-play-as-role"
+    click a6 href "https://github.com/tigra/graphia/blob/main/context/adr/006-test-role-pinning-via-graphia-role.md"
+    click sp5s34 href "https://github.com/tigra/graphia/tree/main/context/spec/005-play-as-role"
+    click sp5s5 href "https://github.com/tigra/graphia/tree/main/context/spec/005-play-as-role"
+    click sp5v href "https://github.com/tigra/graphia/blob/main/context/spec/005-play-as-role/functional-spec.md"
+    click t5 href "https://github.com/tigra/graphia/blob/main/context/tutorials/005-play-as-role/tutorial.md"
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:

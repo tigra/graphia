@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Graphia — Project Timeline (interactive)</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif;
+    max-width: 1400px;
+    margin: 2em auto;
+    padding: 0 1em;
+    color: #1f2328;
+  }
+  h1 { font-size: 1.6em; margin-bottom: 0.2em; }
+  .subtitle { color: #57606a; margin-top: 0; }
+  .note { font-size: 0.9em; color: #57606a; background: #f6f8fa; padding: 0.6em 0.9em; border-left: 4px solid #d0d7de; margin: 1em 0; }
+  .mermaid { margin: 1.5em 0; }
+  a { color: #0969da; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  #mermaid-error { color: #cf222e; background: #ffebe9; padding: 0.6em 0.9em; border-left: 4px solid #cf222e; margin: 1em 0; display: none; font-family: monospace; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>Graphia — Project Timeline (interactive)</h1>
+<p class="subtitle">CRs, ADRs, and spec execution from 2026-04-29 → 2026-05-24.</p>
+<p class="note">
+  Click any milestone (diamond) or slice (bar) to open its source artifact on GitHub.
+  This page exists because GitHub's markdown renderer sandboxes mermaid diagrams in an iframe
+  that blocks click-through navigation; rendering the same diagram in a non-sandboxed HTML page
+  restores the click links.
+  Source markdown: <a href="https://github.com/tigra/graphia/blob/main/context/project-timeline.md">context/project-timeline.md</a>.
+</p>
+<div id="mermaid-error"></div>
+<pre class="mermaid">
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#2d2d2d', 'textColor': '#e6e6e6', 'sectionBkgColor': '#3c3c3c', 'altSectionBkgColor': '#333333', 'gridColor': '#555555', 'doneTaskBkgColor': '#6aa84f', 'doneTaskBorderColor': '#38761d', 'activeTaskBkgColor': '#e69138', 'activeTaskBorderColor': '#b45f06', 'excludeBkgColor': '#7d5630', 'taskTextColor': '#e6e6e6', 'taskTextLightColor': '#ffffff', 'taskTextDarkColor': '#ffffff', 'taskTextClickableColor': '#9ecbff', 'taskTextOutsideColor': '#e6e6e6'}}}%%
+gantt
+    title Graphia — CRs, ADRs, and Spec Execution
+    dateFormat YYYY-MM-DD
+    axisFormat %b %d
+    excludes weekends
+
+    section Phase 1 (v1.0)
+    Spec 001 — Playable Skeleton · 9 slices             :milestone, done, sp1, 2026-04-29, 0d
+
+    section Rescoping & setup
+    CR 001 — AgentCore + AI tool-use into v1.1           :milestone, done, m1, 2026-05-05, 0d
+    CR 002 — Long-term Memory in; tool-use to Phase 7    :milestone, done, m2, 2026-05-06, 0d
+    ADR 001 — Hosted Runtime + local mode preserved      :milestone, done, a1, 2026-05-07, 0d
+    Spec 002 authored · terraform-aws agent hired        :milestone, done, sp2, 2026-05-10, 0d
+
+    section Phase 2 (v1.1) — Spec 002
+    ADR 002 — Runtime-embedded Gateway tools             :milestone, crit, a2, 2026-05-12, 0d
+    ADR 003 — Bedrock Nova over Claude                   :milestone, done, a3, 2026-05-13, 0d
+    ADR 004 — Gateway IAM-auth workaround                :milestone, crit, a4, 2026-05-13, 0d
+    ADR 005 — Gateway tools via Lambda targets           :milestone, done, a5, 2026-05-14, 0d
+    CR 003 — Observability trace trees                   :milestone, done, c3, 2026-05-15, 0d
+    CR 004 — Revise launch criteria                      :milestone, done, c4, 2026-05-18, 0d
+    Slices 1-3 — Auth · Terraform · Runtime image        :done, s13, 2026-05-12, 1d
+    Slice 3 follow-on — Makefile task-runner             :done, s3f, 2026-05-12, 1d
+    Slice 4 — Full remote game · HITL over the wire      :done, s4, 2026-05-13, 1d
+    Slices 5-6 — Corner badge · AgentCore Memory diary   :done, s56, 2026-05-13, 1d
+    Slice 6 follow-on — DiaryStore factory fix           :done, s6f, 2026-05-13, 1d
+    Slice 7 — Gateway tools · ADR 002 to 005 pivot       :done, s7, 2026-05-13, 3d
+    Slice 7 follow-on — 5 remote-only bug fixes          :done, fix, 2026-05-15, 1d
+    Slice 8 — Observability + remote-mode failure modal  :done, s8, 2026-05-15, 1d
+    CR 003 follow-ons — OTEL recipe · IAM · Tx Search    :done, s8f, 2026-05-16, 1d
+    Slice 9 — local/remote equivalence tests             :done, s9, 2026-05-18, 1d
+    Slice 10 — destroy verification + README             :done, s10, 2026-05-18, 1d
+    Slice 11 — Diary round-trip · fallback · deploy hint :done, s11, 2026-05-20, 1d
+    Spec 002 verified Completed                          :milestone, done, sp2v, after s11, 0d
+    Tutorial 002 published                               :milestone, done, sp2t, after sp2v, 0d
+
+    section Polish & publish (v1.1.x)
+    Spec 003 — Reliable game exit (Esc quit modal)       :done, sp3, 2026-05-22, 1d
+    Spec 004 — Robust /vote validation + driver fix      :done, sp4, 2026-05-22, 1d
+    Tutorial 004 published                               :milestone, done, t4, after sp4, 0d
+    Published to GitHub (tigra/graphia) + README         :milestone, done, pub, 2026-05-22, 1d
+
+    section Spec 005 — Play-as-role + determinism posture
+    Slices 1-2 — GRAPHIA_ROLE feature + make passthrough :done, sp5s12, 2026-05-23, 1d
+    ADR 006 — Test role-pinning via GRAPHIA_ROLE         :milestone, done, a6, 2026-05-23, 0d
+    Slices 3-4 — Test-suite migration to GRAPHIA_ROLE    :done, sp5s34, 2026-05-23, 2d
+    Slice 5 — Retire GRAPHIA_SEED from production        :done, sp5s5, 2026-05-24, 1d
+    Spec 005 verified Completed                          :milestone, done, sp5v, after sp5s5, 0d
+    Tutorial 005 published                               :milestone, done, t5, after sp5v, 0d
+
+    click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
+    click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
+    click m2 href "https://github.com/tigra/graphia/blob/main/context/change-requests/002-long-term-memory-for-cross-game-stats.md"
+    click a1 href "https://github.com/tigra/graphia/blob/main/context/adr/001-hosted-agentcore-with-local-mode.md"
+    click sp2 href "https://github.com/tigra/graphia/tree/main/context/spec/002-hosted-agentcore-deployment"
+    click a2 href "https://github.com/tigra/graphia/blob/main/context/adr/002-runtime-embedded-gateway-tool-handlers.md"
+    click a3 href "https://github.com/tigra/graphia/blob/main/context/adr/003-bedrock-nova-over-claude.md"
+    click a4 href "https://github.com/tigra/graphia/blob/main/context/adr/004-gateway-target-iam-auth-cli-workaround.md"
+    click a5 href "https://github.com/tigra/graphia/blob/main/context/adr/005-gateway-tools-via-lambda-targets.md"
+    click c3 href "https://github.com/tigra/graphia/blob/main/context/change-requests/003-observability-navigable-trace-trees.md"
+    click c4 href "https://github.com/tigra/graphia/blob/main/context/change-requests/004-revise-launch-error-handling-criteria.md"
+    click s13 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s3f href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s4 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s56 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s6f href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s7 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click fix href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s8 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s8f href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s9 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s10 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click s11 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
+    click sp2v href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/functional-spec.md"
+    click sp2t href "https://github.com/tigra/graphia/blob/main/context/tutorials/002-hosted-agentcore-deployment/tutorial.md"
+    click sp3 href "https://github.com/tigra/graphia/tree/main/context/spec/003-reliable-game-exit"
+    click sp4 href "https://github.com/tigra/graphia/tree/main/context/spec/004-robust-vote-input-validation"
+    click t4 href "https://github.com/tigra/graphia/blob/main/context/tutorials/004-robust-vote-input-validation/tutorial.md"
+    click pub href "https://github.com/tigra/graphia"
+    click sp5s12 href "https://github.com/tigra/graphia/tree/main/context/spec/005-play-as-role"
+    click a6 href "https://github.com/tigra/graphia/blob/main/context/adr/006-test-role-pinning-via-graphia-role.md"
+    click sp5s34 href "https://github.com/tigra/graphia/tree/main/context/spec/005-play-as-role"
+    click sp5s5 href "https://github.com/tigra/graphia/tree/main/context/spec/005-play-as-role"
+    click sp5v href "https://github.com/tigra/graphia/blob/main/context/spec/005-play-as-role/functional-spec.md"
+    click t5 href "https://github.com/tigra/graphia/blob/main/context/tutorials/005-play-as-role/tutorial.md"
+</pre>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+  window.addEventListener('error', function (ev) {
+    var box = document.getElementById('mermaid-error');
+    box.style.display = 'block';
+    box.textContent = 'Page error: ' + ((ev.error && ev.error.stack) ? ev.error.stack : (ev.message || ev));
+  });
+  function bootMermaid() {
+    try {
+      if (typeof mermaid === 'undefined') {
+        throw new Error('mermaid global is not defined — script likely failed to load.');
+      }
+      mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
+      mermaid.run();
+    } catch (err) {
+      var box = document.getElementById('mermaid-error');
+      box.style.display = 'block';
+      box.textContent = 'Mermaid failed to render:\n\n' + ((err && err.stack) ? err.stack : String(err));
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootMermaid);
+  } else {
+    bootMermaid();
+  }
+</script>
+</body>
+</html>
