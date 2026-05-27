@@ -22,7 +22,7 @@
 </head>
 <body>
 <h1>Graphia — Project Timeline (interactive)</h1>
-<p class="subtitle">CRs, ADRs, and spec execution from 2026-04-29 → 2026-05-24.</p>
+<p class="subtitle">CRs, ADRs, and spec execution from 2026-04-29 → 2026-05-27.</p>
 <p class="note">
   Click any milestone (diamond) or slice (bar) to open its source artifact on GitHub.
   This page exists because GitHub's markdown renderer sandboxes mermaid diagrams in an iframe
@@ -84,6 +84,12 @@ gantt
     Spec 005 verified Completed                          :milestone, done, sp5v, after sp5s5, 0d
     Tutorial 005 published                               :milestone, done, t5, after sp5v, 0d
 
+    section Phase 3 (v1.2) — Spec 006 kickoff
+    Spec 006 — Cross-Game Career Stats drafted           :milestone, active, sp6, 2026-05-25, 0d
+    Spec 006 tech-considerations                         :milestone, active, sp6t, 2026-05-25, 0d
+    ADR 007 — Self-authored long-term Memory records     :milestone, active, a7, 2026-05-25, 0d
+    ADR 008 — Client-owned stats via running totals      :milestone, active, a8, 2026-05-25, 0d
+
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
     click m2 href "https://github.com/tigra/graphia/blob/main/context/change-requests/002-long-term-memory-for-cross-game-stats.md"
@@ -119,6 +125,10 @@ gantt
     click sp5s5 href "https://github.com/tigra/graphia/tree/main/context/spec/005-play-as-role"
     click sp5v href "https://github.com/tigra/graphia/blob/main/context/spec/005-play-as-role/functional-spec.md"
     click t5 href "https://github.com/tigra/graphia/blob/main/context/tutorials/005-play-as-role/tutorial.md"
+    click sp6 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/functional-spec.md"
+    click sp6t href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/technical-considerations.md"
+    click a7 href "https://github.com/tigra/graphia/blob/main/context/adr/007-cross-game-stats-as-long-term-memory-records.md"
+    click a8 href "https://github.com/tigra/graphia/blob/main/context/adr/008-client-owned-cross-game-stats.md"
 </pre>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
 <script>

@@ -3,7 +3,7 @@
 A high-level history of the project, reconstructed from `git log` and the
 `context/` artifacts: how scope changed (Change Requests), how the architecture
 was decided (Architecture Decision Records), and how the work was executed (specs
-broken into vertical slices). Covers **2026-04-29 → 2026-05-24**.
+broken into vertical slices). Covers **2026-04-29 → 2026-05-27**.
 
 Graphia is built with the **AWOS spec-driven workflow** — every increment flows
 `product → roadmap → architecture → spec → tech → tasks → implement → verify → tutorial`,
@@ -68,6 +68,12 @@ gantt
     Spec 005 verified Completed                          :milestone, done, sp5v, after sp5s5, 0d
     Tutorial 005 published                               :milestone, done, t5, after sp5v, 0d
 
+    section Phase 3 (v1.2) — Spec 006 kickoff
+    Spec 006 — Cross-Game Career Stats drafted           :milestone, active, sp6, 2026-05-25, 0d
+    Spec 006 tech-considerations                         :milestone, active, sp6t, 2026-05-25, 0d
+    ADR 007 — Self-authored long-term Memory records     :milestone, active, a7, 2026-05-25, 0d
+    ADR 008 — Client-owned stats via running totals      :milestone, active, a8, 2026-05-25, 0d
+
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
     click m2 href "https://github.com/tigra/graphia/blob/main/context/change-requests/002-long-term-memory-for-cross-game-stats.md"
@@ -103,6 +109,10 @@ gantt
     click sp5s5 href "https://github.com/tigra/graphia/tree/main/context/spec/005-play-as-role"
     click sp5v href "https://github.com/tigra/graphia/blob/main/context/spec/005-play-as-role/functional-spec.md"
     click t5 href "https://github.com/tigra/graphia/blob/main/context/tutorials/005-play-as-role/tutorial.md"
+    click sp6 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/functional-spec.md"
+    click sp6t href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/technical-considerations.md"
+    click a7 href "https://github.com/tigra/graphia/blob/main/context/adr/007-cross-game-stats-as-long-term-memory-records.md"
+    click a8 href "https://github.com/tigra/graphia/blob/main/context/adr/008-client-owned-cross-game-stats.md"
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:
@@ -111,11 +121,11 @@ gantt
 - **Shape = kind.** Diamonds are point events (CRs, ADRs, spec milestones); bars are executed slice work spanning real days.
 - **Sections = project phase.** ADRs are listed first within Phase 2, then the slice bars, so a superseded ADR (red diamond) is never mistaken for blocked work.
 
-The only red marks are the two superseded ADRs (002, 004); the CRs are green because — even though CR 001 and 002 carried `Proposed` for a while — the scope changes were fully executed and have now been formally Accepted. All bars and milestones are now green: every spec is Completed and every tutorial is published.
+The red marks are the two superseded ADRs (002, 004); the CRs are green because — even though CR 001 and 002 carried `Proposed` for a while — the scope changes were fully executed and have now been formally Accepted. The orange marks are the Phase 3 kickoff artifacts: Spec 006 is in `Draft` status and ADRs 007/008 are `Proposed` (pending review).
 
 ---
 
-## What was going on — five acts
+## What was going on — six acts
 
 ### Act 1 — Phase 1: a playable skeleton (2026-04-29)
 
@@ -289,6 +299,44 @@ regression test, and the cross-parametrize identity test refactored to a
 parsing-layer assertion that needs no RNG). Zero `GRAPHIA_SEED` hits anywhere in
 the repo's `*.py` files.
 
+### Act 6 — Phase 3 kickoff: cross-game career stats (2026-05-25)
+
+With Phase 2 closed and the determinism posture codified, Phase 3 — the project
+roadmap's headline cross-session AgentCore Memory demonstration — opened with
+a complete planning bundle:
+
+- **Spec 006 — Cross-Game Career Stats** (Draft): a persistent career layer for
+  the human player — counters for games played, wins by role, day-vote
+  initiations, day-ballots cast, and mafia-pointing attempted-vs-successful
+  kills, persisted across game sessions. The player sees a one-paragraph
+  career-summary greeting on launch, and a post-game stats panel with deltas
+  after the Moderator's recap. Abandoned-via-quit games tracked separately.
+- **ADR 007 — Cross-Game Stats as Self-Authored AgentCore Long-Term Memory
+  Records** (Proposed, pending review): picks the AgentCore Memory mechanism.
+  Argues against built-in `SEMANTIC` / `SUMMARIZATION` strategies (LLM
+  extraction can't preserve exact integer counters) and against short-term
+  events as a rolling aggregate (not the long-term-Memory feature CR 002
+  promised). Picks a self-managed (custom) strategy with self-authored records
+  via the batch-record APIs, read deterministically by namespace. Also
+  corrects a wording bug in architecture.md §2 and ADR 001 that conflated
+  "long-term scope" with "long-lived data".
+- **ADR 008 — Client-Owned Cross-Game Stats via Running-Total `GameState`
+  Counters** (Proposed, pending review): picks the ownership seam. Store I/O
+  lives in the UI/client layer (`ui/app.py`), not in graph nodes, keeping the
+  LangGraph topology mode-agnostic per ADR 001. Graph nodes maintain
+  running-total counters in `GameState` (replace semantics) so the latest
+  state snapshot is the authoritative end-of-game source — no need to
+  aggregate deltas from the `stream_mode="updates"` consumer.
+- **Architecture.md §2** received a small amendment to name ADR 007's
+  mechanism explicitly (self-managed long-term Memory strategy + batch-record
+  APIs + namespace-deterministic reads).
+
+The artifacts arrived as a parallel-session branch (`claude/status-check-O6zuB`)
+that was rebased onto current `main` and fast-forwarded in; both ADRs were
+downgraded from `Accepted` to `Proposed` to surface them for deliberate review
+before binding the implementation. Tasks breakdown (`/awos:tasks 006`) and
+slice-by-slice implementation remain ahead.
+
 ---
 
 ## The Slice 7 saga (2026-05-13 → 05-15)
@@ -384,6 +432,8 @@ coverage._
 | 004 | 2026-05-13 | Gateway target IAM-auth via CLI workaround              | Superseded by ADR 005 |
 | 005 | 2026-05-14 | Gateway tools via Lambda targets                        | Accepted              |
 | 006 | 2026-05-23 | Test role-pinning via `GRAPHIA_ROLE` (amended Slice 5)  | Proposed              |
+| 007 | 2026-05-25 | Cross-game stats as self-authored long-term Memory records | Proposed           |
+| 008 | 2026-05-25 | Client-owned cross-game stats via running-total `GameState` counters | Proposed |
 
 ## Specs & tutorials
 
@@ -394,6 +444,7 @@ coverage._
 | 003  | Reliable Game Exit Controls          | 3      | Completed |
 | 004  | Robust /vote Input Validation        | 4      | Completed |
 | 005  | Play-As-Role via Environment Variable | 5      | Completed |
+| 006  | Long-Term Cross-Game Memory & Career Stats | —     | Draft     |
 
 Per-increment learning tutorials live under `context/tutorials/`: `001`, the
 final `002` (depth-first walkthrough of all eleven Spec 002 slices), `004`
@@ -408,14 +459,14 @@ when no longer interesting.
 
 ## What's next
 
-**Phase 3 — Long-Term Cross-Game Memory & Career Stats** is the next big roadmap
-item, started via `/awos:spec`. It would introduce the cross-session AgentCore
-Memory pattern as a counterpoint to the per-game Memory pattern from Phase 2 —
-persisting career-stats summaries across game sessions (night-kill initiations
-and votes, day-execution initiations and votes, win rates by role, etc.), with
-a pre-game career-summary greeting and a post-game career-stats panel. From the
-AWOS chain that means: spec → tech → tasks → implement-by-slice → verify →
-tutorial, with CRs and ADRs logged along the way.
+**Phase 3 — Long-Term Cross-Game Memory & Career Stats** is in flight. Spec
+006's functional spec and technical-considerations are drafted; ADR 007
+(Memory mechanism: self-managed long-term records) and ADR 008 (ownership
+seam: client-owned store + running-total `GameState` counters) are both
+`Proposed` and awaiting deliberate review before binding the implementation.
+The immediate next step on the AWOS chain is `/awos:tasks 006` (after both
+ADRs are reviewed and either Accepted as drafted, amended, or replaced by a
+different design path).
 
 The repo is public at **github.com/tigra/graphia**, so future increments ship
 in the open.
