@@ -2,7 +2,7 @@
 
 - **ADR Number:** 008
 - **Title:** Client-Owned Cross-Game Stats via Running-Total GameState Counters
-- **Status:** Accepted
+- **Status:** Proposed
 - **Date:** 2026-05-24
 - **Authors:** Alexey Tigarev
 

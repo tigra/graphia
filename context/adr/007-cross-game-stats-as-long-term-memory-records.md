@@ -2,7 +2,7 @@
 
 - **ADR Number:** 007
 - **Title:** Cross-Game Stats as Self-Authored AgentCore Long-Term Memory Records
-- **Status:** Accepted
+- **Status:** Proposed
 - **Date:** 2026-05-24
 - **Authors:** Alexey Tigarev
 
