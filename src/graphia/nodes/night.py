@@ -222,11 +222,31 @@ def resolve_night_kill(state: GameState) -> dict:
     announcement = SystemMessage(
         content=f"During the night, {victim.name} was killed."
     )
-    return {
+
+    delta: dict = {
         "players": updated,
         "kill_log": [record],
         "messages": [announcement],
+        "night_victim_count": state.get("night_victim_count", 0) + 1,
     }
+
+    human_id = state.get("human_id")
+    human = players.get(human_id) if human_id else None
+    if (
+        human is not None
+        and human.is_alive
+        and human.role == "mafia"
+        and human_id in night_picks
+    ):
+        delta["human_night_attempts"] = (
+            state.get("human_night_attempts", 0) + 1
+        )
+        if night_picks[human_id] == victim_id:
+            delta["human_night_successes"] = (
+                state.get("human_night_successes", 0) + 1
+            )
+
+    return delta
 
 
 def night_close(

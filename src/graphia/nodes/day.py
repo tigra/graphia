@@ -616,6 +616,7 @@ def resolve_vote(state: GameState) -> dict:
             "players": players,
             "kill_log": [kill_record],
             "active_vote": None,
+            "execution_count": state.get("execution_count", 0) + 1,
         }
 
     # Vote failed: bump counter, reshuffle, reset turn index.
