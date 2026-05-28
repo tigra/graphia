@@ -23,6 +23,8 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import threading
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -40,9 +42,12 @@ __all__ = [
     "LocalFileStatsStore",
     "make_stats_store",
     "render_greeting",
+    "render_panel",
     "fold",
     "summarize",
 ]
+
+_ROLE_LABELS: dict[str, str] = {"mafia": "Mafia", "law_abiding": "Law-abiding"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -222,6 +227,30 @@ def _career_from_json(raw: Any) -> CareerStats:
     )
 
 
+def _career_to_json(stats: CareerStats) -> dict[str, Any]:
+    """Serialise a ``CareerStats`` to a plain JSON object.
+
+    The inverse of :func:`_career_from_json`: every field round-trips by the
+    same key, so ``_career_from_json(_career_to_json(s)) == s``. Dict fields
+    are copied so the returned payload never aliases the aggregate's maps.
+    """
+    return {
+        "games_total": stats.games_total,
+        "games_by_role": dict(stats.games_by_role),
+        "wins_by_role": dict(stats.wins_by_role),
+        "abandoned_by_role": dict(stats.abandoned_by_role),
+        "outcome_split": dict(stats.outcome_split),
+        "night_attempts": stats.night_attempts,
+        "night_successes": stats.night_successes,
+        "votes_called": stats.votes_called,
+        "ballots_cast": stats.ballots_cast,
+        "total_day_executions": stats.total_day_executions,
+        "total_night_victims": stats.total_night_victims,
+        "completed_games": stats.completed_games,
+        "sum_rounds_completed": stats.sum_rounds_completed,
+    }
+
+
 class LocalFileStatsStore:
     """File-backed career stats store for local mode.
 
@@ -233,6 +262,7 @@ class LocalFileStatsStore:
 
     def __init__(self, path: Path) -> None:
         self._path = path
+        self._lock = threading.Lock()
 
     def load(self) -> CareerStats:
         try:
@@ -259,10 +289,21 @@ class LocalFileStatsStore:
         return _career_from_json(raw)
 
     def record(self, summary: GameSummary) -> CareerStats:
-        raise NotImplementedError(
-            "LocalFileStatsStore.record is implemented in a later task "
-            "(depends on fold())."
-        )
+        """Fold ``summary`` into the persisted career and return the new total.
+
+        Read-modify-write under a lock so concurrent records don't interleave.
+        The write is atomic: the new JSON lands in a sibling temp file, then
+        :func:`os.replace` swaps it into place — a crash mid-write leaves the
+        previous file intact. The parent dir is created if missing.
+        """
+        with self._lock:
+            new = fold(self.load(), summary)
+            self._path.parent.mkdir(parents=True, exist_ok=True)
+            payload = json.dumps(_career_to_json(new), indent=2)
+            tmp = self._path.with_name(f"{self._path.name}.{os.getpid()}.tmp")
+            tmp.write_text(payload, encoding="utf-8")
+            os.replace(tmp, self._path)
+            return new
 
 
 def make_stats_store(config: GraphiaConfig) -> StatsStore:
@@ -275,15 +316,59 @@ def make_stats_store(config: GraphiaConfig) -> StatsStore:
     return LocalFileStatsStore(config.stats_file)
 
 
+def _win_rate(stats: CareerStats, role: str) -> str:
+    """Win rate in ``role`` as a percentage, or ``"—"`` if none completed.
+
+    The denominator is completed games in the role
+    (``role_games - role_abandoned``); a zero denominator means the player has
+    no win/loss-resolved game in that role yet, which reads as ``"—"`` rather
+    than a misleading ``0%`` (spec §2.4).
+    """
+    completed = stats.role_games(role) - stats.role_abandoned(role)
+    if completed <= 0:
+        return "—"
+    return f"{round(100 * stats.role_wins(role) / completed)}%"
+
+
 def render_greeting(stats: CareerStats) -> str:
     """Produce the launch greeting summarising the player's career.
 
-    Returns the first-run welcome line when no games have been recorded.
-    The non-empty branch is intentionally minimal here — richer formatting
-    (win-rate-by-role, streaks, and the like) is a later task.
+    Returns the first-run welcome line when no games have been recorded;
+    otherwise a one-paragraph cumulative summary of total games played and the
+    win rate broken down by role (as Mafia / as Law-abiding). A role with no
+    completed games shows ``"—"`` rather than ``0%`` (spec §2.2, §2.4).
     """
     if stats.games_total == 0:
         return "Welcome — this is your first game, so there's no history yet."
     games = stats.games_total
     plural = "game" if games == 1 else "games"
-    return f"Welcome back — you've played {games} {plural} so far."
+    mafia = _win_rate(stats, "mafia")
+    law = _win_rate(stats, "law_abiding")
+    return (
+        f"Welcome back — you've played {games} {plural} so far. "
+        f"Win rate as Mafia: {mafia}; as Law-abiding: {law}."
+    )
+
+
+def render_panel(stats: CareerStats, last: GameSummary) -> str:
+    """Produce the post-game career panel: this game's delta plus the totals.
+
+    Shown after the Moderator recap on a win/loss. ``stats`` is the *updated*
+    aggregate (i.e. already includes ``last``); the panel reports the role the
+    human played and the outcome of the just-finished game, then the new
+    cumulative totals with the contribution this game made marked ``+1`` —
+    total games, and win rate by role (spec §2.3, §2.4). This slice tracks
+    only games and win-rate-by-role; the action/night counters arrive later.
+    """
+    role_label = _ROLE_LABELS.get(last.human_role, last.human_role)
+    result = "won" if last.human_won else "did not win"
+    games = stats.games_total
+    plural = "game" if games == 1 else "games"
+    mafia = _win_rate(stats, "mafia")
+    law = _win_rate(stats, "law_abiding")
+    return (
+        "Career update — "
+        f"This game: you played as {role_label} and {result}.\n"
+        f"Games played (career): {games} {plural} (+1 this game).\n"
+        f"Win rate by role (career) — as Mafia: {mafia}; as Law-abiding: {law}."
+    )

@@ -17,7 +17,7 @@
 
 - [ ] **Slice 2: Record win/loss by role; greeting + post-game panel**
   - [x] `fold(aggregate, summary)` for `games_total`, `games_by_role`, `wins_by_role`, `completed_games`, `sum_rounds_completed`, `outcome_split` (law_abiding_win / mafia_win / draw); `summarize(latest_state, human_id, outcome)` extracting role / outcome / `human_won` / rounds. **[Agent: python-backend]**
-  - [ ] `LocalFileStatsStore.record()` — read-modify-write: `fold` then atomic temp-file + `os.replace` under `threading.Lock`, parent `mkdir(parents=True, exist_ok=True)`; full `render_greeting` (games + win rate by role, `"—"` when a role has no completed games) and `render_panel` (cumulative + per-game deltas). **[Agent: python-backend]**
+  - [x] `LocalFileStatsStore.record()` — read-modify-write: `fold` then atomic temp-file + `os.replace` under `threading.Lock`, parent `mkdir(parents=True, exist_ok=True)`; full `render_greeting` (games + win rate by role, `"—"` when a role has no completed games) and `render_panel` (cumulative + per-game deltas). **[Agent: python-backend]**
   - [ ] `ui/app.py`: outcome mapping (`human_won = winner == players[human_id].role`; `outcome ∈ {law_abiding_win, mafia_win, draw}`); after `drive_graph(...)` returns → `summarize`→`record`→`render_panel` to `#public-log` before the existing "Game over." banner. **[Agent: textual-tui]**
   - [ ] Tests: `fold` role splits + win-rate denominator + `draw`-is-not-a-win; `summarize` from a crafted `_latest_state`; local store round-trip / accumulation / atomic-write; `App.run_test()` panel after a forced end + non-empty greeting on the next launch. Run `uv run pytest`. **[Agent: testing]**
 
