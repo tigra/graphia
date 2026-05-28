@@ -35,7 +35,7 @@
 
 - [ ] **Slice 5: Abandoned-game recording (Esc-confirmed quit)**
   - [x] `fold` handles `"abandoned"`: `+1` to `games_total` / `games_by_role` / `abandoned_by_role` / `outcome_split.abandoned`; excluded from `completed_games` / `sum_rounds_completed` / the win-rate denominator. **[Agent: python-backend]**
-  - [ ] `ui/app.py` `_on_quit_decision`: after the confirm guard and **before** `call_after_refresh(self.exit)` / `_arm_hard_exit_fallback()`, if a game is in progress (started, not already `_game_over` / `phase == "end"`) record an `"abandoned"` summary — best-effort with a short timeout (local write is instant; remote write dropped if it can't beat the hard-exit fallback); double-record guard on the end screen; `Ctrl+C` (`action_abort`) untouched. **[Agent: textual-tui]**
+  - [x] `ui/app.py` `_on_quit_decision`: after the confirm guard and **before** `call_after_refresh(self.exit)` / `_arm_hard_exit_fallback()`, if a game is in progress (started, not already `_game_over` / `phase == "end"`) record an `"abandoned"` summary — best-effort with a short timeout (local write is instant; remote write dropped if it can't beat the hard-exit fallback); double-record guard on the end screen; `Ctrl+C` (`action_abort`) untouched. **[Agent: textual-tui]**
   - [ ] Tests: `fold` abandoned (counted in games / outcome-split, excluded from win-rate / avg-length); `App.run_test()` Esc-confirm records `outcome="abandoned"`, `Ctrl+C` records nothing, Esc on the end screen does not double-record. Run `uv run pytest`. **[Agent: testing]**
 
 - [ ] **Slice 6: AgentCore long-term-record remote backend + equivalence**

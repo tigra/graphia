@@ -131,6 +131,11 @@ class GraphiaApp(App[None]):
         # on_key handler is a no-op so normal in-game bindings (q, ctrl+c)
         # still work. Once True, any keypress exits.
         self._game_over: bool = False
+        # Flips to True once this game has been folded into the career — by
+        # either the normal-end path (_record_career) or the abandoned-quit
+        # path (_on_quit_decision). Guards against a double-record when the
+        # player presses Esc after a normal end already recorded the game.
+        self._career_recorded: bool = False
         # Flips to True the first time we observe the human's PlayerState
         # flipped to is_alive=False. Spectators still see the public log
         # and end-game screen but are never prompted and no longer receive
@@ -408,7 +413,7 @@ class GraphiaApp(App[None]):
         timer.daemon = True
         timer.start()
 
-    def _on_quit_decision(self, confirm: bool | None) -> None:
+    async def _on_quit_decision(self, confirm: bool | None) -> None:
         """Dismiss callback for :class:`QuitModal` — exit only on ``True``.
 
         ``False`` (player picked **No** / pressed ``n`` / pressed Esc) and
@@ -438,6 +443,28 @@ class GraphiaApp(App[None]):
         """
         if not confirm:
             return
+        # Record an abandoned game only if one is genuinely in progress: it has
+        # started (human_id observed from the graph stream), is not already at
+        # END (_game_over), and has not already been folded into the career.
+        # Esc on the end screen, or a second Esc after a normal end, records
+        # nothing. Best-effort under a short timeout so a slow remote Memory
+        # write can never outlive the hard-exit fallback armed below — if it
+        # can't finish in time we silently drop it (same net result as Ctrl+C).
+        if (
+            not self._game_over
+            and not self._career_recorded
+            and self._human_id is not None
+            and self._stats_store is not None
+        ):
+            self._career_recorded = True
+            summary = summarize(self._latest_state, self._human_id, "abandoned")
+            try:
+                await asyncio.wait_for(
+                    asyncio.to_thread(self._stats_store.record, summary),
+                    timeout=0.4,
+                )
+            except Exception:  # noqa: BLE001
+                pass
         pending = self._pending_resume
         if pending is not None and not pending.done():
             pending.cancel()
@@ -531,12 +558,15 @@ class GraphiaApp(App[None]):
         launch greeting — so it bypasses the ``private_to`` filter and lands
         just before the "Game over." banner.
         """
+        if self._career_recorded:
+            return
         winner = self._latest_state.get("winner")
         outcome = self._OUTCOME_BY_WINNER.get(winner) if isinstance(winner, str) else None
         if outcome is None or self._human_id is None or self._stats_store is None:
             return
         summary = summarize(self._latest_state, self._human_id, outcome)
         new = self._stats_store.record(summary)
+        self._career_recorded = True
         log.write(Text(render_panel(new, summary)))
 
     def _show_failure_modal(self, exc: BaseException) -> None:
