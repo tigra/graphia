@@ -38,6 +38,8 @@ def collect_name(state: GameState) -> dict:
         "players": {player_id: human},
         "phase": "setup",
         "cycle": 1,
+        "human_votes_called": 0,
+        "human_ballots_cast": 0,
         "messages": [SystemMessage(content=f"A new game begins. Welcome, {name}.")],
     }
 

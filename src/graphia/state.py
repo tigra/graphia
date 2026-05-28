@@ -44,6 +44,8 @@ class GameState(TypedDict, total=False):
     day_turn_index: int
     day_rounds: int
     day_votes_called: int
+    human_votes_called: int
+    human_ballots_cast: int
     active_vote: ActiveVote | None
     # Carries a validation error (e.g. a bad ``/vote`` target) forward to the
     # NEXT ``day_turn`` execution so the human can be re-prompted with the hint
