@@ -119,12 +119,15 @@ def fold(aggregate: CareerStats, summary: GameSummary) -> CareerStats:
 
     Returns a NEW :class:`CareerStats` — the input is never mutated and its
     dict fields are copied before update. This slice folds the outcome/role
-    dimensions plus the human's lifetime day-action counters
-    (``votes_called`` / ``ballots_cast``, which accumulate for every recorded
-    game); the ``"abandoned"`` branch and the game-wide night/execution totals
-    are deferred to later slices and pass through untouched. A ``draw`` is a
-    completed game (counted in ``completed_games`` / ``sum_rounds_completed``)
-    but not a win.
+    dimensions, the human's lifetime day-action counters (``votes_called`` /
+    ``ballots_cast``) and night-kill counters (``night_attempts`` /
+    ``night_successes``), plus the game-wide totals (``total_day_executions`` /
+    ``total_night_victims``), all of which accumulate for every recorded game;
+    the ``"abandoned"`` branch is deferred to a later slice and passes through
+    untouched. A ``draw`` is a completed game (counted in ``completed_games`` /
+    ``sum_rounds_completed``) but not a win. Average game length is *derived*
+    from ``sum_rounds_completed`` / ``completed_games`` at render time, not
+    stored here.
     """
     games_by_role = dict(aggregate.games_by_role)
     wins_by_role = dict(aggregate.wins_by_role)
@@ -143,6 +146,10 @@ def fold(aggregate: CareerStats, summary: GameSummary) -> CareerStats:
         outcome_split=outcome_split,
         votes_called=aggregate.votes_called + summary.votes_called,
         ballots_cast=aggregate.ballots_cast + summary.ballots_cast,
+        night_attempts=aggregate.night_attempts + summary.night_attempts,
+        night_successes=aggregate.night_successes + summary.night_successes,
+        total_day_executions=aggregate.total_day_executions + summary.day_executions,
+        total_night_victims=aggregate.total_night_victims + summary.night_victims,
         completed_games=aggregate.completed_games + 1,
         sum_rounds_completed=aggregate.sum_rounds_completed + summary.rounds,
     )
@@ -334,14 +341,29 @@ def _win_rate(stats: CareerStats, role: str) -> str:
     return f"{round(100 * stats.role_wins(role) / completed)}%"
 
 
+def _avg_game_length(stats: CareerStats) -> str:
+    """Average rounds over completed games, or ``"—"`` if none (spec §2.5).
+
+    Derived from ``sum_rounds_completed`` / ``completed_games`` (abandoned
+    games never enter either total, so they are excluded automatically).
+    """
+    if stats.completed_games <= 0:
+        return "—"
+    return f"{stats.sum_rounds_completed / stats.completed_games:.1f}"
+
+
 def render_greeting(stats: CareerStats) -> str:
     """Produce the launch greeting summarising the player's career.
 
     Returns the first-run welcome line when no games have been recorded;
-    otherwise a one-paragraph cumulative summary of total games played, the
-    win rate broken down by role (as Mafia / as Law-abiding), and the number
-    of day-votes the player has initiated. A role with no completed games
-    shows ``"—"`` rather than ``0%`` (spec §2.2, §2.4).
+    otherwise a one-paragraph cumulative summary. The "you" sentence covers
+    the player's personal numbers — total games played, win rate by role (as
+    Mafia / as Law-abiding), night kills attempted vs. successful, and
+    day-votes initiated; a separate "Across all games" sentence carries the
+    game-wide totals (day executions, night victims, average game length) so
+    the player can tell personal figures from world-wide ones (spec §2.2,
+    §2.4, §2.5). A role with no completed games shows ``"—"`` rather than
+    ``0%``.
     """
     if stats.games_total == 0:
         return "Welcome — this is your first game, so there's no history yet."
@@ -354,7 +376,12 @@ def render_greeting(stats: CareerStats) -> str:
     return (
         f"Welcome back — you've played {games} {plural} so far. "
         f"Win rate as Mafia: {mafia}; as Law-abiding: {law}. "
-        f"You've initiated {votes} day-{votes_plural}."
+        f"Your night kills: {stats.night_successes} successful "
+        f"of {stats.night_attempts} attempted. "
+        f"You've initiated {votes} day-{votes_plural}. "
+        f"Across all games: {stats.total_day_executions} day executions, "
+        f"{stats.total_night_victims} night victims, "
+        f"average game length {_avg_game_length(stats)} rounds."
     )
 
 
@@ -364,11 +391,13 @@ def render_panel(stats: CareerStats, last: GameSummary) -> str:
     Shown after the Moderator recap on a win/loss. ``stats`` is the *updated*
     aggregate (i.e. already includes ``last``); the panel reports the role the
     human played and the outcome of the just-finished game, then the new
-    cumulative totals with the contribution this game made marked as a delta —
-    total games, win rate by role, and the player's day-action counters
-    (day-votes called / ballots cast) with this game's delta beside each
-    career total (spec §2.3, §2.4). This slice adds the day-action counters;
-    the night/execution counters arrive later.
+    cumulative totals with the contribution this game made marked as a delta.
+    "You (career)" lines carry the player's personal counters — win rate by
+    role, day-votes called / ballots cast, and night kills attempted vs.
+    successful; "All games (career)" lines carry the game-wide totals — day
+    executions, night victims, and average game length — so personal and
+    world-wide figures stay clearly separable (spec §2.3, §2.4, §2.5). Each
+    counter shows this game's delta beside the career total.
     """
     role_label = _ROLE_LABELS.get(last.human_role, last.human_role)
     result = "won" if last.human_won else "did not win"
@@ -382,9 +411,17 @@ def render_panel(stats: CareerStats, last: GameSummary) -> str:
         "Career update — "
         f"This game: you played as {role_label} and {result}.\n"
         f"Games played (career): {games} {plural} (+1 this game).\n"
-        f"Win rate by role (career) — as Mafia: {mafia}; as Law-abiding: {law}.\n"
-        f"Day-{votes_plural} you called: +{last.votes_called} this game "
+        f"You (career) — win rate as Mafia: {mafia}; as Law-abiding: {law}.\n"
+        f"You (career) — day-{votes_plural} called: +{last.votes_called} this game "
         f"(career total: {stats.votes_called}).\n"
-        f"Day-{ballots_plural} you cast: +{last.ballots_cast} this game "
-        f"(career total: {stats.ballots_cast})."
+        f"You (career) — day-{ballots_plural} cast: +{last.ballots_cast} this game "
+        f"(career total: {stats.ballots_cast}).\n"
+        f"You (career) — night kills: +{last.night_successes} successful / "
+        f"+{last.night_attempts} attempted this game "
+        f"(career total: {stats.night_successes}/{stats.night_attempts}).\n"
+        f"All games (career) — day executions: +{last.day_executions} this game "
+        f"(career total: {stats.total_day_executions}).\n"
+        f"All games (career) — night victims: +{last.night_victims} this game "
+        f"(career total: {stats.total_night_victims}).\n"
+        f"All games (career) — average game length: {_avg_game_length(stats)} rounds."
     )

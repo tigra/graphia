@@ -501,20 +501,37 @@ def test_render_panel_shows_vote_and_ballot_deltas() -> None:
 
 
 def test_render_panel_singular_plural_vote_ballot_labels() -> None:
-    """One vote/ballot uses the singular ``Day-vote`` / ``Day-ballot`` labels."""
-    last = _summary(
+    """One vote/ballot uses singular noun labels; two or more pluralize them.
+
+    The "You (career)" vote/ballot lines pluralize the noun on the count: a
+    single vote/ballot reads ``day-vote called`` / ``day-ballot cast``, while
+    two or more read ``day-votes called`` / ``day-ballots cast``.
+    """
+    # Singular: exactly one vote / one ballot keeps the noun singular.
+    singular = _summary(
         human_role="mafia",
         outcome="mafia_win",
         human_won=True,
         votes_called=1,
         ballots_cast=1,
     )
-    stats = fold(CareerStats(), last)
+    panel_singular = render_panel(fold(CareerStats(), singular), singular)
 
-    panel = render_panel(stats, last)
+    assert "You (career) — day-vote called: +1 this game" in panel_singular
+    assert "You (career) — day-ballot cast: +1 this game" in panel_singular
 
-    assert "Day-vote you called: +1 this game" in panel
-    assert "Day-ballot you cast: +1 this game" in panel
+    # Plural: two votes / two ballots pluralize the noun.
+    plural = _summary(
+        human_role="mafia",
+        outcome="mafia_win",
+        human_won=True,
+        votes_called=2,
+        ballots_cast=2,
+    )
+    panel_plural = render_panel(fold(CareerStats(), plural), plural)
+
+    assert "You (career) — day-votes called: +2 this game" in panel_plural
+    assert "You (career) — day-ballots cast: +2 this game" in panel_plural
 
 
 # --------------------------------------------------------------------------
