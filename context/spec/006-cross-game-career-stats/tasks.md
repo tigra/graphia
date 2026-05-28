@@ -24,7 +24,7 @@
 - [ ] **Slice 3: Day-action counters (votes called, ballots cast)**
   - [x] `state.py`: add `human_votes_called`, `human_ballots_cast` (`int`, replace semantics, initialized to `0` in the setup node). **[Agent: langgraph-agentic]**
   - [x] `nodes/day.py`: increment `human_votes_called` in `_begin_vote` when `active_vote.initiator == human_id`; `human_ballots_cast` in the `collect_votes` human branch (each reads current value, returns current+1). **[Agent: langgraph-agentic]**
-  - [ ] Extend `GameSummary` / `CareerStats` + `fold` + `summarize` to carry `votes_called` / `ballots_cast`; add the greeting/panel lines. **[Agent: python-backend]**
+  - [x] Extend `GameSummary` / `CareerStats` + `fold` + `summarize` to carry `votes_called` / `ballots_cast`; add the greeting/panel lines. **[Agent: python-backend]**
   - [ ] Tests: node counter tests (human as vote initiator / ballot caster) with crafted state + existing pointing fixtures; extended `fold` / `summarize`; panel delta line. Run `uv run pytest`. **[Agent: testing]**
 
 - [ ] **Slice 4: Night-kill counters + game-wide totals**

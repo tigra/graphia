@@ -119,10 +119,12 @@ def fold(aggregate: CareerStats, summary: GameSummary) -> CareerStats:
 
     Returns a NEW :class:`CareerStats` — the input is never mutated and its
     dict fields are copied before update. This slice folds the outcome/role
-    dimensions only; the ``"abandoned"`` branch and the lifetime/game-wide
-    action totals are deferred to later slices and pass through untouched. A
-    ``draw`` is a completed game (counted in ``completed_games`` /
-    ``sum_rounds_completed``) but not a win.
+    dimensions plus the human's lifetime day-action counters
+    (``votes_called`` / ``ballots_cast``, which accumulate for every recorded
+    game); the ``"abandoned"`` branch and the game-wide night/execution totals
+    are deferred to later slices and pass through untouched. A ``draw`` is a
+    completed game (counted in ``completed_games`` / ``sum_rounds_completed``)
+    but not a win.
     """
     games_by_role = dict(aggregate.games_by_role)
     wins_by_role = dict(aggregate.wins_by_role)
@@ -139,6 +141,8 @@ def fold(aggregate: CareerStats, summary: GameSummary) -> CareerStats:
         games_by_role=games_by_role,
         wins_by_role=wins_by_role,
         outcome_split=outcome_split,
+        votes_called=aggregate.votes_called + summary.votes_called,
+        ballots_cast=aggregate.ballots_cast + summary.ballots_cast,
         completed_games=aggregate.completed_games + 1,
         sum_rounds_completed=aggregate.sum_rounds_completed + summary.rounds,
     )
@@ -334,9 +338,10 @@ def render_greeting(stats: CareerStats) -> str:
     """Produce the launch greeting summarising the player's career.
 
     Returns the first-run welcome line when no games have been recorded;
-    otherwise a one-paragraph cumulative summary of total games played and the
-    win rate broken down by role (as Mafia / as Law-abiding). A role with no
-    completed games shows ``"—"`` rather than ``0%`` (spec §2.2, §2.4).
+    otherwise a one-paragraph cumulative summary of total games played, the
+    win rate broken down by role (as Mafia / as Law-abiding), and the number
+    of day-votes the player has initiated. A role with no completed games
+    shows ``"—"`` rather than ``0%`` (spec §2.2, §2.4).
     """
     if stats.games_total == 0:
         return "Welcome — this is your first game, so there's no history yet."
@@ -344,9 +349,12 @@ def render_greeting(stats: CareerStats) -> str:
     plural = "game" if games == 1 else "games"
     mafia = _win_rate(stats, "mafia")
     law = _win_rate(stats, "law_abiding")
+    votes = stats.votes_called
+    votes_plural = "vote" if votes == 1 else "votes"
     return (
         f"Welcome back — you've played {games} {plural} so far. "
-        f"Win rate as Mafia: {mafia}; as Law-abiding: {law}."
+        f"Win rate as Mafia: {mafia}; as Law-abiding: {law}. "
+        f"You've initiated {votes} day-{votes_plural}."
     )
 
 
@@ -356,9 +364,11 @@ def render_panel(stats: CareerStats, last: GameSummary) -> str:
     Shown after the Moderator recap on a win/loss. ``stats`` is the *updated*
     aggregate (i.e. already includes ``last``); the panel reports the role the
     human played and the outcome of the just-finished game, then the new
-    cumulative totals with the contribution this game made marked ``+1`` —
-    total games, and win rate by role (spec §2.3, §2.4). This slice tracks
-    only games and win-rate-by-role; the action/night counters arrive later.
+    cumulative totals with the contribution this game made marked as a delta —
+    total games, win rate by role, and the player's day-action counters
+    (day-votes called / ballots cast) with this game's delta beside each
+    career total (spec §2.3, §2.4). This slice adds the day-action counters;
+    the night/execution counters arrive later.
     """
     role_label = _ROLE_LABELS.get(last.human_role, last.human_role)
     result = "won" if last.human_won else "did not win"
@@ -366,9 +376,15 @@ def render_panel(stats: CareerStats, last: GameSummary) -> str:
     plural = "game" if games == 1 else "games"
     mafia = _win_rate(stats, "mafia")
     law = _win_rate(stats, "law_abiding")
+    votes_plural = "vote" if last.votes_called == 1 else "votes"
+    ballots_plural = "ballot" if last.ballots_cast == 1 else "ballots"
     return (
         "Career update — "
         f"This game: you played as {role_label} and {result}.\n"
         f"Games played (career): {games} {plural} (+1 this game).\n"
-        f"Win rate by role (career) — as Mafia: {mafia}; as Law-abiding: {law}."
+        f"Win rate by role (career) — as Mafia: {mafia}; as Law-abiding: {law}.\n"
+        f"Day-{votes_plural} you called: +{last.votes_called} this game "
+        f"(career total: {stats.votes_called}).\n"
+        f"Day-{ballots_plural} you cast: +{last.ballots_cast} this game "
+        f"(career total: {stats.ballots_cast})."
     )
