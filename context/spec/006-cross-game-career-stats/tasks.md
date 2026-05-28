@@ -8,12 +8,12 @@
 
 ---
 
-- [ ] **Slice 1: Pre-game greeting (first-run welcome) + local store seam**
+- [x] **Slice 1: Pre-game greeting (first-run welcome) + local store seam**
   - [x] Add `src/graphia/stats_store.py` scaffold: frozen `CareerStats` (zeroed default) + `GameSummary` dataclasses, `StatsStore` Protocol (`load`/`record`), and `render_greeting` (first-run welcome line when `games_total == 0`). **[Agent: python-backend]**
   - [x] Implement `LocalFileStatsStore.load()` (zeroed `CareerStats` on missing/unparseable file, logged, never raises) + `make_stats_store(config)` returning the local store. **[Agent: python-backend]**
   - [x] Add `config.stats_file` (`GRAPHIA_STATS_FILE`, default `./.graphia/career.json`), derived like `log_file`/`checkpoint_dir`. **[Agent: python-backend]**
   - [x] Wire the store seam in `ui/app.py`: build via `make_stats_store(self.config)` in `_drive`, injectable through `GraphiaApp.__init__` for tests; render `render_greeting(store.load())` to `#public-log` before gameplay (bypasses the `private_to` filter). **[Agent: textual-tui]**
-  - [ ] Tests: `render_greeting` first-run welcome; `LocalFileStatsStore.load()` missing→zeroed; `App.run_test()` greeting shows the welcome line on first launch. Run `uv run pytest`. **[Agent: testing]**
+  - [x] Tests: `render_greeting` first-run welcome; `LocalFileStatsStore.load()` missing→zeroed; `App.run_test()` greeting shows the welcome line on first launch. Run `uv run pytest`. **[Agent: testing]**
 
 - [ ] **Slice 2: Record win/loss by role; greeting + post-game panel**
   - [ ] `fold(aggregate, summary)` for `games_total`, `games_by_role`, `wins_by_role`, `completed_games`, `sum_rounds_completed`, `outcome_split` (law_abiding_win / mafia_win / draw); `summarize(latest_state, human_id, outcome)` extracting role / outcome / `human_won` / rounds. **[Agent: python-backend]**
