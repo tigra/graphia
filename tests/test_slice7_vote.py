@@ -954,3 +954,208 @@ def test_human_slash_vote_ambiguous_re_interrupts(
         f"VOTE_INITIATE for Bianca missing; messages: "
         f"{_system_contents(graph, run_config)!r}"
     )
+
+
+# --------------------------------------------------------------------------
+# Spec 006, Slice 3 — human day-action counters (votes called / ballots cast)
+#
+# These two tests reuse the drive-until-human-day_turn + resume harness above
+# to prove the GameState counters that ``stats_store.summarize`` reads are
+# populated by the day nodes:
+#
+# - ``day_turn`` bumps ``human_votes_called`` on the human's successful
+#   ``/vote <target>`` (human path only).
+# - ``collect_votes`` bumps ``human_ballots_cast`` when the human casts a
+#   yes/no ballot (human branch only).
+#
+# The pure-fold/summarize/render-panel coverage lives in test_career_stats.py;
+# here we only assert the graph actually writes the keys.
+# --------------------------------------------------------------------------
+
+
+def _drive_to_human_day_turn(
+    graph,
+    run_config,
+    fake,
+) -> None:
+    """Advance from the name interrupt to the first HUMAN day_turn interrupt.
+
+    Mirrors the setup shared by tests 4 and 5: drive past the name interrupt
+    with a live-state Night-1 Pointing fake (so ``mafia_pointing`` resolves a
+    real target), pre-stock the Day queues with generic speaks + Yes ballots,
+    then ``_advance_until`` the graph pauses on the human's own day_turn.
+    """
+    _drive(graph, run_config, {"messages": []})
+
+    original_invoke = fake._invoke
+
+    def _invoke_with_live_pointing(schema, messages):
+        if schema is Pointing:
+            la_id = _alive_law_abiding_ai_id(graph, run_config)
+            return Pointing(target_id=la_id)
+        return original_invoke(schema, messages)
+
+    fake._invoke = _invoke_with_live_pointing  # type: ignore[method-assign]
+
+    _drive(graph, run_config, Command(resume=HUMAN_NAME))
+
+    # AIs that go before the human in the shuffled order just speak.
+    fake._queues[DayAction] = [
+        DayAction(kind="speak", text=f"AI speaks ({i}).") for i in range(40)
+    ]
+    fake._last.pop(DayAction, None)
+    # AI ballots: Yes (the vote outcome is irrelevant to the counter tests).
+    fake._queues[Ballot] = [Ballot(yes=True)] * 20
+    fake._last.pop(Ballot, None)
+
+    def _is_human_day_turn() -> bool:
+        iv = _collect_interrupt(graph, run_config)
+        return bool(
+            iv
+            and iv.get("kind") == "day_turn"
+            and iv.get("speaker_name") == HUMAN_NAME
+        )
+
+    def _respond_speak(iv: dict[str, Any]) -> str:
+        kind = iv.get("kind")
+        if kind == "day_turn":
+            return "..."
+        if kind == "vote":
+            return "yes"
+        return ""
+
+    _advance_until(
+        graph,
+        run_config,
+        stop=_is_human_day_turn,
+        interrupt_responder=_respond_speak,
+        budget=100,
+    )
+
+    iv = _collect_interrupt(graph, run_config)
+    assert iv is not None and iv.get("speaker_name") == HUMAN_NAME, (
+        f"expected human day_turn interrupt, got {iv!r}"
+    )
+
+
+def test_human_vote_bumps_human_votes_called(
+    env: Path,
+    fake_haiku,
+    fake_sonnet,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A human's successful ``/vote`` increments ``human_votes_called`` to 1.
+
+    Drives to the human's day_turn (counter still 0), resumes with a valid
+    ``/vote <prefix>`` against a unique alive Mafia AI, and asserts the
+    counter ticked to exactly 1 in the resulting graph state.
+    """
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+    fake_haiku(AI_NAMES)
+    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+
+    config = load_config()
+    graph, thread_id = build_graph(config)
+    run_config = make_run_config(thread_id)
+
+    _drive_to_human_day_turn(graph, run_config, fake)
+
+    # The counter must still be unset/0 before the human's vote.
+    pre = graph.get_state(run_config).values
+    assert pre.get("human_votes_called", 0) == 0, (
+        f"human_votes_called should start at 0, got "
+        f"{pre.get('human_votes_called')!r}"
+    )
+
+    # Pick a unique-prefix alive Mafia AI as the vote target.
+    mafia_id = _alive_mafia_ai_id(graph, run_config)
+    mafia_name = _players(graph, run_config)[mafia_id].name
+    prefix = mafia_name[:3]
+    alive_names = [
+        p.name for p in _players(graph, run_config).values() if p.is_alive
+    ]
+    matching = [n for n in alive_names if prefix.lower() in n.lower()]
+    assert matching == [mafia_name], (
+        f"prefix {prefix!r} is ambiguous across alive roster {alive_names!r}"
+    )
+
+    _drive(graph, run_config, Command(resume=f"/vote {prefix}"))
+
+    state = graph.get_state(run_config).values
+    assert state.get("human_votes_called") == 1, (
+        f"expected human_votes_called==1 after the human's /vote, got "
+        f"{state.get('human_votes_called')!r}"
+    )
+
+
+def test_human_ballot_bumps_human_ballots_cast(
+    env: Path,
+    fake_haiku,
+    fake_sonnet,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When the human casts a ballot, ``human_ballots_cast`` increments.
+
+    After the human initiates a vote, ``collect_votes`` polls every alive
+    player one per super-step; the human's own poll surfaces a ``kind="vote"``
+    interrupt. Resuming it with "yes"/"no" must bump ``human_ballots_cast``.
+    We advance until that counter goes positive (the human is polled exactly
+    once per vote) and assert it reached 1.
+    """
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+    fake_haiku(AI_NAMES)
+    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+
+    config = load_config()
+    graph, thread_id = build_graph(config)
+    run_config = make_run_config(thread_id)
+
+    _drive_to_human_day_turn(graph, run_config, fake)
+
+    assert (
+        graph.get_state(run_config).values.get("human_ballots_cast", 0) == 0
+    ), "human_ballots_cast should start at 0"
+
+    # Human initiates a vote against a unique-prefix alive Mafia AI, which
+    # opens the ballot-collection flow that will eventually poll the human.
+    mafia_id = _alive_mafia_ai_id(graph, run_config)
+    mafia_name = _players(graph, run_config)[mafia_id].name
+    prefix = mafia_name[:3]
+    alive_names = [
+        p.name for p in _players(graph, run_config).values() if p.is_alive
+    ]
+    assert [n for n in alive_names if prefix.lower() in n.lower()] == [
+        mafia_name
+    ], f"prefix {prefix!r} ambiguous across {alive_names!r}"
+
+    _drive(graph, run_config, Command(resume=f"/vote {prefix}"))
+
+    # Now poll through the ballot collection. The human's ballot interrupt
+    # (kind="vote") gets a "yes"; AI ballots are served from the Yes queue.
+    def _human_voted() -> bool:
+        return (
+            graph.get_state(run_config).values.get("human_ballots_cast", 0)
+            >= 1
+        )
+
+    def _respond(iv: dict[str, Any]) -> str:
+        kind = iv.get("kind")
+        if kind == "vote":
+            return "yes"
+        if kind == "day_turn":
+            return "..."
+        return ""
+
+    _advance_until(
+        graph,
+        run_config,
+        stop=_human_voted,
+        interrupt_responder=_respond,
+        budget=100,
+    )
+
+    cast = graph.get_state(run_config).values.get("human_ballots_cast", 0)
+    assert cast == 1, (
+        f"expected human_ballots_cast==1 after the human cast one ballot, "
+        f"got {cast!r}"
+    )

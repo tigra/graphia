@@ -42,6 +42,7 @@ from graphia.stats_store import (
     LocalFileStatsStore,
     fold,
     render_greeting,
+    render_panel,
     summarize,
 )
 from graphia.ui.app import GraphiaApp
@@ -70,19 +71,22 @@ def _summary(
     outcome: str,
     human_won: bool,
     rounds: int = 1,
+    votes_called: int = 0,
+    ballots_cast: int = 0,
 ) -> GameSummary:
-    """Build a flat :class:`GameSummary` with zeroed action counters.
+    """Build a flat :class:`GameSummary` with zeroed night counters.
 
-    Slice 2 only folds outcome/role/rounds, so the action/night fields are
-    irrelevant here and pinned to ``0``.
+    Slice 2 only folds outcome/role/rounds (action counters pinned ``0``);
+    Slice 3 adds the human day-action counters, so ``votes_called`` /
+    ``ballots_cast`` are now overridable while the night fields stay ``0``.
     """
     return GameSummary(
         human_role=human_role,
         outcome=outcome,
         human_won=human_won,
         rounds=rounds,
-        votes_called=0,
-        ballots_cast=0,
+        votes_called=votes_called,
+        ballots_cast=ballots_cast,
         night_attempts=0,
         night_successes=0,
         night_victims=0,
@@ -368,6 +372,149 @@ def test_summarize_absent_counters_default_to_zero() -> None:
     assert summary.night_successes == 0
     assert summary.night_victims == 0
     assert summary.day_executions == 0
+
+
+# --------------------------------------------------------------------------
+# Slice 3 — human day-action counters (votes called / ballots cast)
+#
+# Pure-function coverage only here (no graph): fold accumulates the lifetime
+# vote/ballot totals, summarize reads the per-game GameState keys, and
+# render_panel surfaces the per-game deltas. The graph-driven proof that the
+# day_turn / collect_votes nodes actually populate these GameState keys lives
+# in test_slice7_vote.py alongside the rest of the vote-flow drive harness.
+# --------------------------------------------------------------------------
+
+
+def test_fold_accumulates_votes_and_ballots_single_game() -> None:
+    """A single fold carries the game's vote/ballot counters into the career."""
+    summary = _summary(
+        human_role="law_abiding",
+        outcome="law_abiding_win",
+        human_won=True,
+        votes_called=2,
+        ballots_cast=3,
+    )
+
+    result = fold(CareerStats(), summary)
+
+    assert result.votes_called == 2
+    assert result.ballots_cast == 3
+
+
+def test_fold_accumulates_votes_and_ballots_across_games() -> None:
+    """Vote/ballot totals sum across multiple folds (lifetime accumulation)."""
+    stats = CareerStats()
+    stats = fold(
+        stats,
+        _summary(
+            human_role="mafia",
+            outcome="mafia_win",
+            human_won=True,
+            votes_called=1,
+            ballots_cast=4,
+        ),
+    )
+    stats = fold(
+        stats,
+        _summary(
+            human_role="law_abiding",
+            outcome="law_abiding_win",
+            human_won=True,
+            votes_called=3,
+            ballots_cast=2,
+        ),
+    )
+
+    assert stats.votes_called == 1 + 3
+    assert stats.ballots_cast == 4 + 2
+
+
+def test_fold_zero_counters_leave_totals_untouched() -> None:
+    """A game with no votes/ballots adds nothing to the lifetime totals."""
+    base = fold(
+        CareerStats(),
+        _summary(
+            human_role="mafia",
+            outcome="mafia_win",
+            human_won=True,
+            votes_called=5,
+            ballots_cast=6,
+        ),
+    )
+
+    after = fold(
+        base,
+        _summary(
+            human_role="mafia",
+            outcome="law_abiding_win",
+            human_won=False,
+            votes_called=0,
+            ballots_cast=0,
+        ),
+    )
+
+    assert after.votes_called == 5
+    assert after.ballots_cast == 6
+
+
+def test_summarize_reads_human_vote_and_ballot_counters() -> None:
+    """``summarize`` lifts ``human_votes_called`` / ``human_ballots_cast``."""
+    human_id = "p-human"
+    latest_state = {
+        "players": {human_id: _RolePlayer("law_abiding")},
+        "winner": "law_abiding",
+        "cycle": 2,
+        "human_votes_called": 4,
+        "human_ballots_cast": 7,
+    }
+
+    summary = summarize(latest_state, human_id, "law_abiding_win")
+
+    assert summary.votes_called == 4
+    assert summary.ballots_cast == 7
+
+
+def test_render_panel_shows_vote_and_ballot_deltas() -> None:
+    """The post-game panel reports this game's vote/ballot deltas + totals."""
+    last = _summary(
+        human_role="law_abiding",
+        outcome="law_abiding_win",
+        human_won=True,
+        votes_called=2,
+        ballots_cast=3,
+    )
+    # The aggregate is the *updated* career (already folds ``last``), with a
+    # prior history so the career totals exceed this game's deltas.
+    stats = fold(
+        CareerStats(votes_called=1, ballots_cast=5),
+        last,
+    )
+
+    panel = render_panel(stats, last)
+
+    # Per-game delta lines: this game's contribution beside the career total.
+    assert "+2 this game" in panel
+    assert "+3 this game" in panel
+    # The career totals (prior 1/5 plus this game's 2/3).
+    assert "career total: 3" in panel
+    assert "career total: 8" in panel
+
+
+def test_render_panel_singular_plural_vote_ballot_labels() -> None:
+    """One vote/ballot uses the singular ``Day-vote`` / ``Day-ballot`` labels."""
+    last = _summary(
+        human_role="mafia",
+        outcome="mafia_win",
+        human_won=True,
+        votes_called=1,
+        ballots_cast=1,
+    )
+    stats = fold(CareerStats(), last)
+
+    panel = render_panel(stats, last)
+
+    assert "Day-vote you called: +1 this game" in panel
+    assert "Day-ballot you cast: +1 this game" in panel
 
 
 # --------------------------------------------------------------------------

@@ -21,11 +21,11 @@
   - [x] `ui/app.py`: outcome mapping (`human_won = winner == players[human_id].role`; `outcome ∈ {law_abiding_win, mafia_win, draw}`); after `drive_graph(...)` returns → `summarize`→`record`→`render_panel` to `#public-log` before the existing "Game over." banner. **[Agent: textual-tui]**
   - [x] Tests: `fold` role splits + win-rate denominator + `draw`-is-not-a-win; `summarize` from a crafted `_latest_state`; local store round-trip / accumulation / atomic-write; `App.run_test()` panel after a forced end + non-empty greeting on the next launch. Run `uv run pytest`. **[Agent: testing]**
 
-- [ ] **Slice 3: Day-action counters (votes called, ballots cast)**
+- [x] **Slice 3: Day-action counters (votes called, ballots cast)**
   - [x] `state.py`: add `human_votes_called`, `human_ballots_cast` (`int`, replace semantics, initialized to `0` in the setup node). **[Agent: langgraph-agentic]**
   - [x] `nodes/day.py`: increment `human_votes_called` in `_begin_vote` when `active_vote.initiator == human_id`; `human_ballots_cast` in the `collect_votes` human branch (each reads current value, returns current+1). **[Agent: langgraph-agentic]**
   - [x] Extend `GameSummary` / `CareerStats` + `fold` + `summarize` to carry `votes_called` / `ballots_cast`; add the greeting/panel lines. **[Agent: python-backend]**
-  - [ ] Tests: node counter tests (human as vote initiator / ballot caster) with crafted state + existing pointing fixtures; extended `fold` / `summarize`; panel delta line. Run `uv run pytest`. **[Agent: testing]**
+  - [x] Tests: node counter tests (human as vote initiator / ballot caster) with crafted state + existing pointing fixtures; extended `fold` / `summarize`; panel delta line. Run `uv run pytest`. **[Agent: testing]**
 
 - [ ] **Slice 4: Night-kill counters + game-wide totals**
   - [ ] `state.py`: add `human_night_attempts`, `human_night_successes`, `night_victim_count`, `execution_count` (init `0` in setup). **[Agent: langgraph-agentic]**
