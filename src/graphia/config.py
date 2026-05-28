@@ -15,6 +15,7 @@ class GraphiaConfig:
     aws_region: str
     log_file: Path
     checkpoint_dir: Path
+    stats_file: Path
     human_role: str | None
     remote_mode: bool
     runtime_invocation_url: str | None
@@ -55,6 +56,7 @@ def load_config() -> GraphiaConfig:
     checkpoint_dir = Path(
         os.environ.get("GRAPHIA_CHECKPOINT_DIR", "./.graphia/checkpoints")
     )
+    stats_file = Path(os.environ.get("GRAPHIA_STATS_FILE", "./.graphia/career.json"))
 
     remote_mode = _env_truthy("GRAPHIA_REMOTE")
     runtime_invocation_url = os.environ.get("GRAPHIA_RUNTIME_URL") or None
@@ -98,6 +100,7 @@ def load_config() -> GraphiaConfig:
         aws_region=aws_region,
         log_file=log_file,
         checkpoint_dir=checkpoint_dir,
+        stats_file=stats_file,
         human_role=human_role,
         remote_mode=remote_mode,
         runtime_invocation_url=runtime_invocation_url,

@@ -21,6 +21,7 @@ from graphia.config import GraphiaConfig, load_config
 from graphia.driver import drive_graph
 from graphia.graph import build_graph, make_run_config
 from graphia.logging import StreamTraceLogger, setup_logger
+from graphia.stats_store import StatsStore, make_stats_store, render_greeting
 from graphia.ui.badge import CornerBadge
 from graphia.ui.failure_modal import FailureModal
 from graphia.ui.quit_modal import QuitModal
@@ -93,11 +94,14 @@ class GraphiaApp(App[None]):
     config: GraphiaConfig
     logger: StreamTraceLogger
 
-    def __init__(self) -> None:
+    def __init__(self, stats_store: StatsStore | None = None) -> None:
         super().__init__()
         # Loaded eagerly so `compose()` can read `remote_mode` for the badge
         # label. `on_mount` reuses the same instance instead of reloading.
         self.config = load_config()
+        # Injectable for tests, mirroring the graph's `diary_store=` seam;
+        # built from config in `_drive` when not supplied.
+        self._stats_store: StatsStore | None = stats_store
         self._pending_resume: asyncio.Future[Any] | None = None
         self._human_id: str | None = None
         self._graph: CompiledStateGraph | None = None
@@ -453,6 +457,11 @@ class GraphiaApp(App[None]):
     async def _drive(self) -> None:
         log = self.query_one("#public-log", RichLog)
         try:
+            store = self._stats_store or make_stats_store(self.config)
+            self._stats_store = store
+            # Written directly to the public pane (not as a graph message) so
+            # it bypasses the `private_to` filter and shows before gameplay.
+            log.write(Text(render_greeting(store.load())))
             graph, thread_id = build_graph(self.config)
             self._thread_id = thread_id
             run_config = make_run_config(thread_id)
