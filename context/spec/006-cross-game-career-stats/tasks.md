@@ -27,11 +27,11 @@
   - [x] Extend `GameSummary` / `CareerStats` + `fold` + `summarize` to carry `votes_called` / `ballots_cast`; add the greeting/panel lines. **[Agent: python-backend]**
   - [x] Tests: node counter tests (human as vote initiator / ballot caster) with crafted state + existing pointing fixtures; extended `fold` / `summarize`; panel delta line. Run `uv run pytest`. **[Agent: testing]**
 
-- [ ] **Slice 4: Night-kill counters + game-wide totals**
+- [x] **Slice 4: Night-kill counters + game-wide totals**
   - [x] `state.py`: add `human_night_attempts`, `human_night_successes`, `night_victim_count`, `execution_count` (init `0` in setup). **[Agent: langgraph-agentic]**
   - [x] `nodes/night.py` `resolve_night_kill`: `night_victim_count` (a victim died), `human_night_attempts` (human is alive Mafia and present in `night_picks`), `human_night_successes` (`night_picks[human_id] == victim.id`); `nodes/day.py` `resolve_vote`: `execution_count` when a vote resolves to an execution. **[Agent: langgraph-agentic]**
   - [x] Extend `fold` / `summarize` for lifetime `night_attempts` / `night_successes`, game-wide `total_day_executions` / `total_night_victims`, and average game length (`sum_rounds_completed` / `completed_games`); render kills attempted-vs-successful + game-wide totals clearly distinct from the player's personal numbers. **[Agent: python-backend]**
-  - [ ] Tests: `resolve_night_kill` (human backs the killed target / backs a non-killed target / victim died) + `resolve_vote` execution; `fold` game-wide totals + average length; render. Run `uv run pytest`. **[Agent: testing]**
+  - [x] Tests: `resolve_night_kill` (human backs the killed target / backs a non-killed target / victim died) + `resolve_vote` execution; `fold` game-wide totals + average length; render. Run `uv run pytest`. **[Agent: testing]**
 
 - [ ] **Slice 5: Abandoned-game recording (Esc-confirmed quit)**
   - [ ] `fold` handles `"abandoned"`: `+1` to `games_total` / `games_by_role` / `abandoned_by_role` / `outcome_split.abandoned`; excluded from `completed_games` / `sum_rounds_completed` / the win-rate denominator. **[Agent: python-backend]**

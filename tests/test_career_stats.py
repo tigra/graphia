@@ -73,12 +73,19 @@ def _summary(
     rounds: int = 1,
     votes_called: int = 0,
     ballots_cast: int = 0,
+    night_attempts: int = 0,
+    night_successes: int = 0,
+    night_victims: int = 0,
+    day_executions: int = 0,
 ) -> GameSummary:
-    """Build a flat :class:`GameSummary` with zeroed night counters.
+    """Build a flat :class:`GameSummary`.
 
-    Slice 2 only folds outcome/role/rounds (action counters pinned ``0``);
-    Slice 3 adds the human day-action counters, so ``votes_called`` /
-    ``ballots_cast`` are now overridable while the night fields stay ``0``.
+    Slice 2 only folded outcome/role/rounds (action counters pinned ``0``);
+    Slice 3 made the human day-action counters (``votes_called`` /
+    ``ballots_cast``) overridable; Slice 4 adds the night-kill counters
+    (``night_attempts`` / ``night_successes``) and the game-wide totals
+    (``night_victims`` / ``day_executions``), each defaulting to ``0`` so
+    earlier tests keep their zeroed-night-counter contract.
     """
     return GameSummary(
         human_role=human_role,
@@ -87,10 +94,10 @@ def _summary(
         rounds=rounds,
         votes_called=votes_called,
         ballots_cast=ballots_cast,
-        night_attempts=0,
-        night_successes=0,
-        night_victims=0,
-        day_executions=0,
+        night_attempts=night_attempts,
+        night_successes=night_successes,
+        night_victims=night_victims,
+        day_executions=day_executions,
     )
 
 
@@ -804,3 +811,231 @@ async def test_ui_panel_written_then_second_app_greets_cumulative(
 
         await pilot.press("q")
     assert app2.is_running is False
+
+
+# --------------------------------------------------------------------------
+# Slice 4 — night-kill counters + game-wide totals
+#
+# Pure-function coverage: fold accumulates the lifetime night-kill counters
+# (night_attempts / night_successes) and the game-wide totals
+# (total_day_executions / total_night_victims); the average-game-length
+# derivation renders correctly (and "—" with no completed games); and both
+# the greeting and the post-game panel surface the night-kill figure and the
+# game-wide totals with the personal-vs-world-wide distinction intact. The
+# graph-driven proof that resolve_night_kill / resolve_vote populate the
+# GameState keys lives in the node tests (test_slice5_night.py).
+# --------------------------------------------------------------------------
+
+
+def test_fold_accumulates_night_counters_and_totals_single_game() -> None:
+    """A single fold carries night-kill counters and game-wide totals over."""
+    summary = _summary(
+        human_role="mafia",
+        outcome="mafia_win",
+        human_won=True,
+        night_attempts=2,
+        night_successes=1,
+        night_victims=3,
+        day_executions=2,
+    )
+
+    result = fold(CareerStats(), summary)
+
+    assert result.night_attempts == 2
+    assert result.night_successes == 1
+    assert result.total_night_victims == 3
+    assert result.total_day_executions == 2
+
+
+def test_fold_accumulates_night_counters_and_totals_across_games() -> None:
+    """Night counters and game-wide totals sum across multiple folds."""
+    stats = CareerStats()
+    stats = fold(
+        stats,
+        _summary(
+            human_role="mafia",
+            outcome="mafia_win",
+            human_won=True,
+            night_attempts=2,
+            night_successes=2,
+            night_victims=1,
+            day_executions=0,
+        ),
+    )
+    stats = fold(
+        stats,
+        _summary(
+            human_role="mafia",
+            outcome="law_abiding_win",
+            human_won=False,
+            night_attempts=1,
+            night_successes=0,
+            night_victims=2,
+            day_executions=3,
+        ),
+    )
+
+    assert stats.night_attempts == 2 + 1
+    assert stats.night_successes == 2 + 0
+    assert stats.total_night_victims == 1 + 2
+    assert stats.total_day_executions == 0 + 3
+
+
+def test_fold_zero_night_counters_leave_totals_untouched() -> None:
+    """A game with no night/execution activity adds nothing to the totals."""
+    base = fold(
+        CareerStats(),
+        _summary(
+            human_role="mafia",
+            outcome="mafia_win",
+            human_won=True,
+            night_attempts=4,
+            night_successes=3,
+            night_victims=5,
+            day_executions=6,
+        ),
+    )
+
+    after = fold(
+        base,
+        _summary(
+            human_role="law_abiding",
+            outcome="law_abiding_win",
+            human_won=True,
+        ),
+    )
+
+    assert after.night_attempts == 4
+    assert after.night_successes == 3
+    assert after.total_night_victims == 5
+    assert after.total_day_executions == 6
+
+
+# --------------------------------------------------------------------------
+# Average game length — derived from sum_rounds_completed / completed_games
+# --------------------------------------------------------------------------
+
+
+def test_avg_game_length_two_completed_games_renders_five() -> None:
+    """Two completed games of 4 and 6 rounds → average 5.0 in the greeting."""
+    stats = CareerStats()
+    stats = fold(
+        stats,
+        _summary(
+            human_role="mafia", outcome="mafia_win", human_won=True, rounds=4
+        ),
+    )
+    stats = fold(
+        stats,
+        _summary(
+            human_role="law_abiding",
+            outcome="law_abiding_win",
+            human_won=True,
+            rounds=6,
+        ),
+    )
+
+    greeting = render_greeting(stats)
+
+    assert "average game length 5.0 rounds" in greeting
+
+
+def test_avg_game_length_no_completed_games_renders_dash() -> None:
+    """With no completed games the average shows ``"—"``, not ``0`` rounds.
+
+    A zeroed career renders the first-run welcome (no average at all), so the
+    "no completed games" path is exercised directly through ``render_panel``,
+    whose average line always renders. The panel's ``last`` summary is the
+    game that just finished but, with both ``completed_games`` and
+    ``sum_rounds_completed`` at zero in the (artificially un-folded) aggregate,
+    the derived average must read ``"—"``.
+    """
+    last = _summary(
+        human_role="mafia", outcome="mafia_win", human_won=True, rounds=3
+    )
+    # An aggregate whose completed-game counters are still zero (simulating the
+    # "no completed games" edge for the derivation, independent of ``last``).
+    stats = CareerStats(games_total=1, completed_games=0, sum_rounds_completed=0)
+
+    panel = render_panel(stats, last)
+
+    assert "average game length: — rounds" in panel
+
+
+# --------------------------------------------------------------------------
+# Greeting / panel surface the night-kills figure and game-wide totals,
+# keeping personal ("You") and world-wide ("All games") figures separable.
+# --------------------------------------------------------------------------
+
+
+def test_greeting_shows_night_kills_and_game_wide_totals() -> None:
+    """The cumulative greeting carries night-kill and game-wide totals."""
+    stats = fold(
+        CareerStats(),
+        _summary(
+            human_role="mafia",
+            outcome="mafia_win",
+            human_won=True,
+            rounds=4,
+            night_attempts=3,
+            night_successes=2,
+            night_victims=5,
+            day_executions=1,
+        ),
+    )
+
+    greeting = render_greeting(stats)
+
+    # Personal night-kill figure: successful of attempted.
+    assert "Your night kills: 2 successful of 3 attempted" in greeting
+    # Game-wide totals, clearly framed as across-all-games world figures.
+    assert "Across all games:" in greeting
+    assert "1 day executions" in greeting
+    assert "5 night victims" in greeting
+    assert "average game length 4.0 rounds" in greeting
+
+
+def test_panel_separates_personal_night_kills_from_game_wide_totals() -> None:
+    """The panel distinguishes ``You (career)`` from ``All games (career)``."""
+    last = _summary(
+        human_role="mafia",
+        outcome="mafia_win",
+        human_won=True,
+        rounds=4,
+        night_attempts=3,
+        night_successes=2,
+        night_victims=5,
+        day_executions=1,
+    )
+    # Prior history so the career totals exceed this game's deltas.
+    stats = fold(
+        CareerStats(
+            night_attempts=1,
+            night_successes=1,
+            total_day_executions=2,
+            total_night_victims=4,
+            completed_games=1,
+            sum_rounds_completed=6,
+        ),
+        last,
+    )
+
+    panel = render_panel(stats, last)
+
+    # Personal night kills sit under a "You (career)" line: this game's delta
+    # (+2 successful / +3 attempted) beside the career total (3/4).
+    assert (
+        "You (career) — night kills: +2 successful / +3 attempted this game "
+        "(career total: 3/4)." in panel
+    )
+    # Game-wide day executions / night victims sit under "All games (career)".
+    assert (
+        "All games (career) — day executions: +1 this game "
+        "(career total: 3)." in panel
+    )
+    assert (
+        "All games (career) — night victims: +5 this game "
+        "(career total: 9)." in panel
+    )
+    # Average game length is a game-wide figure: (6 + 4) / 2 = 5.0.
+    assert "All games (career) — average game length: 5.0 rounds." in panel

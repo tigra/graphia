@@ -31,6 +31,9 @@ import pytest
 from textual.widgets import Input, RichLog
 
 from graphia.llm import DayAction
+from graphia.nodes.day import resolve_vote
+from graphia.nodes.night import resolve_night_kill
+from graphia.state import ActiveVote, PlayerState
 from graphia.ui.app import GraphiaApp
 from graphia.ui.widgets import PointingModal
 
@@ -366,3 +369,196 @@ async def test_night1_human_mafia_picks_target_via_modal(
         # while the Day loop is running.
         app.exit()
     assert app.is_running is False
+
+
+# --------------------------------------------------------------------------
+# Spec 006 Slice 4 — night-kill counters + execution counter, tested by
+# calling the resolution nodes DIRECTLY with a hand-built state dict.
+#
+# ``resolve_night_kill`` and ``resolve_vote`` are pure functions: they take a
+# ``GameState`` dict and return a delta dict, with no ``interrupt()``. That
+# lets us test the counter-bookkeeping in isolation, side-stepping the full
+# graph-drive harness. The only RNG in ``resolve_night_kill`` is the tie-break
+# ``random.choice`` over equally-pointed victims — every scenario below pins a
+# single unanimous victim so there is no tie and the result is deterministic.
+# --------------------------------------------------------------------------
+
+
+def _player(
+    pid: str, name: str, role: str, *, is_human: bool = False, is_alive: bool = True
+) -> PlayerState:
+    """Construct a ``PlayerState`` for a hand-built resolution-node state."""
+    return PlayerState(
+        id=pid, name=name, role=role, is_human=is_human, is_alive=is_alive
+    )
+
+
+def _night_state(
+    players: dict[str, PlayerState],
+    night_picks: dict[str, str],
+    human_id: str | None,
+) -> dict:
+    """Minimal state dict for a direct ``resolve_night_kill`` call."""
+    state: dict = {
+        "cycle": 1,
+        "players": players,
+        "night_picks": night_picks,
+    }
+    if human_id is not None:
+        state["human_id"] = human_id
+    return state
+
+
+def test_resolve_night_kill_human_mafia_backs_killed_target() -> None:
+    """Human alive-Mafia backs the killed victim → attempts, successes, victims all +1."""
+    human_id = "p-human"
+    victim_id = "p-victim"
+    players = {
+        human_id: _player(human_id, "Alice", "mafia", is_human=True),
+        "p-ai-mafia": _player("p-ai-mafia", "Marco", "mafia"),
+        victim_id: _player(victim_id, "Priya", "law_abiding"),
+        "p-other": _player("p-other", "Silas", "law_abiding"),
+    }
+    # Unanimous pick → no tie-break, deterministic victim.
+    night_picks = {human_id: victim_id, "p-ai-mafia": victim_id}
+
+    delta = resolve_night_kill(
+        _night_state(players, night_picks, human_id)
+    )
+
+    assert delta["night_victim_count"] == 1
+    assert delta["human_night_attempts"] == 1
+    assert delta["human_night_successes"] == 1
+    # Sanity: the named victim actually died.
+    assert delta["players"][victim_id].is_alive is False
+
+
+def test_resolve_night_kill_human_mafia_backs_unkilled_target() -> None:
+    """Human backs a target that is NOT killed → attempts +1, successes NOT bumped."""
+    human_id = "p-human"
+    killed_id = "p-victim"
+    other_target_id = "p-other"
+    players = {
+        human_id: _player(human_id, "Alice", "mafia", is_human=True),
+        "ai1": _player("ai1", "Marco", "mafia"),
+        "ai2": _player("ai2", "Yuki", "mafia"),
+        killed_id: _player(killed_id, "Priya", "law_abiding"),
+        other_target_id: _player(other_target_id, "Silas", "law_abiding"),
+    }
+    # Two AI Mafia back ``killed_id`` (majority, unanimous-on-the-victim);
+    # the human alone backs ``other_target_id``. ``killed_id`` is the strict
+    # plurality winner, so there is no tie-break RNG.
+    night_picks = {
+        human_id: other_target_id,
+        "ai1": killed_id,
+        "ai2": killed_id,
+    }
+
+    delta = resolve_night_kill(
+        _night_state(players, night_picks, human_id)
+    )
+
+    assert delta["players"][killed_id].is_alive is False
+    assert delta["night_victim_count"] == 1
+    assert delta["human_night_attempts"] == 1
+    # The human's pick did not match the victim, so no success bump.
+    assert "human_night_successes" not in delta
+
+
+def test_resolve_night_kill_human_not_mafia_only_bumps_victim_count() -> None:
+    """A victim dies but the human is Law-abiding / absent from picks → victims +1 only."""
+    human_id = "p-human"
+    victim_id = "p-victim"
+    players = {
+        human_id: _player(human_id, "Alice", "law_abiding", is_human=True),
+        "ai-mafia": _player("ai-mafia", "Marco", "mafia"),
+        victim_id: _player(victim_id, "Priya", "law_abiding"),
+    }
+    # Only the AI Mafia points; the Law-abiding human is not in night_picks.
+    night_picks = {"ai-mafia": victim_id}
+
+    delta = resolve_night_kill(
+        _night_state(players, night_picks, human_id)
+    )
+
+    assert delta["players"][victim_id].is_alive is False
+    assert delta["night_victim_count"] == 1
+    assert "human_night_attempts" not in delta
+    assert "human_night_successes" not in delta
+
+
+def test_resolve_night_kill_no_picks_bumps_nothing() -> None:
+    """The no-kill path (empty ``night_picks``) bumps no counters at all."""
+    human_id = "p-human"
+    players = {
+        human_id: _player(human_id, "Alice", "mafia", is_human=True),
+        "ai": _player("ai", "Marco", "law_abiding"),
+    }
+
+    delta = resolve_night_kill(_night_state(players, {}, human_id))
+
+    assert "night_victim_count" not in delta
+    assert "human_night_attempts" not in delta
+    assert "human_night_successes" not in delta
+    # Nobody died — players are not touched on this path.
+    assert "players" not in delta
+
+
+# --------------------------------------------------------------------------
+# resolve_vote — execution_count bumps only on the executed (target-flipped)
+# branch, not when a vote fails.
+# --------------------------------------------------------------------------
+
+
+def _vote_state(
+    players: dict[str, PlayerState],
+    target_id: str,
+    ballots: dict[str, str],
+) -> dict:
+    """Minimal state dict with an ``active_vote`` for a direct ``resolve_vote`` call."""
+    active: ActiveVote = {
+        "initiator": "p-initiator",
+        "target": target_id,
+        "ballots": ballots,
+        "pending": [],
+    }
+    return {
+        "cycle": 1,
+        "players": players,
+        "active_vote": active,
+    }
+
+
+def test_resolve_vote_execution_bumps_execution_count() -> None:
+    """A successful (majority-yes) vote executes the target and bumps ``execution_count``."""
+    target_id = "p-target"
+    players = {
+        "p-a": _player("p-a", "Alice", "law_abiding"),
+        "p-b": _player("p-b", "Marco", "law_abiding"),
+        target_id: _player(target_id, "Priya", "mafia"),
+    }
+    # 2 yes / 1 no over 3 ballots → strict majority → executed.
+    ballots = {"p-a": "yes", "p-b": "yes", target_id: "no"}
+
+    delta = resolve_vote(_vote_state(players, target_id, ballots))
+
+    assert delta["execution_count"] == 1
+    assert delta["players"][target_id].is_alive is False
+
+
+def test_resolve_vote_failed_vote_does_not_bump_execution_count() -> None:
+    """A failed (no-majority) vote leaves the target alive and never bumps the counter."""
+    target_id = "p-target"
+    players = {
+        "p-a": _player("p-a", "Alice", "law_abiding"),
+        "p-b": _player("p-b", "Marco", "law_abiding"),
+        target_id: _player(target_id, "Priya", "mafia"),
+    }
+    # 1 yes / 2 no → no majority → vote fails.
+    ballots = {"p-a": "yes", "p-b": "no", target_id: "no"}
+
+    delta = resolve_vote(_vote_state(players, target_id, ballots))
+
+    assert "execution_count" not in delta
+    # The failed-vote branch bumps the failed-vote cap counter instead.
+    assert delta.get("day_votes_called") == 1
