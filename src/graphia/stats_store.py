@@ -26,6 +26,7 @@ import logging
 import os
 import threading
 from dataclasses import dataclass, field, replace
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
@@ -40,6 +41,7 @@ __all__ = [
     "CareerStats",
     "StatsStore",
     "LocalFileStatsStore",
+    "AgentCoreLongTermStatsStore",
     "make_stats_store",
     "render_greeting",
     "render_panel",
@@ -334,13 +336,176 @@ class LocalFileStatsStore:
             return new
 
 
+class AgentCoreLongTermStatsStore:
+    """Career stats as a single self-authored AgentCore long-term record.
+
+    Remote-mode counterpart of :class:`LocalFileStatsStore` (ADR 007,
+    spec 006 §2.1). The rolling :class:`CareerStats` aggregate is persisted
+    as **one** long-term memory *record* (not a short-term event) under a
+    self-managed (custom) strategy, scoped to a stable career ``namespace``.
+    Record content is authored directly as the ``_career_to_json`` payload —
+    bypassing the LLM-extraction path the built-in strategies use — so reads
+    are **exact**, and they are deterministic because we list by namespace
+    rather than semantic-search.
+
+    Identity is stable across games: ``actor_id`` defaults to
+    ``"human-career"`` (NOT the per-game random player id), and the namespace
+    is fixed for the whole career, so every session reads/writes the same
+    single record.
+
+    The vendored ``bedrock_agentcore`` SDK (``MemoryClient``) wraps the
+    short-term event APIs but **not** the batch-record / ``ListMemoryRecords``
+    data-plane APIs (verified against the installed package). We therefore
+    call the boto3 ``bedrock-agentcore`` data-plane client directly. The
+    client is built lazily on first call so importing this module — and the
+    whole local-mode / test path — needs no AWS credentials or boto3 import.
+    """
+
+    def __init__(
+        self,
+        memory_id: str,
+        strategy_id: str | None,
+        namespace: str | None,
+        actor_id: str = "human-career",
+        region: str | None = None,
+    ) -> None:
+        if not memory_id:
+            raise ValueError("memory_id is required for AgentCoreLongTermStatsStore")
+        self._memory_id = memory_id
+        self._strategy_id = strategy_id
+        self._namespace = namespace or f"/career/{actor_id}/"
+        self._actor_id = actor_id
+        self._region = region
+        self._client = None  # lazy
+
+    def _get_client(self):
+        if self._client is None:
+            import boto3
+
+            self._client = boto3.client(
+                "bedrock-agentcore", region_name=self._region
+            )
+        return self._client
+
+    def _find_record_id(self) -> str | None:
+        """Return the career record's id, or ``None`` if no record exists yet.
+
+        Lists records filtered to the career namespace; the single career
+        record is expected. Returns the first match's id (or ``None``); any
+        read failure is logged and treated as "no record" by the callers.
+        """
+        client = self._get_client()
+        kwargs: dict[str, Any] = {
+            "memoryId": self._memory_id,
+            "namespace": self._namespace,
+        }
+        if self._strategy_id:
+            kwargs["memoryStrategyId"] = self._strategy_id
+        response = client.list_memory_records(**kwargs)
+        summaries = response.get("memoryRecordSummaries") or []
+        if not summaries:
+            return None
+        return summaries[0].get("memoryRecordId")
+
+    def load(self) -> CareerStats:
+        """Read the single career record by namespace; zeroed if absent.
+
+        Deterministic ``ListMemoryRecords`` by namespace — never semantic
+        search. The record's ``content.text`` is parsed via
+        :func:`_career_from_json`. A missing record, a read error, or an
+        unparseable payload yields a zeroed :class:`CareerStats` (logged,
+        never raised) — matching :class:`LocalFileStatsStore`'s tolerance.
+        """
+        try:
+            client = self._get_client()
+            kwargs: dict[str, Any] = {
+                "memoryId": self._memory_id,
+                "namespace": self._namespace,
+            }
+            if self._strategy_id:
+                kwargs["memoryStrategyId"] = self._strategy_id
+            response = client.list_memory_records(**kwargs)
+        except Exception:
+            logger.warning(
+                "Could not list career memory records in %s; starting fresh.",
+                self._namespace,
+                exc_info=True,
+            )
+            return CareerStats()
+        summaries = response.get("memoryRecordSummaries") or []
+        if not summaries:
+            logger.info(
+                "No career memory record in %s; starting fresh.", self._namespace
+            )
+            return CareerStats()
+        text = (summaries[0].get("content") or {}).get("text")
+        if not text:
+            return CareerStats()
+        try:
+            raw = json.loads(text)
+        except (TypeError, ValueError):
+            logger.warning(
+                "Career memory record in %s is unparseable; starting fresh.",
+                self._namespace,
+                exc_info=True,
+            )
+            return CareerStats()
+        return _career_from_json(raw)
+
+    def record(self, summary: GameSummary) -> CareerStats:
+        """Fold ``summary`` into the career record and return the new total.
+
+        Reads the current record (and its id), folds the summary in, and
+        writes the new aggregate as the record content via
+        ``BatchUpdateMemoryRecords`` when a record already exists, or
+        ``BatchCreateMemoryRecords`` on first write (absence detected from
+        the load). Read-back is exact because we author the content directly.
+        """
+        existing_id = self._find_record_id()
+        new = fold(self.load(), summary)
+        text = json.dumps(_career_to_json(new))
+        now = datetime.now(timezone.utc)
+        client = self._get_client()
+        if existing_id is None:
+            record_item: dict[str, Any] = {
+                "requestIdentifier": self._actor_id,
+                "namespaces": [self._namespace],
+                "content": {"text": text},
+                "timestamp": now,
+            }
+            if self._strategy_id:
+                record_item["memoryStrategyId"] = self._strategy_id
+            client.batch_create_memory_records(
+                memoryId=self._memory_id, records=[record_item]
+            )
+        else:
+            record_item = {
+                "memoryRecordId": existing_id,
+                "timestamp": now,
+                "content": {"text": text},
+                "namespaces": [self._namespace],
+            }
+            if self._strategy_id:
+                record_item["memoryStrategyId"] = self._strategy_id
+            client.batch_update_memory_records(
+                memoryId=self._memory_id, records=[record_item]
+            )
+        return new
+
+
 def make_stats_store(config: GraphiaConfig) -> StatsStore:
     """Select the career stats store implementation for ``config``.
 
-    Local-only for now: returns a :class:`LocalFileStatsStore` over
-    ``config.stats_file``. A later task adds the AgentCore long-term-memory
-    branch keyed on ``config.memory_id``.
+    ``memory_id`` set (remote mode) selects the AgentCore long-term-record
+    store; otherwise the file-backed local store over ``config.stats_file``.
     """
+    if config.memory_id:
+        return AgentCoreLongTermStatsStore(
+            config.memory_id,
+            config.stats_strategy_id,
+            config.stats_namespace,
+            region=config.aws_region,
+        )
     return LocalFileStatsStore(config.stats_file)
 
 
