@@ -33,10 +33,10 @@
   - [x] Extend `fold` / `summarize` for lifetime `night_attempts` / `night_successes`, game-wide `total_day_executions` / `total_night_victims`, and average game length (`sum_rounds_completed` / `completed_games`); render kills attempted-vs-successful + game-wide totals clearly distinct from the player's personal numbers. **[Agent: python-backend]**
   - [x] Tests: `resolve_night_kill` (human backs the killed target / backs a non-killed target / victim died) + `resolve_vote` execution; `fold` game-wide totals + average length; render. Run `uv run pytest`. **[Agent: testing]**
 
-- [ ] **Slice 5: Abandoned-game recording (Esc-confirmed quit)**
+- [x] **Slice 5: Abandoned-game recording (Esc-confirmed quit)**
   - [x] `fold` handles `"abandoned"`: `+1` to `games_total` / `games_by_role` / `abandoned_by_role` / `outcome_split.abandoned`; excluded from `completed_games` / `sum_rounds_completed` / the win-rate denominator. **[Agent: python-backend]**
   - [x] `ui/app.py` `_on_quit_decision`: after the confirm guard and **before** `call_after_refresh(self.exit)` / `_arm_hard_exit_fallback()`, if a game is in progress (started, not already `_game_over` / `phase == "end"`) record an `"abandoned"` summary — best-effort with a short timeout (local write is instant; remote write dropped if it can't beat the hard-exit fallback); double-record guard on the end screen; `Ctrl+C` (`action_abort`) untouched. **[Agent: textual-tui]**
-  - [ ] Tests: `fold` abandoned (counted in games / outcome-split, excluded from win-rate / avg-length); `App.run_test()` Esc-confirm records `outcome="abandoned"`, `Ctrl+C` records nothing, Esc on the end screen does not double-record. Run `uv run pytest`. **[Agent: testing]**
+  - [x] Tests: `fold` abandoned (counted in games / outcome-split, excluded from win-rate / avg-length); `App.run_test()` Esc-confirm records `outcome="abandoned"`, `Ctrl+C` records nothing, Esc on the end screen does not double-record. Run `uv run pytest`. **[Agent: testing]**
 
 - [ ] **Slice 6: AgentCore long-term-record remote backend + equivalence**
   - [ ] `config.py`: add `stats_strategy_id` (`GRAPHIA_STATS_STRATEGY_ID`) and `stats_namespace` (`GRAPHIA_STATS_NAMESPACE`, default `/career/human-career/`), remote-only, plumbed from `terraform output` like `memory_id` / `gateway_url`. **[Agent: python-backend]**

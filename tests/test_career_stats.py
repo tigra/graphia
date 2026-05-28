@@ -1039,3 +1039,131 @@ def test_panel_separates_personal_night_kills_from_game_wide_totals() -> None:
     )
     # Average game length is a game-wide figure: (6 + 4) / 2 = 5.0.
     assert "All games (career) — average game length: 5.0 rounds." in panel
+
+
+# --------------------------------------------------------------------------
+# Slice 5 — abandoned games (fold semantics)
+#
+# An abandoned game (``outcome == "abandoned"``) is recorded when the player
+# quits mid-game. It still counts as a game played and still folds the
+# action/night counters and game-wide totals for events that happened before
+# the quit, but it is NOT a win/loss-resolved game: it never bumps
+# ``wins_by_role``, ``completed_games``, or ``sum_rounds_completed``, so it
+# drops out of both the win-rate denominator (``role_games - role_abandoned``)
+# and the average-game-length average. Instead it bumps ``abandoned_by_role``
+# for the role the player held and ``outcome_split["abandoned"]``.
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("human_role", ["mafia", "law_abiding"])
+def test_fold_abandoned_counts_game_and_abandon_not_win(human_role: str) -> None:
+    """Abandon bumps games_total / games_by_role / abandoned_by_role / split.
+
+    It must NOT bump ``wins_by_role``, ``completed_games``, or
+    ``sum_rounds_completed`` — an abandoned game is neither a win nor a
+    win/loss-resolved game.
+    """
+    summary = _summary(
+        human_role=human_role,
+        outcome="abandoned",
+        human_won=False,
+        rounds=4,
+    )
+
+    result = fold(CareerStats(), summary)
+
+    assert result.games_total == 1
+    assert result.role_games(human_role) == 1
+    assert result.role_abandoned(human_role) == 1
+    assert result.outcome_count("abandoned") == 1
+    # Not win/loss-resolved: never a win, never a completed game.
+    assert result.role_wins(human_role) == 0
+    assert result.wins_by_role == {}
+    assert result.completed_games == 0
+    assert result.sum_rounds_completed == 0
+
+
+def test_fold_abandoned_still_folds_action_and_game_wide_counters() -> None:
+    """Pre-quit events still count: action + night + game-wide totals fold."""
+    summary = _summary(
+        human_role="mafia",
+        outcome="abandoned",
+        human_won=False,
+        rounds=2,
+        votes_called=3,
+        ballots_cast=5,
+        night_attempts=2,
+        night_successes=1,
+        night_victims=4,
+        day_executions=6,
+    )
+
+    result = fold(CareerStats(), summary)
+
+    assert result.votes_called == 3
+    assert result.ballots_cast == 5
+    assert result.night_attempts == 2
+    assert result.night_successes == 1
+    assert result.total_night_victims == 4
+    assert result.total_day_executions == 6
+    # But the completed-game dimensions stay untouched.
+    assert result.completed_games == 0
+    assert result.sum_rounds_completed == 0
+
+
+def test_fold_abandoned_excluded_from_win_rate_denominator() -> None:
+    """A win then an abandon in the same role → 100% (denominator stays 1).
+
+    The win-rate denominator is ``role_games - role_abandoned``, so the
+    abandoned game cancels out of the player's ratio: 1 win over 1
+    win/loss-resolved game reads 100% even though two games were played.
+    """
+    stats = CareerStats()
+    stats = fold(
+        stats,
+        _summary(human_role="mafia", outcome="mafia_win", human_won=True),
+    )
+    stats = fold(
+        stats,
+        _summary(human_role="mafia", outcome="abandoned", human_won=False),
+    )
+
+    assert stats.role_games("mafia") == 2
+    assert stats.role_abandoned("mafia") == 1
+    # Win-rate denominator = role_games - role_abandoned = 1, so 1/1 = 100%.
+    greeting = render_greeting(stats)
+    mafia_segment = greeting.split("Mafia:", 1)[1].split(";", 1)[0]
+    assert "100%" in mafia_segment
+
+
+def test_fold_abandoned_excluded_from_average_length() -> None:
+    """An abandoned game leaves the average game length unchanged.
+
+    A completed game of 4 rounds sets the average to 4.0; a subsequent
+    abandoned game (with rounds of its own) must not move it, because
+    abandoned games enter neither ``sum_rounds_completed`` nor
+    ``completed_games``.
+    """
+    stats = fold(
+        CareerStats(),
+        _summary(
+            human_role="law_abiding",
+            outcome="law_abiding_win",
+            human_won=True,
+            rounds=4,
+        ),
+    )
+    after_abandon = fold(
+        stats,
+        _summary(
+            human_role="mafia",
+            outcome="abandoned",
+            human_won=False,
+            rounds=9,
+        ),
+    )
+
+    assert after_abandon.completed_games == 1
+    assert after_abandon.sum_rounds_completed == 4
+    # The average is still derived from the single completed 4-round game.
+    assert "average game length 4.0 rounds" in render_greeting(after_abandon)
