@@ -21,7 +21,13 @@ from graphia.config import GraphiaConfig, load_config
 from graphia.driver import drive_graph
 from graphia.graph import build_graph, make_run_config
 from graphia.logging import StreamTraceLogger, setup_logger
-from graphia.stats_store import StatsStore, make_stats_store, render_greeting
+from graphia.stats_store import (
+    StatsStore,
+    make_stats_store,
+    render_greeting,
+    render_panel,
+    summarize,
+)
 from graphia.ui.badge import CornerBadge
 from graphia.ui.failure_modal import FailureModal
 from graphia.ui.quit_modal import QuitModal
@@ -477,6 +483,7 @@ class GraphiaApp(App[None]):
                 config=self.config,
                 on_state=self._on_graph_state,
             )
+            self._record_career(log)
             self._game_over = True
             log.write(
                 Text.from_markup("[bold green]Game over.[/] Press any key to exit.")
@@ -508,6 +515,29 @@ class GraphiaApp(App[None]):
                         "Press any key to exit."
                     )
                 )
+
+    _OUTCOME_BY_WINNER: dict[str, str] = {
+        "law_abiding": "law_abiding_win",
+        "mafia": "mafia_win",
+        "draw": "draw",
+    }
+
+    def _record_career(self, log: RichLog) -> None:
+        """Fold the just-finished game into the career and show the panel.
+
+        Runs only on a real end (a ``winner`` is present in the streamed-state
+        mirror); a graph that unwound without resolving has no outcome to
+        record. The panel is written directly to the public pane — like the
+        launch greeting — so it bypasses the ``private_to`` filter and lands
+        just before the "Game over." banner.
+        """
+        winner = self._latest_state.get("winner")
+        outcome = self._OUTCOME_BY_WINNER.get(winner) if isinstance(winner, str) else None
+        if outcome is None or self._human_id is None or self._stats_store is None:
+            return
+        summary = summarize(self._latest_state, self._human_id, outcome)
+        new = self._stats_store.record(summary)
+        log.write(Text(render_panel(new, summary)))
 
     def _show_failure_modal(self, exc: BaseException) -> None:
         """Push the remote-mode :class:`FailureModal` for an unhandled crash.

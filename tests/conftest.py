@@ -256,14 +256,19 @@ def env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[Path]:
       the developer's real log.
     - Points the checkpoint dir at ``tmp_path / checkpoints`` so each test gets
       a fresh SqliteSaver backing store.
+    - Points the career stats file at ``tmp_path / career.json`` so tests never
+      read or write the developer's real career history (and each test starts
+      from a zeroed, first-run aggregate).
 
     Yields the log-file path for tests that want to read emitted events.
     """
     log_file = tmp_path / "graphia.log"
     checkpoint_dir = tmp_path / "checkpoints"
+    stats_file = tmp_path / "career.json"
     monkeypatch.setenv("AWS_BEARER_TOKEN_BEDROCK", "dummy")
     monkeypatch.setenv("GRAPHIA_LOG_FILE", str(log_file))
     monkeypatch.setenv("GRAPHIA_CHECKPOINT_DIR", str(checkpoint_dir))
+    monkeypatch.setenv("GRAPHIA_STATS_FILE", str(stats_file))
     yield log_file
 
 

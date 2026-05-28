@@ -76,6 +76,7 @@ from rich.text import Text
 from textual.widgets import Input, RichLog
 
 from graphia.llm import Ballot, DayAction, Pointing
+from graphia.stats_store import LocalFileStatsStore
 from graphia.ui.app import GraphiaApp
 
 # Reuse the proven remote-mode harness pieces rather than re-deriving them.
@@ -268,6 +269,7 @@ def _normalise(text: str, thread_id: str | None) -> str:
 
 async def test_local_and_remote_full_game_produce_identical_public_output(
     env: Path,
+    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     fake_haiku,
     fake_sonnet,
@@ -297,7 +299,13 @@ async def test_local_and_remote_full_game_produce_identical_public_output(
     fake_haiku(AI_NAMES)
     local_fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
 
-    local_app = GraphiaApp()
+    # Each run is an independent game session; give each its own zeroed career
+    # store so neither sees the other's recorded game. Without this, run 1's
+    # post-game record() would bump run 2's greeting/panel counts and the
+    # byte-identical public-log assertion below would fail on the career lines.
+    local_app = GraphiaApp(
+        stats_store=LocalFileStatsStore(tmp_path / "career-local.json")
+    )
     local_result = await _run_full_game_collecting(local_app, local_fake)
 
     # ----- Run 2: REMOTE mode (FakeAgentCoreClient + AgentCoreMemoryDiaryStore)
@@ -340,7 +348,9 @@ async def test_local_and_remote_full_game_produce_identical_public_output(
     monkeypatch.setattr(app_module, "build_graph", _wrapped_build_graph)
     monkeypatch.setattr("graphia.driver.AgentCoreClient", FakeAgentCoreClient)
 
-    remote_app = GraphiaApp()
+    remote_app = GraphiaApp(
+        stats_store=LocalFileStatsStore(tmp_path / "career-remote.json")
+    )
     remote_result = await _run_full_game_collecting(remote_app, remote_fake)
 
     # ----- Sanity: the remote run actually used the remote seams ----------
