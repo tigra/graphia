@@ -36,6 +36,11 @@ class GraphiaConfig:
     # player at the failed session's CloudWatch coordinates. ``None`` is
     # tolerated: the modal degrades to showing the filter expression alone.
     cloudwatch_log_group: str | None
+    # Self-managed career memory strategy id and its namespace (Slice 6,
+    # remote only). Plumbed from ``terraform output``; ``stats_strategy_id``
+    # is ``None`` in local mode where career stats live in ``stats_file``.
+    stats_strategy_id: str | None
+    stats_namespace: str | None
 
 
 def _env_truthy(name: str) -> bool:
@@ -62,6 +67,10 @@ def load_config() -> GraphiaConfig:
     runtime_invocation_url = os.environ.get("GRAPHIA_RUNTIME_URL") or None
     memory_id = os.environ.get("GRAPHIA_MEMORY_ID") or None
     cloudwatch_log_group = os.environ.get("GRAPHIA_LOG_GROUP") or None
+    stats_strategy_id = os.environ.get("GRAPHIA_STATS_STRATEGY_ID")
+    stats_namespace = os.environ.get(
+        "GRAPHIA_STATS_NAMESPACE", "/career/human-career/"
+    )
     gateway_id = os.environ.get("GRAPHIA_GATEWAY_ID") or None
     # Prefer an explicitly supplied URL (useful for local-mode probing
     # against a deployed Gateway) but derive it from the id + region when
@@ -108,4 +117,6 @@ def load_config() -> GraphiaConfig:
         gateway_id=gateway_id,
         gateway_url=gateway_url,
         cloudwatch_log_group=cloudwatch_log_group,
+        stats_strategy_id=stats_strategy_id,
+        stats_namespace=stats_namespace,
     )

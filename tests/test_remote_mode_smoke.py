@@ -744,6 +744,8 @@ async def test_remote_mode_driver_detects_interrupt_from_stream_not_local_state(
         gateway_id=None,
         gateway_url=None,
         cloudwatch_log_group=None,
+        stats_strategy_id=None,
+        stats_namespace="/career/human-career/",
         human_role=None,
     )
 
@@ -1022,6 +1024,8 @@ async def test_remote_mode_consumer_receives_basemessage_from_scripted_sse(
         gateway_id=None,
         gateway_url=None,
         cloudwatch_log_group=None,
+        stats_strategy_id=None,
+        stats_namespace="/career/human-career/",
         human_role=None,
     )
 
@@ -1135,6 +1139,8 @@ async def test_drive_graph_on_state_receives_human_id_from_collect_name_chunk(
         gateway_id=None,
         gateway_url=None,
         cloudwatch_log_group=None,
+        stats_strategy_id=None,
+        stats_namespace="/career/human-career/",
         human_role=None,
     )
 
