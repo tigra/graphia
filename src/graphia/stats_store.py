@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
@@ -40,6 +40,8 @@ __all__ = [
     "LocalFileStatsStore",
     "make_stats_store",
     "render_greeting",
+    "fold",
+    "summarize",
 ]
 
 
@@ -105,6 +107,61 @@ class CareerStats:
     def outcome_count(self, outcome: str) -> int:
         """Number of games ending in ``outcome`` (``0`` if never seen)."""
         return self.outcome_split.get(outcome, 0)
+
+
+def fold(aggregate: CareerStats, summary: GameSummary) -> CareerStats:
+    """Fold one finished game into the career aggregate, purely.
+
+    Returns a NEW :class:`CareerStats` — the input is never mutated and its
+    dict fields are copied before update. This slice folds the outcome/role
+    dimensions only; the ``"abandoned"`` branch and the lifetime/game-wide
+    action totals are deferred to later slices and pass through untouched. A
+    ``draw`` is a completed game (counted in ``completed_games`` /
+    ``sum_rounds_completed``) but not a win.
+    """
+    games_by_role = dict(aggregate.games_by_role)
+    wins_by_role = dict(aggregate.wins_by_role)
+    outcome_split = dict(aggregate.outcome_split)
+
+    games_by_role[summary.human_role] = games_by_role.get(summary.human_role, 0) + 1
+    if summary.human_won:
+        wins_by_role[summary.human_role] = wins_by_role.get(summary.human_role, 0) + 1
+    outcome_split[summary.outcome] = outcome_split.get(summary.outcome, 0) + 1
+
+    return replace(
+        aggregate,
+        games_total=aggregate.games_total + 1,
+        games_by_role=games_by_role,
+        wins_by_role=wins_by_role,
+        outcome_split=outcome_split,
+        completed_games=aggregate.completed_games + 1,
+        sum_rounds_completed=aggregate.sum_rounds_completed + summary.rounds,
+    )
+
+
+def summarize(latest_state: dict, human_id: str, outcome: str) -> GameSummary:
+    """Build the per-game :class:`GameSummary` from the final graph state.
+
+    ``human_role`` and the win flag come from the human's ``PlayerState`` and
+    the game ``winner`` (both faction strings, so equality is meaningful);
+    ``rounds`` is the ``cycle`` counter. The action/night counters are read
+    defensively with a ``0`` default so this stays forward-compatible — the
+    ``GameState`` fields they map to are added by later slices, and reading
+    them now keeps ``summarize`` re-edit-free when they land.
+    """
+    human_role = latest_state["players"][human_id].role
+    return GameSummary(
+        human_role=human_role,
+        outcome=outcome,
+        human_won=(latest_state.get("winner") == human_role),
+        rounds=latest_state.get("cycle", 0),
+        votes_called=latest_state.get("human_votes_called", 0),
+        ballots_cast=latest_state.get("human_ballots_cast", 0),
+        night_attempts=latest_state.get("human_night_attempts", 0),
+        night_successes=latest_state.get("human_night_successes", 0),
+        night_victims=latest_state.get("night_victim_count", 0),
+        day_executions=latest_state.get("execution_count", 0),
+    )
 
 
 class StatsStore(Protocol):
