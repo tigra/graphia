@@ -347,7 +347,12 @@ def day_turn(state: GameState) -> dict:
             # Do NOT advance turn_index — the turn is consumed by the
             # vote flow, but we want to resume speech rotation from the
             # same position after the vote resolves. Clear any pending error.
-            return {"active_vote": active, "day_turn_error": None}
+            human_votes_called = state.get("human_votes_called", 0) + 1
+            return {
+                "active_vote": active,
+                "day_turn_error": None,
+                "human_votes_called": human_votes_called,
+            }
 
         if not text:
             text = "(stays silent.)"
@@ -483,6 +488,7 @@ def collect_votes(state: GameState) -> dict:
 
     target_name = target.name if target else target_id
 
+    extra: dict = {}
     if voter.is_human:
         payload = {
             "kind": "vote",
@@ -505,6 +511,7 @@ def collect_votes(state: GameState) -> dict:
                 **payload,
                 "error": "Answer yes or no.",
             }
+        extra["human_ballots_cast"] = state.get("human_ballots_cast", 0) + 1
     else:
         if target is None:
             # Target missing (shouldn't happen); conservative no.
@@ -532,6 +539,7 @@ def collect_votes(state: GameState) -> dict:
     return {
         "messages": [ballot_msg],
         "active_vote": new_active_out,
+        **extra,
     }
 
 
