@@ -118,31 +118,46 @@ def fold(aggregate: CareerStats, summary: GameSummary) -> CareerStats:
     """Fold one finished game into the career aggregate, purely.
 
     Returns a NEW :class:`CareerStats` — the input is never mutated and its
-    dict fields are copied before update. This slice folds the outcome/role
-    dimensions, the human's lifetime day-action counters (``votes_called`` /
-    ``ballots_cast``) and night-kill counters (``night_attempts`` /
-    ``night_successes``), plus the game-wide totals (``total_day_executions`` /
-    ``total_night_victims``), all of which accumulate for every recorded game;
-    the ``"abandoned"`` branch is deferred to a later slice and passes through
-    untouched. A ``draw`` is a completed game (counted in ``completed_games`` /
-    ``sum_rounds_completed``) but not a win. Average game length is *derived*
-    from ``sum_rounds_completed`` / ``completed_games`` at render time, not
-    stored here.
+    dict fields are copied before update. The role/outcome dimensions, the
+    human's lifetime day-action counters (``votes_called`` / ``ballots_cast``)
+    and night-kill counters (``night_attempts`` / ``night_successes``), and the
+    game-wide totals (``total_day_executions`` / ``total_night_victims``) all
+    accumulate for *every* recorded game — including an abandoned one, since
+    actions the player completed and events that occurred before the quit still
+    count (spec §2.4, §2.5).
+
+    An abandoned game (``summary.outcome == "abandoned"``) diverges only in what
+    it does *not* fold: it never increments ``wins_by_role`` (it is neither a
+    win nor a loss), and it is excluded from ``completed_games`` /
+    ``sum_rounds_completed`` (a quit has no meaningful final length), so it
+    drops out of both the win-rate denominator (``role_games - role_abandoned``)
+    and the average-game-length average (spec §2.7). Instead it bumps
+    ``abandoned_by_role`` for the role the player held. A ``draw`` is a completed
+    game (counted in ``completed_games`` / ``sum_rounds_completed``) but not a
+    win. Average game length is *derived* at render time, not stored here.
     """
+    is_abandoned = summary.outcome == "abandoned"
+
     games_by_role = dict(aggregate.games_by_role)
     wins_by_role = dict(aggregate.wins_by_role)
+    abandoned_by_role = dict(aggregate.abandoned_by_role)
     outcome_split = dict(aggregate.outcome_split)
 
     games_by_role[summary.human_role] = games_by_role.get(summary.human_role, 0) + 1
-    if summary.human_won:
-        wins_by_role[summary.human_role] = wins_by_role.get(summary.human_role, 0) + 1
     outcome_split[summary.outcome] = outcome_split.get(summary.outcome, 0) + 1
+    if is_abandoned:
+        abandoned_by_role[summary.human_role] = (
+            abandoned_by_role.get(summary.human_role, 0) + 1
+        )
+    elif summary.human_won:
+        wins_by_role[summary.human_role] = wins_by_role.get(summary.human_role, 0) + 1
 
     return replace(
         aggregate,
         games_total=aggregate.games_total + 1,
         games_by_role=games_by_role,
         wins_by_role=wins_by_role,
+        abandoned_by_role=abandoned_by_role,
         outcome_split=outcome_split,
         votes_called=aggregate.votes_called + summary.votes_called,
         ballots_cast=aggregate.ballots_cast + summary.ballots_cast,
@@ -150,8 +165,10 @@ def fold(aggregate: CareerStats, summary: GameSummary) -> CareerStats:
         night_successes=aggregate.night_successes + summary.night_successes,
         total_day_executions=aggregate.total_day_executions + summary.day_executions,
         total_night_victims=aggregate.total_night_victims + summary.night_victims,
-        completed_games=aggregate.completed_games + 1,
-        sum_rounds_completed=aggregate.sum_rounds_completed + summary.rounds,
+        completed_games=aggregate.completed_games + (0 if is_abandoned else 1),
+        sum_rounds_completed=(
+            aggregate.sum_rounds_completed + (0 if is_abandoned else summary.rounds)
+        ),
     )
 
 
