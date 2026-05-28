@@ -40,6 +40,10 @@ def collect_name(state: GameState) -> dict:
         "cycle": 1,
         "human_votes_called": 0,
         "human_ballots_cast": 0,
+        "human_night_attempts": 0,
+        "human_night_successes": 0,
+        "night_victim_count": 0,
+        "execution_count": 0,
         "messages": [SystemMessage(content=f"A new game begins. Welcome, {name}.")],
     }
 
