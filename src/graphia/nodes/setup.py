@@ -106,16 +106,21 @@ def assign_roles(state: GameState) -> dict:
         random.shuffle(deck)
         roles = [pinned_role, *deck]
     existing = state.get("players", {})
+    human_id = state["human_id"]
     updated: dict[str, PlayerState] = {}
+    human_role = "law_abiding"
     for index, (pid, player) in enumerate(existing.items()):
+        role = roles[index]
+        if pid == human_id:
+            human_role = role
         updated[pid] = PlayerState(
             id=player.id,
             name=player.name,
-            role=roles[index],  # type: ignore[arg-type]
+            role=role,  # type: ignore[arg-type]
             is_human=player.is_human,
             is_alive=player.is_alive,
         )
-    return {"players": updated}
+    return {"players": updated, "human_role": human_role}
 
 
 def introduce_roster(state: GameState) -> dict:

@@ -37,6 +37,12 @@ class GameState(TypedDict, total=False):
     messages: Annotated[list[AnyMessage], add_messages]
     players: dict[str, PlayerState]
     human_id: str
+    # The human's dealt faction ("mafia"/"law_abiding") lifted to a top-level
+    # plain string so it survives remote-mode serialization: PlayerState is not
+    # a LangChain Serializable, so client-side it crosses the wire as its repr
+    # string and ``players[human_id].role`` is unavailable. summarize() reads
+    # this field instead. Set server-side in assign_roles where roles are dealt.
+    human_role: str
     phase: Literal["setup", "night", "day", "end"]
     cycle: int
     night_picks: dict[str, str]

@@ -349,6 +349,7 @@ def test_summarize_reads_role_winner_and_won_flag(
     human_id = "p-human"
     latest_state = {
         "players": {human_id: _RolePlayer(role)},
+        "human_role": role,
         "winner": winner,
         "cycle": 3,
     }
@@ -366,6 +367,7 @@ def test_summarize_absent_counters_default_to_zero() -> None:
     human_id = "p-human"
     latest_state = {
         "players": {human_id: _RolePlayer("law_abiding")},
+        "human_role": "law_abiding",
         "winner": "law_abiding",
         # No cycle, no action/night counters present.
     }
@@ -469,6 +471,7 @@ def test_summarize_reads_human_vote_and_ballot_counters() -> None:
     human_id = "p-human"
     latest_state = {
         "players": {human_id: _RolePlayer("law_abiding")},
+        "human_role": "law_abiding",
         "winner": "law_abiding",
         "cycle": 2,
         "human_votes_called": 4,
@@ -479,6 +482,49 @@ def test_summarize_reads_human_vote_and_ballot_counters() -> None:
 
     assert summary.votes_called == 4
     assert summary.ballots_cast == 7
+
+
+@pytest.mark.parametrize(
+    ("role", "winner", "outcome", "expect_won"),
+    [
+        ("law_abiding", "mafia", "mafia_win", False),
+        ("mafia", "mafia", "mafia_win", True),
+    ],
+)
+def test_summarize_remote_shape_players_are_repr_strings(
+    role: str, winner: str, outcome: str, expect_won: bool
+) -> None:
+    """Remote-mode regression: ``players`` values cross the wire as repr STRINGS.
+
+    In remote mode the AgentCore Runtime serializes graph state via
+    ``langchain_core.load.dumpd``; ``PlayerState`` is not a LangChain
+    ``Serializable``, so client-side ``players[human_id]`` is the object's
+    ``repr`` string, not a ``PlayerState``. ``summarize`` runs client-side on
+    that state, so it must NOT touch ``players[...].role`` — it reads the
+    top-level ``human_role`` field instead. Against the OLD code this raised
+    ``AttributeError: 'str' object has no attribute 'role'`` (the deployed
+    end-of-game crash); the guard here is that no attribute access happens.
+    """
+    human_id = "T"
+    latest_state = {
+        "players": {
+            human_id: (
+                f"PlayerState(id='{human_id}', role='{role}', "
+                "is_human=True, is_alive=True)"
+            ),
+            "ai-1": "PlayerState(id='ai-1', role='mafia', is_human=False, is_alive=True)",
+        },
+        "human_role": role,
+        "winner": winner,
+        "cycle": 3,
+    }
+
+    summary = summarize(latest_state, human_id, outcome)
+
+    assert summary.human_role == role
+    assert summary.outcome == outcome
+    assert summary.human_won is expect_won
+    assert summary.rounds == 3
 
 
 def test_render_panel_shows_vote_and_ballot_deltas() -> None:

@@ -177,14 +177,17 @@ def fold(aggregate: CareerStats, summary: GameSummary) -> CareerStats:
 def summarize(latest_state: dict, human_id: str, outcome: str) -> GameSummary:
     """Build the per-game :class:`GameSummary` from the final graph state.
 
-    ``human_role`` and the win flag come from the human's ``PlayerState`` and
-    the game ``winner`` (both faction strings, so equality is meaningful);
-    ``rounds`` is the ``cycle`` counter. The action/night counters are read
-    defensively with a ``0`` default so this stays forward-compatible — the
-    ``GameState`` fields they map to are added by later slices, and reading
-    them now keeps ``summarize`` re-edit-free when they land.
+    ``human_role`` is read from the top-level ``human_role`` state field (set
+    server-side at role-deal time) — never from ``players[human_id].role``,
+    which in remote mode crosses the wire as a ``repr`` string rather than a
+    ``PlayerState`` (so the attribute access would raise). The win flag
+    compares it against the game ``winner`` (both faction strings, so equality
+    is meaningful); ``rounds`` is the ``cycle`` counter. The action/night
+    counters are read defensively with a ``0`` default so this stays
+    forward-compatible. ``human_id`` is retained for caller signature stability
+    but no longer used here.
     """
-    human_role = latest_state["players"][human_id].role
+    human_role = latest_state.get("human_role", "")
     return GameSummary(
         human_role=human_role,
         outcome=outcome,
