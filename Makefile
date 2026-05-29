@@ -50,7 +50,7 @@ LAMBDA_ZIPS   = $(addprefix $(LAMBDA_BUILD)/,$(addsuffix .zip,$(LAMBDA_FNS)))
 
 .PHONY: help check-container build run shell clean login-ecr push \
         tf-init tf-fmt tf-validate tf-plan tf-ecr-bootstrap tf-apply tf-destroy \
-        wire-env deploy redeploy destroy inspect-diary play play-remote \
+        wire-env deploy redeploy deploy-stats destroy inspect-diary play play-remote \
         build-lambdas clean-lambdas enable-transaction-search verify-observability \
         create-stats-strategy
 
@@ -77,9 +77,10 @@ help:
 	@echo "  make clean-lambdas      Remove $(LAMBDA_BUILD)/."
 	@echo ""
 	@echo "Workflow composites:"
-	@echo "  make deploy             First-time: build-lambdas + tf-init + tf-ecr-bootstrap + push + tf-apply + wire-env."
-	@echo "  make redeploy           Steady-state code update: build-lambdas + push + tf-apply + wire-env."
-	@echo "  make wire-env           Discover the deployed Runtime URL + Memory id + log group via the AWS API and write them into .env (no Terraform state needed)."
+	@echo "  make deploy             First-time: build-lambdas + tf-init + tf-ecr-bootstrap + push + tf-apply + wire-env, then deploy-stats (full Phase 3 bring-up)."
+	@echo "  make redeploy           Steady-state code update: build-lambdas + push + tf-apply + wire-env (reads pinned STATS_STRATEGY_ID from .env)."
+	@echo "  make deploy-stats       Convergent career-stats bring-up: tf-apply + create-stats-strategy + wire-env + tf-apply (pins + plumbs STATS_STRATEGY_ID)."
+	@echo "  make wire-env           Discover the deployed Runtime URL + Memory id + log group (+ STATS_STRATEGY_ID, if a strategy exists) via the AWS API and write them into .env (no Terraform state needed)."
 	@echo "  make destroy            Alias for tf-destroy."
 	@echo ""
 	@echo "Play:"
@@ -172,8 +173,15 @@ tf-destroy:
 # --- Workflow composites.
 
 # Idempotent: replaces any existing GRAPHIA_RUNTIME_URL / GRAPHIA_MEMORY_ID /
-# GRAPHIA_LOG_GROUP / OWNER lines in .env in place, preserves every other line.
-# Creates .env if it doesn't exist.
+# GRAPHIA_LOG_GROUP / OWNER / STATS_STRATEGY_ID lines in .env in place, preserves
+# every other line. Creates .env if it doesn't exist.
+#
+# STATS_STRATEGY_ID is pinned ONLY when the deployed Memory already carries a
+# self-managed (CUSTOM) strategy — i.e. after `make create-stats-strategy` has
+# run. If none exists yet, .env is left untouched (never written empty/None), so
+# a plain wire-env before the strategy is created can't blank the Runtime's
+# GRAPHIA_STATS_STRATEGY_ID on the next apply. Once pinned, the include'd .env
+# value wins over the STATS_STRATEGY_ID ?= default, just like OWNER.
 #
 # OWNER is resolved and pinned into .env first, before the deployment lookup:
 #   1. the deployed ECR repo's `Owner` tag — the source of truth for who the
@@ -235,12 +243,26 @@ wire-env:
 	     /^GRAPHIA_LOG_GROUP=/   { print lg; lseen=1; next } \
 	     { print } \
 	     END { if (!rseen) print ru; if (!mseen) print mi; if (!lseen) print lg }' \
-	    .env > .env.tmp && mv .env.tmp .env
+	    .env > .env.tmp && mv .env.tmp .env; \
+	STRATEGY_ID=$$(aws --region $(AWS_REGION) bedrock-agentcore-control get-memory \
+	    --memory-id "$$MEMORY_ID" \
+	    --query "memory.strategies[?type=='CUSTOM']|[0].strategyId" --output text 2>/dev/null || true); \
+	if [ -n "$$STRATEGY_ID" ] && [ "$$STRATEGY_ID" != "None" ]; then \
+	  awk -v si="STATS_STRATEGY_ID=$$STRATEGY_ID" \
+	      'BEGIN { sseen=0 } \
+	       /^STATS_STRATEGY_ID=/ { print si; sseen=1; next } \
+	       { print } \
+	       END { if (!sseen) print si }' \
+	      .env > .env.tmp && mv .env.tmp .env; \
+	fi
 	@echo ""
 	@echo "Wired into .env (discovered via the AWS API — no Terraform state needed):"
-	@grep -E '^(GRAPHIA_(RUNTIME_URL|MEMORY_ID|LOG_GROUP)|OWNER)=' .env
+	@grep -E '^(GRAPHIA_(RUNTIME_URL|MEMORY_ID|LOG_GROUP)|OWNER|STATS_STRATEGY_ID)=' .env
 
 deploy: build-lambdas tf-init tf-ecr-bootstrap push tf-apply wire-env
+	@echo ""
+	@echo "Base stack up — running the Phase 3 career-stats bring-up..."
+	$(MAKE) deploy-stats
 	@echo ""
 	@echo "Deploy complete. Runtime invocation URL:"
 	@cd $(TF_DIR) && ./tf output runtime_invocation_url
@@ -254,6 +276,27 @@ redeploy: build-lambdas push tf-apply wire-env
 	@echo ""
 	@echo "Next: launch a game against the deployed Runtime with:"
 	@echo "  make play-remote"
+
+# --- Phase 3 career-stats bring-up (spec 006 / ADR 007).
+#
+# The self-managed Memory strategy can't be a Terraform resource (provider gap,
+# see create-stats-strategy), so first bring-up is a convergent four-step dance:
+#   1. tf-apply             — creates the S3/SNS/IAM scaffolding + Memory exec role.
+#   2. create-stats-strategy — CLI-creates the self-managed strategy out-of-band
+#                              (idempotent: reuses an existing CUSTOM strategy).
+#   3. wire-env             — discovers + pins STATS_STRATEGY_ID into .env.
+#   4. tf-apply             — re-applies; reads the pinned id from .env so the
+#                            Runtime gets GRAPHIA_STATS_STRATEGY_ID set.
+# Fully idempotent / convergent: re-running reuses the strategy, re-pins the same
+# id, and the final apply is a no-op once the Runtime env var already matches.
+deploy-stats:
+	$(MAKE) tf-apply
+	$(MAKE) create-stats-strategy
+	$(MAKE) wire-env
+	$(MAKE) tf-apply
+	@echo ""
+	@echo "Career-stats bring-up complete: STATS_STRATEGY_ID pinned in .env and"
+	@echo "plumbed to the Runtime as GRAPHIA_STATS_STRATEGY_ID."
 
 # --- Lambda zip-build pipeline (ADR 005).
 #
