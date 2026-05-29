@@ -261,6 +261,13 @@ resource "aws_bedrockagentcore_memory" "this" {
   # No inline `memory_strategies` block (the provider has none). The diary tier
   # uses raw events end-to-end (`create_event` / `list_events`); the career tier
   # uses the out-of-band self-managed strategy described above.
+
+  # Wait for the memory-stats execution role to propagate through IAM before
+  # AgentCore's UpdateMemory validates its trust policy (see the
+  # `time_sleep.wait_memory_stats_role` rationale above). This adds ORDERING
+  # only — `depends_on` does not force replacement, so existing Memory state is
+  # untouched on a steady-state apply.
+  depends_on = [time_sleep.wait_memory_stats_role]
 }
 
 # ---------------------------------------------------------------------------
@@ -401,6 +408,26 @@ resource "aws_iam_role_policy" "memory_stats" {
   name   = "${local.name_prefix}-memory-stats-inline"
   role   = aws_iam_role.memory_stats.id
   policy = data.aws_iam_policy_document.memory_stats_inline.json
+}
+
+# IAM-propagation delay for the memory-stats execution role. On a from-scratch
+# apply, AgentCore's UpdateMemory validates the brand-new role's trust policy
+# ~1s after the role is created — often before IAM has propagated globally —
+# failing with `ValidationException: Please provide a role with a valid trust
+# policy`. A retry succeeds (the role has propagated by then), but we want the
+# first apply to work. This canonical fix forces a 30s pause between the role
+# (+ its inline policy) being created and the Memory update that references it.
+#
+# No `triggers`: the sleep is keyed to the role's lifetime, not every apply.
+# time_sleep creates ONCE and persists in state; steady-state applies do not
+# re-sleep. It only re-runs if the role/policy it depends on is replaced.
+resource "time_sleep" "wait_memory_stats_role" {
+  create_duration = "30s"
+
+  depends_on = [
+    aws_iam_role.memory_stats,
+    aws_iam_role_policy.memory_stats,
+  ]
 }
 
 # ---------------------------------------------------------------------------
