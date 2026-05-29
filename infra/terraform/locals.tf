@@ -47,6 +47,28 @@ locals {
   # subpath so multiple environments in the same account stay separated.
   runtime_log_group = "/aws/bedrock-agentcore/${local.name_prefix}-runtime"
 
+  # Career-stats long-term-Memory namespace (spec 006 / ADR 007 — Layer 1).
+  # The self-managed strategy's records live here; `ListMemoryRecords` reads by
+  # this namespace deterministically. Identity is stable across games
+  # (actor_id="human-career", NOT the per-game player id), so the namespace is
+  # constant. MUST match the app's `GRAPHIA_STATS_NAMESPACE` default
+  # (`src/graphia/config.py`, technical-considerations §2.2) so local-mode and
+  # remote-mode read/write the same logical career bucket.
+  stats_namespace = "/career/human-career/"
+
+  # S3 bucket receiving the self-managed strategy's batched event payloads
+  # (RESEARCH.md §14). Bucket names are global, lowercase, dash-only, <= 63
+  # chars: `name_prefix` is already lowercase-dash, and the account id keeps the
+  # name globally unique without leaking anything secret. For environment=demo
+  # this resolves to `graphia-demo-stats-payload-257394491982` (well under 63).
+  stats_payload_bucket = substr("${local.name_prefix}-stats-payload-${data.aws_caller_identity.current.account_id}", 0, 63)
+
+  # SNS topic for the self-managed strategy's job notifications (RESEARCH.md
+  # §14). Standard (non-FIFO) topic: career records are written on demand, not
+  # driven by the never-fired auto-extraction trigger, so per-session ordering
+  # is irrelevant.
+  stats_topic_name = "${local.name_prefix}-stats-payload"
+
   # Bedrock model ARN patterns the Runtime is allowed to invoke. Graphia
   # calls Amazon Nova foundation models directly (Nova Pro for gameplay,
   # Nova Lite for roster generation) — pinned to ${var.region}.

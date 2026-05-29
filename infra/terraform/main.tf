@@ -243,12 +243,164 @@ resource "aws_bedrockagentcore_memory" "this" {
   # 7–365.
   event_expiry_duration = 90
 
-  description = "Graphia per-game diary store — one event per AI player's nightly diary entry, keyed by (player_id, game_id)."
+  description = "Graphia Memory — per-game diary events (Phase 2) + cross-game career-stats long-term records under the self-managed strategy (Phase 3, ADR 007)."
 
-  # No `memory_strategies` block: the application uses raw events end-to-end
-  # (`create_event` / `list_events`), no semantic / summarisation / extraction
-  # processing required. The provider models strategies as a separate
-  # `aws_bedrockagentcore_memory_strategy` resource — we declare none.
+  # Execution role the Memory service assumes for its self-managed (custom)
+  # strategy's payload delivery — writing batched event payloads to the S3
+  # bucket and publishing job notifications to the SNS topic (ADR 007 / spec
+  # 006 §2.2). The provider documents `memory_execution_role_arn` as "Required
+  # when using custom memory strategies with model processing"; the self-managed
+  # strategy needs it for S3/SNS delivery even though our auto-extraction
+  # trigger is never fired (we author records on demand). The strategy itself
+  # is attached OUT-OF-BAND (`make create-stats-strategy`) — provider 6.44.0's
+  # `aws_bedrockagentcore_memory_strategy` exposes only the four `*_OVERRIDE`
+  # LLM-extraction types, no SELF_MANAGED / invocation_configuration surface.
+  # See RESEARCH.md §14.
+  memory_execution_role_arn = aws_iam_role.memory_stats.arn
+
+  # No inline `memory_strategies` block (the provider has none). The diary tier
+  # uses raw events end-to-end (`create_event` / `list_events`); the career tier
+  # uses the out-of-band self-managed strategy described above.
+}
+
+# ---------------------------------------------------------------------------
+# Career-stats long-term-Memory payload-delivery scaffolding (spec 006 / ADR
+# 007 — Layer 1). A self-managed (custom) Memory strategy REQUIRES an S3
+# bucket + SNS topic + IAM role for its payload-delivery `invocationConfiguration`
+# (AWS devguide: memory-self-managed-strategies), even though Graphia never
+# fires the auto-extraction trigger — career records are authored on demand via
+# the batch-record APIs. This is the accepted standing-infrastructure cost of a
+# faithful long-term-Memory demonstration (ADR 007 §5).
+#
+# Provider gap: provider 6.44.0 (and latest 6.47.0) `aws_bedrockagentcore_memory_strategy`
+# has NO `SELF_MANAGED` configuration type and no `invocation_configuration`
+# (S3/SNS) attribute — its `CUSTOM` `configuration.type` only supports
+# `SEMANTIC_OVERRIDE` / `SUMMARY_OVERRIDE` / `USER_PREFERENCE_OVERRIDE` /
+# `EPISODIC_OVERRIDE`, all LLM-extraction strategies. So the bucket/topic/role
+# below ARE Terraform-managed, but the strategy that consumes them is created
+# out-of-band (`make create-stats-strategy`), mirroring the Transaction Search
+# steps 2–3 precedent (RESEARCH.md §12). Full rationale: RESEARCH.md §14.
+# ---------------------------------------------------------------------------
+
+# S3 bucket — AgentCore delivers batched event payloads here when a trigger
+# fires. force_destroy so `terraform destroy` cleans it up without a manual
+# empty step (payloads are transient processing artefacts, not durable data).
+resource "aws_s3_bucket" "stats_payload" {
+  bucket        = local.stats_payload_bucket
+  force_destroy = true
+
+  tags = {
+    Name = local.stats_payload_bucket
+  }
+}
+
+# Block all public access — the bucket only ever receives service-internal
+# payload writes from the Memory execution role.
+resource "aws_s3_bucket_public_access_block" "stats_payload" {
+  bucket = aws_s3_bucket.stats_payload.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# Server-side encryption at rest (AWS-managed SSE-S3 / AES256) — matches the
+# ECR repo's AES256 posture; no customer-managed KMS key for this reference
+# project.
+resource "aws_s3_bucket_server_side_encryption_configuration" "stats_payload" {
+  bucket = aws_s3_bucket.stats_payload.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# Lifecycle policy — auto-delete delivered payloads after 1 day. The AWS
+# self-managed-strategy guide explicitly recommends this to control cost since
+# payloads are consumed-then-discarded (we never even consume them: the trigger
+# is unused). 1 day is the minimum meaningful expiry.
+resource "aws_s3_bucket_lifecycle_configuration" "stats_payload" {
+  bucket = aws_s3_bucket.stats_payload.id
+
+  rule {
+    id     = "expire-delivered-payloads"
+    status = "Enabled"
+
+    filter {}
+
+    expiration {
+      days = 1
+    }
+  }
+}
+
+# SNS topic — AgentCore publishes a job notification here when a trigger fires.
+# Standard (non-FIFO) topic: career records are written on demand, not via the
+# unused auto-extraction trigger, so per-session ordering is irrelevant.
+resource "aws_sns_topic" "stats_payload" {
+  name = local.stats_topic_name
+
+  tags = {
+    Name = local.stats_topic_name
+  }
+}
+
+# IAM role the Memory service assumes for payload delivery. Trust principal is
+# `bedrock-agentcore.amazonaws.com` (AWS self-managed-strategy trust policy);
+# the inline policy is least-privilege — exactly the S3 + SNS actions the AWS
+# guide lists, scoped to this bucket and this topic.
+data "aws_iam_policy_document" "memory_stats_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["bedrock-agentcore.amazonaws.com"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "memory_stats_inline" {
+  # S3 payload delivery — the two actions the AWS self-managed-strategy guide
+  # grants: GetBucketLocation on the bucket, PutObject on its objects.
+  statement {
+    sid    = "S3PayloadDelivery"
+    effect = "Allow"
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:PutObject",
+    ]
+    resources = [
+      aws_s3_bucket.stats_payload.arn,
+      "${aws_s3_bucket.stats_payload.arn}/*",
+    ]
+  }
+
+  # SNS notifications — GetTopicAttributes + Publish, scoped to the one topic.
+  statement {
+    sid    = "SNSNotifications"
+    effect = "Allow"
+    actions = [
+      "sns:GetTopicAttributes",
+      "sns:Publish",
+    ]
+    resources = [aws_sns_topic.stats_payload.arn]
+  }
+}
+
+resource "aws_iam_role" "memory_stats" {
+  name               = "${local.name_prefix}-memory-stats"
+  assume_role_policy = data.aws_iam_policy_document.memory_stats_assume_role.json
+}
+
+resource "aws_iam_role_policy" "memory_stats" {
+  name   = "${local.name_prefix}-memory-stats-inline"
+  role   = aws_iam_role.memory_stats.id
+  policy = data.aws_iam_policy_document.memory_stats_inline.json
 }
 
 # ---------------------------------------------------------------------------
@@ -285,11 +437,22 @@ resource "aws_bedrockagentcore_agent_runtime" "this" {
   #   Gateway-MCP. `make_diary_store(config)` reads this and constructs a
   #   `GatewayMCPDiaryStore` pointing at the Gateway's MCP endpoint; the
   #   Gateway forwards calls to the Lambda diary handlers.
+  # - `GRAPHIA_STATS_STRATEGY_ID` / `GRAPHIA_STATS_NAMESPACE`: the remote-mode
+  #   career-stats store (`AgentCoreLongTermStatsStore`, spec 006 §2.1) reads
+  #   these to write/read the rolling career aggregate as a self-managed
+  #   long-term Memory record. The strategy id comes from the
+  #   `stats_strategy_id` var (the out-of-band-created strategy — RESEARCH.md
+  #   §14); it is "" until the strategy is created, after which the store can
+  #   also resolve it by listing the Memory's strategies. The namespace is the
+  #   constant career namespace local (matches the app's GRAPHIA_STATS_NAMESPACE
+  #   default `/career/human-career/`).
   # Implicit references to the Memory and Gateway resources establish the
   # correct ordering — no `depends_on` needed for those two specifically.
   environment_variables = {
-    GRAPHIA_MEMORY_ID  = aws_bedrockagentcore_memory.this.id
-    GRAPHIA_GATEWAY_ID = aws_bedrockagentcore_gateway.this.gateway_id
+    GRAPHIA_MEMORY_ID         = aws_bedrockagentcore_memory.this.id
+    GRAPHIA_GATEWAY_ID        = aws_bedrockagentcore_gateway.this.gateway_id
+    GRAPHIA_STATS_STRATEGY_ID = var.stats_strategy_id
+    GRAPHIA_STATS_NAMESPACE   = local.stats_namespace
   }
 
   # Ensure the inline policy is in place before the Runtime is created;

@@ -31,3 +31,9 @@ variable "ecr_force_delete" {
   type        = bool
   default     = false
 }
+
+variable "stats_strategy_id" {
+  description = "Id of the self-managed (custom) long-term-Memory strategy backing remote-mode career stats (spec 006 / ADR 007). The strategy is created OUT-OF-BAND via `make create-stats-strategy` because provider 6.44.0's `aws_bedrockagentcore_memory_strategy` has no SELF_MANAGED / invocation_configuration surface (S3 + SNS payload delivery) — see RESEARCH.md §14. Feed the `strategyId` that command returns back in (e.g. via `make tf-apply STATS_STRATEGY_ID=...`) so it is plumbed to the Runtime as `GRAPHIA_STATS_STRATEGY_ID`. Empty until the strategy exists; the Runtime then resolves it by listing the Memory's strategies (technical-considerations §2.2)."
+  type        = string
+  default     = ""
+}

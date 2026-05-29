@@ -947,3 +947,98 @@ container log group was created.
 | Topic | URL |
 |---|---|
 | IAM Permissions for AgentCore Runtime (execution role policy) | <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-permissions.html> |
+
+---
+
+## 14. Spec 006 (Cross-Game Career Stats) — self-managed long-term-Memory strategy + payload-delivery scaffolding (ADR 007)
+
+Phase 3 stores remote-mode career stats as a self-authored **long-term memory
+record** under a **self-managed (custom)** Memory strategy on the existing
+`aws_bedrockagentcore_memory.this` resource (ADR 007 Layer 1; spec 006
+technical-considerations §2.2/§3). A configured self-managed strategy
+**requires** payload-delivery scaffolding — an S3 bucket, an SNS topic, and an
+IAM role — for its `invocationConfiguration`, even though Graphia never fires
+the auto-extraction trigger (career records are authored on demand via the
+batch-record APIs). This is accepted standing infrastructure (ADR 007 §5).
+
+### The provider gap (the load-bearing finding)
+
+`hashicorp/aws = 6.44.0` (and the latest 6.47.0, re-checked at the v6.47.0 tag)
+models AgentCore Memory strategies as a separate `aws_bedrockagentcore_memory_strategy`
+resource. Its `type` accepts `SEMANTIC` / `SUMMARIZATION` / `USER_PREFERENCE` /
+`EPISODIC` / `CUSTOM`, and for `CUSTOM` the nested `configuration.type` accepts
+ONLY the four `*_OVERRIDE` variants (`SEMANTIC_OVERRIDE`, `SUMMARY_OVERRIDE`,
+`USER_PREFERENCE_OVERRIDE`, `EPISODIC_OVERRIDE`) — all **LLM-extraction**
+strategies driven by `consolidation { append_to_prompt, model_id }` /
+`extraction { … }` blocks. **There is no `SELF_MANAGED` type and no
+`invocation_configuration` (`payloadDeliveryBucketName` / `topicArn`) or
+`trigger_condition` attribute anywhere on the resource.** Likewise
+`aws_bedrockagentcore_memory` has no inline `memory_strategies` block.
+
+The self-managed strategy's `invocationConfiguration` is exposed by the **AWS
+API** (`create-memory[-strategy]` → `customMemoryStrategy.configuration.selfManagedConfiguration`)
+and by **CloudFormation** (`AWS::BedrockAgentCore::Memory InvocationConfigurationInput`
+with `PayloadDeliveryBucketName` + `TopicArn`) — but not by the Terraform
+provider. So the strategy itself cannot be a Terraform resource in the pinned
+(or any current) provider. Bumping the provider does not close the gap.
+
+### What this sub-task implements (Terraform-expressible)
+
+Declared in `main.tf`, all native to `hashicorp/aws = 6.44.0`, all tagged via
+the provider `default_tags` block (S3 + SNS are taggable):
+
+| Resource | Purpose |
+|---|---|
+| `aws_s3_bucket.stats_payload` (+ `_public_access_block`, `_server_side_encryption_configuration`, `_lifecycle_configuration`) | Payload-delivery bucket (`invocationConfiguration.payloadDeliveryBucketName`). Public access blocked; AES256 at rest; 1-day expiry on delivered payloads (AWS guide cost recommendation); `force_destroy` for clean teardown. |
+| `aws_sns_topic.stats_payload` | Job-notification topic (`invocationConfiguration.topicArn`). Standard (non-FIFO) — on-demand writes, no ordering need. |
+| `aws_iam_role.memory_stats` + `aws_iam_role_policy.memory_stats` | Memory execution role. Trust = `bedrock-agentcore.amazonaws.com`; inline policy is the exact least-privilege S3 (`GetBucketLocation`, `PutObject`) + SNS (`GetTopicAttributes`, `Publish`) set from the AWS self-managed-strategy guide, scoped to this bucket and topic. |
+
+`aws_bedrockagentcore_memory.this` now sets `memory_execution_role_arn =
+aws_iam_role.memory_stats.arn` (the provider documents this arg as required for
+custom strategies). New outputs `stats_strategy_id` (the var, see below),
+`stats_namespace` (the `/career/human-career/` local), `stats_payload_bucket`,
+`stats_payload_topic_arn`, `memory_execution_role_arn`. The Runtime gains
+`GRAPHIA_STATS_STRATEGY_ID` (from var) + `GRAPHIA_STATS_NAMESPACE` (from local)
+env vars, wired exactly like the existing `GRAPHIA_MEMORY_ID`.
+
+### Out-of-band: creating the strategy (mirrors §12 steps 2–3)
+
+The strategy is attached out-of-band with **`make create-stats-strategy`** —
+the project's task-runner pattern, parallel to `make enable-transaction-search`.
+It calls `aws bedrock-agentcore-control create-memory-strategy` (or the
+`update-memory` form) with `customMemoryStrategy.configuration.selfManagedConfiguration.invocationConfiguration`
+pointing at the Terraform-created bucket/topic, `namespaces=[/career/human-career/]`,
+and the Terraform-created execution role. The command prints the returned
+`strategyId`; feed it back via `make tf-apply STATS_STRATEGY_ID=<id>` so it
+flows to the Runtime as `GRAPHIA_STATS_STRATEGY_ID`. This is **not** faked in a
+`null_resource`/`local-exec` (the `./tf` container image ships no `aws` CLI —
+same constraint as §10/§12) and is a one-time-per-deploy control-plane step, so
+out-of-band is the correct call independent of the gap. The app can also resolve
+the strategy by listing the Memory's strategies if the id is left unset
+(technical-considerations §2.2).
+
+### Findings summary
+
+- **Self-managed strategy is a provider gap.** `aws_bedrockagentcore_memory_strategy`
+  in 6.44.0/6.47.0 supports only LLM-extraction `*_OVERRIDE` custom types — no
+  `SELF_MANAGED` type, no S3/SNS `invocation_configuration`. The strategy is
+  created out-of-band; the bucket/topic/role it consumes ARE Terraform-managed.
+- **The scaffolding is mandatory, the trigger is unused.** A configured
+  self-managed strategy requires S3 + SNS + IAM role for payload delivery even
+  though Graphia authors records on demand and never fires the trigger (ADR 007).
+- **Least-privilege role from the AWS guide.** Exactly S3 `GetBucketLocation` +
+  `PutObject` and SNS `GetTopicAttributes` + `Publish`, scoped to the one bucket
+  and one topic; trust principal `bedrock-agentcore.amazonaws.com`.
+- **Namespace must match the app.** `/career/human-career/` equals the app's
+  `GRAPHIA_STATS_NAMESPACE` default so local + remote target the same career
+  bucket; stable across games (actor_id `human-career`, not the per-game id).
+
+### Sources (this section)
+
+| Topic | URL |
+|---|---|
+| AgentCore Memory — self-managed strategies (S3/SNS/IAM setup, `selfManagedConfiguration.invocationConfiguration`, batch APIs) | <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/memory-self-managed-strategies.html> |
+| CloudFormation `AWS::BedrockAgentCore::Memory InvocationConfigurationInput` (`PayloadDeliveryBucketName`, `TopicArn`) | <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-bedrockagentcore-memory-invocationconfigurationinput.html> |
+| `aws_bedrockagentcore_memory_strategy` schema (CUSTOM = `*_OVERRIDE` only, no SELF_MANAGED) | <https://registry.terraform.io/providers/hashicorp/aws/6.44.0/docs/resources/bedrockagentcore_memory_strategy> |
+| `aws_bedrockagentcore_memory` schema (`memory_execution_role_arn`, no inline strategies) | <https://registry.terraform.io/providers/hashicorp/aws/6.44.0/docs/resources/bedrockagentcore_memory> |
+| AgentCore Memory namespace design patterns | <https://aws.amazon.com/blogs/machine-learning/organizing-agents-memory-at-scale-namespace-design-patterns-in-agentcore-memory/> |

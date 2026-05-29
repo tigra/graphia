@@ -32,7 +32,12 @@ ECR_FORCE_DELETE ?= false
 
 TF_DIR        = infra/terraform
 TF_VARS       = -var environment=$(ENVIRONMENT) -var owner=$(OWNER) -var ecr_force_delete=$(ECR_FORCE_DELETE)
-TF_APPLY_VARS = $(TF_VARS) -var image_tag=$(TAG)
+# STATS_STRATEGY_ID: the self-managed career-stats strategy id from
+# `make create-stats-strategy` (spec 006 / ADR 007). Empty until that runs;
+# feed it back via `make tf-apply STATS_STRATEGY_ID=<id>` to plumb it to the
+# Runtime as GRAPHIA_STATS_STRATEGY_ID. See infra/terraform/RESEARCH.md §14.
+STATS_STRATEGY_ID ?=
+TF_APPLY_VARS = $(TF_VARS) -var image_tag=$(TAG) -var stats_strategy_id=$(STATS_STRATEGY_ID)
 
 LAMBDA_DIR    = infra/lambda
 LAMBDA_BUILD  = $(LAMBDA_DIR)/.build
@@ -46,7 +51,8 @@ LAMBDA_ZIPS   = $(addprefix $(LAMBDA_BUILD)/,$(addsuffix .zip,$(LAMBDA_FNS)))
 .PHONY: help check-container build run shell clean login-ecr push \
         tf-init tf-fmt tf-validate tf-plan tf-ecr-bootstrap tf-apply tf-destroy \
         wire-env deploy redeploy destroy inspect-diary play play-remote \
-        build-lambdas clean-lambdas enable-transaction-search verify-observability
+        build-lambdas clean-lambdas enable-transaction-search verify-observability \
+        create-stats-strategy
 
 help:
 	@echo "Container image targets:"
@@ -82,6 +88,9 @@ help:
 	@echo ""
 	@echo "Inspection:"
 	@echo "  make inspect-diary      Pretty-print diary entries from the deployed Memory (uses .env)."
+	@echo ""
+	@echo "Career stats (spec 006 / ADR 007 — self-managed long-term Memory strategy):"
+	@echo "  make create-stats-strategy      Create the self-managed strategy out-of-band (provider gap); prints its strategyId."
 	@echo ""
 	@echo "Observability (one-time, per AWS account):"
 	@echo "  make enable-transaction-search  Turn on CloudWatch Transaction Search for the trace tree."
@@ -313,6 +322,55 @@ enable-transaction-search:
 	aws xray update-indexing-rule --name "Default" --rule '{"Probabilistic": {"DesiredSamplingPercentage": 100}}' --region $(AWS_REGION)
 	@echo ""
 	@echo "CloudWatch Transaction Search enabled in $(AWS_REGION): trace segments -> CloudWatch Logs, 100% span indexing."
+
+# --- Career-stats self-managed strategy (spec 006 / ADR 007, one-time per deploy).
+#
+# The self-managed (custom) long-term-Memory strategy that backs remote-mode
+# career stats can NOT be a Terraform resource: provider 6.44.0/6.47.0
+# `aws_bedrockagentcore_memory_strategy` exposes only the LLM-extraction
+# `*_OVERRIDE` custom types, with no SELF_MANAGED type and no S3/SNS
+# `invocation_configuration` (infra/terraform/RESEARCH.md §14). Terraform DOES
+# manage the payload-delivery scaffolding the strategy requires (S3 bucket, SNS
+# topic, memory execution role); this target attaches the strategy itself
+# out-of-band, mirroring `enable-transaction-search` (§12 steps 2-3).
+#
+# State-independent: discovers the Terraform-created Memory / bucket / topic /
+# role via the AWS API by their conventional names (same approach as wire-env),
+# so it works from a fresh clone with profile access. Prints the returned
+# strategyId — feed it back so it reaches the Runtime:
+#   make tf-apply STATS_STRATEGY_ID=<printed-id>
+# Idempotent-ish: if a self-managed strategy already exists on the Memory, it
+# prints that one's id instead of creating a duplicate.
+STATS_NAMESPACE ?= /career/human-career/
+create-stats-strategy:
+	@set -e; \
+	MEMORY_PREFIX=$$(printf 'graphia-%s_memory' "$(ENVIRONMENT)" | tr '-' '_' | cut -c1-48); \
+	MEMORY_ID=$$(aws --region $(AWS_REGION) bedrock-agentcore-control list-memories \
+	    --query "memories[?starts_with(id, '$$MEMORY_PREFIX')].id | [0]" --output text); \
+	if [ -z "$$MEMORY_ID" ] || [ "$$MEMORY_ID" = "None" ]; then \
+	  echo "ERROR: no AgentCore memory starting '$$MEMORY_PREFIX' in $(AWS_REGION). Deploy first (make deploy)."; exit 1; \
+	fi; \
+	EXISTING=$$(aws --region $(AWS_REGION) bedrock-agentcore-control list-memory-strategies \
+	    --memory-id "$$MEMORY_ID" \
+	    --query "memoryStrategies[?type=='CUSTOM']|[0].strategyId" --output text 2>/dev/null || echo None); \
+	if [ -n "$$EXISTING" ] && [ "$$EXISTING" != "None" ]; then \
+	  echo "Self-managed strategy already exists: $$EXISTING"; \
+	  echo "Re-apply Terraform to plumb it: make tf-apply STATS_STRATEGY_ID=$$EXISTING"; \
+	  exit 0; \
+	fi; \
+	BUCKET="graphia-$(ENVIRONMENT)-stats-payload-$(AWS_ACCOUNT)"; \
+	TOPIC_ARN="arn:aws:sns:$(AWS_REGION):$(AWS_ACCOUNT):graphia-$(ENVIRONMENT)-stats-payload"; \
+	STRATEGY_JSON=$$(printf '{"customMemoryStrategy":{"name":"graphia-%s-career","namespaces":["%s"],"configuration":{"selfManagedConfiguration":{"invocationConfiguration":{"payloadDeliveryBucketName":"%s","topicArn":"%s"}}}}}' \
+	    "$(ENVIRONMENT)" "$(STATS_NAMESPACE)" "$$BUCKET" "$$TOPIC_ARN"); \
+	echo "Creating self-managed strategy on memory $$MEMORY_ID ..."; \
+	STRATEGY_ID=$$(aws --region $(AWS_REGION) bedrock-agentcore-control create-memory-strategy \
+	    --memory-id "$$MEMORY_ID" \
+	    --memory-strategy "$$STRATEGY_JSON" \
+	    --query 'memoryStrategy.strategyId' --output text); \
+	echo ""; \
+	echo "Created self-managed career-stats strategy: $$STRATEGY_ID"; \
+	echo "Now plumb it to the Runtime:"; \
+	echo "  make tf-apply STATS_STRATEGY_ID=$$STRATEGY_ID"
 
 # --- Live observability verification.
 #

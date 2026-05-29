@@ -33,6 +33,31 @@ output "memory_id" {
   value       = aws_bedrockagentcore_memory.this.id
 }
 
+output "stats_strategy_id" {
+  description = "Id of the self-managed (custom) long-term-Memory strategy backing remote-mode career stats (spec 006 / ADR 007), passed to the Runtime via the `GRAPHIA_STATS_STRATEGY_ID` env var. This is the value `AgentCoreLongTermStatsStore` uses as `memoryStrategyId` when authoring/reading the career record by namespace. Echoes the `stats_strategy_id` var because the strategy is created OUT-OF-BAND (`make create-stats-strategy`) — provider 6.44.0 has no SELF_MANAGED strategy surface (RESEARCH.md §14). Empty until that command has run and its `strategyId` is fed back via `-var stats_strategy_id=...`."
+  value       = var.stats_strategy_id
+}
+
+output "stats_namespace" {
+  description = "Career-stats long-term-Memory namespace passed to the Runtime via the `GRAPHIA_STATS_NAMESPACE` env var. `AgentCoreLongTermStatsStore` lists/writes the rolling career record under this namespace deterministically (`ListMemoryRecords` by namespace, no semantic search). Matches the app's `GRAPHIA_STATS_NAMESPACE` default `/career/human-career/`; surfaced here so local-mode / out-of-band tooling target the same logical career bucket."
+  value       = local.stats_namespace
+}
+
+output "stats_payload_bucket" {
+  description = "Name of the S3 bucket the self-managed strategy delivers batched event payloads to. Input to the out-of-band `make create-stats-strategy` (`invocationConfiguration.payloadDeliveryBucketName`). Standing scaffolding required by a configured self-managed strategy even though the trigger is never fired (ADR 007 §5)."
+  value       = aws_s3_bucket.stats_payload.id
+}
+
+output "stats_payload_topic_arn" {
+  description = "ARN of the SNS topic the self-managed strategy publishes job notifications to. Input to the out-of-band `make create-stats-strategy` (`invocationConfiguration.topicArn`)."
+  value       = aws_sns_topic.stats_payload.arn
+}
+
+output "memory_execution_role_arn" {
+  description = "ARN of the IAM role the Memory service assumes for the self-managed strategy's S3/SNS payload delivery. Input to the out-of-band `make create-stats-strategy` (`--memory-execution-role-arn`); also set on the Memory resource as `memory_execution_role_arn`."
+  value       = aws_iam_role.memory_stats.arn
+}
+
 output "gateway_id" {
   description = "AgentCore Gateway identifier passed to the Runtime via the `GRAPHIA_GATEWAY_ID` env var. Sub-task 3's in-container MCP client uses it to construct the Gateway invocation URL when routing diary calls through Gateway-MCP."
   value       = aws_bedrockagentcore_gateway.this.gateway_id
