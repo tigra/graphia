@@ -172,8 +172,18 @@ tf-destroy:
 # --- Workflow composites.
 
 # Idempotent: replaces any existing GRAPHIA_RUNTIME_URL / GRAPHIA_MEMORY_ID /
-# GRAPHIA_LOG_GROUP lines in .env in place, preserves every other line.
+# GRAPHIA_LOG_GROUP / OWNER lines in .env in place, preserves every other line.
 # Creates .env if it doesn't exist.
+#
+# OWNER is resolved and pinned into .env first, before the deployment lookup:
+#   1. the deployed ECR repo's `Owner` tag — the source of truth for who the
+#      live stack is tagged to (so a fresh clone whose `git config user.email`
+#      differs, can't drift the Owner tag on the next apply); failing that,
+#   2. `git config user.email` (the same fallback the OWNER make-var uses), so a
+#      fresh checkout with nothing deployed in AWS still gets OWNER populated.
+# Because OWNER is written before the runtime existence check, it lands in .env
+# even when no stack is deployed yet (wire-env then still errors on the missing
+# runtime, but OWNER is already pinned).
 #
 # State-independent: instead of reading `./tf output` (which needs local
 # Terraform state, so only works on the machine that deployed), it discovers
@@ -187,16 +197,35 @@ wire-env:
 	RUNTIME_NAME=$$(printf 'graphia-%s_runtime' "$(ENVIRONMENT)" | tr '-' '_' | cut -c1-48); \
 	MEMORY_PREFIX=$$(printf 'graphia-%s_memory' "$(ENVIRONMENT)" | tr '-' '_' | cut -c1-48); \
 	LOG_GROUP="/aws/bedrock-agentcore/graphia-$(ENVIRONMENT)-runtime"; \
+	touch .env; \
+	ECR_ARN=$$(aws --region $(AWS_REGION) ecr describe-repositories \
+	    --repository-names "graphia-$(ENVIRONMENT)-runtime" \
+	    --query 'repositories[0].repositoryArn' --output text 2>/dev/null || true); \
+	OWNER_TAG=""; \
+	if [ -n "$$ECR_ARN" ] && [ "$$ECR_ARN" != "None" ]; then \
+	  OWNER_TAG=$$(aws --region $(AWS_REGION) ecr list-tags-for-resource \
+	      --resource-arn "$$ECR_ARN" \
+	      --query "tags[?Key=='Owner'].Value | [0]" --output text 2>/dev/null || true); \
+	fi; \
+	if [ -z "$$OWNER_TAG" ] || [ "$$OWNER_TAG" = "None" ]; then \
+	  OWNER_TAG=$$(git config user.email 2>/dev/null || echo unknown); \
+	fi; \
+	awk -v ow="OWNER=$$OWNER_TAG" \
+	    'BEGIN { oseen=0 } \
+	     /^OWNER=/ { print ow; oseen=1; next } \
+	     { print } \
+	     END { if (!oseen) print ow }' \
+	    .env > .env.tmp && mv .env.tmp .env; \
 	RUNTIME_URL=$$(aws --region $(AWS_REGION) bedrock-agentcore-control list-agent-runtimes \
 	    --query "agentRuntimes[?agentRuntimeName=='$$RUNTIME_NAME'].agentRuntimeArn | [0]" --output text); \
 	MEMORY_ID=$$(aws --region $(AWS_REGION) bedrock-agentcore-control list-memories \
 	    --query "memories[?starts_with(id, '$$MEMORY_PREFIX')].id | [0]" --output text); \
 	if [ -z "$$RUNTIME_URL" ] || [ "$$RUNTIME_URL" = "None" ]; then \
+	  echo "OWNER pinned to '$$OWNER_TAG' in .env."; \
 	  echo "ERROR: no AgentCore runtime named '$$RUNTIME_NAME' found in $(AWS_REGION)."; \
 	  echo "       Is the stack deployed for ENVIRONMENT=$(ENVIRONMENT)? Run 'make deploy' (or set the right ENVIRONMENT)."; \
 	  exit 1; \
 	fi; \
-	touch .env; \
 	awk -v ru="GRAPHIA_RUNTIME_URL=$$RUNTIME_URL" \
 	    -v mi="GRAPHIA_MEMORY_ID=$$MEMORY_ID" \
 	    -v lg="GRAPHIA_LOG_GROUP=$$LOG_GROUP" \
@@ -209,7 +238,7 @@ wire-env:
 	    .env > .env.tmp && mv .env.tmp .env
 	@echo ""
 	@echo "Wired into .env (discovered via the AWS API — no Terraform state needed):"
-	@grep -E '^GRAPHIA_(RUNTIME_URL|MEMORY_ID|LOG_GROUP)=' .env
+	@grep -E '^(GRAPHIA_(RUNTIME_URL|MEMORY_ID|LOG_GROUP)|OWNER)=' .env
 
 deploy: build-lambdas tf-init tf-ecr-bootstrap push tf-apply wire-env
 	@echo ""
@@ -350,9 +379,9 @@ create-stats-strategy:
 	if [ -z "$$MEMORY_ID" ] || [ "$$MEMORY_ID" = "None" ]; then \
 	  echo "ERROR: no AgentCore memory starting '$$MEMORY_PREFIX' in $(AWS_REGION). Deploy first (make deploy)."; exit 1; \
 	fi; \
-	EXISTING=$$(aws --region $(AWS_REGION) bedrock-agentcore-control list-memory-strategies \
+	EXISTING=$$(aws --region $(AWS_REGION) bedrock-agentcore-control get-memory \
 	    --memory-id "$$MEMORY_ID" \
-	    --query "memoryStrategies[?type=='CUSTOM']|[0].strategyId" --output text 2>/dev/null || echo None); \
+	    --query "memory.strategies[?type=='CUSTOM']|[0].strategyId" --output text 2>/dev/null || echo None); \
 	if [ -n "$$EXISTING" ] && [ "$$EXISTING" != "None" ]; then \
 	  echo "Self-managed strategy already exists: $$EXISTING"; \
 	  echo "Re-apply Terraform to plumb it: make tf-apply STATS_STRATEGY_ID=$$EXISTING"; \
@@ -360,13 +389,16 @@ create-stats-strategy:
 	fi; \
 	BUCKET="graphia-$(ENVIRONMENT)-stats-payload-$(AWS_ACCOUNT)"; \
 	TOPIC_ARN="arn:aws:sns:$(AWS_REGION):$(AWS_ACCOUNT):graphia-$(ENVIRONMENT)-stats-payload"; \
-	STRATEGY_JSON=$$(printf '{"customMemoryStrategy":{"name":"graphia-%s-career","namespaces":["%s"],"configuration":{"selfManagedConfiguration":{"invocationConfiguration":{"payloadDeliveryBucketName":"%s","topicArn":"%s"}}}}}' \
-	    "$(ENVIRONMENT)" "$(STATS_NAMESPACE)" "$$BUCKET" "$$TOPIC_ARN"); \
-	echo "Creating self-managed strategy on memory $$MEMORY_ID ..."; \
-	STRATEGY_ID=$$(aws --region $(AWS_REGION) bedrock-agentcore-control create-memory-strategy \
+	STRATEGY_NAME=$$(printf 'graphia_%s_career' "$(ENVIRONMENT)" | tr '-' '_' | cut -c1-48); \
+	STRATEGIES_JSON=$$(printf '{"addMemoryStrategies":[{"customMemoryStrategy":{"name":"%s","configuration":{"selfManagedConfiguration":{"invocationConfiguration":{"payloadDeliveryBucketName":"%s","topicArn":"%s"}}}}}]}' \
+	    "$$STRATEGY_NAME" "$$BUCKET" "$$TOPIC_ARN"); \
+	echo "Adding self-managed strategy to memory $$MEMORY_ID ..."; \
+	aws --region $(AWS_REGION) bedrock-agentcore-control update-memory \
 	    --memory-id "$$MEMORY_ID" \
-	    --memory-strategy "$$STRATEGY_JSON" \
-	    --query 'memoryStrategy.strategyId' --output text); \
+	    --memory-strategies "$$STRATEGIES_JSON" >/dev/null; \
+	STRATEGY_ID=$$(aws --region $(AWS_REGION) bedrock-agentcore-control get-memory \
+	    --memory-id "$$MEMORY_ID" \
+	    --query "memory.strategies[?type=='CUSTOM']|[0].strategyId" --output text); \
 	echo ""; \
 	echo "Created self-managed career-stats strategy: $$STRATEGY_ID"; \
 	echo "Now plumb it to the Runtime:"; \
