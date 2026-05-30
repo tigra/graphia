@@ -2,7 +2,7 @@
 
 - **ADR Number:** 007
 - **Title:** Two-Tier Long-Term Memory — Exact-Counter Records Now, Semantic Memory Later
-- **Status:** Accepted
+- **Status:** Superseded by [ADR 008](./008-self-managed-memory-pipeline.md) (*Long-Term Memory via the Self-Managed Pipeline*) — 2026-05-30. Live audit revealed the self-managed strategy's S3/SNS/IAM payload-delivery scaffolding sat inert (no subscriber, no consumer) and the long-term-memory-strategy idea was never built end-to-end. ADR 008 rewires the pipeline as AWS intended (events → S3/SNS → consumer Lambda → records), making the scaffolding load-bearing; the two-tier framing in this ADR is no longer in force.
 - **Date:** 2026-05-28
 - **Authors:** Alexey Tigarev
 
