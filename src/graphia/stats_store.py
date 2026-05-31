@@ -499,12 +499,12 @@ class AgentCoreLongTermStatsStore:
 def make_stats_store(config: GraphiaConfig) -> StatsStore:
     """Select the career stats store implementation for ``config``.
 
-    ``memory_id`` set (remote mode) selects the AgentCore long-term-record
+    ``career_memory_id`` set (remote mode) selects the AgentCore long-term-record
     store; otherwise the file-backed local store over ``config.stats_file``.
     """
-    if config.memory_id:
+    if config.career_memory_id:
         return AgentCoreLongTermStatsStore(
-            config.memory_id,
+            config.career_memory_id,
             config.stats_strategy_id,
             config.stats_namespace,
             region=config.aws_region,

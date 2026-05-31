@@ -20,6 +20,7 @@ class GraphiaConfig:
     remote_mode: bool
     runtime_invocation_url: str | None
     memory_id: str | None
+    career_memory_id: str | None
     # Gateway plumbing (Slice 7 sub-task 3). Both fields are normally
     # only populated inside the Runtime container — Terraform sets
     # ``GRAPHIA_GATEWAY_ID`` on the Runtime resource's environment_variables
@@ -66,6 +67,7 @@ def load_config() -> GraphiaConfig:
     remote_mode = _env_truthy("GRAPHIA_REMOTE")
     runtime_invocation_url = os.environ.get("GRAPHIA_RUNTIME_URL") or None
     memory_id = os.environ.get("GRAPHIA_MEMORY_ID") or None
+    career_memory_id = os.environ.get("GRAPHIA_CAREER_MEMORY_ID") or None
     cloudwatch_log_group = os.environ.get("GRAPHIA_LOG_GROUP") or None
     stats_strategy_id = os.environ.get("GRAPHIA_STATS_STRATEGY_ID")
     stats_namespace = os.environ.get(
@@ -114,6 +116,7 @@ def load_config() -> GraphiaConfig:
         remote_mode=remote_mode,
         runtime_invocation_url=runtime_invocation_url,
         memory_id=memory_id,
+        career_memory_id=career_memory_id,
         gateway_id=gateway_id,
         gateway_url=gateway_url,
         cloudwatch_log_group=cloudwatch_log_group,

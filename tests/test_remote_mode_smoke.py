@@ -229,7 +229,6 @@ def patched_agentcore_client(
 
     import graphia.ui.app as app_module
     from graphia.diary_store import InProcessDiaryStore
-    from graphia.stats_store import LocalFileStatsStore
 
     real_build_graph = app_module.build_graph
 
@@ -245,16 +244,6 @@ def patched_agentcore_client(
         FakeAgentCoreClient.captured_graph = graph
         return graph, thread_id
 
-    # Same reason as the diary store: remote-mode env sets GRAPHIA_MEMORY_ID,
-    # so the real make_stats_store would build an AgentCoreLongTermStatsStore
-    # whose load()/record() reach boto3. Force the file-backed store (over the
-    # test's temp GRAPHIA_STATS_FILE) to keep this smoke run boto3-free. The
-    # dedicated AgentCoreLongTermStatsStore tests land in a later sub-task.
-    monkeypatch.setattr(
-        app_module,
-        "make_stats_store",
-        lambda config: LocalFileStatsStore(config.stats_file),
-    )
     monkeypatch.setattr(app_module, "build_graph", _wrapped_build_graph)
     monkeypatch.setattr("graphia.driver.AgentCoreClient", FakeAgentCoreClient)
     return FakeAgentCoreClient
@@ -752,6 +741,7 @@ async def test_remote_mode_driver_detects_interrupt_from_stream_not_local_state(
         remote_mode=True,
         runtime_invocation_url=FAKE_RUNTIME_ARN,
         memory_id=None,
+        career_memory_id=None,
         gateway_id=None,
         gateway_url=None,
         cloudwatch_log_group=None,
@@ -1032,6 +1022,7 @@ async def test_remote_mode_consumer_receives_basemessage_from_scripted_sse(
         remote_mode=True,
         runtime_invocation_url=FAKE_RUNTIME_ARN,
         memory_id=None,
+        career_memory_id=None,
         gateway_id=None,
         gateway_url=None,
         cloudwatch_log_group=None,
@@ -1147,6 +1138,7 @@ async def test_drive_graph_on_state_receives_human_id_from_collect_name_chunk(
         remote_mode=True,
         runtime_invocation_url=FAKE_RUNTIME_ARN,
         memory_id=None,
+        career_memory_id=None,
         gateway_id=None,
         gateway_url=None,
         cloudwatch_log_group=None,
