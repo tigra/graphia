@@ -41,7 +41,12 @@ TF_APPLY_VARS = $(TF_VARS) -var image_tag=$(TAG) -var stats_strategy_id=$(STATS_
 
 LAMBDA_DIR    = infra/lambda
 LAMBDA_BUILD  = $(LAMBDA_DIR)/.build
-LAMBDA_FNS    = diary_write diary_read
+LAMBDA_FNS    = diary_write diary_read career_consumer
+
+# Career-consumer Lambda vendors these modules from src/graphia/ at zip time
+# so the function imports them flat (`from career_events import ...`,
+# `from stats_store import ...`); see infra/lambda/career_consumer/lambda_function.py.
+CAREER_CONSUMER_VENDORED = src/graphia/career_events.py src/graphia/stats_store.py
 
 # Lambda zips are produced by `make build-lambdas`. Each zip vendors the
 # function's `requirements.txt` (bedrock-agentcore SDK) alongside
@@ -344,6 +349,33 @@ $(LAMBDA_BUILD)/%.zip: $(LAMBDA_DIR)/%/lambda_function.py $(LAMBDA_DIR)/%/requir
 		--only-binary=:all:
 	cp $(LAMBDA_DIR)/$*/lambda_function.py $(LAMBDA_BUILD)/$*/
 	cd $(LAMBDA_BUILD)/$* && zip -qr ../$*.zip .
+
+# career_consumer also vendors career_events.py + stats_store.py from src/graphia/.
+# Make picks the more specific target over the pattern rule above, so this is the
+# rule that actually runs for that zip. Imports are rewritten flat at copy time:
+# `from graphia.stats_store import …` becomes `from stats_store import …`, so the
+# zipped Lambda doesn't carry a `graphia/` package wrapper. boto3 is provided by
+# the Lambda runtime; requirements.txt is intentionally empty.
+$(LAMBDA_BUILD)/career_consumer.zip: $(LAMBDA_DIR)/career_consumer/lambda_function.py \
+                                     $(LAMBDA_DIR)/career_consumer/requirements.txt \
+                                     $(CAREER_CONSUMER_VENDORED)
+	@mkdir -p $(LAMBDA_BUILD)
+	rm -rf $(LAMBDA_BUILD)/career_consumer
+	mkdir -p $(LAMBDA_BUILD)/career_consumer
+	pip3 install --quiet -r $(LAMBDA_DIR)/career_consumer/requirements.txt -t $(LAMBDA_BUILD)/career_consumer \
+		--platform $(LAMBDA_PY_PLATFORM) \
+		--python-version $(LAMBDA_PY_VERSION) \
+		--implementation cp \
+		--only-binary=:all:
+	cp $(LAMBDA_DIR)/career_consumer/lambda_function.py $(LAMBDA_BUILD)/career_consumer/
+	for src in $(CAREER_CONSUMER_VENDORED); do \
+	  base=$$(basename $$src); \
+	  sed -e 's/^from graphia\.stats_store/from stats_store/' \
+	      -e 's/^from graphia\.config/from config/' \
+	      -e 's/^from graphia\.career_events/from career_events/' \
+	      $$src > $(LAMBDA_BUILD)/career_consumer/$$base; \
+	done
+	cd $(LAMBDA_BUILD)/career_consumer && zip -qr ../career_consumer.zip .
 
 clean-lambdas:
 	rm -rf $(LAMBDA_BUILD)

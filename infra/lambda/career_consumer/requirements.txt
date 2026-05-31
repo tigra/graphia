@@ -1,0 +1,3 @@
+# boto3 and botocore are provided by the AWS Lambda Python runtime.
+# The vendored sources from src/graphia/ (career_events.py, stats_store.py) are
+# copied alongside lambda_function.py by `make build-lambdas` and use stdlib only.

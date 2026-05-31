@@ -97,6 +97,7 @@ class CareerStats:
     total_night_victims: int = 0
     completed_games: int = 0
     sum_rounds_completed: int = 0
+    games_folded: list[str] = field(default_factory=list)
 
     def role_games(self, role: str) -> int:
         """Games played in ``role`` (``0`` for an unseen role)."""
@@ -233,6 +234,14 @@ def _str_int_dict(raw: Any, key: str) -> dict[str, int]:
     return {k: v for k, v in value.items() if isinstance(k, str) and isinstance(v, int)}
 
 
+def _str_list(raw: Any, key: str) -> list[str]:
+    """Read ``key`` as a ``list[str]``, dropping non-string entries."""
+    value = raw.get(key)
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, str)]
+
+
 def _career_from_json(raw: Any) -> CareerStats:
     """Parse a JSON object into a ``CareerStats``, tolerating missing keys.
 
@@ -256,6 +265,7 @@ def _career_from_json(raw: Any) -> CareerStats:
         total_night_victims=_int_field(raw, "total_night_victims"),
         completed_games=_int_field(raw, "completed_games"),
         sum_rounds_completed=_int_field(raw, "sum_rounds_completed"),
+        games_folded=_str_list(raw, "games_folded"),
     )
 
 
@@ -280,6 +290,7 @@ def _career_to_json(stats: CareerStats) -> dict[str, Any]:
         "total_night_victims": stats.total_night_victims,
         "completed_games": stats.completed_games,
         "sum_rounds_completed": stats.sum_rounds_completed,
+        "games_folded": list(stats.games_folded),
     }
 
 
