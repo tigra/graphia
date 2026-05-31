@@ -209,6 +209,19 @@ data "aws_iam_policy_document" "runtime_inline" {
     actions   = ["bedrock-agentcore:InvokeGateway"]
     resources = [aws_bedrockagentcore_gateway.this.gateway_arn]
   }
+
+  # ADR 008: the Runtime emits per-action career events on the dedicated
+  # career Memory (no Gateway hop — direct boto3 `create_event`), and reads
+  # the consolidated long-term `CareerStats` record back via
+  # `list_memory_records` for the launch greeting. Scoped to the career
+  # Memory only; the diary path stays Gateway-fronted (no Memory grant for
+  # diary on this role).
+  statement {
+    sid       = "AgentCoreCareerMemoryRuntimeAccess"
+    effect    = "Allow"
+    actions   = ["bedrock-agentcore:CreateEvent", "bedrock-agentcore:ListMemoryRecords"]
+    resources = [aws_bedrockagentcore_memory.career.arn]
+  }
 }
 
 resource "aws_iam_role" "runtime" {

@@ -397,27 +397,22 @@ class AgentCoreCareerEventStore:
         return self._client
 
     def load(self) -> CareerStats:
-        """Read the single career record by namespace; zeroed if absent.
+        """Read the single career record by namespace; zeroed if genuinely absent.
 
         Deterministic ``ListMemoryRecords`` by namespace — never semantic
         search. The record's ``content.text`` is parsed via
-        :func:`_career_from_json`. A missing record, a read error, or an
-        unparseable payload yields a zeroed :class:`CareerStats` (logged,
-        never raised) — matching :class:`LocalFileStatsStore`'s tolerance.
+        :func:`_career_from_json`. An empty result or an unparseable payload
+        yields a zeroed :class:`CareerStats` (the namespace genuinely has no
+        record yet, or a future schema change made one unreadable).
+        **AgentCore / boto3 errors propagate** so a broken remote setup
+        fails loud instead of silently rendering panels from a zeroed
+        aggregate.
         """
-        try:
-            client = self._get_client()
-            response = client.list_memory_records(
-                memoryId=self._memory_id,
-                namespace=self._namespace,
-            )
-        except Exception:
-            logger.warning(
-                "Could not list career memory records in %s; starting fresh.",
-                self._namespace,
-                exc_info=True,
-            )
-            return CareerStats()
+        client = self._get_client()
+        response = client.list_memory_records(
+            memoryId=self._memory_id,
+            namespace=self._namespace,
+        )
         summaries = response.get("memoryRecordSummaries") or []
         if not summaries:
             logger.info(

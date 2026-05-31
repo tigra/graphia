@@ -296,29 +296,22 @@ class AgentCoreCareerEventEmitter:
         return self._client
 
     def emit(self, session_id: str, event: CareerEvent) -> None:
-        try:
-            client = self._get_client()
-            body = json.dumps(to_json(event))
-            client.create_event(
-                memoryId=self._memory_id,
-                actorId=self._actor_id,
-                sessionId=session_id,
-                eventTimestamp=datetime.now(timezone.utc),
-                payload=[
-                    {
-                        "conversational": {
-                            "content": {"text": body},
-                            "role": "ASSISTANT",
-                        }
+        client = self._get_client()
+        body = json.dumps(to_json(event))
+        client.create_event(
+            memoryId=self._memory_id,
+            actorId=self._actor_id,
+            sessionId=session_id,
+            eventTimestamp=datetime.now(timezone.utc),
+            payload=[
+                {
+                    "conversational": {
+                        "content": {"text": body},
+                        "role": "ASSISTANT",
                     }
-                ],
-            )
-        except Exception:
-            logger.exception(
-                "Career event emit failed (kind=%s, session=%s); continuing.",
-                event.kind,
-                session_id,
-            )
+                }
+            ],
+        )
 
 
 def make_career_emitter(config: "GraphiaConfig") -> CareerEventEmitter:

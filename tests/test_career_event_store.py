@@ -3,9 +3,10 @@
 The store is the read-only remote-mode view over AgentCore long-term memory:
 
 * ``load()`` lists the single namespace-scoped record and parses it via
-  ``_career_from_json``; missing / malformed / boto-error all yield a zeroed
-  :class:`CareerStats` (the same forgiving contract as
-  :class:`LocalFileStatsStore`).
+  ``_career_from_json``; a missing record or a malformed payload yields a
+  zeroed :class:`CareerStats` (the namespace genuinely has no record yet),
+  but **AgentCore / boto3 errors propagate** so a broken remote setup fails
+  loud instead of silently rendering panels from a zeroed aggregate.
 * ``record(summary)`` returns ``fold(self.load(), summary)`` and does NOT
   write anything to AgentCore. Persistence is the emitter + Lambda's job
   (ADR 008); the store only folds locally so the post-game panel renders
@@ -155,16 +156,17 @@ def test_load_returns_zeroed_on_empty_or_malformed(
     assert stats.games_total == 0
 
 
-def test_load_returns_zeroed_on_boto_error() -> None:
-    """A boto3 ``list_memory_records`` failure yields a zeroed aggregate."""
+def test_load_raises_on_boto_error() -> None:
+    """A boto3 ``list_memory_records`` failure propagates — remote-mode
+    failures must be loud, never silently rendered as a zeroed aggregate
+    (which would hide a broken IAM / network / config from the user)."""
     client = _FakeAgentCoreClient(
         raise_on_list=RuntimeError("simulated boto3 client error")
     )
     store = _make_store(client)
 
-    stats = store.load()
-
-    assert stats == CareerStats()
+    with pytest.raises(RuntimeError, match="simulated boto3 client error"):
+        store.load()
 
 
 def test_record_returns_local_fold_without_writing() -> None:
