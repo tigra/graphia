@@ -1,3 +1,12 @@
-# boto3 and botocore are provided by the AWS Lambda Python runtime.
-# The vendored sources from src/graphia/ (career_events.py, stats_store.py) are
-# copied alongside lambda_function.py by `make build-lambdas` and use stdlib only.
+# The Lambda Python 3.13 runtime ships a boto3 / botocore snapshot that is
+# older than the bedrock-agentcore data-plane API we need: it has
+# `list_events` and `list_memory_records`, but the batch record-write methods
+# (`batch_create_memory_records`, `batch_update_memory_records`) are missing
+# and raise `AttributeError` at call time. A live invocation traced to:
+#   AttributeError: 'BedrockAgentCoreDataPlaneFrontingLayer' object has no
+#   attribute 'batch_create_memory_records'
+# Pinning a current boto3 here so the build vendors it into the zip and the
+# function uses the bundled copy instead of the runtime's stale one. Local
+# tests and the runtime container resolve from the same wheel.
+boto3>=1.43.0
+botocore>=1.43.0

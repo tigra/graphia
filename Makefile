@@ -360,8 +360,9 @@ $(LAMBDA_BUILD)/%.zip: $(LAMBDA_DIR)/%/lambda_function.py $(LAMBDA_DIR)/%/requir
 # Make picks the more specific target over the pattern rule above, so this is the
 # rule that actually runs for that zip. Imports are rewritten flat at copy time:
 # `from graphia.stats_store import …` becomes `from stats_store import …`, so the
-# zipped Lambda doesn't carry a `graphia/` package wrapper. boto3 is provided by
-# the Lambda runtime; requirements.txt is intentionally empty.
+# zipped Lambda doesn't carry a `graphia/` package wrapper. boto3 / botocore are
+# pinned in requirements.txt (the Lambda runtime's bundled snapshot lacks the
+# bedrock-agentcore data-plane batch record-write methods we need).
 $(LAMBDA_BUILD)/career_consumer.zip: $(LAMBDA_DIR)/career_consumer/lambda_function.py \
                                      $(LAMBDA_DIR)/career_consumer/requirements.txt \
                                      $(CAREER_CONSUMER_VENDORED)
