@@ -350,17 +350,19 @@ class LocalFileStatsStore:
 
 
 class AgentCoreCareerEventStore:
-    """Read-and-fold-only career stats view over AgentCore long-term memory.
+    """Read-only career stats view over AgentCore long-term memory.
 
     Remote-mode counterpart of :class:`LocalFileStatsStore` (ADR 007 / 008,
-    spec 006 §2.5). Unlike the local store, this store does **not** persist
-    on ``record()``: the finalizer events (``game_ended`` / ``game_abandoned``)
-    are emitted asynchronously by the endgame node and the quit-decision path
-    via :func:`graphia.career_events.make_career_emitter`, and a backing
-    Lambda materialises them into the long-term record off-band. Persistence
-    is the emitter's responsibility; this store only reads what's already
-    materialised and folds the just-finished game on top so the post-game
-    panel reflects the current run while the Lambda write catches up.
+    spec 006 §2.5). This store does **not** persist on ``record()`` and does
+    **not** synthesise a folded view either: the finalizer events
+    (``game_ended`` / ``game_abandoned``) are emitted asynchronously by the
+    endgame node and the quit-decision path via
+    :func:`graphia.career_events.make_career_emitter`, and a backing Lambda
+    materialises them into the long-term record off-band. ``record()`` only
+    re-reads what the Lambda has actually materialised — if the async write
+    hasn't caught up yet, the post-game panel honestly shows pre-game
+    numbers rather than a locally-fabricated +1 that may not survive the
+    next load.
 
     Identity is stable across games: ``actor_id`` defaults to
     ``"human-career"`` (NOT the per-game random player id), and the namespace
@@ -434,19 +436,22 @@ class AgentCoreCareerEventStore:
         return _career_from_json(raw)
 
     def record(self, summary: GameSummary) -> CareerStats:
-        """Return the locally-folded aggregate without writing to AgentCore.
+        """Return the currently-materialised aggregate; do not write or fold.
 
         Per ADR 008 / spec 006 §2.5, persistence flows through the finalizer
         emitter (``game_ended`` / ``game_abandoned``) that the endgame node
         and ``_on_quit_decision`` already invoke; the backing Lambda
         materialises those events into the long-term record asynchronously.
-        This method therefore only folds ``summary`` into the most recent
-        loaded aggregate so the post-game panel renders the right deltas
-        while the async write catches up. The returned value is *not*
-        guaranteed to round-trip through a subsequent ``load()`` until the
-        Lambda has processed the emitted event.
+
+        ``summary`` is ignored here on purpose: an in-process ``fold`` of
+        the just-finished game over ``load()`` would tell the post-game
+        panel "+1 game" even when the Lambda pipeline never wrote, masking
+        a broken strategy / Lambda / IAM as a cosmetic delay. The panel
+        instead shows the actually-persisted state — if the async write
+        hasn't landed yet, it shows pre-game numbers, and the next session's
+        greeting will reflect the delta only once the Lambda materialises.
         """
-        return fold(self.load(), summary)
+        return self.load()
 
 
 def make_stats_store(config: GraphiaConfig) -> StatsStore:

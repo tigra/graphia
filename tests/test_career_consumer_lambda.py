@@ -453,3 +453,51 @@ def test_finalizer_with_no_session_events_skips_write(
     ops = [op for op, _ in agentcore.calls]
     # list_events fires once; nothing else.
     assert ops == ["list_events"], f"unexpected ops: {ops!r}"
+
+
+def test_list_events_uses_include_payloads_plural(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Regression: the boto3 ``list_events`` kwarg is ``includePayloads``
+    (plural), not ``includePayload`` (singular).
+
+    A live-production crash traced to this exact typo: the Lambda was
+    invoked, ``ParamValidationError: Unknown parameter in input:
+    'includePayload', must be one of: ..., includePayloads, ...`` aborted
+    the handler before any ``batch_create_memory_records`` write, and the
+    long-term career record stayed empty across games. Earlier tests stubbed
+    ``list_events(**kwargs)`` without inspecting kwargs, so the typo passed
+    unit tests and only surfaced against real boto3.
+    """
+    session_id = "sess-validate"
+    end_event = CareerEvent(
+        kind=KIND_GAME_ENDED,
+        session_id=session_id,
+        outcome="mafia_win",
+        human_role="mafia",
+        rounds=3,
+    )
+    envelope = _make_envelope([end_event])
+
+    s3 = _FakeS3Client(body=envelope)
+    agentcore = _FakeAgentCoreClient(
+        list_events_response={"events": [_agentcore_event_payload(end_event)]},
+        list_memory_records_response={"memoryRecordSummaries": []},
+    )
+    _inject_clients(monkeypatch, s3, agentcore)
+
+    lambda_function.lambda_handler(
+        _make_sns_event("s3://b/payload.json"), context=None
+    )
+
+    list_events_calls = [
+        kwargs for op, kwargs in agentcore.calls if op == "list_events"
+    ]
+    assert list_events_calls, "expected the handler to call list_events"
+    first = list_events_calls[0]
+    assert first.get("includePayloads") is True, (
+        f"list_events kwargs must carry includePayloads=True (plural); got {first!r}"
+    )
+    assert "includePayload" not in first, (
+        f"list_events kwargs must not carry the singular includePayload typo; got {first!r}"
+    )

@@ -7,10 +7,13 @@ The store is the read-only remote-mode view over AgentCore long-term memory:
   zeroed :class:`CareerStats` (the namespace genuinely has no record yet),
   but **AgentCore / boto3 errors propagate** so a broken remote setup fails
   loud instead of silently rendering panels from a zeroed aggregate.
-* ``record(summary)`` returns ``fold(self.load(), summary)`` and does NOT
-  write anything to AgentCore. Persistence is the emitter + Lambda's job
-  (ADR 008); the store only folds locally so the post-game panel renders
-  the right deltas while the async write catches up.
+* ``record(summary)`` returns ``self.load()`` and does NOT write anything
+  to AgentCore — and crucially does NOT fold ``summary`` in. A locally-
+  folded "+1 game" view would tell the post-game panel things had been
+  persisted even when the Lambda pipeline never wrote, masking a broken
+  strategy / Lambda / IAM as a cosmetic delay. The panel shows the actual
+  materialised state instead; the next session's greeting carries the new
+  delta only once the async pipeline lands the record.
 
 All AWS access is mocked at the lazy ``_client`` seam — we inject a fake
 client into ``store._client`` BEFORE any call, so ``_get_client`` never
@@ -169,14 +172,17 @@ def test_load_raises_on_boto_error() -> None:
         store.load()
 
 
-def test_record_returns_local_fold_without_writing() -> None:
-    """``record(summary)`` returns ``fold(load(), summary)`` and writes nothing.
+def test_record_returns_materialised_state_without_writing_or_folding() -> None:
+    """``record(summary)`` returns ``self.load()`` — no write, no in-process fold.
 
-    The store is read-and-fold-only — persistence flows through the
-    emitter + Lambda, not this method. The fake records ZERO calls to
-    ``create_event`` / ``batch_create_memory_records`` /
-    ``batch_update_memory_records``; only ``list_memory_records`` fires
-    (from the embedded ``load`` call).
+    The store is read-only — persistence flows through the emitter + Lambda,
+    not this method. ``summary`` is ignored on purpose: an in-process fold
+    of the just-finished game would tell the post-game panel "+1 game" even
+    when the Lambda never wrote, masking a broken async pipeline as a
+    cosmetic delay. The fake records ZERO calls to ``create_event`` /
+    ``batch_create_memory_records`` / ``batch_update_memory_records``; only
+    ``list_memory_records`` fires (from the embedded ``load`` call), and the
+    returned aggregate equals the materialised state byte-for-byte.
     """
     prior = CareerStats(
         games_total=1,
@@ -212,8 +218,14 @@ def test_record_returns_local_fold_without_writing() -> None:
 
     result = store.record(summary)
 
-    # Returned aggregate equals the pure local fold.
-    assert result == fold(prior, summary)
+    # No in-process fold — the result is exactly the materialised aggregate.
+    # The summary is the law_abiding game; if record() had folded, games_total
+    # would be 2 and law_abiding would appear in games_by_role.
+    assert result == prior
+    assert result != fold(prior, summary), (
+        "record() must not in-process fold the just-finished game; otherwise "
+        "the panel renders a fake +1 even when the Lambda pipeline failed"
+    )
     # No writes — only the list call from load().
     ops = [op for op, _ in client.calls]
     assert ops == ["list_memory_records"], (

@@ -173,7 +173,7 @@ def _list_session_events(session_id: str):
             "memoryId": memory_id,
             "actorId": _ACTOR_ID,
             "sessionId": session_id,
-            "includePayload": True,
+            "includePayloads": True,
         }
         if next_token:
             kwargs["nextToken"] = next_token
