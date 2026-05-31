@@ -232,15 +232,14 @@ def patched_agentcore_client(
 
     real_build_graph = app_module.build_graph
 
-    def _wrapped_build_graph(config):
+    def _wrapped_build_graph(config, **kwargs):
         # Force the in-process diary store so the proxied local graph never
         # tries to reach AgentCore Memory via boto3 — even when the env
         # asks for remote mode. Slice 6 sub-task 4 adds the dedicated
         # diary-store equivalence tests; here we just keep this smoke run
         # boto3-free.
-        graph, thread_id = real_build_graph(
-            config, diary_store=InProcessDiaryStore()
-        )
+        kwargs.setdefault("diary_store", InProcessDiaryStore())
+        graph, thread_id = real_build_graph(config, **kwargs)
         FakeAgentCoreClient.captured_graph = graph
         return graph, thread_id
 

@@ -17,6 +17,11 @@ from textual.containers import Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Input, RichLog, Static
 
+from graphia.career_events import (
+    CareerEvent,
+    CareerEventEmitter,
+    make_career_emitter,
+)
 from graphia.config import GraphiaConfig, load_config
 from graphia.driver import drive_graph
 from graphia.graph import build_graph, make_run_config
@@ -100,7 +105,11 @@ class GraphiaApp(App[None]):
     config: GraphiaConfig
     logger: StreamTraceLogger
 
-    def __init__(self, stats_store: StatsStore | None = None) -> None:
+    def __init__(
+        self,
+        stats_store: StatsStore | None = None,
+        career_emitter: CareerEventEmitter | None = None,
+    ) -> None:
         super().__init__()
         # Loaded eagerly so `compose()` can read `remote_mode` for the badge
         # label. `on_mount` reuses the same instance instead of reloading.
@@ -108,6 +117,10 @@ class GraphiaApp(App[None]):
         # Injectable for tests, mirroring the graph's `diary_store=` seam;
         # built from config in `_drive` when not supplied.
         self._stats_store: StatsStore | None = stats_store
+        # Same injection seam for the per-action career-events emitter; built
+        # from config in `_drive` when not supplied and shared with the graph
+        # so the quit path and the nodes target the same sink.
+        self._career_emitter: CareerEventEmitter | None = career_emitter
         self._pending_resume: asyncio.Future[Any] | None = None
         self._human_id: str | None = None
         self._graph: CompiledStateGraph | None = None
@@ -457,6 +470,21 @@ class GraphiaApp(App[None]):
             and self._stats_store is not None
         ):
             self._career_recorded = True
+            if self._career_emitter is not None and self._thread_id is not None:
+                # Fire-and-forget: the quit flow must never raise on a remote
+                # emit failure. NoOp in local mode.
+                try:
+                    self._career_emitter.emit(
+                        self._thread_id,
+                        CareerEvent(
+                            kind="game_abandoned",
+                            session_id=self._thread_id,
+                            human_role=self._latest_state.get("human_role", ""),
+                            rounds_so_far=int(self._latest_state.get("cycle", 0)),
+                        ),
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
             summary = summarize(self._latest_state, self._human_id, "abandoned")
             try:
                 await asyncio.wait_for(
@@ -492,10 +520,12 @@ class GraphiaApp(App[None]):
         try:
             store = self._stats_store or make_stats_store(self.config)
             self._stats_store = store
+            emitter = self._career_emitter or make_career_emitter(self.config)
+            self._career_emitter = emitter
             # Written directly to the public pane (not as a graph message) so
             # it bypasses the `private_to` filter and shows before gameplay.
             log.write(Text(render_greeting(store.load())))
-            graph, thread_id = build_graph(self.config)
+            graph, thread_id = build_graph(self.config, career_emitter=emitter)
             self._thread_id = thread_id
             run_config = make_run_config(thread_id)
             self._graph = graph

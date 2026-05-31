@@ -338,10 +338,10 @@ async def test_local_and_remote_full_game_produce_identical_public_output(
 
     real_build_graph = app_module.build_graph
 
-    def _wrapped_build_graph(config):
+    def _wrapped_build_graph(config, **kwargs):
         # diary_store=None -> build_graph calls make_diary_store(config),
         # which (GRAPHIA_MEMORY_ID set) returns a real AgentCoreMemoryDiaryStore.
-        graph, thread_id = real_build_graph(config)
+        graph, thread_id = real_build_graph(config, **kwargs)
         FakeAgentCoreClient.captured_graph = graph
         return graph, thread_id
 
