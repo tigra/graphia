@@ -55,38 +55,26 @@ def _with_career(
     return partial(node, career_emitter=career_emitter, game_id=game_id)
 
 
-def build_graph(
-    config: GraphiaConfig,
+def _assemble_graph(
     *,
-    diary_store: DiaryStore | None = None,
-    career_emitter: CareerEventEmitter | None = None,
-) -> tuple[CompiledStateGraph, str]:
-    # Slice 6 sub-task 3: bind a ``DiaryStore`` into the Night-close write
-    # site. Tests that don't care can leave ``diary_store=None`` and the
-    # factory picks the right impl per :attr:`GraphiaConfig.remote_mode`.
-    if diary_store is None:
-        diary_store = make_diary_store(config)
-    # Slice 8.4: per-action career-stats emitter. Mirrors the diary store —
-    # the factory picks the right impl per ``GraphiaConfig.career_memory_id``
-    # (NoOp locally, AgentCore Memory remotely). Tests that don't care can
-    # leave ``career_emitter=None`` and inherit the NoOp local default.
-    if career_emitter is None:
-        career_emitter = make_career_emitter(config)
+    diary_store: DiaryStore,
+    career_emitter: CareerEventEmitter,
+    game_id: str,
+    saver: SqliteSaver,
+) -> CompiledStateGraph:
+    """Build the Graphia StateGraph topology and compile it with ``saver``.
 
-    config.checkpoint_dir.mkdir(parents=True, exist_ok=True)
-    thread_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-    db_path = config.checkpoint_dir / f"{thread_id}.sqlite"
-
-    # Open the connection directly rather than via from_conn_string's context
-    # manager, which would close the DB as soon as this frame goes out of scope.
-    # The graph process owns the lifetime for the duration of the game.
-    conn = sqlite3.connect(str(db_path), check_same_thread=False)
-    saver = SqliteSaver(conn)
-
+    Shared by local-mode :func:`build_graph` and the AgentCore Runtime's
+    :func:`graphia.runtime.graph_builder.build_runtime_graph`. The two
+    builders differ only in how they obtain ``game_id`` (and the matching
+    SQLite checkpoint location); the node graph itself — what's wrapped
+    in service-injection ``partial``s, which conditional edges exist —
+    lives here so the two modes can't drift apart.
+    """
     # Service-injection pattern (mirrors the diary store): every node that
     # emits a per-action career event closes over the ``career_emitter`` +
     # ``game_id`` so node implementations stay free of module-level singletons.
-    emit = partial(_with_career, career_emitter=career_emitter, game_id=thread_id)
+    emit = partial(_with_career, career_emitter=career_emitter, game_id=game_id)
 
     builder: StateGraph = StateGraph(GameState)
     builder.add_node("collect_name", collect_name)
@@ -102,7 +90,7 @@ def build_graph(
     # placeholder writes don't need to reach into module-level singletons.
     builder.add_node(
         "night_close",
-        partial(night_close, diary_store=diary_store, game_id=thread_id),
+        partial(night_close, diary_store=diary_store, game_id=game_id),
     )
     builder.add_node("day_open", day_open)
     builder.add_node("day_turn", emit(day_turn))
@@ -190,7 +178,43 @@ def build_graph(
     # Day → Night cycle. night_open bumps cycle on re-entry.
     builder.add_edge("day_close", "night_open")
 
-    graph = builder.compile(checkpointer=saver)
+    return builder.compile(checkpointer=saver)
+
+
+def build_graph(
+    config: GraphiaConfig,
+    *,
+    diary_store: DiaryStore | None = None,
+    career_emitter: CareerEventEmitter | None = None,
+) -> tuple[CompiledStateGraph, str]:
+    # Slice 6 sub-task 3: bind a ``DiaryStore`` into the Night-close write
+    # site. Tests that don't care can leave ``diary_store=None`` and the
+    # factory picks the right impl per :attr:`GraphiaConfig.remote_mode`.
+    if diary_store is None:
+        diary_store = make_diary_store(config)
+    # Slice 8.4: per-action career-stats emitter. Mirrors the diary store —
+    # the factory picks the right impl per ``GraphiaConfig.career_memory_id``
+    # (NoOp locally, AgentCore Memory remotely). Tests that don't care can
+    # leave ``career_emitter=None`` and inherit the NoOp local default.
+    if career_emitter is None:
+        career_emitter = make_career_emitter(config)
+
+    config.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    thread_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+    db_path = config.checkpoint_dir / f"{thread_id}.sqlite"
+
+    # Open the connection directly rather than via from_conn_string's context
+    # manager, which would close the DB as soon as this frame goes out of scope.
+    # The graph process owns the lifetime for the duration of the game.
+    conn = sqlite3.connect(str(db_path), check_same_thread=False)
+    saver = SqliteSaver(conn)
+
+    graph = _assemble_graph(
+        diary_store=diary_store,
+        career_emitter=career_emitter,
+        game_id=thread_id,
+        saver=saver,
+    )
     return graph, thread_id
 
 
