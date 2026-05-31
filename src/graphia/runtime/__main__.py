@@ -70,6 +70,7 @@ from bedrock_agentcore import BedrockAgentCoreApp
 from langchain_core.load import dumpd
 from langgraph.types import Command
 
+from graphia.career_events import make_career_emitter
 from graphia.config import load_config
 from graphia.diary_store import make_diary_store
 from graphia.runtime.graph_builder import build_runtime_graph
@@ -88,7 +89,12 @@ from graphia.runtime.observability import (
 # JSONL-to-``GRAPHIA_LOG_FILE`` behaviour is untouched.
 configure_runtime_observability()
 
-_diary_store = make_diary_store(load_config())
+_config = load_config()
+_diary_store = make_diary_store(_config)
+# ADR 008: per-action career events go directly to the dedicated career
+# AgentCore Memory (no Gateway hop). NoOp until GRAPHIA_CAREER_MEMORY_ID is
+# set in the Runtime container's env (which Terraform does in remote mode).
+_career_emitter = make_career_emitter(_config)
 
 # Runtime sessions are ephemeral (up to 8h microVMs per spec-002 §2.5).
 # tmpfs is the right home for per-session SQLite checkpoints — they
@@ -185,7 +191,12 @@ async def _run_invocation(
     span, so the graph-node and model-call spans land in one tree (CR 003).
     """
     try:
-        graph = build_runtime_graph(thread_id, _CHECKPOINT_DIR, _diary_store)
+        graph = build_runtime_graph(
+            thread_id,
+            _CHECKPOINT_DIR,
+            _diary_store,
+            career_emitter=_career_emitter,
+        )
     except Exception as exc:  # noqa: BLE001
         logger.exception(
             "graph compilation failed",

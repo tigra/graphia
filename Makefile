@@ -253,6 +253,12 @@ wire-env:
 	CAREER_MEMORY_ID=$$(aws --region $(AWS_REGION) bedrock-agentcore-control list-memories \
 	    --query "memories[?starts_with(id, '$$CAREER_MEMORY_PREFIX')].id | [0]" --output text); \
 	if [ -n "$$CAREER_MEMORY_ID" ] && [ "$$CAREER_MEMORY_ID" != "None" ]; then \
+	  awk -v ci="GRAPHIA_CAREER_MEMORY_ID=$$CAREER_MEMORY_ID" \
+	      'BEGIN { cseen=0 } \
+	       /^GRAPHIA_CAREER_MEMORY_ID=/ { print ci; cseen=1; next } \
+	       { print } \
+	       END { if (!cseen) print ci }' \
+	      .env > .env.tmp && mv .env.tmp .env; \
 	  STRATEGY_ID=$$(aws --region $(AWS_REGION) bedrock-agentcore-control get-memory \
 	      --memory-id "$$CAREER_MEMORY_ID" \
 	      --query "memory.strategies[?type=='CUSTOM']|[0].strategyId" --output text 2>/dev/null || true); \
@@ -267,7 +273,7 @@ wire-env:
 	fi
 	@echo ""
 	@echo "Wired into .env (discovered via the AWS API — no Terraform state needed):"
-	@grep -E '^(GRAPHIA_(RUNTIME_URL|MEMORY_ID|LOG_GROUP)|OWNER|STATS_STRATEGY_ID)=' .env
+	@grep -E '^(GRAPHIA_(RUNTIME_URL|MEMORY_ID|CAREER_MEMORY_ID|LOG_GROUP)|OWNER|STATS_STRATEGY_ID)=' .env
 
 deploy: build-lambdas tf-init tf-ecr-bootstrap push tf-apply wire-env
 	@echo ""

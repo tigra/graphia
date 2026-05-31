@@ -52,6 +52,10 @@ from graphia.nodes import (
     route_day_turn_or_vote,
     vote_prompt,
 )
+from graphia.career_events import (
+    CareerEventEmitter,
+    NoOpCareerEventEmitter,
+)
 from graphia.state import GameState
 
 
@@ -59,6 +63,8 @@ def build_runtime_graph(
     thread_id: str,
     checkpoint_dir: Path,
     diary_store: DiaryStore | None = None,
+    *,
+    career_emitter: "CareerEventEmitter | None" = None,
 ) -> CompiledStateGraph:
     """Compile the Graphia StateGraph with a caller-supplied thread_id.
 
@@ -75,6 +81,14 @@ def build_runtime_graph(
     """
     if diary_store is None:
         diary_store = InProcessDiaryStore()
+    # Mirrors :func:`graphia.graph.build_graph`: the per-action career emitter
+    # is bound into the six emitting nodes via a ``partial`` so node sources
+    # stay free of module-level singletons. Caller (Runtime entrypoint)
+    # constructs it via ``make_career_emitter(load_config())``; tests that
+    # compile this graph directly can leave ``career_emitter=None`` and inherit
+    # the NoOp default.
+    if career_emitter is None:
+        career_emitter = NoOpCareerEventEmitter()
 
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     db_path = checkpoint_dir / f"{thread_id}.sqlite"
@@ -82,29 +96,32 @@ def build_runtime_graph(
     conn = sqlite3.connect(str(db_path), check_same_thread=False)
     saver = SqliteSaver(conn)
 
+    def emit(node):
+        return partial(node, career_emitter=career_emitter, game_id=thread_id)
+
     builder: StateGraph = StateGraph(GameState)
     builder.add_node("collect_name", collect_name)
     builder.add_node("generate_roster", generate_roster)
-    builder.add_node("assign_roles", assign_roles)
+    builder.add_node("assign_roles", emit(assign_roles))
     builder.add_node("introduce_roster", introduce_roster)
     builder.add_node("reveal_role", reveal_role)
     builder.add_node("first_night_mafia_intros", first_night_mafia_intros)
     builder.add_node("night_open", night_open)
     builder.add_node("mafia_pointing", mafia_pointing)
-    builder.add_node("resolve_night_kill", resolve_night_kill)
+    builder.add_node("resolve_night_kill", emit(resolve_night_kill))
     builder.add_node(
         "night_close",
         partial(night_close, diary_store=diary_store, game_id=thread_id),
     )
     builder.add_node("day_open", day_open)
-    builder.add_node("day_turn", day_turn)
+    builder.add_node("day_turn", emit(day_turn))
     builder.add_node("vote_prompt", vote_prompt)
-    builder.add_node("collect_votes", collect_votes)
-    builder.add_node("resolve_vote", resolve_vote)
+    builder.add_node("collect_votes", emit(collect_votes))
+    builder.add_node("resolve_vote", emit(resolve_vote))
     builder.add_node("day_close", day_close)
     builder.add_node("check_win_night", check_win_condition)
     builder.add_node("check_win_day", check_win_condition)
-    builder.add_node("end_screen", end_screen)
+    builder.add_node("end_screen", emit(end_screen))
 
     builder.add_edge(START, "collect_name")
     builder.add_edge("collect_name", "generate_roster")
