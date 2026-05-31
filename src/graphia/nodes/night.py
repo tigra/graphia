@@ -9,6 +9,11 @@ from collections import Counter
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.types import interrupt
 
+from graphia.career_events import (
+    KIND_NIGHT_RESOLVED,
+    CareerEvent,
+    CareerEventEmitter,
+)
 from graphia.diary_store import DiaryStore
 from graphia.llm import Pointing, get_sonnet
 from graphia.prompts import (
@@ -181,7 +186,12 @@ def mafia_pointing(state: GameState) -> dict:
     return {"night_picks": picks}
 
 
-def resolve_night_kill(state: GameState) -> dict:
+def resolve_night_kill(
+    state: GameState,
+    *,
+    career_emitter: CareerEventEmitter | None = None,
+    game_id: str | None = None,
+) -> dict:
     cycle = state.get("cycle", 1)
     night_picks = state.get("night_picks", {})
     players = state.get("players", {})
@@ -232,19 +242,35 @@ def resolve_night_kill(state: GameState) -> dict:
 
     human_id = state.get("human_id")
     human = players.get(human_id) if human_id else None
+    human_was_picker = False
+    human_picked_victim = False
     if (
         human is not None
         and human.is_alive
         and human.role == "mafia"
         and human_id in night_picks
     ):
+        human_was_picker = True
         delta["human_night_attempts"] = (
             state.get("human_night_attempts", 0) + 1
         )
         if night_picks[human_id] == victim_id:
+            human_picked_victim = True
             delta["human_night_successes"] = (
                 state.get("human_night_successes", 0) + 1
             )
+
+    if career_emitter is not None and game_id is not None:
+        career_emitter.emit(
+            game_id,
+            CareerEvent(
+                kind=KIND_NIGHT_RESOLVED,
+                session_id=game_id,
+                victim_died=True,
+                human_was_mafia_picker=human_was_picker,
+                human_picked_victim=human_picked_victim,
+            ),
+        )
 
     return delta
 

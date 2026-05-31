@@ -9,6 +9,11 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.types import interrupt
 from pydantic import ValidationError
 
+from graphia.career_events import (
+    KIND_GAME_STARTED,
+    CareerEvent,
+    CareerEventEmitter,
+)
 from graphia.config import load_config
 from graphia.llm import Roster, get_haiku
 from graphia.prompts import NAME_GEN_SYSTEM, NAME_GEN_USER, ROSTER_INTRO_TEMPLATE
@@ -84,7 +89,12 @@ def generate_roster(state: GameState) -> dict:
     return {"players": {**existing, **new_players}}
 
 
-def assign_roles(state: GameState) -> dict:
+def assign_roles(
+    state: GameState,
+    *,
+    career_emitter: CareerEventEmitter | None = None,
+    game_id: str | None = None,
+) -> dict:
     config = load_config()
     deck: list[str] = [
         "mafia",
@@ -119,6 +129,15 @@ def assign_roles(state: GameState) -> dict:
             role=role,  # type: ignore[arg-type]
             is_human=player.is_human,
             is_alive=player.is_alive,
+        )
+    if career_emitter is not None and game_id is not None:
+        career_emitter.emit(
+            game_id,
+            CareerEvent(
+                kind=KIND_GAME_STARTED,
+                session_id=game_id,
+                human_role=human_role,
+            ),
         )
     return {"players": updated, "human_role": human_role}
 

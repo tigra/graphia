@@ -10,6 +10,10 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
+from graphia.career_events import (
+    CareerEventEmitter,
+    make_career_emitter,
+)
 from graphia.config import GraphiaConfig
 from graphia.diary_store import DiaryStore, make_diary_store
 from graphia.nodes import (
@@ -40,16 +44,34 @@ from graphia.nodes import (
 from graphia.state import GameState
 
 
+def _with_career(
+    node, *, career_emitter: CareerEventEmitter, game_id: str
+):
+    """Bind ``career_emitter`` + ``game_id`` into a node's kwargs.
+
+    Returns a partial so each emitting node call-site stays free of module-
+    level singletons — same shape the diary store uses for ``night_close``.
+    """
+    return partial(node, career_emitter=career_emitter, game_id=game_id)
+
+
 def build_graph(
     config: GraphiaConfig,
     *,
     diary_store: DiaryStore | None = None,
+    career_emitter: CareerEventEmitter | None = None,
 ) -> tuple[CompiledStateGraph, str]:
     # Slice 6 sub-task 3: bind a ``DiaryStore`` into the Night-close write
     # site. Tests that don't care can leave ``diary_store=None`` and the
     # factory picks the right impl per :attr:`GraphiaConfig.remote_mode`.
     if diary_store is None:
         diary_store = make_diary_store(config)
+    # Slice 8.4: per-action career-stats emitter. Mirrors the diary store —
+    # the factory picks the right impl per ``GraphiaConfig.career_memory_id``
+    # (NoOp locally, AgentCore Memory remotely). Tests that don't care can
+    # leave ``career_emitter=None`` and inherit the NoOp local default.
+    if career_emitter is None:
+        career_emitter = make_career_emitter(config)
 
     config.checkpoint_dir.mkdir(parents=True, exist_ok=True)
     thread_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
@@ -61,16 +83,21 @@ def build_graph(
     conn = sqlite3.connect(str(db_path), check_same_thread=False)
     saver = SqliteSaver(conn)
 
+    # Service-injection pattern (mirrors the diary store): every node that
+    # emits a per-action career event closes over the ``career_emitter`` +
+    # ``game_id`` so node implementations stay free of module-level singletons.
+    emit = partial(_with_career, career_emitter=career_emitter, game_id=thread_id)
+
     builder: StateGraph = StateGraph(GameState)
     builder.add_node("collect_name", collect_name)
     builder.add_node("generate_roster", generate_roster)
-    builder.add_node("assign_roles", assign_roles)
+    builder.add_node("assign_roles", emit(assign_roles))
     builder.add_node("introduce_roster", introduce_roster)
     builder.add_node("reveal_role", reveal_role)
     builder.add_node("first_night_mafia_intros", first_night_mafia_intros)
     builder.add_node("night_open", night_open)
     builder.add_node("mafia_pointing", mafia_pointing)
-    builder.add_node("resolve_night_kill", resolve_night_kill)
+    builder.add_node("resolve_night_kill", emit(resolve_night_kill))
     # ``night_close`` closes over the diary store + game id so the per-Night
     # placeholder writes don't need to reach into module-level singletons.
     builder.add_node(
@@ -78,10 +105,10 @@ def build_graph(
         partial(night_close, diary_store=diary_store, game_id=thread_id),
     )
     builder.add_node("day_open", day_open)
-    builder.add_node("day_turn", day_turn)
+    builder.add_node("day_turn", emit(day_turn))
     builder.add_node("vote_prompt", vote_prompt)
-    builder.add_node("collect_votes", collect_votes)
-    builder.add_node("resolve_vote", resolve_vote)
+    builder.add_node("collect_votes", emit(collect_votes))
+    builder.add_node("resolve_vote", emit(resolve_vote))
     builder.add_node("day_close", day_close)
     # Slice 8: win-condition detection + end screen. The same pure-read
     # function is registered under two node names so each check site can
@@ -89,7 +116,7 @@ def build_graph(
     # day → day_turn / day_close fallthrough).
     builder.add_node("check_win_night", check_win_condition)
     builder.add_node("check_win_day", check_win_condition)
-    builder.add_node("end_screen", end_screen)
+    builder.add_node("end_screen", emit(end_screen))
 
     builder.add_edge(START, "collect_name")
     builder.add_edge("collect_name", "generate_roster")

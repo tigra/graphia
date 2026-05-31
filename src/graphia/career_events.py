@@ -18,10 +18,18 @@ parse one shape and dispatch on ``kind``.
 
 from __future__ import annotations
 
+import json
+import logging
 from dataclasses import dataclass
-from typing import Any, Iterable, Literal
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Any, Iterable, Literal, Protocol
 
 from graphia.stats_store import GameSummary
+
+if TYPE_CHECKING:
+    from graphia.config import GraphiaConfig
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "EventKind",
@@ -36,6 +44,10 @@ __all__ = [
     "to_json",
     "from_json",
     "build_summary",
+    "CareerEventEmitter",
+    "NoOpCareerEventEmitter",
+    "AgentCoreCareerEventEmitter",
+    "make_career_emitter",
 ]
 
 KIND_GAME_STARTED = "game_started"
@@ -214,3 +226,110 @@ def build_summary(events: Iterable[CareerEvent]) -> GameSummary:
         night_victims=night_victims,
         day_executions=day_executions,
     )
+
+
+_CAREER_EVENT_KIND_KEY = "kind"
+_CAREER_EVENT_KIND_TAG = "career_event"
+
+
+class CareerEventEmitter(Protocol):
+    """Fire-and-forget per-action career-stats event sink.
+
+    Local mode binds :class:`NoOpCareerEventEmitter`; remote mode binds
+    :class:`AgentCoreCareerEventEmitter`. Either way, ``emit`` never raises
+    back into a game-mechanics node — emission failures are swallowed so a
+    transient Memory hiccup never crashes gameplay (spec 006 §2.x).
+    """
+
+    def emit(self, session_id: str, event: CareerEvent) -> None:
+        """Publish ``event`` for the game identified by ``session_id``."""
+        ...
+
+
+class NoOpCareerEventEmitter:
+    """Silent no-op emitter — local mode and tests.
+
+    No AWS reached. ``emit`` discards every event.
+    """
+
+    def emit(self, session_id: str, event: CareerEvent) -> None:
+        return None
+
+
+class AgentCoreCareerEventEmitter:
+    """AgentCore Memory short-term event emitter for remote-mode careers.
+
+    Each call lands as one ``CreateEvent`` against the configured Memory
+    resource, scoped to ``(actor_id, session_id)`` so a downstream consumer
+    Lambda can fold the events for a single game by listing that pair. The
+    serialised :class:`CareerEvent` rides in the event ``payload`` as a JSON
+    body inside a ``conversational`` content block (same wire shape the
+    diary store uses), and ``kind`` is mirrored into the event ``metadata``
+    so list-time filtering can pick career events out of any shared session.
+
+    The boto3 ``bedrock-agentcore`` data-plane client is built lazily on
+    first emit so importing this module — and the whole local-mode / test
+    path — needs no AWS credentials or boto3 import. ``actor_id`` defaults
+    to ``"human-career"`` so events are stable across games for one player.
+    """
+
+    def __init__(
+        self,
+        memory_id: str,
+        actor_id: str = "human-career",
+        region: str | None = None,
+    ) -> None:
+        if not memory_id:
+            raise ValueError("memory_id is required for AgentCoreCareerEventEmitter")
+        self._memory_id = memory_id
+        self._actor_id = actor_id
+        self._region = region
+        self._client = None  # lazy
+
+    def _get_client(self):
+        if self._client is None:
+            import boto3
+
+            self._client = boto3.client(
+                "bedrock-agentcore", region_name=self._region
+            )
+        return self._client
+
+    def emit(self, session_id: str, event: CareerEvent) -> None:
+        try:
+            client = self._get_client()
+            body = json.dumps(to_json(event))
+            client.create_event(
+                memoryId=self._memory_id,
+                actorId=self._actor_id,
+                sessionId=session_id,
+                eventTimestamp=datetime.now(timezone.utc),
+                payload=[
+                    {
+                        "conversational": {
+                            "content": {"text": body},
+                            "role": "ASSISTANT",
+                        }
+                    }
+                ],
+            )
+        except Exception:
+            logger.exception(
+                "Career event emit failed (kind=%s, session=%s); continuing.",
+                event.kind,
+                session_id,
+            )
+
+
+def make_career_emitter(config: "GraphiaConfig") -> CareerEventEmitter:
+    """Select the career event emitter implementation for ``config``.
+
+    ``career_memory_id`` set (remote mode) selects the AgentCore Memory
+    short-term emitter; otherwise a :class:`NoOpCareerEventEmitter`.
+    """
+    if config.career_memory_id:
+        return AgentCoreCareerEventEmitter(
+            memory_id=config.career_memory_id,
+            region=config.aws_region,
+        )
+    return NoOpCareerEventEmitter()

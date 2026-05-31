@@ -17,6 +17,11 @@ from __future__ import annotations
 
 from langchain_core.messages import SystemMessage
 
+from graphia.career_events import (
+    KIND_GAME_ENDED,
+    CareerEvent,
+    CareerEventEmitter,
+)
 from graphia.prompts import (
     ENDGAME_HEADER_KILLS,
     ENDGAME_HEADER_ROSTER,
@@ -25,6 +30,15 @@ from graphia.prompts import (
     ENDGAME_WINNER_MAFIA,
 )
 from graphia.state import GameState, KillRecord, PlayerState
+
+# Mirrors graphia.ui.app.GraphiaApp._OUTCOME_BY_WINNER. The end-of-game event
+# carries the same outcome string the local-mode summary uses, so consumer
+# folds are byte-identical to ``stats_store.summarize`` (spec 006 §2.x).
+_OUTCOME_BY_WINNER: dict[str, str] = {
+    "law_abiding": "law_abiding_win",
+    "mafia": "mafia_win",
+    "draw": "draw",
+}
 
 
 def _role_label(role: str) -> str:
@@ -98,7 +112,12 @@ def _winner_line(winner: str | None) -> str:
     return "The game has ended."
 
 
-def end_screen(state: GameState) -> dict:
+def end_screen(
+    state: GameState,
+    *,
+    career_emitter: CareerEventEmitter | None = None,
+    game_id: str | None = None,
+) -> dict:
     """Emit the final Moderator message and flip phase to "end"."""
     players = state.get("players", {})
     kill_log = list(state.get("kill_log", []))
@@ -118,6 +137,21 @@ def end_screen(state: GameState) -> dict:
     lines.append(f"{ENDGAME_HEADER_ROSTER} {', '.join(roster_entries)}")
 
     final_msg = SystemMessage(content="\n".join(lines))
+
+    if career_emitter is not None and game_id is not None and isinstance(winner, str):
+        outcome = _OUTCOME_BY_WINNER.get(winner)
+        if outcome is not None:
+            career_emitter.emit(
+                game_id,
+                CareerEvent(
+                    kind=KIND_GAME_ENDED,
+                    session_id=game_id,
+                    outcome=outcome,
+                    human_role=state.get("human_role"),
+                    rounds=state.get("cycle", 0),
+                ),
+            )
+
     return {"messages": [final_msg], "phase": "end"}
 
 

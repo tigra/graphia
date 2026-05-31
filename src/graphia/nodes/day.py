@@ -30,6 +30,13 @@ from typing import cast
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.types import interrupt
 
+from graphia.career_events import (
+    KIND_BALLOT_CAST,
+    KIND_VOTE_INITIATED,
+    KIND_VOTE_RESOLVED,
+    CareerEvent,
+    CareerEventEmitter,
+)
 from graphia.llm import Ballot, DayAction, get_sonnet
 from graphia.prompts import (
     AI_VOTE_SYSTEM,
@@ -254,7 +261,12 @@ def _begin_vote(
     return active
 
 
-def day_turn(state: GameState) -> dict:
+def day_turn(
+    state: GameState,
+    *,
+    career_emitter: CareerEventEmitter | None = None,
+    game_id: str | None = None,
+) -> dict:
     """Run exactly one player's Day turn, then advance bookkeeping.
 
     A turn may either emit a speech (AIMessage) or initiate a vote (setting
@@ -348,6 +360,15 @@ def day_turn(state: GameState) -> dict:
             # vote flow, but we want to resume speech rotation from the
             # same position after the vote resolves. Clear any pending error.
             human_votes_called = state.get("human_votes_called", 0) + 1
+            if career_emitter is not None and game_id is not None:
+                career_emitter.emit(
+                    game_id,
+                    CareerEvent(
+                        kind=KIND_VOTE_INITIATED,
+                        session_id=game_id,
+                        initiator_is_human=True,
+                    ),
+                )
             return {
                 "active_vote": active,
                 "day_turn_error": None,
@@ -373,6 +394,15 @@ def day_turn(state: GameState) -> dict:
         if action.kind == "vote":
             assert action.target_id is not None  # validated in _ai_day_action
             active = _begin_vote(player.id, action.target_id, players)
+            if career_emitter is not None and game_id is not None:
+                career_emitter.emit(
+                    game_id,
+                    CareerEvent(
+                        kind=KIND_VOTE_INITIATED,
+                        session_id=game_id,
+                        initiator_is_human=False,
+                    ),
+                )
             return {"active_vote": active}
         # kind == "speak"
         assert action.text is not None
@@ -455,7 +485,12 @@ def _ai_ballot(
     return Ballot(yes=False)
 
 
-def collect_votes(state: GameState) -> dict:
+def collect_votes(
+    state: GameState,
+    *,
+    career_emitter: CareerEventEmitter | None = None,
+    game_id: str | None = None,
+) -> dict:
     """Poll ONE voter per super-step. Replay-safe like ``day_turn``.
 
     Reads ``active_vote["pending"][0]``, collects that voter's ballot
@@ -512,6 +547,15 @@ def collect_votes(state: GameState) -> dict:
                 "error": "Answer yes or no.",
             }
         extra["human_ballots_cast"] = state.get("human_ballots_cast", 0) + 1
+        if career_emitter is not None and game_id is not None:
+            career_emitter.emit(
+                game_id,
+                CareerEvent(
+                    kind=KIND_BALLOT_CAST,
+                    session_id=game_id,
+                    voter_is_human=True,
+                ),
+            )
     else:
         if target is None:
             # Target missing (shouldn't happen); conservative no.
@@ -519,6 +563,15 @@ def collect_votes(state: GameState) -> dict:
         else:
             ballot = _ai_ballot(voter, target, state)
             yes = ballot.yes
+        if career_emitter is not None and game_id is not None:
+            career_emitter.emit(
+                game_id,
+                CareerEvent(
+                    kind=KIND_BALLOT_CAST,
+                    session_id=game_id,
+                    voter_is_human=False,
+                ),
+            )
 
     vote_label = "Yes" if yes else "No"
     ballot_msg = SystemMessage(
@@ -543,7 +596,12 @@ def collect_votes(state: GameState) -> dict:
     }
 
 
-def resolve_vote(state: GameState) -> dict:
+def resolve_vote(
+    state: GameState,
+    *,
+    career_emitter: CareerEventEmitter | None = None,
+    game_id: str | None = None,
+) -> dict:
     """Tally ballots and either execute or fail the vote.
 
     On execution: flip the target's ``is_alive``, append a KillRecord with
@@ -611,6 +669,15 @@ def resolve_vote(state: GameState) -> dict:
             "cause": "execution",
             "role": target.role,
         }
+        if career_emitter is not None and game_id is not None:
+            career_emitter.emit(
+                game_id,
+                CareerEvent(
+                    kind=KIND_VOTE_RESOLVED,
+                    session_id=game_id,
+                    was_executed=True,
+                ),
+            )
         return {
             "messages": messages,
             "players": players,
@@ -623,6 +690,15 @@ def resolve_vote(state: GameState) -> dict:
     messages.append(SystemMessage(content=VOTE_FAILED_TEMPLATE))
     votes_called = state.get("day_votes_called", 0) + 1
     next_order = _shuffle_order(players)
+    if career_emitter is not None and game_id is not None:
+        career_emitter.emit(
+            game_id,
+            CareerEvent(
+                kind=KIND_VOTE_RESOLVED,
+                session_id=game_id,
+                was_executed=False,
+            ),
+        )
     return {
         "messages": messages,
         "active_vote": None,
