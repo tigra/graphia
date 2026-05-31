@@ -1213,3 +1213,279 @@ def test_fold_abandoned_excluded_from_average_length() -> None:
     assert after_abandon.sum_rounds_completed == 4
     # The average is still derived from the single completed 4-round game.
     assert "average game length 4.0 rounds" in render_greeting(after_abandon)
+
+
+# --------------------------------------------------------------------------
+# Slice 8 sub-task 9 — Category A: career_events pure-function tests
+#
+# ADR 008 / Spec 006: the remote pipeline emits one ``CareerEvent`` per
+# statistical moment and a Lambda folds them via ``build_summary`` →
+# ``fold`` back into the SAME ``GameSummary`` ``stats_store.summarize``
+# produces locally. These tests lock the equivalence anchor: wire-format
+# round-trip per kind, ``build_summary`` parity with the existing
+# ``summarize`` results, the abandoned finalizer semantics, and the rule
+# that non-human ``vote_initiated`` / ``ballot_cast`` are dropped from the
+# personal counters (but ``vote_resolved`` / ``night_resolved`` always
+# fold for game-wide totals).
+# --------------------------------------------------------------------------
+
+
+from graphia.career_events import (  # noqa: E402  (group at file end)
+    KIND_BALLOT_CAST,
+    KIND_GAME_ABANDONED,
+    KIND_GAME_ENDED,
+    KIND_GAME_STARTED,
+    KIND_NIGHT_RESOLVED,
+    KIND_VOTE_INITIATED,
+    KIND_VOTE_RESOLVED,
+    CareerEvent,
+    build_summary,
+    from_json,
+    to_json,
+)
+
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        CareerEvent(
+            kind=KIND_GAME_STARTED, session_id="g1", human_role="mafia"
+        ),
+        CareerEvent(
+            kind=KIND_VOTE_INITIATED, session_id="g1", initiator_is_human=True
+        ),
+        CareerEvent(
+            kind=KIND_BALLOT_CAST, session_id="g1", voter_is_human=False
+        ),
+        CareerEvent(
+            kind=KIND_VOTE_RESOLVED, session_id="g1", was_executed=True
+        ),
+        CareerEvent(
+            kind=KIND_NIGHT_RESOLVED,
+            session_id="g1",
+            victim_died=True,
+            human_was_mafia_picker=True,
+            human_picked_victim=False,
+        ),
+        CareerEvent(
+            kind=KIND_GAME_ENDED,
+            session_id="g1",
+            human_role="law_abiding",
+            outcome="law_abiding_win",
+            rounds=5,
+        ),
+        CareerEvent(
+            kind=KIND_GAME_ABANDONED,
+            session_id="g1",
+            human_role="mafia",
+            rounds_so_far=2,
+        ),
+    ],
+)
+def test_career_event_round_trips_through_json(event: CareerEvent) -> None:
+    """Each of the 7 kinds round-trips ``to_json`` → ``from_json`` unchanged.
+
+    Wire-format equivalence anchor: the Lambda receives JSON that came out
+    of ``to_json`` and must rebuild the exact same ``CareerEvent``. None
+    fields are omitted from the wire payload (see ``to_json``) and restored
+    as None by ``from_json``, so the reconstructed dataclass compares
+    equal to the original.
+    """
+    blob = to_json(event)
+
+    restored = from_json(blob)
+
+    assert restored == event
+    # Discriminator pair is always carried on the wire.
+    assert "kind" in blob and "session_id" in blob
+    # Unset fields are never serialised (compact format).
+    for name, value in blob.items():
+        assert value is not None, f"field {name!r} should have been omitted"
+
+
+def test_build_summary_matches_summarize_for_mafia_win() -> None:
+    """``build_summary`` on a finalizer sequence equals ``summarize`` output.
+
+    The events mirror what the Runtime would emit during a Mafia-win game
+    where the human Mafia picker took 2 kill attempts (1 successful) and
+    1 day execution was tallied. Mirrors the ``test_summarize_*`` cases:
+    same role / outcome / rounds / counters end up in the GameSummary.
+    """
+    events = [
+        CareerEvent(
+            kind=KIND_GAME_STARTED, session_id="g1", human_role="mafia"
+        ),
+        CareerEvent(
+            kind=KIND_NIGHT_RESOLVED,
+            session_id="g1",
+            victim_died=True,
+            human_was_mafia_picker=True,
+            human_picked_victim=True,
+        ),
+        CareerEvent(
+            kind=KIND_NIGHT_RESOLVED,
+            session_id="g1",
+            victim_died=False,
+            human_was_mafia_picker=True,
+            human_picked_victim=False,
+        ),
+        CareerEvent(
+            kind=KIND_VOTE_RESOLVED, session_id="g1", was_executed=True
+        ),
+        CareerEvent(
+            kind=KIND_GAME_ENDED,
+            session_id="g1",
+            human_role="mafia",
+            outcome="mafia_win",
+            rounds=3,
+        ),
+    ]
+
+    summary = build_summary(events)
+
+    assert summary == GameSummary(
+        human_role="mafia",
+        outcome="mafia_win",
+        human_won=True,
+        rounds=3,
+        votes_called=0,
+        ballots_cast=0,
+        night_attempts=2,
+        night_successes=1,
+        night_victims=1,
+        day_executions=1,
+    )
+
+
+def test_build_summary_matches_summarize_for_law_abiding_loss() -> None:
+    """Law-abiding loss: ``human_won`` is False; counters still fold."""
+    events = [
+        CareerEvent(
+            kind=KIND_GAME_STARTED, session_id="g1", human_role="law_abiding"
+        ),
+        CareerEvent(
+            kind=KIND_VOTE_INITIATED,
+            session_id="g1",
+            initiator_is_human=True,
+        ),
+        CareerEvent(
+            kind=KIND_BALLOT_CAST, session_id="g1", voter_is_human=True
+        ),
+        CareerEvent(
+            kind=KIND_BALLOT_CAST, session_id="g1", voter_is_human=True
+        ),
+        CareerEvent(
+            kind=KIND_VOTE_RESOLVED, session_id="g1", was_executed=False
+        ),
+        CareerEvent(
+            kind=KIND_NIGHT_RESOLVED,
+            session_id="g1",
+            victim_died=True,
+            human_was_mafia_picker=False,
+            human_picked_victim=False,
+        ),
+        CareerEvent(
+            kind=KIND_GAME_ENDED,
+            session_id="g1",
+            human_role="law_abiding",
+            outcome="mafia_win",
+            rounds=4,
+        ),
+    ]
+
+    summary = build_summary(events)
+
+    assert summary.human_role == "law_abiding"
+    assert summary.outcome == "mafia_win"
+    assert summary.human_won is False
+    assert summary.rounds == 4
+    assert summary.votes_called == 1
+    assert summary.ballots_cast == 2
+    assert summary.night_victims == 1
+    assert summary.night_attempts == 0
+    assert summary.night_successes == 0
+
+
+def test_build_summary_game_abandoned_sets_outcome_and_rounds() -> None:
+    """``game_abandoned`` finalizer → outcome="abandoned", rounds=rounds_so_far.
+
+    ``human_won`` is False (abandoned games are never wins). ``rounds`` is
+    set from ``rounds_so_far`` on the abandoned event.
+    """
+    events = [
+        CareerEvent(
+            kind=KIND_GAME_STARTED, session_id="g1", human_role="mafia"
+        ),
+        CareerEvent(
+            kind=KIND_NIGHT_RESOLVED,
+            session_id="g1",
+            victim_died=True,
+            human_was_mafia_picker=True,
+            human_picked_victim=True,
+        ),
+        CareerEvent(
+            kind=KIND_GAME_ABANDONED,
+            session_id="g1",
+            human_role="mafia",
+            rounds_so_far=2,
+        ),
+    ]
+
+    summary = build_summary(events)
+
+    assert summary.outcome == "abandoned"
+    assert summary.human_won is False
+    assert summary.rounds == 2
+    assert summary.human_role == "mafia"
+    # Pre-quit night kill still folded.
+    assert summary.night_attempts == 1
+    assert summary.night_successes == 1
+
+
+def test_build_summary_drops_non_human_personal_counters() -> None:
+    """Non-human vote_initiated / ballot_cast must NOT bump personal counters.
+
+    But ``vote_resolved`` (game-wide day executions) and ``night_resolved``
+    (game-wide night victims) always fold regardless of who initiated.
+    """
+    events = [
+        CareerEvent(
+            kind=KIND_GAME_STARTED, session_id="g1", human_role="law_abiding"
+        ),
+        # AI initiator, AI voter — these must be ignored for personal counters.
+        CareerEvent(
+            kind=KIND_VOTE_INITIATED,
+            session_id="g1",
+            initiator_is_human=False,
+        ),
+        CareerEvent(
+            kind=KIND_BALLOT_CAST, session_id="g1", voter_is_human=False
+        ),
+        # But the resolution still counts toward the game-wide total.
+        CareerEvent(
+            kind=KIND_VOTE_RESOLVED, session_id="g1", was_executed=True
+        ),
+        CareerEvent(
+            kind=KIND_NIGHT_RESOLVED,
+            session_id="g1",
+            victim_died=True,
+            human_was_mafia_picker=False,
+            human_picked_victim=False,
+        ),
+        CareerEvent(
+            kind=KIND_GAME_ENDED,
+            session_id="g1",
+            human_role="law_abiding",
+            outcome="law_abiding_win",
+            rounds=2,
+        ),
+    ]
+
+    summary = build_summary(events)
+
+    # Personal counters stay at 0 for non-human-driven votes/ballots.
+    assert summary.votes_called == 0
+    assert summary.ballots_cast == 0
+    # Game-wide totals still record the execution and the night victim.
+    assert summary.day_executions == 1
+    assert summary.night_victims == 1
