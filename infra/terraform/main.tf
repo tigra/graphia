@@ -243,9 +243,36 @@ resource "aws_bedrockagentcore_memory" "this" {
   # 7–365.
   event_expiry_duration = 90
 
-  description = "Graphia Memory — per-game diary events (Phase 2) + cross-game career-stats long-term records under the self-managed strategy (Phase 3, ADR 007)."
+  description = "Graphia Memory — per-game diary events (Phase 2). Career stats moved to a dedicated Memory in Phase 3 (ADR 008)."
 
-  # Execution role the Memory service assumes for its self-managed (custom)
+  # No inline `memory_strategies` block (the provider has none). The diary tier
+  # uses raw events end-to-end (`create_event` / `list_events`); the career tier
+  # lives on `aws_bedrockagentcore_memory.career` (ADR 008) with its own
+  # self-managed strategy and execution-role attachment.
+}
+
+# ---------------------------------------------------------------------------
+# AgentCore Memory — career-stats store (spec 006 / ADR 008). Distinct from the
+# diary Memory above: per ADR 008 career stats need their own AgentCore Memory
+# so their lifecycle, retention, and the self-managed strategy that backs the
+# long-term `CareerStats` record are isolated from per-game diary events. The
+# Runtime authors per-action career events here; a consumer Lambda (later
+# sub-task) consolidates them into the long-term record under the self-managed
+# strategy's namespace.
+# ---------------------------------------------------------------------------
+
+resource "aws_bedrockagentcore_memory" "career" {
+  name = local.career_memory_name
+
+  # Same 90-day event expiry as the diary tier — per-action career events are
+  # transient inputs the consumer Lambda folds into the long-term record;
+  # they don't need indefinite retention. The long-term `CareerStats` record
+  # itself lives under the self-managed strategy (no per-event expiry).
+  event_expiry_duration = 90
+
+  description = "Graphia Memory — Phase 3 career stats long-term record + per-action career events under the self-managed strategy, per ADR 008."
+
+  # Execution role the Memory service assumes for the self-managed (custom)
   # strategy's payload delivery — writing batched event payloads to the S3
   # bucket and publishing job notifications to the SNS topic (ADR 007 / spec
   # 006 §2.2). The provider documents `memory_execution_role_arn` as "Required
@@ -255,18 +282,15 @@ resource "aws_bedrockagentcore_memory" "this" {
   # is attached OUT-OF-BAND (`make create-stats-strategy`) — provider 6.44.0's
   # `aws_bedrockagentcore_memory_strategy` exposes only the four `*_OVERRIDE`
   # LLM-extraction types, no SELF_MANAGED / invocation_configuration surface.
-  # See RESEARCH.md §14.
+  # See RESEARCH.md §14. Per ADR 008 the attachment moves from the diary
+  # Memory to this career Memory.
   memory_execution_role_arn = aws_iam_role.memory_stats.arn
-
-  # No inline `memory_strategies` block (the provider has none). The diary tier
-  # uses raw events end-to-end (`create_event` / `list_events`); the career tier
-  # uses the out-of-band self-managed strategy described above.
 
   # Wait for the memory-stats execution role to propagate through IAM before
   # AgentCore's UpdateMemory validates its trust policy (see the
-  # `time_sleep.wait_memory_stats_role` rationale above). This adds ORDERING
+  # `time_sleep.wait_memory_stats_role` rationale below). This adds ORDERING
   # only — `depends_on` does not force replacement, so existing Memory state is
-  # untouched on a steady-state apply.
+  # untouched on a steady-state apply; the time_sleep persists.
   depends_on = [time_sleep.wait_memory_stats_role]
 }
 
@@ -454,12 +478,17 @@ resource "aws_bedrockagentcore_agent_runtime" "this" {
   # stream surface at `/invocations`. Diary tools live in Lambda functions
   # behind the Gateway (per ADR 005), not in this container.
 
-  # Plumb the Memory ID and the Gateway identifier into the container.
+  # Plumb the Memory IDs and the Gateway identifier into the container.
   # - `GRAPHIA_MEMORY_ID`: `src/graphia/config.py::load_config()` reads it.
   #   The deployed Runtime never instantiates `AgentCoreMemoryDiaryStore`
   #   directly (the gateway-first factory branch takes precedence), but
   #   the var is still plumbed so ad-hoc local Memory inspection from the
   #   container works when Gateway is unset.
+  # - `GRAPHIA_CAREER_MEMORY_ID`: the dedicated career-stats AgentCore Memory
+  #   (ADR 008). The Runtime's career-stats store writes per-action events
+  #   here, and the consumer Lambda (later sub-task) consolidates them into
+  #   the long-term `CareerStats` record under the self-managed strategy's
+  #   namespace.
   # - `GRAPHIA_GATEWAY_ID`: the agent's diary call path goes through
   #   Gateway-MCP. `make_diary_store(config)` reads this and constructs a
   #   `GatewayMCPDiaryStore` pointing at the Gateway's MCP endpoint; the
@@ -467,16 +496,17 @@ resource "aws_bedrockagentcore_agent_runtime" "this" {
   # - `GRAPHIA_STATS_STRATEGY_ID` / `GRAPHIA_STATS_NAMESPACE`: the remote-mode
   #   career-stats store (`AgentCoreLongTermStatsStore`, spec 006 §2.1) reads
   #   these to write/read the rolling career aggregate as a self-managed
-  #   long-term Memory record. The strategy id comes from the
-  #   `stats_strategy_id` var (the out-of-band-created strategy — RESEARCH.md
-  #   §14); it is "" until the strategy is created, after which the store can
-  #   also resolve it by listing the Memory's strategies. The namespace is the
-  #   constant career namespace local (matches the app's GRAPHIA_STATS_NAMESPACE
-  #   default `/career/human-career/`).
+  #   long-term Memory record on the career Memory. The strategy id comes from
+  #   the `stats_strategy_id` var (the out-of-band-created strategy —
+  #   RESEARCH.md §14); it is "" until the strategy is created, after which
+  #   the store can also resolve it by listing the career Memory's strategies.
+  #   The namespace is the constant career namespace local (matches the app's
+  #   GRAPHIA_STATS_NAMESPACE default `/career/human-career/`).
   # Implicit references to the Memory and Gateway resources establish the
   # correct ordering — no `depends_on` needed for those two specifically.
   environment_variables = {
     GRAPHIA_MEMORY_ID         = aws_bedrockagentcore_memory.this.id
+    GRAPHIA_CAREER_MEMORY_ID  = aws_bedrockagentcore_memory.career.id
     GRAPHIA_GATEWAY_ID        = aws_bedrockagentcore_gateway.this.gateway_id
     GRAPHIA_STATS_STRATEGY_ID = var.stats_strategy_id
     GRAPHIA_STATS_NAMESPACE   = local.stats_namespace

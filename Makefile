@@ -204,6 +204,7 @@ wire-env:
 	@set -e; \
 	RUNTIME_NAME=$$(printf 'graphia-%s_runtime' "$(ENVIRONMENT)" | tr '-' '_' | cut -c1-48); \
 	MEMORY_PREFIX=$$(printf 'graphia-%s_memory' "$(ENVIRONMENT)" | tr '-' '_' | cut -c1-48); \
+	CAREER_MEMORY_PREFIX=$$(printf 'graphia-%s_career_memory' "$(ENVIRONMENT)" | tr '-' '_' | cut -c1-48); \
 	LOG_GROUP="/aws/bedrock-agentcore/graphia-$(ENVIRONMENT)-runtime"; \
 	touch .env; \
 	ECR_ARN=$$(aws --region $(AWS_REGION) ecr describe-repositories \
@@ -244,16 +245,20 @@ wire-env:
 	     { print } \
 	     END { if (!rseen) print ru; if (!mseen) print mi; if (!lseen) print lg }' \
 	    .env > .env.tmp && mv .env.tmp .env; \
-	STRATEGY_ID=$$(aws --region $(AWS_REGION) bedrock-agentcore-control get-memory \
-	    --memory-id "$$MEMORY_ID" \
-	    --query "memory.strategies[?type=='CUSTOM']|[0].strategyId" --output text 2>/dev/null || true); \
-	if [ -n "$$STRATEGY_ID" ] && [ "$$STRATEGY_ID" != "None" ]; then \
-	  awk -v si="STATS_STRATEGY_ID=$$STRATEGY_ID" \
-	      'BEGIN { sseen=0 } \
-	       /^STATS_STRATEGY_ID=/ { print si; sseen=1; next } \
-	       { print } \
-	       END { if (!sseen) print si }' \
-	      .env > .env.tmp && mv .env.tmp .env; \
+	CAREER_MEMORY_ID=$$(aws --region $(AWS_REGION) bedrock-agentcore-control list-memories \
+	    --query "memories[?starts_with(id, '$$CAREER_MEMORY_PREFIX')].id | [0]" --output text); \
+	if [ -n "$$CAREER_MEMORY_ID" ] && [ "$$CAREER_MEMORY_ID" != "None" ]; then \
+	  STRATEGY_ID=$$(aws --region $(AWS_REGION) bedrock-agentcore-control get-memory \
+	      --memory-id "$$CAREER_MEMORY_ID" \
+	      --query "memory.strategies[?type=='CUSTOM']|[0].strategyId" --output text 2>/dev/null || true); \
+	  if [ -n "$$STRATEGY_ID" ] && [ "$$STRATEGY_ID" != "None" ]; then \
+	    awk -v si="STATS_STRATEGY_ID=$$STRATEGY_ID" \
+	        'BEGIN { sseen=0 } \
+	         /^STATS_STRATEGY_ID=/ { print si; sseen=1; next } \
+	         { print } \
+	         END { if (!sseen) print si }' \
+	        .env > .env.tmp && mv .env.tmp .env; \
+	  fi; \
 	fi
 	@echo ""
 	@echo "Wired into .env (discovered via the AWS API — no Terraform state needed):"
@@ -416,17 +421,17 @@ enable-transaction-search:
 STATS_NAMESPACE ?= /career/human-career/
 create-stats-strategy:
 	@set -e; \
-	MEMORY_PREFIX=$$(printf 'graphia-%s_memory' "$(ENVIRONMENT)" | tr '-' '_' | cut -c1-48); \
+	CAREER_MEMORY_PREFIX=$$(printf 'graphia-%s_career_memory' "$(ENVIRONMENT)" | tr '-' '_' | cut -c1-48); \
 	MEMORY_ID=$$(aws --region $(AWS_REGION) bedrock-agentcore-control list-memories \
-	    --query "memories[?starts_with(id, '$$MEMORY_PREFIX')].id | [0]" --output text); \
+	    --query "memories[?starts_with(id, '$$CAREER_MEMORY_PREFIX')].id | [0]" --output text); \
 	if [ -z "$$MEMORY_ID" ] || [ "$$MEMORY_ID" = "None" ]; then \
-	  echo "ERROR: no AgentCore memory starting '$$MEMORY_PREFIX' in $(AWS_REGION). Deploy first (make deploy)."; exit 1; \
+	  echo "ERROR: no AgentCore career memory starting '$$CAREER_MEMORY_PREFIX' in $(AWS_REGION). Deploy first (make deploy)."; exit 1; \
 	fi; \
 	EXISTING=$$(aws --region $(AWS_REGION) bedrock-agentcore-control get-memory \
 	    --memory-id "$$MEMORY_ID" \
 	    --query "memory.strategies[?type=='CUSTOM']|[0].strategyId" --output text 2>/dev/null || echo None); \
 	if [ -n "$$EXISTING" ] && [ "$$EXISTING" != "None" ]; then \
-	  echo "Self-managed strategy already exists: $$EXISTING"; \
+	  echo "Self-managed strategy already exists on career memory: $$EXISTING"; \
 	  echo "Re-apply Terraform to plumb it: make tf-apply STATS_STRATEGY_ID=$$EXISTING"; \
 	  exit 0; \
 	fi; \
@@ -435,7 +440,7 @@ create-stats-strategy:
 	STRATEGY_NAME=$$(printf 'graphia_%s_career' "$(ENVIRONMENT)" | tr '-' '_' | cut -c1-48); \
 	STRATEGIES_JSON=$$(printf '{"addMemoryStrategies":[{"customMemoryStrategy":{"name":"%s","configuration":{"selfManagedConfiguration":{"invocationConfiguration":{"payloadDeliveryBucketName":"%s","topicArn":"%s"}}}}}]}' \
 	    "$$STRATEGY_NAME" "$$BUCKET" "$$TOPIC_ARN"); \
-	echo "Adding self-managed strategy to memory $$MEMORY_ID ..."; \
+	echo "Adding self-managed strategy to career memory $$MEMORY_ID ..."; \
 	aws --region $(AWS_REGION) bedrock-agentcore-control update-memory \
 	    --memory-id "$$MEMORY_ID" \
 	    --memory-strategies "$$STRATEGIES_JSON" >/dev/null; \

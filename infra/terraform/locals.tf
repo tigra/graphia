@@ -33,6 +33,13 @@ locals {
   # `graphia_demo_memory` (19 chars, well within the cap).
   memory_name = substr(replace("${local.name_prefix}_memory", "-", "_"), 0, 48)
 
+  # Career-stats long-term-Memory name (spec 006 / ADR 008). Per ADR 008 career
+  # stats live on a SEPARATE AgentCore Memory from the diary tier — distinct
+  # lifecycle, distinct retention semantics, and the self-managed strategy
+  # binds here, not on the diary Memory. Same regex/cap as `memory_name`; for
+  # `environment=demo` resolves to `graphia_demo_career_memory` (26 chars).
+  career_memory_name = substr(replace("${local.name_prefix}_career_memory", "-", "_"), 0, 48)
+
   # AgentCore Gateway names per the CreateGateway API: same family as Memory's
   # `name` pattern — `[a-zA-Z][a-zA-Z0-9-_]{0,99}` (alphanumerics + `-_`, max
   # 100 chars). Gateway is **more permissive than Runtime**: dashes are

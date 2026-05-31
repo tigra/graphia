@@ -33,6 +33,11 @@ output "memory_id" {
   value       = aws_bedrockagentcore_memory.this.id
 }
 
+output "career_memory_id" {
+  description = "Career-stats AgentCore Memory identifier passed to the Runtime via the `GRAPHIA_CAREER_MEMORY_ID` env var (ADR 008). Distinct from `memory_id` (the diary Memory): the Runtime writes per-action career events here, the consumer Lambda consolidates them into the long-term `CareerStats` record under the self-managed strategy's namespace, and `make create-stats-strategy` attaches the strategy to this Memory. Surfaced for local-mode / out-of-band tooling that needs to target the career bucket directly."
+  value       = aws_bedrockagentcore_memory.career.id
+}
+
 output "stats_strategy_id" {
   description = "Id of the self-managed (custom) long-term-Memory strategy backing remote-mode career stats (spec 006 / ADR 007), passed to the Runtime via the `GRAPHIA_STATS_STRATEGY_ID` env var. This is the value `AgentCoreLongTermStatsStore` uses as `memoryStrategyId` when authoring/reading the career record by namespace. Echoes the `stats_strategy_id` var because the strategy is created OUT-OF-BAND (`make create-stats-strategy`) — provider 6.44.0 has no SELF_MANAGED strategy surface (RESEARCH.md §14). Empty until that command has run and its `strategyId` is fed back via `-var stats_strategy_id=...`."
   value       = var.stats_strategy_id
