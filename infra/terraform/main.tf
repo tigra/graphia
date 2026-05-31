@@ -1012,3 +1012,152 @@ resource "aws_bedrockagentcore_gateway_target" "diary_read" {
     }
   }
 }
+
+# ---------------------------------------------------------------------------
+# Career-stats consumer Lambda (spec 006 / ADR 008 / Slice 8.8) — SNS-triggered
+# Python function that subscribes to `aws_sns_topic.stats_payload`, downloads
+# the self-managed strategy's batched event payload from
+# `aws_s3_bucket.stats_payload`, decodes the inner `CareerEvent` JSON, and on
+# finalizer events (game_ended / game_abandoned) folds the full session into
+# the long-term `CareerStats` record on the career Memory.
+#
+# Pattern mirrors the two diary Lambdas above: zip built out-of-band by
+# `make build-lambdas`, runtime/handler/timeout/memory identical, pre-created
+# log group with 30-day retention, dedicated inline-policy execution role
+# (NOT shared with `aws_iam_role.memory_stats` — that one is the *strategy's*
+# delivery role with `bedrock-agentcore` as the trust principal; this is the
+# *Lambda's* execution role with `lambda.amazonaws.com` as the trust principal,
+# least-privilege scoped to exactly what the handler reads/writes).
+# ---------------------------------------------------------------------------
+
+# Dedicated execution role for the career-consumer Lambda. Trust principal is
+# `lambda.amazonaws.com`; the inline policy grants S3 read on the payload
+# bucket, the bedrock-agentcore Memory data-plane actions the handler issues
+# (ListEvents to page the session, ListMemoryRecords to find the existing
+# career record, BatchCreate/UpdateMemoryRecords to persist the fold), and
+# CloudWatch Logs write to its own log group.
+data "aws_iam_policy_document" "lambda_career_consumer_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "lambda_career_consumer_inline" {
+  # S3 — download the self-managed strategy's batched payloads. The handler
+  # calls `s3:GetObject` against `s3PayloadLocation` URIs published by the
+  # Memory service to the SNS topic, which always point inside this bucket.
+  statement {
+    sid       = "S3PayloadRead"
+    effect    = "Allow"
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.stats_payload.arn}/*"]
+  }
+
+  # AgentCore Memory — scoped to the **career** Memory ARN (distinct from the
+  # diary Memory the diary Lambdas reference). ListEvents pages the session,
+  # ListMemoryRecords locates the existing long-term record (if any), and the
+  # two BatchCreate/UpdateMemoryRecords actions persist the folded record.
+  statement {
+    sid    = "AgentCoreCareerMemory"
+    effect = "Allow"
+    actions = [
+      "bedrock-agentcore:ListEvents",
+      "bedrock-agentcore:ListMemoryRecords",
+      "bedrock-agentcore:BatchCreateMemoryRecords",
+      "bedrock-agentcore:BatchUpdateMemoryRecords",
+    ]
+    resources = [aws_bedrockagentcore_memory.career.arn]
+  }
+
+  # CloudWatch Logs — stream creation + log writes on this function's own
+  # pre-created log group only (mirrors the diary Lambda pattern: the log
+  # group is declared as an `aws_cloudwatch_log_group` resource with 30-day
+  # retention, and the policy references it by ARN).
+  statement {
+    sid    = "CloudWatchLogsWrite"
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+    resources = ["${aws_cloudwatch_log_group.career_consumer.arn}:*"]
+  }
+}
+
+resource "aws_iam_role" "career_consumer" {
+  name               = "${local.name_prefix}-lambda-career-consumer"
+  assume_role_policy = data.aws_iam_policy_document.lambda_career_consumer_assume_role.json
+}
+
+resource "aws_iam_role_policy" "career_consumer" {
+  name   = "${local.name_prefix}-lambda-career-consumer-inline"
+  role   = aws_iam_role.career_consumer.id
+  policy = data.aws_iam_policy_document.lambda_career_consumer_inline.json
+}
+
+# Pre-create log group (instead of letting Lambda auto-create it on first
+# invoke) so retention is explicit and tags inherit from default_tags —
+# same approach as the diary Lambdas above.
+resource "aws_cloudwatch_log_group" "career_consumer" {
+  name              = "/aws/lambda/${local.name_prefix}-career-consumer"
+  retention_in_days = 30
+}
+
+resource "aws_lambda_function" "career_consumer" {
+  function_name = "${local.name_prefix}-career-consumer"
+  role          = aws_iam_role.career_consumer.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.13"
+  architectures = ["x86_64"]
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = "${path.module}/../lambda/.build/career_consumer.zip"
+  source_code_hash = filebase64sha256("${path.module}/../lambda/.build/career_consumer.zip")
+
+  environment {
+    variables = {
+      # Career Memory id — the handler reads/writes the long-term CareerStats
+      # record on this Memory and pages session events from it.
+      CAREER_MEMORY_ID = aws_bedrockagentcore_memory.career.id
+
+      # Career-stats namespace — single source of truth, shared with the
+      # Runtime env (`GRAPHIA_STATS_NAMESPACE`) so the consumer Lambda and the
+      # Runtime's remote-mode store target the same logical career bucket.
+      STATS_NAMESPACE = local.stats_namespace
+
+      # AWS_REGION is auto-populated by the Lambda service — boto3 clients in
+      # the handler read it from the environment with no Terraform plumbing.
+    }
+  }
+
+  depends_on = [
+    aws_iam_role_policy.career_consumer,
+    aws_cloudwatch_log_group.career_consumer,
+  ]
+}
+
+# SNS subscription — wire the stats payload topic to the consumer Lambda. The
+# topic has no other subscribers; this is its single fan-out.
+resource "aws_sns_topic_subscription" "career_consumer" {
+  topic_arn = aws_sns_topic.stats_payload.arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.career_consumer.arn
+}
+
+# Resource-based permission — let SNS invoke the Lambda. Scoped to the one
+# topic via `source_arn` so no other SNS topic in the account can trigger
+# this function.
+resource "aws_lambda_permission" "career_consumer_sns" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.career_consumer.function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.stats_payload.arn
+}
