@@ -293,6 +293,14 @@ redeploy: build-lambdas push tf-apply wire-env
 	@echo "Next: launch a game against the deployed Runtime with:"
 	@echo "  make play-remote"
 
+# End-to-end verification of the career-stats pipeline against the live
+# deploy. Walks every stage (runtime image, env, memory actor, strategy,
+# Lambda errors, TUI read path) and fails loud on the first broken thing —
+# so future "did the deploy actually work?" is a script, not a chain of
+# eyeballed aws calls.
+verify-pipeline:
+	@uv run python tools/verify_pipeline.py
+
 # --- Phase 3 career-stats bring-up (spec 006 / ADR 007).
 #
 # The self-managed Memory strategy can't be a Terraform resource (provider gap,
