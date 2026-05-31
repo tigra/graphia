@@ -3,7 +3,7 @@
 A high-level history of the project, reconstructed from `git log` and the
 `context/` artifacts: how scope changed (Change Requests), how the architecture
 was decided (Architecture Decision Records), and how the work was executed (specs
-broken into vertical slices). Covers **2026-04-29 → 2026-05-27**.
+broken into vertical slices). Covers **2026-04-29 → 2026-05-31**.
 
 Graphia is built with the **AWOS spec-driven workflow** — every increment flows
 `product → roadmap → architecture → spec → tech → tasks → implement → verify → tutorial`,
@@ -68,11 +68,20 @@ gantt
     Spec 005 verified Completed                          :milestone, done, sp5v, after sp5s5, 0d
     Tutorial 005 published                               :milestone, done, t5, after sp5v, 0d
 
-    section Phase 3 (v1.2) — Spec 006 kickoff
-    Spec 006 — Cross-Game Career Stats drafted           :milestone, active, sp6, 2026-05-25, 0d
-    Spec 006 tech-considerations                         :milestone, active, sp6t, 2026-05-25, 0d
-    ADR 007 — Self-authored long-term Memory records     :milestone, active, a7, 2026-05-25, 0d
-    ADR 008 — Client-owned stats via running totals      :milestone, active, a8, 2026-05-25, 0d
+    section Phase 3 (v1.2) — Spec 006 cross-game career stats
+    Spec 006 — Cross-Game Career Stats drafted           :milestone, done, sp6, 2026-05-25, 0d
+    Spec 006 tech-considerations                         :milestone, done, sp6t, 2026-05-25, 0d
+    ADRs 007 + 008 initial drafts                        :milestone, done, sp6adrs0, 2026-05-25, 0d
+    Slices 1-2 — Greeting + win/loss record              :done, sp6s12, 2026-05-28, 1d
+    Slices 3-4 — Day-action + night/game counters        :done, sp6s34, 2026-05-28, 1d
+    Slice 5 — Abandoned-game on Esc-quit                 :done, sp6s5, 2026-05-28, 1d
+    ADR 007 — Two-tier long-term memory stats            :milestone, crit, a7, 2026-05-28, 0d
+    Slices 6-7 — Initial remote backend + Terraform      :done, sp6s67, 2026-05-29, 1d
+    ADR 008 — Self-managed pipeline (supersedes 007)     :milestone, done, a8, 2026-05-30, 0d
+    Slice 8.1-8.9 — Rebuilt pipeline + consumer Lambda   :done, sp6s8, 2026-05-31, 1d
+    Architecture doc + Mermaid diagrams                  :milestone, done, sp6arch, 2026-05-31, 0d
+    Live-deploy bug parade (4 failure modes)             :done, sp6bugs, 2026-05-31, 1d
+    make verify-pipeline — end-to-end harness            :milestone, done, sp6verify, 2026-05-31, 0d
 
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
@@ -111,8 +120,17 @@ gantt
     click t5 href "https://github.com/tigra/graphia/blob/main/context/tutorials/005-play-as-role/tutorial.md"
     click sp6 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/functional-spec.md"
     click sp6t href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/technical-considerations.md"
-    click a7 href "https://github.com/tigra/graphia/blob/main/context/adr/007-cross-game-stats-as-long-term-memory-records.md"
-    click a8 href "https://github.com/tigra/graphia/blob/main/context/adr/008-client-owned-cross-game-stats.md"
+    click sp6adrs0 href "https://github.com/tigra/graphia/tree/main/context/adr"
+    click sp6s12 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/tasks.md"
+    click sp6s34 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/tasks.md"
+    click sp6s5 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/tasks.md"
+    click a7 href "https://github.com/tigra/graphia/blob/main/context/adr/007-two-tier-long-term-memory-stats.md"
+    click sp6s67 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/tasks.md"
+    click a8 href "https://github.com/tigra/graphia/blob/main/context/adr/008-self-managed-memory-pipeline.md"
+    click sp6s8 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/tasks.md"
+    click sp6arch href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/architecture.md"
+    click sp6bugs href "https://github.com/tigra/graphia/commits/main"
+    click sp6verify href "https://github.com/tigra/graphia/blob/main/tools/verify_pipeline.py"
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:
@@ -121,7 +139,7 @@ gantt
 - **Shape = kind.** Diamonds are point events (CRs, ADRs, spec milestones); bars are executed slice work spanning real days.
 - **Sections = project phase.** ADRs are listed first within Phase 2, then the slice bars, so a superseded ADR (red diamond) is never mistaken for blocked work.
 
-The red marks are the two superseded ADRs (002, 004); the CRs are green because — even though CR 001 and 002 carried `Proposed` for a while — the scope changes were fully executed and have now been formally Accepted. The orange marks are the Phase 3 kickoff artifacts: Spec 006 is in `Draft` status and ADRs 007/008 are `Proposed` (pending review).
+The red marks are the three superseded ADRs (002, 004, 007); the CRs are green because — even though CR 001 and 002 carried `Proposed` for a while — the scope changes were fully executed and have now been formally Accepted. The Phase 3 section now shows the full implementation arc — Slices 1-8 plus the ADR 007 → 008 mid-stream pivot plus a four-bug live-deploy parade ending at the `verify-pipeline` harness. Spec 006 itself is still `Draft` only because `/awos:verify` hasn't been run yet; implementation is 42/42 done.
 
 ---
 
@@ -337,6 +355,124 @@ downgraded from `Accepted` to `Proposed` to surface them for deliberate review
 before binding the implementation. Tasks breakdown (`/awos:tasks 006`) and
 slice-by-slice implementation remain ahead.
 
+### Act 7 — Phase 3 implementation, twice (2026-05-28 → 05-31)
+
+The Act 6 ADRs were reviewed and **ADR 007 was Accepted in revised form —
+"Two-tier long-term memory stats"** (05-28): exact integer records via the
+batch-record APIs now, with a future "semantic" tier left as an opening for
+a later spec. The original ADR 008 framing — client-owned stats via
+running-total `GameState` counters — was effectively absorbed; the
+running-total approach landed inside the slices below as the natural shape
+for the local store, without needing its own architectural binding.
+
+**Slices 1-5 (05-28)** built the full career-stats feature in local mode in
+a single day. Slice 1 introduced the store seam — `stats_store.py`,
+`render_greeting`, the first-run welcome line, and `LocalFileStatsStore`.
+Slice 2 added `fold` / `summarize` and the post-game panel. Slices 3-4
+added day-action (votes called, ballots cast) and night/game-wide counters
+(kills attempted/successful, day executions, night victims). Slice 5 wired
+the Esc-quit path so an abandoned game is recorded as an "abandoned"
+outcome — counted in games-played but excluded from win-rate denominators.
+With Slice 5 in, local mode was feature-complete; `.graphia/career.json`
+accumulated across launches.
+
+**Slices 6-7 (05-29)** delivered the first remote backend per ADR 007:
+Slice 6 added the `career_memory_id` / `stats_strategy_id` config seam and
+an `AgentCoreLongTermStatsStore` that wrote records directly via
+`batch_create_memory_records`; Slice 7 added Terraform for a dedicated
+AgentCore Memory plus an out-of-band CLI step (`make
+create-stats-strategy`) to attach a `SELF_MANAGED` strategy — because the
+`hashicorp/aws` provider only supports `CUSTOM` (LLM-extraction) strategies,
+not self-managed ones.
+
+The **Slice 7 post-deploy reveal** was that the strategy's S3 + SNS +
+Lambda scaffolding sat *unused*: the direct-write store wrote records
+without ever producing events, so the `SELF_MANAGED` strategy never had
+anything to fire on. The architecture was paying for scaffolding it didn't
+exercise. **ADR 008 was rewritten as "Self-managed memory pipeline"
+(05-30)** and formally **superseded ADR 007**: per-action events flow to
+AgentCore's short-term tier, the strategy's S3 + SNS deliveries trigger a
+consumer Lambda, and the Lambda materialises consolidated long-term records
+by folding the session's events. The intended AWS pattern, end to end,
+instead of half-using it.
+
+**Slice 8 (05-31)** rebuilt the remote pipeline against ADR 008 across nine
+sub-slices: a dedicated career Memory with the scaffolding re-attached
+(8.1), the `career_memory_id` config seam (8.2), the shared `career_events`
+module (8.3), per-action emissions from six graph nodes via a
+`partial`-wrapper service-injection pattern (8.4), `game_abandoned`
+emission on Esc-quit (8.5), the read-only `AgentCoreCareerEventStore` that
+replaced the direct-write store (8.6), the consumer Lambda with
+`games_folded` session-id idempotency (8.7), Terraform wiring for the
+consumer Lambda (8.8), and a fresh pipeline-equivalence test suite (8.9).
+An **architecture document with eight embedded mermaid diagrams** joined
+the spec dir to map the new shape.
+
+**Then the live deploy exposed four distinct bugs, none caught by the
+all-mocked test suite:**
+
+1. **Runtime IAM missing `bedrock-agentcore:CreateEvent`** on the career
+   Memory — the emitter `create_event` calls were silently being swallowed
+   in remote mode. Fix: grant the permission *and* remove the silent
+   try/except in the emitter so future IAM gaps fail loud.
+2. **`build_runtime_graph` parity gap** — Slice 8.4 plumbed the
+   career-emitter into local-mode `build_graph` but missed the runtime-side
+   builder (the two graphs were hand-mirrored copies, with the docstring
+   "*mirror this here if you change the local graph*" — the discipline
+   failed exactly as it always does). Two-step fix: wire the emitter
+   through the runtime builder, then **refactor both builders to share a
+   single `_assemble_graph` helper** so the drift class is structurally
+   impossible going forward.
+3. **`includePayload` (singular) typo** in the consumer Lambda's
+   `list_events` kwargs — local tests stubbed `list_events(**kwargs)`
+   without inspecting kwargs, so the boto3 `ParamValidationError` only
+   surfaced against real boto3.
+4. **`batch_create_memory_records` missing on the Lambda runtime's boto3**
+   — the Python 3.13 Lambda runtime ships an older snapshot that has
+   `list_events` and `list_memory_records` but not the batch record-write
+   methods. Local boto3 has them, so unit tests passed; the Lambda crashed
+   with `AttributeError` at the write site. Vendored a current boto3 in
+   `requirements.txt` so the zip carries its own copy.
+
+In parallel, **`record(summary)` was simplified to return `self.load()`
+unchanged** instead of an in-process `fold(load(), summary)` synthesis. The
+fold had been hiding the boto3 bugs — the post-game panel always showed a
+happy "+1 this game" even when nothing was persisted, masking a broken
+pipeline as a cosmetic delay. The new behaviour shows the actually-
+materialised state; if the async write hasn't landed yet, the panel
+honestly shows pre-game numbers, and the next session's greeting reflects
+the delta only once the consumer Lambda completes (typically a 2-3 min
+async lag at the strategy's default trigger settings).
+
+To stop the post-mortem-by-CLI-call cycle, **two new test modules locked the
+boto3 contract at unit-test time** —
+`tests/test_boto3_api_contract.py` walks
+`boto3.client('bedrock-agentcore').meta.service_model` to validate every
+operation name and parameter name the codebase calls, and
+`tests/test_lambda_zip_contents.py` opens the built `career_consumer.zip`
+and asserts vendored `boto3` / `botocore` packages plus a gzipped
+bedrock-agentcore service description that exposes the batch-record
+operations. Together they cover the typo class (1, 3) and the runtime-
+version-mismatch class (4) at `pytest -q` time, against artifacts that
+mirror what the Lambda actually loads.
+
+And **`make verify-pipeline`** went into the Makefile — a six-stage
+read-only harness against the live deploy that asserts the runtime image
+tag matches HEAD, `.env` carries the career memory id, the `human-career`
+actor exists in career memory, the self-managed strategy is `ACTIVE`, the
+Lambda's latest log stream has no `[ERROR]` / `ParamValidationError` /
+`AttributeError` markers, and the TUI's exact
+`make_stats_store(load_config()).load()` returns the same record AgentCore
+has. First run against the `eafa1ee` deploy: all six green, with the most
+recent game's session id in `games_folded` — end-to-end proof, not promise.
+
+Spec 006 ends Phase 3 implementation at **42/42 tasks `[x]`** and **232
+passing tests** (1 skipped, 1 known flake — `test_vote_validation` passes
+in isolation, fires ~1-in-3 in the full suite under
+`GraphRecursionError`). The functional spec stays `Draft` only because
+`/awos:verify 006` and `/awos:tutorial 006` are the deliberate next steps,
+not because anything is unfinished.
+
 ---
 
 ## The Slice 7 saga (2026-05-13 → 05-15)
@@ -431,26 +567,32 @@ coverage._
 | 003 | 2026-05-13 | Bedrock model family — Amazon Nova over Claude          | Accepted              |
 | 004 | 2026-05-13 | Gateway target IAM-auth via CLI workaround              | Superseded by ADR 005 |
 | 005 | 2026-05-14 | Gateway tools via Lambda targets                        | Accepted              |
-| 006 | 2026-05-23 | Test role-pinning via `GRAPHIA_ROLE` (amended Slice 5)  | Proposed              |
-| 007 | 2026-05-25 | Cross-game stats as self-authored long-term Memory records | Proposed           |
-| 008 | 2026-05-25 | Client-owned cross-game stats via running-total `GameState` counters | Proposed |
+| 006 | 2026-05-23 | Test role-pinning via `GRAPHIA_ROLE` (amended Slice 5)  | Accepted              |
+| 007 | 2026-05-28 | Two-tier long-term memory stats (exact now, semantic later) | Superseded by ADR 008 |
+| 008 | 2026-05-30 | Long-term memory via the self-managed pipeline          | Accepted              |
 
 ## Specs & tutorials
 
-| Spec | Title                                | Slices | Status    |
-| ---- | ------------------------------------ | ------ | --------- |
-| 001  | Playable Skeleton                    | 9      | Completed |
-| 002  | Hosted AgentCore Deployment          | 11     | Completed |
-| 003  | Reliable Game Exit Controls          | 3      | Completed |
-| 004  | Robust /vote Input Validation        | 4      | Completed |
-| 005  | Play-As-Role via Environment Variable | 5      | Completed |
-| 006  | Long-Term Cross-Game Memory & Career Stats | —     | Draft     |
+| Spec | Title                                       | Slices | Status    |
+| ---- | ------------------------------------------- | ------ | --------- |
+| 001  | Playable Skeleton                           | 9      | Completed |
+| 002  | Hosted AgentCore Deployment                 | 11     | Completed |
+| 003  | Reliable Game Exit Controls                 | 3      | Completed |
+| 004  | Robust /vote Input Validation               | 4      | Completed |
+| 005  | Play-As-Role via Environment Variable       | 5      | Completed |
+| 006  | Long-Term Cross-Game Memory & Career Stats  | 8      | Draft     |
+
+_Spec 006 implementation is 42/42 complete and verified end-to-end against the live deploy; `/awos:verify` and `/awos:tutorial` are the deliberate next steps, so the status field stays `Draft` for now._
 
 Per-increment learning tutorials live under `context/tutorials/`: `001`, the
 final `002` (depth-first walkthrough of all eleven Spec 002 slices), `004`
 (the LangGraph interrupt/resume-pump gotcha), and `005` (the determinism
 posture as the conceptual spine — `GRAPHIA_ROLE` and the seed retirement).
-Tutorial `003` was intentionally skipped — that index is left open. An interim
+Tutorial `003` was intentionally skipped — that index is left open.
+Tutorial `006` is pending — to be written after `/awos:verify 006`, and
+given the depth of material (ADR 007 → 008 mid-stream rewrite, the
+self-managed-strategy/S3/SNS/Lambda pipeline, the four real-deploy bugs
+and what catches each one) it should be a rich one. An interim
 `002-hosted-agentcore-deployment-v2` draft (Slices 1-4 + the Nova switch,
 pre-Lambda-pivot) sits alongside as a historical artifact and will be removed
 when no longer interesting.
@@ -459,14 +601,25 @@ when no longer interesting.
 
 ## What's next
 
-**Phase 3 — Long-Term Cross-Game Memory & Career Stats** is in flight. Spec
-006's functional spec and technical-considerations are drafted; ADR 007
-(Memory mechanism: self-managed long-term records) and ADR 008 (ownership
-seam: client-owned store + running-total `GameState` counters) are both
-`Proposed` and awaiting deliberate review before binding the implementation.
-The immediate next step on the AWOS chain is `/awos:tasks 006` (after both
-ADRs are reviewed and either Accepted as drafted, amended, or replaced by a
-different design path).
+**Phase 3 — Long-Term Cross-Game Memory & Career Stats** is implementation-
+complete. 42/42 spec-006 tasks are `[x]`, the live deploy is verified
+end-to-end (`make verify-pipeline` returns six green checks against the
+`eafa1ee` runtime + Lambda), and the architecture document maps the final
+ADR 008 shape. The remaining AWOS steps are deliberate, not blocked:
+
+1. **`/awos:verify 006`** — read the functional spec's acceptance criteria
+   against the delivered state, flip Status → Completed in the spec and
+   `[ ]` → `[x]` on the five roadmap bullets at the top of Phase 3.
+2. **`/awos:tutorial 006`** — capture the spec's worth of teaching
+   material: the ADR 007 → 008 pivot (when half-using AWS scaffolding
+   exposes a wrong architecture), the self-managed pipeline shape, and the
+   four real-deploy bugs paired with the integration tests that now catch
+   each class.
+
+After that, the next roadmap item is **AI Provider Flexibility** —
+AWS Profile / SSO credentials (the work for this is effectively shipped
+across the deploy/runtime changes and just needs a roadmap tick) and a
+**Local Ollama Provider** (genuinely fresh scope).
 
 The repo is public at **github.com/tigra/graphia**, so future increments ship
 in the open.

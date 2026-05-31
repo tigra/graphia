@@ -84,11 +84,20 @@ gantt
     Spec 005 verified Completed                          :milestone, done, sp5v, after sp5s5, 0d
     Tutorial 005 published                               :milestone, done, t5, after sp5v, 0d
 
-    section Phase 3 (v1.2) — Spec 006 kickoff
-    Spec 006 — Cross-Game Career Stats drafted           :milestone, active, sp6, 2026-05-25, 0d
-    Spec 006 tech-considerations                         :milestone, active, sp6t, 2026-05-25, 0d
-    ADR 007 — Self-authored long-term Memory records     :milestone, active, a7, 2026-05-25, 0d
-    ADR 008 — Client-owned stats via running totals      :milestone, active, a8, 2026-05-25, 0d
+    section Phase 3 (v1.2) — Spec 006 cross-game career stats
+    Spec 006 — Cross-Game Career Stats drafted           :milestone, done, sp6, 2026-05-25, 0d
+    Spec 006 tech-considerations                         :milestone, done, sp6t, 2026-05-25, 0d
+    ADRs 007 + 008 initial drafts                        :milestone, done, sp6adrs0, 2026-05-25, 0d
+    Slices 1-2 — Greeting + win/loss record              :done, sp6s12, 2026-05-28, 1d
+    Slices 3-4 — Day-action + night/game counters        :done, sp6s34, 2026-05-28, 1d
+    Slice 5 — Abandoned-game on Esc-quit                 :done, sp6s5, 2026-05-28, 1d
+    ADR 007 — Two-tier long-term memory stats            :milestone, crit, a7, 2026-05-28, 0d
+    Slices 6-7 — Initial remote backend + Terraform      :done, sp6s67, 2026-05-29, 1d
+    ADR 008 — Self-managed pipeline (supersedes 007)     :milestone, done, a8, 2026-05-30, 0d
+    Slice 8.1-8.9 — Rebuilt pipeline + consumer Lambda   :done, sp6s8, 2026-05-31, 1d
+    Architecture doc + Mermaid diagrams                  :milestone, done, sp6arch, 2026-05-31, 0d
+    Live-deploy bug parade (4 failure modes)             :done, sp6bugs, 2026-05-31, 1d
+    make verify-pipeline — end-to-end harness            :milestone, done, sp6verify, 2026-05-31, 0d
 
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
@@ -127,8 +136,17 @@ gantt
     click t5 href "https://github.com/tigra/graphia/blob/main/context/tutorials/005-play-as-role/tutorial.md"
     click sp6 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/functional-spec.md"
     click sp6t href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/technical-considerations.md"
-    click a7 href "https://github.com/tigra/graphia/blob/main/context/adr/007-cross-game-stats-as-long-term-memory-records.md"
-    click a8 href "https://github.com/tigra/graphia/blob/main/context/adr/008-client-owned-cross-game-stats.md"
+    click sp6adrs0 href "https://github.com/tigra/graphia/tree/main/context/adr"
+    click sp6s12 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/tasks.md"
+    click sp6s34 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/tasks.md"
+    click sp6s5 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/tasks.md"
+    click a7 href "https://github.com/tigra/graphia/blob/main/context/adr/007-two-tier-long-term-memory-stats.md"
+    click sp6s67 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/tasks.md"
+    click a8 href "https://github.com/tigra/graphia/blob/main/context/adr/008-self-managed-memory-pipeline.md"
+    click sp6s8 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/tasks.md"
+    click sp6arch href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/architecture.md"
+    click sp6bugs href "https://github.com/tigra/graphia/commits/main"
+    click sp6verify href "https://github.com/tigra/graphia/blob/main/tools/verify_pipeline.py"
 </pre>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
 <script>
