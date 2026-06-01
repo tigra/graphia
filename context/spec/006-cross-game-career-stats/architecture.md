@@ -28,7 +28,7 @@ flowchart LR
     end
 ```
 
-The greeting reads the aggregate (local file or long-term record); the post-game panel renders from an in-process `fold(load(), summary)` so the player sees correct numbers immediately, while the *remote* write catches up asynchronously through the pipeline.
+The greeting reads the aggregate (local file or long-term record). In local mode the post-game panel renders from an in-process `fold(load(), summary)` *after* the synchronous file write — load returns the just-written value, so the panel shows the up-to-date aggregate. **In remote mode the panel renders from a read-only `load()` only — no in-process fold, no synthesised "+1 this game".** The player sees the *actually-materialised* state; the Lambda's write catches up asynchronously through the pipeline (typically a 2–3 min lag at the strategy's default trigger settings). The prior shape — folding the just-finished game locally to render the +1 immediately — was deliberately removed in [Slice 8.12](./tasks.md) because it masked a broken write pipeline as a cosmetic delay; see [§10 Failure modes](#10-failure-modes) for the loud-fail posture.
 
 ---
 
@@ -43,7 +43,7 @@ The greeting reads the aggregate (local file or long-term record); the post-game
 | `build_summary(events) -> GameSummary` | Remote-mode builder — reconstructs from a session's events | `src/graphia/career_events.py` |
 | `fold(aggregate, summary) -> CareerStats` | Pure aggregation function. **Shared by both modes.** | `src/graphia/stats_store.py` |
 | `LocalFileStatsStore` | Local-mode store. `load()` reads the file tolerantly; `record()` folds and atomically writes | `src/graphia/stats_store.py` |
-| `AgentCoreCareerEventStore` | Remote-mode store. `load()` lists the long-term record by namespace; `record()` returns `fold(load(), summary)` for the panel — **does not write** (the Lambda owns the write) | `src/graphia/stats_store.py` |
+| `AgentCoreCareerEventStore` | Remote-mode store. `load()` lists the long-term record by namespace; `record(summary)` returns `self.load()` unchanged — read-only, **does not write** and **does not fold** (the panel shows actually-persisted state; the Lambda owns the eventual write — see [§10](#10-failure-modes)) | `src/graphia/stats_store.py` |
 | `CareerEventEmitter` (Protocol) | Side-effect for the runtime to emit events | `src/graphia/career_events.py` |
 | `NoOpCareerEventEmitter` | Used in local mode and tests | `src/graphia/career_events.py` |
 | `AgentCoreCareerEventEmitter` | Lazy boto3 `bedrock-agentcore.create_event` wrapper. Used by runtime nodes + the UI quit path in remote mode | `src/graphia/career_events.py` |
@@ -109,7 +109,7 @@ sequenceDiagram
     end
 ```
 
-The Runtime's call to `record()` runs **client-side, locally**, and returns the just-folded aggregate so the post-game panel renders correct numbers *before* the Lambda has finished. The next launch's greeting reads the long-term record, by which point the Lambda has written it.
+The Runtime's call to `record()` runs **client-side, locally**, and in remote mode returns the currently-materialised aggregate via `list_memory_records` — *not* a fold-with-the-just-finished-game. The post-game panel therefore shows the state the Lambda has *already* written; if the Lambda hasn't caught up yet (typically a 2–3 min lag) the panel shows pre-game numbers, and the next launch's greeting carries the delta only once the Lambda completes. The in-process fold was removed here deliberately — see [§10 Loud-fail in remote mode](#10-failure-modes).
 
 ---
 
@@ -179,11 +179,12 @@ flowchart LR
     RG -->|fold| CS
 ```
 
-The equivalence rests on three pieces being **shared**, not duplicated:
+The equivalence rests on four pieces being **shared**, not duplicated:
 
 1. The `GameSummary` data shape.
 2. The `fold(aggregate, summary)` pure function (vendored into the Lambda zip — no parallel implementation).
 3. The `CareerStats` shape (including the `games_folded` sidecar — empty in local mode; populated in remote because the Lambda needs idempotency under at-least-once SNS delivery).
+4. The LangGraph topology itself: `build_graph` (local mode) and `build_runtime_graph` (the AgentCore Runtime entrypoint) both delegate to a private `_assemble_graph(builder, *, diary_store, career_emitter, game_id, saver)` helper in `src/graphia/graph.py`. Per-action emitter wiring lands in both modes by construction, instead of by hand-mirroring. This is a [Slice 8.11](./tasks.md) refactor — earlier in spec 006 the two graphs were verbatim copies with the runtime-side one carrying a docstring saying "mirror this here if the local graph evolves," and the discipline failed exactly as docstrings of that shape always do (Slice 8.4's emitter plumbing was added to `build_graph` but missed `build_runtime_graph`, so the deployed Runtime emitted nothing for several deploy cycles).
 
 `summarize` and `build_summary` are the two ends; both produce the *same* `GameSummary` for the same game.
 
@@ -223,17 +224,17 @@ flowchart TB
 
     E1 --> E2 --> E3 --> End
 
-    Done --> Panel["Runtime UI: record() returns local fold → render_panel()"]
+    Done --> Panel["Runtime UI: record() → load() → render_panel()<br/>(remote mode: no in-process fold; see §10)"]
     Done --> Lambda["Lambda: list_events + build_summary + fold + write record"]
     Done --> Next["Next launch: render_greeting(load())"]
 ```
 
-Three things happen at game end, *concurrently in remote mode*:
-1. The UI renders the post-game panel from a local fold (synchronous, immediate).
-2. The Lambda consolidates the session into the long-term record (asynchronous, seconds-scale).
+Three things happen at game end in remote mode:
+1. The UI renders the post-game panel from a synchronous `record(summary) → load()` call — showing the actually-materialised aggregate, *not* a synthesised "+1 this game".
+2. The Lambda consolidates the session into the long-term record (asynchronous, ~2–3 min at the strategy's default trigger settings).
 3. On the *next* app launch, the greeting reads the record the Lambda wrote.
 
-The async gap between (1) and (3) is bounded by minutes-to-days (between game-ends), never a practical problem.
+The async gap between (1) and (3) is bounded by minutes-to-days (between game-ends), never a practical problem. *Local mode* differs: `record()` is a synchronous fold-and-atomic-write, so the post-game panel reflects the just-finished game immediately, and there is no gap.
 
 ---
 
@@ -252,6 +253,8 @@ flowchart LR
 
 All four steps are wrapped by `make deploy` (which ends with `make deploy-stats`), so the user runs a single command. The convergence + idempotency mean re-running `make deploy` is safe.
 
+After any deploy, **`make verify-pipeline`** ([`tools/verify_pipeline.py`](../../../tools/verify_pipeline.py)) walks the live deploy and prints a green/red line per stage: runtime image tag matches git HEAD, `.env` carries `GRAPHIA_CAREER_MEMORY_ID`, the `human-career` actor exists in career memory, at least one ACTIVE `SELF_MANAGED` strategy is attached, the Lambda's latest log stream has no `ParamValidationError` / `AttributeError` / `[ERROR]` markers, and `make_stats_store(load_config()).load()` returns the same record `list_memory_records` does. Exits non-zero on first failure so `make redeploy && make verify-pipeline` composes into a single verify-after-deploy step. This was added in [Slice 8.15](./tasks.md) after the parade of live-deploy bugs (Slices 8.10–8.13) made post-mortem-by-CLI-call too costly to keep doing by hand.
+
 ---
 
 ## 10. Failure modes
@@ -261,6 +264,7 @@ All four steps are wrapped by `make deploy` (which ends with `make deploy-stats`
 - **Clock skew on local host.** Causes AWS signature failures at deploy time (`SignatureDoesNotMatch`) — not at game-time. Sync the host clock.
 - **Strategy delivery filtering.** AgentCore's self-managed strategy delivers *all* events on its Memory; consumer-side filtering is unnecessary because the career Memory is dedicated and its only events are career events. (This is why the dedicated Memory was chosen over a shared one — no cross-feature event drift to worry about.)
 - **Eventual consistency on greeting.** `list_memory_records` reads can briefly lag the Lambda's `batch_update`. In practice the gap between two app launches dwarfs the AgentCore consistency window, so the player never observes it.
+- **Loud-fail in remote mode (no silent fallback).** Per [Slices 8.10–8.12](./tasks.md), `AgentCoreCareerEventEmitter.emit()` and `AgentCoreCareerEventStore.load()` no longer catch boto3 errors — IAM gaps, network failures, and `ParamValidationError`s propagate and crash the call site loud, instead of silently writing zeros that look indistinguishable from "no history yet." The corollary: `make_stats_store(config)` selects the remote store strictly on `config.career_memory_id` being set, and there is *no automatic fallback to `LocalFileStatsStore`* when the remote store fails. Remote mode is opt-in (via `GRAPHIA_CAREER_MEMORY_ID`) and stays opt-in once chosen; `make verify-pipeline` is the canonical health check.
 
 ---
 
