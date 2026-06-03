@@ -39,12 +39,12 @@ _Hard scope for v1.1. The reference project must demonstrate Bedrock AgentCore a
 
 _Hard scope for v1.2. Demonstrates the long-term, cross-session use of AgentCore Memory — a distinct pattern from the per-game Memory use in Phase 2 — by accumulating career and aggregate stats across game sessions._
 
-- [ ] **Long-Term Cross-Game Memory & Career Stats**
-  - [ ] **Cross-Game Stats Accumulation:** Persist a small end-of-game summary from each game (night-kill initiations and votes, day-execution initiations and votes, game outcomes, role-broken-down counts) so the player builds a real career history across many games.
-  - [ ] **Pre-Game Career-Summary Greeting:** On launch, before the role-count prompts, greet the player with a one-paragraph cumulative summary drawn from the cross-game store (games played, win rate by role, kills attempted vs. successful, etc.). Empty on the very first run.
-  - [ ] **Post-Game Career-Stats Panel:** After the Moderator's end-of-game recap, append a brief panel that shows the updated career numbers and the deltas from the just-finished game.
-  - [ ] **AgentCore Memory as the Long-Term Store (Remote Mode):** In remote mode, persist the cross-game stats summaries via AgentCore Memory — the explicit demonstration of long-term cross-session Memory.
-  - [ ] **Local-File Stats Store (Local Mode):** In local mode, persist the same data shape to a file in the game's local data directory so dev work without AWS still sees stats accumulate. (Note: this is the only persistent state that crosses sessions in local mode; full game transcripts, diaries, and replays remain non-persistent.)
+- [x] **Long-Term Cross-Game Memory & Career Stats**
+  - [x] **Cross-Game Stats Accumulation:** Persist a small end-of-game summary from each game (night-kill initiations and votes, day-execution initiations and votes, game outcomes, role-broken-down counts) so the player builds a real career history across many games.
+  - [x] **Pre-Game Career-Summary Greeting:** On launch, before the role-count prompts, greet the player with a one-paragraph cumulative summary drawn from the cross-game store (games played, win rate by role, kills attempted vs. successful, etc.). Empty on the very first run.
+  - [x] **Post-Game Career-Stats Panel:** After the Moderator's end-of-game recap, append a brief panel that shows the updated career numbers and the deltas from the just-finished game.
+  - [x] **AgentCore Memory as the Long-Term Store (Remote Mode):** In remote mode, persist the cross-game stats summaries via AgentCore Memory — the explicit demonstration of long-term cross-session Memory.
+  - [x] **Local-File Stats Store (Local Mode):** In local mode, persist the same data shape to a file in the game's local data directory so dev work without AWS still sees stats accumulate. (Note: this is the only persistent state that crosses sessions in local mode; full game transcripts, diaries, and replays remain non-persistent.)
 
 ---
 

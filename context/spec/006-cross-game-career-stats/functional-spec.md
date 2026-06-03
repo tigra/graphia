@@ -1,7 +1,7 @@
 # Functional Specification: Long-Term Cross-Game Memory & Career Stats
 
 - **Roadmap Item:** Phase 3 — Long-Term Cross-Game Memory & Career Stats (Cross-Game Stats Accumulation, Pre-Game Career-Summary Greeting, Post-Game Career-Stats Panel, AgentCore Memory as the Long-Term Store, Local-File Stats Store)
-- **Status:** Draft
+- **Status:** Completed
 - **Author:** Alexey Tigarev
 
 ---
@@ -22,30 +22,30 @@ This change gives the player a **persistent career**. Across every game they pla
 
 - **As a** returning player, **I want** my results and actions to carry over from one game to the next, **so that** I build up a real history instead of starting fresh every time.
   - **Acceptance Criteria:**
-    - [ ] When a game finishes by a side winning, the player's tallies are updated to include that game.
-    - [ ] When a game is abandoned by the player confirming a quit, the player's tallies are updated to record it as an abandoned game (see §2.7).
-    - [ ] Once a game has been recorded, its contribution to the history is still present on the next launch.
-    - [ ] Closing and reopening the game does not reset or lose previously accumulated history.
-    - [ ] Only summary numbers are remembered — the player cannot replay or re-read the transcript, chat, or diaries of a past game.
+    - [x] When a game finishes by a side winning, the player's tallies are updated to include that game.
+    - [x] When a game is abandoned by the player confirming a quit, the player's tallies are updated to record it as an abandoned game (see §2.7).
+    - [x] Once a game has been recorded, its contribution to the history is still present on the next launch.
+    - [x] Closing and reopening the game does not reset or lose previously accumulated history.
+    - [x] Only summary numbers are remembered — the player cannot replay or re-read the transcript, chat, or diaries of a past game.
 
 ### 2.2 Pre-game career greeting
 
 - **As a** player, **I want** a short summary of my history when I launch the game, **so that** I'm reminded where I left off before the new game begins.
   - **Acceptance Criteria:**
-    - [ ] On launch, before the game begins, the player sees a one-paragraph summary of their cumulative career.
-    - [ ] The greeting reports, at minimum: total games played, win rate broken down by role (as Mafia / as Law-abiding), kills attempted vs. successful, and votes the player has initiated.
-    - [ ] **First run:** when there is no history yet, the greeting is replaced by a short one-line welcome (e.g., *"Welcome — this is your first game, so there's no history yet."*), after which the game proceeds normally.
-    - [ ] The greeting is informational only — it requires no input and does not interrupt the start of the game.
+    - [x] On launch, before the game begins, the player sees a one-paragraph summary of their cumulative career.
+    - [x] The greeting reports, at minimum: total games played, win rate broken down by role (as Mafia / as Law-abiding), kills attempted vs. successful, and votes the player has initiated.
+    - [x] **First run:** when there is no history yet, the greeting is replaced by a short one-line welcome (e.g., *"Welcome — this is your first game, so there's no history yet."*), after which the game proceeds normally.
+    - [x] The greeting is informational only — it requires no input and does not interrupt the start of the game.
 
 ### 2.3 Post-game career panel with deltas
 
 - **As a** player, **I want** to see how the game I just finished changed my numbers, **so that** each game visibly contributes to my career.
   - **Acceptance Criteria:**
-    - [ ] After the Moderator's end-of-game recap (i.e., when a game ends by a side winning), the player sees a brief career-stats panel.
-    - [ ] The panel shows the player's updated cumulative numbers **and** the change ("delta") contributed by the game just finished (e.g., *"You initiated 1 day-vote today — career total: 6"*).
-    - [ ] Every personal counter that changed during the game shows its delta; counters that did not change may show no delta or a zero delta.
-    - [ ] The numbers in the panel reflect the game that just ended (they are not "one game behind").
-    - [ ] When a game ends by the player quitting (no recap is shown), no post-game panel appears; the abandoned game is instead reflected in the next launch's greeting.
+    - [x] After the Moderator's end-of-game recap (i.e., when a game ends by a side winning), the player sees a brief career-stats panel.
+    - [x] The panel shows the player's updated cumulative numbers **and** the change ("delta") contributed by the game just finished (e.g., *"You initiated 1 day-vote today — career total: 6"*).
+    - [x] Every personal counter that changed during the game shows its delta; counters that did not change may show no delta or a zero delta.
+    - [x] The numbers in the panel reflect the game that just ended (they are not "one game behind").
+    - [x] When a game ends by the player quitting (no recap is shown), no post-game panel appears; the abandoned game is instead reflected in the next launch's greeting.
 
 ### 2.4 What's counted — your personal numbers
 
@@ -56,12 +56,12 @@ This change gives the player a **persistent career**. Across every game they pla
   - **Day-ballots you cast** — the number of execution votes the player took part in.
   - **Night kills attempted vs. successful (as Mafia)** — *attempted* counts each Night the player took part in choosing a victim; *successful* counts the Nights where the victim the Mafia killed was the one the player backed.
   - **Acceptance Criteria:**
-    - [ ] After a game in which the player (as Mafia) backed the target that was actually killed, the "successful kills" number increases by one.
-    - [ ] After a game in which the player (as Mafia) backed a target that was *not* the one killed, "attempted" increases but "successful" does not.
-    - [ ] After a game the player won, the win count and win rate for the role they played increase accordingly.
-    - [ ] Win rate is computed only over games that reached a win/loss; abandoned games are excluded from the win-rate denominator.
-    - [ ] When the player has not yet completed a game in a given role, the win rate for that role reads as not-applicable (e.g., *"—"* or *"no games yet"*) rather than as 0%.
-    - [ ] Counters reflect actions the player took while alive; being eliminated early does not erase the actions taken before elimination.
+    - [x] After a game in which the player (as Mafia) backed the target that was actually killed, the "successful kills" number increases by one.
+    - [x] After a game in which the player (as Mafia) backed a target that was *not* the one killed, "attempted" increases but "successful" does not.
+    - [x] After a game the player won, the win count and win rate for the role they played increase accordingly.
+    - [x] Win rate is computed only over games that reached a win/loss; abandoned games are excluded from the win-rate denominator.
+    - [x] When the player has not yet completed a game in a given role, the win rate for that role reads as not-applicable (e.g., *"—"* or *"no games yet"*) rather than as 0%.
+    - [x] Counters reflect actions the player took while alive; being eliminated early does not erase the actions taken before elimination.
 
 ### 2.5 What's counted — game-wide totals
 
@@ -71,28 +71,28 @@ This change gives the player a **persistent career**. Across every game they pla
   - **Total night victims** — cumulative count of players killed at Night.
   - **Average game length** — the average number of day/night rounds a game lasts, computed over games that played to a win/loss (abandoned games, which have no final length, are excluded from this average).
   - **Acceptance Criteria:**
-    - [ ] After each finished game, the "games played" total and the matching outcome tally (Law-abiding win, Mafia win, or abandoned) each increase by one.
-    - [ ] The "total day executions" and "total night victims" totals increase by the number of players executed and killed in the just-recorded game, including events that occurred before a quit.
-    - [ ] The "average game length" reflects all games that played to a win/loss, including the most recent such game, and is unaffected by abandoned games.
-    - [ ] Game-wide totals are clearly distinguishable from the player's personal numbers (the player can tell which figures are "you" and which are "all games").
+    - [x] After each finished game, the "games played" total and the matching outcome tally (Law-abiding win, Mafia win, or abandoned) each increase by one.
+    - [x] The "total day executions" and "total night victims" totals increase by the number of players executed and killed in the just-recorded game, including events that occurred before a quit.
+    - [x] The "average game length" reflects all games that played to a win/loss, including the most recent such game, and is unaffected by abandoned games.
+    - [x] Game-wide totals are clearly distinguishable from the player's personal numbers (the player can tell which figures are "you" and which are "all games").
 
 ### 2.6 Same experience however the game is run
 
 - **As a** player, **I want** my career to behave identically whether I play on my own machine or against the hosted version, **so that** my history is one continuous record from my point of view.
   - **Acceptance Criteria:**
-    - [ ] The greeting and the post-game panel look and read the same regardless of how the game is launched.
-    - [ ] The set of numbers tracked is the same in both cases.
-    - [ ] *(Note: where the history is physically kept differs between the two run modes; that is an implementation detail and is addressed in the technical considerations, not here.)*
+    - [x] The greeting and the post-game panel look and read the same regardless of how the game is launched.
+    - [x] The set of numbers tracked is the same in both cases.
+    - [x] *(Note: where the history is physically kept differs between the two run modes; that is an implementation detail and is addressed in the technical considerations, not here.)*
 
 ### 2.7 Games that end by quitting (abandoned games)
 
 - **As a** player who leaves a game in progress, **I want** that game to be acknowledged in my history rather than vanish, **so that** my record reflects every game I started.
   - **Acceptance Criteria:**
-    - [ ] When the player confirms a quit (the "Quit? (y/n)" prompt → yes) during a game in progress, that game is recorded as an **abandoned** game before the program exits.
-    - [ ] An abandoned game adds one to "games played" for the role the player was holding and adds one to the "abandoned" category in the game-wide outcome split.
-    - [ ] An abandoned game does **not** count as a win or a loss and is excluded from win-rate calculations.
-    - [ ] The player's personal action counters (day-votes called, day-ballots cast, night kills attempted/successful) include the actions the player actually completed before quitting.
-    - [ ] Pressing `Ctrl+C` to force-quit exits the program immediately and records **nothing** — no abandoned game is added. This is an accepted, deliberate difference from the `Esc`-confirmed quit path. *(Players who want the game recorded should leave via `Esc` → yes; `Ctrl+C` remains the instant escape hatch.)*
+    - [x] When the player confirms a quit (the "Quit? (y/n)" prompt → yes) during a game in progress, that game is recorded as an **abandoned** game before the program exits.
+    - [x] An abandoned game adds one to "games played" for the role the player was holding and adds one to the "abandoned" category in the game-wide outcome split.
+    - [x] An abandoned game does **not** count as a win or a loss and is excluded from win-rate calculations.
+    - [x] The player's personal action counters (day-votes called, day-ballots cast, night kills attempted/successful) include the actions the player actually completed before quitting.
+    - [x] Pressing `Ctrl+C` to force-quit exits the program immediately and records **nothing** — no abandoned game is added. This is an accepted, deliberate difference from the `Esc`-confirmed quit path. *(Players who want the game recorded should leave via `Esc` → yes; `Ctrl+C` remains the instant escape hatch.)*
 
 ---
 

@@ -6,7 +6,7 @@ Rewritten 2026-05-31 to match ADR 008. The prior version is preserved in git.
 # Technical Specification: Long-Term Cross-Game Career Stats
 
 - **Functional Specification:** [`./functional-spec.md`](./functional-spec.md)
-- **Status:** Draft (rewritten per [ADR 008](../../adr/008-self-managed-memory-pipeline.md))
+- **Status:** Completed (rewritten per [ADR 008](../../adr/008-self-managed-memory-pipeline.md))
 - **Supersedes:** the prior direct-batch-write design (Slice 6, ADR 007 — now Superseded)
 - **Author(s):** Alexey Tigarev
 
