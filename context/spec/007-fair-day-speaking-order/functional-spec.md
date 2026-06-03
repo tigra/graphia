@@ -1,7 +1,7 @@
 # Functional Specification: Fair Day Speaking Order (Role- and Player-Type-Independent)
 
 - **Roadmap Item:** Not a roadmap feature — a quality/integrity guarantee on the existing Day phase, requested ad hoc. (Roadmap order is unaffected; Phase 4 remains the next feature.)
-- **Status:** Draft
+- **Status:** Completed
 - **Author:** Alexey Tigarev
 
 ---
@@ -24,29 +24,29 @@ Today the order is drawn impartially, but **nothing guarantees it stays that way
 
 - **As a** player, **I want** the speaking order to never favor any role or favor human vs AI, **so that** no one gains an unfair advantage from *when* they speak.
   - **Acceptance Criteria:**
-    - [ ] Each still-alive player is equally likely to occupy any given speaking position (the order is a uniformly random arrangement of the living players).
-    - [ ] No role is favored: a player's chance of landing in any position does not depend on whether they are Mafia or Law-abiding.
-    - [ ] The human player has the same chance of any position as any comparable AI player — being the human neither advances nor delays their turn.
-    - [ ] This holds for **every** position, not only who speaks first.
-    - [ ] This holds on **every** speaking round within a day, including after the order is freshly drawn part-way through a day.
-    - [ ] As players are eliminated, the impartiality continues to hold among the players who are still alive.
+    - [x] Each still-alive player is equally likely to occupy any given speaking position (the order is a uniformly random arrangement of the living players).
+    - [x] No role is favored: a player's chance of landing in any position does not depend on whether they are Mafia or Law-abiding.
+    - [x] The human player has the same chance of any position as any comparable AI player — being the human neither advances nor delays their turn.
+    - [x] This holds for **every** position, not only who speaks first.
+    - [x] This holds on **every** speaking round within a day, including after the order is freshly drawn part-way through a day.
+    - [x] As players are eliminated, the impartiality continues to hold among the players who are still alive.
 
 ### 2.2 The guarantee is proven by automated tests
 
 - **As the** project maintainer, **I want** this impartiality locked in by automated tests in the standard suite, **so that** any future change that introduces bias is caught immediately.
   - **Acceptance Criteria:**
-    - [ ] A deterministic test confirms that changing **only** the players' roles (everything else identical) does not change which speaking orders are possible or how likely they are.
-    - [ ] A deterministic test confirms that changing **only** whether a player is human or AI does not change which speaking orders are possible or how likely they are.
-    - [ ] A large-sample test draws the speaking order many times and confirms each role and each player-type appears in each position within an accepted tolerance of an even spread.
-    - [ ] These tests run as part of the normal test command and fail loudly if the order ever becomes role- or player-type-dependent.
-    - [ ] The tests reach no external or cloud service (they run fully offline).
+    - [x] A deterministic test confirms that changing **only** the players' roles (everything else identical) does not change which speaking orders are possible or how likely they are.
+    - [x] A deterministic test confirms that changing **only** whether a player is human or AI does not change which speaking orders are possible or how likely they are.
+    - [x] A large-sample test draws the speaking order many times and confirms each role and each player-type appears in each position within an accepted tolerance of an even spread.
+    - [x] These tests run as part of the normal test command and fail loudly if the order ever becomes role- or player-type-dependent.
+    - [x] The tests reach no external or cloud service (they run fully offline).
 
 ### 2.3 No change to how the Day looks or plays
 
 - **As a** player, **I want** the Day to behave exactly as before, **so that** this is purely a safety guarantee, not a feature change.
   - **Acceptance Criteria:**
-    - [ ] The Day phase plays as it does today — same prompts, same turn flow, same number of rounds and vote rules.
-    - [ ] No new on-screen text, setting, or control is introduced.
+    - [x] The Day phase plays as it does today — same prompts, same turn flow, same number of rounds and vote rules.
+    - [x] No new on-screen text, setting, or control is introduced.
 
 ---
 
