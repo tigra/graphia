@@ -3,7 +3,7 @@
 A high-level history of the project, reconstructed from `git log` and the
 `context/` artifacts: how scope changed (Change Requests), how the architecture
 was decided (Architecture Decision Records), and how the work was executed (specs
-broken into vertical slices). Covers **2026-04-29 → 2026-05-31**.
+broken into vertical slices). Covers **2026-04-29 → 2026-06-03**.
 
 Graphia is built with the **AWOS spec-driven workflow** — every increment flows
 `product → roadmap → architecture → spec → tech → tasks → implement → verify → tutorial`,
@@ -83,6 +83,14 @@ gantt
     Live-deploy bug parade (4 failure modes)             :done, sp6bugs, 2026-05-31, 1d
     make verify-pipeline — end-to-end harness            :milestone, done, sp6verify, 2026-05-31, 0d
 
+    section Phase 3 close-out + Day-phase integrity (v1.2.x)
+    buddah plugin installed — ADR/CR/tutorial skills + hook :milestone, done, bud, 2026-06-03, 0d
+    Spec 006 verified Completed                          :milestone, done, sp6v, 2026-06-03, 0d
+    Tutorial 006 published                               :milestone, done, sp6tut, 2026-06-03, 0d
+    Spec 007 — Fair Day Speaking Order (Draft)           :milestone, active, sp7, 2026-06-03, 0d
+    Spec 008 — Same-Round Message Visibility + tech (Draft) :milestone, active, sp8, 2026-06-03, 0d
+    Spec 009 — AI Collusion Awareness (Draft)            :milestone, active, sp9, 2026-06-03, 0d
+
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
     click m2 href "https://github.com/tigra/graphia/blob/main/context/change-requests/002-long-term-memory-for-cross-game-stats.md"
@@ -131,6 +139,12 @@ gantt
     click sp6arch href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/architecture.md"
     click sp6bugs href "https://github.com/tigra/graphia/commits/main"
     click sp6verify href "https://github.com/tigra/graphia/blob/main/tools/verify_pipeline.py"
+    click bud href "https://github.com/tigra/awos/tree/feat/buddah-plugin/plugins/buddah"
+    click sp6v href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/functional-spec.md"
+    click sp6tut href "https://github.com/tigra/graphia/blob/main/context/tutorials/006-cross-game-career-stats/tutorial.md"
+    click sp7 href "https://github.com/tigra/graphia/tree/main/context/spec/007-fair-day-speaking-order"
+    click sp8 href "https://github.com/tigra/graphia/tree/main/context/spec/008-same-round-message-visibility"
+    click sp9 href "https://github.com/tigra/graphia/tree/main/context/spec/009-ai-collusion-awareness"
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:
@@ -139,11 +153,11 @@ gantt
 - **Shape = kind.** Diamonds are point events (CRs, ADRs, spec milestones); bars are executed slice work spanning real days.
 - **Sections = project phase.** ADRs are listed first within Phase 2, then the slice bars, so a superseded ADR (red diamond) is never mistaken for blocked work.
 
-The red marks are the three superseded ADRs (002, 004, 007); the CRs are green because — even though CR 001 and 002 carried `Proposed` for a while — the scope changes were fully executed and have now been formally Accepted. The Phase 3 section now shows the full implementation arc — Slices 1-8 plus the ADR 007 → 008 mid-stream pivot plus a four-bug live-deploy parade ending at the `verify-pipeline` harness. Spec 006 itself is still `Draft` only because `/awos:verify` hasn't been run yet; implementation is 42/42 done.
+The red marks are the three superseded ADRs (002, 004, 007); the CRs are green because — even though CR 001 and 002 carried `Proposed` for a while — the scope changes were fully executed and have now been formally Accepted. The Phase 3 section now shows the full implementation arc — Slices 1-8 plus the ADR 007 → 008 mid-stream pivot plus a four-bug live-deploy parade ending at the `verify-pipeline` harness. Spec 006 has since been **verified Completed** and **Tutorial 006** published; the new close-out section then adds the three Day-phase integrity specs (007 fair order, 008 visibility, 009 collusion awareness), shown orange because they are still `Draft`.
 
 ---
 
-## What was going on — six acts
+## What was going on — eight acts
 
 ### Act 1 — Phase 1: a playable skeleton (2026-04-29)
 
@@ -473,6 +487,53 @@ in isolation, fires ~1-in-3 in the full suite under
 `/awos:verify 006` and `/awos:tutorial 006` are the deliberate next steps,
 not because anything is unfinished.
 
+### Act 8 — Phase 3 closed out, plus a Day-phase integrity trio (2026-06-03)
+
+Spec 006's deliberate next steps were taken. **`/awos:verify 006`** checked all
+32 acceptance criteria against the delivered state and flipped the functional
+spec and technical-considerations to **Completed**, with Phase 3's five roadmap
+bullets ticked (the lone `test_vote_validation` flake reproduced — passing in
+isolation, a pre-existing determinism artifact, not a 006 regression).
+**Tutorial 006** was then published as a depth-first walkthrough of the
+self-managed Memory pipeline — opening with a candid note that the whole
+two-tier pipeline is *deliberately over-engineered* for a stats counter: a
+technology demonstration, not a need-driven design, and an explicit sidestep of
+the project's design-driven-by-realistic-needs principle (the plain-file local
+store is all the feature actually needs).
+
+A close read of the Day speaking loop then produced three small **Day-phase
+integrity specs**, all `Draft`:
+
+- **Spec 007 — Fair Day Speaking Order**: speaking order must be provably
+  independent of role and of human/AI player type, enforced by structural +
+  statistical tests. (Confirmed in passing that today's `_shuffle_order` is
+  already a uniform, role-blind shuffle — the spec locks it in.)
+- **Spec 008 — Same-Round Message Visibility** (+ technical-considerations):
+  speakers must see the current round's earlier messages; the recent-discussion
+  window widens 10 → 30 so a full round fits, verified by a chokepoint unit test
+  plus one UI test. The human side needs no code change — the on-screen log was
+  never windowed; `_CONTEXT_WINDOW` only ever bounded the AI prompt feed.
+- **Spec 009 — AI Collusion Awareness**: a light prompt nudge that copycat
+  messages may signal collusion; behaviour left emergent, no automated test.
+
+The session also exercised the **buddah plugin** — the AWOS marketplace
+packaging of the `/adr`, `/change-request`, `/tutorial` skills plus a proactive
+`awos-next` suggestion hook. Installing it surfaced a real plugin bug: the
+`UserPromptSubmit` hook used `${CLAUDE_PLUGIN_DIR}`, an unset variable that
+collapsed the command path to `/hooks/…` and failed every prompt (every
+*official* plugin uses `${CLAUDE_PLUGIN_ROOT}`). Pointing the cached copy at the
+real path fixed it — proven from the session transcript, where the hook
+attachment flipped from `hook_non_blocking_error` to `hook_additional_context`
+the instant the path was corrected. The fork-side fix (the variable name, plus
+broadening the matcher and suggestion text to the `/buddah:*` namespace) remains
+open.
+
+Two commits landed and were pushed: an **AWOS-tooling commit** (re-synced
+framework command files + buddah enablement) and a **project-work commit** (006
+verification + Tutorial 006 + specs 007–009). The `/adr` · `/change-request` ·
+`/tutorial` → `_`-prefixed command renames are intentionally left uncommitted
+for now.
+
 ---
 
 ## The Slice 7 saga (2026-05-13 → 05-15)
@@ -580,19 +641,23 @@ coverage._
 | 003  | Reliable Game Exit Controls                 | 3      | Completed |
 | 004  | Robust /vote Input Validation               | 4      | Completed |
 | 005  | Play-As-Role via Environment Variable       | 5      | Completed |
-| 006  | Long-Term Cross-Game Memory & Career Stats  | 8      | Draft     |
+| 006  | Long-Term Cross-Game Memory & Career Stats  | 8      | Completed |
+| 007  | Fair Day Speaking Order                     | TBD    | Draft     |
+| 008  | Same-Round Message Visibility               | TBD    | Draft     |
+| 009  | AI Collusion Awareness                      | TBD    | Draft     |
 
-_Spec 006 implementation is 42/42 complete and verified end-to-end against the live deploy; `/awos:verify` and `/awos:tutorial` are the deliberate next steps, so the status field stays `Draft` for now._
+_Spec 006 was verified Completed on 2026-06-03 (all 32 acceptance criteria, Phase 3 roadmap bullets ticked) and Tutorial 006 published. Specs 007–009 are the new Day-phase integrity trio — 008 already has its technical-considerations; all three await `/awos:tasks` and implementation._
 
 Per-increment learning tutorials live under `context/tutorials/`: `001`, the
 final `002` (depth-first walkthrough of all eleven Spec 002 slices), `004`
 (the LangGraph interrupt/resume-pump gotcha), and `005` (the determinism
 posture as the conceptual spine — `GRAPHIA_ROLE` and the seed retirement).
 Tutorial `003` was intentionally skipped — that index is left open.
-Tutorial `006` is pending — to be written after `/awos:verify 006`, and
-given the depth of material (ADR 007 → 008 mid-stream rewrite, the
-self-managed-strategy/S3/SNS/Lambda pipeline, the four real-deploy bugs
-and what catches each one) it should be a rich one. An interim
+Tutorial `006` is now **published** — a depth-first walkthrough of the
+self-managed-strategy/S3/SNS/Lambda pipeline (ADR 007 → 008 rewrite, the
+four real-deploy bugs and what catches each), opening with a candid note
+that the two-tier Memory pipeline is deliberately over-engineered for a
+stats counter — a technology demonstration, not a need-driven design. An interim
 `002-hosted-agentcore-deployment-v2` draft (Slices 1-4 + the Nova switch,
 pre-Lambda-pivot) sits alongside as a historical artifact and will be removed
 when no longer interesting.
@@ -601,25 +666,29 @@ when no longer interesting.
 
 ## What's next
 
-**Phase 3 — Long-Term Cross-Game Memory & Career Stats** is implementation-
-complete. 42/42 spec-006 tasks are `[x]`, the live deploy is verified
-end-to-end (`make verify-pipeline` returns six green checks against the
-`eafa1ee` runtime + Lambda), and the architecture document maps the final
-ADR 008 shape. The remaining AWOS steps are deliberate, not blocked:
+**Phase 3 — Long-Term Cross-Game Memory & Career Stats** is now closed:
+Spec 006 is **verified Completed**, **Tutorial 006** is published, and the
+live deploy is green end-to-end (`make verify-pipeline`, six checks against
+the `eafa1ee` runtime + Lambda).
 
-1. **`/awos:verify 006`** — read the functional spec's acceptance criteria
-   against the delivered state, flip Status → Completed in the spec and
-   `[ ]` → `[x]` on the five roadmap bullets at the top of Phase 3.
-2. **`/awos:tutorial 006`** — capture the spec's worth of teaching
-   material: the ADR 007 → 008 pivot (when half-using AWS scaffolding
-   exposes a wrong architecture), the self-managed pipeline shape, and the
-   four real-deploy bugs paired with the integration tests that now catch
-   each class.
+Three **Day-phase integrity specs** are queued, all `Draft`:
 
-After that, the next roadmap item is **AI Provider Flexibility** —
-AWS Profile / SSO credentials (the work for this is effectively shipped
-across the deploy/runtime changes and just needs a roadmap tick) and a
-**Local Ollama Provider** (genuinely fresh scope).
+1. **Spec 008 — Same-Round Message Visibility** has its
+   technical-considerations; next is `/awos:tasks` → implement (the
+   recent-discussion window 10 → 30 plus the chokepoint and UI tests). 008
+   is the prerequisite for 009 to be meaningful, so it should land first.
+2. **Spec 007 — Fair Day Speaking Order** and **Spec 009 — AI Collusion
+   Awareness** still need `/awos:tech`, then tasks + implement. 007 is
+   independent; 009 leans on 008's visibility.
+
+After the trio, the next roadmap item remains **AI Provider Flexibility** —
+AWS Profile / SSO credentials (effectively shipped across the deploy/runtime
+changes; needs a roadmap tick) and a **Local Ollama Provider** (fresh scope).
+
+A few loose ends carried over from the 2026-06-03 session: the product
+`architecture.md` still describes remote stats in pre-ADR-008 terms; Tutorial
+`003` remains the deliberately-open slot; and the buddah plugin's fork-side
+hook fix (`${CLAUDE_PLUGIN_ROOT}` + `/buddah:*` namespace) is still pending.
 
 The repo is public at **github.com/tigra/graphia**, so future increments ship
 in the open.

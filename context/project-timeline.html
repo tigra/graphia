@@ -22,7 +22,7 @@
 </head>
 <body>
 <h1>Graphia — Project Timeline (interactive)</h1>
-<p class="subtitle">CRs, ADRs, and spec execution from 2026-04-29 → 2026-05-27.</p>
+<p class="subtitle">CRs, ADRs, and spec execution from 2026-04-29 → 2026-06-03.</p>
 <p class="note">
   Click any milestone (diamond) or slice (bar) to open its source artifact on GitHub.
   This page exists because GitHub's markdown renderer sandboxes mermaid diagrams in an iframe
@@ -99,6 +99,14 @@ gantt
     Live-deploy bug parade (4 failure modes)             :done, sp6bugs, 2026-05-31, 1d
     make verify-pipeline — end-to-end harness            :milestone, done, sp6verify, 2026-05-31, 0d
 
+    section Phase 3 close-out + Day-phase integrity (v1.2.x)
+    buddah plugin installed — ADR/CR/tutorial skills + hook :milestone, done, bud, 2026-06-03, 0d
+    Spec 006 verified Completed                          :milestone, done, sp6v, 2026-06-03, 0d
+    Tutorial 006 published                               :milestone, done, sp6tut, 2026-06-03, 0d
+    Spec 007 — Fair Day Speaking Order (Draft)           :milestone, active, sp7, 2026-06-03, 0d
+    Spec 008 — Same-Round Message Visibility + tech (Draft) :milestone, active, sp8, 2026-06-03, 0d
+    Spec 009 — AI Collusion Awareness (Draft)            :milestone, active, sp9, 2026-06-03, 0d
+
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
     click m2 href "https://github.com/tigra/graphia/blob/main/context/change-requests/002-long-term-memory-for-cross-game-stats.md"
@@ -147,6 +155,12 @@ gantt
     click sp6arch href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/architecture.md"
     click sp6bugs href "https://github.com/tigra/graphia/commits/main"
     click sp6verify href "https://github.com/tigra/graphia/blob/main/tools/verify_pipeline.py"
+    click bud href "https://github.com/tigra/awos/tree/feat/buddah-plugin/plugins/buddah"
+    click sp6v href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/functional-spec.md"
+    click sp6tut href "https://github.com/tigra/graphia/blob/main/context/tutorials/006-cross-game-career-stats/tutorial.md"
+    click sp7 href "https://github.com/tigra/graphia/tree/main/context/spec/007-fair-day-speaking-order"
+    click sp8 href "https://github.com/tigra/graphia/tree/main/context/spec/008-same-round-message-visibility"
+    click sp9 href "https://github.com/tigra/graphia/tree/main/context/spec/009-ai-collusion-awareness"
 </pre>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
 <script>
