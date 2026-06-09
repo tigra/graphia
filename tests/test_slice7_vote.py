@@ -187,6 +187,43 @@ def _alive_law_abiding_ai_id(graph, run_config) -> str:
     return ids[0]
 
 
+def _ai_point_target_from_prompt(messages, *, exclude_substr: str | None = None) -> str:
+    """Resolve a Night-pointing target from the mafia-point PROMPT roster.
+
+    ``mafia_pointing`` renders the live ``"name: id"`` lines of alive
+    Law-abiding Citizens into the prompt; picking the first whose name is an
+    AI (in ``AI_NAMES``) yields a live, valid, non-human target WITHOUT reading
+    ``graph.get_state()``.
+
+    Reading ``graph.get_state()`` re-entrantly mid-stream returns a STALE
+    pre-``assign_roles`` snapshot — every player still ``"law_abiding"`` — so
+    the first AI looks Law-abiding though it may be Mafia. ``_ai_pick_target``
+    then rejects that invalid target and falls back to
+    ``random.choice(alive_law_abiding)``, a set that INCLUDES the human. A
+    night-killed human stops interrupting, so the Night->Day drive free-runs
+    past ``recursion_limit=50`` (intermittent ``GraphRecursionError``). Parsing
+    the prompt roster sidesteps the staleness and can never return the human.
+
+    ``exclude_substr`` optionally skips AIs whose (lower-cased) name contains
+    it — used where a later fuzzy ``/vote`` match must stay unambiguous.
+    """
+    text = "\n".join(
+        c if isinstance(c := getattr(m, "content", ""), str) else str(c)
+        for m in messages
+    )
+    for line in text.splitlines():
+        name, sep, ident = line.partition(":")
+        name = name.strip()
+        if not sep or name not in AI_NAMES:
+            continue
+        if exclude_substr and exclude_substr in name.lower():
+            continue
+        return ident.strip()
+    raise AssertionError(
+        "no matching alive Law-abiding AI in the mafia-point roster:\n" + text
+    )
+
+
 # --------------------------------------------------------------------------
 # Driving helper: advances the graph through pending interrupts up to either
 # a caller-provided stop condition or a budget cap.
@@ -316,10 +353,9 @@ def test_successful_execution_ends_day_and_reveals_role(
 
     def _invoke_with_live_pointing(schema, messages):
         if schema is Pointing:
-            # Fresh target each call: first alive Law-abiding AI (Night 1
-            # reads current state).
-            la_id = _alive_law_abiding_ai_id(graph, run_config)
-            return Pointing(target_id=la_id)
+            return Pointing(
+                target_id=_ai_point_target_from_prompt(messages)
+            )
         return original_invoke(schema, messages)
 
     fake._invoke = _invoke_with_live_pointing  # type: ignore[method-assign]
@@ -471,8 +507,9 @@ def test_failed_vote_continues_day_and_counts_against_cap(
 
     def _invoke_with_live_pointing(schema, messages):
         if schema is Pointing:
-            la_id = _alive_law_abiding_ai_id(graph, run_config)
-            return Pointing(target_id=la_id)
+            return Pointing(
+                target_id=_ai_point_target_from_prompt(messages)
+            )
         return original_invoke(schema, messages)
 
     fake._invoke = _invoke_with_live_pointing  # type: ignore[method-assign]
@@ -583,8 +620,9 @@ def test_three_failed_votes_ends_day(
 
     def _invoke_with_live_pointing(schema, messages):
         if schema is Pointing:
-            la_id = _alive_law_abiding_ai_id(graph, run_config)
-            return Pointing(target_id=la_id)
+            return Pointing(
+                target_id=_ai_point_target_from_prompt(messages)
+            )
         return original_invoke(schema, messages)
 
     fake._invoke = _invoke_with_live_pointing  # type: ignore[method-assign]
@@ -700,8 +738,9 @@ def test_human_slash_vote_is_parsed(
 
     def _invoke_with_live_pointing(schema, messages):
         if schema is Pointing:
-            la_id = _alive_law_abiding_ai_id(graph, run_config)
-            return Pointing(target_id=la_id)
+            return Pointing(
+                target_id=_ai_point_target_from_prompt(messages)
+            )
         return original_invoke(schema, messages)
 
     fake._invoke = _invoke_with_live_pointing  # type: ignore[method-assign]
@@ -832,22 +871,13 @@ def test_human_slash_vote_ambiguous_re_interrupts(
 
     def _invoke_with_live_pointing(schema, messages):
         if schema is Pointing:
-            # Pick an AI Law-abiding target that does NOT contain the
-            # ambiguity substring ``"ia"``, so both Bianca and Elias remain
-            # alive after Night 1.
-            players = _players(graph, run_config)
-            non_ia = [
-                p.id
-                for p in players.values()
-                if p.is_alive
-                and p.role == "law_abiding"
-                and not p.is_human
-                and "ia" not in p.name.lower()
-            ]
-            if non_ia:
-                return Pointing(target_id=non_ia[0])
+            # Pick an AI Law-abiding target whose name does NOT contain the
+            # ambiguity substring "ia", so both Bianca and Elias stay alive
+            # after Night 1 for the later ambiguous-/vote fuzzy match.
             return Pointing(
-                target_id=_alive_law_abiding_ai_id(graph, run_config)
+                target_id=_ai_point_target_from_prompt(
+                    messages, exclude_substr="ia"
+                )
             )
         return original_invoke(schema, messages)
 
@@ -974,8 +1004,9 @@ def _drive_to_human_day_turn(
 
     def _invoke_with_live_pointing(schema, messages):
         if schema is Pointing:
-            la_id = _alive_law_abiding_ai_id(graph, run_config)
-            return Pointing(target_id=la_id)
+            return Pointing(
+                target_id=_ai_point_target_from_prompt(messages)
+            )
         return original_invoke(schema, messages)
 
     fake._invoke = _invoke_with_live_pointing  # type: ignore[method-assign]

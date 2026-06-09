@@ -25,14 +25,20 @@ _Determinism: every test seeds `random` in-test from one stable `BASE_SEED` (no 
 
 ## Post-completion hardening (test-suite determinism)
 
-Surfaced after 007 was verified: two pre-existing vote tests drove the real
-graph past Day 1 into the **unpinned Night-RNG tail**, so the super-steps a
-single `graph.stream` consumed before pausing were RNG-trajectory dependent —
-on some trajectories exceeding `recursion_limit=50`, making the tests pass in
-isolation but flake intermittently in the full suite (RNG state at entry shifts
-with collection order). Same determinism-posture domain as 007; recorded here.
-No production change. **[Agent: testing]**
+Surfaced after 007 was verified: vote tests intermittently raised
+`GraphRecursionError` (`recursion_limit=50`) — ~1/8 in isolation, more often in
+the full suite (RNG entry-state shifts with collection order). **Root cause
+(traced, not guessed):** the tests' Night-pointing override resolved its target
+via `graph.get_state(run_config)` read **re-entrantly mid-stream**, which
+returns a STALE pre-`assign_roles` snapshot (every player still `law_abiding`).
+So it named the first AI — sometimes actually Mafia — which `_ai_pick_target`
+rejects, falling back to `random.choice(alive_law_abiding)`, a set that
+**includes the human**. A night-killed human stops interrupting, so the
+Night→Day drive free-runs with no `interrupt()` and blows past 50 super-steps.
+Test-harness bug only; no production change. **[Agent: testing]**
 
-- [x] **Deflake `test_three_failed_votes_ends_day` (`tests/test_slice7_vote.py`)** — bound the drive to halt right after `day_close` and assert only on durable Day-1 `messages` markers (the three "vote fails" lines + the no-execution line), dropping the `swallow_recursion=True` safety net and the Night-2 `cycle>=2` / "Night falls" assertions. Same Slice-7 intent (three failed votes end the Day without an execution), now deterministic by construction.
-- [x] **Deflake `test_vote_dead_player_reprompts` (`tests/test_vote_validation.py`)** — pin the mechanical-RNG trajectory (role deal + Night-1 kill tie-break/fallback) with a single local `random.seed(2024)` before the graph is built and driven, per the architecture §6-sanctioned in-test seed (not a `GRAPHIA_SEED` env protocol). The dead-target re-prompt behaviour (functional-spec 004 §2.5) holds identically under the seed.
-- [x] Run `uv run pytest -q`; confirm the full suite is green (243 passed, 1 skipped).
+- [x] **Fix the stale-target override (`tests/test_slice7_vote.py`)** — replace all 6 `graph.get_state()`-based Night-pointing overrides with one staleness-proof helper, `_ai_point_target_from_prompt(messages)`, that parses the live `name: id` roster `mafia_pointing` rendered into the prompt and picks the first AI by name — never the human, never a stale snapshot. (An earlier `eb51582` change to `test_three_failed_votes_ends_day` had bounded that drive to halt after `day_close`; that's retained and consistent, but it was aimed at the wrong location — this override fix is the real root cause.)
+- [x] **Fix the same pattern (`tests/test_vote_validation.py`)** — route its `_advance_until_human_day_turn` Night-pointing override through the same helper, and **remove the now-vestigial `random.seed(2024)` band-aid** (plus its misleading comment, the `SEED_…` constant, and the unused `import random`) — the root-cause fix supersedes it.
+- [x] Stress-verify: `test_slice7_vote.py` ×60 and `test_vote_validation.py` ×50 (unseeded) in isolation, plus the full suite ×10 — **0 failures across 132 runs** (was ~1/8). Suite stays green (243 passed, 1 skipped).
+
+_Known latent risk (not fixed here): `tests/test_slice8_endgame.py` carries the same stale-`get_state` Night-pointing pattern in 4 overrides. It did not surface in any of the 132 runs (its win-checks terminate before a free-run) and its overrides are entangled with win/loss assertions, so it's deferred to a separate careful pass rather than changed on a hunch._

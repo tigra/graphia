@@ -38,7 +38,6 @@ Bedrock is stubbed at the ``ChatBedrockConverse`` boundary via the unified
 
 from __future__ import annotations
 
-import random
 from pathlib import Path
 from typing import Any
 
@@ -56,24 +55,6 @@ from graphia.llm import Ballot, DayAction, Pointing
 # Mafia-night interrupt before reaching the human's first Day turn.
 AI_NAMES = ["Aarav", "Bianca", "Chiko", "Daria", "Elias", "Finn"]
 HUMAN_NAME = "Alice"
-
-# Architecture §6 "Determinism Posture & Testing Conventions": production
-# uses an UNSEEDED module-global ``random`` for the role deal and the
-# Night-kill tie-break/fallback ``random.choice``. ``_advance_until_human_day_turn``
-# drives the REAL graph through Night 1 and the Day-1 speaker loop, and the
-# dead-target test additionally resumes a full re-prompt cycle, so the number
-# of super-steps a single ``graph.stream`` consumes before pausing is
-# RNG-trajectory dependent. On some trajectories that count exceeds the test's
-# ``recursion_limit`` of 50 and the drive raises ``GraphRecursionError``.
-# Because the global RNG state at test entry shifts with collection order and
-# with how much RNG earlier tests consumed, the test passes in isolation but
-# can flake intermittently in the full suite. Per the §6-sanctioned mechanism
-# (the same one ``tests/test_dual_mode_smoke.py`` uses), the at-risk test seeds
-# the module-global RNG once, locally and explicitly, with this stable constant
-# to pin a trajectory that stays within the recursion limit. This is NOT a
-# ``GRAPHIA_SEED`` env protocol and does not weaken any assertion: the
-# dead-target re-prompt behaviour (§2.5) holds identically under the seed.
-SEED_VOTE_LOOP_WITHIN_RECURSION_LIMIT = 2024
 
 
 # --------------------------------------------------------------------------
@@ -207,6 +188,36 @@ def _alive_law_abiding_ai_id(graph, run_config) -> str:
     return ids[0]
 
 
+def _ai_point_target_from_prompt(messages) -> str:
+    """Resolve a Night-pointing target from the mafia-point PROMPT roster.
+
+    ``mafia_pointing`` renders the live ``"name: id"`` lines of alive
+    Law-abiding Citizens into the prompt; picking the first whose name is an
+    AI (in ``AI_NAMES``) yields a live, valid, non-human target WITHOUT reading
+    ``graph.get_state()``.
+
+    Reading ``graph.get_state()`` re-entrantly mid-stream returns a STALE
+    pre-``assign_roles`` snapshot (every player still ``"law_abiding"``), so a
+    role-based helper would name the first AI — who may actually be Mafia.
+    ``_ai_pick_target`` then rejects that invalid target and falls back to
+    ``random.choice(alive_law_abiding)``, a set that INCLUDES the human; a
+    night-killed human stops interrupting and the drive free-runs past
+    ``recursion_limit``. Parsing the prompt roster is staleness-proof and can
+    never return the human.
+    """
+    text = "\n".join(
+        c if isinstance(c := getattr(m, "content", ""), str) else str(c)
+        for m in messages
+    )
+    for line in text.splitlines():
+        name, sep, ident = line.partition(":")
+        if sep and name.strip() in AI_NAMES:
+            return ident.strip()
+    raise AssertionError(
+        "no alive Law-abiding AI in the mafia-point roster:\n" + text
+    )
+
+
 def _advance_until_human_day_turn(graph, run_config, fake) -> None:
     """Drive the graph through Night 1 and AI Day-1 turns to the human's slot.
 
@@ -226,8 +237,9 @@ def _advance_until_human_day_turn(graph, run_config, fake) -> None:
 
     def _invoke_with_live_pointing(schema, messages):
         if schema is Pointing:
-            la_id = _alive_law_abiding_ai_id(graph, run_config)
-            return Pointing(target_id=la_id)
+            return Pointing(
+                target_id=_ai_point_target_from_prompt(messages)
+            )
         return original_invoke(schema, messages)
 
     fake._invoke = _invoke_with_live_pointing  # type: ignore[method-assign]
@@ -934,15 +946,6 @@ def test_vote_dead_player_reprompts(
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
     fake_haiku(AI_NAMES)
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
-
-    # Pin the mechanical-RNG trajectory the graph-drive below will consume
-    # (role deal + Night-1 kill tie-break/fallback) so ``_advance_until_human_day_turn``
-    # and the subsequent re-prompt drive stay within ``recursion_limit=50``.
-    # See the module-level constant's docstring (architecture §6). Seeded here,
-    # after env/role setup, right before the graph is built and driven —
-    # production reads the module-global ``random`` directly, so this fixes the
-    # whole downstream trajectory without touching production code.
-    random.seed(SEED_VOTE_LOOP_WITHIN_RECURSION_LIMIT)
 
     config = load_config()
     graph, thread_id = build_graph(config)
