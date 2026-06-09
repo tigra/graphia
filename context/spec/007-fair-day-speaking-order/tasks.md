@@ -20,3 +20,19 @@ finding), `testing` (the suite).
 ---
 
 _Determinism: every test seeds `random` in-test from one stable `BASE_SEED` (no env var, no production seed; architecture §6) — re-runs are identical, so the statistical assertions can't flake. Tolerance / N (and M) are chosen at implementation, tight enough to catch a meaningful positional skew (functional-spec §2.1, §2.2)._
+
+---
+
+## Post-completion hardening (test-suite determinism)
+
+Surfaced after 007 was verified: two pre-existing vote tests drove the real
+graph past Day 1 into the **unpinned Night-RNG tail**, so the super-steps a
+single `graph.stream` consumed before pausing were RNG-trajectory dependent —
+on some trajectories exceeding `recursion_limit=50`, making the tests pass in
+isolation but flake intermittently in the full suite (RNG state at entry shifts
+with collection order). Same determinism-posture domain as 007; recorded here.
+No production change. **[Agent: testing]**
+
+- [x] **Deflake `test_three_failed_votes_ends_day` (`tests/test_slice7_vote.py`)** — bound the drive to halt right after `day_close` and assert only on durable Day-1 `messages` markers (the three "vote fails" lines + the no-execution line), dropping the `swallow_recursion=True` safety net and the Night-2 `cycle>=2` / "Night falls" assertions. Same Slice-7 intent (three failed votes end the Day without an execution), now deterministic by construction.
+- [x] **Deflake `test_vote_dead_player_reprompts` (`tests/test_vote_validation.py`)** — pin the mechanical-RNG trajectory (role deal + Night-1 kill tie-break/fallback) with a single local `random.seed(2024)` before the graph is built and driven, per the architecture §6-sanctioned in-test seed (not a `GRAPHIA_SEED` env protocol). The dead-target re-prompt behaviour (functional-spec 004 §2.5) holds identically under the seed.
+- [x] Run `uv run pytest -q`; confirm the full suite is green (243 passed, 1 skipped).

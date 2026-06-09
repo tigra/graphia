@@ -14,8 +14,8 @@ the tests are fast, deterministic, and free of UI timing flakiness:
    speaking turns before any day_close line.
 
 3. ``test_three_failed_votes_ends_day`` — three consecutive failed votes
-   trigger the DAY_MAX_VOTES cap. After the third, ``day_votes_called==3``,
-   ``day_close`` fires, and Night 2 opens.
+   trigger the DAY_MAX_VOTES cap. After the third, ``day_close`` fires and
+   the Day ends without an execution.
 
 4. ``test_human_slash_vote_is_parsed`` — a human's ``/vote <substring>`` is
    fuzzy-matched against alive names, the resulting VOTE_INITIATE line is
@@ -561,7 +561,7 @@ def test_three_failed_votes_ends_day(
     fake_sonnet,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """After three failed votes, day_close fires and Night 2 opens."""
+    """After three failed votes, day_close fires and the Day ends without an execution."""
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     # Put the human at index 0 (so the drive pauses before any AI consumes
     # the still-empty DayAction queue) and a Mafia AI at index 1 so each of
@@ -623,41 +623,33 @@ def test_three_failed_votes_ends_day(
             return options[0]["id"] if options else ""
         raise AssertionError(f"Unexpected interrupt kind: {kind!r}")
 
-    # Track the peak day_votes_called seen so far. Day 2's day_open resets
-    # the counter to 0, so we can't just read the current value — we need
-    # to watch for the moment it hits DAY_MAX_VOTES during Day 1 AND the
-    # day_close line landing.
-    # Counting markers we can observe AFTER Day 2 resets state:
-    # - Each failed vote emits VOTE_FAILED_TEMPLATE → persists in messages.
-    # - day_close emits DAY_CLOSE_NO_EXEC_LINE → persists.
-    # - night_open bumps cycle → visible once Night 2 starts.
-    # These survive Day-2's day_open reset, so we can assert against
-    # permanent log markers rather than transient counters.
+    # Stop as soon as Day 1 closes. The 3 "vote fails" lines + the day_close
+    # "no one executed" line are durable ``messages`` markers (never reset),
+    # so we don't read the transient day_votes_called counter and we don't
+    # drive past Day 1 into the unpinned Night-RNG tail — keeping the drive
+    # bounded and the test deterministic by construction (the Slice-7 intent:
+    # three failed votes end the Day without an execution).
 
     def _stopped() -> bool:
         messages = _system_contents(graph, run_config)
         failed_count = sum(1 for m in messages if VOTE_FAILED_TEMPLATE in m)
-        cycle = graph.get_state(run_config).values.get("cycle", 1)
         return (
             failed_count >= DAY_MAX_VOTES
             and DAY_CLOSE_NO_EXEC_LINE in " ".join(messages)
-            and cycle >= 2
         )
 
-    # The graph continues looping indefinitely past Night 2 (Day 2 speaks,
-    # Night 3 kills, etc.) because Slice 8's end-game check isn't in yet.
-    # We pass ``swallow_recursion=True`` so that if a single ``_drive``
-    # stream call runs past its recursion cap before the next interrupt,
-    # the driver exits cleanly and the test asserts against the last
-    # checkpointed state. The stop condition above is still the primary
-    # exit — recursion is only a safety net.
+    # The drive halts at the first interrupt after day_close (Day 2's first
+    # human turn): day_close → night_open is an automatic edge and the human
+    # is Law-abiding (no Night interrupt), so the final stream call transits a
+    # bounded Night 2 (~a dozen super-steps, well within recursion_limit=50)
+    # before pausing. No ``swallow_recursion`` needed — we never chase the
+    # long multi-night tail that made this drive RNG-depth-sensitive.
     _advance_until(
         graph,
         run_config,
         stop=_stopped,
         interrupt_responder=_respond,
         budget=200,
-        swallow_recursion=True,
     )
 
     # --- Assertions -----------------------------------------------------
@@ -673,20 +665,11 @@ def test_three_failed_votes_ends_day(
         f"expected {DAY_MAX_VOTES} 'vote fails' lines, got {failed_count}"
     )
 
-    # day_close emitted its "no one executed" line at least once — the
-    # no-execution path at the failed-votes cap.
+    # day_close emitted its "no one executed" line — the no-execution path at
+    # the failed-votes cap. This is the Slice-7 intent: three failed votes end
+    # the Day without an execution.
     assert DAY_CLOSE_NO_EXEC_LINE in " ".join(messages), (
         "day_close line missing after DAY_MAX_VOTES"
-    )
-
-    # Night 2 opened: "Night falls" appears twice in the log (Night 1 + 2)
-    # and the cycle counter has bumped to at least 2.
-    night_falls_count = sum(1 for m in messages if "Night falls." in m)
-    assert night_falls_count >= 2, (
-        f"expected 2+ 'Night falls.' lines, got {night_falls_count}"
-    )
-    assert graph.get_state(run_config).values.get("cycle", 1) >= 2, (
-        "expected cycle>=2 in Night 2"
     )
 
 

@@ -38,6 +38,7 @@ Bedrock is stubbed at the ``ChatBedrockConverse`` boundary via the unified
 
 from __future__ import annotations
 
+import random
 from pathlib import Path
 from typing import Any
 
@@ -55,6 +56,24 @@ from graphia.llm import Ballot, DayAction, Pointing
 # Mafia-night interrupt before reaching the human's first Day turn.
 AI_NAMES = ["Aarav", "Bianca", "Chiko", "Daria", "Elias", "Finn"]
 HUMAN_NAME = "Alice"
+
+# Architecture §6 "Determinism Posture & Testing Conventions": production
+# uses an UNSEEDED module-global ``random`` for the role deal and the
+# Night-kill tie-break/fallback ``random.choice``. ``_advance_until_human_day_turn``
+# drives the REAL graph through Night 1 and the Day-1 speaker loop, and the
+# dead-target test additionally resumes a full re-prompt cycle, so the number
+# of super-steps a single ``graph.stream`` consumes before pausing is
+# RNG-trajectory dependent. On some trajectories that count exceeds the test's
+# ``recursion_limit`` of 50 and the drive raises ``GraphRecursionError``.
+# Because the global RNG state at test entry shifts with collection order and
+# with how much RNG earlier tests consumed, the test passes in isolation but
+# can flake intermittently in the full suite. Per the §6-sanctioned mechanism
+# (the same one ``tests/test_dual_mode_smoke.py`` uses), the at-risk test seeds
+# the module-global RNG once, locally and explicitly, with this stable constant
+# to pin a trajectory that stays within the recursion limit. This is NOT a
+# ``GRAPHIA_SEED`` env protocol and does not weaken any assertion: the
+# dead-target re-prompt behaviour (§2.5) holds identically under the seed.
+SEED_VOTE_LOOP_WITHIN_RECURSION_LIMIT = 2024
 
 
 # --------------------------------------------------------------------------
@@ -915,6 +934,15 @@ def test_vote_dead_player_reprompts(
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
     fake_haiku(AI_NAMES)
     fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+
+    # Pin the mechanical-RNG trajectory the graph-drive below will consume
+    # (role deal + Night-1 kill tie-break/fallback) so ``_advance_until_human_day_turn``
+    # and the subsequent re-prompt drive stay within ``recursion_limit=50``.
+    # See the module-level constant's docstring (architecture §6). Seeded here,
+    # after env/role setup, right before the graph is built and driven —
+    # production reads the module-global ``random`` directly, so this fixes the
+    # whole downstream trajectory without touching production code.
+    random.seed(SEED_VOTE_LOOP_WITHIN_RECURSION_LIMIT)
 
     config = load_config()
     graph, thread_id = build_graph(config)
