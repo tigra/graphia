@@ -60,7 +60,7 @@ DAY_MAX_ROUNDS = 6
 DAY_MAX_VOTES = 3
 
 # Number of recent public messages to include as context for AI speakers.
-_CONTEXT_WINDOW = 10
+_CONTEXT_WINDOW = 30
 
 
 def _role_label(role: str) -> str:
