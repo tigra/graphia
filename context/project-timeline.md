@@ -3,7 +3,7 @@
 A high-level history of the project, reconstructed from `git log` and the
 `context/` artifacts: how scope changed (Change Requests), how the architecture
 was decided (Architecture Decision Records), and how the work was executed (specs
-broken into vertical slices). Covers **2026-04-29 → 2026-06-03**.
+broken into vertical slices). Covers **2026-04-29 → 2026-06-10**.
 
 Graphia is built with the **AWOS spec-driven workflow** — every increment flows
 `product → roadmap → architecture → spec → tech → tasks → implement → verify → tutorial`,
@@ -87,9 +87,11 @@ gantt
     buddah plugin installed — ADR/CR/tutorial skills + hook :milestone, done, bud, 2026-06-03, 0d
     Spec 006 verified Completed                          :milestone, done, sp6v, 2026-06-03, 0d
     Tutorial 006 published                               :milestone, done, sp6tut, 2026-06-03, 0d
-    Spec 007 — Fair Day Speaking Order (Draft)           :milestone, active, sp7, 2026-06-03, 0d
-    Spec 008 — Same-Round Message Visibility + tech (Draft) :milestone, active, sp8, 2026-06-03, 0d
-    Spec 009 — AI Collusion Awareness (Draft)            :milestone, active, sp9, 2026-06-03, 0d
+    Spec 007 — Fair Day Speaking Order ✓                 :milestone, done, sp7, 2026-06-09, 0d
+    Spec 008 — Same-Round Message Visibility ✓           :milestone, done, sp8, 2026-06-09, 0d
+    Spec 009 — AI Collusion Awareness ✓ (anti-parrot)    :milestone, done, sp9, 2026-06-10, 0d
+    Dialogue-diversity experiment → anti-parrot fix      :milestone, done, divexp, 2026-06-10, 0d
+    LLM accessor rename + GraphRecursion flake fix       :milestone, done, fixday, 2026-06-09, 0d
 
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
@@ -145,6 +147,7 @@ gantt
     click sp7 href "https://github.com/tigra/graphia/tree/main/context/spec/007-fair-day-speaking-order"
     click sp8 href "https://github.com/tigra/graphia/tree/main/context/spec/008-same-round-message-visibility"
     click sp9 href "https://github.com/tigra/graphia/tree/main/context/spec/009-ai-collusion-awareness"
+    click divexp href "https://github.com/tigra/graphia/blob/main/context/spec/009-ai-collusion-awareness/repetition-experiment-design.md"
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:
@@ -153,11 +156,11 @@ gantt
 - **Shape = kind.** Diamonds are point events (CRs, ADRs, spec milestones); bars are executed slice work spanning real days.
 - **Sections = project phase.** ADRs are listed first within Phase 2, then the slice bars, so a superseded ADR (red diamond) is never mistaken for blocked work.
 
-The red marks are the three superseded ADRs (002, 004, 007); the CRs are green because — even though CR 001 and 002 carried `Proposed` for a while — the scope changes were fully executed and have now been formally Accepted. The Phase 3 section now shows the full implementation arc — Slices 1-8 plus the ADR 007 → 008 mid-stream pivot plus a four-bug live-deploy parade ending at the `verify-pipeline` harness. Spec 006 has since been **verified Completed** and **Tutorial 006** published; the new close-out section then adds the three Day-phase integrity specs (007 fair order, 008 visibility, 009 collusion awareness), shown orange because they are still `Draft`.
+The red marks are the three superseded ADRs (002, 004, 007); the CRs are green because — even though CR 001 and 002 carried `Proposed` for a while — the scope changes were fully executed and have now been formally Accepted. The Phase 3 section now shows the full implementation arc — Slices 1-8 plus the ADR 007 → 008 mid-stream pivot plus a four-bug live-deploy parade ending at the `verify-pipeline` harness. Spec 006 has since been **verified Completed** and **Tutorial 006** published; the close-out section's three Day-phase integrity specs (007 fair order, 008 visibility, 009 collusion awareness) are now all **Completed** (green) — 009 via an experiment-chosen anti-parrot reword — alongside an LLM-accessor rename and a recursion-flake fix.
 
 ---
 
-## What was going on — eight acts
+## What was going on — nine acts
 
 ### Act 1 — Phase 1: a playable skeleton (2026-04-29)
 
@@ -536,6 +539,66 @@ for now.
 
 ---
 
+### Act 9 — Closing the Day-phase trio, and an experiment to fix what it broke (2026-06-09 → 06-10)
+
+The integrity trio was **finished**: Spec 008 verified Completed with a tutorial,
+and Spec 007 likewise (its `_shuffle_order` was already fair; the suite locks it
+in). Spec 009 was then implemented and verified — a one-line Day-speak nudge that
+copycat messages may signal collusion.
+
+**The recursion flake, finally root-caused.** The intermittent
+`GraphRecursionError` that had haunted the vote tests for weeks turned out *not*
+to be the "unpinned Night-RNG tail" an earlier `eb51582` "deflake" had guessed
+at. The real cause: the tests' Night-pointing override read `graph.get_state()`
+**re-entrantly mid-stream**, which returns a **stale pre-`assign_roles`
+snapshot** (every player still `law_abiding`). So the override named the first
+AI — sometimes actually Mafia — `_ai_pick_target` rejected it and fell back to
+`random.choice(alive_law_abiding)`, a set that **includes the human**; the
+night-killed human then stopped interrupting and the Night→Day drive free-ran
+past `recursion_limit=50`. The fix derives the target from the **prompt's own
+roster** instead of live state, across all the affected tests, and retires a
+now-vestigial `random.seed` band-aid — verified 0 failures over 132 stress runs.
+A candid correction: the earlier deflake had been aimed at the wrong line.
+
+**A misnomer corrected.** `get_sonnet`/`get_haiku` were bound to **Amazon Nova
+Pro / Lite** (per ADR-003) — and CLAUDE.md still claimed "Sonnet 4.5 / Haiku 4.5
+/ eu-north-1." Renamed to capability-tier `get_large`/`get_small` (model-agnostic
+so the next swap needs no rename) and the docs corrected. There is no Claude in
+the gameplay path, local or remote.
+
+**The repetition spiral — and an experiment to settle it.** Remote play surfaced
+the opposite of Spec 009's intent: instead of making copycatting *rarer*, the
+collusion nudge primed Nova to **echo and obsess over repeated phrasing**, Day
+chat collapsing into players accusing each other of repetition in repeated
+phrases. CloudWatch trace archaeology pulled the actual speeches (and confirmed
+the Nova-Pro model), and a new **`make eval-dialogue`** harness quantified it
+(~77% distinct, matching the live session). A quick n=2 A/B was *too noisy to
+trust* (a same-config replication swung 33% → 47%), so the work pivoted to a
+**rigorous experiment** ([design](../spec/009-ai-collusion-awareness/repetition-experiment-design.md)):
+9 conditions × N=10 paired games on real Nova, length-capped, name-masked
+similarity, bootstrap CIs, paired-vs-HEAD with Holm — runnable via
+**`make repetition-experiment`**. The result **reversed the pilot**: the
+anti-parrot reword the noisy A/B had called a *failure* was in fact the best
+design-preserving fix — name-masked near-dup **0.57 → 0.15, below the pre-spec
+baseline (0.20)** — while keeping Spec 008's full context window. A secondary
+lesson: *removing* the collusion line alone barely helped (−0.13); you must
+**instruct against** parroting, not merely stop priming it. The fix was adopted
+in place (no CR — 009 was still being iterated), with the spec carrying a
+revision note.
+
+A final gotcha closing out a `make redeploy`: a SigV4 **`Signature expired`**
+error that was neither creds nor the host clock but the **Podman VM clock**,
+drifted ~16 minutes behind after a laptop sleep — fixed by syncing the VM clock
+to the host.
+
+Several project-work commits landed and were pushed across the two days (008/007
+verification + tutorials, the flake fix, the model rename, 009 implement/verify,
+and the experiment + anti-parrot fix). The `fake_sonnet`/`fake_haiku` *fixture*
+rename (the same misnomer, ~100 test refs) and the AWOS `_`-prefixed command
+renames remain intentionally uncommitted.
+
+---
+
 ## The Slice 7 saga (2026-05-13 → 05-15)
 
 The single most eventful stretch. ADR 002 had chosen *runtime-embedded* Gateway
@@ -646,7 +709,7 @@ coverage._
 | 008  | Same-Round Message Visibility               | TBD    | Draft     |
 | 009  | AI Collusion Awareness                      | TBD    | Draft     |
 
-_Spec 006 was verified Completed on 2026-06-03 (all 32 acceptance criteria, Phase 3 roadmap bullets ticked) and Tutorial 006 published. Specs 007–009 are the new Day-phase integrity trio — 008 already has its technical-considerations; all three await `/awos:tasks` and implementation._
+_Spec 006 was verified Completed on 2026-06-03 (all 32 acceptance criteria, Phase 3 roadmap bullets ticked) and Tutorial 006 published. Specs 007–009 (the Day-phase integrity trio) are now all **verified Completed**; 009's collusion nudge was revised to an **anti-parrot** reword after a real-Nova experiment showed the original wording drove a Day-dialogue repetition spiral._
 
 Per-increment learning tutorials live under `context/tutorials/`: `001`, the
 final `002` (depth-first walkthrough of all eleven Spec 002 slices), `004`
@@ -671,24 +734,28 @@ Spec 006 is **verified Completed**, **Tutorial 006** is published, and the
 live deploy is green end-to-end (`make verify-pipeline`, six checks against
 the `eafa1ee` runtime + Lambda).
 
-Three **Day-phase integrity specs** are queued, all `Draft`:
+The **Day-phase integrity trio is done** — 007, 008, 009 all verified
+Completed, with 008 and 009 tutorials (009's pending) and an anti-parrot fix
+chosen by a real-Nova experiment. The next roadmap item is **Phase 4 — AI
+Provider Flexibility**: AWS Profile / SSO credentials (effectively shipped
+across the deploy/runtime changes; needs a roadmap tick) and a **Local Ollama
+Provider** (fresh scope).
 
-1. **Spec 008 — Same-Round Message Visibility** has its
-   technical-considerations; next is `/awos:tasks` → implement (the
-   recent-discussion window 10 → 30 plus the chokepoint and UI tests). 008
-   is the prerequisite for 009 to be meaningful, so it should land first.
-2. **Spec 007 — Fair Day Speaking Order** and **Spec 009 — AI Collusion
-   Awareness** still need `/awos:tech`, then tasks + implement. 007 is
-   independent; 009 leans on 008's visibility.
+Immediate follow-ups from the 06-09→10 session:
 
-After the trio, the next roadmap item remains **AI Provider Flexibility** —
-AWS Profile / SSO credentials (effectively shipped across the deploy/runtime
-changes; needs a roadmap tick) and a **Local Ollama Provider** (fresh scope).
+1. **Ship 009 remotely** — the anti-parrot fix is committed and live in `make
+   play`, but the deployed Runtime still runs the old line until a `make
+   redeploy` (watch the Podman VM clock).
+2. **Fixture rename** — `fake_sonnet`/`fake_haiku` carry the same Nova misnomer
+   as the now-renamed accessors (~100 test refs); a mechanical follow-up.
+3. **Dialogue-diversity gate** — the `make repetition-experiment` harness could
+   graduate from report-only to a `--min-distinct` regression gate once a
+   threshold is settled.
 
-A few loose ends carried over from the 2026-06-03 session: the product
-`architecture.md` still describes remote stats in pre-ADR-008 terms; Tutorial
-`003` remains the deliberately-open slot; and the buddah plugin's fork-side
-hook fix (`${CLAUDE_PLUGIN_ROOT}` + `/buddah:*` namespace) is still pending.
+Older loose ends still open: the product `architecture.md` describes remote
+stats in pre-ADR-008 terms; Tutorial `003` remains the deliberately-open slot;
+the buddah plugin's fork-side hook fix (`${CLAUDE_PLUGIN_ROOT}` + `/buddah:*`
+namespace); and the AWOS `_`-prefixed command renames remain uncommitted.
 
 The repo is public at **github.com/tigra/graphia**, so future increments ship
 in the open.

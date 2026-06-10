@@ -83,6 +83,17 @@ uv run pytest -q
 
 The suite is fully mocked at the `ChatBedrockConverse` boundary (an autouse fixture fails loudly if any test reaches real Bedrock), so it runs offline and deterministically.
 
+### Dialogue-quality evals (real Bedrock)
+
+Beyond the mocked unit suite, two `make` targets exercise the *actual* AI dialogue against the live gameplay model (Amazon Nova) to catch quality regressions the mocked tests structurally can't — e.g. AI players echoing each other into a repetition spiral:
+
+| Target | What it does |
+|---|---|
+| `make eval-dialogue` | Plays N real-LLM games with a scripted human and scores AI Day-speech repetition (lexical near-duplicate rate). A quick diversity smoke. |
+| `make repetition-experiment` | The rigorous, **paired A/B** harness — ranks prompt / context-window / temperature fixes across conditions with a name-masked similarity metric and bootstrap confidence intervals. Design + results: [`repetition-experiment-design.md`](context/spec/009-ai-collusion-awareness/repetition-experiment-design.md). |
+
+These hit live Bedrock (so they cost tokens and are non-deterministic) and live **outside** `pytest`. Use them to A/B any change to AI dialogue — run on `HEAD`, then on a pre-change checkout, and compare.
+
 ---
 
 ## How it works
