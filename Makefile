@@ -57,7 +57,7 @@ LAMBDA_ZIPS   = $(addprefix $(LAMBDA_BUILD)/,$(addsuffix .zip,$(LAMBDA_FNS)))
         tf-init tf-fmt tf-validate tf-plan tf-ecr-bootstrap tf-apply tf-destroy \
         wire-env deploy redeploy deploy-stats destroy inspect-diary play play-remote \
         build-lambdas clean-lambdas enable-transaction-search verify-observability \
-        create-stats-strategy
+        create-stats-strategy eval-dialogue
 
 help:
 	@echo "Container image targets:"
@@ -421,6 +421,15 @@ play-remote:
 #   make inspect-diary ARGS="--game-id <thread> --json"
 inspect-diary:
 	uv run python -m graphia.tools.inspect_diary $(ARGS)
+
+# Dialogue-diversity eval: play N games on the REAL gameplay model (Nova) and
+# measure how repetitive the AI Day speeches are. NOT a mocked unit test — it
+# reaches live Bedrock (needs AWS creds) and costs tokens. Use it to A/B prompt
+# or model changes (run on HEAD, then on a pre-change checkout, compare).
+#   make eval-dialogue
+#   make eval-dialogue ARGS="--games 8 --threshold 0.82 --min-distinct 0.85 --json div.json"
+eval-dialogue:
+	uv run python -m graphia.tools.eval_dialogue $(ARGS)
 
 # --- CloudWatch Transaction Search (one-time, per AWS account).
 #
