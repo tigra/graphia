@@ -294,7 +294,7 @@ async def test_ctrl_c_shows_aborted_banner(
         # resolves an alive non-human Law-abiding target at invoke time).
         # ``fake_sonnet`` still owns the Day/Ballot bindings; the
         # ``dynamic_night_pointing`` install below overrides the Night
-        # ``get_sonnet`` binding so Night 1 never falls back to the
+        # ``get_large`` binding so Night 1 never falls back to the
         # random pick (which can target the human and flip
         # the game into spectator → end-of-game within the 0.2 s pause).
         pointings=[],

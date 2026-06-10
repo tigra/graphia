@@ -1,4 +1,14 @@
-"""Bedrock LLM singletons (Sonnet + Haiku) and structured-output schemas."""
+"""Bedrock LLM singletons (large + small tiers) and structured-output schemas.
+
+Two capability tiers, **named by size, not by model family**, so swapping the
+underlying Bedrock model never requires renaming call sites:
+
+- ``get_large()`` — the heavier gameplay model (AI dialogue, votes, pointing).
+- ``get_small()`` — the lighter mechanical model (roster name generation).
+
+Both currently resolve to Amazon Nova (Pro / Lite) per ADR-003; that choice is
+an operational detail captured below and in the ADR, not in the function names.
+"""
 
 from __future__ import annotations
 
@@ -9,33 +19,36 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from graphia.config import load_config
 
-_SONNET_MODEL_ID = "amazon.nova-pro-v1:0"
-_HAIKU_MODEL_ID = "amazon.nova-lite-v1:0"
+# Model ids are operational choices (ADR-003: Nova over Claude). The *tier*
+# names above are the stable interface; these ids can change without touching
+# any caller.
+_LARGE_MODEL_ID = "amazon.nova-pro-v1:0"
+_SMALL_MODEL_ID = "amazon.nova-lite-v1:0"
 
-_sonnet: ChatBedrockConverse | None = None
-_haiku: ChatBedrockConverse | None = None
+_large: ChatBedrockConverse | None = None
+_small: ChatBedrockConverse | None = None
 
 
-def get_sonnet() -> ChatBedrockConverse:
-    global _sonnet
-    if _sonnet is None:
-        _sonnet = ChatBedrockConverse(
-            model=_SONNET_MODEL_ID,
+def get_large() -> ChatBedrockConverse:
+    global _large
+    if _large is None:
+        _large = ChatBedrockConverse(
+            model=_LARGE_MODEL_ID,
             region_name=load_config().aws_region,
             temperature=0.7,
         )
-    return _sonnet
+    return _large
 
 
-def get_haiku() -> ChatBedrockConverse:
-    global _haiku
-    if _haiku is None:
-        _haiku = ChatBedrockConverse(
-            model=_HAIKU_MODEL_ID,
+def get_small() -> ChatBedrockConverse:
+    global _small
+    if _small is None:
+        _small = ChatBedrockConverse(
+            model=_SMALL_MODEL_ID,
             region_name=load_config().aws_region,
             temperature=0.8,
         )
-    return _haiku
+    return _small
 
 
 class Roster(BaseModel):

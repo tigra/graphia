@@ -464,10 +464,10 @@ def test_six_rounds_without_vote_ends_day(
     sonnet_day_fake = _InfSonnetDay()
     sonnet_pointing_fake = _InfSonnetPointing(_live_victim)
     monkeypatch.setattr(
-        "graphia.nodes.day.get_sonnet", lambda: sonnet_day_fake
+        "graphia.nodes.day.get_large", lambda: sonnet_day_fake
     )
     monkeypatch.setattr(
-        "graphia.nodes.night.get_sonnet", lambda: sonnet_pointing_fake
+        "graphia.nodes.night.get_large", lambda: sonnet_pointing_fake
     )
 
     config = load_config()

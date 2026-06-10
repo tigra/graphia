@@ -92,7 +92,7 @@ RELATIVE_TOLERANCE = 0.45
 # robust across an unknown number of AI turns over M games we use a tiny
 # stateless fake that yields a generic speak action for ANY number of calls and
 # resolves Night pointing against live graph state (so no real target id needs
-# to be known ahead of time). It satisfies BOTH the day and night get_sonnet
+# to be known ahead of time). It satisfies BOTH the day and night get_large
 # call sites with one object.
 # --------------------------------------------------------------------------
 
@@ -101,7 +101,7 @@ class _AlwaysSpeakSonnet:
     """Stateless Sonnet stand-in: AIs always speak; Night points at a live target.
 
     Dispatches on the schema bound via ``with_structured_output`` (mirrors the
-    production call shape ``get_sonnet().with_structured_output(S).invoke(m)``):
+    production call shape ``get_large().with_structured_output(S).invoke(m)``):
 
     - ``DayAction`` -> ``DayAction(kind="speak", ...)`` every time, so no AI
       ever initiates a vote and the Day runs cleanly to its round cap.
@@ -315,10 +315,10 @@ def test_emerging_day_order_is_fair_across_games(
             lambda: graph.get_state(run_config).values
         )
         monkeypatch.setattr(
-            "graphia.nodes.day.get_sonnet", lambda: sonnet
+            "graphia.nodes.day.get_large", lambda: sonnet
         )
         monkeypatch.setattr(
-            "graphia.nodes.night.get_sonnet", lambda: sonnet
+            "graphia.nodes.night.get_large", lambda: sonnet
         )
 
         # Stream to the first (name) interrupt.

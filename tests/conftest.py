@@ -44,8 +44,8 @@ class _LoudFailureLLM:
 def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     """Autouse safety net: any unstubbed LLM call raises immediately.
 
-    Patches the three call-site bindings (``get_haiku`` in ``nodes.setup`` and
-    ``get_sonnet`` in both ``nodes.night`` and ``nodes.day``) with a
+    Patches the three call-site bindings (``get_small`` in ``nodes.setup`` and
+    ``get_large`` in both ``nodes.night`` and ``nodes.day``) with a
     loud-failure fake. Explicit per-test fixtures (``fake_haiku``,
     ``fake_sonnet``, ``fake_sonnet_pointing``, ``fake_sonnet_day``) run after
     this one and replace these bindings via the same ``monkeypatch`` surface,
@@ -53,16 +53,16 @@ def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     loudly instead of hanging on boto3 retries.
     """
     monkeypatch.setattr(
-        "graphia.nodes.setup.get_haiku",
-        lambda: _LoudFailureLLM("graphia.nodes.setup.get_haiku"),
+        "graphia.nodes.setup.get_small",
+        lambda: _LoudFailureLLM("graphia.nodes.setup.get_small"),
     )
     monkeypatch.setattr(
-        "graphia.nodes.night.get_sonnet",
-        lambda: _LoudFailureLLM("graphia.nodes.night.get_sonnet"),
+        "graphia.nodes.night.get_large",
+        lambda: _LoudFailureLLM("graphia.nodes.night.get_large"),
     )
     monkeypatch.setattr(
-        "graphia.nodes.day.get_sonnet",
-        lambda: _LoudFailureLLM("graphia.nodes.day.get_sonnet"),
+        "graphia.nodes.day.get_large",
+        lambda: _LoudFailureLLM("graphia.nodes.day.get_large"),
     )
 
 
@@ -177,7 +177,7 @@ def safe_memory_client(monkeypatch: pytest.MonkeyPatch) -> None:
 class FakeHaiku:
     """Stand-in for ``ChatBedrockConverse`` used inside ``generate_roster``.
 
-    The real code path is ``get_haiku().with_structured_output(Roster).invoke(msgs)``.
+    The real code path is ``get_small().with_structured_output(Roster).invoke(msgs)``.
     This fake collapses that to a scripted-outputs queue. Each entry is either a
     ``Roster`` to return or an ``Exception`` to raise (e.g. ``ValidationError``
     to exercise the retry path).
@@ -213,7 +213,7 @@ class FakeHaiku:
 
 @pytest.fixture
 def fake_haiku(monkeypatch: pytest.MonkeyPatch) -> Callable[..., FakeHaiku]:
-    """Factory fixture: patch ``graphia.nodes.setup.get_haiku`` with a fake.
+    """Factory fixture: patch ``graphia.nodes.setup.get_small`` with a fake.
 
     Usage::
 
@@ -225,9 +225,9 @@ def fake_haiku(monkeypatch: pytest.MonkeyPatch) -> Callable[..., FakeHaiku]:
     ``Roster``) or an explicit ``outputs=`` sequence mixing ``Roster`` values
     and ``Exception`` instances for retry-path tests.
 
-    Patches the ``get_haiku`` binding **inside** ``graphia.nodes.setup`` (the
+    Patches the ``get_small`` binding **inside** ``graphia.nodes.setup`` (the
     call site) so the already-imported reference is replaced cleanly — patching
-    the canonical ``graphia.llm.get_haiku`` would not help, because setup.py
+    the canonical ``graphia.llm.get_small`` would not help, because setup.py
     already bound the original at import time.
     """
 
@@ -241,7 +241,7 @@ def fake_haiku(monkeypatch: pytest.MonkeyPatch) -> Callable[..., FakeHaiku]:
                 raise TypeError("fake_haiku requires either `names` or `outputs`")
             outputs = [Roster(names=list(names))]
         fake = FakeHaiku(outputs)
-        monkeypatch.setattr("graphia.nodes.setup.get_haiku", lambda: fake)
+        monkeypatch.setattr("graphia.nodes.setup.get_small", lambda: fake)
         return fake
 
     return _install
@@ -276,7 +276,7 @@ class FakeSonnet:
     """Stand-in for ``ChatBedrockConverse`` used inside Mafia pointing.
 
     The production call is
-    ``get_sonnet().with_structured_output(Pointing).invoke(msgs)``. This fake
+    ``get_large().with_structured_output(Pointing).invoke(msgs)``. This fake
     collapses that into a queue of scripted ``Pointing`` outputs (or
     exceptions to exercise the retry / random-fallback path).
 
@@ -310,7 +310,7 @@ class FakeSonnet:
 def fake_sonnet_pointing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Callable[..., FakeSonnet]:
-    """Factory fixture: patch ``graphia.nodes.night.get_sonnet`` with a fake.
+    """Factory fixture: patch ``graphia.nodes.night.get_large`` with a fake.
 
     Usage::
 
@@ -323,7 +323,7 @@ def fake_sonnet_pointing(
     ``outputs=`` sequence mixing ``Pointing`` values and ``Exception``
     instances for retry-path tests.
 
-    Patches the ``get_sonnet`` binding **inside** ``graphia.nodes.night`` so
+    Patches the ``get_large`` binding **inside** ``graphia.nodes.night`` so
     the already-imported reference is replaced at the call site.
     """
 
@@ -339,7 +339,7 @@ def fake_sonnet_pointing(
                 )
             outputs = [Pointing(target_id=t) for t in target_ids]
         fake = FakeSonnet(outputs)
-        monkeypatch.setattr("graphia.nodes.night.get_sonnet", lambda: fake)
+        monkeypatch.setattr("graphia.nodes.night.get_large", lambda: fake)
         return fake
 
     return _install
@@ -349,7 +349,7 @@ class FakeSonnetDay:
     """Stand-in for ``ChatBedrockConverse`` used inside Day-phase speaking.
 
     Production call site is
-    ``get_sonnet().with_structured_output(DayAction).invoke(msgs)`` inside
+    ``get_large().with_structured_output(DayAction).invoke(msgs)`` inside
     ``graphia.nodes.day._ai_speak``. This fake collapses that to a scripted
     FIFO queue of ``DayAction`` outputs (or exceptions to exercise the retry
     / deterministic-fallback path).
@@ -392,7 +392,7 @@ class FakeSonnetDay:
 def fake_sonnet_day(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Callable[..., FakeSonnetDay]:
-    """Factory fixture: patch ``graphia.nodes.day.get_sonnet`` with a fake.
+    """Factory fixture: patch ``graphia.nodes.day.get_large`` with a fake.
 
     Usage::
 
@@ -407,7 +407,7 @@ def fake_sonnet_day(
     via ``outputs=``, or a shortcut ``texts=`` parameter that wraps each
     string as ``DayAction(kind="speak", text=...)``.
 
-    Patches the ``get_sonnet`` binding **inside** ``graphia.nodes.day`` so the
+    Patches the ``get_large`` binding **inside** ``graphia.nodes.day`` so the
     already-imported reference is replaced at the call site.
     """
 
@@ -423,7 +423,7 @@ def fake_sonnet_day(
                 )
             outputs = [DayAction(kind="speak", text=t) for t in texts]
         fake = FakeSonnetDay(outputs)
-        monkeypatch.setattr("graphia.nodes.day.get_sonnet", lambda: fake)
+        monkeypatch.setattr("graphia.nodes.day.get_large", lambda: fake)
         return fake
 
     return _install
@@ -442,7 +442,7 @@ def plain_text(widget: Widget) -> str:
 # ``with_structured_output`` so a single fake can serve DayAction, Ballot,
 # and Pointing calls simultaneously. Needed for Slice 7 where ``collect_votes``
 # binds ``Ballot`` while ``day_turn`` binds ``DayAction`` on the same
-# ``get_sonnet()`` reference.
+# ``get_large()`` reference.
 # --------------------------------------------------------------------------
 
 
@@ -469,7 +469,7 @@ class FakeSonnetUnified:
 
     Production call shape::
 
-        get_sonnet().with_structured_output(SchemaClass).invoke(msgs)
+        get_large().with_structured_output(SchemaClass).invoke(msgs)
 
     This fake keeps a separate scripted queue per schema class so one fixture
     can satisfy ``DayAction`` (speak/vote), ``Ballot`` (yes/no), and
@@ -531,7 +531,7 @@ class _DynamicNightPointing:
     """Stateless Night-pointing fake that picks an alive target at call time.
 
     Production call shape is
-    ``get_sonnet().with_structured_output(Pointing).invoke(msgs)``. Between
+    ``get_large().with_structured_output(Pointing).invoke(msgs)``. Between
     a test's ``fake_sonnet(...)`` call and the worker actually reaching the
     ``mafia_pointing`` super-step there is an unavoidable race: the real
     target UUIDs are only known once ``assign_roles`` has run on graph
@@ -572,7 +572,7 @@ class _DynamicNightPointing:
 def dynamic_night_pointing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Callable[..., _DynamicNightPointing]:
-    """Factory: patch ``graphia.nodes.night.get_sonnet`` with a race-safe fake.
+    """Factory: patch ``graphia.nodes.night.get_large`` with a race-safe fake.
 
     Usage (after an earlier ``fake_sonnet(...)`` call — this fixture
     overrides the night-side binding installed there)::
@@ -587,7 +587,7 @@ def dynamic_night_pointing(
         state_provider: Callable[[], dict],
     ) -> _DynamicNightPointing:
         fake = _DynamicNightPointing(state_provider)
-        monkeypatch.setattr("graphia.nodes.night.get_sonnet", lambda: fake)
+        monkeypatch.setattr("graphia.nodes.night.get_large", lambda: fake)
         return fake
 
     return _install
@@ -635,7 +635,7 @@ class _TargetHumanPointing:
 def target_human_pointing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Callable[..., _TargetHumanPointing]:
-    """Factory: patch ``graphia.nodes.night.get_sonnet`` to always target the human.
+    """Factory: patch ``graphia.nodes.night.get_large`` to always target the human.
 
     Usage::
 
@@ -651,7 +651,7 @@ def target_human_pointing(
         state_provider: Callable[[], dict],
     ) -> _TargetHumanPointing:
         fake = _TargetHumanPointing(state_provider)
-        monkeypatch.setattr("graphia.nodes.night.get_sonnet", lambda: fake)
+        monkeypatch.setattr("graphia.nodes.night.get_large", lambda: fake)
         return fake
 
     return _install
@@ -671,8 +671,8 @@ def fake_sonnet(
             pointings=[Pointing(target_id="p-2")],
         )
 
-    Patches ``graphia.nodes.day.get_sonnet`` AND
-    ``graphia.nodes.night.get_sonnet`` with the same instance so calls
+    Patches ``graphia.nodes.day.get_large`` AND
+    ``graphia.nodes.night.get_large`` with the same instance so calls
     routed through either call site go through one queue-set. This is
     required for Slice 7 tests where a single run touches ``DayAction``
     (speaking), ``Ballot`` (voting), and ``Pointing`` (next night) on the
@@ -690,8 +690,8 @@ def fake_sonnet(
             ballots=ballots,
             pointings=pointings,
         )
-        monkeypatch.setattr("graphia.nodes.day.get_sonnet", lambda: fake)
-        monkeypatch.setattr("graphia.nodes.night.get_sonnet", lambda: fake)
+        monkeypatch.setattr("graphia.nodes.day.get_large", lambda: fake)
+        monkeypatch.setattr("graphia.nodes.night.get_large", lambda: fake)
         return fake
 
     return _install

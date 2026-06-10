@@ -37,7 +37,7 @@ from graphia.career_events import (
     CareerEvent,
     CareerEventEmitter,
 )
-from graphia.llm import Ballot, DayAction, get_sonnet
+from graphia.llm import Ballot, DayAction, get_large
 from graphia.prompts import (
     AI_VOTE_SYSTEM,
     AI_VOTE_USER_TEMPLATE,
@@ -186,7 +186,7 @@ def _ai_day_action(
     context = _render_context(list(state.get("messages", [])))
     alive_ids = {p.id for p in players.values() if p.is_alive}
 
-    llm = get_sonnet().with_structured_output(DayAction)
+    llm = get_large().with_structured_output(DayAction)
     base_messages: list = [
         SystemMessage(content=DAY_SPEAK_SYSTEM),
         HumanMessage(
@@ -457,7 +457,7 @@ def _ai_ballot(
 ) -> Ballot:
     """Ask Sonnet for a Yes/No ballot. Conservative fallback on failure."""
     context = _render_context(list(state.get("messages", [])))
-    llm = get_sonnet().with_structured_output(Ballot)
+    llm = get_large().with_structured_output(Ballot)
     base_messages: list = [
         SystemMessage(content=AI_VOTE_SYSTEM),
         HumanMessage(

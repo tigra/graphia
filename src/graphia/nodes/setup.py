@@ -15,7 +15,7 @@ from graphia.career_events import (
     CareerEventEmitter,
 )
 from graphia.config import load_config
-from graphia.llm import Roster, get_haiku
+from graphia.llm import Roster, get_small
 from graphia.prompts import NAME_GEN_SYSTEM, NAME_GEN_USER, ROSTER_INTRO_TEMPLATE
 from graphia.state import GameState, PlayerState
 
@@ -54,7 +54,7 @@ def collect_name(state: GameState) -> dict:
 
 
 def _generate_names() -> Roster:
-    llm = get_haiku().with_structured_output(Roster)
+    llm = get_small().with_structured_output(Roster)
     messages: list = [
         SystemMessage(content=NAME_GEN_SYSTEM),
         HumanMessage(content=NAME_GEN_USER),

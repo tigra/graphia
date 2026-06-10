@@ -10,7 +10,8 @@ All code lives under `src/graphia/`; new work should go there unless explicitly 
 
 ## Running and testing
 
-- **Run the game:** `uv run python -m graphia` (Textual TUI; needs a real terminal, not PyCharm's "Run" console).
+- **Prefer `make <target>` for any action that has one.** The repo-root `Makefile` is the canonical task-runner (it wraps `./tf`, the container runtime, and `aws`). When an action you need maps to a target, use it instead of re-deriving the raw commands — e.g. `make build` / `make run` / `make play` (local) / `make play-remote` (deployed), `make deploy` / `make redeploy` / `make destroy`, `make tf-plan` / `make tf-apply`, `make build-lambdas`, `make verify-pipeline`, `make inspect-diary`. Run `make help` for the full list. Fall back to raw commands only when no target fits.
+- **Run the game:** `uv run python -m graphia` (Textual TUI; needs a real terminal, not PyCharm's "Run" console). Equivalently `make play`.
 - **Tests:** `uv run pytest -q` (fast, all-mocked) — the autouse `safe_llm` fixture in `tests/conftest.py` patches every LLM call site to fail loudly if a test forgets to install `fake_haiku` / `fake_sonnet*`. Real Bedrock must never be reached from the suite.
 - **Single test:** `uv run pytest tests/test_slice7_vote.py::test_name -q`.
 - **Determinism posture:** there is no seed env var. Mechanical-RNG decisions (role deal, day-speech order, tie-breaks) use module-global `random` and vary across runs; LLM-driven decisions (AI dialogue, name generation) are inherently non-reproducible. See architecture §6.
@@ -29,7 +30,7 @@ All code lives under `src/graphia/`; new work should go there unless explicitly 
 
 **Checkpointing:** `SqliteSaver` writes to `./.graphia/checkpoints/<thread_id>.sqlite`. The DB connection is opened directly (not via the context manager) because the graph owns its lifetime for the whole game. There is no cross-session save/load — each run is a fresh thread id; old files are safe to delete.
 
-**LLMs:** Two singletons in `src/graphia/llm.py` — Sonnet 4.5 (gameplay) and Haiku 4.5 (mechanical, e.g. roster name generation). Both via `langchain-aws` `ChatBedrockConverse` against the `eu-north-1` Bedrock inference profile. Behavioral variation comes from prompts and temperature, **not** from adding more models. Pydantic schemas (`Roster`, `Pointing`, `Ballot`, `DayAction`) are kept *flat* with primitive fields because Bedrock Converse rejects discriminated unions.
+**LLMs:** Two capability tiers in `src/graphia/llm.py` — `get_large()` (gameplay: AI dialogue, votes, pointing) and `get_small()` (mechanical, e.g. roster name generation). The tier names are **model-agnostic on purpose**; both currently resolve to **Amazon Nova** — Nova Pro (large) and Nova Lite (small) — via `langchain-aws` `ChatBedrockConverse` in **`us-east-1`**. ADR-003 swapped Claude→Nova long ago; the old `get_sonnet`/`get_haiku` names (and any "Sonnet 4.5 / Haiku 4.5 / eu-north-1" references) are **retired and were misleading** — there is no Claude in the gameplay path, local or remote. Behavioral variation comes from prompts and temperature, **not** from adding more models. Pydantic schemas (`Roster`, `Pointing`, `Ballot`, `DayAction`) are kept *flat* with primitive fields because Bedrock Converse rejects discriminated unions.
 
 **Logs vs UI:** `graph.stream` deltas go to `GRAPHIA_LOG_FILE` (JSONL, via `StreamTraceLogger`). Nothing diagnostic is ever printed to the Textual panes — exceptions surface as a banner pointing at the log file path.
 
@@ -73,6 +74,6 @@ Important rules baked into these commands:
 
 ## Test conventions worth knowing
 
-- The `safe_llm` autouse fixture (`tests/conftest.py`) replaces `get_haiku` / `get_sonnet` at every call site (`graphia.nodes.setup`, `graphia.nodes.night`, `graphia.nodes.day`) with a `_LoudFailureLLM`. If you add a new module that calls an LLM, extend `safe_llm` to patch it too — otherwise a forgotten stub will fall through to real boto3 and hang pytest teardown on retry loops.
+- The `safe_llm` autouse fixture (`tests/conftest.py`) replaces `get_small` / `get_large` at every call site (`graphia.nodes.setup`, `graphia.nodes.night`, `graphia.nodes.day`) with a `_LoudFailureLLM`. If you add a new module that calls an LLM, extend `safe_llm` to patch it too — otherwise a forgotten stub will fall through to real boto3 and hang pytest teardown on retry loops.
 - Per-test fixtures (`fake_haiku`, `fake_sonnet`, `fake_sonnet_pointing`, `fake_sonnet_day`, `dynamic_night_pointing`, `target_human_pointing`) re-monkeypatch the same surface; they run after `safe_llm`.
 - The slice-numbered test files (`test_slice2_roster.py` … `test_slice9_polish.py`) map 1:1 onto the vertical slices in `context/spec/001-playable-skeleton/tasks.md`.

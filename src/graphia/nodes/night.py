@@ -15,7 +15,7 @@ from graphia.career_events import (
     CareerEventEmitter,
 )
 from graphia.diary_store import DiaryStore
-from graphia.llm import Pointing, get_sonnet
+from graphia.llm import Pointing, get_large
 from graphia.prompts import (
     MAFIA_POINT_SYSTEM,
     MAFIA_POINT_USER_TEMPLATE,
@@ -106,7 +106,7 @@ def _ai_pick_target(
     valid_ids_list = sorted(valid_ids)
     roster = _roster_lines(alive_law_abiding)
 
-    llm = get_sonnet().with_structured_output(Pointing)
+    llm = get_large().with_structured_output(Pointing)
     base_messages: list = [
         SystemMessage(content=MAFIA_POINT_SYSTEM),
         HumanMessage(content=MAFIA_POINT_USER_TEMPLATE.format(roster=roster)),

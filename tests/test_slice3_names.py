@@ -1,6 +1,6 @@
 """Slice 3 tests: AI names come from Haiku (stubbed), not a hardcoded list.
 
-Every test in this module monkeypatches ``graphia.nodes.setup.get_haiku`` via
+Every test in this module monkeypatches ``graphia.nodes.setup.get_small`` via
 the ``fake_haiku`` fixture so nothing reaches real Bedrock. We drive the app
 through the same pilot flow used in Slice 2, capture the public log, and make
 assertions about which names appeared.
@@ -25,7 +25,7 @@ def _install_sonnet_defaults(fake_sonnet) -> None:
     """Defensive Sonnet stub for Slice-3 tests.
 
     Slice 3 only asserts roster behaviour, but once the human submits their
-    name the graph chains into Night-1, which calls ``get_sonnet()``. Without
+    name the graph chains into Night-1, which calls ``get_large()``. Without
     this stub the worker hits real Bedrock (via boto3 with dummy creds),
     keeping an executor thread alive past ``app.exit()`` and blocking
     pytest teardown on the 300s executor-join timeout.

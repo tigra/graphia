@@ -84,7 +84,7 @@ async def test_roster_intro_contains_all_seven_names_in_one_line(
     # assertions still hold.
     fake_haiku(HARDCODED_AI_NAMES)
     # After the roster intro the graph chains into Night-1 Mafia pointing,
-    # which binds ``get_sonnet()``. Without this stub the worker would
+    # which binds ``get_large()``. Without this stub the worker would
     # reach real Bedrock with dummy creds, triggering boto3 retries that
     # keep an executor thread alive past ``app.exit()`` and blocking
     # pytest teardown on the 300s executor-join timeout.
