@@ -92,6 +92,7 @@ gantt
     Spec 009 — AI Collusion Awareness ✓ (anti-parrot)    :milestone, done, sp9, 2026-06-10, 0d
     Dialogue-diversity experiment → anti-parrot fix      :milestone, done, divexp, 2026-06-10, 0d
     LLM accessor rename + GraphRecursion flake fix       :milestone, done, fixday, 2026-06-09, 0d
+    Tutorials 007–009 published                          :milestone, done, tut789, 2026-06-10, 0d
 
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
@@ -148,6 +149,8 @@ gantt
     click sp8 href "https://github.com/tigra/graphia/tree/main/context/spec/008-same-round-message-visibility"
     click sp9 href "https://github.com/tigra/graphia/tree/main/context/spec/009-ai-collusion-awareness"
     click divexp href "https://github.com/tigra/graphia/blob/main/context/spec/009-ai-collusion-awareness/repetition-experiment-design.md"
+    click fixday href "https://github.com/tigra/graphia/commits/main"
+    click tut789 href "https://github.com/tigra/graphia/blob/main/context/tutorials/009-ai-collusion-awareness/tutorial.md"
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:
@@ -705,9 +708,9 @@ coverage._
 | 004  | Robust /vote Input Validation               | 4      | Completed |
 | 005  | Play-As-Role via Environment Variable       | 5      | Completed |
 | 006  | Long-Term Cross-Game Memory & Career Stats  | 8      | Completed |
-| 007  | Fair Day Speaking Order                     | TBD    | Draft     |
-| 008  | Same-Round Message Visibility               | TBD    | Draft     |
-| 009  | AI Collusion Awareness                      | TBD    | Draft     |
+| 007  | Fair Day Speaking Order                     | 2      | Completed |
+| 008  | Same-Round Message Visibility               | 2      | Completed |
+| 009  | AI Collusion Awareness                      | 1      | Completed |
 
 _Spec 006 was verified Completed on 2026-06-03 (all 32 acceptance criteria, Phase 3 roadmap bullets ticked) and Tutorial 006 published. Specs 007–009 (the Day-phase integrity trio) are now all **verified Completed**; 009's collusion nudge was revised to an **anti-parrot** reword after a real-Nova experiment showed the original wording drove a Day-dialogue repetition spiral._
 
@@ -725,6 +728,12 @@ stats counter — a technology demonstration, not a need-driven design. An inter
 pre-Lambda-pivot) sits alongside as a historical artifact and will be removed
 when no longer interesting.
 
+Tutorials `007`–`009` are now **published**, completing the Day-phase trio's
+documentation: `007` (fair speaking order), `008` (same-round visibility), and
+`009` — a methodology walkthrough of the paired real-Nova **experiment** that
+chose the anti-parrot fix (how to evaluate and fix non-deterministic LLM
+behaviour, not just the one-line prompt change).
+
 ---
 
 ## What's next
@@ -735,8 +744,8 @@ live deploy is green end-to-end (`make verify-pipeline`, six checks against
 the `eafa1ee` runtime + Lambda).
 
 The **Day-phase integrity trio is done** — 007, 008, 009 all verified
-Completed, with 008 and 009 tutorials (009's pending) and an anti-parrot fix
-chosen by a real-Nova experiment. The next roadmap item is **Phase 4 — AI
+Completed **and tutorialised**, with 009's tutorial framing the real-Nova
+experiment that chose the anti-parrot fix. The next roadmap item is **Phase 4 — AI
 Provider Flexibility**: AWS Profile / SSO credentials (effectively shipped
 across the deploy/runtime changes; needs a roadmap tick) and a **Local Ollama
 Provider** (fresh scope).
