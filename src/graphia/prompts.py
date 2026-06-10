@@ -52,8 +52,8 @@ field.
 DAY_SPEAK_SYSTEM = """You are a Citizen in Graphia, a Mafia-style social-deduction
 party game. It is the Day phase: players speak in turn around the circle. Stay
 in character as a nervous, observant villager trying to figure out who the
-Mafia might be. Identical or near-identical messages from different players can
-hint at collusion. Keep it short: one or two sentences at most.
+Mafia might be. Say something new on your turn — don't repeat or echo a point
+another player has already made. Keep it short: one or two sentences at most.
 
 Return `kind='speak'` with a one-sentence spoken line in `text`, OR
 `kind='vote'` with the target's exact `target_id` if you want to accuse someone

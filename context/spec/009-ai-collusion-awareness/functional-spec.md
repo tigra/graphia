@@ -4,6 +4,8 @@
 - **Status:** Completed
 - **Author:** Alexey Tigarev
 
+> **Revision (2026-06-10) — approach pivoted from "notice copycats" to "don't be one."** The original nudge (§2.1 below: AIs made *aware* that identical messages signal collusion) **backfired** in play: it primed the Nova gameplay model to produce — and obsessively comment on — repeated phrasing, collapsing Day chat into a repetition spiral (name-masked near-dup rose to **0.57** vs a **0.20** pre-spec baseline). A controlled experiment ([`repetition-experiment-design.md`](./repetition-experiment-design.md) §13) showed the fix is to **instruct against parroting directly** — "say something new; don't echo a point already made" — which restored diversity *below* baseline (**0.15**) while keeping spec 008's full same-round visibility. The §2.2 intent (copycatting discouraged, behavior natural) stands; the *mechanism* changed. The acceptance criteria below describe the original framing and are retained for history; the shipped guidance is the anti-parroting line.
+
 ---
 
 ## 1. Overview and Rationale (The "Why")

@@ -57,7 +57,7 @@ LAMBDA_ZIPS   = $(addprefix $(LAMBDA_BUILD)/,$(addsuffix .zip,$(LAMBDA_FNS)))
         tf-init tf-fmt tf-validate tf-plan tf-ecr-bootstrap tf-apply tf-destroy \
         wire-env deploy redeploy deploy-stats destroy inspect-diary play play-remote \
         build-lambdas clean-lambdas enable-transaction-search verify-observability \
-        create-stats-strategy eval-dialogue
+        create-stats-strategy eval-dialogue repetition-experiment
 
 help:
 	@echo "Container image targets:"
@@ -430,6 +430,14 @@ inspect-diary:
 #   make eval-dialogue ARGS="--games 8 --threshold 0.82 --min-distinct 0.85 --json div.json"
 eval-dialogue:
 	uv run python -m graphia.tools.eval_dialogue $(ARGS)
+
+# Rigorous repetition experiment (the design under spec 009): ranks candidate
+# fixes vs HEAD/BASE on real Nova with paired seeds, length cap, name-masked
+# metric, bootstrap CIs, and paired tests. Long real-LLM run; writes incremental
+# JSON. See context/spec/009-ai-collusion-awareness/repetition-experiment-design.md
+#   make repetition-experiment ARGS="--games 10"
+repetition-experiment:
+	uv run python -m graphia.tools.repetition_experiment $(ARGS)
 
 # --- CloudWatch Transaction Search (one-time, per AWS account).
 #

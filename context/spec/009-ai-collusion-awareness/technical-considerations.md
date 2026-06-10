@@ -18,9 +18,11 @@ No logic, schema, graph, UI, or test change. The signal is *interpretive only* �
 
 ### 2.1 The one prompt change — `src/graphia/prompts.py`
 
-- Append a single sentence to the `DAY_SPEAK_SYSTEM` string. **Confirmed wording:**
+- Append a single sentence to the `DAY_SPEAK_SYSTEM` string. **Shipped wording (revised 2026-06-10):**
 
-  > Identical or near-identical messages from different players can hint at collusion.
+  > Say something new on your turn — don't repeat or echo a point another player has already made.
+
+  The original wording — *"Identical or near-identical messages from different players can hint at collusion."* — backfired into a repetition spiral on Nova; the experiment ([`repetition-experiment-design.md`](./repetition-experiment-design.md) §13) selected the anti-parroting phrasing above (name-masked near-dup 0.57 → 0.15, below the pre-spec baseline). Still a single observational/imperative line in the speak prompt only.
 
 - It is added as an **observation**, not an imperative — no "call it out", no "accuse them", no fixed phrasing — satisfying functional-spec §2.1 (light awareness) and §2.2 (emergent behaviour). It joins the existing "nervous, observant villager" framing already in the prompt.
 
