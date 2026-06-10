@@ -32,7 +32,7 @@ The central technology here isn't LangGraph or AgentCore — it's **experiment d
 
 ## What's new this increment
 
-- [**Paired-seed LLM A/B**](#1-the-spine-making-a-non-deterministic-ab-comparable) — share one seed set across conditions so only the model's words vary.
+- [**Paired-seed LLM A/B**](#1-the-spine-making-a-non-deterministic-ab-comparable) — share one seed set across conditions to *correlate* the runs and lower variance (it pins the deal, not the trajectory).
 - [**Real-LLM eval, make-gated outside the suite**](#2-the-vehicle-a-real-model-eval-that-opts-out-of-the-mocked-suite) — a harness that deliberately hits real Bedrock, gated behind `make`.
 - [**Name-masked similarity metric**](#3-measuring-the-right-thing-mask-the-names) — mask player names so template echo registers as repetition.
 - [**Length-cap confound control**](#4-the-confound-game-length) — cap speeches per game so longer games don't fake a worse score.
@@ -51,7 +51,7 @@ The increment's structure is a pipeline that turns a noisy, non-deterministic si
 
 ```mermaid
 flowchart TD
-    SEED["one shared seed set<br/>(pins game STRUCTURE, not words)"]
+    SEED["one shared seed set<br/>(fixes the role deal; otherwise just<br/>an attempt to lower variance)"]
     COND["9 conditions<br/>(line × window × temp)"]
     SEED --> RUN
     COND -->|"setattr, in-process"| RUN["play N paired real-Nova games<br/>capped at K speeches each"]
@@ -68,7 +68,9 @@ flowchart TD
 
 **Pose.** Tutorial 007 taught how to test a *random* thing — seed the RNG, and the shuffle is reproducible. But the thing under test here is the **LLM's words**, and no seed controls those: run the same game twice and the AIs say different things. So how do you compare "prompt A" against "prompt B" when *every* run differs for two reasons at once — the change you made, and the model's inherent noise?
 
-**Present.** You can't remove the model noise, but you can remove *everything else* and then average the noise away. The technique is a **paired-seed LLM A/B**: pin the game **structure** with a fixed seed set, and reuse the **same seed set across every condition**. Game *i* then has the identical role deal, speaking order, and Night trajectory in condition A and condition B — so the only thing that differs between the two is the prompt (plus residual model noise, which N games average out). That makes the conditions *matched pairs*, which is both more honest and more powerful than comparing unmatched runs.
+**Present.** You can't remove the model noise — but you *can* fix the seed, and that helps, as long as you're clear-eyed about how little it actually guarantees. The technique is a **paired-seed LLM A/B**: reuse the **same fixed seed set across every condition**, so `random.seed(seed)` makes the RNG *stream* identical in condition A and condition B for game *i*, and pair the conditions game-for-game.
+
+That pins exactly one thing: the **role deal** — the first draw taken before any model output. Past it, be honest that seeding does *not* pin the trajectory, and — the subtle part — it doesn't even reliably pin the *mechanical* outcomes downstream. The game's mechanical draws (the per-round `_shuffle_order`, the night-kill tie-break) are consumed from that single stream at points the **LLM decides**: the Night victim is a model pick and executions follow AI votes, so *who is alive* differs between conditions; and because a tie-break only draws *when the picks tie*, an LLM-contingent draw that fires in one condition but not the other **desynchronises the stream**, after which every later "mechanical" result reads a different number. You don't know when a vote or a kill lands, or on whom — so beyond the deal, you can't point to any draw and call it matched. This is therefore **not** a matched-pairs design and the runs are **not** identical games; pairing on the seed pins the deal and *correlates* the two runs enough to shrink variance — an attempt to lower the noise, nothing more.
 
 ```python
 # src/graphia/tools/repetition_experiment.py — main
@@ -80,7 +82,7 @@ for cond in conds:
         outcome = _play_game(seed, args.max_speeches)   # game i has the same structure in every cond
 ```
 
-**Apply.** This is the project's **determinism posture as policy** (tutorial 005) meeting its second non-determinism axis. 005/007 only ever had *mechanical* RNG to pin; 009 names the distinction explicitly — `random.seed(seed)` fixes the deal and the shuffle, but the dialogue stays free, *by design*, because the dialogue is the dependent variable. It directly reuses **seeded multi-sample from one master** (007): there, N child seeds produced a distribution over a deterministic shuffle; here, the same construct produces N *matched game structures* over a non-deterministic model. Same seam, new job.
+**Apply.** This is the project's **determinism posture as policy** (tutorial 005) meeting a deeper kind of randomness. In 005/007 the *only* randomness was mechanical, so seeding it reproduced a trajectory exactly. Here a second source — the model's own decisions — sits *upstream* of the mechanical draws and decides when they fire, so seeding reproduces nothing past the deal. It still reuses **seeded multi-sample from one master** (007) — N child seeds from one root — but for a humbler job: not reproducing trajectories, just correlating the paired runs to lower variance. The honest one-liner: the seed pins the deal and lowers the noise; it cannot make two LLM-driven games the same.
 
 ### 2. The vehicle: a real-model eval that opts out of the mocked suite
 
@@ -168,7 +170,7 @@ boots = sorted(mean(vals[_RNG.randrange(len(vals))] for _ in vals) for _ in rang
 return (mean(vals), boots[int(0.025 * n)], boots[int(0.975 * n)])   # mean, 2.5th & 97.5th percentile
 ```
 
-*Paired comparison — "is this fix actually better than the baseline?"* Comparing two conditions' *averages* throws away the pairing earned in §1. Instead, for each seed *i*, take the **difference** between the fix and HEAD *on that same game structure*, and ask whether those differences sit below zero. Because both conditions saw the identical role deal and speaking order on game *i*, subtracting cancels the between-game variance and isolates the prompt's effect — a much more sensitive test than comparing two noisy means. We bootstrap *those differences* for a CI and a two-sided p-value (the share of resamples that land on the wrong side of zero — small means "the effect is consistently in one direction, not a coin-flip").
+*Paired comparison — "is this fix actually better than the baseline?"* Comparing two conditions' *averages* throws away the seed-pairing from §1. Instead, for each seed *i*, take the **difference** between the fix and HEAD on game *i*, and ask whether those differences sit below zero. Because the two runs share game *i*'s seed (the same role deal and scripted human, and a correlated trajectory), subtracting removes the variance those shared starting conditions cause — sharpening the comparison versus two noisy means. It does *not* remove *all* between-game variance — the runs aren't identical games (§1) — so this is variance reduction, not perfect isolation; a paired test is simply more sensitive whenever the pairs are *correlated*, which the shared seed makes them. We bootstrap *those differences* for a CI and a two-sided p-value (the share of resamples that land on the wrong side of zero — small means "the effect is consistently in one direction, not a coin-flip").
 
 ```python
 # src/graphia/tools/repetition_experiment.py — _paired_vs_head
@@ -187,7 +189,7 @@ for rank, (key, p) in enumerate(ordered):            # ordered = comparisons sor
     adj[key] = running                                 # monotone: an adjusted p never decreases
 ```
 
-**Apply.** Together these turn a noisy pile of per-game numbers into a table you can *act on*: `antiparrot` at `0.15 [0.09, 0.20]`, **Δ−0.42 vs HEAD** (a 42-percentage-point fall in near-duplicated speeches, 57% → 15%), Holm-p < 0.001 — i.e. a solid estimate, a large matched improvement, and one that isn't an artifact of trying eight things. This is the natural successor to **reproducible statistical uniformity** (tutorial 007): there the claim was "a uniform shuffle stays inside a σ-band," made non-flaky by a fixed seed on a *deterministic* sample; here the data is genuinely random and the claim is *comparative*, so the σ-band gives way to CIs (how sure?) + a paired test (better than baseline?) + Holm (not just luck across eight tries?). And the pairing from §1 is what makes the paired test legal at all — `zip(head, cond)` only means something because index *i* is the *same game structure* in both conditions.
+**Apply.** Together these turn a noisy pile of per-game numbers into a table you can *act on*: `antiparrot` at `0.15 [0.09, 0.20]`, **Δ−0.42 vs HEAD** (a 42-percentage-point fall in near-duplicated speeches, 57% → 15%), Holm-p < 0.001 — i.e. a solid estimate, a large matched improvement, and one that isn't an artifact of trying eight things. This is the natural successor to **reproducible statistical uniformity** (tutorial 007): there the claim was "a uniform shuffle stays inside a σ-band," made non-flaky by a fixed seed on a *deterministic* sample; here the data is genuinely random and the claim is *comparative*, so the σ-band gives way to CIs (how sure?) + a paired test (better than baseline?) + Holm (not just luck across eight tries?). And the pairing from §1 is what gives the paired test its extra power — `zip(head, cond)` lines up runs that share game *i*'s seed and are therefore *correlated*, which shrinks the noise relative to unpaired means. (As §1 admits, they are not the *same* game — only correlated — so the win is variance reduction, not a guarantee.)
 
 ### 6. Running the conditions without touching source
 
