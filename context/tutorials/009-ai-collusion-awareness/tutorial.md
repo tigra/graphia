@@ -101,22 +101,41 @@ _drive(graph, run_config, Command(resume=HUMAN_NAME))   # scripted human, never 
 
 ### 3. Measuring the right thing: mask the names
 
-**Pose.** Look at the failure: *"I've been watching everyone, and it seems like **Jin**'s behavior is suspicious"* followed by *"…it seems like **Aiko**'s behavior is suspicious."* A character-level diff sees two different strings (the names differ) and calls them distinct — but to a human they're the *same sentence*. The repetition is **structural**: one skeleton, the slot swapped. How does a metric catch that?
+**Pose.** Look at the failure: *"I've been watching everyone, and it seems like **Jin**'s behavior is suspicious"* followed by *"…it seems like **Aiko**'s behavior is suspicious."* A character-level diff sees two different strings (the names differ) and calls them distinct — but to a human they're the *same sentence*. The repetition is **structural**: one skeleton, the slot swapped. Two questions follow: how do you stop the swapped name from hiding the repeat, and how do you *measure* "two speeches are basically the same" in the first place — and turn that into a single number?
 
-**Present.** With a **name-masked similarity metric**: before measuring, replace every player name with a single `<NAME>` token, then cluster near-duplicates. Masking collapses the template's variants onto each other so they cluster as the repeats they are. This is the experiment's *primary* metric — the one the decision rule reads.
+**Present — step 1, mask the names.** Normalise away the surface variation first: replace every player name with a single `<NAME>` token. Now *"…Jin's behavior is suspicious"* and *"…Aiko's behavior is suspicious"* both become the **identical** string *"…<NAME>'s behavior is suspicious."*
 
 ```python
-# src/graphia/tools/repetition_experiment.py — _mask_names / _metrics
+# src/graphia/tools/repetition_experiment.py — _mask_names
 def _mask_names(text, names):
     for n in sorted(names, key=len, reverse=True):
         text = re.sub(rf"\b{re.escape(n)}\b", "<NAME>", text, flags=re.IGNORECASE)
     return text
-...
-masked = [_normalize(_mask_names(s, outcome.names)) for s in sp]
-primary = _near_dup_rate(masked, 0.85)   # fraction of speeches with a >=0.85 difflib neighbour
 ```
 
-**Apply.** The speeches themselves come from the AI's `DayAction` (the **flat structured-output** schema from tutorial 001) — the eval reads `kind="speak"` text straight out of the tool call. Masking is paired with a *threshold sweep* (near-dup at 0.80/0.85/0.90) and a corpus-level **self-BLEU** as cross-checks, so the headline number doesn't hinge on one arbitrary cutoff. The lesson generalises: when a model fails *structurally*, your metric has to normalise away the surface variation the model uses to look diverse.
+**Present — step 2, score the overlap.** To decide whether two (masked, lower-cased) speeches "are the same," score them with Python's stdlib `difflib.SequenceMatcher.ratio()` — a number in **[0, 1]**. It finds the matching characters between the two strings and returns `2·M / T` (M = matched characters, T = the two strings' combined length): **1.0 = identical**, 0.0 = nothing in common. Our two masked lines now score 1.0; before masking they'd have scored high-but-under-1 (only the name differed). We call two speeches **near-duplicates** when that ratio clears a **threshold of 0.85** — loosely, "≈85% of the characters line up" — loose enough to catch a reworded twin, tight enough to spare a genuinely different sentence.
+
+**Present — step 3, turn pairwise scores into one number.** A game has many speeches, so the harness groups every speech that's ≥0.85-similar to another into a cluster (a tiny union-find over all pairs) and reports the **fraction of speeches that land in a cluster of size ≥ 2** — i.e. how many had at least one near-twin:
+
+```python
+# src/graphia/tools/repetition_experiment.py — _near_dup_rate
+in_dup = sum(len(c) for c in _clusters(texts, threshold) if len(c) > 1)
+return in_dup / len(texts)      # e.g. 0.57  ==  57% of this game's speeches had a near-twin
+```
+
+So read the table numbers **literally**: HEAD's **0.57** means *57% of the capped, name-masked speeches in a typical HEAD game had a near-duplicate*; `antiparrot`'s **0.15** means 15% did — each the mean over that condition's 10 games. That single per-game fraction, masked and averaged, *is* the experiment's primary metric, the one the decision rule reads.
+
+**Apply.** The speeches themselves come from the AI's `DayAction` (the **flat structured-output** schema from tutorial 001) — the eval reads `kind="speak"` text straight out of the tool call. Because 0.85 is a judgement call, the primary is cross-checked two ways so the headline never hinges on one arbitrary cutoff: a **threshold sweep** (the same rate recomputed at 0.80 / 0.85 / 0.90), and a corpus-level **self-BLEU** that measures repetition through a different lens.
+
+*What self-BLEU is.* **BLEU** is the classic machine-translation score: it measures how many of a candidate sentence's n-grams (here 1-, 2-, and 3-word sequences) also appear in one or more *reference* sentences, times a brevity penalty so a terse output can't game it — a number in [0, 1], higher meaning "more of this sentence is already in the references." **Self-BLEU** turns that into a *diversity* measure: score each speech using *all the other speeches as its references*, and average over the set. If every speech's phrases keep showing up in its neighbours, self-BLEU is high → the set is repetitive; if speeches share little, it's low → diverse.
+
+```python
+# src/graphia/tools/repetition_experiment.py — _self_bleu
+return mean(_bleu(toks[i], toks[:i] + toks[i + 1:]) for i in range(len(toks)))
+#            ^ each speech scored against ALL the others as references, then averaged
+```
+
+The point of running it *alongside* the difflib rate is that the two are wrong in different ways: difflib asks "does this whole sentence have a near-twin?", while self-BLEU asks "are this sentence's *phrases* recycled across the set?" — so self-BLEU catches **diffuse** repetition (a stock phrase sprinkled through otherwise-different sentences) that whole-sentence clustering would miss. Here they agree, which is the reassurance you want: HEAD scores self-BLEU **0.78** (heavy phrase recycling) against `antiparrot`'s **0.53** — below even the baseline's 0.56 — the same ranking the masked near-dup rate gives. The general lesson: when a model fails *structurally*, the metric has to (a) normalise away the surface variation it uses to look diverse, (b) be explicit about what "the same" *means* — a concrete 0.85 on a concrete overlap score, not a vibe — and (c) be triangulated by a second metric that fails differently.
 
 ### 4. The confound: game length
 
@@ -137,19 +156,38 @@ speeches = _ai_speeches(graph, run_config, ai_names)[:max_speeches]
 
 ### 5. Honest ranking: bootstrap CIs and a paired test
 
-**Pose.** With N=10 games per condition and a metric that bounces between 0.0 and 0.5 game-to-game, a single mean is a lie waiting to mislead. (Indeed: a same-config replication in the pilot swung 33% → 47%.) How do you rank nine conditions so the ranking survives the noise?
+**Pose.** With N=10 games per condition and a metric that bounces between 0.0 and 0.5 game-to-game, a single mean is a lie waiting to mislead — a condition might average 0.30 today and 0.40 tomorrow purely by luck of which dialogues the model happened to generate. (Indeed: a same-config replication in the pilot swung 33% → 47%.) How do you rank nine conditions so the ranking survives the noise — and how do you know a difference is *real* rather than luck?
 
-**Present.** **Bootstrap CIs + a paired test.** Each condition's per-game values are resampled to a 95% confidence interval, never reported as a bare point. Each candidate fix is then compared to the baseline condition with a **paired bootstrap difference** over the matched seeds (§1), and the family of comparisons is **Holm-corrected** for multiplicity.
+**Present.** Three standard statistics tools, each answering one of those worries. None assumes the data is bell-curved (it isn't — it's a bounded rate), which is exactly why we reach for resampling rather than textbook formulas.
+
+*Confidence interval, via the **bootstrap** — "how sure are we of this number?"* A point estimate like "0.15" hides its own uncertainty. The bootstrap recovers that uncertainty with nothing but resampling: from a condition's 10 per-game values, draw 10 *with replacement* to make a synthetic alternate run, take its mean, and repeat a few thousand times. The spread of those thousands of means approximates the *sampling distribution* of the mean; its middle 95% is the **95% confidence interval** — the band of true values the data is consistent with. A wide CI means "we barely know"; a narrow one means "this estimate is solid." So every number is reported as `0.15 [0.09, 0.20]`, never a bare `0.15`.
+
+```python
+# src/graphia/tools/repetition_experiment.py — _boot_ci
+boots = sorted(mean(vals[_RNG.randrange(len(vals))] for _ in vals) for _ in range(n))
+return (mean(vals), boots[int(0.025 * n)], boots[int(0.975 * n)])   # mean, 2.5th & 97.5th percentile
+```
+
+*Paired comparison — "is this fix actually better than the baseline?"* Comparing two conditions' *averages* throws away the pairing earned in §1. Instead, for each seed *i*, take the **difference** between the fix and HEAD *on that same game structure*, and ask whether those differences sit below zero. Because both conditions saw the identical role deal and speaking order on game *i*, subtracting cancels the between-game variance and isolates the prompt's effect — a much more sensitive test than comparing two noisy means. We bootstrap *those differences* for a CI and a two-sided p-value (the share of resamples that land on the wrong side of zero — small means "the effect is consistently in one direction, not a coin-flip").
 
 ```python
 # src/graphia/tools/repetition_experiment.py — _paired_vs_head
-diffs = [c - h for h, c in zip(head, cond)]   # paired on the shared seed set; negative = less repetition
+diffs = [c - h for h, c in zip(head, cond)]   # per-seed (matched) difference; negative = less repetition
 boots = sorted(mean(diffs[_RNG.randrange(len(diffs))] for _ in diffs) for _ in range(n))
 lo, hi = boots[int(0.025 * n)], boots[int(0.975 * n)]
-p = 2 * min(frac_pos, 1 - frac_pos)           # two-sided bootstrap p
+p = 2 * min(frac_pos, 1 - frac_pos)           # two-sided bootstrap p-value
 ```
 
-**Apply.** This is the natural successor to **reproducible statistical uniformity** (tutorial 007). There, the claim was "a uniform shuffle stays inside a σ-band," and a fixed seed made the band non-flaky. Here the claim is comparative ("fix X repeats less than baseline") over a genuinely noisy per-unit signal, so the σ-band gives way to CIs + a paired test + Holm. The pairing from §1 is what makes the paired bootstrap legal: `zip(head, cond)` only means anything because index *i* is the *same game structure* in both.
+*Holm correction — "did one of eight comparisons just get lucky?"* We don't test one fix; we test **eight** against HEAD. Run enough comparisons and one will cross p < 0.05 by pure chance — the multiple-comparisons trap (twenty independent coin-flip tests, and on average one "passes"). **Holm–Bonferroni** guards against it: sort the eight p-values ascending and make each clear a progressively stricter bar — the smallest must beat `0.05 / 8`, the next `0.05 / 7`, and so on. That controls the chance of *any* false positive across the whole family, while staying more powerful (rejecting more true effects) than plain Bonferroni.
+
+```python
+# src/graphia/tools/repetition_experiment.py — _holm
+for rank, (key, p) in enumerate(ordered):            # ordered = comparisons sorted by p ascending
+    running = max(running, min(1.0, (m - rank) * p))   # scale each p by the # of tests still standing
+    adj[key] = running                                 # monotone: an adjusted p never decreases
+```
+
+**Apply.** Together these turn a noisy pile of per-game numbers into a table you can *act on*: `antiparrot` at `0.15 [0.09, 0.20]`, **Δ−0.42 vs HEAD** (a 42-percentage-point fall in near-duplicated speeches, 57% → 15%), Holm-p < 0.001 — i.e. a solid estimate, a large matched improvement, and one that isn't an artifact of trying eight things. This is the natural successor to **reproducible statistical uniformity** (tutorial 007): there the claim was "a uniform shuffle stays inside a σ-band," made non-flaky by a fixed seed on a *deterministic* sample; here the data is genuinely random and the claim is *comparative*, so the σ-band gives way to CIs (how sure?) + a paired test (better than baseline?) + Holm (not just luck across eight tries?). And the pairing from §1 is what makes the paired test legal at all — `zip(head, cond)` only means something because index *i* is the *same game structure* in both conditions.
 
 ### 6. Running the conditions without touching source
 
