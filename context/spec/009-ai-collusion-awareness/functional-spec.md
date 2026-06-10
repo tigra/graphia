@@ -1,7 +1,7 @@
 # Functional Specification: AI Collusion Awareness (Copycat Messages Are Suspicious)
 
 - **Roadmap Item:** Not a roadmap feature — a small enrichment of AI Day-phase behavior, requested ad hoc. Builds on [008 — Same-Round Message Visibility](../008-same-round-message-visibility/functional-spec.md). (Roadmap order unaffected; Phase 4 remains next.)
-- **Status:** Draft
+- **Status:** Completed
 - **Author:** Alexey Tigarev
 
 ---
@@ -26,25 +26,25 @@ This rests on the visibility delivered by spec 008: an AI can only notice copyca
 
 - **As a** player, **I want** the AI villagers to treat suspiciously-similar messages as a possible collusion tell, **so that** the Day discussion feels more perceptive and copycatting carries some risk.
   - **Acceptance Criteria:**
-    - [ ] The guidance given to AI players during the Day includes the idea that identical or near-identical messages from different players may indicate collusion and are worth suspicion.
-    - [ ] The guidance is **light**: AI players are made aware of the signal but are not instructed to react in any specific, mandatory way.
-    - [ ] This awareness applies to AI players' **spoken turns** during the Day. It is **not** added to their execution-vote (Yes/No ballot) decisions.
+    - [x] The guidance given to AI players during the Day includes the idea that identical or near-identical messages from different players may indicate collusion and are worth suspicion.
+    - [x] The guidance is **light**: AI players are made aware of the signal but are not instructed to react in any specific, mandatory way.
+    - [x] This awareness applies to AI players' **spoken turns** during the Day. It is **not** added to their execution-vote (Yes/No ballot) decisions.
 
 ### 2.2 The resulting behavior stays emergent
 
 - **As a** player, **I want** the AI's response to copycatting to feel natural, **so that** the game doesn't become robotic or repetitive.
   - **Acceptance Criteria:**
-    - [ ] No automatic/mechanical detection flags duplicate messages; whether similarity is noticed or mentioned is left entirely to the AI's own judgment.
-    - [ ] The AI is not forced into a fixed phrase or a mandatory call-out — an AI may ignore the similarity, mention it, or simply factor it into whom it suspects.
-    - [ ] Players may also, emergently, *avoid* copycatting once the signal is in play — this is allowed to arise on its own, not enforced.
+    - [x] No automatic/mechanical detection flags duplicate messages; whether similarity is noticed or mentioned is left entirely to the AI's own judgment.
+    - [x] The AI is not forced into a fixed phrase or a mandatory call-out — an AI may ignore the similarity, mention it, or simply factor it into whom it suspects.
+    - [x] Players may also, emergently, *avoid* copycatting once the signal is in play — this is allowed to arise on its own, not enforced.
 
 ### 2.3 No automated test; no other change to the Day
 
 - **As the** maintainer, **I want** this kept to a light guidance change, **so that** it adds flavor without new mechanics or test overhead.
   - **Acceptance Criteria:**
-    - [ ] The behavior is confirmed by **play-testing only**; there is no automated test asserting it (AI output is non-deterministic, and the intent is emergent behavior, not a guaranteed reaction).
-    - [ ] No new on-screen control, setting, or message is introduced — the only observable change is potentially richer AI Day dialogue.
-    - [ ] Turn flow, number of rounds, and vote rules are unchanged.
+    - [x] The behavior is confirmed by **play-testing only**; there is no automated test asserting it (AI output is non-deterministic, and the intent is emergent behavior, not a guaranteed reaction).
+    - [x] No new on-screen control, setting, or message is introduced — the only observable change is potentially richer AI Day dialogue.
+    - [x] Turn flow, number of rounds, and vote rules are unchanged.
 
 ---
 
