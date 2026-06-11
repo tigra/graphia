@@ -22,7 +22,7 @@
 </head>
 <body>
 <h1>Graphia — Project Timeline (interactive)</h1>
-<p class="subtitle">CRs, ADRs, and spec execution from 2026-04-29 → 2026-06-10.</p>
+<p class="subtitle">CRs, ADRs, and spec execution from 2026-04-29 → 2026-06-11.</p>
 <p class="note">
   Click any milestone (diamond) or slice (bar) to open its source artifact on GitHub.
   This page exists because GitHub's markdown renderer sandboxes mermaid diagrams in an iframe
@@ -110,6 +110,11 @@ gantt
     LLM accessor rename + GraphRecursion flake fix       :milestone, done, fixday, 2026-06-09, 0d
     Tutorials 007–009 published                          :milestone, done, tut789, 2026-06-10, 0d
 
+    section Phase 4 (v1.3) — AI Provider Flexibility
+    Spec 010 — Local Ollama Provider (Draft + tech)      :milestone, active, sp10, 2026-06-11, 0d
+    ADR 009 — Pluggable LLM provider abstraction         :milestone, done, a9, 2026-06-11, 0d
+    ADR 010 — Anthropic-compat Ollama protocol           :milestone, done, a10, 2026-06-11, 0d
+
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
     click m2 href "https://github.com/tigra/graphia/blob/main/context/change-requests/002-long-term-memory-for-cross-game-stats.md"
@@ -167,6 +172,9 @@ gantt
     click divexp href "https://github.com/tigra/graphia/blob/main/context/spec/009-ai-collusion-awareness/repetition-experiment-design.md"
     click fixday href "https://github.com/tigra/graphia/commits/main"
     click tut789 href "https://github.com/tigra/graphia/blob/main/context/tutorials/009-ai-collusion-awareness/tutorial.md"
+    click sp10 href "https://github.com/tigra/graphia/tree/main/context/spec/010-local-ollama-provider"
+    click a9 href "https://github.com/tigra/graphia/blob/main/context/adr/009-pluggable-llm-provider-abstraction.md"
+    click a10 href "https://github.com/tigra/graphia/blob/main/context/adr/010-anthropic-compatible-ollama-protocol.md"
 </pre>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
 <script>

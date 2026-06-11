@@ -3,7 +3,7 @@
 A high-level history of the project, reconstructed from `git log` and the
 `context/` artifacts: how scope changed (Change Requests), how the architecture
 was decided (Architecture Decision Records), and how the work was executed (specs
-broken into vertical slices). Covers **2026-04-29 → 2026-06-10**.
+broken into vertical slices). Covers **2026-04-29 → 2026-06-11**.
 
 Graphia is built with the **AWOS spec-driven workflow** — every increment flows
 `product → roadmap → architecture → spec → tech → tasks → implement → verify → tutorial`,
@@ -94,6 +94,11 @@ gantt
     LLM accessor rename + GraphRecursion flake fix       :milestone, done, fixday, 2026-06-09, 0d
     Tutorials 007–009 published                          :milestone, done, tut789, 2026-06-10, 0d
 
+    section Phase 4 (v1.3) — AI Provider Flexibility
+    Spec 010 — Local Ollama Provider (Draft + tech)      :milestone, active, sp10, 2026-06-11, 0d
+    ADR 009 — Pluggable LLM provider abstraction         :milestone, done, a9, 2026-06-11, 0d
+    ADR 010 — Anthropic-compat Ollama protocol           :milestone, done, a10, 2026-06-11, 0d
+
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
     click m2 href "https://github.com/tigra/graphia/blob/main/context/change-requests/002-long-term-memory-for-cross-game-stats.md"
@@ -151,6 +156,9 @@ gantt
     click divexp href "https://github.com/tigra/graphia/blob/main/context/spec/009-ai-collusion-awareness/repetition-experiment-design.md"
     click fixday href "https://github.com/tigra/graphia/commits/main"
     click tut789 href "https://github.com/tigra/graphia/blob/main/context/tutorials/009-ai-collusion-awareness/tutorial.md"
+    click sp10 href "https://github.com/tigra/graphia/tree/main/context/spec/010-local-ollama-provider"
+    click a9 href "https://github.com/tigra/graphia/blob/main/context/adr/009-pluggable-llm-provider-abstraction.md"
+    click a10 href "https://github.com/tigra/graphia/blob/main/context/adr/010-anthropic-compatible-ollama-protocol.md"
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:
@@ -602,6 +610,50 @@ renames remain intentionally uncommitted.
 
 ---
 
+### Act 10 — Phase 4 kickoff: a pluggable LLM provider, and a path back to Anthropic (2026-06-11)
+
+**Phase 4 — AI Provider Flexibility** opened. The literal next roadmap checklist
+item (*AWS Profile / SSO Credentials*) turned out to be **effectively already
+shipped** — SSO has been the canonical Bedrock auth path since May — so the real
+target is the **Local Ollama Provider**: play a full game **offline, at zero
+cost**, against a local model. **Spec 010** was drafted (choose Ollama in config;
+a complete offline game; two independently configurable models with a documented
+default; plain-language errors when Ollama isn't ready; identical mechanics,
+model-dependent quality) plus its technical-considerations.
+
+The tech work surfaced **two architectural decisions**, each logged as an ADR —
+and the interview itself was sharpened twice by the author:
+
+- **ADR 009 (Accepted) — pluggable LLM-provider abstraction.** A normal abstract
+  provider interface with a Bedrock implementation and an Ollama implementation,
+  selected by a branch in the existing `get_large`/`get_small` factory — chosen
+  over a heavier self-registering *registry* (over-engineered for two providers)
+  and a bare *inline branch* (no clean separation). Blast radius is tiny (every
+  call site already goes through that one seam), and it makes local mode **fully
+  offline** for the first time — which revises the architecture doc's "local mode
+  hits AWS only for Bedrock."
+- **ADR 010 (Accepted) — Anthropic-compatible protocol for Ollama.** The Ollama
+  implementation talks to Ollama's **Anthropic Messages–compatible `/v1/messages`**
+  endpoint (via `langchain-anthropic`, local `base_url`) rather than the native
+  or OpenAI-compatible surfaces. The rationale is strategic: Anthropic was
+  Graphia's **original** intended model family, and Nova-on-Bedrock (**ADR 003**)
+  was a deliberate cost detour — so an Anthropic client *locally* keeps a path to
+  future single-client unification if the project ever returns from Nova to
+  Claude. The load-bearing risk — whether tool-use / structured output works over
+  Ollama's newest compat surface — is held behind an **implementation smoke-test
+  gate** with native-`ChatOllama` / OpenAI-compat fallbacks (cheap to swap thanks
+  to the ADR-009 abstraction).
+
+Two author corrections shaped the records: that the **protocol is a separate
+dimension** from the abstraction (so it became its *own* ADR rather than a
+rejected alternative), and that the Anthropic-compatible endpoint should be
+**verified, not assumed** — a quick docs check confirmed Ollama really does serve
+`/v1/messages`. The tech spec was then **reconciled** to both ADRs (provider
+abstraction + Anthropic client + the smoke-test gate, `langchain-anthropic`
+dependency). Next: `/awos:tasks 010`, and folding ADR 009 into `architecture.md`.
+
+---
+
 ## The Slice 7 saga (2026-05-13 → 05-15)
 
 The single most eventful stretch. ADR 002 had chosen *runtime-embedded* Gateway
@@ -697,6 +749,8 @@ coverage._
 | 006 | 2026-05-23 | Test role-pinning via `GRAPHIA_ROLE` (amended Slice 5)  | Accepted              |
 | 007 | 2026-05-28 | Two-tier long-term memory stats (exact now, semantic later) | Superseded by ADR 008 |
 | 008 | 2026-05-30 | Long-term memory via the self-managed pipeline          | Accepted              |
+| 009 | 2026-06-11 | Pluggable LLM provider abstraction (Bedrock + Ollama)   | Accepted              |
+| 010 | 2026-06-11 | Anthropic-compatible protocol for the Ollama provider   | Accepted              |
 
 ## Specs & tutorials
 
@@ -711,6 +765,7 @@ coverage._
 | 007  | Fair Day Speaking Order                     | 2      | Completed |
 | 008  | Same-Round Message Visibility               | 2      | Completed |
 | 009  | AI Collusion Awareness                      | 1      | Completed |
+| 010  | Local Ollama Provider                       | TBD    | Draft     |
 
 _Spec 006 was verified Completed on 2026-06-03 (all 32 acceptance criteria, Phase 3 roadmap bullets ticked) and Tutorial 006 published. Specs 007–009 (the Day-phase integrity trio) are now all **verified Completed**; 009's collusion nudge was revised to an **anti-parrot** reword after a real-Nova experiment showed the original wording drove a Day-dialogue repetition spiral._
 
@@ -744,11 +799,14 @@ live deploy is green end-to-end (`make verify-pipeline`, six checks against
 the `eafa1ee` runtime + Lambda).
 
 The **Day-phase integrity trio is done** — 007, 008, 009 all verified
-Completed **and tutorialised**, with 009's tutorial framing the real-Nova
-experiment that chose the anti-parrot fix. The next roadmap item is **Phase 4 — AI
-Provider Flexibility**: AWS Profile / SSO credentials (effectively shipped
-across the deploy/runtime changes; needs a roadmap tick) and a **Local Ollama
-Provider** (fresh scope).
+Completed **and tutorialised**. **Phase 4 — AI Provider Flexibility** is now
+**underway**: the *AWS Profile / SSO* sub-item is effectively shipped (needs a
+roadmap tick), and the **Local Ollama Provider** is specced — **Spec 010** (Draft
++ tech) plus **ADR 009** (pluggable provider abstraction) and **ADR 010**
+(Anthropic-compat `/v1/messages`), both Accepted. Next on it: `/awos:tasks 010`
+to slice for implementation, fold **ADR 009** into `architecture.md`
+(`/awos:architecture`), and the implementation-time **structured-output
+smoke-test** that ADR 010 gates on.
 
 Immediate follow-ups from the 06-09→10 session:
 
