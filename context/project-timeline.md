@@ -3,7 +3,7 @@
 A high-level history of the project, reconstructed from `git log` and the
 `context/` artifacts: how scope changed (Change Requests), how the architecture
 was decided (Architecture Decision Records), and how the work was executed (specs
-broken into vertical slices). Covers **2026-04-29 → 2026-06-11**.
+broken into vertical slices). Covers **2026-04-29 → 2026-06-12**.
 
 Graphia is built with the **AWOS spec-driven workflow** — every increment flows
 `product → roadmap → architecture → spec → tech → tasks → implement → verify → tutorial`,
@@ -95,9 +95,13 @@ gantt
     Tutorials 007–009 published                          :milestone, done, tut789, 2026-06-10, 0d
 
     section Phase 4 (v1.3) — AI Provider Flexibility
-    Spec 010 — Local Ollama Provider (Draft + tech)      :milestone, active, sp10, 2026-06-11, 0d
+    Spec 010 — Local Ollama Provider (spec + tech)       :milestone, done, sp10, 2026-06-11, 0d
     ADR 009 — Pluggable LLM provider abstraction         :milestone, done, a9, 2026-06-11, 0d
     ADR 010 — Anthropic-compat Ollama protocol           :milestone, done, a10, 2026-06-11, 0d
+    Spec 010 implemented — 5 slices + ollama-smoke       :done, sp10impl, 2026-06-11, 1d
+    ADR-010 gate: qwen2.5 rejected, qwen3-coder verified :milestone, done, gate, 2026-06-12, 0d
+    Follow-ups — offline gate · serde allowlist · fixture rename :milestone, done, fups, 2026-06-12, 0d
+    Spec 010 verified Completed — Phase 4 closed         :milestone, done, sp10v, 2026-06-12, 0d
 
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
@@ -159,6 +163,10 @@ gantt
     click sp10 href "https://github.com/tigra/graphia/tree/main/context/spec/010-local-ollama-provider"
     click a9 href "https://github.com/tigra/graphia/blob/main/context/adr/009-pluggable-llm-provider-abstraction.md"
     click a10 href "https://github.com/tigra/graphia/blob/main/context/adr/010-anthropic-compatible-ollama-protocol.md"
+    click sp10impl href "https://github.com/tigra/graphia/blob/main/context/spec/010-local-ollama-provider/tasks.md"
+    click gate href "https://github.com/tigra/graphia/blob/main/context/spec/010-local-ollama-provider/tasks.md"
+    click fups href "https://github.com/tigra/graphia/blob/main/context/spec/010-local-ollama-provider/tasks.md"
+    click sp10v href "https://github.com/tigra/graphia/blob/main/context/spec/010-local-ollama-provider/functional-spec.md"
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:
@@ -171,7 +179,7 @@ The red marks are the three superseded ADRs (002, 004, 007); the CRs are green b
 
 ---
 
-## What was going on — nine acts
+## What was going on — ten acts
 
 ### Act 1 — Phase 1: a playable skeleton (2026-04-29)
 
@@ -610,7 +618,7 @@ renames remain intentionally uncommitted.
 
 ---
 
-### Act 10 — Phase 4 kickoff: a pluggable LLM provider, and a path back to Anthropic (2026-06-11)
+### Act 10 — Phase 4: a pluggable LLM provider, offline play, and the gate that fired twice (2026-06-11 → 06-12)
 
 **Phase 4 — AI Provider Flexibility** opened. The literal next roadmap checklist
 item (*AWS Profile / SSO Credentials*) turned out to be **effectively already
@@ -650,7 +658,45 @@ rejected alternative), and that the Anthropic-compatible endpoint should be
 **verified, not assumed** — a quick docs check confirmed Ollama really does serve
 `/v1/messages`. The tech spec was then **reconciled** to both ADRs (provider
 abstraction + Anthropic client + the smoke-test gate, `langchain-anthropic`
-dependency). Next: `/awos:tasks 010`, and folding ADR 009 into `architecture.md`.
+dependency), ADR 009 was folded into `architecture.md` (§1/§3/§4), and
+`/awos:tasks 010` produced five vertical slices.
+
+**Implementation (06-11 → 06-12)** ran the slices in order, each leaving the app
+runnable: the `LLMProvider` abstraction with `BedrockProvider` as a **pure
+zero-behavior refactor** (full suite green with zero test edits — the proof);
+the `GRAPHIA_LLM_PROVIDER` config surface with typo and remote-contradiction
+guards; `OllamaProvider` via `ChatAnthropic` against the local `/v1/messages`
+(constructing with *zero* AWS or Anthropic credentials); a fail-fast boot
+preflight with plain-language errors ("Couldn't reach Ollama… `ollama serve`",
+missing models named with their `ollama pull` lines); and `make ollama-smoke` —
+a per-schema structured-output instrumentation harness that counts raw
+tool-call outcomes *underneath* the game's retry-then-fallback masking. 45 new
+offline tests; the mocked suite never touches a provider.
+
+**The ADR-010 gate fired twice, for two different reasons.** First run: the
+"offline" game died at 2.5s on `UnauthorizedSSOTokenError` — not the model but
+an **environment leak**: `make_career_emitter` gates on the Memory id alone, so
+a wire-env'd `.env` had even local games emitting career events to AgentCore
+Memory (functional-spec §2.2 violation, caught only because SSO happened to be
+expired). Second, with the harness env-isolated: the candidate default
+`qwen2.5:7b` was **rejected** — 40/40 `DayAction` tool-call failures, the model
+answering in prose and every Day turn falling back to canned lines — while
+**`qwen3-coder:30b` verified clean** (0 failures across Roster/Pointing/
+DayAction; the user's live game later exercised `Ballot` too, via a real vote).
+The verified pair became the config defaults and the README gained a "Play
+offline with Ollama" quickstart. ADR 010's Anthropic-compat bet **held** — the
+fallback clause was never invoked.
+
+**Three follow-ups closed the act:** the **offline gate** (provider=`ollama`
+blanks all cloud store ids at config load — §2.2 now holds by construction, no
+`.env` hand-editing); the **`PlayerState` checkpoint-serializer allowlist**
+(a shared `make_checkpoint_serde()` at both saver sites, killing 45,609
+deprecation warnings per suite run before a future langgraph upgrade turned
+them into hard failures); and the **`fake_sonnet`/`fake_haiku` → `fake_large`/
+`fake_small` fixture rename** (249 refs across 20 files — the last survivors of
+the Nova misnomer). Spec 010 was then **verified Completed** (14/14 criteria)
+and **Phase 4 closed**, with both roadmap sub-items ticked — including the
+long-unticked *AWS Profile / SSO Credentials*, shipped incrementally since May.
 
 ---
 
@@ -765,7 +811,7 @@ coverage._
 | 007  | Fair Day Speaking Order                     | 2      | Completed |
 | 008  | Same-Round Message Visibility               | 2      | Completed |
 | 009  | AI Collusion Awareness                      | 1      | Completed |
-| 010  | Local Ollama Provider                       | TBD    | Draft     |
+| 010  | Local Ollama Provider                       | 5      | Completed |
 
 _Spec 006 was verified Completed on 2026-06-03 (all 32 acceptance criteria, Phase 3 roadmap bullets ticked) and Tutorial 006 published. Specs 007–009 (the Day-phase integrity trio) are now all **verified Completed**; 009's collusion nudge was revised to an **anti-parrot** reword after a real-Nova experiment showed the original wording drove a Day-dialogue repetition spiral._
 
@@ -800,21 +846,22 @@ the `eafa1ee` runtime + Lambda).
 
 The **Day-phase integrity trio is done** — 007, 008, 009 all verified
 Completed **and tutorialised**. **Phase 4 — AI Provider Flexibility** is now
-**underway**: the *AWS Profile / SSO* sub-item is effectively shipped (needs a
-roadmap tick), and the **Local Ollama Provider** is specced — **Spec 010** (Draft
-+ tech) plus **ADR 009** (pluggable provider abstraction) and **ADR 010**
-(Anthropic-compat `/v1/messages`), both Accepted. Next on it: `/awos:tasks 010`
-to slice for implementation, fold **ADR 009** into `architecture.md`
-(`/awos:architecture`), and the implementation-time **structured-output
-smoke-test** that ADR 010 gates on.
+**closed**: Spec 010 (Local Ollama Provider) implemented, smoke-gated, live
+play-tested, and verified Completed; ADRs 009/010 Accepted and folded into the
+architecture; both roadmap sub-items ticked. The next roadmap item is **Phase 5
+— Setup Flexibility** (Configurable Role Counts) and **Richer Night Resolution**
+(Multi-Round Mafia Consensus) — start with `/awos:spec`.
+
+Fresh follow-ups from the 06-11→12 session: **Tutorial 010** (rich material:
+the provider abstraction, the gate that fired twice, the offline gate); the
+**tutorials index** still lacks 008/009 rows (and now 010); and
+`product-definition.md` still calls the Ollama provider "future".
 
 Immediate follow-ups from the 06-09→10 session:
 
-1. **Ship 009 remotely** — the anti-parrot fix is committed and live in `make
-   play`, but the deployed Runtime still runs the old line until a `make
-   redeploy` (watch the Podman VM clock).
-2. **Fixture rename** — `fake_sonnet`/`fake_haiku` carry the same Nova misnomer
-   as the now-renamed accessors (~100 test refs); a mechanical follow-up.
+1. ~~Ship 009 remotely~~ — done (deployed 2026-06-10 after the Podman
+   clock-skew detour).
+2. ~~Fixture rename~~ — done in the Phase 4 close-out (06-12).
 3. **Dialogue-diversity gate** — the `make repetition-experiment` harness could
    graduate from report-only to a `--min-distinct` regression gate once a
    threshold is settled.

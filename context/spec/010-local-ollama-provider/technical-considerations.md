@@ -1,7 +1,7 @@
 # Technical Specification: Local Ollama Provider
 
 - **Functional Specification:** [`./functional-spec.md`](./functional-spec.md)
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 - **Implements:** [ADR 009 — Pluggable LLM Provider Abstraction](../../adr/009-pluggable-llm-provider-abstraction.md) · [ADR 010 — Anthropic-Compatible Ollama Protocol](../../adr/010-anthropic-compatible-ollama-protocol.md)
 
@@ -17,7 +17,7 @@ The whole game reaches the LLM through **one seam**: `get_large()` / `get_small(
 
 The structured-output path is the **load-bearing risk** and is gated: ADR 010 requires a **smoke-test** that tool-use over `/v1/messages` reliably produces the flat schemas with the recommended models **before** relying on it; the ADR-009 abstraction makes the **fallback** (swap `OllamaProvider`'s client to native `ChatOllama` or an OpenAI-compatible client) a contained change. No game schema changes — `Roster` / `Pointing` / `Ballot` / `DayAction` are already flat (kept that way for Bedrock Converse), and a malformed/invalid local-model turn flows into the **existing** retry-then-fallback in the node helpers.
 
-This keeps the two-tier pattern (architecture §4) — it adds a provider axis, not a third tier — and makes local mode **fully offline** for the first time (architecture §3 currently says "local mode hits AWS only for Bedrock"; that stops being true). That shift is recorded in **ADR 009** and still needs folding into `architecture.md` (`/awos:architecture`).
+This keeps the two-tier pattern (architecture §4) — it adds a provider axis, not a third tier — and makes local mode **fully offline** for the first time. That shift is recorded in **ADR 009** and has been folded into `architecture.md` (§1/§3/§4, 2026-06-11).
 
 ---
 
