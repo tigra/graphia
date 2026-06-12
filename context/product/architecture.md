@@ -7,7 +7,7 @@
 - **Language & Runtime:** Python 3.10+ (LangGraph 1.x drops 3.9; modern union syntax is useful).
 - **Dependency & Project Management:** `uv` with `pyproject.toml` and `uv.lock`. Scripts run via `uv run python -m graphia`; no PEP 723 inline script metadata.
 - **Orchestration Framework:** LangGraph 1.x (`StateGraph`, `interrupt()`/`Command(resume=…)`, reducers, structured-output schemas via `with_structured_output`). `ToolNode` and `bind_tools` are **deferred to Phase 7** — v1.x uses structured output rather than agentic tool calls (per CR 002 amendment, applying the *design-driven-by-realistic-needs* principle: Mafia game-design tool-call cases are mostly degenerate vs. structured output).
-- **LLM Client:** `langchain-aws` `ChatBedrockConverse`. Two singletons in a two-tier pattern — a heavyweight LLM for gameplay and a lightweight LLM for short mechanical calls — see §4.
+- **LLM Client:** a small **provider abstraction** (per ADR 009) — an abstract provider interface with two implementations, selected by a config setting at the existing two-tier factory: **Bedrock** (`langchain-aws` `ChatBedrockConverse`, the default) and **Ollama** (local-only; reached through Ollama's Anthropic-compatible `/v1/messages` endpoint via `langchain-anthropic`, per ADR 010). Each provider exposes the same two-tier pattern — a heavyweight LLM for gameplay and a lightweight LLM for short mechanical calls — see §4.
 - **Console UI:** Textual (TUI framework on top of Rich). Chosen for the Phase 6 requirement that AI players "type" into a shared chat panel while the human types into a pinned input line without stream collisions.
 - **Concurrency Model:**
   - **Phases 1–5:** synchronous LangGraph execution (`graph.invoke`, `graph.stream`). Because Textual runs its own asyncio event loop, sync LangGraph calls are dispatched via `asyncio.to_thread` so they don't block the UI.
@@ -38,7 +38,7 @@
 
 Graphia ships with **two parallel run modes**, selected via a `--remote` flag at launch. Both modes share the same LangGraph topology, game logic, and structured-output schemas; they differ only in where the runtime executes and where state lives.
 
-- **Local mode (default):** Single Python process on the developer's laptop (macOS / Linux / Windows terminals). Textual TUI in the foreground, LangGraph driving in the background, Bedrock model calls reaching out to AWS for inference, but **no AgentCore involvement**. Used for game-mechanics development and offline-of-AgentCore play.
+- **Local mode (default):** Single Python process on the developer's laptop (macOS / Linux / Windows terminals). Textual TUI in the foreground, LangGraph driving in the background, **no AgentCore involvement**. Model inference goes to the configured LLM provider (§4): **Bedrock** (the default — the one AWS touchpoint of local mode) or **local Ollama**, under which local mode is **fully offline** — no AWS account, credentials, network, or per-token cost (ADR 009/010, spec 010). Used for game-mechanics development and offline play.
   - Entry point: `uv run python -m graphia`.
   - Filesystem footprint: `./.graphia/` for checkpoint sqlite + JSONL trace log; the local cross-game stats file lives in the game's local data directory.
 - **Remote mode (Phase 2 / v1.1 scope):** The game-engine core runs as a Bedrock AgentCore Runtime workload in `us-east-1`; the local Textual UI invokes the deployed runtime through the AgentCore client. Tools, Memory, and observability are all AgentCore-managed.
@@ -47,8 +47,9 @@ Graphia ships with **two parallel run modes**, selected via a `--remote` flag at
   - **Scale:** AgentCore Runtime is consumption-based (per-second CPU + memory; idle / IO-wait free) — scale-to-zero by default in `us-east-1`. No fixed monthly floor.
 - **Terminal Requirements (both modes):** UTF-8 terminal with ANSI support (Textual requires this). `stdin/stdout/stderr` are reconfigured to `encoding="utf-8", errors="replace"` at startup to defend against non-UTF-8 default locales.
 - **Secrets & Config via `.env`:**
-  - `AWS_BEARER_TOKEN_BEDROCK` (legacy default for Bedrock model invocation) **or** `AWS_PROFILE=<your-aws-profile>` (SSO path — either works for Bedrock; SSO is now the canonical path).
+  - `AWS_BEARER_TOKEN_BEDROCK` (legacy default for Bedrock model invocation) **or** `AWS_PROFILE=<your-aws-profile>` (SSO path — either works for Bedrock; SSO is now the canonical path). Not needed when the Ollama provider is selected.
   - `AWS_REGION=us-east-1`.
+  - `GRAPHIA_LLM_PROVIDER` — `bedrock` (default) | `ollama`; selects the LLM provider implementation (ADR 009). With `ollama`: `GRAPHIA_OLLAMA_BASE_URL` (default `http://localhost:11434`) plus per-tier model overrides (`GRAPHIA_OLLAMA_LARGE_MODEL` / `GRAPHIA_OLLAMA_SMALL_MODEL`). Ollama is **local-mode only** — combining it with `--remote` is a config contradiction rejected at startup.
   - `GRAPHIA_LOG_FILE` — path for the streaming trace log (default `./.graphia/graphia.log`).
   - `GRAPHIA_CHECKPOINT_DIR` (optional) — overrides the checkpoint sqlite location.
   - `--remote` CLI flag toggles remote-mode invocation.
@@ -58,11 +59,15 @@ Graphia ships with **two parallel run modes**, selected via a `--remote` flag at
 
 ## 4. External Services & APIs
 
-- **LLM Provider:** AWS Bedrock, region `us-east-1` (US inference profiles). Two `ChatBedrockConverse` instances in a two-tier pattern:
+- **LLM Provider:** pluggable behind a provider abstraction (ADR 009), selected by `GRAPHIA_LLM_PROVIDER`; **two providers**, each exposing the same two tiers:
+  - **Bedrock (default):** AWS Bedrock, region `us-east-1` (US inference profiles), via `ChatBedrockConverse`. The only provider usable in remote mode.
+  - **Ollama (local mode only):** a model served locally by Ollama, reached through Ollama's **Anthropic-compatible `/v1/messages`** endpoint via `langchain-anthropic` with a local `base_url` (ADR 010 — chosen over the native and OpenAI-compatible surfaces to keep a path back to a single Anthropic client if the Nova cost-detour of ADR 003 is ever reversed). Fully offline; structured output via Anthropic tool-use, gated by an implementation smoke-test with native/OpenAI-compat fallbacks.
+
+  The two tiers, per provider:
   - **Primary (heavyweight LLM):** used for all gameplay roles — Moderator narrative announcements, AI player turns (pointing, speaking, voting), character-sheet generation (Phase 6), and the end-of-game creative recap (Phase 6).
   - **Secondary (lightweight LLM):** used only for short, mechanical calls where the heavyweight tier's latency/cost is overkill. Current use: start-of-game AI player name generation in a single call.
 
-  Behavioural variation within each tier comes from system prompts, temperature, and structured-output schemas — **not** from adding more models. Two LLM tiers is the cap for this project; the specific model identities (family, version, region-prefix) are operational and cost choices captured in code and in the relevant ADR, not architectural pins of this document.
+  Behavioural variation within each tier comes from system prompts, temperature, and structured-output schemas — **not** from adding more models. Two LLM tiers is the cap for this project, and **two providers** is the current provider set (a future provider means another implementation of the ADR-009 interface, justified by its own ADR); the specific model identities (family, version, region-prefix, Ollama model names) are operational and cost choices captured in code and in the relevant ADR, not architectural pins of this document.
 
 - **Bedrock AgentCore (remote mode only — Phase 2 + Phase 3 scope):**
   - **AgentCore Runtime:** hosts the LangGraph game-engine core; consumption-based per-second pricing, scale-to-zero in `us-east-1`.
@@ -75,8 +80,9 @@ Graphia ships with **two parallel run modes**, selected via a `--remote` flag at
 - **Authentication:**
   - **Bedrock model invocation:** Bearer-token (`AWS_BEARER_TOKEN_BEDROCK`) — auto-picked up by boto3 ≥ 1.39's `bedrock-runtime` client. The developer's SSO profile is the alternative (and now canonical) path; both work.
   - **AgentCore deployment & runtime invocation:** the developer's SSO profile (`aws sso login --profile <your-profile>` before each session). Bearer tokens are not used for AgentCore.
+  - **Ollama provider:** no authentication — the Anthropic client sends a dummy api-key to the local endpoint; no AWS credentials are read.
 
-- **No Other External Services:** No standalone database service, no external message broker, no object storage, no auth provider, no email/notification channels. AgentCore Memory is the only managed-state service (and only in remote mode). Local mode hits AWS only for Bedrock model invocation.
+- **No Other External Services:** No standalone database service, no external message broker, no object storage, no auth provider, no email/notification channels. AgentCore Memory is the only managed-state service (and only in remote mode). Local mode hits AWS only for Bedrock model invocation — and not at all when the **Ollama** provider is selected (fully offline; the only external endpoint is the player's own local Ollama server).
 
 - **Web / external research tools:** explicitly out of scope — all in-game data access reads game state only, keeping the game self-contained and deterministic to reason about (per product-definition §3.2).
 
