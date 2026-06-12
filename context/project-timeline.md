@@ -99,9 +99,10 @@ gantt
     ADR 009 — Pluggable LLM provider abstraction         :milestone, done, a9, 2026-06-11, 0d
     ADR 010 — Anthropic-compat Ollama protocol           :milestone, done, a10, 2026-06-11, 0d
     Spec 010 implemented — 5 slices + ollama-smoke       :done, sp10impl, 2026-06-11, 1d
-    ADR-010 gate: qwen2.5 rejected, qwen3-coder verified :milestone, done, gate, 2026-06-12, 0d
+    ADR-010 gate — qwen2.5 rejected, qwen3-coder verified :milestone, done, gate, 2026-06-12, 0d
     Follow-ups — offline gate · serde allowlist · fixture rename :milestone, done, fups, 2026-06-12, 0d
     Spec 010 verified Completed — Phase 4 closed         :milestone, done, sp10v, 2026-06-12, 0d
+    Tutorial 010 published                               :milestone, done, t10, 2026-06-12, 0d
 
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
@@ -167,6 +168,7 @@ gantt
     click gate href "https://github.com/tigra/graphia/blob/main/context/spec/010-local-ollama-provider/tasks.md"
     click fups href "https://github.com/tigra/graphia/blob/main/context/spec/010-local-ollama-provider/tasks.md"
     click sp10v href "https://github.com/tigra/graphia/blob/main/context/spec/010-local-ollama-provider/functional-spec.md"
+    click t10 href "https://github.com/tigra/graphia/blob/main/context/tutorials/010-local-ollama-provider/tutorial.md"
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:
@@ -852,10 +854,11 @@ architecture; both roadmap sub-items ticked. The next roadmap item is **Phase 5
 — Setup Flexibility** (Configurable Role Counts) and **Richer Night Resolution**
 (Multi-Round Mafia Consensus) — start with `/awos:spec`.
 
-Fresh follow-ups from the 06-11→12 session: **Tutorial 010** (rich material:
-the provider abstraction, the gate that fired twice, the offline gate); the
-**tutorials index** still lacks 008/009 rows (and now 010); and
-`product-definition.md` still calls the Ollama provider "future".
+Fresh follow-ups from the 06-11→12 session: **Tutorial 010 is published**
+(the provider abstraction, the gate that fired twice, the offline gate — for
+the LLM-integration reader) and the **tutorials index** now carries the
+008/009/010 rows. Still open: `product-definition.md` calls the Ollama
+provider "future".
 
 Immediate follow-ups from the 06-09→10 session:
 
