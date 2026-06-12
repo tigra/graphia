@@ -33,7 +33,7 @@ Nonexistent / dead-target cases (§2.3 + §2.5) are pinned in later
 slices (Sub 3.1 / 3.2) and are intentionally out of scope for this file.
 
 Bedrock is stubbed at the ``ChatBedrockConverse`` boundary via the unified
-``fake_sonnet`` fixture; no test touches real AWS.
+``fake_large`` fixture; no test touches real AWS.
 """
 
 from __future__ import annotations
@@ -221,7 +221,7 @@ def _ai_point_target_from_prompt(messages) -> str:
 def _advance_until_human_day_turn(graph, run_config, fake) -> None:
     """Drive the graph through Night 1 and AI Day-1 turns to the human's slot.
 
-    AI speakers fall through to the unified Sonnet fake's ``DayAction``
+    AI speakers fall through to the unified large-model fake's ``DayAction``
     queue (scripted as ``speak`` lines below); Night 1 ``Pointing`` calls
     are resolved at invoke time against live graph state via the override
     installed on the fake's ``_invoke``.
@@ -230,7 +230,7 @@ def _advance_until_human_day_turn(graph, run_config, fake) -> None:
     _drive(graph, run_config, {"messages": []})
     assert _collect_interrupt(graph, run_config) == {"kind": "name"}
 
-    # Patch the unified Sonnet fake so Night-1 Pointing resolves against
+    # Patch the unified large-model fake so Night-1 Pointing resolves against
     # live state — we don't know the role-assigned UUIDs until after the
     # name resume runs.
     original_invoke = fake._invoke
@@ -288,8 +288,8 @@ def _advance_until_human_day_turn(graph, run_config, fake) -> None:
 )
 def test_vote_empty_name_shows_usage_hint(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
     malformed_input: str,
 ) -> None:
@@ -304,8 +304,8 @@ def test_vote_empty_name_shows_usage_hint(
     # Pin the Day-1 speaker order so the human's day_turn surfaces on the
     # first super-step after the name resume.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
-    fake_haiku(AI_NAMES)
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake_small(AI_NAMES)
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -360,8 +360,8 @@ def test_vote_empty_name_shows_usage_hint(
 
 def test_voted_yesterday_is_speech(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """``/voted yesterday`` is captured as the human's spoken line.
@@ -375,8 +375,8 @@ def test_voted_yesterday_is_speech(
     # Pin the Day-1 speaker order so the human's day_turn surfaces on the
     # first super-step after the name resume.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
-    fake_haiku(AI_NAMES)
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake_small(AI_NAMES)
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -423,8 +423,8 @@ def test_voted_yesterday_is_speech(
 
 def test_votefor_alice_is_speech(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """``/votefor Alice`` is captured as the human's spoken line.
@@ -437,8 +437,8 @@ def test_votefor_alice_is_speech(
     # Pin the Day-1 speaker order so the human's day_turn surfaces on the
     # first super-step after the name resume.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
-    fake_haiku(AI_NAMES)
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake_small(AI_NAMES)
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -496,8 +496,8 @@ def _drive_capture(graph, run_config, payload) -> list[dict]:
 
 def test_vote_against_self_passes_executes_human(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Human votes against themselves with unanimous Yes → human is executed.
@@ -511,7 +511,7 @@ def test_vote_against_self_passes_executes_human(
     3. The first ballot polled is the human's own (insertion order: the
        human was added by ``collect_name`` before any AI). The human
        answers Yes to executing themself.
-    4. All AI voters return ``Ballot(yes=True)`` from the unified Sonnet
+    4. All AI voters return ``Ballot(yes=True)`` from the unified large-model
        fake's pre-seeded queue, so the tally is unanimous Yes.
     5. ``resolve_vote`` flips the human's ``is_alive`` to False, appends a
        single ``KillRecord`` with ``cause='execution'`` and the human's
@@ -530,8 +530,8 @@ def test_vote_against_self_passes_executes_human(
     # Pin the Day-1 speaker order so the human's day_turn surfaces on the
     # first super-step after the name resume.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
-    fake_haiku(AI_NAMES)
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake_small(AI_NAMES)
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -662,8 +662,8 @@ def test_vote_against_self_passes_executes_human(
 
 def test_vote_against_self_fails_human_survives(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Human votes against themself; all No ballots → vote fails, human lives.
@@ -679,7 +679,7 @@ def test_vote_against_self_fails_human_survives(
        — the human was added by ``collect_name`` before any AI). The
        human answers ``"n"``.
     4. Every AI ballot polled afterwards returns ``Ballot(yes=False)`` from
-       the unified Sonnet fake's pre-seeded queue, so the tally is
+       the unified large-model fake's pre-seeded queue, so the tally is
        unanimous No.
     5. ``resolve_vote`` posts the "vote fails" line, clears ``active_vote``,
        bumps ``day_votes_called`` from 0 → 1, resets ``day_turn_index``,
@@ -698,8 +698,8 @@ def test_vote_against_self_fails_human_survives(
     # Pin the Day-1 speaker order so the human's day_turn surfaces on the
     # first super-step after the name resume.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
-    fake_haiku(AI_NAMES)
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake_small(AI_NAMES)
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -834,8 +834,8 @@ def test_vote_against_self_fails_human_survives(
 
 def test_vote_nonexistent_name_reprompts(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """``/vote zzz`` re-prompts with "No such player. Try again." (§2.3).
@@ -854,8 +854,8 @@ def test_vote_nonexistent_name_reprompts(
     # Pin the Day-1 speaker order so the human's day_turn surfaces on the
     # first super-step after the name resume.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
-    fake_haiku(AI_NAMES)
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake_small(AI_NAMES)
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -918,8 +918,8 @@ def test_vote_nonexistent_name_reprompts(
 
 def test_vote_dead_player_reprompts(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """``/vote <dead-name>`` re-prompts with the same "No such player" error.
@@ -944,8 +944,8 @@ def test_vote_dead_player_reprompts(
     # Pin the Day-1 speaker order so the human's day_turn surfaces on the
     # first super-step after the name resume.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
-    fake_haiku(AI_NAMES)
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake_small(AI_NAMES)
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -960,7 +960,7 @@ def test_vote_dead_player_reprompts(
     # how to update a dict-reducer channel mid-interrupt.
     #
     # We pick the dead-target NAME from the fixed ``AI_NAMES`` roster handed
-    # to ``fake_haiku`` above — "Finn" is guaranteed to be present regardless
+    # to ``fake_small`` above — "Finn" is guaranteed to be present regardless
     # of how RNG assigns roles. The ``_fuzzy_match_alive`` wrapper below
     # shadows Finn as dead in a local copy of the players dict; the live
     # state's actual is_alive flag for Finn doesn't matter (the shadow path

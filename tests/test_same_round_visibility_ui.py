@@ -13,8 +13,8 @@ speaking order so AI players go first, scripts their speeches to known
 lines, drives the Textual app to the human's ``day_turn`` interrupt, and
 asserts those earlier lines are on screen *before* the human submits.
 
-The Bedrock boundary is stubbed via ``fake_haiku`` (roster) and
-``fake_sonnet`` (Day speaking) — no real AWS is reached, satisfying the
+The Bedrock boundary is stubbed via ``fake_small`` (roster) and
+``fake_large`` (Day speaking) — no real AWS is reached, satisfying the
 autouse ``safe_llm`` net.
 """
 
@@ -119,8 +119,8 @@ async def _wait_for_players(app: GraphiaApp, pilot) -> dict:
 
 async def test_same_round_speeches_visible_at_human_turn(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     dynamic_night_pointing,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -147,13 +147,13 @@ async def test_same_round_speeches_visible_at_human_turn(
         return [*ai_ids, human_id]
 
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_last)
-    fake_haiku(AI_NAMES)
+    fake_small(AI_NAMES)
 
     # Distinctive, assertable speeches — one per AI speaking slot. After the
     # night kill there are 5 alive AI players, so 5 distinct lines precede
     # the human's turn; extra lines pad the queue harmlessly.
     distinctive_texts = [f"distinctive-round1-line-{i}" for i in range(1, 41)]
-    fake_sonnet(
+    fake_large(
         pointings=[],
         day_actions=[
             DayAction(kind="speak", text=t) for t in distinctive_texts

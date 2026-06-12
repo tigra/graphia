@@ -10,8 +10,8 @@ normal-end path and the abandoned path prevents a double record.
 
 These tests drive the real ``GraphiaApp`` through Textual's ``App.run_test``
 pilot, mirroring ``tests/test_quit_modal.py``: ``GRAPHIA_ROLE=law-abiding``
-pins the human's role, ``fake_haiku`` covers roster generation, and
-``fake_sonnet`` pre-loads scripted Day/Night queues so the driver never
+pins the human's role, ``fake_small`` covers roster generation, and
+``fake_large`` pre-loads scripted Day/Night queues so the driver never
 reaches real Bedrock. The first ``interrupt()`` is the *name* prompt, which
 fires before ``human_id`` exists — quitting there would record nothing. To
 reach a genuinely in-progress, recordable game, ``_advance_to_in_progress``
@@ -171,8 +171,8 @@ def capturing_store() -> _CapturingStatsStore:
 @pytest.fixture
 def booted_app(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     capturing_store: _CapturingStatsStore,
     monkeypatch: pytest.MonkeyPatch,
 ) -> GraphiaApp:
@@ -181,14 +181,14 @@ def booted_app(
     Returned ready-to-go but NOT yet running — the caller wraps it in
     ``app.run_test()``. Pinning the role and stubbing both LLMs is defensive:
     a pointing super-step may begin before the modal interactions land, and an
-    unstubbed Sonnet call would fail loudly via the autouse ``safe_llm`` net.
+    unstubbed large-model call would fail loudly via the autouse ``safe_llm`` net.
     """
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
+    fake_small(AI_NAMES)
     # AIs always speak (no VoteModal pops) and point at a placeholder target;
     # the unified fake replays the last scripted output once a queue drains, so
     # one entry each is enough to drive setup → Night → the human's Day turn.
-    fake_sonnet(
+    fake_large(
         day_actions=[DayAction(kind="speak", text="Just watching for now.")],
         ballots=[],
         pointings=[Pointing(target_id="placeholder")],

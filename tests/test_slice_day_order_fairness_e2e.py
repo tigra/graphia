@@ -48,8 +48,8 @@ production role deal, Night pointing fallbacks, and every ``_shuffle_order``
 read the module-global ``random`` state, so this pins the whole trajectory.
 There is NO env var, NO ``GRAPHIA_SEED``.
 
-Bedrock is never reached: ``fake_haiku`` scripts the roster, an unbounded
-"always speak" Sonnet fake serves every AI Day turn, and the dynamic Night
+Bedrock is never reached: ``fake_small`` scripts the roster, an unbounded
+"always speak" large-model fake serves every AI Day turn, and the dynamic Night
 pointing fake resolves a live target — so the autouse ``safe_llm`` net is
 satisfied at every call site.
 """
@@ -85,9 +85,9 @@ RELATIVE_TOLERANCE = 0.45
 
 
 # --------------------------------------------------------------------------
-# An unbounded "always speak" Sonnet fake.
+# An unbounded "always speak" large-model fake.
 #
-# The unified ``fake_sonnet`` fixture serves a *finite* DayAction queue (then
+# The unified ``fake_large`` fixture serves a *finite* DayAction queue (then
 # replays the last item). That works, but to make the intent unmistakable and
 # robust across an unknown number of AI turns over M games we use a tiny
 # stateless fake that yields a generic speak action for ANY number of calls and
@@ -97,8 +97,8 @@ RELATIVE_TOLERANCE = 0.45
 # --------------------------------------------------------------------------
 
 
-class _AlwaysSpeakSonnet:
-    """Stateless Sonnet stand-in: AIs always speak; Night points at a live target.
+class _AlwaysSpeakLarge:
+    """Stateless large-model stand-in: AIs always speak; Night points at a live target.
 
     Dispatches on the schema bound via ``with_structured_output`` (mirrors the
     production call shape ``get_large().with_structured_output(S).invoke(m)``):
@@ -114,7 +114,7 @@ class _AlwaysSpeakSonnet:
         self._bound_schema: type | None = None
         self.call_count = 0
 
-    def with_structured_output(self, schema: type) -> "_AlwaysSpeakSonnet":
+    def with_structured_output(self, schema: type) -> "_AlwaysSpeakLarge":
         self._bound_schema = schema
         return self
 
@@ -133,7 +133,7 @@ class _AlwaysSpeakSonnet:
                 candidates = [p.id for p in players.values() if p.is_alive]
             return Pointing(target_id=candidates[0])
         raise AssertionError(
-            f"_AlwaysSpeakSonnet got an unexpected schema: {self._bound_schema!r}"
+            f"_AlwaysSpeakLarge got an unexpected schema: {self._bound_schema!r}"
         )
 
 
@@ -245,7 +245,7 @@ def _capture_day1_orders(graph, run_config) -> list[list[str]]:
 def test_emerging_day_order_is_fair_across_games(
     env: Path,
     tmp_path: Path,
-    fake_haiku,
+    fake_small,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Across M seeded games, the live Day order is uniform + role/type-blind.
@@ -304,21 +304,21 @@ def test_emerging_day_order_is_fair_across_games(
             "GRAPHIA_CHECKPOINT_DIR", str(tmp_path / f"ckpt-{game_index}")
         )
 
-        fake_haiku(AI_NAMES)
+        fake_small(AI_NAMES)
         config = load_config()
         graph, thread_id = build_graph(config)
         run_config = make_run_config(thread_id)
 
-        # One stateless Sonnet fake serves BOTH the Day (speak) and Night
+        # One stateless large-model fake serves BOTH the Day (speak) and Night
         # (pointing) call sites. Resolves live state lazily so it needs no ids.
-        sonnet = _AlwaysSpeakSonnet(
+        large_fake = _AlwaysSpeakLarge(
             lambda: graph.get_state(run_config).values
         )
         monkeypatch.setattr(
-            "graphia.nodes.day.get_large", lambda: sonnet
+            "graphia.nodes.day.get_large", lambda: large_fake
         )
         monkeypatch.setattr(
-            "graphia.nodes.night.get_large", lambda: sonnet
+            "graphia.nodes.night.get_large", lambda: large_fake
         )
 
         # Stream to the first (name) interrupt.

@@ -29,8 +29,8 @@ run:
   fixing role assignment and every tie-break. Seed 0 puts the human in slot
   0 as Law-abiding, a well-trodden trajectory (see ``test_remote_mode_smoke.py``)
   that needs no ``kind="point"`` interrupt answer.
-* **LLM** — the ``fake_haiku`` / ``fake_sonnet`` fixtures script every
-  Bedrock call; the unified Sonnet fake additionally gets a live-state
+* **LLM** — the ``fake_small`` / ``fake_large`` fixtures script every
+  Bedrock call; the unified large-model fake additionally gets a live-state
   dispatcher (identical to the one in ``test_remote_mode_smoke._run_full_game``)
   so Pointing/DayAction targets resolve deterministically at invoke time.
 * **Human input** — both runs feed the same name (``Alice``) and the same
@@ -134,7 +134,7 @@ def _set_remote_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 async def _run_full_game_collecting(
-    app: GraphiaApp, fake_sonnet_handle: Any
+    app: GraphiaApp, fake_large_handle: Any
 ) -> dict[str, Any]:
     """Drive ``app`` boot-to-"Game over." and return its observable outcome.
 
@@ -145,7 +145,7 @@ async def _run_full_game_collecting(
     :class:`FakeAgentCoreClient` proxies ``stream`` into that very graph, so
     ``graph.get_state`` is populated identically either way.
 
-    The live-state Sonnet dispatcher is identical to the one in
+    The live-state large-model dispatcher is identical to the one in
     ``test_remote_mode_smoke._run_full_game`` — Pointing/DayAction targets
     can only resolve once role-assignment has minted the uuid player ids, so
     selection is deferred to invoke time. Both modes share this code, so the
@@ -167,7 +167,7 @@ async def _run_full_game_collecting(
 
         # Install the live-state dispatcher so AI targets resolve at invoke
         # time against the freshly-assigned uuid player ids.
-        fake = fake_sonnet_handle
+        fake = fake_large_handle
         original_invoke = fake._invoke
 
         def _invoke_live(schema: type, messages: Any) -> Any:
@@ -271,8 +271,8 @@ async def test_local_and_remote_full_game_produce_identical_public_output(
     env: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
 ) -> None:
     """A full game in local vs remote mode yields identical public output.
 
@@ -296,8 +296,8 @@ async def test_local_and_remote_full_game_produce_identical_public_output(
     # Production uses the module-global ``random`` API; resetting it here
     # before the first call into the graph fixes the trajectory.
     random.seed(SEED_DUAL_MODE_DETERMINISTIC_TRAJECTORY)
-    fake_haiku(AI_NAMES)
-    local_fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake_small(AI_NAMES)
+    local_fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     # Each run is an independent game session; give each its own zeroed career
     # store so neither sees the other's recorded game. Without this, run 1's
@@ -318,8 +318,8 @@ async def test_local_and_remote_full_game_produce_identical_public_output(
     # would fail. Reset the module-global ``random`` state to the same seed
     # before the first call into the graph for this mode.
     random.seed(SEED_DUAL_MODE_DETERMINISTIC_TRAJECTORY)
-    fake_haiku(AI_NAMES)
-    remote_fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake_small(AI_NAMES)
+    remote_fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     # Reset the proxying AgentCore client's class-level state, then wrap
     # build_graph so the freshly compiled graph (built with a *real*

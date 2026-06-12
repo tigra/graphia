@@ -150,8 +150,8 @@ async def _run_with_bad_first_vote(
 )
 async def test_bad_vote_through_driver_reprompts_not_ends(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
     bad_input: str,
     expected_error: str,
@@ -167,8 +167,8 @@ async def test_bad_vote_through_driver_reprompts_not_ends(
     ``snapshot.next``), so the human was never re-prompted.
     """
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake_small(AI_NAMES)
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)

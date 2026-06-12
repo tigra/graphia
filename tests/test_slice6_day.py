@@ -19,8 +19,8 @@ Three scenarios, each isolated to a specific piece of Day-phase behaviour:
    interrupts with scripted strings, and stops the moment the
    ``"The Day ends with no one executed."`` line is emitted.
 
-All tests stub the Bedrock boundary via the ``fake_haiku`` /
-``fake_sonnet_pointing`` / ``fake_sonnet_day`` fixtures so nothing touches
+All tests stub the Bedrock boundary via the ``fake_small`` /
+``fake_large_pointing`` / ``fake_large_day`` fixtures so nothing touches
 real AWS Bedrock.
 """
 
@@ -128,8 +128,8 @@ async def _wait_for_players(app: GraphiaApp, pilot) -> dict:
 
 async def test_day_opens_with_victim_role_reveal(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     dynamic_night_pointing,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -139,11 +139,11 @@ async def test_day_opens_with_victim_role_reveal(
     # role-reveal line. No RNG-driven ordering is asserted, so the role
     # pin is the only setup required.
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
-    # Unified Sonnet fake handles Day-speaking (and Ballot if a vote
+    fake_small(AI_NAMES)
+    # Unified large-model fake handles Day-speaking (and Ballot if a vote
     # happens). Day fake is installed first; then we immediately override
     # the Night binding with the race-safe dynamic fake.
-    fake_sonnet(
+    fake_large(
         pointings=[],
         day_actions=[
             DayAction(kind="speak", text=f"I suspect someone. ({i})")
@@ -226,8 +226,8 @@ async def test_day_opens_with_victim_role_reveal(
 
 async def test_day_rounds_shuffle_and_players_speak(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     dynamic_night_pointing,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -253,10 +253,10 @@ async def test_day_rounds_shuffle_and_players_speak(
         return [*ai_ids[:3], human_id, *ai_ids[3:]]
 
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_at_index_three)
-    fake_haiku(AI_NAMES)
+    fake_small(AI_NAMES)
 
     scripted_texts = [f"msg-from-AI-{i}" for i in range(1, 41)]
-    fake_sonnet(
+    fake_large(
         pointings=[],
         day_actions=[
             DayAction(kind="speak", text=t) for t in scripted_texts
@@ -334,7 +334,7 @@ async def test_day_rounds_shuffle_and_players_speak(
             for m in state.get("messages", [])
             if isinstance(m, AIMessage)
         ]
-        # Scripted texts flow 1:1 from FakeSonnetDay.invoke into AIMessages:
+        # Scripted texts flow 1:1 from FakeLargeDay.invoke into AIMessages:
         # at least the first 3 scripted values must appear, in order.
         assert scripted_texts[0] in ai_texts
         assert scripted_texts[1] in ai_texts
@@ -384,7 +384,7 @@ def _day_closed(graph, run_config) -> bool:
 
 def test_six_rounds_without_vote_ends_day(
     env: Path,
-    fake_haiku,
+    fake_small,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Drive the graph directly (no Textual): Day closes after 6 rounds.
@@ -395,18 +395,18 @@ def test_six_rounds_without_vote_ends_day(
     interrupt with a scripted value and stop the moment the Day closes.
     """
     # Role-pin only: the test counts day_rounds and asserts the Day-close
-    # line appears after 6 rounds. The infinite-sonnet fakes always
+    # line appears after 6 rounds. The infinite-large-model fakes always
     # "speak" (never "vote"), and the human's role pin (law-abiding)
     # keeps the "point" interrupt suppressed — no RNG-driven ordering or
     # tie-break behaviour is asserted, so no RNG pinning is required.
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
+    fake_small(AI_NAMES)
 
-    # Patch the sonnet bindings directly with inline callables — the
+    # Patch the large-model bindings directly with inline callables — the
     # factory fixtures don't support "infinite" stream lengths that test 3
     # wants. We mirror the production call shape (.with_structured_output
     # returning self, .invoke returning a model) so the graph is happy.
-    class _InfSonnetDay:
+    class _InfLargeDay:
         call_count = 0
 
         def with_structured_output(self, schema):
@@ -418,7 +418,7 @@ def test_six_rounds_without_vote_ends_day(
                 kind="speak", text=f"msg-ai-{self.call_count}"
             )
 
-    class _InfSonnetPointing:
+    class _InfLargePointing:
         """Returns the FIRST alive Law-abiding AI as the victim every call.
 
         Target resolution happens inside .invoke by reading the current
@@ -461,13 +461,13 @@ def test_six_rounds_without_vote_ends_day(
             candidates = [p.id for p in players.values() if p.is_alive]
         return candidates[0]
 
-    sonnet_day_fake = _InfSonnetDay()
-    sonnet_pointing_fake = _InfSonnetPointing(_live_victim)
+    large_day_fake = _InfLargeDay()
+    large_pointing_fake = _InfLargePointing(_live_victim)
     monkeypatch.setattr(
-        "graphia.nodes.day.get_large", lambda: sonnet_day_fake
+        "graphia.nodes.day.get_large", lambda: large_day_fake
     )
     monkeypatch.setattr(
-        "graphia.nodes.night.get_large", lambda: sonnet_pointing_fake
+        "graphia.nodes.night.get_large", lambda: large_pointing_fake
     )
 
     config = load_config()

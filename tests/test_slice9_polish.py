@@ -123,19 +123,19 @@ async def _wait_for_input_enabled(app: GraphiaApp, pilot) -> Input:
 
 async def test_spectator_view_when_human_dies_midgame(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     target_human_pointing,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Human dies Night 1 → app flips into spectator mode; game continues."""
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
+    fake_small(AI_NAMES)
 
     # Script Day speeches so AIs keep the game going after the human dies.
     # Using `kind="speak"` only (never `vote`) keeps the Day loop simple —
     # it will cap out at DAY_MAX_ROUNDS rather than ever triggering a vote.
-    fake_sonnet(
+    fake_large(
         pointings=[],
         day_actions=[
             DayAction(kind="speak", text=f"post-death-talk-{i}")
@@ -281,18 +281,18 @@ async def test_spectator_view_when_human_dies_midgame(
 
 async def test_ctrl_c_shows_aborted_banner(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     dynamic_night_pointing,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Pressing ctrl+c mid-game writes 'Game aborted.' to #public-log and exits."""
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
-    fake_sonnet(
+    fake_small(AI_NAMES)
+    fake_large(
         # Pointings live behind ``dynamic_night_pointing`` (race-safe — it
         # resolves an alive non-human Law-abiding target at invoke time).
-        # ``fake_sonnet`` still owns the Day/Ballot bindings; the
+        # ``fake_large`` still owns the Day/Ballot bindings; the
         # ``dynamic_night_pointing`` install below overrides the Night
         # ``get_large`` binding so Night 1 never falls back to the
         # random pick (which can target the human and flip

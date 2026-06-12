@@ -70,8 +70,8 @@ async def _wait_for(
 
 async def test_roster_intro_contains_all_seven_names_in_one_line(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch,
 ) -> None:
     # Pin the human as Law-abiding so the ``mafia_pointing`` super-step never
@@ -79,10 +79,10 @@ async def test_roster_intro_contains_all_seven_names_in_one_line(
     # Mafia draw makes the worker wait on a modal the test never drives,
     # which strands the producer thread and bloats teardown by up to 300s.
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    # Slice 3 replaced the hardcoded list with a live Haiku call. Pin the
+    # Slice 3 replaced the hardcoded list with a live small-model call. Pin the
     # fake to the original Slice-2 names so the rest of this test's
     # assertions still hold.
-    fake_haiku(HARDCODED_AI_NAMES)
+    fake_small(HARDCODED_AI_NAMES)
     # After the roster intro the graph chains into Night-1 Mafia pointing,
     # which binds ``get_large()``. Without this stub the worker would
     # reach real Bedrock with dummy creds, triggering boto3 retries that
@@ -90,9 +90,9 @@ async def test_roster_intro_contains_all_seven_names_in_one_line(
     # pytest teardown on the 300s executor-join timeout.
     # A placeholder ``Pointing`` triggers the production random fallback
     # in ``_ai_pick_target`` — safer than racing to script real target
-    # ids before the worker invokes Sonnet. FakeSonnetUnified replays the
+    # ids before the worker invokes the large model. FakeLargeUnified replays the
     # last popped value on subsequent invocations.
-    fake_sonnet(
+    fake_large(
         pointings=[Pointing(target_id="placeholder")],
         day_actions=[DayAction(kind="speak", text="hello")],
     )

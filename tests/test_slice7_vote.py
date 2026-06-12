@@ -26,9 +26,9 @@ the tests are fast, deterministic, and free of UI timing flakiness:
    re-issues the day_turn interrupt with an ``"error"`` payload, and the
    turn index does NOT advance. A subsequent precise substring succeeds.
 
-All Bedrock boundaries are stubbed via the unified ``fake_sonnet`` fixture
+All Bedrock boundaries are stubbed via the unified ``fake_large`` fixture
 (DayAction / Ballot / Pointing served from one fake keyed on schema), plus
-``fake_haiku`` for the name generator. No test touches real AWS.
+``fake_small`` for the name generator. No test touches real AWS.
 """
 
 from __future__ import annotations
@@ -287,8 +287,8 @@ def _advance_until(
 
 def test_successful_execution_ends_day_and_reveals_role(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """AI calls a vote; a Yes-majority executes the target and closes Day 1.
@@ -306,13 +306,13 @@ def test_successful_execution_ends_day_and_reveals_role(
     # target — otherwise _ai_day_action rejects the self-targeted vote and
     # the scripted DayAction(kind="vote") never fires.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_then_law_abiding)
-    fake_haiku(AI_NAMES)
+    fake_small(AI_NAMES)
 
     # Initial fake has no scripted outputs yet — we'll reconfigure it once
     # roles are known. Use the 'replay last' behaviour: we pre-seed with a
     # placeholder speak action that will never actually be served because we
     # inject real scripts before any Day call.
-    fake = fake_sonnet(
+    fake = fake_large(
         day_actions=[],
         ballots=[],
         pointings=[],
@@ -328,7 +328,7 @@ def test_successful_execution_ends_day_and_reveals_role(
 
     # Resume with name → roles are now assigned. We can read the roster.
     # But driving past `collect_name` also drives straight into Night 1,
-    # where mafia_pointing will try to invoke the Sonnet for Pointing.
+    # where mafia_pointing will try to invoke the large model for Pointing.
     # Pre-stock the pointings queue NOW by mutating the fake.
     # Since we don't yet know player IDs, we need to resume the graph step by
     # step. The first name resume triggers collect_name → generate_roster
@@ -481,8 +481,8 @@ def test_successful_execution_ends_day_and_reveals_role(
 
 def test_failed_vote_continues_day_and_counts_against_cap(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A vote is called but mostly-No ballots defeat it; Day continues."""
@@ -493,9 +493,9 @@ def test_failed_vote_continues_day_and_counts_against_cap(
     # target — otherwise _ai_day_action rejects the self-targeted vote and
     # the scripted DayAction(kind="vote") never fires.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_then_mafia)
-    fake_haiku(AI_NAMES)
+    fake_small(AI_NAMES)
 
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -594,8 +594,8 @@ def test_failed_vote_continues_day_and_counts_against_cap(
 
 def test_three_failed_votes_ends_day(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """After three failed votes, day_close fires and the Day ends without an execution."""
@@ -606,9 +606,9 @@ def test_three_failed_votes_ends_day(
     # speaker — otherwise the vote is rejected, falls back to speak, and
     # the test never sees 3 fails.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_then_mafia)
-    fake_haiku(AI_NAMES)
+    fake_small(AI_NAMES)
 
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -718,15 +718,15 @@ def test_three_failed_votes_ends_day(
 
 def test_human_slash_vote_is_parsed(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Human types ``/vote <prefix>`` → the correct VOTE_INITIATE fires."""
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
+    fake_small(AI_NAMES)
 
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -835,15 +835,15 @@ def test_human_slash_vote_is_parsed(
 
 def test_human_slash_vote_ambiguous_re_interrupts(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Ambiguous substring → re-interrupt with 'error'; turn index unchanged.
 
     We reuse the standard ``AI_NAMES`` roster — the substring ``"ia"``
     matches two alive players (Bianca and Elias) after Night 1, which
-    gives us the ambiguity we need without bespoke haiku names that
+    gives us the ambiguity we need without bespoke small-model names that
     happen to be fragile under certain test orderings. The Night-1
     pointing fake below steers the Mafia kill to a non-"ia" target, so
     both candidates survive regardless of the role shuffle.
@@ -857,9 +857,9 @@ def test_human_slash_vote_ambiguous_re_interrupts(
     # dealt (Mafia don't kill themselves; the kill is aimed at a non-"ia"
     # name). The role-deck shuffle therefore has no effect on the
     # invariant this test depends on, and no RNG pinning is required.
-    fake_haiku(AI_NAMES)
+    fake_small(AI_NAMES)
 
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -1054,8 +1054,8 @@ def _drive_to_human_day_turn(
 
 def test_human_vote_bumps_human_votes_called(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A human's successful ``/vote`` increments ``human_votes_called`` to 1.
@@ -1065,8 +1065,8 @@ def test_human_vote_bumps_human_votes_called(
     counter ticked to exactly 1 in the resulting graph state.
     """
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake_small(AI_NAMES)
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -1104,8 +1104,8 @@ def test_human_vote_bumps_human_votes_called(
 
 def test_human_ballot_bumps_human_ballots_cast(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """When the human casts a ballot, ``human_ballots_cast`` increments.
@@ -1117,8 +1117,8 @@ def test_human_ballot_bumps_human_ballots_cast(
     once per vote) and assert it reached 1.
     """
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake_small(AI_NAMES)
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)

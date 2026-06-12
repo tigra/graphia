@@ -17,7 +17,7 @@ class _LoudFailureLLM:
 
     Any attempt to call through an unstubbed LLM raises ``RuntimeError`` with
     a pointer to the right fixture. Without this safety net a test that forgets
-    to stub Sonnet would silently fall through to the real ``ChatBedrockConverse``
+    to stub the large model would silently fall through to the real ``ChatBedrockConverse``
     binding, which triggers boto3 retry loops against dummy AWS credentials —
     those retries keep an ``asyncio.to_thread`` worker alive long after
     ``app.exit()`` and block pytest teardown until the 300s executor-join
@@ -34,8 +34,8 @@ class _LoudFailureLLM:
     def invoke(self, messages: Any) -> Any:
         raise RuntimeError(
             f"Unstubbed LLM call through {self._which}. Add the matching "
-            "fixture to this test: `fake_haiku(...)` for roster generation, "
-            "`fake_sonnet(...)` (unified) for Day/Night. Real Bedrock must "
+            "fixture to this test: `fake_small(...)` for roster generation, "
+            "`fake_large(...)` (unified) for Day/Night. Real Bedrock must "
             "never be reached from the test suite."
         )
 
@@ -46,8 +46,8 @@ def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
 
     Patches the three call-site bindings (``get_small`` in ``nodes.setup`` and
     ``get_large`` in both ``nodes.night`` and ``nodes.day``) with a
-    loud-failure fake. Explicit per-test fixtures (``fake_haiku``,
-    ``fake_sonnet``, ``fake_sonnet_pointing``, ``fake_sonnet_day``) run after
+    loud-failure fake. Explicit per-test fixtures (``fake_small``,
+    ``fake_large``, ``fake_large_pointing``, ``fake_large_day``) run after
     this one and replace these bindings via the same ``monkeypatch`` surface,
     so tests that *do* stub keep working while tests that forgot now fail
     loudly instead of hanging on boto3 retries.
@@ -174,7 +174,7 @@ def safe_memory_client(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-class FakeHaiku:
+class FakeSmall:
     """Stand-in for ``ChatBedrockConverse`` used inside ``generate_roster``.
 
     The real code path is ``get_small().with_structured_output(Roster).invoke(msgs)``.
@@ -192,7 +192,7 @@ class FakeHaiku:
         self.call_count = 0
         self._bound_schema: type | None = None
 
-    def with_structured_output(self, schema: type) -> "FakeHaiku":
+    def with_structured_output(self, schema: type) -> "FakeSmall":
         # Real LangChain returns a new runnable bound to the schema; for the
         # test we just record the schema and return self so subsequent
         # ``.invoke`` calls go through the scripted queue.
@@ -203,7 +203,7 @@ class FakeHaiku:
         self.call_count += 1
         if not self._outputs:
             raise AssertionError(
-                "FakeHaiku.invoke called more times than scripted outputs"
+                "FakeSmall.invoke called more times than scripted outputs"
             )
         out = self._outputs.pop(0)
         if isinstance(out, Exception):
@@ -212,12 +212,12 @@ class FakeHaiku:
 
 
 @pytest.fixture
-def fake_haiku(monkeypatch: pytest.MonkeyPatch) -> Callable[..., FakeHaiku]:
+def fake_small(monkeypatch: pytest.MonkeyPatch) -> Callable[..., FakeSmall]:
     """Factory fixture: patch ``graphia.nodes.setup.get_small`` with a fake.
 
     Usage::
 
-        fake = fake_haiku(["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"])
+        fake = fake_small(["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"])
         # ...run the app / node under test...
         assert fake.call_count == 1
 
@@ -235,12 +235,12 @@ def fake_haiku(monkeypatch: pytest.MonkeyPatch) -> Callable[..., FakeHaiku]:
         names: Sequence[str] | None = None,
         *,
         outputs: Sequence[Roster | Exception] | None = None,
-    ) -> FakeHaiku:
+    ) -> FakeSmall:
         if outputs is None:
             if names is None:
-                raise TypeError("fake_haiku requires either `names` or `outputs`")
+                raise TypeError("fake_small requires either `names` or `outputs`")
             outputs = [Roster(names=list(names))]
-        fake = FakeHaiku(outputs)
+        fake = FakeSmall(outputs)
         monkeypatch.setattr("graphia.nodes.setup.get_small", lambda: fake)
         return fake
 
@@ -272,7 +272,7 @@ def env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[Path]:
     yield log_file
 
 
-class FakeSonnet:
+class FakeLarge:
     """Stand-in for ``ChatBedrockConverse`` used inside Mafia pointing.
 
     The production call is
@@ -290,7 +290,7 @@ class FakeSonnet:
         self.call_count = 0
         self._bound_schema: type | None = None
 
-    def with_structured_output(self, schema: type) -> "FakeSonnet":
+    def with_structured_output(self, schema: type) -> "FakeLarge":
         self._bound_schema = schema
         return self
 
@@ -298,7 +298,7 @@ class FakeSonnet:
         self.call_count += 1
         if not self._outputs:
             raise AssertionError(
-                "FakeSonnet.invoke called more times than scripted outputs"
+                "FakeLarge.invoke called more times than scripted outputs"
             )
         out = self._outputs.pop(0)
         if isinstance(out, Exception):
@@ -307,14 +307,14 @@ class FakeSonnet:
 
 
 @pytest.fixture
-def fake_sonnet_pointing(
+def fake_large_pointing(
     monkeypatch: pytest.MonkeyPatch,
-) -> Callable[..., FakeSonnet]:
+) -> Callable[..., FakeLarge]:
     """Factory fixture: patch ``graphia.nodes.night.get_large`` with a fake.
 
     Usage::
 
-        fake = fake_sonnet_pointing(["victim-id", "victim-id"])
+        fake = fake_large_pointing(["victim-id", "victim-id"])
         # ... run the app ...
         assert fake.call_count == 2
 
@@ -331,21 +331,21 @@ def fake_sonnet_pointing(
         target_ids: Sequence[str] | None = None,
         *,
         outputs: Sequence[Pointing | Exception] | None = None,
-    ) -> FakeSonnet:
+    ) -> FakeLarge:
         if outputs is None:
             if target_ids is None:
                 raise TypeError(
-                    "fake_sonnet_pointing requires either `target_ids` or `outputs`"
+                    "fake_large_pointing requires either `target_ids` or `outputs`"
                 )
             outputs = [Pointing(target_id=t) for t in target_ids]
-        fake = FakeSonnet(outputs)
+        fake = FakeLarge(outputs)
         monkeypatch.setattr("graphia.nodes.night.get_large", lambda: fake)
         return fake
 
     return _install
 
 
-class FakeSonnetDay:
+class FakeLargeDay:
     """Stand-in for ``ChatBedrockConverse`` used inside Day-phase speaking.
 
     Production call site is
@@ -365,7 +365,7 @@ class FakeSonnetDay:
         self._bound_schema: type | None = None
         self._last: DayAction | None = None
 
-    def with_structured_output(self, schema: type) -> "FakeSonnetDay":
+    def with_structured_output(self, schema: type) -> "FakeLargeDay":
         self._bound_schema = schema
         return self
 
@@ -377,7 +377,7 @@ class FakeSonnetDay:
             # hand-authored script.
             if self._last is None:
                 raise AssertionError(
-                    "FakeSonnetDay.invoke called but no scripted outputs "
+                    "FakeLargeDay.invoke called but no scripted outputs "
                     "remain and no prior output to repeat"
                 )
             return self._last
@@ -389,14 +389,14 @@ class FakeSonnetDay:
 
 
 @pytest.fixture
-def fake_sonnet_day(
+def fake_large_day(
     monkeypatch: pytest.MonkeyPatch,
-) -> Callable[..., FakeSonnetDay]:
+) -> Callable[..., FakeLargeDay]:
     """Factory fixture: patch ``graphia.nodes.day.get_large`` with a fake.
 
     Usage::
 
-        fake = fake_sonnet_day([
+        fake = fake_large_day([
             DayAction(kind="speak", text="msg-from-AI-1"),
             DayAction(kind="speak", text="msg-from-AI-2"),
         ])
@@ -415,14 +415,14 @@ def fake_sonnet_day(
         outputs: Sequence[DayAction | Exception] | None = None,
         *,
         texts: Sequence[str] | None = None,
-    ) -> FakeSonnetDay:
+    ) -> FakeLargeDay:
         if outputs is None:
             if texts is None:
                 raise TypeError(
-                    "fake_sonnet_day requires either `outputs` or `texts`"
+                    "fake_large_day requires either `outputs` or `texts`"
                 )
             outputs = [DayAction(kind="speak", text=t) for t in texts]
-        fake = FakeSonnetDay(outputs)
+        fake = FakeLargeDay(outputs)
         monkeypatch.setattr("graphia.nodes.day.get_large", lambda: fake)
         return fake
 
@@ -438,7 +438,7 @@ def plain_text(widget: Widget) -> str:
 
 
 # --------------------------------------------------------------------------
-# Unified Sonnet fake — dispatches on the schema passed to
+# Unified large-model fake — dispatches on the schema passed to
 # ``with_structured_output`` so a single fake can serve DayAction, Ballot,
 # and Pointing calls simultaneously. Needed for Slice 7 where ``collect_votes``
 # binds ``Ballot`` while ``day_turn`` binds ``DayAction`` on the same
@@ -446,7 +446,7 @@ def plain_text(widget: Widget) -> str:
 # --------------------------------------------------------------------------
 
 
-class _SonnetQueue:
+class _LargeQueue:
     """Bound view over one of the unified fake's scripted queues.
 
     Each ``invoke`` call pops the next scripted item for the bound schema.
@@ -456,7 +456,7 @@ class _SonnetQueue:
     of invocations.
     """
 
-    def __init__(self, owner: "FakeSonnetUnified", schema: type) -> None:
+    def __init__(self, owner: "FakeLargeUnified", schema: type) -> None:
         self._owner = owner
         self._schema = schema
 
@@ -464,8 +464,8 @@ class _SonnetQueue:
         return self._owner._invoke(self._schema, messages)
 
 
-class FakeSonnetUnified:
-    """Unified Sonnet fake dispatching on the schema bound at call time.
+class FakeLargeUnified:
+    """Unified large-model fake dispatching on the schema bound at call time.
 
     Production call shape::
 
@@ -500,13 +500,13 @@ class FakeSonnetUnified:
             Pointing: 0,
         }
 
-    def with_structured_output(self, schema: type) -> _SonnetQueue:
+    def with_structured_output(self, schema: type) -> _LargeQueue:
         if schema not in self._queues:
             raise AssertionError(
-                f"FakeSonnet has no scripted queue for schema {schema!r}. "
+                f"FakeLarge has no scripted queue for schema {schema!r}. "
                 "Supported: DayAction, Ballot, Pointing."
             )
-        return _SonnetQueue(self, schema)
+        return _LargeQueue(self, schema)
 
     def _invoke(self, schema: type, messages: Any) -> Any:
         self.call_count += 1
@@ -516,7 +516,7 @@ class FakeSonnetUnified:
             last = self._last.get(schema)
             if last is None:
                 raise AssertionError(
-                    f"FakeSonnet.invoke called for {schema.__name__} but no "
+                    f"FakeLarge.invoke called for {schema.__name__} but no "
                     "scripted outputs remain and no prior output to repeat."
                 )
             return last
@@ -532,7 +532,7 @@ class _DynamicNightPointing:
 
     Production call shape is
     ``get_large().with_structured_output(Pointing).invoke(msgs)``. Between
-    a test's ``fake_sonnet(...)`` call and the worker actually reaching the
+    a test's ``fake_large(...)`` call and the worker actually reaching the
     ``mafia_pointing`` super-step there is an unavoidable race: the real
     target UUIDs are only known once ``assign_roles`` has run on graph
     state, so tests can't pre-script a specific ``Pointing(target_id=...)``
@@ -574,7 +574,7 @@ def dynamic_night_pointing(
 ) -> Callable[..., _DynamicNightPointing]:
     """Factory: patch ``graphia.nodes.night.get_large`` with a race-safe fake.
 
-    Usage (after an earlier ``fake_sonnet(...)`` call — this fixture
+    Usage (after an earlier ``fake_large(...)`` call — this fixture
     overrides the night-side binding installed there)::
 
         dynamic_night_pointing(lambda: app._graph.get_state(app._run_config).values)
@@ -658,14 +658,14 @@ def target_human_pointing(
 
 
 @pytest.fixture
-def fake_sonnet(
+def fake_large(
     monkeypatch: pytest.MonkeyPatch,
-) -> Callable[..., FakeSonnetUnified]:
-    """Factory fixture: unified Sonnet fake patched into BOTH day and night.
+) -> Callable[..., FakeLargeUnified]:
+    """Factory fixture: unified large-model fake patched into BOTH day and night.
 
     Usage::
 
-        fake = fake_sonnet(
+        fake = fake_large(
             day_actions=[DayAction(kind="speak", text="hello")],
             ballots=[Ballot(yes=True), Ballot(yes=False)],
             pointings=[Pointing(target_id="p-2")],
@@ -676,7 +676,7 @@ def fake_sonnet(
     routed through either call site go through one queue-set. This is
     required for Slice 7 tests where a single run touches ``DayAction``
     (speaking), ``Ballot`` (voting), and ``Pointing`` (next night) on the
-    same Sonnet binding.
+    same large-model binding.
     """
 
     def _install(
@@ -684,8 +684,8 @@ def fake_sonnet(
         day_actions: Sequence[DayAction | Exception] | None = None,
         ballots: Sequence[Ballot | Exception] | None = None,
         pointings: Sequence[Pointing | Exception] | None = None,
-    ) -> FakeSonnetUnified:
-        fake = FakeSonnetUnified(
+    ) -> FakeLargeUnified:
+        fake = FakeLargeUnified(
             day_actions=day_actions,
             ballots=ballots,
             pointings=pointings,

@@ -17,8 +17,8 @@ The thing under test (built by Slice 1 Subs 1.1 and 1.2; Slice 2's
 These tests drive the real ``GraphiaApp`` through Textual's ``App.run_test``
 pilot. To keep them fast and deterministic the LangGraph startup path is
 short-circuited: ``GRAPHIA_ROLE=law-abiding`` pins the human's role
-(ADR-006), ``fake_haiku`` covers the roster generation, and
-``fake_sonnet`` pre-loads scripted day/night outputs so the driver never
+(ADR-006), ``fake_small`` covers the roster generation, and
+``fake_large`` pre-loads scripted day/night outputs so the driver never
 reaches real Bedrock. No test submits the human's name — pausing the
 worker on the very first ``interrupt()`` (the name prompt) is enough for
 the modal to be opened against a live, idle game.
@@ -42,7 +42,7 @@ from graphia.ui.quit_modal import QuitModal
 # advance past the name prompt in these tests, but the role is still set
 # so the modal interaction runs against a fully-determined boot path.
 
-# Roster names handed to the Haiku fake. Six AIs + the human round out
+# Roster names handed to the small-model fake. Six AIs + the human round out
 # the seven-player table; the human's name is never submitted in any of
 # these tests, so role labels here are inert.
 AI_NAMES = ["Aarav", "Bianca", "Chiko", "Daria", "Elias", "Finn"]
@@ -111,8 +111,8 @@ async def _wait_until_idle(app: GraphiaApp, pilot) -> None:
 @pytest.fixture
 def booted_app(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> GraphiaApp:
     """Build a ``GraphiaApp`` with the LLM surface pre-stubbed.
@@ -120,18 +120,18 @@ def booted_app(
     Returned ready-to-go but NOT yet running — the caller wraps it in
     ``app.run_test()`` to start the pilot. Pinning the role and stubbing
     both LLMs is defensive: a Mafia-pointing super-step may begin before
-    the test's modal interactions land, and an unstubbed Sonnet call
+    the test's modal interactions land, and an unstubbed large-model call
     would fail loudly via the autouse ``safe_llm`` net.
     """
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
-    # Empty scripted queues are fine: ``FakeSonnetUnified`` will only be
+    fake_small(AI_NAMES)
+    # Empty scripted queues are fine: ``FakeLargeUnified`` will only be
     # invoked if the worker gets past the name prompt, which it never
     # does here (no name is ever submitted). Installing the fake still
     # matters — it overrides the loud-failure default from
-    # ``safe_llm``'s autouse so a defensive Sonnet call from any future
+    # ``safe_llm``'s autouse so a defensive large-model call from any future
     # boot-time code path does not crash teardown.
-    fake_sonnet(pointings=[], day_actions=[], ballots=[])
+    fake_large(pointings=[], day_actions=[], ballots=[])
     return GraphiaApp()
 
 

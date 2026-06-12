@@ -32,7 +32,7 @@ What's mocked
 -------------
 
 * ``ChatBedrockConverse`` — via the autouse ``safe_llm`` fixture and the
-  per-test ``fake_haiku`` / ``fake_sonnet`` factories. No real Bedrock.
+  per-test ``fake_small`` / ``fake_large`` factories. No real Bedrock.
 * ``AgentCoreClient`` — via ``monkeypatch.setattr`` against the
   ``graphia.driver`` import binding (the call site). The fake's
   ``stream`` method records every invocation and forwards to the local
@@ -255,7 +255,7 @@ def patched_agentcore_client(
 
 async def _run_full_game(
     app: GraphiaApp,
-    fake_sonnet_handle: Any,
+    fake_large_handle: Any,
 ) -> str:
     """Drive ``app`` from boot through end-of-game, returning the final log.
 
@@ -282,10 +282,10 @@ async def _run_full_game(
         rc = app._run_config
         assert rc is not None
 
-        # Install a live-state dispatcher for the unified Sonnet fake so
+        # Install a live-state dispatcher for the unified large-model fake so
         # Pointing/DayAction targets resolve at invoke time (uuid ids are
         # only known once roles are assigned).
-        original_invoke = fake_sonnet_handle._invoke
+        original_invoke = fake_large_handle._invoke
 
         def _invoke_live(schema, messages):
             if schema is Pointing:
@@ -304,7 +304,7 @@ async def _run_full_game(
                 return Ballot(yes=False)
             return original_invoke(schema, messages)
 
-        fake_sonnet_handle._invoke = _invoke_live  # type: ignore[method-assign]
+        fake_large_handle._invoke = _invoke_live  # type: ignore[method-assign]
 
         # Enter the human name. Wait for the input to enable first.
         for _ in range(100):
@@ -366,8 +366,8 @@ async def _run_full_game(
 
 async def test_remote_mode_drives_full_game_through_fake_agentcore_client(
     remote_env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     patched_agentcore_client: type[FakeAgentCoreClient],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -383,8 +383,8 @@ async def test_remote_mode_drives_full_game_through_fake_agentcore_client(
     from langgraph.types import Command
 
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake_small(AI_NAMES)
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     app = GraphiaApp()
     rendered = await _run_full_game(app, fake)
@@ -444,8 +444,8 @@ async def test_remote_mode_drives_full_game_through_fake_agentcore_client(
 async def test_local_and_remote_render_equivalent_winner(
     request: pytest.FixtureRequest,
     mode: str,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Equivalence claim: same scenario, same winner line in both modes.
@@ -467,8 +467,8 @@ async def test_local_and_remote_render_equivalent_winner(
         request.getfixturevalue("local_env")
 
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake_small(AI_NAMES)
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     app = GraphiaApp()
     rendered = await _run_full_game(app, fake)

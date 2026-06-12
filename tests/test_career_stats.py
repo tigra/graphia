@@ -679,19 +679,19 @@ class _FakeStatsStore:
 
 
 async def test_ui_greeting_appears_on_launch(
-    env: Path, fake_haiku, fake_sonnet, monkeypatch
+    env: Path, fake_small, fake_large, monkeypatch
 ) -> None:
     """The first-run greeting is written to ``#public-log`` at launch.
 
-    The injected fake store keeps this off the filesystem. ``fake_haiku`` /
-    ``fake_sonnet`` and the Law-abiding role pin guard against teardown hangs:
+    The injected fake store keeps this off the filesystem. ``fake_small`` /
+    ``fake_large`` and the Law-abiding role pin guard against teardown hangs:
     the greeting writes before ``build_graph``, but the driver then advances
     the graph, and an unstubbed LLM call would strand a boto3 retry thread
     past ``app.exit()``.
     """
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"])
-    fake_sonnet(
+    fake_small(["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"])
+    fake_large(
         pointings=[Pointing(target_id="placeholder")],
         day_actions=[DayAction(kind="speak", text="hello")],
     )
@@ -798,7 +798,7 @@ async def _drive_law_abiding_loss_to_end(
 
 
 async def test_ui_panel_written_then_second_app_greets_cumulative(
-    env: Path, tmp_path: Path, fake_haiku, fake_sonnet, monkeypatch
+    env: Path, tmp_path: Path, fake_small, fake_large, monkeypatch
 ) -> None:
     """A finished game writes the career panel; a fresh app then greets back.
 
@@ -811,9 +811,9 @@ async def test_ui_panel_written_then_second_app_greets_cumulative(
     """
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     # Two rosters: one per game (the second app boots a fresh graph and calls
-    # Haiku again before we read its greeting and exit).
-    fake_haiku(outputs=[Roster(names=AI_NAMES), Roster(names=AI_NAMES)])
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    # the small model again before we read its greeting and exit).
+    fake_small(outputs=[Roster(names=AI_NAMES), Roster(names=AI_NAMES)])
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     store_path = tmp_path / "shared" / "career.json"
 

@@ -45,8 +45,8 @@ async def _wait(pilot, pred, timeout: float = 15.0, interval: float = 0.1) -> No
 
 async def test_ui_unfreezes_after_first_day_turn(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     dynamic_night_pointing,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -57,7 +57,7 @@ async def test_ui_unfreezes_after_first_day_turn(
     checkpoint state transiently exposed ``.next`` without a matching
     interrupt on ``.tasks[*].interrupts``.
 
-    Uses the unified ``fake_sonnet`` fixture plus ``dynamic_night_pointing``
+    Uses the unified ``fake_large`` fixture plus ``dynamic_night_pointing``
     so both Night pointing AND Day speaking calls route through fakes with
     no race — the separate per-phase fixtures previously left Day speaking
     unstubbed on the first Night's path, which could strand a boto3 retry
@@ -66,11 +66,11 @@ async def test_ui_unfreezes_after_first_day_turn(
     # Pin the human as Law-abiding so a random Mafia draw cannot strand the
     # worker on the human-Mafia modal interrupt during teardown.
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
-    # Install the unified Sonnet fake up front — DayAction queue carries
+    fake_small(AI_NAMES)
+    # Install the unified large-model fake up front — DayAction queue carries
     # 80 scripted lines so the Day loop has plenty to consume before the
     # test stops driving.
-    fake_sonnet(
+    fake_large(
         pointings=[],
         day_actions=[
             DayAction(kind="speak", text=f"AI-speaks-{i}") for i in range(80)

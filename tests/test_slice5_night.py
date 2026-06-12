@@ -12,10 +12,10 @@ Covers two deterministic scenarios driven through the compiled graph:
    the kill resolves. The human sees both their role reveal and the private
    Mafia-teammate intro.
 
-Both tests stub the Bedrock boundary with the unified ``fake_sonnet``
-fixture (day + night bindings in one shot) plus ``fake_haiku`` for the
+Both tests stub the Bedrock boundary with the unified ``fake_large``
+fixture (day + night bindings in one shot) plus ``fake_small`` for the
 roster generator, so nothing touches real Bedrock. Using the unified
-fake also covers the Day-open Sonnet call that fires once the night
+fake also covers the Day-open large-model call that fires once the night
 kill resolves — previous revisions stubbed only night, letting Day-1
 speaking calls leak to real Bedrock and strand a boto3 retry thread
 past ``app.exit()``.
@@ -121,8 +121,8 @@ async def _wait_for_players(app: GraphiaApp, pilot) -> dict:
 
 async def test_night1_human_law_abiding_kill_announced(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     dynamic_night_pointing,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -138,14 +138,14 @@ async def test_night1_human_law_abiding_kill_announced(
     - The human's private panel shows their role reveal but no Mafia intro.
     """
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
+    fake_small(AI_NAMES)
 
-    # Unified Sonnet fake handles Day speaking / Ballot. Night pointing
+    # Unified large-model fake handles Day speaking / Ballot. Night pointing
     # is patched immediately afterwards with the dynamic fake that picks
     # the first alive Law-abiding non-human at invoke time — required so
     # the assertions below line up with the actual victim regardless of
     # worker timing.
-    fake_sonnet(
+    fake_large(
         pointings=[],
         day_actions=[
             DayAction(kind="speak", text=f"day-talk-{i}") for i in range(8)
@@ -244,8 +244,8 @@ async def test_night1_human_law_abiding_kill_announced(
 
 async def test_night1_human_mafia_picks_target_via_modal(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     dynamic_night_pointing,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -260,12 +260,12 @@ async def test_night1_human_mafia_picks_target_via_modal(
     victim's ``is_alive`` flipping to ``False``.
     """
     monkeypatch.setenv("GRAPHIA_ROLE", "mafia")
-    fake_haiku(AI_NAMES)
+    fake_small(AI_NAMES)
 
     # Install LLM stubs BEFORE ``run_test`` — once the worker starts it can
-    # reach ``mafia_pointing`` almost immediately, so we need the Sonnet
+    # reach ``mafia_pointing`` almost immediately, so we need the large-model
     # bindings in place before the modal interrupt even fires.
-    fake_sonnet(
+    fake_large(
         pointings=[],
         day_actions=[
             DayAction(kind="speak", text=f"day-talk-{i}") for i in range(8)

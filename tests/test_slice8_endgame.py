@@ -20,9 +20,9 @@ Textual) mirroring the pattern used in ``test_slice7_vote.py``:
 Plus a single Textual-pilot smoke test asserting the "Game over." marker
 renders in ``#public-log`` and any keypress exits the app.
 
-All LLM calls go through the unified ``fake_sonnet`` fixture (DayAction,
+All LLM calls go through the unified ``fake_large`` fixture (DayAction,
 Ballot, Pointing served from one fake keyed on schema), plus
-``fake_haiku`` for name generation. No test touches real Bedrock.
+``fake_small`` for name generation. No test touches real Bedrock.
 """
 
 from __future__ import annotations
@@ -136,14 +136,14 @@ def _advance_until(
 
 def test_law_abiding_wins_when_all_mafia_executed(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Sequential Day votes remove both Mafia; end_screen announces Law win.
 
     Strategy:
-    - The ``FakeSonnetUnified`` fake's DayAction queue is scripted to
+    - The ``FakeLargeUnified`` fake's DayAction queue is scripted to
       always return ``kind="vote"`` targeting the *first alive Mafia AI*.
       Because we override ``._invoke`` with a live-state reader, each vote
       action is resolved at call-time — no need to pre-compute UUIDs.
@@ -157,9 +157,9 @@ def test_law_abiding_wins_when_all_mafia_executed(
     second Mafia → ``check_win_day`` sees no Mafia alive → end_screen.
     """
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
+    fake_small(AI_NAMES)
 
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -303,8 +303,8 @@ def test_law_abiding_wins_when_all_mafia_executed(
 
 def test_mafia_wins_when_parity_reached(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Night kills bring Mafia to parity with Law-abiding → Mafia wins.
@@ -318,9 +318,9 @@ def test_mafia_wins_when_parity_reached(
     No ballots from AIs, human votes No) so no Mafia ever dies.
     """
     monkeypatch.setenv("GRAPHIA_ROLE", "mafia")
-    fake_haiku(AI_NAMES)
+    fake_small(AI_NAMES)
 
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -420,8 +420,8 @@ def test_mafia_wins_when_parity_reached(
 
 def test_endgame_message_contains_kill_log_and_roster(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Dedicated assertion pass on the final message structure.
@@ -432,9 +432,9 @@ def test_endgame_message_contains_kill_log_and_roster(
     role labels for every player (alive and dead).
     """
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
+    fake_small(AI_NAMES)
 
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -538,8 +538,8 @@ def test_endgame_message_contains_kill_log_and_roster(
 
 async def test_end_screen_visible_in_ui(
     env: Path,
-    fake_haiku,
-    fake_sonnet,
+    fake_small,
+    fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Pilot smoke test: end screen lands in #public-log; any key exits.
@@ -569,9 +569,9 @@ async def test_end_screen_visible_in_ui(
     from textual.widgets import Input, RichLog
 
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    fake_haiku(AI_NAMES)
+    fake_small(AI_NAMES)
 
-    fake = fake_sonnet(day_actions=[], ballots=[], pointings=[])
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     app = GraphiaApp()
 
