@@ -1,0 +1,84 @@
+# Functional Specification: AI Blunder Tracking (Repo-Persisted Quality Ledger)
+
+- **Roadmap Item:** Not a roadmap feature — a quality-measurement increment in the spirit of the Day-phase integrity trio (007–009) and the dialogue evals they produced, requested ad hoc. (Roadmap order unaffected; Phase 5 remains next.)
+- **Status:** Draft
+- **Author:** Alexey Tigarev
+
+---
+
+## 1. Overview and Rationale (The "Why")
+
+Play-testing keeps surfacing AI behaviors that break the social-deduction illusion. Repetition ("parroting") was the first, and spec 009 built the measurement that fixed it. But there's a whole family of **self-consistency blunders** the AI players commit that nothing currently watches:
+
+- an AI **accuses itself** of being suspicious;
+- an AI **votes against itself** — tries to start a vote on itself, or approves its own execution;
+- a Mafioso **helps execute a fellow Mafioso** — starting a vote against a teammate, or voting Yes on one;
+- an AI **talks about itself in the third person**, referring to itself by name as if it were another player at the table.
+
+Each of these is jarring to a human player and, today, invisible to the maintainer except by luck of observation during play. Worse, the project now runs on **two different AI providers** (the cloud model and the local Ollama models), and a behavior that's rare on one can be common on the other — there is no way to know without measuring both.
+
+The deeper gap is structural: every existing quality measurement prints a one-off report to the terminal and is gone. There is **no durable record** of how the AI behaved at any point in the project's history — no way to ask "did the last prompt change make self-accusation worse on the local model?".
+
+**Desired outcome:** one quality-measurement run plays a batch of games against a chosen provider/model, counts every watched behavior (the four new blunders **plus** the existing repetition measure, folded into one family), and **appends a dated record to a ledger kept in the repository** — so AI quality becomes a tracked, comparable, history-backed property of the project rather than an anecdote. A "baby MLOps" loop: measure → commit the record → change something → measure again → compare by reading two records.
+
+**Success is measured by:** after running the measurement against both providers, the repository contains records showing, for each run: when it ran, which provider and model(s), which version of the game, how many games were played, and the rate of every watched behavior — and a maintainer can answer "how does the local model compare to the cloud model on self-votes?" by reading the ledger alone.
+
+---
+
+## 2. Functional Requirements (The "What")
+
+### 2.1 The watched behaviors are defined and counted
+
+- **As the** maintainer, **I want** each blunder defined precisely enough to count, **so that** rates are comparable across runs and models.
+  - **Acceptance Criteria:**
+    - [ ] **Self-accusation** is counted when an AI's spoken Day line names *itself* as the suspect — e.g. the player Elena saying "I find Elena suspicious."
+    - [ ] **Self-vote** is counted when an AI attempts to start a vote against itself, or casts a Yes ballot on its own execution. Attempts count even when the game's own safety nets quietly absorb them — the measurement sees the attempt, not just the survivors.
+    - [ ] **Mafioso peer-vote** is counted when a Mafioso starts a vote against a fellow Mafioso **or** casts a Yes ballot on a fellow Mafioso's execution (one combined measure; tracked as a signal, not forbidden by the game).
+    - [ ] **Third-person self-talk** is counted when an AI's spoken line refers to itself by its own name as though it were another player (regardless of whether the content is accusatory).
+    - [ ] **Repetition** (the spec-009 near-duplicate measure) is reported alongside the four new behaviors as part of the same family — one run yields one set of numbers covering all five.
+    - [ ] Each behavior is reported as a **rate** with its denominator visible (e.g. self-accusations per 100 spoken lines; peer-votes per ballot cast by a Mafioso), not as a bare count, so runs of different sizes compare honestly.
+    - [ ] Text-based detection (self-accusation, third-person self-talk) is **approximate by nature**; the spec accepts detection that may miss rephrasings or over-count edge cases, as long as the rule applied is consistent across runs and documented next to the numbers. Action-based detection (self-vote, peer-vote) is exact.
+
+### 2.2 One run measures a chosen provider; both providers are covered
+
+- **As the** maintainer, **I want** the same measurement to run against the cloud model and against the local Ollama models, **so that** quality is known per provider, not assumed.
+  - **Acceptance Criteria:**
+    - [ ] A measurement run targets a chosen provider — the cloud (Nova) gameplay model or the local (Ollama) verified model pair — plays a configurable number of games unattended, and produces the full set of behavior rates for that provider.
+    - [ ] Running it once per provider yields **directly comparable records**: same behaviors, same definitions, same rate denominators, differing only in the provider/model identification.
+    - [ ] The run reaches a real model (it measures real behavior), so it lives alongside the project's other live evaluations — invoked deliberately, never as part of the ordinary offline test suite, with real cost/time expectations stated where it's documented.
+
+### 2.3 Every run appends a record to a repo-kept ledger
+
+- **As the** maintainer, **I want** each run's results persisted in the repository, **so that** AI quality has a history I can diff, not a terminal scroll-back I lost.
+  - **Acceptance Criteria:**
+    - [ ] Each completed run **appends one record** to a ledger that lives **inside the repository** (committed alongside the code, human-readable).
+    - [ ] A record carries at minimum: the run date, the provider and model name(s), the version of the game the run measured (so a record is attributable to the code/prompts that produced it), the number of games and the totals behind each denominator, and the rate of every watched behavior.
+    - [ ] Records **accumulate** — a new run never overwrites or rewrites history; the ledger reads chronologically.
+    - [ ] A maintainer can answer "Nova vs Ollama on behavior X" or "before vs after prompt change Y" by reading the ledger alone — no re-running, no external service, no tooling beyond a text editor. (A comparison/reporting command is explicitly **not** part of this increment.)
+
+### 2.4 Measurement only — the game itself is unchanged
+
+- **As a** player, **I want** the game to play exactly as it does today, **so that** this increment changes what the maintainer *knows*, not what the game *does*.
+  - **Acceptance Criteria:**
+    - [ ] No gameplay change: no new prompts, rules, guards, or on-screen elements. The watched behaviors remain *possible* in play; this increment only counts them.
+    - [ ] Fixes for whatever the measurements reveal (prompt nudges, mechanical guards) are **explicitly out of scope** — each becomes its own later, evidence-driven change, measured against the baseline this increment establishes.
+
+---
+
+## 3. Scope and Boundaries
+
+### In-Scope
+
+- Precise, countable definitions of the four new blunders (self-accusation, self-vote, Mafioso peer-vote, third-person self-talk) and folding the existing **repetition** measure into the same reported family.
+- A measurement run that plays a batch of real games against a **chosen provider** — cloud (Nova) or local (Ollama, the verified pair) — and produces the full rate set; both providers covered by running it per provider.
+- A **repo-committed, append-only, human-readable ledger** of run records (date, provider/models, game version, volumes, rates).
+- Counting **attempts** the game's safety nets absorb (e.g. a rejected self-vote initiation), not just visible outcomes.
+
+### Out-of-Scope
+
+- **Any fix or mitigation** for the measured behaviors — no prompt changes, no new mechanical guards (measure first; fixes are later specs).
+- **Comparison/report tooling, dashboards, charts, or threshold gates** — the ledger is the deliverable; humans read it. (A comparison command or regression gate can be a later increment.)
+- **Automatic/scheduled runs (CI)** — runs are manual and deliberate, like the project's other live evaluations.
+- **Human-player behavior** — only AI players are measured.
+- **Perfect text-based detection** — approximate, consistently-applied detection is accepted for the speech-based behaviors.
+- **Other roadmap items** (Phase 5 Setup Flexibility & Richer Night Resolution; Phase 6 Personas & Async Day Chat; Phase 7 Tool-Use & Expanded Roles) — each its own spec.
