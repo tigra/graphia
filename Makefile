@@ -57,7 +57,7 @@ LAMBDA_ZIPS   = $(addprefix $(LAMBDA_BUILD)/,$(addsuffix .zip,$(LAMBDA_FNS)))
         tf-init tf-fmt tf-validate tf-plan tf-ecr-bootstrap tf-apply tf-destroy \
         wire-env deploy redeploy deploy-stats destroy inspect-diary play play-remote \
         build-lambdas clean-lambdas enable-transaction-search verify-observability \
-        create-stats-strategy eval-dialogue repetition-experiment
+        create-stats-strategy eval-dialogue repetition-experiment ollama-smoke
 
 help:
 	@echo "Container image targets:"
@@ -438,6 +438,19 @@ eval-dialogue:
 #   make repetition-experiment ARGS="--games 10"
 repetition-experiment:
 	uv run python -m graphia.tools.repetition_experiment $(ARGS)
+
+# Real-Ollama structured-output smoke (spec 010 Slice 5 / ADR-010's
+# verify-at-implementation gate): for each LARGE,SMALL model pair, preflight
+# the local Ollama server then drive ONE scripted game on the real provider,
+# counting raw structured-output parse outcomes per schema (Roster / Pointing /
+# Ballot / DayAction) underneath the game's retry-then-fallback masking.
+# Reports RELIABLE/UNRELIABLE per pair — it never switches transports itself.
+# NOT a mocked unit test: needs a running `ollama serve` with the models
+# pulled; burns local model time, no AWS.
+#   make ollama-smoke
+#   make ollama-smoke ARGS="--models qwen2.5:7b,qwen2.5:3b --json smoke.json"
+ollama-smoke:
+	uv run python -m graphia.tools.ollama_smoke $(ARGS)
 
 # --- CloudWatch Transaction Search (one-time, per AWS account).
 #

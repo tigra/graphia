@@ -29,7 +29,7 @@ from graphia.career_events import (
     NoOpCareerEventEmitter,
 )
 from graphia.diary_store import DiaryStore, InProcessDiaryStore
-from graphia.graph import _assemble_graph
+from graphia.graph import _assemble_graph, make_checkpoint_serde
 
 
 def build_runtime_graph(
@@ -63,7 +63,7 @@ def build_runtime_graph(
     db_path = checkpoint_dir / f"{thread_id}.sqlite"
 
     conn = sqlite3.connect(str(db_path), check_same_thread=False)
-    saver = SqliteSaver(conn)
+    saver = SqliteSaver(conn, serde=make_checkpoint_serde())
 
     return _assemble_graph(
         diary_store=diary_store,

@@ -6,6 +6,7 @@ import sqlite3
 from datetime import datetime, timezone
 from functools import partial
 
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
@@ -41,7 +42,25 @@ from graphia.nodes import (
     route_day_turn_or_vote,
     vote_prompt,
 )
-from graphia.state import GameState
+from graphia.state import GameState, PlayerState
+
+
+def make_checkpoint_serde() -> JsonPlusSerializer:
+    """Checkpoint serializer with Graphia's custom state types allowlisted.
+
+    ``PlayerState`` is a dataclass, so msgpack round-trips it as a typed
+    extension; without an explicit allowlist langgraph warns on every
+    deserialization ("Deserializing unregistered type graphia.state.PlayerState
+    ...") and a future release will hard-block it. Registering the class here
+    *extends* langgraph's built-in ``SAFE_MSGPACK_TYPES`` (langchain messages,
+    stdlib types) — it does not replace them — but it does switch off the
+    permissive warn-and-allow default: any *new* custom class stored in
+    ``GameState`` must be added to this list or its deserialization will be
+    blocked. Every ``SqliteSaver`` construction site (local ``build_graph``
+    and the Runtime's ``build_runtime_graph``) must pass this serde so the
+    allowlist can't drift between modes.
+    """
+    return JsonPlusSerializer(allowed_msgpack_modules=[PlayerState])
 
 
 def _with_career(
@@ -207,7 +226,7 @@ def build_graph(
     # manager, which would close the DB as soon as this frame goes out of scope.
     # The graph process owns the lifetime for the duration of the game.
     conn = sqlite3.connect(str(db_path), check_same_thread=False)
-    saver = SqliteSaver(conn)
+    saver = SqliteSaver(conn, serde=make_checkpoint_serde())
 
     graph = _assemble_graph(
         diary_store=diary_store,

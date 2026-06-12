@@ -8,6 +8,15 @@ from pathlib import Path
 
 _TRUTHY = frozenset({"1", "true", "yes", "on"})
 
+_DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
+# Recommended model defaults — smoke-verified 2026-06-12 via
+# `make ollama-smoke`: qwen3-coder:30b (large) + qwen2.5:3b (small) ran a
+# full scripted game with zero structured-output failures. The provisional
+# qwen2.5:7b large candidate was rejected — it answers in prose instead of
+# making the tool call (40/40 DayAction failures).
+_DEFAULT_OLLAMA_LARGE_MODEL = "qwen3-coder:30b"
+_DEFAULT_OLLAMA_SMALL_MODEL = "qwen2.5:3b"
+
 
 @dataclass(slots=True, frozen=True)
 class GraphiaConfig:
@@ -42,6 +51,14 @@ class GraphiaConfig:
     # is ``None`` in local mode where career stats live in ``stats_file``.
     stats_strategy_id: str | None
     stats_namespace: str | None
+    # LLM provider selection (spec 010). ``bedrock`` keeps the existing
+    # cloud path; ``ollama`` targets a locally running Ollama server and is
+    # local-mode only (contradiction with ``remote_mode`` is rejected below).
+    # Defaulted so tests constructing the config directly stay valid.
+    llm_provider: str = "bedrock"
+    ollama_base_url: str = _DEFAULT_OLLAMA_BASE_URL
+    ollama_large_model: str = _DEFAULT_OLLAMA_LARGE_MODEL
+    ollama_small_model: str = _DEFAULT_OLLAMA_SMALL_MODEL
 
 
 def _env_truthy(name: str) -> bool:
@@ -98,6 +115,37 @@ def load_config() -> GraphiaConfig:
                     f"GRAPHIA_ROLE must be 'mafia' or 'law-abiding' (got {role_raw!r})."
                 )
 
+    provider_raw = os.environ.get("GRAPHIA_LLM_PROVIDER", "bedrock")
+    match provider_raw.strip().lower():
+        case "" | "bedrock":
+            llm_provider = "bedrock"
+        case "ollama":
+            llm_provider = "ollama"
+        case _:
+            raise SystemExit(
+                "GRAPHIA_LLM_PROVIDER must be 'bedrock' or 'ollama' "
+                f"(got {provider_raw!r})."
+            )
+
+    ollama_base_url = os.environ.get(
+        "GRAPHIA_OLLAMA_BASE_URL", _DEFAULT_OLLAMA_BASE_URL
+    )
+    ollama_large_model = os.environ.get(
+        "GRAPHIA_OLLAMA_LARGE_MODEL", _DEFAULT_OLLAMA_LARGE_MODEL
+    )
+    ollama_small_model = os.environ.get(
+        "GRAPHIA_OLLAMA_SMALL_MODEL", _DEFAULT_OLLAMA_SMALL_MODEL
+    )
+
+    if remote_mode and llm_provider == "ollama":
+        raise SystemExit(
+            "GRAPHIA_LLM_PROVIDER=ollama can't be combined with remote mode "
+            "(--remote / GRAPHIA_REMOTE=1): Ollama runs on your machine and "
+            "can't be reached from the deployed Runtime. Use the cloud "
+            "provider for --remote, or drop --remote to play locally on "
+            "Ollama."
+        )
+
     if remote_mode and not runtime_invocation_url:
         raise SystemExit(
             "Remote mode requested (--remote / GRAPHIA_REMOTE=1) but "
@@ -105,6 +153,23 @@ def load_config() -> GraphiaConfig:
             "`terraform output runtime_invocation_url` from infra/terraform/ "
             "and add the value to .env as `GRAPHIA_RUNTIME_URL=...`."
         )
+
+    # Offline gate (functional-spec 010 §2.2): an Ollama game must complete
+    # "without reaching any cloud service". A wire-env'd ``.env`` carries a
+    # deployed stack's Memory/Gateway ids, and the diary/career factories
+    # gate on those ids alone — a live local game died on
+    # ``UnauthorizedSSOTokenError`` mid-session because career events still
+    # targeted AgentCore Memory. Blanking the cloud-store ids here, at the
+    # single config choke point, drops stats/diaries to their local/no-op
+    # implementations exactly as on a fresh machine (local career stats in
+    # ``stats_file`` are unaffected). The remote+ollama contradiction guard
+    # above already ensures ollama implies local mode.
+    if llm_provider == "ollama":
+        memory_id = None
+        career_memory_id = None
+        gateway_id = None
+        gateway_url = None
+        stats_strategy_id = None
 
     return GraphiaConfig(
         bearer_token=bearer_token,
@@ -122,4 +187,8 @@ def load_config() -> GraphiaConfig:
         cloudwatch_log_group=cloudwatch_log_group,
         stats_strategy_id=stats_strategy_id,
         stats_namespace=stats_namespace,
+        llm_provider=llm_provider,
+        ollama_base_url=ollama_base_url,
+        ollama_large_model=ollama_large_model,
+        ollama_small_model=ollama_small_model,
     )

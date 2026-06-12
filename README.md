@@ -59,6 +59,30 @@ make play
 
 ---
 
+## Play offline with Ollama
+
+You can also run the full game entirely offline against a local [Ollama](https://ollama.com) server — zero cloud cost, no AWS account needed:
+
+```bash
+# 1. Install Ollama (https://ollama.com), then pull the recommended models:
+ollama pull qwen3-coder:30b   # gameplay model (~19 GB download)
+ollama pull qwen2.5:3b        # mechanical model (name generation)
+
+# 2. Select the provider in .env:
+#    GRAPHIA_LLM_PROVIDER=ollama
+
+# 3. Play as usual:
+make play
+```
+
+The recommended pair (`qwen3-coder:30b` + `qwen2.5:3b`) is the smoke-verified default. Other models can be configured via `GRAPHIA_OLLAMA_LARGE_MODEL` / `GRAPHIA_OLLAMA_SMALL_MODEL`, but they are **not smoke-verified** — weak models tend to answer in prose instead of making the structured tool call, and the game then falls back to canned lines. That is exactly what `make ollama-smoke ARGS="--models <large>,<small>"` exists to check: run it against any candidate pair before committing to a game with it.
+
+Note that AI dialogue quality depends on the local model and is not guaranteed to match the cloud provider's.
+
+Ollama mode is fully offline by construction: any deployed stack's Memory/Gateway ids in your `.env` (`GRAPHIA_MEMORY_ID`, `GRAPHIA_CAREER_MEMORY_ID`, Gateway ids) are automatically ignored, so there is nothing to hand-edit — career stats persist locally to the stats file, and cloud stats resume as soon as you switch the provider back to `bedrock`.
+
+---
+
 ## Remote mode (hosted on AgentCore)
 
 The same game can run against a deployed AgentCore Runtime, provisioned by the Terraform module in [`infra/terraform/`](infra/terraform/README.md) and driven entirely through `make`:

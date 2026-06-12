@@ -18,6 +18,7 @@ import os
 from dotenv import load_dotenv
 
 from graphia.config import load_config
+from graphia.preflight import run_ollama_preflight
 from graphia.ui.app import GraphiaApp
 
 load_dotenv()
@@ -41,5 +42,8 @@ if __name__ == "__main__":
     if args.remote:
         os.environ["GRAPHIA_REMOTE"] = "1"
     # Surface invalid GRAPHIA_ROLE / missing GRAPHIA_RUNTIME_URL on stderr before Textual takes the screen.
-    load_config()
+    config = load_config()
+    # Same fail-fast posture for the Ollama provider: confirm the server is
+    # reachable and the configured models are pulled before any UI renders.
+    run_ollama_preflight(config)
     GraphiaApp().run()
