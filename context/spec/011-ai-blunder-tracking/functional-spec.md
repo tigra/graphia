@@ -52,7 +52,12 @@ The deeper gap is structural: every existing quality measurement prints a one-of
 - **As the** maintainer, **I want** each run's results persisted in the repository, **so that** AI quality has a history I can diff, not a terminal scroll-back I lost.
   - **Acceptance Criteria:**
     - [ ] Each completed run **appends one record** to a ledger that lives **inside the repository** (committed alongside the code, human-readable).
-    - [ ] A record carries at minimum: the run date, the provider and model name(s), the version of the game the run measured (so a record is attributable to the code/prompts that produced it), the number of games and the totals behind each denominator, and the rate of every watched behavior.
+    - [ ] **The state of the code that produced a run is identifiable from its record.** A record carries the exact code version (the commit identifier) and a **clean/dirty flag**: whether the working copy contained changes not yet recorded in the project history at run time. Since prompts, detection rules, and settings all live in the code, a clean record is fully attributable to its commit.
+    - [ ] Given the working copy has unrecorded local changes, when a measurement run starts, then the maintainer is **warned up front** that the results will not be attributable to any recorded version — the run proceeds (iterating before committing is normal), but its ledger record is unmistakably marked as coming from a modified working copy.
+    - [ ] **The models are identified by more than their names.** For local (Ollama) runs the record carries each model's **content fingerprint (digest)** — a re-pulled tag with silently changed weights is distinguishable — plus the local server's version. For cloud runs the record carries the full model identifier; the record acknowledges that provider-side model updates are invisible and the run date is the only proxy.
+    - [ ] A record carries the **effective settings actually used** — the resolved model names (after any environment overrides), the number of games, and the structural seed(s) — so a run can be repeated like-for-like.
+    - [ ] A record carries a **metric-definitions version**, bumped whenever a detection rule changes, so rates measured under different rules are visibly incomparable in the ledger itself.
+    - [ ] A record carries **run-quality counts** — games attempted, completed, and failed/ended early, plus the run's duration — alongside the date, provider, the totals behind each denominator, and the rate of every watched behavior, so a degenerate run cannot masquerade as a clean baseline.
     - [ ] Records **accumulate** — a new run never overwrites or rewrites history; the ledger reads chronologically.
     - [ ] A maintainer can answer "Nova vs Ollama on behavior X" or "before vs after prompt change Y" by reading the ledger alone — no re-running, no external service, no tooling beyond a text editor. (A comparison/reporting command is explicitly **not** part of this increment.)
 
@@ -81,4 +86,5 @@ The deeper gap is structural: every existing quality measurement prints a one-of
 - **Automatic/scheduled runs (CI)** — runs are manual and deliberate, like the project's other live evaluations.
 - **Human-player behavior** — only AI players are measured.
 - **Perfect text-based detection** — approximate, consistently-applied detection is accepted for the speech-based behaviors.
+- **Recording hardware/OS details or dependency versions** beyond what the code version already pins — hardware affects speed, not the watched behaviors, and dependencies are pinned by the committed lockfile (which the clean/dirty flag guards).
 - **Other roadmap items** (Phase 5 Setup Flexibility & Richer Night Resolution; Phase 6 Personas & Async Day Chat; Phase 7 Tool-Use & Expanded Roles) — each its own spec.
