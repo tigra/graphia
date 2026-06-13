@@ -34,3 +34,90 @@ metrics:
     rate: 0.3695652173913043
     count: 34
     denominator: 92
+---
+run:
+  date: '2026-06-13'
+  duration_seconds: 343.364
+  metrics_version: 1
+code:
+  commit: '6d3926885201de4239a689936c0e1a02c248679b'
+  branch: 'main'
+  dirty: true
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.30.6'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 3
+  seed: null
+  max_rounds: null
+quality:
+  games_attempted: 3
+  games_completed: 3
+  games_failed_early: 0
+  duration_seconds: 343.364
+metrics:
+  repetition:
+    rate: 0.4537037037037037
+    count: 49
+    denominator: 108
+  third_person_self_talk:
+    rate: 0.037037037037037035
+    count: 4
+    denominator: 108
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 1
+  self_vote.yes:
+    rate: 0.5
+    count: 1
+    denominator: 2
+notes: 'self-run by Claude (Slice 5 acceptance); tree dirty: parked AWOS command renames + handoff.md uncommitted'
+---
+run:
+  date: '2026-06-13'
+  duration_seconds: 140.33
+  metrics_version: 1
+code:
+  commit: '6d3926885201de4239a689936c0e1a02c248679b'
+  branch: 'main'
+  dirty: true
+provider:
+  name: 'bedrock'
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  base_url: null
+  games: 3
+  seed: null
+  max_rounds: null
+quality:
+  games_attempted: 3
+  games_completed: 3
+  games_failed_early: 0
+  duration_seconds: 140.33
+metrics:
+  repetition:
+    rate: 0.44871794871794873
+    count: 70
+    denominator: 156
+  third_person_self_talk:
+    rate: 0.01282051282051282
+    count: 2
+    denominator: 156
+notes: 'self-run by Claude (Slice 5 cloud comparison vs ollama); tree dirty: parked AWOS renames + handoff.md'
