@@ -53,9 +53,37 @@ metrics:
     rate: 0.4
     count: 4
     denominator: 10
+notes: ''                   # free-text run annotation — the one HUMAN-MUTABLE field
 ```
+
+## `notes` — the one human-mutable field
+
+Every record ends with a top-level **`notes`** key: a free-text annotation of
+*why* the run was made or *what* was observed. It is the **single exception** to
+"never rewrite history":
+
+- **Set it at run time** with `--note "<free text>"` (e.g.
+  `make blunder-eval ARGS="--provider bedrock --games 5 --note 'baseline before prompt change Y'"`).
+- **Or leave it off** — the record then renders as `notes: ''` (present but
+  empty), visibly inviting you to **edit or extend it by hand** afterwards.
+- **Multi-line is allowed.** Hand-write it as a YAML literal block scalar so it
+  stays valid YAML:
+
+  ```yaml
+  notes: |
+    first observation
+    second observation
+  ```
+
+  (The harness emits this same block-scalar form automatically when a `--note`
+  contains newlines.)
+
+Only `notes` is hand-editable; every **machine-measured** field (`run`,
+`provider`, `quality`, `metrics`, and the later provenance blocks) stays
+**append-only and is never rewritten**. Records produced before this field was
+introduced may simply lack a `notes` key — that is fine.
 
 Later increments grow the record (code commit/branch/dirty provenance, the full
 blunder-metric family, Ollama model digests / Bedrock model note, effective
 settings, run duration) — always **added** keys, never a rewrite of the contract
-above.
+above. `notes` always stays last.

@@ -137,6 +137,11 @@ class EvalResult:
     # visible). Slice 2's detectors add their own ``{rate, count, denominator}``
     # entries to this same map.
     metrics: dict[str, dict[str, float | int]] = field(default_factory=dict)
+    # Free-text run annotation (tech-spec 011 §2.5): the ONE human-mutable field.
+    # Populated from ``--note`` at run time or left empty so the rendered record
+    # invites hand-editing; multi-line notes render as a YAML block scalar. The
+    # machine-measured fields above stay append-only/immutable.
+    notes: str = ""
 
 
 def _isolate_cloud_stores() -> None:
@@ -309,6 +314,26 @@ def _yaml_block(mapping: dict[str, object], indent: int) -> list[str]:
     return [f"{pad}{key}: {_yaml_scalar(val)}" for key, val in mapping.items()]
 
 
+def _yaml_block_scalar(key: str, value: str, indent: int) -> list[str]:
+    """Render ``key`` with a multi-line string as a YAML literal block scalar.
+
+    Emits the ``key: |`` literal-block indicator (which preserves newlines
+    verbatim) followed by each content line indented one level deeper than the
+    key, per the YAML spec. A trailing newline in ``value`` is dropped before
+    splitting so the default block-chomping (clip: exactly one final newline)
+    matches what the source string carried — and an empty final line never
+    produces a stray over-indented blank that some readers reject.
+
+    Used only by :func:`render_record` for the ``notes`` field when the note
+    contains a newline; single-line notes go through the quoted-scalar path.
+    """
+    pad = "  " * indent
+    content_pad = "  " * (indent + 1)
+    lines = [f"{pad}{key}: |"]
+    lines += [f"{content_pad}{line}" for line in value.rstrip("\n").split("\n")]
+    return lines
+
+
 def render_record(result: EvalResult, run_date: str) -> str:
     """Render ONE ledger YAML document (no ``---`` separator) for a finished run.
 
@@ -338,6 +363,13 @@ def render_record(result: EvalResult, run_date: str) -> str:
             rate: <float>
             count: <int>
             denominator: <int>
+        notes: '<free text, or empty>'
+
+    ``notes`` is always emitted LAST (after ``metrics``) — present even when
+    empty (``notes: ''``) so the record visibly invites hand-editing. A note
+    with no newline renders as a single safely-quoted scalar; a multi-line note
+    renders as a YAML literal block scalar (``notes: |`` then indented lines).
+    It is the one human-mutable field; the machine fields above stay immutable.
     """
     lines: list[str] = []
 
@@ -386,6 +418,15 @@ def render_record(result: EvalResult, run_date: str) -> str:
             if key in facets
         }
         lines += _yaml_block(ordered, indent=2)
+
+    # ``notes`` — always LAST, always present (the one human-mutable field). A
+    # multi-line note is a YAML block scalar; everything else (incl. empty) is a
+    # single quoted scalar, so an unset note renders as ``notes: ''`` — present
+    # but empty, visibly inviting hand-editing.
+    if "\n" in result.notes:
+        lines += _yaml_block_scalar("notes", result.notes, indent=0)
+    else:
+        lines.append(f"notes: {_yaml_str(result.notes)}")
 
     return "\n".join(lines) + "\n"
 
@@ -498,6 +539,9 @@ def run_eval(config: object, args: argparse.Namespace) -> EvalResult:
         provider=args.provider,
         large_model=large_model,
         small_model=small_model,
+        # ``--note`` (or "" when unset) — the run annotation, rendered last in
+        # the ledger record; a maintainer can extend it by hand afterwards.
+        notes=args.note,
     )
 
     # Accumulate AI lines across games, plus the union of AI player names so the
@@ -588,6 +632,16 @@ def _build_parser() -> argparse.ArgumentParser:
         help=(
             "override the small/mechanical model (sets GRAPHIA_OLLAMA_SMALL_MODEL for "
             "ollama; ignored for bedrock)"
+        ),
+    )
+    ap.add_argument(
+        "--note",
+        type=str,
+        default="",
+        help=(
+            "free-text annotation for this run (why it was made / what you observed); "
+            "recorded as the ledger record's last key. The one human-mutable field — "
+            "leave it off to hand-edit (incl. multi-line) into the YAML afterwards"
         ),
     )
     return ap

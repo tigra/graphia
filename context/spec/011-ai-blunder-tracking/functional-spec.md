@@ -57,7 +57,8 @@ The deeper gap is structural: every existing quality measurement prints a one-of
     - [ ] A record carries the **effective settings actually used** — the resolved model names (after any environment overrides), the number of games, and the structural seed(s) — so a run can be repeated like-for-like.
     - [ ] A record carries a **metric-definitions version**, bumped whenever a detection rule changes, so rates measured under different rules are visibly incomparable in the ledger itself.
     - [ ] A record carries **run-quality counts** — games attempted, completed, and failed/ended early, plus the run's duration — alongside the date, provider, the totals behind each denominator, and the rate of every watched behavior, so a degenerate run cannot masquerade as a clean baseline.
-    - [ ] Records **accumulate** — a new run never overwrites or rewrites history; the ledger reads chronologically.
+    - [ ] A record carries a **free-text notes field** for human annotation — set at run time (a CLI option) and/or hand-edited afterwards — so a maintainer can record *why* a run was made or what they observed ("after the Moderator-label fix", "qwen3-coder felt repetitive"). This is the **one human-mutable field**: it may be added to or edited after the fact, while the machine-measured fields stay append-only and are never rewritten.
+    - [ ] Records **accumulate** — a new run never overwrites or rewrites history (the notes field excepted, per above); the ledger reads chronologically.
     - [ ] A maintainer can answer "Nova vs Ollama on behavior X" or "before vs after prompt change Y" by reading the ledger alone — no re-running, no external service, no tooling beyond a text editor. (A comparison/reporting command is explicitly **not** part of this increment.)
 
 ### 2.4 Measurement only — the game itself is unchanged

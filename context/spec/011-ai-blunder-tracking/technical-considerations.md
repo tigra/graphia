@@ -53,7 +53,7 @@ A module-level **`METRICS_VERSION = 1`** stamps every record; any change to a ru
 
 ### 2.3 Provider selection and isolation — **[Agent: python-backend]**
 
-- CLI: `--provider {ollama,bedrock}` (plus `--games`, `--seed`, `--max-rounds`, optional model overrides). Forces `GRAPHIA_LLM_PROVIDER` in-process; `ollama` runs the existing preflight first.
+- CLI: `--provider {ollama,bedrock}` (plus `--games`, `--seed`, `--max-rounds`, optional model overrides, and `--note "<free text>"` for a run annotation). Forces `GRAPHIA_LLM_PROVIDER` in-process; `ollama` runs the existing preflight first.
 - **Both** providers get the smoke's env isolation (pop `GRAPHIA_*MEMORY_ID`/`GATEWAY*`/`STATS_STRATEGY_ID`): eval games must never pollute the career-stats stores — for Bedrock runs this matters because the offline config gate only covers `ollama`.
 - Bedrock runs need live AWS credentials and cost real tokens; stated in `make help` text and the README evals table.
 
@@ -70,7 +70,8 @@ Collected once per run, before games start:
 
 - New top-level `evals/` directory (with a short `evals/README.md` explaining the ledger contract: append-only, one YAML document per run, never rewrite history).
 - Append one `---`-separated YAML document per run. **Write-only, hand-rendered YAML** (a small serializer for our known, flat-ish record shape) — avoids a PyYAML dependency for a format we only ever write; key order fixed for readable diffs. (If a reader/comparison tool lands later, *that* increment adds the parser dependency.)
-- Record shape (illustrative, not exhaustive): `run` (date, duration, metrics_version), `code` (commit, branch, dirty), `provider` (name, models w/ digests or ids, server_version/note), `settings` (games, seed, max_rounds, resolved models), `quality` (attempted/completed/failed_early), `metrics` (each as `{rate, count, denominator}`).
+- Record shape (illustrative, not exhaustive): `run` (date, duration, metrics_version), `code` (commit, branch, dirty), `provider` (name, models w/ digests or ids, server_version/note), `settings` (games, seed, max_rounds, resolved models), `quality` (attempted/completed/failed_early), `metrics` (each as `{rate, count, denominator}`), and a top-level `notes` free-text field (last key, for discoverability) — populated from `--note` or left empty for hand-editing.
+- **Notes is the one human-mutable field.** The serializer writes it (empty string when unset); the README states that the machine-measured fields are append-only and immutable, while `notes` may be edited/extended by hand after a run (a block scalar so multi-line annotations are valid YAML). This is the documented exception to "never rewrite history".
 
 ### 2.6 Make target + docs — **[Agent: python-backend]**
 

@@ -22,7 +22,10 @@ network, or a live game**. Three concerns are covered:
 3. **The hand-rendered write-only YAML ledger** — ``render_record`` emits the
    documented fixed key order with correctly-typed scalars (model ids carrying
    ``:`` / digits single-quoted, floats stable, ints bare, ``metrics_version``
-   present); ``append_record`` to a ``tmp_path`` ledger twice accumulates two
+   present), and a top-level ``notes`` free-text field rendered LAST: present-
+   but-empty (``notes: ''``) when unset, a safely-quoted scalar for a single-
+   line ``--note``, and a YAML literal block scalar (``notes: |``) when multi-
+   line; ``append_record`` to a ``tmp_path`` ledger twice accumulates two
    ``---``-separated documents without rewriting the first.
 
 The synthetic ``EvalResult`` is built from the real dataclass (imported), so a
@@ -392,13 +395,85 @@ def _synthetic_result() -> EvalResult:
     )
 
 
+def _top_level_keys(doc: str) -> list[str]:
+    """The top-level YAML keys of a rendered record, in document order.
+
+    A top-level key is an unindented ``key:`` or ``key: <scalar>`` line. Picks
+    up both the block headers (``run:``) and a leaf top-level key like
+    ``notes: ''`` — so the ``notes``-is-last assertions read off one helper.
+    """
+    keys: list[str] = []
+    for ln in doc.splitlines():
+        if not ln or ln.startswith(" "):
+            continue
+        head, _, _ = ln.partition(":")
+        if head and head == head.strip():
+            keys.append(head)
+    return keys
+
+
 def test_render_record_emits_the_fixed_top_level_key_order() -> None:
-    """Top-level keys appear in the documented order: run → provider → quality → metrics."""
+    """Top-level keys appear in the documented order: run → provider → quality → metrics → notes."""
     doc = render_record(_synthetic_result(), "2026-06-13")
+
+    assert _top_level_keys(doc) == ["run", "provider", "quality", "metrics", "notes"]
+
+
+def test_render_record_emits_notes_as_the_last_top_level_key() -> None:
+    """A single-line ``--note`` renders as the LAST top-level key, safely quoted.
+
+    The note carries a ``:`` and an apostrophe so the quoting/escaping path is
+    exercised, and the run round-trips with the stable key order ending in
+    ``notes`` (run → provider → quality → metrics → notes).
+    """
+    result = _synthetic_result()
+    result.notes = "baseline run: it's the pre-change Y measurement"
+
+    doc = render_record(result, "2026-06-13")
+
+    assert _top_level_keys(doc) == ["run", "provider", "quality", "metrics", "notes"]
+    # Quoted scalar with the embedded apostrophe doubled per YAML single-quote rules.
+    assert "notes: 'baseline run: it''s the pre-change Y measurement'" in doc
+    # And it is genuinely the final top-level line (after the metrics block).
+    assert doc.rstrip("\n").splitlines()[-1] == (
+        "notes: 'baseline run: it''s the pre-change Y measurement'"
+    )
+
+
+def test_render_record_empty_note_is_present_but_empty() -> None:
+    """An unset/empty note renders as ``notes: ''`` (present, not omitted)."""
+    result = _synthetic_result()
+    assert result.notes == ""  # the dataclass default
+
+    doc = render_record(result, "2026-06-13")
+
+    assert "notes: ''" in doc
+    assert "notes" in _top_level_keys(doc)
+
+
+def test_render_record_multiline_note_is_a_block_scalar() -> None:
+    """A multi-line note renders as a YAML literal block scalar (``notes: |``).
+
+    Assert structurally (the repo ships no YAML parser): the literal ``|`` block
+    indicator opens the key, each content line appears indented one level deeper
+    than the ``notes`` key, and ``notes`` is still the last top-level key.
+    """
+    result = _synthetic_result()
+    result.notes = "first line\nsecond line\nthird line"
+
+    doc = render_record(result, "2026-06-13")
     lines = doc.splitlines()
 
-    top_level = [ln[:-1] for ln in lines if ln and not ln.startswith(" ") and ln.endswith(":")]
-    assert top_level == ["run", "provider", "quality", "metrics"]
+    # The literal block indicator opens the key (not a quoted/flow scalar).
+    assert "notes: |" in lines
+    header_i = lines.index("notes: |")
+    # Each content line is indented one level (two spaces) under the key.
+    assert lines[header_i + 1] == "  first line"
+    assert lines[header_i + 2] == "  second line"
+    assert lines[header_i + 3] == "  third line"
+    # Still the last top-level key, and the body is the document's tail.
+    assert _top_level_keys(doc) == ["run", "provider", "quality", "metrics", "notes"]
+    assert doc.rstrip("\n").splitlines()[-1] == "  third line"
 
 
 def test_render_record_metric_subkeys_are_rate_then_count_then_denominator() -> None:
