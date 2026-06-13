@@ -57,7 +57,8 @@ LAMBDA_ZIPS   = $(addprefix $(LAMBDA_BUILD)/,$(addsuffix .zip,$(LAMBDA_FNS)))
         tf-init tf-fmt tf-validate tf-plan tf-ecr-bootstrap tf-apply tf-destroy \
         wire-env deploy redeploy deploy-stats destroy inspect-diary play play-remote \
         build-lambdas clean-lambdas enable-transaction-search verify-observability \
-        create-stats-strategy eval-dialogue repetition-experiment ollama-smoke
+        create-stats-strategy eval-dialogue repetition-experiment ollama-smoke \
+        blunder-eval
 
 help:
 	@echo "Container image targets:"
@@ -94,6 +95,12 @@ help:
 	@echo ""
 	@echo "Inspection:"
 	@echo "  make inspect-diary      Pretty-print diary entries from the deployed Memory (uses .env)."
+	@echo ""
+	@echo "Live AI-quality evals (reach a REAL model — NOT the mocked suite; run deliberately):"
+	@echo "  make eval-dialogue      Play N real-Nova games and score AI Day-speech repetition. Bedrock: needs AWS creds, costs tokens."
+	@echo "  make repetition-experiment  Rigorous paired A/B of repetition fixes on real Nova (bootstrap CIs). Bedrock: long run, costs tokens."
+	@echo "  make ollama-smoke       Real-Ollama structured-output smoke per model pair. Needs a running 'ollama serve' with the models pulled."
+	@echo "  make blunder-eval       Play N games on a chosen provider, count self-consistency blunders + repetition, append one record to evals/blunder-ledger.yaml. Both providers; Bedrock costs real tokens. ARGS=\"--provider ollama|bedrock --games N\"."
 	@echo ""
 	@echo "Career stats (spec 006 / ADR 007 — self-managed long-term Memory strategy):"
 	@echo "  make create-stats-strategy      Create the self-managed strategy out-of-band (provider gap); prints its strategyId."
@@ -451,6 +458,19 @@ repetition-experiment:
 #   make ollama-smoke ARGS="--models qwen2.5:7b,qwen2.5:3b --json smoke.json"
 ollama-smoke:
 	uv run python -m graphia.tools.ollama_smoke $(ARGS)
+
+# AI Blunder Tracking (spec 011): play N unattended games against a chosen REAL
+# provider, count self-consistency blunders (self-vote, Mafioso peer-vote,
+# third-person self-talk) plus the spec-009 repetition measure, and append one
+# dated, comparable record to the repo-committed ledger evals/blunder-ledger.yaml
+# — "baby MLOps" for AI quality: measure, commit the record, change something,
+# measure again, compare by reading two records. NOT a mocked unit test: reaches
+# a real model. Works for both providers — Bedrock needs live AWS creds and
+# costs real tokens; Ollama needs the verified local pair (boot preflight gates).
+#   make blunder-eval ARGS="--provider ollama --games 5"
+#   make blunder-eval ARGS="--provider bedrock --games 5 --seed 20260613"
+blunder-eval:
+	uv run python -m graphia.tools.blunder_eval $(ARGS)
 
 # --- CloudWatch Transaction Search (one-time, per AWS account).
 #
