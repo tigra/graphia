@@ -53,11 +53,13 @@ from graphia.tools.blunder_eval import (
     PROVIDERS,
     _CLOUD_STORE_ENV_VARS,
     _apply_model_overrides,
+    _attach_ci,
     _isolate_cloud_stores,
     append_record,
     main,
     render_record,
     score_repetition,
+    wilson_ci,
 )
 
 # The non-cloud-store env vars the harness also mutates on the pre-run path.
@@ -383,7 +385,7 @@ def _synthetic_result() -> EvalResult:
     dotted Bedrock id, so the renderer's single-quoting of string scalars is
     exercised against values a YAML reader could otherwise mis-type.
     """
-    return EvalResult(
+    result = EvalResult(
         provider="bedrock",
         large_model="us.amazon.nova-pro-v1:0",
         small_model="qwen2.5:3b",
@@ -393,6 +395,10 @@ def _synthetic_result() -> EvalResult:
         ai_speeches=["line one", "line two"],
         metrics={"repetition": {"rate": 0.4, "count": 2, "denominator": 5}},
     )
+    # Mirror run_eval: the Wilson CI is attached to every present metric, so the
+    # rendered record carries ci_low/ci_high right after denominator.
+    _attach_ci(result.metrics)
+    return result
 
 
 def _top_level_keys(doc: str) -> list[str]:
@@ -500,19 +506,36 @@ def test_render_record_multiline_note_is_a_block_scalar() -> None:
     assert doc.rstrip("\n").splitlines()[-1] == "  third line"
 
 
-def test_render_record_metric_subkeys_are_rate_then_count_then_denominator() -> None:
-    """The repetition metric's sub-keys keep the fixed rate → count → denominator order."""
+def test_render_record_metric_subkeys_are_rate_count_denominator_then_ci() -> None:
+    """The metric sub-keys keep the fixed rate → count → denominator → ci_low → ci_high order."""
     doc = render_record(_synthetic_result(), "2026-06-13")
     lines = doc.splitlines()
 
     rate_i = lines.index("    rate: 0.4")
     count_i = lines.index("    count: 2")
     denom_i = lines.index("    denominator: 5")
-    assert rate_i < count_i < denom_i
+    # The Wilson CI floats are siblings AFTER denominator, in low → high order.
+    low_i = next(i for i, ln in enumerate(lines) if ln.startswith("    ci_low: "))
+    high_i = next(i for i, ln in enumerate(lines) if ln.startswith("    ci_high: "))
+    assert rate_i < count_i < denom_i < low_i < high_i
     # And the metric sits under its name, under the metrics block.
     assert "metrics:" in lines
     assert "  repetition:" in lines
     assert lines.index("  repetition:") < rate_i
+
+
+def test_render_record_present_metric_carries_a_wilson_ci_band() -> None:
+    """A present metric (2/5) renders ci_low/ci_high matching ``wilson_ci``.
+
+    The CI is derived/supplementary — attached by ``_attach_ci`` from the
+    metric's own count/denominator — so the rendered band must equal
+    ``wilson_ci(2, 5)`` to the float ``repr`` the renderer emits.
+    """
+    doc = render_record(_synthetic_result(), "2026-06-13")
+    low, high = wilson_ci(2, 5)
+
+    assert f"    ci_low: {low!r}" in doc
+    assert f"    ci_high: {high!r}" in doc
 
 
 def test_render_record_scalar_typing_quotes_strings_keeps_numbers_bare() -> None:

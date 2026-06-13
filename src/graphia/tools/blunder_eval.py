@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import random
 import re
@@ -110,6 +111,59 @@ _NEAR_DUP_THRESHOLD = 0.85
 # anywhere else). Slice 2 owns this constant and the rule set it stamps.
 METRICS_VERSION = 1
 
+# Wilson score confidence-interval constants for the per-metric reliability band
+# (spec 011). The CI is DERIVED/SUPPLEMENTARY — it reads off each metric's
+# count/denominator and does NOT change any detection rule or denominator, so it
+# does NOT bump ``METRICS_VERSION``; rates measured under one rule set stay
+# comparable, the interval just annotates how trustworthy each one is.
+_CI_LEVEL = 0.95
+# 95% two-sided z-quantile (Φ⁻¹(0.975)).
+_CI_Z = 1.96
+
+
+def wilson_ci(
+    count: int, denominator: int, z: float = _CI_Z
+) -> tuple[float, float]:
+    """The 95% Wilson score interval for a proportion, clamped to ``[0, 1]``.
+
+    A closed-form, any-``n`` confidence interval for the underlying rate of a
+    metric given its ``count`` near-duplicates / blunders out of ``denominator``
+    opportunities — so a reader can tell a solid ``repetition 0.45 @ n=108`` from
+    a noisy ``self_vote.yes 0.50 @ n=2`` by the *width* of the band. Closed-form
+    (no resampling), which is why it is the Wilson interval and not a bootstrap.
+
+    Standard formula with p̂ = count / n::
+
+        center = (p̂ + z²/2n) / (1 + z²/n)
+        half   = z·√(p̂(1−p̂)/n + z²/4n²) / (1 + z²/n)
+        (low, high) = (center − half, center + half), clamped to [0, 1]
+
+    Edge handling: ``count == 0`` pins ``low`` to exactly ``0.0`` and
+    ``count == denominator`` pins ``high`` to exactly ``1.0`` (the Wilson bound is
+    already ≈ there; we make it exact). A 0 denominator yields ``(0.0, 1.0)`` —
+    total ignorance — but present metrics always have ``denominator > 0``.
+
+    Wilson score interval; **treats each line/ballot as an independent Bernoulli
+    trial — for ``repetition`` (near-dup is correlated within a game) this
+    UNDERSTATES uncertainty; accepted tradeoff for a closed-form any-n
+    interval.** Pure (no I/O, no global state) so it is unit-testable on known
+    values.
+    """
+    if denominator <= 0:
+        return (0.0, 1.0)
+
+    n = denominator
+    p_hat = count / n
+    z2 = z * z
+    denom = 1.0 + z2 / n
+    center = (p_hat + z2 / (2 * n)) / denom
+    half = (z * math.sqrt(p_hat * (1.0 - p_hat) / n + z2 / (4 * n * n))) / denom
+
+    low = 0.0 if count == 0 else max(0.0, center - half)
+    high = 1.0 if count == denominator else min(1.0, center + half)
+    return (low, high)
+
+
 # The word-boundary pattern used by ``score_third_person_self_talk`` to decide
 # whether a speaker names *themselves* in their own line. A player name is
 # embedded with ``re.escape`` (names are free strings and could in theory carry
@@ -180,7 +234,9 @@ class EvalResult:
     # The one metric this slice computes, shaped as ``{rate, count, denominator}``
     # (functional-spec 011 §2.1: every behaviour is a rate with its denominator
     # visible). Slice 2's detectors add their own ``{rate, count, denominator}``
-    # entries to this same map.
+    # entries to this same map. ``run_eval`` then post-processes each PRESENT
+    # metric through ``wilson_ci`` to attach ``ci_low``/``ci_high`` siblings (the
+    # derived 95% reliability band; spec 011).
     metrics: dict[str, dict[str, float | int]] = field(default_factory=dict)
     # --- Slice 4 run-provenance blocks (functional-spec 011 §2.3, tech §2.4) ---
     # The code provenance: ``{"commit": <sha|None>, "branch": <str|None>,
@@ -944,6 +1000,27 @@ def _facets(count: int, denominator: int) -> dict[str, float | int | None]:
     return {"rate": count / denominator, "count": count, "denominator": denominator}
 
 
+def _attach_ci(metrics: dict[str, dict[str, float | int | None]]) -> None:
+    """Attach a Wilson ``ci_low``/``ci_high`` to every PRESENT metric, in place.
+
+    A present metric (``denominator > 0`` — the only kind ``run_eval`` keeps in
+    the record) gets two float siblings AFTER ``denominator`` from
+    :func:`wilson_ci` on its own ``count``/``denominator``, giving each rate a
+    reliability band (a wide one flags a small-``n`` noise rate). Absent metrics
+    never reach here — ``run_eval`` already omitted them — so the
+    absent-omission convention is untouched and no CI is invented for a 0/0
+    metric. The CI is derived/supplementary: it reads existing fields only and
+    does NOT bump ``METRICS_VERSION``.
+    """
+    for facets in metrics.values():
+        denominator = facets.get("denominator")
+        if not isinstance(denominator, int) or denominator <= 0:
+            continue  # defensive — present metrics always have denominator > 0
+        low, high = wilson_ci(int(facets["count"]), denominator)
+        facets["ci_low"] = low
+        facets["ci_high"] = high
+
+
 def score_vote_blunders(
     messages: list,
     players: dict[str, PlayerState],
@@ -1201,6 +1278,8 @@ def render_record(result: EvalResult, run_date: str) -> str:
             rate: <float>
             count: <int>
             denominator: <int>
+            ci_low: <float>   # Wilson 95% lower bound (every present metric)
+            ci_high: <float>  # Wilson 95% upper bound
         notes: '<free text, or empty>'
 
     Absent provenance fields render as YAML ``null`` (an unreached git commit, a
@@ -1311,10 +1390,13 @@ def render_record(result: EvalResult, run_date: str) -> str:
     lines.append("metrics:")
     for metric_name, facets in result.metrics.items():
         lines.append(f"  {metric_name}:")
-        # Fixed sub-key order for clean diffs across runs and metrics.
+        # Fixed sub-key order for clean diffs across runs and metrics. ``ci_low``
+        # / ``ci_high`` are the Wilson 95% reliability band, rendered as floats
+        # right after ``denominator`` whenever they were attached (every present
+        # metric); a synthetic record without them simply omits the two lines.
         ordered = {
             key: facets[key]
-            for key in ("rate", "count", "denominator")
+            for key in ("rate", "count", "denominator", "ci_low", "ci_high")
             if key in facets
         }
         lines += _yaml_block(ordered, indent=2)
@@ -1634,6 +1716,14 @@ def run_eval(config: object, args: argparse.Namespace) -> EvalResult:
         totals = action_totals[metric]
         if totals["denominator"] > 0:
             result.metrics[metric] = _facets(totals["count"], totals["denominator"])
+
+    # Attach a Wilson 95% CI (ci_low/ci_high) to every PRESENT metric so each
+    # rate carries its own reliability band — a wide band flags a small-n rate
+    # (e.g. self_vote.yes 0.50 @ n=2) as noise, a tight one (repetition 0.45 @
+    # n=108) as solid. Derived/supplementary: reads count/denominator only, so it
+    # does not change detection and does not bump METRICS_VERSION. Absent metrics
+    # were already omitted above, so none gets a CI.
+    _attach_ci(result.metrics)
 
     # Stamp the wall-clock duration (monotonic delta) onto the run/quality
     # block before rendering, so a degenerate (e.g. all-failed) run cannot

@@ -80,6 +80,8 @@ metrics:                        # each metric is a rate WITH its denominator vis
     rate: 0.4                   # count / denominator
     count: 4
     denominator: 10
+    ci_low: 0.168               # Wilson 95% lower bound on the true rate (every present metric)
+    ci_high: 0.687              # Wilson 95% upper bound — a WIDE band means a small-n, low-trust rate
 notes: ''                       # free-text run annotation — the one HUMAN-MUTABLE field (always last)
 ```
 
@@ -113,9 +115,9 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   baseline: `games_attempted`, `games_completed`, `games_failed_early` (games
   that raised mid-run and were skipped), and `duration_seconds` (mirrored from
   `run`).
-- **`metrics`** — a map of metric-name → `{rate, count, denominator}` (`rate` =
-  `count / denominator`). The six watched behaviours, each AI-only (the human
-  player is never counted):
+- **`metrics`** — a map of metric-name → `{rate, count, denominator, ci_low,
+  ci_high}` (`rate` = `count / denominator`). The six watched behaviours, each
+  AI-only (the human player is never counted):
   - **`repetition`** — AI Day lines that are name-masked near-duplicates of
     another AI line (the spec-009 measure, difflib ratio ≥ 0.85). *Denominator:
     AI spoken lines.*
@@ -144,6 +146,24 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   `repetition`, `third_person_self_talk` — share the "AI spoken lines"
   denominator, which is always > 0 in a real game, so they stay present with a
   genuine `0.0` when clean.)
+
+  **`ci_low` / `ci_high` — the Wilson 95% confidence interval.** Every *present*
+  metric carries a closed-form [Wilson score interval](https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Wilson_score_interval)
+  for the true rate at a 95% confidence level: `ci_low` is the lower bound,
+  `ci_high` the upper, each clamped to `[0, 1]`. It exists so a reader can judge
+  **per-metric reliability from the band's width** — `repetition 0.45` over
+  `denominator: 108` is a tight, trustworthy band, whereas `self_vote.yes 0.50`
+  over `denominator: 2` is a very wide one (≈ `0.09 … 0.91`): the same rate, but
+  noise, not signal. The interval is **derived/supplementary** — computed from
+  `count` and `denominator` alone, it changes no detection rule, so adding it did
+  **not** bump `metrics_version` and rates stay cross-comparable. **Caveat for
+  `repetition`:** the interval treats each line as an independent Bernoulli
+  trial, but near-duplication is *correlated within a game* (an AI that loops
+  tends to loop repeatedly in the same game), so for `repetition` the band
+  **understates** the true uncertainty — an accepted tradeoff for a closed-form
+  interval that works at any `n`. **Records written before this field landed do
+  not carry `ci_low` / `ci_high`** (read those rates without a band, as with any
+  pre-provenance field below).
 - **`notes`** — the one human-mutable field; always last. See below.
 
 ## `notes` — the one human-mutable field

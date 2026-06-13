@@ -43,7 +43,9 @@ Speech-based (**approximate by design**, functional-spec §2.1), over named `AIM
 
 *(Self-accusation — own name within a suspicion-keyword window — was considered and **dropped**: keyword-lexicon matching is too fragile to compare across runs and models. `third_person_self_talk` survives because it needs only the speaker's own name, no lexicon.)*
 
-A module-level **`METRICS_VERSION = 1`** stamps every record; any change to a rule or denominator bumps it (functional-spec §2.3).
+Each present metric additionally carries a **Wilson 95% score interval** (`ci_low`/`ci_high`, closed-form, `z=1.96`) so per-metric reliability is visible (a tight band at large n vs a wide band at n=2). It treats each line/ballot as an independent Bernoulli trial — for `repetition` (near-dup is correlated within a game) this understates uncertainty, an accepted closed-form-any-n tradeoff (documented in `evals/README.md`). The CI is **derived/supplementary** — attached post-scoring to present metrics only (absent metrics stay omitted) and does **not** bump `METRICS_VERSION`.
+
+A module-level **`METRICS_VERSION = 1`** stamps every record; any change to a detection rule or denominator bumps it (functional-spec §2.3) — the derived CI does not.
 
 ### 2.2 Capture instrumentation — shared, provider-agnostic — **[Agent: langgraph-agentic]**
 
@@ -70,7 +72,7 @@ Collected once per run, before games start:
 
 - New top-level `evals/` directory (with a short `evals/README.md` explaining the ledger contract: append-only, one YAML document per run, never rewrite history).
 - Append one `---`-separated YAML document per run. **Write-only, hand-rendered YAML** (a small serializer for our known, flat-ish record shape) — avoids a PyYAML dependency for a format we only ever write; key order fixed for readable diffs. (If a reader/comparison tool lands later, *that* increment adds the parser dependency.)
-- Record shape (illustrative, not exhaustive): `run` (date, duration, metrics_version), `code` (commit, branch, dirty), `provider` (name, models w/ digests or ids, server_version/note), `settings` (games, seed, max_rounds, resolved models), `quality` (attempted/completed/failed_early), `metrics` (each as `{rate, count, denominator}`), and a top-level `notes` free-text field (last key, for discoverability) — populated from `--note` or left empty for hand-editing.
+- Record shape (illustrative, not exhaustive): `run` (date, duration, metrics_version), `code` (commit, branch, dirty), `provider` (name, models w/ digests or ids, server_version/note), `settings` (games, seed, max_rounds, resolved models), `quality` (attempted/completed/failed_early), `metrics` (each present metric as `{rate, count, denominator, ci_low, ci_high}`; absent metrics omitted), and a top-level `notes` free-text field (last key, for discoverability) — populated from `--note` or left empty for hand-editing.
 - **Notes is the one human-mutable field.** The serializer writes it (empty string when unset); the README states that the machine-measured fields are append-only and immutable, while `notes` may be edited/extended by hand after a run (a block scalar so multi-line annotations are valid YAML). This is the documented exception to "never rewrite history".
 
 ### 2.6 Make target + docs — **[Agent: python-backend]**

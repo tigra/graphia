@@ -37,6 +37,7 @@ call site.
 
 from __future__ import annotations
 
+import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from graphia.llm import DayAction
@@ -49,11 +50,13 @@ from graphia.prompts import (
 from graphia.state import PlayerState
 from graphia.tools.blunder_eval import (
     EvalResult,
+    _attach_ci,
     make_day_speaker_resolver,
     render_record,
     score_self_vote_initiation,
     score_third_person_self_talk,
     score_vote_blunders,
+    wilson_ci,
 )
 from graphia.tools.instrument import CaptureRecord, InstrumentedModel
 
@@ -624,3 +627,127 @@ def test_self_vote_initiation_absent_when_no_ai_vote_attempt() -> None:
     facets = score_self_vote_initiation(captures)
 
     assert facets == {"rate": None, "count": 0, "denominator": 0}
+
+
+# ===========================================================================
+# 4. wilson_ci — the per-metric Wilson 95% reliability band (spec 011).
+#
+# Closed-form (no resampling): a tight band on a large-n rate, a WIDE band on a
+# tiny-n rate, clamped to [0, 1]. The whole point is that a reader can tell a
+# solid repetition 0.45 @ n=108 from a noisy self_vote.yes 0.50 @ n=2 by width.
+# ===========================================================================
+
+
+def test_wilson_ci_50_of_100_is_centered_and_tight() -> None:
+    """A balanced large-n proportion (50/100) gives the textbook ≈(0.404, 0.596)."""
+    low, high = wilson_ci(50, 100)
+
+    assert low == pytest.approx(0.404, abs=1e-3)
+    assert high == pytest.approx(0.596, abs=1e-3)
+
+
+def test_wilson_ci_zero_count_pins_low_to_zero() -> None:
+    """``count == 0`` pins ci_low to exactly 0.0 (and ci_high stays below 1)."""
+    low, high = wilson_ci(0, 10)
+
+    assert low == 0.0
+    assert high < 1.0
+    assert high > 0.0  # 0/10 is not certainty of 0 — the upper bound is positive
+
+
+def test_wilson_ci_full_count_pins_high_to_one() -> None:
+    """``count == denominator`` pins ci_high to exactly 1.0 (ci_low stays above 0)."""
+    low, high = wilson_ci(10, 10)
+
+    assert high == 1.0
+    assert low > 0.0
+    assert low < 1.0  # 10/10 is not certainty of 1 — the lower bound is below 1
+
+
+def test_wilson_ci_tiny_denominator_is_wide() -> None:
+    """The whole point: 1/2 yields a WIDE band (high − low > 0.6) — noise, not signal."""
+    low, high = wilson_ci(1, 2)
+
+    assert high - low > 0.6
+    assert 0.0 <= low < high <= 1.0
+
+
+def test_wilson_ci_large_denominator_is_tight() -> None:
+    """A large-n rate (49/108) gives a narrow band — a reliable, comparable rate."""
+    low, high = wilson_ci(49, 108)
+
+    # Centered near the point estimate, and clearly tighter than the 1/2 case.
+    assert low == pytest.approx(0.362, abs=1e-2)
+    assert high == pytest.approx(0.546, abs=1e-2)
+    assert high - low < 0.2
+
+
+def test_wilson_ci_is_always_clamped_to_unit_interval() -> None:
+    """Every (count, denominator) yields a band within [0, 1] with low ≤ high."""
+    for count, denominator in [(0, 1), (1, 1), (0, 3), (3, 3), (1, 2), (49, 108)]:
+        low, high = wilson_ci(count, denominator)
+        assert 0.0 <= low <= high <= 1.0
+
+
+def test_wilson_ci_zero_denominator_is_total_ignorance() -> None:
+    """A 0 denominator (no opportunity) returns the full (0.0, 1.0) — defensive."""
+    assert wilson_ci(0, 0) == (0.0, 1.0)
+
+
+# ===========================================================================
+# 5. CI attachment + rendering: present metrics carry ci_low/ci_high in order;
+#    absent (omitted) metrics stay CI-free.
+# ===========================================================================
+
+
+def test_attach_ci_adds_band_to_present_metric_only() -> None:
+    """``_attach_ci`` annotates a present metric in place and skips a 0/0 metric.
+
+    A present metric (denominator > 0) gains ci_low/ci_high equal to
+    ``wilson_ci`` of its own count/denominator; a degenerate 0/0 entry (which
+    ``run_eval`` would already have omitted) is left untouched — no CI invented.
+    """
+    metrics: dict[str, dict[str, float | int | None]] = {
+        "repetition": {"rate": 1 / 2, "count": 1, "denominator": 2},
+        "degenerate": {"rate": None, "count": 0, "denominator": 0},
+    }
+
+    _attach_ci(metrics)
+
+    low, high = wilson_ci(1, 2)
+    assert metrics["repetition"]["ci_low"] == low
+    assert metrics["repetition"]["ci_high"] == high
+    assert "ci_low" not in metrics["degenerate"]
+    assert "ci_high" not in metrics["degenerate"]
+
+
+def test_render_present_metric_carries_ci_absent_metric_omitted() -> None:
+    """A rendered record shows a present metric's CI in order; an absent one has none.
+
+    Mirrors the run_eval seam: only present-opportunity metrics make it into
+    ``result.metrics`` (and through ``_attach_ci``). The rendered record names
+    ``repetition`` with ci_low/ci_high right after denominator, and never
+    mentions the omitted ``peer_vote.yes`` — so an absent metric carries no CI.
+    """
+    result = EvalResult(
+        provider="ollama",
+        metrics={
+            "repetition": {"rate": 49 / 108, "count": 49, "denominator": 108},
+            # peer_vote.yes had a 0 denominator this batch → OMITTED (no CI).
+        },
+    )
+    _attach_ci(result.metrics)
+
+    doc = render_record(result, "2026-06-13")
+    lines = doc.splitlines()
+
+    denom_i = lines.index("    denominator: 108")
+    low_i = next(i for i, ln in enumerate(lines) if ln.startswith("    ci_low: "))
+    high_i = next(i for i, ln in enumerate(lines) if ln.startswith("    ci_high: "))
+    assert denom_i < low_i < high_i
+
+    low, high = wilson_ci(49, 108)
+    assert f"    ci_low: {low!r}" in doc
+    assert f"    ci_high: {high!r}" in doc
+
+    assert "peer_vote.yes" not in doc
