@@ -107,9 +107,9 @@ uv run pytest -q
 
 The suite is fully mocked at the `ChatBedrockConverse` boundary (an autouse fixture fails loudly if any test reaches real Bedrock), so it runs offline and deterministically.
 
-### Dialogue-quality evals (real Bedrock)
+### AI-quality evals (real model, outside `pytest`)
 
-Beyond the mocked unit suite, several `make` targets exercise the *actual* AI behaviour against a live gameplay model to catch quality regressions the mocked tests structurally can't — e.g. AI players echoing each other into a repetition spiral:
+Beyond the mocked unit suite, several `make` targets exercise the *actual* AI behaviour against a live gameplay model (Bedrock **or** local Ollama) to catch quality regressions the mocked tests structurally can't — e.g. AI players echoing each other into a repetition spiral, or an AI voting to execute itself. `make blunder-eval` additionally accumulates a **repo-committed quality ledger** ([`evals/blunder-ledger.yaml`](evals/README.md)) — each run a provenance-stamped record with per-metric Wilson confidence intervals, so AI quality is a tracked, diffable property ("baby MLOps") rather than a one-off terminal report:
 
 | Target | What it does |
 |---|---|
