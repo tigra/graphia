@@ -89,14 +89,49 @@ def _alive_ids_in_roster_order(players: dict[str, PlayerState]) -> list[str]:
     return [p.id for p in players.values() if p.is_alive]
 
 
-def _render_context(messages: list) -> str:
-    """Render the last ``_CONTEXT_WINDOW`` messages compactly for prompts."""
+def _render_context(messages: list, speaker_id: str) -> str:
+    """Render the last ``_CONTEXT_WINDOW`` speaker-visible messages for prompts.
+
+    Privacy filter (gameplay integrity): a message carrying
+    ``additional_kwargs["private_to"] == other_id`` is a whisper addressed to
+    a *different* player (e.g. the Mafia teammate-intro sent to each mafioso,
+    or the human's private role reveal). Those must NOT enter ``speaker_id``'s
+    context — otherwise a Law-abiding AI could read the Mafia roster. We keep
+    public messages (no ``private_to``) and the speaker's OWN whispers; the
+    latter is load-bearing because a mafioso's only record of its team is its
+    own intro whisper (the Day/vote prompts never re-inject the role).
+
+    Labels match the human UI (``ui/app.py``): a public ``SystemMessage`` is
+    the Moderator's voice and is labelled ``Moderator``; the speaker's own
+    private whisper is labelled ``Moderator (private)``. Player messages keep
+    their ``name``.
+
+    Windowing order: filter to speaker-visible messages FIRST, then take the
+    last ``_CONTEXT_WINDOW`` — so other players' whispers never consume the
+    visible-context budget and a full Day round's public speeches stay visible
+    (spec 008, "Same-Round Message Visibility").
+    """
     if not messages:
         return "(no prior discussion)"
-    recent = messages[-_CONTEXT_WINDOW:]
+    visible: list = []
+    for msg in messages:
+        extra = getattr(msg, "additional_kwargs", {}) or {}
+        private_to = extra.get("private_to")
+        if private_to and private_to != speaker_id:
+            # Whisper addressed to someone else — never visible to this speaker.
+            continue
+        visible.append(msg)
+    recent = visible[-_CONTEXT_WINDOW:]
     lines: list[str] = []
     for msg in recent:
-        speaker = getattr(msg, "name", None) or msg.__class__.__name__
+        extra = getattr(msg, "additional_kwargs", {}) or {}
+        private_to = extra.get("private_to")
+        if isinstance(msg, SystemMessage):
+            # Moderator voice. The speaker's own whisper is labelled to match
+            # the UI's "Moderator (private)"; public lines are "Moderator".
+            speaker = "Moderator (private)" if private_to else "Moderator"
+        else:
+            speaker = getattr(msg, "name", None) or msg.__class__.__name__
         content = getattr(msg, "content", "")
         if not isinstance(content, str):
             content = str(content)
@@ -183,7 +218,7 @@ def _ai_day_action(
     """
     players = state.get("players", {})
     roster = _render_alive_roster(players)
-    context = _render_context(list(state.get("messages", [])))
+    context = _render_context(list(state.get("messages", [])), speaker.id)
     alive_ids = {p.id for p in players.values() if p.is_alive}
 
     llm = get_large().with_structured_output(DayAction)
@@ -456,7 +491,7 @@ def _ai_ballot(
     state: GameState,
 ) -> Ballot:
     """Ask Sonnet for a Yes/No ballot. Conservative fallback on failure."""
-    context = _render_context(list(state.get("messages", [])))
+    context = _render_context(list(state.get("messages", [])), voter.id)
     llm = get_large().with_structured_output(Ballot)
     base_messages: list = [
         SystemMessage(content=AI_VOTE_SYSTEM),

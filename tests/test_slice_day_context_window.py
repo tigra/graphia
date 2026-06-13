@@ -4,7 +4,13 @@
 builds the "recent discussion" shown to a speaker for both the AI day-speak
 prompt and the AI vote prompt. It renders ``messages[-_CONTEXT_WINDOW:]``, one
 line per message as ``f"{speaker}: {content}"`` where ``speaker`` is the
-message's ``name`` (falling back to its class name).
+message's ``name`` (a public ``SystemMessage`` — the Moderator's voice — is
+labelled ``Moderator`` to match the UI).
+
+``_render_context`` now takes a ``speaker_id`` so it can drop whispers
+addressed to *other* players; these tests use all-public message lists, so any
+non-empty speaker id renders them identically. Privacy/label behaviour proper
+is covered in ``tests/test_day_context_privacy.py``.
 
 These are pure tests over a hand-built message list: no graph, no LLM, no AWS.
 They lock in same-round message visibility (functional spec §2.1 "Same-Round
@@ -23,6 +29,10 @@ from graphia.nodes.day import _CONTEXT_WINDOW, _render_context
 PLAYER_COUNT = 7
 FULL_ROUND_MESSAGES = PLAYER_COUNT + 1  # 7 speeches + 1 day-open announcement
 
+# Any non-empty speaker id renders an all-public message list identically;
+# these tests carry no whispers, so the value is irrelevant to the assertions.
+SPEAKER_ID = "speaker-1"
+
 
 def _build_full_round() -> list:
     """One day-open ``SystemMessage`` plus seven named ``AIMessage`` speeches."""
@@ -38,10 +48,12 @@ def test_full_round_every_speaker_line_appears() -> None:
     """Every speaker in a full round — including the earliest — is rendered."""
     messages = _build_full_round()
 
-    rendered = _render_context(messages)
+    rendered = _render_context(messages, SPEAKER_ID)
 
     # The day-open announcement and all seven speeches must survive the window.
-    assert "The Day begins. Discuss." in rendered
+    # The Moderator's public SystemMessage is labelled "Moderator" (matching
+    # the UI), not "SystemMessage".
+    assert "Moderator: The Day begins. Discuss." in rendered
     for i in range(PLAYER_COUNT):
         assert f"P{i}: speech from player {i}" in rendered
     # The earliest AIMessage specifically must not be trimmed.
@@ -71,7 +83,7 @@ def test_earlier_speaker_visible_to_later_speaker() -> None:
             AIMessage(content=f"speech from player {i}", name=f"P{i}")
         )
 
-    rendered = _render_context(messages)
+    rendered = _render_context(messages, SPEAKER_ID)
 
     assert "P0: speech from player 0" in rendered
     assert "P5: speech from player 5" in rendered
