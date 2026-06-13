@@ -1,7 +1,7 @@
 # Functional Specification: AI Blunder Tracking (Repo-Persisted Quality Ledger)
 
 - **Roadmap Item:** Not a roadmap feature — a quality-measurement increment in the spirit of the Day-phase integrity trio (007–009) and the dialogue evals they produced, requested ad hoc. (Roadmap order unaffected; Phase 5 remains next.)
-- **Status:** Draft
+- **Status:** Completed
 - **Author:** Alexey Tigarev
 
 ---
@@ -30,44 +30,44 @@ The deeper gap is structural: every existing quality measurement prints a one-of
 
 - **As the** maintainer, **I want** each blunder defined precisely enough to count, **so that** rates are comparable across runs and models.
   - **Acceptance Criteria:**
-    - [ ] **Self-vote** is counted as **two separate measures** — an AI **initiating** a vote against itself, and an AI casting a **Yes ballot** on its own execution. The initiation counts even when the game's own safety nets quietly absorb it (the AI's own turn-handler rejects a self-targeted vote) — the measurement sees the attempt, not just the survivors.
-    - [ ] **Mafioso peer-vote** is counted as **two separate measures** — a Mafioso **initiating** a vote against a fellow Mafioso, and a Mafioso casting a **Yes ballot** on a fellow Mafioso's execution (tracked as signals, not forbidden by the game).
-    - [ ] Vote-**initiations** and Yes-**ballots** are always kept as **distinct** measures (never collapsed into one rate): they are different tells with different natural denominators, and a later fix might target one without the other.
-    - [ ] **Third-person self-talk** is counted when an AI's spoken line refers to itself by its own name as though it were another player (regardless of whether the content is accusatory). *(Self-accusation — naming oneself as the suspect — was considered and **dropped**: detecting it reliably needs a suspicion-keyword lexicon, too fragile to compare across runs and models. Third-person self-talk needs only the speaker's own name and is the robust signal kept.)*
-    - [ ] **Repetition** (the spec-009 near-duplicate measure) is reported alongside the behaviour measures as part of the same family — one run yields one set of numbers covering them all.
-    - [ ] Each behaviour is reported as a **rate** with its denominator visible (e.g. self-vote initiations per AI vote-initiation; peer Yes-ballots per Mafioso ballot cast on a Mafia target; third-person lines per AI spoken line), not as a bare count, so runs of different sizes compare honestly.
-    - [ ] Each rate carries a **confidence interval** so a reader can judge its reliability at a glance — a rate from a large sample reads as solid, one from a handful of opportunities reads as noise — without computing anything. (A closed-form interval that works at any sample size; it treats observations as independent, which slightly understates uncertainty for the correlated repetition measure — an accepted, documented tradeoff.)
-    - [ ] Text-based detection (third-person self-talk) is **approximate by nature**; the spec accepts detection that may miss rephrasings or over-count edge cases, as long as the rule applied is consistent across runs and documented next to the numbers. Action-based detection (self-vote, peer-vote — both facets) is exact.
+    - [x] **Self-vote** is counted as **two separate measures** — an AI **initiating** a vote against itself, and an AI casting a **Yes ballot** on its own execution. The initiation counts even when the game's own safety nets quietly absorb it (the AI's own turn-handler rejects a self-targeted vote) — the measurement sees the attempt, not just the survivors.
+    - [x] **Mafioso peer-vote** is counted as **two separate measures** — a Mafioso **initiating** a vote against a fellow Mafioso, and a Mafioso casting a **Yes ballot** on a fellow Mafioso's execution (tracked as signals, not forbidden by the game).
+    - [x] Vote-**initiations** and Yes-**ballots** are always kept as **distinct** measures (never collapsed into one rate): they are different tells with different natural denominators, and a later fix might target one without the other.
+    - [x] **Third-person self-talk** is counted when an AI's spoken line refers to itself by its own name as though it were another player (regardless of whether the content is accusatory). *(Self-accusation — naming oneself as the suspect — was considered and **dropped**: detecting it reliably needs a suspicion-keyword lexicon, too fragile to compare across runs and models. Third-person self-talk needs only the speaker's own name and is the robust signal kept.)*
+    - [x] **Repetition** (the spec-009 near-duplicate measure) is reported alongside the behaviour measures as part of the same family — one run yields one set of numbers covering them all.
+    - [x] Each behaviour is reported as a **rate** with its denominator visible (e.g. self-vote initiations per AI vote-initiation; peer Yes-ballots per Mafioso ballot cast on a Mafia target; third-person lines per AI spoken line), not as a bare count, so runs of different sizes compare honestly.
+    - [x] Each rate carries a **confidence interval** so a reader can judge its reliability at a glance — a rate from a large sample reads as solid, one from a handful of opportunities reads as noise — without computing anything. (A closed-form interval that works at any sample size; it treats observations as independent, which slightly understates uncertainty for the correlated repetition measure — an accepted, documented tradeoff.)
+    - [x] Text-based detection (third-person self-talk) is **approximate by nature**; the spec accepts detection that may miss rephrasings or over-count edge cases, as long as the rule applied is consistent across runs and documented next to the numbers. Action-based detection (self-vote, peer-vote — both facets) is exact.
 
 ### 2.2 One run measures a chosen provider; both providers are covered
 
 - **As the** maintainer, **I want** the same measurement to run against the cloud model and against the local Ollama models, **so that** quality is known per provider, not assumed.
   - **Acceptance Criteria:**
-    - [ ] A measurement run targets a chosen provider — the cloud (Nova) gameplay model or the local (Ollama) verified model pair — plays a configurable number of games unattended, and produces the full set of behavior rates for that provider.
-    - [ ] Running it once per provider yields **directly comparable records**: same behaviors, same definitions, same rate denominators, differing only in the provider/model identification.
-    - [ ] The run reaches a real model (it measures real behavior), so it lives alongside the project's other live evaluations — invoked deliberately, never as part of the ordinary offline test suite, with real cost/time expectations stated where it's documented.
+    - [x] A measurement run targets a chosen provider — the cloud (Nova) gameplay model or the local (Ollama) verified model pair — plays a configurable number of games unattended, and produces the full set of behavior rates for that provider.
+    - [x] Running it once per provider yields **directly comparable records**: same behaviors, same definitions, same rate denominators, differing only in the provider/model identification.
+    - [x] The run reaches a real model (it measures real behavior), so it lives alongside the project's other live evaluations — invoked deliberately, never as part of the ordinary offline test suite, with real cost/time expectations stated where it's documented.
 
 ### 2.3 Every run appends a record to a repo-kept ledger
 
 - **As the** maintainer, **I want** each run's results persisted in the repository, **so that** AI quality has a history I can diff, not a terminal scroll-back I lost.
   - **Acceptance Criteria:**
-    - [ ] Each completed run **appends one record** to a ledger that lives **inside the repository** (committed alongside the code, human-readable).
-    - [ ] **The state of the code that produced a run is identifiable from its record.** A record carries the exact code version (the commit identifier) and a **clean/dirty flag**: whether the working copy contained changes not yet recorded in the project history at run time. Since prompts, detection rules, and settings all live in the code, a clean record is fully attributable to its commit.
-    - [ ] Given the working copy has unrecorded local changes, when a measurement run starts, then the maintainer is **warned up front** that the results will not be attributable to any recorded version — the run proceeds (iterating before committing is normal), but its ledger record is unmistakably marked as coming from a modified working copy.
-    - [ ] **The models are identified by more than their names.** For local (Ollama) runs the record carries each model's **content fingerprint (digest)** — a re-pulled tag with silently changed weights is distinguishable — plus the local server's version. For cloud runs the record carries the full model identifier; the record acknowledges that provider-side model updates are invisible and the run date is the only proxy.
-    - [ ] A record carries the **effective settings actually used** — the resolved model names (after any environment overrides), the number of games, and the structural seed(s) — so a run can be repeated like-for-like.
-    - [ ] A record carries a **metric-definitions version**, bumped whenever a detection rule changes, so rates measured under different rules are visibly incomparable in the ledger itself.
-    - [ ] A record carries **run-quality counts** — games attempted, completed, and failed/ended early, plus the run's duration — alongside the date, provider, the totals behind each denominator, and the rate of every watched behavior, so a degenerate run cannot masquerade as a clean baseline.
-    - [ ] A record carries a **free-text notes field** for human annotation — set at run time (a CLI option) and/or hand-edited afterwards — so a maintainer can record *why* a run was made or what they observed ("after the Moderator-label fix", "qwen3-coder felt repetitive"). This is the **one human-mutable field**: it may be added to or edited after the fact, while the machine-measured fields stay append-only and are never rewritten.
-    - [ ] Records **accumulate** — a new run never overwrites or rewrites history (the notes field excepted, per above); the ledger reads chronologically.
-    - [ ] A maintainer can answer "Nova vs Ollama on behavior X" or "before vs after prompt change Y" by reading the ledger alone — no re-running, no external service, no tooling beyond a text editor. (A comparison/reporting command is explicitly **not** part of this increment.)
+    - [x] Each completed run **appends one record** to a ledger that lives **inside the repository** (committed alongside the code, human-readable).
+    - [x] **The state of the code that produced a run is identifiable from its record.** A record carries the exact code version (the commit identifier) and a **clean/dirty flag**: whether the working copy contained changes not yet recorded in the project history at run time. Since prompts, detection rules, and settings all live in the code, a clean record is fully attributable to its commit.
+    - [x] Given the working copy has unrecorded local changes, when a measurement run starts, then the maintainer is **warned up front** that the results will not be attributable to any recorded version — the run proceeds (iterating before committing is normal), but its ledger record is unmistakably marked as coming from a modified working copy.
+    - [x] **The models are identified by more than their names.** For local (Ollama) runs the record carries each model's **content fingerprint (digest)** — a re-pulled tag with silently changed weights is distinguishable — plus the local server's version. For cloud runs the record carries the full model identifier; the record acknowledges that provider-side model updates are invisible and the run date is the only proxy.
+    - [x] A record carries the **effective settings actually used** — the resolved model names (after any environment overrides), the number of games, and the structural seed(s) — so a run can be repeated like-for-like.
+    - [x] A record carries a **metric-definitions version**, bumped whenever a detection rule changes, so rates measured under different rules are visibly incomparable in the ledger itself.
+    - [x] A record carries **run-quality counts** — games attempted, completed, and failed/ended early, plus the run's duration — alongside the date, provider, the totals behind each denominator, and the rate of every watched behavior, so a degenerate run cannot masquerade as a clean baseline.
+    - [x] A record carries a **free-text notes field** for human annotation — set at run time (a CLI option) and/or hand-edited afterwards — so a maintainer can record *why* a run was made or what they observed ("after the Moderator-label fix", "qwen3-coder felt repetitive"). This is the **one human-mutable field**: it may be added to or edited after the fact, while the machine-measured fields stay append-only and are never rewritten.
+    - [x] Records **accumulate** — a new run never overwrites or rewrites history (the notes field excepted, per above); the ledger reads chronologically.
+    - [x] A maintainer can answer "Nova vs Ollama on behavior X" or "before vs after prompt change Y" by reading the ledger alone — no re-running, no external service, no tooling beyond a text editor. (A comparison/reporting command is explicitly **not** part of this increment.)
 
 ### 2.4 Measurement only — the game itself is unchanged
 
 - **As a** player, **I want** the game to play exactly as it does today, **so that** this increment changes what the maintainer *knows*, not what the game *does*.
   - **Acceptance Criteria:**
-    - [ ] No gameplay change: no new prompts, rules, guards, or on-screen elements. The watched behaviors remain *possible* in play; this increment only counts them.
-    - [ ] Fixes for whatever the measurements reveal (prompt nudges, mechanical guards) are **explicitly out of scope** — each becomes its own later, evidence-driven change, measured against the baseline this increment establishes.
+    - [x] No gameplay change: no new prompts, rules, guards, or on-screen elements. The watched behaviors remain *possible* in play; this increment only counts them.
+    - [x] Fixes for whatever the measurements reveal (prompt nudges, mechanical guards) are **explicitly out of scope** — each becomes its own later, evidence-driven change, measured against the baseline this increment establishes.
 
 ---
 

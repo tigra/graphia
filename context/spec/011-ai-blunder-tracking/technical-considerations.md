@@ -1,7 +1,7 @@
 # Technical Specification: AI Blunder Tracking (Repo-Persisted Quality Ledger)
 
 - **Functional Specification:** [`./functional-spec.md`](./functional-spec.md)
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 ---
