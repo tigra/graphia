@@ -58,7 +58,7 @@ LAMBDA_ZIPS   = $(addprefix $(LAMBDA_BUILD)/,$(addsuffix .zip,$(LAMBDA_FNS)))
         wire-env deploy redeploy deploy-stats destroy inspect-diary play play-remote \
         build-lambdas clean-lambdas enable-transaction-search verify-observability \
         create-stats-strategy eval-dialogue repetition-experiment ollama-smoke \
-        blunder-eval
+        blunder-eval view-ledger
 
 help:
 	@echo "Container image targets:"
@@ -95,6 +95,7 @@ help:
 	@echo ""
 	@echo "Inspection:"
 	@echo "  make inspect-diary      Pretty-print diary entries from the deployed Memory (uses .env)."
+	@echo "  make view-ledger        Browse the eval quality ledger (evals/blunder-ledger.yaml) as a scrollable table. ARGS=\"--path <file>\"."
 	@echo ""
 	@echo "Live AI-quality evals (reach a REAL model — NOT the mocked suite; run deliberately):"
 	@echo "  make eval-dialogue      Play N real-Nova games and score AI Day-speech repetition. Bedrock: needs AWS creds, costs tokens."
@@ -428,6 +429,15 @@ play-remote:
 #   make inspect-diary ARGS="--game-id <thread> --json"
 inspect-diary:
 	uv run python -m graphia.tools.inspect_diary $(ARGS)
+
+# Browse the repo-committed eval quality ledger (the records `make blunder-eval`
+# appends to evals/blunder-ledger.yaml) as a scrollable Textual table — a
+# read-only viewer (spec 012), no AWS/model needed. Forward --path to point at
+# an alternate ledger:
+#   make view-ledger
+#   make view-ledger ARGS="--path /tmp/some-ledger.yaml"
+view-ledger:
+	uv run python -m graphia.ui.ledger_viewer $(ARGS)
 
 # Dialogue-diversity eval: play N games on the REAL gameplay model (Nova) and
 # measure how repetitive the AI Day speeches are. NOT a mocked unit test — it
