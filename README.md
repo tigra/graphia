@@ -109,14 +109,15 @@ The suite is fully mocked at the `ChatBedrockConverse` boundary (an autouse fixt
 
 ### Dialogue-quality evals (real Bedrock)
 
-Beyond the mocked unit suite, two `make` targets exercise the *actual* AI dialogue against the live gameplay model (Amazon Nova) to catch quality regressions the mocked tests structurally can't — e.g. AI players echoing each other into a repetition spiral:
+Beyond the mocked unit suite, several `make` targets exercise the *actual* AI behaviour against a live gameplay model to catch quality regressions the mocked tests structurally can't — e.g. AI players echoing each other into a repetition spiral:
 
 | Target | What it does |
 |---|---|
 | `make eval-dialogue` | Plays N real-LLM games with a scripted human and scores AI Day-speech repetition (lexical near-duplicate rate). A quick diversity smoke. |
 | `make repetition-experiment` | The rigorous, **paired A/B** harness — ranks prompt / context-window / temperature fixes across conditions with a name-masked similarity metric and bootstrap confidence intervals. Design + results: [`repetition-experiment-design.md`](context/spec/009-ai-collusion-awareness/repetition-experiment-design.md). |
+| `make blunder-eval` | Plays N games against a chosen provider and counts the AI **self-consistency blunder** family (self-vote, Mafioso peer-vote, third-person self-talk) **plus** repetition, then appends one dated record to [`evals/blunder-ledger.yaml`](evals/README.md). Works for **both** providers; run it per provider for directly comparable records. `ARGS="--provider ollama\|bedrock --games N [--seed S] [--note '...']"`. |
 
-These hit live Bedrock (so they cost tokens and are non-deterministic) and live **outside** `pytest`. Use them to A/B any change to AI dialogue — run on `HEAD`, then on a pre-change checkout, and compare.
+These reach a real model (so they're non-deterministic) and live **outside** `pytest`. The Bedrock path costs tokens; `make blunder-eval` also runs against a local Ollama server (zero cloud cost). Use `eval-dialogue` / `repetition-experiment` to A/B any change to AI dialogue — run on `HEAD`, then on a pre-change checkout, and compare — and `blunder-eval` to build up the committed quality ledger over time.
 
 ---
 

@@ -413,10 +413,18 @@ def _top_level_keys(doc: str) -> list[str]:
 
 
 def test_render_record_emits_the_fixed_top_level_key_order() -> None:
-    """Top-level keys appear in the documented order: run → provider → quality → metrics → notes."""
+    """Top-level keys appear in the documented order: run → code → provider → settings → quality → metrics → notes."""
     doc = render_record(_synthetic_result(), "2026-06-13")
 
-    assert _top_level_keys(doc) == ["run", "provider", "quality", "metrics", "notes"]
+    assert _top_level_keys(doc) == [
+        "run",
+        "code",
+        "provider",
+        "settings",
+        "quality",
+        "metrics",
+        "notes",
+    ]
 
 
 def test_render_record_emits_notes_as_the_last_top_level_key() -> None:
@@ -424,14 +432,22 @@ def test_render_record_emits_notes_as_the_last_top_level_key() -> None:
 
     The note carries a ``:`` and an apostrophe so the quoting/escaping path is
     exercised, and the run round-trips with the stable key order ending in
-    ``notes`` (run → provider → quality → metrics → notes).
+    ``notes`` (run → code → provider → settings → quality → metrics → notes).
     """
     result = _synthetic_result()
     result.notes = "baseline run: it's the pre-change Y measurement"
 
     doc = render_record(result, "2026-06-13")
 
-    assert _top_level_keys(doc) == ["run", "provider", "quality", "metrics", "notes"]
+    assert _top_level_keys(doc) == [
+        "run",
+        "code",
+        "provider",
+        "settings",
+        "quality",
+        "metrics",
+        "notes",
+    ]
     # Quoted scalar with the embedded apostrophe doubled per YAML single-quote rules.
     assert "notes: 'baseline run: it''s the pre-change Y measurement'" in doc
     # And it is genuinely the final top-level line (after the metrics block).
@@ -472,7 +488,15 @@ def test_render_record_multiline_note_is_a_block_scalar() -> None:
     assert lines[header_i + 2] == "  second line"
     assert lines[header_i + 3] == "  third line"
     # Still the last top-level key, and the body is the document's tail.
-    assert _top_level_keys(doc) == ["run", "provider", "quality", "metrics", "notes"]
+    assert _top_level_keys(doc) == [
+        "run",
+        "code",
+        "provider",
+        "settings",
+        "quality",
+        "metrics",
+        "notes",
+    ]
     assert doc.rstrip("\n").splitlines()[-1] == "  third line"
 
 

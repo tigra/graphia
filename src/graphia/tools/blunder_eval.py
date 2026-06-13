@@ -30,11 +30,16 @@ and ``--help`` works on its own.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import random
 import re
+import subprocess
 import sys
 import tempfile
+import time
+import urllib.error
+import urllib.request
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -151,12 +156,18 @@ _DEFAULT_GAMES = 5
 
 @dataclass(slots=True)
 class EvalResult:
-    """Outcome of one harness run — grows in later Slice-1 tasks.
+    """Outcome of one harness run — provenance + run-quality + the metric family.
 
     Slice 1, Task 2 fills ``ai_speeches`` and the ``repetition`` metric it feeds
     (``{rate, count, denominator}``), plus the resolved model names; Task 3
-    turns this into the appended ledger record. ``run_eval`` returns this object
-    and the CLI/ledger task persists it.
+    turns this into the appended ledger record. Slice 4 grows it with the
+    run-provenance blocks that make a record *attributable to a code version and
+    a model fingerprint* (functional-spec 011 §2.3): :attr:`code` (commit /
+    branch / dirty), the enriched :attr:`provider_block` (ollama digests +
+    server version, or the bedrock full-ids + invisible-updates note),
+    :attr:`settings` (effective resolved values), and the wall-clock
+    :attr:`duration_seconds` on the run/quality block. ``run_eval`` returns this
+    object and the CLI/ledger task persists it.
     """
 
     provider: Provider
@@ -171,6 +182,25 @@ class EvalResult:
     # visible). Slice 2's detectors add their own ``{rate, count, denominator}``
     # entries to this same map.
     metrics: dict[str, dict[str, float | int]] = field(default_factory=dict)
+    # --- Slice 4 run-provenance blocks (functional-spec 011 §2.3, tech §2.4) ---
+    # The code provenance: ``{"commit": <sha|None>, "branch": <str|None>,
+    # "dirty": <bool>}`` from :func:`collect_code_provenance`. A clean record is
+    # fully attributable to its commit; a dirty one is unmistakably marked.
+    code: dict[str, object] = field(default_factory=dict)
+    # The enriched provider identification — the per-model digest + server
+    # version (ollama) or the full ids + invisible-updates note (bedrock), from
+    # :func:`collect_provider_provenance`. ``name`` / ``large_model`` /
+    # ``small_model`` mirror the flat fields above; the nested ``models`` /
+    # ``server_version`` / ``note`` carry the fingerprint detail.
+    provider_block: dict[str, object] = field(default_factory=dict)
+    # The effective resolved settings actually used (post-env-override), so a run
+    # can be repeated like-for-like: model names, base url (ollama), games, seed,
+    # max_rounds (functional-spec 011 §2.3).
+    settings: dict[str, object] = field(default_factory=dict)
+    # Wall-clock run duration in seconds (``time.monotonic()`` delta), surfaced
+    # on the ``run`` and ``quality`` blocks so a degenerate run cannot masquerade
+    # as a clean baseline. ``None`` until the run finishes.
+    duration_seconds: float | None = None
     # Free-text run annotation (tech-spec 011 §2.5): the ONE human-mutable field.
     # Populated from ``--note`` at run time or left empty so the rendered record
     # invites hand-editing; multi-line notes render as a YAML block scalar. The
@@ -243,6 +273,237 @@ def _resolved_model_names(config: object) -> tuple[str, str]:
     import graphia.llm as llm_mod
 
     return (llm_mod._LARGE_MODEL_ID, llm_mod._SMALL_MODEL_ID)
+
+
+# ===========================================================================
+# Run-provenance collection (Slice 4, Task 1; functional-spec 011 §2.3,
+# tech-spec §2.4).
+#
+# Collected ONCE per run, before any game starts, and rendered into the record
+# so a record is attributable to a code version and a model fingerprint. Every
+# collector DEGRADES GRACEFULLY — a missing git binary, a non-repo cwd, an
+# unreachable Ollama server — records ``None`` for the unavailable field rather
+# than crashing the run (a measurement run must still produce its record). The
+# collectors are PURE/INJECTABLE (they take the repo root / base url / model
+# names as arguments) so Task 3 can unit-test them with stubbed git/HTTP.
+# ===========================================================================
+
+# Short timeout for the Ollama provenance GETs — the same fail-fast posture as
+# the boot preflight (``preflight._PREFLIGHT_TIMEOUT_SECONDS``): generous for a
+# cold local server, short enough that an unreachable server degrades promptly.
+_PROVENANCE_HTTP_TIMEOUT_SECONDS = 3.0
+
+# The fixed bedrock caveat (tech-spec 011 §2.4): provider-side model weights can
+# change under a stable id with no client-visible signal, so the record states
+# the run date is the only proxy for "which weights answered".
+_BEDROCK_UPDATE_NOTE = (
+    "provider-side model updates are not observable; run date is the only proxy."
+)
+
+
+def collect_code_provenance(repo_root: Path) -> dict[str, object]:
+    """Collect git code provenance — ``{"commit", "branch", "dirty"}``.
+
+    Runs ``git rev-parse HEAD`` (commit), ``git rev-parse --abbrev-ref HEAD``
+    (branch), and ``git status --porcelain`` (dirty = any output) via
+    ``subprocess`` with ``cwd=repo_root`` (functional-spec 011 §2.3). A clean
+    record is fully attributable to its commit, since prompts, detection rules,
+    and settings all live in the code.
+
+    Degrades gracefully: if ``git`` is missing or ``repo_root`` is not a git
+    repository, ``commit`` / ``branch`` are recorded as ``None`` and ``dirty``
+    as ``False`` (nothing to attribute, but the run still records) — never
+    raises. ``dirty`` is the load-bearing flag: it is ``True`` only when a
+    porcelain status genuinely reported uncommitted changes.
+
+    PURE/INJECTABLE: ``repo_root`` is an argument so Task 3 can point it at a
+    throwaway repo (or a non-repo dir) and assert the clean/dirty/unknown paths
+    without touching the real working copy.
+    """
+    commit = _git_output(repo_root, "rev-parse", "HEAD")
+    branch = _git_output(repo_root, "rev-parse", "--abbrev-ref", "HEAD")
+    porcelain = _git_output(repo_root, "status", "--porcelain")
+    # ``dirty`` is only meaningfully True when git answered AND the tree had
+    # changes. A failed status (None) means "unknown" → not flagged dirty, so a
+    # non-repo run is not spuriously marked modified.
+    dirty = bool(porcelain) if porcelain is not None else False
+    return {"commit": commit, "branch": branch, "dirty": dirty}
+
+
+def _git_output(repo_root: Path, *args: str) -> str | None:
+    """Run ``git <args>`` in ``repo_root`` and return stripped stdout, or ``None``.
+
+    Returns ``None`` on any failure — a non-zero exit (not a repo), a missing
+    ``git`` binary (``FileNotFoundError``), or a timeout — so a provenance gap
+    degrades to ``None`` rather than propagating. ``check=False`` because a
+    non-zero ``git`` exit (e.g. "not a git repository") is an expected,
+    handled outcome here, not an exceptional one.
+    """
+    try:
+        proc = subprocess.run(
+            ["git", *args],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            timeout=_PROVENANCE_HTTP_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode != 0:
+        return None
+    return proc.stdout.strip()
+
+
+def warn_if_dirty(code: dict[str, object]) -> None:
+    """Print the up-front dirty-tree warning to stderr (functional-spec 011 §2.3).
+
+    Given a working copy with unrecorded local changes, the maintainer is warned
+    *before games start* that the results will not be attributable to any
+    recorded version — the run proceeds regardless (iterating before committing
+    is normal), and its ledger record carries ``code.dirty: true``. A clean
+    (or unknown) tree prints nothing.
+    """
+    if code.get("dirty"):
+        print(
+            "WARNING: working copy has uncommitted changes — results will not "
+            "be attributable to a recorded version (the record is marked "
+            "code.dirty: true).",
+            file=sys.stderr,
+        )
+
+
+def _ollama_get_json(base_url: str, path: str) -> dict[str, object] | None:
+    """GET ``<base_url><path>`` and return the parsed JSON object, or ``None``.
+
+    Mirrors the preflight HTTP posture (stdlib ``urllib`` + ``json``, short
+    timeout): no httpx/requests dependency for a single GET. Returns ``None`` on
+    any failure — unreachable server (``OSError`` covers URLError / socket
+    timeout), a non-JSON body (``ValueError``), or a non-mapping payload — so a
+    provenance gap degrades to ``None`` rather than crashing the run.
+    """
+    url = base_url.rstrip("/") + path
+    try:
+        with urllib.request.urlopen(
+            url, timeout=_PROVENANCE_HTTP_TIMEOUT_SECONDS
+        ) as response:
+            payload = json.load(response)
+    except (OSError, ValueError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def collect_ollama_model_provenance(
+    base_url: str, models: list[str]
+) -> dict[str, object]:
+    """Collect Ollama model fingerprints + server version (functional-spec 011 §2.3).
+
+    Identifies the local models by *more than their names*: GETs ``/api/tags``
+    for each configured model's **content digest** (a re-pulled tag with
+    silently changed weights is then distinguishable) and ``/api/version`` for
+    the local server's version. Returns::
+
+        {
+          "models": {"<name>": {"name": "<name>", "digest": "<sha256:...|None>"}, ...},
+          "server_version": "<x.y.z|None>",
+        }
+
+    Tag-matching mirrors :func:`graphia.preflight._model_installed`: a tagless
+    configured name (``qwen2.5``) resolves against any installed tag of that
+    model; a tagged name (``qwen2.5:7b``) requires an exact match. A model the
+    server doesn't report (or an unreachable server) yields ``digest: None`` —
+    the run still records, just without that fingerprint.
+
+    PURE/INJECTABLE: ``base_url`` and ``models`` are arguments and the only I/O
+    goes through :func:`_ollama_get_json`, so Task 3 stubs that one seam to feed
+    synthetic ``/api/tags`` / ``/api/version`` payloads with no live server. The
+    input order of ``models`` is preserved (de-duplicated) in the result.
+    """
+    tags = _ollama_get_json(base_url, "/api/tags")
+    installed: list[dict[str, object]] = []
+    if tags is not None:
+        raw = tags.get("models")
+        if isinstance(raw, list):
+            installed = [m for m in raw if isinstance(m, dict)]
+
+    model_block: dict[str, object] = {}
+    for name in dict.fromkeys(models):  # de-dupe, preserve first-seen order
+        model_block[name] = {
+            "name": name,
+            "digest": _digest_for(name, installed),
+        }
+
+    version_payload = _ollama_get_json(base_url, "/api/version")
+    server_version: str | None = None
+    if version_payload is not None:
+        candidate = version_payload.get("version")
+        server_version = candidate if isinstance(candidate, str) else None
+
+    return {"models": model_block, "server_version": server_version}
+
+
+def _digest_for(
+    configured: str, installed: list[dict[str, object]]
+) -> str | None:
+    """Find the content digest for a configured model name among installed models.
+
+    Applies the same tag-matching rule as the preflight
+    (:func:`graphia.preflight._model_installed`): an exact match for a tagged
+    name, or any tag of the same base model for a tagless name. Returns the
+    matched entry's ``digest`` (a ``sha256:...`` string) or ``None`` when no
+    installed model matches or the matched entry carries no string digest.
+    """
+    has_tag = ":" in configured
+    for model in installed:
+        name = model.get("name")
+        if not isinstance(name, str):
+            continue
+        matches = (
+            name == configured
+            if has_tag
+            else name.split(":", 1)[0] == configured
+        )
+        if matches:
+            digest = model.get("digest")
+            return digest if isinstance(digest, str) else None
+    return None
+
+
+def collect_provider_provenance(
+    provider: Provider,
+    large_model: str,
+    small_model: str,
+    base_url: str,
+) -> dict[str, object]:
+    """Collect the enriched provider identification for the record.
+
+    For ``ollama`` the models are fingerprinted by content digest plus the local
+    server version (:func:`collect_ollama_model_provenance`). For ``bedrock``
+    the full model ids are recorded with the fixed invisible-updates note
+    (:data:`_BEDROCK_UPDATE_NOTE`) — provider-side weight changes leave no
+    client-visible signal, so the run date is the only proxy (functional-spec
+    011 §2.3). Both shapes carry ``name`` / ``large_model`` / ``small_model``
+    so the flat identity is in the block; ollama adds ``models`` (digests) +
+    ``server_version``, bedrock adds ``note``.
+
+    Degrades gracefully via the collectors it delegates to — an unreachable
+    Ollama server yields ``None`` digests / version, never a crash.
+    """
+    block: dict[str, object] = {
+        "name": provider,
+        "large_model": large_model,
+        "small_model": small_model,
+    }
+    match provider:
+        case "ollama":
+            ollama = collect_ollama_model_provenance(
+                base_url, [large_model, small_model]
+            )
+            block["models"] = ollama["models"]
+            block["server_version"] = ollama["server_version"]
+        case "bedrock":
+            block["note"] = _BEDROCK_UPDATE_NOTE
+    return block
 
 
 def _ai_lines_with_names(state: dict[str, Any]) -> tuple[list[str], set[str]]:
@@ -795,10 +1056,12 @@ def score_vote_blunders(
 # is a deliberate later increment (functional-spec 011 §2.3, Notes for the
 # implementer). Key order is FIXED here so successive records diff cleanly.
 #
-# Slice-1 record subset: ``run`` / ``provider`` / ``quality`` / ``metrics``.
-# Slice 4 adds the ``code`` (commit/branch/dirty) and ``settings`` (seed,
-# max_rounds, base url) provenance blocks and the ollama digests / bedrock note
-# — the gap below the existing top-level keys is the room left for them.
+# Record shape (Slice 4): ``run`` (date, duration, metrics_version) → ``code``
+# (commit/branch/dirty) → ``provider`` (name, models-with-digests-or-ids,
+# server_version/note) → ``settings`` (resolved models, base url, games, seed,
+# max_rounds) → ``quality`` (attempted/completed/failed_early, duration) →
+# ``metrics`` → ``notes`` (always LAST). Key order is fixed so successive
+# records diff cleanly.
 
 # YAML scalars that must be quoted to round-trip as plain strings (a date like
 # ``2026-06-13`` is unambiguous unquoted, but a model id like ``nova-pro`` or
@@ -833,9 +1096,39 @@ def _yaml_scalar(value: object) -> str:
 
 
 def _yaml_block(mapping: dict[str, object], indent: int) -> list[str]:
-    """Render a flat mapping of scalars as indented ``key: scalar`` YAML lines."""
+    """Render a flat mapping of scalars as indented ``key: scalar`` YAML lines.
+
+    A ``None`` value renders as the YAML ``null`` (an unquoted ``key: null``) so
+    an absent provenance field — an unreached git commit, a missing digest, a
+    bedrock run's empty server version — reads as genuinely absent, not as the
+    empty string ``''``. Every non-``None`` primitive goes through
+    :func:`_yaml_scalar`.
+    """
     pad = "  " * indent
-    return [f"{pad}{key}: {_yaml_scalar(val)}" for key, val in mapping.items()]
+    return [
+        f"{pad}{key}: {'null' if val is None else _yaml_scalar(val)}"
+        for key, val in mapping.items()
+    ]
+
+
+def _yaml_nested_map(
+    mapping: dict[str, object], indent: int
+) -> list[str]:
+    """Render a mapping whose values are themselves flat scalar sub-maps.
+
+    Each ``key`` becomes a block header (``key:``) followed by its sub-map
+    rendered by :func:`_yaml_block` one level deeper — the shape the provider
+    block's ``models`` map needs (``<model-name>: {name, digest}``). Sub-map
+    values are scalars (or ``None``); this is deliberately one level of nesting,
+    not arbitrary recursion, matching the one known record shape.
+    """
+    pad = "  " * indent
+    lines: list[str] = []
+    for key, sub in mapping.items():
+        lines.append(f"{pad}{key}:")
+        assert isinstance(sub, dict)  # the one known shape; not arbitrary nesting
+        lines += _yaml_block(sub, indent + 1)
+    return lines
 
 
 def _yaml_block_scalar(key: str, value: str, indent: int) -> list[str]:
@@ -863,25 +1156,46 @@ def render_record(result: EvalResult, run_date: str) -> str:
 
     Pure and self-contained — takes the populated ``EvalResult`` plus the run
     date string (caller passes ``date.today().isoformat()``) and returns the
-    document text with a FIXED key order, so Slice 1 Task 4 can unit-test the
-    rendering and key stability with no live run. The ``append_record`` thin
+    document text with a FIXED top-level key order, so the rendering and key
+    stability are unit-testable with no live run. The ``append_record`` thin
     wrapper is what writes it (with the ``---`` separator) to the ledger file.
 
-    Slice-1 record shape (a subset; Slice 4 grows it with ``code`` / ``settings``
-    provenance — see the module note above):
+    Fixed key order (Slice 4 run-provenance shape; functional-spec 011 §2.3,
+    tech-spec §2.5) — ``run`` → ``code`` → ``provider`` → ``settings`` →
+    ``quality`` → ``metrics`` → ``notes`` (``notes`` always LAST):
 
         run:
           date: '<iso date>'
-          games: <int>
+          duration_seconds: <float|null>
           metrics_version: <int>
+        code:
+          commit: '<sha>' | null
+          branch: '<name>' | null
+          dirty: <bool>
         provider:
           name: '<ollama|bedrock>'
           large_model: '<id>'
           small_model: '<id>'
+          # ollama only:
+          models:
+            '<name>':
+              name: '<name>'
+              digest: '<sha256:...>' | null
+          server_version: '<x.y.z>' | null
+          # bedrock only:
+          note: '<invisible-updates caveat>'
+        settings:
+          large_model: '<id>'
+          small_model: '<id>'
+          base_url: '<url>' | null
+          games: <int>
+          seed: <int> | null
+          max_rounds: <int> | null
         quality:
           games_attempted: <int>
           games_completed: <int>
           games_failed_early: <int>
+          duration_seconds: <float|null>
         metrics:
           repetition:
             rate: <float>
@@ -889,11 +1203,14 @@ def render_record(result: EvalResult, run_date: str) -> str:
             denominator: <int>
         notes: '<free text, or empty>'
 
-    ``notes`` is always emitted LAST (after ``metrics``) — present even when
-    empty (``notes: ''``) so the record visibly invites hand-editing. A note
-    with no newline renders as a single safely-quoted scalar; a multi-line note
-    renders as a YAML literal block scalar (``notes: |`` then indented lines).
-    It is the one human-mutable field; the machine fields above stay immutable.
+    Absent provenance fields render as YAML ``null`` (an unreached git commit, a
+    missing ollama digest, a bedrock run's empty server version) so they read as
+    genuinely absent rather than as the empty string. ``notes`` is always
+    emitted LAST — present even when empty (``notes: ''``) so the record visibly
+    invites hand-editing. A note with no newline renders as a single
+    safely-quoted scalar; a multi-line note renders as a YAML literal block
+    scalar (``notes: |`` then indented lines). It is the one human-mutable
+    field; the machine fields above stay immutable.
     """
     lines: list[str] = []
 
@@ -901,18 +1218,76 @@ def render_record(result: EvalResult, run_date: str) -> str:
     lines += _yaml_block(
         {
             "date": run_date,
-            "games": result.games_attempted,
+            "duration_seconds": result.duration_seconds,
             "metrics_version": METRICS_VERSION,
         },
         indent=1,
     )
 
-    lines.append("provider:")
+    # ``code`` — git provenance (commit / branch / dirty). ``commit`` / ``branch``
+    # are ``null`` when git was unavailable; ``dirty`` is a bool. Defaults to the
+    # all-degraded shape if the run never collected it, so the renderer stays
+    # total over a bare ``EvalResult`` (the synthetic-record tests).
+    code = result.code or {"commit": None, "branch": None, "dirty": False}
+    lines.append("code:")
     lines += _yaml_block(
         {
-            "name": result.provider,
-            "large_model": result.large_model,
-            "small_model": result.small_model,
+            "commit": code.get("commit"),
+            "branch": code.get("branch"),
+            "dirty": bool(code.get("dirty")),
+        },
+        indent=1,
+    )
+
+    # ``provider`` — the enriched identification. When the run collected a
+    # ``provider_block`` (the live path) we render it; otherwise we fall back to
+    # the flat identity off the result so a bare synthetic ``EvalResult`` still
+    # renders. The nested ``models`` map (ollama digests) goes through
+    # ``_yaml_nested_map``; ``server_version`` / ``note`` are flat scalars.
+    lines.append("provider:")
+    block = result.provider_block or {
+        "name": result.provider,
+        "large_model": result.large_model,
+        "small_model": result.small_model,
+    }
+    lines += _yaml_block(
+        {
+            "name": block.get("name", result.provider),
+            "large_model": block.get("large_model", result.large_model),
+            "small_model": block.get("small_model", result.small_model),
+        },
+        indent=1,
+    )
+    models = block.get("models")
+    if isinstance(models, dict):
+        lines.append("  models:")
+        lines += _yaml_nested_map(models, indent=2)
+    if "server_version" in block:
+        lines += _yaml_block(
+            {"server_version": block.get("server_version")}, indent=1
+        )
+    if "note" in block:
+        lines += _yaml_block({"note": block.get("note")}, indent=1)
+
+    # ``settings`` — the effective resolved values for a like-for-like rerun.
+    # Falls back to a minimal shape (games from the quality counts) if absent.
+    settings = result.settings or {
+        "large_model": result.large_model,
+        "small_model": result.small_model,
+        "base_url": None,
+        "games": result.games_attempted,
+        "seed": None,
+        "max_rounds": None,
+    }
+    lines.append("settings:")
+    lines += _yaml_block(
+        {
+            "large_model": settings.get("large_model", result.large_model),
+            "small_model": settings.get("small_model", result.small_model),
+            "base_url": settings.get("base_url"),
+            "games": settings.get("games", result.games_attempted),
+            "seed": settings.get("seed"),
+            "max_rounds": settings.get("max_rounds"),
         },
         indent=1,
     )
@@ -923,6 +1298,7 @@ def render_record(result: EvalResult, run_date: str) -> str:
             "games_attempted": result.games_attempted,
             "games_completed": result.games_completed,
             "games_failed_early": result.games_failed_early,
+            "duration_seconds": result.duration_seconds,
         },
         indent=1,
     )
@@ -1132,19 +1508,51 @@ def run_eval(config: object, args: argparse.Namespace) -> EvalResult:
     Plays ``args.games`` unattended scripted games against the real provider,
     accumulates each finished game's AI-spoken lines, and computes the one
     ``repetition`` metric (Slice 1) via the imported spec-009 measure. A game
-    that raises mid-run counts as failed-early (logged to stderr, run continues)
-    — full provenance / run-quality lands in Slice 4; here we just keep the
-    attempted / completed counts honest.
+    that raises mid-run counts as failed-early (logged to stderr, run continues).
+
+    Run-provenance (Slice 4, functional-spec 011 §2.3) is collected ONCE here,
+    before any game starts, so the record is attributable to a code version and
+    a model fingerprint: the git ``code`` block (with the up-front dirty
+    warning), the enriched ``provider`` block (ollama digests + server version,
+    or the bedrock full-ids + invisible-updates note), the effective
+    ``settings``, and — measured around the game loop — the wall-clock duration.
     """
     large_model, small_model = _resolved_model_names(config)
+
+    # --- Run-provenance, collected once before games start (functional-spec
+    # §2.3, tech §2.4). All collectors degrade gracefully (null on failure), so
+    # an unavailable source never fails the run.
+    code = collect_code_provenance(_REPO_ROOT)
+    warn_if_dirty(code)  # up-front stderr warning when the tree is dirty
+    base_url = config.ollama_base_url  # load_config always sets this
+    provider_block = collect_provider_provenance(
+        args.provider, large_model, small_model, base_url
+    )
+    settings = {
+        "large_model": large_model,
+        "small_model": small_model,
+        # base_url is only meaningful for ollama; recorded null for bedrock.
+        "base_url": base_url if args.provider == "ollama" else None,
+        "games": args.games,
+        "seed": args.seed,
+        "max_rounds": args.max_rounds,
+    }
+
     result = EvalResult(
         provider=args.provider,
         large_model=large_model,
         small_model=small_model,
+        code=code,
+        provider_block=provider_block,
+        settings=settings,
         # ``--note`` (or "" when unset) — the run annotation, rendered last in
         # the ledger record; a maintainer can extend it by hand afterwards.
         notes=args.note,
     )
+
+    # Wall-clock start; the duration is stamped onto the result just before the
+    # record is appended (monotonic delta — immune to wall-clock adjustments).
+    started = time.monotonic()
 
     # Accumulate AI lines across games, plus the union of AI player names so the
     # spec-009 name-masking still fires across the pooled set (a name dealt in
@@ -1226,6 +1634,11 @@ def run_eval(config: object, args: argparse.Namespace) -> EvalResult:
         totals = action_totals[metric]
         if totals["denominator"] > 0:
             result.metrics[metric] = _facets(totals["count"], totals["denominator"])
+
+    # Stamp the wall-clock duration (monotonic delta) onto the run/quality
+    # block before rendering, so a degenerate (e.g. all-failed) run cannot
+    # masquerade as a clean baseline (functional-spec §2.3).
+    result.duration_seconds = round(time.monotonic() - started, 3)
 
     # Persist one ``---``-separated record to the repo-committed ledger so this
     # run becomes a tracked, comparable, history-backed datapoint (functional-
