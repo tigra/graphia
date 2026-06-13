@@ -121,3 +121,114 @@ metrics:
     count: 2
     denominator: 156
 notes: 'self-run by Claude (Slice 5 cloud comparison vs ollama); tree dirty: parked AWOS renames + handoff.md'
+---
+run:
+  date: '2026-06-13'
+  duration_seconds: 1072.842
+  metrics_version: 1
+code:
+  commit: 'e7dd42c90d1ea581f3836103addf50842037a592'
+  branch: 'main'
+  dirty: true
+provider:
+  name: 'bedrock'
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  base_url: null
+  games: 20
+  seed: null
+  max_rounds: null
+quality:
+  games_attempted: 20
+  games_completed: 20
+  games_failed_early: 0
+  duration_seconds: 1072.842
+metrics:
+  repetition:
+    rate: 0.5541740674955595
+    count: 624
+    denominator: 1126
+    ci_low: 0.525005635243927
+    ci_high: 0.5829741028007689
+  third_person_self_talk:
+    rate: 0.03285968028419183
+    count: 37
+    denominator: 1126
+    ci_low: 0.02393238642185013
+    ci_high: 0.04496364289765802
+notes: 'reliable baseline n=20 + Wilson CI (cloud, vs ollama); tree dirty, measurement code = commit e7dd42c'
+---
+run:
+  date: '2026-06-13'
+  duration_seconds: 2495.145
+  metrics_version: 1
+code:
+  commit: 'e7dd42c90d1ea581f3836103addf50842037a592'
+  branch: 'main'
+  dirty: true
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.30.6'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 20
+  seed: null
+  max_rounds: null
+quality:
+  games_attempted: 20
+  games_completed: 20
+  games_failed_early: 0
+  duration_seconds: 2495.145
+metrics:
+  repetition:
+    rate: 0.38908659549228947
+    count: 328
+    denominator: 843
+    ci_low: 0.35674854915183896
+    ci_high: 0.4224309337644466
+  third_person_self_talk:
+    rate: 0.07829181494661921
+    count: 66
+    denominator: 843
+    ci_low: 0.06201102056451266
+    ci_high: 0.09839867116532203
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 13
+    ci_low: 0.0
+    ci_high: 0.22810184305529166
+  self_vote.yes:
+    rate: 0.6333333333333333
+    count: 19
+    denominator: 30
+    ci_low: 0.45513246433604937
+    ci_high: 0.7812629779598231
+  peer_vote.initiation:
+    rate: 0.5
+    count: 7
+    denominator: 14
+    ci_low: 0.2679886791947528
+    ci_high: 0.7320113208052472
+  peer_vote.yes:
+    rate: 0.8571428571428571
+    count: 12
+    denominator: 14
+    ci_low: 0.600580922361363
+    ci_high: 0.9599069262620787
+notes: 'reliable baseline n=20 + Wilson CI; supersedes the n=3 self-run; tree dirty (parked AWOS renames + handoff.md), measurement code = commit e7dd42c'
