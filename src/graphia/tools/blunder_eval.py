@@ -32,15 +32,39 @@ from __future__ import annotations
 import argparse
 import os
 import random
+import re
 import sys
 import tempfile
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, SystemMessage
 from langgraph.types import Command
+
+# The game's own public vote lines are our parse anchors for the three exact
+# action detectors (tech-spec 011 §2.1): the announce names the initiator +
+# target, each per-ballot line names the voter + Yes/No. We IMPORT the format
+# strings (never hardcode copies) and derive the parsing regexes from them, so a
+# template reword in ``graphia.prompts`` breaks extraction loudly (and the
+# offline tests, which build synthetic histories from these same constants)
+# rather than letting a metric drift silently (tech-spec 011 §3, template-
+# coupling risk).
+from graphia.llm import DayAction
+from graphia.prompts import (
+    DAY_SPEAK_USER_TEMPLATE,
+    VOTE_INITIATE_ANNOUNCE_TEMPLATE,
+    VOTE_PER_BALLOT_TEMPLATE,
+)
+from graphia.state import PlayerState
+
+# The shared structured-output proxy (tech-spec 011 §2.2): Slice 3 Task 2 uses
+# it in CAPTURE mode — a ``captures`` list + a prompt-parse ``speaker_resolver``
+# — to intercept every raw ``DayAction`` with its speaker attributed, so the
+# ``_accept``-rejected self-vote initiation is countable. ``ollama_smoke`` is the
+# count-only consumer of the same proxy; the two paths are independent.
+from graphia.tools.instrument import CaptureRecord, InstrumentedModel
 
 # Reuse the established make-gated harness driver (scripted human + stream-to-
 # interrupt pump) rather than re-implementing it — same import ``ollama_smoke``
@@ -73,13 +97,23 @@ from graphia.tools.repetition_experiment import (
 _NEAR_DUP_THRESHOLD = 0.85
 
 # Metric-definitions version stamped into every ledger record (functional-spec
-# 011 §2.3): any change to a detection rule or denominator bumps it, so rates
+# 011 §2.3): the SINGLE SOURCE OF TRUTH for the rule set behind every metric.
+# Any change to a detection rule or denominator — the near-dup threshold, the
+# third-person own-name rule, a denominator definition — MUST bump this, so rates
 # measured under different rules are visibly incomparable in the ledger itself.
-# Slice 2 (the game-record detectors) is the task that *owns* this constant and
-# the rule set behind it; until it lands here we default to 1 and read whatever
-# value that slice eventually defines, so the record always carries the live
-# version without this task pinning it.
+# ``render_record`` reads this constant directly (no local default lives
+# anywhere else). Slice 2 owns this constant and the rule set it stamps.
 METRICS_VERSION = 1
+
+# The word-boundary pattern used by ``score_third_person_self_talk`` to decide
+# whether a speaker names *themselves* in their own line. A player name is
+# embedded with ``re.escape`` (names are free strings and could in theory carry
+# regex metacharacters), wrapped in ``\b…\b`` word boundaries, and matched
+# case-insensitively — so "Mira" hits "I think Mira lied" but never "Miranda"
+# or "admire". Kept as a named, documented constant beside the version stamp so
+# the one speech rule and any offline test share a single definition; changing
+# it is a rule change and bumps ``METRICS_VERSION``.
+_OWN_NAME_BOUNDARY = r"\b{}\b"
 
 # The repo-committed quality ledger (tech-spec 011 §2.5). Top-level ``evals/``
 # dir at the repo root; one ``---``-separated YAML document is appended per run.
@@ -233,6 +267,34 @@ def _ai_lines_with_names(state: dict[str, Any]) -> tuple[list[str], set[str]]:
     return lines, ai_names
 
 
+def _ai_lines_with_speakers(state: dict[str, Any]) -> list[tuple[str, str]]:
+    """Extract per-line ``(speaker_name, text)`` pairs for the AI-spoken Day lines.
+
+    The same AI-line predicate as :func:`_ai_lines_with_names` — an ``AIMessage``
+    whose ``name`` is a non-human player's name with non-empty string content,
+    so the scripted human's lines are excluded — but it keeps the speaker's name
+    *attached to each line* rather than collapsing to a pooled list + name-set.
+    ``score_third_person_self_talk`` needs that pairing to ask "does this line
+    name its *own* speaker?"; the pooled ``(lines, names)`` shape that
+    :func:`score_repetition` consumes cannot answer that. Both shapes are read
+    from the same messages, so the speech metrics stay consistent over one game.
+
+    The pooled extraction is left untouched so ``score_repetition``'s inputs do
+    not change; a caller that wants both derives names/lines from this list when
+    convenient, or calls each extractor directly.
+    """
+    players = state.get("players", {})
+    ai_names = {p.name for p in players.values() if not p.is_human}
+    return [
+        (name, m.content.strip())
+        for m in state.get("messages", [])
+        if isinstance(m, AIMessage)
+        and (name := getattr(m, "name", None)) in ai_names
+        and isinstance(m.content, str)
+        and m.content.strip()
+    ]
+
+
 def score_repetition(
     ai_lines: list[str], ai_names: set[str]
 ) -> dict[str, float | int]:
@@ -260,6 +322,468 @@ def score_repetition(
         "rate": count / denominator,
         "count": count,
         "denominator": denominator,
+    }
+
+
+def score_third_person_self_talk(
+    lines_with_speakers: list[tuple[str, str]],
+) -> dict[str, float | int]:
+    """Pure scorer for ``third_person_self_talk`` — ``{rate, count, denominator}``.
+
+    Counts AI spoken lines in which the *speaker names themselves*: the line is
+    a blunder when the speaker's own name appears in their own ``text`` as a
+    whole word, case-insensitively (tech-spec §2.1, ``third_person_self_talk``
+    row). The name is escaped (:data:`_OWN_NAME_BOUNDARY` wraps ``re.escape``-d
+    name in ``\\b…\\b``) so an own-name match never spuriously fires on a
+    substring ("Mira" ≠ "Miranda") and a name with regex-special characters is
+    matched literally. ``denominator`` is the total AI spoken lines (the same
+    denominator as ``repetition`` — both are per-AI-spoken-line speech rates);
+    ``count`` is the lines that self-name; ``rate`` = count / denominator, 0.0
+    when there are no lines (no ``ZeroDivisionError`` on an empty game).
+
+    Self-accusation (own name within a suspicion-keyword window) was deliberately
+    **dropped** as too fragile to compare across runs/models (functional-spec
+    §2.1) — this rule needs only the speaker's own name, no lexicon.
+
+    DRIVER-INDEPENDENT BY DESIGN: takes plain ``(name, text)`` pairs, so Slice 2
+    Task 3 can unit-test it on synthetic data with no live model.
+    """
+    denominator = len(lines_with_speakers)
+    if denominator == 0:
+        return {"rate": 0.0, "count": 0, "denominator": 0}
+    count = sum(
+        1
+        for speaker, text in lines_with_speakers
+        if re.search(
+            _OWN_NAME_BOUNDARY.format(re.escape(speaker)), text, re.IGNORECASE
+        )
+    )
+    return {
+        "rate": count / denominator,
+        "count": count,
+        "denominator": denominator,
+    }
+
+
+# ===========================================================================
+# The three exact, game-record ACTION detectors (Slice 2, Task 2).
+#
+# These read the game's OWN public vote lines — the announce and per-ballot
+# ``SystemMessage``s ``day.py`` emits — and the final ``players`` roles, with no
+# LLM-output parsing (tech-spec 011 §2.1). Vote-initiation and Yes-ballot stay
+# SEPARATE metrics, a clean {self, peer} × {initiation, yes} family; this slice
+# owns three of the four — ``self_vote.yes``, ``peer_vote.initiation``,
+# ``peer_vote.yes`` — and ``self_vote.initiation`` (the proxy-only one) is
+# Slice 3.
+#
+# Denominator-0 representation (the spec §2.1 "absent, not a misleading 0"
+# choice): an action metric whose denominator is 0 means *the game offered no
+# opportunity* for that blunder (e.g. no ballot was ever cast on a mafia
+# target → ``peer_vote.yes`` has no bussing opportunities). Reporting that as
+# ``rate: 0.0`` would read as "the AI never bussed" when in fact it was never
+# tested — a misleading 0. So a no-opportunity metric is reported ABSENT: the
+# scorer returns ``rate=None`` with its 0/0 facets for unit-test introspection,
+# and ``run_eval`` OMITS the metric from ``result.metrics`` entirely when the
+# denominator is 0 — the renderer iterates only the entries present, so an
+# omitted metric simply does not appear in that run's record. (The speech
+# metrics differ: their denominator is "AI spoken lines", always > 0 in a real
+# game, so they stay present with a real 0.0 when clean.)
+# ===========================================================================
+
+# The literal Yes/No labels ``day.py`` formats into ``VOTE_PER_BALLOT_TEMPLATE``
+# (``vote_label = "Yes" if yes else "No"``). Kept as a named constant so the
+# ballot parse anchors on the SAME label spelling the node emits; a label
+# reword in ``day.py`` would fail the offline ballot-parse tests.
+_BALLOT_YES_LABEL = "Yes"
+_BALLOT_NO_LABEL = "No"
+
+
+def _template_to_regex(template: str, fields: dict[str, str]) -> re.Pattern[str]:
+    """Compile a ``str.format`` template into a named-group capture regex.
+
+    Splits the template on its ``{field}`` placeholders and re-joins the literal
+    spans (``re.escape``-d) with each field replaced by a named capture group
+    whose body is supplied in ``fields`` — e.g. ``{"initiator": r"(?P<initiator>.+?)"}``.
+    Deriving the regex FROM the imported format string (rather than hand-writing
+    a parallel pattern) is what makes a template reword break extraction loudly:
+    the literal spans must still match, so a changed announce/ballot wording
+    stops parsing and the offline tests (built from the same constant) catch it.
+
+    Every ``{...}`` placeholder in the template MUST have a matching entry in
+    ``fields`` or this raises ``KeyError`` — a guard that a new placeholder in a
+    reworded template is noticed at import-anchor time, not silently dropped.
+    """
+    pattern_parts: list[str] = []
+    pos = 0
+    for match in re.finditer(r"\{(\w+)\}", template):
+        literal = template[pos : match.start()]
+        pattern_parts.append(re.escape(literal))
+        field_name = match.group(1)
+        pattern_parts.append(fields[field_name])  # KeyError if unanchored
+        pos = match.end()
+    pattern_parts.append(re.escape(template[pos:]))
+    return re.compile("^" + "".join(pattern_parts) + "$")
+
+
+# Announce: "{initiator} has called for a vote to execute {target}." Names are
+# captured non-greedily so the trailing literal (" has called for a vote to
+# execute ") anchors the boundary between the two free-text names. Anchored
+# ``^...$`` against each ``SystemMessage`` content.
+_VOTE_ANNOUNCE_RE = _template_to_regex(
+    VOTE_INITIATE_ANNOUNCE_TEMPLATE,
+    {"initiator": r"(?P<initiator>.+?)", "target": r"(?P<target>.+?)"},
+)
+
+# Per-ballot: "{voter}: {vote_label}". The label is constrained to the exact
+# Yes/No spellings ``day.py`` emits so a context-render line of the shape
+# "Name: <free text>" (which never enters ``state['messages']`` anyway) could
+# not be mistaken for a ballot even if one did. Voter captured non-greedily.
+_VOTE_BALLOT_RE = _template_to_regex(
+    VOTE_PER_BALLOT_TEMPLATE,
+    {
+        "voter": r"(?P<voter>.+?)",
+        "vote_label": rf"(?P<vote_label>{re.escape(_BALLOT_YES_LABEL)}|{re.escape(_BALLOT_NO_LABEL)})",
+    },
+)
+
+# ---------------------------------------------------------------------------
+# Speaker attribution for the proxy-captured ``DayAction``s (self_vote.initiation).
+#
+# A captured ``DayAction`` is attributed to its speaker by reading the SPEAKER
+# off the invoke prompt — ``DAY_SPEAK_USER_TEMPLATE`` opens "You are {speaker}."
+# — and mapping that NAME to an id via this game's ``players``. This reads only
+# the prompt the call was handed (never live graph state), so attribution cannot
+# go stale or re-enter the running graph — the documented robust mechanism
+# (instrument.py), and the deliberate avoidance of the mid-stream ``get_state``
+# trap that bit ``tests/test_slice7_vote.py``.
+#
+# The anchor is DERIVED from the imported ``DAY_SPEAK_USER_TEMPLATE`` (literal
+# spans before/after ``{speaker}``, ``re.escape``-d), so a reword of that
+# template breaks the parse loudly in the offline tests rather than silently
+# mis-attributing — the same template-coupling discipline the announce/ballot
+# anchors use. The speaker name is captured non-greedily up to the first literal
+# span that follows it. Only the prompt's leading line carries this, so the
+# regex is matched (not full-anchored) against the ``HumanMessage`` content.
+# ===========================================================================
+
+
+def _speaker_anchor_regex() -> re.Pattern[str]:
+    """Compile a regex that captures the ``{speaker}`` name from a Day prompt.
+
+    Splits ``DAY_SPEAK_USER_TEMPLATE`` on its first ``{speaker}`` placeholder and
+    anchors on the ``re.escape``-d literal text immediately before and after it
+    (``"You are "`` … ``". Alive players at the table…"``), so the speaker name —
+    captured non-greedily — is bounded by the real template text. Deriving FROM
+    the imported template (not a hardcoded copy) is what makes a reword fail the
+    offline attribution test loudly.
+    """
+    marker = "{speaker}"
+    idx = DAY_SPEAK_USER_TEMPLATE.index(marker)
+    before = DAY_SPEAK_USER_TEMPLATE[:idx]
+    after_full = DAY_SPEAK_USER_TEMPLATE[idx + len(marker) :]
+    # Anchor on the literal text up to the NEXT placeholder (or end) so the
+    # trailing capture boundary is real template prose, not another field.
+    next_field = re.search(r"\{\w+\}", after_full)
+    after = after_full[: next_field.start()] if next_field else after_full
+    return re.compile(
+        re.escape(before) + r"(?P<speaker>.+?)" + re.escape(after),
+        re.DOTALL,
+    )
+
+
+_DAY_SPEAKER_RE = _speaker_anchor_regex()
+
+
+def _message_text(msg: object) -> str:
+    """Return a message's string content, or '' (str content only; defensive)."""
+    content = getattr(msg, "content", msg)
+    return content if isinstance(content, str) else ""
+
+
+def make_day_speaker_resolver(
+    players: dict[str, PlayerState],
+) -> "Callable[[Any], str | None]":
+    """Build a prompt-parse speaker resolver bound to one game's ``players``.
+
+    The returned callable is the proxy's ``speaker_resolver``: given an invoke's
+    ``messages``, it scans them for the ``DAY_SPEAK_USER_TEMPLATE`` "You are
+    {speaker}." line, extracts the speaker NAME, and maps it to that player's id
+    via this game's name→id index (:func:`_name_index`). Returns ``None`` when no
+    message carries the Day-speak prompt (a ``Ballot`` / ``Pointing`` / ``Roster``
+    invoke, or the retry reminder alone) or the name resolves to no unique
+    player — so capture stays attributed only to genuine Day-speaker turns.
+
+    Reads ONLY the prompt it is handed — never live graph state — so attribution
+    cannot go stale or re-enter the running graph (the ``get_state`` trap). Bound
+    to one game because names are unique only within a game.
+    """
+    index = _name_index(players)
+
+    def _resolve(messages: Any) -> str | None:
+        if not isinstance(messages, (list, tuple)):
+            return None
+        for msg in messages:
+            match = _DAY_SPEAKER_RE.search(_message_text(msg))
+            if match is None:
+                continue
+            speaker = index.get(match.group("speaker").strip())
+            return speaker.id if speaker is not None else None
+        return None
+
+    return _resolve
+
+
+def score_self_vote_initiation(
+    captures: "list[Any]",
+) -> dict[str, float | int | None]:
+    """Pure scorer for ``self_vote.initiation`` from raw proxy captures.
+
+    The ONE vote metric no post-game state can see: a self-targeted AI vote is
+    rejected by ``day._ai_day_action._accept`` (``target_id != speaker.id``)
+    before it reaches game state, so it must be counted from the raw
+    structured-output payload the proxy intercepts at invoke time (tech-spec
+    011 §2.1). Over a list of :class:`~graphia.tools.instrument.CaptureRecord`:
+
+    - **Denominator** — every raw ``DayAction(kind="vote")`` produced by an AI
+      day-speaker (the capture's ``speaker_id`` resolved): all raw AI
+      vote-initiation ATTEMPTS, accepted or rejected.
+    - **Numerator** — those whose ``target_id`` equals the resolving speaker's
+      own id: a self-targeted vote initiation, counted EVEN THOUGH ``_accept``
+      rejects it.
+
+    A capture with no resolved ``speaker_id`` (an unattributed payload, or a
+    non-Day-speak schema) is skipped — it is not an AI day-speaker vote attempt.
+    ``kind != "vote"`` captures (speaks) are not initiation attempts and are not
+    in the denominator. Denominator-0 (no AI ever attempted a vote) returns
+    ``rate=None`` — absent, not a misleading 0 — exactly as the Slice-2 action
+    metrics do (:func:`_facets`); ``run_eval`` then OMITS it from the record.
+
+    DRIVER-INDEPENDENT BY DESIGN: takes a plain list of capture records, so the
+    offline tests build synthetic captures with no live model.
+    """
+    num = den = 0
+    for cap in captures:
+        action = getattr(cap, "raw_result", None)
+        speaker_id = getattr(cap, "speaker_id", None)
+        # Only AI day-speaker vote attempts enter the denominator: a resolved
+        # speaker, a DayAction, and kind == "vote".
+        if speaker_id is None or not isinstance(action, DayAction):
+            continue
+        if action.kind != "vote":
+            continue
+        den += 1
+        if action.target_id is not None and action.target_id == speaker_id:
+            num += 1
+    return _facets(num, den)
+
+
+@dataclass(slots=True)
+class _ParsedInitiation:
+    """One parsed vote-initiation announce: the initiator + target players.
+
+    ``None`` for either side means the announced name did not resolve to a
+    unique alive-or-dead player (defensive — names are validated distinct, so
+    this should not happen, but an unresolved line is simply not counted, which
+    keeps the metric honest rather than guessing).
+    """
+
+    initiator: PlayerState | None
+    target: PlayerState | None
+
+
+@dataclass(slots=True)
+class _ParsedBallot:
+    """One parsed per-ballot line: the voter player + their Yes/No."""
+
+    voter: PlayerState | None
+    yes: bool
+
+
+def _name_index(players: dict[str, PlayerState]) -> dict[str, PlayerState]:
+    """Map each UNIQUELY-held name to its player (for announce/ballot resolution).
+
+    Names are validated distinct (case-insensitive) at roster generation, so in
+    practice this is one entry per player. Defensively, a name held by more than
+    one player is dropped from the index (resolves to ``None`` downstream and is
+    not counted) rather than resolving ambiguously. Keyed on the exact name the
+    templates format in, so resolution is an exact-string lookup.
+    """
+    index: dict[str, PlayerState] = {}
+    seen_twice: set[str] = set()
+    for player in players.values():
+        if player.name in index:
+            seen_twice.add(player.name)
+        index[player.name] = player
+    for name in seen_twice:
+        index.pop(name, None)
+    return index
+
+
+def _is_ai(player: PlayerState | None) -> bool:
+    """True for a resolved, non-human player — the AI-only filter all three
+    action metrics apply (the human voter/initiator is always excluded; tech-
+    spec 011 §2.1)."""
+    return player is not None and not player.is_human
+
+
+def _parse_vote_lines(
+    messages: list,
+    players: dict[str, PlayerState],
+) -> tuple[list[_ParsedInitiation], list[_ParsedBallot]]:
+    """Parse a game's message history into vote initiations + ballots.
+
+    Walks every ``SystemMessage`` (the Moderator voice that carries the announce
+    and per-ballot lines), matching each against the template-derived anchors
+    and resolving the named initiator/target/voter back to players via
+    :func:`_name_index`. Non-``SystemMessage``s and lines matching neither anchor
+    are ignored. Pure over ``(messages, players)`` — no game, no model — so each
+    derived scorer is unit-testable on a synthetic history built from the real
+    templates.
+    """
+    index = _name_index(players)
+    initiations: list[_ParsedInitiation] = []
+    ballots: list[_ParsedBallot] = []
+    for msg in messages:
+        if not isinstance(msg, SystemMessage):
+            continue
+        content = msg.content
+        if not isinstance(content, str):
+            continue
+        content = content.strip()
+        announce = _VOTE_ANNOUNCE_RE.match(content)
+        if announce is not None:
+            initiations.append(
+                _ParsedInitiation(
+                    initiator=index.get(announce.group("initiator")),
+                    target=index.get(announce.group("target")),
+                )
+            )
+            continue
+        ballot = _VOTE_BALLOT_RE.match(content)
+        if ballot is not None:
+            ballots.append(
+                _ParsedBallot(
+                    voter=index.get(ballot.group("voter")),
+                    yes=ballot.group("vote_label") == _BALLOT_YES_LABEL,
+                )
+            )
+    return initiations, ballots
+
+
+def _facets(count: int, denominator: int) -> dict[str, float | int | None]:
+    """Shape one action metric as ``{rate, count, denominator}``.
+
+    A 0 denominator (no opportunity for this blunder) yields ``rate=None`` — the
+    "absent, not a misleading 0" representation (spec §2.1; see the section
+    header). ``run_eval`` omits such a metric from the record entirely; the
+    ``None`` rate is here so a direct unit test can assert "absent" introspectively.
+    """
+    if denominator == 0:
+        return {"rate": None, "count": count, "denominator": 0}
+    return {"rate": count / denominator, "count": count, "denominator": denominator}
+
+
+def score_vote_blunders(
+    messages: list,
+    players: dict[str, PlayerState],
+) -> dict[str, dict[str, float | int | None]]:
+    """Pure scorer for the three exact game-record vote-blunder metrics.
+
+    Parses the game's own announce + per-ballot lines (template-derived anchors)
+    and the final ``players`` roles into the three rates, each as
+    ``{rate, count, denominator}`` (tech-spec 011 §2.1). All counts are AI-only
+    (the human voter/initiator is excluded). Returns a map keyed by metric name:
+
+    - ``self_vote.yes`` — numerator: an AI Yes ballot where the voter IS the
+      vote's target; denominator: AI ballots where voter == target (self-
+      execution opportunities). [The vote in scope is the one whose target the
+      ballot is being cast on; ``collect_votes`` polls every alive player on the
+      single active target, so a voter whose name equals the active target's name
+      is voting on their own execution.]
+    - ``peer_vote.initiation`` — numerator: a mafia-AI initiation whose target is
+      a fellow mafioso; denominator: all mafia-AI vote initiations.
+    - ``peer_vote.yes`` — numerator: a mafia-AI Yes ballot whose target is a
+      fellow mafioso; denominator: mafia-AI ballots cast on a mafia target
+      (bussing opportunities).
+
+    The per-ballot line names only the VOTER and their Yes/No — not the target —
+    so each ballot is attributed to the vote announced most recently before it
+    (the active vote ``collect_votes`` is polling). We therefore walk the history
+    once, tracking the current active vote's target from each announce, and
+    classify each subsequent ballot against that target until the next announce.
+
+    Denominator-0 metrics return ``rate=None`` (absent, not a misleading 0; see
+    :func:`_facets`). DRIVER-INDEPENDENT BY DESIGN: takes a plain message list +
+    players map, so Slice 2 Task 3 unit-tests it on synthetic histories built
+    from the real templates with no live model.
+    """
+    index = _name_index(players)
+
+    self_yes_num = self_yes_den = 0
+    peer_init_num = peer_init_den = 0
+    peer_yes_num = peer_yes_den = 0
+
+    # The target of the vote currently being polled — set by each announce,
+    # consumed by the ballots that follow it until the next announce. Held as a
+    # player so role/identity comparisons are by-id, not by-name.
+    active_target: PlayerState | None = None
+
+    for msg in messages:
+        if not isinstance(msg, SystemMessage):
+            continue
+        content = msg.content
+        if not isinstance(content, str):
+            continue
+        content = content.strip()
+
+        announce = _VOTE_ANNOUNCE_RE.match(content)
+        if announce is not None:
+            initiator = index.get(announce.group("initiator"))
+            target = index.get(announce.group("target"))
+            active_target = target
+            # peer_vote.initiation — mafia-AI initiations only.
+            if _is_ai(initiator) and initiator.role == "mafia":
+                peer_init_den += 1
+                if (
+                    target is not None
+                    and target.role == "mafia"
+                    and target.id != initiator.id
+                ):
+                    peer_init_num += 1
+            continue
+
+        ballot = _VOTE_BALLOT_RE.match(content)
+        if ballot is None:
+            continue
+        voter = index.get(ballot.group("voter"))
+        yes = ballot.group("vote_label") == _BALLOT_YES_LABEL
+        if not _is_ai(voter) or active_target is None:
+            continue
+
+        # self_vote.yes — opportunity = an AI voting on its OWN execution
+        # (voter is the active vote's target). Numerator = that ballot is Yes.
+        if voter.id == active_target.id:
+            self_yes_den += 1
+            if yes:
+                self_yes_num += 1
+
+        # peer_vote.yes — opportunity = a mafia AI casting a ballot on a MAFIA
+        # target (a fellow mafioso, not themselves). Numerator = that ballot is
+        # Yes (bussing a teammate). A mafioso voting on their own execution is a
+        # self-vote, not a peer-vote, so the self-target is excluded here.
+        if (
+            voter.role == "mafia"
+            and active_target.role == "mafia"
+            and active_target.id != voter.id
+        ):
+            peer_yes_den += 1
+            if yes:
+                peer_yes_num += 1
+
+    return {
+        "self_vote.yes": _facets(self_yes_num, self_yes_den),
+        "peer_vote.initiation": _facets(peer_init_num, peer_init_den),
+        "peer_vote.yes": _facets(peer_yes_num, peer_yes_den),
     }
 
 
@@ -452,12 +976,69 @@ def append_record(
     return ledger_path
 
 
-def _play_one_game(
-    args: argparse.Namespace, game_index: int
-) -> tuple[list[str], set[str]]:
+@dataclass(slots=True)
+class _GameCapture:
+    """The per-game data ``run_eval`` scores — read from one final state.
+
+    Slice-1 speech inputs (pooled across games):
+    - ``ai_lines`` / ``ai_names`` — the AI-spoken Day lines (human excluded) +
+      AI names for the spec-009 repetition measure.
+    - ``ai_lines_with_speakers`` — per-line ``(speaker, text)`` pairs for the
+      third-person self-talk measure.
+
+    Slice-2 action inputs (scored PER GAME, then summed — names are only unique
+    within a game, so the vote scorer must resolve against this game's own map):
+    - ``players`` — the final ``players`` map (roles for the action detectors).
+    - ``messages`` — the full message history (announce + per-ballot lines).
+    """
+
+    ai_lines: list[str]
+    ai_names: set[str]
+    ai_lines_with_speakers: list[tuple[str, str]]
+    players: dict[str, PlayerState]
+    messages: list
+    # Raw structured-output captures intercepted by the proxy this game (Slice 3,
+    # Task 2): every ``with_structured_output(...).invoke(...)`` payload with its
+    # speaker attributed. ``run_eval`` filters these for AI-day-speaker
+    # ``DayAction(kind="vote")`` to compute ``self_vote.initiation`` — the one
+    # blunder no post-game state can see (``_accept`` rejects the self-vote).
+    captures: list[CaptureRecord]
+
+
+def _install_capture_provider(
+    captures: list[CaptureRecord],
+    speaker_resolver: Callable[[Any], str | None],
+) -> None:
+    """Point ``graphia.llm``'s seams at a CAPTURE proxy over the active provider.
+
+    Installs through the documented in-process seams (``_active_provider`` /
+    ``_large`` / ``_small``) — the same seams ``ollama_smoke`` and
+    ``repetition_experiment`` use, identical for both providers because the seam
+    sits ABOVE the provider branch (the ADR-009 dividend), so no production code
+    changes and the provider is whichever ``load_config`` already resolved. The
+    proxy CAPTURES (a ``captures`` list + the prompt-parse ``speaker_resolver``)
+    rather than counts — the orthogonal mode ``instrument`` exposes. The inner
+    clients are the active provider's real ones, so the games still hit the real
+    model; the proxy only observes.
+    """
+    import graphia.llm as llm_mod
+
+    provider = llm_mod._resolve_provider()
+    llm_mod._large = InstrumentedModel(
+        provider.large(), captures=captures, speaker_resolver=speaker_resolver
+    )
+    llm_mod._small = InstrumentedModel(
+        provider.small(), captures=captures, speaker_resolver=speaker_resolver
+    )
+
+
+def _play_one_game(args: argparse.Namespace, game_index: int) -> _GameCapture:
     """Drive one unattended scripted game on an isolated checkpoint; return its
-    ``(ai_lines, ai_names)`` — lines with the human's already excluded, names so
-    the spec-009 measure can name-mask. Raises on any failure — the caller in
+    :class:`_GameCapture` — the speech inputs (pooled lines + AI names + per-line
+    speaker pairs) for the Slice-1 repetition / third-person measures, the final
+    ``players`` map and full message history for the Slice-2 action detectors,
+    PLUS the raw proxy captures for the Slice-3 ``self_vote.initiation`` metric,
+    all read from the one game. Raises on any failure — the caller in
     ``run_eval`` catches, logs, and counts it as failed-early.
 
     Reuses the ``eval_dialogue`` / ``ollama_smoke`` driver pattern verbatim:
@@ -488,6 +1069,19 @@ def _play_one_game(
             raise RuntimeError(f"no name interrupt: {first!r}")
         _drive(graph, run_config, Command(resume=HUMAN_NAME))
 
+        # Roles are now dealt — read this game's ``players`` ONCE, at a quiescent
+        # point BETWEEN super-steps (the same safe ``get_state`` the driver loop
+        # below already uses), and install the capture proxy. The resolver
+        # parses the speaker off each Day-speak invoke's PROMPT and maps the name
+        # to an id via this map — no live ``get_state`` from inside a running
+        # node, so attribution cannot go stale (the ``test_slice7_vote`` trap).
+        # All Day-speak invokes happen after this point, so the map is ready.
+        players_now = graph.get_state(run_config).values.get("players", {})
+        captures: list[CaptureRecord] = []
+        _install_capture_provider(
+            captures, make_day_speaker_resolver(players_now)
+        )
+
         rounds = 0
         line_idx = 0
         # Answer interrupts until the game ends (no ``.next``) or the round cap.
@@ -516,7 +1110,15 @@ def _play_one_game(
             _drive(graph, run_config, Command(resume=resume))
 
         state = graph.get_state(run_config).values
-        return _ai_lines_with_names(state)
+        lines, names = _ai_lines_with_names(state)
+        return _GameCapture(
+            ai_lines=lines,
+            ai_names=names,
+            ai_lines_with_speakers=_ai_lines_with_speakers(state),
+            players=state.get("players", {}),
+            messages=list(state.get("messages", [])),
+            captures=captures,
+        )
 
 
 def run_eval(config: object, args: argparse.Namespace) -> EvalResult:
@@ -546,14 +1148,36 @@ def run_eval(config: object, args: argparse.Namespace) -> EvalResult:
 
     # Accumulate AI lines across games, plus the union of AI player names so the
     # spec-009 name-masking still fires across the pooled set (a name dealt in
-    # one game masks that name everywhere it appears in the pool).
+    # one game masks that name everywhere it appears in the pool). The per-line
+    # ``(speaker, text)`` pairs accumulate alongside for the third-person measure
+    # — each pair self-contained (a line is scored against its own speaker), so
+    # pooling across games is sound without any cross-game name-resolution.
     pooled_lines: list[str] = []
     pooled_names: set[str] = set()
+    pooled_speaker_lines: list[tuple[str, str]] = []
+
+    # Action-metric numerators/denominators summed ACROSS games. Each game is
+    # scored against its OWN ``players`` map (names are unique only within a
+    # game; the same name could be dealt a different role next game), then its
+    # raw count/denominator are added in — so the batch rate is
+    # total_num/total_den, never a mean-of-rates (Slice 2, Task 2 aggregation).
+    # ``self_vote.initiation`` is summed the same way but sourced from the PROXY
+    # captures (Slice 3), not the message history — the metric no game state can
+    # see. The full canonical {self,peer}x{initiation,yes} family now exists.
+    action_totals: dict[str, dict[str, int]] = {
+        metric: {"count": 0, "denominator": 0}
+        for metric in (
+            "self_vote.initiation",
+            "self_vote.yes",
+            "peer_vote.initiation",
+            "peer_vote.yes",
+        )
+    }
 
     for game_index in range(args.games):
         result.games_attempted += 1
         try:
-            lines, names = _play_one_game(args, game_index)
+            cap = _play_one_game(args, game_index)
         except Exception as exc:  # noqa: BLE001 - record and continue the batch
             result.games_failed_early += 1
             print(
@@ -562,11 +1186,46 @@ def run_eval(config: object, args: argparse.Namespace) -> EvalResult:
             )
             continue
         result.games_completed += 1
-        pooled_lines.extend(lines)
-        pooled_names.update(names)
+        pooled_lines.extend(cap.ai_lines)
+        pooled_names.update(cap.ai_names)
+        pooled_speaker_lines.extend(cap.ai_lines_with_speakers)
+
+        # Score this game's vote blunders against its own roster, then fold the
+        # raw count/denominator of each metric into the batch totals.
+        per_game = score_vote_blunders(cap.messages, cap.players)
+        # ``self_vote.initiation`` comes from the proxy captures, not the
+        # message history — a self-vote is rejected by ``_accept`` before it can
+        # reach ``cap.messages``, so this is the only place it is countable. Its
+        # speaker id was attributed at invoke time by the prompt-parse resolver.
+        per_game["self_vote.initiation"] = score_self_vote_initiation(cap.captures)
+        for metric, facets in per_game.items():
+            action_totals[metric]["count"] += int(facets["count"])
+            action_totals[metric]["denominator"] += int(facets["denominator"])
 
     result.ai_speeches = pooled_lines
+    # Both speech metrics share the AI-spoken-line denominator; they are computed
+    # together so one run records the full speech family (functional-spec §2.1).
     result.metrics["repetition"] = score_repetition(pooled_lines, pooled_names)
+    result.metrics["third_person_self_talk"] = score_third_person_self_talk(
+        pooled_speaker_lines
+    )
+
+    # The four vote action metrics, in the canonical {self,peer}x{initiation,yes}
+    # family order. Each enters the record only when the batch offered at least
+    # one opportunity (total denominator > 0); a no-opportunity metric is OMITTED
+    # — reported absent, not as a misleading 0.0 (functional-spec §2.1; see
+    # ``score_vote_blunders`` / ``score_self_vote_initiation`` / ``_facets``).
+    # ``self_vote.initiation`` (the proxy-only one) completes the family in
+    # Slice 3.
+    for metric in (
+        "self_vote.initiation",
+        "self_vote.yes",
+        "peer_vote.initiation",
+        "peer_vote.yes",
+    ):
+        totals = action_totals[metric]
+        if totals["denominator"] > 0:
+            result.metrics[metric] = _facets(totals["count"], totals["denominator"])
 
     # Persist one ``---``-separated record to the repo-committed ledger so this
     # run becomes a tracked, comparable, history-backed datapoint (functional-

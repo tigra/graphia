@@ -44,7 +44,6 @@ import sys
 import tempfile
 import time
 from dataclasses import dataclass, field
-from typing import Any
 
 from langgraph.types import Command
 
@@ -57,6 +56,13 @@ from graphia.tools.eval_dialogue import (
     _drive,
 )
 
+# The counting proxy + per-schema stats live in the shared instrument module
+# (tech-spec 011 §2.2): ``ollama_smoke`` is just one consumer — it installs the
+# proxy with a ``stats`` map and NO speaker resolver, so it counts only. The
+# counting semantics here are byte-for-byte the ones this harness was built on;
+# they simply moved (Slice 3, Task 1).
+from graphia.tools.instrument import InstrumentedModel, SchemaStats
+
 # The four structured-output surfaces under test (tech-spec §2.6 / ADR-010).
 SCHEMA_NAMES = ("Roster", "Pointing", "Ballot", "DayAction")
 
@@ -66,92 +72,14 @@ DEFAULT_THRESHOLD = 0.20
 
 
 # ---------------------------------------------------------------------------
-# Counting proxy — the instrumentation seam.
+# Counting proxy install — the instrumentation seam.
+#
+# The proxy pair (``InstrumentedModel`` / per-schema ``SchemaStats``) lives in
+# ``graphia.tools.instrument`` now (tech-spec 011 §2.2); this harness is the
+# count-only consumer. It builds the proxy with a ``stats`` map and no speaker
+# resolver, so the counting behavior — and the RELIABLE/UNRELIABLE verdict it
+# feeds — is byte-for-byte what it was before the extraction.
 # ---------------------------------------------------------------------------
-
-
-@dataclass
-class SchemaStats:
-    """Raw attempt outcomes for one structured-output schema."""
-
-    attempts: int = 0
-    failures: int = 0  # exception OR non-instance result from a raw invoke
-    fallbacks: int = 0  # two consecutive raw failures = the game's
-    #                     retry-then-deterministic-fallback path fired
-    _consecutive_failures: int = 0
-    last_error: str | None = None
-
-    def record_success(self) -> None:
-        self.attempts += 1
-        self._consecutive_failures = 0
-
-    def record_failure(self, error: str) -> None:
-        self.attempts += 1
-        self.failures += 1
-        self.last_error = error
-        self._consecutive_failures += 1
-        # Every node helper tries at most twice before falling back to a
-        # deterministic value (or, for Roster, crashing the game) — so two
-        # consecutive raw failures on the same schema mean the masked
-        # fallback fired. Node helpers run to completion before the next one
-        # starts (single-threaded graph), so per-schema adjacency is sound.
-        if self._consecutive_failures >= 2:
-            self.fallbacks += 1
-            self._consecutive_failures = 0
-
-    @property
-    def failure_rate(self) -> float:
-        return self.failures / self.attempts if self.attempts else 0.0
-
-
-class _CountingStructured:
-    """Wraps one ``with_structured_output(schema)`` runnable, counting raw
-    invoke outcomes underneath the game's own retry/fallback handling."""
-
-    def __init__(self, inner: Any, schema: Any, stats: dict[str, SchemaStats]):
-        self._inner = inner
-        self._schema = schema
-        self._stats = stats
-
-    def _rec(self) -> SchemaStats:
-        name = self._schema.__name__ if isinstance(self._schema, type) else str(self._schema)
-        return self._stats.setdefault(name, SchemaStats())
-
-    def invoke(self, *args: Any, **kwargs: Any) -> Any:
-        rec = self._rec()
-        try:
-            result = self._inner.invoke(*args, **kwargs)
-        except Exception as exc:
-            rec.record_failure(f"{type(exc).__name__}: {exc}")
-            raise  # preserve the game's own exception handling exactly
-        if isinstance(self._schema, type) and not isinstance(result, self._schema):
-            # e.g. the model produced no tool call and langchain returned
-            # None / a raw message — a parse failure even though no exception
-            # surfaced. Return it unchanged so the game's validators decide.
-            rec.record_failure(f"non-instance result: {type(result).__name__}")
-        else:
-            rec.record_success()
-        return result
-
-    def __getattr__(self, name: str) -> Any:  # defensive passthrough
-        return getattr(self._inner, name)
-
-
-class _CountingModel:
-    """Thin proxy over a tier client: intercepts ``with_structured_output``
-    and delegates everything else untouched."""
-
-    def __init__(self, inner: Any, stats: dict[str, SchemaStats]):
-        self._inner = inner
-        self._stats = stats
-
-    def with_structured_output(self, schema: Any, **kwargs: Any) -> _CountingStructured:
-        return _CountingStructured(
-            self._inner.with_structured_output(schema, **kwargs), schema, self._stats
-        )
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._inner, name)
 
 
 def _install_counting_provider(stats: dict[str, SchemaStats]) -> None:
@@ -159,14 +87,16 @@ def _install_counting_provider(stats: dict[str, SchemaStats]) -> None:
 
     Uses the documented override seams (``_active_provider`` / ``_large`` /
     ``_small``) — the same ones ``repetition_experiment`` rebuilds — so no
-    production code changes and no Bedrock client is ever constructed.
+    production code changes and no Bedrock client is ever constructed. The
+    proxy counts only (``stats`` supplied, no ``speaker_resolver``); raw capture
+    is a different consumer's concern (Slice 3, Task 2).
     """
     import graphia.llm as llm_mod
 
     provider = llm_mod.OllamaProvider()
     llm_mod._active_provider = provider
-    llm_mod._large = _CountingModel(provider.large(), stats)
-    llm_mod._small = _CountingModel(provider.small(), stats)
+    llm_mod._large = InstrumentedModel(provider.large(), stats=stats)
+    llm_mod._small = InstrumentedModel(provider.small(), stats=stats)
 
 
 # ---------------------------------------------------------------------------
