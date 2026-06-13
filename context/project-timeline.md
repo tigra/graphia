@@ -3,7 +3,7 @@
 A high-level history of the project, reconstructed from `git log` and the
 `context/` artifacts: how scope changed (Change Requests), how the architecture
 was decided (Architecture Decision Records), and how the work was executed (specs
-broken into vertical slices). Covers **2026-04-29 → 2026-06-12**.
+broken into vertical slices). Covers **2026-04-29 → 2026-06-13**.
 
 Graphia is built with the **AWOS spec-driven workflow** — every increment flows
 `product → roadmap → architecture → spec → tech → tasks → implement → verify → tutorial`,
@@ -104,6 +104,14 @@ gantt
     Spec 010 verified Completed — Phase 4 closed         :milestone, done, sp10v, 2026-06-12, 0d
     Tutorial 010 published                               :milestone, done, t10, 2026-06-12, 0d
 
+    section Quality measurement (v1.3.x) — Spec 011 AI Blunder Tracking
+    Spec 011 — AI Blunder Tracking (spec + tech + tasks) :milestone, done, sp11, 2026-06-13, 0d
+    Day-context fix — Moderator label + whisper privacy  :milestone, done, dcf, 2026-06-13, 0d
+    Slices 1-6 — detectors · capture proxy · provenance · Wilson CI :done, sp11impl, 2026-06-13, 1d
+    n=20 baseline reverses the n=3 read (repetition)     :milestone, done, base11, 2026-06-13, 0d
+    Spec 011 verified Completed (23/23)                  :milestone, done, sp11v, 2026-06-13, 0d
+    Tutorial 011 published                               :milestone, done, t11, 2026-06-13, 0d
+
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
     click m2 href "https://github.com/tigra/graphia/blob/main/context/change-requests/002-long-term-memory-for-cross-game-stats.md"
@@ -169,6 +177,11 @@ gantt
     click fups href "https://github.com/tigra/graphia/blob/main/context/spec/010-local-ollama-provider/tasks.md"
     click sp10v href "https://github.com/tigra/graphia/blob/main/context/spec/010-local-ollama-provider/functional-spec.md"
     click t10 href "https://github.com/tigra/graphia/blob/main/context/tutorials/010-local-ollama-provider/tutorial.md"
+    click sp11 href "https://github.com/tigra/graphia/tree/main/context/spec/011-ai-blunder-tracking"
+    click sp11impl href "https://github.com/tigra/graphia/blob/main/context/spec/011-ai-blunder-tracking/tasks.md"
+    click base11 href "https://github.com/tigra/graphia/blob/main/evals/blunder-ledger.yaml"
+    click sp11v href "https://github.com/tigra/graphia/blob/main/context/spec/011-ai-blunder-tracking/functional-spec.md"
+    click t11 href "https://github.com/tigra/graphia/blob/main/context/tutorials/011-ai-blunder-tracking/tutorial.md"
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:
@@ -181,7 +194,7 @@ The red marks are the three superseded ADRs (002, 004, 007); the CRs are green b
 
 ---
 
-## What was going on — ten acts
+## What was going on — eleven acts
 
 ### Act 1 — Phase 1: a playable skeleton (2026-04-29)
 
@@ -814,6 +827,7 @@ coverage._
 | 008  | Same-Round Message Visibility               | 2      | Completed |
 | 009  | AI Collusion Awareness                      | 1      | Completed |
 | 010  | Local Ollama Provider                       | 5      | Completed |
+| 011  | AI Blunder Tracking (quality ledger)        | 6      | Completed |
 
 _Spec 006 was verified Completed on 2026-06-03 (all 32 acceptance criteria, Phase 3 roadmap bullets ticked) and Tutorial 006 published. Specs 007–009 (the Day-phase integrity trio) are now all **verified Completed**; 009's collusion nudge was revised to an **anti-parrot** reword after a real-Nova experiment showed the original wording drove a Day-dialogue repetition spiral._
 
@@ -837,6 +851,43 @@ documentation: `007` (fair speaking order), `008` (same-round visibility), and
 chose the anti-parrot fix (how to evaluate and fix non-deterministic LLM
 behaviour, not just the one-line prompt change).
 
+### Act 11 — AI Blunder Tracking: turning AI quality into a tracked, trustworthy number (2026-06-13)
+
+A play-test observation kicked it off: beyond repetition, the AI commits a family of
+self-consistency blunders — voting to execute *itself*, Mafiosi voting to execute
+*teammates*, talking about itself in the third person — all invisible to the
+maintainer except by luck, and unmeasured. **Spec 011 (AI Blunder Tracking)** set out
+to make AI quality a *tracked* property: a make-gated harness (`make blunder-eval`)
+that plays real games on either provider, counts the blunder family, and appends one
+record per run to a repo-committed YAML ledger (`evals/blunder-ledger.yaml`) — "baby
+MLOps". The chain ran spec → tech (which **dropped self-accusation** as too
+keyword-fragile and **split each vote blunder** into separate initiation/Yes-ballot
+measures) → tasks (six vertical slices) → implement.
+
+Two slices carried the interesting craft. The **capture proxy** (extending spec 010's
+reliability-counting `InstrumentedModel` from counting to *capturing*) measures
+`self_vote.initiation` — a self-targeted AI vote the game's turn-handler rejects
+before it reaches state, so the only place to see it is the raw payload — and
+attributes it to the speaker by parsing the invoke *prompt* rather than a re-entrant
+`graph.get_state()` (dodging the stale-snapshot trap that bit `test_slice7_vote`
+earlier). The detectors parse the game's *own* message templates (imported as anchors,
+so a reword breaks a test, not a metric), and a no-opportunity metric is *omitted*,
+not reported as a misleading 0.
+
+The user pushed twice on rigor — "three games is too few" and "did you keep the
+statistical machinery?" — and both pushes paid off. A **Wilson confidence interval**
+now ships with every rate (closed-form, readable at a glance), and a proper **20-game
+baseline reversed the 3-game read**: at n=3 repetition looked identical across
+providers (≈0.45, "structural"); at n=20 the intervals separated cleanly (Nova 0.554
+[0.525, 0.583] vs qwen 0.389 [0.357, 0.422]) — provider-dependent after all, with
+qwen's vote-incoherence (self-execution 63%, teammate-execution 86%) now exposed. The
+same "rigor reverses the noisy pilot" lesson as spec 009, re-lived literally. A bonus
+gameplay fix rode along — the user noticed AIs confabulating about a publicly-revealed
+role, which traced to the Moderator's announcements being labelled `SystemMessage:`
+(not `Moderator:`) in the AI's prompt *and* a private-whisper leak into the
+day-context — both fixed (commit `ef452d3`). Spec 011 was verified **Completed (23/23)**
+and tutorialised.
+
 ---
 
 ## What's next
@@ -854,11 +905,15 @@ architecture; both roadmap sub-items ticked. The next roadmap item is **Phase 5
 — Setup Flexibility** (Configurable Role Counts) and **Richer Night Resolution**
 (Multi-Round Mafia Consensus) — start with `/awos:spec`.
 
-Fresh follow-ups from the 06-11→12 session: **Tutorial 010 is published**
-(the provider abstraction, the gate that fired twice, the offline gate — for
-the LLM-integration reader) and the **tutorials index** now carries the
-008/009/010 rows. Still open: `product-definition.md` calls the Ollama
-provider "future".
+**Spec 011 (AI Blunder Tracking) is verified Completed and tutorialised**
+(2026-06-13): a make-gated harness + a repo-committed, append-only quality ledger
+with run provenance and Wilson confidence intervals, and a reliable n=20 baseline
+that reversed the n=3 read (repetition is provider-dependent; qwen's vote-incoherence
+is severe). The measured blunders are a *starting line* for future evidence-driven
+fixes, each measured against the ledger. The **tutorials index** now carries the
+008/009/010/011 rows. Still open: the parked AWOS `_`-command renames + `handoff.md`;
+a CLAUDE.md mention of `make blunder-eval`; and `product-definition.md` still calls
+the Ollama provider "future".
 
 Immediate follow-ups from the 06-09→10 session:
 

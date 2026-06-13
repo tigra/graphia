@@ -22,7 +22,7 @@
 </head>
 <body>
 <h1>Graphia — Project Timeline (interactive)</h1>
-<p class="subtitle">CRs, ADRs, and spec execution from 2026-04-29 → 2026-06-12.</p>
+<p class="subtitle">CRs, ADRs, and spec execution from 2026-04-29 → 2026-06-13.</p>
 <p class="note">
   Click any milestone (diamond) or slice (bar) to open its source artifact on GitHub.
   This page exists because GitHub's markdown renderer sandboxes mermaid diagrams in an iframe
@@ -120,6 +120,14 @@ gantt
     Spec 010 verified Completed — Phase 4 closed         :milestone, done, sp10v, 2026-06-12, 0d
     Tutorial 010 published                               :milestone, done, t10, 2026-06-12, 0d
 
+    section Quality measurement (v1.3.x) — Spec 011 AI Blunder Tracking
+    Spec 011 — AI Blunder Tracking (spec + tech + tasks) :milestone, done, sp11, 2026-06-13, 0d
+    Day-context fix — Moderator label + whisper privacy  :milestone, done, dcf, 2026-06-13, 0d
+    Slices 1-6 — detectors · capture proxy · provenance · Wilson CI :done, sp11impl, 2026-06-13, 1d
+    n=20 baseline reverses the n=3 read (repetition)     :milestone, done, base11, 2026-06-13, 0d
+    Spec 011 verified Completed (23/23)                  :milestone, done, sp11v, 2026-06-13, 0d
+    Tutorial 011 published                               :milestone, done, t11, 2026-06-13, 0d
+
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
     click m2 href "https://github.com/tigra/graphia/blob/main/context/change-requests/002-long-term-memory-for-cross-game-stats.md"
@@ -185,6 +193,11 @@ gantt
     click fups href "https://github.com/tigra/graphia/blob/main/context/spec/010-local-ollama-provider/tasks.md"
     click sp10v href "https://github.com/tigra/graphia/blob/main/context/spec/010-local-ollama-provider/functional-spec.md"
     click t10 href "https://github.com/tigra/graphia/blob/main/context/tutorials/010-local-ollama-provider/tutorial.md"
+    click sp11 href "https://github.com/tigra/graphia/tree/main/context/spec/011-ai-blunder-tracking"
+    click sp11impl href "https://github.com/tigra/graphia/blob/main/context/spec/011-ai-blunder-tracking/tasks.md"
+    click base11 href "https://github.com/tigra/graphia/blob/main/evals/blunder-ledger.yaml"
+    click sp11v href "https://github.com/tigra/graphia/blob/main/context/spec/011-ai-blunder-tracking/functional-spec.md"
+    click t11 href "https://github.com/tigra/graphia/blob/main/context/tutorials/011-ai-blunder-tracking/tutorial.md"
 </pre>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
 <script>
