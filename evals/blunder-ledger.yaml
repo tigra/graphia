@@ -1,0 +1,36 @@
+---
+run:
+  date: '2026-06-13'
+  games: 3
+  metrics_version: 1
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+quality:
+  games_attempted: 3
+  games_completed: 3
+  games_failed_early: 0
+metrics:
+  repetition:
+    rate: 0.45384615384615384
+    count: 59
+    denominator: 130
+---
+run:
+  date: '2026-06-13'
+  games: 3
+  metrics_version: 1
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+quality:
+  games_attempted: 3
+  games_completed: 3
+  games_failed_early: 0
+metrics:
+  repetition:
+    rate: 0.3695652173913043
+    count: 34
+    denominator: 92
