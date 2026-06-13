@@ -23,23 +23,27 @@ No production code changes — the game is measured, not modified (functional-sp
 
 ### 2.1 Metric definitions and their data sources — **[Agent: langgraph-agentic]**
 
-Action-based (**exact**), from raw proxy capture + game record, with roles from final `players`:
+Action-based (**exact**), from raw proxy capture + game record, with roles from final `players`. Vote-initiation and Yes-ballot are kept as **separate** metrics throughout — a clean `{self, peer} × {initiation, yes}` family (functional-spec §2.1):
 
-| Metric | Numerator events | Denominator (visible in record) |
-| --- | --- | --- |
-| `self_vote.initiation_attempts` | raw `DayAction(kind="vote", target_id == speaker.id)` from the proxy (speaker resolved at invoke time via a live-state callback, the `dynamic_night_pointing` pattern) — counted even though `_accept` rejects them | all raw AI vote-initiation attempts |
-| `self_vote.own_execution_yes` | AI Yes ballot where voter == vote target (from per-ballot messages + the preceding announce) | all AI ballots where voter == target (i.e. opportunities) |
-| `mafioso_peer_vote` (combined per functional-spec §2.1) | mafia-AI initiations targeting a fellow mafioso **+** mafia-AI Yes ballots on a fellow mafioso | mafia-AI initiations **+** mafia-AI ballots cast on mafia targets |
+| Metric | Numerator events | Denominator (visible in record) | Source |
+| --- | --- | --- | --- |
+| `self_vote.initiation` | raw `DayAction(kind="vote", target_id == speaker.id)` — counted even though the AI turn-handler (`_accept`) rejects it | all raw AI vote-initiation attempts | **proxy** (Slice 3) — invisible to game state |
+| `self_vote.yes` | AI Yes ballot where voter == vote target | all AI ballots where voter == target (self-execution opportunities) | game record |
+| `peer_vote.initiation` | mafia-AI initiation targeting a fellow mafioso | all mafia-AI vote initiations | game record |
+| `peer_vote.yes` | mafia-AI Yes ballot on a fellow mafioso | mafia-AI ballots cast on a mafia target (bussing opportunities) | game record |
 
-Speech-based (**approximate by design**, functional-spec §2.1 last criterion), over named `AIMessage`s:
+Only `self_vote.initiation` needs the capture proxy — a self-targeted AI vote is rejected by the turn-handler before it reaches game state, so it is the one metric no post-game record can see. The other three are exact reads of the game's own message history (`VOTE_INITIATE_ANNOUNCE_TEMPLATE`, `VOTE_PER_BALLOT_TEMPLATE`) + final `players` roles; the proxy still resolves the live speaker at invoke time via a state callback (the `dynamic_night_pointing` pattern).
+
+Speech-based (**approximate by design**, functional-spec §2.1), over named `AIMessage`s:
 
 | Metric | Rule (documented as code constants) | Denominator |
 | --- | --- | --- |
 | `third_person_self_talk` | the speaker's own name appears (word-boundary, case-insensitive) in their own spoken line | AI spoken lines |
-| `self_accusation` | own name within a small token window of a documented **suspicion lexicon** (`suspicious`, `suspect`, `accuse`, `guilty`, `mafia`, …) in their own line — a subset-ish of the above, counted independently | AI spoken lines |
 | `repetition` | the spec-009 name-masked near-dup rate at 0.85 (imported, not reimplemented) | AI spoken lines |
 
-A module-level **`METRICS_VERSION = 1`** stamps every record; any change to a rule, lexicon, or denominator bumps it (functional-spec §2.3).
+*(Self-accusation — own name within a suspicion-keyword window — was considered and **dropped**: keyword-lexicon matching is too fragile to compare across runs and models. `third_person_self_talk` survives because it needs only the speaker's own name, no lexicon.)*
+
+A module-level **`METRICS_VERSION = 1`** stamps every record; any change to a rule or denominator bumps it (functional-spec §2.3).
 
 ### 2.2 Capture instrumentation — shared, provider-agnostic — **[Agent: langgraph-agentic]**
 
@@ -78,7 +82,7 @@ Collected once per run, before games start:
 
 - **Blast radius:** one new tool module + the shared instrument helper extraction (with `ollama_smoke` kept green), `evals/`, a make target, docs. **Zero production-code change**; the mocked suite never runs any of it.
 - **Risk — message-template coupling.** Action-metric extraction parses our own announce/ballot templates; a template rewording breaks extraction. *Mitigation:* import the template constants as parse anchors; offline unit tests pin extraction against synthetic histories built from those same constants.
-- **Risk — lexicon/heuristic drift.** The speech-based rules will get tuned. *Mitigation:* `METRICS_VERSION` bump discipline (a criterion, not a convention), rules as named constants beside the version.
+- **Risk — heuristic drift.** The one speech-based rule (third-person self-talk, an own-name match) may get tuned. *Mitigation:* `METRICS_VERSION` bump discipline (a criterion, not a convention), the rule as a named constant beside the version. (Self-accusation's fragile keyword lexicon was dropped precisely to avoid this class of drift.)
 - **Risk — denominator subtleties.** Peer-vote opportunities (ballots *on mafia targets* only) are easy to get wrong silently. *Mitigation:* denominators recorded next to every rate (functional-spec §2.1); unit-tested against hand-built game records.
 - **Risk — ledger merge conflicts** if two runs land on diverging branches. Accepted: appends conflict trivially and resolve by keeping both documents.
 - **Determinism posture unchanged** (architecture §6): mechanical seeds recorded for like-for-like reruns; LLM behavior stays non-reproducible — that's the thing being measured.
