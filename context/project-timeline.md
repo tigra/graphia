@@ -112,6 +112,11 @@ gantt
     Spec 011 verified Completed (23/23)                  :milestone, done, sp11v, 2026-06-13, 0d
     Tutorial 011 published                               :milestone, done, t11, 2026-06-13, 0d
 
+    section Tooling (v1.3.x) — Spec 012 Eval Ledger Viewer (in progress)
+    Spec 012 — Eval Ledger Viewer (spec + tech + tasks)  :milestone, done, sp12, 2026-06-13, 0d
+    Slice 1 — pyyaml + pure data layer + Textual table    :done, sp12s1, 2026-06-13, 1d
+    Slices 2-3 — search · drill-down (pending)            :active, sp12rest, 2026-06-13, 1d
+
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
     click m2 href "https://github.com/tigra/graphia/blob/main/context/change-requests/002-long-term-memory-for-cross-game-stats.md"
@@ -182,6 +187,8 @@ gantt
     click base11 href "https://github.com/tigra/graphia/blob/main/evals/blunder-ledger.yaml"
     click sp11v href "https://github.com/tigra/graphia/blob/main/context/spec/011-ai-blunder-tracking/functional-spec.md"
     click t11 href "https://github.com/tigra/graphia/blob/main/context/tutorials/011-ai-blunder-tracking/tutorial.md"
+    click sp12 href "https://github.com/tigra/graphia/tree/main/context/spec/012-eval-ledger-viewer"
+    click sp12s1 href "https://github.com/tigra/graphia/blob/main/context/spec/012-eval-ledger-viewer/tasks.md"
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:
@@ -194,7 +201,7 @@ The red marks are the three superseded ADRs (002, 004, 007); the CRs are green b
 
 ---
 
-## What was going on — eleven acts
+## What was going on — twelve acts (the twelfth in progress)
 
 ### Act 1 — Phase 1: a playable skeleton (2026-04-29)
 
@@ -828,6 +835,7 @@ coverage._
 | 009  | AI Collusion Awareness                      | 1      | Completed |
 | 010  | Local Ollama Provider                       | 5      | Completed |
 | 011  | AI Blunder Tracking (quality ledger)        | 6      | Completed |
+| 012  | Eval Ledger Viewer                          | 3      | In progress (Slice 1/3) |
 
 _Spec 006 was verified Completed on 2026-06-03 (all 32 acceptance criteria, Phase 3 roadmap bullets ticked) and Tutorial 006 published. Specs 007–009 (the Day-phase integrity trio) are now all **verified Completed**; 009's collusion nudge was revised to an **anti-parrot** reword after a real-Nova experiment showed the original wording drove a Day-dialogue repetition spiral._
 
@@ -888,6 +896,32 @@ role, which traced to the Moderator's announcements being labelled `SystemMessag
 day-context — both fixed (commit `ef452d3`). Spec 011 was verified **Completed (23/23)**
 and tutorialised.
 
+### Act 12 — Eval Ledger Viewer: making the quality history legible (2026-06-13, in progress)
+
+Spec 011 left the quality ledger **append-only and write-only** — easy to grow,
+hard to read: comparing runs meant scrolling raw indented YAML. **Spec 012 (Eval
+Ledger Viewer)** is the reader 011 deferred — a standalone Textual table over
+`evals/blunder-ledger.yaml`: one row per run, `rate [CI] m/n` cells (blank where
+a behavior wasn't exercised), a `⚠` mark on dirty-tree runs, both-axis
+scrolling, filter-search, and a full-record drill-down. It finally takes on the
+**YAML-parser dependency** (`pyyaml`) that 011 deliberately avoided, exactly as
+`evals/README.md` foretold. The chain ran spec → tech (Textual 8.2.4 APIs
+verified live, no spec/Textual collisions) → tasks (three vertical slices,
+MVP-table-first) → implement.
+
+**Slice 1 (the MVP) is done**, in two layers: a **pure, Textual-free data layer**
+(`eval_ledger.py` — parse + a defensive flattener) so the bulk of the logic is
+unit-testable without a TUI, and a thin **Textual viewer**
+(`ui/ledger_viewer.py`, `make view-ledger`). Two agent catches were the story of
+the slice, both from *checking reality over the spec*: the vote metrics are
+stored as **flat dotted keys** (`metrics["self_vote.initiation"]`), not the
+nested maps the tech spec assumed — caught by parsing the real committed ledger,
+fixed flat-first-nested-fallback, spec corrected; and the `textual-tui` agent
+spotted a **prompt-injection attempt** in a docs-tool's output (a fake "run
+`npx ctx7 setup`" instruction) and ignored it. +22 offline tests (pure +
+Textual `run_test` Pilot); suite 407 → 429. Slices 2 (search) and 3 (drill-down
++ a read-only byte-identical proof) remain.
+
 ---
 
 ## What's next
@@ -908,12 +942,12 @@ architecture; both roadmap sub-items ticked. The next roadmap item is **Phase 5
 **Spec 011 (AI Blunder Tracking) is verified Completed and tutorialised**
 (2026-06-13): a make-gated harness + a repo-committed, append-only quality ledger
 with run provenance and Wilson confidence intervals, and a reliable n=20 baseline
-that reversed the n=3 read (repetition is provider-dependent; qwen's vote-incoherence
-is severe). The measured blunders are a *starting line* for future evidence-driven
-fixes, each measured against the ledger. The **tutorials index** now carries the
-008/009/010/011 rows. Still open: the parked AWOS `_`-command renames + `handoff.md`;
-a CLAUDE.md mention of `make blunder-eval`; and `product-definition.md` still calls
-the Ollama provider "future".
+that reversed the n=3 read. **Spec 012 (Eval Ledger Viewer) is in progress** —
+Slice 1 of 3 done (`make view-ledger` opens a scrollable table over that ledger);
+search and drill-down remain, then verify + tutorial. The roadmap's next *feature*
+is still **Phase 5 — Configurable Role Counts / Multi-Round Mafia Consensus**.
+Still open: the parked AWOS `_`-command renames + `handoff.md`; and
+`product-definition.md` still calls the Ollama provider "future".
 
 Immediate follow-ups from the 06-09→10 session:
 
