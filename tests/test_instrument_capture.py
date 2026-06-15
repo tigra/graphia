@@ -44,6 +44,7 @@ import pytest
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from graphia.llm import DayAction, Ballot
+from graphia.nodes.day import _role_label, _team_line, _win_condition_line
 from graphia.prompts import DAY_SPEAK_SYSTEM, DAY_SPEAK_USER_TEMPLATE
 from graphia.state import PlayerState
 from graphia.tools.blunder_eval import (
@@ -88,7 +89,12 @@ def _day_prompt(speaker: PlayerState) -> list:
         SystemMessage(content=DAY_SPEAK_SYSTEM),
         HumanMessage(
             content=DAY_SPEAK_USER_TEMPLATE.format(
-                speaker=speaker.name, roster="(roster)", context="(ctx)"
+                speaker=speaker.name,
+                role_label=_role_label(speaker.role),
+                win_condition=_win_condition_line(speaker.role),
+                team_line=_team_line(speaker, {speaker.id: speaker}),
+                roster="(roster)",
+                context="(ctx)",
             )
         ),
     ]

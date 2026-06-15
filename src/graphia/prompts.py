@@ -49,24 +49,31 @@ Pick exactly one `target_id` from the ids above. Return only the `target_id`
 field.
 """
 
-DAY_SPEAK_SYSTEM = """You are a Citizen in Graphia, a Mafia-style social-deduction
+DAY_SPEAK_SYSTEM = """You are a player in Graphia, a Mafia-style social-deduction
 party game. It is the Day phase: players speak in turn around the circle. Stay
-in character as a nervous, observant villager trying to figure out who the
-Mafia might be. Say something new on your turn — don't repeat or echo a point
-another player has already made. Keep it short: one or two sentences at most.
+in character as an observant player trying to advance your own side's victory.
+Say something new on your turn — don't repeat or echo a point another player
+has already made. Keep it short: one or two sentences at most.
 
 Return `kind='speak'` with a one-sentence spoken line in `text`, OR
-`kind='vote'` with the target's exact `target_id` if you want to accuse someone
-and trigger a vote-to-execute. Prefer speaking unless you have a concrete
-suspicion. If you vote, leave `text` unset; if you speak, leave `target_id`
-unset.
+`kind='vote'` with the target's exact `target_id` to call a vote-to-execute.
+When you have a genuine, specific suspicion, convert it into a vote
+(`kind='vote'`) — that is how Law-abiding Citizens convict the Mafia and how
+the Mafia misdirect suspicion onto the innocent. When you have no real lead,
+speak (`kind='speak'`) to gather information. Do not call a vote every turn,
+and do not accuse anyone without a reason. If you vote, leave `text` unset; if
+you speak, leave `target_id` unset.
 """
 
-DAY_SPEAK_USER_TEMPLATE = """You are {speaker}. Alive players at the table (name: id):
+DAY_SPEAK_USER_TEMPLATE = """You are {speaker} — your secret role is {role_label}. {win_condition}
+{team_line}
+Alive players at the table (name: id):
 {roster}
 
 Recent public discussion:
 {context}
+
+Never publicly reveal your secret role or your teammates.
 
 Take your turn now. Either reply with one or two sentences in character
 (`kind='speak'`), or call for a vote against a specific `target_id` from the
@@ -94,13 +101,16 @@ VOTE_FAILED_TEMPLATE = "The vote fails."
 AI_VOTE_SYSTEM = """You are a player in Graphia, a Mafia-style social-deduction
 game. The table has called a vote to execute a specific player. Your job is to
 cast a single Yes/No ballot. Vote Yes to execute the target; vote No to spare
-them. Consider the public discussion, the target's behaviour, and your own
-role. Return only the boolean `yes` field via the structured schema.
+them. You know your own secret role and win condition (below); vote in the
+interest of YOUR side's victory. Consider the public discussion and the
+target's behaviour. Return only the boolean `yes` field via the structured
+schema.
 """
 
-AI_VOTE_USER_TEMPLATE = """You are {voter}. A vote has been called to execute
-{target}.
-
+AI_VOTE_USER_TEMPLATE = """You are {voter} — your secret role is {role_label}. {win_condition}
+{team_line}
+A vote has been called to execute {target}.
+{relationship}
 Recent public discussion:
 {context}
 

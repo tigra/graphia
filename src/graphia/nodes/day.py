@@ -67,6 +67,89 @@ def _role_label(role: str) -> str:
     return "Mafia" if role == "mafia" else "Law-abiding Citizen"
 
 
+def _win_condition_line(role: str) -> str:
+    """Return the actor's win condition, worded to match ``check_win_condition``.
+
+    The mechanical rule (``graphia.nodes.endgame.check_win_condition``):
+    Law-abiding wins when no Mafia remain; Mafia wins when the Mafia count is
+    greater than or equal to the Law-abiding count. We lift that wording
+    verbatim here so the prompt objective the model optimises matches the rule
+    the engine actually enforces (load-bearing — spec 013 §2.5).
+    """
+    if role == "mafia":
+        return (
+            "Your side, the Mafia, wins when the Mafia count is greater than "
+            "or equal to the Law-abiding count."
+        )
+    return (
+        "Your side, the Law-abiding Citizens, wins when no Mafia remain."
+    )
+
+
+def _teammates_str(actor: PlayerState, players: dict[str, PlayerState]) -> str:
+    """Return the alive Mafia names (excluding ``actor``) for a teammate line.
+
+    Mafia-only by design (spec 013 §2.5 knowledge-boundary invariant): this is
+    called only for a Mafioso, and it enumerates *Mafia* peers — the only other
+    players whose allegiance a Mafioso legitimately knows. A Law-abiding Citizen
+    never receives a teammate list (its ``team_line`` is empty); disclosing
+    fellow Citizens would collapse the deduction game. Returns a sentinel when
+    the actor is the last Mafioso standing.
+    """
+    names = [
+        p.name
+        for p in players.values()
+        if p.is_alive and p.role == "mafia" and p.id != actor.id
+    ]
+    if not names:
+        return "(none — you are the last Mafioso)"
+    return ", ".join(names)
+
+
+def _team_line(actor: PlayerState, players: dict[str, PlayerState]) -> str:
+    """Mafia-only fellow-Mafiosi disclosure line; ``""`` for a Citizen.
+
+    Knowledge-boundary invariant (spec 013 §2.5): a Citizen learns nothing
+    about any other player's side, so its team line is the empty string.
+    """
+    if actor.role != "mafia":
+        return ""
+    return (
+        f"Your fellow Mafiosi (keep this secret): "
+        f"{_teammates_str(actor, players)}."
+    )
+
+
+def _ballot_relationship(voter: PlayerState, target: PlayerState) -> str:
+    """Return the node-computed ballot relationship NUDGE (never an imperative).
+
+    Both phrasings are persuasion, not a mechanical ban (spec 013 §2.6): each of
+    self-execution and teammate-execution can be a rare legitimate strategy
+    (self-sacrifice; bussing a teammate to deflect suspicion). Emits only:
+
+    * "is YOU" — when the voter is the target;
+    * "is your fellow Mafioso" — only when BOTH voter and target are Mafia;
+    * "" — otherwise.
+
+    It never labels a target as a fellow Citizen or discloses any other-player
+    allegiance, so a Law-abiding voter's ballot leaks nothing (its relationship
+    is only ever "is YOU" on a self-targeted ballot, else "").
+    """
+    if voter.id == target.id:
+        return (
+            f"** {target.name} is YOU. Executing yourself normally loses you "
+            f"the game — vote No unless this is a deliberate self-sacrifice "
+            f"play. **"
+        )
+    if voter.role == "mafia" and target.role == "mafia":
+        return (
+            f"** {target.name} is your fellow Mafioso. Executing a teammate "
+            f"normally costs you the game — vote No unless you have a "
+            f"deliberate bus-the-teammate reason. **"
+        )
+    return ""
+
+
 def _find_last_night_victim(
     kill_log: list[KillRecord], cycle: int
 ) -> KillRecord | None:
@@ -221,12 +304,22 @@ def _ai_day_action(
     context = _render_context(list(state.get("messages", [])), speaker.id)
     alive_ids = {p.id for p in players.values() if p.is_alive}
 
+    # Role/team/win-condition grounding (spec 013 §2.5). Computed for ALL
+    # actors and injected directly into the prompt — never via the scrolling
+    # ``context`` whisper. ``_team_line`` is Mafia-only (a Citizen's is "").
+    role_label = _role_label(speaker.role)
+    win_condition = _win_condition_line(speaker.role)
+    team_line = _team_line(speaker, players)
+
     llm = get_large().with_structured_output(DayAction)
     base_messages: list = [
         SystemMessage(content=DAY_SPEAK_SYSTEM),
         HumanMessage(
             content=DAY_SPEAK_USER_TEMPLATE.format(
                 speaker=speaker.name,
+                role_label=role_label,
+                win_condition=win_condition,
+                team_line=team_line,
                 roster=roster,
                 context=context,
             )
@@ -490,15 +583,30 @@ def _ai_ballot(
     target: PlayerState,
     state: GameState,
 ) -> Ballot:
-    """Ask Sonnet for a Yes/No ballot. Conservative fallback on failure."""
+    """Ask the gameplay model for a Yes/No ballot. Conservative fallback."""
+    players = state.get("players", {})
     context = _render_context(list(state.get("messages", [])), voter.id)
+
+    # Role/team/win-condition grounding + the relationship NUDGE (spec 013
+    # §2.5/§2.6), computed for ALL voters. ``_team_line`` is Mafia-only;
+    # ``_ballot_relationship`` emits only "is YOU"/"is your fellow Mafioso"/""
+    # so a Law-abiding voter's ballot discloses no other-player allegiance.
+    role_label = _role_label(voter.role)
+    win_condition = _win_condition_line(voter.role)
+    team_line = _team_line(voter, players)
+    relationship = _ballot_relationship(voter, target)
+
     llm = get_large().with_structured_output(Ballot)
     base_messages: list = [
         SystemMessage(content=AI_VOTE_SYSTEM),
         HumanMessage(
             content=AI_VOTE_USER_TEMPLATE.format(
                 voter=voter.name,
+                role_label=role_label,
+                win_condition=win_condition,
+                team_line=team_line,
                 target=target.name,
+                relationship=relationship,
                 context=context,
             )
         ),

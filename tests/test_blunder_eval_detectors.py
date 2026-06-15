@@ -41,6 +41,7 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from graphia.llm import DayAction
+from graphia.nodes.day import _role_label, _team_line, _win_condition_line
 from graphia.prompts import (
     DAY_SPEAK_SYSTEM,
     DAY_SPEAK_USER_TEMPLATE,
@@ -501,7 +502,12 @@ def _day_prompt(speaker: PlayerState) -> list:
         SystemMessage(content=DAY_SPEAK_SYSTEM),
         HumanMessage(
             content=DAY_SPEAK_USER_TEMPLATE.format(
-                speaker=speaker.name, roster="(roster)", context="(ctx)"
+                speaker=speaker.name,
+                role_label=_role_label(speaker.role),
+                win_condition=_win_condition_line(speaker.role),
+                team_line=_team_line(speaker, {speaker.id: speaker}),
+                roster="(roster)",
+                context="(ctx)",
             )
         ),
     ]
@@ -596,7 +602,12 @@ def test_self_vote_initiation_resolver_ignores_non_day_speak_prompts() -> None:
     # A name not on this game's roster → None, never a wrong-player attribution.
     ghost = HumanMessage(
         content=DAY_SPEAK_USER_TEMPLATE.format(
-            speaker="Ghost", roster="r", context="c"
+            speaker="Ghost",
+            role_label="Law-abiding Citizen",
+            win_condition="",
+            team_line="",
+            roster="r",
+            context="c",
         )
     )
     assert resolve([ghost]) is None
