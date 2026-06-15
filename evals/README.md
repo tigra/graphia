@@ -38,8 +38,9 @@ For now, read the ledger with a text editor.
 ## Record shape — field legend
 
 Each record is one YAML document with a **fixed top-level key order** —
-`run` → `code` → `provider` → `settings` → `quality` → `metrics` → `notes`
-(`notes` always last). A full record looks like:
+`run` → `code` → `provider` → `settings` → `quality` → `outcomes` →
+`vote_activity` → `metrics` → `notes` (the two game-dynamics blocks sit after
+`quality`, before `metrics`; `notes` always last). A full record looks like:
 
 ```yaml
 ---
@@ -75,6 +76,29 @@ quality:                        # so a degenerate run cannot masquerade as a cle
   games_completed: 5
   games_failed_early: 0         # games that raised mid-run and were skipped
   duration_seconds: 412.3       # same wall-clock duration, mirrored beside the run-quality counts
+outcomes:                       # win-rate by side over the COMPLETED games — four buckets that partition the run
+  games: 20                     # completed-game denominator (failed-early games excluded)
+  law_abiding:                  # a SIDE: carries a win-rate + its Wilson 95% band
+    wins: 11
+    rate: 0.55                  # wins / games
+    ci_low: 0.342
+    ci_high: 0.742
+  mafia:                        # the other SIDE: same shape
+    wins: 6
+    rate: 0.3
+    ci_low: 0.145
+    ci_high: 0.519
+  draw: 2                       # bare count — not a side, no rate
+  no_winner: 1                  # winner is null (typically the eval round cap)
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:                  # AI vote-INITIATION counts by side and by game-day — the explicit-zero inverse of `metrics`
+  by_side:                      # ALWAYS both side keys with an integer (zero included), never omitted
+    law_abiding: 4
+    mafia: 0
+  by_day:                       # sparse — only days with ≥1 initiation; `by_day: {}` when none
+    day_1: 2
+    day_2: 1
+    day_3: 1
 metrics:                        # each metric is a rate WITH its denominator visible (never a bare count)
   repetition:
     rate: 0.4                   # count / denominator
@@ -115,6 +139,12 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   baseline: `games_attempted`, `games_completed`, `games_failed_early` (games
   that raised mid-run and were skipped), and `duration_seconds` (mirrored from
   `run`).
+- **`outcomes`** — win-rate by side over the run's **completed** games (so a
+  reader can ask "did this fix help one side win more?"); see
+  [`outcomes`](#outcomes) below.
+- **`vote_activity`** — AI vote-**initiation** counts by side and by game-day
+  (so a silent-Day provider reads as a visible `0`, not an absence); see
+  [`vote_activity`](#vote_activity) below.
 - **`metrics`** — a map of metric-name → `{rate, count, denominator, ci_low,
   ci_high}` (`rate` = `count / denominator`). The six watched behaviours, each
   AI-only (the human player is never counted):
@@ -166,6 +196,76 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   pre-provenance field below).
 - **`notes`** — the one human-mutable field; always last. See below.
 
+### outcomes
+
+The `outcomes` block is a win-rate snapshot over the run's **completed** games
+(spec 013, _AI Behavioral Integrity & Outcome Tracking_):
+
+- **`games`** — the completed-game count, and the **single denominator** for the
+  whole block. Games that raised mid-run never produce a winner, so they are
+  excluded here (they are already counted in `quality.games_failed_early`).
+- **`law_abiding` / `mafia`** — the two **sides**, each a `{wins, rate, ci_low,
+  ci_high}` map: `wins` is that side's win count, `rate` = `wins / games`, and
+  `ci_low` / `ci_high` are the **Wilson 95%** band on that win-rate (the same
+  interval `metrics` uses — judge reliability by its width). When `games == 0`
+  the side renders as a bare `{wins: 0}` with **no** `rate` / `ci_low` /
+  `ci_high` (a 0/0 win-rate would be meaningless).
+- **`draw` / `no_winner`** — **bare integer counts**, not sides, so neither
+  carries a rate or a CI. `draw` is a finished game with no winning side;
+  `no_winner` is a game whose `winner` was `null` — **dominated by the eval
+  round cap**, since the scripted human always votes No, so a game that can't
+  reach a decisive execution simply runs out of rounds unresolved.
+- **`note`** — a **fixed, machine-emitted** caveat string (immutable, like
+  `provider.note` for bedrock — *not* the human-mutable top-level `notes`).
+
+**Partition invariant (a reader can sanity-check it):** the four buckets are
+mutually exclusive and exhaustive over the completed games, so
+
+```
+law_abiding.wins + mafia.wins + draw + no_winner == games
+```
+
+always holds in a well-formed record — if it doesn't, the record is suspect.
+
+**Passive-scripted-human caveat (the load-bearing one).** Every eval game is
+played against the **scripted law-abiding human** who *always votes No and never
+initiates a vote*. That makes the win-rate a **consistent, comparable measure
+across runs** (Nova vs Ollama, before vs after a prompt change) — but it is
+**NOT a true game-balance figure**, because a real human plays nothing like that
+passive script. Read `law_abiding` vs `mafia` as "did this change shift the
+balance *under the fixed eval opponent*", never as "is the game balanced". This
+same caveat rides in the machine-emitted `outcomes.note` so it travels with
+every record, not just this README.
+
+### vote_activity
+
+The `vote_activity` block counts **AI vote-initiation attempts** (an AI calling
+a vote, by the public announce line), summed across the run's completed games
+and bucketed two independent ways (spec 013):
+
+- **`by_side`** — a map with **always both keys**, `law_abiding` and `mafia`,
+  each a plain **integer count** (zero included) of vote initiations made by AI
+  players on that side.
+- **`by_day`** — a **sparse** map, `day_1`, `day_2`, … keyed by game-day, only
+  for days that saw **at least one** initiation; days sorted by their integer
+  suffix (`day_2` before `day_10`). When no day saw an initiation it renders as
+  the literal **`by_day: {}`** (present-but-empty), never an omitted key.
+
+**Explicit-zero — the deliberate divergence from `metrics`.** This is the whole
+point of the block, so it is stated plainly: unlike `metrics`, which **omits** a
+no-opportunity rate entirely (a `0.0` there would misread as "the AI never did
+it" when in truth it was never tested — see **Absent ≠ 0** under `metrics`),
+`vote_activity` **always emits its zero**. A run where the AI never initiates a
+vote renders `by_side: {law_abiding: 0, mafia: 0}` / `by_day: {}` — a
+**committed, visible zero**, never an absent block. The reason for the opposite
+treatment: here the **absence of Day activity is itself the signal** (e.g. a
+provider whose Day phase is silent — the AI never speaks up to call a vote), so
+the zero must survive into the record and the viewer rather than vanishing.
+
+`by_side` and `by_day` are **independent marginals of the same grand total** —
+both partition the identical set of counted initiations, just along different
+axes, so `sum(by_side.values()) == sum(by_day.values())` in any record.
+
 ## `notes` — the one human-mutable field
 
 Every record ends with a top-level **`notes`** key: a free-text annotation of
@@ -205,3 +305,14 @@ rewritten**.
   fields (or even the whole block). That is expected for pre-provenance runs and
   is not a corruption — read those records for what they carry, and prefer the
   newer, fully-attributable ones for any version-to-version comparison.
+- **Records written before spec 013 lack `outcomes` / `vote_activity`.** These
+  two game-dynamics blocks landed after the original record shape, so older
+  records simply don't carry them — read them as **absent**, exactly as any
+  other pre-provenance field. Their arrival **did not bump `metrics_version`**:
+  they are orthogonal new *measurements* (win-rate, vote-initiation activity),
+  not a change to the blunder-family detection rules, so bumping would falsely
+  flag every prior blunder rate as incomparable. This is the same precedent as
+  the `ci_low` / `ci_high` reliability band — a derived/supplementary
+  measurement is not a rule change. So a blunder `rate` stays cross-comparable
+  across the spec-013 boundary; only the new blocks are missing from earlier
+  records.

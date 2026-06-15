@@ -82,15 +82,21 @@ METRIC_ORDER: tuple[tuple[str, str], ...] = (
 )
 
 # Fixed leading column headers, before the per-metric columns (tech-spec 012
-# §2.3). ``⚠`` is the dirty-working-copy marker column; the rest are the run's
-# identifying facts. ``Notes`` is the run's free-text note (truncated to a single
+# §2.3, extended by 013 §2.3). ``⚠`` is the dirty-working-copy marker column; the
+# rest are the run's identifying facts. ``Wins (LA/M)`` (:func:`_outcomes_cell`)
+# and ``Votes (LA/M)`` (:func:`_vote_activity_cell`) are the two game-dynamics
+# columns — both compact, both *fixed* (head) columns appended **before**
+# ``Notes`` / the metric block so the UI's right-justify split
+# (``len(columns) - len(METRIC_ORDER)``) keys off the *tail* and keeps tracking
+# the metric count: the new head columns stay left-justified like the other
+# identity columns. ``Notes`` is the run's free-text note (truncated to a single
 # bounded line by :func:`_note_cell`) — it lives here, *before* the metric block,
-# for two reasons: it keeps the UI's metric right-justification split
-# (``len(columns) - len(METRIC_ORDER)``) undisturbed, and — because notes are
-# part of the search blob (§2.4) — it makes a note-match *visible* in the row
-# instead of looking like a phantom hit (the full verbatim note is in the
-# drill-down). The 6 wide metric columns scroll off-screen regardless, so placing
-# Notes ahead of them keeps it in the initial viewport at no cost to the metrics.
+# for two reasons: it keeps that right-justification split undisturbed, and —
+# because notes are part of the search blob (§2.4) — it makes a note-match
+# *visible* in the row instead of looking like a phantom hit (the full verbatim
+# note is in the drill-down). The 6 wide metric columns scroll off-screen
+# regardless, so placing Notes ahead of them keeps it in the initial viewport at
+# no cost to the metrics.
 _FIXED_COLUMNS: tuple[str, ...] = (
     "⚠",
     "Date",
@@ -98,6 +104,8 @@ _FIXED_COLUMNS: tuple[str, ...] = (
     "Large model",
     "Small model",
     "Games",
+    "Wins (LA/M)",
+    "Votes (LA/M)",
     "Notes",
 )
 
@@ -143,6 +151,92 @@ def _resolved_games(record: RawRecord) -> Any:
     return _dig(record, "settings.games", default=_dig(record, "run.games", ""))
 
 
+def _outcomes_cell(record: RawRecord) -> str:
+    """The ``Wins (LA/M)`` table cell — both side win-rates, or blank when absent.
+
+    Reads ``outcomes.law_abiding.rate`` / ``outcomes.mafia.rate`` via :func:`_dig`
+    and renders the compact two-decimal pair ``LA .55 / M .30`` (no CI in the
+    table — the band is detail-only, like the metric cells). An **absent**
+    ``outcomes`` block (any pre-013 record) → the **empty string**, mirroring the
+    absent-metric blank. The ``games == 0`` path emits ``outcomes`` with the rate
+    keys omitted, so each side resolves to ``None`` and renders as the dash-less
+    placeholder ``LA — / M —`` rather than raising.
+    """
+    if _dig(record, "outcomes", _MISSING) is _MISSING:
+        return ""
+    la = _dig(record, "outcomes.law_abiding.rate")
+    mafia = _dig(record, "outcomes.mafia.rate")
+    return f"LA {_table_rate(la)} / M {_table_rate(mafia)}"
+
+
+def _table_rate(rate: Any) -> str:
+    """A side rate as a leading-dot two-decimal (``0.55`` → ``.55``), or ``—``.
+
+    Drops the leading ``0`` for table width (``.55`` not ``0.55``); a ``None``
+    rate (the ``games == 0`` path omits rate keys) shows :data:`_ABSENT` so a
+    present-but-rate-less outcomes block stays distinct from a real ``0.0``.
+    """
+    if rate is None:
+        return _ABSENT
+    return f"{float(rate):.2f}".lstrip("0") or "0"
+
+
+def _vote_activity_cell(record: RawRecord) -> str:
+    """The ``Votes (LA/M)`` table cell — the explicit-zero, carried to the viewport.
+
+    The deliberate inverse of :func:`_outcomes_cell`'s absent-blank: a
+    ``vote_activity`` block that is **present** renders ``LA {n} / M {n}`` even
+    when both counts are ``0`` (so the Nova-silent-Day pathology shows
+    ``LA 0 / M 0``, never a phantom blank), whereas an **absent** block (a pre-013
+    record) renders the **empty string**. The present-zero and absent states MUST
+    render differently — that distinction is the whole point of the block's
+    explicit-zero guarantee (tech-spec 013 §2.2). Implemented via the ``_MISSING``
+    sentinel: block absent → blank; else both ``by_side`` ints (each defaulting to
+    ``0``) are formatted.
+    """
+    if _dig(record, "vote_activity", _MISSING) is _MISSING:
+        return ""
+    la = _vote_count(_dig(record, "vote_activity.by_side.law_abiding"))
+    mafia = _vote_count(_dig(record, "vote_activity.by_side.mafia"))
+    return f"LA {la} / M {mafia}"
+
+
+def _vote_count(value: Any) -> int:
+    """A ``by_side`` count coerced to ``int``, defaulting a missing side to ``0``."""
+    try:
+        return int(value) if value is not None else 0
+    except (TypeError, ValueError):
+        return 0
+
+
+def _winner_keyword(record: RawRecord) -> str:
+    """The scoped-search ``winner`` keyword for a record (tech-spec 013 §2.3).
+
+    A derived label naming the side that won the **strict majority** of the
+    record's completed games (``law_abiding`` / ``mafia``), or ``draw`` when the
+    plain ``draw`` bucket leads, or ``mixed`` when no single bucket has a strict
+    majority. An **absent** ``outcomes`` block (any pre-013 record) → the empty
+    string, so the field neither matches nor pollutes the blob. Every read is
+    defensive (:func:`_dig` + :func:`_vote_count`), so a partial/zero-count block
+    never raises (``games == 0`` omits rates but keeps the ``wins``/``draw``
+    counts, all zero → ``mixed``).
+    """
+    if _dig(record, "outcomes", _MISSING) is _MISSING:
+        return ""
+    buckets = {
+        "law_abiding": _vote_count(_dig(record, "outcomes.law_abiding.wins")),
+        "mafia": _vote_count(_dig(record, "outcomes.mafia.wins")),
+        "draw": _vote_count(_dig(record, "outcomes.draw")),
+    }
+    leader = max(buckets, key=lambda key: buckets[key])
+    top = buckets[leader]
+    # A strict majority over the other two buckets names the winner; otherwise the
+    # run had no decisive side (a tie at the top, or all-zero) → "mixed".
+    if top > 0 and top > sum(v for k, v in buckets.items() if k != leader):
+        return leader
+    return "mixed"
+
+
 def _dig(record: Any, dotted_key: str, default: Any = None) -> Any:
     """Defensive dotted-path lookup — never raises on a missing level.
 
@@ -180,6 +274,7 @@ SEARCH_FIELDS: tuple[str, ...] = (
     "games",
     "note",
     "state",
+    "winner",
 )
 
 # The selector's default option — search across *all* facts (the free-text blob),
@@ -307,6 +402,8 @@ def _row_cells(record: RawRecord) -> list[str]:
         _text(large_model),
         _text(small_model),
         _text(games),
+        _outcomes_cell(record),
+        _vote_activity_cell(record),
         _note_cell(record),
     ]
     cells.extend(_metric_cell(record, dotted_key) for dotted_key, _ in METRIC_ORDER)
@@ -396,8 +493,10 @@ def _search_blob(record: RawRecord) -> str:
     """Build one lowercased searchable string for a record (tech-spec 012 §2.4).
 
     Concatenates the run's date, provider name, both resolved model ids, the
-    code commit and branch, a ``dirty``/``clean`` keyword, and the **full notes**
-    text — the facets the viewer's substring filter searches across. Model ids
+    code commit and branch, a ``dirty``/``clean`` keyword, the derived ``winner``
+    keyword (the side that won the run's majority — :func:`_winner_keyword` —
+    empty on a pre-013 record), and the **full notes** text — the facets the
+    viewer's substring filter searches across. Model ids
     prefer the effective ``settings`` values with the ``provider`` fallback (same
     rule as the row cells), so a pre-provenance record still contributes its
     model ids to the blob. Everything is lowercased so the UI's per-keystroke
@@ -412,6 +511,7 @@ def _search_blob(record: RawRecord) -> str:
         _text(_dig(record, "code.commit", "")),
         _text(_dig(record, "code.branch", "")),
         "dirty" if dirty else "clean",
+        _winner_keyword(record),
         _text(_dig(record, "notes", "")),
     ]
     return " ".join(part for part in parts if part).lower()
@@ -430,7 +530,10 @@ def _search_fields(record: RawRecord) -> dict[str, str]:
 
     ``model`` deliberately joins **both** resolved model ids (large + small) so a
     single ``model`` search matches either tier. ``state`` carries the
-    ``dirty``/``clean`` keyword derived from ``code.dirty``.
+    ``dirty``/``clean`` keyword derived from ``code.dirty``. ``winner`` carries the
+    derived majority-side keyword (:func:`_winner_keyword` — ``law_abiding`` /
+    ``mafia`` / ``draw`` / ``mixed``, empty on a pre-013 record); there is
+    deliberately **no** vote-activity field (a count, not a searchable keyword).
     """
     dirty = bool(_dig(record, "code.dirty", default=False))
     models = " ".join(
@@ -450,6 +553,7 @@ def _search_fields(record: RawRecord) -> dict[str, str]:
         "games": _text(_resolved_games(record)),
         "note": _text(_dig(record, "notes", "")),
         "state": "dirty" if dirty else "clean",
+        "winner": _winner_keyword(record),
     }
     return {key: value.lower() for key, value in fields.items()}
 
@@ -497,10 +601,12 @@ def render_detail(record: RawRecord) -> str:
     A plain ``str`` (newline-joined) — **not** a YAML re-dump — laying every
     provenance and quality field out under section headers in the canonical
     top-level order ``run`` → ``code`` → ``provider`` → ``settings`` →
-    ``quality`` → ``metrics`` → ``notes`` (tech-spec 012 §2.5). The thin Textual
-    ``DetailScreen`` (a later task) wraps this string in a scroller; **no
-    Rich/Textual concern lives here**, mirroring the table model's plain-string
-    contract.
+    ``quality`` → ``outcomes`` → ``vote_activity`` → ``metrics`` → ``notes``
+    (tech-spec 012 §2.5, extended by 013 §2.3 — the two game-dynamics blocks sit
+    after ``quality`` and before ``metrics``, matching the record key order). The
+    thin Textual ``DetailScreen`` (a later task) wraps this string in a scroller;
+    **no Rich/Textual concern lives here**, mirroring the table model's
+    plain-string contract.
 
     Defensive throughout: every field is read via :func:`_dig`, so a
     *pre-provenance* record (no ``code`` / ``settings`` blocks, no CI bands,
@@ -520,6 +626,16 @@ def render_detail(record: RawRecord) -> str:
     - **settings** — the effective resolved values incl. ``games``, plus
       ``metrics_version`` mirrored here for a like-for-like repeat.
     - **quality** — the run-quality counts.
+    - **outcomes** — the win-rate by side (013 §2.1): ``games``, then
+      ``law_abiding``/``mafia`` each with ``wins`` + **full-precision** ``rate`` +
+      a ``[ci_low–ci_high]`` band (rate/band omitted on the ``games == 0`` path),
+      then the bare ``draw``/``no_winner`` counts and the immutable ``note``
+      caveat. A whole absent block (pre-013 record) collapses to one ``—`` line.
+    - **vote_activity** — AI vote-initiation counts (013 §2.2): a ``by_side``
+      sub-block (**both** sides always, the explicit-zero) and a ``by_day``
+      sub-block (``day_N: n`` sorted by integer suffix, or a ``(none)`` line when
+      empty so "present but no per-day activity" stays distinct from an absent
+      block, which collapses to one ``—`` line).
     - **metrics** — one line per :data:`METRIC_ORDER` entry (so order and
       vocabulary match the table's columns). Each **present** metric shows its
       **full-precision** ``rate`` + ``[ci_low–ci_high]`` band (band omitted when
@@ -534,6 +650,8 @@ def render_detail(record: RawRecord) -> str:
         _render_provider_section(record),
         _render_settings_section(record),
         _render_quality_section(record),
+        _render_outcomes_section(record),
+        _render_vote_activity_section(record),
         _render_metrics_section(record),
         _render_notes_section(record),
     ]
@@ -642,6 +760,98 @@ def _render_quality_section(record: RawRecord) -> str:
             _field("duration_seconds", _dig(record, "quality.duration_seconds")),
         ],
     )
+
+
+def _render_outcomes_section(record: RawRecord) -> str:
+    """The ``outcomes`` block — win-rate by side (013 §2.1), or one ``—`` line.
+
+    A whole **absent** block (any pre-013 record) collapses to a single ``—``
+    line, mirroring :func:`_render_code_section`'s absent pattern. When present:
+    ``games``, then ``law_abiding``/``mafia`` each as ``wins`` + **full-precision**
+    ``rate`` + a ``[ci_low–ci_high]`` band (rate + band omitted on the
+    ``games == 0`` path, where only ``wins`` is recorded), then the bare ``draw``
+    / ``no_winner`` counts and the immutable ``note`` caveat. Every read is
+    defensive (:func:`_dig`), so a malformed/partial block never raises.
+    """
+    outcomes = _dig(record, "outcomes")
+    if not isinstance(outcomes, dict):
+        return _section("outcomes", [f"  {_ABSENT}"])
+
+    lines = [_field("games", _dig(record, "outcomes.games"))]
+    for side in ("law_abiding", "mafia"):
+        lines.append(f"  {side}:")
+        wins = _dig(record, f"outcomes.{side}.wins")
+        lines.append(f"    wins: {_text(wins) if _text(wins) else _ABSENT}")
+        lines.append(f"    rate: {_format_outcome_rate(record, side)}")
+    lines.append(_field("draw", _dig(record, "outcomes.draw")))
+    lines.append(_field("no_winner", _dig(record, "outcomes.no_winner")))
+    lines.append(_field("note", _dig(record, "outcomes.note")))
+    return _section("outcomes", lines)
+
+
+def _format_outcome_rate(record: RawRecord, side: str) -> str:
+    """A side's full-precision ``rate [ci_low–ci_high]`` band, or ``—``.
+
+    Mirrors :func:`_format_detail_metric`'s full-precision posture (``repr`` of the
+    float, not the table's two-decimal): an **absent** ``rate`` (the
+    ``games == 0`` path omits it) shows :data:`_ABSENT`; a present ``rate`` shows
+    the bare value, with the ``[ci_low–ci_high]`` band appended only when both CI
+    bounds are present (omitted otherwise, like the metric detail).
+    """
+    rate = _dig(record, f"outcomes.{side}.rate")
+    if rate is None:
+        return _ABSENT
+    ci_low = _dig(record, f"outcomes.{side}.ci_low")
+    ci_high = _dig(record, f"outcomes.{side}.ci_high")
+    if ci_low is not None and ci_high is not None:
+        band = f" [{repr(float(ci_low))}{_CI_DASH}{repr(float(ci_high))}]"
+    else:
+        band = ""
+    return f"{repr(float(rate))}{band}"
+
+
+def _render_vote_activity_section(record: RawRecord) -> str:
+    """The ``vote_activity`` block — initiation counts (013 §2.2), or one ``—`` line.
+
+    A whole **absent** block (pre-013 record) collapses to a single ``—`` line.
+    When present: a ``by_side`` sub-block listing **both** sides always (the
+    explicit-zero guarantee — a silent run reads ``law_abiding: 0`` /
+    ``mafia: 0``), then a ``by_day`` sub-block listing ``day_N: n`` **sorted by
+    integer suffix**. An empty ``by_day`` (present block, no per-day activity)
+    shows a ``(none)`` line so it stays distinct from an absent block's ``—``.
+    """
+    activity = _dig(record, "vote_activity")
+    if not isinstance(activity, dict):
+        return _section("vote_activity", [f"  {_ABSENT}"])
+
+    lines = ["  by_side:"]
+    for side in ("law_abiding", "mafia"):
+        lines.append(
+            f"    {side}: {_vote_count(_dig(record, f'vote_activity.by_side.{side}'))}"
+        )
+
+    lines.append("  by_day:")
+    by_day = _dig(record, "vote_activity.by_day")
+    if isinstance(by_day, dict) and by_day:
+        for day_key in sorted(by_day, key=_day_sort_key):
+            lines.append(f"    {day_key}: {_vote_count(by_day[day_key])}")
+    else:
+        # Present block, no per-day activity — distinct from an absent block.
+        lines.append("    (none)")
+    return _section("vote_activity", lines)
+
+
+def _day_sort_key(day_key: str) -> tuple[int, str]:
+    """Sort ``day_N`` keys by integer suffix (so ``day_10`` follows ``day_2``).
+
+    Falls back to lexical order (suffix second in the tuple) for any key that does
+    not parse as ``day_<int>``, so a malformed key never raises.
+    """
+    _, _, suffix = day_key.partition("_")
+    try:
+        return (int(suffix), day_key)
+    except ValueError:
+        return (1 << 30, day_key)
 
 
 def _render_metrics_section(record: RawRecord) -> str:

@@ -322,6 +322,8 @@ def test_columns_are_fixed_columns_then_metric_labels() -> None:
         "Large model",
         "Small model",
         "Games",
+        "Wins (LA/M)",
+        "Votes (LA/M)",
         "Notes",
     ]
     assert model.columns[_FIXED_COLUMN_COUNT:] == [label for _, label in METRIC_ORDER]

@@ -59,6 +59,8 @@ from langgraph.types import Command
 # coupling risk).
 from graphia.llm import DayAction
 from graphia.prompts import (
+    DAY_OPEN_NO_VICTIM_TEMPLATE,
+    DAY_OPEN_VICTIM_REVEAL_TEMPLATE,
     DAY_SPEAK_USER_TEMPLATE,
     VOTE_INITIATE_ANNOUNCE_TEMPLATE,
     VOTE_PER_BALLOT_TEMPLATE,
@@ -238,6 +240,20 @@ class EvalResult:
     # metric through ``wilson_ci`` to attach ``ci_low``/``ci_high`` siblings (the
     # derived 95% reliability band; spec 011).
     metrics: dict[str, dict[str, float | int]] = field(default_factory=dict)
+    # --- Spec-013 game-dynamics blocks (tech-spec 013 §2.1, §2.2) ---
+    # Orthogonal new measurements OUTSIDE the versioned ``metrics`` map (rendered
+    # after ``quality``, before ``metrics``), so they do NOT bump
+    # ``METRICS_VERSION`` — the ``ci_low``/``ci_high`` precedent.
+    # ``outcomes`` — win-rate by side over the completed games (the four
+    # partitioning buckets + the passive-human caveat note); from
+    # :func:`tally_outcomes`. Empty until ``run_eval`` folds the per-game winners.
+    outcomes: dict[str, object] = field(default_factory=dict)
+    # ``vote_activity`` — AI vote-initiation counts by side and by game-day
+    # (``{"by_side": {law_abiding, mafia}, "by_day": {day_N: ...}}``), summed
+    # across completed games; from :func:`score_vote_activity`. The explicit-zero
+    # inverse of ``metrics``: ``by_side`` always carries both keys with a visible
+    # integer (zero included), ``by_day`` is sparse / ``{}`` when no initiations.
+    vote_activity: dict[str, dict[str, int]] = field(default_factory=dict)
     # --- Slice 4 run-provenance blocks (functional-spec 011 §2.3, tech §2.4) ---
     # The code provenance: ``{"commit": <sha|None>, "branch": <str|None>,
     # "dirty": <bool>}`` from :func:`collect_code_provenance`. A clean record is
@@ -354,6 +370,18 @@ _PROVENANCE_HTTP_TIMEOUT_SECONDS = 3.0
 # the run date is the only proxy for "which weights answered".
 _BEDROCK_UPDATE_NOTE = (
     "provider-side model updates are not observable; run date is the only proxy."
+)
+
+# The fixed passive-scripted-human caveat (spec-013 §2.1): every eval game is
+# played against the scripted law-abiding human who always votes No and never
+# initiates a vote, so win-rate is a CONSISTENT comparable measure across runs —
+# not a true game-balance figure. Machine-emitted as ``outcomes.note`` (immutable,
+# like ``_BEDROCK_UPDATE_NOTE``) and distinct from the human-mutable top-level
+# ``notes`` field. Stated here once so the one caveat and any offline test share
+# a single source of truth.
+_OUTCOMES_HUMAN_CAVEAT = (
+    "win-rate is measured against a passive scripted human (always votes No, never "
+    "initiates) — a consistent comparable measure, not true game balance."
 )
 
 
@@ -1021,6 +1049,182 @@ def _attach_ci(metrics: dict[str, dict[str, float | int | None]]) -> None:
         facets["ci_high"] = high
 
 
+# ===========================================================================
+# Spec-013 outcome + vote-activity blocks: orthogonal new measurements that sit
+# OUTSIDE the versioned ``metrics`` map (after ``quality``, before ``metrics``),
+# so they do NOT bump ``METRICS_VERSION`` — exactly the ``ci_low``/``ci_high``
+# precedent (a derived/supplementary measurement is not a change to a blunder-
+# detection rule, so bumping would falsely flag every prior rate as
+# incomparable). Both helpers are PURE over plain inputs (a winners list /
+# messages + players), so Task 4 unit-tests them with no live model.
+# ===========================================================================
+
+# The four ``winner`` buckets in fixed render order: the two SIDES (which carry a
+# Wilson win-rate + CI), then ``draw`` and ``no_winner`` (bare counts — neither
+# is a side, so neither gets a rate). ``None`` (an unresolved game — round cap)
+# maps to ``no_winner``.
+_OUTCOME_SIDES: tuple[str, str] = ("law_abiding", "mafia")
+
+
+def tally_outcomes(winners: list[str | None]) -> dict[str, object]:
+    """Tally per-game ``winner`` values into the ``outcomes`` block (pure).
+
+    Partitions the COMPLETED games (one entry per finished game; failed-early
+    games never produce a winner and are excluded — they are already counted in
+    ``quality.games_failed_early``) into four mutually-exclusive buckets over the
+    same ``games`` denominator (spec-013 §2.1)::
+
+        law_abiding / mafia  → {wins, rate, ci_low, ci_high}   (a side win-rate)
+        draw                 → bare int count (not a side, no rate)
+        no_winner            → bare int count (winner is None — round cap)
+
+    The four buckets PARTITION the run, so the README-stated invariant holds:
+    ``law_abiding.wins + mafia.wins + draw + no_winner == games``. The two side
+    win-rates carry a **Wilson 95% CI** over ``(wins, games)`` — derived/
+    supplementary, no ``METRICS_VERSION`` bump (the ``ci_low``/``ci_high``
+    precedent). ``games == 0`` emits the block with zero counts and OMITS the
+    rates/CI on the two sides (no ``ZeroDivisionError``).
+
+    Returns a render-ready mapping with the fixed key order
+    ``games → law_abiding → mafia → draw → no_winner → note``; ``note`` is the
+    immutable :data:`_OUTCOMES_HUMAN_CAVEAT` passive-human caveat. PURE: takes a
+    plain list, so Task 4 asserts the buckets / invariant / CI / ``games==0``
+    path on a synthetic list with no live model.
+    """
+    games = len(winners)
+    counts = {side: 0 for side in _OUTCOME_SIDES}
+    draw = 0
+    no_winner = 0
+    for winner in winners:
+        match winner:
+            case "law_abiding" | "mafia":
+                counts[winner] += 1
+            case "draw":
+                draw += 1
+            case _:  # None or any unrecognised value → unresolved
+                no_winner += 1
+
+    block: dict[str, object] = {"games": games}
+    for side in _OUTCOME_SIDES:
+        wins = counts[side]
+        if games == 0:
+            # No denominator: emit the bare count only, omit rate/CI so a 0/0
+            # never raises and never reads as a real 0.0 rate.
+            block[side] = {"wins": wins}
+            continue
+        low, high = wilson_ci(wins, games)
+        block[side] = {
+            "wins": wins,
+            "rate": wins / games,
+            "ci_low": low,
+            "ci_high": high,
+        }
+    block["draw"] = draw
+    block["no_winner"] = no_winner
+    block["note"] = _OUTCOMES_HUMAN_CAVEAT
+    return block
+
+
+# The two day-open markers, full-anchored ``^...$`` regexes derived from the
+# imported templates (the same template-coupling discipline the announce/ballot
+# anchors use — a reword breaks the offline tests loudly). Both placeholders are
+# rendered as plain non-capturing ``.+?`` (we only need to KNOW a line is a day
+# boundary, never to capture its fields), which also sidesteps the duplicate
+# ``{name}`` group the victim template would otherwise create.
+#
+# ⚠ PREFIX TRAP (spec-013 §2.2): ``DAY_OPEN_NO_VICTIM_TEMPLATE`` ("Day breaks.")
+# is a strict prefix of ``DAY_OPEN_VICTIM_REVEAL_TEMPLATE`` ("Day breaks. {name}
+# was…"). ``score_vote_activity`` therefore tests the VICTIM regex FIRST (full-
+# anchored, so it only matches a complete victim line) and falls back to
+# EXACT-EQUALITY for the no-victim line — so each day boundary increments the
+# counter exactly once, never twice.
+_DAY_OPEN_VICTIM_RE = _template_to_regex(
+    DAY_OPEN_VICTIM_REVEAL_TEMPLATE,
+    {"name": r".+?", "role_label": r".+?"},
+)
+
+
+def score_vote_activity(
+    messages: list,
+    players: dict[str, PlayerState],
+) -> dict[str, dict[str, int]]:
+    """Pure scorer for the ``vote_activity`` block — AI vote initiations by side × day.
+
+    Mirrors :func:`score_vote_blunders`'s message-log walk (same ``SystemMessage``
+    filter, ``_name_index``, AI-only via :func:`_is_ai`, template-derived anchors)
+    but counts a different thing: how many vote initiations each AI SIDE makes on
+    each game-day (spec-013 §2.2). Walks the history once tracking a
+    ``current_day`` counter that starts at 0 and increments on every day-open
+    marker; for each ``VOTE_INITIATE_ANNOUNCE`` line it resolves the initiator,
+    keeps only AI initiators, reads their ``role`` (side) off the final
+    ``players``, and increments ``counts[(side, day)]``. Returns::
+
+        {"by_side": {"law_abiding": <int>, "mafia": <int>},
+         "by_day":  {"day_1": <int>, "day_2": <int>, ...}}
+
+    ⚠ EXPLICIT-ZERO — the deliberate INVERSE of ``metrics``' absent-omission
+    (``_facets`` reports ``rate=None`` for a no-opportunity metric, which
+    ``run_eval`` then OMITS, because a 0.0 there would misleadingly read as "the
+    AI never bussed"). Here the absence of activity is ITSELF the signal (the
+    Nova-silent-Day pathology must read as a committed, visible ``0``), so
+    ``by_side`` ALWAYS emits BOTH side keys with integer counts by literal
+    construction — a run with zero initiations renders
+    ``by_side: {law_abiding: 0, mafia: 0}`` / ``by_day: {}``, never an omitted
+    block. ``by_day`` is naturally SPARSE (only days with ≥1 initiation appear);
+    do NOT pre-seed ``day_N: 0`` (the day count varies per game). ``by_side`` and
+    ``by_day`` are independent marginals of one grand total, so
+    ``sum(by_side.values()) == sum(by_day.values())``.
+
+    The day-open prefix trap (no-victim "Day breaks." is a prefix of the victim
+    line) is handled by testing :data:`_DAY_OPEN_VICTIM_RE` first and falling
+    back to exact-equality with ``DAY_OPEN_NO_VICTIM_TEMPLATE`` — each boundary
+    increments ``current_day`` exactly once.
+
+    DRIVER-INDEPENDENT BY DESIGN: takes a plain message list + players map, so
+    Task 4 unit-tests it on synthetic histories built from the real templates.
+    """
+    index = _name_index(players)
+    counts: dict[tuple[str, int], int] = {}
+    current_day = 0
+
+    for msg in messages:
+        if not isinstance(msg, SystemMessage):
+            continue
+        content = msg.content
+        if not isinstance(content, str):
+            continue
+        content = content.strip()
+
+        # Day-open boundary: victim regex first (full-anchored), else exact
+        # no-victim equality — so the prefix never double-counts.
+        if _DAY_OPEN_VICTIM_RE.match(content) is not None:
+            current_day += 1
+            continue
+        if content == DAY_OPEN_NO_VICTIM_TEMPLATE:
+            current_day += 1
+            continue
+
+        announce = _VOTE_ANNOUNCE_RE.match(content)
+        if announce is None:
+            continue
+        initiator = index.get(announce.group("initiator"))
+        if not _is_ai(initiator):
+            continue
+        side = initiator.role
+        counts[(side, current_day)] = counts.get((side, current_day), 0) + 1
+
+    # ``by_side`` — ALWAYS both keys, zero included (the explicit-zero guarantee).
+    by_side = {
+        side: sum(n for (s, _day), n in counts.items() if s == side)
+        for side in _OUTCOME_SIDES
+    }
+    # ``by_day`` — sparse: only days with ≥1 initiation, summed across sides.
+    by_day: dict[str, int] = {}
+    for (_side, day), n in counts.items():
+        by_day[f"day_{day}"] = by_day.get(f"day_{day}", 0) + n
+    return {"by_side": by_side, "by_day": by_day}
+
+
 def score_vote_blunders(
     messages: list,
     players: dict[str, PlayerState],
@@ -1208,6 +1412,42 @@ def _yaml_nested_map(
     return lines
 
 
+def _yaml_int_map(key: str, mapping: dict[str, int], indent: int) -> list[str]:
+    """Render ``key`` over a flat ``sub: int`` map — inline ``key: {}`` when empty.
+
+    Spec-013 needs ``vote_activity.by_day`` to render as a PRESENT-but-empty map
+    (the literal inline ``key: {}``, not an omitted key) when a run had no vote
+    initiations — so the explicit-zero guarantee survives into the viewport
+    rather than reading as "absent". An empty map collapses onto the key line
+    (``by_day: {}``), matching the tech-spec §2.2 shape and the YAML flow-mapping
+    spelling a reader expects. A non-empty map emits the ``key:`` header followed
+    by one ``sub: <int>`` line per entry, with the ``day_N`` keys sorted by their
+    INTEGER suffix (so ``day_2`` precedes ``day_10``, not lexicographically);
+    non-``day_N`` keys (if any) sort after by their string. Values are plain ints.
+    """
+    pad = "  " * indent
+    if not mapping:
+        return [f"{pad}{key}: {{}}"]
+    lines = [f"{pad}{key}:"]
+    lines += [
+        f"{'  ' * (indent + 1)}{sub}: {_yaml_scalar(mapping[sub])}"
+        for sub in sorted(mapping, key=_day_sort_key)
+    ]
+    return lines
+
+
+def _day_sort_key(key: str) -> tuple[int, int | str]:
+    """Sort key ordering ``day_N`` keys by their integer ``N`` (``day_2`` < ``day_10``).
+
+    A ``day_<int>`` key sorts in band 0 by its integer suffix; anything else
+    sorts in band 1 by its raw string, so a non-conforming key never crashes the
+    integer parse and simply trails the numeric days deterministically.
+    """
+    if key.startswith("day_") and key[4:].isdigit():
+        return (0, int(key[4:]))
+    return (1, key)
+
+
 def _yaml_block_scalar(key: str, value: str, indent: int) -> list[str]:
     """Render ``key`` with a multi-line string as a YAML literal block scalar.
 
@@ -1237,9 +1477,10 @@ def render_record(result: EvalResult, run_date: str) -> str:
     stability are unit-testable with no live run. The ``append_record`` thin
     wrapper is what writes it (with the ``---`` separator) to the ledger file.
 
-    Fixed key order (Slice 4 run-provenance shape; functional-spec 011 §2.3,
-    tech-spec §2.5) — ``run`` → ``code`` → ``provider`` → ``settings`` →
-    ``quality`` → ``metrics`` → ``notes`` (``notes`` always LAST):
+    Fixed key order (spec-013 §2.3 shape) — ``run`` → ``code`` → ``provider`` →
+    ``settings`` → ``quality`` → ``outcomes`` → ``vote_activity`` → ``metrics``
+    → ``notes`` (the two game-dynamics blocks sit after ``quality``, before
+    ``metrics``; ``notes`` always LAST):
 
         run:
           date: '<iso date>'
@@ -1273,6 +1514,16 @@ def render_record(result: EvalResult, run_date: str) -> str:
           games_completed: <int>
           games_failed_early: <int>
           duration_seconds: <float|null>
+        outcomes:
+          games: <int>
+          law_abiding: {wins: <int>, rate: <float>, ci_low: <float>, ci_high: <float>}
+          mafia:       {wins: <int>, rate: <float>, ci_low: <float>, ci_high: <float>}
+          draw: <int>          # bare count — not a side, no rate
+          no_winner: <int>     # winner=None (round cap / unresolved)
+          note: '<passive-scripted-human caveat>'
+        vote_activity:
+          by_side: {law_abiding: <int>, mafia: <int>}   # ALWAYS both keys, zero included
+          by_day:  {day_1: <int>, day_2: <int>, ...}     # sparse; {} when none
         metrics:
           repetition:
             rate: <float>
@@ -1382,6 +1633,54 @@ def render_record(result: EvalResult, run_date: str) -> str:
         indent=1,
     )
 
+    # ``outcomes`` (spec-013 §2.1) — win-rate by side, after ``quality`` and
+    # before ``metrics``. ``games`` then the two sides (each ``{wins, rate?,
+    # ci_low?, ci_high?}`` — rate/CI omitted when ``games == 0``), then the bare
+    # ``draw``/``no_winner`` counts, then the immutable caveat ``note``. Only
+    # rendered when the run actually produced an outcomes block (a bare synthetic
+    # ``EvalResult`` without it simply omits the section).
+    if result.outcomes:
+        lines.append("outcomes:")
+        lines += _yaml_block({"games": result.outcomes.get("games", 0)}, indent=1)
+        for side in _OUTCOME_SIDES:
+            facets = result.outcomes.get(side)
+            if not isinstance(facets, dict):
+                continue
+            lines.append(f"  {side}:")
+            # Fixed sub-key order; rate/ci omitted on the games==0 path.
+            ordered = {
+                key: facets[key]
+                for key in ("wins", "rate", "ci_low", "ci_high")
+                if key in facets
+            }
+            lines += _yaml_block(ordered, indent=2)
+        lines += _yaml_block(
+            {
+                "draw": result.outcomes.get("draw", 0),
+                "no_winner": result.outcomes.get("no_winner", 0),
+            },
+            indent=1,
+        )
+        lines += _yaml_block(
+            {"note": result.outcomes.get("note", _OUTCOMES_HUMAN_CAVEAT)}, indent=1
+        )
+
+    # ``vote_activity`` (spec-013 §2.2) — AI vote-initiation counts by side ×
+    # day. ``by_side`` ALWAYS emits both side keys with a visible integer (the
+    # explicit-zero guarantee); ``by_day`` is sparse and renders the literal
+    # ``{}`` (present-but-empty) when no day saw an initiation, with ``day_N``
+    # keys sorted by integer suffix. Only rendered when the run produced the block.
+    if result.vote_activity:
+        lines.append("vote_activity:")
+        by_side = result.vote_activity.get("by_side", {})
+        lines.append("  by_side:")
+        lines += _yaml_block(
+            {side: int(by_side.get(side, 0)) for side in _OUTCOME_SIDES},
+            indent=2,
+        )
+        by_day = result.vote_activity.get("by_day", {})
+        lines += _yaml_int_map("by_day", dict(by_day), indent=1)
+
     # ``metrics`` is a map of metric-name → {rate, count, denominator}. Slice 1
     # carries only ``repetition``; Slice 2's detectors add sibling entries here
     # under the same nested shape, each rendered in this same fixed sub-key
@@ -1448,6 +1747,12 @@ class _GameCapture:
     within a game, so the vote scorer must resolve against this game's own map):
     - ``players`` — the final ``players`` map (roles for the action detectors).
     - ``messages`` — the full message history (announce + per-ballot lines).
+
+    Spec-013 outcome input:
+    - ``winner`` — this game's ``state["winner"]`` (∈ ``{"law_abiding", "mafia",
+      "draw", None}``; ``None`` = the game never resolved — typically the eval
+      round cap, since the scripted human always votes No). Folded by
+      ``run_eval`` into the ``outcomes`` block via :func:`tally_outcomes`.
     """
 
     ai_lines: list[str]
@@ -1455,6 +1760,7 @@ class _GameCapture:
     ai_lines_with_speakers: list[tuple[str, str]]
     players: dict[str, PlayerState]
     messages: list
+    winner: str | None
     # Raw structured-output captures intercepted by the proxy this game (Slice 3,
     # Task 2): every ``with_structured_output(...).invoke(...)`` payload with its
     # speaker attributed. ``run_eval`` filters these for AI-day-speaker
@@ -1576,6 +1882,7 @@ def _play_one_game(args: argparse.Namespace, game_index: int) -> _GameCapture:
             players=state.get("players", {}),
             messages=list(state.get("messages", [])),
             captures=captures,
+            winner=state.get("winner"),
         )
 
 
@@ -1646,6 +1953,13 @@ def run_eval(config: object, args: argparse.Namespace) -> EvalResult:
     pooled_names: set[str] = set()
     pooled_speaker_lines: list[tuple[str, str]] = []
 
+    # Spec-013: the per-completed-game winners (folded into ``outcomes`` once) and
+    # the vote-activity marginals summed across games (``by_side`` both-keys, and
+    # the sparse per-game-day ``by_day`` — day_1 across all games, etc.).
+    winners: list[str | None] = []
+    vote_by_side: dict[str, int] = {side: 0 for side in _OUTCOME_SIDES}
+    vote_by_day: dict[str, int] = {}
+
     # Action-metric numerators/denominators summed ACROSS games. Each game is
     # scored against its OWN ``players`` map (names are unique only within a
     # game; the same name could be dealt a different role next game), then its
@@ -1680,6 +1994,18 @@ def run_eval(config: object, args: argparse.Namespace) -> EvalResult:
         pooled_names.update(cap.ai_names)
         pooled_speaker_lines.extend(cap.ai_lines_with_speakers)
 
+        # Spec-013: record this game's winner and fold its vote-activity
+        # marginals into the batch totals (``by_side`` summed per side, ``by_day``
+        # summed per per-game day number — day_1 of this game adds to day_1 of the
+        # batch). The block is scored against this game's own ``players`` because
+        # names are unique only within a game, exactly like the vote blunders.
+        winners.append(cap.winner)
+        activity = score_vote_activity(cap.messages, cap.players)
+        for side, n in activity["by_side"].items():
+            vote_by_side[side] = vote_by_side.get(side, 0) + n
+        for day_key, n in activity["by_day"].items():
+            vote_by_day[day_key] = vote_by_day.get(day_key, 0) + n
+
         # Score this game's vote blunders against its own roster, then fold the
         # raw count/denominator of each metric into the batch totals.
         per_game = score_vote_blunders(cap.messages, cap.players)
@@ -1691,6 +2017,14 @@ def run_eval(config: object, args: argparse.Namespace) -> EvalResult:
         for metric, facets in per_game.items():
             action_totals[metric]["count"] += int(facets["count"])
             action_totals[metric]["denominator"] += int(facets["denominator"])
+
+    # Spec-013 game-dynamics blocks, folded over the completed games. ``outcomes``
+    # partitions the winners (``games`` = completed games denominator); the side
+    # win-rates carry a Wilson CI, ``draw``/``no_winner`` are bare counts.
+    # ``vote_activity`` carries the explicit-zero ``by_side`` (both keys always)
+    # and the sparse ``by_day`` — already summed across games above.
+    result.outcomes = tally_outcomes(winners)
+    result.vote_activity = {"by_side": vote_by_side, "by_day": vote_by_day}
 
     result.ai_speeches = pooled_lines
     # Both speech metrics share the AI-spoken-line denominator; they are computed
