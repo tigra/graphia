@@ -232,3 +232,157 @@ metrics:
     ci_low: 0.600580922361363
     ci_high: 0.9599069262620787
 notes: 'reliable baseline n=20 + Wilson CI; supersedes the n=3 self-run; tree dirty (parked AWOS renames + handoff.md), measurement code = commit e7dd42c'
+---
+run:
+  date: '2026-06-15'
+  duration_seconds: 1073.234
+  metrics_version: 1
+code:
+  commit: 'b3913f59a10b0d04f5cf34e32ef7a0e69af6e809'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'bedrock'
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  base_url: null
+  games: 20
+  seed: null
+  max_rounds: null
+quality:
+  games_attempted: 20
+  games_completed: 20
+  games_failed_early: 0
+  duration_seconds: 1073.234
+outcomes:
+  games: 20
+  law_abiding:
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.16113012549493322
+  mafia:
+    wins: 8
+    rate: 0.4
+    ci_low: 0.21880396741419272
+    ci_high: 0.613422057684794
+  draw: 0
+  no_winner: 12
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 0
+    mafia: 0
+  by_day: {}
+metrics:
+  repetition:
+    rate: 0.5429362880886427
+    count: 588
+    denominator: 1083
+    ci_low: 0.5131674971168662
+    ci_high: 0.5724015499273397
+  third_person_self_talk:
+    rate: 0.01662049861495845
+    count: 18
+    denominator: 1083
+    ci_low: 0.010538670205770564
+    ci_high: 0.02611947758687926
+notes: 'spec-013 baseline: pre-fix behaviour (role-blind prompts)'
+---
+run:
+  date: '2026-06-15'
+  duration_seconds: 2488.841
+  metrics_version: 1
+code:
+  commit: 'b3913f59a10b0d04f5cf34e32ef7a0e69af6e809'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.30.8'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 20
+  seed: null
+  max_rounds: null
+quality:
+  games_attempted: 20
+  games_completed: 20
+  games_failed_early: 0
+  duration_seconds: 2488.841
+outcomes:
+  games: 20
+  law_abiding:
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.16113012549493322
+  mafia:
+    wins: 18
+    rate: 0.9
+    ci_low: 0.6989617935882066
+    ci_high: 0.9721341060158468
+  draw: 0
+  no_winner: 2
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 20
+    mafia: 12
+  by_day:
+    day_1: 16
+    day_2: 11
+    day_3: 5
+metrics:
+  repetition:
+    rate: 0.42470588235294116
+    count: 361
+    denominator: 850
+    ci_low: 0.3918873429785217
+    ci_high: 0.45820194758778465
+  third_person_self_talk:
+    rate: 0.08823529411764706
+    count: 75
+    denominator: 850
+    ci_low: 0.07097268388972111
+    ci_high: 0.10920312389476725
+  self_vote.initiation:
+    rate: 0.125
+    count: 2
+    denominator: 16
+    ci_low: 0.034976749337057134
+    ci_high: 0.3602333143674828
+  self_vote.yes:
+    rate: 0.5666666666666667
+    count: 17
+    denominator: 30
+    ci_low: 0.3919700954540873
+    ci_high: 0.7262276256938489
+  peer_vote.initiation:
+    rate: 0.25
+    count: 3
+    denominator: 12
+    ci_low: 0.08894003962896138
+    ci_high: 0.53231033912066
+  peer_vote.yes:
+    rate: 0.6666666666666666
+    count: 8
+    denominator: 12
+    ci_low: 0.3906175873976139
+    ci_high: 0.8618821601026385
+notes: 'spec-013 baseline: pre-fix behaviour (role-blind prompts)'
