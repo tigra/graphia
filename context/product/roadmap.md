@@ -63,7 +63,7 @@ _With AgentCore deployment and long-term Memory in place, give players a real ch
 _Add the configurability and richer consensus mechanics the product definition calls for, now that the deployment, memory, and provider foundations are in place._
 
 - [ ] **Setup Flexibility**
-  - [ ] **Configurable Role Counts:** Replace the fixed lineup with startup prompts asking the human for the number of Law-abiding Citizens and Mafiosos, then randomly assign roles so every run starts fresh.
+  - [ ] **Configurable Role Counts:** Replace the fixed lineup with the way for a human to specify numbers of Law-abiding Citizens and Mafiosos, then randomly assign roles so every run starts fresh.
 
 - [ ] **Richer Night Resolution**
   - [ ] **Multi-Round Mafia Consensus by Pointing:** Have Mafiosos converge on a victim across multiple rounds of private pointing, falling back to the Phase 1 single-round majority-with-random-tie-break only if they fail to agree within a round cap.
