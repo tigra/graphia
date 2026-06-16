@@ -3,7 +3,7 @@
 A high-level history of the project, reconstructed from `git log` and the
 `context/` artifacts: how scope changed (Change Requests), how the architecture
 was decided (Architecture Decision Records), and how the work was executed (specs
-broken into vertical slices). Covers **2026-04-29 → 2026-06-13**.
+broken into vertical slices). Covers **2026-04-29 → 2026-06-16**.
 
 Graphia is built with the **AWOS spec-driven workflow** — every increment flows
 `product → roadmap → architecture → spec → tech → tasks → implement → verify → tutorial`,
@@ -118,6 +118,15 @@ gantt
     Slices 2-7 — search · drill-down · selector · cell cursor :done, sp12rest, 2026-06-14, 1d
     Spec 012 verified Completed (live walk passed)       :milestone, done, sp12v, 2026-06-14, 0d
 
+    section AI behaviour (v1.3.x) — Spec 013 AI Behavioral Integrity
+    Spec 013 — AI Behavioral Integrity (spec+tech+tasks) :milestone, done, sp13, 2026-06-15, 0d
+    Slice 1 — outcomes + vote_activity tracking          :done, sp13s1, 2026-06-15, 1d
+    Slice 2 — pre-fix baseline n=20/provider (clean)     :milestone, done, sp13b, 2026-06-15, 0d
+    Slice 3 — role/team grounding + passivity nudge      :done, sp13s3, 2026-06-15, 1d
+    Slice 4 — after-picture (grounding done, passivity refuted) :milestone, done, sp13a, 2026-06-16, 0d
+    CR 005 — accept effort-not-results acceptance        :milestone, done, cr5, 2026-06-16, 0d
+    Spec 013 verified Completed (under CR 005)           :milestone, done, sp13v, 2026-06-16, 0d
+
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
     click m2 href "https://github.com/tigra/graphia/blob/main/context/change-requests/002-long-term-memory-for-cross-game-stats.md"
@@ -190,6 +199,12 @@ gantt
     click t11 href "https://github.com/tigra/graphia/blob/main/context/tutorials/011-ai-blunder-tracking/tutorial.md"
     click sp12 href "https://github.com/tigra/graphia/tree/main/context/spec/012-eval-ledger-viewer"
     click sp12s1 href "https://github.com/tigra/graphia/blob/main/context/spec/012-eval-ledger-viewer/tasks.md"
+    click sp13 href "https://github.com/tigra/graphia/tree/main/context/spec/013-ai-behavioral-integrity"
+    click sp13s1 href "https://github.com/tigra/graphia/blob/main/context/spec/013-ai-behavioral-integrity/tasks.md"
+    click sp13b href "https://github.com/tigra/graphia/blob/main/evals/blunder-ledger.yaml"
+    click sp13a href "https://github.com/tigra/graphia/blob/main/evals/blunder-ledger.yaml"
+    click cr5 href "https://github.com/tigra/graphia/blob/main/context/change-requests/005-ai-behaviour-acceptance-effort-not-results.md"
+    click sp13v href "https://github.com/tigra/graphia/blob/main/context/spec/013-ai-behavioral-integrity/functional-spec.md"
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:
@@ -202,7 +217,7 @@ The red marks are the three superseded ADRs (002, 004, 007); the CRs are green b
 
 ---
 
-## What was going on — twelve acts
+## What was going on — thirteen acts
 
 ### Act 1 — Phase 1: a playable skeleton (2026-04-29)
 
@@ -805,6 +820,7 @@ coverage._
 | 002 | 2026-05-06 | Long-term AgentCore Memory in; AI tool-use demoted to Phase 7      | Accepted |
 | 003 | 2026-05-15 | AgentCore Observability delivers navigable per-session trace trees | Accepted |
 | 004 | 2026-05-18 | Revise §2.2 launch error handling and the §2.1 next-step hint      | Accepted |
+| 005 | 2026-06-16 | Reframe spec 013 acceptance: commit to effort, not results (AI)    | Accepted |
 
 ## Architecture Decision Records
 
@@ -837,6 +853,7 @@ coverage._
 | 010  | Local Ollama Provider                       | 5      | Completed |
 | 011  | AI Blunder Tracking (quality ledger)        | 6      | Completed |
 | 012  | Eval Ledger Viewer                          | 7      | Completed |
+| 013  | AI Behavioral Integrity & Outcome Tracking  | 4      | Completed |
 
 _Spec 006 was verified Completed on 2026-06-03 (all 32 acceptance criteria, Phase 3 roadmap bullets ticked) and Tutorial 006 published. Specs 007–009 (the Day-phase integrity trio) are now all **verified Completed**; 009's collusion nudge was revised to an **anti-parrot** reword after a real-Nova experiment showed the original wording drove a Day-dialogue repetition spiral._
 
@@ -959,6 +976,40 @@ viewer never imports `load_config`). **Spec 012 is verified Completed.**
 
 ---
 
+### Act 13 — AI Behavioral Integrity: fixing behaviour as a tested hypothesis (2026-06-15 → 06-16)
+
+Spec 011's n=20 baseline had exposed three pathologies; spec 012's viewer made them
+legible; **Spec 013** set out to *fix* them — and to fix them *honestly*. The
+diagnosis from the data was one root cause: the gameplay prompts never tell an AI its
+own secret role, side, or teammates, so it votes to execute itself (0.63), votes to
+execute its own Mafia teammate (0.86), or (on the cloud model) never calls a Day vote
+at all. The increment ran **measure-first within one spec**: Slice 1 added two ledger
+blocks (`outcomes` = win-rate by side; `vote_activity` = initiations by side and
+game-day, with an **explicit-zero** so a silent Day reads as a committed `0/0` — the
+deliberate inverse of 011's absent-omission); Slice 2 committed a **pre-fix baseline**
+on the unchanged behaviour (clean tree, both providers); only then did Slice 3 inject
+the fix — role + win-condition + teammate list + a ballot relationship-flag, directly
+into the prompts — under a hard **knowledge-boundary invariant** (a Citizen is told
+nothing about any other player's allegiance; only Mafia get a teammate list). A real
+coupling bug surfaced and was caught: the reworded prompt's literal anchor nearly broke
+011's prompt-parse speaker resolver.
+
+The **after-picture (Slice 4)** was honestly mixed. **Confirmed:** role/team grounding
+drove qwen's self-execution votes 0.57→0.0 and teammate-execution 0.67→0.0 (third-person
+self-talk 0.088→0.016). **Refuted:** the Day-passivity nudge did not wake Nova — still
+zero votes. **Open:** the town still won 0/20 on both providers (coherent individual
+votes ≠ town coordination). Under the spec's original outcome-based acceptance this read
+as a failure despite the measurement working perfectly — which surfaced a principle,
+captured in **[CR 005](context/change-requests/005-ai-behaviour-acceptance-effort-not-results.md)**:
+for non-deterministic AI work the project commits to a measured **effort** (a tested
+hypothesis), **not** to a guaranteed **result**. Reframed that way, every behaviour
+criterion was *tested against the baseline* and so satisfied — and **Spec 013 verified
+Completed** (12/12), with the unachieved improvements (Nova passivity, town coordination)
+moved to follow-up specs rather than buried as failure. Suite **465 → 526**; tutorial 013
+published (the `012` tutorial slot is left open for the Eval Ledger Viewer).
+
+---
+
 ## What's next
 
 **Phase 3 — Long-Term Cross-Game Memory & Career Stats** is now closed:
@@ -980,11 +1031,18 @@ with run provenance and Wilson confidence intervals, and a reliable n=20 baselin
 that reversed the n=3 read. **Spec 012 (Eval Ledger Viewer) is verified Completed**
 (2026-06-14): `make view-ledger` opens a scrollable, searchable table over that
 ledger with a field-selector scope, a cell cursor that scrolls the highlight
-fully into view, and a full-record drill-down — the live walk passed. Its
-**tutorial remains** to be written. The roadmap's next *feature*
+fully into view, and a full-record drill-down — the live walk passed. **Spec 013
+(AI Behavioral Integrity) is verified Completed and tutorialised** (2026-06-16,
+under CR 005): role/team grounding fixed the local model's vote-incoherence
+(self/teammate-execution → 0.0); the Day-passivity nudge was refuted and the
+town-win problem stayed open, both moved to follow-up specs under the
+**effort-not-results** acceptance principle. The roadmap's next *feature*
 is still **Phase 5 — Configurable Role Counts / Multi-Round Mafia Consensus**.
-Still open: the parked AWOS `_`-command renames + `handoff.md`; and
-`product-definition.md` still calls the Ollama provider "future".
+Open follow-ups: the **Nova Day-passivity** mechanical attempt and the deeper
+**town-coordination / Day-decisiveness** problem (both spec-able now); the
+**Eval Ledger Viewer tutorial** (the held-open `012` slot); the parked AWOS
+`_`-command renames + `handoff.md`; and `product-definition.md` still calls the
+Ollama provider "future".
 
 Immediate follow-ups from the 06-09→10 session:
 

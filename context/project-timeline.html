@@ -22,7 +22,7 @@
 </head>
 <body>
 <h1>Graphia — Project Timeline (interactive)</h1>
-<p class="subtitle">CRs, ADRs, and spec execution from 2026-04-29 → 2026-06-13.</p>
+<p class="subtitle">CRs, ADRs, and spec execution from 2026-04-29 → 2026-06-16.</p>
 <p class="note">
   Click any milestone (diamond) or slice (bar) to open its source artifact on GitHub.
   This page exists because GitHub's markdown renderer sandboxes mermaid diagrams in an iframe
@@ -128,10 +128,20 @@ gantt
     Spec 011 verified Completed (23/23)                  :milestone, done, sp11v, 2026-06-13, 0d
     Tutorial 011 published                               :milestone, done, t11, 2026-06-13, 0d
 
-    section Tooling (v1.3.x) — Spec 012 Eval Ledger Viewer (in progress)
+    section Tooling (v1.3.x) — Spec 012 Eval Ledger Viewer
     Spec 012 — Eval Ledger Viewer (spec + tech + tasks)  :milestone, done, sp12, 2026-06-13, 0d
     Slice 1 — pyyaml + pure data layer + Textual table    :done, sp12s1, 2026-06-13, 1d
-    Slices 2-3 — search · drill-down (pending)            :active, sp12rest, 2026-06-13, 1d
+    Slices 2-7 — search · drill-down · selector · cell cursor            :done, sp12rest, 2026-06-14, 1d
+    Spec 012 verified Completed (live walk passed)       :milestone, done, sp12v, 2026-06-14, 0d
+
+    section AI behaviour (v1.3.x) — Spec 013 AI Behavioral Integrity
+    Spec 013 — AI Behavioral Integrity (spec+tech+tasks) :milestone, done, sp13, 2026-06-15, 0d
+    Slice 1 — outcomes + vote_activity tracking          :done, sp13s1, 2026-06-15, 1d
+    Slice 2 — pre-fix baseline n=20/provider (clean)     :milestone, done, sp13b, 2026-06-15, 0d
+    Slice 3 — role/team grounding + passivity nudge      :done, sp13s3, 2026-06-15, 1d
+    Slice 4 — after-picture (grounding done, passivity refuted) :milestone, done, sp13a, 2026-06-16, 0d
+    CR 005 — accept effort-not-results acceptance        :milestone, done, cr5, 2026-06-16, 0d
+    Spec 013 verified Completed (under CR 005)           :milestone, done, sp13v, 2026-06-16, 0d
 
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
@@ -205,6 +215,12 @@ gantt
     click t11 href "https://github.com/tigra/graphia/blob/main/context/tutorials/011-ai-blunder-tracking/tutorial.md"
     click sp12 href "https://github.com/tigra/graphia/tree/main/context/spec/012-eval-ledger-viewer"
     click sp12s1 href "https://github.com/tigra/graphia/blob/main/context/spec/012-eval-ledger-viewer/tasks.md"
+    click sp13 href "https://github.com/tigra/graphia/tree/main/context/spec/013-ai-behavioral-integrity"
+    click sp13s1 href "https://github.com/tigra/graphia/blob/main/context/spec/013-ai-behavioral-integrity/tasks.md"
+    click sp13b href "https://github.com/tigra/graphia/blob/main/evals/blunder-ledger.yaml"
+    click sp13a href "https://github.com/tigra/graphia/blob/main/evals/blunder-ledger.yaml"
+    click cr5 href "https://github.com/tigra/graphia/blob/main/context/change-requests/005-ai-behaviour-acceptance-effort-not-results.md"
+    click sp13v href "https://github.com/tigra/graphia/blob/main/context/spec/013-ai-behavioral-integrity/functional-spec.md"
 </pre>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
 <script>
