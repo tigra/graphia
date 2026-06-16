@@ -106,6 +106,7 @@ _FIXED_COLUMNS: tuple[str, ...] = (
     "Games",
     "Wins (LA/M)",
     "Votes (LA/M)",
+    "Lineup",
     "Notes",
 )
 
@@ -209,6 +210,22 @@ def _vote_count(value: Any) -> int:
         return 0
 
 
+def _lineup_cell(record: RawRecord) -> str:
+    """The ``Lineup`` table cell — the configured ``citizens/mafia``, or blank.
+
+    Reads ``settings.lineup.num_citizens`` / ``num_mafia`` via :func:`_dig` and
+    renders the compact ``"{c}/{m}"`` pair (e.g. ``5/2``). An **absent**
+    ``settings.lineup`` sub-map (any pre-014 record — no migration) → the
+    **empty string**, mirroring :func:`_outcomes_cell`'s absent-blank so a
+    never-recorded lineup stays distinct from any present value.
+    """
+    if _dig(record, "settings.lineup", _MISSING) is _MISSING:
+        return ""
+    citizens = _dig(record, "settings.lineup.num_citizens")
+    mafia = _dig(record, "settings.lineup.num_mafia")
+    return f"{_text(citizens)}/{_text(mafia)}"
+
+
 def _winner_keyword(record: RawRecord) -> str:
     """The scoped-search ``winner`` keyword for a record (tech-spec 013 §2.3).
 
@@ -235,6 +252,23 @@ def _winner_keyword(record: RawRecord) -> str:
     if top > 0 and top > sum(v for k, v in buckets.items() if k != leader):
         return leader
     return "mixed"
+
+
+def _lineup_keyword(record: RawRecord) -> str:
+    """A ``"5c2m"``-style search keyword for the configured lineup, or blank.
+
+    Reads ``settings.lineup.num_citizens`` / ``num_mafia`` via :func:`_dig` and
+    renders a single compact, search-friendly token (``"{c}c{m}m"``) so a
+    free-text query like ``5c2m`` finds runs by their lineup. An **absent**
+    ``settings.lineup`` (any pre-014 record) → the empty string, so the keyword
+    neither matches nor pollutes the blob — the same posture as
+    :func:`_winner_keyword`.
+    """
+    if _dig(record, "settings.lineup", _MISSING) is _MISSING:
+        return ""
+    citizens = _dig(record, "settings.lineup.num_citizens")
+    mafia = _dig(record, "settings.lineup.num_mafia")
+    return f"{_text(citizens)}c{_text(mafia)}m"
 
 
 def _dig(record: Any, dotted_key: str, default: Any = None) -> Any:
@@ -404,6 +438,7 @@ def _row_cells(record: RawRecord) -> list[str]:
         _text(games),
         _outcomes_cell(record),
         _vote_activity_cell(record),
+        _lineup_cell(record),
         _note_cell(record),
     ]
     cells.extend(_metric_cell(record, dotted_key) for dotted_key, _ in METRIC_ORDER)
@@ -512,6 +547,7 @@ def _search_blob(record: RawRecord) -> str:
         _text(_dig(record, "code.branch", "")),
         "dirty" if dirty else "clean",
         _winner_keyword(record),
+        _lineup_keyword(record),
         _text(_dig(record, "notes", "")),
     ]
     return " ".join(part for part in parts if part).lower()
@@ -743,6 +779,10 @@ def _render_settings_section(record: RawRecord) -> str:
             _field("games", _dig(record, "settings.games")),
             _field("seed", _dig(record, "settings.seed")),
             _field("max_rounds", _dig(record, "settings.max_rounds")),
+            # Spec-014 lineup, defensively dug — a pre-014 record (no
+            # ``settings.lineup``) shows the ``—`` em-dash, no migration.
+            _field("citizens", _dig(record, "settings.lineup.num_citizens")),
+            _field("mafia", _dig(record, "settings.lineup.num_mafia")),
         ],
     )
 

@@ -310,6 +310,24 @@ def _apply_model_overrides(
         os.environ["GRAPHIA_OLLAMA_SMALL_MODEL"] = small_model
 
 
+def _apply_lineup_overrides(citizens: int | None, mafia: int | None) -> None:
+    """Route ``--citizens`` / ``--mafia`` through the game's lineup env vars.
+
+    Sets ``GRAPHIA_NUM_CITIZENS`` / ``GRAPHIA_NUM_MAFIA`` (spec 014) *before*
+    ``load_config()`` is called — mirroring :func:`_apply_model_overrides` — so
+    the configured lineup flows through the same single config choke point both
+    the game and the eval read. There is deliberately NO separate CLI
+    validation: an invalid lineup (e.g. ``--mafia 0`` or mafia ≥ citizens) is
+    caught by the Slice-1 fail-fast guard in ``load_config`` and exits with the
+    broken rule named, exactly as a bad ``.env`` would. Either flag unset leaves
+    its env var untouched, so the per-var ``.env``/default (today's 5 + 2) wins.
+    """
+    if citizens is not None:
+        os.environ["GRAPHIA_NUM_CITIZENS"] = str(citizens)
+    if mafia is not None:
+        os.environ["GRAPHIA_NUM_MAFIA"] = str(mafia)
+
+
 def _seed_game(base_seed: int | None, game_index: int) -> None:
     """Seed the module-global RNG for one game's *structure* (the driver hook).
 
@@ -1509,6 +1527,9 @@ def render_record(result: EvalResult, run_date: str) -> str:
           games: <int>
           seed: <int> | null
           max_rounds: <int> | null
+          lineup:                  # spec 014 — the configured whole-table counts
+            num_citizens: <int>
+            num_mafia: <int>
         quality:
           games_attempted: <int>
           games_completed: <int>
@@ -1621,6 +1642,21 @@ def render_record(result: EvalResult, run_date: str) -> str:
         },
         indent=1,
     )
+    # ``settings.lineup`` (spec 014 §2.4) — the configured whole-table counts,
+    # rendered after the flat settings keys as a one-level nested sub-map (the
+    # ``provider.models`` / ``outcomes`` per-block path). Only emitted when the
+    # run recorded a lineup, so a bare synthetic ``EvalResult`` (no lineup) omits
+    # it — pre-014 records simply lack the sub-map.
+    lineup = settings.get("lineup")
+    if isinstance(lineup, dict):
+        lines.append("  lineup:")
+        lines += _yaml_block(
+            {
+                "num_citizens": lineup.get("num_citizens"),
+                "num_mafia": lineup.get("num_mafia"),
+            },
+            indent=2,
+        )
 
     lines.append("quality:")
     lines += _yaml_block(
@@ -1925,6 +1961,13 @@ def run_eval(config: object, args: argparse.Namespace) -> EvalResult:
         "games": args.games,
         "seed": args.seed,
         "max_rounds": args.max_rounds,
+        # The configured lineup (spec 014 §2.4), read off the resolved config so a
+        # custom ``--citizens``/``--mafia`` (or a ``.env`` override) is recorded
+        # for a like-for-like rerun. Nested sub-map rendered after the flat keys.
+        "lineup": {
+            "num_citizens": getattr(config, "num_citizens", None),
+            "num_mafia": getattr(config, "num_mafia", None),
+        },
     }
 
     result = EvalResult(
@@ -2131,6 +2174,25 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     ap.add_argument(
+        "--citizens",
+        type=int,
+        default=None,
+        help=(
+            "number of Citizens in the lineup (sets GRAPHIA_NUM_CITIZENS before "
+            "config load; default 5). An invalid lineup is rejected by the same "
+            "fail-fast config guard the game uses."
+        ),
+    )
+    ap.add_argument(
+        "--mafia",
+        type=int,
+        default=None,
+        help=(
+            "number of Mafiosos in the lineup (sets GRAPHIA_NUM_MAFIA before "
+            "config load; default 2; must be strictly fewer than --citizens)"
+        ),
+    )
+    ap.add_argument(
         "--note",
         type=str,
         default="",
@@ -2152,6 +2214,9 @@ def main(argv: list[str] | None = None) -> int:
     os.environ["GRAPHIA_LLM_PROVIDER"] = args.provider
     _isolate_cloud_stores()
     _apply_model_overrides(args.large_model, args.small_model)
+    # Route --citizens/--mafia onto the lineup env vars before load_config, so
+    # the Slice-1 fail-fast guard validates them (a bad lineup exits there).
+    _apply_lineup_overrides(args.citizens, args.mafia)
     # Deal the scripted human a law-abiding role so they never face a night-point
     # interrupt — the same default the other evals set, keeping the scripted
     # driver on the day_turn / vote / point happy path. ``setdefault`` so an
