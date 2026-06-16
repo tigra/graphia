@@ -1,7 +1,7 @@
 # Functional Specification: Configurable Role Counts
 
 - **Roadmap Item:** Phase 5 — Setup Flexibility → **Configurable Role Counts**. (The sibling Phase 5 item, *Multi-Round Mafia Consensus by Pointing*, is a separate spec.)
-- **Status:** Draft
+- **Status:** Completed
 - **Author:** Alexey Tigarev
 
 ---
@@ -26,30 +26,30 @@ The lineup is set through **pre-launch configuration** — the same place the pl
 
 - **As a** player, **I want** to set how many Law-abiding Citizens and Mafiosos are at the table before I launch, **so that** I can play (and measure) tables other than the fixed five-plus-two.
   - **Acceptance Criteria:**
-    - [ ] The lineup is set through **pre-launch configuration** (the same mechanism the player already uses to select provider / pin a role) — **not** an in-game prompt. Launch stays non-interactive.
-    - [ ] The two configured numbers are the **counts for the whole table**: the total Law-abiding Citizens and the total Mafiosos, **including the human** (e.g. a 5-and-2 lineup is seven players total, the human being one of them).
-    - [ ] Given **nothing is configured**, when the player launches, then the game uses the **current default lineup — five Law-abiding Citizens and two Mafiosos** — so existing behaviour is unchanged for anyone who sets nothing.
+    - [x] The lineup is set through **pre-launch configuration** (the same mechanism the player already uses to select provider / pin a role) — **not** an in-game prompt. Launch stays non-interactive.
+    - [x] The two configured numbers are the **counts for the whole table**: the total Law-abiding Citizens and the total Mafiosos, **including the human** (e.g. a 5-and-2 lineup is seven players total, the human being one of them).
+    - [x] Given **nothing is configured**, when the player launches, then the game uses the **current default lineup — five Law-abiding Citizens and two Mafiosos** — so existing behaviour is unchanged for anyone who sets nothing.
 
 ### 2.2 An unworkable lineup is refused at startup
 
 - **As a** player, **I want** a clearly broken lineup rejected before the game starts, **so that** I never sit through a game that was decided before it began or crash on a typo.
   - **Acceptance Criteria:**
-    - [ ] A lineup is valid only when there is **at least one Mafioso** and **strictly fewer Mafiosos than Law-abiding Citizens** (otherwise the Mafia start at or above the parity that wins them the game, or there are no Mafia to find — the game is over before it starts), with at least the minimum table that rule implies.
-    - [ ] Given an **invalid** lineup (no Mafiosos, Mafiosos greater than or equal to Citizens, zero/negative, or non-numeric), when the player launches, then the game **exits at startup with a clear, plain-language message** naming the rule that was broken — **no game table opens and no stack trace is shown**.
+    - [x] A lineup is valid only when there is **at least one Mafioso** and **strictly fewer Mafiosos than Law-abiding Citizens** (otherwise the Mafia start at or above the parity that wins them the game, or there are no Mafia to find — the game is over before it starts), with at least the minimum table that rule implies.
+    - [x] Given an **invalid** lineup (no Mafiosos, Mafiosos greater than or equal to Citizens, zero/negative, or non-numeric), when the player launches, then the game **exits at startup with a clear, plain-language message** naming the rule that was broken — **no game table opens and no stack trace is shown**.
 
 ### 2.3 Roles are dealt randomly to match the lineup
 
 - **As a** player, **I want** roles assigned at random each run, **so that** every game starts fresh rather than with a predetermined seating.
   - **Acceptance Criteria:**
-    - [ ] Given a valid lineup, when the game starts, then exactly that many Citizens and Mafiosos are in play and **each player's role — including the human's — is assigned at random** within those counts; the human is not guaranteed any particular side.
-    - [ ] The existing win conditions apply unchanged, now relative to the configured counts: Law-abiding win when all Mafiosos are eliminated; Mafia win when their number reaches the number of Law-abiding players.
+    - [x] Given a valid lineup, when the game starts, then exactly that many Citizens and Mafiosos are in play and **each player's role — including the human's — is assigned at random** within those counts; the human is not guaranteed any particular side.
+    - [x] The existing win conditions apply unchanged, now relative to the configured counts: Law-abiding win when all Mafiosos are eliminated; Mafia win when their number reaches the number of Law-abiding players.
 
 ### 2.4 The lineup is recorded and visible in measurement
 
 - **As the** maintainer, **I want** each eval run to record and the ledger viewer to show the lineup it was played on, **so that** a run's behaviour rates and outcomes can be read in light of the table size and Mafia density.
   - **Acceptance Criteria:**
-    - [ ] An eval run's recorded result includes the **lineup it used** (the count of each role).
-    - [ ] The ledger viewer **displays the lineup for each run** (at least in the full-record drill-down, and surfaced in the table where it fits), alongside the existing run facts.
+    - [x] An eval run's recorded result includes the **lineup it used** (the count of each role).
+    - [x] The ledger viewer **displays the lineup for each run** (at least in the full-record drill-down, and surfaced in the table where it fits), alongside the existing run facts.
 
 ---
 
