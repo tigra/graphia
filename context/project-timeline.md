@@ -217,7 +217,7 @@ The red marks are the three superseded ADRs (002, 004, 007); the CRs are green b
 
 ---
 
-## What was going on — thirteen acts
+## What was going on — fourteen acts
 
 ### Act 1 — Phase 1: a playable skeleton (2026-04-29)
 
@@ -1006,7 +1006,41 @@ hypothesis), **not** to a guaranteed **result**. Reframed that way, every behavi
 criterion was *tested against the baseline* and so satisfied — and **Spec 013 verified
 Completed** (12/12), with the unachieved improvements (Nova passivity, town coordination)
 moved to follow-up specs rather than buried as failure. Suite **465 → 526**; tutorial 013
-published (the `012` tutorial slot is left open for the Eval Ledger Viewer).
+published (the `012` tutorial slot left open for the Eval Ledger Viewer — filled in Act 14).
+
+### Act 14 — Configurable Role Counts, and closing the tutorials gap (2026-06-16)
+
+With the Day-phase measurement and integrity work done, attention turned to the first
+Phase 5 *feature*: letting a player choose the table. **Spec 014 (Configurable Role
+Counts)** replaced the fixed seven-player lineup with env-configured counts of Citizens
+and Mafiosos (whole table, human included; **default 5 + 2** when unset), dealt randomly
+including the human. The design turned on a single **invariant**: the role-deck size
+(`num_mafia + num_citizens`) and the AI-roster size (`total − 1`) both derive from one
+config, so they can never drift into an `IndexError`. Two guards defend it — a
+**fail-fast validation** block in `load_config` that refuses an unworkable lineup before
+the TUI opens (its `mafia < citizens` rule *encoding* the parity-favours-Mafia win
+check), and a deterministic **`_coerce_to_count` floor** beneath the name-gen
+validation-retry that guarantees exactly `total − 1` distinct names even when the small
+model miscounts. The lineup also became a **recorded eval variable** (`settings.lineup`)
+surfaced in the 012 viewer's new `Lineup` column, with `--citizens`/`--mafia` CLI flags
+routed through the same config choke point. Three vertical slices, suite **526 → 576**,
+**verified Completed**; the roadmap's **Setup Flexibility** item (and its sole child)
+ticked.
+
+A live read backed it: an offline `make play` and a 4-game **4+1** `blunder-eval` both
+dealt and played the configured table, the eval's record carrying `settings.lineup
+{4, 1}`. The repetition rate there (**~0.36**) sat squarely in the 5+2 band —
+**lineup-independent** — sharpening the standing conclusion that AI Day-speech
+**repetition is the top unsolved quality problem**, untouched by spec 013 or the lineup.
+That and the other open threads were written into a new **`context/backlog.md`** so they
+survive between sessions.
+
+Finally the documentation debt closed: tutorials for **012 (Eval Ledger Viewer)** and
+**014 (Configurable Role Counts)** were written — 012 from the *historical* state at its
+completion commit (before 013/014 edited the viewer), 014 from current HEAD — and the
+tutorials index gained rows for **012, 013, and 014** (013's tutorial had shipped a row
+short). The held-open `012` tutorial slot is now filled; only Tutorial `003` remains a
+deliberate gap.
 
 ---
 
@@ -1036,13 +1070,21 @@ fully into view, and a full-record drill-down — the live walk passed. **Spec 0
 under CR 005): role/team grounding fixed the local model's vote-incoherence
 (self/teammate-execution → 0.0); the Day-passivity nudge was refuted and the
 town-win problem stayed open, both moved to follow-up specs under the
-**effort-not-results** acceptance principle. The roadmap's next *feature*
-is still **Phase 5 — Configurable Role Counts / Multi-Round Mafia Consensus**.
-Open follow-ups: the **Nova Day-passivity** mechanical attempt and the deeper
-**town-coordination / Day-decisiveness** problem (both spec-able now); the
-**Eval Ledger Viewer tutorial** (the held-open `012` slot); the parked AWOS
-`_`-command renames + `handoff.md`; and `product-definition.md` still calls the
-Ollama provider "future".
+**effort-not-results** acceptance principle. **Spec 014 (Configurable Role Counts)
+is verified Completed** (2026-06-16): env-configured whole-table lineups dealt
+randomly behind a single deck↔roster size invariant, fail-fast validation, and a
+deterministic name-gen floor, with the lineup recorded in the eval ledger and shown
+in the 012 viewer — which **closes Phase 5's Setup Flexibility**. Tutorials **012**
+and **014** are now published and the index carries rows for 011's whole follow-on
+run (012/013/014). The roadmap's next *feature* is the sibling Phase 5 item,
+**Richer Night Resolution — Multi-Round Mafia Consensus by Pointing** (more
+meaningful now that tables can carry several Mafiosos); start with `/awos:spec`.
+Open follow-ups (now tracked in **[`context/backlog.md`](context/backlog.md)**): the
+**repetition-reduction** fix-spec (the top unsolved AI-quality problem, ~0.36–0.45 on
+ollama and lineup-independent); the **Nova Day-passivity** mechanical attempt and the
+deeper **town-coordination / Day-decisiveness** problem; graceful **career-greeting
+degradation** when the stats store is unreachable; the parked AWOS `_`-command renames
++ `handoff.md`; and `product-definition.md` still calling the Ollama provider "future".
 
 Immediate follow-ups from the 06-09→10 session:
 
