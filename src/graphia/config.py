@@ -17,6 +17,14 @@ _DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
 _DEFAULT_OLLAMA_LARGE_MODEL = "qwen3-coder:30b"
 _DEFAULT_OLLAMA_SMALL_MODEL = "qwen2.5:3b"
 
+_DEFAULT_NUM_CITIZENS = 5
+_DEFAULT_NUM_MAFIA = 2
+# Documented ceiling on total table size (Citizens + Mafiosos). Chosen so a
+# full Day round (total + 1 messages) stays well inside ``_CONTEXT_WINDOW``,
+# the small model's one-shot name request stays modest, and per-game vote-poll
+# cost/tokens stay bounded. It is a single deliberate cap, trivially raised.
+_MAX_TABLE_SIZE = 12
+
 
 @dataclass(slots=True, frozen=True)
 class GraphiaConfig:
@@ -59,6 +67,11 @@ class GraphiaConfig:
     ollama_base_url: str = _DEFAULT_OLLAMA_BASE_URL
     ollama_large_model: str = _DEFAULT_OLLAMA_LARGE_MODEL
     ollama_small_model: str = _DEFAULT_OLLAMA_SMALL_MODEL
+    # Configurable lineup (spec 014). Whole-table counts including the human;
+    # validated in ``load_config`` before the TUI starts. Defaulted so tests
+    # constructing the config directly stay valid.
+    num_citizens: int = _DEFAULT_NUM_CITIZENS
+    num_mafia: int = _DEFAULT_NUM_MAFIA
 
 
 def _env_truthy(name: str) -> bool:
@@ -66,6 +79,16 @@ def _env_truthy(name: str) -> bool:
     if raw is None:
         return False
     return raw.strip().lower() in _TRUTHY
+
+
+def _parse_count(name: str, default: int) -> int:
+    raw = os.environ.get(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        return int(raw.strip())
+    except ValueError:
+        raise SystemExit(f"{name} must be a whole number (got {raw!r}).")
 
 
 def load_config() -> GraphiaConfig:
@@ -171,6 +194,37 @@ def load_config() -> GraphiaConfig:
         gateway_url = None
         stats_strategy_id = None
 
+    # Lineup validation (spec 014 §2.1). Whole-table counts, human included;
+    # every invalid lineup fails fast here with the broken rule named, before
+    # the TUI (or an eval) starts. Negative/zero counts are caught by the
+    # ``< 1`` guards since e.g. ``int("-3")`` parses then fails ``< 1``.
+    num_citizens = _parse_count("GRAPHIA_NUM_CITIZENS", _DEFAULT_NUM_CITIZENS)
+    num_mafia = _parse_count("GRAPHIA_NUM_MAFIA", _DEFAULT_NUM_MAFIA)
+
+    if num_mafia < 1:
+        raise SystemExit(
+            "GRAPHIA_NUM_MAFIA must be at least 1 — a game with no Mafiosos "
+            f"is already over (nobody to find). Got {num_mafia}."
+        )
+    if num_citizens < 1:
+        raise SystemExit(
+            f"GRAPHIA_NUM_CITIZENS must be at least 1 (got {num_citizens})."
+        )
+    if num_mafia >= num_citizens:
+        raise SystemExit(
+            f"GRAPHIA_NUM_MAFIA ({num_mafia}) must be strictly fewer than "
+            f"GRAPHIA_NUM_CITIZENS ({num_citizens}) — otherwise the Mafia "
+            "start at or above the parity that wins them the game before it "
+            "begins."
+        )
+    total = num_citizens + num_mafia
+    if total > _MAX_TABLE_SIZE:
+        raise SystemExit(
+            f"Table too large: {num_citizens} Citizens + {num_mafia} "
+            f"Mafiosos = {total} players exceeds the maximum of "
+            f"{_MAX_TABLE_SIZE}."
+        )
+
     return GraphiaConfig(
         bearer_token=bearer_token,
         aws_region=aws_region,
@@ -191,4 +245,6 @@ def load_config() -> GraphiaConfig:
         ollama_base_url=ollama_base_url,
         ollama_large_model=ollama_large_model,
         ollama_small_model=ollama_small_model,
+        num_citizens=num_citizens,
+        num_mafia=num_mafia,
     )
