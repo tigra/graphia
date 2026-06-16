@@ -221,9 +221,10 @@ def fake_small(monkeypatch: pytest.MonkeyPatch) -> Callable[..., FakeSmall]:
         # ...run the app / node under test...
         assert fake.call_count == 1
 
-    Accepts either a single list of 6 names (converted to a one-shot
-    ``Roster``) or an explicit ``outputs=`` sequence mixing ``Roster`` values
-    and ``Exception`` instances for retry-path tests.
+    Accepts either a single list of names — sized to the lineup's AI-name
+    count (``num_citizens + num_mafia - 1``; 6 for the default 5+2 table) —
+    converted to a one-shot ``Roster``, or an explicit ``outputs=`` sequence
+    mixing ``Roster`` values and ``Exception`` instances for retry-path tests.
 
     Patches the ``get_small`` binding **inside** ``graphia.nodes.setup`` (the
     call site) so the already-imported reference is replaced cleanly — patching

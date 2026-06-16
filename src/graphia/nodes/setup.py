@@ -16,7 +16,11 @@ from graphia.career_events import (
 )
 from graphia.config import load_config
 from graphia.llm import Roster, get_small
-from graphia.prompts import NAME_GEN_SYSTEM, NAME_GEN_USER, ROSTER_INTRO_TEMPLATE
+from graphia.prompts import (
+    NAME_GEN_SYSTEM,
+    NAME_GEN_USER_TEMPLATE,
+    ROSTER_INTRO_TEMPLATE,
+)
 from graphia.state import GameState, PlayerState
 
 _ROLE_LABELS: dict[str, str] = {
@@ -53,28 +57,85 @@ def collect_name(state: GameState) -> dict:
     }
 
 
-def _generate_names() -> Roster:
+def _coerce_to_count(roster: Roster | None, count: int) -> Roster:
+    """Force a roster to exactly ``count`` distinct names.
+
+    The pure, last-resort guarantee behind the deck/roster invariant: whatever
+    the model returned (or failed to return), this yields exactly ``count``
+    distinct names so the role-mapping loop in :func:`assign_roles` can never
+    ``IndexError``. Trims to the first ``count`` distinct names when given too
+    many; pads with deterministically-distinct ``Player-{k}`` placeholders —
+    skipping any that would collide (case-insensitively) with a name already
+    present — when given too few or ``None``.
+    """
+    names = list(roster.names) if roster is not None else []
+    # De-dup defensively (case-insensitive) while preserving order; the schema
+    # validator already enforces this on parsed rosters, but a coerced result
+    # must hold the invariant unconditionally.
+    seen: set[str] = set()
+    distinct: list[str] = []
+    for name in names:
+        key = name.strip().lower()
+        if key and key not in seen:
+            seen.add(key)
+            distinct.append(name.strip())
+    if len(distinct) >= count:
+        return Roster(names=distinct[:count])
+    k = 1
+    while len(distinct) < count:
+        placeholder = f"Player-{k}"
+        if placeholder.lower() not in seen:
+            seen.add(placeholder.lower())
+            distinct.append(placeholder)
+        k += 1
+    return Roster(names=distinct)
+
+
+def _generate_names(count: int) -> Roster:
+    """Return exactly ``count`` distinct AI names.
+
+    Validation-retry-then-coerce: invoke the small model for ``count`` names;
+    if it parses to exactly ``count``, return it. On a :class:`ValidationError`
+    or a wrong count, do one corrective retry naming the exact count. If that
+    still fails or is the wrong count, :func:`_coerce_to_count` trims/pads to a
+    guaranteed ``count`` distinct names — the result is *always* exactly
+    ``count`` (never an ``IndexError`` in :func:`assign_roles`).
+    """
     llm = get_small().with_structured_output(Roster)
+    user_prompt = NAME_GEN_USER_TEMPLATE.format(count=count)
     messages: list = [
         SystemMessage(content=NAME_GEN_SYSTEM),
-        HumanMessage(content=NAME_GEN_USER),
+        HumanMessage(content=user_prompt),
     ]
     try:
-        return llm.invoke(messages)
+        roster = llm.invoke(messages)
+        if len(roster.names) == count:
+            return roster
     except ValidationError:
-        retry_messages = [
-            SystemMessage(content=NAME_GEN_SYSTEM),
-            HumanMessage(content=NAME_GEN_USER),
-            HumanMessage(
-                content="Those names were invalid: must be 6 distinct non-empty "
-                "strings. Try again."
-            ),
-        ]
-        return llm.invoke(retry_messages)
+        roster = None
+
+    retry_messages = [
+        SystemMessage(content=NAME_GEN_SYSTEM),
+        HumanMessage(content=user_prompt),
+        HumanMessage(
+            content=f"That was invalid: return exactly {count} distinct, "
+            "non-empty first names via the Roster schema. Try again."
+        ),
+    ]
+    try:
+        retried = llm.invoke(retry_messages)
+        if len(retried.names) == count:
+            return retried
+        roster = retried
+    except ValidationError:
+        pass
+    return _coerce_to_count(roster, count)
 
 
 def generate_roster(state: GameState) -> dict:
-    roster = _generate_names()
+    config = load_config()
+    ai_count = config.num_citizens + config.num_mafia - 1
+    roster = _generate_names(ai_count)
     new_players: dict[str, PlayerState] = {}
     for ai_name in roster.names:
         pid = str(uuid.uuid4())
@@ -96,15 +157,9 @@ def assign_roles(
     game_id: str | None = None,
 ) -> dict:
     config = load_config()
-    deck: list[str] = [
-        "mafia",
-        "mafia",
-        "law_abiding",
-        "law_abiding",
-        "law_abiding",
-        "law_abiding",
-        "law_abiding",
-    ]
+    deck: list[str] = (
+        ["mafia"] * config.num_mafia + ["law_abiding"] * config.num_citizens
+    )
     if config.human_role is None:
         random.shuffle(deck)
         roles = deck

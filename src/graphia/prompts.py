@@ -18,12 +18,12 @@ party game. You produce short, memorable, culturally varied first names that
 feel natural around a game table. You never explain; you only return names.
 """
 
-NAME_GEN_USER = """Generate exactly 6 distinct first names for AI players.
+NAME_GEN_USER_TEMPLATE = """Generate exactly {count} distinct first names for AI players.
 Requirements:
 - One word each, no titles, no surnames, no numbers, no punctuation.
 - Culturally varied — draw from different regions and traditions.
-- All 6 must be distinct (case-insensitive) and non-empty.
-Return them via the Roster schema as a `names` list of 6 strings.
+- All {count} must be distinct (case-insensitive) and non-empty.
+Return them via the Roster schema as a `names` list of {count} strings.
 """
 
 MAFIA_TEAMMATE_INTRO_TEMPLATE = (

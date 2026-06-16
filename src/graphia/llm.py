@@ -32,7 +32,13 @@ from langchain_aws import ChatBedrockConverse
 from langchain_core.language_models import BaseChatModel
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from graphia.config import load_config
+from graphia.config import _MAX_TABLE_SIZE, load_config
+
+# Largest AI-name list the roster schema accepts: one fewer than the maximum
+# table size (the human occupies the remaining seat). Exact-count enforcement
+# for a given lineup lives in the caller (``setup._generate_names`` +
+# ``_coerce_to_count``); this is only the schema-level ceiling.
+_MAX_AI_NAMES = _MAX_TABLE_SIZE - 1
 
 # Model ids are operational choices (ADR-003: Nova over Claude). The *tier*
 # names above are the stable interface; these ids can change without touching
@@ -158,7 +164,7 @@ def get_small() -> BaseChatModel:
 
 
 class Roster(BaseModel):
-    names: list[str] = Field(min_length=6, max_length=6)
+    names: list[str] = Field(min_length=1, max_length=_MAX_AI_NAMES)
 
     @field_validator("names")
     @classmethod

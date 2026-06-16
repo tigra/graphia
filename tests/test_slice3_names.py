@@ -202,13 +202,16 @@ async def test_retry_on_validation_failure(
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     # A synthetic ValidationError for the Roster schema — we cannot easily
     # build one by hand, so force validation by feeding Roster an invalid
-    # list inside ``pytest.raises`` and capture the exception.
+    # list and capture the exception. Spec 014 relaxed the schema to
+    # ``min_length=1`` (variable lineups), so a 1-element list is now valid;
+    # an *empty* list still trips ``min_length=1`` and gives us the
+    # first-call validation failure this test needs.
     try:
-        Roster(names=["only-one"])
+        Roster(names=[])
     except ValidationError as exc:
         validation_error = exc
     else:  # pragma: no cover
-        raise AssertionError("expected Roster to reject a 1-element list")
+        raise AssertionError("expected Roster to reject an empty list")
 
     good_names = ["Noor", "Oleg", "Pema", "Quinn", "Rafa", "Sage"]
     fake = fake_small(

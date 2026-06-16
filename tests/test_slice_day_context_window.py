@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from langchain_core.messages import AIMessage, SystemMessage
 
+from graphia.config import _MAX_TABLE_SIZE
 from graphia.nodes.day import _CONTEXT_WINDOW, _render_context
 
 # Standard lineup: 7 players. A full round is up to 7 speeches plus the
@@ -68,6 +69,20 @@ def test_context_window_holds_a_full_round() -> None:
     assertion makes a future shrink below a round's worth fail loudly.
     """
     assert _CONTEXT_WINDOW >= FULL_ROUND_MESSAGES  # i.e. >= 8
+
+
+def test_context_window_holds_a_full_round_at_max_lineup() -> None:
+    """Guard: the window fits a full round at the largest configurable lineup.
+
+    Spec 014 lets the table grow to ``_MAX_TABLE_SIZE`` players. A full round
+    at that ceiling is ``_MAX_TABLE_SIZE`` speeches + the day-open
+    announcement, so the window must hold at least ``_MAX_TABLE_SIZE + 1``
+    messages for the earliest speaker at the biggest table to survive the
+    trim. Importing the real constants makes a future shrink of either
+    ``_CONTEXT_WINDOW`` *or* a raise of ``_MAX_TABLE_SIZE`` past the window
+    fail loudly here.
+    """
+    assert _CONTEXT_WINDOW >= _MAX_TABLE_SIZE + 1
 
 
 def test_earlier_speaker_visible_to_later_speaker() -> None:
