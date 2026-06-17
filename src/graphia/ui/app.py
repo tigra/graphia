@@ -331,11 +331,28 @@ class GraphiaApp(App[None]):
             return stripped if stripped else "…"
         if kind == "point":
             options = payload.get("options") or []
+            # Spec 015 §2.5: thread the multi-round context through to the
+            # modal — the current round, the cap, and the by-name picks-so-far
+            # summary the graph rendered. All optional with safe defaults, so a
+            # round-agnostic call (or any older payload) still works.
+            raw_round = payload.get("round")
+            round_number = raw_round if isinstance(raw_round, int) else None
+            raw_cap = payload.get("round_cap")
+            round_cap = raw_cap if isinstance(raw_cap, int) else None
+            raw_prior = payload.get("prior_picks")
+            prior_picks = raw_prior if isinstance(raw_prior, str) and raw_prior else None
             # push_screen_wait blocks this worker until dismiss() is called;
             # PointingModal resolves with the selected target's .id (str),
             # which is exactly what the graph interrupt expects as the
             # Command(resume=...) value.
-            target_id = await self.push_screen_wait(PointingModal(options=options))
+            target_id = await self.push_screen_wait(
+                PointingModal(
+                    options=options,
+                    round_number=round_number,
+                    round_cap=round_cap,
+                    prior_picks=prior_picks,
+                )
+            )
             return target_id
         if kind == "vote":
             target_name = str(payload.get("target_name") or "this player")

@@ -284,12 +284,23 @@ class FakeLarge:
     Attributes:
         call_count: Number of times ``.invoke`` was called — useful for
             asserting the retry branch ran exactly once.
+        last_messages: The message list handed to the most recent ``.invoke``
+            call (the LangChain ``[SystemMessage, HumanMessage, ...]`` prompt).
+            Lets prompt-threading tests inspect the actual rendered prompt
+            text the model would have received (Spec 015 §2.4 — the by-name
+            "teammates' picks so far" block). Purely additive: existing tests
+            only read ``call_count``.
+        messages_log: Every ``.invoke``'s message list, in call order — for
+            tests that need the prompt from a *specific* (e.g. 2nd-pointer)
+            invocation rather than just the last.
     """
 
     def __init__(self, outputs: Sequence[Pointing | Exception]) -> None:
         self._outputs: list[Pointing | Exception] = list(outputs)
         self.call_count = 0
         self._bound_schema: type | None = None
+        self.last_messages: Any = None
+        self.messages_log: list[Any] = []
 
     def with_structured_output(self, schema: type) -> "FakeLarge":
         self._bound_schema = schema
@@ -297,6 +308,8 @@ class FakeLarge:
 
     def invoke(self, messages: Any) -> Pointing:
         self.call_count += 1
+        self.last_messages = messages
+        self.messages_log.append(messages)
         if not self._outputs:
             raise AssertionError(
                 "FakeLarge.invoke called more times than scripted outputs"

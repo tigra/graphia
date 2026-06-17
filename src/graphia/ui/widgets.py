@@ -27,7 +27,7 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, Label, OptionList
+from textual.widgets import Button, Label, OptionList, Static
 from textual.widgets.option_list import Option
 
 
@@ -39,11 +39,29 @@ class PointingModal(ModalScreen[str]):
             dismissal value) and ``"name"`` (string — the user-visible label).
             Typically sourced from the ``kind="point"`` interrupt payload,
             restricted to alive law-abiding players.
+        round_number: Optional current pointing round (1-based). When set
+            alongside ``round_cap`` the modal shows a "Night kill — round X of
+            N" header (Spec 015 — Multi-Round Mafia Consensus by Pointing).
+        round_cap: Optional cap on pointing rounds, paired with
+            ``round_number`` for the header.
+        prior_picks: Optional by-name summary of the teammates' picks so far
+            this Night. When non-empty (and not the neutral "no picks yet"
+            line) it is rendered read-only above the target list so the human
+            Mafioso sees exactly what the AI Mafiosos see.
+
+    All three context params default to ``None`` so a round-agnostic call
+    (e.g. tests, or any non-multi-round path) renders just the option list as
+    before.
 
     The modal dismisses with the selected option's ``id``. The caller is
     expected to ``await app.push_screen_wait(PointingModal(...))`` from a
     worker and forward that string back into ``Command(resume=...)``.
     """
+
+    # The neutral sentinel the graph's _render_prior_picks returns when no
+    # teammate has pointed yet; treated as "nothing to show" so the very first
+    # pointer of round 1 sees no picks block.
+    _NEUTRAL_PRIOR_PICKS = "No teammate has pointed yet this Night."
 
     DEFAULT_CSS = """
     PointingModal {
@@ -53,7 +71,16 @@ class PointingModal(ModalScreen[str]):
 
     PointingModal > Vertical {
         width: 40%;
-        height: 40%;
+        /* Size to content (title + optional round/prior-picks lines + every
+           option) so the whole target list is visible without scrolling. The
+           roster is at most ~11 targets, so on any normal terminal the dialog
+           grows just tall enough to show them all. ``max-height`` caps it at
+           90% of the screen so it can never overflow; when the content is
+           genuinely taller than that, this Vertical's default ``overflow: auto``
+           gives a single scrollbar (scroll, never clip-and-hide). ``min-height``
+           keeps a 1-2 target list looking like a dialog rather than a sliver. */
+        height: auto;
+        max-height: 90%;
         min-width: 40;
         min-height: 10;
         border: thick $accent;
@@ -68,26 +95,81 @@ class PointingModal(ModalScreen[str]):
         color: $text;
     }
 
+    PointingModal #pointing-round {
+        height: auto;
+        padding: 0 0 1 0;
+        text-style: bold;
+        color: $accent;
+    }
+
+    PointingModal #pointing-prior-picks {
+        height: auto;
+        padding: 0 0 1 0;
+        color: $text-muted;
+    }
+
     PointingModal OptionList {
-        height: 1fr;
+        /* ``auto`` grows the list to one row per option (its optimal size with
+           no scrolling) instead of ``1fr`` filling a fixed remainder — under a
+           short dialog with the Spec-015 round + prior-picks chrome, ``1fr``
+           collapsed the list to ~1 visible row. ``overflow-y: hidden`` stops the
+           OptionList from drawing its OWN inner scrollbar; the parent Vertical's
+           ``max-height`` + ``overflow: auto`` owns the single scroll when (and
+           only when) the content can't fit the screen. */
+        height: auto;
+        overflow-y: hidden;
         border: none;
     }
     """
 
-    def __init__(self, options: list[dict[str, Any]]) -> None:
+    def __init__(
+        self,
+        options: list[dict[str, Any]],
+        round_number: int | None = None,
+        round_cap: int | None = None,
+        prior_picks: str | None = None,
+    ) -> None:
         super().__init__()
         # Defensive copy + normalization so we don't carry arbitrary payload
         # fields into the widget tree.
         self._options: list[dict[str, str]] = [
             {"id": str(o["id"]), "name": str(o["name"])} for o in options
         ]
+        self._round_number: int | None = (
+            round_number if isinstance(round_number, int) else None
+        )
+        self._round_cap: int | None = (
+            round_cap if isinstance(round_cap, int) else None
+        )
+        # Drop empty / neutral "no picks yet" so the first pointer sees nothing.
+        prior = prior_picks if isinstance(prior_picks, str) else None
+        if prior is not None:
+            prior = prior.strip()
+        self._prior_picks: str | None = (
+            prior if prior and prior != self._NEUTRAL_PRIOR_PICKS else None
+        )
 
     def compose(self) -> ComposeResult:
         with Vertical():
+            # Spec 015 §2.5 header: only shown when both round + cap are known,
+            # so a round-agnostic call renders just the title + list as before.
+            if self._round_number is not None and self._round_cap is not None:
+                yield Static(
+                    f"Night kill — round {self._round_number} "
+                    f"of {self._round_cap}",
+                    id="pointing-round",
+                )
             yield Label(
                 "Choose your target (Night Mafia vote)",
                 id="pointing-title",
             )
+            # Read-only teammates' picks-so-far (by name). Omitted entirely when
+            # there is nothing to show (first pointer of round 1, or no context).
+            if self._prior_picks is not None:
+                yield Static(
+                    f"Teammates so far: {self._prior_picks}",
+                    id="pointing-prior-picks",
+                )
             yield OptionList(
                 *[Option(opt["name"], id=opt["id"]) for opt in self._options],
                 id="pointing-options",

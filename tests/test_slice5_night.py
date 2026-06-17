@@ -251,19 +251,23 @@ async def test_night1_human_mafia_picks_target_via_modal(
 ) -> None:
     """Human is Mafia; the pointing modal opens and the human picks a target.
 
-    With 2 total Mafia and the human being one of them, only one AI Mafia
-    is asked. Both Mafia (human + AI) agree on the same target, producing
-    a clean majority of 2-0.
+    Spec 015 (Multi-Round Mafia Consensus): the single-pass ``mafia_pointing``
+    is gone — the Night now runs a per-pointer loop (``mafia_round_start`` →
+    ``mafia_point`` → ``route_after_mafia_point``). With 2 total Mafia and the
+    human being one of them, the human points via the ``PointingModal`` on its
+    ``mafia_point`` visit and the lone AI Mafia points on its own visit. Both
+    agree on the same target, so the first round is unanimous (set size 1) and
+    the loop resolves in a single round — no second round.
 
     Assertions cover: the Mafia-teammate private intro reaching the human,
-    the public kill announcement, the recorded ``night_picks``, and the
-    victim's ``is_alive`` flipping to ``False``.
+    the public kill announcement, the deciding round's ``night_round_picks``,
+    and the victim's ``is_alive`` flipping to ``False``.
     """
     monkeypatch.setenv("GRAPHIA_ROLE", "mafia")
     fake_small(AI_NAMES)
 
     # Install LLM stubs BEFORE ``run_test`` — once the worker starts it can
-    # reach ``mafia_pointing`` almost immediately, so we need the large-model
+    # reach the pointing loop almost immediately, so we need the large-model
     # bindings in place before the modal interrupt even fires.
     fake_large(
         pointings=[],
@@ -356,12 +360,17 @@ async def test_night1_human_mafia_picks_target_via_modal(
         # Public: the kill announcement lands.
         assert kill_line in public_rendered
 
-        # Graph-state assertions.
+        # Graph-state assertions. The deciding round's picks live in
+        # ``night_round_picks`` (Spec 015) — both Mafia agreed in round 1, so
+        # the loop resolved without re-entering ``mafia_round_start`` and the
+        # rounds log stayed empty (single round).
         state = app._graph.get_state(app._run_config).values
         final_players = state["players"]
-        night_picks = state.get("night_picks", {})
-        assert night_picks.get(human_id) == target_id
-        assert night_picks.get(ai_mafia_id) == target_id
+        night_round_picks = state.get("night_round_picks", {})
+        assert night_round_picks.get(human_id) == target_id
+        assert night_round_picks.get(ai_mafia_id) == target_id
+        assert state.get("night_round") == 1
+        assert state.get("night_rounds_log", []) == []
         assert final_players[target_id].is_alive is False
 
         # Graph now loops Night -> Day -> Night; force-exit instead of
@@ -398,11 +407,18 @@ def _night_state(
     night_picks: dict[str, str],
     human_id: str | None,
 ) -> dict:
-    """Minimal state dict for a direct ``resolve_night_kill`` call."""
+    """Minimal state dict for a direct ``resolve_night_kill`` call.
+
+    Spec 015 (Multi-Round Mafia Consensus): ``resolve_night_kill`` now reads
+    the *deciding* round's picks from ``night_round_picks`` (the round that
+    ended the loop) instead of the legacy single-pass ``night_picks``. The
+    ``night_picks`` parameter name is kept for the callers; it feeds the
+    deciding-round channel.
+    """
     state: dict = {
         "cycle": 1,
         "players": players,
-        "night_picks": night_picks,
+        "night_round_picks": night_picks,
     }
     if human_id is not None:
         state["human_id"] = human_id

@@ -141,12 +141,13 @@ def test_resolve_night_kill_emits_night_resolved_with_human_mafia_picker() -> No
         "p-ai-mafia": _player("p-ai-mafia", "Marco", "mafia"),
         victim_id: _player(victim_id, "Priya", "law_abiding"),
     }
-    # Unanimous pick → no tie-break randomness, deterministic victim.
-    night_picks = {human_id: victim_id, "p-ai-mafia": victim_id}
+    # Unanimous pick → no tie-break randomness, deterministic victim. Spec 015:
+    # resolve_night_kill reads the deciding round's picks from night_round_picks.
+    night_round_picks = {human_id: victim_id, "p-ai-mafia": victim_id}
     state = {
         "cycle": 1,
         "players": players,
-        "night_picks": night_picks,
+        "night_round_picks": night_round_picks,
         "human_id": human_id,
     }
     emitter = _CapturingEmitter()
@@ -233,7 +234,7 @@ def test_no_op_emitter_captures_nothing_across_nodes() -> None:
                 "p-ai": _player("p-ai", "Marco", "mafia"),
                 victim_id: _player(victim_id, "Priya", "law_abiding"),
             },
-            "night_picks": {human_id: victim_id, "p-ai": victim_id},
+            "night_round_picks": {human_id: victim_id, "p-ai": victim_id},
             "human_id": human_id,
         },
         career_emitter=no_op,

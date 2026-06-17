@@ -46,6 +46,17 @@ class GameState(TypedDict, total=False):
     phase: Literal["setup", "night", "day", "end"]
     cycle: int
     night_picks: dict[str, str]
+    # Multi-round Mafia consensus (Spec 015 §2.2) — all plain-replace, reset in
+    # night_open beside night_picks. night_round is the current round (1–3);
+    # night_mafia_order is the round's shuffled living-Mafioso ids (empty ⇒
+    # reshuffle on next mafia_point); night_pointer_index is the cursor within
+    # it; night_round_picks is mafioso_id → target_id for the current (deciding)
+    # round; night_rounds_log holds completed rounds' pick dicts.
+    night_round: int
+    night_mafia_order: list[str]
+    night_pointer_index: int
+    night_round_picks: dict[str, str]
+    night_rounds_log: list[dict[str, str]]
     day_order: list[str]
     day_turn_index: int
     day_rounds: int

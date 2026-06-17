@@ -24,10 +24,12 @@ from graphia.nodes.endgame import (
 )
 from graphia.nodes.night import (
     first_night_mafia_intros,
-    mafia_pointing,
+    mafia_point,
+    mafia_round_start,
     night_close,
     night_open,
     resolve_night_kill,
+    route_after_mafia_point,
     route_after_night_open,
 )
 from graphia.nodes.setup import (
@@ -52,12 +54,14 @@ __all__ = [
     "first_night_mafia_intros",
     "generate_roster",
     "introduce_roster",
-    "mafia_pointing",
+    "mafia_point",
+    "mafia_round_start",
     "night_close",
     "night_open",
     "resolve_night_kill",
     "resolve_vote",
     "reveal_role",
+    "route_after_mafia_point",
     "route_after_night_open",
     "route_after_resolve_vote",
     "route_after_win_day",

@@ -25,6 +25,12 @@ from graphia.state import GameState, KillRecord, PlayerState
 
 logger = logging.getLogger(__name__)
 
+# Spec 015 §2.3 / §2.5: the hard cap on private pointing rounds. Referenced by
+# the loop router (route_after_mafia_point) and surfaced to the human pointer
+# via the "point" interrupt payload's ``round_cap`` so the modal can show
+# "round X of N" with a single source of truth.
+NIGHT_ROUND_CAP = 3
+
 
 def first_night_mafia_intros(state: GameState) -> dict:
     if state.get("cycle", 1) != 1:
@@ -78,6 +84,11 @@ def night_open(state: GameState) -> dict:
     return {
         "messages": [SystemMessage(content="Night falls.")],
         "night_picks": {},
+        "night_round": 1,
+        "night_mafia_order": [],
+        "night_pointer_index": 0,
+        "night_round_picks": {},
+        "night_rounds_log": [],
         "phase": "night",
         "cycle": cycle,
     }
@@ -87,29 +98,107 @@ def route_after_night_open(state: GameState) -> str:
     """Slice 9 safety cap router.
 
     If ``night_open`` detected the cycle cap and set ``winner="draw"``, short-
-    circuit to ``end_screen``; otherwise proceed with the normal Night flow.
+    circuit to ``end_screen``; otherwise enter the multi-round pointing loop at
+    ``mafia_round_start`` (Spec 015 — Multi-Round Mafia Consensus by Pointing).
     """
     if state.get("winner") == "draw":
         return "end_screen"
-    return "mafia_pointing"
+    return "mafia_round_start"
+
+
+def _shuffle_mafia_order(mafia_ids: list[str]) -> list[str]:
+    """Return a freshly shuffled copy of the living-Mafioso ids for one round.
+
+    The single Night shuffle surface (Spec 015 §2.6): one module-level function
+    over the module-global ``random`` RNG, mirroring the Day phase's
+    ``graphia.nodes.day._shuffle_order``. Keeping it as the *only* place the
+    per-round order is randomized gives tests one monkeypatch point to pin the
+    pointing order. It is called from ``mafia_round_start`` — a node with no
+    ``interrupt()`` — so the non-deterministic shuffle is committed as its own
+    super-step and is never re-run on a human-pointer replay (§3 replay-safety).
+    """
+    ids = list(mafia_ids)
+    random.shuffle(ids)
+    return ids
 
 
 def _roster_lines(alive_law_abiding: list[PlayerState]) -> str:
     return "\n".join(f"{p.name}: {p.id}" for p in alive_law_abiding)
 
 
+def _render_prior_picks(
+    players: dict[str, PlayerState],
+    rounds_log: list[dict[str, str]],
+    current_round_picks: dict[str, str],
+    *,
+    exclude_pointer_id: str,
+) -> str:
+    """Render the picks-so-far context for the AI pointing prompt, by NAME.
+
+    Spec 015 §2.4: a Mafioso-only block summarizing every teammate pick already
+    committed this Night — completed rounds from ``rounds_log`` (in order) plus
+    the current round's picks collected before this pointer's turn
+    (``exclude_pointer_id`` is the current pointer, who has not yet picked).
+    Ids are resolved to names through ``players``; only names appear in the
+    prose. Renders a neutral line when no teammate has pointed yet (the very
+    first pointer of round 1).
+
+    Knowledge-boundary (Spec 013): this is invoked only from the AI pointing
+    path, which is only ever a Mafioso — never threaded into a Law-abiding
+    player's prompt.
+    """
+
+    def name_of(player_id: str) -> str:
+        player = players.get(player_id)
+        return player.name if player is not None else player_id
+
+    def render_round(picks: dict[str, str]) -> str:
+        return ", ".join(
+            f"{name_of(mafioso_id)} → {name_of(target_id)}"
+            for mafioso_id, target_id in picks.items()
+        )
+
+    segments: list[str] = []
+    for round_number, picks in enumerate(rounds_log, start=1):
+        if picks:
+            segments.append(f"Round {round_number} — {render_round(picks)}")
+
+    current_so_far = {
+        mafioso_id: target_id
+        for mafioso_id, target_id in current_round_picks.items()
+        if mafioso_id != exclude_pointer_id
+    }
+    if current_so_far:
+        current_round_number = len(rounds_log) + 1
+        segments.append(
+            f"Round {current_round_number} so far — "
+            f"{render_round(current_so_far)}"
+        )
+
+    if not segments:
+        return "No teammate has pointed yet this Night."
+    return "; ".join(segments)
+
+
 def _ai_pick_target(
     alive_law_abiding: list[PlayerState],
     mafia: PlayerState,
+    prior_picks: str = "",
 ) -> str:
     valid_ids = {p.id for p in alive_law_abiding}
     valid_ids_list = sorted(valid_ids)
     roster = _roster_lines(alive_law_abiding)
+    prior_picks_block = prior_picks or "No teammate has pointed yet this Night."
 
     llm = get_large().with_structured_output(Pointing)
     base_messages: list = [
         SystemMessage(content=MAFIA_POINT_SYSTEM),
-        HumanMessage(content=MAFIA_POINT_USER_TEMPLATE.format(roster=roster)),
+        HumanMessage(
+            content=MAFIA_POINT_USER_TEMPLATE.format(
+                roster=roster,
+                prior_picks=prior_picks_block,
+            )
+        ),
     ]
 
     try:
@@ -140,50 +229,169 @@ def _ai_pick_target(
     return random.choice(alive_law_abiding).id
 
 
-def mafia_pointing(state: GameState) -> dict:
+def _alive_mafia(state: GameState) -> list[PlayerState]:
+    """Living Mafiosos in roster (players-dict insertion) order."""
     players = state.get("players", {})
+    return [p for p in players.values() if p.is_alive and p.role == "mafia"]
 
-    # Preserve roster order from the players dict.
-    alive_mafia = [
-        p for p in players.values() if p.is_alive and p.role == "mafia"
-    ]
-    alive_law_abiding = [
-        p for p in players.values() if p.is_alive and p.role == "law_abiding"
-    ]
+
+def _alive_law_abiding(state: GameState) -> list[PlayerState]:
+    """Living Law-abiding targets in roster (players-dict insertion) order."""
+    players = state.get("players", {})
+    return [p for p in players.values() if p.is_alive and p.role == "law_abiding"]
+
+
+def mafia_round_start(state: GameState) -> dict:
+    """Begin one pointing round: roll over the prior round, then shuffle order.
+
+    This node does the round's only non-deterministic work — the per-round
+    shuffle of the living-Mafioso order — and contains **no** ``interrupt()``.
+    Because it is its own super-step, the shuffle is committed before any
+    human pointer is prompted and is never recomputed on a resume (§3
+    replay-safety): ``mafia_point`` only ever *reads* the committed order.
+
+    Re-entry from ``route_after_mafia_point`` (a round ended without consensus
+    and under the cap) carries a non-empty ``night_round_picks`` — that
+    completed round is appended to ``night_rounds_log`` and the round counter is
+    bumped here. The first entry from ``night_open`` carries empty picks, so the
+    round stays at 1 and the log is untouched.
+
+    Defensive guard: with no living Mafioso or no living target, return an empty
+    order so ``route_after_mafia_point`` routes straight to ``resolve_night_kill``
+    with no picks — a graceful no-kill no-op matching today's behaviour.
+    """
+    alive_mafia = _alive_mafia(state)
+    alive_law_abiding = _alive_law_abiding(state)
+
+    if not alive_mafia or not alive_law_abiding:
+        # Graceful no-op: empty order → router → resolve_night_kill → no kill.
+        return {
+            "night_mafia_order": [],
+            "night_pointer_index": 0,
+            "night_round_picks": {},
+        }
+
+    delta: dict = {}
+
+    prior_round_picks = state.get("night_round_picks", {})
+    if prior_round_picks:
+        # Re-entry for a later round: archive the just-completed round and bump.
+        rounds_log = list(state.get("night_rounds_log", []))
+        rounds_log.append(dict(prior_round_picks))
+        delta["night_rounds_log"] = rounds_log
+        delta["night_round"] = state.get("night_round", 1) + 1
+
+    delta["night_mafia_order"] = _shuffle_mafia_order(
+        [m.id for m in alive_mafia]
+    )
+    delta["night_pointer_index"] = 0
+    delta["night_round_picks"] = {}
+    return delta
+
+
+def mafia_point(state: GameState) -> dict:
+    """Handle exactly ONE pointer's pick this super-step (replay-safe).
+
+    All work before the ``interrupt()`` is a pure read of committed state, so a
+    human-pointer resume re-derives the same pointer and replays its resume
+    value without recomputing any AI pick made earlier in the round (§3). The
+    pick is committed into ``night_round_picks`` and the cursor advanced; the
+    next pointer (or round) is selected by ``route_after_mafia_point``.
+    """
+    order: list[str] = list(state.get("night_mafia_order", []))
+    index = state.get("night_pointer_index", 0)
+
+    # Empty order ⇒ no-mafia / no-target guard from mafia_round_start. No-op;
+    # the router sends us to resolution.
+    if not order or index >= len(order):
+        return {}
+
+    players = state.get("players", {})
+    alive_law_abiding = _alive_law_abiding(state)
     valid_ids = {p.id for p in alive_law_abiding}
 
-    # Defensive guard: Slice 8 will end the game when a side is wiped out.
-    # Until then, make this node a graceful no-op so the graph doesn't crash
-    # trying to pick from an empty pool.
-    if not alive_mafia:
-        return {"messages": [SystemMessage(content="No Mafia remain.")]}
-    if not alive_law_abiding:
-        return {"messages": [SystemMessage(content="No Mafia targets remain.")]}
+    pointer_id = order[index]
+    pointer = players.get(pointer_id)
 
-    picks: dict[str, str] = {}
-    for mafia in alive_mafia:
-        if mafia.is_human:
-            value = interrupt(
-                {
-                    "kind": "point",
-                    "options": [
-                        {"id": t.id, "name": t.name} for t in alive_law_abiding
-                    ],
-                }
-            )
-            target_id = value if isinstance(value, str) else ""
-            if target_id not in valid_ids:
-                # UI is responsible for returning valid ids; fall back rather
-                # than hang if something slips through.
-                target_id = random.choice(alive_law_abiding).id
-            picks[mafia.id] = target_id
-        else:
-            picks[mafia.id] = _ai_pick_target(
-                alive_law_abiding=alive_law_abiding,
-                mafia=mafia,
-            )
+    if pointer is not None and pointer.is_human:
+        # Surface the human Mafioso exactly the AI's information (Spec 015
+        # §2.4): the current round number, the cap, and the by-name picks-so-
+        # far — completed rounds plus this round's picks made before the
+        # human's turn (the human is excluded as the current pointer, who has
+        # not yet picked). Built with the SAME helper the AI path uses so both
+        # see an identical summary. All pure reads of committed state, so this
+        # is replay-safe before the interrupt() below.
+        prior_picks = _render_prior_picks(
+            players=players,
+            rounds_log=state.get("night_rounds_log", []),
+            current_round_picks=state.get("night_round_picks", {}),
+            exclude_pointer_id=pointer_id,
+        )
+        # interrupt() as the first effecting statement (only pure reads above).
+        value = interrupt(
+            {
+                "kind": "point",
+                "options": [
+                    {"id": t.id, "name": t.name} for t in alive_law_abiding
+                ],
+                "round": state.get("night_round", 1),
+                "round_cap": NIGHT_ROUND_CAP,
+                "prior_picks": prior_picks,
+            }
+        )
+        target_id = value if isinstance(value, str) else ""
+        if target_id not in valid_ids:
+            # UI is responsible for returning valid ids; fall back rather than
+            # hang if something slips through.
+            target_id = random.choice(alive_law_abiding).id
+    else:
+        # AI pointer. Thread the by-name picks-so-far context (Spec 015 §2.4):
+        # completed rounds from night_rounds_log plus this round's picks made
+        # before this pointer's turn, so the AI Mafioso can converge on a
+        # shared target. Mafia-only context (Spec 013 knowledge-boundary): the
+        # pointing prompt is only ever invoked for a Mafioso.
+        prior_picks = _render_prior_picks(
+            players=players,
+            rounds_log=state.get("night_rounds_log", []),
+            current_round_picks=state.get("night_round_picks", {}),
+            exclude_pointer_id=pointer_id,
+        )
+        target_id = _ai_pick_target(
+            alive_law_abiding=alive_law_abiding,
+            mafia=pointer,
+            prior_picks=prior_picks,
+        )
 
-    return {"night_picks": picks}
+    new_picks: dict[str, str] = dict(state.get("night_round_picks", {}))
+    new_picks[pointer_id] = target_id
+    return {
+        "night_round_picks": new_picks,
+        "night_pointer_index": index + 1,
+    }
+
+
+def route_after_mafia_point(state: GameState) -> str:
+    """Pure router off ``mafia_point``.
+
+    * Empty order (no-mafia / no-target guard) → ``resolve_night_kill``.
+    * More pointers remain this round → ``mafia_point`` (next pointer).
+    * Round complete: unanimous OR round cap (3) reached → ``resolve_night_kill``;
+      otherwise → ``mafia_round_start`` (play another round).
+    """
+    order = state.get("night_mafia_order", [])
+    if not order:
+        return "resolve_night_kill"
+
+    index = state.get("night_pointer_index", 0)
+    if index < len(order):
+        return "mafia_point"
+
+    # Round complete.
+    round_picks = state.get("night_round_picks", {})
+    unanimous = len(set(round_picks.values())) == 1
+    if unanimous or state.get("night_round", 1) >= NIGHT_ROUND_CAP:
+        return "resolve_night_kill"
+    return "mafia_round_start"
 
 
 def resolve_night_kill(
@@ -193,10 +401,14 @@ def resolve_night_kill(
     game_id: str | None = None,
 ) -> dict:
     cycle = state.get("cycle", 1)
-    night_picks = state.get("night_picks", {})
+    # Spec 015 §2.3: resolve from the *deciding* round's picks — the round that
+    # ended the loop (unanimous target, or the final round on the cap). The
+    # tally / plurality / random-tie-break body below is unchanged from the
+    # single-round rule; it now operates on that deciding round.
+    night_picks = state.get("night_round_picks", {})
     players = state.get("players", {})
 
-    # If mafia_pointing produced no picks (e.g., nobody left to target),
+    # If the deciding round produced no picks (e.g., nobody left to target),
     # nothing dies tonight. Keep kill_log and players untouched so the
     # downstream day_open can fall through to its "no victim" template.
     if not night_picks:

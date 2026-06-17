@@ -384,12 +384,12 @@ def test_cycle_20_triggers_draw_end() -> None:
     assert route_after_night_open({"winner": "draw"}) == "end_screen"
 
     # Sanity: below the cap, night_open behaves normally and the router
-    # takes the mafia_pointing path.
+    # enters the multi-round pointing loop at mafia_round_start (Spec 015).
     normal = night_open({"cycle": 1, "phase": "setup", "players": {}})
     assert normal.get("winner") is None
     assert normal["cycle"] == 1
     assert normal["phase"] == "night"
-    assert route_after_night_open(normal) == "mafia_pointing"
+    assert route_after_night_open(normal) == "mafia_round_start"
 
     # And night_open bumps the cycle when re-entering from Day below the cap.
     rolled = night_open({"cycle": 5, "phase": "day", "players": {}})

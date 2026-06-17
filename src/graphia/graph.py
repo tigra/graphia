@@ -29,12 +29,14 @@ from graphia.nodes import (
     first_night_mafia_intros,
     generate_roster,
     introduce_roster,
-    mafia_pointing,
+    mafia_point,
+    mafia_round_start,
     night_close,
     night_open,
     resolve_night_kill,
     resolve_vote,
     reveal_role,
+    route_after_mafia_point,
     route_after_night_open,
     route_after_win_day,
     route_after_win_night,
@@ -103,7 +105,12 @@ def _assemble_graph(
     builder.add_node("reveal_role", reveal_role)
     builder.add_node("first_night_mafia_intros", first_night_mafia_intros)
     builder.add_node("night_open", night_open)
-    builder.add_node("mafia_pointing", mafia_pointing)
+    # Spec 015: the single-pass ``mafia_pointing`` is replaced by a bounded
+    # multi-round pointing loop. ``mafia_round_start`` shuffles the round's
+    # order (its own super-step, no interrupt) and ``mafia_point`` handles one
+    # pointer per super-step (interrupt-safe for a human pointer).
+    builder.add_node("mafia_round_start", mafia_round_start)
+    builder.add_node("mafia_point", mafia_point)
     builder.add_node("resolve_night_kill", emit(resolve_night_kill))
     # ``night_close`` closes over the diary store + game id so the per-Night
     # placeholder writes don't need to reach into module-level singletons.
@@ -133,16 +140,30 @@ def _assemble_graph(
     builder.add_edge("reveal_role", "first_night_mafia_intros")
     builder.add_edge("first_night_mafia_intros", "night_open")
     # Slice 9: the draw safety cap short-circuits Night setup to end_screen
-    # when night_open detects cycle >= 20. Otherwise, proceed to pointing.
+    # when night_open detects cycle >= 20. Otherwise, enter the pointing loop.
     builder.add_conditional_edges(
         "night_open",
         route_after_night_open,
         {
             "end_screen": "end_screen",
-            "mafia_pointing": "mafia_pointing",
+            "mafia_round_start": "mafia_round_start",
         },
     )
-    builder.add_edge("mafia_pointing", "resolve_night_kill")
+    # Spec 015 multi-round pointing loop. A round starts (shuffle the order),
+    # then ``mafia_point`` runs one pointer per super-step. ``route_after_
+    # mafia_point`` loops within the round, starts another round when split and
+    # under the cap, or resolves on consensus / cap — mirroring the Day phase's
+    # ``day_turn`` self-loop.
+    builder.add_edge("mafia_round_start", "mafia_point")
+    builder.add_conditional_edges(
+        "mafia_point",
+        route_after_mafia_point,
+        {
+            "mafia_point": "mafia_point",
+            "mafia_round_start": "mafia_round_start",
+            "resolve_night_kill": "resolve_night_kill",
+        },
+    )
     # After the Night kill, check the win condition before closing the Night.
     builder.add_edge("resolve_night_kill", "check_win_night")
     builder.add_conditional_edges(

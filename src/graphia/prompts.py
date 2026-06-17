@@ -45,6 +45,13 @@ alive Law-abiding Citizens provided to you.
 MAFIA_POINT_USER_TEMPLATE = """Alive Law-abiding Citizens (name: id):
 {roster}
 
+Your Mafia teammates' picks so far this Night:
+{prior_picks}
+
+The Mafia kill by AGREEMENT — the Night ends the moment every teammate points
+at the same target. Move toward a shared target: if your teammates have already
+converged on someone, you may change your pick to match them.
+
 Pick exactly one `target_id` from the ids above. Return only the `target_id`
 field.
 """
