@@ -65,8 +65,8 @@ _Add the configurability and richer consensus mechanics the product definition c
 - [x] **Setup Flexibility**
   - [x] **Configurable Role Counts:** Replace the fixed lineup with the way for a human to specify numbers of Law-abiding Citizens and Mafiosos, then randomly assign roles so every run starts fresh. *(Spec 014, Completed 2026-06-16.)*
 
-- [ ] **Richer Night Resolution**
-  - [ ] **Multi-Round Mafia Consensus by Pointing:** Have Mafiosos converge on a victim across multiple rounds of private pointing, falling back to the Phase 1 single-round majority-with-random-tie-break only if they fail to agree within a round cap.
+- [x] **Richer Night Resolution**
+  - [x] **Multi-Round Mafia Consensus by Pointing:** Have Mafiosos converge on a victim across multiple rounds of private pointing, falling back to the Phase 1 single-round majority-with-random-tie-break only if they fail to agree within a round cap. *(Spec 015, Completed 2026-06-17.)*
 
 ---
 

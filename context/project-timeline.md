@@ -217,7 +217,7 @@ The red marks are the three superseded ADRs (002, 004, 007); the CRs are green b
 
 ---
 
-## What was going on — fourteen acts
+## What was going on — fifteen acts
 
 ### Act 1 — Phase 1: a playable skeleton (2026-04-29)
 
@@ -1042,6 +1042,37 @@ tutorials index gained rows for **012, 013, and 014** (013's tutorial had shippe
 short). The held-open `012` tutorial slot is now filled; only Tutorial `003` remains a
 deliberate gap.
 
+### Act 15 — Multi-Round Mafia Consensus, on a replay-safe pointing loop (2026-06-17)
+
+Phase 5's second feature. **Spec 015 (Multi-Round Mafia Consensus by Pointing)**
+replaced the single-round Night kill — where two Mafiosos could split their picks and
+a coin-flip decided the victim — with a real act of team consensus. The living
+Mafiosos point in turn over **up to three rounds**, in a **fresh random order each
+round** (the Spec 007 — Fair Day Speaking Order fair-shuffle pattern, so the last-mover advantage rotates
+rather than sticking to one Mafioso); each pointer **sees the picks already made, by
+name**; **unanimous agreement** ends the Night early, and only a still-split team after
+the cap falls back to **majority of the final round** (random tie-break).
+
+The load-bearing decision was a **replay-safety** one. Because LangGraph re-executes a
+node wholesale on resume, a single per-*round* node would re-invoke the AI picks made
+before the human's `interrupt()` — drifting from what the human was shown. So the loop
+is **per-*pointer***: `mafia_round_start` commits the round's shuffle as its *own*
+super-step (no interrupt), then `mafia_point` handles one pointer at a time
+(interrupt-first for the human), so a resume recomputes nothing. A real-driver test
+pins it — the AI fake's call count stays at 2 across the human's modal interrupt/resumes.
+
+Three vertical slices — the loop + deciding-round resolution (Slice 1), the AI prompt
+threaded with the running picks so it *actually* converges (Slice 2), and the human
+modal showing "round X of 3" + teammates' picks (Slice 3) — took the suite **576 →
+594**. A live `make play` as a Mafioso confirmed the multi-round pointing and the
+convergence display; the smoke also surfaced a UI nit — the point modal showed one
+target and scrolled on a short terminal (the new round/picks chrome squeezed the
+fixed-height list), fixed by sizing the dialog to its content (`height: auto;
+max-height: 90%`) so it shows every target. Suite **595**; **Spec 015 verified
+Completed** — which **closes Phase 5 entirely**. (That same smoke re-tripped the
+career-greeting boot crash on an expired SSO — the graceful-degradation backlog item,
+deliberately left parked.)
+
 ---
 
 ## What's next
@@ -1074,11 +1105,14 @@ town-win problem stayed open, both moved to follow-up specs under the
 is verified Completed** (2026-06-16): env-configured whole-table lineups dealt
 randomly behind a single deck↔roster size invariant, fail-fast validation, and a
 deterministic name-gen floor, with the lineup recorded in the eval ledger and shown
-in the 012 viewer — which **closes Phase 5's Setup Flexibility**. Tutorials **012**
-and **014** are now published and the index carries rows for 011's whole follow-on
-run (012/013/014). The roadmap's next *feature* is the sibling Phase 5 item,
-**Richer Night Resolution — Multi-Round Mafia Consensus by Pointing** (more
-meaningful now that tables can carry several Mafiosos); start with `/awos:spec`.
+in the 012 viewer. Tutorials **012** and **014** are published and the index carries
+rows for 011's whole follow-on run (012/013/014). **Spec 015 (Multi-Round Mafia
+Consensus by Pointing) is verified Completed** (2026-06-17): a bounded, replay-safe
+per-pointer consensus loop with unanimous-agreement early exit and a majority-of-the-
+final-round fallback, live-smoke confirmed. With 014 (Setup Flexibility) and 015
+(Richer Night Resolution) both done, **Phase 5 is fully closed**. The roadmap's next
+*feature* is **Phase 6 — AI Personas & Per-Game Memory, Asynchronous Day Chat, and the
+End-of-Game Payoff**; start with `/awos:spec`. Tutorial `015` is still owed.
 Open follow-ups (now tracked in **[`context/backlog.md`](context/backlog.md)**): the
 **repetition-reduction** fix-spec (the top unsolved AI-quality problem, ~0.36–0.45 on
 ollama and lineup-independent); the **Nova Day-passivity** mechanical attempt and the
