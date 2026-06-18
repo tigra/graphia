@@ -35,6 +35,8 @@ Run `make help` to list everything. The targets you'll use most:
 | `make destroy` | Tear down the whole AgentCore stack (safe two-step ECR purge). |
 | `make build` | Build just the runtime container image. |
 | `make inspect-diary` | Pretty-print per-game diary entries from the deployed Memory. |
+| `make blunder-eval` | Run the tracked AI-quality eval — N games on a provider; appends a provenance-stamped record (blunders + repetition, Wilson CIs) to the committed ledger. |
+| `make view-ledger` | Browse the committed AI-quality ledger as a scrollable table (read-only). |
 
 Direct commands (`uv run python -m graphia`, `terraform …`, `aws …`) still work and are documented below for clarity, but reach for `make` first.
 
