@@ -173,7 +173,7 @@ flowchart LR
 
 ---
 
-## Built with AWOS (and our extensions)
+## Built with AWOS (and the `buddah` plugin)
 
 Graphia is developed with **[AWOS](https://github.com/provectus/awos)** — Provectus's AI workflow for spec-driven development. Each feature flows through a chain of slash commands, every stage reading the previous stage's artifact and writing the next:
 
@@ -184,13 +184,13 @@ All artifacts live under [`context/`](context/) and are navigable here on GitHub
 - **Product & direction:** [`product-definition.md`](context/product/product-definition.md) · [`roadmap.md`](context/product/roadmap.md) · [`architecture.md`](context/product/architecture.md)
 - **Specs** (functional spec + tech considerations + task list per increment): [`context/spec/`](context/spec/) — e.g. [`001-playable-skeleton`](context/spec/001-playable-skeleton/), [`002-hosted-agentcore-deployment`](context/spec/002-hosted-agentcore-deployment/), [`004-robust-vote-input-validation`](context/spec/004-robust-vote-input-validation/)
 
-### Our extensions to AWOS
+### The logging/learning extensions — now the `buddah` plugin
 
-Three skills were added on top of the base chain and are a core part of how this project stays legible over time. They live in [`.awos/commands/`](.awos/commands/) and write into `context/`:
+Three skills extend the base chain and are a core part of how this project stays legible over time. They began as local AWOS commands and are now packaged in the **`buddah` plugin** (installed from the AWOS marketplace), invoked as `/buddah:<name>`; each writes into `context/`:
 
-- **Change Requests** — [`/awos:change-request`](.awos/commands/change-request.md) → [`context/change-requests/`](context/change-requests/). Logged whenever a *previously-agreed requirement* shifts (scope, roadmap order, success criteria). Captured at the business-value level, kept separate from implementation detail. See e.g. [CR 001 — AgentCore + tool-use into scope](context/change-requests/001-agentcore-and-tools-in-scope.md) and [CR 003 — observability trace trees](context/change-requests/003-observability-navigable-trace-trees.md).
-- **Architecture Decision Records** — [`/awos:adr`](.awos/commands/adr.md) → [`context/adr/`](context/adr/). Logged whenever an *architectural* choice is made or revised (deployment target, region, data store, vendor trade-off). Each records Context · Alternatives · Decision · Rationale · Consequences, and survives rewrites of the architecture doc. See e.g. [ADR 001 — hosted Runtime + local mode](context/adr/001-hosted-agentcore-with-local-mode.md), [ADR 003 — Bedrock Nova over Claude](context/adr/003-bedrock-nova-over-claude.md), [ADR 005 — Gateway tools via Lambda targets](context/adr/005-gateway-tools-via-lambda-targets.md).
-- **Per-increment Tutorials** — [`/awos:tutorial`](.awos/commands/tutorial.md) → [`context/tutorials/`](context/tutorials/README.md). A narrative learning artifact for each completed increment, teaching the concepts it introduced (depth-first, Socratic), with concept dedup against earlier tutorials so nothing is re-taught. See the **[tutorials index](context/tutorials/README.md)** for the reading order; start with [Tutorial 001 — playable skeleton](context/tutorials/001-playable-skeleton/tutorial.md), or jump to [Tutorial 004](context/tutorials/004-robust-vote-input-validation/tutorial.md) for a standalone read on a LangGraph interrupt/resume gotcha.
+- **Change Requests** — `/buddah:change-request` → [`context/change-requests/`](context/change-requests/). Logged whenever a *previously-agreed requirement* shifts (scope, roadmap order, success criteria). Captured at the business-value level, kept separate from implementation detail. See e.g. [CR 001 — AgentCore + tool-use into scope](context/change-requests/001-agentcore-and-tools-in-scope.md) and [CR 003 — observability trace trees](context/change-requests/003-observability-navigable-trace-trees.md).
+- **Architecture Decision Records** — `/buddah:adr` → [`context/adr/`](context/adr/). Logged whenever an *architectural* choice is made or revised (deployment target, region, data store, vendor trade-off). Each records Context · Alternatives · Decision · Rationale · Consequences, and survives rewrites of the architecture doc. See e.g. [ADR 001 — hosted Runtime + local mode](context/adr/001-hosted-agentcore-with-local-mode.md), [ADR 003 — Bedrock Nova over Claude](context/adr/003-bedrock-nova-over-claude.md), [ADR 005 — Gateway tools via Lambda targets](context/adr/005-gateway-tools-via-lambda-targets.md).
+- **Per-increment Tutorials** — `/buddah:tutorial` → [`context/tutorials/`](context/tutorials/README.md). A narrative learning artifact for each completed increment, teaching the concepts it introduced (depth-first, Socratic), with concept dedup against earlier tutorials so nothing is re-taught. See the **[tutorials index](context/tutorials/README.md)** for the reading order; start with [Tutorial 001 — playable skeleton](context/tutorials/001-playable-skeleton/tutorial.md), or jump to [Tutorial 004](context/tutorials/004-robust-vote-input-validation/tutorial.md) for a standalone read on a LangGraph interrupt/resume gotcha.
 
 How they relate: a **CR** records *what* changed in the requirements and *why*; an **ADR** records *how* an architectural question was settled; a **tutorial** explains, after the fact, *how the result works* so a returning reader (or a curious dev) can learn the pattern without reading every commit.
 
@@ -208,4 +208,4 @@ The artifacts in [`context/`](context/) aren't decoration after the fact — the
 
 ## Status
 
-Graphia is built incrementally and is an active personal reference project. Phases 1–2 (playable skeleton + hosted AgentCore deployment) are complete; later phases (long-term cross-game memory, AI provider flexibility, richer night resolution, personas) are tracked in [`context/product/roadmap.md`](context/product/roadmap.md).
+Graphia is built incrementally and is an active personal reference project. **Phases 1–5 are complete** — playable skeleton, hosted AgentCore deployment, long-term cross-game memory & career stats, AI provider flexibility (Bedrock **and** local Ollama), and richer setup/night resolution (configurable role counts + multi-round Mafia consensus). **Phase 6 is underway**: AI character personas have shipped (each AI plays a distinct character, with Mafiosos performing a cover); per-AI private thoughts/diaries, asynchronous day chat, and the end-of-game payoff are next. Sixteen increments are specced, verified, and tutorialised so far. The full roadmap and the per-increment history are in [`context/product/roadmap.md`](context/product/roadmap.md) and [`context/project-timeline.md`](context/project-timeline.md).

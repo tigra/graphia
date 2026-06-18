@@ -4,7 +4,7 @@ Per-increment learning tutorials for [Graphia](../../README.md). Each one covers
 
 Each tutorial ships with a companion `concepts.md` — a ledger of the concepts it introduced (human-readable title + a stable kebab-slug). That ledger is the dedup mechanism: a later tutorial reads all earlier ledgers and skips anything already covered.
 
-> These artifacts are produced with the [`/awos:tutorial`](../../.awos/commands/tutorial.md) skill (an extension to the [AWOS](https://github.com/provectus/awos) workflow). See the [project timeline](../project-timeline.md) for how the increments unfolded and the [roadmap](../product/roadmap.md) for what's next.
+> These artifacts are produced with the `/buddah:tutorial` skill — part of the **`buddah` plugin**, the logging/learning extensions to the [AWOS](https://github.com/provectus/awos) workflow. See the [project timeline](../project-timeline.md) for how the increments unfolded and the [roadmap](../product/roadmap.md) for what's next.
 
 ---
 

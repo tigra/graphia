@@ -37,7 +37,7 @@ All code lives under `src/graphia/`; new work should go there unless explicitly 
 
 ## AWOS workflow (slash commands)
 
-This project uses **AWOS** (provectus AI workflow) for spec-driven development. The chained commands under `.awos/commands/` (mirrored as `/awos:<name>` slash commands) are:
+This project uses **AWOS** (provectus AI workflow) for spec-driven development. The core chained commands live under `.awos/commands/` (mirrored as `/awos:<name>` slash commands); the three logging/learning skills (ADR, change-request, tutorial) are no longer local — they're provided by the **`buddah` plugin** (from the AWOS marketplace) and invoked as `/buddah:<name>`. The core chain:
 
 | Stage          | Command              | Reads                                               | Writes                                              |
 | -------------- | -------------------- | --------------------------------------------------- | --------------------------------------------------- |
@@ -50,12 +50,16 @@ This project uses **AWOS** (provectus AI workflow) for spec-driven development. 
 | Tasks          | `/awos:tasks`        | functional-spec + technical-considerations          | `context/spec/NNN-<slug>/tasks.md` (vertical slices)|
 | Implement      | `/awos:implement`    | next `[ ]` task — delegates to assigned subagent    | code + flips `[ ]` → `[x]` in `tasks.md`            |
 | Verify         | `/awos:verify`       | tasks all `[x]` + functional-spec acceptance        | flips Status → Completed in spec + roadmap          |
-| Tutorial       | `/awos:tutorial`     | completed spec + prior `concepts.md`s + git history | `context/tutorials/NNN-<slug>/{tutorial.md, concepts.md}` |
+| Tutorial       | `/buddah:tutorial`   | completed spec + prior `concepts.md`s + git history | `context/tutorials/NNN-<slug>/{tutorial.md, concepts.md}` |
 
-Two **optional logging skills** sit alongside the main flow and are invoked from the chained commands (or directly):
+(`/awos:tutorial` is shown as the chain's last stage for continuity, but it's the **buddah** skill `/buddah:tutorial`.)
 
-- **`/awos:change-request`** — logs a CR under `context/change-requests/NNN-<slug>.md` whenever a previously-agreed *requirement* shifts (scope, roadmap order, success criteria). Auto-offered after `/awos:product`, `/awos:roadmap`, and `/awos:spec` updates.
-- **`/awos:adr`** — logs an Architecture Decision Record under `context/adr/NNN-<slug>.md` whenever an *architectural* choice is made or revised (tech stack, deployment target, region, data store, security posture, vendor lock-in trade-off). Auto-offered after `/awos:architecture` and `/awos:tech`, and listed as a follow-up suggestion in `/awos:change-request` when the change touches architecture. ADRs capture *Context, Alternatives, Decision, Rationale, Consequences*; they live below the architecture doc and survive its rewrites.
+Two **optional logging skills** sit alongside the main flow — both from the **`buddah` plugin** — invoked from the chained commands (or directly):
+
+- **`/buddah:change-request`** — logs a CR under `context/change-requests/NNN-<slug>.md` whenever a previously-agreed *requirement* shifts (scope, roadmap order, success criteria). Auto-offered after `/awos:product`, `/awos:roadmap`, and `/awos:spec` updates.
+- **`/buddah:adr`** — logs an Architecture Decision Record under `context/adr/NNN-<slug>.md` whenever an *architectural* choice is made or revised (tech stack, deployment target, region, data store, security posture, vendor lock-in trade-off). Auto-offered after `/awos:architecture` and `/awos:tech`, and listed as a follow-up suggestion in `/buddah:change-request` when the change touches architecture. ADRs capture *Context, Alternatives, Decision, Rationale, Consequences*; they live below the architecture doc and survive its rewrites.
+
+> **Note:** the project's own local copies of these three commands were removed once the `buddah` plugin superseded them — only `spec`, `tech`, `tasks`, `implement`, `verify`, `roadmap`, `product`, `architecture`, `hire` remain under `.awos/commands/`.
 
 Important rules baked into these commands:
 
