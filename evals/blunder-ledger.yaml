@@ -712,3 +712,162 @@ metrics:
     ci_low: 0.0
     ci_high: 0.5615060804490177
 notes: 'post spec-016 AI Character Personas: first eval with in-character Day dialogue + two-layer Mafioso legend/true-self in speak prompts (default 5+2 lineup)'
+---
+run:
+  date: '2026-06-18'
+  duration_seconds: 1547.765
+  metrics_version: 1
+code:
+  commit: '29d7b2527e5c8b8cdbd54967be8ea0e5bd34f554'
+  branch: 'main'
+  dirty: true
+provider:
+  name: 'bedrock'
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  base_url: null
+  games: 20
+  seed: null
+  max_rounds: null
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 20
+  games_completed: 20
+  games_failed_early: 0
+  duration_seconds: 1547.765
+outcomes:
+  games: 20
+  law_abiding:
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.16113012549493322
+  mafia:
+    wins: 14
+    rate: 0.7
+    ci_low: 0.4810232237710206
+    ci_high: 0.854524726031006
+  draw: 0
+  no_winner: 6
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 0
+    mafia: 0
+  by_day: {}
+metrics:
+  repetition:
+    rate: 0.3714531384350817
+    count: 432
+    denominator: 1163
+    ci_low: 0.3441481616827832
+    ci_high: 0.39960454648257543
+  third_person_self_talk:
+    rate: 0.0
+    count: 0
+    denominator: 1163
+    ci_low: 0.0
+    ci_high: 0.003292306342180464
+notes: 'n=20 baseline on bedrock (nova) post spec-016 AI Character Personas — in-character Day dialogue + two-layer Mafioso legend/true-self; default 5+2'
+---
+run:
+  date: '2026-06-18'
+  duration_seconds: 4328.678
+  metrics_version: 1
+code:
+  commit: '29d7b2527e5c8b8cdbd54967be8ea0e5bd34f554'
+  branch: 'main'
+  dirty: true
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.30.8'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 20
+  seed: null
+  max_rounds: null
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 20
+  games_completed: 20
+  games_failed_early: 0
+  duration_seconds: 4328.678
+outcomes:
+  games: 20
+  law_abiding:
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.16113012549493322
+  mafia:
+    wins: 13
+    rate: 0.65
+    ci_low: 0.43285051021946463
+    ci_high: 0.8188104521320554
+  draw: 0
+  no_winner: 7
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 12
+    mafia: 3
+  by_day:
+    day_1: 9
+    day_2: 6
+metrics:
+  repetition:
+    rate: 0.36855670103092786
+    count: 429
+    denominator: 1164
+    ci_low: 0.3413173426552329
+    ci_high: 0.39666082150675613
+  third_person_self_talk:
+    rate: 0.007731958762886598
+    count: 9
+    denominator: 1164
+    ci_low: 0.00407304060475982
+    ci_high: 0.014629495766611088
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 6
+    ci_low: 0.0
+    ci_high: 0.3903430336530645
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 13
+    ci_low: 0.0
+    ci_high: 0.22810184305529166
+  peer_vote.initiation:
+    rate: 0.6666666666666666
+    count: 2
+    denominator: 3
+    ci_low: 0.2076549551264879
+    ci_high: 0.9385096847238394
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 10
+    ci_low: 0.0
+    ci_high: 0.2775401687666166
+notes: 'n=20 baseline on ollama (qwen3-coder:30b/qwen2.5:3b) post spec-016 AI Character Personas — in-character Day dialogue + two-layer Mafioso legend/true-self; default 5+2'
