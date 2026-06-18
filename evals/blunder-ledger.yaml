@@ -622,3 +622,93 @@ metrics:
     ci_low: 0.0
     ci_high: 0.7934567085261071
 notes: 'spec-014 quick: repetition at 4+1 lineup; exercises --citizens/--mafia override + settings.lineup recording; dirty-tree exploratory'
+---
+run:
+  date: '2026-06-18'
+  duration_seconds: 1261.524
+  metrics_version: 1
+code:
+  commit: '79a9f24c0ec74e070e3923cfc5db3952019525df'
+  branch: 'main'
+  dirty: true
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.30.8'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 6
+  seed: null
+  max_rounds: null
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 6
+  games_completed: 6
+  games_failed_early: 0
+  duration_seconds: 1261.524
+outcomes:
+  games: 6
+  law_abiding:
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.3903430336530645
+  mafia:
+    wins: 3
+    rate: 0.5
+    ci_low: 0.18761280689940868
+    ci_high: 0.8123871931005913
+  draw: 0
+  no_winner: 3
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 7
+    mafia: 0
+  by_day:
+    day_1: 6
+    day_2: 1
+metrics:
+  repetition:
+    rate: 0.45294117647058824
+    count: 154
+    denominator: 340
+    ci_low: 0.40084868810363483
+    ci_high: 0.5060852023854742
+  third_person_self_talk:
+    rate: 0.029411764705882353
+    count: 10
+    denominator: 340
+    ci_low: 0.01605268857724054
+    ci_high: 0.05328621631384883
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 2
+    ci_low: 0.0
+    ci_high: 0.6576280471103807
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 6
+    ci_low: 0.0
+    ci_high: 0.3903430336530645
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 3
+    ci_low: 0.0
+    ci_high: 0.5615060804490177
+notes: 'post spec-016 AI Character Personas: first eval with in-character Day dialogue + two-layer Mafioso legend/true-self in speak prompts (default 5+2 lineup)'
