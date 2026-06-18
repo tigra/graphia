@@ -1152,8 +1152,10 @@ Open follow-ups (now tracked in **[`context/backlog.md`](context/backlog.md)**):
 **repetition-reduction** fix-spec (the top unsolved AI-quality problem, ~0.36–0.45 on
 ollama and lineup-independent); the **Nova Day-passivity** mechanical attempt and the
 deeper **town-coordination / Day-decisiveness** problem; graceful **career-greeting
-degradation** when the stats store is unreachable; the parked AWOS `_`-command renames
-+ `handoff.md`; and `product-definition.md` still calling the Ollama provider "future".
+degradation** when the stats store is unreachable; and `product-definition.md` still
+calling the Ollama provider "future". (The long-parked AWOS command renames + stale
+`handoff.md` were removed 2026-06-18 — buddah plugin supersedes those commands — so the
+working tree is clean again.)
 
 Immediate follow-ups from the 06-09→10 session:
 

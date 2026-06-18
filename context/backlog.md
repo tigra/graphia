@@ -37,5 +37,6 @@ _Last updated: 2026-06-16._
 
 ## Housekeeping
 
-- **Parked AWOS command renames + `handoff.md`** — the `_`-prefixed AWOS adr/change-request/tutorial command renames (deliberately disabled in favour of the buddah plugin) and a stale `handoff.md` transcript remain uncommitted in the working tree by choice. Decide whether to commit the renames / delete or gitignore `handoff.md`.
 - **`product-definition.md` "future Ollama provider" wording** — the Ollama provider shipped (spec 010) but the product definition still calls it "future / on the roadmap." Minor wording refresh.
+
+_(Resolved 2026-06-18: the parked AWOS adr/change-request/tutorial command renames were removed entirely — superseded by the buddah plugin — and the stale `handoff.md` transcript was deleted, de-dirtying the working tree.)_
