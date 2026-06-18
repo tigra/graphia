@@ -217,7 +217,7 @@ The red marks are the three superseded ADRs (002, 004, 007); the CRs are green b
 
 ---
 
-## What was going on — fifteen acts
+## What was going on — sixteen acts
 
 ### Act 1 — Phase 1: a playable skeleton (2026-04-29)
 
@@ -1073,6 +1073,34 @@ Completed** — which **closes Phase 5 entirely**. (That same smoke re-tripped t
 career-greeting boot crash on an expired SSO — the graceful-degradation backlog item,
 deliberately left parked.)
 
+### Act 16 — AI Character Personas: a secret identity an agent must perform (2026-06-18)
+
+The first Phase 6 feature. **Spec 016 (AI Character Personas)** gives each AI player a
+persona — personality, backstory, manner — generated fresh each game, so the Day chat
+reads like a cast of distinct people. The headline idea is a **deception model**: a
+Mafioso carries a *true self* (it knows it's Mafia) **and** a *public legend* it
+performs to blend in; a Citizen has one honest persona. The persona is the **voice
+layer** atop spec-013's role grounding, and the Mafioso's secret is injected **only into
+its own** Day-speech prompt with a stay-in-cover instruction — never broadcast — so the
+deception is playable without leaking allegiance (knowledge-boundary invariant
+preserved). Personas are hidden during play and **revealed at game end**, contrasting
+each Mafioso's legend with its true self.
+
+It was built core-outward over three slices (generate + persist + reveal → Day-speech
+voice → optional Night flavour), composing existing machinery — flat structured output,
+the validation-retry-then-floor shape from spec 014, the heavyweight creative tier — with
+a never-block fallback so a flaky model can't stall setup. The most transferable lessons
+were two **persistence gotchas** that adding one `PlayerState` field surfaced (both real
+bugs caught mid-build): the wholesale `PlayerState(...)` rebuild sites silently dropped
+the new field (fixed by switching to `dataclasses.replace`), and the checkpoint
+serializer round-tripped the new `PlayerPersona` to a plain `dict` until it was added to
+`make_checkpoint_serde`'s `allowed_msgpack_modules` (the docstring had warned exactly
+this). A third lesson came free: spec 015's Night-replay test was latently
+**order-dependent** on module-global `random` and flipped red once 016's new tests shifted
+the cumulative RNG state — fixed by seeding the RNG at the test's start (architecture §6).
+Suite **595 → 615** (green under both stable and randomized ordering); **Spec 016 verified
+Completed and tutorialised**, ticking Phase 6's *AI Character Sheet Generation*.
+
 ---
 
 ## What's next
@@ -1110,10 +1138,16 @@ rows for 011's whole follow-on run (012/013/014). **Spec 015 (Multi-Round Mafia
 Consensus by Pointing) is verified Completed** (2026-06-17): a bounded, replay-safe
 per-pointer consensus loop with unanimous-agreement early exit and a majority-of-the-
 final-round fallback, live-smoke confirmed. With 014 (Setup Flexibility) and 015
-(Richer Night Resolution) both done, **Phase 5 is fully closed**. The roadmap's next
-*feature* is **Phase 6 — AI Personas & Per-Game Memory, Asynchronous Day Chat, and the
-End-of-Game Payoff**; start with `/awos:spec`. Tutorial `015` is published — every
-completed spec is now tutorialised except the deliberately-skipped `003`.
+(Richer Night Resolution) both done, **Phase 5 is fully closed**. **Spec 016 (AI
+Character Personas) is verified Completed and tutorialised** (2026-06-18), opening
+**Phase 6** — a two-layer deception persona (Mafioso legend vs true self) threaded into
+the Day-speech prompts and revealed at game end, plus two persistence gotchas fixed
+(`dataclasses.replace` rebuilds + the `PlayerPersona` serde allow-list) and a de-flaked
+RNG-order-dependent test. The roadmap's next *feature* is the next Phase 6 item,
+**Per-AI Day-Round Private Thoughts** (each character reflecting in its own voice),
+which builds directly on personas; start with `/awos:spec`. Tutorials `015` and `016`
+are published — every completed spec is now tutorialised except the deliberately-skipped
+`003`.
 Open follow-ups (now tracked in **[`context/backlog.md`](context/backlog.md)**): the
 **repetition-reduction** fix-spec (the top unsolved AI-quality problem, ~0.36–0.45 on
 ollama and lineup-independent); the **Nova Day-passivity** mechanical attempt and the
