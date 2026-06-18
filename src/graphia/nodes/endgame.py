@@ -25,6 +25,9 @@ from graphia.career_events import (
 from graphia.prompts import (
     ENDGAME_HEADER_KILLS,
     ENDGAME_HEADER_ROSTER,
+    ENDGAME_PERSONA_CITIZEN_TEMPLATE,
+    ENDGAME_PERSONA_HEADER,
+    ENDGAME_PERSONA_MAFIA_TEMPLATE,
     ENDGAME_WINNER_DRAW,
     ENDGAME_WINNER_LAW,
     ENDGAME_WINNER_MAFIA,
@@ -112,6 +115,57 @@ def _winner_line(winner: str | None) -> str:
     return "The game has ended."
 
 
+def _persona_field(persona: object, name: str) -> str:
+    """Read one persona attribute, tolerating either shape.
+
+    A persona arrives as a :class:`~graphia.state.PlayerPersona` in-process, but
+    after a checkpoint round-trip the LangGraph serde returns it as a plain
+    ``dict`` (``PlayerPersona`` is not on the serde allow-list). ``end_screen``
+    is the first reader of persona fields out of checkpointed state, so it must
+    accept both. Missing/blank fields degrade to an empty string rather than
+    crashing.
+    """
+    if isinstance(persona, dict):
+        value = persona.get(name, "")
+    else:
+        value = getattr(persona, name, "")
+    return value if isinstance(value, str) else ""
+
+
+def _persona_reveal_line(player: PlayerState) -> str | None:
+    """Format one AI player's end-of-game persona reveal line.
+
+    Returns None when there is nothing to reveal — the human (no persona) or a
+    fallback-path player whose ``persona`` is None — so the caller skips it
+    rather than emitting an empty bullet. For a Mafioso the cover legend it
+    performed is contrasted against its true self; a Law-abiding player shows
+    its single honest persona.
+    """
+    persona = player.persona
+    if persona is None:
+        return None
+    role_label = _role_label(player.role)
+    personality = _persona_field(persona, "personality")
+    manner = _persona_field(persona, "manner")
+    public_persona = _persona_field(persona, "public_persona")
+    if player.role == "mafia":
+        return ENDGAME_PERSONA_MAFIA_TEMPLATE.format(
+            name=player.name,
+            role_label=role_label,
+            personality=personality,
+            manner=manner,
+            public_persona=public_persona,
+            true_self=_persona_field(persona, "true_self"),
+        )
+    return ENDGAME_PERSONA_CITIZEN_TEMPLATE.format(
+        name=player.name,
+        role_label=role_label,
+        personality=personality,
+        manner=manner,
+        public_persona=public_persona,
+    )
+
+
 def end_screen(
     state: GameState,
     *,
@@ -135,6 +189,22 @@ def end_screen(
         f"{p.name} ({_role_label(p.role)})" for p in players.values()
     ]
     lines.append(f"{ENDGAME_HEADER_ROSTER} {', '.join(roster_entries)}")
+
+    # Persona reveal (Spec 016 §2.4): a public section, after the role reveal,
+    # showing who each AI player really was — survivors and eliminated alike.
+    # The human (no persona) and any fallback-path player without one are
+    # skipped. For a Mafioso, the cover legend is contrasted with its true self.
+    persona_lines: list[str] = []
+    for p in players.values():
+        if p.is_human:
+            continue
+        line = _persona_reveal_line(p)
+        if line is not None:
+            persona_lines.append(line)
+    if persona_lines:
+        lines.append("")
+        lines.append(ENDGAME_PERSONA_HEADER)
+        lines.extend(persona_lines)
 
     final_msg = SystemMessage(content="\n".join(lines))
 

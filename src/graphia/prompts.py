@@ -26,6 +26,48 @@ Requirements:
 Return them via the Roster schema as a `names` list of {count} strings.
 """
 
+PERSONA_SYSTEM = """You are a character designer for Graphia, a Mafia-style
+social-deduction party game. You invent a vivid, distinct persona for one AI
+player: a personality, a characteristic manner of speaking, and a short
+backstory. Personas are felt through how a character talks — they never change
+the rules. Return only the structured fields; do not explain.
+"""
+
+PERSONA_CITIZEN_USER_TEMPLATE = """Design a persona for the player named {name}.
+
+This is an honest, ordinary townsperson with nothing to hide — what they
+present is who they truly are.
+
+Provide:
+- `personality`: a short, distinctive temperament (e.g. bold and brash; warm
+  and cautious; dry and analytical).
+- `manner`: how they speak — pacing, vocabulary, verbal tics.
+- `public_backstory`: a brief, honest backstory (who they are, what they do).
+- Leave `secret_backstory` empty.
+
+Make this character distinct and memorable — anchor it on the name {name} so it
+does not blur into other players.
+"""
+
+PERSONA_MAFIA_USER_TEMPLATE = """Design a TWO-LAYER persona for the player named {name}, who is secretly a Mafioso.
+
+This player lives a double life and needs both a convincing cover and a true
+self that only they know:
+
+- `personality`: the temperament of the PUBLIC COVER they perform at the table.
+- `manner`: how that public cover speaks.
+- `public_backstory`: the LEGEND — a believable cover identity of an ordinary,
+  trustworthy townsperson. This cover MUST NOT hint, in any way, that the
+  character is a Mafioso, a criminal, or hiding anything. It should read as a
+  perfectly innocent member of the town.
+- `secret_backstory`: the TRUE SELF — a backstory consistent with being a
+  Mafioso (who they really are, how they came to the Mafia), known only to this
+  player.
+
+Make this character distinct and memorable — anchor it on the name {name}. The
+legend and the true self should both feel like the same person playing a part.
+"""
+
 MAFIA_TEAMMATE_INTRO_TEMPLATE = (
     "Your Mafia teammates are: {names}. You work together to eliminate "
     "Law-abiding Citizens. During the Night, you point at one target; "
@@ -44,7 +86,7 @@ alive Law-abiding Citizens provided to you.
 
 MAFIA_POINT_USER_TEMPLATE = """Alive Law-abiding Citizens (name: id):
 {roster}
-
+{mafia_persona}
 Your Mafia teammates' picks so far this Night:
 {prior_picks}
 
@@ -74,6 +116,7 @@ you speak, leave `target_id` unset.
 
 DAY_SPEAK_USER_TEMPLATE = """You are {speaker} — your secret role is {role_label}. {win_condition}
 {team_line}
+{persona}
 Alive players at the table (name: id):
 {roster}
 
@@ -130,3 +173,13 @@ ENDGAME_WINNER_MAFIA = "The Mafia have won."
 ENDGAME_WINNER_DRAW = "The game ended in a draw after 20 cycles."
 ENDGAME_HEADER_KILLS = "Events this game:"
 ENDGAME_HEADER_ROSTER = "Full roster:"
+ENDGAME_PERSONA_HEADER = "Who they really were:"
+# Honest persona for a Law-abiding AI: name, role, and the single self it showed.
+ENDGAME_PERSONA_CITIZEN_TEMPLATE = (
+    "• {name} ({role_label}) — {personality} {manner} {public_persona}"
+)
+# Mafioso reveal: contrast the cover legend it performed against its true self.
+ENDGAME_PERSONA_MAFIA_TEMPLATE = (
+    "• {name} ({role_label}) — publicly presented as {public_persona} "
+    "({personality} {manner}) … but was really a Mafioso: {true_self}"
+)

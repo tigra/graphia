@@ -9,7 +9,7 @@ import pytest
 from rich.text import Text
 from textual.widget import Widget
 
-from graphia.llm import Ballot, DayAction, Pointing, Roster
+from graphia.llm import Ballot, DayAction, Persona, Pointing, Roster
 
 
 class _LoudFailureLLM:
@@ -44,9 +44,10 @@ class _LoudFailureLLM:
 def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     """Autouse safety net: any unstubbed LLM call raises immediately.
 
-    Patches the three call-site bindings (``get_small`` in ``nodes.setup`` and
-    ``get_large`` in both ``nodes.night`` and ``nodes.day``) with a
-    loud-failure fake. Explicit per-test fixtures (``fake_small``,
+    Patches the call-site bindings (``get_small`` and ``get_large`` in
+    ``nodes.setup``, and ``get_large`` in both ``nodes.night`` and
+    ``nodes.day``) with a loud-failure fake. Explicit per-test fixtures
+    (``fake_small``,
     ``fake_large``, ``fake_large_pointing``, ``fake_large_day``) run after
     this one and replace these bindings via the same ``monkeypatch`` surface,
     so tests that *do* stub keep working while tests that forgot now fail
@@ -55,6 +56,14 @@ def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "graphia.nodes.setup.get_small",
         lambda: _LoudFailureLLM("graphia.nodes.setup.get_small"),
+    )
+    # Spec 016: ``generate_personas`` adds a ``get_large`` call site in
+    # ``nodes.setup``. Net it too — the node's broad-exception fallback turns
+    # this loud failure into a deterministic fallback persona, so tests that
+    # don't install a persona fake stay green (and never reach real Bedrock).
+    monkeypatch.setattr(
+        "graphia.nodes.setup.get_large",
+        lambda: _LoudFailureLLM("graphia.nodes.setup.get_large"),
     )
     monkeypatch.setattr(
         "graphia.nodes.night.get_large",
@@ -486,8 +495,9 @@ class FakeLargeUnified:
         get_large().with_structured_output(SchemaClass).invoke(msgs)
 
     This fake keeps a separate scripted queue per schema class so one fixture
-    can satisfy ``DayAction`` (speak/vote), ``Ballot`` (yes/no), and
-    ``Pointing`` (night target) bindings without interference.
+    can satisfy ``DayAction`` (speak/vote), ``Ballot`` (yes/no), ``Pointing``
+    (night target), and ``Persona`` (setup-time character generation) bindings
+    without interference.
 
     Attributes:
         call_count: Total invocations across all schemas.
@@ -500,11 +510,17 @@ class FakeLargeUnified:
         day_actions: Sequence[DayAction | Exception] | None = None,
         ballots: Sequence[Ballot | Exception] | None = None,
         pointings: Sequence[Pointing | Exception] | None = None,
+        personas: Sequence[Persona | Exception] | None = None,
     ) -> None:
         self._queues: dict[type, list[Any]] = {
             DayAction: list(day_actions) if day_actions else [],
             Ballot: list(ballots) if ballots else [],
             Pointing: list(pointings) if pointings else [],
+            # Spec 016: ``generate_personas`` binds ``Persona`` on this same
+            # ``get_large()`` reference at setup time. A persona queue replays
+            # its last value once drained, like the others — so a test can
+            # supply one persona and have it serve every AI player.
+            Persona: list(personas) if personas else [],
         }
         self._last: dict[type, Any] = {}
         self.call_count = 0
@@ -512,13 +528,14 @@ class FakeLargeUnified:
             DayAction: 0,
             Ballot: 0,
             Pointing: 0,
+            Persona: 0,
         }
 
     def with_structured_output(self, schema: type) -> _LargeQueue:
         if schema not in self._queues:
             raise AssertionError(
                 f"FakeLarge has no scripted queue for schema {schema!r}. "
-                "Supported: DayAction, Ballot, Pointing."
+                "Supported: DayAction, Ballot, Pointing, Persona."
             )
         return _LargeQueue(self, schema)
 
@@ -683,14 +700,16 @@ def fake_large(
             day_actions=[DayAction(kind="speak", text="hello")],
             ballots=[Ballot(yes=True), Ballot(yes=False)],
             pointings=[Pointing(target_id="p-2")],
+            personas=[Persona(personality="bold", manner="terse",
+                              public_backstory="the baker")],
         )
 
-    Patches ``graphia.nodes.day.get_large`` AND
-    ``graphia.nodes.night.get_large`` with the same instance so calls
-    routed through either call site go through one queue-set. This is
-    required for Slice 7 tests where a single run touches ``DayAction``
-    (speaking), ``Ballot`` (voting), and ``Pointing`` (next night) on the
-    same large-model binding.
+    Patches ``graphia.nodes.day.get_large``, ``graphia.nodes.night.get_large``
+    AND ``graphia.nodes.setup.get_large`` with the same instance so calls
+    routed through any call site go through one queue-set. This is required
+    for Slice 7/8 tests where a single run touches ``DayAction`` (speaking),
+    ``Ballot`` (voting), ``Pointing`` (next night), and (Spec 016)
+    ``Persona`` (setup-time generation) on the same large-model binding.
     """
 
     def _install(
@@ -698,14 +717,21 @@ def fake_large(
         day_actions: Sequence[DayAction | Exception] | None = None,
         ballots: Sequence[Ballot | Exception] | None = None,
         pointings: Sequence[Pointing | Exception] | None = None,
+        personas: Sequence[Persona | Exception] | None = None,
     ) -> FakeLargeUnified:
         fake = FakeLargeUnified(
             day_actions=day_actions,
             ballots=ballots,
             pointings=pointings,
+            personas=personas,
         )
         monkeypatch.setattr("graphia.nodes.day.get_large", lambda: fake)
         monkeypatch.setattr("graphia.nodes.night.get_large", lambda: fake)
+        # Spec 016: ``generate_personas`` is the first heavyweight call site in
+        # ``setup.py``. Patch it here too so a single ``fake_large(...)`` covers
+        # persona generation in addition to Day/Night — keeping the one-fake
+        # contract whole-game.
+        monkeypatch.setattr("graphia.nodes.setup.get_large", lambda: fake)
         return fake
 
     return _install

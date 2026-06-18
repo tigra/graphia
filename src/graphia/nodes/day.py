@@ -24,6 +24,7 @@ Topology contract (Slice 7):
 
 from __future__ import annotations
 
+import dataclasses
 import random
 from typing import cast
 
@@ -118,6 +119,43 @@ def _team_line(actor: PlayerState, players: dict[str, PlayerState]) -> str:
         f"Your fellow Mafiosi (keep this secret): "
         f"{_teammates_str(actor, players)}."
     )
+
+
+def _persona_block(speaker: PlayerState) -> str:
+    """Render the speaker's persona as a voice-layer block for its OWN prompt.
+
+    Persona is the *voice/temperament* layer atop the spec-013 *role-facts*
+    grounding (`_role_label` / `_win_condition_line` / `_team_line`). It is
+    injected ONLY into this speaker's own Day-speech prompt — never broadcast,
+    never threaded into another player's prompt (privacy invariant, spec 016
+    §2.3): a Mafioso's ``true_self`` would otherwise leak its allegiance.
+
+    For ALL AI speakers we surface the persona's ``personality``, ``manner``,
+    and the ``public_persona`` it projects, framed as "play this character;
+    speak in this voice." For a Mafioso we ADDITIONALLY surface its
+    ``true_self`` plus an explicit stay-in-cover, never-reveal instruction —
+    the cover is the face shown to the table; the true self stays hidden.
+
+    Defensive: ``persona`` should always be populated for an AI player (set in
+    ``generate_personas`` at setup), but if it is ``None`` we render an empty
+    block so ``.format`` never breaks.
+    """
+    persona = speaker.persona
+    if persona is None:
+        return ""
+    lines = [
+        "You are playing this character — speak in this voice throughout:",
+        f"- Personality: {persona.personality}",
+        f"- Manner of speaking: {persona.manner}",
+        f"- The public face you present at the table: {persona.public_persona}",
+    ]
+    if speaker.role == "mafia":
+        lines.append(
+            f"- YOUR SECRET TRUTH (never reveal): {persona.true_self} "
+            "This public face is a cover. Maintain it at all times and NEVER "
+            "reveal that you are Mafia or that your persona is a front."
+        )
+    return "\n".join(lines)
 
 
 def _ballot_relationship(voter: PlayerState, target: PlayerState) -> str:
@@ -311,6 +349,11 @@ def _ai_day_action(
     win_condition = _win_condition_line(speaker.role)
     team_line = _team_line(speaker, players)
 
+    # Persona is the voice/temperament layer atop the role-facts grounding,
+    # injected ONLY into this speaker's own prompt (spec 016 §2.3 privacy
+    # invariant). Composes with — does not replace — the spec-013 grounding.
+    persona = _persona_block(speaker)
+
     llm = get_large().with_structured_output(DayAction)
     base_messages: list = [
         SystemMessage(content=DAY_SPEAK_SYSTEM),
@@ -320,6 +363,7 @@ def _ai_day_action(
                 role_label=role_label,
                 win_condition=win_condition,
                 team_line=team_line,
+                persona=persona,
                 roster=roster,
                 context=context,
             )
@@ -791,10 +835,11 @@ def resolve_vote(
                 "messages": messages,
                 "active_vote": None,
             }
-        # Flip the player's alive flag via a fresh dataclass-like dict.
-        # PlayerState is a dataclass; mutate in place since we already copied
-        # the outer dict.
-        target.is_alive = False
+        # Flip the player's alive flag. Only ``is_alive`` changes; every other
+        # field (persona included) carries forward via ``replace``. We already
+        # copied the outer ``players`` dict, so reassigning the rebuilt target
+        # leaves the caller's state untouched.
+        target = dataclasses.replace(target, is_alive=False)
         players[target_id] = target
 
         messages.append(

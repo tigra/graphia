@@ -35,6 +35,7 @@ from graphia.nodes.night import (
 from graphia.nodes.setup import (
     assign_roles,
     collect_name,
+    generate_personas,
     generate_roster,
     introduce_roster,
     reveal_role,
@@ -52,6 +53,7 @@ __all__ = [
     "day_turn",
     "end_screen",
     "first_night_mafia_intros",
+    "generate_personas",
     "generate_roster",
     "introduce_roster",
     "mafia_point",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import logging
 import random
 from collections import Counter
@@ -190,12 +191,24 @@ def _ai_pick_target(
     roster = _roster_lines(alive_law_abiding)
     prior_picks_block = prior_picks or "No teammate has pointed yet this Night."
 
+    # Spec 016 §2.4 (secondary, light): colour this Mafioso's private pointing
+    # reasoning with its persona. Night pointing is silent and Mafia-only, so it
+    # reasons as its TRUE character — surface personality + manner, no public
+    # cover. Defensive: render "" when no persona so .format never breaks.
+    persona = mafia.persona
+    mafia_persona_block = (
+        f"\nYou are {persona.personality} {persona.manner}\n"
+        if persona is not None
+        else ""
+    )
+
     llm = get_large().with_structured_output(Pointing)
     base_messages: list = [
         SystemMessage(content=MAFIA_POINT_SYSTEM),
         HumanMessage(
             content=MAFIA_POINT_USER_TEMPLATE.format(
                 roster=roster,
+                mafia_persona=mafia_persona_block,
                 prior_picks=prior_picks_block,
             )
         ),
@@ -425,13 +438,9 @@ def resolve_night_kill(
     updated: dict[str, PlayerState] = {}
     for pid, player in players.items():
         if pid == victim_id:
-            updated[pid] = PlayerState(
-                id=player.id,
-                name=player.name,
-                role=player.role,
-                is_human=player.is_human,
-                is_alive=False,
-            )
+            # Only the victim's alive flag changes; every other field (persona
+            # included) carries forward via ``replace``.
+            updated[pid] = dataclasses.replace(player, is_alive=False)
         else:
             updated[pid] = player
 

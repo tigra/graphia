@@ -27,6 +27,7 @@ from graphia.nodes import (
     day_turn,
     end_screen,
     first_night_mafia_intros,
+    generate_personas,
     generate_roster,
     introduce_roster,
     mafia_point,
@@ -44,7 +45,7 @@ from graphia.nodes import (
     route_day_turn_or_vote,
     vote_prompt,
 )
-from graphia.state import GameState, PlayerState
+from graphia.state import GameState, PlayerPersona, PlayerState
 
 
 def make_checkpoint_serde() -> JsonPlusSerializer:
@@ -62,7 +63,7 @@ def make_checkpoint_serde() -> JsonPlusSerializer:
     and the Runtime's ``build_runtime_graph``) must pass this serde so the
     allowlist can't drift between modes.
     """
-    return JsonPlusSerializer(allowed_msgpack_modules=[PlayerState])
+    return JsonPlusSerializer(allowed_msgpack_modules=[PlayerState, PlayerPersona])
 
 
 def _with_career(
@@ -101,6 +102,10 @@ def _assemble_graph(
     builder.add_node("collect_name", collect_name)
     builder.add_node("generate_roster", generate_roster)
     builder.add_node("assign_roles", emit(assign_roles))
+    # Spec 016: persona generation runs AFTER role assignment (it needs roles to
+    # tailor a Mafioso's cover-legend-plus-true-self vs. a Citizen's single
+    # honest persona) and BEFORE the roster intro. Plain node — no career event.
+    builder.add_node("generate_personas", generate_personas)
     builder.add_node("introduce_roster", introduce_roster)
     builder.add_node("reveal_role", reveal_role)
     builder.add_node("first_night_mafia_intros", first_night_mafia_intros)
@@ -135,7 +140,8 @@ def _assemble_graph(
     builder.add_edge(START, "collect_name")
     builder.add_edge("collect_name", "generate_roster")
     builder.add_edge("generate_roster", "assign_roles")
-    builder.add_edge("assign_roles", "introduce_roster")
+    builder.add_edge("assign_roles", "generate_personas")
+    builder.add_edge("generate_personas", "introduce_roster")
     builder.add_edge("introduce_roster", "reveal_role")
     builder.add_edge("reveal_role", "first_night_mafia_intros")
     builder.add_edge("first_night_mafia_intros", "night_open")

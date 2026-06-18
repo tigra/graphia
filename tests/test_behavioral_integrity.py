@@ -42,6 +42,7 @@ from graphia.nodes.day import (
     _ai_ballot,
     _ai_day_action,
     _ballot_relationship,
+    _persona_block,
     _team_line,
     _teammates_str,
     _win_condition_line,
@@ -88,14 +89,15 @@ def _render_day_prompt(actor: PlayerState, players: dict[str, PlayerState]) -> s
     """Render the REAL ``DAY_SPEAK_USER_TEMPLATE`` for ``actor`` via the real helpers.
 
     Mirrors exactly the field computation in ``_ai_day_action`` (role_label,
-    win_condition, team_line, roster, context) so a reword of any of those
-    helpers or of the template breaks this render.
+    win_condition, team_line, persona, roster, context) so a reword of any of
+    those helpers or of the template breaks this render.
     """
     return DAY_SPEAK_USER_TEMPLATE.format(
         speaker=actor.name,
         role_label=day_nodes._role_label(actor.role),
         win_condition=_win_condition_line(actor.role),
         team_line=_team_line(actor, players),
+        persona=_persona_block(actor),
         roster=day_nodes._render_alive_roster(players),
         context="(no prior discussion)",
     )

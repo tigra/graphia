@@ -41,7 +41,12 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from graphia.llm import DayAction
-from graphia.nodes.day import _role_label, _team_line, _win_condition_line
+from graphia.nodes.day import (
+    _persona_block,
+    _role_label,
+    _team_line,
+    _win_condition_line,
+)
 from graphia.prompts import (
     DAY_SPEAK_SYSTEM,
     DAY_SPEAK_USER_TEMPLATE,
@@ -506,6 +511,7 @@ def _day_prompt(speaker: PlayerState) -> list:
                 role_label=_role_label(speaker.role),
                 win_condition=_win_condition_line(speaker.role),
                 team_line=_team_line(speaker, {speaker.id: speaker}),
+                persona=_persona_block(speaker),
                 roster="(roster)",
                 context="(ctx)",
             )
@@ -606,6 +612,7 @@ def test_self_vote_initiation_resolver_ignores_non_day_speak_prompts() -> None:
             role_label="Law-abiding Citizen",
             win_condition="",
             team_line="",
+            persona="",
             roster="r",
             context="c",
         )

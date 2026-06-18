@@ -10,6 +10,23 @@ from langchain_core.messages import AnyMessage
 from langgraph.graph.message import add_messages
 
 
+@dataclass(frozen=True)
+class PlayerPersona:
+    """A player's persona: a personality, a manner of speaking, and a backstory.
+
+    ``public_persona`` is the face shown to the table — a Mafioso's cover legend
+    or a Citizen's honest self; ``true_self`` is a Mafioso's real backstory and
+    is empty for Citizens. Pure in-game state attached to :class:`PlayerState`;
+    it gets a clean default repr like the rest of the state and carries no
+    serialization machinery.
+    """
+
+    personality: str
+    manner: str
+    public_persona: str
+    true_self: str
+
+
 @dataclass
 class PlayerState:
     id: str
@@ -17,6 +34,7 @@ class PlayerState:
     role: Literal["mafia", "law_abiding"]
     is_human: bool
     is_alive: bool = True
+    persona: PlayerPersona | None = None
 
 
 class KillRecord(TypedDict, total=False):

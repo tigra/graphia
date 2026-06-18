@@ -178,6 +178,22 @@ class Roster(BaseModel):
         return stripped
 
 
+class Persona(BaseModel):
+    """A generated character persona for one AI player.
+
+    Kept deliberately flat (primitive string fields only) — the same
+    Bedrock-Converse constraint that shapes ``Roster``/``Ballot``/``DayAction``;
+    nested or discriminated shapes are rejected. ``public_backstory`` is the
+    cover the character presents to the table; ``secret_backstory`` is a
+    Mafioso's true self and is left empty for Citizens.
+    """
+
+    personality: str
+    manner: str
+    public_backstory: str
+    secret_backstory: str = ""
+
+
 class Pointing(BaseModel):
     target_id: str = Field(min_length=1)
 

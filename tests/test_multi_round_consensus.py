@@ -37,6 +37,7 @@ through the Textual app (mirroring ``test_slice5_night.py``).
 from __future__ import annotations
 
 import asyncio
+import random
 from pathlib import Path
 from typing import Awaitable, Callable
 
@@ -418,7 +419,7 @@ def test_first_pointer_gets_neutral_empty_block() -> None:
 
     # The neutral text is embedded by the template wiring used by _ai_pick_target.
     prompt = MAFIA_POINT_USER_TEMPLATE.format(
-        roster="Priya: a", prior_picks=neutral
+        roster="Priya: a", mafia_persona="", prior_picks=neutral
     )
     assert neutral in prompt
     # And not a stale "Round 1" pick line.
@@ -875,6 +876,12 @@ async def test_human_mafioso_multi_round_replay_does_not_recompute_ai_picks(
     and recomputes no earlier AI pick (tech-spec §3 replay-safety). The deciding
     round's ``night_round_picks`` is unanimous on the human's target.
     """
+    # Pin the module-global RNG so the role deal is independent of how much
+    # `random` earlier tests consumed — this real-driver trajectory otherwise
+    # depends on cumulative suite-wide RNG state and flips under reordering
+    # (architecture §6 sanctions a local `random.seed(...)` for the one test
+    # that needs a deterministic RNG trajectory).
+    random.seed(0)
     monkeypatch.setenv("GRAPHIA_ROLE", "mafia")
     fake_small(AI_NAMES)
     # Pin the round order so the human points first and the AI second each
