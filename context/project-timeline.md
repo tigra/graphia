@@ -1112,7 +1112,8 @@ per-pointer consensus loop with unanimous-agreement early exit and a majority-of
 final-round fallback, live-smoke confirmed. With 014 (Setup Flexibility) and 015
 (Richer Night Resolution) both done, **Phase 5 is fully closed**. The roadmap's next
 *feature* is **Phase 6 — AI Personas & Per-Game Memory, Asynchronous Day Chat, and the
-End-of-Game Payoff**; start with `/awos:spec`. Tutorial `015` is still owed.
+End-of-Game Payoff**; start with `/awos:spec`. Tutorial `015` is published — every
+completed spec is now tutorialised except the deliberately-skipped `003`.
 Open follow-ups (now tracked in **[`context/backlog.md`](context/backlog.md)**): the
 **repetition-reduction** fix-spec (the top unsolved AI-quality problem, ~0.36–0.45 on
 ollama and lineup-independent); the **Nova Day-passivity** mechanical attempt and the
