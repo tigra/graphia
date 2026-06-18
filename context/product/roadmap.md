@@ -76,6 +76,7 @@ _Once the game mechanics are solid, layer in the features that make Graphia feel
 
 - [ ] **AI Personas & Per-Game Memory**
   - [ ] **AI Character Sheet Generation:** At game start, have a creative LLM produce a distinct personality, backstory, and voice for each AI player, persisted for the whole game so their behavior feels consistent.
+  - [ ] **Per-AI Day-Round Private Thoughts:** At the end of each Day round, let every surviving AI player privately reflect — a short note seen by no one else (not the other players, not the human) — where it takes stock of the conversation and the game so far and plans its own strategy. These thoughts accumulate and are fed back to *that same* AI, in event order, in its later Day-speech prompts and, for a Mafioso, during Night pointing — a running private train of thought that grounds its next move. The reflection prompt is deliberately **mild**: it invites the player to think, without steering it toward any particular strategy. (A within-game working scratchpad fed back into the AI's own prompts — distinct from the **Per-AI Private Diaries** below, the before-Night entries surfaced at end-of-game.)
   - [ ] **Per-AI Private Diaries:** Before each Night, have every surviving AI player write a short private diary entry capturing their suspicions and plans, kept hidden during play and surfaced at the end. Stored in **AgentCore Memory** (remote mode) under a per-player namespace, or in the game's own state (local mode) — exercising the per-game AgentCore Memory pattern from Phase 2.
 
 - [ ] **Asynchronous Day Chat**
