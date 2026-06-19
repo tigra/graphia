@@ -19,8 +19,7 @@ _Last updated: 2026-06-19._
 
 ## Roadmap features (in `roadmap.md`, not yet specced)
 
-- **Multi-Round Mafia Consensus by Pointing** — the sibling Phase 5 item: Mafiosos converge on a victim over multiple rounds of private pointing, falling back to single-round majority + random tie-break within a cap. More meaningful now that lineups (hence Mafia counts) are configurable (spec 014). _Next: `/awos:spec`._
-- **Phase 6** (Personas, Async Day Chat, End-of-Game Payoff) and **Phase 7** (Tool-Use & Expanded Roles) — each its own spec when reached.
+- **Phase 6** (Async Day Chat, End-of-Game Payoff) and **Phase 7** (Tool-Use & Expanded Roles) — each its own spec when reached.
 
 ## Robustness gaps
 
@@ -29,7 +28,6 @@ _Last updated: 2026-06-19._
 
 ## Test reliability
 
-- **Flaky replay test — `test_human_mafioso_multi_round_replay_does_not_recompute_ai_picks`** (`tests/test_multi_round_consensus.py`) — **RESOLVED 2026-06-19 (commit `c829d3c`).** Exactly the fix recommended here was applied: the role-deal RNG is now pinned *directly* via a dedicated `_shuffle_deck` seam (monkeypatched in the test — no global `random.seed`), mirroring the existing `_shuffle_order` / `_shuffle_mafia_order` seams (architecture §6). The deeper cross-test cause was also fixed — background driver producer threads (`asyncio.to_thread`, cancelled-but-not-joined on user-exit) now signal completion via a `threading.Event` and are drained at test teardown (autouse `drain_driver_producers` in `conftest.py`), so a leaked producer can no longer consume the module-global `random` into a later test. Verified stable across 8+ consecutive full-suite runs. _Origin: re-surfaced 2026-06-18; root-caused + fixed 2026-06-19 during the spec-018 work._
 - **Suite-wide ledger-write guard (belt-and-braces)** — a test-isolation bug let eval tests append ~25 synthetic records to the committed `evals/blunder-ledger.yaml`: `append_record`'s `ledger_path=LEDGER_PATH` was an **early-bound signature default**, so `run_eval`'s no-arg append always hit the real ledger and per-test `monkeypatch.setattr(LEDGER_PATH)` never reached it (**root cause fixed 2026-06-18** — the default is now `None`, resolved to the module global at call time). **Recommendation:** add an **autouse fixture pointing `blunder_eval.LEDGER_PATH` at `tmp_path`** for the whole suite, so no future eval test can touch the real ledger even if a redirect is forgotten; consider the same for `TRANSCRIPTS_ROOT`. _Origin: ledger pollution discovered 2026-06-18 during the spec-017 smoke._
 
 ## Measurement / eval ideas
@@ -39,12 +37,6 @@ _Last updated: 2026-06-19._
 - **Engagement / decisiveness metrics (+ blunder-denominator caveat)** — the self/peer-vote blunder rates read **~0 only because the AI town barely votes** (spec-018 run denominators were 4 / 5 / **1**; Wilson CIs up to 0–79%), so a "clean" blunder rate can mask total non-engagement rather than signalling good play. Add engagement signals to the ledger/summary — **votes-initiated-per-game**, **% games resolved vs `no_winner`** — and surface them next to the blunder rates so the two are read together. _Origin: spec 018 n=10 ollama review 2026-06-19._
 - **Active-human eval variant** — the scripted human always votes No and never initiates (already flagged in the outcomes `note`); this passive baseline likely suppresses vote-passing and inflates `no_winner`. Consider an opt-in **active-human** variant (sometimes votes Yes / initiates) as a second comparable measure, or surface the caveat more prominently in the summary. _Origin: spec 018 n=10 ollama review 2026-06-19._
 - **Transcript round labels (spec 017)** — the transcript renderer labels round blocks by *vote-segments*, not engine speaking-rounds (one "Round 1." block can span several real rounds), which misled human reviewers twice during the spec-018 review and would mislead the Phase-7 LLM-as-Judge that reads these transcripts. Label each engine round (and/or annotate each Moderator recap with its true round number). _Origin: spec 018 n=10 ollama review 2026-06-19._
-
-## Docs debt
-
-- **Eval Ledger Viewer tutorial** — spec 012 is Completed but un-tutorialised; the `012` tutorial slot is intentionally left open for it (`/buddah:tutorial 012`).
-- **Spec 014 tutorial** — after verify (`/buddah:tutorial 014`).
-- **Tutorials index** (`tutorials/README.md`) — missing rows for 011, 013, 014 (and the 012-gap note).
 
 ## Housekeeping
 
