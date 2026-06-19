@@ -41,6 +41,37 @@ class _LoudFailureLLM:
 
 
 @pytest.fixture(autouse=True)
+def drain_driver_producers() -> Iterator[None]:
+    """Autouse teardown: join any in-flight driver producer thread before next test.
+
+    The Textual driver (``graphia.driver``) runs each graph super-step in a
+    worker thread via ``asyncio.to_thread`` (``_producer``). On a USER-cancelled
+    exit (``app.exit()`` / Esc / Ctrl+C) the driver deliberately cancels the
+    producer's asyncio-task wrapper WITHOUT awaiting the underlying thread — the
+    real-app concern being a thread parked in a slow Bedrock call. The thread
+    cannot be killed from Python, so it keeps running in the background.
+
+    In the mocked test suite that thread finishes within milliseconds, but if it
+    finishes AFTER the next test has set up its own RNG-dependent trajectory
+    (the role deal, day-speech order, tie-breaks all draw from the module-global
+    ``random``), the leaked producer corrupts that trajectory — the cross-test
+    flakiness behind ``test_multi_round_consensus``. This fixture closes the
+    leak generically (protecting every off-convention RNG-pinning test, e.g.
+    ``test_configurable_lineup`` and ``test_dual_mode_smoke``) by joining each
+    producer's real completion signal at teardown — a point with no pending
+    asyncio cancellation, so the join genuinely blocks (unlike a drain attempted
+    inside the driver's own cancellation ``finally``). The wait is purely
+    threading-based and never touches an event loop, so it is safe from sync
+    fixture teardown regardless of the test loop's state. Bounded so a genuinely
+    stuck thread cannot hang the suite.
+    """
+    import graphia.driver as _driver
+
+    yield
+    _driver.wait_for_producers_quiescent(timeout=10.0)
+
+
+@pytest.fixture(autouse=True)
 def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     """Autouse safety net: any unstubbed LLM call raises immediately.
 

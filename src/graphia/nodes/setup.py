@@ -33,6 +33,21 @@ _ROLE_LABELS: dict[str, str] = {
 }
 
 
+def _shuffle_deck(deck: list[str]) -> None:
+    """Shuffle the role deck in place via the module-global ``random`` RNG.
+
+    The single role-deal shuffle surface (architecture §6), mirroring the Day
+    phase's ``graphia.nodes.day._shuffle_order`` and the Night phase's
+    ``graphia.nodes.night._shuffle_mafia_order``. Lifting the inline
+    ``random.shuffle(deck)`` out of :func:`assign_roles` gives tests one
+    monkeypatch point to pin the deal deterministically (substitute a no-op /
+    identity so the deck keeps its constructed order) without seeding the
+    module-global RNG — keeping a test's trajectory pinned by intent and immune
+    to cross-test global-RNG state. Production behaviour is unchanged.
+    """
+    random.shuffle(deck)
+
+
 def collect_name(state: GameState) -> dict:
     value = interrupt({"kind": "name"})
     name = value.strip() if isinstance(value, str) else ""
@@ -165,14 +180,14 @@ def assign_roles(
         ["mafia"] * config.num_mafia + ["law_abiding"] * config.num_citizens
     )
     if config.human_role is None:
-        random.shuffle(deck)
+        _shuffle_deck(deck)
         roles = deck
     else:
         # Human is always the first inserted player; surface mis-seating loudly.
         assert state["human_id"] == next(iter(state["players"]))
         pinned_role = config.human_role
         deck.remove(pinned_role)
-        random.shuffle(deck)
+        _shuffle_deck(deck)
         roles = [pinned_role, *deck]
     existing = state.get("players", {})
     human_id = state["human_id"]

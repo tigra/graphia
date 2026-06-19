@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import threading
+import time
 from typing import Any, Awaitable, Callable, Iterator
 
 from langchain_core.messages import BaseMessage
@@ -15,6 +17,53 @@ from graphia.config import GraphiaConfig
 from graphia.logging import StreamTraceLogger
 
 _SENTINEL = object()
+
+# Real-completion signal for in-flight :func:`_producer` worker threads.
+#
+# ``asyncio.to_thread`` runs each producer on a persistent ThreadPoolExecutor,
+# so the pool threads stay alive idle between super-steps — a naive
+# ``threading.active_count()`` / thread-join check cannot tell whether a
+# *producer body* is still running. Instead each producer owns a
+# ``threading.Event`` that it sets in its ``finally`` (the body's true exit,
+# whether it completed, errored, or was cancelled-from-asyncio but kept running
+# in the background because the underlying thread cannot be killed). The driver
+# registers the event for the run's lifetime; :func:`wait_for_producers_quiescent`
+# blocks (bounded) on all outstanding events.
+#
+# This closes a cross-test isolation leak: on a user-cancelled exit the
+# ``consumer_cancelled`` branch deliberately does NOT await the producer thread
+# (it may be parked in a slow Bedrock call in the real app), so a still-running
+# producer can keep consuming the module-global ``random`` after the test that
+# launched it has exited — corrupting the next test's RNG-dependent trajectory.
+# The autouse pytest fixture calls :func:`wait_for_producers_quiescent` at
+# teardown (where no asyncio cancellation is pending, unlike the driver's
+# ``finally``), so a mocked-and-therefore-fast leaked producer drains BEFORE the
+# next test runs. In the real app this is never on the hot path — it is only
+# called from the test fixture; production exit behaviour is unchanged.
+_inflight_producers: set[threading.Event] = set()
+_inflight_lock = threading.Lock()
+
+
+def wait_for_producers_quiescent(timeout: float = 5.0) -> bool:
+    """Block (bounded) until every in-flight :func:`_producer` body has finished.
+
+    Returns ``True`` if all producers quiesced within ``timeout`` seconds,
+    ``False`` if the deadline was hit with one still running. Safe to call with
+    no producers outstanding (returns ``True`` immediately). Intended for test
+    teardown — it joins the producer bodies via their completion events so a
+    leaked background producer can no longer race the next test's RNG state.
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        with _inflight_lock:
+            outstanding = [e for e in _inflight_producers if not e.is_set()]
+        if not outstanding:
+            return True
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return False
+        # Wait on the first outstanding event; loop re-snapshots the rest.
+        outstanding[0].wait(timeout=remaining)
 
 
 def _swallow_task_result(task: asyncio.Task) -> None:
@@ -58,14 +107,23 @@ def _producer(
     run_config: dict,
     loop: asyncio.AbstractEventLoop,
     queue: asyncio.Queue,
+    done_event: threading.Event,
 ) -> None:
-    """Iterate the sync graph stream in a worker thread, pushing chunks live."""
+    """Iterate the sync graph stream in a worker thread, pushing chunks live.
+
+    ``done_event`` is set in the ``finally`` — the body's true exit point — so
+    a watcher (test teardown via :func:`wait_for_producers_quiescent`) can tell
+    when this producer body has actually stopped touching shared module state
+    (the global ``random`` RNG), even on the cancelled-but-kept-running path
+    where the asyncio task wrapper is cancelled but the thread runs on.
+    """
     try:
         for chunk in _make_stream_iterator(graph, client, payload, run_config):
             loop.call_soon_threadsafe(queue.put_nowait, chunk)
     except BaseException as exc:  # noqa: BLE001 - forwarded to consumer
         loop.call_soon_threadsafe(queue.put_nowait, ("error", exc))
     finally:
+        done_event.set()
         loop.call_soon_threadsafe(queue.put_nowait, _SENTINEL)
 
 
@@ -100,8 +158,22 @@ async def _consume_stream(
     payload_kind = "Command" if isinstance(payload, Command) else type(payload).__name__
     logger.record({"driver": "consume_start", "payload_kind": payload_kind})
 
+    # Completion signal for this super-step's producer body (set in its
+    # ``finally``). Registered for the run so test teardown can join it via
+    # :func:`wait_for_producers_quiescent` even on the cancelled-but-still-
+    # running path; pruned once set to bound the registry over a long session.
+    done_event = threading.Event()
+    with _inflight_lock:
+        _inflight_producers.add(done_event)
+        # Opportunistically drop any already-finished producers so the set
+        # does not grow across a full game's many super-steps.
+        for finished in [e for e in _inflight_producers if e.is_set()]:
+            _inflight_producers.discard(finished)
+
     producer_task = asyncio.create_task(
-        asyncio.to_thread(_producer, graph, client, payload, run_config, loop, queue)
+        asyncio.to_thread(
+            _producer, graph, client, payload, run_config, loop, queue, done_event
+        )
     )
 
     captured_interrupts: list[Interrupt] = []
@@ -178,11 +250,23 @@ async def _consume_stream(
             # process exit even if the thread is still alive. Mark the
             # task's result as consumed so asyncio doesn't warn about an
             # un-retrieved exception on a cancelled-but-still-pending task.
+            #
+            # ``done_event`` is deliberately LEFT registered: the thread is
+            # still running, so it will set the event from its ``finally``
+            # when it eventually finishes. Test teardown's
+            # :func:`wait_for_producers_quiescent` joins that event so the
+            # leaked producer drains before the next test — closing the
+            # cross-test global-RNG contention. Production exit is unaffected
+            # (the waiter is only invoked from the test fixture).
             if not producer_task.done():
                 producer_task.cancel()
             producer_task.add_done_callback(_swallow_task_result)
         else:
+            # Normal completion: the producer body has finished and set its
+            # event. Drop it from the registry so the set stays bounded.
             await producer_task
+            with _inflight_lock:
+                _inflight_producers.discard(done_event)
     return captured_interrupts
 
 

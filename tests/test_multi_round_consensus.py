@@ -37,7 +37,6 @@ through the Textual app (mirroring ``test_slice5_night.py``).
 from __future__ import annotations
 
 import asyncio
-import random
 from pathlib import Path
 from typing import Awaitable, Callable
 
@@ -47,6 +46,7 @@ from textual.widgets import Input, OptionList, RichLog, Static
 
 from graphia.llm import DayAction, Pointing
 from graphia.nodes import night as night_mod
+from graphia.nodes import setup as setup_mod
 from graphia.nodes.night import (
     NIGHT_ROUND_CAP,
     _ai_pick_target,
@@ -876,20 +876,20 @@ async def test_human_mafioso_multi_round_replay_does_not_recompute_ai_picks(
     and recomputes no earlier AI pick (tech-spec §3 replay-safety). The deciding
     round's ``night_round_picks`` is unanimous on the human's target.
     """
-    # Pin the module-global RNG so the role deal is independent of how much
-    # `random` earlier tests consumed — this real-driver trajectory otherwise
-    # depends on cumulative suite-wide RNG state and flips under reordering
-    # (architecture §6 sanctions a local `random.seed(...)` for the one test
-    # that needs a deterministic RNG trajectory).
-    random.seed(0)
+    # Pin the role deal via the RNG-using helper, NOT a global `random.seed(...)`
+    # (architecture §6: "pin it via targeted monkeypatching of the RNG-using
+    # helper"). Replacing the deck-shuffle seam with an identity no-op makes the
+    # deal fully deterministic from the deck's constructed order, so this real-
+    # driver trajectory no longer depends on cumulative suite-wide RNG state
+    # (which a leaked prior-test driver thread could corrupt after `seed(0)`).
+    # With GRAPHIA_ROLE=mafia and the default 5+2 lineup, the un-shuffled deck is
+    # ["mafia"] + ["law_abiding"]*5; assign_roles prepends the pinned human role,
+    # yielding ["mafia"(human), "mafia"(AI), "law_abiding"*5] in insertion order:
+    # the human + exactly one AI Mafioso (the two-pointer trajectory this test
+    # drives) plus five Law-abiding targets.
+    monkeypatch.setattr(setup_mod, "_shuffle_deck", lambda deck: None)
     monkeypatch.setenv("GRAPHIA_ROLE", "mafia")
     fake_small(AI_NAMES)
-    # Pin the round order so the human points first and the AI second each
-    # round — a deterministic two-pointer trajectory. (The module-global
-    # shuffle surface; architecture §6.)
-    monkeypatch.setattr(
-        night_mod, "_shuffle_mafia_order", lambda ids: sorted(ids)
-    )
     fake_large(
         pointings=[],
         day_actions=[
@@ -899,6 +899,25 @@ async def test_human_mafioso_multi_round_replay_does_not_recompute_ai_picks(
 
     app = GraphiaApp()
     async with app.run_test() as pilot:
+        # Pin the round order so the HUMAN points FIRST and the AI second each
+        # round — the trajectory this test depends on. ``_CountingRoundPointing``
+        # reads ``night_round`` from the *committed* checkpoint to decide
+        # disagree-vs-agree; when the human points first the AI's pick lands
+        # after the round's bookkeeping has committed, so round detection is
+        # reliable. A plain ``sorted(ids)`` pin would NOT guarantee this — the
+        # player ids are random uuid4 strings, so sorting them puts the human
+        # first only ~half the time, which silently flips round 1 unanimous (or
+        # mis-detects round 2) and breaks the two-round expectation. So resolve
+        # the live ``human_id`` and pin it to the front (the single Night shuffle
+        # surface; architecture §6), mirroring the sibling modal test.
+        def _human_first(ids: list[str]) -> list[str]:
+            state = app._graph.get_state(app._run_config).values
+            human = state.get("human_id")
+            rest = sorted(i for i in ids if i != human)
+            return ([human] + rest) if human in ids else sorted(ids)
+
+        monkeypatch.setattr(night_mod, "_shuffle_mafia_order", _human_first)
+
         ai_fake = _CountingRoundPointing(
             lambda: app._graph.get_state(app._run_config).values
         )
