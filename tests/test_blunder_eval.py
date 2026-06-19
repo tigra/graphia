@@ -28,6 +28,30 @@ network, or a live game**. Three concerns are covered:
    line; ``append_record`` to a ``tmp_path`` ledger twice accumulates two
    ``---``-separated documents without rewriting the first.
 
+Spec 017 (*Eval Transcript Preservation*), Slice 1 Task 4 EXTENDS this file with
+three offline, model-free concerns:
+
+4. **Streaming capture preserves multiple Nights' picks** — a mocked eval game
+   (real graph built with ``fake_large`` / ``fake_small``, RNG-controlled
+   pointing via a live-state dispatcher) is driven through MORE THAN ONE Night
+   while taping the per-super-step ``graph.stream(stream_mode="updates")`` log
+   into a ``_GameCapture.events`` list (the exact ``on_update`` sink
+   ``_play_one_game`` threads). The regression: each Night's ``night_open``
+   RESETS ``night_round_picks`` / ``night_rounds_log``, so a final-state read
+   would hold only the LAST Night's picks — but the captured stream log still
+   carries the EARLIER Night's pointing, and the rendered transcript shows both.
+
+5. **Storage + ledger link** — a mocked ``run_eval`` (``_play_one_game`` stubbed
+   to return hand-built ``_GameCapture``s, so no graph or provider is built)
+   writes ``<transcripts_root>/<run-id>/game-NN.txt`` into a ``tmp_path`` with
+   the per-run-dir + zero-padded naming, the files contain the rendered
+   transcript text, and the ledger record carries ``run.transcript_dir ==
+   "<run-id>"``. The real ``evals/transcripts/`` is never touched.
+
+6. **Cleanup affordance** — ``clean_transcripts`` over a temp transcripts root
+   inside a temp git repo: a committed (tracked) run dir is preserved while an
+   untracked one is removed, and the returned list names exactly what it dropped.
+
 The synthetic ``EvalResult`` is built from the real dataclass (imported), so a
 field rename breaks these tests honestly. The repo ships no stdlib YAML and
 deliberately adds no parser, so the renderer is asserted structurally
@@ -42,9 +66,12 @@ from __future__ import annotations
 
 import argparse
 import os
+import subprocess
 from pathlib import Path
+from typing import Any, Callable
 
 import pytest
+from langgraph.types import Command
 
 from graphia.tools import blunder_eval
 from graphia.tools.blunder_eval import (
@@ -52,13 +79,18 @@ from graphia.tools.blunder_eval import (
     METRICS_VERSION,
     PROVIDERS,
     _CLOUD_STORE_ENV_VARS,
+    _GameCapture,
     _apply_model_overrides,
     _attach_ci,
     _isolate_cloud_stores,
     append_record,
+    clean_transcripts,
     main,
     render_record,
+    render_transcript,
+    run_eval,
     score_repetition,
+    transcript_path,
     wilson_ci,
 )
 
@@ -627,3 +659,582 @@ def test_append_record_first_document_starts_with_the_separator(
     append_record(_synthetic_result(), "2026-06-13", ledger_path=ledger)
 
     assert ledger.read_text(encoding="utf-8").startswith("---\n")
+
+
+# ===========================================================================
+# 4. Spec 017 — streaming capture preserves MULTIPLE Nights' picks.
+#
+# This is the central regression of the slice: ``night_open`` resets the
+# per-Night pointing channels (``night_round_picks`` / ``night_rounds_log``)
+# every Night, so a final-state read holds only the LAST Night's picks. The
+# harness instead taps the per-super-step ``graph.stream(stream_mode="updates")``
+# log into ``_GameCapture.events`` (the ``on_update`` sink ``_play_one_game``
+# threads), which preserves every Night's pointing in chronological order.
+#
+# Driven model-free against the REAL graph: ``fake_large`` / ``fake_small`` stub
+# every LLM call site, and a live-state Pointing dispatcher (the slice-8
+# pattern) targets a fresh law-abiding AI each Night — never the human — so the
+# human survives Night 1 and a SECOND Night occurs. AIs only ``speak`` (never
+# vote), so each Day exhausts its rounds and rolls into the next Night without
+# any execution ending the game early.
+# ===========================================================================
+
+from graphia.config import load_config  # noqa: E402  (after the module docstring/imports)
+from graphia.graph import build_graph, make_run_config  # noqa: E402
+from graphia.llm import Ballot, DayAction, Pointing  # noqa: E402
+from graphia.tools.eval_dialogue import _collect_interrupt, _drive  # noqa: E402
+
+_HUMAN_NAME = "Alice"
+_AI_NAMES = ["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"]
+
+
+def _alive_ai_ids_by_role(graph, run_config, role: str) -> list[str]:
+    """Alive non-human player ids of ``role``, read off live graph state."""
+    players = graph.get_state(run_config).values.get("players", {})
+    return [
+        p.id
+        for p in players.values()
+        if p.is_alive and p.role == role and not p.is_human
+    ]
+
+
+def _drive_two_night_game(
+    graph,
+    run_config,
+    fake,
+    *,
+    events_sink: Callable[[dict], None],
+    target_nights: int = 2,
+    budget: int = 400,
+) -> None:
+    """Drive a mocked game past ``target_nights`` Nights, taping every super-step.
+
+    Mirrors ``_play_one_game``'s drive loop (name interrupt → resume → answer
+    interrupts until done) but against the ``fake_large``-built graph, with two
+    deliberate forcings so a clean multi-Night game results:
+
+    - a live ``_invoke_live`` dispatch on the unified fake: Pointing targets a
+      fresh ALIVE law-abiding AI each Night (so the law-abiding human is never
+      the victim and survives into Night 2); every DayAction is a ``speak`` (so
+      no AI ever calls a vote — the Day exhausts its rounds and rolls into the
+      next Night without an execution); Ballots are No (defensive — no vote is
+      ever opened anyway).
+    - the human (pinned law-abiding via ``GRAPHIA_ROLE``) passes on ``day_turn``
+      and votes No, never initiating a vote.
+
+    Stops once ``cycle`` has advanced to ``target_nights`` AND that Night's kill
+    has resolved, or the graph ends / the budget is exhausted — so the captured
+    log spans at least two full Nights' pointing.
+    """
+    original_invoke = fake._invoke
+
+    def _invoke_live(schema, messages):
+        if schema is Pointing:
+            law_ids = _alive_ai_ids_by_role(graph, run_config, "law_abiding")
+            if law_ids:
+                return Pointing(target_id=law_ids[0])
+            # No law-abiding AI left — fall back to any alive non-human so the
+            # Night still resolves rather than hanging.
+            alive = _alive_ai_ids_by_role(graph, run_config, "mafia")
+            return Pointing(target_id=alive[0] if alive else "missing")
+        if schema is DayAction:
+            return DayAction(kind="speak", text="(nothing to add this round.)")
+        if schema is Ballot:
+            return Ballot(yes=False)
+        return original_invoke(schema, messages)
+
+    fake._invoke = _invoke_live  # type: ignore[method-assign]
+
+    # Stream to the name interrupt, then resume with the scripted name.
+    _drive(graph, run_config, {"messages": []}, on_update=events_sink)
+    first = _collect_interrupt(graph, run_config)
+    assert first == {"kind": "name"}, f"expected name interrupt first, got {first!r}"
+    _drive(graph, run_config, Command(resume=_HUMAN_NAME), on_update=events_sink)
+
+    def _reached_target_night() -> bool:
+        values = graph.get_state(run_config).values
+        if values.get("winner") is not None:
+            return True  # game ended (shouldn't, but stop cleanly)
+        # A Night has fully resolved when we are at/past target cycle AND the
+        # Day phase has opened for it (so that Night's kill is in the log).
+        cycle = values.get("cycle", 1)
+        return cycle >= target_nights and values.get("phase") == "day"
+
+    for _ in range(budget):
+        if _reached_target_night():
+            return
+        snapshot = graph.get_state(run_config)
+        if not snapshot.next:
+            return  # graph reached END
+        iv = _collect_interrupt(graph, run_config)
+        if iv is None:
+            _drive(graph, run_config, None, on_update=events_sink)
+            continue
+        kind = iv.get("kind")
+        if kind == "day_turn":
+            resume: str = "..."
+        elif kind == "vote":
+            resume = "no"
+        elif kind == "point":
+            options = iv.get("options") or []  # human is law-abiding; defensive
+            resume = options[0]["id"] if options else ""
+        else:
+            raise AssertionError(f"unexpected interrupt {kind!r}")
+        _drive(graph, run_config, Command(resume=resume), on_update=events_sink)
+
+
+def _picks_per_night(events: list[dict[str, Any]]) -> list[dict[str, str]]:
+    """The deciding ``night_round_picks`` captured for each Night, in order.
+
+    Walks the streamed log: a ``night_open`` delta opens a fresh Night (and
+    resets the channels — present as ``night_round_picks: {}``); each subsequent
+    ``mafia_point`` delta carries the cumulative ``night_round_picks`` for the
+    round in progress. We keep the LAST non-empty ``night_round_picks`` seen
+    before the next ``night_open`` as that Night's deciding picks. This is the
+    very read a final-state snapshot CANNOT do (it would hold only the last
+    Night's picks); doing it off the stream proves the earlier Night survived.
+    """
+    per_night: list[dict[str, str]] = []
+    current: dict[str, str] | None = None
+    for event in events:
+        for node, delta in event.items():
+            if not isinstance(delta, dict):
+                continue
+            if node == "night_open":
+                if current:
+                    per_night.append(current)
+                current = {}
+                continue
+            if current is None:
+                continue
+            picks = delta.get("night_round_picks")
+            if isinstance(picks, dict) and picks:
+                current = dict(picks)
+    if current:
+        per_night.append(current)
+    return per_night
+
+
+def test_capture_events_preserves_multiple_nights_pointing(
+    env: Path,
+    fake_small,
+    fake_large,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A 2+ Night mocked game's ``events`` log holds EARLIER Nights' picks.
+
+    The no-Night-lost regression (tech-spec §4 capture bullet): drive the real
+    graph past two Nights while taping each super-step into an ``events`` list,
+    then assert at least two distinct Nights' deciding ``night_round_picks`` are
+    present in that log — even though ``night_open`` reset the channel between
+    them, so a final-state read would have lost the first. The captured picks
+    name real player ids, and each Night points at a DIFFERENT victim (a fresh
+    alive law-abiding AI), so the two Nights' picks are genuinely distinct, not a
+    repeat of one surviving channel.
+    """
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+    monkeypatch.setenv("GRAPHIA_LLM_PROVIDER", "bedrock")
+    fake_small(_AI_NAMES)
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
+
+    config = load_config()
+    graph, thread_id = build_graph(config)
+    run_config = make_run_config(thread_id)
+
+    events: list[dict[str, Any]] = []
+    _drive_two_night_game(
+        graph, run_config, fake, events_sink=events.append, target_nights=2
+    )
+
+    # The stream log is an ordered list of {node: delta} super-steps.
+    assert events, "no super-steps were captured"
+    assert all(isinstance(e, dict) for e in events)
+
+    # At least two Nights opened in the captured log (each night_open is a fresh
+    # Night and a channel reset).
+    night_opens = [e for e in events if "night_open" in e]
+    assert len(night_opens) >= 2, (
+        f"expected >=2 Nights captured, saw {len(night_opens)}"
+    )
+
+    # The deciding picks for each Night, recovered from the stream log.
+    per_night = _picks_per_night(events)
+    assert len(per_night) >= 2, (
+        f"expected >=2 Nights' pointing in the log, recovered {per_night!r}"
+    )
+
+    # Night 1's picks survive in the log even though night_open reset the channel
+    # before Night 2 — the failure mode a final-state read has.
+    night1_picks, night2_picks = per_night[0], per_night[1]
+    assert night1_picks, "Night 1 deciding picks were lost from the stream log"
+    assert night2_picks, "Night 2 deciding picks missing from the stream log"
+
+    # Each Night targeted a fresh law-abiding victim, so the two Nights' picked
+    # targets differ — proof the earlier Night wasn't just the later one's
+    # surviving channel echoed twice.
+    night1_targets = set(night1_picks.values())
+    night2_targets = set(night2_picks.values())
+    assert night1_targets and night2_targets
+    assert night1_targets != night2_targets, (
+        f"both Nights point at the same target(s) — Night 1 may have been lost: "
+        f"{night1_targets!r} vs {night2_targets!r}"
+    )
+
+    # And the renderer surfaces BOTH Nights' pointing by name (the end-to-end
+    # proof the captured log → transcript keeps every Night).
+    players = graph.get_state(run_config).values.get("players", {})
+    id_to_name = {pid: p.name for pid, p in players.items()}
+    transcript = render_transcript(
+        events, players, game_index=1, run_meta={"provider": "bedrock"}
+    )
+    night1_victim_name = id_to_name[next(iter(night1_targets))]
+    night2_victim_name = id_to_name[next(iter(night2_targets))]
+    assert f"points at {night1_victim_name}" in transcript
+    assert f"points at {night2_victim_name}" in transcript
+
+
+# ===========================================================================
+# 5. Spec 017 — per-run transcript storage + the ledger record link.
+#
+# Drive a MOCKED ``run_eval`` with ``_play_one_game`` stubbed to return
+# hand-built ``_GameCapture``s (so no graph or provider is constructed — fully
+# offline), an injected ``transcripts_root`` under ``tmp_path``, a pinned
+# ``run_id``, and an injected ledger path. Assert the per-run-dir + zero-padded
+# files exist, carry the rendered text, and the record links the run-id. The
+# real ``evals/transcripts/`` is never written.
+# ===========================================================================
+
+
+def _capture_for_storage(victim_name: str) -> _GameCapture:
+    """A minimal but realistic ``_GameCapture`` with a one-Night ``events`` log.
+
+    Carries a final ``players`` map (roles + names) and an ordered ``events``
+    log with a setup reveal, one Night's pointing + kill, and a Day open — enough
+    that ``render_transcript`` produces a real tagged document with the stable
+    ``<transcript>`` token and the victim's name, without running a game.
+    """
+    from graphia.state import PlayerPersona, PlayerState
+
+    mafia = PlayerState(
+        id="p-1",
+        name="Don",
+        role="mafia",
+        is_human=False,
+        persona=PlayerPersona("sly", "smooth", "the tavern keeper", "the boss"),
+    )
+    victim = PlayerState(
+        id="p-2",
+        name=victim_name,
+        role="law_abiding",
+        is_human=False,
+        is_alive=False,
+        persona=PlayerPersona("kind", "gentle", "the baker", ""),
+    )
+    players = {"p-1": mafia, "p-2": victim}
+    events: list[dict[str, Any]] = [
+        {"night_open": {"night_round_picks": {}, "night_rounds_log": []}},
+        {"mafia_point": {"night_round_picks": {"p-1": "p-2"}}},
+        {
+            "resolve_night_kill": {
+                "kill_log": [{"cycle": 1, "name": victim_name, "cause": "night"}],
+            }
+        },
+    ]
+    return _GameCapture(
+        ai_lines=[],
+        ai_names={"Don", victim_name},
+        ai_lines_with_speakers=[],
+        players=players,
+        messages=[],
+        captures=[],
+        winner="mafia",
+        events=events,
+    )
+
+
+def _storage_args(games: int) -> argparse.Namespace:
+    """The ``argparse.Namespace`` ``run_eval`` reads — a bedrock, no-seed run."""
+    return argparse.Namespace(
+        provider="bedrock",
+        games=games,
+        seed=None,
+        max_rounds=None,
+        note="",
+    )
+
+
+def _stub_run_eval_env(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> tuple[object, Path]:
+    """Stub everything ``run_eval`` touches except the transcript path under test.
+
+    Returns a bare config object (``run_eval`` only reads ``ollama_base_url`` /
+    ``num_citizens`` / ``num_mafia`` defensively) and the temp ledger path the
+    record is appended to — so neither the real ledger nor the real transcripts
+    dir is written. Provenance collectors are stubbed to degraded values so no
+    git/HTTP runs.
+    """
+    monkeypatch.setattr(
+        blunder_eval, "collect_code_provenance", lambda root: {
+            "commit": None, "branch": None, "dirty": False
+        }
+    )
+    monkeypatch.setattr(
+        blunder_eval,
+        "collect_provider_provenance",
+        lambda provider, large, small, base: {
+            "name": provider, "large_model": large, "small_model": small
+        },
+    )
+    monkeypatch.setattr(
+        blunder_eval, "_resolved_model_names", lambda config: ("nova-pro", "nova-lite")
+    )
+    # Redirect the ledger write to a temp file (never the real one).
+    ledger = tmp_path / "ledger.yaml"
+    monkeypatch.setattr(blunder_eval, "LEDGER_PATH", ledger)
+
+    class _Cfg:
+        ollama_base_url = "http://localhost:11434"
+        num_citizens = 5
+        num_mafia = 2
+
+    return _Cfg(), ledger
+
+
+def test_run_eval_writes_per_run_transcript_files_into_tmp_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A mocked 2-game run writes ``<run-id>/game-01.txt`` + ``game-02.txt``.
+
+    ``_play_one_game`` is stubbed to return hand-built ``_GameCapture``s (no graph
+    / no provider), ``transcripts_root`` + ``run_id`` are injected under
+    ``tmp_path``, and the files land with the per-run-dir + zero-padded naming and
+    carry the rendered transcript text (the stable ``<transcript>`` token + each
+    game's victim name).
+    """
+    config, _ledger = _stub_run_eval_env(monkeypatch, tmp_path)
+    transcripts_root = tmp_path / "transcripts"
+    run_id = "2026-06-18T09-00-00"
+
+    victims = {0: "Cara", 1: "Eve"}
+
+    def _fake_play(args: argparse.Namespace, game_index: int) -> _GameCapture:
+        return _capture_for_storage(victims[game_index])
+
+    monkeypatch.setattr(blunder_eval, "_play_one_game", _fake_play)
+
+    result = run_eval(
+        config,
+        _storage_args(games=2),
+        transcripts_root=transcripts_root,
+        run_id=run_id,
+    )
+
+    run_dir = transcripts_root / run_id
+    game1 = run_dir / "game-01.txt"
+    game2 = run_dir / "game-02.txt"
+    assert game1.exists(), "game-01.txt missing under the per-run dir"
+    assert game2.exists(), "game-02.txt missing under the per-run dir"
+    # No third file — exactly one per game.
+    assert sorted(p.name for p in run_dir.iterdir()) == ["game-01.txt", "game-02.txt"]
+
+    # The files carry the rendered transcript (stable tag + per-game victim name).
+    text1 = game1.read_text(encoding="utf-8")
+    text2 = game2.read_text(encoding="utf-8")
+    assert "<transcript>" in text1
+    assert "<transcript>" in text2
+    assert "Cara" in text1
+    assert "Eve" in text2
+
+    # The injected path matches ``transcript_path``'s own arithmetic.
+    assert game1 == transcript_path(transcripts_root, run_id, 1)
+    assert game2 == transcript_path(transcripts_root, run_id, 2)
+
+    # The result carries the run-id as its transcript dir.
+    assert result.transcript_dir == run_id
+
+
+def test_run_eval_record_carries_transcript_dir_link(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """The ledger record renders ``run.transcript_dir: '<run-id>'`` for the run.
+
+    The viewer maps a record → its transcripts via this link. We render the
+    record ``run_eval`` produced and assert the run-id appears under ``run`` as
+    ``transcript_dir`` — and that ``transcript_path`` would resolve a game file
+    under exactly that dir name.
+    """
+    config, _ledger = _stub_run_eval_env(monkeypatch, tmp_path)
+    transcripts_root = tmp_path / "transcripts"
+    run_id = "2026-06-18T10-15-30"
+
+    monkeypatch.setattr(
+        blunder_eval,
+        "_play_one_game",
+        lambda args, game_index: _capture_for_storage("Cara"),
+    )
+
+    result = run_eval(
+        config,
+        _storage_args(games=1),
+        transcripts_root=transcripts_root,
+        run_id=run_id,
+    )
+
+    assert result.transcript_dir == run_id
+
+    doc = render_record(result, "2026-06-18")
+    # The link is rendered under the ``run`` block as a single-quoted scalar.
+    assert f"  transcript_dir: '{run_id}'" in doc
+    # And it is genuinely inside the ``run`` block (before ``code:``).
+    run_i = doc.index("run:")
+    code_i = doc.index("code:")
+    link_i = doc.index(f"  transcript_dir: '{run_id}'")
+    assert run_i < link_i < code_i
+
+
+def test_run_eval_does_not_touch_the_real_transcripts_dir(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """An injected ``transcripts_root`` keeps the real ``evals/transcripts/`` untouched.
+
+    Belt-and-braces: snapshot the real ``TRANSCRIPTS_ROOT``'s contents (if any)
+    before the run and assert the run-id dir we wrote lives under ``tmp_path``,
+    NOT under the repo's ``evals/transcripts/``. The real dir gains no new
+    children from this run.
+    """
+    config, _ledger = _stub_run_eval_env(monkeypatch, tmp_path)
+    transcripts_root = tmp_path / "transcripts"
+    run_id = "2026-06-18T11-22-33"
+
+    real_root = blunder_eval.TRANSCRIPTS_ROOT
+    before = (
+        sorted(p.name for p in real_root.iterdir()) if real_root.is_dir() else None
+    )
+
+    monkeypatch.setattr(
+        blunder_eval,
+        "_play_one_game",
+        lambda args, game_index: _capture_for_storage("Cara"),
+    )
+
+    run_eval(
+        config,
+        _storage_args(games=1),
+        transcripts_root=transcripts_root,
+        run_id=run_id,
+    )
+
+    # Our run-id dir is under tmp_path, never under the real root.
+    assert (transcripts_root / run_id).is_dir()
+    assert not (real_root / run_id).exists()
+
+    after = (
+        sorted(p.name for p in real_root.iterdir()) if real_root.is_dir() else None
+    )
+    assert after == before, "the real evals/transcripts/ gained or lost children"
+
+
+# ===========================================================================
+# 6. Spec 017 — ``clean_transcripts`` drops only UNTRACKED run dirs.
+#
+# Exercised against a REAL temp git repo (``git init`` in ``tmp_path``): one run
+# dir is committed (tracked → keep), one is left untracked (→ remove). The
+# function asks git via ``git ls-files`` exactly as the make target does, so this
+# runs the real tracked-vs-untracked decision — never against the repo's own
+# ``evals/transcripts/``.
+# ===========================================================================
+
+
+def _git(repo: Path, *args: str) -> None:
+    """Run one ``git`` command in ``repo`` (test-local helper, fail loudly)."""
+    subprocess.run(
+        ["git", *args],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
+def _init_temp_repo(repo: Path) -> None:
+    """``git init`` a throwaway repo with a committable identity + default branch."""
+    repo.mkdir(parents=True, exist_ok=True)
+    _git(repo, "init")
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "Test")
+    _git(repo, "config", "commit.gpgsign", "false")
+
+
+def test_clean_transcripts_keeps_tracked_drops_untracked(
+    tmp_path: Path,
+) -> None:
+    """In a temp git repo: a committed run dir survives; an untracked one is removed.
+
+    ``clean_transcripts`` decides tracked-vs-untracked with ``git ls-files`` over
+    each run dir (via ``_git_tracks_anything_under``). We commit ``kept-run`` and
+    leave ``smoke-run`` untracked, then call ``clean_transcripts`` with the temp
+    repo as ``repo_root`` — the real decision path. Only the untracked dir is
+    removed, and the returned list names exactly it.
+    """
+    repo = tmp_path / "repo"
+    _init_temp_repo(repo)
+
+    transcripts_root = repo / "evals" / "transcripts"
+    kept = transcripts_root / "kept-run"
+    smoke = transcripts_root / "smoke-run"
+    kept.mkdir(parents=True)
+    smoke.mkdir(parents=True)
+    (kept / "game-01.txt").write_text("<transcript>kept</transcript>\n", "utf-8")
+    (smoke / "game-01.txt").write_text("<transcript>smoke</transcript>\n", "utf-8")
+
+    # Track + commit only the keeper; leave the smoke run untracked.
+    _git(repo, "add", str(kept / "game-01.txt"))
+    _git(repo, "commit", "-m", "keep this run")
+
+    removed = clean_transcripts(transcripts_root, repo_root=repo)
+
+    # The untracked smoke run is gone; the committed keeper survives intact.
+    assert not smoke.exists(), "untracked smoke run should be removed"
+    assert kept.is_dir(), "committed run must be preserved"
+    assert (kept / "game-01.txt").read_text(encoding="utf-8") == (
+        "<transcript>kept</transcript>\n"
+    )
+    # The returned list names exactly the removed dir.
+    assert removed == [smoke]
+
+
+def test_clean_transcripts_missing_root_is_a_noop(tmp_path: Path) -> None:
+    """A missing ``transcripts_root`` is a silent no-op returning an empty list."""
+    repo = tmp_path / "repo"
+    _init_temp_repo(repo)
+
+    removed = clean_transcripts(repo / "evals" / "transcripts", repo_root=repo)
+
+    assert removed == []
+
+
+def test_clean_transcripts_all_untracked_are_removed(tmp_path: Path) -> None:
+    """With nothing committed, every run dir under the root is removed.
+
+    The smoke-run-cleanup happy path: two untracked run dirs, both dropped, both
+    named in the returned list (sorted, as the function iterates).
+    """
+    repo = tmp_path / "repo"
+    _init_temp_repo(repo)
+
+    transcripts_root = repo / "evals" / "transcripts"
+    run_a = transcripts_root / "run-a"
+    run_b = transcripts_root / "run-b"
+    for run in (run_a, run_b):
+        run.mkdir(parents=True)
+        (run / "game-01.txt").write_text("x\n", "utf-8")
+
+    removed = clean_transcripts(transcripts_root, repo_root=repo)
+
+    assert not run_a.exists()
+    assert not run_b.exists()
+    assert sorted(removed) == sorted([run_a, run_b])

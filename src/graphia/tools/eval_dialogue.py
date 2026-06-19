@@ -32,7 +32,7 @@ import sys
 import tempfile
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable
 
 from langchain_core.messages import AIMessage
 from langgraph.types import Command
@@ -73,15 +73,34 @@ def _normalize(text: str) -> str:
     return t.strip(" .!?,;:'\"")
 
 
-def _drive(graph, run_config, payload, *, recursion_limit: int = 400) -> None:
-    """Stream until the next pause/interrupt; swallow the recursion cap."""
+def _drive(
+    graph,
+    run_config,
+    payload,
+    *,
+    recursion_limit: int = 400,
+    on_update: Callable[[dict], None] | None = None,
+) -> None:
+    """Stream until the next pause/interrupt; swallow the recursion cap.
+
+    ``on_update`` is an OPTIONAL per-super-step sink (default ``None`` — every
+    existing caller is untouched). When given, it is called with each
+    ``stream_mode="updates"`` payload as it streams — a ``{node: delta}`` dict
+    for one super-step. This is the seam the spec-017 transcript capture taps to
+    accumulate an ordered per-game event log: it must read the deltas *as they
+    stream*, because the per-Night pointing channels (``night_round_picks`` /
+    ``night_rounds_log``) are reset every Night in ``night_open``, so the final
+    state holds only the last Night's picks. With no ``on_update`` the updates
+    are discarded exactly as before (the historical ``for _ in stream: pass``).
+    """
     from langgraph.errors import GraphRecursionError
 
     bounded = dict(run_config)
     bounded.setdefault("recursion_limit", recursion_limit)
     try:
-        for _ in graph.stream(payload, bounded, stream_mode="updates"):
-            pass
+        for update in graph.stream(payload, bounded, stream_mode="updates"):
+            if on_update is not None:
+                on_update(update)
     except GraphRecursionError:
         return
 

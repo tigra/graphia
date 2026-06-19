@@ -36,11 +36,15 @@ from graphia.eval_ledger import (
     SEARCH_FIELDS,
     SEARCH_SCOPE_ALL,
     TableModel,
+    TranscriptEntry,
     _NOTES_CELL_MAXLEN,
     build_table_model,
+    list_transcripts,
     load_ledger,
+    read_transcript,
     render_detail,
     row_matches_field,
+    transcript_dir_for,
 )
 
 # The fixed leading column count (⚠ / Date / Provider / Large / Small / Games /
@@ -837,3 +841,169 @@ def test_search_fields_state_is_dirty_for_a_dirty_record(tmp_path: Path) -> None
     assert fields["state"] == "dirty"
     assert row_matches_field("state", "dirty", model.search_blobs[0], fields) is True
     assert row_matches_field("state", "clean", model.search_blobs[0], fields) is False
+
+
+# ===========================================================================
+# A6. transcript locating / listing / reading (spec 017, Slice 2 — pure layer)
+# ===========================================================================
+#
+# The pure data layer the viewer's TranscriptListScreen / TranscriptScreen
+# consume: ``transcript_dir_for`` resolves a record's ``run.transcript_dir``
+# against the ledger's SIBLING ``transcripts/`` dir; ``list_transcripts`` lists
+# its ``game-*.txt`` as SORTED ``TranscriptEntry`` items; ``read_transcript``
+# reads one file's text. All three are read-only and DEFENSIVE (mirroring
+# ``_dig``): a missing field / missing dir / empty dir / unreadable file all
+# resolve to an EMPTY result, never raise — the contract that drives the
+# viewer's "No transcripts for this run." state. Everything lives in
+# ``tmp_path``; the committed ``evals/transcripts/`` is never touched.
+#
+# A record naming a run-id transcript dir under ``run.transcript_dir`` — the
+# field ``blunder_eval.render_record`` writes (the dir NAME, never an absolute
+# path). The id matches the sibling dir built by ``_write_transcripts``.
+_RUN_WITH_TRANSCRIPTS_DOC = textwrap.dedent(
+    """\
+    run:
+      date: '2026-06-18'
+      transcript_dir: '2026-06-18T14-32-05'
+      metrics_version: 1
+    provider:
+      name: 'ollama'
+      large_model: 'qwen3-coder:30b'
+      small_model: 'qwen2.5:3b'
+    quality:
+      games_attempted: 2
+      games_completed: 2
+      games_failed_early: 0
+    metrics:
+      repetition:
+        rate: 0.5
+        count: 10
+        denominator: 20
+    """
+)
+
+
+def _write_transcripts(
+    ledger_path: Path, run_id: str, files: dict[str, str]
+) -> Path:
+    """Create the ledger's sibling ``transcripts/<run-id>/`` dir + game files.
+
+    Mirrors ``blunder_eval``'s on-disk layout: a ``transcripts/`` dir SIBLING to
+    the ledger file, one ``<run-id>`` dir under it, each ``files`` entry written
+    as a ``game-NN.txt``. Returns the run dir. Everything sits inside the
+    caller's ``tmp_path`` — never the committed ``evals/transcripts/``.
+    """
+    run_dir = ledger_path.parent / "transcripts" / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    for name, body in files.items():
+        (run_dir / name).write_text(body, encoding="utf-8")
+    return run_dir
+
+
+def test_list_transcripts_returns_sorted_entries_with_labels_and_paths(
+    tmp_path: Path,
+) -> None:
+    """A run's two games list as sorted ``TranscriptEntry`` items, read back verbatim.
+
+    ``game-01.txt`` before ``game-02.txt`` (sorted by filename), each entry's
+    ``.label`` is the file stem (``game-01``) and ``.path`` the resolved file;
+    ``read_transcript(entry.path)`` returns the file's text.
+    """
+    ledger = _write_ledger(tmp_path, _RUN_WITH_TRANSCRIPTS_DOC)
+    (record,) = load_ledger(ledger)
+    # Write game-02 FIRST so the sort (not insertion order) is what orders them.
+    _write_transcripts(
+        ledger,
+        "2026-06-18T14-32-05",
+        {
+            "game-02.txt": "second game body",
+            "game-01.txt": "first game body",
+        },
+    )
+
+    entries = list_transcripts(record, ledger)
+
+    assert [e.label for e in entries] == ["game-01", "game-02"]
+    assert all(isinstance(e, TranscriptEntry) for e in entries)
+    # The paths resolve under the ledger's sibling transcripts/<run-id>/ dir.
+    assert entries[0].path == ledger.parent / "transcripts" / "2026-06-18T14-32-05" / "game-01.txt"
+    # The reader returns each file's text verbatim.
+    assert read_transcript(entries[0].path) == "first game body"
+    assert read_transcript(entries[1].path) == "second game body"
+
+
+def test_transcript_dir_for_resolves_against_ledger_sibling(tmp_path: Path) -> None:
+    """``transcript_dir_for`` returns ``<ledger>/../transcripts/<run-id>`` (no I/O).
+
+    Locating does NOT check existence — it returns the Path the run-id resolves
+    to under the ledger's sibling ``transcripts/`` dir, even before the dir is
+    created (existence is ``list_transcripts``'s concern).
+    """
+    ledger = _write_ledger(tmp_path, _RUN_WITH_TRANSCRIPTS_DOC)
+    (record,) = load_ledger(ledger)
+
+    located = transcript_dir_for(record, ledger)
+
+    assert located == ledger.parent / "transcripts" / "2026-06-18T14-32-05"
+
+
+def test_transcript_dir_for_missing_field_is_none(tmp_path: Path) -> None:
+    """A record with NO ``run.transcript_dir`` field resolves to ``None``.
+
+    An older pre-017 record (the ``_FULL_WITH_CI_DOC`` fixture carries no
+    transcript_dir) has nowhere to point — the locate half of the "no
+    transcripts" state.
+    """
+    ledger = _write_ledger(tmp_path, _FULL_WITH_CI_DOC)
+    (record,) = load_ledger(ledger)
+
+    assert transcript_dir_for(record, ledger) is None
+
+
+def test_list_transcripts_missing_field_is_empty(tmp_path: Path) -> None:
+    """A record with NO ``run.transcript_dir`` lists as ``[]`` (never raises)."""
+    ledger = _write_ledger(tmp_path, _FULL_WITH_CI_DOC)
+    (record,) = load_ledger(ledger)
+
+    assert list_transcripts(record, ledger) == []
+
+
+def test_list_transcripts_nonexistent_dir_is_empty(tmp_path: Path) -> None:
+    """A ``transcript_dir`` naming a dir that doesn't exist locally → ``[]``.
+
+    The record names a run-id, but the sibling ``transcripts/<run-id>/`` dir was
+    never created (a run not shared/pulled). Defensive: ``[]``, not an error.
+    """
+    ledger = _write_ledger(tmp_path, _RUN_WITH_TRANSCRIPTS_DOC)
+    (record,) = load_ledger(ledger)
+
+    # The dir is located but absent on disk.
+    located = transcript_dir_for(record, ledger)
+    assert located is not None and not located.exists()
+
+    assert list_transcripts(record, ledger) == []
+
+
+def test_list_transcripts_empty_dir_is_empty(tmp_path: Path) -> None:
+    """A present-but-EMPTY run dir (no ``game-*.txt``) lists as ``[]``."""
+    ledger = _write_ledger(tmp_path, _RUN_WITH_TRANSCRIPTS_DOC)
+    (record,) = load_ledger(ledger)
+    # Create the run dir but write no game files into it.
+    _write_transcripts(ledger, "2026-06-18T14-32-05", {})
+
+    located = transcript_dir_for(record, ledger)
+    assert located is not None and located.is_dir()
+
+    assert list_transcripts(record, ledger) == []
+
+
+def test_read_transcript_missing_file_is_empty_string(tmp_path: Path) -> None:
+    """``read_transcript`` on a missing file returns ``""`` (never raises).
+
+    A transcript that vanished between listing and opening degrades to a blank
+    view, not a traceback — the loader's defensive empty-string contract.
+    """
+    missing = tmp_path / "transcripts" / "2026-06-18T14-32-05" / "game-01.txt"
+    assert not missing.exists()
+
+    assert read_transcript(missing) == ""

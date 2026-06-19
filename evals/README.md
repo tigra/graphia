@@ -35,6 +35,71 @@ console viewer or before/after comparison tool is a future increment, and _that_
 increment is the one that takes on the YAML-parser dependency this one avoids.
 For now, read the ledger with a text editor.
 
+## Transcripts
+
+`make blunder-eval` also preserves the **full transcript of every measured
+game** (spec 017, _Eval Transcript Preservation_) so a reviewer can read *why* a
+number looks the way it does — the public Day discussion and votes **and** the
+normally-hidden layers (true roles, the Mafiosos' private Night picks, each
+persona including a Mafioso's cover *and* its true self). These are
+maintainer-facing eval artifacts, never shown to players in-game.
+
+### Layout
+
+Each run writes one directory under `evals/transcripts/`, named for the run:
+
+```
+evals/transcripts/<run-id>/game-NN.txt
+```
+
+- **One directory per run.** `<run-id>` is a filesystem-safe, sortable
+  timestamp generated once per run (e.g. `2026-06-18T14-32-05`), so runs sort
+  chronologically.
+- **One `.txt` per game**, with a **zero-padded** game index — `game-01.txt`,
+  `game-02.txt`, … (padded to at least two digits, widening for runs of 100+
+  games) — so the game ↔ file relationship is obvious and files sort in play
+  order.
+- Each transcript is a plain, readable file with `<transcript>` / `<setup>` /
+  `<night>` / `<day>` / `<round>` structural markers; open it directly, or
+  browse it in the viewer (`make view-ledger` → drill into the run).
+
+### Ledger link
+
+The run's record carries **`run.transcript_dir: '<run-id>'`** — the directory
+**name** (not an absolute path). The viewer derives the absolute path by joining
+the ledger's sibling `transcripts/` directory with that name. The field is
+additive: a run that wrote no transcripts, and any record written before spec
+017, simply **omits** it.
+
+### Not gitignored — curated commit-or-delete
+
+`evals/transcripts/` is **deliberately not gitignored**. Transcripts are
+ordinary untracked files that *hang out* until the developer decides what to do
+with them — visibility + curation over a silent ignore. The convention:
+
+- **Commit the full, clean runs** worth keeping (e.g. the n=20 baselines) — a
+  deliberate `git add` + commit makes a run part of the shared project record so
+  a teammate (or the future LLM-as-Judge) can read the same games.
+- **Delete the few-game smoke runs** before committing, once you've confirmed
+  they hold no important findings.
+
+There is a **one-command cleanup**:
+
+```
+make clean-transcripts
+```
+
+It drops every **untracked** run directory under `evals/transcripts/` (the smoke
+runs) and **keeps the committed ones** — "untracked vs tracked" is decided by
+git, and it only ever operates under `evals/transcripts/`.
+
+**Why clean up before the next measured run.** An uncommitted transcript run
+left in the tree makes the **next** eval stamp `code.dirty: true` (uncommitted
+changes ⇒ not attributable to a recorded version), so **commit-or-delete before
+the next measured run** keeps eval provenance clean. After a smoke run, the
+assistant should prompt you to delete that run's transcripts (unless they hold
+findings) and commit the full keepers.
+
 ## Record shape — field legend
 
 Each record is one YAML document with a **fixed top-level key order** —
@@ -48,6 +113,7 @@ run:
   date: '2026-06-13'            # run date — for Bedrock, the only proxy for provider-side model drift
   duration_seconds: 412.3       # wall-clock duration of the whole run (null until finished)
   metrics_version: 1            # rule-set version; bumps when any detection rule or denominator changes
+  transcript_dir: '2026-06-13T14-32-05'  # spec 017 — this run's dir under evals/transcripts/ (omitted if no transcripts / older record)
 code:
   commit: '<sha>'               # git HEAD at run time — or null if git was unavailable
   branch: 'main'                # git branch — or null if unavailable
@@ -114,7 +180,12 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
 - **`run`** — `date` (the run date; for Bedrock it is the *only* proxy for which
   provider-side weights answered), `duration_seconds` (whole-run wall clock,
   `null` until the run finishes), `metrics_version` (the rule-set version — see
-  the note on cross-version comparison below).
+  the note on cross-version comparison below), and `transcript_dir` (spec 017 —
+  the run's directory **name** under `evals/transcripts/`, e.g.
+  `'2026-06-18T14-32-05'`; see [Transcripts](#transcripts) below). **`transcript_dir`
+  is a new, additive field:** it is **omitted** on runs that wrote no
+  transcripts and on **older records written before spec 017** — read it as
+  absent there, exactly like any other pre-feature field.
 - **`code`** — `commit` and `branch` from git at run time (each `null` if git was
   unavailable or the cwd is not a repo), and `dirty`. **`dirty` is the
   load-bearing flag:** `true` means the working copy had uncommitted changes, so

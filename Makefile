@@ -58,7 +58,7 @@ LAMBDA_ZIPS   = $(addprefix $(LAMBDA_BUILD)/,$(addsuffix .zip,$(LAMBDA_FNS)))
         wire-env deploy redeploy deploy-stats destroy inspect-diary play play-remote \
         build-lambdas clean-lambdas enable-transaction-search verify-observability \
         create-stats-strategy eval-dialogue repetition-experiment ollama-smoke \
-        blunder-eval view-ledger
+        blunder-eval view-ledger clean-transcripts
 
 help:
 	@echo "Container image targets:"
@@ -96,6 +96,7 @@ help:
 	@echo "Inspection:"
 	@echo "  make inspect-diary      Pretty-print diary entries from the deployed Memory (uses .env)."
 	@echo "  make view-ledger        Browse the eval quality ledger (evals/blunder-ledger.yaml) as a scrollable table. ARGS=\"--path <file>\"."
+	@echo "  make clean-transcripts  Drop the UNTRACKED run dirs under evals/transcripts/ (the smoke runs); committed runs are kept."
 	@echo ""
 	@echo "Live AI-quality evals (reach a REAL model — NOT the mocked suite; run deliberately):"
 	@echo "  make eval-dialogue      Play N real-Nova games and score AI Day-speech repetition. Bedrock: needs AWS creds, costs tokens."
@@ -438,6 +439,19 @@ inspect-diary:
 #   make view-ledger ARGS="--path /tmp/some-ledger.yaml"
 view-ledger:
 	uv run python -m graphia.ui.ledger_viewer $(ARGS)
+
+# Spec-017 transcript cleanup: drop the UNTRACKED (uncommitted) run dirs under
+# evals/transcripts/ — the few-game smoke runs — while leaving any run a
+# developer has committed (git-tracked) in place. The rule of thumb: commit the
+# full, clean keepers (e.g. n=20 baselines); delete the smoke runs after a
+# findings check. "Untracked vs tracked" is decided by git (git ls-files), and
+# the cleanup only ever operates under evals/transcripts/ — backed by the tested
+# blunder_eval.clean_transcripts() so the testing task can drive it against a
+# tmp dir. Also keeps eval provenance clean: an uncommitted transcript dir left
+# in the tree makes the NEXT eval stamp dirty: true, so clean-or-commit first.
+#   make clean-transcripts
+clean-transcripts:
+	uv run python -c "from graphia.tools.blunder_eval import clean_transcripts; r = clean_transcripts(); print('Removed {} untracked transcript run dir(s):'.format(len(r))); [print('  ' + str(p)) for p in r]"
 
 # Dialogue-diversity eval: play N games on the REAL gameplay model (Nova) and
 # measure how repetitive the AI Day speeches are. NOT a mocked unit test — it

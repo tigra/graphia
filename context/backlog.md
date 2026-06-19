@@ -5,7 +5,7 @@ Roadmap *features* live in [`product/roadmap.md`](product/roadmap.md); this file
 **follow-ups, robustness gaps, measurement ideas, docs debt, and housekeeping** —
 things surfaced during implementation that don't (yet) have a spec.
 
-_Last updated: 2026-06-16._
+_Last updated: 2026-06-18._
 
 ---
 
@@ -23,6 +23,11 @@ _Last updated: 2026-06-16._
 ## Robustness gaps
 
 - **Graceful career-greeting degradation** — a transient stats-store failure (e.g. expired SSO) currently **crashes the game at boot**: `render_greeting(store.load())` in the UI driver propagates `UnauthorizedSSOTokenError` and the game exits before starting. The greeting should degrade gracefully ("career stats unavailable") rather than take down startup. Same class as the spec-010/011 cloud-at-boot issue. _Origin: live smoke 2026-06-16._
+
+## Test reliability
+
+- **Flaky replay test — `test_human_mafioso_multi_round_replay_does_not_recompute_ai_picks`** (`tests/test_multi_round_consensus.py`) — the spec-015 multi-round-consensus replay test **fails intermittently on full-suite runs but passes in isolation**. Spec-016's `random.seed(0)` de-flake is **not robust**: it seeds the module-global RNG *before* `app.run_test()` boots Textual, and the TUI/async startup between the seed and the role-deal consumes a variable amount of `random`, shifting the deal trajectory. **Recommendation:** pin the role-deal RNG *directly* (seed/monkeypatch at the deal itself, not globally before the TUI starts), or monkeypatch the deal's shuffle/sample surface, so the trajectory is order- and timing-independent. _Origin: re-surfaced 2026-06-18 after the spec-017 capture test (which drives a real graph) shifted suite-wide RNG/timing._
+- **Suite-wide ledger-write guard (belt-and-braces)** — a test-isolation bug let eval tests append ~25 synthetic records to the committed `evals/blunder-ledger.yaml`: `append_record`'s `ledger_path=LEDGER_PATH` was an **early-bound signature default**, so `run_eval`'s no-arg append always hit the real ledger and per-test `monkeypatch.setattr(LEDGER_PATH)` never reached it (**root cause fixed 2026-06-18** — the default is now `None`, resolved to the module global at call time). **Recommendation:** add an **autouse fixture pointing `blunder_eval.LEDGER_PATH` at `tmp_path`** for the whole suite, so no future eval test can touch the real ledger even if a redirect is forgotten; consider the same for `TRANSCRIPTS_ROOT`. _Origin: ledger pollution discovered 2026-06-18 during the spec-017 smoke._
 
 ## Measurement / eval ideas
 

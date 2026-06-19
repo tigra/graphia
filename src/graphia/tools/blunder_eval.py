@@ -42,7 +42,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Callable, Literal
 
@@ -73,6 +73,12 @@ from graphia.state import PlayerState
 # ``_accept``-rejected self-vote initiation is countable. ``ollama_smoke`` is the
 # count-only consumer of the same proxy; the two paths are independent.
 from graphia.tools.instrument import CaptureRecord, InstrumentedModel
+
+# The pure transcript renderer (spec 017 Slice 1 Task 2): per game, its ordered
+# ``_GameCapture.events`` stream log + final ``players`` → a tagged, human-
+# readable document. ``run_eval`` calls it once per game and writes the result
+# under ``evals/transcripts/<run-id>/``.
+from graphia.tools.eval_transcript import render_transcript
 
 # Reuse the established make-gated harness driver (scripted human + stream-to-
 # interrupt pump) rather than re-implementing it — same import ``ollama_smoke``
@@ -184,6 +190,14 @@ _OWN_NAME_BOUNDARY = r"\b{}\b"
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 LEDGER_PATH = _REPO_ROOT / "evals" / "blunder-ledger.yaml"
 
+# The transcript store (spec 017 §2.3): a sibling of the ledger under ``evals/``,
+# resolved from the SAME repo root so the viewer can derive the absolute path
+# from the ledger's parent. One ``<run-id>`` directory per run, holding the
+# rendered ``game-NN.txt`` files. Deliberately NOT gitignored — the transcripts
+# are ordinary untracked files curated commit-or-delete by convention (functional
+# -spec §2.3); ``make clean-transcripts`` drops the untracked smoke runs.
+TRANSCRIPTS_ROOT = LEDGER_PATH.parent / "transcripts"
+
 # Provider literals kept as a module constant so the CLI choices and any later
 # type narrowing share one source of truth.
 type Provider = Literal["ollama", "bedrock"]
@@ -278,6 +292,14 @@ class EvalResult:
     # invites hand-editing; multi-line notes render as a YAML block scalar. The
     # machine-measured fields above stay append-only/immutable.
     notes: str = ""
+    # --- Spec-017 transcript link (functional-spec §2.3, tech §2.3) ---
+    # The run's transcript directory NAME (the ``<run-id>`` under
+    # ``evals/transcripts/``, NOT an absolute path) — written into the record as
+    # ``run.transcript_dir`` so the viewer derives the absolute path from the
+    # ledger's sibling ``transcripts/`` dir. A NEW additive field: empty when the
+    # run wrote no transcripts, in which case ``render_record`` omits the key —
+    # so OLDER records (and bare synthetic ones) simply don't carry it.
+    transcript_dir: str = ""
 
 
 def _isolate_cloud_stores() -> None:
@@ -1504,6 +1526,7 @@ def render_record(result: EvalResult, run_date: str) -> str:
           date: '<iso date>'
           duration_seconds: <float|null>
           metrics_version: <int>
+          transcript_dir: '<run-id>'   # spec 017 — the run's dir under evals/transcripts/; omitted on older runs
         code:
           commit: '<sha>' | null
           branch: '<name>' | null
@@ -1566,14 +1589,19 @@ def render_record(result: EvalResult, run_date: str) -> str:
     lines: list[str] = []
 
     lines.append("run:")
-    lines += _yaml_block(
-        {
-            "date": run_date,
-            "duration_seconds": result.duration_seconds,
-            "metrics_version": METRICS_VERSION,
-        },
-        indent=1,
-    )
+    run_block: dict[str, object] = {
+        "date": run_date,
+        "duration_seconds": result.duration_seconds,
+        "metrics_version": METRICS_VERSION,
+    }
+    # ``transcript_dir`` (spec 017 §2.3) — the run-id directory NAME under
+    # ``evals/transcripts/``, emitted ONLY when this run wrote transcripts. A new
+    # additive field: an empty ``transcript_dir`` (a run that wrote none, or a
+    # bare synthetic ``EvalResult``) omits the key entirely, so OLDER records are
+    # defensively absent it — never backfilled, never a misleading empty link.
+    if result.transcript_dir:
+        run_block["transcript_dir"] = result.transcript_dir
+    lines += _yaml_block(run_block, indent=1)
 
     # ``code`` — git provenance (commit / branch / dirty). ``commit`` / ``branch``
     # are ``null`` when git was unavailable; ``dirty`` is a bool. Defaults to the
@@ -1751,7 +1779,7 @@ def render_record(result: EvalResult, run_date: str) -> str:
 def append_record(
     result: EvalResult,
     run_date: str,
-    ledger_path: Path = LEDGER_PATH,
+    ledger_path: Path | None = None,
 ) -> Path:
     """Append one ``---``-separated record for ``result`` to the ledger; return its path.
 
@@ -1759,14 +1787,138 @@ def append_record(
     document-separator line, then the rendered document, in append mode — so
     records accumulate and history is never rewritten (functional-spec 011
     §2.3). Creates the ``evals/`` directory and the ledger file on first use.
-    ``ledger_path`` is injectable so Slice 1 Task 4 can append to a temp file.
+    ``ledger_path`` is injectable so a temp file can be used; it defaults to
+    ``None`` and is resolved to the module-global ``LEDGER_PATH`` *at call time*
+    (NOT bound as a signature default), so a ``monkeypatch.setattr(LEDGER_PATH)``
+    in tests reaches even the no-arg call inside :func:`run_eval` — the early-bound
+    default that silently leaked synthetic records into the real ledger is gone.
     """
+    if ledger_path is None:
+        ledger_path = LEDGER_PATH
     ledger_path.parent.mkdir(parents=True, exist_ok=True)
     document = render_record(result, run_date)
     with ledger_path.open("a", encoding="utf-8") as fh:
         fh.write("---\n")
         fh.write(document)
     return ledger_path
+
+
+# ===========================================================================
+# Spec-017 transcript storage + one-command cleanup.
+#
+# Layout (tech-spec §2.3): each measured game's rendered transcript is written to
+# ``evals/transcripts/<run-id>/game-NN.txt`` — ONE directory per run, with a
+# zero-padded game index so a 10-game run sorts game-01 … game-10 lexically and
+# the run/game relationship is obvious from the names alone. ``<run-id>`` is a
+# filesystem-safe, sortable timestamp generated ONCE per ``run_eval``.
+#
+# The store is NOT gitignored: the rendered files are ordinary untracked files,
+# curated by the developer commit-or-delete (functional-spec §2.3). The smoke
+# runs are dropped with ``make clean-transcripts`` → :func:`clean_transcripts`,
+# which removes only the untracked run dirs (a committed/tracked run is kept).
+# ===========================================================================
+
+
+def make_run_id(now: datetime | None = None) -> str:
+    """A filesystem-safe, sortable ``<run-id>`` for one run's transcript dir.
+
+    An ISO-ish local timestamp with the ``:`` separators (illegal in a path on
+    Windows, awkward everywhere) swapped for ``-`` — e.g. ``2026-06-18T14-32-05``.
+    Lexical sort order matches chronological order, and the form is safe on
+    macOS / Linux. Generated ONCE per ``run_eval`` (real-run-only; tests inject a
+    fixed id), so ``datetime.now()`` here is fine — this is the eval harness, not
+    the determinism-sensitive graph code (architecture §6). ``now`` is injectable
+    purely so a test can pin the timestamp.
+    """
+    moment = now if now is not None else datetime.now()
+    return moment.strftime("%Y-%m-%dT%H-%M-%S")
+
+
+def transcript_path(
+    transcripts_root: Path, run_id: str, game_index: int, *, pad: int = 2
+) -> Path:
+    """The path for one game's transcript: ``<root>/<run-id>/game-NN.txt``.
+
+    ``game_index`` is 1-based and zero-padded to ``pad`` digits (at least 2 —
+    ``game-01.txt``); a run with more than 99 games keeps growing the width
+    naturally (``game-100.txt``), so the ordering still reads correctly. Pure
+    path arithmetic — no directory is created here; the writer makes the run dir.
+    """
+    name = f"game-{game_index:0{pad}d}.txt"
+    return transcripts_root / run_id / name
+
+
+def write_transcript(
+    text: str,
+    transcripts_root: Path,
+    run_id: str,
+    game_index: int,
+    *,
+    pad: int = 2,
+) -> Path:
+    """Write one game's rendered transcript and return the file path.
+
+    Creates the per-run directory (``<root>/<run-id>/``) on first use and writes
+    ``text`` to ``game-NN.txt`` (zero-padded ``game_index``). ``transcripts_root``
+    is injectable so tests write into a ``tmp_path`` and never touch the real
+    ``evals/transcripts/``. Returns the written path for the caller to log/track.
+    """
+    path = transcript_path(transcripts_root, run_id, game_index, pad=pad)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def _git_tracks_anything_under(repo_root: Path, directory: Path) -> bool:
+    """True iff git tracks ≥1 file under ``directory`` (``git ls-files`` non-empty).
+
+    Asks git, relative to ``repo_root``, whether the directory holds any tracked
+    path — the test :func:`clean_transcripts` uses to decide "committed (keep)"
+    vs "untracked (drop)". Degrades to ``False`` (treat as untracked → eligible
+    for removal) only when git is genuinely unavailable; a directory git tracks
+    is never removed. Uses ``git ls-files -- <dir>``: empty stdout ⇒ nothing
+    tracked there.
+    """
+    out = _git_output(repo_root, "ls-files", "--", str(directory))
+    return bool(out)
+
+
+def clean_transcripts(
+    transcripts_root: Path = TRANSCRIPTS_ROOT,
+    *,
+    repo_root: Path = _REPO_ROOT,
+) -> list[Path]:
+    """Remove the UNTRACKED run dirs under ``transcripts_root``; keep committed ones.
+
+    The one-command cleanup behind ``make clean-transcripts`` (functional-spec
+    §2.3): drops the few-game smoke runs that were never committed, leaving the
+    curated keepers (the runs a developer ``git add``-ed + committed) untouched.
+    "Untracked" is decided by git (``git ls-files`` over each run dir via
+    :func:`_git_tracks_anything_under`): a run dir with ANY tracked file is
+    preserved; one with none is removed wholesale.
+
+    SAFE BY CONSTRUCTION: only ever operates on direct child directories of
+    ``transcripts_root`` (never files outside it, never the root itself). A
+    missing ``transcripts_root`` is a no-op. Returns the list of removed run-dir
+    paths so the caller / test can report what it dropped.
+
+    ``transcripts_root`` and ``repo_root`` are arguments so the testing task runs
+    it against a ``tmp_path`` — a tracked run is simulated by making git report it
+    tracked — never against the real ``evals/transcripts/``.
+    """
+    import shutil
+
+    removed: list[Path] = []
+    if not transcripts_root.is_dir():
+        return removed
+    for run_dir in sorted(transcripts_root.iterdir()):
+        if not run_dir.is_dir():
+            continue
+        if _git_tracks_anything_under(repo_root, run_dir):
+            continue  # committed/tracked keeper — leave it
+        shutil.rmtree(run_dir)
+        removed.append(run_dir)
+    return removed
 
 
 @dataclass(slots=True)
@@ -1789,6 +1941,22 @@ class _GameCapture:
       "draw", None}``; ``None`` = the game never resolved — typically the eval
       round cap, since the scripted human always votes No). Folded by
       ``run_eval`` into the ``outcomes`` block via :func:`tally_outcomes`.
+
+    Spec-017 transcript input:
+    - ``events`` — the ORDERED per-super-step ``graph.stream(stream_mode=
+      "updates")`` log this game emitted, each entry a ``{node: delta}`` dict
+      captured **as it streamed** (via the ``on_update`` sink threaded into
+      :func:`eval_dialogue._drive`). This — NOT the final ``state`` snapshot — is
+      the transcript renderer's source of truth: the per-Night pointing channels
+      (``night_round_picks`` / ``night_rounds_log``) are reset every Night in
+      ``night_open``, so a final-state read holds only the *last* Night's picks,
+      while this log preserves every Night's pointing (and every message, role,
+      persona, vote, ballot, and kill) in strict chronological order. The
+      Slice-1-Task-2 pure renderer consumes this list; the existing metrics
+      scoring does NOT read it (it stays additive). The deltas are stored raw —
+      the renderer, not the capture, decides what to surface — so nothing a
+      transcript needs (ordering, a message's ``private_to`` tag) is pre-summarized
+      away here.
     """
 
     ai_lines: list[str]
@@ -1803,6 +1971,11 @@ class _GameCapture:
     # ``DayAction(kind="vote")`` to compute ``self_vote.initiation`` — the one
     # blunder no post-game state can see (``_accept`` rejects the self-vote).
     captures: list[CaptureRecord]
+    # Spec-017: the ordered per-super-step ``{node: delta}`` stream log (see the
+    # class docstring). Defaults to an empty list so a ``_GameCapture`` built by
+    # hand (an offline scorer test) needs no transcript wiring. ``_play_one_game``
+    # populates it via the ``on_update`` sink it threads into every ``_drive``.
+    events: list[dict[str, Any]] = field(default_factory=list)
 
 
 def _install_capture_provider(
@@ -1862,12 +2035,24 @@ def _play_one_game(args: argparse.Namespace, game_index: int) -> _GameCapture:
         graph, thread_id = build_graph(config)
         run_config = make_run_config(thread_id)
 
+        # Spec-017 transcript capture: an ordered per-super-step event log this
+        # game accumulates AS IT STREAMS. ``_drive`` is told to push every
+        # ``stream_mode="updates"`` payload here via ``on_update`` — so the per-
+        # Night pointing (``night_round_picks`` / ``night_rounds_log``, reset
+        # each Night in ``night_open``) is recorded before the reset, which the
+        # final ``get_state`` read below would have lost for all but the last
+        # Night. The deltas are appended raw, in stream order, for the renderer.
+        events: list[dict[str, Any]] = []
+
+        def _capture(update: dict) -> None:
+            events.append(update)
+
         # Stream to the name interrupt, then resume with the scripted name.
-        _drive(graph, run_config, {"messages": []})
+        _drive(graph, run_config, {"messages": []}, on_update=_capture)
         first = _collect_interrupt(graph, run_config)
         if not first or first.get("kind") != "name":
             raise RuntimeError(f"no name interrupt: {first!r}")
-        _drive(graph, run_config, Command(resume=HUMAN_NAME))
+        _drive(graph, run_config, Command(resume=HUMAN_NAME), on_update=_capture)
 
         # Roles are now dealt — read this game's ``players`` ONCE, at a quiescent
         # point BETWEEN super-steps (the same safe ``get_state`` the driver loop
@@ -1893,7 +2078,7 @@ def _play_one_game(args: argparse.Namespace, game_index: int) -> _GameCapture:
                 break  # reached end_screen / END
             iv = _collect_interrupt(graph, run_config)
             if iv is None:
-                _drive(graph, run_config, None)
+                _drive(graph, run_config, None, on_update=_capture)
                 continue
             kind = iv.get("kind")
             if kind == "day_turn":
@@ -1907,7 +2092,7 @@ def _play_one_game(args: argparse.Namespace, game_index: int) -> _GameCapture:
                 resume = options[0]["id"] if options else ""
             else:
                 raise RuntimeError(f"unexpected interrupt {kind!r}")
-            _drive(graph, run_config, Command(resume=resume))
+            _drive(graph, run_config, Command(resume=resume), on_update=_capture)
 
         state = graph.get_state(run_config).values
         lines, names = _ai_lines_with_names(state)
@@ -1919,10 +2104,17 @@ def _play_one_game(args: argparse.Namespace, game_index: int) -> _GameCapture:
             messages=list(state.get("messages", [])),
             captures=captures,
             winner=state.get("winner"),
+            events=events,
         )
 
 
-def run_eval(config: object, args: argparse.Namespace) -> EvalResult:
+def run_eval(
+    config: object,
+    args: argparse.Namespace,
+    *,
+    transcripts_root: Path | None = None,
+    run_id: str | None = None,
+) -> EvalResult:
     """Play the games and score them — the harness's substance.
 
     The provider is already forced, the cloud stores are isolated, the ollama
@@ -1941,8 +2133,42 @@ def run_eval(config: object, args: argparse.Namespace) -> EvalResult:
     warning), the enriched ``provider`` block (ollama digests + server version,
     or the bedrock full-ids + invisible-updates note), the effective
     ``settings``, and — measured around the game loop — the wall-clock duration.
+
+    Spec-017 transcripts: a ``<run-id>`` is generated ONCE (a sortable, fs-safe
+    timestamp; both ``transcripts_root`` and ``run_id`` are injectable so tests
+    write into a ``tmp_path`` with a pinned id and NEVER touch the real
+    ``evals/transcripts/``). Each completed game's ordered event log is rendered
+    (:func:`~graphia.tools.eval_transcript.render_transcript`) and written to
+    ``<transcripts_root>/<run-id>/game-NN.txt``; the run-id is then recorded on
+    the result as ``run.transcript_dir`` so the viewer can locate the run's
+    transcripts from the ledger.
     """
     large_model, small_model = _resolved_model_names(config)
+
+    # Spec-017: resolve the transcript store + the once-per-run id. The base dir
+    # defaults to the repo's ``evals/transcripts/`` but is injectable; the run-id
+    # is a fresh fs-safe timestamp unless a test pins one. Generated here, before
+    # the loop, so every game in the run shares one directory.
+    transcripts_base = (
+        transcripts_root if transcripts_root is not None else TRANSCRIPTS_ROOT
+    )
+    transcript_run_id = run_id if run_id is not None else make_run_id()
+    # ``run_meta`` feeds the per-transcript header (provider + resolved models +
+    # game count); read defensively by the renderer so a thin mapping is fine.
+    run_meta = {
+        "provider": args.provider,
+        "large_model": large_model,
+        "small_model": small_model,
+        "games": args.games,
+    }
+    # Zero-pad the game index to the width of the run's game count (≥ 2), so a
+    # 10-game run writes game-01 … game-10 and a 100-game run game-001 … game-100,
+    # both sorting lexically in chronological order.
+    pad = max(2, len(str(max(args.games, 1))))
+    # Set only if ≥1 transcript is actually written, so a run that wrote none
+    # (all games failed early) leaves ``transcript_dir`` empty and the record
+    # omits the link — never a dangling reference to an empty dir.
+    wrote_any_transcript = False
 
     # --- Run-provenance, collected once before games start (functional-spec
     # §2.3, tech §2.4). All collectors degrade gracefully (null on failure), so
@@ -2033,6 +2259,31 @@ def run_eval(config: object, args: argparse.Namespace) -> EvalResult:
             )
             continue
         result.games_completed += 1
+
+        # Spec-017: render this completed game's ordered event log (NOT a final-
+        # state snapshot — that loses every Night's pointing but the last) into a
+        # tagged, human-readable transcript and write it to
+        # ``<run-id>/game-NN.txt`` (1-based, zero-padded). Best-effort: a render/
+        # write hiccup must not fail the measured run, so it is logged and the
+        # game still counts as completed and is scored as normal.
+        try:
+            text = render_transcript(
+                cap.events,
+                cap.players,
+                game_index=game_index + 1,
+                run_meta=run_meta,
+            )
+            write_transcript(
+                text, transcripts_base, transcript_run_id, game_index + 1, pad=pad
+            )
+            wrote_any_transcript = True
+        except Exception as exc:  # noqa: BLE001 - never fail the run on a transcript
+            print(
+                f"  game {game_index}: transcript write FAILED "
+                f"({type(exc).__name__}: {exc})",
+                file=sys.stderr,
+            )
+
         pooled_lines.extend(cap.ai_lines)
         pooled_names.update(cap.ai_names)
         pooled_speaker_lines.extend(cap.ai_lines_with_speakers)
@@ -2101,6 +2352,13 @@ def run_eval(config: object, args: argparse.Namespace) -> EvalResult:
     # does not change detection and does not bump METRICS_VERSION. Absent metrics
     # were already omitted above, so none gets a CI.
     _attach_ci(result.metrics)
+
+    # Spec-017: record the run's transcript dir NAME on the result (the viewer
+    # derives the absolute path from the ledger's sibling ``transcripts/``), but
+    # ONLY when ≥1 transcript was actually written — a run that wrote none leaves
+    # it empty and ``render_record`` omits the ``run.transcript_dir`` key.
+    if wrote_any_transcript:
+        result.transcript_dir = transcript_run_id
 
     # Stamp the wall-clock duration (monotonic delta) onto the run/quality
     # block before rendering, so a degenerate (e.g. all-failed) run cannot

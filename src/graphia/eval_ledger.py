@@ -39,10 +39,15 @@ __all__ = [
     "SEARCH_FIELDS",
     "SEARCH_SCOPE_ALL",
     "TableModel",
+    "TranscriptEntry",
+    "TRANSCRIPTS_DIRNAME",
     "load_ledger",
     "build_table_model",
     "render_detail",
     "row_matches_field",
+    "transcript_dir_for",
+    "list_transcripts",
+    "read_transcript",
 ]
 
 # One parsed ledger record: the YAML document as a plain nested mapping. Keyed by
@@ -386,6 +391,116 @@ def load_ledger(path: Path) -> list[RawRecord]:
         ) from exc
 
     return [doc for doc in documents if isinstance(doc, dict)]
+
+
+# ===========================================================================
+# Transcript locating / listing / reading (spec 017, Slice 2 — pure layer).
+#
+# The viewer holds the ledger ``Path`` and a selected :data:`RawRecord`; from
+# those it must reach the run's preserved per-game transcripts. The store lives
+# in the ledger's **sibling ``transcripts/`` dir** — exactly the layout
+# ``blunder_eval`` writes to (``TRANSCRIPTS_ROOT = LEDGER_PATH.parent /
+# "transcripts"``), and a record names its run's dir with the run-id directory
+# NAME under ``run.transcript_dir`` (never an absolute path). These three pure
+# functions — locate, list, read — are the whole data layer the
+# ``TranscriptListScreen`` / ``TranscriptScreen`` consume; **no Textual import**,
+# **read-only** (they never create/write/delete), and **defensive throughout**
+# (mirroring :func:`_dig`): a missing ``transcript_dir`` field, a dir absent
+# locally (a run not shared/pulled), an empty dir, or an unreadable file all
+# resolve to an **empty result, never an exception** — which is what drives the
+# viewer's "No transcripts for this run." state.
+# ===========================================================================
+
+# The fixed sibling-of-the-ledger directory name that holds every run's
+# transcript dir — the pure-layer mirror of ``blunder_eval.TRANSCRIPTS_ROOT``'s
+# ``LEDGER_PATH.parent / "transcripts"`` layout. Kept as a module constant so the
+# locating logic and the writer agree on the one folder name.
+TRANSCRIPTS_DIRNAME = "transcripts"
+
+# The glob the run's per-game transcript files match (``game-01.txt`` …), the
+# read-side mirror of ``blunder_eval``'s ``game-NN.txt`` naming. Sorting these by
+# filename yields the natural ``game-01 … game-NN`` order (zero-padded indices
+# sort lexically the same as numerically).
+_TRANSCRIPT_GLOB = "game-*.txt"
+
+
+@dataclass(frozen=True, slots=True)
+class TranscriptEntry:
+    """One browsable game transcript — a display ``label`` and its file ``path``.
+
+    The unit :func:`list_transcripts` returns (one per ``game-NN.txt`` in a run's
+    dir, sorted). ``label`` is the file's stem (``game-01``) — the human-readable
+    game name the ``TranscriptListScreen`` shows; ``path`` is the resolved file,
+    so the viewer hands it straight to :func:`read_transcript` with **no path
+    arithmetic of its own**. A frozen, slotted value object, matching
+    :class:`TableModel`'s house style.
+    """
+
+    label: str
+    path: Path
+
+
+def transcript_dir_for(record: RawRecord, ledger_path: Path) -> Path | None:
+    """Locate a record's transcript directory, or ``None`` when it has none.
+
+    Reads the record's ``run.transcript_dir`` (the run-id directory NAME, NOT an
+    absolute path — what ``blunder_eval.render_record`` writes) via the defensive
+    :func:`_dig` getter, and resolves it against the ledger's **sibling
+    ``transcripts/`` dir** (``ledger_path.parent / "transcripts" / <run-id>``) —
+    mirroring how ``blunder_eval`` derives ``TRANSCRIPTS_ROOT``. Returns the
+    :class:`Path` **without checking it exists** (existence is :func:`list_transcripts`'s
+    concern); a **missing / empty / non-string** ``transcript_dir`` field (an
+    older pre-017 record, or a run that wrote none) resolves to ``None`` so a
+    field absence never raises — the locate half of the "no transcripts" state.
+    """
+    run_id = _dig(record, "run.transcript_dir")
+    if not isinstance(run_id, str) or not run_id.strip():
+        return None
+    return ledger_path.parent / TRANSCRIPTS_DIRNAME / run_id
+
+
+def list_transcripts(record: RawRecord, ledger_path: Path) -> list[TranscriptEntry]:
+    """List a run's per-game transcripts as sorted :class:`TranscriptEntry` items.
+
+    Locates the run's dir via :func:`transcript_dir_for`, then returns one
+    :class:`TranscriptEntry` per ``game-*.txt`` file in it, **sorted by filename**
+    so the natural ``game-01 … game-NN`` order falls out (zero-padded indices sort
+    lexically). Each entry carries the file's stem as its ``label`` (``game-01``)
+    and the resolved ``path``, so the viewer never does path arithmetic.
+
+    Defensive (mirroring :func:`_dig`): returns the **empty list** when the
+    ``run.transcript_dir`` field is missing, when the dir is **absent locally** (a
+    run not shared/pulled), when it is not a directory, or when it holds **no
+    matching files** — never raises. This empty list is what drives the viewer's
+    "No transcripts for this run." state.
+    """
+    directory = transcript_dir_for(record, ledger_path)
+    if directory is None:
+        return []
+    try:
+        if not directory.is_dir():
+            return []
+        files = sorted(directory.glob(_TRANSCRIPT_GLOB), key=lambda p: p.name)
+    except OSError:
+        # A permission / FS error reading the dir is treated like an absent dir —
+        # the viewer shows "no transcripts" rather than crashing.
+        return []
+    return [TranscriptEntry(label=path.stem, path=path) for path in files]
+
+
+def read_transcript(path: Path) -> str:
+    """Read one transcript file's text, or ``""`` when it can't be read.
+
+    The read half of the pure layer: returns the file's UTF-8 text for the
+    ``TranscriptScreen`` to scroll. Defensive (mirroring :func:`_dig`) — a
+    **missing**, **unreadable**, or otherwise erroring file resolves to the
+    **empty string**, never raising, so a transcript that vanished between listing
+    and opening degrades to a blank view instead of a traceback.
+    """
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
 
 
 def build_table_model(records: list[RawRecord]) -> TableModel:

@@ -26,7 +26,17 @@ from __future__ import annotations
 import textwrap
 from pathlib import Path
 
-from textual.widgets import DataTable, Footer, Header, Input, Select, Static
+from textual.widgets import (
+    DataTable,
+    Footer,
+    Header,
+    Input,
+    Label,
+    ListItem,
+    ListView,
+    Select,
+    Static,
+)
 
 from graphia.eval_ledger import (
     METRIC_ORDER,
@@ -38,6 +48,8 @@ from graphia.ui.ledger_viewer import (
     DetailScreen,
     LedgerTableScreen,
     LedgerViewerApp,
+    TranscriptListScreen,
+    TranscriptScreen,
 )
 
 from conftest import plain_text
@@ -1072,3 +1084,393 @@ async def test_cell_cursor_scrolls_the_highlighted_cell_fully_into_view(
         assert table.cursor_coordinate.column == 0
         assert table.scroll_offset.x == 0
         assert _cell_fully_visible(table)
+
+
+# ===========================================================================
+# B10. Transcript browse (spec 017, Slice 2) — from a run's DetailScreen, ``t``
+#      opens the TranscriptListScreen; selecting a game pushes a read-only
+#      TranscriptScreen showing the file's text; Esc/Backspace/q step back out
+#      transcript → list → record. A run with NO transcripts shows the plain
+#      "No transcripts for this run." message. The viewer never writes.
+# ===========================================================================
+#
+# The transcript store lives in the ledger's SIBLING ``transcripts/<run-id>/``
+# dir (the layout ``blunder_eval`` writes), so each record below names its run
+# via ``run.transcript_dir`` and the matching dir is created under ``tmp_path``
+# — the committed ``evals/transcripts/`` is NEVER touched. The transcript body
+# carries a recognizable ``<transcript>`` tag plus a unique marker string, so
+# the rendered TranscriptScreen body can be matched back to the exact file.
+
+# The plain "no transcripts" copy the list screen shows when a run has none.
+# Asserted by value (echoing the module's ``_NO_TRANSCRIPTS_MESSAGE``) so the
+# test pins the user-visible string, not a private name.
+_NO_TRANSCRIPTS_MESSAGE = "No transcripts for this run."
+
+# A unique marker woven into the synthetic transcript body, so the rendered
+# TranscriptScreen can be matched back to this exact file (never asserted on
+# real game prose — this is a fabricated transcript fixture).
+_TRANSCRIPT_MARKER = "UNIQUE-MARKER-Zx42"
+
+_TRANSCRIPT_BODY = (
+    "<transcript>\n"
+    "  <setup>\n"
+    f"    Alice — Mafioso (legend: baker / true_self: {_TRANSCRIPT_MARKER})\n"
+    "  </setup>\n"
+    "  <night>\n"
+    "    round 1: Alice points at Bob\n"
+    "  </night>\n"
+    "</transcript>\n"
+)
+
+
+def _doc_with_transcript_dir(date: str, run_id: str | None) -> str:
+    """A minimal full-shape ledger doc; carries ``run.transcript_dir`` when set.
+
+    ``run_id`` None → NO ``transcript_dir`` field (an older pre-017 record, the
+    "no transcripts" case); a string → the run-id NAME the viewer resolves
+    against the ledger's sibling ``transcripts/`` dir.
+    """
+    transcript_line = f"  transcript_dir: '{run_id}'\n" if run_id is not None else ""
+    return textwrap.dedent(
+        f"""\
+        run:
+          date: '{date}'
+          metrics_version: 1
+        """
+    ) + transcript_line + textwrap.dedent(
+        """\
+        provider:
+          name: 'ollama'
+          large_model: 'qwen3-coder:30b'
+          small_model: 'qwen2.5:3b'
+        quality:
+          games_attempted: 2
+          games_completed: 2
+          games_failed_early: 0
+        metrics:
+          repetition:
+            rate: 0.5
+            count: 10
+            denominator: 20
+        notes: 'run with browsable transcripts'
+        """
+    )
+
+
+def _write_run_transcripts(
+    ledger_path: Path, run_id: str, files: dict[str, str]
+) -> Path:
+    """Create the ledger's SIBLING ``transcripts/<run-id>/`` dir + game files.
+
+    Mirrors ``blunder_eval``'s on-disk layout (``<ledger>/../transcripts/``),
+    entirely inside the caller's ``tmp_path`` — the committed
+    ``evals/transcripts/`` is never touched. Returns the run dir.
+    """
+    run_dir = ledger_path.parent / "transcripts" / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    for name, body in files.items():
+        (run_dir / name).write_text(body, encoding="utf-8")
+    return run_dir
+
+
+def _transcript_body_text(screen: TranscriptScreen) -> str:
+    """The TranscriptScreen body's text, read via the widget API (not bytes).
+
+    The body is a ``markup=False`` ``Static`` whose ``render()`` returns a
+    Textual ``Content`` of the verbatim file text. Read it back through that
+    renderable (preferring its ``.plain``) so the literal ``<transcript>`` tags
+    survive — the shared ``plain_text`` helper's ``Text.from_markup`` fallback
+    would mangle the ``<...>`` tokens — asserting model→widget fidelity, not
+    rendered geometry.
+    """
+    body = screen.query_one("#transcript-body", Static)
+    rendered = body.render()
+    return rendered.plain if hasattr(rendered, "plain") else str(rendered)
+
+
+async def _open_detail_for_first_row(pilot) -> DetailScreen:
+    """Focus the table and drill into row 0 via the real CellSelected key path."""
+    table = pilot.app.screen.query_one("#ledger-table", DataTable)
+    table.focus()
+    await pilot.pause()
+    await pilot.press("enter")
+    await pilot.pause()
+    assert isinstance(pilot.app.screen, DetailScreen)
+    return pilot.app.screen
+
+
+async def test_t_on_detail_opens_transcript_list_of_the_runs_games(
+    tmp_path: Path,
+) -> None:
+    """From a run's DetailScreen, ``t`` opens a TranscriptListScreen of its games.
+
+    The run has two transcripts; pressing ``t`` lists exactly them (game-01,
+    game-02), in sorted order, and the "no transcripts" message stays hidden.
+    """
+    ledger = _write_ledger(
+        tmp_path, _doc_with_transcript_dir("2026-06-18", "run-A"), name="tlist.yaml"
+    )
+    _write_run_transcripts(
+        ledger,
+        "run-A",
+        {"game-02.txt": "second " + _TRANSCRIPT_BODY, "game-01.txt": _TRANSCRIPT_BODY},
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _open_detail_for_first_row(pilot)
+
+        # Press ``t`` to open the run's transcripts.
+        await pilot.press("t")
+        await pilot.pause()
+        assert isinstance(app.screen, TranscriptListScreen)
+
+        # The list carries one ListItem per game, sorted game-01 before game-02.
+        listing = app.screen.query_one("#transcript-list", ListView)
+        labels = [
+            plain_text(item.query_one(Label)) for item in listing.query(ListItem)
+        ]
+        assert labels == ["game-01", "game-02"]
+        # The list is shown; the "no transcripts" message is hidden.
+        assert listing.display is True
+        assert app.screen.query_one("#transcript-empty", Static).display is False
+
+
+async def test_selecting_a_game_shows_its_transcript_text(tmp_path: Path) -> None:
+    """Selecting a game pushes a TranscriptScreen showing that file's text.
+
+    The unique marker woven into the synthetic body must appear in the rendered
+    read-only Static, proving the file's text reached the screen verbatim.
+    """
+    ledger = _write_ledger(
+        tmp_path, _doc_with_transcript_dir("2026-06-18", "run-B"), name="tshow.yaml"
+    )
+    _write_run_transcripts(ledger, "run-B", {"game-01.txt": _TRANSCRIPT_BODY})
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _open_detail_for_first_row(pilot)
+        await pilot.press("t")
+        await pilot.pause()
+        assert isinstance(app.screen, TranscriptListScreen)
+
+        # Select the first (only) game via the real ListView.Selected key path.
+        listing = app.screen.query_one("#transcript-list", ListView)
+        listing.focus()
+        await pilot.pause()
+        await pilot.press("enter")
+        await pilot.pause()
+
+        # A TranscriptScreen is now on top, showing the file's verbatim text.
+        assert isinstance(app.screen, TranscriptScreen)
+        body_text = _transcript_body_text(app.screen)
+        assert _TRANSCRIPT_MARKER in body_text
+        # The literal tags survive (the body is markup=False).
+        assert "<transcript>" in body_text
+
+
+async def test_back_out_transcript_to_list_to_record(tmp_path: Path) -> None:
+    """Stepping back out: transcript → list → the run's DetailScreen.
+
+    ``escape`` on the TranscriptScreen returns to the list; ``backspace`` on the
+    list returns to the run's DetailScreen — the exact reverse of the way in.
+    """
+    ledger = _write_ledger(
+        tmp_path, _doc_with_transcript_dir("2026-06-18", "run-C"), name="tback.yaml"
+    )
+    _write_run_transcripts(ledger, "run-C", {"game-01.txt": _TRANSCRIPT_BODY})
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _open_detail_for_first_row(pilot)
+        await pilot.press("t")
+        await pilot.pause()
+        assert isinstance(app.screen, TranscriptListScreen)
+
+        listing = app.screen.query_one("#transcript-list", ListView)
+        listing.focus()
+        await pilot.pause()
+        await pilot.press("enter")
+        await pilot.pause()
+        assert isinstance(app.screen, TranscriptScreen)
+
+        # escape: transcript → list.
+        await pilot.press("escape")
+        await pilot.pause()
+        assert isinstance(app.screen, TranscriptListScreen)
+
+        # backspace: list → the run's DetailScreen.
+        await pilot.press("backspace")
+        await pilot.pause()
+        assert isinstance(app.screen, DetailScreen)
+
+
+async def test_back_out_to_record_then_table_restores_cursor(tmp_path: Path) -> None:
+    """Popping the whole transcript stack lands back on the run's row in the table.
+
+    Drill into row 1 (a non-first row), open transcripts, read a game, then step
+    all the way out: transcript → list → DetailScreen → table, with the table
+    cursor restored to row 1 (spec 012's return-on-resume pattern, unperturbed
+    by the transcript detour).
+    """
+    ledger = _write_ledger(
+        tmp_path,
+        _doc_with_transcript_dir("2026-06-01", None),
+        _doc_with_transcript_dir("2026-06-02", "run-D"),
+        name="tcursor.yaml",
+    )
+    _write_run_transcripts(ledger, "run-D", {"game-01.txt": _TRANSCRIPT_BODY})
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        table = app.screen.query_one("#ledger-table", DataTable)
+        table.focus()
+        await pilot.pause()
+
+        # Drill into row 1 (the run WITH transcripts).
+        await pilot.press("down")
+        assert table.cursor_row == 1
+        await pilot.press("enter")
+        await pilot.pause()
+        assert isinstance(app.screen, DetailScreen)
+
+        # Into transcripts, read a game.
+        await pilot.press("t")
+        await pilot.pause()
+        listing = app.screen.query_one("#transcript-list", ListView)
+        listing.focus()
+        await pilot.pause()
+        await pilot.press("enter")
+        await pilot.pause()
+        assert isinstance(app.screen, TranscriptScreen)
+
+        # Step all the way out: transcript → list → detail → table.
+        await pilot.press("escape")
+        await pilot.pause()
+        assert isinstance(app.screen, TranscriptListScreen)
+        await pilot.press("escape")
+        await pilot.pause()
+        assert isinstance(app.screen, DetailScreen)
+        await pilot.press("escape")
+        await pilot.pause()
+        assert isinstance(app.screen, LedgerTableScreen)
+
+        # The table cursor is restored to the row that was drilled into.
+        restored = app.screen.query_one("#ledger-table", DataTable)
+        assert restored.cursor_row == 1
+
+
+async def test_run_with_no_transcripts_shows_plain_message(tmp_path: Path) -> None:
+    """A record with NO ``transcript_dir`` opens to the plain "no transcripts" copy.
+
+    Drilling into a transcript-less run and pressing ``t`` shows the
+    TranscriptListScreen with the list hidden and the plain
+    "No transcripts for this run." message displayed — no error, no crash.
+    """
+    ledger = _write_ledger(
+        tmp_path, _doc_with_transcript_dir("2026-06-18", None), name="tnone.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _open_detail_for_first_row(pilot)
+
+        await pilot.press("t")
+        await pilot.pause()
+        assert isinstance(app.screen, TranscriptListScreen)
+
+        # The list is hidden; the plain "no transcripts" message is shown.
+        listing = app.screen.query_one("#transcript-list", ListView)
+        empty = app.screen.query_one("#transcript-empty", Static)
+        assert listing.display is False
+        assert empty.display is True
+        assert plain_text(empty) == _NO_TRANSCRIPTS_MESSAGE
+        # No crash — the viewer is still running.
+        assert app.is_running
+
+
+async def test_run_with_missing_transcript_dir_shows_plain_message(
+    tmp_path: Path,
+) -> None:
+    """A record naming a dir that doesn't exist locally also shows the plain message.
+
+    The record names a run-id, but the sibling ``transcripts/<run-id>/`` dir was
+    never created (a run not shared/pulled) — ``list_transcripts`` returns ``[]``
+    and the list screen shows the plain "no transcripts" message, not an error.
+    """
+    ledger = _write_ledger(
+        tmp_path,
+        _doc_with_transcript_dir("2026-06-18", "run-not-pulled"),
+        name="tmissing.yaml",
+    )
+    # Deliberately do NOT create transcripts/run-not-pulled/.
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _open_detail_for_first_row(pilot)
+
+        await pilot.press("t")
+        await pilot.pause()
+        assert isinstance(app.screen, TranscriptListScreen)
+
+        empty = app.screen.query_one("#transcript-empty", Static)
+        assert app.screen.query_one("#transcript-list", ListView).display is False
+        assert empty.display is True
+        assert plain_text(empty) == _NO_TRANSCRIPTS_MESSAGE
+        assert app.is_running
+
+
+async def test_browsing_transcripts_leaves_files_byte_unchanged(
+    tmp_path: Path,
+) -> None:
+    """The full transcript browse session leaves the transcript files byte-identical.
+
+    The viewer is strictly read-only (functional-spec §2.2/§2.5): capture each
+    game file's bytes before, drive the full open → read → back-out flow across
+    two games, and assert every file is byte-identical afterwards. The viewer
+    never writes.
+    """
+    ledger = _write_ledger(
+        tmp_path, _doc_with_transcript_dir("2026-06-18", "run-E"), name="treadonly.yaml"
+    )
+    run_dir = _write_run_transcripts(
+        ledger,
+        "run-E",
+        {
+            "game-01.txt": _TRANSCRIPT_BODY,
+            "game-02.txt": "second game " + _TRANSCRIPT_BODY,
+        },
+    )
+    before = {p.name: p.read_bytes() for p in sorted(run_dir.glob("game-*.txt"))}
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _open_detail_for_first_row(pilot)
+        await pilot.press("t")
+        await pilot.pause()
+        listing = app.screen.query_one("#transcript-list", ListView)
+
+        # Open each game in turn, reading it, then backing out to the list.
+        for index in range(len(listing.query(ListItem))):
+            listing = app.screen.query_one("#transcript-list", ListView)
+            listing.focus()
+            listing.index = index
+            await pilot.pause()
+            await pilot.press("enter")
+            await pilot.pause()
+            assert isinstance(app.screen, TranscriptScreen)
+            # Read the body (a pure read; must not mutate the file).
+            _transcript_body_text(app.screen)
+            await pilot.press("escape")
+            await pilot.pause()
+            assert isinstance(app.screen, TranscriptListScreen)
+
+    after = {p.name: p.read_bytes() for p in sorted(run_dir.glob("game-*.txt"))}
+    assert after == before

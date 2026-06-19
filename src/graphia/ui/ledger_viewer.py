@@ -34,7 +34,17 @@ from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.coordinate import Coordinate
 from textual.message import Message
 from textual.screen import Screen
-from textual.widgets import DataTable, Footer, Header, Input, Select, Static
+from textual.widgets import (
+    DataTable,
+    Footer,
+    Header,
+    Input,
+    Label,
+    ListItem,
+    ListView,
+    Select,
+    Static,
+)
 
 from graphia.eval_ledger import (
     LedgerParseError,
@@ -43,8 +53,11 @@ from graphia.eval_ledger import (
     SEARCH_FIELDS,
     SEARCH_SCOPE_ALL,
     TableModel,
+    TranscriptEntry,
     build_table_model,
+    list_transcripts,
     load_ledger,
+    read_transcript,
     render_detail,
     row_matches_field,
 )
@@ -125,12 +138,20 @@ class DetailScreen(Screen):
     ``Back`` key hints) frame the record, so it stays obvious that this is the
     same ledger viewer and how to return — a full-window record can otherwise
     read like a different program with no visible way out.
+
+    The ``t`` binding (spec 017) opens this run's per-game transcripts in a
+    :class:`TranscriptListScreen`: it lists the run via the pure
+    :func:`~graphia.eval_ledger.list_transcripts` (passing the app's ledger
+    ``Path`` + this record — the screen does no path arithmetic of its own) and
+    pushes the list screen on top, so leaving the list returns here. A run with
+    no transcripts (older record, dir not pulled) opens to a plain "no
+    transcripts" message rather than erroring.
     """
 
     # Drives the Header band: the app name (so the detail view is unmistakably
     # still the ledger viewer) plus a subtitle spelling out the back keys.
     TITLE = "Graphia eval ledger"
-    SUB_TITLE = "run detail · Esc / Backspace to go back"
+    SUB_TITLE = "run detail · Esc / Backspace to go back · t for transcripts"
 
     DEFAULT_CSS = """
     DetailScreen {
@@ -158,6 +179,7 @@ class DetailScreen(Screen):
         Binding("escape", "close", "Back", show=True),
         Binding("backspace", "close", "Back", show=True),
         Binding("q", "close", "Back", show=False),
+        Binding("t", "open_transcripts", "Transcripts", show=True),
     ]
 
     def __init__(self, record: RawRecord) -> None:
@@ -172,6 +194,204 @@ class DetailScreen(Screen):
 
     def action_close(self) -> None:
         """Pop this screen, returning to the table (which restores its cursor)."""
+        self.app.pop_screen()
+
+    def action_open_transcripts(self) -> None:
+        """Open this run's per-game transcripts (the ``t`` binding, spec 017).
+
+        Lists the run's games through the pure
+        :func:`~graphia.eval_ledger.list_transcripts` — passing the app's ledger
+        ``Path`` (the single holder, reached via ``self.app`` the same way
+        :meth:`action_close` reaches ``pop_screen``) and this record, so the UI
+        does **no** path arithmetic — and pushes a :class:`TranscriptListScreen`
+        on top of this one. Leaving the list pops back here (the run's record).
+        An empty list (older record, missing/un-pulled dir) is handled by the
+        list screen as the plain "No transcripts for this run." state — never an
+        error.
+        """
+        entries = list_transcripts(self._record, self.app._path)
+        self.app.push_screen(TranscriptListScreen(entries))
+
+
+# The copy shown in #transcript-empty when a run has no preserved transcripts —
+# an older pre-017 record, a missing/un-pulled run dir, or an empty dir all land
+# here (``list_transcripts`` returned ``[]``). A plain message, not an error
+# (functional-spec §2.2), mirroring the table screen's #empty-state posture.
+_NO_TRANSCRIPTS_MESSAGE = "No transcripts for this run."
+
+
+class TranscriptListScreen(Screen):
+    """The run's per-game transcripts as a selectable list (spec 017).
+
+    Pushed from a run's :class:`DetailScreen` (its ``t`` binding). Composes a
+    :class:`~textual.widgets.ListView` of one :class:`~textual.widgets.ListItem`
+    per :class:`~graphia.eval_ledger.TranscriptEntry` — labelled by the entry's
+    ``.label`` (``game-01``, ``game-02``, …) — that the maintainer arrows/Enters
+    to pick a game; selecting one pushes a :class:`TranscriptScreen` for that
+    game. The :class:`TranscriptEntry` list is held **index-parallel** to the
+    list rows (mirroring :class:`LedgerTableScreen`'s ``_visible_indices``
+    contract), so :class:`~textual.widgets.ListView.Selected`'s ``index`` resolves
+    straight back to the right entry.
+
+    When the run has **no** transcripts (``entries == []`` — an older record, a
+    missing/un-pulled dir, an empty dir), the list is hidden and a plain
+    :data:`_NO_TRANSCRIPTS_MESSAGE` is shown instead — no error, no crash
+    (functional-spec §2.2), the same hide-grid/show-message posture as
+    :class:`LedgerTableScreen`'s #empty-state.
+
+    ``escape``/``backspace``/``q`` pop back to the :class:`DetailScreen` the
+    maintainer came from (its own screen-level bindings, so they take precedence
+    over the app-level quit while this screen is active) — reusing spec 012's
+    push/pop back-out idiom verbatim. **Read-only throughout** — it only lists
+    what the pure layer located; it never creates, writes, or reads files
+    itself.
+    """
+
+    TITLE = "Graphia eval ledger"
+    SUB_TITLE = "run transcripts · Enter to read · Esc / Backspace to go back"
+
+    DEFAULT_CSS = """
+    TranscriptListScreen {
+        layout: vertical;
+    }
+
+    #transcript-list {
+        height: 1fr;
+        width: 1fr;
+    }
+
+    #transcript-empty {
+        height: 1fr;
+        width: 1fr;
+        content-align: center middle;
+        color: $text-muted;
+    }
+    """
+
+    # Same back-out idiom as DetailScreen: escape/backspace (shown) and q (quiet)
+    # pop back to the run's record. Screen-level, so they precede the app's
+    # escape→quit while this screen is active.
+    BINDINGS = [
+        Binding("escape", "close", "Back", show=True),
+        Binding("backspace", "close", "Back", show=True),
+        Binding("q", "close", "Back", show=False),
+    ]
+
+    def __init__(self, entries: list[TranscriptEntry]) -> None:
+        super().__init__()
+        self._entries = entries
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        # One ListItem per transcript, in the order the pure layer sorted them
+        # (game-01 … game-NN). Empty when the run has none — on_mount then hides
+        # this and shows the message instead.
+        yield ListView(
+            *(
+                ListItem(Label(entry.label))
+                for entry in self._entries
+            ),
+            id="transcript-list",
+        )
+        yield Static(_NO_TRANSCRIPTS_MESSAGE, id="transcript-empty")
+        yield Footer()
+
+    def on_mount(self) -> None:
+        """Show the list, or switch to the plain "no transcripts" message."""
+        listing = self.query_one("#transcript-list", ListView)
+        empty = self.query_one("#transcript-empty", Static)
+        if not self._entries:
+            listing.display = False
+            empty.display = True
+            return
+        empty.display = False
+        listing.focus()
+
+    def action_close(self) -> None:
+        """Pop back to the run's :class:`DetailScreen` (where the maintainer was)."""
+        self.app.pop_screen()
+
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        """Open the picked game's transcript in a :class:`TranscriptScreen`.
+
+        Resolves the selection through the index-parallel ``_entries`` list (so
+        the right :class:`~graphia.eval_ledger.TranscriptEntry` is opened) and
+        pushes the read-only scroller. Leaving that screen pops back to this
+        list. A no-op for an out-of-range index (defensive; the empty-run path
+        has no rows to select).
+        """
+        index = event.index
+        if not 0 <= index < len(self._entries):
+            return
+        self.app.push_screen(TranscriptScreen(self._entries[index]))
+
+
+class TranscriptScreen(Screen):
+    """One game's full transcript in a scrollable, read-only view (spec 017).
+
+    Pushed from :class:`TranscriptListScreen` when a game is selected. Reads the
+    transcript text through the pure
+    :func:`~graphia.eval_ledger.read_transcript` (handed the entry's ``.path`` —
+    **no** file reads or path arithmetic of its own) and wraps it verbatim in a
+    :class:`~textual.containers.VerticalScroll` so a long game is fully reachable.
+    The body is a :class:`~textual.widgets.Static` (a read-only text widget, **not**
+    an :class:`~textual.widgets.Input`) — there is nothing to edit; the viewer is
+    read-only throughout.
+
+    ``escape``/``backspace``/``q`` pop back to the :class:`TranscriptListScreen`
+    — the identical back-out idiom as :class:`DetailScreen` / the list screen,
+    reusing spec 012's push/pop pattern, so the maintainer steps back out
+    transcript → list → run record exactly the way they came in. A
+    missing/unreadable file degrades to a blank view (``read_transcript`` returns
+    ``""``), never a traceback.
+    """
+
+    TITLE = "Graphia eval ledger"
+    SUB_TITLE = "game transcript · Esc / Backspace to go back"
+
+    DEFAULT_CSS = """
+    TranscriptScreen {
+        layout: vertical;
+    }
+
+    #transcript-scroll {
+        height: 1fr;
+        width: 1fr;
+    }
+
+    #transcript-body {
+        padding: 0 1;
+        width: 1fr;
+    }
+    """
+
+    # Identical back-out idiom as DetailScreen: pop back to the transcript list.
+    BINDINGS = [
+        Binding("escape", "close", "Back", show=True),
+        Binding("backspace", "close", "Back", show=True),
+        Binding("q", "close", "Back", show=False),
+    ]
+
+    def __init__(self, entry: TranscriptEntry) -> None:
+        super().__init__()
+        self._entry = entry
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        with VerticalScroll(id="transcript-scroll"):
+            # Plain text, verbatim from the pure reader — no Rich markup parsing
+            # (markup=False), so the transcript's literal ``<transcript>`` /
+            # ``<day>`` / ``<round>`` tags render as written rather than being
+            # mistaken for console markup.
+            yield Static(
+                read_transcript(self._entry.path),
+                id="transcript-body",
+                markup=False,
+            )
+        yield Footer()
+
+    def action_close(self) -> None:
+        """Pop back to the :class:`TranscriptListScreen`."""
         self.app.pop_screen()
 
 
