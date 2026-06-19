@@ -44,6 +44,7 @@ from graphia.prompts import (
     AI_VOTE_USER_TEMPLATE,
     DAY_OPEN_NO_VICTIM_TEMPLATE,
     DAY_OPEN_VICTIM_REVEAL_TEMPLATE,
+    DAY_ROUND_RECAP_TEMPLATE,
     DAY_SPEAK_SYSTEM,
     DAY_SPEAK_USER_TEMPLATE,
     VOTE_EXECUTED_TEMPLATE,
@@ -198,11 +199,123 @@ def _find_last_night_victim(
     return None
 
 
+def _executed_this_cycle(
+    kill_log: list[KillRecord], cycle: int
+) -> KillRecord | None:
+    """Return the execution-cause KillRecord for ``cycle``, or None.
+
+    Shared by ``day_close`` (which only needs the boolean "did an execution
+    happen this cycle", derived from ``is not None``) and the recap renderer
+    (which names the executed player and their revealed side). Lifting this out
+    of the inline ``day_close`` predicate keeps the two callers DRY.
+    """
+    for record in reversed(kill_log):
+        if record.get("cause") == "execution" and record.get("cycle") == cycle:
+            return record
+    return None
+
+
+def render_day_round_recap(state: GameState) -> SystemMessage:
+    """Render the end-of-round public Moderator status recap (spec 018).
+
+    PURE: reads ``cycle`` (day number), counts alive players by role from the
+    insertion-ordered ``players`` dict, reads ``day_votes_initiated``, and
+    derives the executed-today clause from ``_executed_this_cycle``. It mutates
+    nothing and uses NO randomness and no hash-order-dependent ``set`` iteration
+    (iterating the ordered ``players`` dict only) so the dual-mode byte-equal
+    smoke test stays green.
+
+    Returns a PUBLIC ``SystemMessage`` (no ``additional_kwargs["private_to"]``)
+    so it reaches both the human UI and every AI player's scrolling context for
+    free — ``_render_context`` already folds public Moderator lines in. It
+    discloses nothing hidden: living-player counts and the executed player's
+    revealed side are all derivable from public play.
+    """
+    day = state.get("cycle", 1)
+    players = state.get("players", {})
+
+    law_count = sum(
+        1 for p in players.values() if p.is_alive and p.role == "law_abiding"
+    )
+    mafia_count = sum(
+        1 for p in players.values() if p.is_alive and p.role == "mafia"
+    )
+
+    law_noun = "Law-abiding Citizen" if law_count == 1 else "Law-abiding Citizens"
+    mafia_noun = "Mafioso" if mafia_count == 1 else "Mafiosos"
+    law_clause = f"{law_count} {law_noun}"
+    mafia_clause = f"{mafia_count} {mafia_noun}"
+
+    votes = state.get("day_votes_initiated", 0)
+    if votes == 0:
+        votes_clause = "No execution votes called yet today."
+    elif votes == 1:
+        votes_clause = "1 execution vote called today."
+    else:
+        votes_clause = f"{votes} execution votes called today."
+
+    executed = _executed_this_cycle(state.get("kill_log", []), day)
+    if executed is None:
+        executed_clause = "No one has been executed today."
+    else:
+        executed_clause = (
+            f"{executed['name']} was executed today and was revealed to be "
+            f"{_role_label(executed['role'])}."
+        )
+
+    content = DAY_ROUND_RECAP_TEMPLATE.format(
+        day=day,
+        law_clause=law_clause,
+        mafia_clause=mafia_clause,
+        votes_clause=votes_clause,
+        executed_clause=executed_clause,
+    )
+    return SystemMessage(content=content)
+
+
 def _shuffle_order(players: dict[str, PlayerState]) -> list[str]:
     """Return a shuffled list of alive-player ids."""
     ids = [p.id for p in players.values() if p.is_alive]
     random.shuffle(ids)
     return ids
+
+
+def _round_complete_update(
+    state: GameState,
+    rounds: int,
+    *,
+    recap_enabled: bool,
+    extra: dict | None = None,
+) -> dict:
+    """Build the state update for a completed Day round (spec 018).
+
+    Centralises the three round-wrap return sites in ``day_turn`` (the
+    empty/out-of-bounds defensive path, the dead-player wrap path, and the
+    normal speak/vote wrap path). Bumps ``day_rounds``, reshuffles
+    ``day_order`` for the next round, and resets ``day_turn_index``.
+
+    ``extra`` may carry the caller's own ``messages`` (e.g. the normal path's
+    speech ``AIMessage``) and/or ``clear_error`` keys, which are merged in.
+
+    The end-of-round recap is appended IFF ``recap_enabled AND new_rounds <
+    DAY_MAX_ROUNDS``: at the round-cap boundary (``new_rounds ==
+    DAY_MAX_ROUNDS``) ``day_turn`` stays silent so ``day_close`` owns that
+    single recap (the no-double-post gate). The recap is placed AFTER any
+    caller-supplied ``messages`` (the ``add_messages`` reducer takes a list)
+    so it renders at the end of the round, following the speech.
+    """
+    extra = extra or {}
+    new_rounds = rounds + 1
+    update: dict = {
+        "day_turn_index": 0,
+        "day_rounds": new_rounds,
+        "day_order": _shuffle_order(state["players"]),
+        **extra,
+    }
+    if recap_enabled and new_rounds < DAY_MAX_ROUNDS:
+        prior_messages = list(extra.get("messages", []))
+        update["messages"] = [*prior_messages, render_day_round_recap(state)]
+    return update
 
 
 def _alive_ids_in_roster_order(players: dict[str, PlayerState]) -> list[str]:
@@ -321,6 +434,7 @@ def day_open(state: GameState) -> dict:
         "day_turn_index": 0,
         "day_rounds": 0,
         "day_votes_called": 0,
+        "day_votes_initiated": 0,
         "active_vote": None,
         "day_turn_error": None,
         "phase": "day",
@@ -438,6 +552,7 @@ def day_turn(
     *,
     career_emitter: CareerEventEmitter | None = None,
     game_id: str | None = None,
+    recap_enabled: bool = True,
 ) -> dict:
     """Run exactly one player's Day turn, then advance bookkeeping.
 
@@ -459,13 +574,8 @@ def day_turn(
 
     if not order or turn_index >= len(order):
         # Defensive: empty or out-of-bounds order; treat the round as complete.
-        new_rounds = rounds + 1
-        next_order = _shuffle_order(players)
-        return {
-            "day_turn_index": 0,
-            "day_rounds": new_rounds,
-            "day_order": next_order,
-        }
+        # No speech message — emits only the recap, when gated in.
+        return _round_complete_update(state, rounds, recap_enabled=recap_enabled)
 
     player_id = order[turn_index]
     player = players.get(player_id)
@@ -475,13 +585,10 @@ def day_turn(
     if player is None or not player.is_alive:
         new_turn_index = turn_index + 1
         if new_turn_index >= len(order):
-            new_rounds = rounds + 1
-            next_order = _shuffle_order(players)
-            return {
-                "day_turn_index": 0,
-                "day_rounds": new_rounds,
-                "day_order": next_order,
-            }
+            # Round wrap with no speech message — recap only, when gated in.
+            return _round_complete_update(
+                state, rounds, recap_enabled=recap_enabled
+            )
         return {"day_turn_index": new_turn_index}
 
     # --------------------------------------------------------------
@@ -532,6 +639,7 @@ def day_turn(
             # vote flow, but we want to resume speech rotation from the
             # same position after the vote resolves. Clear any pending error.
             human_votes_called = state.get("human_votes_called", 0) + 1
+            day_votes_initiated = state.get("day_votes_initiated", 0) + 1
             if career_emitter is not None and game_id is not None:
                 career_emitter.emit(
                     game_id,
@@ -545,6 +653,7 @@ def day_turn(
                 "active_vote": active,
                 "day_turn_error": None,
                 "human_votes_called": human_votes_called,
+                "day_votes_initiated": day_votes_initiated,
             }
 
         if not text:
@@ -566,6 +675,7 @@ def day_turn(
         if action.kind == "vote":
             assert action.target_id is not None  # validated in _ai_day_action
             active = _begin_vote(player.id, action.target_id, players)
+            day_votes_initiated = state.get("day_votes_initiated", 0) + 1
             if career_emitter is not None and game_id is not None:
                 career_emitter.emit(
                     game_id,
@@ -575,7 +685,10 @@ def day_turn(
                         initiator_is_human=False,
                     ),
                 )
-            return {"active_vote": active}
+            return {
+                "active_vote": active,
+                "day_votes_initiated": day_votes_initiated,
+            }
         # kind == "speak"
         assert action.text is not None
         msg = AIMessage(
@@ -587,15 +700,14 @@ def day_turn(
 
     new_turn_index = turn_index + 1
     if new_turn_index >= len(order):
-        new_rounds = rounds + 1
-        next_order = _shuffle_order(players)
-        return {
-            "messages": [msg],
-            "day_turn_index": 0,
-            "day_rounds": new_rounds,
-            "day_order": next_order,
-            **clear_error,
-        }
+        # Round wrap on a speaking turn: the speech message and (when gated in)
+        # the recap end up in order — speech first, recap last.
+        return _round_complete_update(
+            state,
+            rounds,
+            recap_enabled=recap_enabled,
+            extra={"messages": [msg], **clear_error},
+        )
 
     return {
         "messages": [msg],
@@ -896,28 +1008,46 @@ def resolve_vote(
     }
 
 
-def day_close(state: GameState) -> dict:
+def day_close(state: GameState, *, recap_enabled: bool = True) -> dict:
     """Close the Day.
 
     When an execution just landed, the canonical ``VOTE_EXECUTED_TEMPLATE``
     line has already been posted by ``resolve_vote``; we do NOT repeat the
     "no one executed" phrasing in that case. Only the no-execution paths
     (rounds cap, failed-votes cap) emit the generic close line.
+
+    When ``recap_enabled`` (spec 018), ``day_close`` owns the *closing* recap
+    for the day-ending boundaries it covers (round-cap, vote-cap, and a
+    mid-round execution that ends the Day but not the game). The recap is
+    appended AFTER the close-line logic, so on the no-execution path it follows
+    the "no one executed" line, and on the execution path it surfaces the
+    post-execution standings + "executed today" line (``resolve_vote`` already
+    posted the execution reveal, so that path's pre-recap messages are empty).
+
+    This node is reached ONLY when the Day ends *and the game continues*: a
+    winning move routes ``check_win_day`` / ``check_win_night`` to
+    ``end_screen``, bypassing ``day_close`` — so the recap is never posted on a
+    game-ending move (which keeps the endgame "last message" assertions green).
+    No double-post: ``day_turn`` already suppresses its round-wrap recap at the
+    ``DAY_MAX_ROUNDS`` boundary, so ``day_close`` owning the closing recap
+    yields exactly one recap per boundary.
     """
     cycle = state.get("cycle", 1)
     kill_log = state.get("kill_log", [])
-    executed_this_day = any(
-        rec.get("cause") == "execution" and rec.get("cycle") == cycle
-        for rec in kill_log
-    )
-    if executed_this_day:
-        # The execution line already ended the Day publicly; no extra line.
-        return {}
-    return {
-        "messages": [
+    executed_this_day = _executed_this_cycle(kill_log, cycle) is not None
+    messages: list = []
+    if not executed_this_day:
+        # The execution line already ended the Day publicly on the execution
+        # path; only the no-execution paths (rounds cap, failed-votes cap) emit
+        # the generic close line.
+        messages.append(
             SystemMessage(content="The Day ends with no one executed.")
-        ],
-    }
+        )
+    if recap_enabled:
+        messages.append(render_day_round_recap(state))
+    if not messages:
+        return {}
+    return {"messages": messages}
 
 
 def route_day_turn(state: GameState) -> str:

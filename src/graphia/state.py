@@ -79,6 +79,15 @@ class GameState(TypedDict, total=False):
     day_turn_index: int
     day_rounds: int
     day_votes_called: int
+    # Count of execution votes CALLED so far this Day (any initiator). Plain
+    # replace, reset to 0 in day_open and incremented by 1 at BOTH vote-
+    # initiation sites in day_turn (the human "/vote" branch and the AI
+    # DayAction(kind="vote") branch). Counts INITIATIONS, not resolutions:
+    # distinct from day_votes_called (which counts only FAILED votes) — a
+    # successful execution returns from resolve_vote without bumping that,
+    # and AI-initiated votes bump no per-Day counter, so neither is a correct
+    # "votes called this Day" source. The recap renderer reads this field.
+    day_votes_initiated: int
     human_votes_called: int
     human_ballots_cast: int
     human_night_attempts: int

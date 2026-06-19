@@ -72,12 +72,31 @@ class GraphiaConfig:
     # constructing the config directly stay valid.
     num_citizens: int = _DEFAULT_NUM_CITIZENS
     num_mafia: int = _DEFAULT_NUM_MAFIA
+    # End-of-round Day recap (spec 018). The ablation off-switch: on by
+    # default; an explicit falsy ``GRAPHIA_DAY_ROUND_RECAP`` plays the Day
+    # exactly as before. Defaulted so tests constructing the config directly
+    # stay valid.
+    day_round_recap_enabled: bool = True
 
 
 def _env_truthy(name: str) -> bool:
     raw = os.environ.get(name)
     if raw is None:
         return False
+    return raw.strip().lower() in _TRUTHY
+
+
+def _env_flag(name: str, *, default: bool) -> bool:
+    """Default-aware boolean env flag.
+
+    Returns ``default`` when the variable is unset or blank; otherwise returns
+    whether the stripped/lowercased value is truthy. Unlike ``_env_truthy``
+    (which is default-off), this supports a flag that is on by default and
+    requires an explicit falsy value (``0``/``false``/``no``/``off``) to disable.
+    """
+    raw = os.environ.get(name)
+    if raw is None or not raw.strip():
+        return default
     return raw.strip().lower() in _TRUTHY
 
 
@@ -105,6 +124,7 @@ def load_config() -> GraphiaConfig:
     stats_file = Path(os.environ.get("GRAPHIA_STATS_FILE", "./.graphia/career.json"))
 
     remote_mode = _env_truthy("GRAPHIA_REMOTE")
+    day_round_recap_enabled = _env_flag("GRAPHIA_DAY_ROUND_RECAP", default=True)
     runtime_invocation_url = os.environ.get("GRAPHIA_RUNTIME_URL") or None
     memory_id = os.environ.get("GRAPHIA_MEMORY_ID") or None
     career_memory_id = os.environ.get("GRAPHIA_CAREER_MEMORY_ID") or None
@@ -247,4 +267,5 @@ def load_config() -> GraphiaConfig:
         ollama_small_model=ollama_small_model,
         num_citizens=num_citizens,
         num_mafia=num_mafia,
+        day_round_recap_enabled=day_round_recap_enabled,
     )

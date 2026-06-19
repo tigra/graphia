@@ -83,6 +83,7 @@ def _assemble_graph(
     career_emitter: CareerEventEmitter,
     game_id: str,
     saver: SqliteSaver,
+    recap_enabled: bool,
 ) -> CompiledStateGraph:
     """Build the Graphia StateGraph topology and compile it with ``saver``.
 
@@ -124,11 +125,17 @@ def _assemble_graph(
         partial(night_close, diary_store=diary_store, game_id=game_id),
     )
     builder.add_node("day_open", day_open)
-    builder.add_node("day_turn", emit(day_turn))
+    # Spec 018: the end-of-round recap flag is bound into both Day nodes that
+    # post it. ``day_turn`` composes it onto its existing career-emitter
+    # binding; ``day_close`` (a plain node) is wrapped in its own ``partial``.
+    # Both builders thread ``recap_enabled`` so local and remote can't drift.
+    builder.add_node(
+        "day_turn", partial(emit(day_turn), recap_enabled=recap_enabled)
+    )
     builder.add_node("vote_prompt", vote_prompt)
     builder.add_node("collect_votes", emit(collect_votes))
     builder.add_node("resolve_vote", emit(resolve_vote))
-    builder.add_node("day_close", day_close)
+    builder.add_node("day_close", partial(day_close, recap_enabled=recap_enabled))
     # Slice 8: win-condition detection + end screen. The same pure-read
     # function is registered under two node names so each check site can
     # own a dedicated conditional fan-out (night → night_close fallthrough,
@@ -260,6 +267,7 @@ def build_graph(
         career_emitter=career_emitter,
         game_id=thread_id,
         saver=saver,
+        recap_enabled=config.day_round_recap_enabled,
     )
     return graph, thread_id
 

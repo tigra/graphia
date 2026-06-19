@@ -38,6 +38,7 @@ def build_runtime_graph(
     diary_store: DiaryStore | None = None,
     *,
     career_emitter: CareerEventEmitter | None = None,
+    day_round_recap_enabled: bool = True,
 ) -> CompiledStateGraph:
     """Compile the Graphia StateGraph with a caller-supplied thread_id.
 
@@ -53,6 +54,15 @@ def build_runtime_graph(
     the production Runtime entrypoint supplies real instances built from
     :func:`graphia.diary_store.make_diary_store` /
     :func:`graphia.career_events.make_career_emitter`.
+
+    ``day_round_recap_enabled`` (spec 018) is threaded through to
+    ``_assemble_graph`` so the deployed Runtime honours the same end-of-round
+    recap ablation flag as local mode; the production entrypoint passes
+    ``load_config().day_round_recap_enabled``. It defaults to ``True`` (recap
+    on, matching the config default) so tests/callers that compile this graph
+    directly need not supply it. This is the anti-drift seam the
+    module docstring's prior-incident note is about: both builders must thread
+    the flag or local and remote diverge.
     """
     if diary_store is None:
         diary_store = InProcessDiaryStore()
@@ -70,4 +80,5 @@ def build_runtime_graph(
         career_emitter=career_emitter,
         game_id=thread_id,
         saver=saver,
+        recap_enabled=day_round_recap_enabled,
     )

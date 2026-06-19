@@ -148,6 +148,15 @@ VOTE_EXECUTED_TEMPLATE = "{name} has been executed. {name} was a {role_label}."
 
 VOTE_FAILED_TEMPLATE = "The vote fails."
 
+# End-of-round Moderator status recap (spec 018). Present-tense, neutral
+# Moderator voice. The two side counts and the votes/executed clauses are
+# assembled (with singular/plural) in ``render_day_round_recap`` and passed in
+# as finished strings — same pattern as ``team_line`` / ``relationship``.
+DAY_ROUND_RECAP_TEMPLATE = (
+    "Day {day} status: {law_clause} and {mafia_clause} remain. "
+    "{votes_clause} {executed_clause}"
+)
+
 AI_VOTE_SYSTEM = """You are a player in Graphia, a Mafia-style social-deduction
 game. The table has called a vote to execute a specific player. Your job is to
 cast a single Yes/No ballot. Vote Yes to execute the target; vote No to spare
