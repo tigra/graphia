@@ -72,7 +72,7 @@ _Add the configurability and richer consensus mechanics the product definition c
 
 ### Phase 6
 
-_Once the game mechanics are solid, layer in the features that make Graphia feel alive and showcase the advanced LangGraph patterns the project is really about._
+_Once the game mechanics are solid, layer in the features that make Graphia feel alive and showcase the advanced LangGraph patterns the project is really about. The near-term focus is **Day decisiveness and per-AI reasoning** — making the AI town actually act on what it knows: the n=10 ollama review found the new day-round recap accurate at every round yet never acted upon, and the town still wins 0/10._
 
 - [x] **Eval Transcript Preservation**
   - [x] **Preserved, Browsable Eval Transcripts:** Persist the **full game transcript of each measured (eval) run** — a narrow, **eval-only** exception to the otherwise-standing "transcripts are non-persistent across sessions" rule — and make it browsable from the eval-ledger viewer, next to that run's recorded metrics. Valuable on its own for **human evaluation** (reading what the AI actually said in a measured game, not just the numbers), and it is also the substrate the LLM-as-Judge (Phase 7) later reads. (Separated from the judge because the transcripts are useful to a human reviewer with or without an automated judge — useful *now*, given the open AI-quality questions.)
@@ -80,10 +80,23 @@ _Once the game mechanics are solid, layer in the features that make Graphia feel
 - [x] **Day-Round Moderator Recap**
   - [x] **End-of-Round Day-Dynamics Nudge:** At the end of each Day round, have the Moderator post a brief **public** status to all players — the day number, how many Law-abiding Citizens and Mafiosos are still alive, how many votes were initiated this Day, and who was executed this Day (by side) — so everyone shares one clear read of where the game stands. This **surfaces facts already derivable from public play** (executed players' roles are revealed; night victims are always Law-abiding) into a single shared picture rather than disclosing anything hidden. The recap is woven into the AI players' working context **in chronological order**, alongside the day's utterances and other events, so it informs their later speech and votes the same way an utterance does. (A candidate aid for the standing **town-coordination** weakness — the AI town has never won at n=20 — by giving players a clear, common situational summary to reason from.)
 
+- [ ] **Recap-Driven Day Decisiveness**
+  - [ ] **Feed the Round Recap into AI Reasoning:** Surface the latest day-round recap **directly** in each surviving AI player's Day-speech and vote prompts — not only in the scrolling chat history — so they reason and act on the standing "N Law-abiding vs M Mafia" picture. The n=10 ollama review found the recap accurate at every round yet never acted upon (the town still wins 0/10), so this turns the shared situational summary into an actual decision input. (The day-decisiveness lever folded in now; the complementary force-a-vote and rule-awareness levers stay in the backlog.)
+  - [ ] **Game-Time in the Recap:** Add the current point in game time to the recap — **the round within the Day, beside the day number** — so every player has a clear sense of how far the Day has progressed and the mounting pressure to act before it ends.
+
+- [ ] **Browsable-Transcript Round Labels**
+  - [ ] **Per-Round Transcript Labels:** Label each engine speaking-round in the preserved eval transcripts. Today a single "Round" block spans several real rounds, which misreads the game's structure for a human reviewer — and would mislead the Phase-7 LLM-as-Judge that reads these transcripts. Each round (and each Moderator recap within it) should be attributable to its true round number.
+
 - [ ] **AI Personas & Per-Game Memory**
   - [x] **AI Character Sheet Generation:** At game start, have a creative LLM produce a distinct personality, backstory, and voice for each AI player, persisted for the whole game so their behavior feels consistent. *(Spec 016 — AI Character Personas; Completed 2026-06-18. Extended in scope: a Mafioso's two-layer persona (true self + public legend) and an end-of-game reveal.)*
   - [ ] **Per-AI Day-Round Private Thoughts:** At the end of each Day round, let every surviving AI player privately reflect — a short note seen by no one else (not the other players, not the human) — where it takes stock of the conversation and the game so far and plans its own strategy. These thoughts accumulate and are fed back to *that same* AI, in event order, in its later Day-speech prompts and, for a Mafioso, during Night pointing — a running private train of thought that grounds its next move. The reflection prompt is deliberately **mild**: it invites the player to think, without steering it toward any particular strategy. (A within-game working scratchpad fed back into the AI's own prompts — distinct from the **Per-AI Private Diaries** below, the before-Night entries surfaced at end-of-game.)
   - [ ] **Per-AI Private Diaries:** Before each Night, have every surviving AI player write a short private diary entry capturing their suspicions and plans, kept hidden during play and surfaced at the end. Stored in **AgentCore Memory** (remote mode) under a per-player namespace, or in the game's own state (local mode) — exercising the per-game AgentCore Memory pattern from Phase 2.
+
+---
+
+### Phase 6a
+
+_The richer "feels-alive" Day experience and the end-of-game payoff — split out from Phase 6 and deferred behind the near-term Day-decisiveness / per-AI-reasoning work above._
 
 - [ ] **Asynchronous Day Chat**
   - [ ] **Rate-Limited Concurrent AI Chatter:** Replace the synchronous Day loop with an asynchronous one in which AI players post messages over time, subject to a per-player rate limit, so discussions feel like a real room rather than a round-robin.
