@@ -1,0 +1,139 @@
+Game 6 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10
+
+<transcript>
+<setup>
+  Avery — Law-abiding Citizen
+    (no persona recorded)
+  Qaisar — Law-abiding Citizen
+    Personality: honest and straightforward
+    Manner: speaks with deliberate, measured pacing; uses simple, direct vocabulary; rarely stumbles over words; avoids slang or fancy phrases
+    Persona: Qaisar is a carpenter who has lived in the town his whole life. He's known for his reliability and integrity, always finishing projects on time and never taking shortcuts. He enjoys quiet evenings at home with his family and rarely gets involved in town gossip.
+  Lian — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, with a tendency to over-explain simple points; uses phrases like "you know what I mean" and "let's be real about this"; avoids slang but has a habit of repeating the last word of the previous sentence when thinking
+    Persona: Lian is a librarian who loves organizing books and helping people find what they need. They've lived in the town their whole life and are known for being trustworthy and reliable.
+  Vasia — Mafia
+    Personality: Vasia is a quiet, methodical woman who exudes calm confidence. She has a strong sense of duty and always puts the needs of others before her own. Vasia is deeply empathetic and often takes on the role of mediator in group discussions.
+    Manner: Vasia speaks in measured, deliberate tones with a soft, almost soothing cadence. She uses gentle gestures when she talks and tends to pause before answering questions, as if carefully considering each word. Her voice is warm but steady, never rising above a moderate volume.
+    Public legend: Vasia is a retired school librarian who lives alone in a small cottage on the edge of town. She spends her days tending to her garden and helping neighbors with their reading needs. Recently, she has been offering free tutoring sessions to local children struggling with literacy. Vasia is known for her kindness and reliability.
+    True self (hidden): Vasia was recruited into the Mafia after her younger brother was killed in a gang dispute. She became a key enforcer for the family, using her calm demeanor and nurturing appearance to manipulate people into trusting her before turning on them. She has been working her way up the ranks, always keeping one eye on the future while maintaining her public cover.
+  Ismail — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks with measured, deliberate pacing; uses simple, direct vocabulary with a slight hesitation before complex words; often repeats key phrases for emphasis
+    Persona: Ismail is a local librarian who has lived in the town his whole life. He enjoys reading, gardening, and helping others find information. He's known for being trustworthy and straightforward.
+  Tahani — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, with a tendency to over-explain simple points; uses frequent qualifiers like "you know" and "I mean"; avoids complex vocabulary and prefers direct, straightforward language
+    Persona: Tahani is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being reliable and trustworthy, often volunteering at local events and always lending a helping hand to neighbors.
+  Arman — Mafia
+    Personality: Calm and methodical, with a quiet confidence that inspires trust. Arman has a gentle demeanor but is fiercely protective of those he considers family.
+    Manner: Speaks in measured, deliberate tones. Uses phrases like "I've seen it all" or "It's not what it seems," often pausing before answering questions. His voice carries a slight rasp from years of smoking.
+    Public legend: Arman is a retired librarian who moved to the town after his wife passed away. He spends his days tending to his garden, reading old newspapers, and helping newcomers find their way around. He's known for being a quiet, helpful presence in the community.
+    True self (hidden): Arman was a low-level enforcer in the city's underground before fleeing to this town after a botched operation. He's been living under the radar for years, using his public identity as a cover while maintaining connections within the criminal network. He’s always looking for a way back into power.
+</setup>
+<preamble>
+  Moderator: A new game begins. Welcome, Avery.
+  Moderator: Players in this game: Avery, Qaisar, Lian, Vasia, Ismail, Tahani, Arman. Let the game begin.
+  Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+  Moderator (private to Vasia): Your Mafia teammates are: Arman. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+  Moderator (private to Arman): Your Mafia teammates are: Vasia. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+  Night 1 begins.
+  Pointing round 1:
+    Vasia points at Qaisar
+    Arman points at Qaisar
+  Moderator: During the night, Qaisar was killed.
+  Moderator: Night 1 ends.
+</night>
+<day>
+  Day 1 begins.
+  Moderator: Day breaks. Qaisar was killed last night. Qaisar was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Avery: I'm still watching everyone carefully before I commit.
+  Arman: I've seen it all, and I know how dangerous it is to rush into accusations. Let's take a moment to gather our thoughts.
+  Tahani: I think we should all just keep talking and see if anyone has any useful information to share.
+  Ismail: I think we should all just keep talking and see if anyone has any useful information to share.
+  Lian: I'm just trying to make sure everyone's telling the truth about what they saw last night. You know what I mean? Let's be real about this — we can't let our guard down now.
+  Vasia: I agree with Lian — we need to be cautious about jumping to conclusions. Let's focus on what we know and avoid speculation.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Ismail: I'm still trying to figure out what happened last night, but I do know that we need to be careful about who we trust.
+  Arman: I think we're all feeling the weight of Qaisar's loss. I'd like to hear from those who were closest to him — what did they see?
+  Avery: Hard to say yet — I want to hear another round first.
+  Tahani: I'm still trying to figure out what happened last night. You know, I mean, it's hard to say who could be involved, but we should keep talking and see if anyone has any leads.
+  Lian: I think we should all focus on the facts and not jump to conclusions. Let's be real about this — we need to figure out who the Mafia is, but we also need to make sure we're not accusing the wrong person.
+  Vasia: I think we should all take a step back and really listen to what everyone is saying. It's easy to get caught up in fear, but that's exactly what the Mafia wants.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Lian: I'm still trying to figure out what happened last night. You know what I mean? Let's be real about this — we need to stay focused on the facts and not let fear drive us to make mistakes.
+  Ismail: I'm still trying to figure out what happened last night, but I do know that we need to be careful about who we trust.
+  Arman: I think we should focus on the fact that Qaisar was killed during the night, and we need to figure out who had the opportunity.
+  Vasia: I think we should all stay focused on the facts and avoid letting fear cloud our judgment. It's clear that Qaisar's death has shaken us, but we must be cautious not to let paranoia lead us astray.
+  Avery: I don't have a strong read on anyone right now.
+  Tahani: I think we should all just keep talking and see if anyone has any useful information to share. You know, I mean, it's hard to say who could be involved, but we should keep talking and see if anyone has any leads.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Lian: I'm still trying to figure out what happened last night. You know what I mean? Let's be real about this — we need to stay focused on the facts and not let fear drive us to make mistakes.
+  Vasia: I think we're all still reeling from Qaisar's death, but we have to stay grounded in facts. I'm not convinced anyone here is hiding anything yet — let's not let fear turn into panic.
+  Avery: Let's not rush; something will give itself away soon.
+  Ismail: I'm still trying to figure out what happened last night, but I do know that we need to be careful about who we trust.
+  Arman: I've seen it all, and I know how dangerous it is to rush into accusations. Let's take a moment to gather our thoughts.
+  Tahani: I think we're all feeling the pressure, but let's not forget that Qaisar was killed during the night — that means one of us had to be involved. I mean, it's not like he just vanished into thin air.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Tahani: I think we all need to stay calm and keep talking, you know? Maybe someone will start to feel uncomfortable and say something that gives them away.
+  Avery: I'm keeping an open mind, but a few of you worry me.
+  Arman: I think we're all shaken by Qaisar's death, but we have to stay focused on the facts. I've seen it all — fear can make people say things they don't mean.
+  Vasia: I think we're all just trying to process what happened, but we need to be careful not to let fear make us reckless. Let's keep talking, but stay focused on the truth.
+  Lian: I think we're all just trying to stay calm, but let's not forget — we need to be smart about this. You know what I mean? We can't let fear make us act before we have proof.
+  Ismail: I think we're all just trying to stay calm, but let's not forget — we need to be smart about this. You know what I mean? We can't let fear make us act before we have proof.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Ismail: I'm still not convinced anyone here is hiding anything yet — let's not let fear turn into panic. But I do think we should all be honest about what we saw or heard last night.
+  Avery: Nothing's obvious to me yet — keep talking.
+  Vasia: I think we're all doing our best to stay calm, but I'd like to hear more about what each of you experienced during the night. It might help us piece together what really happened.
+  Tahani: I'm still trying to figure out what happened last night. You know, I mean, it's hard to say who could be involved, but we should keep talking and see if anyone has any leads.
+  Lian: I'm still trying to figure out what happened last night. You know what I mean? Let's be real about this — we need to stay focused on the facts and not let fear drive us to make mistakes.
+  Arman: I think we're all feeling the weight of Qaisar's death, but we have to be careful not to let fear turn into paranoia. It's not what it seems.
+  Moderator: The Day ends with no one executed.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+</day>
+<night>
+  Night 2 begins.
+  Pointing round 1:
+    Vasia points at Tahani
+    Arman points at Tahani
+  Moderator: During the night, Tahani was killed.
+  Moderator: Night 2 ends.
+</night>
+<day>
+  Day 2 begins.
+  Moderator: Day breaks. Tahani was killed last night. Tahani was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Arman: I've seen it all — and I know how dangerous it is to let fear drive us to make the wrong calls. We can't let panic blind us now.
+  Avery: I'm still watching everyone carefully before I commit.
+  Ismail: I'm still trying to figure out what happened last night, but I do know that we need to be careful about who we trust. I think we should all be honest about what we saw or heard last night — that's the only way we're going to get to the truth.
+  Lian: I'm still trying to figure out what happened last night. You know what I mean? Let's be real about this — we need to stay focused on the facts and not let fear drive us to make mistakes.
+  Vasia: I'm really hoping we can all stay calm and rational. Tahani's death is a shock, but let's not let grief cloud our judgment.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Arman: I think we're all shaken, but let's not let our emotions lead us astray. I've seen enough to know that panic won't help us find the truth.
+  Avery: Hard to say yet — I want to hear another round first.
+  Ismail: I'm still not convinced anyone here is hiding anything yet — let's not let fear turn into panic. But I do think we should all be honest about what we saw or heard last night.
+  Lian: I’m still trying to figure out what happened last night. You know what I mean? Let’s be real about this — we need to stay focused on the facts and not let fear drive us to make mistakes.
+  Vasia: I'm really hoping we can all stay calm and rational. Tahani's death is a shock, but let's not let grief cloud our judgment.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Avery: I don't have a strong read on anyone right now.
+  Arman: I think we're all doing our best under these circumstances, but we have to be careful not to jump to conclusions. I've seen it all — sometimes the most obvious suspect is the one who's been playing it safe.
+  Lian: I'm still trying to figure out what happened last night. You know what I mean? Let's be real about this — we need to stay focused on the facts and not let fear drive us to make mistakes.
+  Ismail: I'm still not convinced anyone here is hiding anything yet — let's not let fear turn into panic. But I do think we should all be honest about what we saw or heard last night.
+  Vasia: Ismail, you've been asking everyone to be honest about what they saw — do you have any specific observations about last night?
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Lian: I'm still trying to figure out what happened last night. You know what I mean? Let's be real about this — we need to stay focused on the facts and not let fear drive us to make mistakes.
+  Ismail: I did see something odd last night — Vasia, you were near the window, right? I just want to make sure we're all on the same page about what we observed.
+  Avery: Let's not rush; something will give itself away soon.
+  Arman: Ismail, you've been asking everyone to be honest — that's exactly what we need. But let's not forget, sometimes the most honest people are the ones who keep their eyes wide open.
+  Vasia: Ismail, you've been asking everyone to be honest — that's exactly what we need. But let's not forget, sometimes the most honest people are the ones who keep their eyes wide open.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Lian: I'm still trying to figure out what happened last night. You know what I mean? Let's be real about this — we need to stay focused on the facts and not let fear drive us to make mistakes.
+</round>
+</day>
+</transcript>

@@ -1,0 +1,140 @@
+Game 9 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10
+
+<transcript>
+<setup>
+  Avery — Law-abiding Citizen
+    (no persona recorded)
+  Abdul — Mafia
+    Personality: Calm and methodical, with a quiet intensity that makes people trust his judgment. He has an almost monk-like devotion to order and fairness, which is why he's so respected in the community.
+    Manner: Speaks slowly and deliberately, choosing each word carefully. His voice is soft but carries weight. He often pauses before answering questions, as if weighing the consequences of his words.
+    Public legend: Abdul is a retired school librarian who has lived in the town for over thirty years. He's known for his quiet demeanor and his ability to mediate disputes between neighbors. He spends his days reading, gardening, and helping the local youth with their homework. His neighbors describe him as dependable and kind-hearted.
+    True self (hidden): Abdul was a low-level enforcer in the city's organized crime syndicate before faking his death to escape the life. He's been living under an assumed identity for years, using his skills to manipulate situations from behind the scenes while maintaining a façade of peace and order.
+  Zara — Law-abiding Citizen
+    Personality: honest and straightforward
+    Manner: speaks slowly and deliberately, with a calm, measured tone. Uses simple, direct vocabulary and often repeats key words for emphasis. Never raises her voice, but speaks with quiet confidence.
+    Persona: Zara is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being trustworthy and always tells the truth, even when it's inconvenient.
+  Isaiah — Law-abiding Citizen
+    Personality: honest and straightforward
+    Manner: speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key words for emphasis. Often pauses before answering questions, as if carefully considering each word.
+    Persona: Isaiah is a retired school librarian who spent decades helping children find their way through books. He enjoys quiet evenings reading and participating in local book clubs. He has no secrets and lives a simple, honest life.
+  Lila — Law-abiding Citizen
+    Personality: Calm and observant
+    Manner: Speaks slowly and deliberately, with a tendency to pause before answering questions. Uses simple, direct language and avoids slang. Often checks her watch or glances around the room while talking.
+    Persona: Lila is a librarian who has lived in the town her entire life. She spends her days organizing books and helping people find information. She's known for being reliable and trustworthy, often offering to help others with their research or reading needs.
+  Nurul — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key phrases for emphasis. Often pauses before answering questions, as if carefully considering each word.
+    Persona: Nurul is a librarian who has lived in the town all their life. They spend their days organizing books and helping people find information. They are well-respected for their kindness and reliability.
+  Kai — Mafia
+    Personality: Kai is a quiet, methodical individual who appears to be a simple town librarian by day, but harbors a calculating and manipulative nature beneath their calm exterior.
+    Manner: Kai speaks in measured, deliberate tones with an almost robotic precision. They avoid direct eye contact and tend to phrase their sentences carefully, often using passive voice or indirect language to obscure their intent.
+    Public legend: Kai is a reserved and well-read librarian who has lived in the town for over a decade. They spend their days organizing books and helping patrons find resources. Known for their meticulous attention to detail, Kai is a quiet presence who rarely speaks unless necessary. They are respected by neighbors for their honesty and dedication to the community.
+    True self (hidden): Kai was once a skilled con artist who built a reputation for being unassailable in any scheme. When the town's prosperity began to decline, Kai saw an opportunity to infiltrate the community under the guise of a librarian. They now manipulate information and people from within the town's most trusted institution, using their access to gather intelligence and control key figures.
+</setup>
+<preamble>
+  Moderator: A new game begins. Welcome, Avery.
+  Moderator: Players in this game: Avery, Abdul, Zara, Isaiah, Lila, Nurul, Kai. Let the game begin.
+  Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+  Moderator (private to Abdul): Your Mafia teammates are: Kai. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+  Moderator (private to Kai): Your Mafia teammates are: Abdul. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+  Night 1 begins.
+  Pointing round 1:
+    Kai points at Zara
+    Abdul points at Zara
+  Moderator: During the night, Zara was killed.
+  Moderator: Night 1 ends.
+</night>
+<day>
+  Day 1 begins.
+  Moderator: Day breaks. Zara was killed last night. Zara was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Avery: I'm still watching everyone carefully before I commit.
+  Lila: I'll need to see some reasoning before I jump to any conclusions.
+  Isaiah: I agree with Lila — we need solid reasoning before accusing anyone.
+  Abdul: That's unfortunate about Zara. I hope we can find a way to keep everyone safe while we figure this out.
+  Nurul: I think we should focus on why Zara was targeted. It's not random — someone knew something about her. I'm still waiting to hear what others saw last night.
+  Kai: I agree with Nurul — we should focus on Zara's death and what it reveals about our killer's knowledge. I'm still forming my thoughts on who might have been watching.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Abdul: I think we should all be mindful of how quickly we jump to conclusions. Zara's death was a shock, but let's not let fear cloud our judgment.
+  Lila: I think we should focus on what Zara knew that made her a target. That might give us a clue about who among us is still watching.
+  Isaiah: I think we should all be careful about who we trust — especially since Zara was killed because of what she knew. We need to keep talking and stay alert.
+  Avery: Hard to say yet — I want to hear another round first.
+  Kai: I think it's important that we consider Zara's last moments — what she might have seen or said that would have made her a target.
+  Nurul: I think we should all be honest about what we saw last night — that's the only way we'll find Zara's killer.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Lila: I think we should focus on Zara's last words or actions — that's often what gives the killer away.
+  Kai: I think we should all be cautious about who we trust — especially since Zara's death was so sudden. It's clear our killer is watching us closely.
+  Abdul: I think we're all feeling the weight of Zara's death, but we must stay focused on facts, not fear.
+  Avery: I don't have a strong read on anyone right now.
+  Isaiah: I think we should all be honest about what we saw last night — that's the only way we'll find Zara's killer.
+  Nurul: I think we need to figure out what Zara knew — that's the key to finding her killer. I'm still waiting to hear what others saw last night.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Avery: Let's not rush; something will give itself away soon.
+  Nurul: I still think we should all be honest about what we saw last night — that's the only way we'll find Zara's killer.
+  Lila: I'm still waiting to hear what Zara saw or said before she was killed. That's often the key.
+  Isaiah: I think we should all be honest about what we saw last night — that's the only way we'll find Zara's killer.
+  Abdul: I think we should all take a step back and really assess what we know versus what we're guessing. Zara's death was a blow, but we must not let our emotions lead us astray.
+  Kai: I think we should focus on Zara's final moments — what she saw or said could be the key to identifying our killer.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Lila: I think we're all grasping at straws. Let's focus on what Zara actually said or did before she was killed — that’s where the truth lies.
+  Nurul: I think we're all right to be cautious, but we also need to trust each other if we're going to solve this. I'm still waiting to hear what Zara saw or said — that's what's going to help us find her killer.
+  Isaiah: I think we should all be honest about what we saw last night — that's the only way we'll find Zara's killer.
+  Kai: I think we're all focused on Zara's death, but perhaps we should also consider what she might have been hiding. It's possible the killer knew more about her than we do.
+  Avery: I'm keeping an open mind, but a few of you worry me.
+  Abdul: I agree with Avery — we should all be cautious about who we trust. I'm still waiting to hear what Zara actually saw or said before she was killed.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Avery: Nothing's obvious to me yet — keep talking.
+  Lila: I still think we're not looking close enough at what Zara did before she was killed. That's where the real clues are.
+  Nurul: I think we're all right to be cautious, but we also need to trust each other if we're going to solve this. I'm still waiting to hear what Zara saw or said — that's what's going to help us find her killer.
+  Kai: I agree with Nurul — we need to focus on what Zara actually saw or said. It's possible she was about to expose something that made her a target.
+  Abdul: I think we're all clinging to the same pieces of information, but we need to look beyond what Zara saw or said — we need to consider what she *didn't* say, or what she might have been too afraid to reveal.
+  Isaiah: I think we're all focusing too much on Zara's last words, but what about what she *didn't* say? That might be the key.
+  Moderator: The Day ends with no one executed.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+</day>
+<night>
+  Night 2 begins.
+  Pointing round 1:
+    Abdul points at Isaiah
+    Kai points at Isaiah
+  Moderator: During the night, Isaiah was killed.
+  Moderator: Night 2 ends.
+</night>
+<day>
+  Day 2 begins.
+  Moderator: Day breaks. Isaiah was killed last night. Isaiah was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Abdul: Isaiah's death throws a wrench into our investigation — I think we need to reassess everyone's alibis and motives now.
+  Lila: Isaiah's death changes everything. I think we need to figure out who had the means and motive to kill him — and why he was targeted specifically.
+  Kai: Isaiah's death is a setback, but it also means we have less time to figure out who's behind these killings. We need to be more careful about who we trust.
+  Avery: I'm still watching everyone carefully before I commit.
+  Nurul: I think we should all be careful about who we trust — especially now that Isaiah is gone. I still believe we need to focus on what Zara saw or said before she was killed.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Lila: I think we're all acting like we know more than we do. Let's not rush into accusations — let's focus on what we actually know about Isaiah's death.
+  Abdul: I think we should all be honest about what we know — not what we're guessing. Isaiah's death was a blow, but we must not let our emotions lead us astray.
+  Nurul: I think we're all shaken by Isaiah's death, but we can't let fear make us rush into mistakes. We need to stay calm and keep looking at what we actually know — not what we're afraid might be true.
+  Avery: Hard to say yet — I want to hear another round first.
+  Kai: I think we're all feeling the pressure, but we need to be careful not to let fear cloud our judgment. Isaiah's death is tragic, but it also means we have less time to figure out who's behind these killings.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Abdul: I think we're all feeling the weight of these losses, but we must stay focused on the facts. Isaiah's death was a setback, but it also means we have less time to uncover the truth — and that makes every word we hear now more critical.
+  Avery: I don't have a strong read on anyone right now.
+  Nurul: I think we're all feeling the pressure, but we need to remember that Isaiah's death doesn't automatically make someone a target. We should focus on what we actually know — not what we're afraid might be true.
+  Kai: I think we're all feeling the weight of these losses, but we must stay focused on the facts. Isaiah's death was a setback, but it also means we have less time to uncover the truth — and that makes every word we hear now more critical.
+  Lila: I think we're all feeling the pressure, but we need to stay focused on what actually happened to Isaiah — not just what we suspect.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Abdul: I think we're all feeling the weight of these losses, but we must stay focused on the facts. Isaiah's death was a setback, but it also means we have less time to uncover the truth — and that makes every word we hear now more critical.
+  Avery: Let's not rush; something will give itself away soon.
+  Lila: I think we're all trying to piece together what happened to Isaiah, but we need to be careful not to jump to conclusions based on assumptions.
+  Kai: I think we're all clinging too tightly to the assumption that Isaiah was killed because of what he knew — but maybe the killer wanted him silenced for a different reason entirely.
+  Nurul: I think we're all trying to figure out who killed Isaiah, but we need to be careful not to let fear make us choose the wrong person to execute. Let's focus on what we actually know, not what we're afraid might be true.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Kai: I think we're all letting fear dictate our suspicions. If the killer wanted to send a message, maybe they chose Isaiah not for what he knew, but for who he was — someone who didn't stand out.
+  Nurul: I think we're all letting fear cloud our judgment. We need to stay focused on facts, not fears.
+</round>
+</day>
+</transcript>

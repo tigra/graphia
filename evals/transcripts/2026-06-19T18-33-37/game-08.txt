@@ -1,0 +1,141 @@
+Game 8 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10
+
+<transcript>
+<setup>
+  Avery — Law-abiding Citizen
+    (no persona recorded)
+  yusuf — Law-abiding Citizen
+    Personality: honest and straightforward
+    Manner: speaks slowly and deliberately, with a slight hesitation before each word, using simple vocabulary and often repeating himself for emphasis
+    Persona: yusuf is a retired schoolteacher who now spends his days gardening and reading newspapers. he's known for his kindness and his habit of always telling the truth, no matter how uncomfortable it might be
+  mina — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses. Often repeats key words for emphasis and avoids complex sentences.
+    Persona: Mina is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. Mina is known for being kind and trustworthy, always willing to lend a listening ear or offer a friendly smile.
+  zhang — Mafia
+    Personality: Calm and methodical, with a quiet intensity that makes others trust his judgment.
+    Manner: Speaks in measured, deliberate tones, often pausing before responding. Uses formal language and avoids emotional expressions.
+    Public legend: Zhang is a retired accountant who moved to the town to live a peaceful life away from the bustling city. He enjoys gardening, reading, and helping neighbors with their finances. His calm demeanor and attention to detail make him a trusted figure in the community.
+    True self (hidden): Zhang was recruited into the Mafia after his family was threatened for refusing to pay protection money. He has since risen through the ranks using his financial acumen and ability to remain composed under pressure. His cover as an accountant allows him to blend into society while managing the Mafia's finances.
+  nina — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses for emphasis. Often repeats key words for clarity.
+    Persona: Nina is a librarian who loves quiet evenings and helping others find the right book. She's known for her kindness and straightforwardness in all her interactions.
+  kai — Mafia
+    Personality: Kai is a quiet, methodical individual who exudes calm confidence. They are deeply empathetic but keep their emotions carefully guarded, rarely showing vulnerability. They're a natural problem-solver who prefers to observe before acting, and they take pride in being seen as reliable and trustworthy.
+    Manner: Kai speaks slowly and deliberately, choosing words carefully. They tend to use indirect language, often phrasing things as questions or suggestions rather than statements. Their tone is soft but firm, with a slight cadence that makes them sound thoughtful and deliberate.
+    Public legend: Kai is a librarian who has lived in the town for most of their life. They're known for being incredibly organized, always arriving early to events, and offering quiet support to others. They’re deeply respected for their discretion and kindness, especially when helping people with research or navigating difficult situations.
+    True self (hidden): Kai joined the Mafia after a tragic loss — their younger brother was killed in a "random" accident that turned out to be orchestrated. They’ve spent years climbing the ranks under the guise of a quiet observer, using their ability to blend in and gather intelligence to protect the family name. They now see themselves as a guardian of the truth, even if it means playing both sides.
+  harry — Law-abiding Citizen
+    Personality: honest and straightforward
+    Manner: speaks slowly and deliberately, using simple vocabulary with a slight rural accent; often pauses to think before answering questions
+    Persona: Harry is a retired schoolteacher who lived in the same town his whole life. He spent forty years teaching reading and writing to children, and now enjoys gardening and helping out at the local community center.
+</setup>
+<preamble>
+  Moderator: A new game begins. Welcome, Avery.
+  Moderator: Players in this game: Avery, yusuf, mina, zhang, nina, kai, harry. Let the game begin.
+  Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+  Moderator (private to zhang): Your Mafia teammates are: kai. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+  Moderator (private to kai): Your Mafia teammates are: zhang. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+  Night 1 begins.
+  Pointing round 1:
+    zhang points at harry
+    kai points at harry
+  Moderator: During the night, harry was killed.
+  Moderator: Night 1 ends.
+</night>
+<day>
+  Day 1 begins.
+  Moderator: Day breaks. harry was killed last night. harry was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  yusuf: I think it is important that we listen carefully to each person's story. I do not trust anyone who speaks too quickly. That is all I have to say.
+  Avery: I'm still watching everyone carefully before I commit.
+  kai: I agree with yusuf — it's crucial that we take our time to really listen to each other. I've been thinking about the way things unfolded last night, and I wonder if anyone else felt a bit uneasy about the circumstances surrounding harry's death.
+  nina: I think we should focus on what we know, not guesswork. Harry was killed, and we need to figure out why. I'm still watching everyone carefully.
+  mina: I agree with nina. We must focus on facts. Harry was killed. That is all we know for sure.
+  zhang: I find it peculiar that we're all here discussing harry's death, yet no one has mentioned the specific details of how he was killed. I believe we should focus on facts and avoid speculation.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  yusuf: I think we should all be very careful about who we trust. I have been thinking about what everyone said, and I do not like how quickly some people spoke. That is all.
+  Avery: Hard to say yet — I want to hear another round first.
+  mina: I think we should all try to stay calm. We need to talk about what we know, not what we guess.
+  zhang: I believe we should focus on the facts of harry's death. The manner of his killing remains unspoken, which is unusual.
+  kai: I think it's worth considering whether harry's death was truly random, or if someone among us might have been watching too closely to know more than they're letting on.
+  nina: I think we should all try to stay calm and focus on facts. Harry was killed, and we need to figure out why — not who might have said something quickly.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Avery: I don't have a strong read on anyone right now.
+  mina: I think we should all try to stay calm and focus on what we know. Harry was killed, and that is the only fact we have.
+  nina: I think we should all try to stay calm and focus on facts. Harry was killed, and that is the only fact we have.
+  zhang: I believe we should all focus on the facts of how harry was killed. The lack of specific details is concerning.
+  yusuf: I think it is very important that we all speak slowly and carefully. I do not trust anyone who speaks too quickly. That is all.
+  kai: I think we're all feeling the weight of harry's loss. I wonder if anyone else noticed anything odd about the way the night unfolded.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  mina: I think we should all try to stay calm and focus on what we know. Harry was killed, and that is the only fact we have.
+  kai: I think it's strange that we're all so focused on the facts, yet no one has mentioned the specific details of how Harry was killed. I'm starting to wonder if that's by design.
+  nina: I think we should all try to stay calm and focus on facts. Harry was killed, and that is the only fact we have.
+  Avery: Let's not rush; something will give itself away soon.
+  yusuf: I think it is very important that we all speak slowly. I do not like how quickly some people spoke. That is all.
+  zhang: I agree with kai — it is odd that we have not yet discussed the specifics of how Harry was killed. I think we should all be cautious about who among us might know more than they are sharing.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Avery: I'm keeping an open mind, but a few of you worry me.
+  nina: I think we should all try to stay calm and focus on facts. Harry was killed, and that is the only fact we have.
+  mina: I think we should all try to stay calm and focus on what we know. Harry was killed, and that is the only fact we have.
+  yusuf: I think we should all be very careful about who we trust. I have been listening, and I do not like how quickly some people spoke. That is all.
+  kai: I can't help but notice how everyone keeps returning to the same point — that we must focus on facts. It makes me wonder if there's something we're all avoiding discussing.
+  zhang: I believe we should all consider that the silence around the details of Harry's death might be intentional. It is uncharacteristic for a group to avoid discussing such specifics, especially when the manner of death is so central to our investigation.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  nina: I think we should all try to stay calm and focus on facts. Harry was killed, and that is the only fact we have.
+  mina: I think we should all try to stay calm and focus on what we know. Harry was killed, and that is the only fact we have.
+  zhang: I think it's worth considering that the silence around Harry's death details might be more than just caution — it could be a deliberate misdirection.
+  kai: I think it's worth asking — if the details of Harry's death are so crucial, why has no one shared what they actually witnessed?
+  Avery: Nothing's obvious to me yet — keep talking.
+  yusuf: I think it is very important that we all speak slowly and carefully. I do not trust anyone who speaks too quickly. That is all.
+  Moderator: The Day ends with no one executed.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+</day>
+<night>
+  Night 2 begins.
+  Pointing round 1:
+    kai points at nina
+    zhang points at nina
+  Moderator: During the night, nina was killed.
+  Moderator: Night 2 ends.
+</night>
+<day>
+  Day 2 begins.
+  Moderator: Day breaks. nina was killed last night. nina was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  zhang: The loss of nina is a blow to our group's unity. I think we must now be even more vigilant about who among us might be hiding information.
+  Avery: I'm still watching everyone carefully before I commit.
+  mina: I think we should all try to stay calm and focus on what we know. Nina was killed, and that is the only fact we have.
+  kai: I'm concerned that nina's death might be connected to our earlier discussion about Harry's murder. It feels like we're being pushed toward a conclusion before all the facts are out.
+  yusuf: I think it is very important that we all speak slowly. I do not like how quickly some people spoke about nina's death. That is all.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  zhang: I find it concerning that we lost nina tonight, and yet no one has offered a clear explanation for her death. It is unsettling when the most vulnerable among us are silenced without discussion.
+  yusuf: I think it is very important that we all speak slowly. I do not like how quickly some people spoke about nina's death. That is all.
+  mina: I think we should all try to stay calm and focus on what we know. Nina was killed, and that is the only fact we have.
+  kai: I can't help but wonder if nina's death was meant to silence her, or if we're being manipulated into focusing on the wrong details.
+  Avery: Hard to say yet — I want to hear another round first.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  mina: I think we should all try to stay calm and focus on what we know. Nina was killed, and that is the only fact we have.
+  yusuf: I think we should all be very careful about who we trust. I have been listening, and I do not like how quickly some people spoke about nina's death. That is all.
+  zhang: I agree with yusuf — it is indeed unsettling how quickly nina was taken, and how little we know of the circumstances surrounding her death. We must not let fear cloud our judgment.
+  kai: I wonder if nina's death was a message — a warning to those who might speak too soon or too loudly about Harry's murder.
+  Avery: I don't have a strong read on anyone right now.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  kai: I think it's worth considering whether nina's death was a deliberate attempt to steer our conversation away from Harry's murder, or if we're simply seeing a pattern of elimination.
+  mina: I think we should all try to stay calm and focus on what we know. Nina was killed, and that is the only fact we have.
+  zhang: I believe we should focus on the pattern of deaths and avoid jumping to conclusions. It's crucial that we examine all information carefully before making accusations.
+  Avery: Let's not rush; something will give itself away soon.
+  yusuf: I think it is very important that we all speak slowly and carefully. I do not like how quickly some people spoke about nina's death. That is all.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  yusuf: I think it is very important that we all speak slowly. I do not like how quickly some people spoke about nina's death. That is all.
+  kai: I think we're all feeling the weight of nina's loss, but I'm starting to believe her death was not random — it feels too deliberate.
+  mina: I think we should all try to stay calm and focus on what we know. Nina was killed, and that is the only fact we have.
+</round>
+</day>
+</transcript>

@@ -1,0 +1,160 @@
+Game 3 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10
+
+<transcript>
+<setup>
+  Avery — Law-abiding Citizen
+    (no persona recorded)
+  Adalyn — Mafia
+    Personality: Adalyn is a gentle, methodical woman who exudes calm authority. She's deeply empathetic yet calculating in her approach to problems, always seeming to have the best interests of others at heart while carefully observing and collecting information.
+    Manner: Adalyn speaks in measured, soft tones with a slight lilt in her voice. She often pauses before answering questions, as if weighing each word carefully. She uses phrases like "I believe" or "From what I've seen" to imply she's always considering multiple perspectives.
+    Public legend: Adalyn is a midwife in the town, known for her kindness and steady hands. She tends to the sick and delivers babies with quiet grace. She has a small garden where she grows herbs for healing remedies and often shares them with neighbors. Her home is always warm and welcoming, filled with the scent of lavender and chamomile.
+    True self (hidden): Adalyn was a nurse in a bustling city before joining the Mafia. She discovered her talent for manipulation while working in the hospital's emergency ward, where she could observe people's true natures under pressure. She became a Mafioso after her sister was killed by a rival gang and she needed to protect her remaining family. She has since become a trusted enforcer who operates with a quiet, calculating grace.
+  Finn — Law-abiding Citizen
+    Personality: honest and straightforward
+    Manner: speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key phrases for emphasis. Pauses frequently to think, and often nods when making a point.
+    Persona: Finn is a blacksmith in town, known for his reliability and steady hands. He's been in the same spot for decades, building tools and fixing things for everyone. He's never been involved in anything shady, and he's always been open about his work and life.
+  Ila — Mafia
+    Personality: A quiet, methodical woman who presents herself as a simple herbalist and healer, deeply devoted to her community's wellbeing.
+    Manner: Speaks in soft, measured tones with a slight lisp, often pausing before answering questions. She tends to use metaphors drawn from nature and healing, and avoids direct confrontation or aggressive speech.
+    Public legend: Ila has lived in the town her entire life, working as a healer and herbalist. She tends to the sick and injured with gentle care, always offering remedies made from plants found in the surrounding forest. Many townspeople trust her with their health and well-being, as she has never been known to cause harm or keep secrets.
+    True self (hidden): Ila was recruited into the Mafia by a trusted mentor who recognized her calm demeanor and ability to blend in. She was trained in the art of manipulation and silent influence, using her position as a healer to gather information and subtly eliminate threats without raising suspicion. Her cover is so effective that even those closest to her believe she is entirely innocent.
+  Kaiya — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, using simple but clear language with frequent pauses for emphasis. Often repeats key words to drive a point home.
+    Persona: Kaiya is a town librarian who loves nothing more than organizing books and helping people find the information they need. She's known throughout the town for her kindness and straightforward nature.
+  Lumi — Law-abiding Citizen
+    Personality: Innocent and trusting
+    Manner: Speaks slowly and deliberately, using simple vocabulary with frequent pauses. Has a habit of tilting her head when listening and often repeats key words for emphasis.
+    Persona: Lumi is a librarian who loves helping people find the right books. She's known for being kind to everyone and always ready with a smile. Her days are spent organizing collections and reading stories aloud to children at the local library.
+  Mikael — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, with a soft, measured tone. Uses simple, direct vocabulary and often repeats key words for emphasis. Never rushes or uses slang.
+    Persona: Mikael is a retired school librarian who lived a quiet life in the town. He enjoys reading, gardening, and helping neighbors with their books. He has no secrets and is well-known for his kindness and reliability.
+</setup>
+<preamble>
+  Moderator: A new game begins. Welcome, Avery.
+  Moderator: Players in this game: Avery, Adalyn, Finn, Ila, Kaiya, Lumi, Mikael. Let the game begin.
+  Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+  Moderator (private to Adalyn): Your Mafia teammates are: Ila. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+  Moderator (private to Ila): Your Mafia teammates are: Adalyn. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+  Night 1 begins.
+  Pointing round 1:
+    Ila points at Mikael
+    Adalyn points at Mikael
+  Moderator: During the night, Mikael was killed.
+  Moderator: Night 1 ends.
+</night>
+<day>
+  Day 1 begins.
+  Moderator: Day breaks. Mikael was killed last night. Mikael was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Kaiya: Ila, you seemed really shaken by Mikael's death. Can you tell us what you were doing during the night? That's a good question to ask, and it might help us figure out who the killer is.
+  Ila: I was tending to my herbs, as usual. The night was quiet, too quiet.
+  Avery: I'm still watching everyone carefully before I commit.
+  Finn: Ila, you said the night was too quiet. That's strange — if you were tending herbs, did you notice anything unusual about the garden? I'm thinking maybe the killer was trying to stay quiet too.
+  Adalyn: I believe we should all be cautious about who we trust, especially with the killer still among us.
+  Lumi: Ila, you mentioned the night was too quiet. I was reading by the fireplace, and I didn't hear anything unusual. Did you notice anything strange about the garden? I'm trying to understand what happened.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Lumi: Ila, you said the night was too quiet. I was reading by the fireplace, and I didn't hear anything unusual. Did you notice anything strange about the garden? I'm trying to understand what happened.
+  Avery: Hard to say yet — I want to hear another round first.
+  Finn: Ila, you said the night was too quiet. That's what I thought too — it was so quiet, I couldn't even hear my own hammer on the anvil. I'm thinking maybe the killer was trying to stay quiet too.
+  Kaiya: Ila, you keep saying the night was too quiet. That's strange — if you were tending herbs, did you see anything that might have been out of place in the garden? I'm trying to understand what happened.
+  Ila: The herbs were unsettled, as if something had disturbed them — not from the wind, but from footsteps.
+  Adalyn: Ila, you mentioned the herbs were unsettled. I was in my garden tending to the lavender when I noticed some of the plants were trampled. It seems the killer may have been careless.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Ila: The footsteps were light, but deliberate — not the usual path through the garden. It seems the killer knew exactly where to step to avoid detection.
+  Kaiya: Ila, you mentioned the killer knew exactly where to step. That sounds like they were familiar with the garden — did you recognize those footsteps, or did they seem strange to you? I'm trying to understand if this was someone who lived here or someone new.
+  Adalyn: I was tending to my lavender when I noticed the trampled herbs, but I didn't hear anything unusual. It's strange how the killer seemed so deliberate yet careless at the same time.
+  Lumi: Ila, you said the footsteps were deliberate. That makes me think the killer was someone who knew the garden well. Did you see anyone walking that path recently?
+  Finn: Ila, you said the footsteps were deliberate and not from the wind. That means the killer was very careful — but also knew the garden well. Did you see anyone else walking that path recently? I'm thinking maybe we should check who else has been in the garden lately.
+  Avery: I don't have a strong read on anyone right now.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Adalyn: I was tending to my lavender when I noticed the trampled herbs, but I didn't hear anything unusual. It's strange how the killer seemed so deliberate yet careless at the same time.
+  Finn: Ila, you said the footsteps were deliberate and not from the wind. That means the killer was very careful — but also knew the garden well. Did you see anyone else walking that path recently? I'm thinking maybe we should check who else has been in the garden lately.
+  Lumi: Ila, you said the footsteps were deliberate. That makes me think the killer was someone who knew the garden well. Did you see anyone else walking that path recently?
+  Kaiya: I think we should focus on who else has been in the garden lately. That's where the killer left their clues.
+  Ila: I’ve been tending to my herbs, but I’ve noticed that some of them have been disturbed — not by the wind, but by something heavier than a breeze.
+  Avery: Let's not rush; something will give itself away soon.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Avery: I'm keeping an open mind, but a few of you worry me.
+  Lumi: Ila, you said the herbs were disturbed by something heavier than a breeze. That sounds like more than just an animal — do you think it could have been a person?
+  Moderator: Kaiya has called for a vote to execute Finn.
+  Moderator: Avery: No
+  Moderator: Adalyn: Yes
+  Moderator: Finn: No
+  Moderator: Ila: No
+  Moderator: Kaiya: No
+  Moderator: Lumi: No
+  Moderator: The tally: 1 Yes, 5 No.
+  Moderator: The vote fails.
+</round>
+  <round>
+  Round 2.
+  Moderator: Finn has called for a vote to execute Avery.
+  Moderator: Avery: No
+  Moderator: Adalyn: Yes
+  Moderator: Finn: No
+  Moderator: Ila: Yes
+  Moderator: Kaiya: No
+  Moderator: Lumi: Yes
+  Moderator: The tally: 3 Yes, 3 No.
+  Moderator: The vote fails.
+</round>
+  <round>
+  Round 3.
+  Kaiya: Ila, you mentioned the herbs were disturbed by something heavy. Did you see anyone else near the garden area? I'm trying to piece together who could have been there.
+  Adalyn: Ila, your mention of the disturbed herbs has me wondering — did you notice any other signs of someone lingering nearby, or perhaps a specific item left behind?
+  Finn: Someone is trying to misdirect suspicion — and it might not be who we think.
+  Lumi: I think we should trust our instincts, but also listen carefully to what everyone says. It's easy to get confused when there are so many clues... and not enough time to check them all.
+  Ila: The herbs I tend to are particular about their care — they don’t respond well to being stepped on, especially not by heavy feet. I've been watching the garden closely, and it seems someone has been coming in after dark.
+  Avery: Nothing's obvious to me yet — keep talking.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.
+  Ila: The garden's been disturbed, but not just by footsteps. There's a scent — not of the herbs, but something else. It lingered, like a shadow that won't fade.
+  Avery: I'm still watching everyone carefully before I commit.
+  Finn: Ila, you've mentioned the scent and the heavy footsteps. But what about the timing? Did you see this disturbance during the day, or was it after dark like you said? That could be key.
+  Lumi: Ila, you said the scent lingered like a shadow... that makes me think it might have been someone who stayed a while, not just passing through. Do you remember what time it was when you first noticed the disturbance?
+  Kaiya: Ila, you said the scent lingered like a shadow... that makes me think it might have been someone who stayed a while, not just passing through.
+  Adalyn: I believe the timing of the disturbance is crucial — if it was after dark, the attacker may have had more time to linger. But I'm wondering, did anyone else notice anything unusual around that time?
+  Moderator: The Day ends with no one executed.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.
+</round>
+</day>
+<night>
+  Night 2 begins.
+  Pointing round 1:
+    Adalyn points at Finn
+    Ila points at Finn
+  Moderator: During the night, Finn was killed.
+  Moderator: Night 2 ends.
+</night>
+<day>
+  Day 2 begins.
+  Moderator: Day breaks. Finn was killed last night. Finn was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Kaiya: Finn was a Law-abiding Citizen, and now we have one less ally. I'm thinking we should all be extra careful about who we trust — especially with the killer still among us.
+  Adalyn: I believe we must be cautious about who among us could have orchestrated Finn's murder, especially given how the killer seems to target the most observant.
+  Lumi: I think we should focus on the garden — Ila, you said the scent lingered like a shadow. That sounds important.
+  Avery: Hard to say yet — I want to hear another round first.
+  Ila: The scent I noticed wasn't just lingering — it was sharp, like something torn away. I think whoever disturbed the garden knew they were being watched.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Adalyn: Ila, if the scent was sharp and like something torn away, it makes me wonder — did you see any physical evidence left behind, or could it have been something as simple as a torn piece of fabric?
+  Kaiya: Ila, if the scent was sharp and like something torn away, it makes me wonder — did you see any physical evidence left behind, or could it have been something as simple as a torn piece of fabric?
+  Ila: The garden's been disturbed, but I'm thinking the killer might have left something behind — a small thing, maybe, that wouldn't draw attention. Something sharp, like a torn edge.
+  Lumi: Ila, you said the killer might have left something sharp behind. That makes me wonder — could it have been a tool, or maybe something from inside the house?
+  Avery: I don't have a strong read on anyone right now.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Adalyn: I think we should consider that whoever disturbed the garden might have been in such a hurry they forgot something — or perhaps left something intentionally to throw us off.
+  Ila: The garden's been disturbed, but I'm thinking the killer might have left something behind — a small thing, maybe, that wouldn't draw attention. Something sharp, like a torn edge.
+  Kaiya: Ila, you said the scent lingered like a shadow. That sounds important.
+  Lumi: Ila, you said the killer might have left something sharp behind. That makes me think it could be a small tool, maybe even something we can find if we look closely.
+  Avery: Let's not rush; something will give itself away soon.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Lumi: I think we should all be careful about who we trust — especially with the killer still among us.
+  Adalyn: I believe the killer's haste or intent to mislead might have left us a clue — perhaps something small and easily overlooked, but telling.
+</round>
+</day>
+</transcript>

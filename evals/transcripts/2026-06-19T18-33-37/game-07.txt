@@ -1,0 +1,140 @@
+Game 7 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10
+
+<transcript>
+<setup>
+  Avery — Law-abiding Citizen
+    (no persona recorded)
+  Zoe — Law-abiding Citizen
+    Personality: honest and straightforward
+    Manner: speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key phrases for emphasis. Often pauses before answering questions, as if carefully considering each word.
+    Persona: Zoe is a librarian who has lived in the town her entire life. She spends her days organizing books and helping people find information. She's known for being trustworthy and always tells the truth, even when it's inconvenient.
+  Liam — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses. Often repeats himself for emphasis and tends to look directly at the person he's speaking to.
+    Persona: Liam is a retired postal worker who now spends his days tending to his garden and reading local newspapers. He’s known around town for his punctuality and reliability, always arriving on time for meetings and never missing a beat.
+  Hanna — Law-abiding Citizen
+    Personality: honest and straightforward
+    Manner: speaks slowly and deliberately, choosing her words carefully; avoids slang and uses formal grammar; often pauses before answering questions
+    Persona: Hanna is a librarian who has lived in the town her entire life. She spends her days organizing books and helping people find information. She's known for being reliable and trustworthy.
+  Izzy — Law-abiding Citizen
+    Personality: straightforward and trusting
+    Manner: speaks slowly and deliberately, using simple words and often repeating key phrases for emphasis. Has a habit of nodding while talking and finishes sentences with "you know?"
+    Persona: Izzy is a librarian who loves books and quiet conversations. They've lived in town their whole life and work hard to keep the community informed and connected through reading and storytelling.
+  Kai — Mafia
+    Personality: Kai is a quiet, methodical individual who exudes calm confidence. They are deeply empathetic and always seem to know exactly what to say in tense situations, but their thoughts remain inscrutable. They're the kind of person who listens more than they speak, yet their words carry weight.
+    Manner: Kai speaks in measured, deliberate tones with a soft cadence. They rarely raise their voice and often pause before answering questions. Their speech is structured and logical, sometimes bordering on clinical. When they do laugh, it's rare and genuine, but never at inappropriate times.
+    Public legend: Kai is a retired librarian who moved to the town to live quietly after years of helping others through books and knowledge. They enjoy gardening, reading, and volunteering at the local community center. They're known for being helpful, reliable, and always available when someone needs advice or support. People trust Kai because they never judge and always offer thoughtful responses.
+    True self (hidden): Kai was once a minor enforcer in the city's underground network before being promoted to a higher position within the organization. They joined after their family was threatened by a rival gang, and over time, they became indispensable due to their calm demeanor and ability to manipulate situations without drawing attention. They now act as a middleman between various factions, ensuring order while advancing their own interests.
+  Yan — Mafia
+    Personality: A calm, methodical individual who speaks with quiet confidence and always appears to have their thoughts together. They are naturally observant, yet unassuming, often listening more than they speak.
+    Manner: Uses measured, deliberate speech. Prefers to phrase statements as questions or soft assertions. Speaks with a slight drawl, often trailing off at the end of sentences. Avoids direct confrontation and rarely raises their voice.
+    Public legend: Yan is a local librarian who has lived in town his whole life. He spends his days organizing books, helping patrons find resources, and occasionally teaching basic literacy classes to children. He's known for being patient, reliable, and deeply interested in the stories of others. People trust him because he never judges and always listens.
+    True self (hidden): Yan was recruited into the Mafia after his younger sister was killed in a drive-by shooting. The family was powerless to stop it. He took a vow of silence, swearing never to reveal his true identity or the names of those involved in the organization. He uses his quiet nature and ability to observe as tools for his role within the group.
+</setup>
+<preamble>
+  Moderator: A new game begins. Welcome, Avery.
+  Moderator: Players in this game: Avery, Zoe, Liam, Hanna, Izzy, Kai, Yan. Let the game begin.
+  Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+  Moderator (private to Kai): Your Mafia teammates are: Yan. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+  Moderator (private to Yan): Your Mafia teammates are: Kai. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+  Night 1 begins.
+  Pointing round 1:
+    Yan points at Zoe
+    Kai points at Zoe
+  Moderator: During the night, Zoe was killed.
+  Moderator: Night 1 ends.
+</night>
+<day>
+  Day 1 begins.
+  Moderator: Day breaks. Zoe was killed last night. Zoe was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Kai: I'm glad we have some time to discuss what happened last night. I hope everyone is feeling safe and secure.
+  Avery: I'm still watching everyone carefully before I commit.
+  Hanna: I'm still watching everyone carefully before I commit.
+  Liam: I think we should all just stay calm and keep talking. No need to rush into anything.
+  Yan: That's good to hear, Kai. I hope we can all stay calm and think clearly about what happened to Zoe.
+  Izzy: I think we should all just stay calm and keep talking. No need to rush into anything.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Hanna: I agree with Liam and Izzy — we should remain calm and continue discussing. I'd like to know more about what everyone was doing during the night, especially since Zoe was killed.
+  Kai: I agree with Hanna — it's important we all share what we were doing during the night. I was tending to my garden, as usual, but I couldn't help but notice how quiet everyone seemed.
+  Yan: I was in my study, organizing some old books. I couldn't help but overhear a few things about the night's events. It's strange how quiet everyone was, isn't it?
+  Liam: I was just reading the newspaper like always, nothing out of the ordinary. I think we should all just keep talking and see what else comes up.
+  Avery: Hard to say yet — I want to hear another round first.
+  Izzy: I think it's important we all share what we were doing during the night, you know? I was just reading at home like usual.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Yan: Izzy, you mentioned reading at home — did you notice anything unusual while you were there? Or was it as quiet as ever?
+  Avery: I don't have a strong read on anyone right now.
+  Kai: I think it's important we stay vigilant, but not let fear drive us to make rash decisions. I'll keep watching and listening carefully.
+  Hanna: I think it's important that we all remain attentive to any inconsistencies in our stories, especially given the events of last night.
+  Liam: I think we should all just keep talking and see what else comes up. I'm still watching everyone carefully before I commit.
+  Izzy: I think we should all keep talking and stay vigilant, you know? I'm still not sure who to trust yet.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Yan: I'm still trying to piece together what happened last night. It's odd that Zoe was killed so early — I wonder if there was a specific reason.
+  Avery: Let's not rush; something will give itself away soon.
+  Hanna: I'm still trying to piece together what happened last night. It's odd that Zoe was killed so early — I wonder if there was a specific reason.
+  Kai: I think it's important we stay focused on the facts and not let paranoia take over. I'm still trying to understand why Zoe was targeted, and if there's a pattern we're missing.
+  Liam: I think we should all just keep talking and see what else comes up. I'm still watching everyone carefully before I commit.
+  Izzy: I'm still trying to figure out why Zoe was targeted, you know? It's strange that she was killed so early — I hope we can all stay focused and keep talking to find the truth.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Izzy: I'm still trying to figure out why Zoe was targeted, you know? It's strange that she was killed so early — I hope we can all stay focused and keep talking to find the truth.
+  Liam: I think we're all just trying to stay calm, but I'm still watching everyone carefully before I commit. I hope we can figure out what happened to Zoe soon.
+  Yan: I'm still wondering why Zoe was targeted so early. It makes me think there might be a pattern we're missing.
+  Avery: I'm keeping an open mind, but a few of you worry me.
+  Kai: I think we're all feeling the weight of Zoe's death, but I'm starting to suspect that the killer might be trying to send a message. That's why I'm leaning toward staying focused on the facts and not jumping to conclusions.
+  Hanna: I'm still trying to understand why Zoe was targeted so early. It's unsettling, but I think we should all focus on what we know for certain rather than speculation.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Kai: I think we're all grasping for answers, but I'm starting to believe that the killer's next move might be more predictable than we think. Let's just keep talking and see if anyone else starts to act a bit too oddly.
+  Liam: I think we're all just trying to stay calm, but I'm still watching everyone carefully before I commit.
+  Yan: I'm still trying to figure out why Zoe was targeted so early. It makes me wonder if there was something specific about her that triggered the killer's choice.
+  Hanna: I believe we should all focus on the facts of what we know, and not let our suspicions grow into accusations. I'm still trying to understand why Zoe was targeted so early.
+  Avery: Nothing's obvious to me yet — keep talking.
+  Izzy: I'm still not sure who to trust yet, you know? I think we should keep sharing what we were doing last night — maybe that will help us figure out who the killer is.
+  Moderator: The Day ends with no one executed.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+</day>
+<night>
+  Night 2 begins.
+  Pointing round 1:
+    Kai points at Liam
+    Yan points at Liam
+  Moderator: During the night, Liam was killed.
+  Moderator: Night 2 ends.
+</night>
+<day>
+  Day 2 begins.
+  Moderator: Day breaks. Liam was killed last night. Liam was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Avery: I'm still watching everyone carefully before I commit.
+  Izzy: I'm really worried about what happened to Liam last night — it's so strange that he was killed now, you know? I think we should all stay focused and keep talking, but I'm starting to feel like the killer might be getting more bold. Let's just keep sharing what we were doing last night and see if anything stands out.
+  Hanna: I'm still trying to understand why Liam was targeted now — it's unsettling, but I think we should all focus on what we know for certain rather than speculation. Let's keep talking and see if anyone else starts to act a bit too oddly.
+  Yan: I'm still trying to figure out why Liam was targeted now — it's unsettling, but I think we should all focus on what we know for certain rather than speculation.
+  Kai: I'm starting to think the killer is targeting people who seem too calm about the deaths. That's not a coincidence — it's a message. Let's keep talking, but let's also pay attention to how people react when we mention the pattern.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Yan: I'm still trying to understand why Liam was targeted now — it's unsettling, but I think we should all focus on what we know for certain rather than speculation.
+  Avery: Hard to say yet — I want to hear another round first.
+  Hanna: I'm still trying to figure out why Liam was targeted now — it's unsettling, but I think we should all focus on what we know for certain rather than speculation. Let's keep talking and see if anyone else starts to act a bit too oddly.
+  Izzy: I'm still not sure who to trust yet, you know? But I do think we should all share what we were doing last night — maybe that will help us figure out who the killer is.
+  Kai: I think it's clear the killer is targeting people who seem too composed, but I'm starting to wonder if that's a distraction. Let's focus on what we know — not what we think might be a pattern.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Kai: I think we're all starting to feel the pressure, but I'm still not convinced that the killer is trying to send a message — I'm beginning to suspect that the killer might be more interested in keeping us off balance than following a pattern. Let's just keep talking and see if anyone else starts acting a bit too oddly.
+  Hanna: I'm still trying to understand why Liam was targeted now — it's unsettling, but I think we should all focus on what we know for certain rather than speculation. Let's keep talking and see if anyone else starts to act a bit too oddly.
+  Izzy: I'm still not sure who to trust yet, you know? But I do think we should all share what we were doing last night — maybe that will help us figure out who the killer is.
+  Avery: I don't have a strong read on anyone right now.
+  Yan: I'm still not convinced that the killer is trying to send a message — I'm beginning to suspect that the killer might be more interested in keeping us off balance than following a pattern.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Kai: I think we're all feeling the pressure, but I'm starting to believe that the killer's next move might be more predictable than we think. Let's just keep talking and see if anyone else starts to act a bit too oddly.
+  Hanna: I'm still trying to understand why Liam was targeted now — it's unsettling, but I think we should all focus on what we know for certain rather than speculation. Let's keep talking and see if anyone else starts to act a bit too oddly.
+  Yan: I'm starting to think the killer isn't just targeting calm people — they're testing us, seeing how we react when the pressure mounts.
+  Avery: Let's not rush; something will give itself away soon.
+  Izzy: I'm still not sure who to trust yet, you know? But I do think we should all share what we were doing last night — maybe that will help us figure out who the killer is.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Izzy: I'm still not sure who to trust yet, you know? But I do think we should all share what we were doing last night — maybe that will help us figure out who the killer is.
+  Yan: I'm starting to think the killer isn't just targeting calm people — they're testing us, seeing how we react when the pressure mounts.
+</round>
+</day>
+</transcript>

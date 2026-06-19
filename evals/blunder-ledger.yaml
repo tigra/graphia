@@ -871,3 +871,94 @@ metrics:
     ci_low: 0.0
     ci_high: 0.2775401687666166
 notes: 'n=20 baseline on ollama (qwen3-coder:30b/qwen2.5:3b) post spec-016 AI Character Personas — in-character Day dialogue + two-layer Mafioso legend/true-self; default 5+2'
+---
+run:
+  date: '2026-06-19'
+  duration_seconds: 1777.56
+  metrics_version: 1
+  transcript_dir: '2026-06-19T18-33-37'
+code:
+  commit: '65ddb3480d7ea03ebd9589e2018d5a9363879273'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.30.10'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 10
+  seed: null
+  max_rounds: null
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  duration_seconds: 1777.56
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.2775401687666166
+  mafia:
+    wins: 3
+    rate: 0.3
+    ci_low: 0.10778928748621183
+    ci_high: 0.6032267800204347
+  draw: 0
+  no_winner: 7
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 8
+    mafia: 0
+  by_day:
+    day_1: 7
+    day_2: 1
+metrics:
+  repetition:
+    rate: 0.4362934362934363
+    count: 226
+    denominator: 518
+    ci_low: 0.39420953717152685
+    ci_high: 0.479315302549952
+  third_person_self_talk:
+    rate: 0.005791505791505791
+    count: 3
+    denominator: 518
+    ci_low: 0.001971513270597796
+    ci_high: 0.01688784941723698
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 4
+    ci_low: 0.0
+    ci_high: 0.48990002040399916
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 5
+    ci_low: 0.0
+    ci_high: 0.43449149475208104
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 1
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+notes: 'spec 018 day-round recap (default-on) — 10-game ollama baseline + qualitative gameplay review'

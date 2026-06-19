@@ -1,0 +1,174 @@
+Game 1 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10
+
+<transcript>
+<setup>
+  Avery — Law-abiding Citizen
+    (no persona recorded)
+  Jax — Law-abiding Citizen
+    Personality: honest and straightforward
+    Manner: speaks slowly and deliberately, with a tendency to over-enunciate each word. Uses simple, direct language and often repeats key phrases for emphasis. Never uses slang or idioms.
+    Persona: Jax is a retired school librarian who now spends his days tending to his garden and reading mystery novels. He's known throughout the town for his honesty and willingness to help others. He has no secrets and is completely transparent in all his dealings.
+  Lincoln — Mafia
+    Personality: Lincoln is a quiet, methodical man who exudes calm authority. He speaks with measured deliberation, rarely interrupting others but always offering thoughtful contributions when he does speak. His demeanor is that of a respected elder, someone who has seen much and learned to trust his instincts.
+    Manner: Lincoln talks in a low, gravelly voice, often pausing before speaking to ensure precision. He uses formal language and avoids slang, preferring to phrase his thoughts carefully. When he does speak, it's usually after considering others' words, and he rarely raises his voice.
+    Public legend: Lincoln is a retired school superintendent who spent thirty years in education. He's known for being fair, patient, and deeply committed to children’s welfare. He lives alone in a modest home on the edge of town, where he keeps a garden and spends his afternoons reading. He's well-respected in the community for his integrity and wisdom, often sought out for advice.
+    True self (hidden): Lincoln was once a young man who fell into the wrong crowd during a time of economic hardship. He began working as an enforcer for a local crime family to protect his family, but quickly became entangled in deeper operations. Over time, he rose through the ranks by showing loyalty and efficiency, eventually becoming a trusted lieutenant. Though he has no love for the life he leads now, he believes he's done more good than harm by keeping people safe from worse threats.
+  Sanaa — Mafia
+    Personality: Sanaa is a calm, methodical woman who presents herself as a devoted librarian with a deep love for order and knowledge. She has a quiet intensity that makes her seem trustworthy and wise, but beneath this exterior lies a calculating mind trained in manipulation and control.
+    Manner: Sanaa speaks slowly and deliberately, choosing her words carefully. Her voice is soft but carries weight. She often pauses before responding to a question, as if weighing the implications of each statement. When she does speak, her tone is measured and composed, never raising it above a gentle whisper.
+    Public legend: Sanaa has lived in the town her entire life, working at the local library where she's been since she was eighteen. She's known for her quiet demeanor and her ability to help anyone find exactly what they're looking for. She's married to a kind man named David who works as a baker, and together they have two children who are both in school. Sanaa is often seen at the local community center helping with reading programs and organizing book drives.
+    True self (hidden): Sanaa was recruited into the Mafia by her uncle, who was a respected crime boss in the town's underground network. She was trained from a young age in the art of deception and manipulation, learning how to blend seamlessly into society while orchestrating complex criminal operations behind the scenes. She uses her public identity as a librarian to gather information about townspeople, using her access to books and quiet nature to observe and manipulate others without suspicion.
+  Ahmed — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, with a slight hesitation before each word, using simple vocabulary and often repeating himself for emphasis
+    Persona: Ahmed is a retired school teacher who lived a quiet life in the town. He spent his days helping children learn and now enjoys gardening and reading books on history.
+  Haniya — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, with a quiet, measured tone. Uses simple vocabulary and avoids idioms. Nods frequently when agreeing or thinking.
+    Persona: Haniya is a librarian who lives in the quiet town of Millbrook. She spends her days organizing books and helping people find information. She's known for being kind and trustworthy, with no secrets or hidden motives.
+  Mira — Law-abiding Citizen
+    Personality: Calm and observant
+    Manner: Speaks slowly and deliberately, often pausing for emphasis. Uses simple, direct language with a tendency to repeat key words for clarity. Never raises her voice, but her steady tone carries weight.
+    Persona: Mira is a librarian who has lived in the town her entire life. She spends her days organizing books and helping people find information. She's known for being reliable and kind, always ready to lend a listening ear or offer a helpful suggestion. She has no secrets and no hidden motives.
+</setup>
+<preamble>
+  Moderator: A new game begins. Welcome, Avery.
+  Moderator: Players in this game: Avery, Jax, Lincoln, Sanaa, Ahmed, Haniya, Mira. Let the game begin.
+  Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+  Moderator (private to Lincoln): Your Mafia teammates are: Sanaa. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+  Moderator (private to Sanaa): Your Mafia teammates are: Lincoln. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+  Night 1 begins.
+  Pointing round 1:
+    Sanaa points at Haniya
+    Lincoln points at Haniya
+  Moderator: During the night, Haniya was killed.
+  Moderator: Night 1 ends.
+</night>
+<day>
+  Day 1 begins.
+  Moderator: Day breaks. Haniya was killed last night. Haniya was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Jax: I am Jax, and I have a feeling that this is not the end of the night. I think we need to be very careful about who we trust.
+  Lincoln: I agree with Jax—Haniya's death should make us all vigilant. We must examine our words and actions carefully.
+  Sanaa: Haniya's death is a grave loss to our community. I hope we can all reflect on her contributions and ensure we don't lose anyone else unnecessarily.
+  Avery: I'm still watching everyone carefully before I commit.
+  Mira: I think we should all be mindful of our words. Haniya's death was sudden, and we must not let fear cloud our judgment.
+  Ahmed: I think we should all be very careful about who we trust. I don't like this feeling.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Avery: Hard to say yet — I want to hear another round first.
+  Jax: I think we should all be very careful about who we trust. I don't like this feeling.
+  Ahmed: I think we should listen carefully to what everyone says. I don't trust this feeling.
+  Sanaa: I agree with Jax—Haniya's death has shaken us all. I think it's important we stay calm and not let fear drive us to make rash decisions.
+  Mira: I think we should focus on what we know, not on feelings. Haniya was a Law-abiding Citizen, and that's a fact.
+  Lincoln: I believe we must tread carefully, as Haniya's passing has left a void we should not hastily fill.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Lincoln: I think we should all take a moment to consider our next steps carefully. Haniya's death was a setback, but we must not let it paralyze us.
+  Ahmed: I think we should all be very careful about who we trust. I don't like this feeling.
+  Jax: I think we should all be very careful about who we trust. I don't like this feeling.
+  Avery: I don't have a strong read on anyone right now.
+  Sanaa: I think we should all take a moment to consider our next steps carefully. Haniya's death was a setback, but we must not let it paralyze us.
+  Mira: I think we should all be mindful of our words. Haniya's death was sudden, and we must not let fear cloud our judgment.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Mira: I think we should focus on facts, not feelings. Haniya was a Law-abiding Citizen, and that's what matters.
+  Ahmed: I think we should all be very careful about who we trust. I don't like this feeling.
+  Jax: I think we should all be very careful about who we trust. I don't like this feeling.
+  Sanaa: I think we should all be mindful of our words. Haniya's death was sudden, and we must not let fear cloud our judgment.
+  Lincoln: I think we should all be mindful of our words. Haniya's death was sudden, and we must not let fear cloud our judgment.
+  Avery: Let's not rush; something will give itself away soon.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Jax: I think we should all be very careful about who we trust. I don't like this feeling.
+  Sanaa: I think we should all be mindful of our words. Haniya's death was sudden, and we must not let fear cloud our judgment.
+  Avery: I'm keeping an open mind, but a few of you worry me.
+  Mira: I think we should all be mindful of our words. Haniya's death was sudden, and we must not let fear cloud our judgment.
+  Ahmed: I think we should all be mindful of our words. Haniya's death was sudden, and we must not let fear cloud our judgment.
+  Lincoln: I think we should all be mindful of our words. Haniya's death was sudden, and we must not let fear cloud our judgment.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Avery: Nothing's obvious to me yet — keep talking.
+  Ahmed: I think we should all be very careful about who we trust. I don't like this feeling.
+  Sanaa: I think we're all feeling the weight of Haniya's loss. It's important we support each other through this, but also stay vigilant.
+  Jax: I think we should all be very careful about who we trust. I don't like this feeling.
+  Lincoln: I think we'd all do well to remember that fear and suspicion can be weapons the Mafia uses against us. Let's not let them cloud our judgment.
+  Mira: I think we should all be mindful of our words. Haniya's death was sudden, and we must not let fear cloud our judgment.
+  Moderator: The Day ends with no one executed.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+</day>
+<night>
+  Night 2 begins.
+  Pointing round 1:
+    Lincoln points at Avery
+    Sanaa points at Avery
+  Moderator: During the night, Avery was killed.
+  Moderator: Night 2 ends.
+</night>
+<day>
+  Day 2 begins.
+  Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Mira: I think we should all be mindful of our words. Avery's death was sudden, and we must not let fear cloud our judgment.
+  Sanaa: Avery's death is a stark reminder that we must stay alert. I trust none of us are complacent about our safety.
+  Lincoln: Avery's death is a sobering reminder that our safety depends on vigilance. I trust we'll all remain cautious, but not so much that we let fear blind us to the truth.
+  Ahmed: I think we should all be very careful about who we trust. I don't like this feeling.
+  Jax: I think we should all be very careful about who we trust. I don't like this feeling.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Sanaa: Avery's death has shaken us all, but we must not let paranoia divide us. I think we should focus on gathering information rather than pointing fingers.
+  Jax: I think we should all be very careful about who we trust. I don't like this feeling.
+  Mira: I think we should all be mindful of our words. Avery's death was sudden, and we must not let fear cloud our judgment.
+  Lincoln: I think we'd all do well to remember that fear and suspicion can be weapons the Mafia uses against us. Let's not let them cloud our judgment.
+  Ahmed: I think we should all be very careful about who we trust. I don't like this feeling.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Jax: I think we should all be very careful about who we trust. I don't like this feeling.
+  Sanaa: I think we're all shaken by these losses, but let's not let fear turn into panic. We need to stay focused on the facts.
+  Lincoln: I think we're all feeling the pressure, but let's not let paranoia drive us to make hasty decisions. We need to stay calm and think clearly.
+  Mira: I think we should all be mindful of our words. Avery's death was sudden, and we must not let fear cloud our judgment.
+  Ahmed: I think we should talk about who was near Avery when she died. That's important. I don't like this feeling.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Mira: I think we should all be mindful of our words. Avery's death was sudden, and we must not let fear cloud our judgment.
+  Jax: I think we should all be very careful about who we trust. I don't like this feeling.
+  Ahmed: I think we should all be very careful about who we trust. I don't like this feeling.
+  Sanaa: I think we should focus on the facts of Avery's death and not let our emotions lead us astray.
+  Lincoln: I believe we must carefully consider the timing of Avery's death. It seems too convenient that she was killed so soon after our discussions about trust and safety.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Ahmed: I think we should talk about who was near Avery when she died. That's important. I don't like this feeling.
+  Sanaa: I believe we should all take a step back and assess our own actions during the night. It's important to remember that we're all under suspicion, and we must be careful not to let our guard down.
+  Jax: I think we should all be very careful about who we trust. I don't like this feeling.
+  Mira: I think we should focus on the facts of Avery's death and not let our emotions lead us astray.
+  Lincoln: I believe we must consider the possibility that the killer is among us, and that our safety depends on how carefully we observe one another.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Mira: I think we should all be very careful about who we trust. I don't like this feeling.
+  Jax: I think we should all be very careful about who we trust. I don't like this feeling.
+  Lincoln: I think we'd all do well to remember that fear and suspicion can be weapons the Mafia uses against us. Let's not let them cloud our judgment.
+  Sanaa: I agree with Lincoln — we must be cautious, but not let fear dictate our choices. I think it's vital that we examine the timeline of events carefully.
+  Ahmed: I think we should all be very careful about who we trust. I don't like this feeling.
+  Moderator: The Day ends with no one executed.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+</day>
+<night>
+  Night 3 begins.
+  Pointing round 1:
+    Lincoln points at Ahmed
+    Sanaa points at Ahmed
+  Moderator: During the night, Ahmed was killed.
+  Moderator: The Mafia have won.
+
+Events this game:
+• Night 1: Haniya (Law-abiding Citizen)
+• Night 2: Avery (Law-abiding Citizen)
+• Night 3: Ahmed (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Jax (Law-abiding Citizen), Lincoln (Mafia), Sanaa (Mafia), Ahmed (Law-abiding Citizen), Haniya (Law-abiding Citizen), Mira (Law-abiding Citizen)
+
+Who they really were:
+• Jax (Law-abiding Citizen) — honest and straightforward speaks slowly and deliberately, with a tendency to over-enunciate each word. Uses simple, direct language and often repeats key phrases for emphasis. Never uses slang or idioms. Jax is a retired school librarian who now spends his days tending to his garden and reading mystery novels. He's known throughout the town for his honesty and willingness to help others. He has no secrets and is completely transparent in all his dealings.
+• Lincoln (Mafia) — publicly presented as Lincoln is a retired school superintendent who spent thirty years in education. He's known for being fair, patient, and deeply committed to children’s welfare. He lives alone in a modest home on the edge of town, where he keeps a garden and spends his afternoons reading. He's well-respected in the community for his integrity and wisdom, often sought out for advice. (Lincoln is a quiet, methodical man who exudes calm authority. He speaks with measured deliberation, rarely interrupting others but always offering thoughtful contributions when he does speak. His demeanor is that of a respected elder, someone who has seen much and learned to trust his instincts. Lincoln talks in a low, gravelly voice, often pausing before speaking to ensure precision. He uses formal language and avoids slang, preferring to phrase his thoughts carefully. When he does speak, it's usually after considering others' words, and he rarely raises his voice.) … but was really a Mafioso: Lincoln was once a young man who fell into the wrong crowd during a time of economic hardship. He began working as an enforcer for a local crime family to protect his family, but quickly became entangled in deeper operations. Over time, he rose through the ranks by showing loyalty and efficiency, eventually becoming a trusted lieutenant. Though he has no love for the life he leads now, he believes he's done more good than harm by keeping people safe from worse threats.
+• Sanaa (Mafia) — publicly presented as Sanaa has lived in the town her entire life, working at the local library where she's been since she was eighteen. She's known for her quiet demeanor and her ability to help anyone find exactly what they're looking for. She's married to a kind man named David who works as a baker, and together they have two children who are both in school. Sanaa is often seen at the local community center helping with reading programs and organizing book drives. (Sanaa is a calm, methodical woman who presents herself as a devoted librarian with a deep love for order and knowledge. She has a quiet intensity that makes her seem trustworthy and wise, but beneath this exterior lies a calculating mind trained in manipulation and control. Sanaa speaks slowly and deliberately, choosing her words carefully. Her voice is soft but carries weight. She often pauses before responding to a question, as if weighing the implications of each statement. When she does speak, her tone is measured and composed, never raising it above a gentle whisper.) … but was really a Mafioso: Sanaa was recruited into the Mafia by her uncle, who was a respected crime boss in the town's underground network. She was trained from a young age in the art of deception and manipulation, learning how to blend seamlessly into society while orchestrating complex criminal operations behind the scenes. She uses her public identity as a librarian to gather information about townspeople, using her access to books and quiet nature to observe and manipulate others without suspicion.
+• Ahmed (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a slight hesitation before each word, using simple vocabulary and often repeating himself for emphasis Ahmed is a retired school teacher who lived a quiet life in the town. He spent his days helping children learn and now enjoys gardening and reading books on history.
+• Haniya (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a quiet, measured tone. Uses simple vocabulary and avoids idioms. Nods frequently when agreeing or thinking. Haniya is a librarian who lives in the quiet town of Millbrook. She spends her days organizing books and helping people find information. She's known for being kind and trustworthy, with no secrets or hidden motives.
+• Mira (Law-abiding Citizen) — Calm and observant Speaks slowly and deliberately, often pausing for emphasis. Uses simple, direct language with a tendency to repeat key words for clarity. Never raises her voice, but her steady tone carries weight. Mira is a librarian who has lived in the town her entire life. She spends her days organizing books and helping people find information. She's known for being reliable and kind, always ready to lend a listening ear or offer a helpful suggestion. She has no secrets and no hidden motives.
+</night>
+</transcript>

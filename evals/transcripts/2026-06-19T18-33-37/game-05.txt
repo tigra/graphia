@@ -1,0 +1,138 @@
+Game 5 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10
+
+<transcript>
+<setup>
+  Avery — Law-abiding Citizen
+    (no persona recorded)
+  Qing — Mafia
+    Personality: Calm and methodical, with a quiet intensity that makes others trust her judgment. She is deeply observant and rarely speaks unless she has something meaningful to contribute.
+    Manner: Speaks in measured, deliberate tones with a slight rasp, as if always considering her words carefully. She often pauses before responding, and her voice carries an undercurrent of authority that others instinctively respect.
+    Public legend: Qing is a herbalist who lives on the edge of town. She tends to the sick and injured with gentle care, using her knowledge of plants and remedies passed down through generations. She is known for her quiet demeanor and her ability to keep secrets, often seen tending to her garden or visiting the sick in their homes.
+    True self (hidden): Qing was once a mid-level enforcer in the city's underground network. She rose quickly through the ranks due to her calm efficiency and ability to remain unseen during operations. When the heat became too intense, she faked her own death and reinvented herself as a simple herbalist. Her loyalty now lies with the Mafia, but she is careful not to let any loose information surface.
+  Jiaxin — Mafia
+    Personality: A quiet, methodical individual who appears deeply committed to community service and public welfare.
+    Manner: Speaks in measured, deliberate tones with a slight tendency to over-explain points, often pausing thoughtfully before responding. Uses formal language and avoids slang.
+    Public legend: Jiaxin is a dedicated town librarian who has served the community for over fifteen years. They are known for their quiet dedication, organizing book drives and hosting weekly storytime sessions for children. They live alone in a modest apartment near the library and are well-respected by all.
+    True self (hidden): Jiaxin was recruited into the Mafia after their younger brother was killed in a gang dispute. They have been working as an informant within the town's leadership, using their public role to gather intelligence while maintaining their cover. Their true loyalty lies with the organization that promised revenge for their brother's death.
+  Hiroshi — Law-abiding Citizen
+    Personality: calm and methodical
+    Manner: speaks slowly and deliberately, using precise vocabulary with a slight Japanese accent; often pauses before answering questions
+    Persona: Hiroshi is a retired schoolteacher from Osaka who moved to the city to help his daughter with her studies. He's known for his patience and wisdom in resolving conflicts among neighbors.
+  Mengyang — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, using simple vocabulary with a slight hesitation before each sentence. Often repeats words for emphasis or clarity.
+    Persona: Mengyang is a librarian who loves organizing books and helping people find information. They are known in town for being trustworthy and always telling the truth, even when it's difficult. Mengyang has no secrets and wants nothing more than to live a quiet, peaceful life.
+  Nuri — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses for emphasis. Often repeats key words for clarity.
+    Persona: Nuri is a retired school librarian who loves gardening and reading mystery novels. They are known for their reliability and straightforward nature in the town.
+  Aisha — Law-abiding Citizen
+    Personality: honest and straightforward
+    Manner: speaks with deliberate, measured words; avoids filler phrases; uses simple vocabulary but with a slight emphasis on clarity and truth
+    Persona: Aisha is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being reliable and trustworthy, often offering to help neighbors with their reading or research needs.
+</setup>
+<preamble>
+  Moderator: A new game begins. Welcome, Avery.
+  Moderator: Players in this game: Avery, Qing, Jiaxin, Hiroshi, Mengyang, Nuri, Aisha. Let the game begin.
+  Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+  Moderator (private to Qing): Your Mafia teammates are: Jiaxin. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+  Moderator (private to Jiaxin): Your Mafia teammates are: Qing. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+  Night 1 begins.
+  Pointing round 1:
+    Jiaxin points at Nuri
+    Qing points at Nuri
+  Moderator: During the night, Nuri was killed.
+  Moderator: Night 1 ends.
+</night>
+<day>
+  Day 1 begins.
+  Moderator: Day breaks. Nuri was killed last night. Nuri was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Hiroshi: I have observed that Nuri was killed during the night, and I believe it is important to listen carefully to each person's explanation for their actions. I will wait to hear what others say before making any judgments.
+  Aisha: I will wait to hear the explanations and see if anyone's story doesn't add up. I'm hoping we can find the killer among us.
+  Mengyang: I think it's important to stay calm and listen carefully to everyone's stories. I don't want to jump to conclusions too quickly.
+  Avery: I'm still watching everyone carefully before I commit.
+  Qing: I agree with Mengyang — we must remain calm and attentive to the details. Nuri's death has shaken us, but we should focus on understanding each person's account rather than speculation.
+  Jiaxin: I concur with Qing — it is vital that we remain attentive to each person's account. I will listen carefully and await further details before forming any conclusions.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Qing: I've been thinking about Nuri's death, and it seems odd that the killer targeted her so early. It's possible they're trying to create chaos, or perhaps they're testing our reactions. I think we should pay close attention to how everyone behaves in the next few turns.
+  Jiaxin: I find it peculiar that Nuri was eliminated so early, as it disrupts our collective sense of security. I propose we examine the behavior and statements of each individual with a critical eye, particularly focusing on any inconsistencies or abrupt changes in demeanor.
+  Hiroshi: I agree with Qing and Jiaxin — Nuri's early elimination does feel like a tactic to unsettle us. I will pay close attention to any sudden shifts in behavior or overly rehearsed explanations.
+  Mengyang: I think... we should focus on the facts. Qing and Jiaxin both said something about behavior — I wonder if anyone acted differently tonight, or if anyone seemed nervous when Nuri was mentioned.
+  Avery: Hard to say yet — I want to hear another round first.
+  Aisha: I think it's important that we all stick to the facts and avoid making assumptions. If someone seems nervous when Nuri is mentioned, we should pay attention, but let's not jump to conclusions.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Avery: I don't have a strong read on anyone right now.
+  Hiroshi: I find it significant that two of us have mentioned nervousness or shifts in behavior. I will continue to observe, but if someone's explanation feels rehearsed or overly defensive, it may warrant closer attention.
+  Jiaxin: I believe it would be prudent to examine more closely any statements that appear overly rehearsed or defensive, as they may indicate an attempt to mislead the group. I propose we focus on identifying such behavior in the coming turns.
+  Qing: I think we should all be mindful of how we present our stories — a little too much emphasis on calmness or certainty can sometimes raise questions.
+  Mengyang: I think... I heard Qing say something about emphasis on calmness. That made me wonder — does anyone else feel like someone's explanation seems a bit too rehearsed?
+  Aisha: I think we should focus on the facts and not let our suspicions grow into accusations. If someone seems nervous, we can ask follow-up questions, but let's not jump to conclusions.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Hiroshi: I am beginning to suspect that someone among us is not being entirely truthful. I will continue to observe and listen carefully.
+  Aisha: I agree with Hiroshi — I'm starting to feel that way too. I think we should ask some pointed questions to see how people respond.
+  Mengyang: I think... I noticed that Hiroshi and Aisha both said they're starting to feel suspicious. That makes me wonder — do either of you feel like someone's story doesn't quite add up?
+  Jiaxin: I believe we must remain vigilant, as the killer's actions suggest they are deliberately attempting to sow discord. I propose that we carefully analyze each person's behavior for signs of deception or inconsistency.
+  Avery: Let's not rush; something will give itself away soon.
+  Qing: I think we should all take a moment to reflect on our own behavior — if we're truly calm and innocent, then our explanations should feel natural, not forced.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Avery: I'm keeping an open mind, but a few of you worry me.
+  Mengyang: I think... I'm starting to feel like someone's explanation seems a bit too rehearsed. It's hard to say for sure, but it makes me a little nervous.
+  Qing: I think we should all be honest about our thoughts — if someone is trying to mislead us, it's better to address it directly than let suspicion fester.
+  Jiaxin: I believe we should all take a moment to reflect on our own behavior and ensure that our explanations feel natural and not forced.
+  Hiroshi: I think we should all consider the timing of our observations carefully. If someone's nervousness or rehearsed explanation emerged only after Nuri was mentioned, that may be significant.
+  Aisha: I think we should all be honest about our thoughts — if someone is trying to mislead us, it's better to address it directly than let suspicion fester.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Qing: I think we should focus on the patterns in how people respond to questions about Nuri's death — particularly if their stories shift slightly when pressed.
+  Hiroshi: I believe we should all consider whether our explanations feel natural — if someone's story shifts only after Nuri is mentioned, that may be worth noting.
+  Avery: Nothing's obvious to me yet — keep talking.
+  Jiaxin: I believe we must carefully consider the timing of our observations, as those who react only after Nuri's mention may be concealing something.
+  Aisha: I think we should all be mindful of how our stories hold up under scrutiny. If someone's explanation changes slightly when questioned, that could be a red flag.
+  Mengyang: I think... I'm starting to feel like someone's story doesn't quite add up. It's hard to point to exactly who, but it's making me nervous.
+  Moderator: The Day ends with no one executed.
+  Moderator: Day 1 status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+</day>
+<night>
+  Night 2 begins.
+  Pointing round 1:
+    Qing points at Hiroshi
+    Jiaxin points at Hiroshi
+  Moderator: During the night, Hiroshi was killed.
+  Moderator: Night 2 ends.
+</night>
+<day>
+  Day 2 begins.
+  Moderator: Day breaks. Hiroshi was killed last night. Hiroshi was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Aisha: I'm not sure who to trust anymore, but I think we should focus on the fact that Hiroshi was killed last night. That means one of the Mafiosos is still among us, and they're likely trying to manipulate us now.
+  Avery: I'm still watching everyone carefully before I commit.
+  Mengyang: I think... I'm starting to feel like Aisha's explanation about not knowing who to trust seems a bit too rehearsed. It's hard to say for sure, but it makes me a little nervous.
+  Qing: I think we should all be mindful of how our stories hold up under scrutiny — if someone's explanation changes slightly when questioned, that could be a red flag.
+  Jiaxin: I believe we must remain steadfast in our unity, as the killer's next move will likely target those who are most vocal in their suspicions.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Aisha: I'm starting to think that the killer is cleverly pretending to be a Law-abiding Citizen to throw us off their trail. I'd like to know more about how everyone reacted when they heard Hiroshi was killed.
+  Avery: Hard to say yet — I want to hear another round first.
+  Qing: I think we should all consider how our reactions to Hiroshi's death align with the stories we've shared. If someone’s explanation shifts only after the topic is brought up, that deserves attention.
+  Jiaxin: I think we should all be mindful of how our stories hold up under scrutiny — if someone's explanation changes slightly when questioned, that could be a red flag.
+  Mengyang: I think... I'm starting to feel like Jiaxin's explanation about staying united seems a bit too rehearsed. It's hard to say for sure, but it makes me a little nervous.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Avery: I don't have a strong read on anyone right now.
+  Aisha: I think we should focus on the fact that the killer is still here and knows how to play this game. I’m not convinced that Jiaxin’s reaction to Hiroshi’s death was natural — it felt too calculated.
+  Jiaxin: I find it concerning that some of our discussions seem to be veering toward accusations without concrete evidence. We must ensure that any suspicions we harbor are well-founded before acting upon them.
+  Mengyang: I think... I'm starting to feel like Aisha's explanation about the killer being clever seems a bit too rehearsed. It's hard to say for sure, but it makes me a little nervous.
+  Qing: I think we should all consider whether our reactions to Hiroshi's death feel natural — if someone's story shifts only after the topic is brought up, that may be worth noting.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+  Jiaxin: I believe we must all reflect carefully on whether our concerns are based on observable facts or mere intuition.
+  Avery: Let's not rush; something will give itself away soon.
+  Qing: I think we should all consider whether our concerns are based on observable facts or mere intuition. If someone's story shifts only after the topic is brought up, that may be worth noting.
+  Aisha: I think we're all feeling the pressure, but let's not let our nerves make us jump to conclusions. I'm still watching closely.
+  Mengyang: I think... I'm starting to feel like Qing's explanation about concerns being based on facts seems a bit too rehearsed. It's hard to say for sure, but it makes me a little nervous.
+  Moderator: Day 2 status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+</day>
+</transcript>
