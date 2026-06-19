@@ -1,7 +1,7 @@
 # Functional Specification: Eval Transcript Preservation
 
 - **Roadmap Item:** Phase 6 — **Eval Transcript Preservation** → **Preserved, Browsable Eval Transcripts**. (Eval/quality tooling, in the same family as the AI Blunder Tracking ledger and the Eval Ledger Viewer; the **LLM-as-Judge** that will *read* these transcripts is a separate Phase 7 item.)
-- **Status:** Draft
+- **Status:** Completed
 - **Author:** Alexey Tigarev
 
 ---
@@ -26,30 +26,30 @@ This increment **preserves the full transcript of each measured (eval) game** an
 
 - **As the** maintainer, **I want** every game in a measured run kept in full, **so that** I can read what actually happened, not just the rates it produced.
   - **Acceptance Criteria:**
-    - [ ] Given a measured (eval) run of N games completes, then **each of the N games' full transcripts is preserved** (one transcript per game), associated with that run's ledger record.
-    - [ ] A transcript captures the **complete game**: every Day utterance, every Moderator announcement, each vote (who initiated it, every ballot, the outcome), and each Night kill — **and** the normally-hidden material: each player's **true role**, the Mafiosos' **private Night choices**, and the **personas** (a Mafioso's public legend *and* its true self). The reviewer sees everything; nothing is redacted.
-    - [ ] A transcript is **human-readable**, organized with clear structural markers — a single transcript wrapper, with nested **Day / Round / Night** sections (e.g. `<transcript>`, `<day>`, `<round>`, `<night>` tags) — so a reader can follow the phase structure at a glance, while the content inside each section reads as plain prose.
-    - [ ] All events (utterances, vote initiation, votes, pointing etc.) are preserved in a strict chronological order, how did they happen in a game.
-    - [ ] **Eval-only:** transcripts are preserved **only for measured eval runs**. A normal game (`make play`) still preserves nothing across sessions — the standing non-persistence rule is unchanged outside the eval path.
+    - [x] Given a measured (eval) run of N games completes, then **each of the N games' full transcripts is preserved** (one transcript per game), associated with that run's ledger record.
+    - [x] A transcript captures the **complete game**: every Day utterance, every Moderator announcement, each vote (who initiated it, every ballot, the outcome), and each Night kill — **and** the normally-hidden material: each player's **true role**, the Mafiosos' **private Night choices**, and the **personas** (a Mafioso's public legend *and* its true self). The reviewer sees everything; nothing is redacted.
+    - [x] A transcript is **human-readable**, organized with clear structural markers — a single transcript wrapper, with nested **Day / Round / Night** sections (e.g. `<transcript>`, `<day>`, `<round>`, `<night>` tags) — so a reader can follow the phase structure at a glance, while the content inside each section reads as plain prose.
+    - [x] All events (utterances, vote initiation, votes, pointing etc.) are preserved in a strict chronological order, how did they happen in a game.
+    - [x] **Eval-only:** transcripts are preserved **only for measured eval runs**. A normal game (`make play`) still preserves nothing across sessions — the standing non-persistence rule is unchanged outside the eval path.
 
 ### 2.2 Browse a run's transcripts in the eval-ledger viewer
 
 - **As the** maintainer, **I want** to read a run's game transcripts from the same viewer that shows its metrics, **so that** I can move directly from a number to the game behind it.
   - **Acceptance Criteria:**
-    - [ ] Given the eval-ledger viewer is open and a run **with preserved transcripts** is selected, when the maintainer drills into that run, then they can see the run has per-game transcripts and **choose one of its N games to read**.
-    - [ ] When the maintainer opens a game's transcript, then the **full transcript is shown in a scrollable, read-only view**, reachable from that run's record (alongside its metrics).
-    - [ ] When the maintainer **leaves** the transcript view, then they **return to the run's record** where they were.
-    - [ ] Given a run with **no** preserved transcripts (e.g. an older record written before this feature), when the maintainer drills into it, then the viewer shows plainly that **there are no transcripts for that run** — no error, no crash.
+    - [x] Given the eval-ledger viewer is open and a run **with preserved transcripts** is selected, when the maintainer drills into that run, then they can see the run has per-game transcripts and **choose one of its N games to read**.
+    - [x] When the maintainer opens a game's transcript, then the **full transcript is shown in a scrollable, read-only view**, reachable from that run's record (alongside its metrics).
+    - [x] When the maintainer **leaves** the transcript view, then they **return to the run's record** where they were.
+    - [x] Given a run with **no** preserved transcripts (e.g. an older record written before this feature), when the maintainer drills into it, then the viewer shows plainly that **there are no transcripts for that run** — no error, no crash.
 
 ### 2.3 Transcripts are shareable at the developer's choice
 
 - **As the** maintainer, **I want** transcripts kept where I can choose to share the noteworthy ones, **so that** a teammate (or, later, an automated judge) can read the same games — without every routine run forcing its transcripts into the shared record.
   - **Acceptance Criteria:**
-    - [ ] Preserved transcripts are written to a location **within the project** (alongside the eval results), so the developer can choose to include specific transcripts in the **shared project record**.
-    - [ ] The relationship of games to transcripts is easily identifiable from naming; single eval run has its own directory.
-    - [ ] The measured run does **not** automatically add transcripts to the shared record — they are written as ordinary files that simply remain until the developer **commits** them or **deletes** them; including a run in the shared record is a **deliberate developer action**.
-    - [ ] There is a **one-command cleanup** for transcripts (so the few-game smoke runs don't accumulate): the rule of thumb is to **commit the full, clean runs** worth keeping and **delete the smoke runs** (after confirming they hold no important findings). After a smoke run, the assistant prompts the developer to delete that run's transcripts.
-    - [ ] A transcript the developer chooses to share can be read by anyone with the project — both in the viewer and as a plain, readable file on its own.
+    - [x] Preserved transcripts are written to a location **within the project** (alongside the eval results), so the developer can choose to include specific transcripts in the **shared project record**.
+    - [x] The relationship of games to transcripts is easily identifiable from naming; single eval run has its own directory.
+    - [x] The measured run does **not** automatically add transcripts to the shared record — they are written as ordinary files that simply remain until the developer **commits** them or **deletes** them; including a run in the shared record is a **deliberate developer action**.
+    - [x] There is a **one-command cleanup** for transcripts (so the few-game smoke runs don't accumulate): the rule of thumb is to **commit the full, clean runs** worth keeping and **delete the smoke runs** (after confirming they hold no important findings). After a smoke run, the assistant prompts the developer to delete that run's transcripts.
+    - [x] A transcript the developer chooses to share can be read by anyone with the project — both in the viewer and as a plain, readable file on its own.
 
 ---
 

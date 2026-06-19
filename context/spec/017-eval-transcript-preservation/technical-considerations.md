@@ -1,7 +1,7 @@
 # Technical Specification: Eval Transcript Preservation
 
 - **Functional Specification:** [`./functional-spec.md`](./functional-spec.md)
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 ---

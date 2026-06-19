@@ -3,7 +3,7 @@
 A high-level history of the project, reconstructed from `git log` and the
 `context/` artifacts: how scope changed (Change Requests), how the architecture
 was decided (Architecture Decision Records), and how the work was executed (specs
-broken into vertical slices). Covers **2026-04-29 → 2026-06-16**.
+broken into vertical slices). Covers **2026-04-29 → 2026-06-19**.
 
 Graphia is built with the **AWOS spec-driven workflow** — every increment flows
 `product → roadmap → architecture → spec → tech → tasks → implement → verify → tutorial`,
@@ -217,7 +217,7 @@ The red marks are the three superseded ADRs (002, 004, 007); the CRs are green b
 
 ---
 
-## What was going on — sixteen acts
+## What was going on — seventeen acts
 
 ### Act 1 — Phase 1: a playable skeleton (2026-04-29)
 
@@ -1101,6 +1101,43 @@ the cumulative RNG state — fixed by seeding the RNG at the test's start (archi
 Suite **595 → 615** (green under both stable and randomized ordering); **Spec 016 verified
 Completed and tutorialised**, ticking Phase 6's *AI Character Sheet Generation*.
 
+### Act 17 — Eval Transcript Preservation: keeping the trial, not just the verdict (2026-06-18 → 06-19)
+
+The second Phase 6 feature, and an eval-tooling one. The quality ledger (spec 011)
+records each measured run's *numbers* — repetition, blunder rates, win-rate by side —
+but threw the games away; when a number looked wrong (repetition near a half, the town
+winning 0/20) there was no way to read *why*. **Spec 017 (Eval Transcript Preservation)**
+keeps the full transcript of every measured eval game and makes it **browsable in the
+eval-ledger viewer**, next to that run's metrics — the public Day discussion and votes
+*and* the normally-hidden layers (true roles, the Mafiosos' private Night picks, each
+persona including a Mafioso's legend *and* its true self). It is a deliberate, narrow
+**eval-only** exception to the project's "transcripts are non-persistent" rule, and the
+substrate the Phase 7 LLM-as-Judge will later read.
+
+The load-bearing decision was **where the events come from**. The obvious source — the
+final `get_state` snapshot when the game ends — *lies*: the per-Night pointing channels
+(spec 015) are replace-reduced and **reset every Night**, so a snapshot holds only the
+last Night's picks. So the capture **taps the per-super-step update stream** instead, via
+an optional `on_update` sink threaded into the shared `_drive` (default `None`, so every
+existing caller is untouched), accumulating an ordered `{node: delta}` log per game. A
+**pure** `render_transcript` then rebuilds nested `<night>/<day>/<round>` structure from
+that flat log using the engine's own node deltas as boundaries, voicing each message
+(player / public Moderator / private whisper). Slice 2 added a browse path reusing the
+whole spec-012 viewer stack — a Textual-free locator/loader under two read-only screens
+(`t` on a run's record → game list → scrollable transcript), with a clean "no
+transcripts" state for older records.
+
+Built over two slices (capture + render + store + docs; viewer browse), suite **615 →
+652**. A real 2-game Ollama smoke confirmed a transcript reads naturally end-to-end —
+and, fittingly for a measurement increment, the smoke *also* exposed a real bug: ~25
+synthetic records had been leaking into the committed ledger because `append_record`'s
+`ledger_path=LEDGER_PATH` default was **bound at import time**, so the tests'
+`monkeypatch.setattr(LEDGER_PATH)` never reached `run_eval`'s no-arg append. Fixed by
+resolving the global at call time (proven: a full suite leaves the real ledger
+git-clean), the ledger reverted to its 14 real records, and the flaky multi-round replay
+test + a suite-wide ledger-write guard written into the backlog. **Spec 017 verified
+Completed and tutorialised**, ticking Phase 6's *Preserved, Browsable Eval Transcripts*.
+
 ---
 
 ## What's next
@@ -1143,11 +1180,18 @@ Character Personas) is verified Completed and tutorialised** (2026-06-18), openi
 **Phase 6** — a two-layer deception persona (Mafioso legend vs true self) threaded into
 the Day-speech prompts and revealed at game end, plus two persistence gotchas fixed
 (`dataclasses.replace` rebuilds + the `PlayerPersona` serde allow-list) and a de-flaked
-RNG-order-dependent test. The roadmap's next *feature* is the next Phase 6 item,
-**Per-AI Day-Round Private Thoughts** (each character reflecting in its own voice),
-which builds directly on personas; start with `/awos:spec`. Tutorials `015` and `016`
-are published — every completed spec is now tutorialised except the deliberately-skipped
-`003`.
+RNG-order-dependent test. **Spec 017 (Eval Transcript Preservation) is verified Completed
+and tutorialised** (2026-06-19): each measured eval game's full transcript (secrets
+included) is captured from the **per-super-step stream** — not the final snapshot, which
+would lose every Night's pointing but the last — rendered to
+`evals/transcripts/<run-id>/game-NN.txt` and browsable in the 012 viewer; a 2-game Ollama
+smoke read end-to-end and incidentally exposed an early-bound-default ledger-write leak
+(fixed; ledger reverted to its real records, with a flaky test + a ledger-write guard
+filed to the backlog). The roadmap's next *feature* is the next Phase 6 item, the
+**Day-Round Moderator Recap** (a public end-of-round status nudge — also a candidate aid
+for the open town-coordination weakness); start with `/awos:spec`. Tutorials `015`,
+`016`, and `017` are published — every completed spec is now tutorialised except the
+deliberately-skipped `003`.
 Open follow-ups (now tracked in **[`context/backlog.md`](context/backlog.md)**): the
 **repetition-reduction** fix-spec (the top unsolved AI-quality problem, ~0.36–0.45 on
 ollama and lineup-independent); the **Nova Day-passivity** mechanical attempt and the
@@ -1168,8 +1212,9 @@ Immediate follow-ups from the 06-09→10 session:
 
 Older loose ends still open: the product `architecture.md` describes remote
 stats in pre-ADR-008 terms; Tutorial `003` remains the deliberately-open slot;
-the buddah plugin's fork-side hook fix (`${CLAUDE_PLUGIN_ROOT}` + `/buddah:*`
-namespace); and the AWOS `_`-prefixed command renames remain uncommitted.
+and the buddah plugin's fork-side hook fix (`${CLAUDE_PLUGIN_ROOT}` + `/buddah:*`
+namespace). (The AWOS `_`-prefixed command renames were removed 2026-06-18 — the
+buddah plugin supersedes those commands.)
 
 The repo is public at **github.com/tigra/graphia**, so future increments ship
 in the open.
