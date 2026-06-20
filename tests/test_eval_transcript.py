@@ -99,11 +99,18 @@ def _final_players() -> dict[str, PlayerState]:
 
 
 # Markers (substrings we put INTO the synthetic inputs, so asserting them is
-# matching our own tokens — never the renderer's prose).
+# matching our own tokens — never the renderer's prose). These mirror the real
+# engine templates in ``graphia.prompts`` so the renderer's structural detection
+# (vote / kill / recap) fires exactly as it does on a real game's stream.
 _NIGHT1_VICTIM = "Cara"  # killed Night 1; pointed at by both Mafiosos round 1
 _NIGHT2_ONLY_TARGET = "Bo"  # pointed at on Night 2 only — the no-Night-lost token
+# ``VOTE_INITIATE_ANNOUNCE_TEMPLATE`` / ``VOTE_EXECUTED_TEMPLATE`` shapes.
 _VOTE_INITIATE_LINE = "Mira has called for a vote to execute Dario."
 _VOTE_EXECUTED_LINE = "Dario has been executed. Dario was a Mafia."
+# ``resolve_night_kill`` shape — the real night-kill announcement the renderer
+# relabels into a ``<kill>`` block.
+_NIGHT1_KILL_LINE = "During the night, Cara was killed."
+_NIGHT2_KILL_LINE = "During the night, Bo was killed."
 
 
 def _setup_events() -> list[dict[str, Any]]:
@@ -146,7 +153,9 @@ def _night_events(
     channels — the very reset these tests prove the stream log survives).
     ``mafia_round_start`` carries the cumulative ``night_rounds_log`` (completed
     rounds) and ``mafia_point`` carries the cumulative ``night_round_picks`` for
-    the deciding round. ``resolve_night_kill`` announces the victim.
+    the deciding round. ``resolve_night_kill`` announces the victim with the real
+    ``"During the night, {name} was killed."`` template, which the renderer
+    relabels into an inline ``<kill>{name} — {side}</kill>`` block.
     """
     return [
         {
@@ -172,7 +181,7 @@ def _night_events(
             "resolve_night_kill": {
                 "messages": [
                     SystemMessage(
-                        content=f"{victim_name} was killed in the night."
+                        content=f"During the night, {victim_name} was killed."
                     ),
                 ],
                 "kill_log": [
@@ -216,23 +225,24 @@ def _day_events(
         },
     ]
     if with_vote:
+        # The vote streams across the engine's three node kinds: ``vote_prompt``
+        # (initiation), one ``collect_votes`` super-step per voter (each a single
+        # ballot line), then ``resolve_vote`` (tally + outcome). The renderer
+        # assembles these into one ``<vote>`` block.
         events += [
             {
                 "vote_prompt": {
                     "messages": [SystemMessage(content=_VOTE_INITIATE_LINE)],
                 }
             },
-            {
-                "collect_votes": {
-                    "messages": [
-                        SystemMessage(content="Mira: Yes"),
-                        SystemMessage(content="Bo: Yes"),
-                    ]
-                }
-            },
+            {"collect_votes": {"messages": [SystemMessage(content="Mira: Yes")]}},
+            {"collect_votes": {"messages": [SystemMessage(content="Bo: Yes")]}},
             {
                 "resolve_vote": {
-                    "messages": [SystemMessage(content=_VOTE_EXECUTED_LINE)],
+                    "messages": [
+                        SystemMessage(content="The tally: 2 Yes, 0 No."),
+                        SystemMessage(content=_VOTE_EXECUTED_LINE),
+                    ],
                     "kill_log": [
                         {"cycle": day_number, "name": "Dario", "cause": "execution"}
                     ],
@@ -324,14 +334,15 @@ def test_render_wraps_everything_in_a_single_transcript() -> None:
 def test_render_preserves_strict_chronological_order() -> None:
     """The four phases appear in stream order, asserted by marker ``.index``.
 
-    Night 1's victim (Cara) precedes Day 1's vote initiation, which precedes
-    Night 2's only target (Bo), which precedes Day 2's "Day 2 breaks." — so the
-    Night/Day alternation is in strict chronological order, never reordered.
+    Night 1's victim (Cara, now an inline ``<kill>`` block) precedes Day 1's vote
+    block (``initiator="Mira" target="Dario"``), which precedes Night 2's only
+    target (Bo), which precedes Day 2's "Day 2 breaks." — so the Night/Day
+    alternation is in strict chronological order, never reordered.
     """
     doc = _render()
 
-    night1_i = doc.index("Night 1 begins.")
-    day1_i = doc.index(_VOTE_INITIATE_LINE)
+    night1_i = doc.index(f"<kill>{_NIGHT1_VICTIM} — Law-abiding Citizen</kill>")
+    day1_i = doc.index('<vote initiator="Mira" target="Dario">')
     night2_i = doc.index("Night 2 begins.")
     day2_i = doc.index("Day 2 breaks.")
 
@@ -339,11 +350,11 @@ def test_render_preserves_strict_chronological_order() -> None:
 
 
 def test_render_first_night_precedes_first_day() -> None:
-    """The Night-1 kill announcement precedes any Day-1 utterance (ordering spine)."""
+    """The Night-1 kill block precedes any Day-1 utterance (ordering spine)."""
     doc = _render()
 
-    # Cara's Night-1 death is announced before Mira speaks on Day 1.
-    assert doc.index(f"{_NIGHT1_VICTIM} was killed") < doc.index(
+    # Cara's Night-1 death (the <kill> block) is announced before Mira speaks.
+    assert doc.index(f"<kill>{_NIGHT1_VICTIM} — Law-abiding Citizen</kill>") < doc.index(
         "I think the fishmonger is lying."
     )
 
@@ -414,16 +425,30 @@ def test_render_shows_every_nights_picks_by_name_including_night_two() -> None:
 
 
 def test_render_shows_vote_initiation_each_ballot_and_outcome() -> None:
-    """The full Day-1 vote: who initiated it, each ballot, and the execution outcome."""
+    """The full Day-1 vote renders as one ``<vote>`` block (spec 022).
+
+    The block names the initiator + target as attributes, lists each ballot as a
+    plain ``Name: Yes/No`` line with NO ``Moderator:`` prefix, then the tally,
+    then an ``outcome:`` line naming the executed player and revealed side.
+    """
     doc = _render()
 
-    # Initiation (who called the vote on whom).
-    assert _VOTE_INITIATE_LINE in doc
-    # Each ballot, by voter — both Yes ballots we scripted.
-    assert "Mira: Yes" in doc
-    assert "Bo: Yes" in doc
-    # The outcome — Dario executed, role revealed.
-    assert _VOTE_EXECUTED_LINE in doc
+    # The vote is one delimited block; resolve it to assert its contents.
+    start = doc.index("<vote ")
+    end = doc.index("</vote>", start) + len("</vote>")
+    block = doc[start:end]
+
+    # Initiation is the block's attributes (who called the vote on whom).
+    assert '<vote initiator="Mira" target="Dario">' in block
+    # Each ballot, by voter, as a plain line — and NO Moderator prefix anywhere.
+    assert "Mira: Yes" in block
+    assert "Bo: Yes" in block
+    assert "Moderator:" not in block
+    # The tally line.
+    assert "tally: 2 Yes, 0 No" in block
+    # The outcome names the executed player and revealed side (verbatim reveal).
+    assert "outcome:" in block
+    assert _VOTE_EXECUTED_LINE in block
 
 
 def test_render_keeps_a_private_role_reveal_in_the_transcript() -> None:
@@ -532,8 +557,23 @@ _ROUND_PLAYERS = {
 
 
 def _recap_for(round_number: int) -> str:
-    """A UNIQUE per-round recap marker so each can be attributed to one block."""
-    return f"Status recap closing round {round_number}."
+    """A UNIQUE per-round recap line, shaped like the real recap template.
+
+    Mirrors ``DAY_ROUND_RECAP_TEMPLATE`` (``"Day {day}, {clock} status: …"``) so
+    the renderer relabels it into an inline ``<recap>…</recap>`` element (spec
+    022). The per-round count clause keeps each one a UNIQUE marker, so a given
+    recap can be attributed to exactly one round block.
+    """
+    return (
+        f"Day 1, round {round_number} status: 2 Law-abiding Citizens and "
+        f"1 Mafioso remain. No execution votes called yet today. "
+        f"No one has been executed today."
+    )
+
+
+def _recap_element_for(round_number: int) -> str:
+    """The inline ``<recap>…</recap>`` element the renderer emits for that recap."""
+    return f"<recap>{_recap_for(round_number)}</recap>"
 
 
 def _wrap_round_delta(
@@ -635,12 +675,13 @@ def test_round_block_count_equals_speaking_round_count() -> None:
 
 
 def test_each_recap_is_the_last_line_inside_the_round_it_closes() -> None:
-    """§2.3: each round's unique recap is the final content line of its own block.
+    """§2.3: each round's unique recap element is the final line of its own block.
 
-    Each wrap carries a distinguishable recap string; that string must appear
-    inside the block labeled with the same round number, must be that block's
-    final content line (after the speech), and must NOT appear in any other
-    block.
+    Each wrap carries a distinguishable recap string; the renderer relabels it
+    into an inline ``<recap>…</recap>`` element (spec 022). That element must
+    appear inside the block labeled with the same round number, must be that
+    block's final content line (after the speech), and must NOT appear in any
+    other block.
     """
     day = _render_one_day(_multi_round_day_events(1, 3))
     blocks = _round_blocks(day)
@@ -648,15 +689,16 @@ def test_each_recap_is_the_last_line_inside_the_round_it_closes() -> None:
 
     for index, block in enumerate(blocks, start=1):
         recap = _recap_for(index)
-        # The recap belongs to THIS round's block...
-        assert recap in block, f"round {index} recap missing from its block"
+        element = _recap_element_for(index)
+        # The recap belongs to THIS round's block, as a <recap> element...
+        assert element in block, f"round {index} recap missing from its block"
         # ...and to no OTHER round's block.
         for other in range(1, 4):
             if other != index:
                 assert _recap_for(other) not in block
 
-        # The recap is the LAST content line of the block (after the speech):
-        # only the closing </round> tag follows it.
+        # The recap element is the LAST content line of the block (after the
+        # speech): only the closing </round> tag follows it.
         content_lines = [
             line.strip()
             for line in block.splitlines()
@@ -664,7 +706,7 @@ def test_each_recap_is_the_last_line_inside_the_round_it_closes() -> None:
             and not line.strip().startswith("<round>")
             and not line.strip().startswith("</round>")
         ]
-        assert content_lines[-1] == f"Moderator: {recap}"
+        assert content_lines[-1] == element
         # The speech precedes the recap inside the same block.
         assert block.index(f"round {index}") < block.index(recap)
 
@@ -713,13 +755,12 @@ def test_round_numbering_resets_at_the_start_of_each_day() -> None:
 def test_failed_vote_stays_inside_its_round_without_opening_a_new_block() -> None:
     """§2.2: a failed vote (``day_votes_called``) does NOT open a new ``<round>``.
 
-    A round contains speeches, then a failed-vote tally + "vote fails" line, then
-    more speech, then its wrap. The whole pass renders as ONE block: the round
-    count is unchanged by the failed vote, and the vote lines sit inside the same
-    block as that round's speeches.
+    A round contains speeches, then a failed-vote ``<vote>`` block, then more
+    speech, then its wrap. The whole pass renders as ONE round block: the round
+    count is unchanged by the failed vote, and the ``<vote>`` block sits inside
+    the same round block as that round's speeches. The failed vote's ``outcome:``
+    line reproduces "The vote fails." (spec 022 keeps the wording).
     """
-    tally_line = "Vote tally — Yes 1, No 2."
-    fails_line = "The vote fails. The Day continues."
     events: list[dict[str, Any]] = [
         {
             "day_open": {
@@ -733,11 +774,24 @@ def test_failed_vote_stays_inside_its_round_without_opening_a_new_block() -> Non
                 ]
             }
         },
+        # A failed vote: initiation, ballots, then a tally + "The vote fails."
+        {
+            "vote_prompt": {
+                "messages": [
+                    SystemMessage(
+                        content="Mira has called for a vote to execute Bo."
+                    )
+                ]
+            }
+        },
+        {"collect_votes": {"messages": [SystemMessage(content="Mira: Yes")]}},
+        {"collect_votes": {"messages": [SystemMessage(content="Bo: No")]}},
+        {"collect_votes": {"messages": [SystemMessage(content="Dario: No")]}},
         {
             "resolve_vote": {
                 "messages": [
-                    SystemMessage(content=tally_line),
-                    SystemMessage(content=fails_line),
+                    SystemMessage(content="The tally: 1 Yes, 2 No."),
+                    SystemMessage(content="The vote fails."),
                 ],
                 "day_votes_called": 1,
             }
@@ -752,9 +806,13 @@ def test_failed_vote_stays_inside_its_round_without_opening_a_new_block() -> Non
     assert day.count("<round>") == 1
     assert len(blocks) == 1
     only = blocks[0]
-    # The tally + "vote fails" lines live INSIDE that single round block.
-    assert tally_line in only
-    assert fails_line in only
+    # The failed vote is one <vote> block INSIDE that single round block.
+    assert "<vote initiator=\"Mira\" target=\"Bo\">" in only
+    assert "tally: 1 Yes, 2 No" in only
+    assert "outcome: failed — The vote fails." in only
+    # The ballots are plain, prefix-free lines inside the vote block.
+    assert "Mira: Yes" in only
+    assert "Bo: No" in only
     # Alongside that round's speech and its closing recap.
     assert "Opening remarks." in only
     assert _recap_for(1) in only
@@ -793,22 +851,32 @@ def test_failed_vote_then_two_more_rounds_renders_three_blocks() -> None:
 
 
 def test_executed_vote_reveal_lands_in_the_final_round_no_empty_block() -> None:
-    """§2.5(a): an executed-vote reveal sits inside the final round; no empty block.
+    """§2.5(a): an executed-vote ``<vote>`` block sits inside the final round.
 
-    Two rounds wrap, then a passing vote ends the Day. The deciding tally +
-    execution reveal must land inside the LAST round block (round 2), and there
-    must be no spurious empty ``<round></round>`` after it.
+    Two rounds wrap, then a passing vote ends the Day. The deciding ``<vote>``
+    block (tally + execution reveal) must land inside the LAST round block
+    (round 2), and there must be no spurious empty ``<round></round>`` after it.
     """
-    tally_line = "Vote tally — Yes 2, No 0."
-    reveal_line = "Dario was executed. Dario was a Mafia."
+    reveal_line = "Dario has been executed. Dario was a Mafia."
     events: list[dict[str, Any]] = [
         {"day_open": {"messages": [SystemMessage(content="Day 1 breaks.")]}},
         _wrap_round_delta(1, with_recap=True),
         _wrap_round_delta(2, with_recap=True),
         {
+            "vote_prompt": {
+                "messages": [
+                    SystemMessage(
+                        content="Mira has called for a vote to execute Dario."
+                    )
+                ]
+            }
+        },
+        {"collect_votes": {"messages": [SystemMessage(content="Mira: Yes")]}},
+        {"collect_votes": {"messages": [SystemMessage(content="Bo: Yes")]}},
+        {
             "resolve_vote": {
                 "messages": [
-                    SystemMessage(content=tally_line),
+                    SystemMessage(content="The tally: 2 Yes, 0 No."),
                     SystemMessage(content=reveal_line),
                 ],
                 "kill_log": [
@@ -824,12 +892,14 @@ def test_executed_vote_reveal_lands_in_the_final_round_no_empty_block() -> None:
     assert day.count("<round>") == 2
     assert len(blocks) == 2
     assert "<round></round>" not in day.replace("\n", "").replace(" ", "")
-    # The deciding tally + execution reveal are inside the LAST block.
+    # The deciding <vote> block (tally + execution reveal) is inside the LAST.
     last = blocks[-1]
-    assert tally_line in last
+    assert "<vote initiator=\"Mira\" target=\"Dario\">" in last
+    assert "tally: 2 Yes, 0 No" in last
     assert reveal_line in last
-    # And not duplicated into the first block.
+    # And the vote block is not duplicated into the first block.
     assert reveal_line not in blocks[0]
+    assert "<vote " not in blocks[0]
 
 
 def test_no_execution_close_lands_in_the_final_round_no_empty_block() -> None:
@@ -840,7 +910,11 @@ def test_no_execution_close_lands_in_the_final_round_no_empty_block() -> None:
     must land inside the LAST round block, with no empty block following.
     """
     no_exec_line = "The Day ends with no one executed."
-    final_recap = "Final status recap for the Day."
+    final_recap = (
+        "Day 1, 12 AM (midnight) status: 2 Law-abiding Citizens and "
+        "1 Mafioso remain. No execution votes called yet today. "
+        "No one has been executed today."
+    )
     events: list[dict[str, Any]] = [
         {"day_open": {"messages": [SystemMessage(content="Day 1 breaks.")]}},
         _wrap_round_delta(1, with_recap=True),
@@ -862,11 +936,13 @@ def test_no_execution_close_lands_in_the_final_round_no_empty_block() -> None:
     assert day.count("<round>") == 3
     assert len(blocks) == 3
     assert "<round></round>" not in day.replace("\n", "").replace(" ", "")
-    # The day-ending content lands in the LAST round block.
+    # The day-ending content lands in the LAST round block: the no-execution
+    # Moderator line, then the final recap relabeled as a <recap> element.
     last = blocks[-1]
-    assert no_exec_line in last
-    assert final_recap in last
-    # The final recap is the LAST content line of the final block.
+    assert f"Moderator: {no_exec_line}" in last
+    final_element = f"<recap>{final_recap}</recap>"
+    assert final_element in last
+    # The final recap element is the LAST content line of the final block.
     content_lines = [
         line.strip()
         for line in last.splitlines()
@@ -874,7 +950,7 @@ def test_no_execution_close_lands_in_the_final_round_no_empty_block() -> None:
         and not line.strip().startswith("<round>")
         and not line.strip().startswith("</round>")
     ]
-    assert content_lines[-1] == f"Moderator: {final_recap}"
+    assert content_lines[-1] == final_element
 
 
 # --- recap-off parity — structure is recap-independent ----------------------
@@ -904,3 +980,430 @@ def test_recap_on_and_off_produce_the_same_round_block_count() -> None:
     day_off = _render_one_day(_multi_round_day_events(1, 3, with_recap=False))
 
     assert day_on.count("<round>") == day_off.count("<round>") == 3
+
+
+# ===========================================================================
+# 6. Structured block format (spec 022) — each event type is its own
+#    consistent, flush-left, delimited block; no alignment whitespace;
+#    utterances unchanged; no information lost.
+#
+# These exercise the renderer against synthetic event logs shaped like the real
+# engine templates (``graphia.prompts``) so the structural detection (vote /
+# kill / recap / endgame) fires exactly as it does on a real game's stream.
+# ===========================================================================
+
+# The real ``end_screen`` Moderator content: a winner line, the events list, the
+# full roster, and the persona reveal — all already plain prose on ONE message.
+_ENDGAME_CONTENT = "\n".join(
+    [
+        "The Mafia have won.",
+        "",
+        "Events this game:",
+        "• Night 1: Cara (Law-abiding Citizen)",
+        "• Day 1: Dario (Mafia) executed",
+        "",
+        "Full roster: Dario (Mafia), Mira (Law-abiding Citizen), "
+        "Bo (Law-abiding Citizen), Cara (Law-abiding Citizen)",
+        "",
+        "Who they really were:",
+        "• Mira (Law-abiding Citizen) — the village schoolteacher who knows everyone",
+        "• Dario (Mafia) — publicly the harbour fishmonger … but was really a "
+        "Mafioso: runs the smuggling ring",
+    ]
+)
+
+
+def _endgame_event() -> dict[str, Any]:
+    """One ``end_screen`` super-step carrying the whole endgame Moderator message."""
+    return {"end_screen": {"messages": [SystemMessage(content=_ENDGAME_CONTENT)]}}
+
+
+def _full_game_events() -> list[dict[str, Any]]:
+    """A complete synthetic game exercising every spec-022 block type at once.
+
+    Setup → Night 1 (multi-round pointing, real ``<kill>`` line) → Day 1
+    (utterances, a FAILED vote, more rounds with real recap lines, then an
+    executed vote) → Night 2 → endgame. Shaped from the real engine templates so
+    the renderer emits ``<setup>``/``<night>``/``<kill>``/``<day>``/``<round>``/
+    ``<recap>``/``<vote>``/``<endgame>`` blocks.
+    """
+    events: list[dict[str, Any]] = []
+    events += _setup_events()
+    events += _night_events(
+        night_number=1,
+        rounds_log=[{"p-dario": "p-cara"}],
+        deciding_round={"p-dario": "p-cara"},
+        victim_name=_NIGHT1_VICTIM,
+    )
+    # Day 1: a failed vote in round 1, then a passing (executed) vote in round 2.
+    failed_recap = (
+        "Day 1, 9 AM status: 3 Law-abiding Citizens and 1 Mafioso remain. "
+        "1 execution vote called today. No one has been executed today."
+    )
+    exec_recap = (
+        "Day 1, 12 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. "
+        "1 execution vote called today. Dario was executed today and was "
+        "revealed to be Mafia."
+    )
+    events += [
+        {"day_open": {"messages": [SystemMessage(content="Day 1 breaks.")]}},
+        {
+            "day_turn": {
+                "messages": [
+                    AIMessage(content="I think the fishmonger is lying.", name="Mira")
+                ]
+            }
+        },
+        # Failed vote (round 1).
+        {
+            "vote_prompt": {
+                "messages": [
+                    SystemMessage(
+                        content="Bo has called for a vote to execute Mira."
+                    )
+                ]
+            }
+        },
+        {"collect_votes": {"messages": [SystemMessage(content="Mira: No")]}},
+        {"collect_votes": {"messages": [SystemMessage(content="Bo: Yes")]}},
+        {"collect_votes": {"messages": [SystemMessage(content="Dario: No")]}},
+        {
+            "resolve_vote": {
+                "messages": [
+                    SystemMessage(content="The tally: 1 Yes, 2 No."),
+                    SystemMessage(content="The vote fails."),
+                ],
+                "day_votes_called": 1,
+            }
+        },
+        # Round 1 wraps with its recap.
+        {
+            "day_turn": {
+                "messages": [
+                    AIMessage(content="Let us regroup.", name="Mira"),
+                    SystemMessage(content=failed_recap),
+                ],
+                "day_rounds": 1,
+            }
+        },
+        # Round 2: a passing vote that executes Dario.
+        {
+            "day_turn": {
+                "messages": [
+                    AIMessage(content="The forge kept me busy.", name="Bo")
+                ]
+            }
+        },
+        {
+            "vote_prompt": {
+                "messages": [
+                    SystemMessage(
+                        content="Mira has called for a vote to execute Dario."
+                    )
+                ]
+            }
+        },
+        {"collect_votes": {"messages": [SystemMessage(content="Mira: Yes")]}},
+        {"collect_votes": {"messages": [SystemMessage(content="Bo: Yes")]}},
+        {"collect_votes": {"messages": [SystemMessage(content="Dario: No")]}},
+        {
+            "resolve_vote": {
+                "messages": [
+                    SystemMessage(content="The tally: 2 Yes, 1 No."),
+                    SystemMessage(content=_VOTE_EXECUTED_LINE),
+                ],
+                "kill_log": [{"cycle": 1, "name": "Dario", "cause": "execution"}],
+            }
+        },
+        # day_close emits the executed-today recap into the last round.
+        {
+            "day_close": {
+                "messages": [SystemMessage(content=exec_recap)],
+            }
+        },
+    ]
+    events += _night_events(
+        night_number=2,
+        rounds_log=[{"p-dario": "p-bo"}],
+        deciding_round={"p-dario": "p-bo"},
+        victim_name=_NIGHT2_ONLY_TARGET,
+    )
+    events.append(_endgame_event())
+    return events
+
+
+def _render_full_game() -> str:
+    """Render the full block-exercising synthetic game once for the assertions."""
+    return render_transcript(
+        _full_game_events(), _final_players(), game_index=1, run_meta=None
+    )
+
+
+def _block(doc: str, tag: str) -> str:
+    """Slice the first ``<tag>…</tag>`` (inline or multi-line) out of ``doc``.
+
+    Handles both a bare open tag (``<endgame>``) and an attributed one
+    (``<vote initiator=… >``) by locating whichever appears first.
+    """
+    bare = doc.find(f"<{tag}>")
+    attributed = doc.find(f"<{tag} ")
+    candidates = [i for i in (bare, attributed) if i != -1]
+    start = min(candidates)
+    end = doc.index(f"</{tag}>", start) + len(f"</{tag}>")
+    return doc[start:end]
+
+
+# --- the vote block ---------------------------------------------------------
+
+
+def test_executed_vote_block_names_the_revealed_side() -> None:
+    """A vote that executed someone: ``outcome:`` names the player AND revealed side.
+
+    The executed vote's outcome line reproduces the engine reveal verbatim
+    ("Dario has been executed. Dario was a Mafia."), which names the executed
+    player and their revealed side — inside the single ``<vote>`` block.
+    """
+    doc = _render_full_game()
+    # The second (passing) vote block.
+    second = doc.index('<vote initiator="Mira" target="Dario">')
+    block = doc[second : doc.index("</vote>", second) + len("</vote>")]
+
+    assert "outcome: executed — Dario has been executed. Dario was a Mafia." in block
+    # The revealed side is named in that outcome line.
+    assert "Mafia" in block
+
+
+def test_failed_vote_block_outcome_reads_failed() -> None:
+    """A failed vote's ``outcome:`` line reads "failed" and reproduces the wording."""
+    doc = _render_full_game()
+    first = doc.index('<vote initiator="Bo" target="Mira">')
+    block = doc[first : doc.index("</vote>", first) + len("</vote>")]
+
+    assert "outcome: failed — The vote fails." in block
+
+
+def test_vote_ballots_are_plain_lines_with_no_moderator_prefix() -> None:
+    """Each ballot is a plain ``Name: Yes/No`` line — no ``Moderator:`` prefix.
+
+    The vote block carries the tally and outcome too; none of its lines wear the
+    Moderator voice (spec 022 drops it on ballots, and the tally/outcome are
+    relabeled, not Moderator lines).
+    """
+    doc = _render_full_game()
+    second = doc.index('<vote initiator="Mira" target="Dario">')
+    block = doc[second : doc.index("</vote>", second) + len("</vote>")]
+
+    for ballot in ("Mira: Yes", "Bo: Yes", "Dario: No"):
+        assert ballot in block
+    assert "tally: 2 Yes, 1 No" in block
+    # No Moderator voice anywhere inside the vote block.
+    assert "Moderator:" not in block
+
+
+# --- the night-kill block ---------------------------------------------------
+
+
+def test_night_kill_is_inline_block_with_revealed_side() -> None:
+    """A night kill is an inline ``<kill>Name — Side</kill>``, distinct from picks.
+
+    Cara dies Night 1; her block names her revealed side (off the final roster)
+    and sits inside the night, separate from the "points at" pointing-round
+    lines.
+    """
+    doc = _render_full_game()
+    first_night = doc.index("<night>")
+    night_block = doc[first_night : doc.index("</night>", first_night)]
+
+    assert "<kill>Cara — Law-abiding Citizen</kill>" in night_block
+    # The kill block is distinct from the pointing rounds (both present, but the
+    # kill is its own labeled element — the "points at" lines aren't inside it).
+    assert "Dario points at Cara" in night_block
+    assert "points at" not in "<kill>Cara — Law-abiding Citizen</kill>"
+
+
+def test_night_kill_block_uses_the_final_roster_side() -> None:
+    """The night-kill side comes from the final roster (Mafia vs. Law-abiding)."""
+    doc = _render_full_game()
+    # Night 2 kills Bo (Law-abiding); a Mafia victim would read "— Mafia".
+    second_night = doc.index("<night>", doc.index("<night>") + 1)
+    night2 = doc[second_night : doc.index("</night>", second_night)]
+    assert "<kill>Bo — Law-abiding Citizen</kill>" in night2
+
+
+# --- the recap element ------------------------------------------------------
+
+
+def test_recap_is_its_own_element_carrying_day_clock_counts_votes_executed() -> None:
+    """A recap is a ``<recap>…</recap>`` element, not an ordinary Moderator line.
+
+    The element reproduces the spec-018/020 recap content as-is: the day + clock,
+    the living counts by side, the votes-called clause, and the executed-today
+    clause — and is NOT prefixed ``Moderator:``.
+    """
+    doc = _render_full_game()
+    # The executed-today recap from day_close (round 2).
+    recap_text = (
+        "Day 1, 12 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. "
+        "1 execution vote called today. Dario was executed today and was "
+        "revealed to be Mafia."
+    )
+    element = f"<recap>{recap_text}</recap>"
+    assert element in doc
+    # It is NOT rendered as an ordinary Moderator line.
+    assert f"Moderator: {recap_text}" not in doc
+    # Content carried as-is: day, in-world clock, counts, votes, executed.
+    assert "Day 1, 12 PM status:" in element  # day + clock
+    assert "2 Law-abiding Citizens and 1 Mafioso remain" in element  # counts
+    assert "1 execution vote called today" in element  # votes
+    assert "Dario was executed today" in element  # executed-today
+
+
+# --- per-player flush-left setup --------------------------------------------
+
+
+def test_setup_entries_are_flush_left_with_no_alignment_indentation() -> None:
+    """Each setup entry (name/role + persona fields) is flush-left — no 2-/4-space.
+
+    The roster header lines and their persona ``Field: value`` lines all start at
+    column 0 (spec 022), where the pre-022 format indented them by 2 and 4 spaces.
+    """
+    doc = _render_full_game()
+    setup = doc[doc.index("<setup>") : doc.index("</setup>") + len("</setup>")]
+    lines = setup.splitlines()
+
+    # No content line in <setup> carries leading whitespace.
+    for line in lines:
+        assert line == line.lstrip(), f"indented setup line: {line!r}"
+
+    # The structured per-player entries are present, flush-left.
+    assert "Dario — Mafia" in lines
+    assert "Mira — Law-abiding Citizen" in lines
+    assert "Personality: coldly calculating" in lines
+    assert "Public legend: Dario the harbour fishmonger, up before dawn most days" in lines
+    assert "True self (hidden): Dario runs the smuggling ring the fish stall launders for" in lines
+
+
+# --- the endgame block ------------------------------------------------------
+
+
+def test_endgame_is_one_labeled_block_with_winner_roster_and_reveal() -> None:
+    """The endgame (winner + full roster + persona reveal) is one ``<endgame>`` block."""
+    doc = _render_full_game()
+    block = _block(doc, "endgame")
+
+    # Winner line, the full roster, and the persona reveal all inside the block.
+    assert "The Mafia have won." in block
+    assert "Full roster: Dario (Mafia)" in block
+    assert "Who they really were:" in block
+    assert "Dario (Mafia) — publicly the harbour fishmonger" in block
+
+
+def test_endgame_block_is_top_level_not_folded_into_the_last_night() -> None:
+    """The ``<endgame>`` block follows — and is outside — the final ``<night>``.
+
+    The endgame is its own labeled block, never buried inside the last Night/Day
+    section (spec 022). It opens after the last ``</night>`` and before
+    ``</transcript>``.
+    """
+    doc = _render_full_game()
+
+    last_night_close = doc.rindex("</night>")
+    endgame_open = doc.index("<endgame>")
+    assert last_night_close < endgame_open
+    assert endgame_open < doc.index("</transcript>")
+    # The winner line is NOT inside any <night> block.
+    night_starts = [
+        i for i in range(len(doc)) if doc.startswith("<night>", i)
+    ]
+    for start in night_starts:
+        night = doc[start : doc.index("</night>", start)]
+        assert "The Mafia have won." not in night
+
+
+# --- flush-left / inline one-liners / utterances unchanged ------------------
+
+
+def test_one_line_sections_are_written_inline() -> None:
+    """Single-line sections are inline ``<tag>…</tag>`` (kill, recap) — spec 022."""
+    doc = _render_full_game()
+
+    # An inline kill: the open tag, content, and close tag share one line.
+    for line in doc.splitlines():
+        if line.startswith("<kill>"):
+            assert line.endswith("</kill>"), f"kill not inline: {line!r}"
+        if line.startswith("<recap>"):
+            assert line.endswith("</recap>"), f"recap not inline: {line!r}"
+    # Both kinds are present as inline one-liners.
+    assert any(
+        line.startswith("<kill>") and line.endswith("</kill>")
+        for line in doc.splitlines()
+    )
+    assert any(
+        line.startswith("<recap>") and line.endswith("</recap>")
+        for line in doc.splitlines()
+    )
+
+
+def test_block_content_lines_are_flush_left_no_alignment_spaces() -> None:
+    """No content line anywhere is indented — everything is flush-left (spec 022).
+
+    The opening/closing tags and every content line begin at column 0; the old
+    2-/4-space alignment indentation is gone throughout the document.
+    """
+    doc = _render_full_game()
+
+    for line in doc.splitlines():
+        if not line:  # blank separators are allowed (they carry no indent anyway)
+            continue
+        assert not line.startswith(" "), f"indented line found: {line!r}"
+
+
+def test_player_utterances_are_plain_name_text_lines() -> None:
+    """A player's speaking turn stays a plain ``Name: text`` line, exactly as before."""
+    doc = _render_full_game()
+
+    assert "Mira: I think the fishmonger is lying." in doc
+    assert "Bo: The forge kept me busy." in doc
+    # The utterance is not wrapped in any block tag of its own.
+    for utterance in (
+        "Mira: I think the fishmonger is lying.",
+        "Bo: The forge kept me busy.",
+    ):
+        line = next(
+            ln for ln in doc.splitlines() if ln == utterance
+        )
+        assert "<" not in line and ">" not in line
+
+
+# --- no information lost -----------------------------------------------------
+
+
+def test_no_information_lost_across_the_restructure() -> None:
+    """Every speech, ballot, kill, recap, and reveal still appears (spec 022).
+
+    The restructure changes only grouping/formatting — so the same player
+    speeches, vote ballots, both night-kill victims, the recap content, and the
+    endgame persona reveal are all still present in the rendered document.
+    """
+    doc = _render_full_game()
+
+    # Player speeches.
+    assert "Mira: I think the fishmonger is lying." in doc
+    assert "Bo: The forge kept me busy." in doc
+    assert "Mira: Let us regroup." in doc
+    # Every ballot (across both votes), prefix-free.
+    for ballot in ("Mira: No", "Bo: Yes", "Dario: No", "Mira: Yes"):
+        assert ballot in doc
+    # Both night kills, with their revealed sides.
+    assert "<kill>Cara — Law-abiding Citizen</kill>" in doc
+    assert "<kill>Bo — Law-abiding Citizen</kill>" in doc
+    # The execution reveal (verbatim).
+    assert _VOTE_EXECUTED_LINE in doc
+    # Recap content (the executed-today recap).
+    assert "Dario was executed today and was revealed to be Mafia" in doc
+    # The private role reveal from setup.
+    assert "private to Dario" in doc
+    assert "You are secretly a Mafia." in doc
+    # The endgame persona reveal.
+    assert "Who they really were:" in doc
+    assert "Dario (Mafia) — publicly the harbour fishmonger" in doc
