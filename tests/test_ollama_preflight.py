@@ -34,7 +34,12 @@ from pathlib import Path
 import pytest
 
 from graphia.config import GraphiaConfig
-from graphia.preflight import _model_installed, run_ollama_preflight
+from graphia.preflight import (
+    _fetch_model_context_length,
+    _model_installed,
+    run_ollama_preflight,
+    warn_if_ollama_context_too_small,
+)
 
 _BASE_URL = "http://localhost:11434"
 _LARGE_MODEL = "qwen2.5:7b"
@@ -53,6 +58,7 @@ def _make_config(
     ollama_base_url: str = _BASE_URL,
     ollama_large_model: str = _LARGE_MODEL,
     ollama_small_model: str = _SMALL_MODEL,
+    context_token_budget: int = 20000,
 ) -> GraphiaConfig:
     """Build a ``GraphiaConfig`` directly, bypassing env (frozen dataclass)."""
     return GraphiaConfig(
@@ -77,6 +83,7 @@ def _make_config(
         ollama_base_url=ollama_base_url,
         ollama_large_model=ollama_large_model,
         ollama_small_model=ollama_small_model,
+        context_token_budget=context_token_budget,
     )
 
 
@@ -301,14 +308,25 @@ def test_same_model_for_both_slots_is_reported_once(
 def test_both_models_present_passes_silently(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Realistic /api/tags body with both models → returns None, one GET."""
+    """Realistic /api/tags body with both models → returns None.
+
+    The first call is the ``/api/tags`` model-installed GET; spec 025 then adds
+    a best-effort ``/api/show`` context probe (``warn_if_ollama_context_too_small``).
+    The shared stub answers both with the tags body, which has no ``model_info``,
+    so the context probe reads no signal and stays silent — the preflight still
+    returns ``None``.
+    """
     calls = _stub_tags_endpoint(
         monkeypatch, [_LARGE_MODEL, _SMALL_MODEL, "llama3.2:1b"]
     )
 
     assert run_ollama_preflight(_make_config()) is None
 
-    assert calls == [(f"{_BASE_URL}/api/tags", 3.0)]
+    # The model-installed check is the first call and hits /api/tags with the
+    # 3-second timeout. (The spec-025 /api/show probe follows; it passes a
+    # urllib.request.Request, not a plain URL string, and is covered by the
+    # dedicated context-check tests below.)
+    assert calls[0] == (f"{_BASE_URL}/api/tags", 3.0)
 
 
 def test_trailing_slash_in_base_url_does_not_double_the_separator(
@@ -400,3 +418,140 @@ def test_ollama_under_remote_mode_is_a_no_op(
     run_ollama_preflight(_make_config(llm_provider="ollama", remote_mode=True))
 
     assert exploding_urlopen == []
+
+
+# ---------------------------------------------------------------------------
+# 6. Spec 025 — startup context check (warn below budget, never raise)
+# ---------------------------------------------------------------------------
+
+
+def _stub_show_endpoint(
+    monkeypatch: pytest.MonkeyPatch, model_info: dict | None
+) -> list:
+    """Stub ``urllib.request.urlopen`` with a canned ``/api/show`` reply.
+
+    ``model_info`` becomes the response's ``model_info`` object (carrying e.g.
+    ``qwen3.context_length``); ``None`` omits it entirely. Returns the call log.
+    The check POSTs a ``urllib.request.Request``, so the log records that object.
+    """
+    calls: list = []
+    payload: dict = {"details": {"family": "qwen3"}}
+    if model_info is not None:
+        payload["model_info"] = model_info
+    body = json.dumps(payload).encode("utf-8")
+
+    def _fake_urlopen(req, timeout: float | None = None) -> io.BytesIO:
+        calls.append((req, timeout))
+        return io.BytesIO(body)
+
+    monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen)
+    return calls
+
+
+def test_context_check_warns_when_context_below_budget(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A small declared context (< budget) logs a warning pointing at the env var."""
+    _stub_show_endpoint(monkeypatch, {"qwen3.context_length": 4096})
+
+    with caplog.at_level("WARNING", logger="graphia.preflight"):
+        warn_if_ollama_context_too_small(
+            _make_config(context_token_budget=20000)
+        )
+
+    assert any(record.levelname == "WARNING" for record in caplog.records)
+    message = caplog.text
+    assert "4096" in message
+    assert "OLLAMA_CONTEXT_LENGTH" in message
+
+
+def test_context_check_silent_when_context_meets_budget(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A context at/above the budget logs nothing (the configured-server path)."""
+    _stub_show_endpoint(monkeypatch, {"qwen3.context_length": 32768})
+
+    with caplog.at_level("WARNING", logger="graphia.preflight"):
+        warn_if_ollama_context_too_small(
+            _make_config(context_token_budget=20000)
+        )
+
+    assert caplog.records == []
+
+
+def test_context_check_silent_when_signal_unreadable(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """No ``model_info`` (or no context_length key) ⇒ no warning, no raise."""
+    _stub_show_endpoint(monkeypatch, None)
+
+    with caplog.at_level("WARNING", logger="graphia.preflight"):
+        # Must not raise even though the signal couldn't be read.
+        assert (
+            warn_if_ollama_context_too_small(
+                _make_config(context_token_budget=20000)
+            )
+            is None
+        )
+
+    assert caplog.records == []
+
+
+def test_context_check_never_raises_on_network_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A down server during the context probe is swallowed (never raises)."""
+
+    def _boom(req, timeout: float | None = None):
+        raise OSError("connection refused")
+
+    monkeypatch.setattr(urllib.request, "urlopen", _boom)
+
+    # No exception escapes — the check is best-effort.
+    assert warn_if_ollama_context_too_small(_make_config()) is None
+
+
+def test_context_check_is_a_no_op_for_bedrock(
+    exploding_urlopen: list[str],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Bedrock provider ⇒ the context check never touches HTTP and never warns."""
+    with caplog.at_level("WARNING", logger="graphia.preflight"):
+        warn_if_ollama_context_too_small(_make_config(llm_provider="bedrock"))
+
+    assert exploding_urlopen == []
+    assert caplog.records == []
+
+
+def test_context_check_is_a_no_op_under_remote_mode(
+    exploding_urlopen: list[str],
+) -> None:
+    """Ollama under remote mode ⇒ no HTTP for the context check either."""
+    warn_if_ollama_context_too_small(
+        _make_config(llm_provider="ollama", remote_mode=True)
+    )
+
+    assert exploding_urlopen == []
+
+
+def test_fetch_model_context_length_reads_arch_keyed_field(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``_fetch_model_context_length`` reads the ``<arch>.context_length`` field."""
+    _stub_show_endpoint(monkeypatch, {"qwen3.context_length": 32768})
+
+    value = _fetch_model_context_length(_BASE_URL, _LARGE_MODEL, 3.0)
+
+    assert value == 32768
+
+
+def test_fetch_model_context_length_returns_none_without_field(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No matching field ⇒ ``None`` (so the caller stays quiet)."""
+    _stub_show_endpoint(monkeypatch, {"general.architecture": "qwen3"})
+
+    assert _fetch_model_context_length(_BASE_URL, _LARGE_MODEL, 3.0) is None

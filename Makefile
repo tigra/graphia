@@ -477,7 +477,10 @@ repetition-experiment:
 # Ballot / DayAction) underneath the game's retry-then-fallback masking.
 # Reports RELIABLE/UNRELIABLE per pair — it never switches transports itself.
 # NOT a mocked unit test: needs a running `ollama serve` with the models
-# pulled; burns local model time, no AWS.
+# pulled; burns local model time, no AWS. Start the server with a fuller
+# context window so spec-025's multi-day window is delivered (Ollama's 4096
+# default silently truncates the oldest tokens — the player's role/instructions):
+#   OLLAMA_CONTEXT_LENGTH=32768 ollama serve
 #   make ollama-smoke
 #   make ollama-smoke ARGS="--models qwen2.5:7b,qwen2.5:3b --json smoke.json"
 ollama-smoke:

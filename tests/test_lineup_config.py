@@ -28,6 +28,8 @@ from __future__ import annotations
 import pytest
 
 from graphia.config import (
+    _DEFAULT_CONTEXT_TOKEN_BUDGET,
+    _DEFAULT_CONTEXT_WINDOW,
     _DEFAULT_MAX_DAYS,
     _DEFAULT_NUM_CITIZENS,
     _DEFAULT_NUM_MAFIA,
@@ -43,6 +45,8 @@ _LINEUP_ENV_VARS = (
     "GRAPHIA_NUM_CITIZENS",
     "GRAPHIA_NUM_MAFIA",
     "GRAPHIA_MAX_DAYS",
+    "GRAPHIA_CONTEXT_WINDOW",
+    "GRAPHIA_CONTEXT_TOKEN_BUDGET",
     "GRAPHIA_LLM_PROVIDER",
     "GRAPHIA_REMOTE",
     "GRAPHIA_RUNTIME_URL",
@@ -272,3 +276,97 @@ def test_max_days_non_numeric_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
     message = str(exc_info.value)
     assert "GRAPHIA_MAX_DAYS" in message
     assert "whole number" in message
+
+
+# ---------------------------------------------------------------------------
+# 5. Fuller discussion window (spec 025) — GRAPHIA_CONTEXT_WINDOW, default ~150
+# ---------------------------------------------------------------------------
+
+
+def test_context_window_defaults_to_generous_when_unset() -> None:
+    """Nothing set → the documented fuller-window default (~150 ≈ 3+ days)."""
+    cfg = load_config()
+
+    assert cfg.context_window == _DEFAULT_CONTEXT_WINDOW == 150
+
+
+def test_context_window_empty_string_falls_back_to_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Empty / blank ``GRAPHIA_CONTEXT_WINDOW`` is treated as unset."""
+    monkeypatch.setenv("GRAPHIA_CONTEXT_WINDOW", "   ")
+
+    assert load_config().context_window == _DEFAULT_CONTEXT_WINDOW
+
+
+def test_context_window_env_override_parses_through(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``GRAPHIA_CONTEXT_WINDOW`` overrides the default — e.g. back to the
+    prior short window (30) for the ablation A/B."""
+    monkeypatch.setenv("GRAPHIA_CONTEXT_WINDOW", "30")
+
+    assert load_config().context_window == 30
+
+
+def test_context_window_below_one_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``context_window < 1`` is nonsensical — an empty window shows nothing."""
+    monkeypatch.setenv("GRAPHIA_CONTEXT_WINDOW", "0")
+
+    with pytest.raises(SystemExit) as exc_info:
+        load_config()
+
+    message = str(exc_info.value)
+    assert "GRAPHIA_CONTEXT_WINDOW" in message
+    assert "at least 1" in message
+
+
+def test_context_window_non_numeric_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A non-integer ``GRAPHIA_CONTEXT_WINDOW`` is a ``SystemExit`` from ``_parse_count``."""
+    monkeypatch.setenv("GRAPHIA_CONTEXT_WINDOW", "loads")
+
+    with pytest.raises(SystemExit) as exc_info:
+        load_config()
+
+    message = str(exc_info.value)
+    assert "GRAPHIA_CONTEXT_WINDOW" in message
+    assert "whole number" in message
+
+
+# ---------------------------------------------------------------------------
+# 6. Defensive token-budget cap (spec 025) — GRAPHIA_CONTEXT_TOKEN_BUDGET
+# ---------------------------------------------------------------------------
+
+
+def test_context_token_budget_defaults_when_unset() -> None:
+    """Nothing set → the derived default token budget (a generous constant)."""
+    cfg = load_config()
+
+    assert cfg.context_token_budget == _DEFAULT_CONTEXT_TOKEN_BUDGET
+
+
+def test_context_token_budget_env_override_parses_through(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The optional override flows through for a future provider's context."""
+    monkeypatch.setenv("GRAPHIA_CONTEXT_TOKEN_BUDGET", "8000")
+
+    assert load_config().context_token_budget == 8000
+
+
+def test_context_token_budget_below_one_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A non-positive budget would trim the whole history away — rejected."""
+    monkeypatch.setenv("GRAPHIA_CONTEXT_TOKEN_BUDGET", "0")
+
+    with pytest.raises(SystemExit) as exc_info:
+        load_config()
+
+    message = str(exc_info.value)
+    assert "GRAPHIA_CONTEXT_TOKEN_BUDGET" in message
+    assert "at least 1" in message

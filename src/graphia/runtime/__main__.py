@@ -200,6 +200,8 @@ async def _run_invocation(
             recap_aware_reasoning_enabled=_config.recap_aware_reasoning_enabled,
             role_guidance_enabled=_config.role_guidance_enabled,
             max_days=_config.max_days,
+            context_window=_config.context_window,
+            context_token_budget=_config.context_token_budget,
         )
     except Exception as exc:  # noqa: BLE001
         logger.exception(

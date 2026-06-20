@@ -169,3 +169,37 @@ def test_private_to_others_does_not_consume_window_budget() -> None:
 
     assert "Finn: A late but visible public line." in rendered
     assert "Mallory, Victor" not in rendered
+
+
+# ---------------------------------------------------------------------------
+# Spec 025: the privacy filter is unchanged under the new window/budget params.
+# ---------------------------------------------------------------------------
+
+
+def test_privacy_holds_at_the_fuller_window_and_under_the_cap() -> None:
+    """Other players' whispers never leak — even at the fuller window + budget cap.
+
+    Spec 025 added ``window`` / ``token_budget`` keyword params to
+    ``_render_context``. The privacy filter runs BEFORE both, so a wide window
+    and an active token-budget cap must not change the invariant: a whisper
+    addressed to another player is still dropped, the speaker's own whisper is
+    still kept and labelled, and the public reveal is still visible.
+    """
+    messages = [
+        _mafia_intro_whisper(OTHER_MAFIA_ID),  # addressed to a DIFFERENT mafioso
+        _mafia_intro_whisper(MAFIA_ID),  # the speaker's OWN whisper
+        _public_reveal(),
+        AIMessage(content="Let's stay calm.", name="Mallory"),
+    ]
+
+    rendered = _render_context(
+        messages, MAFIA_ID, window=150, token_budget=20_000
+    )
+
+    # The speaker's own whisper is kept and labelled; the public reveal shows.
+    assert f"Moderator (private): {MAFIA_INTRO}" in rendered
+    assert f"Moderator: {VICTIM_REVEAL}" in rendered
+    assert "Mallory: Let's stay calm." in rendered
+    # A whisper addressed to another player is still dropped — the same content
+    # appears once (the speaker's own), never twice.
+    assert rendered.count(MAFIA_INTRO) == 1

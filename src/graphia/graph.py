@@ -87,6 +87,8 @@ def _assemble_graph(
     recap_aware_reasoning_enabled: bool,
     role_guidance_enabled: bool = True,
     max_days: int = 12,
+    context_window: int = 150,
+    context_token_budget: int = 20000,
 ) -> CompiledStateGraph:
     """Build the Graphia StateGraph topology and compile it with ``saver``.
 
@@ -142,6 +144,10 @@ def _assemble_graph(
     # Spec 024 (ADR 011): the role-guidance flag is bound into those SAME two
     # AI-decision nodes alongside the recap-aware flag, so it gates the tail
     # ``{role_guidance}`` prompt block in both modes.
+    # Spec 025 (ADR 011): the fuller-discussion-window count + its defensive
+    # token-budget cap are bound into the same two AI-decision nodes alongside
+    # the recap-aware-reasoning flag, so ``_ai_day_action`` / ``_ai_ballot``
+    # render the configured window in both modes.
     builder.add_node(
         "day_turn",
         partial(
@@ -149,6 +155,8 @@ def _assemble_graph(
             recap_enabled=recap_enabled,
             recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
             role_guidance_enabled=role_guidance_enabled,
+            context_window=context_window,
+            context_token_budget=context_token_budget,
         ),
     )
     builder.add_node("vote_prompt", vote_prompt)
@@ -158,6 +166,8 @@ def _assemble_graph(
             emit(collect_votes),
             recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
             role_guidance_enabled=role_guidance_enabled,
+            context_window=context_window,
+            context_token_budget=context_token_budget,
         ),
     )
     builder.add_node("resolve_vote", emit(resolve_vote))
@@ -298,6 +308,8 @@ def build_graph(
         recap_aware_reasoning_enabled=config.recap_aware_reasoning_enabled,
         role_guidance_enabled=config.role_guidance_enabled,
         max_days=config.max_days,
+        context_window=config.context_window,
+        context_token_budget=config.context_token_budget,
     )
     return graph, thread_id
 

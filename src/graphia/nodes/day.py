@@ -64,8 +64,36 @@ DAY_MAX_ROUNDS = 6
 # The Day ends after this many failed votes.
 DAY_MAX_VOTES = 3
 
-# Number of recent public messages to include as context for AI speakers.
+# Documented prior-behaviour baseline for the recent-discussion window (spec
+# 025). This was the LIVE window before spec 025; it is now the ablation value
+# (``GRAPHIA_CONTEXT_WINDOW=30`` reproduces the old short window byte-for-byte)
+# and the constant the ``test_slice_day_context_window`` guards still pin. The
+# live window comes from ``GraphiaConfig.context_window`` (default ~150),
+# threaded into ``_render_context`` via the ``window`` parameter — this module
+# global is no longer read by the live render path.
 _CONTEXT_WINDOW = 30
+
+# Conservative chars-per-token ratio for the defensive token-budget estimate
+# (spec 025, R2/R3). Real tokenizers average ~4 chars/token for English; we use
+# 3 to deliberately OVER-estimate token counts (fewer chars per token ⇒ a higher
+# estimated token total for the same text), so the cap trims EARLIER, never
+# later — the safe direction for a safety bound. Not a real tokenizer; the cap
+# is a guardrail, not an exact fit.
+_CHARS_PER_TOKEN = 3
+
+
+def _estimate_tokens(text: str) -> int:
+    """Estimate the token count of ``text`` — a pure, deterministic heuristic.
+
+    A cheap, dependency-free character-count proxy (``len(text) //
+    _CHARS_PER_TOKEN``), NOT a model tokenizer. Used only to bound the rendered
+    discussion history (spec 025): the conservative 3-chars-per-token ratio
+    over-estimates real token counts so the defensive cap trims earlier rather
+    than later. Pure function of the input string — same text always yields the
+    same number (no RNG, no clock) — so the dual-mode byte-equal smoke and
+    seeded fakes are unaffected.
+    """
+    return len(text) // _CHARS_PER_TOKEN
 
 
 def _role_label(role: str) -> str:
@@ -443,8 +471,14 @@ def _alive_ids_in_roster_order(players: dict[str, PlayerState]) -> list[str]:
     return [p.id for p in players.values() if p.is_alive]
 
 
-def _render_context(messages: list, speaker_id: str) -> str:
-    """Render the last ``_CONTEXT_WINDOW`` speaker-visible messages for prompts.
+def _render_context(
+    messages: list,
+    speaker_id: str,
+    *,
+    window: int = _CONTEXT_WINDOW,
+    token_budget: int | None = None,
+) -> str:
+    """Render the last ``window`` speaker-visible messages for AI prompts.
 
     Privacy filter (gameplay integrity): a message carrying
     ``additional_kwargs["private_to"] == other_id`` is a whisper addressed to
@@ -461,9 +495,25 @@ def _render_context(messages: list, speaker_id: str) -> str:
     their ``name``.
 
     Windowing order: filter to speaker-visible messages FIRST, then take the
-    last ``_CONTEXT_WINDOW`` — so other players' whispers never consume the
-    visible-context budget and a full Day round's public speeches stay visible
-    (spec 008, "Same-Round Message Visibility").
+    last ``window`` — so other players' whispers never consume the visible-
+    context budget and a full Day round's public speeches stay visible (spec
+    008, "Same-Round Message Visibility").
+
+    ``window`` (spec 025, ADR 011) is the configurable count from
+    ``GraphiaConfig.context_window`` (default ~150 ≈ 3+ days). It defaults to
+    the prior ``_CONTEXT_WINDOW`` (30) baseline so direct test calls and the
+    ablation path stay byte-identical to pre-025 behaviour.
+
+    ``token_budget`` (spec 025, R2/R3 defensive cap) is applied AFTER the count
+    slice and line rendering: if the rendered history exceeds the budget (by the
+    cheap ``_estimate_tokens`` heuristic), the OLDEST lines are dropped until it
+    fits. Oldest-first because the most recent discussion is the highest-signal,
+    and — critically — because the player's role/objective/instructions are NOT
+    in this string (they are assembled separately and protected from any trim).
+    ``None`` (the default) disables the cap so existing direct callers and the
+    pure window tests stay unaffected; the live Day-turn / vote call sites pass
+    ``GraphiaConfig.context_token_budget``. The cap makes prompt overflow
+    impossible regardless of the count or the operator's server config.
     """
     if not messages:
         return "(no prior discussion)"
@@ -475,7 +525,7 @@ def _render_context(messages: list, speaker_id: str) -> str:
             # Whisper addressed to someone else — never visible to this speaker.
             continue
         visible.append(msg)
-    recent = visible[-_CONTEXT_WINDOW:]
+    recent = visible[-window:]
     lines: list[str] = []
     for msg in recent:
         extra = getattr(msg, "additional_kwargs", {}) or {}
@@ -493,7 +543,18 @@ def _render_context(messages: list, speaker_id: str) -> str:
         if not content:
             continue
         lines.append(f"{speaker}: {content}")
-    return "\n".join(lines) if lines else "(no prior discussion)"
+    if not lines:
+        return "(no prior discussion)"
+    if token_budget is not None:
+        # Defensive cap (R3): drop the OLDEST lines until the rendered history
+        # fits the budget. Chronological order is preserved (we trim the head,
+        # keeping the newest tail). The role/instructions are NOT here, so they
+        # are never the dropped tokens. ``len(lines) > 1`` guard keeps at least
+        # the newest line even if a single line alone exceeds the budget — an
+        # empty history would be strictly worse than one slightly-over line.
+        while len(lines) > 1 and _estimate_tokens("\n".join(lines)) > token_budget:
+            lines.pop(0)
+    return "\n".join(lines)
 
 
 def _render_alive_roster(players: dict[str, PlayerState]) -> str:
@@ -567,6 +628,8 @@ def _ai_day_action(
     *,
     recap_aware_reasoning_enabled: bool = True,
     role_guidance_enabled: bool = True,
+    context_window: int = _CONTEXT_WINDOW,
+    context_token_budget: int | None = None,
 ) -> DayAction:
     """Call the gameplay model for the AI's speaking turn. Returns a DayAction.
 
@@ -581,10 +644,21 @@ def _ai_day_action(
     ``role_guidance_enabled`` (spec 024 ablation flag, ADR 011) gates the tail
     ``{role_guidance}`` block: ON (default) appends the actor's side-matched
     closing directive; OFF reverts the prompt to its pre-024 form (no guidance).
+
+    ``context_window`` / ``context_token_budget`` (spec 025) size the recent-
+    discussion window and its defensive token-budget cap; they default to the
+    prior baseline / no-cap so direct test calls stay unaffected, and the live
+    builders thread ``GraphiaConfig.context_window`` /
+    ``GraphiaConfig.context_token_budget`` through here.
     """
     players = state.get("players", {})
     roster = _render_alive_roster(players)
-    context = _render_context(list(state.get("messages", [])), speaker.id)
+    context = _render_context(
+        list(state.get("messages", [])),
+        speaker.id,
+        window=context_window,
+        token_budget=context_token_budget,
+    )
     alive_ids = {p.id for p in players.values() if p.is_alive}
 
     # Role/team/win-condition grounding (spec 013 §2.5). Computed for ALL
@@ -692,6 +766,8 @@ def day_turn(
     recap_enabled: bool = True,
     recap_aware_reasoning_enabled: bool = True,
     role_guidance_enabled: bool = True,
+    context_window: int = _CONTEXT_WINDOW,
+    context_token_budget: int | None = None,
 ) -> dict:
     """Run exactly one player's Day turn, then advance bookkeeping.
 
@@ -815,6 +891,8 @@ def day_turn(
             state,
             recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
             role_guidance_enabled=role_guidance_enabled,
+            context_window=context_window,
+            context_token_budget=context_token_budget,
         )
         if action.kind == "vote":
             assert action.target_id is not None  # validated in _ai_day_action
@@ -885,6 +963,8 @@ def _ai_ballot(
     *,
     recap_aware_reasoning_enabled: bool = True,
     role_guidance_enabled: bool = True,
+    context_window: int = _CONTEXT_WINDOW,
+    context_token_budget: int | None = None,
 ) -> Ballot:
     """Ask the gameplay model for a Yes/No ballot. Conservative fallback.
 
@@ -895,9 +975,19 @@ def _ai_ballot(
     ``role_guidance_enabled`` (spec 024 ablation flag, ADR 011) gates the tail
     ``{role_guidance}`` block: ON (default) appends the voter's side-matched
     closing directive; OFF reverts the prompt to its pre-024 form (no guidance).
+
+    ``context_window`` / ``context_token_budget`` (spec 025) size the recent-
+    discussion window and its defensive token-budget cap, threaded from
+    ``GraphiaConfig`` by the live builders; defaulted to the prior baseline /
+    no-cap so direct test calls stay unaffected.
     """
     players = state.get("players", {})
-    context = _render_context(list(state.get("messages", [])), voter.id)
+    context = _render_context(
+        list(state.get("messages", [])),
+        voter.id,
+        window=context_window,
+        token_budget=context_token_budget,
+    )
 
     # Role/team/win-condition grounding + the relationship NUDGE (spec 013
     # §2.5/§2.6), computed for ALL voters. ``_team_line`` is Mafia-only;
@@ -953,6 +1043,8 @@ def collect_votes(
     game_id: str | None = None,
     recap_aware_reasoning_enabled: bool = True,
     role_guidance_enabled: bool = True,
+    context_window: int = _CONTEXT_WINDOW,
+    context_token_budget: int | None = None,
 ) -> dict:
     """Poll ONE voter per super-step. Replay-safe like ``day_turn``.
 
@@ -1030,6 +1122,8 @@ def collect_votes(
                 state,
                 recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
                 role_guidance_enabled=role_guidance_enabled,
+                context_window=context_window,
+                context_token_budget=context_token_budget,
             )
             yes = ballot.yes
         if career_emitter is not None and game_id is not None:

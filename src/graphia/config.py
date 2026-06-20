@@ -32,6 +32,44 @@ _DEFAULT_MAX_DAYS = 12
 # cost/tokens stay bounded. It is a single deliberate cap, trivially raised.
 _MAX_TABLE_SIZE = 12
 
+# Fuller multi-day discussion window for AI players (spec 025). The AI Day-turn
+# / vote prompts show the speaker the recent discussion (``_render_context`` in
+# ``nodes/day.py``). The prior 30-message window didn't even cover one full Day
+# (~40-45 messages at the default table); this default of 150 spans 3+ days with
+# margin so cross-day continuity (who accused whom, how someone voted two days
+# ago) reaches the AI. Tunable via ``GRAPHIA_CONTEXT_WINDOW`` so the prior 30 is
+# reproducible for A/B (ADR 011); a value ``< 1`` is nonsensical and rejected
+# like ``GRAPHIA_MAX_DAYS``.
+_DEFAULT_CONTEXT_WINDOW = 150
+
+# Defensive token budget for the rendered discussion HISTORY only (spec 025,
+# R2/R3). Derived — not a primary knob — from a conservatively-assumed effective
+# model context, so the prompt can never overflow such that the OLDEST tokens
+# (where the player's role/objective/instructions sit, at the prompt top) get
+# silently dropped by the model server. This is a SAFETY CEILING on the history
+# string, NOT a target the normal prompt is squeezed down to: the message-count
+# window (~150) is the live limiter, and the cap is sized to sit ABOVE the full
+# 150-message history footprint so a correctly-configured server is never
+# needlessly trimmed — it only bites when the rendered history would otherwise
+# exceed what the model can safely read (e.g. an unconfigured Ollama server
+# whose default ``num_ctx`` is a tiny 4096).
+#
+# Derivation against the operator-documented effective context (the tech doc's
+# live target is OLLAMA_CONTEXT_LENGTH=32768; qwen3-coder is 256K native and
+# Bedrock Nova far larger): from 32768, reserve the fixed prompt scaffold
+# (system prompt + role grounding + persona + standings + role-guidance, ~1.5K)
+# and the completion budget (``_OLLAMA_MAX_TOKENS`` ~1K), then take a ~0.75
+# headroom fraction (R2 anti-dilution, deliberately well short of filling the
+# context): (32768 - ~2500) * 0.75 ≈ 22700, floored to a round 20000. That
+# comfortably admits the worst-case ~6K 150-message history (so the fuller
+# window is delivered in full on a configured server) while still capping a
+# pathological history far below 32K. Only the discussion history is subject to
+# this cap; the role/objective/instructions are assembled OUTSIDE
+# ``_render_context`` and are never the dropped tokens. Overridable via
+# ``GRAPHIA_CONTEXT_TOKEN_BUDGET`` only if a future provider needs a different
+# assumed context.
+_DEFAULT_CONTEXT_TOKEN_BUDGET = 20000
+
 
 @dataclass(slots=True, frozen=True)
 class GraphiaConfig:
@@ -104,6 +142,19 @@ class GraphiaConfig:
     # ``recap_aware_reasoning_enabled`` precedent exactly. Defaulted so tests
     # constructing the config directly stay valid.
     role_guidance_enabled: bool = True
+    # Fuller multi-day discussion window (spec 025, ADR 011). The number of
+    # speaker-visible recent messages shown to an AI player at its Day turn /
+    # vote. Default ~150 spans 3+ days; set ``GRAPHIA_CONTEXT_WINDOW=30`` to
+    # reproduce the prior short window for A/B. Defaulted so tests constructing
+    # the config directly stay valid.
+    context_window: int = _DEFAULT_CONTEXT_WINDOW
+    # Defensive token-budget cap for the rendered discussion history (spec 025,
+    # R2/R3) — derived from a conservatively-assumed effective context so the
+    # prompt can't overflow an unconfigured server. Overridable via
+    # ``GRAPHIA_CONTEXT_TOKEN_BUDGET`` only if a future provider needs a
+    # different assumed context. Defaulted so tests constructing the config
+    # directly stay valid.
+    context_token_budget: int = _DEFAULT_CONTEXT_TOKEN_BUDGET
 
 
 def _env_truthy(name: str) -> bool:
@@ -260,6 +311,29 @@ def load_config() -> GraphiaConfig:
             f"GRAPHIA_MAX_DAYS must be at least 1 (got {max_days})."
         )
 
+    # Fuller multi-day discussion window (spec 025). Parsed like the other
+    # counts; defaults to ~150 messages (3+ days). A value < 1 is nonsensical
+    # (an empty window shows the AI nothing), so reject it like ``max_days``.
+    context_window = _parse_count(
+        "GRAPHIA_CONTEXT_WINDOW", _DEFAULT_CONTEXT_WINDOW
+    )
+    if context_window < 1:
+        raise SystemExit(
+            f"GRAPHIA_CONTEXT_WINDOW must be at least 1 (got {context_window})."
+        )
+    # Defensive token-budget cap (spec 025, R2/R3). A derived constant by
+    # default; only overridden when a future provider needs a different assumed
+    # effective context. Reject < 1 — a non-positive budget would trim away the
+    # whole history.
+    context_token_budget = _parse_count(
+        "GRAPHIA_CONTEXT_TOKEN_BUDGET", _DEFAULT_CONTEXT_TOKEN_BUDGET
+    )
+    if context_token_budget < 1:
+        raise SystemExit(
+            "GRAPHIA_CONTEXT_TOKEN_BUDGET must be at least 1 "
+            f"(got {context_token_budget})."
+        )
+
     if num_mafia < 1:
         raise SystemExit(
             "GRAPHIA_NUM_MAFIA must be at least 1 — a game with no Mafiosos "
@@ -310,4 +384,6 @@ def load_config() -> GraphiaConfig:
         day_round_recap_enabled=day_round_recap_enabled,
         recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
         role_guidance_enabled=role_guidance_enabled,
+        context_window=context_window,
+        context_token_budget=context_token_budget,
     )

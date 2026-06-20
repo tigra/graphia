@@ -70,12 +70,17 @@ You can also run the full game entirely offline against a local [Ollama](https:/
 ollama pull qwen3-coder:30b   # gameplay model (~19 GB download)
 ollama pull qwen2.5:3b        # mechanical model (name generation)
 
-# 2. Select the provider in .env:
+# 2. Start the server with a fuller context window (see the note below):
+OLLAMA_CONTEXT_LENGTH=32768 ollama serve
+
+# 3. Select the provider in .env:
 #    GRAPHIA_LLM_PROVIDER=ollama
 
-# 3. Play as usual:
+# 4. Play as usual:
 make play
 ```
+
+**Set `OLLAMA_CONTEXT_LENGTH=32768` when you `ollama serve`.** AI players reason from a fuller multi-day discussion window (the recent-discussion context defaults to ~150 messages, spanning 3+ days; tunable via `GRAPHIA_CONTEXT_WINDOW`). Ollama's *default* server context is a tiny 4096 tokens and it **silently truncates** anything larger — dropping the oldest tokens, which is exactly where each player's role and instructions sit. The Anthropic-compatible endpoint the game uses can't raise the context per request, so the only lever is this server-side env var. The game stays safe regardless: a defensive token-budget cap makes prompt overflow impossible (it trims the oldest *discussion* lines, never the role), and the Ollama preflight logs a warning when the model's context looks below the window's budget. Without the larger context the game still runs — the fuller window just isn't fully delivered. Run `ollama serve` with this env var set for `make ollama-smoke` too.
 
 The recommended pair (`qwen3-coder:30b` + `qwen2.5:3b`) is the smoke-verified default. Other models can be configured via `GRAPHIA_OLLAMA_LARGE_MODEL` / `GRAPHIA_OLLAMA_SMALL_MODEL`, but they are **not smoke-verified** — weak models tend to answer in prose instead of making the structured tool call, and the game then falls back to canned lines. That is exactly what `make ollama-smoke ARGS="--models <large>,<small>"` exists to check: run it against any candidate pair before committing to a game with it.
 

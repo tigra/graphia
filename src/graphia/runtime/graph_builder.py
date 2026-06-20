@@ -42,6 +42,8 @@ def build_runtime_graph(
     recap_aware_reasoning_enabled: bool = True,
     role_guidance_enabled: bool = True,
     max_days: int = 12,
+    context_window: int = 150,
+    context_token_budget: int = 20000,
 ) -> CompiledStateGraph:
     """Compile the Graphia StateGraph with a caller-supplied thread_id.
 
@@ -84,6 +86,14 @@ def build_runtime_graph(
     passes ``load_config().max_days`` — so the deployed Runtime applies the same
     runaway Day cap as local mode. Same anti-drift requirement: both builders
     must thread it. Defaults to ``12`` (matching the config default).
+
+    ``context_window`` / ``context_token_budget`` (spec 025) are threaded the
+    same way — the production entrypoint passes ``load_config().context_window``
+    / ``load_config().context_token_budget`` — so the deployed Runtime shows AI
+    players the same fuller multi-day discussion window (and applies the same
+    defensive token-budget cap) as local mode. Same anti-drift requirement: both
+    builders must thread them. Default to ``150`` / ``20000`` (matching the
+    config defaults).
     """
     if diary_store is None:
         diary_store = InProcessDiaryStore()
@@ -105,4 +115,6 @@ def build_runtime_graph(
         recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
         role_guidance_enabled=role_guidance_enabled,
         max_days=max_days,
+        context_window=context_window,
+        context_token_budget=context_token_budget,
     )
