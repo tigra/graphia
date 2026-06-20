@@ -1,7 +1,7 @@
 # Functional Specification: Browsable-Transcript Round Labels
 
 - **Roadmap Item:** Phase 6 → Browsable-Transcript Round Labels → **Per-Round Transcript Labels**
-- **Status:** Draft
+- **Status:** Completed
 - **Author:** Alexey Tigarev
 
 ---
@@ -27,38 +27,38 @@ Today the transcript collapses all of a Day's speaking rounds into a **single bl
 - Within a Day, every speaking round (one full cycle where each surviving player speaks once) appears as its own labeled block with a "Round N" label.
 - Round numbers **reset to 1 at the start of each Day** and increase by one for each subsequent speaking round in that Day.
   - **Acceptance Criteria:**
-    - [ ] Given a preserved transcript of a Day that ran six speaking rounds before ending, when the reviewer reads that Day's section, then they see six separate round blocks labeled Round 1 through Round 6.
-    - [ ] Given a transcript with more than one Day, when the reviewer reads the second Day's section, then its first round is labeled Round 1 (numbering restarts each Day).
-    - [ ] Given any Day section, when the reviewer counts the "Round N" labels, then the count equals the number of speaking rounds the game actually played that Day.
+    - [x] Given a preserved transcript of a Day that ran six speaking rounds before ending, when the reviewer reads that Day's section, then they see six separate round blocks labeled Round 1 through Round 6.
+    - [x] Given a transcript with more than one Day, when the reviewer reads the second Day's section, then its first round is labeled Round 1 (numbering restarts each Day).
+    - [x] Given any Day section, when the reviewer counts the "Round N" labels, then the count equals the number of speaking rounds the game actually played that Day.
 
 ### 2.2 Each round block holds only that round's events
 
 - A round block contains the player speeches of that one speaking cycle, plus any execution vote called during that round and its outcome.
   - **Acceptance Criteria:**
-    - [ ] Given a round in which no vote was called, when the reviewer reads that round's block, then it contains exactly one turn of speech per surviving player and nothing from any other round.
-    - [ ] Given a round during which a player called an execution vote, when the reviewer reads that round's block, then the vote and its result appear inside that same round block.
+    - [x] Given a round in which no vote was called, when the reviewer reads that round's block, then it contains exactly one turn of speech per surviving player and nothing from any other round.
+    - [x] Given a round during which a player called an execution vote, when the reviewer reads that round's block, then the vote and its result appear inside that same round block.
 
 ### 2.3 Each Moderator recap closes the round it summarizes
 
 - The end-of-round Moderator status recap appears as the **last line inside the round block whose state it describes**.
 - This spec governs only *where* the recap sits, not its wording. The recap's content — including any in-world time marker added by **Game-Time in the Recap (spec 020)** — is owned by the recap and reproduced as-is.
   - **Acceptance Criteria:**
-    - [ ] Given a round that ended with a Moderator status recap, when the reviewer reads that round's block, then the recap is the final line of that block (after that round's speeches).
-    - [ ] Given a Day with multiple rounds, when the reviewer reads the recaps, then there is at most one closing recap per round block and no round block contains another round's recap.
+    - [x] Given a round that ended with a Moderator status recap, when the reviewer reads that round's block, then the recap is the final line of that block (after that round's speeches).
+    - [x] Given a Day with multiple rounds, when the reviewer reads the recaps, then there is at most one closing recap per round block and no round block contains another round's recap.
 
 ### 2.4 Day-opening announcement stays before the first round
 
 - The Moderator's start-of-Day announcement (who was killed overnight and their revealed role) appears before the first round block, not inside any round.
   - **Acceptance Criteria:**
-    - [ ] Given the start of a Day, when the reviewer reads the Day section, then the overnight-death announcement appears above the Round 1 block.
+    - [x] Given the start of a Day, when the reviewer reads the Day section, then the overnight-death announcement appears above the Round 1 block.
 
 ### 2.5 Day endings land in the final round
 
 - When a Day ends because an execution vote passed, the deciding vote and the execution announcement appear inside the final round's block (the round during which the vote passed); no empty round block follows.
 - When a Day ends with no execution, the "Day ends with no one executed" line and the Day's final status recap appear inside the final round's block.
   - **Acceptance Criteria:**
-    - [ ] Given a Day that ended in an execution, when the reviewer reads the last round block, then the deciding vote and the execution announcement are inside it, and no empty round block follows.
-    - [ ] Given a Day that ended with no execution, when the reviewer reads the last round block, then the "Day ends with no one executed" line and the final recap are inside it.
+    - [x] Given a Day that ended in an execution, when the reviewer reads the last round block, then the deciding vote and the execution announcement are inside it, and no empty round block follows.
+    - [x] Given a Day that ended with no execution, when the reviewer reads the last round block, then the "Day ends with no one executed" line and the final recap are inside it.
 
 ---
 

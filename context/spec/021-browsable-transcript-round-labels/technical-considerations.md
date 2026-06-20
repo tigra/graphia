@@ -6,7 +6,7 @@ Describes HOW the round-labeling fix is built, at an architectural level.
 # Technical Specification: Browsable-Transcript Round Labels
 
 - **Functional Specification:** `context/spec/021-browsable-transcript-round-labels/functional-spec.md`
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 ---
