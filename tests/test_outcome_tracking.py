@@ -168,16 +168,17 @@ def test_tally_outcomes_four_buckets_populated() -> None:
 
 
 def test_tally_outcomes_partition_invariant_holds() -> None:
-    """THE PARTITION INVARIANT: la.wins + mafia.wins + draw + no_winner == games.
+    """THE PARTITION INVARIANT: la + mafia + runaway + draw + no_winner == games.
 
-    The four buckets are mutually exclusive and exhaustive over the completed
-    games, so their counts must sum to the denominator — the README-stated
-    invariant the whole block leans on.
+    The buckets are mutually exclusive and exhaustive over the completed games,
+    so their counts must sum to the denominator — the README-stated invariant the
+    whole block leans on (spec 023 added the ``runaway`` bucket).
     """
     winners: list[str | None] = [
         "law_abiding",
         "mafia",
         "mafia",
+        "runaway",
         "draw",
         None,
         None,
@@ -189,10 +190,51 @@ def test_tally_outcomes_partition_invariant_holds() -> None:
     total = (
         block["law_abiding"]["wins"]
         + block["mafia"]["wins"]
+        + block["runaway"]
         + block["draw"]
         + block["no_winner"]
     )
     assert total == block["games"] == len(winners)
+
+
+def test_tally_outcomes_runaway_bucket_distinct_from_wins_and_draw() -> None:
+    """Spec 023: a ``"runaway"`` (Day-cap hit) lands in its OWN bucket.
+
+    A runaway game is a stuck/looping game, not a legitimate result — it must be
+    visibly distinct from a real side win and from the legacy ``draw``/the
+    ``None`` → ``no_winner`` bucket. Here three games hit the cap; none inflate a
+    side's ``wins`` and none are counted as a draw or as ``no_winner``.
+    """
+    winners: list[str | None] = [
+        "law_abiding",
+        "runaway",
+        "runaway",
+        "mafia",
+        "runaway",
+        "draw",
+        None,
+    ]
+
+    block = tally_outcomes(winners)
+
+    assert block["runaway"] == 3
+    # The cap-hits did NOT inflate either side's wins, the draw, or no_winner.
+    assert block["law_abiding"]["wins"] == 1
+    assert block["mafia"]["wins"] == 1
+    assert block["draw"] == 1
+    assert block["no_winner"] == 1
+    # Side win-rates are over the full denominator, NOT shrunk by runaways.
+    assert block["games"] == 7
+    assert block["law_abiding"]["rate"] == pytest.approx(1 / 7)
+    # The buckets still partition the run with runaway in the sum.
+    total = (
+        block["law_abiding"]["wins"]
+        + block["mafia"]["wins"]
+        + block["runaway"]
+        + block["draw"]
+        + block["no_winner"]
+    )
+    assert total == block["games"]
 
 
 def test_tally_outcomes_wilson_ci_present_on_both_sides() -> None:

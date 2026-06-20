@@ -281,7 +281,8 @@ class EvalResult:
     provider_block: dict[str, object] = field(default_factory=dict)
     # The effective resolved settings actually used (post-env-override), so a run
     # can be repeated like-for-like: model names, base url (ollama), games, seed,
-    # max_rounds (functional-spec 011 §2.3).
+    # max_days (the runaway Day cap; spec 023 renamed it from max_rounds)
+    # (functional-spec 011 §2.3).
     settings: dict[str, object] = field(default_factory=dict)
     # Wall-clock run duration in seconds (``time.monotonic()`` delta), surfaced
     # on the ``run`` and ``quality`` blocks so a degenerate run cannot masquerade
@@ -1099,10 +1100,12 @@ def _attach_ci(metrics: dict[str, dict[str, float | int | None]]) -> None:
 # messages + players), so Task 4 unit-tests them with no live model.
 # ===========================================================================
 
-# The four ``winner`` buckets in fixed render order: the two SIDES (which carry a
-# Wilson win-rate + CI), then ``draw`` and ``no_winner`` (bare counts — neither
-# is a side, so neither gets a rate). ``None`` (an unresolved game — round cap)
-# maps to ``no_winner``.
+# The ``winner`` buckets in fixed render order: the two SIDES (which carry a
+# Wilson win-rate + CI), then ``runaway``, ``draw`` and ``no_winner`` (bare
+# counts — none is a side, so none gets a rate). Spec 023: ``"runaway"`` (the
+# in-game Day-cap hit) is its own bucket, distinct from a real win and from a
+# ``draw``; ``None`` (a game that ended without any winner set — e.g. the
+# anti-hang backstop) maps to ``no_winner``.
 _OUTCOME_SIDES: tuple[str, str] = ("law_abiding", "mafia")
 
 
@@ -1111,34 +1114,39 @@ def tally_outcomes(winners: list[str | None]) -> dict[str, object]:
 
     Partitions the COMPLETED games (one entry per finished game; failed-early
     games never produce a winner and are excluded — they are already counted in
-    ``quality.games_failed_early``) into four mutually-exclusive buckets over the
-    same ``games`` denominator (spec-013 §2.1)::
+    ``quality.games_failed_early``) into mutually-exclusive buckets over the
+    same ``games`` denominator (spec-013 §2.1; runaway added in spec 023)::
 
         law_abiding / mafia  → {wins, rate, ci_low, ci_high}   (a side win-rate)
-        draw                 → bare int count (not a side, no rate)
-        no_winner            → bare int count (winner is None — round cap)
+        runaway              → bare int count (the in-game Day cap was hit —
+                               a stuck/looping game, NOT a legitimate result)
+        draw                 → bare int count (legacy; no live path emits it)
+        no_winner            → bare int count (winner is None — never resolved)
 
-    The four buckets PARTITION the run, so the README-stated invariant holds:
-    ``law_abiding.wins + mafia.wins + draw + no_winner == games``. The two side
-    win-rates carry a **Wilson 95% CI** over ``(wins, games)`` — derived/
-    supplementary, no ``METRICS_VERSION`` bump (the ``ci_low``/``ci_high``
-    precedent). ``games == 0`` emits the block with zero counts and OMITS the
-    rates/CI on the two sides (no ``ZeroDivisionError``).
+    The buckets PARTITION the run, so the README-stated invariant holds:
+    ``law_abiding.wins + mafia.wins + runaway + draw + no_winner == games``. The
+    two side win-rates carry a **Wilson 95% CI** over ``(wins, games)`` —
+    derived/supplementary, no ``METRICS_VERSION`` bump (the ``ci_low``/
+    ``ci_high`` precedent). ``games == 0`` emits the block with zero counts and
+    OMITS the rates/CI on the two sides (no ``ZeroDivisionError``).
 
     Returns a render-ready mapping with the fixed key order
-    ``games → law_abiding → mafia → draw → no_winner → note``; ``note`` is the
-    immutable :data:`_OUTCOMES_HUMAN_CAVEAT` passive-human caveat. PURE: takes a
-    plain list, so Task 4 asserts the buckets / invariant / CI / ``games==0``
-    path on a synthetic list with no live model.
+    ``games → law_abiding → mafia → runaway → draw → no_winner → note``; ``note``
+    is the immutable :data:`_OUTCOMES_HUMAN_CAVEAT` passive-human caveat. PURE:
+    takes a plain list, so Task 4 asserts the buckets / invariant / CI /
+    ``games==0`` path on a synthetic list with no live model.
     """
     games = len(winners)
     counts = {side: 0 for side in _OUTCOME_SIDES}
+    runaway = 0
     draw = 0
     no_winner = 0
     for winner in winners:
         match winner:
             case "law_abiding" | "mafia":
                 counts[winner] += 1
+            case "runaway":
+                runaway += 1
             case "draw":
                 draw += 1
             case _:  # None or any unrecognised value → unresolved
@@ -1159,6 +1167,7 @@ def tally_outcomes(winners: list[str | None]) -> dict[str, object]:
             "ci_low": low,
             "ci_high": high,
         }
+    block["runaway"] = runaway
     block["draw"] = draw
     block["no_winner"] = no_winner
     block["note"] = _OUTCOMES_HUMAN_CAVEAT
@@ -1380,7 +1389,8 @@ def score_vote_blunders(
 # Record shape (Slice 4): ``run`` (date, duration, metrics_version) → ``code``
 # (commit/branch/dirty) → ``provider`` (name, models-with-digests-or-ids,
 # server_version/note) → ``settings`` (resolved models, base url, games, seed,
-# max_rounds) → ``quality`` (attempted/completed/failed_early, duration) →
+# max_days [spec 023; was max_rounds]) → ``quality`` (attempted/completed/
+# failed_early, duration) →
 # ``metrics`` → ``notes`` (always LAST). Key order is fixed so successive
 # records diff cleanly.
 
@@ -1549,7 +1559,7 @@ def render_record(result: EvalResult, run_date: str) -> str:
           base_url: '<url>' | null
           games: <int>
           seed: <int> | null
-          max_rounds: <int> | null
+          max_days: <int> | null   # spec 023 — runaway Day cap (was max_rounds)
           lineup:                  # spec 014 — the configured whole-table counts
             num_citizens: <int>
             num_mafia: <int>
@@ -1562,8 +1572,9 @@ def render_record(result: EvalResult, run_date: str) -> str:
           games: <int>
           law_abiding: {wins: <int>, rate: <float>, ci_low: <float>, ci_high: <float>}
           mafia:       {wins: <int>, rate: <float>, ci_low: <float>, ci_high: <float>}
-          draw: <int>          # bare count — not a side, no rate
-          no_winner: <int>     # winner=None (round cap / unresolved)
+          runaway: <int>       # spec 023 — in-game Day cap hit (NOT a win)
+          draw: <int>          # bare count — legacy; no live path emits it
+          no_winner: <int>     # winner=None (never resolved / backstop)
           note: '<passive-scripted-human caveat>'
         vote_activity:
           by_side: {law_abiding: <int>, mafia: <int>}   # ALWAYS both keys, zero included
@@ -1656,7 +1667,7 @@ def render_record(result: EvalResult, run_date: str) -> str:
         "base_url": None,
         "games": result.games_attempted,
         "seed": None,
-        "max_rounds": None,
+        "max_days": None,
     }
     lines.append("settings:")
     lines += _yaml_block(
@@ -1666,7 +1677,12 @@ def render_record(result: EvalResult, run_date: str) -> str:
             "base_url": settings.get("base_url"),
             "games": settings.get("games", result.games_attempted),
             "seed": settings.get("seed"),
-            "max_rounds": settings.get("max_rounds"),
+            # Spec 023: renamed ``max_rounds`` → ``max_days`` (the runaway Day
+            # cap). Fall back to the legacy key so a synthetic/older settings map
+            # still renders a value.
+            "max_days": settings.get(
+                "max_days", settings.get("max_rounds")
+            ),
         },
         indent=1,
     )
@@ -1720,6 +1736,10 @@ def render_record(result: EvalResult, run_date: str) -> str:
             lines += _yaml_block(ordered, indent=2)
         lines += _yaml_block(
             {
+                # Spec 023: ``runaway`` (the in-game Day-cap hit) is its own bare
+                # count, rendered before ``draw``/``no_winner`` and visibly
+                # distinct from a real win.
+                "runaway": result.outcomes.get("runaway", 0),
                 "draw": result.outcomes.get("draw", 0),
                 "no_winner": result.outcomes.get("no_winner", 0),
             },
@@ -1938,8 +1958,11 @@ class _GameCapture:
 
     Spec-013 outcome input:
     - ``winner`` — this game's ``state["winner"]`` (∈ ``{"law_abiding", "mafia",
-      "draw", None}``; ``None`` = the game never resolved — typically the eval
-      round cap, since the scripted human always votes No). Folded by
+      "runaway", "draw", None}``). Spec 023: a measured game now runs to its
+      NATURAL conclusion, so a real side win is the norm; ``"runaway"`` is the
+      in-game Day-cap hit (a stuck/looping game — flagged distinctly, NOT a
+      win); ``"draw"`` is legacy (no live path emits it); ``None`` means the
+      game ended without any winner set (e.g. the anti-hang backstop). Folded by
       ``run_eval`` into the ``outcomes`` block via :func:`tally_outcomes`.
 
     Spec-017 transcript input:
@@ -2027,11 +2050,19 @@ def _play_one_game(args: argparse.Namespace, game_index: int) -> _GameCapture:
     # the LLM dialogue stays non-deterministic — that is the thing measured.
     _seed_game(args.seed, game_index)
 
-    max_rounds = args.max_rounds if args.max_rounds is not None else 10
+    # Spec 023: a measured game now runs to its NATURAL conclusion — a real
+    # win/loss, or (only for a stuck/looping game) the in-game runaway Day cap
+    # routing to ``end_screen``. The old fixed Day-speaking-turn cut that ended
+    # games mid-Day as "no winner" is gone. ``--max-days`` overrides the cap for
+    # this run (set via ``GRAPHIA_MAX_DAYS`` so ``load_config`` picks it up);
+    # the loop below only watches ``snapshot.next``.
+    if args.max_days is not None:
+        os.environ["GRAPHIA_MAX_DAYS"] = str(args.max_days)
 
     with tempfile.TemporaryDirectory(prefix=f"graphia-blunder-{game_index}-") as ckpt:
         os.environ["GRAPHIA_CHECKPOINT_DIR"] = ckpt
         config = load_config()
+        max_days = config.max_days
         graph, thread_id = build_graph(config)
         run_config = make_run_config(thread_id)
 
@@ -2067,12 +2098,17 @@ def _play_one_game(args: argparse.Namespace, game_index: int) -> _GameCapture:
             captures, make_day_speaker_resolver(players_now)
         )
 
-        rounds = 0
         line_idx = 0
-        # Answer interrupts until the game ends (no ``.next``) or the round cap.
-        for _ in range(max_rounds * 12 + 20):  # generous per-interrupt budget
-            if rounds >= max_rounds:
-                break
+        # Spec 023: answer interrupts until the game ends NATURALLY (no
+        # ``.next`` — a real win/loss, or the in-game runaway Day cap routing to
+        # ``end_screen``). The old ``if rounds >= max_rounds: break`` mid-Day cut
+        # is gone; the only stop is ``snapshot.next`` emptying. The ``range`` is
+        # purely an anti-hang backstop sized off the Day cap: each Day costs at
+        # most a few dozen super-steps (Night pointing rounds + the Day's
+        # speaking/vote sub-graph at the largest table), so ``max_days * 60 + 40``
+        # comfortably exceeds the longest natural game while still bounding a
+        # genuinely stuck graph.
+        for _ in range(max_days * 60 + 40):  # anti-hang backstop, Day-cap-derived
             snapshot = graph.get_state(run_config)
             if not snapshot.next:
                 break  # reached end_screen / END
@@ -2084,7 +2120,6 @@ def _play_one_game(args: argparse.Namespace, game_index: int) -> _GameCapture:
             if kind == "day_turn":
                 resume: str = HUMAN_LINES[line_idx % len(HUMAN_LINES)]
                 line_idx += 1
-                rounds += 1
             elif kind == "vote":
                 resume = "no"  # never execute, so games run long enough to sample
             elif kind == "point":
@@ -2186,7 +2221,13 @@ def run_eval(
         "base_url": base_url if args.provider == "ollama" else None,
         "games": args.games,
         "seed": args.seed,
-        "max_rounds": args.max_rounds,
+        # Spec 023: the recorded game-length control is now the runaway Day cap
+        # (``max_days``, default 12), replacing the old per-game Day-speaking-turn
+        # cut (``max_rounds``). ``config.max_days`` reflects any ``--max-days`` /
+        # ``GRAPHIA_MAX_DAYS`` override for a like-for-like rerun. ``getattr``
+        # (like the lineup below) so a minimal stub config without the attr is
+        # tolerated.
+        "max_days": getattr(config, "max_days", None),
         # The configured lineup (spec 014 §2.4), read off the resolved config so a
         # custom ``--citizens``/``--mafia`` (or a ``.env`` override) is recorded
         # for a like-for-like rerun. Nested sub-map rendered after the flat keys.
@@ -2408,10 +2449,15 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     ap.add_argument(
-        "--max-rounds",
+        "--max-days",
         type=int,
         default=None,
-        help="cap on scripted-human Day rounds per game (cost/time control); unset = no cap",
+        help=(
+            "runaway Day cap for this run — overrides GRAPHIA_MAX_DAYS (default "
+            "12). A safeguard only: a measured game runs to its natural win/loss "
+            "and reaches this cap only if it's stuck/looping. Set lower to "
+            "reproduce a shorter-game ablation."
+        ),
     )
     ap.add_argument(
         "--large-model",
@@ -2501,8 +2547,12 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f"Blunder-eval: provider={args.provider}, {args.games} game(s)"
         + (f", base seed={args.seed}" if args.seed is not None else ", unseeded structure")
-        + (f", max {args.max_rounds} Day rounds" if args.max_rounds is not None else "")
-        + ". Real model; non-deterministic dialogue.",
+        + (
+            f", runaway Day cap {args.max_days}"
+            if args.max_days is not None
+            else ", default 12-Day runaway cap"
+        )
+        + ". Real model; runs to natural end; non-deterministic dialogue.",
     )
 
     result = run_eval(config, args)

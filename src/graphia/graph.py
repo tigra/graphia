@@ -85,6 +85,7 @@ def _assemble_graph(
     saver: SqliteSaver,
     recap_enabled: bool,
     recap_aware_reasoning_enabled: bool,
+    max_days: int = 12,
 ) -> CompiledStateGraph:
     """Build the Graphia StateGraph topology and compile it with ``saver``.
 
@@ -111,7 +112,10 @@ def _assemble_graph(
     builder.add_node("introduce_roster", introduce_roster)
     builder.add_node("reveal_role", reveal_role)
     builder.add_node("first_night_mafia_intros", first_night_mafia_intros)
-    builder.add_node("night_open", night_open)
+    # Spec 023: the runaway Day cap is bound into ``night_open`` the same way the
+    # recap flags are bound into the Day nodes — via ``partial`` over a value both
+    # builders thread, so local and remote share one limit and can't drift.
+    builder.add_node("night_open", partial(night_open, max_days=max_days))
     # Spec 015: the single-pass ``mafia_pointing`` is replaced by a bounded
     # multi-round pointing loop. ``mafia_round_start`` shuffles the round's
     # order (its own super-step, no interrupt) and ``mafia_point`` handles one
@@ -168,8 +172,9 @@ def _assemble_graph(
     builder.add_edge("introduce_roster", "reveal_role")
     builder.add_edge("reveal_role", "first_night_mafia_intros")
     builder.add_edge("first_night_mafia_intros", "night_open")
-    # Slice 9: the draw safety cap short-circuits Night setup to end_screen
-    # when night_open detects cycle >= 20. Otherwise, enter the pointing loop.
+    # Spec 023: the runaway safeguard short-circuits Night setup to end_screen
+    # when night_open detects cycle >= max_days (default 12 Days). Otherwise,
+    # enter the pointing loop.
     builder.add_conditional_edges(
         "night_open",
         route_after_night_open,
@@ -285,6 +290,7 @@ def build_graph(
         saver=saver,
         recap_enabled=config.day_round_recap_enabled,
         recap_aware_reasoning_enabled=config.recap_aware_reasoning_enabled,
+        max_days=config.max_days,
     )
     return graph, thread_id
 

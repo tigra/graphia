@@ -893,7 +893,19 @@ def _render_settings_section(record: RawRecord) -> str:
             _field("base_url", _dig(record, "settings.base_url")),
             _field("games", _dig(record, "settings.games")),
             _field("seed", _dig(record, "settings.seed")),
-            _field("max_rounds", _dig(record, "settings.max_rounds")),
+            # Spec 023: the game-length control was renamed ``max_rounds`` →
+            # ``max_days`` (the runaway Day cap). New records carry
+            # ``settings.max_days``; already-committed pre-023 records carry the
+            # old ``settings.max_rounds``. Render the new field, falling back to
+            # the legacy one, so heterogeneous records all stay readable.
+            _field(
+                "max_days",
+                _dig(
+                    record,
+                    "settings.max_days",
+                    default=_dig(record, "settings.max_rounds"),
+                ),
+            ),
             # Spec-014 lineup, defensively dug — a pre-014 record (no
             # ``settings.lineup``) shows the ``—`` em-dash, no migration.
             _field("citizens", _dig(record, "settings.lineup.num_citizens")),
@@ -924,9 +936,10 @@ def _render_outcomes_section(record: RawRecord) -> str:
     line, mirroring :func:`_render_code_section`'s absent pattern. When present:
     ``games``, then ``law_abiding``/``mafia`` each as ``wins`` + **full-precision**
     ``rate`` + a ``[ci_low–ci_high]`` band (rate + band omitted on the
-    ``games == 0`` path, where only ``wins`` is recorded), then the bare ``draw``
-    / ``no_winner`` counts and the immutable ``note`` caveat. Every read is
-    defensive (:func:`_dig`), so a malformed/partial block never raises.
+    ``games == 0`` path, where only ``wins`` is recorded), then the bare
+    ``runaway`` (spec 023, in-game Day cap) / ``draw`` / ``no_winner`` counts and
+    the immutable ``note`` caveat. Every read is defensive (:func:`_dig`), so a
+    malformed/partial block never raises.
     """
     outcomes = _dig(record, "outcomes")
     if not isinstance(outcomes, dict):
@@ -938,6 +951,10 @@ def _render_outcomes_section(record: RawRecord) -> str:
         wins = _dig(record, f"outcomes.{side}.wins")
         lines.append(f"    wins: {_text(wins) if _text(wins) else _ABSENT}")
         lines.append(f"    rate: {_format_outcome_rate(record, side)}")
+    # Spec 023: ``runaway`` (the in-game Day-cap hit) is a new bare-count bucket,
+    # rendered before ``draw``. A pre-023 record (no ``outcomes.runaway``) shows
+    # the ``—`` em-dash defensively — no migration.
+    lines.append(_field("runaway", _dig(record, "outcomes.runaway")))
     lines.append(_field("draw", _dig(record, "outcomes.draw")))
     lines.append(_field("no_winner", _dig(record, "outcomes.no_winner")))
     lines.append(_field("note", _dig(record, "outcomes.note")))

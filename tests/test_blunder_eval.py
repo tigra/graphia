@@ -893,6 +893,95 @@ def test_capture_events_preserves_multiple_nights_pointing(
     assert f"points at {night2_victim_name}" in transcript
 
 
+def test_natural_mafia_win_runs_to_a_real_result_without_a_mid_day_cut(
+    env: Path,
+    fake_small,
+    fake_large,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Spec 023: a game drives to a REAL win, not cut off mid-Day, not a runaway.
+
+    The blunder-eval drive now stops only on ``snapshot.next`` emptying (a
+    natural end), with no ``rounds >= max_rounds`` mid-Day cut. Here a mocked
+    7-player game (5 law-abiding, 2 mafia) is driven to its natural conclusion:
+    the Mafia kill a fresh law-abiding AI each Night and the law-abiding human
+    passes / votes No (no executions), so the town thins 5→4→3 law-abiding until
+    the Mafia reach parity — a genuine ``winner == "mafia"`` well within the
+    default 12-Day runaway cap. The game must NOT be recorded as ``"runaway"``
+    (the cap was never hit) nor end with no winner from a mid-Day cut.
+    """
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+    monkeypatch.setenv("GRAPHIA_LLM_PROVIDER", "bedrock")
+    fake_small(_AI_NAMES)
+    fake = fake_large(day_actions=[], ballots=[], pointings=[])
+
+    config = load_config()
+    assert config.max_days == 12  # default runaway cap, untouched
+    graph, thread_id = build_graph(config)
+    run_config = make_run_config(thread_id)
+
+    # Mafia always kill a living law-abiding AI; every AI just speaks (no vote is
+    # ever called); the human passes on day_turn and votes No — so no execution
+    # happens and the game ends purely by Night attrition reaching parity.
+    original_invoke = fake._invoke
+
+    def _invoke_live(schema, messages):
+        if schema is Pointing:
+            law_ids = _alive_ai_ids_by_role(graph, run_config, "law_abiding")
+            if law_ids:
+                return Pointing(target_id=law_ids[0])
+            alive = _alive_ai_ids_by_role(graph, run_config, "mafia")
+            return Pointing(target_id=alive[0] if alive else "missing")
+        if schema is DayAction:
+            return DayAction(kind="speak", text="(nothing to add this round.)")
+        if schema is Ballot:
+            return Ballot(yes=False)
+        return original_invoke(schema, messages)
+
+    fake._invoke = _invoke_live  # type: ignore[method-assign]
+
+    # The exact blunder-eval drive shape: name interrupt → resume → answer
+    # interrupts until ``snapshot.next`` empties. No round cap — the only stop is
+    # the natural game end. The backstop mirrors the harness's Day-cap-derived
+    # bound (max_days * 60 + 40) purely as an anti-hang guard.
+    _drive(graph, run_config, {"messages": []})
+    first = _collect_interrupt(graph, run_config)
+    assert first == {"kind": "name"}
+    _drive(graph, run_config, Command(resume=_HUMAN_NAME))
+
+    line_idx = 0
+    max_super_steps = config.max_days * 60 + 40
+    for _ in range(max_super_steps):
+        snapshot = graph.get_state(run_config)
+        if not snapshot.next:
+            break  # natural end
+        iv = _collect_interrupt(graph, run_config)
+        if iv is None:
+            _drive(graph, run_config, None)
+            continue
+        kind = iv.get("kind")
+        if kind == "day_turn":
+            resume: str = "..."
+            line_idx += 1
+        elif kind == "vote":
+            resume = "no"
+        elif kind == "point":
+            options = iv.get("options") or []
+            resume = options[0]["id"] if options else ""
+        else:
+            raise AssertionError(f"unexpected interrupt {kind!r}")
+        _drive(graph, run_config, Command(resume=resume))
+
+    values = graph.get_state(run_config).values
+    # The drive ended on a NATURAL conclusion (no pending nodes).
+    assert not graph.get_state(run_config).next, "game did not run to a natural end"
+    # A REAL side win — Mafia by attrition — NOT a runaway cap-hit and NOT None.
+    assert values.get("winner") == "mafia"
+    assert values.get("winner") != "runaway"
+    # And it resolved well before the runaway cap — the cap was never the reason.
+    assert values.get("cycle", 0) < config.max_days
+
+
 # ===========================================================================
 # 5. Spec 017 — per-run transcript storage + the ledger record link.
 #
@@ -958,7 +1047,9 @@ def _storage_args(games: int) -> argparse.Namespace:
         provider="bedrock",
         games=games,
         seed=None,
-        max_rounds=None,
+        # Spec 023: the CLI control is now the day-denominated runaway cap;
+        # None means "use GRAPHIA_MAX_DAYS / the default 12".
+        max_days=None,
         note="",
     )
 

@@ -28,6 +28,7 @@ from __future__ import annotations
 import pytest
 
 from graphia.config import (
+    _DEFAULT_MAX_DAYS,
     _DEFAULT_NUM_CITIZENS,
     _DEFAULT_NUM_MAFIA,
     _MAX_TABLE_SIZE,
@@ -41,6 +42,7 @@ from graphia.config import (
 _LINEUP_ENV_VARS = (
     "GRAPHIA_NUM_CITIZENS",
     "GRAPHIA_NUM_MAFIA",
+    "GRAPHIA_MAX_DAYS",
     "GRAPHIA_LLM_PROVIDER",
     "GRAPHIA_REMOTE",
     "GRAPHIA_RUNTIME_URL",
@@ -216,3 +218,57 @@ def test_non_numeric_count_rejected(
     assert var in message
     assert "whole number" in message
     assert raw in message
+
+
+# ---------------------------------------------------------------------------
+# 4. Runaway Day cap (spec 023) — GRAPHIA_MAX_DAYS, default 12
+# ---------------------------------------------------------------------------
+
+
+def test_max_days_defaults_to_12_when_unset() -> None:
+    """Nothing set → the documented 12-Day runaway safeguard."""
+    cfg = load_config()
+
+    assert cfg.max_days == _DEFAULT_MAX_DAYS == 12
+
+
+def test_max_days_empty_string_falls_back_to_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Empty / blank ``GRAPHIA_MAX_DAYS`` is treated as unset (``_parse_count``)."""
+    monkeypatch.setenv("GRAPHIA_MAX_DAYS", "   ")
+
+    assert load_config().max_days == _DEFAULT_MAX_DAYS
+
+
+def test_max_days_env_override_parses_through(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``GRAPHIA_MAX_DAYS`` overrides the default for an ablation / A/B run."""
+    monkeypatch.setenv("GRAPHIA_MAX_DAYS", "4")
+
+    assert load_config().max_days == 4
+
+
+def test_max_days_below_one_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``max_days < 1`` is nonsensical — a game always has at least one Day."""
+    monkeypatch.setenv("GRAPHIA_MAX_DAYS", "0")
+
+    with pytest.raises(SystemExit) as exc_info:
+        load_config()
+
+    message = str(exc_info.value)
+    assert "GRAPHIA_MAX_DAYS" in message
+    assert "at least 1" in message
+
+
+def test_max_days_non_numeric_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A non-integer ``GRAPHIA_MAX_DAYS`` is a ``SystemExit`` from ``_parse_count``."""
+    monkeypatch.setenv("GRAPHIA_MAX_DAYS", "lots")
+
+    with pytest.raises(SystemExit) as exc_info:
+        load_config()
+
+    message = str(exc_info.value)
+    assert "GRAPHIA_MAX_DAYS" in message
+    assert "whole number" in message

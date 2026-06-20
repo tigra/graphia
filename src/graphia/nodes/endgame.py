@@ -31,12 +31,16 @@ from graphia.prompts import (
     ENDGAME_WINNER_DRAW,
     ENDGAME_WINNER_LAW,
     ENDGAME_WINNER_MAFIA,
+    ENDGAME_WINNER_RUNAWAY,
 )
 from graphia.state import GameState, KillRecord, PlayerState
 
 # Mirrors graphia.ui.app.GraphiaApp._OUTCOME_BY_WINNER. The end-of-game event
 # carries the same outcome string the local-mode summary uses, so consumer
 # folds are byte-identical to ``stats_store.summarize`` (spec 006 §2.x).
+# ``"runaway"`` (spec 023) is deliberately absent: a Day-cap runaway is not a
+# legitimate result, so it folds no career outcome (an unmapped winner yields
+# ``outcome=None`` and is skipped), exactly as in the UI's mirror.
 _OUTCOME_BY_WINNER: dict[str, str] = {
     "law_abiding": "law_abiding_win",
     "mafia": "mafia_win",
@@ -108,6 +112,10 @@ def _winner_line(winner: str | None) -> str:
         return ENDGAME_WINNER_LAW
     if winner == "mafia":
         return ENDGAME_WINNER_MAFIA
+    # Runaway / unresolved Day-cap hit (spec 023) — distinct from a real win
+    # and visibly not a normal draw.
+    if winner == "runaway":
+        return ENDGAME_WINNER_RUNAWAY
     if winner == "draw":
         return ENDGAME_WINNER_DRAW
     # Defensive: end_screen invoked without a winner set. Produce a generic

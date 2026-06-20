@@ -99,7 +99,8 @@ def _result_with_lineup(num_citizens: int, num_mafia: int) -> EvalResult:
             "base_url": None,
             "games": 5,
             "seed": None,
-            "max_rounds": 3,
+            # Spec 023: the recorded game-length control is the runaway Day cap.
+            "max_days": 12,
             "lineup": {"num_citizens": num_citizens, "num_mafia": num_mafia},
         },
         metrics={"repetition": {"rate": 0.4, "count": 2, "denominator": 5}},

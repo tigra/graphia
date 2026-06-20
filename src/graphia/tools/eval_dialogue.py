@@ -140,7 +140,12 @@ def _play_one_game(game_index: int, base_seed: int, max_rounds: int) -> GameResu
 
         rounds = 0
         line_idx = 0
-        # Answer interrupts until the game ends (no `.next`) or the round cap.
+        # NOTE (spec 023): this ``max_rounds`` is a per-game *sampling* cap — it
+        # bounds how many AI Day speeches the repetition metric samples — NOT the
+        # whole-game runaway Day cap (that is ``config.max_days`` / GRAPHIA_MAX_DAYS,
+        # the in-game safeguard). Deliberately left as a speech-sampling budget;
+        # only the blunder-eval harness drives games to their natural end.
+        # Answer interrupts until the game ends (no `.next`) or the sampling cap.
         for _ in range(max_rounds * 12 + 20):  # generous per-interrupt budget
             if rounds >= max_rounds:
                 break

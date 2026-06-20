@@ -105,4 +105,8 @@ class GameState(TypedDict, total=False):
     # human turn.
     day_turn_error: str | None
     kill_log: Annotated[list[KillRecord], operator.add]
-    winner: Literal["law_abiding", "mafia", "draw"] | None
+    # ``"runaway"`` (spec 023) is the whole-game Day-cap hit — a stuck/looping
+    # game flagged as unresolved, distinct from a real win and from ``"draw"``.
+    # ``"draw"`` is retained for back-compat/defensive rendering though no live
+    # path now produces it.
+    winner: Literal["law_abiding", "mafia", "draw", "runaway"] | None

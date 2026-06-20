@@ -40,6 +40,7 @@ def build_runtime_graph(
     career_emitter: CareerEventEmitter | None = None,
     day_round_recap_enabled: bool = True,
     recap_aware_reasoning_enabled: bool = True,
+    max_days: int = 12,
 ) -> CompiledStateGraph:
     """Compile the Graphia StateGraph with a caller-supplied thread_id.
 
@@ -71,6 +72,11 @@ def build_runtime_graph(
     gates the AI Day-speech / vote ``{standings}`` block by the same ablation
     flag as local mode. Same anti-drift requirement: both builders must thread
     it. Defaults to ``True`` (matching the config default).
+
+    ``max_days`` (spec 023) is threaded the same way — the production entrypoint
+    passes ``load_config().max_days`` — so the deployed Runtime applies the same
+    runaway Day cap as local mode. Same anti-drift requirement: both builders
+    must thread it. Defaults to ``12`` (matching the config default).
     """
     if diary_store is None:
         diary_store = InProcessDiaryStore()
@@ -90,4 +96,5 @@ def build_runtime_graph(
         saver=saver,
         recap_enabled=day_round_recap_enabled,
         recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
+        max_days=max_days,
     )

@@ -56,7 +56,7 @@ def first_night_mafia_intros(state: GameState) -> dict:
     return {"messages": messages}
 
 
-def night_open(state: GameState) -> dict:
+def night_open(state: GameState, *, max_days: int = 12) -> dict:
     # First Night of the game arrives with no prior phase (or "setup");
     # subsequent Nights arrive from the Day loop with phase=="day". Only bump
     # the cycle counter on re-entry so Night 1 and Day 1 share cycle=1.
@@ -67,17 +67,24 @@ def night_open(state: GameState) -> dict:
     else:
         cycle = current_cycle
 
-    # Slice 9 safety cap (Functional §2.9): if the game reaches cycle 20
-    # without a winner, force a draw ending. A downstream conditional edge
-    # (route_after_night_open) short-circuits the Night setup to end_screen.
-    if cycle >= 20:
+    # Runaway safeguard (spec 023): a Mafia game thins out to a winner on its
+    # own, so reaching the Day cap always signals a stuck/looping game — never a
+    # legitimate result. ``max_days`` (default 12, ``GRAPHIA_MAX_DAYS``) is bound
+    # in by ``_assemble_graph`` exactly like the recap flags, so local and remote
+    # share one limit. When hit, record ``winner="runaway"`` (distinct from a
+    # real win and from a ``"draw"``); a downstream conditional edge
+    # (route_after_night_open) short-circuits Night setup to end_screen.
+    if cycle >= max_days:
         return {
-            "winner": "draw",
+            "winner": "runaway",
             "cycle": cycle,
             "phase": "night",
             "messages": [
                 SystemMessage(
-                    content="The game has reached 20 cycles without a resolution."
+                    content=(
+                        f"The game has reached the {max_days}-Day cap without a "
+                        "resolution (runaway game)."
+                    )
                 )
             ],
         }
@@ -96,13 +103,15 @@ def night_open(state: GameState) -> dict:
 
 
 def route_after_night_open(state: GameState) -> str:
-    """Slice 9 safety cap router.
+    """Runaway safeguard router (spec 023).
 
-    If ``night_open`` detected the cycle cap and set ``winner="draw"``, short-
+    If ``night_open`` detected the Day cap and set ``winner="runaway"``, short-
     circuit to ``end_screen``; otherwise enter the multi-round pointing loop at
     ``mafia_round_start`` (Spec 015 — Multi-Round Mafia Consensus by Pointing).
+    Only ``night_open`` sets a winner before this site, so checking for any
+    non-None winner is equivalent to checking the cap and stays robust.
     """
-    if state.get("winner") == "draw":
+    if state.get("winner") is not None:
         return "end_screen"
     return "mafia_round_start"
 

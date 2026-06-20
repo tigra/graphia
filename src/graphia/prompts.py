@@ -192,7 +192,17 @@ Cast your ballot: `yes=True` to execute, `yes=False` to spare. Return only the
 
 ENDGAME_WINNER_LAW = "The Law-abiding Citizens have won."
 ENDGAME_WINNER_MAFIA = "The Mafia have won."
-ENDGAME_WINNER_DRAW = "The game ended in a draw after 20 cycles."
+# Whole-game Day-cap hit (spec 023). A Mafia game has no natural draw — players
+# always thin out to a winner — so reaching the Day cap signals a stuck/looping
+# game, recorded distinctly as a runaway/unresolved game rather than a real
+# result. Day-denominated text, matching the day-cap safeguard.
+ENDGAME_WINNER_RUNAWAY = (
+    "The game did not resolve and was stopped at the Day cap "
+    "(runaway / unresolved game)."
+)
+# Retained (now Day-denominated) for the defensive ``winner == "draw"`` path in
+# ``end_screen``; no live path produces ``"draw"`` since the cap became runaway.
+ENDGAME_WINNER_DRAW = "The game ended in a draw at the Day cap."
 ENDGAME_HEADER_KILLS = "Events this game:"
 ENDGAME_HEADER_ROSTER = "Full roster:"
 ENDGAME_PERSONA_HEADER = "Who they really were:"

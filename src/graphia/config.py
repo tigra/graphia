@@ -19,6 +19,13 @@ _DEFAULT_OLLAMA_SMALL_MODEL = "qwen2.5:3b"
 
 _DEFAULT_NUM_CITIZENS = 5
 _DEFAULT_NUM_MAFIA = 2
+# Whole-game runaway safeguard (spec 023). A Mafia game thins out to a winner
+# on its own — at the largest allowed table the longest natural game is only
+# ~10 Days — so this Day cap is NOT what ends a normal game; it exists purely
+# to stop a stuck/looping ("runaway") game. Default 12 Days, just above the
+# worst-case natural game, leaving reserve for a larger roster. Tunable via
+# ``GRAPHIA_MAX_DAYS`` so prior behaviour is reproducible for A/B (ADR 011).
+_DEFAULT_MAX_DAYS = 12
 # Documented ceiling on total table size (Citizens + Mafiosos). Chosen so a
 # full Day round (total + 1 messages) stays well inside ``_CONTEXT_WINDOW``,
 # the small model's one-shot name request stays modest, and per-game vote-poll
@@ -72,6 +79,12 @@ class GraphiaConfig:
     # constructing the config directly stay valid.
     num_citizens: int = _DEFAULT_NUM_CITIZENS
     num_mafia: int = _DEFAULT_NUM_MAFIA
+    # Whole-game runaway safeguard in Days (spec 023). The single day-denominated
+    # game-length limit, applied identically in real play and measured runs; a
+    # game reaching it is flagged runaway/unresolved, never a real result.
+    # Tunable via ``GRAPHIA_MAX_DAYS`` (default 12). Defaulted so tests
+    # constructing the config directly stay valid.
+    max_days: int = _DEFAULT_MAX_DAYS
     # End-of-round Day recap (spec 018). The ablation off-switch: on by
     # default; an explicit falsy ``GRAPHIA_DAY_ROUND_RECAP`` plays the Day
     # exactly as before. Defaulted so tests constructing the config directly
@@ -231,6 +244,14 @@ def load_config() -> GraphiaConfig:
     num_citizens = _parse_count("GRAPHIA_NUM_CITIZENS", _DEFAULT_NUM_CITIZENS)
     num_mafia = _parse_count("GRAPHIA_NUM_MAFIA", _DEFAULT_NUM_MAFIA)
 
+    # Runaway Day cap (spec 023). Parsed like the other counts; defaults to 12
+    # Days. A value < 1 is nonsensical (no game has zero Days), so reject it.
+    max_days = _parse_count("GRAPHIA_MAX_DAYS", _DEFAULT_MAX_DAYS)
+    if max_days < 1:
+        raise SystemExit(
+            f"GRAPHIA_MAX_DAYS must be at least 1 (got {max_days})."
+        )
+
     if num_mafia < 1:
         raise SystemExit(
             "GRAPHIA_NUM_MAFIA must be at least 1 — a game with no Mafiosos "
@@ -277,6 +298,7 @@ def load_config() -> GraphiaConfig:
         ollama_small_model=ollama_small_model,
         num_citizens=num_citizens,
         num_mafia=num_mafia,
+        max_days=max_days,
         day_round_recap_enabled=day_round_recap_enabled,
         recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
     )

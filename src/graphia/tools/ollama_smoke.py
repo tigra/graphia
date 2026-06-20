@@ -146,6 +146,12 @@ def _run_scripted_game(max_rounds: int, seed: int) -> tuple[bool, str | None]:
 
             rounds = 0
             line_idx = 0
+            # NOTE (spec 023): this ``max_rounds`` is a smoke-test *sampling* cap —
+            # it bounds how many Day rounds run to exercise the structured-output
+            # schemas quickly — NOT the whole-game runaway Day cap
+            # (``config.max_days`` / GRAPHIA_MAX_DAYS, the in-game safeguard).
+            # Deliberately left as a fast schema-exercise budget; only the
+            # blunder-eval harness drives games to their natural end.
             for _ in range(max_rounds * 12 + 20):  # generous per-interrupt budget
                 if rounds >= max_rounds:
                     return True, None  # script ran its course

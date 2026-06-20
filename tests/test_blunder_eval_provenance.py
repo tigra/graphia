@@ -674,7 +674,8 @@ def _result_with_provenance(*, dirty: bool, provider: str) -> EvalResult:
             "base_url": base,
             "games": 5,
             "seed": 20260613,
-            "max_rounds": 3,
+            # Spec 023: the recorded game-length control is the runaway Day cap.
+            "max_days": 12,
         },
         duration_seconds=42.5,
         metrics={"repetition": {"rate": 0.4, "count": 2, "denominator": 5}},

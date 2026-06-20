@@ -1,6 +1,7 @@
-"""Slice 9 tests: spectator mode, Ctrl-C abort banner, 20-cycle draw cap.
+"""Slice 9 tests: spectator mode, Ctrl-C abort banner, runaway Day cap.
 
-Four scenarios cover the polish layer that landed in Slice 9:
+Four scenarios cover the polish layer that landed in Slice 9 (the cap was
+re-expressed as a tunable day-denominated runaway safeguard in spec 023):
 
 1. ``test_spectator_view_when_human_dies_midgame`` — Textual pilot. The
    human is pinned Law-abiding via ``GRAPHIA_ROLE``. Night-1 pointing is hijacked to target
@@ -14,18 +15,18 @@ Four scenarios cover the polish layer that landed in Slice 9:
    a name, ``pilot.press("ctrl+c")`` fires the ``action_abort`` binding
    which writes the red "Game aborted." banner and exits the app.
 
-3. ``test_cycle_20_triggers_draw_end`` — Direct unit call to
-   ``night_open`` with ``cycle=19`` + ``phase="day"`` (so ``night_open``
-   computes ``cycle=20``), then ``route_after_night_open`` — verifies
-   the draw short-circuit path without having to replay 20 rounds of
-   real gameplay. The full-graph ``update_state`` approach is
-   deliberately avoided: the Slice 9 task spec permits this fallback
-   and it is the least flaky option given LangGraph's checkpointer
-   semantics.
+3. ``test_runaway_day_cap_triggers_at_configured_day`` — Direct unit call
+   to ``night_open`` with a configured ``max_days`` and a cycle one short
+   of it (so re-entering from the Day loop bumps to the cap), then
+   ``route_after_night_open`` — verifies the runaway short-circuit fires at
+   the *configured* Day (not a hardcoded 20), records ``winner="runaway"``
+   (distinct from a real win), and reads in Days. The full-graph
+   ``update_state`` approach is deliberately avoided: a focused unit test is
+   the least flaky option given LangGraph's checkpointer semantics.
 
-4. ``test_draw_end_screen_contains_kill_log_and_roster`` — Direct unit
-   call to ``end_screen`` with ``winner="draw"``, a synthetic kill-log
-   record, and a full 7-player roster. Asserts the Draw winner line,
+4. ``test_runaway_end_screen_contains_kill_log_and_roster`` — Direct unit
+   call to ``end_screen`` with ``winner="runaway"``, a synthetic kill-log
+   record, and a full 7-player roster. Asserts the runaway winner line,
    the kill-log header + entry, and every player name + role label
    appear in the composed Moderator message.
 
@@ -50,7 +51,9 @@ from graphia.nodes.night import night_open, route_after_night_open
 from graphia.prompts import (
     ENDGAME_HEADER_KILLS,
     ENDGAME_HEADER_ROSTER,
-    ENDGAME_WINNER_DRAW,
+    ENDGAME_WINNER_LAW,
+    ENDGAME_WINNER_MAFIA,
+    ENDGAME_WINNER_RUNAWAY,
 )
 from graphia.state import KillRecord, PlayerState
 from graphia.ui.app import GraphiaApp
@@ -351,40 +354,56 @@ async def test_ctrl_c_shows_aborted_banner(
 
 
 # --------------------------------------------------------------------------
-# Test 3: reaching cycle 20 forces a draw ending.
+# Test 3: reaching the configured Day cap forces a runaway ending.
 # --------------------------------------------------------------------------
 
 
-def test_cycle_20_triggers_draw_end() -> None:
-    """Unit test on ``night_open`` + ``route_after_night_open``.
+def test_runaway_day_cap_triggers_at_configured_day() -> None:
+    """Unit test on ``night_open`` + ``route_after_night_open`` (spec 023).
 
-    Approach: call the two cycle-cap-relevant functions directly rather
-    than replaying 20 full Day/Night rounds through the compiled graph.
-    LangGraph's checkpointer makes ``update_state`` awkward for large
-    skips (reducer semantics on ``messages`` / ``kill_log``), and the
-    draw-cap logic is pure Python that lives entirely in these two
-    functions — so a focused unit test is the cleanest verification
-    and the Slice 9 task spec explicitly permits this fallback.
+    Approach: call the two cap-relevant functions directly rather than
+    replaying a dozen full Day/Night rounds through the compiled graph.
+    LangGraph's checkpointer makes ``update_state`` awkward for large skips
+    (reducer semantics on ``messages`` / ``kill_log``), and the runaway-cap
+    logic is pure Python that lives entirely in these two functions — so a
+    focused unit test is the cleanest verification.
+
+    The cap value is now a tunable ``max_days`` (default 12) bound into
+    ``night_open`` via ``partial`` in ``_assemble_graph``. This test passes it
+    explicitly to confirm the limit is honoured at the *configured* Day, not a
+    hardcoded 20, and that a cap-hit records the distinct ``"runaway"`` winner.
     """
-    # Entering night_open from the Day loop at cycle=19 → cycle should
-    # bump to 20 and trigger the draw branch.
-    update = night_open({"cycle": 19, "phase": "day", "players": {}})
-
-    assert update["winner"] == "draw"
-    assert update["cycle"] == 20
+    # Default cap = 12: entering from the Day loop at cycle=11 bumps to 12 and
+    # trips the runaway branch.
+    update = night_open({"cycle": 11, "phase": "day", "players": {}})
+    assert update["winner"] == "runaway"
+    assert update["cycle"] == 12
     assert update["phase"] == "night"
-
-    # Message announcing the draw is emitted as a SystemMessage.
+    # Message announces the cap hit, in Days, flagged as a runaway game.
     messages = update["messages"]
     assert len(messages) == 1
     assert isinstance(messages[0], SystemMessage)
-    assert "20 cycles" in messages[0].content
+    assert "12-Day" in messages[0].content
+    assert "runaway" in messages[0].content.lower()
 
-    # Router short-circuits to end_screen when the winner is "draw".
-    assert route_after_night_open({"winner": "draw"}) == "end_screen"
+    # Tunable: a smaller cap trips earlier (ablation / A/B). max_days=4 → the
+    # cap fires when cycle reaches 4.
+    early = night_open({"cycle": 3, "phase": "day", "players": {}}, max_days=4)
+    assert early["winner"] == "runaway"
+    assert early["cycle"] == 4
+    assert "4-Day" in early["messages"][0].content
 
-    # Sanity: below the cap, night_open behaves normally and the router
-    # enters the multi-round pointing loop at mafia_round_start (Spec 015).
+    # Just below the same cap, no runaway: a normal Night opens.
+    below = night_open({"cycle": 2, "phase": "day", "players": {}}, max_days=4)
+    assert below.get("winner") is None
+    assert below["cycle"] == 3
+
+    # Router short-circuits to end_screen on the runaway winner (distinct from a
+    # real side win, which routes the same way but is a legitimate result).
+    assert route_after_night_open({"winner": "runaway"}) == "end_screen"
+
+    # Sanity: below the cap, night_open behaves normally and the router enters
+    # the multi-round pointing loop at mafia_round_start (Spec 015).
     normal = night_open({"cycle": 1, "phase": "setup", "players": {}})
     assert normal.get("winner") is None
     assert normal["cycle"] == 1
@@ -398,19 +417,19 @@ def test_cycle_20_triggers_draw_end() -> None:
 
 
 # --------------------------------------------------------------------------
-# Test 4: the draw end screen still includes the kill log + full roster.
+# Test 4: the runaway end screen still includes the kill log + full roster.
 # --------------------------------------------------------------------------
 
 
-def test_draw_end_screen_contains_kill_log_and_roster() -> None:
-    """``end_screen`` with winner='draw' emits the Draw winner line AND
+def test_runaway_end_screen_contains_kill_log_and_roster() -> None:
+    """``end_screen`` with winner='runaway' emits the runaway winner line AND
     unconditionally includes the kill-log header and the full roster
     reveal — matching the behaviour exercised for law/mafia wins in
     ``test_slice8_endgame.py``.
     """
     # Build a minimal but complete roster: 2 Mafia, 5 Law-abiding — the
     # regulation 7-player game. One victim was killed on Night 3 (before
-    # the draw cap fired).
+    # the runaway cap fired).
     players: dict[str, PlayerState] = {
         "p-1": PlayerState(id="p-1", name="Alice", role="law_abiding", is_human=True),
         "p-2": PlayerState(id="p-2", name="Ivy", role="law_abiding", is_human=False),
@@ -427,8 +446,8 @@ def test_draw_end_screen_contains_kill_log_and_roster() -> None:
     ]
 
     state = {
-        "winner": "draw",
-        "cycle": 20,
+        "winner": "runaway",
+        "cycle": 12,
         "phase": "night",
         "players": players,
         "kill_log": kill_log,
@@ -443,8 +462,10 @@ def test_draw_end_screen_contains_kill_log_and_roster() -> None:
     assert isinstance(final, SystemMessage)
     content = final.content
 
-    # Draw winner line.
-    assert ENDGAME_WINNER_DRAW in content
+    # Runaway / unresolved winner line — visibly distinct from a real win.
+    assert ENDGAME_WINNER_RUNAWAY in content
+    assert ENDGAME_WINNER_LAW not in content
+    assert ENDGAME_WINNER_MAFIA not in content
 
     # Kill-log section present with the lone Night-3 entry.
     assert ENDGAME_HEADER_KILLS in content
