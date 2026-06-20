@@ -103,6 +103,7 @@ def _day_prompt(speaker: PlayerState) -> list:
                 standings=_render_standings({"players": {speaker.id: speaker}}),
                 roster="(roster)",
                 context="(ctx)",
+                role_guidance="",
             )
         ),
     ]

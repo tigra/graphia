@@ -97,6 +97,13 @@ class GraphiaConfig:
     # spec-018 ``day_round_recap_enabled`` precedent exactly. Defaulted so tests
     # constructing the config directly stay valid.
     recap_aware_reasoning_enabled: bool = True
+    # Role-specific Day guidance (spec 024, ADR 011). The ablation off-switch: on
+    # by default; an explicit falsy ``GRAPHIA_ROLE_GUIDANCE`` reverts the AI
+    # Day-speech and vote prompts to their pre-024 form (no role-matched closing
+    # directive injected at the prompt tail). Mirrors the spec-019
+    # ``recap_aware_reasoning_enabled`` precedent exactly. Defaulted so tests
+    # constructing the config directly stay valid.
+    role_guidance_enabled: bool = True
 
 
 def _env_truthy(name: str) -> bool:
@@ -148,6 +155,7 @@ def load_config() -> GraphiaConfig:
     recap_aware_reasoning_enabled = _env_flag(
         "GRAPHIA_RECAP_AWARE_REASONING", default=True
     )
+    role_guidance_enabled = _env_flag("GRAPHIA_ROLE_GUIDANCE", default=True)
     runtime_invocation_url = os.environ.get("GRAPHIA_RUNTIME_URL") or None
     memory_id = os.environ.get("GRAPHIA_MEMORY_ID") or None
     career_memory_id = os.environ.get("GRAPHIA_CAREER_MEMORY_ID") or None
@@ -301,4 +309,5 @@ def load_config() -> GraphiaConfig:
         max_days=max_days,
         day_round_recap_enabled=day_round_recap_enabled,
         recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
+        role_guidance_enabled=role_guidance_enabled,
     )

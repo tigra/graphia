@@ -517,6 +517,7 @@ def test_day_speak_template_slot_guard_renders_with_standings() -> None:
         standings=standings,
         roster="Cleo: p-cleo",
         context="(no prior discussion)",
+        role_guidance="",
     )
 
     assert "{standings}" not in rendered
@@ -539,6 +540,7 @@ def test_ai_vote_template_slot_guard_renders_with_standings() -> None:
         target="Mara",
         relationship="",
         context="(no prior discussion)",
+        role_guidance="",
     )
 
     assert "{standings}" not in rendered

@@ -85,6 +85,7 @@ def _assemble_graph(
     saver: SqliteSaver,
     recap_enabled: bool,
     recap_aware_reasoning_enabled: bool,
+    role_guidance_enabled: bool = True,
     max_days: int = 12,
 ) -> CompiledStateGraph:
     """Build the Graphia StateGraph topology and compile it with ``saver``.
@@ -138,12 +139,16 @@ def _assemble_graph(
     # AI-decision nodes — ``day_turn`` (which calls ``_ai_day_action``) and
     # ``collect_votes`` (which calls ``_ai_ballot``) — alongside their existing
     # bindings, so it gates the ``{standings}`` prompt block in both modes.
+    # Spec 024 (ADR 011): the role-guidance flag is bound into those SAME two
+    # AI-decision nodes alongside the recap-aware flag, so it gates the tail
+    # ``{role_guidance}`` prompt block in both modes.
     builder.add_node(
         "day_turn",
         partial(
             emit(day_turn),
             recap_enabled=recap_enabled,
             recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
+            role_guidance_enabled=role_guidance_enabled,
         ),
     )
     builder.add_node("vote_prompt", vote_prompt)
@@ -152,6 +157,7 @@ def _assemble_graph(
         partial(
             emit(collect_votes),
             recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
+            role_guidance_enabled=role_guidance_enabled,
         ),
     )
     builder.add_node("resolve_vote", emit(resolve_vote))
@@ -290,6 +296,7 @@ def build_graph(
         saver=saver,
         recap_enabled=config.day_round_recap_enabled,
         recap_aware_reasoning_enabled=config.recap_aware_reasoning_enabled,
+        role_guidance_enabled=config.role_guidance_enabled,
         max_days=config.max_days,
     )
     return graph, thread_id

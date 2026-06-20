@@ -728,6 +728,7 @@ def _render_day_prompt(
         standings=_render_standings({"players": players}),
         roster=_render_alive_roster(players),
         context="(no prior discussion)",
+        role_guidance="",
     )
 
 

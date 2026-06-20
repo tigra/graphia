@@ -198,6 +198,7 @@ async def _run_invocation(
             career_emitter=_career_emitter,
             day_round_recap_enabled=_config.day_round_recap_enabled,
             recap_aware_reasoning_enabled=_config.recap_aware_reasoning_enabled,
+            role_guidance_enabled=_config.role_guidance_enabled,
             max_days=_config.max_days,
         )
     except Exception as exc:  # noqa: BLE001

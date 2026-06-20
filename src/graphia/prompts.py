@@ -114,6 +114,36 @@ and do not accuse anyone without a reason. If you vote, leave `text` unset; if
 you speak, leave `target_id` unset.
 """
 
+# Role-specific closing guidance (spec 024). A strong, side-matched menu of the
+# concrete plays available to the actor RIGHT NOW, injected at the TAIL of both
+# Day prompts (recency position) so it is the most salient thing the model reads
+# before acting. The two side-menus live here as the single source of guidance
+# text; both call sites (``_ai_day_action`` / ``_ai_ballot``) consume them
+# through the one ``_role_guidance_block`` builder in ``nodes/day.py``, so the
+# speak-prompt and vote-prompt guidance can never drift. The shared
+# ``ROLE_GUIDANCE_LABEL`` framing header is the structural marker the tests
+# assert on and the ``GRAPHIA_ROLE_GUIDANCE`` ablation flag (ADR 011) toggles.
+ROLE_GUIDANCE_LABEL = "Your side's plays right now:"
+
+# Law-abiding menu: the town wins ONLY by executing Mafiosos, so the moves are
+# active (spot → accuse → vote a genuine suspect) with the explicit caution not
+# to get fellow Law-abiding Citizens executed and not to accuse baselessly.
+ROLE_GUIDANCE_LAW_ABIDING = """The town wins ONLY by executing Mafiosos — drifting or commenting on the dead never wins. So:
+- Watch for a likely Mafioso: weigh who has deflected, dodged, or pushed a vote onto someone innocent.
+- Voice that suspicion openly — name the player you suspect and say why, rather than passive commentary.
+- When you hold a genuine suspect, put them up for a vote-to-execute before the Day ends (`kind='vote'`).
+- Take care NOT to get fellow Law-abiding Citizens executed: do not accuse without a reason. With no real lead, speak to gather information instead of pushing a baseless accusation."""
+
+# Mafioso menu: win by deception. Maintain the cover, deflect onto Citizens,
+# shield/coordinate with teammates, steer votes — all UNDER the standing
+# never-reveal rule (reinforces ``_persona_block``; never instructs disclosure).
+ROLE_GUIDANCE_MAFIA = """You win by deception, not by being caught. So:
+- Hold your public cover persona — stay the ordinary, trustworthy townsperson the table sees.
+- Cast suspicion onto Law-abiding Citizens; give the table a plausible innocent to doubt.
+- Protect your fellow Mafiosos: avoid exposing a teammate, and quietly coordinate to keep suspicion off the Mafia.
+- Steer votes toward Citizens and away from the Mafia (`kind='vote'` on a Citizen when it helps your side).
+- NEVER reveal that you are Mafia, name your teammates, or admit your persona is a front — keep the cover at all times."""
+
 DAY_SPEAK_USER_TEMPLATE = """You are {speaker} — your secret role is {role_label}. {win_condition}
 {team_line}
 {persona}
@@ -124,7 +154,7 @@ Recent public discussion:
 {context}
 
 Never publicly reveal your secret role or your teammates.
-
+{role_guidance}
 Take your turn now. Either reply with one or two sentences in character
 (`kind='speak'`), or call for a vote against a specific `target_id` from the
 roster above (`kind='vote'`).
@@ -185,7 +215,7 @@ AI_VOTE_USER_TEMPLATE = """You are {voter} — your secret role is {role_label}.
 {relationship}
 Recent public discussion:
 {context}
-
+{role_guidance}
 Cast your ballot: `yes=True` to execute, `yes=False` to spare. Return only the
 `yes` field.
 """

@@ -102,6 +102,7 @@ def _render_day_prompt(actor: PlayerState, players: dict[str, PlayerState]) -> s
         standings=_render_standings({"players": players}),
         roster=day_nodes._render_alive_roster(players),
         context="(no prior discussion)",
+        role_guidance=day_nodes._role_guidance_block(actor.role, enabled=True),
     )
 
 
@@ -422,6 +423,7 @@ def test_ai_vote_template_supplies_relationship_placeholder() -> None:
         target="Mara",
         relationship="",
         context="(no prior discussion)",
+        role_guidance="",
     )
     assert "Cleo" in rendered
     assert "Mara" in rendered

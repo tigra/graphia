@@ -516,6 +516,7 @@ def _day_prompt(speaker: PlayerState) -> list:
                 standings=_render_standings({"players": {speaker.id: speaker}}),
                 roster="(roster)",
                 context="(ctx)",
+                role_guidance="",
             )
         ),
     ]
@@ -618,6 +619,7 @@ def test_self_vote_initiation_resolver_ignores_non_day_speak_prompts() -> None:
             standings="s",
             roster="r",
             context="c",
+            role_guidance="",
         )
     )
     assert resolve([ghost]) is None

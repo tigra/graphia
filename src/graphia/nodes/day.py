@@ -47,6 +47,9 @@ from graphia.prompts import (
     DAY_ROUND_RECAP_TEMPLATE,
     DAY_SPEAK_SYSTEM,
     DAY_SPEAK_USER_TEMPLATE,
+    ROLE_GUIDANCE_LABEL,
+    ROLE_GUIDANCE_LAW_ABIDING,
+    ROLE_GUIDANCE_MAFIA,
     VOTE_EXECUTED_TEMPLATE,
     VOTE_FAILED_TEMPLATE,
     VOTE_INITIATE_ANNOUNCE_TEMPLATE,
@@ -295,6 +298,37 @@ def _standings_prompt_block(state: GameState, *, enabled: bool) -> str:
     return f"Current standings (act on these):\n{_render_standings(state)}\n\n"
 
 
+def _role_guidance_block(role: str, *, enabled: bool) -> str:
+    """Render the ``{role_guidance}`` tail slot for the AI Day prompts (spec 024).
+
+    The role-specific closing directive — the concrete plays for the actor's
+    side, the last and most salient thing the model reads before acting. Mirrors
+    ``_standings_prompt_block``'s ablation shape (ADR 011):
+
+    - ``enabled=False`` ⇒ returns ``""`` so the ``{role_guidance}`` slot
+      collapses and the prompt reverts to its exact pre-024 form (no label, no
+      body, no stray blank line) — the A/B ablation seam.
+    - ``enabled=True`` ⇒ returns the labelled block for the actor's TRUE side:
+      the Mafioso menu when ``role == "mafia"``, the Law-abiding menu otherwise
+      (matching the ``_role_label`` / ``_team_line`` role-branch convention).
+      A Citizen never receives Mafia text and vice-versa (the knowledge-boundary
+      posture applied to the directive content); the Mafioso menu reinforces —
+      never contradicts — ``_persona_block``'s standing never-reveal rule.
+
+    Framing: leading + trailing ``\\n`` wrap the ``LABEL`` + body so it slots
+    cleanly into the template's ``...teammates.\\n{role_guidance}\\nTake your
+    turn...`` (resp. ``...\\n{context}\\n{role_guidance}\\nCast your ballot...``)
+    seam — one blank line before and after, body unindented.
+
+    PURE: no state read beyond the passed ``role``, no RNG, no LLM, no ``set``
+    iteration — so the dual-mode byte-equal smoke is unaffected.
+    """
+    if not enabled:
+        return ""
+    menu = ROLE_GUIDANCE_MAFIA if role == "mafia" else ROLE_GUIDANCE_LAW_ABIDING
+    return f"\n{ROLE_GUIDANCE_LABEL}\n{menu}\n"
+
+
 # In-world clock for the Day's rounds (spec 020): round 1 is morning, advancing
 # one step per round toward midnight at round 6, so the recap reads like the Day
 # burning down toward Night. Indexed by ``round - 1`` after clamping.
@@ -532,6 +566,7 @@ def _ai_day_action(
     state: GameState,
     *,
     recap_aware_reasoning_enabled: bool = True,
+    role_guidance_enabled: bool = True,
 ) -> DayAction:
     """Call the gameplay model for the AI's speaking turn. Returns a DayAction.
 
@@ -542,6 +577,10 @@ def _ai_day_action(
     ``recap_aware_reasoning_enabled`` (spec 019 ablation flag, ADR 011) gates the
     ``{standings}`` block: ON (default) injects the labelled standings; OFF
     reverts the prompt to its pre-019 form (no standings block).
+
+    ``role_guidance_enabled`` (spec 024 ablation flag, ADR 011) gates the tail
+    ``{role_guidance}`` block: ON (default) appends the actor's side-matched
+    closing directive; OFF reverts the prompt to its pre-024 form (no guidance).
     """
     players = state.get("players", {})
     roster = _render_alive_roster(players)
@@ -575,6 +614,9 @@ def _ai_day_action(
                 ),
                 roster=roster,
                 context=context,
+                role_guidance=_role_guidance_block(
+                    speaker.role, enabled=role_guidance_enabled
+                ),
             )
         ),
     ]
@@ -649,6 +691,7 @@ def day_turn(
     game_id: str | None = None,
     recap_enabled: bool = True,
     recap_aware_reasoning_enabled: bool = True,
+    role_guidance_enabled: bool = True,
 ) -> dict:
     """Run exactly one player's Day turn, then advance bookkeeping.
 
@@ -771,6 +814,7 @@ def day_turn(
             player,
             state,
             recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
+            role_guidance_enabled=role_guidance_enabled,
         )
         if action.kind == "vote":
             assert action.target_id is not None  # validated in _ai_day_action
@@ -840,12 +884,17 @@ def _ai_ballot(
     state: GameState,
     *,
     recap_aware_reasoning_enabled: bool = True,
+    role_guidance_enabled: bool = True,
 ) -> Ballot:
     """Ask the gameplay model for a Yes/No ballot. Conservative fallback.
 
     ``recap_aware_reasoning_enabled`` (spec 019 ablation flag, ADR 011) gates the
     ``{standings}`` block: ON (default) injects the labelled standings; OFF
     reverts the vote prompt to its pre-019 form (no standings block).
+
+    ``role_guidance_enabled`` (spec 024 ablation flag, ADR 011) gates the tail
+    ``{role_guidance}`` block: ON (default) appends the voter's side-matched
+    closing directive; OFF reverts the prompt to its pre-024 form (no guidance).
     """
     players = state.get("players", {})
     context = _render_context(list(state.get("messages", [])), voter.id)
@@ -874,6 +923,9 @@ def _ai_ballot(
                 target=target.name,
                 relationship=relationship,
                 context=context,
+                role_guidance=_role_guidance_block(
+                    voter.role, enabled=role_guidance_enabled
+                ),
             )
         ),
     ]
@@ -900,6 +952,7 @@ def collect_votes(
     career_emitter: CareerEventEmitter | None = None,
     game_id: str | None = None,
     recap_aware_reasoning_enabled: bool = True,
+    role_guidance_enabled: bool = True,
 ) -> dict:
     """Poll ONE voter per super-step. Replay-safe like ``day_turn``.
 
@@ -976,6 +1029,7 @@ def collect_votes(
                 target,
                 state,
                 recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
+                role_guidance_enabled=role_guidance_enabled,
             )
             yes = ballot.yes
         if career_emitter is not None and game_id is not None:

@@ -40,6 +40,7 @@ def build_runtime_graph(
     career_emitter: CareerEventEmitter | None = None,
     day_round_recap_enabled: bool = True,
     recap_aware_reasoning_enabled: bool = True,
+    role_guidance_enabled: bool = True,
     max_days: int = 12,
 ) -> CompiledStateGraph:
     """Compile the Graphia StateGraph with a caller-supplied thread_id.
@@ -73,6 +74,12 @@ def build_runtime_graph(
     flag as local mode. Same anti-drift requirement: both builders must thread
     it. Defaults to ``True`` (matching the config default).
 
+    ``role_guidance_enabled`` (spec 024, ADR 011) is threaded the same way — the
+    production entrypoint passes ``load_config().role_guidance_enabled`` — so the
+    deployed Runtime gates the AI Day-speech / vote ``{role_guidance}`` tail block
+    by the same ablation flag as local mode. Same anti-drift requirement: both
+    builders must thread it. Defaults to ``True`` (matching the config default).
+
     ``max_days`` (spec 023) is threaded the same way — the production entrypoint
     passes ``load_config().max_days`` — so the deployed Runtime applies the same
     runaway Day cap as local mode. Same anti-drift requirement: both builders
@@ -96,5 +103,6 @@ def build_runtime_graph(
         saver=saver,
         recap_enabled=day_round_recap_enabled,
         recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
+        role_guidance_enabled=role_guidance_enabled,
         max_days=max_days,
     )
