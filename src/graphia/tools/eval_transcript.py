@@ -40,8 +40,8 @@ each one as a self-contained labeled block:
 - an **end-of-round recap** is an inline ``<recap>…</recap>`` element (content
   reproduced as-is, including the spec-020 in-world clock), distinct from
   ordinary Moderator / utterance lines;
-- the **setup** is structured per-player entries (name, role, persona), with no
-  2-/4-space alignment indentation;
+- the **setup** is one ``<player name="…" role="…">`` block per player (its
+  persona fields flush-left inside), so individual personas are separated;
 - the **endgame** (winner + full roster + persona reveal) is one ``<endgame>``
   block;
 - formatting is uniform — content is flush-left with zero indent; a single-line
@@ -265,13 +265,14 @@ def _roster_players(
 def _render_setup(
     players: dict[str, PlayerState], names: dict[str, str]
 ) -> str:
-    """Render the ``<setup>`` roster block: each player's name, role, persona.
+    """Render the ``<setup>`` roster block: one ``<player>`` element per player.
 
-    Each player is a flush-left structured entry — a ``Name — Role`` header line
-    followed by its persona ``Field: value`` lines (spec 022: no 2-/4-space
-    alignment indentation). For a Mafioso, both the public legend AND the true
-    self are shown; for a Citizen, the single honest persona. A player with
-    ``persona=None`` renders its name + role with a "(no persona recorded)" note
+    Each player is its own delimited ``<player name="…" role="…">`` block whose
+    body is the persona ``Field: value`` lines (spec 022: flush-left, no 2-/4-space
+    alignment) — so individual personas are clearly separated rather than running
+    together under a bare header. For a Mafioso, both the public legend AND the
+    true self are shown; for a Citizen, the single honest persona. A player with
+    ``persona=None`` collapses to an inline ``<player …>(no persona recorded)</player>``
     rather than raising.
     """
     lines = ["<setup>"]
@@ -286,8 +287,9 @@ def _render_setup(
         )
         role = getattr(player, "role", "") or ""
         role_label = _ROLE_LABELS.get(role, role or "unknown role")
-        lines.append(f"{name} — {role_label}")
-        lines.extend(_persona_lines(getattr(player, "persona", None), role))
+        attrs = f'name="{name}" role="{role_label}"'
+        body = _persona_lines(getattr(player, "persona", None), role)
+        lines.append(_wrap_attr("player", attrs, body))
     lines.append("</setup>")
     return "\n".join(lines)
 
@@ -539,6 +541,24 @@ def _wrap(tag: str, body: list[str]) -> str:
     if len(content) == 1:
         return f"<{tag}>{content[0]}</{tag}>"
     return "\n".join([f"<{tag}>", *body, f"</{tag}>"])
+
+
+def _wrap_attr(tag: str, attrs: str, body: list[str]) -> str:
+    """Like :func:`_wrap` but with attributes on the opening tag (spec 022).
+
+    Used for ``<player name=… role=…>`` setup entries so each player's persona
+    is its own self-contained, separated block. Same flush-left rules as
+    ``_wrap``: a single content line collapses to inline ``<tag attrs>line</tag>``;
+    an empty body to ``<tag attrs></tag>``; otherwise the tag opens and closes on
+    its own lines with the body flush-left between.
+    """
+    content = [line for line in body if line != ""]
+    open_tag = f"<{tag} {attrs}>" if attrs else f"<{tag}>"
+    if not content:
+        return f"{open_tag}</{tag}>"
+    if len(content) == 1:
+        return f"{open_tag}{content[0]}</{tag}>"
+    return "\n".join([open_tag, *body, f"</{tag}>"])
 
 
 def _inline(tag: str, content: str) -> str:

@@ -374,9 +374,9 @@ def test_render_shows_every_player_true_role() -> None:
     doc = _render()
     setup = doc[doc.index("<setup>") : doc.index("</setup>")]
 
-    assert "Dario — Mafia" in setup
+    assert '<player name="Dario" role="Mafia">' in setup
     for citizen in ("Mira", "Bo", "Cara"):
-        assert f"{citizen} — Law-abiding Citizen" in setup
+        assert f'<player name="{citizen}" role="Law-abiding Citizen">' in setup
 
 
 def test_render_shows_mafioso_true_self_and_public_legend() -> None:
@@ -478,7 +478,7 @@ def test_render_empty_events_does_not_raise() -> None:
     assert "<transcript>" in doc
     assert "</transcript>" in doc
     # The roster still renders off the final players map even with no phases.
-    assert "Dario — Mafia" in doc
+    assert '<player name="Dario" role="Mafia">' in doc
 
 
 def test_render_empty_players_map_does_not_raise() -> None:
@@ -500,6 +500,7 @@ def test_render_player_with_no_persona_does_not_raise() -> None:
 
     Defensive: a sparse roster (a player dealt no persona) must surface its name
     + role and a graceful note rather than crashing on ``None.public_persona``.
+    The single-line body collapses to an inline ``<player …>…</player>``.
     """
     players = {
         "p-1": _player("p-1", "Nil", "law_abiding", persona=None),
@@ -508,9 +509,11 @@ def test_render_player_with_no_persona_does_not_raise() -> None:
 
     doc = render_transcript([], players, game_index=1, run_meta=None)
 
-    assert "Nil — Law-abiding Citizen" in doc
-    assert "Don — Mafia" in doc
-    assert "(no persona recorded)" in doc
+    assert (
+        '<player name="Nil" role="Law-abiding Citizen">(no persona recorded)</player>'
+        in doc
+    )
+    assert '<player name="Don" role="Mafia">(no persona recorded)</player>' in doc
 
 
 def test_render_none_run_meta_does_not_raise() -> None:
@@ -1262,10 +1265,11 @@ def test_recap_is_its_own_element_carrying_day_clock_counts_votes_executed() -> 
 
 
 def test_setup_entries_are_flush_left_with_no_alignment_indentation() -> None:
-    """Each setup entry (name/role + persona fields) is flush-left — no 2-/4-space.
+    """Each ``<player>`` block + its persona fields are flush-left — no 2-/4-space.
 
-    The roster header lines and their persona ``Field: value`` lines all start at
-    column 0 (spec 022), where the pre-022 format indented them by 2 and 4 spaces.
+    The per-player block opening tags and their persona ``Field: value`` lines all
+    start at column 0 (spec 022), where the pre-022 format indented them by 2 and 4
+    spaces.
     """
     doc = _render_full_game()
     setup = doc[doc.index("<setup>") : doc.index("</setup>") + len("</setup>")]
@@ -1275,12 +1279,36 @@ def test_setup_entries_are_flush_left_with_no_alignment_indentation() -> None:
     for line in lines:
         assert line == line.lstrip(), f"indented setup line: {line!r}"
 
-    # The structured per-player entries are present, flush-left.
-    assert "Dario — Mafia" in lines
-    assert "Mira — Law-abiding Citizen" in lines
+    # The per-player blocks open flush-left; their persona fields sit flush-left
+    # between the open/close tags.
+    assert '<player name="Dario" role="Mafia">' in lines
+    assert '<player name="Mira" role="Law-abiding Citizen">' in lines
     assert "Personality: coldly calculating" in lines
     assert "Public legend: Dario the harbour fishmonger, up before dawn most days" in lines
     assert "True self (hidden): Dario runs the smuggling ring the fish stall launders for" in lines
+
+
+def test_setup_wraps_each_player_persona_in_its_own_player_block() -> None:
+    """Each player's persona is its own delimited ``<player>`` block — separated.
+
+    Regression for the format where every player's persona fields ran together
+    flush-left under a bare ``Name — Role`` header, with nothing delimiting one
+    persona from the next. Now each is wrapped in ``<player name="…" role="…">
+    … </player>``, so a reader/parser can isolate one persona without bleeding
+    into the next.
+    """
+    doc = _render()
+    setup = doc[doc.index("<setup>") : doc.index("</setup>") + len("</setup>")]
+
+    # One <player> open + close per roster member (Dario, Mira, Bo, Cara).
+    assert setup.count("<player ") == 4
+    assert setup.count("</player>") == 4
+
+    # Dario's hidden true-self falls strictly INSIDE Dario's own block — between
+    # Dario's opening <player …> and its closing </player>, not leaking past it.
+    dario_open = setup.index('<player name="Dario" role="Mafia">')
+    dario_close = setup.index("</player>", dario_open)
+    assert dario_open < setup.index(_MAFIA_PERSONA.true_self) < dario_close
 
 
 # --- the endgame block ------------------------------------------------------
