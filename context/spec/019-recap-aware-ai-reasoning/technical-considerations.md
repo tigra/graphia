@@ -1,7 +1,7 @@
 # Technical Specification: Recap-Aware AI Reasoning
 
 - **Functional Specification:** `./functional-spec.md`
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 ---

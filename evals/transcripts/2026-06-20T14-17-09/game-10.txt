@@ -1,0 +1,168 @@
+Game 10 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10
+
+<transcript>
+<setup>
+  Avery — Law-abiding Citizen
+    (no persona recorded)
+  Yuki — Law-abiding Citizen
+    Personality: quiet and observant
+    Manner: speaks slowly and deliberately, with a soft, measured tone; avoids direct eye contact; often pauses mid-sentence to reconsider words
+    Persona: Yuki is a librarian who lives alone in a small apartment on the edge of town. They spend their days organizing books and helping townsfolk find information. Yuki is well-liked for their kindness and quiet wisdom.
+  Wataru — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key words for emphasis. Often pauses mid-sentence to gather thoughts, and avoids complex metaphors or slang.
+    Persona: Wataru is a librarian who has lived in the town his whole life. He spends his days organizing books and helping people find information. He's known for being reliable and straightforward, never causing trouble or getting involved in gossip.
+  Eva — Mafia
+    Personality: Eva is a warm, maternal figure who exudes calm authority. She's the kind of person who makes others feel safe, but beneath her gentle exterior lies a calculating mind that weighs every word and action carefully.
+    Manner: Eva speaks in measured, soothing tones, often using phrases like "I'm sure we can work this out together," or "Let's not jump to conclusions." She has a habit of placing her hand on someone's shoulder when trying to comfort them, and she's very good at reading people's reactions.
+    Public legend: Eva is a retired school librarian who lives alone in a cozy cottage on the edge of town. She's known for her kindness and her ability to help others solve problems, often offering advice to neighbors or organizing community events. She has a pet cat named Whiskers and volunteers at the local animal shelter.
+    True self (hidden): Eva was recruited into the Mafia by her own sister, who had been working as an enforcer for years. After her sister's death during a botched operation, Eva took over her position to protect her family's legacy. She's been playing the role of a kind-hearted librarian for months now, carefully choosing which townspeople to target and when.
+  Natsu — Mafia
+    Personality: Cheerful optimist with a hidden streak of cunning
+    Manner: Speaks in a warm, animated tone with frequent hand gestures. Uses idioms and metaphors liberally. Often pauses mid-sentence to "think out loud" before answering questions directly.
+    Public legend: Natsu is a beloved local baker who runs a small family-owned shop on Maple Street. Known for his infectious laughter, he's always ready with a kind word or fresh-baked bread for anyone in need. He believes strongly in community and often volunteers at the town’s annual festivals.
+    True self (hidden): Natsu was once a promising chef who got involved with the local crime syndicate after a family tragedy. The Mafia offered him protection and a way to keep his loved ones safe, but he never intended to stay. Now, he plays the part of the innocent baker while subtly guiding the town's politics from behind the scenes.
+  Shizuru — Law-abiding Citizen
+    Personality: warm and cautious
+    Manner: speaks slowly and deliberately, with frequent pauses for thought. Uses formal Japanese phrases like "shitsurei shimasu" (excuse me) and "arigatou gozaimasu" (thank you very much). Often checks her watch and seems to be constantly calculating time.
+    Persona: Shizuru is a meticulous librarian who has lived in the town her entire life. She is known for her quiet demeanor and exceptional memory, often helping others find exactly what they're looking for. She takes pride in her work and values order and tradition.
+  Aoi — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses. Often says "you know" or "I mean" before finishing thoughts. Has a habit of looking around the room while talking as if checking for agreement.
+    Persona: Aoi is a librarian who has lived in town her whole life. She spends her days organizing books and helping people find information. She's known for being trustworthy and always tells the truth, even when it's difficult.
+</setup>
+<preamble>
+  Moderator: A new game begins. Welcome, Avery.
+  Moderator: Players in this game: Avery, Yuki, Wataru, Eva, Natsu, Shizuru, Aoi. Let the game begin.
+  Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+  Moderator (private to Eva): Your Mafia teammates are: Natsu. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+  Moderator (private to Natsu): Your Mafia teammates are: Eva. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+  Night 1 begins.
+  Pointing round 1:
+    Natsu points at Shizuru
+    Eva points at Shizuru
+  Moderator: During the night, Shizuru was killed.
+  Moderator: Night 1 ends.
+</night>
+<day>
+  Day 1 begins.
+  Moderator: Day breaks. Shizuru was killed last night. Shizuru was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Aoi: I mean, I'm really not sure what to think about this whole situation. You know, Shizuru was such a nice person, and now she's gone... I just hope we can figure out who did it before someone else gets hurt.
+  Yuki: I think it's important we stay calm and focus on facts, not rumors. Someone among us knows what happened to Shizuru.
+  Avery: I'm still watching everyone carefully before I commit.
+  Eva: I'm sure we can work this out together, Aoi. Let's not jump to conclusions about who did it — but I do hope we can trust each other to keep everyone safe.
+  Natsu: I agree with Yuki — we need to stay calm and figure this out together. I'm just glad we're all here, talking this through like a proper community.
+  Wataru: I think we should all just take a deep breath and try to remember what we saw or heard last night. That's the best way to figure this out.
+  Moderator: Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 2.
+  Natsu: I think it's important we stay calm and focus on facts, not rumors. I'm just glad we're all here, talking this through like a proper community.
+  Avery: Hard to say yet — I want to hear another round first.
+  Eva: I'm sure we'll find out who did this, but I think it's important we stay calm and keep talking. I'm just glad we're all here, working together.
+  Aoi: I mean, I'm starting to think that whoever killed Shizuru is still here with us — and I don't just mean that because she was a Citizen. You know, I've been thinking about what everyone said last night, and it's not adding up.
+  Yuki: I think Aoi makes a good point about not jumping to conclusions, but we should also be cautious about who we trust.
+  Wataru: I think we should all try to remember exactly what we did last night. That way, we can see if anyone is hiding something.
+  Moderator: Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 3.
+  Natsu: I think Aoi brings up a good point about not jumping to conclusions — but let's also keep our eyes open for any red flags. I'm just hoping we can figure this out together before anyone else gets hurt.
+  Aoi: I mean, Wataru, you mentioned remembering what we did last night — do you recall seeing anyone acting strange or out of place? You know, I'm just trying to piece this together.
+  Avery: I don't have a strong read on anyone right now.
+  Yuki: I think we should focus on what we actually know, not what we suspect. Aoi, you mentioned things not adding up — can you clarify what specifically you're referring to?
+  Eva: I'm sure we're all just trying to do what's best for our community, but I think it's important we listen carefully to each other's concerns — especially when someone feels uneasy about what happened last night.
+  Wataru: I think we should focus on what we know, not guesswork. I don't see anyone acting strange last night — but I also didn't see anyone doing anything suspicious.
+  Moderator: Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 4.
+  Natsu: I think we all need to take a step back and really listen to each other — there's something off about how Aoi is reacting, but I'm not sure what yet.
+  Wataru: I think we should all just try to stay calm and keep talking — that's how we'll figure this out. I don't see anyone doing anything suspicious, but maybe I'm missing something.
+  Aoi: I mean, I'm starting to think that whoever killed Shizuru is still here with us — and I don't just mean that because she was a Citizen. You know, I've been thinking about what everyone said last night, and it's not adding up.
+  Eva: I'm sure we'll figure this out together, but I do hope everyone is being completely honest with each other about what they saw last night.
+  Yuki: I think it's important we don't let fear cloud our judgment. If we're going to find the truth, we need to be careful about who we accuse — and make sure we're basing our suspicions on something more than just feelings.
+  Avery: Let's not rush; something will give itself away soon.
+  Moderator: Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 5.
+  Natsu: I think we're all feeling the weight of Shizuru's loss, but I agree with Yuki — let's not let fear make us accuse the wrong person. I'm still trying to figure out what really happened last night.
+  Wataru: I think we should all just try to remember what we were doing last night — that's the only way we'll find out who killed Shizuru. I didn't see anyone acting strange, but maybe I missed something.
+  Eva: I'm sure we're all just trying to do what's best for our community, but I think it's important we listen carefully to each other's concerns — especially when someone feels uneasy about what happened last night.
+  Yuki: I think it's odd that Aoi is so certain about things not adding up, yet hasn't pointed to anything specific. It feels like she's trying to stir suspicion without evidence.
+  Aoi: I mean, Yuki, you said I'm stirring suspicion without evidence — but I'm just trying to say that what people said last night doesn't match up with what we know. You know, I think we should all be more careful about who we trust.
+  Avery: I'm keeping an open mind, but a few of you worry me.
+  Moderator: Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 6.
+  Yuki: I think we're all on edge, but let's not let suspicion turn into paranoia. If Aoi has something specific in mind, she should share it.
+  Wataru: I think Yuki makes a good point about not letting suspicion turn into paranoia. I'm still trying to figure out what really happened last night.
+  Avery: Nothing's obvious to me yet — keep talking.
+  Aoi: I mean, I'm just trying to say that what people said last night doesn't match up with what we know. You know, I think we should all be more careful about who we trust.
+  Eva: I'm starting to think that if we're all being honest about last night, we might be overlooking something simple. I hope we're not letting fear twist what we're seeing.
+  Natsu: I think we're all just trying to piece this together, but I'm starting to feel like there's more going on than what we've heard so far — maybe we should all be a bit more specific about what we actually saw.
+  Moderator: The Day ends with no one executed.
+  Moderator: Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+</day>
+<night>
+  Night 2 begins.
+  Pointing round 1:
+    Eva points at Yuki
+    Natsu points at Yuki
+  Moderator: During the night, Yuki was killed.
+  Moderator: Night 2 ends.
+</night>
+<day>
+  Day 2 begins.
+  Moderator: Day breaks. Yuki was killed last night. Yuki was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Aoi: I mean, Yuki's death changes things — I'm starting to think we need to be more careful about who we trust now.
+  Natsu: I think we all need to stay sharp — Yuki's death is a reminder that we can't let our guard down. I'm still not convinced Aoi has nothing more specific to share.
+  Eva: I'm sure Yuki's passing has everyone on edge, but I think we need to stay focused on the facts — not just our feelings.
+  Wataru: I think we should all try to stay focused on what we know, not just what we feel. Yuki's death is sad, but we need to figure out who did it — not point fingers randomly.
+  Avery: I'm still watching everyone carefully before I commit.
+  Moderator: Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 2.
+  Natsu: I think we all need to be more careful about who we trust — especially after Yuki's death. I'm still not convinced Aoi has nothing more specific to share.
+  Wataru: I think we should all try to remember what we were doing last night — that's the only way we'll find out who killed Yuki. I didn't see anyone acting strange, but maybe I missed something.
+  Aoi: I mean, I'm just trying to say that what people said last night doesn't match up with what we know. You know, I think we should all be more careful about who we trust.
+  Eva: I'm sure we can work through this together, but I think it's important to stay focused on what actually happened last night — not just what we suspect.
+  Avery: Hard to say yet — I want to hear another round first.
+  Moderator: Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 3.
+  Wataru: I think we should all try to remember what we were doing last night — that's the only way we'll find out who killed Yuki. I didn't see anyone acting strange, but maybe I missed something.
+  Aoi: I'm starting to think that if we're all being honest about last night, we might be overlooking something simple. You know, I just want to make sure we're not letting fear twist what we're seeing.
+  Avery: I don't have a strong read on anyone right now.
+  Natsu: I think we're all feeling the pressure, but I reckon we should focus on what we actually saw last night — not just guesses. Maybe someone can remind us about their alibi?
+  Eva: I'm sure we're all doing our best to stay calm and think clearly about what happened last night. I hope we can trust each other enough to share what we actually saw.
+  Moderator: Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 4.
+  Wataru: I think we should all try to remember what we were doing last night — that's the only way we'll find out who killed Yuki. I didn't see anyone acting strange, but maybe I missed something.
+  Avery: Let's not rush; something will give itself away soon.
+  Natsu: I'm still not convinced Aoi has nothing more specific to share — maybe we should all be a bit more honest about what we actually saw last night.
+  Aoi: I mean, I'm starting to think we're all just repeating what we heard instead of sharing what we actually saw. You know, maybe someone should tell us about their alibi again — that might help us figure out who killed Yuki.
+  Eva: I'm starting to think that if we're all being honest about last night, we might be overlooking something simple. I hope we're not letting fear twist what we're seeing.
+  Moderator: Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 5.
+  Aoi: I mean, I'm starting to think we're all just repeating what we heard instead of sharing what we actually saw. You know, I just want to make sure we're not letting fear twist what we're seeing.
+  Eva: I'm sure we're all just feeling the weight of Yuki's loss, but let's not let fear cloud our judgment. I think it's clear that we need to stick to what we actually saw last night.
+  Wataru: I think we should all try to remember what we were doing last night — that's the only way we'll find out who killed Yuki. I didn't see anyone acting strange, but maybe I missed something.
+</round>
+</day>
+</transcript>

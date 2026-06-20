@@ -1,0 +1,93 @@
+Game 2 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10
+
+<transcript>
+<setup>
+  Avery — Law-abiding Citizen
+    (no persona recorded)
+  Ming — Law-abiding Citizen
+    Personality: honest and straightforward
+    Manner: speaks slowly and deliberately, choosing each word carefully. Uses simple, clear language with frequent pauses for emphasis. Often repeats key phrases for clarity.
+    Persona: Ming is a retired librarian who now spends his days tending to his garden and reading mystery novels. He's known throughout the town for his honesty and reliability. Recently, he's been noticing strange occurrences around town but hasn't figured out what to make of them yet.
+  Sofia — Mafia
+    Personality: Sofia is a warm, nurturing figure who exudes maternal care and wisdom. She’s the kind of person who remembers everyone’s names, offers comfort during tough times, and always has a gentle word or helpful suggestion ready. Her public persona is that of a peaceful, honest citizen, deeply rooted in community values.
+    Manner: Sofia speaks softly and deliberately, using a calm tone with a slight lilt. She often pauses to consider her words carefully, choosing them with thoughtfulness. When she speaks, it's as if she’s weaving stories from memory—often referencing past experiences or offering advice based on her “life lessons.” She uses phrases like “well, you know,” and “I’ve seen things” when she wants to imply that she has more experience than she lets on.
+    Public legend: Sofia is a beloved midwife in town, known for her kindness and quiet strength. She runs a small clinic where she helps birth babies, tend to the sick, and offer emotional support to those in need. She lives alone with her cat, Patches, and volunteers at the local church. Her reputation is spotless—everyone trusts her implicitly.
+    True self (hidden): Sofia was once a trusted enforcer for a powerful crime family, known as “The Healer” for her ability to silence people without a trace. She used her medical knowledge to eliminate threats in the most believable ways—she’d be found tending to victims after they were “accidentally” poisoned or injured by others. Her loyalty was never questioned, but she left that life when she became disillusioned with the violence and betrayal.
+  Jaxx — Law-abiding Citizen
+    Personality: honest and straightforward
+    Manner: speaks slowly and deliberately, with a slight drawl; uses simple, direct words and avoids idioms
+    Persona: Jaxx is a blacksmith who lives in the town's east district. He's known for his reliability and strong work ethic, often helping neighbors with their ironwork needs.
+  Tahsin — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, with a calm, measured tone. Uses simple, direct vocabulary and rarely stumbles over words. Often pauses before answering questions, as if weighing each word carefully.
+    Persona: Tahsin is a local librarian who enjoys quiet evenings reading mystery novels. He's known for his honesty and straightforward nature, always speaking his mind without hesitation. His days are filled with organizing books and helping townsfolk find the perfect read.
+  Nora — Mafia
+    Personality: Nora is a quiet, methodical woman who appears to be deeply invested in the community's welfare. She has an almost maternal instinct to help others, but her calm demeanor can sometimes come off as distant or unapproachable. She's observant and keeps a close eye on what's happening around her.
+    Manner: Nora speaks in measured, deliberate tones with a slight rasp to her voice, often pausing before responding to questions. She tends to use formal language and avoids casual expressions. Her speech is precise and well-constructed, as if she’s always thinking carefully about what she says.
+    Public legend: Nora works as a librarian in town, where she's known for her quiet dedication and attention to detail. She lives alone in a modest cottage on the edge of town and spends her evenings reading or tending to her garden. She's often seen walking her dog, a golden retriever named Buddy, and is well-respected by the townspeople for her kindness and reliability.
+    True self (hidden): Nora was recruited into the Mafia after her sister was killed in a "random" car accident. She took over her sister's role in the organization and has been working undercover for years. She uses her position as a librarian to gather information about town politics, and she's been careful never to let anyone suspect her true nature.
+  Kai — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key words for emphasis. Pauses frequently, as if double-checking their thoughts before speaking.
+    Persona: Kai is a librarian who has lived in the town his whole life. He enjoys quiet evenings reading and helping others find information. He's known for being trustworthy and straightforward, never getting involved in drama or gossip.
+</setup>
+<preamble>
+  Moderator: A new game begins. Welcome, Avery.
+  Moderator: Players in this game: Avery, Ming, Sofia, Jaxx, Tahsin, Nora, Kai. Let the game begin.
+  Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+  Moderator (private to Sofia): Your Mafia teammates are: Nora. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+  Moderator (private to Nora): Your Mafia teammates are: Sofia. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+  Night 1 begins.
+  Pointing round 1:
+    Nora points at Tahsin
+    Sofia points at Tahsin
+  Moderator: During the night, Tahsin was killed.
+  Moderator: Night 1 ends.
+</night>
+<day>
+  Day 1 begins.
+  Moderator: Day breaks. Tahsin was killed last night. Tahsin was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Jaxx: I'm not sure who to trust yet.
+  Kai: Jaxx seems nervous — that's not normal for a citizen. I don't trust how they're acting.
+  Nora: I'm concerned about Jaxx's behavior — they seem overly anxious, which is unusual for someone in their position.
+  Avery: I'm still watching everyone carefully before I commit.
+  Moderator: Sofia has called for a vote to execute Jaxx.
+  Moderator: Avery: No
+  Moderator: Ming: Yes
+  Moderator: Sofia: Yes
+  Moderator: Jaxx: No
+  Moderator: Nora: Yes
+  Moderator: Kai: Yes
+  Moderator: The tally: 4 Yes, 2 No.
+  Moderator: Jaxx has been executed. Jaxx was a Law-abiding Citizen.
+  Moderator: Day 1, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. Jaxx was executed today and was revealed to be Law-abiding Citizen.
+</round>
+</day>
+<night>
+  Night 2 begins.
+  Pointing round 1:
+    Nora points at Avery
+    Sofia points at Avery
+  Moderator: During the night, Avery was killed.
+  Moderator: The Mafia have won.
+
+Events this game:
+• Night 1: Tahsin (Law-abiding Citizen)
+• Day 1: Jaxx (Law-abiding Citizen) executed
+• Night 2: Avery (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Ming (Law-abiding Citizen), Sofia (Mafia), Jaxx (Law-abiding Citizen), Tahsin (Law-abiding Citizen), Nora (Mafia), Kai (Law-abiding Citizen)
+
+Who they really were:
+• Ming (Law-abiding Citizen) — honest and straightforward speaks slowly and deliberately, choosing each word carefully. Uses simple, clear language with frequent pauses for emphasis. Often repeats key phrases for clarity. Ming is a retired librarian who now spends his days tending to his garden and reading mystery novels. He's known throughout the town for his honesty and reliability. Recently, he's been noticing strange occurrences around town but hasn't figured out what to make of them yet.
+• Sofia (Mafia) — publicly presented as Sofia is a beloved midwife in town, known for her kindness and quiet strength. She runs a small clinic where she helps birth babies, tend to the sick, and offer emotional support to those in need. She lives alone with her cat, Patches, and volunteers at the local church. Her reputation is spotless—everyone trusts her implicitly. (Sofia is a warm, nurturing figure who exudes maternal care and wisdom. She’s the kind of person who remembers everyone’s names, offers comfort during tough times, and always has a gentle word or helpful suggestion ready. Her public persona is that of a peaceful, honest citizen, deeply rooted in community values. Sofia speaks softly and deliberately, using a calm tone with a slight lilt. She often pauses to consider her words carefully, choosing them with thoughtfulness. When she speaks, it's as if she’s weaving stories from memory—often referencing past experiences or offering advice based on her “life lessons.” She uses phrases like “well, you know,” and “I’ve seen things” when she wants to imply that she has more experience than she lets on.) … but was really a Mafioso: Sofia was once a trusted enforcer for a powerful crime family, known as “The Healer” for her ability to silence people without a trace. She used her medical knowledge to eliminate threats in the most believable ways—she’d be found tending to victims after they were “accidentally” poisoned or injured by others. Her loyalty was never questioned, but she left that life when she became disillusioned with the violence and betrayal.
+• Jaxx (Law-abiding Citizen) — honest and straightforward speaks slowly and deliberately, with a slight drawl; uses simple, direct words and avoids idioms Jaxx is a blacksmith who lives in the town's east district. He's known for his reliability and strong work ethic, often helping neighbors with their ironwork needs.
+• Tahsin (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a calm, measured tone. Uses simple, direct vocabulary and rarely stumbles over words. Often pauses before answering questions, as if weighing each word carefully. Tahsin is a local librarian who enjoys quiet evenings reading mystery novels. He's known for his honesty and straightforward nature, always speaking his mind without hesitation. His days are filled with organizing books and helping townsfolk find the perfect read.
+• Nora (Mafia) — publicly presented as Nora works as a librarian in town, where she's known for her quiet dedication and attention to detail. She lives alone in a modest cottage on the edge of town and spends her evenings reading or tending to her garden. She's often seen walking her dog, a golden retriever named Buddy, and is well-respected by the townspeople for her kindness and reliability. (Nora is a quiet, methodical woman who appears to be deeply invested in the community's welfare. She has an almost maternal instinct to help others, but her calm demeanor can sometimes come off as distant or unapproachable. She's observant and keeps a close eye on what's happening around her. Nora speaks in measured, deliberate tones with a slight rasp to her voice, often pausing before responding to questions. She tends to use formal language and avoids casual expressions. Her speech is precise and well-constructed, as if she’s always thinking carefully about what she says.) … but was really a Mafioso: Nora was recruited into the Mafia after her sister was killed in a "random" car accident. She took over her sister's role in the organization and has been working undercover for years. She uses her position as a librarian to gather information about town politics, and she's been careful never to let anyone suspect her true nature.
+• Kai (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key words for emphasis. Pauses frequently, as if double-checking their thoughts before speaking. Kai is a librarian who has lived in the town his whole life. He enjoys quiet evenings reading and helping others find information. He's known for being trustworthy and straightforward, never getting involved in drama or gossip.
+</night>
+</transcript>

@@ -1,0 +1,214 @@
+Game 1 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10
+
+<transcript>
+<setup>
+  Avery — Law-abiding Citizen
+    (no persona recorded)
+  Kai — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, with a tendency to over-explain simple points; uses basic vocabulary with frequent pauses for emphasis; often repeats key words for clarity
+    Persona: Kai is a librarian who has lived in the town his whole life. He spends his days organizing books and helping people find information. He's known for being reliable and straightforward, never getting involved in town gossip or drama.
+  Lila — Law-abiding Citizen
+    Personality: Warm and cautious
+    Manner: Speaks slowly and deliberately, often pausing to choose words carefully. Uses
+many qualifying phrases like "I think," "well, you know," and "if I may
+say." Has a tendency to repeat herself when nervous.
+    Persona: Lila is a librarian who has lived in the town her whole life. She enjoys
+reading, gardening, and volunteering at the local community center. She's
+known for her kindness and her ability to listen to others without judgment.
+  Hazeem — Mafia
+    Personality: Calm and methodical, with a quiet intensity that makes people trust his judgment. He has an almost monk-like dedication to his work and personal routines, which he maintains with unwavering consistency.
+    Manner: Speaks in measured, deliberate tones, often pausing before responding to ensure precision. His voice is low and steady, rarely raising above a calm whisper. He tends to use metaphors drawn from nature and agriculture—particularly farming and weather—to explain complex ideas.
+    Public legend: Hazeem is a respected gardener in the town, known for his meticulous care of the community's flower beds and vegetable gardens. He arrives early each morning with his tools, always wearing a worn straw hat and practical clothes. His garden is considered the pride of the town, and he often shares his wisdom about plant care with neighbors. He has no family ties to speak of, living alone in a small cottage on the edge of town.
+    True self (hidden): Hazeem was once a minor enforcer for a local crime syndicate before realizing the extent of their operations and fleeing. He now works as a mole within the town's social structure, gathering intelligence while maintaining his cover as a peaceful gardener. His goal is to expose the deeper criminal networks that threaten the town from within.
+  Mira — Law-abiding Citizen
+    Personality: Methodical and observant
+    Manner: Speaks slowly and deliberately, with a tendency to double-check her words before saying them. Uses precise vocabulary and often refers to things she's seen or heard in the past.
+    Persona: Mira is a librarian who has lived in the town her entire life. She spends her days organizing books and helping people find information. She's known for being quiet but incredibly reliable, always offering to help others with their research or reading needs.
+  Yuki — Law-abiding Citizen
+    Personality: quiet and observant
+    Manner: speaks slowly and deliberately, with frequent pauses for thought; uses precise, simple vocabulary; often checks her watch or glances around the room
+    Persona: Yuki is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being reliable and always remembers important details others forget.
+  Zane — Mafia
+    Personality: Calm, methodical, and perpetually slightly amused
+    Manner: Speaks in measured, deliberate tones with a dry wit. Uses subtle metaphors and often pauses before answering, as if weighing his words carefully.
+    Public legend: Zane is a quiet bookseller who runs a small, unassuming shop on the edge of town. He’s known for his meticulous attention to detail, his habit of always wearing gloves when handling books, and his ability to recall obscure facts from any text he's read. He rarely speaks unless spoken to, but those who know him trust his judgment implicitly.
+    True self (hidden): Zane was once a low-ranking enforcer for the Blackhand Syndicate before he was promoted to a higher position within the organization. He left the syndicate after a botched operation and now lives under an assumed identity, using his skills to manipulate situations from the shadows while pretending to be just another peaceful citizen.
+</setup>
+<preamble>
+  Moderator: A new game begins. Welcome, Avery.
+  Moderator: Players in this game: Avery, Kai, Lila, Hazeem, Mira, Yuki, Zane. Let the game begin.
+  Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+  Moderator (private to Hazeem): Your Mafia teammates are: Zane. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+  Moderator (private to Zane): Your Mafia teammates are: Hazeem. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+  Night 1 begins.
+  Pointing round 1:
+    Zane points at Avery
+    Hazeem points at Avery
+  Moderator: During the night, Avery was killed.
+  Moderator: Night 1 ends.
+</night>
+<day>
+  Day 1 begins.
+  Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Hazeem: I've been tending to my garden, but I noticed some unusual footprints near the fence this morning. It's odd for this time of day.
+  Mira: Hazeem, did those footprints lead toward the town center or away from it? I'm trying to piece together if there was a deliberate direction to them.
+
+I don't want to jump to conclusions, but I'd like to know more about what you saw.
+  Yuki: I noticed Lila was gone during the night, but she's been acting nervous lately. I'm not sure if that's just coincidence or if she's hiding something.
+  Zane: The footprints could mean many things, Hazeem. A traveler, perhaps, or someone simply out for a walk.
+  Lila: Well, you know, I did check on the town center's perimeter during the night, just to make sure everything was secure. I hope those footprints don't mean we're not as safe as we thought.
+  Kai: I think it's important that we all share what we did during the night, so we can figure out who might have been involved in Avery's death. Lila, you mentioned checking the perimeter — did you see anything suspicious while you were there?
+  Moderator: Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 2.
+  Kai: I think it's important that we all share what we did during the night, so we can figure out who might have been involved in Avery's death. Lila, you mentioned checking the perimeter — did you see anything suspicious while you were there?
+  Hazeem: Lila, you mentioned checking the perimeter — did you see anything suspicious while you were there?
+  Lila: I think it's important that we stay focused on the facts, and not let our suspicions stray too far from what we actually observed. If I may say, Kai, did you notice anything unusual about the area near the town center when you were out?
+  Mira: I noticed Lila, you mentioned checking the perimeter, but I didn't see you near the town center this morning. Were you perhaps closer to where Avery was killed?
+  Zane: I’m intrigued by the footprints, Hazeem. Did you happen to notice any signs of a struggle or other disturbances near where they were found?
+  Yuki: I checked the town center's perimeter myself during the night, and I didn't see any signs of a struggle or disturbances. I did notice that Lila was acting nervous, though.
+  Moderator: Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 3.
+  Zane: I’m still trying to piece together what happened last night. If Lila was indeed checking the perimeter, perhaps she saw something that could help us understand how Avery was killed.
+  Yuki: I didn't see anything unusual near the town center, but I did notice Lila seemed distracted when she returned. It's odd she was alone during the night if she was just checking the perimeter.
+  Mira: I noticed Lila was near the town center this morning, but she wasn't carrying anything that would suggest she'd been checking the perimeter. It's curious that she didn't mention seeing anything unusual.
+  Kai: I think it's important that we all be honest about what we saw and where we were. Lila, you said you checked the perimeter — did you see anything that could help us figure out how Avery was killed?
+  Hazeem: The footprints were faint, but they seemed to trail off toward the old mill. I’m not sure what that means, but it’s worth noting.
+  Lila: I think it's important that we keep our eyes open for any more signs of trouble, especially near the old mill. If I may say, Hazeem, did you notice anything else unusual about the area near the mill?
+  Moderator: Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 4.
+  Hazeem: The old mill has been abandoned for years—nobody should be going there at night, especially not this time of day.
+  Kai: I'm just trying to understand if anyone else saw anything near the old mill.
+  Mira: I'm still trying to understand the connection between the footprints and the old mill. Hazeem, did you see anyone near the mill before or after you found the footprints?
+  Yuki: I'm still not convinced about Lila's actions. If she was just checking the perimeter, why did she seem so nervous when she returned? And why wasn't she seen anywhere near the town center this morning?
+  Lila: I think it's important that we stay focused on the facts, and not let our suspicions stray too far from what we actually observed. If I may say, Yuki, did you see anyone near the old mill before or after you found the footprints?
+  Zane: The old mill has been abandoned for years—nobody should be going there at night, especially not this time of day.
+  Moderator: Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 5.
+  Mira: I'm still trying to understand the connection between the footprints and the old mill. Hazeem, did you see anyone near the mill before or after you found the footprints?
+  Yuki: I'm still not convinced Lila was just checking the perimeter. She seemed too nervous, and her story doesn't add up.
+  Lila: I think it's important that we stay focused on the facts, and not let our suspicions stray too far from what we actually observed. If I may say, Yuki, did you see anyone near the old mill before or after you found the footprints?
+  Hazeem: The old mill may hold more than just memories—it's been quiet too long for comfort.
+  Kai: I think it's important that we all be honest about what we saw and where we were. Yuki, you mentioned seeing Lila acting nervous — did you see her near the old mill at all?
+  Zane: The old mill has been quiet too long for comfort, especially with footprints leading right to its door. I wonder if someone finally decided to make a noise.
+  Moderator: Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 6.
+  Lila: I think it's important that we stay focused on the facts, and not let our suspicions stray too far from what we actually observed. If I may say, Zane, did you see anyone near the old mill before or after you found the footprints?
+  Yuki: I'm still unsure about Lila's story. She was acting nervous, and her movements don't add up.
+  Mira: I'm still not convinced Lila was just checking the perimeter. Her nervousness and lack of clear whereabouts don't align with her story.
+  Zane: The old mill has been quiet too long for comfort, especially with footprints leading right to its door. I wonder if someone finally decided to make a noise.
+  Hazeem: The mill's silence worries me more than the footprints. If someone's been there, they likely won't stay hidden forever.
+  Kai: I'm just trying to understand if anyone else saw anything near the old mill.
+  Moderator: The Day ends with no one executed.
+  Moderator: Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+</day>
+<night>
+  Night 2 begins.
+  Pointing round 1:
+    Hazeem points at Kai
+    Zane points at Kai
+  Moderator: During the night, Kai was killed.
+  Moderator: Night 2 ends.
+</night>
+<day>
+  Day 2 begins.
+  Moderator: Day breaks. Kai was killed last night. Kai was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Zane: The mill's silence worries me more than the footprints. If someone's been there, they likely won't stay hidden forever.
+  Lila: Well, you know, I'm just glad Kai is gone. I hope we can finally focus on the real issue at hand — that old mill.
+  Hazeem: Kai's death is troubling, but it only confirms what I've suspected — the mill is more than just a relic. Someone's been watching us, and they're not afraid to act.
+  Yuki: I'm still not convinced Lila's story about checking the perimeter. Her behavior has been too erratic, and she's avoided answering direct questions.
+  Mira: I'm still trying to understand why Kai was killed at the mill, and whether that was a coincidence or if someone was watching us.
+  Moderator: Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 2.
+  Hazeem: Kai's death feels like a warning — the mill isn't just a place, it's a stage where someone is testing us.
+  Mira: I need to understand why Kai was killed at the mill. If someone was watching us, they might have seen who killed him.
+  Zane: I'm not sure what we're really seeing here — a mill, footprints, a death. But if someone's been watching us, they're not just curious. They're calculating.
+  Yuki: I need to know who was near the mill when Kai was killed. That's the key to understanding what happened.
+  Lila: I think it's important that we stay focused on the facts, and not let our suspicions stray too far from what we actually observed. If I may say, Hazeem, did you see anyone near the mill before or after you found the footprints?
+  Moderator: Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 3.
+  Yuki: I need to know who was at the mill when Kai was killed. That's the key to understanding what happened.
+  Hazeem: Kai's death at the mill wasn't a coincidence — it was a message. The question is, who sent it?
+  Lila: I think it's clear that Kai's death was no accident — and I'm starting to believe the mill is where the killer is trying to send a message. If I may say, Yuki, did you see anyone near the mill when you noticed Lila acting nervous?
+  Mira: I need to understand why Kai was killed at the mill. If someone was watching us, they might have seen who killed him.
+  Zane: The mill has always been a place where secrets fester, not just footprints. If someone was watching us, they've made their presence known.
+  Moderator: Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 4.
+  Hazeem: I need to understand why Kai was killed at the mill. If someone was watching us, they might have seen who killed him.
+  Mira: Lila, you mentioned noticing footprints near the mill — can you clarify whether you saw them before or after Kai's death? That could help us pinpoint if someone was watching us closely.
+  Zane: The mill's been a silent witness too long. I think it's time we stopped pretending it's just an old relic.
+  Yuki: I need to know who was at the mill when Kai was killed. That's the key to understanding what happened.
+  Lila: I think it's clear that Kai's death was no accident — and I'm starting to believe the mill is where the killer is trying to send a message. If I may say, Zane, did you see anyone near the mill before or after you found the footprints?
+  Moderator: Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 5.
+  Hazeem: The mill has been quiet too long, and now we have a death to explain. I think it's time we stop guessing and start asking the right questions.
+  Yuki: I still don't trust how Lila's story keeps changing. If she was really just checking the perimeter, why does her account keep shifting?
+  Zane: The mill's been silent long enough. If someone's been watching, they're not just waiting — they're choosing their moment.
+  Mira: Lila, you've mentioned seeing footprints multiple times now — but you haven't said who else was near the mill when you saw them. That seems like a key detail we're missing.
+  Lila: I think it's important that we not let our fear of the mill cloud our judgment. If I may say, Zane, did you see anyone near the mill before or after you found the footprints?
+  Moderator: Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 6.
+  Hazeem: The mill's been silent, but silence isn't always peaceful — sometimes it's just waiting.
+  Zane: The mill has a way of drawing things into its shadow, whether they mean to be there or not.
+  Lila: I think it's clear that the mill is central to what happened, and I'm starting to believe the killer wants us to focus on it — if I may say, Hazeem, did you see anyone near the mill before or after you found the footprints?
+  Mira: I still think it's crucial to figure out who was at the mill before Kai's death. If Lila saw footprints, she might have seen someone else too — we need to know if that person is still here.
+  Yuki: I still don't trust how Lila's story keeps changing. If she was really just checking the perimeter, why does her account keep shifting?
+  Moderator: The Day ends with no one executed.
+  Moderator: Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+</day>
+<night>
+  Night 3 begins.
+  Pointing round 1:
+    Hazeem points at Lila
+    Zane points at Lila
+  Moderator: During the night, Lila was killed.
+  Moderator: The Mafia have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Night 2: Kai (Law-abiding Citizen)
+• Night 3: Lila (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Kai (Law-abiding Citizen), Lila (Law-abiding Citizen), Hazeem (Mafia), Mira (Law-abiding Citizen), Yuki (Law-abiding Citizen), Zane (Mafia)
+
+Who they really were:
+• Kai (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a tendency to over-explain simple points; uses basic vocabulary with frequent pauses for emphasis; often repeats key words for clarity Kai is a librarian who has lived in the town his whole life. He spends his days organizing books and helping people find information. He's known for being reliable and straightforward, never getting involved in town gossip or drama.
+• Lila (Law-abiding Citizen) — Warm and cautious Speaks slowly and deliberately, often pausing to choose words carefully. Uses
+many qualifying phrases like "I think," "well, you know," and "if I may
+say." Has a tendency to repeat herself when nervous. Lila is a librarian who has lived in the town her whole life. She enjoys
+reading, gardening, and volunteering at the local community center. She's
+known for her kindness and her ability to listen to others without judgment.
+• Hazeem (Mafia) — publicly presented as Hazeem is a respected gardener in the town, known for his meticulous care of the community's flower beds and vegetable gardens. He arrives early each morning with his tools, always wearing a worn straw hat and practical clothes. His garden is considered the pride of the town, and he often shares his wisdom about plant care with neighbors. He has no family ties to speak of, living alone in a small cottage on the edge of town. (Calm and methodical, with a quiet intensity that makes people trust his judgment. He has an almost monk-like dedication to his work and personal routines, which he maintains with unwavering consistency. Speaks in measured, deliberate tones, often pausing before responding to ensure precision. His voice is low and steady, rarely raising above a calm whisper. He tends to use metaphors drawn from nature and agriculture—particularly farming and weather—to explain complex ideas.) … but was really a Mafioso: Hazeem was once a minor enforcer for a local crime syndicate before realizing the extent of their operations and fleeing. He now works as a mole within the town's social structure, gathering intelligence while maintaining his cover as a peaceful gardener. His goal is to expose the deeper criminal networks that threaten the town from within.
+• Mira (Law-abiding Citizen) — Methodical and observant Speaks slowly and deliberately, with a tendency to double-check her words before saying them. Uses precise vocabulary and often refers to things she's seen or heard in the past. Mira is a librarian who has lived in the town her entire life. She spends her days organizing books and helping people find information. She's known for being quiet but incredibly reliable, always offering to help others with their research or reading needs.
+• Yuki (Law-abiding Citizen) — quiet and observant speaks slowly and deliberately, with frequent pauses for thought; uses precise, simple vocabulary; often checks her watch or glances around the room Yuki is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being reliable and always remembers important details others forget.
+• Zane (Mafia) — publicly presented as Zane is a quiet bookseller who runs a small, unassuming shop on the edge of town. He’s known for his meticulous attention to detail, his habit of always wearing gloves when handling books, and his ability to recall obscure facts from any text he's read. He rarely speaks unless spoken to, but those who know him trust his judgment implicitly. (Calm, methodical, and perpetually slightly amused Speaks in measured, deliberate tones with a dry wit. Uses subtle metaphors and often pauses before answering, as if weighing his words carefully.) … but was really a Mafioso: Zane was once a low-ranking enforcer for the Blackhand Syndicate before he was promoted to a higher position within the organization. He left the syndicate after a botched operation and now lives under an assumed identity, using his skills to manipulate situations from the shadows while pretending to be just another peaceful citizen.
+</night>
+</transcript>

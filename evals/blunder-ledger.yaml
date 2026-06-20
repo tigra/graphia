@@ -962,3 +962,100 @@ metrics:
     ci_low: 0.0
     ci_high: 0.7934567085261071
 notes: 'spec 018 day-round recap (default-on) — 10-game ollama baseline + qualitative gameplay review'
+---
+run:
+  date: '2026-06-20'
+  duration_seconds: 2077.294
+  metrics_version: 1
+  transcript_dir: '2026-06-20T14-17-09'
+code:
+  commit: 'a0ebfc95ef9242abb4eee58bbedd62db7d97a12d'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.30.10'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 10
+  seed: null
+  max_rounds: null
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  duration_seconds: 2077.294
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.2775401687666166
+  mafia:
+    wins: 7
+    rate: 0.7
+    ci_low: 0.39677321997956516
+    ci_high: 0.892210712513788
+  draw: 0
+  no_winner: 3
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 6
+    mafia: 3
+  by_day:
+    day_1: 5
+    day_2: 4
+metrics:
+  repetition:
+    rate: 0.4073394495412844
+    count: 222
+    denominator: 545
+    ci_low: 0.36687609508276475
+    ci_high: 0.44909995338003417
+  third_person_self_talk:
+    rate: 0.007339449541284404
+    count: 4
+    denominator: 545
+    ci_low: 0.002857716650670068
+    ci_high: 0.018717907354507388
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 7
+    ci_low: 0.0
+    ci_high: 0.35433884297520657
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 9
+    ci_low: 0.0
+    ci_high: 0.2991527535509594
+  peer_vote.initiation:
+    rate: 0.3333333333333333
+    count: 1
+    denominator: 3
+    ci_low: 0.0614903152761605
+    ci_high: 0.7923450448735121
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 6
+    ci_low: 0.0
+    ci_high: 0.3903430336530645
+notes: 'spec 019/020 effort-not-results: recap-into-prompts + game-time clock; vs baseline 2026-06-19T18-33-37'

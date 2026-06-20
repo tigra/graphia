@@ -1,0 +1,168 @@
+Game 8 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10
+
+<transcript>
+<setup>
+  Avery — Law-abiding Citizen
+    (no persona recorded)
+  Hsin-Yi — Mafia
+    Personality: Hsin-Yi is a meticulous, soft-spoken librarian who believes in order, knowledge, and the power of quiet observation. She has an almost supernatural ability to notice details others miss, which she channels into her work and personal life.
+    Manner: Hsin-Yi speaks slowly and deliberately, as if each word is carefully chosen. She tends to use indirect language and often pauses before responding, giving the impression of deep thought. Her tone is gentle but firm, never raising her voice or showing emotion.
+    Public legend: Hsin-Yi has lived in the town her entire life, working as a librarian where she helps people find exactly what they need. She’s known for being incredibly organized and always ready to lend a helping hand. People trust her with their secrets because she never judges and listens more than she speaks.
+    True self (hidden): Hsin-Yi was drawn into the Mafia after her family was threatened for witnessing a crime. She learned quickly how to blend in, using her calm demeanor and sharp mind to gather intelligence while maintaining her cover. Now, she uses her position as a librarian to observe and collect information, always staying one step ahead of her enemies.
+  Sofia — Law-abiding Citizen
+    Personality: honest and straightforward
+    Manner: speaks slowly and deliberately, using simple but precise language; often pauses to think before answering questions; avoids slang and uses formal grammar
+    Persona: Sofia is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being trustworthy and reliable, always keeping her word and never gossiping about others.
+  Amari — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, using simple vocabulary with a tendency to pause before important words. Often repeats key phrases for emphasis.
+    Persona: Amari is a librarian who loves quiet evenings and helping others find the right book. They are known in town for their kindness and reliability.
+  Nima — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses for emphasis; avoids filler words like "um" or "uh"
+    Persona: Nima is a librarian who loves reading mystery novels and solving puzzles. They work at the town's small public library, where they spend most of their days organizing books and helping residents find information. Nima has no secrets and is known for being trustworthy and reliable.
+  Kaiwen — Law-abiding Citizen
+    Personality: honest and ordinary
+    Manner: speaks slowly and deliberately, with a quiet confidence. Uses simple, direct language and avoids slang. Often pauses before answering questions, as if weighing their words carefully.
+    Persona: Kaiwen is a librarian who has lived in the town his whole life. He spends his days organizing books and helping people find information. He's known for being trustworthy and always tells the truth, even when it's inconvenient.
+  Milo — Mafia
+    Personality: Milo is a quiet, methodical man who appears deeply invested in the well-being of his neighbors. He has an unsettling tendency to know exactly what people are thinking before they say it, which makes him both unnerving and oddly comforting.
+    Manner: Milo speaks in measured, almost hypnotic tones, often pausing dramatically before delivering a statement that seems innocuous but carries weight. He avoids eye contact when lying and uses subtle gestures to emphasize his points. His voice is calm and gravelly, like someone who has spent years listening more than speaking.
+    Public legend: Milo is a retired librarian who lives alone in a small cottage at the edge of town. He spends his days tending to his garden and reading old newspapers. He's known for his kindness and his ability to remember every detail about people's lives, often offering unsolicited advice or bringing them small gifts. He never misses a town meeting and is always the first to volunteer for community projects.
+    True self (hidden): Milo was recruited into the Mafia by his own brother, who had fallen deep into debt with the organization. Initially, Milo refused, but after his brother was killed in an 'accident', he joined the family business out of vengeance. He now works as a trusted enforcer and information broker for the syndicate, using his quiet nature and public persona to gather intelligence without raising suspicion.
+</setup>
+<preamble>
+  Moderator: A new game begins. Welcome, Avery.
+  Moderator: Players in this game: Avery, Hsin-Yi, Sofia, Amari, Nima, Kaiwen, Milo. Let the game begin.
+  Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+  Moderator (private to Hsin-Yi): Your Mafia teammates are: Milo. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+  Moderator (private to Milo): Your Mafia teammates are: Hsin-Yi. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+  Night 1 begins.
+  Pointing round 1:
+    Milo points at Sofia
+    Hsin-Yi points at Sofia
+  Moderator: During the night, Sofia was killed.
+  Moderator: Night 1 ends.
+</night>
+<day>
+  Day 1 begins.
+  Moderator: Day breaks. Sofia was killed last night. Sofia was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Amari: I... I think we should all take a moment to really listen to what everyone is saying. It's important that we hear each other out.
+  Avery: I'm still watching everyone carefully before I commit.
+  Hsin-Yi: I agree with Amari — we must be cautious, but also honest in our words.
+  Milo: I hope we can all stay calm and trust each other. It's hard to believe Sofia is gone, but I think we need to focus on the truth.
+  Nima: I think we should focus on why Sofia was killed and who had the opportunity. Let's not jump to conclusions, but let's also not ignore the facts.
+  Kaiwen: I think we should focus on the facts and not let fear drive our decisions. Let's see if anyone can clarify their actions during the night.
+  Moderator: Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 2.
+  Kaiwen: I'm not sure who to trust yet.
+  Hsin-Yi: I think we should all take a moment to consider the facts carefully — Sofia’s death was not random. Let's focus on what we know, not what we fear.
+  Nima: I think we should all explain where we were and what we did during the night — that's the only way to figure out who killed Sofia.
+  Milo: I think we should all take a step back and really think about what we know versus what we're assuming. Sofia's death was a shock, but let's not let fear cloud our judgment.
+  Avery: Hard to say yet — I want to hear another round first.
+  Amari: I... I think we should all be honest about where we were during the night. That's the only way we'll find the truth.
+  Moderator: Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 3.
+  Kaiwen: I think we should all be clear about our actions during the night — that's the only way to find out who killed Sofia.
+  Amari: I think... I think we should all be clear about our actions during the night. That's the only way to find out who killed Sofia.
+  Milo: I think it's clear that we all need to be honest about our actions during the night — but I also think we should be careful about who we trust with that honesty.
+  Hsin-Yi: I believe we should all reflect on the fact that Sofia was killed during the night — it's clear someone among us had the means and opportunity.
+  Nima: I'm not sure who to trust yet.
+  Avery: I don't have a strong read on anyone right now.
+  Moderator: Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 4.
+  Nima: I think we need to figure out who was alone during the night — that's the key to understanding how Sofia was killed.
+  Milo: I think we're all feeling the weight of Sofia's loss. I hope we can trust that everyone's intentions are good, but we must also stay vigilant.
+  Amari: I think... I think we should all be clear about our actions during the night. That's the only way to find out who killed Sofia.
+  Avery: Let's not rush; something will give itself away soon.
+  Kaiwen: I think we should all focus on what we actually know, not on guesses.
+  Hsin-Yi: I think we should all consider that Sofia’s death was not just a random event — it was a deliberate act. That means someone among us had the opportunity, and perhaps even the intent.
+  Moderator: Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 5.
+  Hsin-Yi: I think it's important we all take a step back and really examine our own memories — sometimes the smallest detail can be the most telling.
+  Milo: I think we're all grasping for answers, but maybe we're overlooking something simple. Did everyone return to their homes after the meeting? I haven't seen anyone leave.
+  Avery: I'm keeping an open mind, but a few of you worry me.
+  Nima: I think we should all be honest about where we were during the night — that's the only way to find the truth.
+  Amari: I think... I think we should all be clear about our actions during the night. That's the only way to find out who killed Sofia.
+  Kaiwen: I think we all need to be more specific about our actions during the night. If someone was alone, that's worth noting.
+  Moderator: Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 6.
+  Avery: Nothing's obvious to me yet — keep talking.
+  Hsin-Yi: I think we're all forgetting that Sofia wasn't alone during the night — someone must have been with her. That detail could be crucial.
+  Nima: I think we should focus on who had access to Sofia's room — that's where the murder happened.
+  Amari: I think... I think we should all be clear about our actions during the night. That's the only way to find out who killed Sofia.
+  Kaiwen: I think we’re all focusing too much on where we were and not enough on what we saw. If someone was alone, that might be worth asking about.
+  Milo: I think we're all so focused on the night's events that we're missing something right in front of us. Has anyone checked the garden gate yet?
+  Moderator: The Day ends with no one executed.
+  Moderator: Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+</day>
+<night>
+  Night 2 begins.
+  Pointing round 1:
+    Hsin-Yi points at Amari
+    Milo points at Amari
+  Moderator: During the night, Amari was killed.
+  Moderator: Night 2 ends.
+</night>
+<day>
+  Day 2 begins.
+  Moderator: Day breaks. Amari was killed last night. Amari was a Law-abiding Citizen.
+  <round>
+  Round 1.
+  Hsin-Yi: I think it's worth noting that Amari was killed during the night — we must all consider who had the means and opportunity.
+  Kaiwen: I think we need to figure out who was alone during the night — that's the key to understanding how Amari was killed.
+  Avery: I'm still watching everyone carefully before I commit.
+  Milo: I think we all need to be honest about where we were during the night — that's the only way to find out who killed Amari.
+  Nima: I think we should all be clear about who was in the garden area last night — that's where Amari was found.
+  Moderator: Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 2.
+  Milo: I think we're all forgetting that Sofia's death and Amari's death happened in different locations. That could mean two different people were involved.
+  Avery: Hard to say yet — I want to hear another round first.
+  Kaiwen: I think we should focus on who was alone in the garden area — that’s where Amari was found, and it’s the only place someone could have acted without being seen.
+  Nima: I think we should focus on who was in the garden area during the night — that's where Amari was found, and it’s the only place someone could have acted without being seen.
+  Hsin-Yi: I think it's important we consider the timing of the deaths — if Sofia and Amari were killed in different locations, it could mean one of us was involved in both.
+  Moderator: Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 3.
+  Hsin-Yi: I think it's worth considering that if two murders happened in different locations, someone might have had the opportunity to move between them — or perhaps someone was already in the garden area when Amari was killed.
+  Nima: I'm not sure who to trust yet.
+  Kaiwen: I think we should focus on who was alone in the garden area during the night — that's where Amari was found, and it’s the only place someone could have acted without being seen.
+  Milo: I think it's strange that we're all focusing on the garden area, when Sofia was killed at the edge of town — surely someone must have been in both locations.
+  Avery: I don't have a strong read on anyone right now.
+  Moderator: Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 4.
+  Nima: I think we should all be clear about who was in the garden area during the night — that's where Amari was found, and it's the only place someone could have acted without being seen.
+  Milo: I think it's worth noting that both Sofia and Amari were killed at different locations — that means someone had to move between the garden and the edge of town, or was already present in both areas.
+  Kaiwen: I think we should all be clear about who was alone in the garden area during the night — that's where Amari was found, and it’s the only place someone could have acted without being seen.
+  Hsin-Yi: I think it's worth noting that if someone was in the garden area during the night, they would have had to move from the edge of town — unless they were already there when Amari was killed.
+  Avery: Let's not rush; something will give itself away soon.
+  Moderator: Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.
+</round>
+  <round>
+  Round 5.
+  Kaiwen: I think we’re all focusing too much on the garden area. What if someone was already at the edge of town when Sofia was killed — that would explain why the murders happened in different places.
+  Milo: I think we're overcomplicating this — if Sofia was killed at the edge of town and Amari in the garden, then someone had to have been in both places. That means one of us was already there when the first murder happened.
+  Nima: I still think we should focus on who was in the garden area during the night — that's where Amari was found, and it's the only place someone could have acted without being seen.
+</round>
+</day>
+</transcript>

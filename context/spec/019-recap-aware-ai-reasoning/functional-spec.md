@@ -1,7 +1,7 @@
 # Functional Specification: Recap-Aware AI Reasoning
 
 - **Roadmap Item:** Phase 6 → Recap-Driven Day Decisiveness → **Feed the Round Recap into AI Reasoning**
-- **Status:** Draft
+- **Status:** Completed
 - **Author:** Alexey Tigarev
 
 ---
@@ -25,19 +25,19 @@ Because this is non-deterministic AI behavior, success is framed as a **measured
 - **Each AI player reasons from the current standings on its turn.**
   - When a surviving AI player takes a Day turn — to speak, to call a vote, or to cast one — the latest standings (how many of each side are alive, how much of the Day's vote budget is spent, who has been executed today) are placed front-and-center for that player, rather than only appearing somewhere back in the scrolling conversation.
   - **Acceptance Criteria:**
-    - [ ] Given this change is in place, when a measured set of games is played, then the latest standings are part of what each AI player is given at its speaking and voting turns — verifiable in the recorded game data, not merely present somewhere earlier in the chat.
-    - [ ] Given a game in progress with the Mafia near parity, when an AI player speaks or votes late in a Day, then its contribution *can* reflect the standings (for example, noting how many remain, or that the town must act before it loses its majority) — observed in the game transcript, understood as possible-not-guaranteed behavior.
+    - [x] Given this change is in place, when a measured set of games is played, then the latest standings are part of what each AI player is given at its speaking and voting turns — verifiable in the recorded game data, not merely present somewhere earlier in the chat.
+    - [x] Given a game in progress with the Mafia near parity, when an AI player speaks or votes late in a Day, then its contribution *can* reflect the standings (for example, noting how many remain, or that the town must act before it loses its majority) — observed in the game transcript, understood as possible-not-guaranteed behavior.
 
 - **The decisiveness effect is measured against the committed baseline (effort-not-results).**
   - The change is evaluated, not assumed. The existing 10-game baseline is the "before"; a comparable run is the "after"; the Day-decisiveness indicators are compared and the result recorded.
   - **Acceptance Criteria:**
-    - [ ] Given the committed baseline and a comparable post-change measured run, when their Day-decisiveness indicators are compared in the quality ledger — how often players call votes, the share of games that reach a win/loss instead of stalling with no result, and the town's win rate — then the comparison is recorded.
-    - [ ] Given that comparison, when the result is reviewed, then the change is accepted whether the indicators improved or not; the hypothesis ("surfacing the standings front-and-center makes the AI town more decisive") is logged as confirmed or refuted, and a refuted result is a valid, complete outcome.
+    - [x] Given the committed baseline and a comparable post-change measured run, when their Day-decisiveness indicators are compared in the quality ledger — how often players call votes, the share of games that reach a win/loss instead of stalling with no result, and the town's win rate — then the comparison is recorded.
+    - [x] Given that comparison, when the result is reviewed, then the change is accepted whether the indicators improved or not; the hypothesis ("surfacing the standings front-and-center makes the AI town more decisive") is logged as confirmed or refuted, and a refuted result is a valid, complete outcome.
 
 - **The standings input stays truthful and reveals nothing hidden.**
   - The standings an AI player reasons from are exactly the public, already-derivable facts the recap shows — never another player's secret side.
   - **Acceptance Criteria:**
-    - [ ] Given an AI player reasons from the standings, when it does so, then it is given only the public recap facts (living counts by side, votes used today, who was executed today) and never the secret side of any living player.
+    - [x] Given an AI player reasons from the standings, when it does so, then it is given only the public recap facts (living counts by side, votes used today, who was executed today) and never the secret side of any living player.
 
 ---
 
