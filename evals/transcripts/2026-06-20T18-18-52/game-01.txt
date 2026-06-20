@@ -1,0 +1,206 @@
+Game 1 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10
+
+<transcript>
+<setup>
+Avery — Law-abiding Citizen
+(no persona recorded)
+Ishmael — Law-abiding Citizen
+Personality: quiet and observant
+Manner: speaks slowly and deliberately, with frequent pauses for thought; uses simple, direct language; often checks his watch or glances around the room
+Persona: Ishmael is a librarian who has lived in the town his whole life. He spends his days organizing books and helping people find information. He's known for being trustworthy and always willing to lend a listening ear.
+Kazuki — Mafia
+Personality: Kazuki is a quiet, methodical individual who exudes calm confidence. They are deeply empathetic yet emotionally reserved, often appearing to be in their own world while carefully observing others. Their integrity and reliability make them trustworthy, though they keep their true thoughts hidden behind a composed exterior.
+Manner: Kazuki speaks slowly and deliberately, choosing each word with care. They rarely interrupt and tend to respond with short, thoughtful phrases like "I see," "That's interesting," or "I hadn't considered that." Their tone is always neutral, never showing strong emotion, even when provoked.
+Public legend: Kazuki is a retired librarian who lives alone in a modest house on the edge of town. They spend their days tending to a small garden and reading classic novels. Known for their kindness and quiet presence, they are often seen at local events but never draw attention. They are deeply respected by neighbors for their discretion and helpful nature.
+True self (hidden): Kazuki was once a high-ranking enforcer in a powerful crime syndicate before faking their death to escape. They now operate under a new identity, using their quiet demeanor and ability to blend in as a way to stay hidden while still pulling the strings from behind the scenes.
+Lila — Law-abiding Citizen
+Personality: Calm and observant
+Manner: Speaks slowly and deliberately, often pausing to consider words. Uses simple, direct language with a tendency to repeat key phrases for emphasis. Never raises her voice, but her steady tone carries weight.
+Persona: Lila is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being trustworthy and always willing to lend a hand. Her quiet nature makes her a good listener, and people often come to her for advice.
+Nina — Mafia
+Personality: Nina is a quiet, methodical woman who believes in doing her job well and keeping to herself. She's not one for drama or gossip, but she has an unsettling ability to observe people with uncanny accuracy.
+Manner: Nina speaks slowly and deliberately, often pausing mid-sentence as if weighing each word carefully. Her voice is soft but steady, and she tends to look directly at whoever she's addressing while speaking.
+Public legend: Nina works as a librarian in town, where she’s known for being exceptionally organized and helpful. She lives alone in a small apartment near the library and rarely socializes outside of work hours. People often comment on how tidy and efficient she is, both at work and home.
+True self (hidden): Nina was recruited into the Mafia after her father was killed for refusing to pay protection money. She's been working undercover for years, using her quiet nature and ability to blend in as a way to stay safe while gathering intelligence. She's now one of the most trusted enforcers in the organization.
+Sakura — Law-abiding Citizen
+Personality: quiet and observant
+Manner: speaks softly, with frequent pauses for thought; uses gentle, descriptive language; often checks her watch or glances around the room
+Persona: Sakura is a librarian who loves quiet evenings and gardening. She’s known for her kindness and always offers to help others, even if it means staying up late to assist someone with their research or tending to a neighbor's plants during the week.
+Wesley — Law-abiding Citizen
+Personality: honest and straightforward
+Manner: speaks with slow, deliberate pacing; uses simple, direct vocabulary; often pauses before answering questions; tends to repeat key phrases for emphasis
+Persona: Wesley is a retired school librarian who enjoys gardening and reading mystery novels. He's known for his calm demeanor and willingness to help others in the community.
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Ishmael, Kazuki, Lila, Nina, Sakura, Wesley. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Kazuki): Your Mafia teammates are: Nina. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Nina): Your Mafia teammates are: Kazuki. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Nina points at Wesley
+Kazuki points at Wesley
+<kill>Wesley — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Wesley was killed last night. Wesley was a Law-abiding Citizen.
+<round>
+Round 1.
+Kazuki: That's interesting. I hadn't considered that.
+Sakura: Ishmael, you mentioned something about the night's events earlier — could you clarify what you meant by that? I didn't quite catch it.
+Ishmael: I'm not sure what Sakura means — I didn't say anything about the night's events earlier.
+Nina: I need to gather more information before making a move. Let's see how people are reacting to Wesley's death.
+Lila: I'm still trying to piece together what happened during the night. I don't think anyone else mentioned anything about the events, but I'd like to hear more from Ishmael about his earlier comments.
+Avery: I'm still watching everyone carefully before I commit.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Ishmael: I think we should focus on who seems overly confident in their statements. It's usually the killer who acts like they know something.
+Kazuki: I agree with Ishmael — it's worth noting how people react under pressure.
+Avery: Hard to say yet — I want to hear another round first.
+Sakura: Ishmael, your comment about confidence in statements — do you think it's more about how people speak, or how they *act*? I'm trying to understand your reasoning.
+Nina: I think we should pay close attention to how people react when their statements are questioned — it could reveal more than they intend.
+Lila: I think we should all be careful about who we trust — especially when someone acts like they know more than they're letting on.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+Avery: I don't have a strong read on anyone right now.
+Kazuki: I think we should all be cautious about jumping to conclusions too quickly.
+Nina: I think we should focus on the reactions — not just what people say, but how they respond when their words are challenged.
+Sakura: I'm still trying to figure out if Ishmael's earlier comment was just a general thought, or if he knew something more about the night's events.
+Ishmael: I'm still trying to figure out if anyone else was as confused as I was about the night's events. It seems like we're all trying to piece together the same puzzle, but some of us are acting like we already have the answer.
+Lila: I think we should all be careful about who we trust — especially when someone acts like they know more than they're letting on.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 4.
+Lila: I'm still not convinced anyone has a solid grasp of what happened last night.
+Kazuki: I think we should focus on the reactions — not just what people say, but how they respond when their words are challenged.
+Nina: I agree with Kazuki — it's the reactions that matter most. I'm still trying to understand what everyone's really thinking.
+Avery: Let's not rush; something will give itself away soon.
+Ishmael: I keep checking my watch — it's strange how everyone seems so sure of themselves when we're all still figuring things out.
+Sakura: Ishmael, you keep checking your watch — are you perhaps trying to signal something about the timing of events?
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 5.
+Kazuki: I think we're all feeling the pressure of not knowing what really happened last night. It's hard to tell who's hiding something.
+Nina: I'm still not convinced anyone has a solid grasp of what happened last night.
+Ishmael: I keep thinking the key is in how people react when their story doesn't add up — not what they say, but how they say it.
+Sakura: Ishmael, you keep checking your watch — are you perhaps trying to signal something about the timing of events?
+Avery: I'm keeping an open mind, but a few of you worry me.
+Lila: I think we're all grasping at straws, but I'm still not convinced anyone has a solid grasp of what happened last night. Let's focus on reactions — especially when someone's story doesn't add up.
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 6.
+Kazuki: I think we're all searching for answers in the wrong place. The real clues might be in what people *don’t* say.
+Ishmael: I’ve been watching how people react when their stories are challenged — it's not just about what they say, but how they hesitate.
+Nina: I think we're all looking for answers in the wrong place. The real clues might be in what people *don’t* say.
+Avery: Nothing's obvious to me yet — keep talking.
+Lila: I think we're all searching for answers in the wrong place. The real clues might be in what people *don’t* say.
+Sakura: Ishmael, you've been glancing at your watch frequently — does it mean something specific to you, or are we all just feeling the weight of uncertainty?
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Nina points at Ishmael
+Kazuki points at Ishmael
+<kill>Ishmael — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Ishmael was killed last night. Ishmael was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: I'm still watching everyone carefully before I commit.
+Nina: Ishmael's death is a setback, but it doesn't change the fact that we still need to be cautious about who among us might be hiding something.
+Kazuki: I think we should all be mindful of how quickly trust can dissolve when we're uncertain.
+Lila: I'm still not convinced anyone has a solid grasp of what happened last night.
+Sakura: I'm not sure who to trust yet.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Kazuki: I think we should focus on who among us hasn't spoken much yet — it might be telling.
+Sakura: Kazuki, you've been quiet lately — does that mean you're watching closely, or are you holding back on something?
+Nina: I think we should pay attention to who's been quiet — sometimes the most revealing thing is who stays silent when others are talking.
+Lila: I think we should pay attention to who's been quiet — it might be telling.
+Avery: Hard to say yet — I want to hear another round first.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+Sakura: I've been thinking about how everyone's reactions shifted after Ishmael's death. It feels like some of us are watching others more closely now.
+Avery: I don't have a strong read on anyone right now.
+Lila: I've been watching how people react when their stories are challenged — it's not just about what they say, but how they hesitate. I'm still not convinced anyone has a solid grasp of what happened last night.
+Kazuki: I agree with Nina — it's not just what people say, but how they react when pressed.
+Nina: I think we're all still processing Ishmael's death, but I'd like to know what everyone was doing during the night — it might help us understand who's been acting suspiciously.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 4.
+Sakura: I've been wondering if anyone else noticed how quiet Nina has been since Ishmael's death — it's not like her to stay so silent.
+Avery: Let's not rush; something will give itself away soon.
+Kazuki: I think it's worth considering that sometimes the most telling silence comes from someone who knows too much.
+Lila: I still think we're missing something basic. Nina, you've been quiet since Ishmael's death — what's your take on that?
+Nina: I've been observing everyone's reactions, and I think it's important that we all reflect on our own behavior during the night. It might be the key to understanding what happened.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 5.
+Sakura: I've been thinking about how everyone's stories don't quite align. It's not just suspicion — it's a disconnect in the details.
+Kazuki: I think we're all still trying to piece together what happened last night, but I'm starting to wonder if some of the details we've shared so far add up.
+Avery: I'm keeping an open mind, but a few of you worry me.
+Lila: I think we're all trying to piece together what happened last night, but I'm still not convinced anyone has a solid grasp of the truth yet.
+Nina: I think we're all still reeling from Ishmael's death, but I'd like to know what everyone was doing during the night — it might help us understand who's been acting suspiciously.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 6.
+Kazuki: I think we're all still trying to figure out what happened last night, but I'm starting to wonder if some of the details we've shared don't quite add up.
+Avery: Nothing's obvious to me yet — keep talking.
+Sakura: I think it's worth noting that everyone's accounts of the night still seem to be missing something crucial — I'm not sure we're hearing the whole truth.
+Nina: I think we're all still trying to figure out what happened last night, but I'm starting to wonder if some of the details we've shared don't quite add up.
+Lila: I think we're all still trying to figure out what happened last night, but I'm starting to wonder if some of the details we've shared don't quite add up.
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Kazuki points at Lila
+Nina points at Lila
+<kill>Lila — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Wesley (Law-abiding Citizen)
+• Night 2: Ishmael (Law-abiding Citizen)
+• Night 3: Lila (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Ishmael (Law-abiding Citizen), Kazuki (Mafia), Lila (Law-abiding Citizen), Nina (Mafia), Sakura (Law-abiding Citizen), Wesley (Law-abiding Citizen)
+
+Who they really were:
+• Ishmael (Law-abiding Citizen) — quiet and observant speaks slowly and deliberately, with frequent pauses for thought; uses simple, direct language; often checks his watch or glances around the room Ishmael is a librarian who has lived in the town his whole life. He spends his days organizing books and helping people find information. He's known for being trustworthy and always willing to lend a listening ear.
+• Kazuki (Mafia) — publicly presented as Kazuki is a retired librarian who lives alone in a modest house on the edge of town. They spend their days tending to a small garden and reading classic novels. Known for their kindness and quiet presence, they are often seen at local events but never draw attention. They are deeply respected by neighbors for their discretion and helpful nature. (Kazuki is a quiet, methodical individual who exudes calm confidence. They are deeply empathetic yet emotionally reserved, often appearing to be in their own world while carefully observing others. Their integrity and reliability make them trustworthy, though they keep their true thoughts hidden behind a composed exterior. Kazuki speaks slowly and deliberately, choosing each word with care. They rarely interrupt and tend to respond with short, thoughtful phrases like "I see," "That's interesting," or "I hadn't considered that." Their tone is always neutral, never showing strong emotion, even when provoked.) … but was really a Mafioso: Kazuki was once a high-ranking enforcer in a powerful crime syndicate before faking their death to escape. They now operate under a new identity, using their quiet demeanor and ability to blend in as a way to stay hidden while still pulling the strings from behind the scenes.
+• Lila (Law-abiding Citizen) — Calm and observant Speaks slowly and deliberately, often pausing to consider words. Uses simple, direct language with a tendency to repeat key phrases for emphasis. Never raises her voice, but her steady tone carries weight. Lila is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being trustworthy and always willing to lend a hand. Her quiet nature makes her a good listener, and people often come to her for advice.
+• Nina (Mafia) — publicly presented as Nina works as a librarian in town, where she’s known for being exceptionally organized and helpful. She lives alone in a small apartment near the library and rarely socializes outside of work hours. People often comment on how tidy and efficient she is, both at work and home. (Nina is a quiet, methodical woman who believes in doing her job well and keeping to herself. She's not one for drama or gossip, but she has an unsettling ability to observe people with uncanny accuracy. Nina speaks slowly and deliberately, often pausing mid-sentence as if weighing each word carefully. Her voice is soft but steady, and she tends to look directly at whoever she's addressing while speaking.) … but was really a Mafioso: Nina was recruited into the Mafia after her father was killed for refusing to pay protection money. She's been working undercover for years, using her quiet nature and ability to blend in as a way to stay safe while gathering intelligence. She's now one of the most trusted enforcers in the organization.
+• Sakura (Law-abiding Citizen) — quiet and observant speaks softly, with frequent pauses for thought; uses gentle, descriptive language; often checks her watch or glances around the room Sakura is a librarian who loves quiet evenings and gardening. She’s known for her kindness and always offers to help others, even if it means staying up late to assist someone with their research or tending to a neighbor's plants during the week.
+• Wesley (Law-abiding Citizen) — honest and straightforward speaks with slow, deliberate pacing; uses simple, direct vocabulary; often pauses before answering questions; tends to repeat key phrases for emphasis Wesley is a retired school librarian who enjoys gardening and reading mystery novels. He's known for his calm demeanor and willingness to help others in the community.
+</endgame>
+</transcript>
