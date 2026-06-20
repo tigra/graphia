@@ -197,6 +197,7 @@ async def _run_invocation(
             _diary_store,
             career_emitter=_career_emitter,
             day_round_recap_enabled=_config.day_round_recap_enabled,
+            recap_aware_reasoning_enabled=_config.recap_aware_reasoning_enabled,
         )
     except Exception as exc:  # noqa: BLE001
         logger.exception(

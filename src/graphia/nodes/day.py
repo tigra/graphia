@@ -276,6 +276,25 @@ def _render_standings(state: GameState) -> str:
     )
 
 
+def _standings_prompt_block(state: GameState, *, enabled: bool) -> str:
+    """Render the ``{standings}`` slot for the AI Day-speech / vote prompts.
+
+    The spec-019 recap-aware-reasoning ablation seam (ADR 011). When
+    ``enabled`` (the default), returns the labelled standings block —
+    ``"Current standings (act on these):\\n<body>\\n\\n"`` — whose trailing
+    blank line preserves the spacing the pre-flag template hard-coded between
+    the standings and the following section. When DISABLED, returns ``""`` so
+    the ``{standings}`` slot collapses to nothing and the prompt reverts to its
+    exact pre-019 form: NO label, NO body, no stray blank line. The standings
+    BODY itself is still owned solely by ``_render_standings`` (the single
+    source the public recap also consumes) — this only governs whether the
+    block is injected into the AI prompts.
+    """
+    if not enabled:
+        return ""
+    return f"Current standings (act on these):\n{_render_standings(state)}\n\n"
+
+
 # In-world clock for the Day's rounds (spec 020): round 1 is morning, advancing
 # one step per round toward midnight at round 6, so the recap reads like the Day
 # burning down toward Night. Indexed by ``round - 1`` after clamping.
@@ -511,12 +530,18 @@ def day_open(state: GameState) -> dict:
 def _ai_day_action(
     speaker: PlayerState,
     state: GameState,
+    *,
+    recap_aware_reasoning_enabled: bool = True,
 ) -> DayAction:
-    """Call Sonnet for the AI's speaking turn. Returns a validated DayAction.
+    """Call the gameplay model for the AI's speaking turn. Returns a DayAction.
 
     The AI may return ``kind='speak'`` (with text) or ``kind='vote'`` (with
     ``target_id``). Target validation is performed by the caller: an invalid
     target triggers a single retry, then falls back to a generic speak.
+
+    ``recap_aware_reasoning_enabled`` (spec 019 ablation flag, ADR 011) gates the
+    ``{standings}`` block: ON (default) injects the labelled standings; OFF
+    reverts the prompt to its pre-019 form (no standings block).
     """
     players = state.get("players", {})
     roster = _render_alive_roster(players)
@@ -545,7 +570,9 @@ def _ai_day_action(
                 win_condition=win_condition,
                 team_line=team_line,
                 persona=persona,
-                standings=_render_standings(state),
+                standings=_standings_prompt_block(
+                    state, enabled=recap_aware_reasoning_enabled
+                ),
                 roster=roster,
                 context=context,
             )
@@ -621,6 +648,7 @@ def day_turn(
     career_emitter: CareerEventEmitter | None = None,
     game_id: str | None = None,
     recap_enabled: bool = True,
+    recap_aware_reasoning_enabled: bool = True,
 ) -> dict:
     """Run exactly one player's Day turn, then advance bookkeeping.
 
@@ -739,7 +767,11 @@ def day_turn(
         # --------------------------------------------------------------
         # AI turn: may either speak or initiate a vote via DayAction.
         # --------------------------------------------------------------
-        action = _ai_day_action(player, state)
+        action = _ai_day_action(
+            player,
+            state,
+            recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
+        )
         if action.kind == "vote":
             assert action.target_id is not None  # validated in _ai_day_action
             active = _begin_vote(player.id, action.target_id, players)
@@ -806,8 +838,15 @@ def _ai_ballot(
     voter: PlayerState,
     target: PlayerState,
     state: GameState,
+    *,
+    recap_aware_reasoning_enabled: bool = True,
 ) -> Ballot:
-    """Ask the gameplay model for a Yes/No ballot. Conservative fallback."""
+    """Ask the gameplay model for a Yes/No ballot. Conservative fallback.
+
+    ``recap_aware_reasoning_enabled`` (spec 019 ablation flag, ADR 011) gates the
+    ``{standings}`` block: ON (default) injects the labelled standings; OFF
+    reverts the vote prompt to its pre-019 form (no standings block).
+    """
     players = state.get("players", {})
     context = _render_context(list(state.get("messages", [])), voter.id)
 
@@ -829,7 +868,9 @@ def _ai_ballot(
                 role_label=role_label,
                 win_condition=win_condition,
                 team_line=team_line,
-                standings=_render_standings(state),
+                standings=_standings_prompt_block(
+                    state, enabled=recap_aware_reasoning_enabled
+                ),
                 target=target.name,
                 relationship=relationship,
                 context=context,
@@ -858,6 +899,7 @@ def collect_votes(
     *,
     career_emitter: CareerEventEmitter | None = None,
     game_id: str | None = None,
+    recap_aware_reasoning_enabled: bool = True,
 ) -> dict:
     """Poll ONE voter per super-step. Replay-safe like ``day_turn``.
 
@@ -929,7 +971,12 @@ def collect_votes(
             # Target missing (shouldn't happen); conservative no.
             yes = False
         else:
-            ballot = _ai_ballot(voter, target, state)
+            ballot = _ai_ballot(
+                voter,
+                target,
+                state,
+                recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
+            )
             yes = ballot.yes
         if career_emitter is not None and game_id is not None:
             career_emitter.emit(

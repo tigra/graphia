@@ -84,6 +84,7 @@ def _assemble_graph(
     game_id: str,
     saver: SqliteSaver,
     recap_enabled: bool,
+    recap_aware_reasoning_enabled: bool,
 ) -> CompiledStateGraph:
     """Build the Graphia StateGraph topology and compile it with ``saver``.
 
@@ -129,11 +130,26 @@ def _assemble_graph(
     # post it. ``day_turn`` composes it onto its existing career-emitter
     # binding; ``day_close`` (a plain node) is wrapped in its own ``partial``.
     # Both builders thread ``recap_enabled`` so local and remote can't drift.
+    # Spec 019 (ADR 011): the recap-aware-reasoning flag is bound into the two
+    # AI-decision nodes — ``day_turn`` (which calls ``_ai_day_action``) and
+    # ``collect_votes`` (which calls ``_ai_ballot``) — alongside their existing
+    # bindings, so it gates the ``{standings}`` prompt block in both modes.
     builder.add_node(
-        "day_turn", partial(emit(day_turn), recap_enabled=recap_enabled)
+        "day_turn",
+        partial(
+            emit(day_turn),
+            recap_enabled=recap_enabled,
+            recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
+        ),
     )
     builder.add_node("vote_prompt", vote_prompt)
-    builder.add_node("collect_votes", emit(collect_votes))
+    builder.add_node(
+        "collect_votes",
+        partial(
+            emit(collect_votes),
+            recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
+        ),
+    )
     builder.add_node("resolve_vote", emit(resolve_vote))
     builder.add_node("day_close", partial(day_close, recap_enabled=recap_enabled))
     # Slice 8: win-condition detection + end screen. The same pure-read
@@ -268,6 +284,7 @@ def build_graph(
         game_id=thread_id,
         saver=saver,
         recap_enabled=config.day_round_recap_enabled,
+        recap_aware_reasoning_enabled=config.recap_aware_reasoning_enabled,
     )
     return graph, thread_id
 

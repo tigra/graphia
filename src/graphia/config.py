@@ -77,6 +77,13 @@ class GraphiaConfig:
     # exactly as before. Defaulted so tests constructing the config directly
     # stay valid.
     day_round_recap_enabled: bool = True
+    # Recap-aware AI reasoning (spec 019, retrofitted under ADR 011). The
+    # ablation off-switch: on by default; an explicit falsy
+    # ``GRAPHIA_RECAP_AWARE_REASONING`` reverts the AI Day-speech and vote
+    # prompts to their pre-019 form (no standings block injected). Mirrors the
+    # spec-018 ``day_round_recap_enabled`` precedent exactly. Defaulted so tests
+    # constructing the config directly stay valid.
+    recap_aware_reasoning_enabled: bool = True
 
 
 def _env_truthy(name: str) -> bool:
@@ -125,6 +132,9 @@ def load_config() -> GraphiaConfig:
 
     remote_mode = _env_truthy("GRAPHIA_REMOTE")
     day_round_recap_enabled = _env_flag("GRAPHIA_DAY_ROUND_RECAP", default=True)
+    recap_aware_reasoning_enabled = _env_flag(
+        "GRAPHIA_RECAP_AWARE_REASONING", default=True
+    )
     runtime_invocation_url = os.environ.get("GRAPHIA_RUNTIME_URL") or None
     memory_id = os.environ.get("GRAPHIA_MEMORY_ID") or None
     career_memory_id = os.environ.get("GRAPHIA_CAREER_MEMORY_ID") or None
@@ -268,4 +278,5 @@ def load_config() -> GraphiaConfig:
         num_citizens=num_citizens,
         num_mafia=num_mafia,
         day_round_recap_enabled=day_round_recap_enabled,
+        recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
     )

@@ -117,10 +117,7 @@ you speak, leave `target_id` unset.
 DAY_SPEAK_USER_TEMPLATE = """You are {speaker} — your secret role is {role_label}. {win_condition}
 {team_line}
 {persona}
-Current standings (act on these):
-{standings}
-
-Alive players at the table (name: id):
+{standings}Alive players at the table (name: id):
 {roster}
 
 Recent public discussion:
@@ -163,6 +160,14 @@ VOTE_FAILED_TEMPLATE = "The vote fails."
 # AI Day-speak / vote prompts WITHOUT the clock, so the public recap and the AI
 # prompts can never drift. The ``" status:"` substring is the test recap-detection
 # marker and must stay intact; the ``{standings}`` body stays byte-identical.
+#
+# In the AI prompts the ``{standings}`` slot carries the WHOLE labelled block
+# (``"Current standings (act on these):\n<body>\n\n"``), assembled by
+# ``_standings_prompt_block`` in ``nodes/day.py``. That block is gated by the
+# spec-019 recap-aware-reasoning ablation flag (ADR 011): with the flag OFF the
+# slot collapses to ``""`` and the prompt reverts to its pre-019 form (no
+# standings label and no body). This recap TEMPLATE is unaffected — it always
+# wraps the bare ``_render_standings`` body.
 DAY_ROUND_RECAP_TEMPLATE = "Day {day}, {clock} status: {standings}"
 
 AI_VOTE_SYSTEM = """You are a player in Graphia, a Mafia-style social-deduction
@@ -176,10 +181,7 @@ schema.
 
 AI_VOTE_USER_TEMPLATE = """You are {voter} — your secret role is {role_label}. {win_condition}
 {team_line}
-Current standings (act on these):
-{standings}
-
-A vote has been called to execute {target}.
+{standings}A vote has been called to execute {target}.
 {relationship}
 Recent public discussion:
 {context}

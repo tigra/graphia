@@ -39,6 +39,7 @@ def build_runtime_graph(
     *,
     career_emitter: CareerEventEmitter | None = None,
     day_round_recap_enabled: bool = True,
+    recap_aware_reasoning_enabled: bool = True,
 ) -> CompiledStateGraph:
     """Compile the Graphia StateGraph with a caller-supplied thread_id.
 
@@ -63,6 +64,13 @@ def build_runtime_graph(
     directly need not supply it. This is the anti-drift seam the
     module docstring's prior-incident note is about: both builders must thread
     the flag or local and remote diverge.
+
+    ``recap_aware_reasoning_enabled`` (spec 019, retrofitted under ADR 011) is
+    threaded the same way — the production entrypoint passes
+    ``load_config().recap_aware_reasoning_enabled`` — so the deployed Runtime
+    gates the AI Day-speech / vote ``{standings}`` block by the same ablation
+    flag as local mode. Same anti-drift requirement: both builders must thread
+    it. Defaults to ``True`` (matching the config default).
     """
     if diary_store is None:
         diary_store = InProcessDiaryStore()
@@ -81,4 +89,5 @@ def build_runtime_graph(
         game_id=thread_id,
         saver=saver,
         recap_enabled=day_round_recap_enabled,
+        recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
     )

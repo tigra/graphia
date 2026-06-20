@@ -42,10 +42,16 @@ import pytest
 from langchain_core.messages import HumanMessage
 
 import graphia.nodes.day as day_nodes
+from graphia.config import load_config
 from graphia.llm import Ballot, DayAction
 from graphia.nodes.day import _ai_ballot, _ai_day_action, _render_standings
 from graphia.prompts import AI_VOTE_USER_TEMPLATE, DAY_SPEAK_USER_TEMPLATE
 from graphia.state import GameState, KillRecord
+
+# The label that heads the injected standings block in both AI prompts. Its
+# presence/absence is the structural marker the spec-019 ablation flag toggles:
+# ON ⇒ the labelled block is injected; OFF ⇒ the block (label + body) is gone.
+_STANDINGS_LABEL = "Current standings (act on these):"
 
 # Reuse the spec-018 hand-built-state helpers verbatim — the standings body
 # ``_render_standings`` returns is the same text the spec-018 recap composer
@@ -539,3 +545,151 @@ def test_ai_vote_template_slot_guard_renders_with_standings() -> None:
     assert standings in rendered
     assert "Cleo" in rendered
     assert "Mara" in rendered
+
+
+# ==========================================================================
+# 4. Ablation off-switch — GRAPHIA_RECAP_AWARE_REASONING (ADR 011 retrofit)
+# ==========================================================================
+#
+# The ADR-011-required flag-off parity test. With the flag OFF the AI
+# Day-speech and vote prompts must revert to their PRE-019 form — no standings
+# label and no standings body — while ON (the default) keeps today's behaviour.
+# Both directions are driven through the REAL ``_ai_day_action`` /
+# ``_ai_ballot`` via the same content-recording ``_CapturingDayFake`` the ON
+# tests above use, so the assertion is on the actual rendered prompt.
+
+
+def test_flag_off_removes_standings_block_from_day_speak_prompt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Flag OFF ⇒ the Day-speak prompt carries NO standings label and NO body."""
+    state = _speak_state()
+    speaker = next(
+        p for p in state["players"].values() if p.is_alive and not p.is_human
+    )
+    fake = _CapturingDayFake(DayAction(kind="speak", text="A measured remark."))
+    monkeypatch.setattr(day_nodes, "get_large", lambda: fake)
+
+    _ai_day_action(speaker, state, recap_aware_reasoning_enabled=False)
+
+    prompt = _human_prompt(fake.messages_log[0])
+    assert _STANDINGS_LABEL not in prompt, (
+        "the standings label leaked into the Day-speak prompt with the flag off"
+    )
+    assert _render_standings(state) not in prompt, (
+        "the standings body leaked into the Day-speak prompt with the flag off"
+    )
+
+
+def test_flag_off_removes_standings_block_from_ai_ballot_prompt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Flag OFF ⇒ the AI vote prompt carries NO standings label and NO body."""
+    state = _speak_state()
+    living = [
+        p for p in state["players"].values() if p.is_alive and not p.is_human
+    ]
+    voter = living[0]
+    target = next(p for p in living if p.id != voter.id)
+    fake = _CapturingDayFake(Ballot(yes=False))
+    monkeypatch.setattr(day_nodes, "get_large", lambda: fake)
+
+    _ai_ballot(voter, target, state, recap_aware_reasoning_enabled=False)
+
+    prompt = _human_prompt(fake.messages_log[0])
+    assert _STANDINGS_LABEL not in prompt, (
+        "the standings label leaked into the AI vote prompt with the flag off"
+    )
+    assert _render_standings(state) not in prompt, (
+        "the standings body leaked into the AI vote prompt with the flag off"
+    )
+
+
+def test_flag_on_default_keeps_standings_block_in_both_prompts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Flag ON (the implicit default) ⇒ BOTH prompts carry the labelled block.
+
+    The contrast partner to the two flag-off tests: the same call sites WITHOUT
+    passing the flag (so the ``True`` default applies) inject the standings
+    label and body, proving the off-result above is attributable to the flag.
+    """
+    state = _speak_state()
+    living = [
+        p for p in state["players"].values() if p.is_alive and not p.is_human
+    ]
+    speaker = living[0]
+    target = next(p for p in living if p.id != speaker.id)
+    expected_body = _render_standings(state)
+
+    speak_fake = _CapturingDayFake(DayAction(kind="speak", text="A remark."))
+    monkeypatch.setattr(day_nodes, "get_large", lambda: speak_fake)
+    _ai_day_action(speaker, state)  # default recap_aware_reasoning_enabled=True
+    speak_prompt = _human_prompt(speak_fake.messages_log[0])
+    assert _STANDINGS_LABEL in speak_prompt
+    assert expected_body in speak_prompt
+
+    ballot_fake = _CapturingDayFake(Ballot(yes=False))
+    monkeypatch.setattr(day_nodes, "get_large", lambda: ballot_fake)
+    _ai_ballot(speaker, target, state)  # default flag on
+    ballot_prompt = _human_prompt(ballot_fake.messages_log[0])
+    assert _STANDINGS_LABEL in ballot_prompt
+    assert expected_body in ballot_prompt
+
+
+# ==========================================================================
+# 5. ``load_config()`` default-on semantics for GRAPHIA_RECAP_AWARE_REASONING
+# ==========================================================================
+#
+# Mirrors the spec-018 ``GRAPHIA_DAY_ROUND_RECAP`` config unit: unset/blank
+# ⇒ on (the documented default), truthy ⇒ on, explicit falsy ⇒ off.
+
+
+def test_load_config_recap_aware_default_on_when_unset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unset ⇒ recap-aware reasoning on (the documented default)."""
+    monkeypatch.delenv("GRAPHIA_RECAP_AWARE_REASONING", raising=False)
+    monkeypatch.setenv("AWS_BEARER_TOKEN_BEDROCK", "dummy")
+
+    assert load_config().recap_aware_reasoning_enabled is True
+
+
+@pytest.mark.parametrize("blank", ["", "   ", "\t"])
+def test_load_config_recap_aware_blank_is_default_on(
+    blank: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A blank/whitespace value is treated as unset ⇒ on (``_env_flag``)."""
+    monkeypatch.setenv("GRAPHIA_RECAP_AWARE_REASONING", blank)
+    monkeypatch.setenv("AWS_BEARER_TOKEN_BEDROCK", "dummy")
+
+    assert load_config().recap_aware_reasoning_enabled is True
+
+
+@pytest.mark.parametrize("truthy", ["1", "true", "TRUE", "yes", "on", "On"])
+def test_load_config_recap_aware_truthy_value_enables(
+    truthy: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Any truthy value keeps recap-aware reasoning on."""
+    monkeypatch.setenv("GRAPHIA_RECAP_AWARE_REASONING", truthy)
+    monkeypatch.setenv("AWS_BEARER_TOKEN_BEDROCK", "dummy")
+
+    assert load_config().recap_aware_reasoning_enabled is True
+
+
+@pytest.mark.parametrize(
+    "falsy", ["0", "false", "FALSE", "no", "off", "Off", "anything-else"]
+)
+def test_load_config_recap_aware_explicit_falsy_disables(
+    falsy: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An explicit falsy value (or any non-truthy token) disables the flag.
+
+    ``_env_flag`` returns truthy-set membership for a non-blank value, so every
+    value not in ``{1,true,yes,on}`` reads as off — the off-switch is the
+    documented ``0``/``false``/``no``/``off`` family, asserted here.
+    """
+    monkeypatch.setenv("GRAPHIA_RECAP_AWARE_REASONING", falsy)
+    monkeypatch.setenv("AWS_BEARER_TOKEN_BEDROCK", "dummy")
+
+    assert load_config().recap_aware_reasoning_enabled is False
