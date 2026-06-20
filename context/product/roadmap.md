@@ -82,7 +82,7 @@ _Once the game mechanics are solid, layer in the features that make Graphia feel
 
 - [ ] **Recap-Driven Day Decisiveness**
   - [ ] **Feed the Round Recap into AI Reasoning:** Surface the latest day-round recap **directly** in each surviving AI player's Day-speech and vote prompts — not only in the scrolling chat history — so they reason and act on the standing "N Law-abiding vs M Mafia" picture. The n=10 ollama review found the recap accurate at every round yet never acted upon (the town still wins 0/10), so this turns the shared situational summary into an actual decision input. (The day-decisiveness lever folded in now; the complementary force-a-vote and rule-awareness levers stay in the backlog.)
-  - [ ] **Game-Time in the Recap:** Add the current point in game time to the recap — **the round within the Day, beside the day number** — so every player has a clear sense of how far the Day has progressed and the mounting pressure to act before it ends.
+  - [x] **Game-Time in the Recap:** Add the current point in game time to the recap — **the round within the Day, beside the day number** — so every player has a clear sense of how far the Day has progressed and the mounting pressure to act before it ends.
 
 - [ ] **Browsable-Transcript Round Labels**
   - [ ] **Per-Round Transcript Labels:** Label each engine speaking-round in the preserved eval transcripts. Today a single "Round" block spans several real rounds, which misreads the game's structure for a human reviewer — and would mislead the Phase-7 LLM-as-Judge that reads these transcripts. Each round (and each Moderator recap within it) should be attributable to its true round number.

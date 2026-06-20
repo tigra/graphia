@@ -1,7 +1,7 @@
 # Functional Specification: Game-Time in the Recap
 
 - **Roadmap Item:** Phase 6 → Recap-Driven Day Decisiveness → **Game-Time in the Recap**
-- **Status:** Draft
+- **Status:** Completed
 - **Author:** Alexey Tigarev
 
 ---
@@ -34,16 +34,16 @@ A Day that ends early — because a vote executes someone, or the day's votes ar
 - **The recap shows an in-world time of day for the current round, beside the day number.**
   - Each round's recap carries the time-of-day for that round, drawn from the mapping above (9 AM at round 1, advancing to midnight at round 6).
   - **Acceptance Criteria:**
-    - [ ] Given the first round of a Day completes, when its recap appears, then it shows the day number and the time **9 AM**.
-    - [ ] Given consecutive rounds pass within a Day, when each round's recap appears, then the time advances one step per round in the order 9 AM → 12 PM → 3 PM → 6 PM → 9 PM → 12 AM.
-    - [ ] Given a Day runs to its sixth round, when that round's recap appears, then it shows **12 AM (midnight)** — the latest time the clock reaches.
-    - [ ] Given a Day ends early at, say, round 3 (a vote executes someone), when the Day's closing recap appears, then the clock shows **3 PM** and does not jump ahead to midnight.
+    - [x] Given the first round of a Day completes, when its recap appears, then it shows the day number and the time **9 AM**.
+    - [x] Given consecutive rounds pass within a Day, when each round's recap appears, then the time advances one step per round in the order 9 AM → 12 PM → 3 PM → 6 PM → 9 PM → 12 AM.
+    - [x] Given a Day runs to its sixth round, when that round's recap appears, then it shows **12 AM (midnight)** — the latest time the clock reaches.
+    - [x] Given a Day ends early at, say, round 3 (a vote executes someone), when the Day's closing recap appears, then the clock shows **3 PM** and does not jump ahead to midnight.
 
 - **The clock reads naturally and changes nothing else.**
   - The time marker is a brief, natural part of the Moderator's recap line; the rest of the recap is untouched.
   - **Acceptance Criteria:**
-    - [ ] Given any recap, when it is read alongside the standings, then the time marker is brief and fits the Moderator's neutral narrating voice.
-    - [ ] Given the clock is present, when the rest of the recap is read, then the standings (living counts by side), the votes-called-today count, and the executed-today line are all unchanged.
+    - [x] Given any recap, when it is read alongside the standings, then the time marker is brief and fits the Moderator's neutral narrating voice.
+    - [x] Given the clock is present, when the rest of the recap is read, then the standings (living counts by side), the votes-called-today count, and the executed-today line are all unchanged.
 
 ---
 

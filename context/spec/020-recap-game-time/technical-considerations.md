@@ -1,7 +1,7 @@
 # Technical Specification: Game-Time in the Recap
 
 - **Functional Specification:** `./functional-spec.md`
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 ---
