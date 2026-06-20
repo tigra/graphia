@@ -508,3 +508,399 @@ def test_render_all_defensive_inputs_at_once_does_not_raise() -> None:
 
     assert "<transcript>" in doc
     assert "</transcript>" in doc
+
+
+# ===========================================================================
+# 5. Per-round Day labels (spec 021) — round splitting keys on ``day_rounds``.
+#
+# These helpers build multi-round Days whose ``day_turn`` wrap deltas carry the
+# engine's own ``day_rounds`` counter (the authoritative round-boundary signal),
+# optionally with the closing recap ``SystemMessage`` the engine attaches to the
+# same wrap delta. The renderer must split a Day into one ``<round>`` block per
+# wrap, reset numbering per Day, hold each recap inside the round it closes, keep
+# a *failed* vote inside its round, and land all Day-ending content in the last
+# round with no empty trailing block.
+# ===========================================================================
+
+# Two-player surviving roster keeps each helper's per-round shape obvious; ids
+# differ from names so an id-vs-name confusion would fail the by-name reads.
+_ROUND_PLAYERS = {
+    "p-mira": _player("p-mira", "Mira", "law_abiding", persona=_CITIZEN_PERSONA),
+    "p-bo": _player("p-bo", "Bo", "law_abiding", persona=_CITIZEN2_PERSONA),
+    "p-dario": _player("p-dario", "Dario", "mafia", persona=_MAFIA_PERSONA),
+}
+
+
+def _recap_for(round_number: int) -> str:
+    """A UNIQUE per-round recap marker so each can be attributed to one block."""
+    return f"Status recap closing round {round_number}."
+
+
+def _wrap_round_delta(
+    round_number: int, *, with_recap: bool
+) -> dict[str, Any]:
+    """One round-robin WRAP super-step: the round's last speech (+ optional recap).
+
+    Mirrors ``_round_complete_update``: a single ``day_turn`` delta that carries
+    the new ``day_rounds`` count AND, when recaps are enabled, the closing recap
+    ``SystemMessage`` appended after the speech. As the renderer's docstring
+    notes, one such delta can stand in for a whole speaking round — it both fills
+    and CLOSES round ``round_number``.
+    """
+    messages: list[Any] = [
+        AIMessage(content=f"My piece for round {round_number}.", name="Mira"),
+    ]
+    if with_recap:
+        messages.append(SystemMessage(content=_recap_for(round_number)))
+    return {"day_turn": {"messages": messages, "day_rounds": round_number}}
+
+
+def _multi_round_day_events(
+    day_number: int, round_count: int, *, with_recap: bool = True
+) -> list[dict[str, Any]]:
+    """A Day that runs ``round_count`` genuine speaking rounds, each one wrap.
+
+    ``day_open`` opens the Day; each round is a single wrap delta carrying the
+    next ``day_rounds`` value (1, 2, …) so the renderer opens a fresh ``<round>``
+    per wrap. ``with_recap`` toggles whether the closing recap rides along (the
+    recap-off / ``recap_enabled=False`` parity case).
+    """
+    events: list[dict[str, Any]] = [
+        {
+            "day_open": {
+                "messages": [SystemMessage(content=f"Day {day_number} breaks.")],
+            }
+        },
+    ]
+    for round_number in range(1, round_count + 1):
+        events.append(_wrap_round_delta(round_number, with_recap=with_recap))
+    return events
+
+
+def _round_blocks(day_block: str) -> list[str]:
+    """Split one ``<day>`` block string into its ``<round>`` block substrings."""
+    blocks: list[str] = []
+    cursor = 0
+    while True:
+        start = day_block.find("<round>", cursor)
+        if start == -1:
+            break
+        end = day_block.find("</round>", start)
+        assert end != -1, "an opened <round> must be closed"
+        blocks.append(day_block[start : end + len("</round>")])
+        cursor = end + len("</round>")
+    return blocks
+
+
+def _render_one_day(events: list[dict[str, Any]]) -> str:
+    """Render a single-Day synthetic log and return only its ``<day>`` block."""
+    doc = render_transcript(
+        events, _ROUND_PLAYERS, game_index=1, run_meta=None
+    )
+    start = doc.index("<day>")
+    end = doc.index("</day>") + len("</day>")
+    return doc[start:end]
+
+
+# --- §2.1 — each speaking round is its own labeled block --------------------
+
+
+def test_six_wraps_render_six_round_blocks_labeled_one_through_six() -> None:
+    """§2.1: a Day with six wrap deltas renders six ``<round>`` blocks, Round 1..6.
+
+    The count of ``<round>`` blocks equals the number of speaking rounds played,
+    and the ``Round k.`` labels appear in ascending order — the reviewer can
+    count the labels to recover the true round count.
+    """
+    day = _render_one_day(_multi_round_day_events(1, 6))
+
+    assert day.count("<round>") == 6
+    # Each label is present, and they appear in strict ascending order.
+    label_positions = [day.index(f"Round {k}.") for k in range(1, 7)]
+    assert label_positions == sorted(label_positions)
+    # No Round 7 — numbering stops at the real round count.
+    assert "Round 7." not in day
+
+
+def test_round_block_count_equals_speaking_round_count() -> None:
+    """§2.1: the ``<round>`` count tracks the number of wraps for several sizes."""
+    for round_count in (1, 2, 3, 5):
+        day = _render_one_day(_multi_round_day_events(1, round_count))
+        assert day.count("<round>") == round_count
+        assert f"Round {round_count}." in day
+        assert f"Round {round_count + 1}." not in day
+
+
+# --- §2.3 — each Moderator recap closes the round it summarizes -------------
+
+
+def test_each_recap_is_the_last_line_inside_the_round_it_closes() -> None:
+    """§2.3: each round's unique recap is the final content line of its own block.
+
+    Each wrap carries a distinguishable recap string; that string must appear
+    inside the block labeled with the same round number, must be that block's
+    final content line (after the speech), and must NOT appear in any other
+    block.
+    """
+    day = _render_one_day(_multi_round_day_events(1, 3))
+    blocks = _round_blocks(day)
+    assert len(blocks) == 3
+
+    for index, block in enumerate(blocks, start=1):
+        recap = _recap_for(index)
+        # The recap belongs to THIS round's block...
+        assert recap in block, f"round {index} recap missing from its block"
+        # ...and to no OTHER round's block.
+        for other in range(1, 4):
+            if other != index:
+                assert _recap_for(other) not in block
+
+        # The recap is the LAST content line of the block (after the speech):
+        # only the closing </round> tag follows it.
+        content_lines = [
+            line.strip()
+            for line in block.splitlines()
+            if line.strip()
+            and not line.strip().startswith("<round>")
+            and not line.strip().startswith("</round>")
+        ]
+        assert content_lines[-1] == f"Moderator: {recap}"
+        # The speech precedes the recap inside the same block.
+        assert block.index(f"round {index}") < block.index(recap)
+
+
+def test_no_round_block_holds_another_rounds_recap() -> None:
+    """§2.3: at most one closing recap per block; no cross-round recap leakage."""
+    day = _render_one_day(_multi_round_day_events(1, 4))
+    blocks = _round_blocks(day)
+
+    for index, block in enumerate(blocks, start=1):
+        recaps_present = [
+            other for other in range(1, 5) if _recap_for(other) in block
+        ]
+        assert recaps_present == [index]
+
+
+# --- §2.1 reset — numbering restarts each Day ------------------------------
+
+
+def test_round_numbering_resets_at_the_start_of_each_day() -> None:
+    """§2.1: the second Day's first block is ``Round 1.`` (numbering resets).
+
+    Day 1 runs three rounds, Day 2 runs two; the second ``<day>`` section must
+    begin its own ``Round 1.`` rather than continuing from Day 1's count.
+    """
+    events = _multi_round_day_events(1, 3) + _multi_round_day_events(2, 2)
+    doc = render_transcript(
+        events, _ROUND_PLAYERS, game_index=1, run_meta=None
+    )
+
+    first_day_start = doc.index("<day>")
+    second_day_start = doc.index("<day>", first_day_start + 1)
+    day1 = doc[first_day_start:second_day_start]
+    day2 = doc[second_day_start:]
+
+    assert day1.count("<round>") == 3
+    assert day2.count("<round>") == 2
+    # Day 2 restarts numbering at Round 1 and stops at its own count.
+    assert "Round 1." in day2
+    assert "Round 3." not in day2
+
+
+# --- §2.2 — a failed vote stays inside its round ----------------------------
+
+
+def test_failed_vote_stays_inside_its_round_without_opening_a_new_block() -> None:
+    """§2.2: a failed vote (``day_votes_called``) does NOT open a new ``<round>``.
+
+    A round contains speeches, then a failed-vote tally + "vote fails" line, then
+    more speech, then its wrap. The whole pass renders as ONE block: the round
+    count is unchanged by the failed vote, and the vote lines sit inside the same
+    block as that round's speeches.
+    """
+    tally_line = "Vote tally — Yes 1, No 2."
+    fails_line = "The vote fails. The Day continues."
+    events: list[dict[str, Any]] = [
+        {
+            "day_open": {
+                "messages": [SystemMessage(content="Day 1 breaks.")],
+            }
+        },
+        {
+            "day_turn": {
+                "messages": [
+                    AIMessage(content="Opening remarks.", name="Mira"),
+                ]
+            }
+        },
+        {
+            "resolve_vote": {
+                "messages": [
+                    SystemMessage(content=tally_line),
+                    SystemMessage(content=fails_line),
+                ],
+                "day_votes_called": 1,
+            }
+        },
+        # The same speaking pass continues, then wraps as round 1.
+        _wrap_round_delta(1, with_recap=True),
+    ]
+    day = _render_one_day(events)
+    blocks = _round_blocks(day)
+
+    # The failed vote did NOT open a new round: exactly one block.
+    assert day.count("<round>") == 1
+    assert len(blocks) == 1
+    only = blocks[0]
+    # The tally + "vote fails" lines live INSIDE that single round block.
+    assert tally_line in only
+    assert fails_line in only
+    # Alongside that round's speech and its closing recap.
+    assert "Opening remarks." in only
+    assert _recap_for(1) in only
+
+
+def test_failed_vote_then_two_more_rounds_renders_three_blocks() -> None:
+    """§2.2: a failed vote inside round 1 leaves later round numbering intact.
+
+    Round 1 holds a failed vote and wraps; rounds 2 and 3 follow. The failed
+    vote must not inflate the count — exactly three blocks, labeled 1..3.
+    """
+    events: list[dict[str, Any]] = [
+        {"day_open": {"messages": [SystemMessage(content="Day 1 breaks.")]}},
+        {
+            "resolve_vote": {
+                "messages": [
+                    SystemMessage(content="Vote tally — Yes 1, No 2."),
+                    SystemMessage(content="The vote fails."),
+                ],
+                "day_votes_called": 1,
+            }
+        },
+        _wrap_round_delta(1, with_recap=True),
+        _wrap_round_delta(2, with_recap=True),
+        _wrap_round_delta(3, with_recap=True),
+    ]
+    day = _render_one_day(events)
+
+    assert day.count("<round>") == 3
+    for k in (1, 2, 3):
+        assert f"Round {k}." in day
+    assert "Round 4." not in day
+
+
+# --- §2.5 — Day endings land in the last block -----------------------------
+
+
+def test_executed_vote_reveal_lands_in_the_final_round_no_empty_block() -> None:
+    """§2.5(a): an executed-vote reveal sits inside the final round; no empty block.
+
+    Two rounds wrap, then a passing vote ends the Day. The deciding tally +
+    execution reveal must land inside the LAST round block (round 2), and there
+    must be no spurious empty ``<round></round>`` after it.
+    """
+    tally_line = "Vote tally — Yes 2, No 0."
+    reveal_line = "Dario was executed. Dario was a Mafia."
+    events: list[dict[str, Any]] = [
+        {"day_open": {"messages": [SystemMessage(content="Day 1 breaks.")]}},
+        _wrap_round_delta(1, with_recap=True),
+        _wrap_round_delta(2, with_recap=True),
+        {
+            "resolve_vote": {
+                "messages": [
+                    SystemMessage(content=tally_line),
+                    SystemMessage(content=reveal_line),
+                ],
+                "kill_log": [
+                    {"cycle": 1, "name": "Dario", "cause": "execution"}
+                ],
+            }
+        },
+    ]
+    day = _render_one_day(events)
+    blocks = _round_blocks(day)
+
+    # Two rounds, not three — the post-wrap vote did not open an empty block.
+    assert day.count("<round>") == 2
+    assert len(blocks) == 2
+    assert "<round></round>" not in day.replace("\n", "").replace(" ", "")
+    # The deciding tally + execution reveal are inside the LAST block.
+    last = blocks[-1]
+    assert tally_line in last
+    assert reveal_line in last
+    # And not duplicated into the first block.
+    assert reveal_line not in blocks[0]
+
+
+def test_no_execution_close_lands_in_the_final_round_no_empty_block() -> None:
+    """§2.5(b): a no-execution close + final recap sit inside the final round.
+
+    Three rounds wrap (the last is the round-cap wrap), then ``day_close`` emits
+    the "Day ends with no one executed." line and the Day's final recap. Both
+    must land inside the LAST round block, with no empty block following.
+    """
+    no_exec_line = "The Day ends with no one executed."
+    final_recap = "Final status recap for the Day."
+    events: list[dict[str, Any]] = [
+        {"day_open": {"messages": [SystemMessage(content="Day 1 breaks.")]}},
+        _wrap_round_delta(1, with_recap=True),
+        _wrap_round_delta(2, with_recap=True),
+        _wrap_round_delta(3, with_recap=True),
+        {
+            "day_close": {
+                "messages": [
+                    SystemMessage(content=no_exec_line),
+                    SystemMessage(content=final_recap),
+                ]
+            }
+        },
+    ]
+    day = _render_one_day(events)
+    blocks = _round_blocks(day)
+
+    # Three rounds — the final wrap + day_close did not open a fourth, empty one.
+    assert day.count("<round>") == 3
+    assert len(blocks) == 3
+    assert "<round></round>" not in day.replace("\n", "").replace(" ", "")
+    # The day-ending content lands in the LAST round block.
+    last = blocks[-1]
+    assert no_exec_line in last
+    assert final_recap in last
+    # The final recap is the LAST content line of the final block.
+    content_lines = [
+        line.strip()
+        for line in last.splitlines()
+        if line.strip()
+        and not line.strip().startswith("<round>")
+        and not line.strip().startswith("</round>")
+    ]
+    assert content_lines[-1] == f"Moderator: {final_recap}"
+
+
+# --- recap-off parity — structure is recap-independent ----------------------
+
+
+def test_round_structure_is_recap_independent_when_recaps_are_off() -> None:
+    """recap-off parity: wraps with ``day_rounds`` but NO recap still split right.
+
+    With ``recap_enabled=False`` the wrap deltas carry ``day_rounds`` but attach
+    no recap ``SystemMessage``. The round structure keys on ``day_rounds`` alone,
+    so a four-round Day still renders four ``<round>`` blocks labeled 1..4 — no
+    recap text is required for the split.
+    """
+    day = _render_one_day(_multi_round_day_events(1, 4, with_recap=False))
+
+    assert day.count("<round>") == 4
+    for k in range(1, 5):
+        assert f"Round {k}." in day
+    # No recap text leaked in — the wraps carried none.
+    for k in range(1, 5):
+        assert _recap_for(k) not in day
+
+
+def test_recap_on_and_off_produce_the_same_round_block_count() -> None:
+    """recap-off parity: block count matches with recaps on vs. off (same wraps)."""
+    day_on = _render_one_day(_multi_round_day_events(1, 3, with_recap=True))
+    day_off = _render_one_day(_multi_round_day_events(1, 3, with_recap=False))
+
+    assert day_on.count("<round>") == day_off.count("<round>") == 3

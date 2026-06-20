@@ -19,10 +19,15 @@ in-game), so it deliberately includes the normally-hidden material:
 
 Structure — ``<transcript>`` wraps a ``<setup>`` roster block, then alternating
 ``<night>`` / ``<day>`` sections in the order they streamed; each ``<day>``
-holds one ``<round>`` per speaking round. The tags are **readability markers**
-(so the future LLM-as-Judge can locate sections), not a format requiring a
-strict parser; the content inside each tag is plain prose with ids resolved to
-names.
+holds one ``<round>`` per speaking round. A new ``<round>`` opens on each
+genuine round-robin wrap — keyed to the engine's own ``day_rounds`` counter
+(``day_turn`` returns ``day_rounds`` only when a full speaking pass completes),
+so the transcript's "Round N" matches the engine's true round number. A *failed*
+execution vote stays inside the round it was called in (it does not bump
+``day_rounds``, so it does not open a new block). The tags are **readability
+markers** (so the future LLM-as-Judge can locate sections), not a format
+requiring a strict parser; the content inside each tag is plain prose with ids
+resolved to names.
 
 Contract — a **pure** :func:`render_transcript` returning a flat ``str`` (same
 posture as :func:`graphia.eval_ledger.render_detail` /
@@ -269,12 +274,32 @@ def _render_phases(
     silently dropped.
 
     Inside a ``<day>`` the body is split into one ``<round>`` per speaking round
-    (functional-spec §2.1): the first round opens at ``day_open``, and a fresh
-    round opens whenever a vote *fails* — ``resolve_vote`` reshuffles
-    ``day_order`` and resets the turn index for a new speaking round when the
-    target is not executed (an *executed* vote ends the Day instead). The
-    utterances, the vote announce/ballots, and the outcome of one cycle all land
-    in the same ``<round>``.
+    (functional-spec §2.1), keyed to the engine's own ``day_rounds`` counter so
+    the "Round N" label matches the engine's true round number — and, once
+    sibling spec 020 ships, the round number that recap's in-world clock encodes.
+    The first round opens at ``day_open``; a fresh round opens on each genuine
+    round-robin wrap, which ``day_turn`` signals by returning ``day_rounds`` (via
+    ``_round_complete_update``) — only on a completed pass, never on a mid-round
+    step. A *failed* execution vote does NOT open a new round: ``resolve_vote``
+    deliberately leaves ``day_rounds`` unchanged, so the failed vote's tally and
+    "vote fails" line stay inside the round they were called in (this is the
+    spec-020 compatibility requirement — the ``<round>`` label must equal the
+    round number the contained recap's clock reads).
+
+    The open is **lazy**: a ``day_rounds`` bump *ends* a round but does not
+    always *begin* a visible one — the final round-cap wrap
+    (``day_rounds == DAY_MAX_ROUNDS``, which carries no recap) is followed by
+    ``day_close``, not another speech. So on a wrap we append that delta's
+    messages (the speech plus the recap ``_round_complete_update`` attached, so
+    the recap closes the round it summarizes) to the CURRENT round, then set a
+    ``pending_round_break`` flag and defer opening the next body until the NEXT
+    ``day_turn`` actually arrives. Only a ``day_turn`` event consumes the flag;
+    ``day_close`` and the vote nodes (``vote_prompt`` / ``collect_votes`` /
+    ``resolve_vote``) always append to the current round, so the Day-ending
+    content lands in the LAST round and no spurious empty round follows
+    (functional-spec §2.5). An empty trailing round body is dropped in
+    ``flush`` (defensive: a degenerate all-dead ``day_order`` bumps
+    ``day_rounds`` with no speech), with numbering kept contiguous.
     """
     out: list[str] = []
     # The currently-open section accumulator. ``kind`` ∈ {None, "preamble",
@@ -294,14 +319,17 @@ def _render_phases(
 
     # Per-Day speaking-round accumulator: a list of round bodies; the last entry
     # is the round currently filling. ``day_header`` holds the day-open line(s)
-    # that precede the first round.
+    # that precede the first round. ``pending_round_break`` is set when a
+    # ``day_turn`` wrap (a delta carrying ``day_rounds``) ends a round; the next
+    # ``day_turn`` event then opens a fresh body (lazy open — see docstring).
     day_round_bodies: list[list[str]] = []
     day_header: list[str] = []
+    pending_round_break = False
 
     def flush() -> None:
         """Close the open section, folding any pending sub-structure into it."""
         nonlocal section_kind, buf, night_rounds, current_round
-        nonlocal day_round_bodies, day_header
+        nonlocal day_round_bodies, day_header, pending_round_break
         if section_kind is None:
             return
         if section_kind == "night":
@@ -314,7 +342,12 @@ def _render_phases(
             out.append(_wrap("night", header + pick_lines + rest))
         elif section_kind == "day":
             body = list(day_header)
-            for number, round_body in enumerate(day_round_bodies, start=1):
+            # Drop an empty trailing round body (defensive: a degenerate
+            # all-dead ``day_order`` bumps ``day_rounds`` with no speech, which
+            # would otherwise emit a spurious empty ``Round N.`` block). Filter
+            # before ``enumerate`` so numbering stays contiguous.
+            non_empty = [rb for rb in day_round_bodies if rb]
+            for number, round_body in enumerate(non_empty, start=1):
                 body.append(
                     _wrap("round", [f"Round {number}.", *round_body])
                 )
@@ -327,6 +360,7 @@ def _render_phases(
         current_round = {}
         day_round_bodies = []
         day_header = []
+        pending_round_break = False
 
     for event in events:
         for node, delta in event.items():
@@ -348,6 +382,7 @@ def _render_phases(
                 day_header = [f"Day {day_index} begins."]
                 _append_messages(day_header, delta, names)
                 day_round_bodies = [[]]  # open the first speaking round
+                pending_round_break = False
                 continue
 
             if section_kind is None:
@@ -361,29 +396,28 @@ def _render_phases(
                 )
                 _append_messages(buf, delta, names)
             elif section_kind == "day":
-                _append_messages(day_round_bodies[-1], delta, names)
-                # A failed vote starts a fresh speaking round (resolve_vote
-                # reshuffled the order); an executed vote ends the Day, so we
-                # do NOT open a new round for it.
-                if node == "resolve_vote" and _vote_failed(delta):
+                # Lazy open: a prior wrap set ``pending_round_break``; the next
+                # ``day_turn`` actually begins the new body. Only ``day_turn``
+                # consumes the flag — ``day_close`` and the vote nodes always
+                # append to the current round (Day-ending content lands in the
+                # last round, functional-spec §2.5).
+                if pending_round_break and node == "day_turn":
                     day_round_bodies.append([])
+                    pending_round_break = False
+                _append_messages(day_round_bodies[-1], delta, names)
+                # A genuine round-robin wrap ends the round: ``day_turn`` returns
+                # ``day_rounds`` only on a completed pass (via
+                # ``_round_complete_update``). Set the break AFTER appending this
+                # delta — the wrap delta's speech + attached recap close the
+                # round they summarize. A failed vote does NOT bump
+                # ``day_rounds``, so it stays in the current round.
+                if node == "day_turn" and "day_rounds" in delta:
+                    pending_round_break = True
             else:  # preamble
                 _append_messages(buf, delta, names)
 
     flush()
     return out
-
-
-def _vote_failed(delta: dict[str, Any]) -> bool:
-    """True when a ``resolve_vote`` delta is a *failed* vote (no execution).
-
-    ``resolve_vote`` signals a failed vote by bumping ``day_votes_called`` and
-    reshuffling ``day_order`` (for a fresh speaking round); an *executed* vote
-    instead appends a ``kill_log`` execution record and ends the Day. We key off
-    the presence of ``day_votes_called`` in the delta — only the failed path
-    carries it — so a new ``<round>`` opens exactly when the engine begins one.
-    """
-    return "day_votes_called" in delta
 
 
 def _wrap(tag: str, body: list[str]) -> str:
