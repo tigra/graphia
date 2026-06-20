@@ -155,10 +155,14 @@ def test_render_recap_no_execution_states_day_counts_votes_and_no_exec() -> None
         "day_votes_initiated": 0,
         "kill_log": [],
     }
-    msg = render_day_round_recap(state)
+    msg = render_day_round_recap(state, day_round=1)
     text = msg.content
 
-    assert "Day 2 status:" in text
+    # Spec 020 inserts the in-world clock between the day number and the marker,
+    # so assert the two fixed scaffold parts separately rather than the old
+    # contiguous "Day 2 status:" literal.
+    assert "Day 2" in text
+    assert " status:" in text
     assert "4 Law-abiding Citizens" in text
     assert "2 Mafiosos" in text
     assert "No execution votes called yet today." in text
@@ -180,7 +184,7 @@ def test_render_recap_with_execution_names_player_and_revealed_side() -> None:
         "day_votes_initiated": 1,
         "kill_log": [executed],
     }
-    text = render_day_round_recap(state).content
+    text = render_day_round_recap(state, day_round=1).content
 
     assert "Mobster5 was executed today" in text
     assert "revealed to be Mafia" in text
@@ -203,7 +207,7 @@ def test_render_recap_executed_law_abiding_reveals_law_abiding_side() -> None:
         "day_votes_initiated": 2,
         "kill_log": [executed],
     }
-    text = render_day_round_recap(state).content
+    text = render_day_round_recap(state, day_round=1).content
 
     assert "Citizen3 was executed today" in text
     assert "revealed to be Law-abiding Citizen" in text
@@ -224,7 +228,7 @@ def test_render_recap_only_counts_execution_for_the_current_cycle() -> None:
         "day_votes_initiated": 0,
         "kill_log": [stale],
     }
-    text = render_day_round_recap(state).content
+    text = render_day_round_recap(state, day_round=1).content
     assert "No one has been executed today." in text
     assert "Mobster6" not in text
 
@@ -256,7 +260,7 @@ def test_render_recap_role_count_singular_vs_plural(
         "kill_log": [],
     }
     # Recap reads "... {law} and {mafia} remain." — assert the exact clauses.
-    text = render_day_round_recap(state).content
+    text = render_day_round_recap(state, day_round=1).content
     assert f"{expected_law}and {expected_mafia}remain." in text
 
 
@@ -278,7 +282,7 @@ def test_render_recap_votes_clause_singular_vs_plural(
         "day_votes_initiated": votes,
         "kill_log": [],
     }
-    assert expected_clause in render_day_round_recap(state).content
+    assert expected_clause in render_day_round_recap(state, day_round=1).content
 
 
 def test_render_recap_returns_public_system_message() -> None:
@@ -289,7 +293,7 @@ def test_render_recap_returns_public_system_message() -> None:
         "day_votes_initiated": 0,
         "kill_log": [],
     }
-    msg = render_day_round_recap(state)
+    msg = render_day_round_recap(state, day_round=1)
     assert isinstance(msg, SystemMessage)
     extra = getattr(msg, "additional_kwargs", {}) or {}
     assert "private_to" not in extra
@@ -309,7 +313,7 @@ def test_render_recap_does_not_mutate_input_state() -> None:
     before_players = dict(players)
     before_alive = {pid: p.is_alive for pid, p in players.items()}
 
-    render_day_round_recap(state)
+    render_day_round_recap(state, day_round=1)
 
     assert set(state.keys()) == before_keys
     assert state["kill_log"] == []
@@ -828,7 +832,8 @@ def test_recap_excluded_from_ai_speech_extraction() -> None:
             "players": players,
             "day_votes_initiated": 0,
             "kill_log": [],
-        }
+        },
+        day_round=1,
     )
     recap_two = render_day_round_recap(
         {
@@ -836,7 +841,8 @@ def test_recap_excluded_from_ai_speech_extraction() -> None:
             "players": players,
             "day_votes_initiated": 1,
             "kill_log": [],
-        }
+        },
+        day_round=2,
     )
 
     ai_line_a = "I think Bianca has been too quiet."

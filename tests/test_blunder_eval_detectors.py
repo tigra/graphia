@@ -43,6 +43,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from graphia.llm import DayAction
 from graphia.nodes.day import (
     _persona_block,
+    _render_standings,
     _role_label,
     _team_line,
     _win_condition_line,
@@ -512,6 +513,7 @@ def _day_prompt(speaker: PlayerState) -> list:
                 win_condition=_win_condition_line(speaker.role),
                 team_line=_team_line(speaker, {speaker.id: speaker}),
                 persona=_persona_block(speaker),
+                standings=_render_standings({"players": {speaker.id: speaker}}),
                 roster="(roster)",
                 context="(ctx)",
             )
@@ -613,6 +615,7 @@ def test_self_vote_initiation_resolver_ignores_non_day_speak_prompts() -> None:
             win_condition="",
             team_line="",
             persona="",
+            standings="s",
             roster="r",
             context="c",
         )

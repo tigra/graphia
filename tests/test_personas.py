@@ -43,6 +43,7 @@ from graphia.nodes.day import (
     _ai_day_action,
     _persona_block,
     _render_alive_roster,
+    _render_standings,
     _role_label,
     _team_line,
     _win_condition_line,
@@ -724,6 +725,7 @@ def _render_day_prompt(
         win_condition=_win_condition_line(speaker.role),
         team_line=_team_line(speaker, players),
         persona=_persona_block(speaker),
+        standings=_render_standings({"players": players}),
         roster=_render_alive_roster(players),
         context="(no prior discussion)",
     )

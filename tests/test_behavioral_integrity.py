@@ -43,6 +43,7 @@ from graphia.nodes.day import (
     _ai_day_action,
     _ballot_relationship,
     _persona_block,
+    _render_standings,
     _team_line,
     _teammates_str,
     _win_condition_line,
@@ -98,6 +99,7 @@ def _render_day_prompt(actor: PlayerState, players: dict[str, PlayerState]) -> s
         win_condition=_win_condition_line(actor.role),
         team_line=_team_line(actor, players),
         persona=_persona_block(actor),
+        standings=_render_standings({"players": players}),
         roster=day_nodes._render_alive_roster(players),
         context="(no prior discussion)",
     )
@@ -415,6 +417,8 @@ def test_ai_vote_template_supplies_relationship_placeholder() -> None:
         role_label="Law-abiding Citizen",
         win_condition=_win_condition_line("law_abiding"),
         team_line="",
+        standings="2 Law-abiding Citizens and 1 Mafioso remain. "
+        "No execution votes called yet today. No one has been executed today.",
         target="Mara",
         relationship="",
         context="(no prior discussion)",

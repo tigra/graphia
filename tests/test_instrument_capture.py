@@ -46,6 +46,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from graphia.llm import DayAction, Ballot
 from graphia.nodes.day import (
     _persona_block,
+    _render_standings,
     _role_label,
     _team_line,
     _win_condition_line,
@@ -99,6 +100,7 @@ def _day_prompt(speaker: PlayerState) -> list:
                 win_condition=_win_condition_line(speaker.role),
                 team_line=_team_line(speaker, {speaker.id: speaker}),
                 persona=_persona_block(speaker),
+                standings=_render_standings({"players": {speaker.id: speaker}}),
                 roster="(roster)",
                 context="(ctx)",
             )

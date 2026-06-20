@@ -215,23 +215,30 @@ def _executed_this_cycle(
     return None
 
 
-def render_day_round_recap(state: GameState) -> SystemMessage:
-    """Render the end-of-round public Moderator status recap (spec 018).
+def _render_standings(state: GameState) -> str:
+    """Render the decision-relevant standings BODY (spec 019), as a plain string.
 
-    PURE: reads ``cycle`` (day number), counts alive players by role from the
-    insertion-ordered ``players`` dict, reads ``day_votes_initiated``, and
-    derives the executed-today clause from ``_executed_this_cycle``. It mutates
-    nothing and uses NO randomness and no hash-order-dependent ``set`` iteration
-    (iterating the ordered ``players`` dict only) so the dual-mode byte-equal
-    smoke test stays green.
+    Returns ONLY the standings text — the
+    ``"{law_clause} and {mafia_clause} remain. {votes_clause} {executed_clause}"``
+    body — with **NO clock** (spec 020's, recap-only) and **NO "Day N status:"
+    framing prefix** (that stays in ``render_day_round_recap``). This is the
+    single source of the standings text: ``render_day_round_recap`` (the public
+    recap) and the two AI Day-turn prompts (``_ai_day_action`` / ``_ai_ballot``)
+    all consume it, so the standings shown publicly and fed to the AI can never
+    drift.
 
-    Returns a PUBLIC ``SystemMessage`` (no ``additional_kwargs["private_to"]``)
-    so it reaches both the human UI and every AI player's scrolling context for
-    free — ``_render_context`` already folds public Moderator lines in. It
-    discloses nothing hidden: living-player counts and the executed player's
-    revealed side are all derivable from public play.
+    PURE: counts alive players by role from the insertion-ordered ``players``
+    dict, reads ``day_votes_initiated``, and derives the executed-today clause
+    from ``_executed_this_cycle`` (keyed on ``cycle``). It mutates nothing and
+    uses NO randomness and no hash-order-dependent ``set`` iteration (iterating
+    the ordered ``players`` dict only) so the dual-mode byte-equal smoke test
+    stays green.
+
+    Discloses nothing hidden: only aggregate living counts by side, the
+    votes-called-today count, and the already-public executed player's revealed
+    side — never a living player's secret side.
     """
-    day = state.get("cycle", 1)
+    cycle = state.get("cycle", 1)
     players = state.get("players", {})
 
     law_count = sum(
@@ -254,7 +261,7 @@ def render_day_round_recap(state: GameState) -> SystemMessage:
     else:
         votes_clause = f"{votes} execution votes called today."
 
-    executed = _executed_this_cycle(state.get("kill_log", []), day)
+    executed = _executed_this_cycle(state.get("kill_log", []), cycle)
     if executed is None:
         executed_clause = "No one has been executed today."
     else:
@@ -263,12 +270,66 @@ def render_day_round_recap(state: GameState) -> SystemMessage:
             f"{_role_label(executed['role'])}."
         )
 
+    return (
+        f"{law_clause} and {mafia_clause} remain. "
+        f"{votes_clause} {executed_clause}"
+    )
+
+
+# In-world clock for the Day's rounds (spec 020): round 1 is morning, advancing
+# one step per round toward midnight at round 6, so the recap reads like the Day
+# burning down toward Night. Indexed by ``round - 1`` after clamping.
+_ROUND_CLOCKS = ("9 AM", "12 PM", "3 PM", "6 PM", "9 PM", "12 AM (midnight)")
+
+
+def _round_clock(day_round: int) -> str:
+    """Map a 1-based Day round to its in-world clock time (spec 020).
+
+    PURE display-only helper: round 1 → ``9 AM``, advancing one step per round
+    (``12 PM``, ``3 PM``, ``6 PM``, ``9 PM``) to ``12 AM (midnight)`` at round 6.
+    Clamps both ends so the time never runs past midnight and never before
+    morning: ``< 1`` maps to ``9 AM`` and ``> 6`` maps to midnight. The
+    ``(midnight)`` parenthetical is kept so the "Night falls" reading is clear.
+
+    No RNG, no LLM, NO wall-clock — the time is purely a reading of the round the
+    Day is already on, so the dual-mode byte-equal smoke stays green.
+    """
+    return _ROUND_CLOCKS[max(1, min(day_round, 6)) - 1]
+
+
+def render_day_round_recap(state: GameState, *, day_round: int) -> SystemMessage:
+    """Render the end-of-round public Moderator status recap (spec 018).
+
+    A thin composer over ``_render_standings`` (spec 019): it keeps the
+    ``"Day {day}, {clock} status: …"`` framing and wraps the standings body in
+    the public ``SystemMessage``. The standings text itself is owned by
+    ``_render_standings`` so the public recap and the AI Day-turn prompts share
+    one string by construction.
+
+    ``day_round`` is REQUIRED and keyword-only (spec 020) so every call site
+    consciously supplies the round the recap covers — the load-bearing decision.
+    ``day_rounds`` is a count of *completed* rounds (it's not yet committed at
+    the round-wrap render site), so the round must be passed in, never read from
+    state here. Its in-world clock (``_round_clock``) is shown beside the day
+    number; the clock is recap-only and is NOT part of the ``_render_standings``
+    body fed to the AI prompts.
+
+    PURE: inherits ``_render_standings``' purity (no mutation, no randomness, no
+    hash-order-dependent ``set`` iteration) and only adds the ``cycle`` day-number
+    prefix and the pure ``_round_clock`` token, so the dual-mode byte-equal smoke
+    test stays green.
+
+    Returns a PUBLIC ``SystemMessage`` (no ``additional_kwargs["private_to"]``)
+    so it reaches both the human UI and every AI player's scrolling context for
+    free — ``_render_context`` already folds public Moderator lines in. It
+    discloses nothing hidden: living-player counts and the executed player's
+    revealed side are all derivable from public play.
+    """
+    day = state.get("cycle", 1)
     content = DAY_ROUND_RECAP_TEMPLATE.format(
         day=day,
-        law_clause=law_clause,
-        mafia_clause=mafia_clause,
-        votes_clause=votes_clause,
-        executed_clause=executed_clause,
+        clock=_round_clock(day_round),
+        standings=_render_standings(state),
     )
     return SystemMessage(content=content)
 
@@ -314,7 +375,13 @@ def _round_complete_update(
     }
     if recap_enabled and new_rounds < DAY_MAX_ROUNDS:
         prior_messages = list(extra.get("messages", []))
-        update["messages"] = [*prior_messages, render_day_round_recap(state)]
+        # ``new_rounds`` is the just-completed 1-based round (spec 020): posted
+        # only for rounds 1..5 here (the cap boundary is gated out above and
+        # owned by ``day_close``), so the clock reads 9 AM … 9 PM.
+        update["messages"] = [
+            *prior_messages,
+            render_day_round_recap(state, day_round=new_rounds),
+        ]
     return update
 
 
@@ -478,6 +545,7 @@ def _ai_day_action(
                 win_condition=win_condition,
                 team_line=team_line,
                 persona=persona,
+                standings=_render_standings(state),
                 roster=roster,
                 context=context,
             )
@@ -761,6 +829,7 @@ def _ai_ballot(
                 role_label=role_label,
                 win_condition=win_condition,
                 team_line=team_line,
+                standings=_render_standings(state),
                 target=target.name,
                 relationship=relationship,
                 context=context,
@@ -1034,6 +1103,16 @@ def day_close(state: GameState, *, recap_enabled: bool = True) -> dict:
     """
     cycle = state.get("cycle", 1)
     kill_log = state.get("kill_log", [])
+    day_rounds = state.get("day_rounds", 0)
+    # Round the closing recap covers (spec 020). ``day_rounds`` counts COMPLETED
+    # rounds. A round-cap close has ``day_rounds == DAY_MAX_ROUNDS`` (round 6
+    # completed) → midnight. An early close (execution / vote-cap) lands
+    # mid-round with ``day_rounds`` one short of the round in progress, so
+    # ``day_rounds + 1`` is the round it stopped on (e.g. 3 → 3 PM), never
+    # jumping ahead to midnight. ``_round_clock`` clamps both terms.
+    ended_on_round = (
+        day_rounds if day_rounds >= DAY_MAX_ROUNDS else day_rounds + 1
+    )
     executed_this_day = _executed_this_cycle(kill_log, cycle) is not None
     messages: list = []
     if not executed_this_day:
@@ -1044,7 +1123,7 @@ def day_close(state: GameState, *, recap_enabled: bool = True) -> dict:
             SystemMessage(content="The Day ends with no one executed.")
         )
     if recap_enabled:
-        messages.append(render_day_round_recap(state))
+        messages.append(render_day_round_recap(state, day_round=ended_on_round))
     if not messages:
         return {}
     return {"messages": messages}

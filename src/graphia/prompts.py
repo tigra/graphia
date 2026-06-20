@@ -117,6 +117,9 @@ you speak, leave `target_id` unset.
 DAY_SPEAK_USER_TEMPLATE = """You are {speaker} — your secret role is {role_label}. {win_condition}
 {team_line}
 {persona}
+Current standings (act on these):
+{standings}
+
 Alive players at the table (name: id):
 {roster}
 
@@ -149,13 +152,18 @@ VOTE_EXECUTED_TEMPLATE = "{name} has been executed. {name} was a {role_label}."
 VOTE_FAILED_TEMPLATE = "The vote fails."
 
 # End-of-round Moderator status recap (spec 018). Present-tense, neutral
-# Moderator voice. The two side counts and the votes/executed clauses are
-# assembled (with singular/plural) in ``render_day_round_recap`` and passed in
-# as finished strings — same pattern as ``team_line`` / ``relationship``.
-DAY_ROUND_RECAP_TEMPLATE = (
-    "Day {day} status: {law_clause} and {mafia_clause} remain. "
-    "{votes_clause} {executed_clause}"
-)
+# Moderator voice. The decision-relevant standings BODY (side counts with
+# singular/plural, the votes-called and executed-today clauses) is assembled in
+# ``_render_standings`` (spec 019) and passed in as the finished ``{standings}``
+# string; ``render_day_round_recap`` adds the "Day N, <clock> status:" framing
+# here. The ``{clock}`` slot is spec 020's in-world game-time for the round (9 AM
+# at round 1 advancing to midnight at round 6), recap-only — it sits beside the
+# day number and is NOT part of the ``{standings}`` body fed to the AI prompts.
+# That same ``_render_standings`` string is injected front-and-center into the
+# AI Day-speak / vote prompts WITHOUT the clock, so the public recap and the AI
+# prompts can never drift. The ``" status:"` substring is the test recap-detection
+# marker and must stay intact; the ``{standings}`` body stays byte-identical.
+DAY_ROUND_RECAP_TEMPLATE = "Day {day}, {clock} status: {standings}"
 
 AI_VOTE_SYSTEM = """You are a player in Graphia, a Mafia-style social-deduction
 game. The table has called a vote to execute a specific player. Your job is to
@@ -168,6 +176,9 @@ schema.
 
 AI_VOTE_USER_TEMPLATE = """You are {voter} — your secret role is {role_label}. {win_condition}
 {team_line}
+Current standings (act on these):
+{standings}
+
 A vote has been called to execute {target}.
 {relationship}
 Recent public discussion:
