@@ -133,6 +133,45 @@ def _shuffle_mafia_order(mafia_ids: list[str]) -> list[str]:
     return ids
 
 
+def _shuffle_night_roster(
+    candidates: list[PlayerState], *, enabled: bool
+) -> list[PlayerState]:
+    """Return the Night candidate roster in a (possibly) randomized order.
+
+    The single Night-roster shuffle surface (Spec 030 §2.1): one module-level
+    function over the module-global ``random`` RNG, mirroring
+    ``_shuffle_mafia_order`` / ``graphia.nodes.day._shuffle_order`` exactly —
+    copy the list, shuffle the copy, return it; never mutate the input. Keeping
+    it the only place the candidate order is randomized gives tests one
+    monkeypatch point to pin (or identity-stub) the order.
+
+    The candidate **set** is invariant: the same ``PlayerState`` elements are
+    returned, only the order may change (the unit-testable contract behind the
+    functional "contains exactly those players" AC). It reads only list
+    membership / identity — never ``role`` / ``is_human`` — so it can hold no
+    fairness bias (the property ``test_slice_day_order_fairness.py`` locks for
+    ``_shuffle_order``).
+
+    **The load-bearing OFF contract (Spec 030 §3.1):** when ``enabled`` is
+    falsy, the input order is returned **before any RNG call whatsoever**, so a
+    flag-OFF build consumes ZERO module-global ``random`` state and reproduces
+    the prior seeded trajectory byte-for-byte. The ``not enabled`` guard MUST
+    stay ahead of ``random.shuffle`` for that promise to hold.
+
+    Called from ``mafia_round_start`` — a node with no ``interrupt()`` — so the
+    draw is committed as its own super-step and is never re-run on a human-
+    pointer replay (§2.2 replay-safety); ``mafia_point`` only ever reads the
+    frozen ``night_law_order`` it produces.
+    """
+    if not enabled:
+        # OFF: prior players-dict insertion order, with no draw — preserves the
+        # seeded trajectory byte-for-byte (the ablation flag's whole point).
+        return list(candidates)
+    shuffled = list(candidates)
+    random.shuffle(shuffled)
+    return shuffled
+
+
 def _roster_lines(alive_law_abiding: list[PlayerState]) -> str:
     return "\n".join(f"{p.name}: {p.id}" for p in alive_law_abiding)
 
@@ -280,20 +319,29 @@ def _alive_law_abiding(state: GameState) -> list[PlayerState]:
     return [p for p in players.values() if p.is_alive and p.role == "law_abiding"]
 
 
-def mafia_round_start(state: GameState) -> dict:
+def mafia_round_start(
+    state: GameState, *, night_roster_shuffle_enabled: bool = True
+) -> dict:
     """Begin one pointing round: roll over the prior round, then shuffle order.
 
     This node does the round's only non-deterministic work — the per-round
-    shuffle of the living-Mafioso order — and contains **no** ``interrupt()``.
-    Because it is its own super-step, the shuffle is committed before any
-    human pointer is prompted and is never recomputed on a resume (§3
-    replay-safety): ``mafia_point`` only ever *reads* the committed order.
+    shuffle of the living-Mafioso order, AND (Spec 030) the per-round shuffle of
+    the living Law-abiding candidate roster the Mafia point at — and contains
+    **no** ``interrupt()``. Because it is its own super-step, both shuffles are
+    committed before any human pointer is prompted and are never recomputed on a
+    resume (§2.2 replay-safety): ``mafia_point`` only ever *reads* the committed
+    ``night_mafia_order`` and the committed ``night_law_order``.
 
     Re-entry from ``route_after_mafia_point`` (a round ended without consensus
     and under the cap) carries a non-empty ``night_round_picks`` — that
     completed round is appended to ``night_rounds_log`` and the round counter is
     bumped here. The first entry from ``night_open`` carries empty picks, so the
     round stays at 1 and the log is untouched.
+
+    ``night_roster_shuffle_enabled`` (Spec 030, ADR 011) gates the candidate-
+    roster shuffle here — the same node that hosts the draw, so the flag rides
+    the draw it gates. OFF takes no RNG draw (``_shuffle_night_roster``'s OFF
+    contract), preserving the prior insertion-order trajectory byte-for-byte.
 
     Defensive guard: with no living Mafioso or no living target, return an empty
     order so ``route_after_mafia_point`` routes straight to ``resolve_night_kill``
@@ -308,6 +356,7 @@ def mafia_round_start(state: GameState) -> dict:
             "night_mafia_order": [],
             "night_pointer_index": 0,
             "night_round_picks": {},
+            "night_law_order": [],
         }
 
     delta: dict = {}
@@ -323,6 +372,17 @@ def mafia_round_start(state: GameState) -> dict:
     delta["night_mafia_order"] = _shuffle_mafia_order(
         [m.id for m in alive_mafia]
     )
+    # Spec 030: freeze the round's candidate-presentation order as an id-list,
+    # the strict mirror of the replay-safe ``night_mafia_order`` pattern. The
+    # only RNG draw for the roster lives here, in this interrupt-free super-step;
+    # ``mafia_point`` resolves these ids back to PlayerStates for BOTH the AI
+    # render and the human ``options`` payload, so they see one consistent order.
+    delta["night_law_order"] = [
+        p.id
+        for p in _shuffle_night_roster(
+            alive_law_abiding, enabled=night_roster_shuffle_enabled
+        )
+    ]
     delta["night_pointer_index"] = 0
     delta["night_round_picks"] = {}
     return delta
@@ -351,8 +411,26 @@ def mafia_point(state: GameState, *, private_thoughts_enabled: bool = True) -> d
         return {}
 
     players = state.get("players", {})
+    # Spec 030: the candidate roster is presented in the round's frozen
+    # ``night_law_order`` (committed once in mafia_round_start — no re-draw on a
+    # human-pointer resume). Resolve that id-order back to living-Law-abiding
+    # PlayerStates here, the SINGLE candidate-assembly point, so the same ordered
+    # list feeds BOTH the AI roster render (_ai_pick_target → _roster_lines) and
+    # the human "point" interrupt's ``options``. The set is unchanged — only the
+    # order — so ``valid_ids`` / eligibility / the random fallback are identical
+    # to before. Defensive: any living Law-abiding id missing from the frozen
+    # order (should not happen — deaths don't occur mid-round) is appended in
+    # insertion order so a candidate can never silently drop out.
     alive_law_abiding = _alive_law_abiding(state)
     valid_ids = {p.id for p in alive_law_abiding}
+    by_id = {p.id: p for p in alive_law_abiding}
+    frozen_order = state.get("night_law_order", [])
+    ordered_law_abiding = [by_id[pid] for pid in frozen_order if pid in by_id]
+    seen = {p.id for p in ordered_law_abiding}
+    ordered_law_abiding.extend(
+        p for p in alive_law_abiding if p.id not in seen
+    )
+    alive_law_abiding = ordered_law_abiding
 
     pointer_id = order[index]
     pointer = players.get(pointer_id)

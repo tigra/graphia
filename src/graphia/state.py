@@ -103,6 +103,17 @@ class GameState(TypedDict, total=False):
     night_pointer_index: int
     night_round_picks: dict[str, str]
     night_rounds_log: list[dict[str, str]]
+    # Randomized Night-pointing roster order (spec 030, ADR 011). The per-round
+    # frozen presentation order of the living Law-abiding candidate ids, computed
+    # ONCE in the interrupt-free ``mafia_round_start`` super-step (so the order is
+    # committed before any human pointer is prompted and never re-drawn on a
+    # resume) and read back in ``mafia_point`` — applied at the single candidate-
+    # assembly point so both the AI roster render and the human ``"point"``
+    # interrupt ``options`` see one consistent, replay-safe order. Plain-replace
+    # reducer, repopulated each round beside ``night_mafia_order``. When the
+    # ablation flag is OFF the order is plain ``players``-dict insertion order
+    # (no RNG draw) — the prior behaviour, byte-for-byte.
+    night_law_order: list[str]
     day_order: list[str]
     day_turn_index: int
     day_rounds: int

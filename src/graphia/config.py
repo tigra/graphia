@@ -173,6 +173,14 @@ class GraphiaConfig:
     # flags' ``_env_flag`` shape. Defaulted so tests constructing the config
     # directly stay valid.
     private_thoughts_enabled: bool = True
+    # Randomized Night-pointing roster order (spec 030, ADR 011). The ablation
+    # off-switch: on by default (the Mafia's living-Law-abiding candidate list is
+    # shuffled each Night so no seat holds a permanent position advantage); an
+    # explicit falsy ``GRAPHIA_NIGHT_ROSTER_SHUFFLE`` reverts to the prior fixed
+    # ``players``-dict insertion order byte-for-byte (no RNG draw) for A/B. Mirrors
+    # the other ADR-011 default-on flags' ``_env_flag`` shape. Defaulted so tests
+    # constructing the config directly stay valid.
+    night_roster_shuffle_enabled: bool = True
 
 
 def _env_truthy(name: str) -> bool:
@@ -230,6 +238,9 @@ def load_config() -> GraphiaConfig:
     )
     private_thoughts_enabled = _env_flag(
         "GRAPHIA_PRIVATE_THOUGHTS", default=True
+    )
+    night_roster_shuffle_enabled = _env_flag(
+        "GRAPHIA_NIGHT_ROSTER_SHUFFLE", default=True
     )
     runtime_invocation_url = os.environ.get("GRAPHIA_RUNTIME_URL") or None
     memory_id = os.environ.get("GRAPHIA_MEMORY_ID") or None
@@ -412,4 +423,5 @@ def load_config() -> GraphiaConfig:
         context_token_budget=context_token_budget,
         scripted_player_active=scripted_player_active,
         private_thoughts_enabled=private_thoughts_enabled,
+        night_roster_shuffle_enabled=night_roster_shuffle_enabled,
     )

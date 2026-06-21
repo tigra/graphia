@@ -45,6 +45,7 @@ def build_runtime_graph(
     context_window: int = 150,
     context_token_budget: int = 20000,
     private_thoughts_enabled: bool = True,
+    night_roster_shuffle_enabled: bool = True,
 ) -> CompiledStateGraph:
     """Compile the Graphia StateGraph with a caller-supplied thread_id.
 
@@ -102,6 +103,14 @@ def build_runtime_graph(
     player's own thoughts into its three AI-decision prompts by the same ablation
     flag as local mode. Same anti-drift requirement: both builders must thread it.
     Defaults to ``True`` (matching the config default).
+
+    ``night_roster_shuffle_enabled`` (spec 030, ADR 011) is threaded the same
+    way — the production entrypoint passes
+    ``load_config().night_roster_shuffle_enabled`` — so the deployed Runtime
+    randomizes the Mafia's Night candidate roster (or, when off, preserves the
+    prior fixed order) by the same ablation flag as local mode. Same anti-drift
+    requirement: both builders must thread it. Defaults to ``True`` (matching the
+    config default).
     """
     if diary_store is None:
         diary_store = InProcessDiaryStore()
@@ -126,4 +135,5 @@ def build_runtime_graph(
         context_window=context_window,
         context_token_budget=context_token_budget,
         private_thoughts_enabled=private_thoughts_enabled,
+        night_roster_shuffle_enabled=night_roster_shuffle_enabled,
     )

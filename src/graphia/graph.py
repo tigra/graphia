@@ -91,6 +91,7 @@ def _assemble_graph(
     context_window: int = 150,
     context_token_budget: int = 20000,
     private_thoughts_enabled: bool = True,
+    night_roster_shuffle_enabled: bool = True,
 ) -> CompiledStateGraph:
     """Build the Graphia StateGraph topology and compile it with ``saver``.
 
@@ -125,10 +126,22 @@ def _assemble_graph(
     # multi-round pointing loop. ``mafia_round_start`` shuffles the round's
     # order (its own super-step, no interrupt) and ``mafia_point`` handles one
     # pointer per super-step (interrupt-safe for a human pointer).
-    builder.add_node("mafia_round_start", mafia_round_start)
+    # Spec 030 (ADR 011): the Night-roster-shuffle flag is bound into
+    # ``mafia_round_start`` — the same interrupt-free super-step that hosts the
+    # candidate-roster draw it gates — via ``partial``, exactly as ``max_days``
+    # rides ``night_open``. Both builders thread the flag so local and remote
+    # can't drift.
+    builder.add_node(
+        "mafia_round_start",
+        partial(
+            mafia_round_start,
+            night_roster_shuffle_enabled=night_roster_shuffle_enabled,
+        ),
+    )
     # Spec 028 (ADR 011): the private-thoughts flag is bound into ``mafia_point``
     # so an AI Mafioso's Night pick is grounded in its own accumulated Day
     # reflections (the third AI-decision prompt this family of flags reaches).
+    # ``mafia_point`` also only READS the frozen spec-030 ``night_law_order``.
     builder.add_node(
         "mafia_point",
         partial(mafia_point, private_thoughts_enabled=private_thoughts_enabled),
@@ -343,6 +356,7 @@ def build_graph(
         context_window=config.context_window,
         context_token_budget=config.context_token_budget,
         private_thoughts_enabled=config.private_thoughts_enabled,
+        night_roster_shuffle_enabled=config.night_roster_shuffle_enabled,
     )
     return graph, thread_id
 
