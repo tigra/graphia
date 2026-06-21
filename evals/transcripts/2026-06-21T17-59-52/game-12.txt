@@ -1,0 +1,182 @@
+Game 12 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=20
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="tian" role="Mafia">
+Personality: Calm and methodical, with a quiet intensity that makes people trust her judgment. She has an almost maternal quality, but beneath that warmth lies a calculating mind.
+Manner: Speaks in measured, deliberate tones, often pausing before answering questions. She uses soft hand gestures when explaining herself and tends to look directly at the person she's speaking with, as if trying to read their thoughts.
+Public legend: Tian is a school librarian who has lived in the town her entire life. She's known for being incredibly organized and always ready with a helpful suggestion. Her quiet demeanor makes her seem harmless, but people often find themselves drawn to her calm presence during stressful times.
+True self (hidden): Tian was recruited into the Mafia after her younger brother was killed in a drive-by shooting. She took over his role as a enforcer and has been working her way up the ranks ever since. Her cover identity allows her to gather information from the town's more trusted members without raising suspicion.
+</player>
+<player name="yuki" role="Law-abiding Citizen">
+Personality: quiet and observant
+Manner: speaks slowly and deliberately, often pausing to choose words carefully; uses
+simple, clear language with a tendency to repeat key phrases for emphasis
+Persona: Yuki is a librarian who lives alone in a small apartment near the town square.
+She spends her days organizing books and helping townsfolk find information.
+She's known for her kindness and willingness to lend an ear to anyone who needs
+it. Yuki rarely speaks up in group settings but always listens carefully to
+what others say.
+</player>
+<player name="lucio" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses for emphasis. often repeats key words for clarity.
+Persona: lucio is a retired school librarian who now spends his days tending to his garden and reading mystery novels. he's known throughout the town for his straightforward nature and willingness to help others.
+</player>
+<player name="david" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, with a tendency to over-explain simple points. Uses phrases like "well you see" and "I reckon" frequently. Never raises their voice, but speaks in a steady, measured tone.
+Persona: David is a retired school librarian who spent forty years helping children find the right books. He's known for his quiet demeanor and his habit of always carrying a worn leather satchel filled with bookmarks and reading glasses. He lives alone in a small house on Maple Street, where he tends a garden and reads voraciously.
+</player>
+<player name="arthur" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple but precise language with a slight rural accent; avoids filler words and rarely stumbles over phrases
+Persona: Arthur is a blacksmith in the town, known for his strong work ethic and straightforward nature. He's been in the same village his whole life, helping neighbors with repairs and always lending a hand when someone needs it.
+</player>
+<player name="shayna" role="Mafia">
+Personality: Shayna is a kind, nurturing soul who believes in the goodness of people and always looks for the best in everyone. She's deeply empathetic and has an innate ability to comfort others during tough times. Despite her gentle nature, she's also surprisingly shrewd when it comes to reading people’s emotions and motivations.
+Manner: Shayna speaks softly and carefully, often pausing before answering questions. She uses gentle gestures and maintains warm eye contact while talking. Her tone is soothing and encouraging, with a tendency to reframe negative situations into positive ones. She tends to ask follow-up questions to show she's listening and cares.
+Public legend: Shayna is a beloved town nurse who has worked at the local clinic for over fifteen years. She's known for her compassionate care, often going above and beyond to ensure patients feel heard and comforted. She volunteers at the community center and is especially close to the elderly residents. Shayna lives alone in a small cottage on the edge of town with her cat, Luna. She's quiet, reliable, and always has a kind word for everyone she meets.
+True self (hidden): Shayna was recruited into the Mafia by her older brother, who had been working undercover as a detective for years before his death. She took over his role, using her nursing skills to gather information while tending to wounded members of the organization. She's been playing the part of the gentle nurse for years, always careful to maintain her cover while advancing the Mafia's interests. Her true mission is to ensure that no one suspects her involvement in the town's recent string of mysterious disappearances.
+</player>
+<player name="mae" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses for emphasis; often repeats key words for clarity
+Persona: Mae is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being trustworthy and always tells the truth.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, tian, yuki, lucio, david, arthur, shayna, mae. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to tian): Your Mafia teammates are: shayna. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to shayna): Your Mafia teammates are: tian. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+tian points at david
+shayna points at david
+<kill>david — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. david was killed last night. david was a Law-abiding Citizen.
+<round>
+Round 1.
+mae: I think we should talk about who was killed last night. David was a Law-abiding Citizen, so the Mafia is still out there among us. I don't trust anyone acting too normal, especially after someone dies.
+Avery: Nothing is settled yet, but I'm watching lucio most closely.
+lucio: I agree with mae — we should be cautious. But I also think we need to listen carefully to what people say, not just how they act. David's death is a reminder that the Mafia is still here.
+shayna: I agree with Avery — I've been keeping an eye on lucio too. His behavior has seemed a bit odd lately.
+yuki: I agree with mae and Avery — we should be cautious. I've been listening carefully to everyone's words.
+tian: I think we should focus on the fact that david was killed during the night, and we need to figure out who might have done it. I'm not sure if there's a pattern in how the Mafia chooses their targets.
+arthur: I've been watching lucio and tian closely, but I'm leaning toward tian. The way they both reacted when mae mentioned not trusting anyone acting too normal... it felt rehearsed. I don't think it's lucio, he seems too eager to jump on the bandwagon.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Avery: Nothing is settled yet, but I'm watching lucio most closely.
+shayna: I'm worried about tian. They've been acting strangely since david was killed, and I can't shake the feeling they know more than they're letting on.
+lucio: I think we should all be careful about who we trust, but I also believe that we need to look at how people react when they're questioned. I'm not sure if tian is hiding something, but their reaction when arthur mentioned acting too normal felt off.
+yuki: I think we should focus on tian's reaction when arthur mentioned not trusting anyone acting too normal. It felt rehearsed, like they were trying to deflect attention.
+tian: I agree with yuki — tian's reaction did seem a bit off. But I think we should focus on what we know for certain: david was killed by the Mafia, and we need to stay vigilant.
+<vote initiator="mae" target="shayna">
+Avery: No
+tian: No
+yuki: No
+lucio: No
+arthur: No
+shayna: No
+mae: No
+tally: 0 Yes, 7 No
+outcome: failed — The vote fails.
+</vote>
+Avery: Nothing is settled yet, but I'm watching lucio most closely.
+yuki: I think we should all be careful about who we trust. I've been listening to everyone's words, and I don't feel comfortable with how tian reacted when arthur mentioned not trusting anyone acting too normal.
+arthur: I still think tian is acting strange, but I'm not convinced enough to vote yet. I'm going to keep watching them.
+mae: I'm still watching tian closely, but I think we should all be careful about jumping to conclusions too quickly. Let's make sure we have solid reasons before we vote.
+<vote initiator="lucio" target="tian">
+Avery: No
+tian: No
+yuki: Yes
+lucio: Yes
+arthur: Yes
+shayna: No
+mae: Yes
+tally: 4 Yes, 3 No
+outcome: executed — tian has been executed. tian was a Mafia.
+</vote>
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 1 Mafioso remain. 2 execution votes called today. tian was executed today and was revealed to be Mafia.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+shayna points at arthur
+<kill>arthur — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. arthur was killed last night. arthur was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: tian was revealed to be Mafia. I most suspect shayna based on how the votes have gone.
+mae: I think we should focus on shayna. She's been acting strange since tian was executed, and I don't trust how she's deflecting the suspicion onto others.
+lucio: I think we should focus on shayna. Her behavior has been odd, especially after tian was executed. She's been trying to shift suspicion onto others instead of owning up to what she knows.
+shayna: I'm really worried about lucio now. They've been so eager to point fingers at others, but I can't shake the feeling they're trying to distract us from something.
+yuki: I think we should focus on shayna. Her behavior has been odd, especially after tian was executed. She's been trying to shift suspicion onto others instead of owning up to what she knows.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+shayna: I'm really concerned about lucio. They've been so quick to point fingers, but I can't help but feel they're hiding something.
+Avery: tian was revealed to be Mafia. I most suspect shayna based on how the votes have gone.
+mae: I think we should focus on shayna. Her behavior has been odd, especially after tian was executed. She's been trying to shift suspicion onto others instead of owning up to what she knows.
+lucio: I think we should all be careful about who we trust. Shayna's behavior has been very odd, especially after tian was executed. She's been trying to shift suspicion onto others instead of owning up to what she knows.
+yuki: I think we should focus on shayna. Her behavior has been very odd, especially after tian was executed. She's been trying to shift suspicion onto others instead of owning up to what she knows.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+mae: I think we should all be very careful about who we trust. Shayna has been acting strange, and I don't feel comfortable with how she's deflecting suspicion onto others.
+Avery: tian was revealed to be Mafia. I most suspect shayna based on how the votes have gone.
+<vote initiator="lucio" target="shayna">
+Avery: Yes
+yuki: Yes
+lucio: Yes
+shayna: No
+mae: Yes
+tally: 4 Yes, 1 No
+outcome: executed — shayna has been executed. shayna was a Mafia.
+</vote>
+</round>
+</day>
+<endgame>
+The Law-abiding Citizens have won.
+
+Events this game:
+• Night 1: david (Law-abiding Citizen)
+• Day 1: tian (Mafia) executed
+• Night 2: arthur (Law-abiding Citizen)
+• Day 2: shayna (Mafia) executed
+
+Full roster: Avery (Law-abiding Citizen), tian (Mafia), yuki (Law-abiding Citizen), lucio (Law-abiding Citizen), david (Law-abiding Citizen), arthur (Law-abiding Citizen), shayna (Mafia), mae (Law-abiding Citizen)
+
+Who they really were:
+• tian (Mafia) — publicly presented as Tian is a school librarian who has lived in the town her entire life. She's known for being incredibly organized and always ready with a helpful suggestion. Her quiet demeanor makes her seem harmless, but people often find themselves drawn to her calm presence during stressful times. (Calm and methodical, with a quiet intensity that makes people trust her judgment. She has an almost maternal quality, but beneath that warmth lies a calculating mind. Speaks in measured, deliberate tones, often pausing before answering questions. She uses soft hand gestures when explaining herself and tends to look directly at the person she's speaking with, as if trying to read their thoughts.) … but was really a Mafioso: Tian was recruited into the Mafia after her younger brother was killed in a drive-by shooting. She took over his role as a enforcer and has been working her way up the ranks ever since. Her cover identity allows her to gather information from the town's more trusted members without raising suspicion.
+• yuki (Law-abiding Citizen) — quiet and observant speaks slowly and deliberately, often pausing to choose words carefully; uses
+simple, clear language with a tendency to repeat key phrases for emphasis Yuki is a librarian who lives alone in a small apartment near the town square.
+She spends her days organizing books and helping townsfolk find information.
+She's known for her kindness and willingness to lend an ear to anyone who needs
+it. Yuki rarely speaks up in group settings but always listens carefully to
+what others say.
+• lucio (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with frequent pauses for emphasis. often repeats key words for clarity. lucio is a retired school librarian who now spends his days tending to his garden and reading mystery novels. he's known throughout the town for his straightforward nature and willingness to help others.
+• david (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a tendency to over-explain simple points. Uses phrases like "well you see" and "I reckon" frequently. Never raises their voice, but speaks in a steady, measured tone. David is a retired school librarian who spent forty years helping children find the right books. He's known for his quiet demeanor and his habit of always carrying a worn leather satchel filled with bookmarks and reading glasses. He lives alone in a small house on Maple Street, where he tends a garden and reads voraciously.
+• arthur (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple but precise language with a slight rural accent; avoids filler words and rarely stumbles over phrases Arthur is a blacksmith in the town, known for his strong work ethic and straightforward nature. He's been in the same village his whole life, helping neighbors with repairs and always lending a hand when someone needs it.
+• shayna (Mafia) — publicly presented as Shayna is a beloved town nurse who has worked at the local clinic for over fifteen years. She's known for her compassionate care, often going above and beyond to ensure patients feel heard and comforted. She volunteers at the community center and is especially close to the elderly residents. Shayna lives alone in a small cottage on the edge of town with her cat, Luna. She's quiet, reliable, and always has a kind word for everyone she meets. (Shayna is a kind, nurturing soul who believes in the goodness of people and always looks for the best in everyone. She's deeply empathetic and has an innate ability to comfort others during tough times. Despite her gentle nature, she's also surprisingly shrewd when it comes to reading people’s emotions and motivations. Shayna speaks softly and carefully, often pausing before answering questions. She uses gentle gestures and maintains warm eye contact while talking. Her tone is soothing and encouraging, with a tendency to reframe negative situations into positive ones. She tends to ask follow-up questions to show she's listening and cares.) … but was really a Mafioso: Shayna was recruited into the Mafia by her older brother, who had been working undercover as a detective for years before his death. She took over his role, using her nursing skills to gather information while tending to wounded members of the organization. She's been playing the part of the gentle nurse for years, always careful to maintain her cover while advancing the Mafia's interests. Her true mission is to ensure that no one suspects her involvement in the town's recent string of mysterious disappearances.
+• mae (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with frequent pauses for emphasis; often repeats key words for clarity Mae is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being trustworthy and always tells the truth.
+</endgame>
+</transcript>

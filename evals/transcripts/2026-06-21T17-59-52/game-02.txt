@@ -1,0 +1,238 @@
+Game 2 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=20
+
+<transcript>
+<setup>
+<player name="Avery" role="Mafia">(no persona recorded)</player>
+<player name="Jaxx" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks with slow, deliberate pacing; uses simple, direct vocabulary; often pauses before answering questions; avoids slang or fancy words
+Persona: Jaxx is a retired postal worker who now spends his days tending to his garden and reading local newspapers. He's known around town for his reliability and straightforward nature.
+</player>
+<player name="Hema" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, with a tendency to over-explain simple points; uses
+everyday vocabulary with a slight rural accent
+Persona: Hema is a librarian from the small town of Millbrook. She's been working at the
+local library for fifteen years, helping people find books and offering
+guidance on research. She's known for her kindness and reliability, always ready
+to lend a listening ear or a helpful hand.
+</player>
+<player name="Vika" role="Mafia">
+Personality: Vika is a warm, nurturing figure who exudes kindness and empathy. She's deeply
+invested in the wellbeing of others and takes great pride in her ability to
+listen and provide comfort. Her public persona is one of a gentle soul who
+finds joy in helping people, especially those who are struggling or feeling
+lonely.
+Manner: Vika speaks softly and deliberately, often using gentle gestures while talking.
+She has a habit of pausing before answering questions, as if carefully weighing
+her words. Her tone is consistently caring and encouraging, even when discussing
+difficult topics. She tends to use phrases like "I'm sure we can figure this out
+together" or "Let's not forget that everyone here has their own battles."
+Public legend: Vika is a beloved nurse at the local hospital who has worked there for over a
+decade. She's known for her compassionate bedside manner and her ability to
+calm even the most anxious patients. In her free time, she volunteers at the
+community center, organizing events for elderly residents and helping with
+local fundraising efforts. She's married to her high school sweetheart, Marcus,
+and they have two children together. Vika is a pillar of the community, always
+there for those in need.
+True self (hidden): Vika was recruited into the Mafia by her sister, who had been working as an
+informant within the organization. Initially reluctant, she found herself drawn
+into the world of organized crime after witnessing the brutal consequences of
+refusing to comply. She has since become a trusted enforcer, using her nurturing
+personality as a mask to manipulate and isolate targets. Her true role is to
+eliminate threats to the Mafia's interests while maintaining a perfect cover.
+</player>
+<player name="Niko" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key words for emphasis. Never uses slang or complex metaphors.
+Persona: Niko is a retired school librarian who spent decades helping children find their love of reading. They now enjoy quiet afternoons tending to their garden and attending local community meetings. Niko has no secrets and is known for being trustworthy by all who know them.
+</player>
+<player name="Liam" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses for emphasis. Often repeats key words for clarity and ends sentences with a slight nod.
+Persona: Liam is a retired school teacher who loves gardening and spending time with his family. He's known for his fairness and always speaks his mind, even if it's not always what people want to hear.
+</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks slowly and deliberately, using simple vocabulary with a slight hesitation before each sentence. Often repeats words for emphasis and uses "you know" frequently.
+Persona: Zara is a librarian who loves reading mystery novels and solving puzzles. She's known for her calm demeanor and always helps others find the information they need. She lives alone in a small apartment near the town square and has never been involved in any scandal.
+</player>
+<player name="Tsunami" role="Law-abiding Citizen">
+Personality: calm and methodical
+Manner: speaks slowly and deliberately, choosing words carefully; uses occasional metaphors drawn from nature and weather
+Persona: Tsunami is a lighthouse keeper who has lived on the coast for thirty years. He spends his days maintaining the beacon and his nights observing the sea's moods. He's known throughout the town for his reliability and quiet wisdom.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Jaxx, Hema, Vika, Niko, Liam, Zara, Tsunami. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Mafia.
+Moderator (private to Avery): Your Mafia teammates are: Vika. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Vika): Your Mafia teammates are: Avery. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Avery points at Tsunami
+Vika points at Tsunami
+<kill>Tsunami — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Tsunami was killed last night. Tsunami was a Law-abiding Citizen.
+<round>
+Round 1.
+Jaxx: I don't see anything yet that makes me think anyone is Mafia. I'd like to hear what people have to say about the night's events.
+Liam: Jaxx, you seemed pretty quiet during the night. Can you tell us what you were thinking? I'm trying to figure out if anyone's acting strange.
+Zara: Jaxx, you know I don't trust people who are too quick to defend themselves. You seem to have been quiet during the night — that's not normal for a citizen.
+Avery: Liam has been steering things in a way that worries me — I think we should keep a close eye there.
+Vika: I'm sure we're all shaken by Tsunami's passing. I'd like to hear more about what everyone was thinking during the night — it might help us figure out who among us is still hiding something.
+Hema: Jaxx, you've been awfully quiet during the night — that's not how I'd expect a normal citizen to act. I'm starting to think there's more to your silence than just being shy.
+Niko: Jaxx, you keep saying you don't see anything, but you were quiet during the night. That's not normal. I think we should talk about that.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Zara: Jaxx, you know I'm not one to jump to conclusions, but your silence during the night — it's making me question things. I'm starting to think maybe you're hiding something.
+Liam: I think we need to be careful about jumping to conclusions, but I do want to ask — Jaxx, can you explain why you stayed quiet during the night? It's not typical for a citizen to be so silent.
+Jaxx: I'm not sure who to trust yet.
+Vika: I'm glad we're all looking out for each other, but I think we need to be careful about jumping to conclusions too quickly. Jaxx, can you tell us more about what you were thinking during the night?
+Niko: I agree with Zara, Jaxx, your silence during the night is making me suspicious. I think we need to know why you were so quiet.
+Hema: I think we should all be honest about our silence during the night. If we're all trying to figure out who's Mafia, then we should all explain ourselves — no one should be left out.
+Avery: Liam has been steering things in a way that worries me — I think we should keep a close eye there.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+<vote initiator="Niko" target="Jaxx">
+Avery: Yes
+Jaxx: No
+Hema: Yes
+Vika: Yes
+Niko: Yes
+Liam: Yes
+Zara: Yes
+tally: 6 Yes, 1 No
+outcome: executed — Jaxx has been executed. Jaxx was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. Jaxx was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Avery points at Liam
+Vika points at Liam
+<kill>Liam — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Liam was killed last night. Liam was a Law-abiding Citizen.
+<round>
+Round 1.
+Zara: I think we should all be careful about who we trust — especially since we lost Liam. You know, I'm starting to wonder if someone among us is trying to manipulate the votes.
+Niko: I think we should all be very careful about who we trust. I'm starting to think that someone among us is trying to manipulate the votes and hide their true side.
+Hema: I think we should all be careful about who we trust — especially since we lost Liam. I'm starting to wonder if someone among us is trying to manipulate the votes.
+Vika: I'm really glad we're all staying alert, but I think we need to be careful about jumping to conclusions too quickly. It's easy to get caught up in suspicion, but we should make sure we're not being manipulated ourselves.
+Avery: Zara has been steering things in a way that worries me — I think we should keep a close eye there.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Vika: I'm still trying to process Liam's death and the way things have been going. I just want everyone to know that I'm here to help us figure this out together, no matter who's hiding something.
+Niko: I think we should all be very careful about who we trust. I'm starting to think that someone among us is trying to manipulate the votes and hide their true side.
+Zara: I think we need to be very careful about who we trust — especially since we lost Liam. You know, I'm starting to wonder if someone among us is trying to manipulate the votes.
+Avery: Zara has been steering things in a way that worries me — I think we should keep a close eye there.
+Hema: I don't see anything yet that makes me think anyone is Mafia.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+Vika: I'm still trying to process Liam's death and the way things have been going. I just want everyone to know that I'm here to help us figure this out together, no matter who's hiding something.
+Avery: Zara has been steering things in a way that worries me — I think we should keep a close eye there.
+Zara: I think we need to be very careful about who we trust — especially since we lost Liam. You know, I'm starting to wonder if someone among us is trying to manipulate the votes.
+Hema: I'm still trying to figure out who's hiding something, but I don't see anything yet that makes me think anyone is Mafia. I'd like to hear what people have to say about the night's events.
+Niko: I think we should all be very careful about who we trust. I'm starting to think that someone among us is trying to manipulate the votes and hide their true side.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 4.
+Vika: I'm still trying to figure out who among us is hiding something. I just want everyone to know that I'm here to help us figure this out together, no matter who's hiding something.
+Zara: I'm starting to think that Avery might be hiding something — they've been steering things in a way that worries me, and you know, I don't trust people who are too quick to deflect suspicion.
+Hema: Zara, I'm starting to think you're trying to push suspicion onto others to hide what you really know. You've been quick to point fingers, but not so quick to explain your own silence during the night. That's not how a citizen acts.
+Avery: Zara has been steering things in a way that worries me — I think we should keep a close eye there.
+Niko: I think we should all be very careful about who we trust. I'm starting to think that someone among us is trying to manipulate the votes and hide their true side.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 5.
+Avery: Zara has been steering things in a way that worries me — I think we should keep a close eye there.
+Hema: I'm still trying to figure out who's hiding something, but I don't see anything yet that makes me think anyone is Mafia. I'd like to hear what people have to say about the night's events.
+Zara: I think we should all be careful about who we trust — especially since we lost Liam. You know, I'm starting to wonder if someone among us is trying to manipulate the votes.
+Vika: I'm still trying to figure out who among us is hiding something. I just want everyone to know that I'm here to help us figure this out together, no matter who's hiding something.
+Niko: I think we should all be very careful about who we trust. I'm starting to think that someone among us is trying to manipulate the votes and hide their true side.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 6.
+Niko: I think we should all be very careful about who we trust. I'm starting to think that someone among us is trying to manipulate the votes and hide their true side.
+Vika: I'm still trying to figure out who among us is hiding something. I just want everyone to know that I'm here to help us figure this out together, no matter who's hiding something.
+Hema: I'm still trying to figure out who's hiding something, but I don't see anything yet that makes me think anyone is Mafia.
+Zara: I think we should all be very careful about who we trust — especially since we lost Liam. You know, I'm starting to wonder if someone among us is trying to manipulate the votes.
+<vote initiator="Avery" target="Zara">
+Avery: Yes
+Hema: Yes
+Vika: Yes
+Niko: Yes
+Zara: No
+tally: 4 Yes, 1 No
+outcome: executed — Zara has been executed. Zara was a Law-abiding Citizen.
+</vote>
+</round>
+</day>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Tsunami (Law-abiding Citizen)
+• Day 1: Jaxx (Law-abiding Citizen) executed
+• Night 2: Liam (Law-abiding Citizen)
+• Day 2: Zara (Law-abiding Citizen) executed
+
+Full roster: Avery (Mafia), Jaxx (Law-abiding Citizen), Hema (Law-abiding Citizen), Vika (Mafia), Niko (Law-abiding Citizen), Liam (Law-abiding Citizen), Zara (Law-abiding Citizen), Tsunami (Law-abiding Citizen)
+
+Who they really were:
+• Jaxx (Law-abiding Citizen) — honest and straightforward speaks with slow, deliberate pacing; uses simple, direct vocabulary; often pauses before answering questions; avoids slang or fancy words Jaxx is a retired postal worker who now spends his days tending to his garden and reading local newspapers. He's known around town for his reliability and straightforward nature.
+• Hema (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a tendency to over-explain simple points; uses
+everyday vocabulary with a slight rural accent Hema is a librarian from the small town of Millbrook. She's been working at the
+local library for fifteen years, helping people find books and offering
+guidance on research. She's known for her kindness and reliability, always ready
+to lend a listening ear or a helpful hand.
+• Vika (Mafia) — publicly presented as Vika is a beloved nurse at the local hospital who has worked there for over a
+decade. She's known for her compassionate bedside manner and her ability to
+calm even the most anxious patients. In her free time, she volunteers at the
+community center, organizing events for elderly residents and helping with
+local fundraising efforts. She's married to her high school sweetheart, Marcus,
+and they have two children together. Vika is a pillar of the community, always
+there for those in need. (Vika is a warm, nurturing figure who exudes kindness and empathy. She's deeply
+invested in the wellbeing of others and takes great pride in her ability to
+listen and provide comfort. Her public persona is one of a gentle soul who
+finds joy in helping people, especially those who are struggling or feeling
+lonely. Vika speaks softly and deliberately, often using gentle gestures while talking.
+She has a habit of pausing before answering questions, as if carefully weighing
+her words. Her tone is consistently caring and encouraging, even when discussing
+difficult topics. She tends to use phrases like "I'm sure we can figure this out
+together" or "Let's not forget that everyone here has their own battles.") … but was really a Mafioso: Vika was recruited into the Mafia by her sister, who had been working as an
+informant within the organization. Initially reluctant, she found herself drawn
+into the world of organized crime after witnessing the brutal consequences of
+refusing to comply. She has since become a trusted enforcer, using her nurturing
+personality as a mask to manipulate and isolate targets. Her true role is to
+eliminate threats to the Mafia's interests while maintaining a perfect cover.
+• Niko (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key words for emphasis. Never uses slang or complex metaphors. Niko is a retired school librarian who spent decades helping children find their love of reading. They now enjoy quiet afternoons tending to their garden and attending local community meetings. Niko has no secrets and is known for being trustworthy by all who know them.
+• Liam (Law-abiding Citizen) — honest and straightforward speaks slowly and deliberately, using simple vocabulary with frequent pauses for emphasis. Often repeats key words for clarity and ends sentences with a slight nod. Liam is a retired school teacher who loves gardening and spending time with his family. He's known for his fairness and always speaks his mind, even if it's not always what people want to hear.
+• Zara (Law-abiding Citizen) — honest and straightforward speaks slowly and deliberately, using simple vocabulary with a slight hesitation before each sentence. Often repeats words for emphasis and uses "you know" frequently. Zara is a librarian who loves reading mystery novels and solving puzzles. She's known for her calm demeanor and always helps others find the information they need. She lives alone in a small apartment near the town square and has never been involved in any scandal.
+• Tsunami (Law-abiding Citizen) — calm and methodical speaks slowly and deliberately, choosing words carefully; uses occasional metaphors drawn from nature and weather Tsunami is a lighthouse keeper who has lived on the coast for thirty years. He spends his days maintaining the beacon and his nights observing the sea's moods. He's known throughout the town for his reliability and quiet wisdom.
+</endgame>
+</transcript>

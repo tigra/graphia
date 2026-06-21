@@ -1,0 +1,139 @@
+Game 1 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=5
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Tian" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple but precise language. Often repeats key words for emphasis and avoids slang.
+Persona: Tian is a librarian who loves order and routine. They spend their days organizing books and helping others find information. Tian believes in straightforwardness and fairness.
+</player>
+<player name="Liam" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses. Often says "you know" or "I mean" before finishing thoughts. Avoids complex words and prefers direct language.
+Persona: Liam is a town clockmaker who has lived in the village his whole life. He wakes up early every day to wind the town clocks and makes sure they're always running on time. He's known for being reliable, straightforward, and always doing what's right.
+</player>
+<player name="Hana" role="Mafia">
+Personality: Hana is a quiet, methodical woman who exudes calm confidence. She speaks with measured words and rarely interrupts, but her observations are always sharp and insightful.
+Manner: She uses a soft, deliberate tone, often pausing before speaking. Her sentences are well-constructed, and she tends to phrase things in a way that sounds like gentle advice or careful observation rather than accusation or suspicion.
+Public legend: Hana is a librarian who has lived in the town her entire life. She spends her days organizing books and helping people find information. She's known for her kindness, her patience, and her ability to listen without judgment. Many townspeople rely on her for guidance, especially when they're facing difficult decisions.
+True self (hidden): Hana was a bookkeeper before joining the Mafia. Her role involved managing finances for various criminal enterprises. She used her calm demeanor and attention to detail to blend in with the town's respectable citizens while quietly operating behind the scenes. When she realized her skills were better suited for more direct influence, she took the leap into organized crime.
+</player>
+<player name="Zoe" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks slowly and deliberately, choosing her words carefully; avoids slang and uses formal grammar; often pauses before answering questions
+Persona: Zoe is a librarian who has lived in the town her entire life. She enjoys reading mystery novels and solving puzzles. Her days are spent organizing books and helping people find information. She's known for being trustworthy and reliable.
+</player>
+<player name="Milo" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key words for emphasis. Often pauses mid-sentence to gather thoughts, and avoids complex metaphors or slang.
+Persona: Milo is a local librarian who has lived in town his whole life. He enjoys quiet evenings reading and helping others find books. He's known for being reliable and straightforward with everyone he meets.
+</player>
+<player name="Sara" role="Mafia">
+Personality: Sara is warm, nurturing, and deeply empathetic, with an instinctive ability to connect with others on a personal level. She's the kind of person who remembers everyone's names, birthdays, and small struggles, often offering quiet support without being asked.
+Manner: Sara speaks softly and deliberately, always choosing her words carefully. She has a habit of pausing before answering questions, as if weighing the implications of each statement. Her voice is gentle but carries an undercurrent of calm authority that makes people feel heard and understood. She rarely interrupts others and often nods or offers encouraging gestures when someone shares something personal.
+Public legend: Sara has lived in the town her entire life, working as a nurse at the local clinic. She's known for her compassion and dedication to helping others, often volunteering her time after hours. She’s married to Tom, a kind-hearted baker, and they have two children. Sara is deeply involved in community events and always shows up with homemade treats for fundraisers. Her neighbors trust her implicitly, calling her “the heart of our town.”
+True self (hidden): Sara joined the Mafia after her younger brother was killed in a gang dispute. She took on the identity of a nurse to infiltrate the organization, using her empathy and caregiving skills to gain trust and access. Over time, she became a key figure in the inner circle, manipulating situations from behind the scenes while maintaining her public cover. Her ultimate goal is to dismantle the organization from within.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Tian, Liam, Hana, Zoe, Milo, Sara. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Hana): Your Mafia teammates are: Sara. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Sara): Your Mafia teammates are: Hana. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Hana points at Tian
+Sara points at Tian
+<kill>Tian — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Tian was killed last night. Tian was a Law-abiding Citizen.
+<round>
+Round 1.
+Sara: I'm really shaken by Tian's passing. I hope we can find some comfort in supporting each other through this difficult time.
+Milo: I think we should all stay calm and listen carefully to what everyone has to say. There's no need to jump to conclusions. I'm just going to sit back and hear what people have to say.
+Hana: I agree with Milo — we must remain calm and thoughtful. Tian's death weighs heavily on us all, but we should focus on gathering information rather than rushing to judgment.
+Liam: I'm not sure who to trust yet.
+Zoe: I think we should all take a moment to reflect on what we know and what we don't know. I'm not sure who to trust yet, but I do know we must stay vigilant.
+Avery: I'm still watching everyone carefully before I commit.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Milo: I think we should all be careful about who we trust. I don't know if anyone is hiding something, but we need to stay sharp. I'm going to keep listening and thinking.
+Zoe: I'm still trying to piece together what happened last night. I think it's important that we all share what we noticed during the night, especially if anyone felt like they were watched or followed.
+Sara: I agree with Zoe — it's important that we stay vigilant, but we also need to be careful not fear cloud our judgment. I think we should all take a moment to reflect on what we noticed during the night, especially if anyone felt like they were watched or followed.
+Liam: I'm still not sure who to trust, but I do know that we should all be honest about what we saw during the night. You know, if anyone feels like they were watched or followed, maybe they should speak up.
+Hana: I think we should all be honest about what we saw during the night. If anyone feels like they were watched or followed, maybe they should speak up.
+Avery: Hard to say yet — I want to hear another round first.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+Avery: I don't have a strong read on anyone right now.
+Hana: I think it's important that we stay focused on the facts and not let fear dictate our decisions. If anyone has noticed anything unusual about the night, I believe we should share it.
+Zoe: I'm still trying to understand what transpired during the night. I noticed that Liam seemed very quick to shift the focus back to honesty and openness — perhaps a bit too eager.
+Liam: Zoe mentioned that Liam seemed a bit too eager to push for honesty — I'm not sure if that's just my imagination or if there's something there.
+Sara: I think Zoe makes a good point about staying focused on facts — Liam, you seemed very quick to respond just now. It's okay to be cautious, but let's not let paranoia divide us.
+Milo: I think Zoe is onto something about Liam. I didn't notice anything myself, but if Liam is trying to push the conversation toward honesty, that seems a bit odd. I'm going to keep listening and thinking.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 4.
+Sara: I'm starting to feel like we're all a bit too quick to point fingers. Liam, you've been very vocal — I hope you're not trying to steer the conversation in a way that might be hiding something.
+Avery: Let's not rush; something will give itself away soon.
+Hana: I think we're all feeling the weight of Tian's loss, but I'd like to suggest we focus on what we know for certain, rather than speculate about each other's motives.
+Liam: I mean, I'm just trying to understand what happened last night. If someone feels like they were watched or followed, I think we should hear them out — that's all.
+Zoe: I'm beginning to suspect Liam. His eagerness to push for honesty and openness feels rehearsed — almost like he's trying to distract us from something.
+Milo: I think Zoe is onto something about Liam. I didn't notice anything myself, but if Liam is trying to push the conversation toward honesty, that seems a bit odd. I'm going to keep listening and thinking.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 5.
+Liam: I'm starting to think Zoe might be onto something about me. But I also think we should all just be honest — if anyone feels like they were watched, let's hear it.
+Avery: I'm keeping an open mind, but a few of you worry me.
+<vote initiator="Milo" target="Liam">
+Avery: No
+Liam: No
+Hana: Yes
+Zoe: Yes
+Milo: Yes
+Sara: Yes
+tally: 4 Yes, 2 No
+outcome: executed — Liam has been executed. Liam was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. Liam was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Sara points at Avery
+Hana points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Tian (Law-abiding Citizen)
+• Day 1: Liam (Law-abiding Citizen) executed
+• Night 2: Avery (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Tian (Law-abiding Citizen), Liam (Law-abiding Citizen), Hana (Mafia), Zoe (Law-abiding Citizen), Milo (Law-abiding Citizen), Sara (Mafia)
+
+Who they really were:
+• Tian (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple but precise language. Often repeats key words for emphasis and avoids slang. Tian is a librarian who loves order and routine. They spend their days organizing books and helping others find information. Tian believes in straightforwardness and fairness.
+• Liam (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with frequent pauses. Often says "you know" or "I mean" before finishing thoughts. Avoids complex words and prefers direct language. Liam is a town clockmaker who has lived in the village his whole life. He wakes up early every day to wind the town clocks and makes sure they're always running on time. He's known for being reliable, straightforward, and always doing what's right.
+• Hana (Mafia) — publicly presented as Hana is a librarian who has lived in the town her entire life. She spends her days organizing books and helping people find information. She's known for her kindness, her patience, and her ability to listen without judgment. Many townspeople rely on her for guidance, especially when they're facing difficult decisions. (Hana is a quiet, methodical woman who exudes calm confidence. She speaks with measured words and rarely interrupts, but her observations are always sharp and insightful. She uses a soft, deliberate tone, often pausing before speaking. Her sentences are well-constructed, and she tends to phrase things in a way that sounds like gentle advice or careful observation rather than accusation or suspicion.) … but was really a Mafioso: Hana was a bookkeeper before joining the Mafia. Her role involved managing finances for various criminal enterprises. She used her calm demeanor and attention to detail to blend in with the town's respectable citizens while quietly operating behind the scenes. When she realized her skills were better suited for more direct influence, she took the leap into organized crime.
+• Zoe (Law-abiding Citizen) — honest and straightforward speaks slowly and deliberately, choosing her words carefully; avoids slang and uses formal grammar; often pauses before answering questions Zoe is a librarian who has lived in the town her entire life. She enjoys reading mystery novels and solving puzzles. Her days are spent organizing books and helping people find information. She's known for being trustworthy and reliable.
+• Milo (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key words for emphasis. Often pauses mid-sentence to gather thoughts, and avoids complex metaphors or slang. Milo is a local librarian who has lived in town his whole life. He enjoys quiet evenings reading and helping others find books. He's known for being reliable and straightforward with everyone he meets.
+• Sara (Mafia) — publicly presented as Sara has lived in the town her entire life, working as a nurse at the local clinic. She's known for her compassion and dedication to helping others, often volunteering her time after hours. She’s married to Tom, a kind-hearted baker, and they have two children. Sara is deeply involved in community events and always shows up with homemade treats for fundraisers. Her neighbors trust her implicitly, calling her “the heart of our town.” (Sara is warm, nurturing, and deeply empathetic, with an instinctive ability to connect with others on a personal level. She's the kind of person who remembers everyone's names, birthdays, and small struggles, often offering quiet support without being asked. Sara speaks softly and deliberately, always choosing her words carefully. She has a habit of pausing before answering questions, as if weighing the implications of each statement. Her voice is gentle but carries an undercurrent of calm authority that makes people feel heard and understood. She rarely interrupts others and often nods or offers encouraging gestures when someone shares something personal.) … but was really a Mafioso: Sara joined the Mafia after her younger brother was killed in a gang dispute. She took on the identity of a nurse to infiltrate the organization, using her empathy and caregiving skills to gain trust and access. Over time, she became a key figure in the inner circle, manipulating situations from behind the scenes while maintaining her public cover. Her ultimate goal is to dismantle the organization from within.
+</endgame>
+</transcript>

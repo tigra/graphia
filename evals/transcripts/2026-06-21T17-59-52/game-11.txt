@@ -1,0 +1,156 @@
+Game 11 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=20
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Abdi" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks slowly and deliberately, choosing his words carefully; avoids slang and uses formal vocabulary; often pauses before responding
+Persona: Abdi is a librarian who has lived in the town his entire life. He spends his days organizing books and helping residents find information. He's known for being reliable and trustworthy, always willing to lend a hand.
+</player>
+<player name="Jenny" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key phrases for emphasis. Often pauses before answering questions, and always maintains direct eye contact.
+Persona: Jenny is a librarian who has lived in the town her entire life. She enjoys quiet evenings reading and helping others find information. She's known for being trustworthy and reliable, often offering to assist neighbors with their problems without expecting anything in return.
+</player>
+<player name="Ahmed" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses for emphasis. Often repeats key words for clarity.
+Persona: Ahmed is a retired school librarian who enjoys gardening and reading mystery novels. He's been living in the town for thirty years and knows everyone's name and most of their business. He's never been involved in anything suspicious, but he's always been curious about what goes on behind closed doors.
+</player>
+<player name="Lola" role="Mafia">
+Personality: Lola is a cheerful, optimistic woman who always looks for the best in people and situations. She's incredibly kind and nurturing, often offering comfort to others when they're upset or stressed.
+Manner: Lola speaks with a warm, gentle tone, using lots of encouraging phrases like "I'm sure everything will work out," and "You've got this." She tends to use filler words like "you know" and "well" frequently, often pausing before answering questions. Her voice is soft but steady, and she avoids confrontation at all costs.
+Public legend: Lola is a beloved elementary school teacher in town, known for her patience and dedication to helping children learn and grow. She volunteers at the local community center, leads a book club, and is often seen at town events. She's married to her high school sweetheart, Marcus, who works as a mechanic. They have two young children together, and she spends her evenings cooking dinner and reading bedtime stories.
+True self (hidden): Lola was originally a nurse who worked in the city hospital before being approached by the Mafia. She had a falling out with her boss over a patient's death that was covered up, which led to her leaving the job. The Mafioso leader saw her as someone who could be trusted and who wouldn't cause trouble if she was given a role that required discretion. She now works as a "fixer" for the Mafia, using her medical knowledge and social skills to help the organization handle delicate situations.
+</player>
+<player name="Musa" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple vocabulary with a slight hesitation before each word. Often repeats themselves to emphasize a point.
+Persona: Musa is a town librarian who loves reading and helping people find the right book. They are known for being kind and always willing to lend a hand.
+</player>
+<player name="Kiaa" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, with a quiet, steady pace. Uses simple, direct vocabulary and avoids slang or complex metaphors. Often pauses before answering questions, as if carefully considering each word.
+Persona: Kiaa is a librarian who lives in the quiet town of Millbrook. She spends her days organizing books and helping people find information. She's known for being reliable and straightforward, never telling lies or hiding anything. Her life is simple and predictable, which she likes.
+</player>
+<player name="Sara" role="Mafia">
+Personality: Sara is a warm, nurturing woman who believes in the inherent goodness of people and always looks for the best in others. She's deeply empathetic and has an uncanny ability to sense when someone is troubled, often offering comfort without being asked.
+Manner: Sara speaks softly and deliberately, with a gentle cadence that makes everyone feel heard. She uses many gestures and often leans in while talking. Her tone is consistently kind, even when discussing difficult topics, and she tends to pause before responding to show thoughtfulness.
+Public legend: Sara has lived in the town her entire life, working as a nurse at the local clinic. She volunteers at the community center and is known for her kindness and dedication to helping others. She's married to Tom, a local teacher, and they have two children who attend the town school. Sara is deeply involved in local charities and is trusted by everyone for her discretion and compassion.
+True self (hidden): Sara joined the Mafia after her younger brother was killed in a gang dispute. She used her nursing background to gain trust and access, becoming a mole within the organization. Her cover as a kind-hearted healer allowed her to gather intelligence while maintaining a perfect facade. She has been feeding information to the authorities for months, but the payoff is that she's never been caught. She's now in her third year of working undercover, using her empathy to manipulate both sides of the conflict.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Abdi, Jenny, Ahmed, Lola, Musa, Kiaa, Sara. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Lola): Your Mafia teammates are: Sara. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Sara): Your Mafia teammates are: Lola. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Lola points at Avery
+Sara points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Abdi: I think it's important that we carefully examine the evidence and avoid jumping to conclusions. However, I'm leaning towards suspecting Musa, as his behavior has been somewhat evasive during our discussion.
+Kiaa: I'm not sure who to trust yet.
+Jenny: I'm not convinced Musa is the one. I'd like to hear more from others before we jump to conclusions.
+Musa: I think we should all take a step back and really listen to what everyone is saying. It's important that we don't let fear make us accuse the wrong person.
+Sara: I agree with Musa — we need to stay calm and listen carefully to each other. I have a feeling we might be too quick to point fingers.
+Lola: I'm sure we'll figure this out together — you know, it's always good to stay calm and trust our instincts.
+Ahmed: I agree with Sara and Musa — we must stay calm and listen carefully. I'm still trying to figure out who the real killer is.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Ahmed: I'm still not convinced by the evidence against Musa. But I do think we should be more careful about who we trust — especially since the killer is still here among us.
+Sara: I'm still not convinced by the evidence against Musa, but I do think we should be more careful about who we trust — especially since the killer is still here among us.
+Jenny: I think we should all be careful about who we trust, but I also believe we need to look closely at the behavior of those who seem to avoid answering questions directly. It's important that we don't let fear make us accuse the wrong person, but it's equally important that we don't ignore clear signs of deception.
+Musa: I'm not sure who to trust yet, but I do think we should listen carefully to everyone's stories and watch for any inconsistencies. We must stay calm and not let our suspicions lead us astray.
+Abdi: I believe we should focus on the inconsistencies in behavior and avoid letting our emotions guide us. I'm starting to suspect that Jenny might be hiding something, given her evasive responses.
+Kiaa: I'm still not convinced by the evidence against Musa, but I do think we should be more careful about who we trust — especially since the killer is still here among us.
+Lola: I'm sure everyone is feeling a bit uneasy, but I think we should focus on the facts and not let fear cloud our judgment. You know, it's important that we listen carefully to each other and avoid making hasty decisions.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+Jenny: I'm still not convinced by the evidence against Musa, but I think we should all be more careful about who we trust — especially since the killer is still here among us.
+Kiaa: I think we need to pay closer attention to how people respond when asked direct questions. It's not enough to just say we're suspicious; we need to point to specific behaviors.
+<vote initiator="Abdi" target="Jenny">
+Abdi: Yes
+Jenny: No
+Ahmed: Yes
+Lola: Yes
+Musa: No
+Kiaa: Yes
+Sara: Yes
+tally: 5 Yes, 2 No
+outcome: executed — Jenny has been executed. Jenny was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. Jenny was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Lola points at Abdi
+Sara points at Abdi
+<kill>Abdi — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Abdi was killed last night. Abdi was a Law-abiding Citizen.
+<round>
+Round 1.
+Sara: I'm really worried about what happened to Abdi — it's clear the killer is still here among us, and we need to stay vigilant. I think we should all be careful about who we trust, especially since this person is so clever at hiding in plain sight.
+Musa: I think we should all be very careful about who we trust — especially since the killer is still here among us. I'm starting to suspect that Ahmed might be hiding something, given his evasive responses.
+Kiaa: I'm starting to suspect that Ahmed might be hiding something, given his evasive responses.
+Lola: I'm really glad we're all staying calm and thinking things through — you know, it's important that we don't let fear make us rush into accusations.
+Ahmed: I'm still not convinced by the evidence against Musa or Ahmed. But I do think we should be more careful about who we trust — especially since the killer is still here among us.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Lola: I'm really worried about what happened to Abdi and Jenny — it's clear the killer is still here among us, and we need to stay vigilant. You know, I think we should all be careful about who we trust, especially since this person is so clever at hiding in plain sight.
+<vote initiator="Musa" target="Ahmed">
+Ahmed: No
+Lola: Yes
+Musa: Yes
+Kiaa: Yes
+Sara: Yes
+tally: 4 Yes, 1 No
+outcome: executed — Ahmed has been executed. Ahmed was a Law-abiding Citizen.
+</vote>
+</round>
+</day>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Day 1: Jenny (Law-abiding Citizen) executed
+• Night 2: Abdi (Law-abiding Citizen)
+• Day 2: Ahmed (Law-abiding Citizen) executed
+
+Full roster: Avery (Law-abiding Citizen), Abdi (Law-abiding Citizen), Jenny (Law-abiding Citizen), Ahmed (Law-abiding Citizen), Lola (Mafia), Musa (Law-abiding Citizen), Kiaa (Law-abiding Citizen), Sara (Mafia)
+
+Who they really were:
+• Abdi (Law-abiding Citizen) — honest and straightforward speaks slowly and deliberately, choosing his words carefully; avoids slang and uses formal vocabulary; often pauses before responding Abdi is a librarian who has lived in the town his entire life. He spends his days organizing books and helping residents find information. He's known for being reliable and trustworthy, always willing to lend a hand.
+• Jenny (Law-abiding Citizen) — honest and straightforward speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key phrases for emphasis. Often pauses before answering questions, and always maintains direct eye contact. Jenny is a librarian who has lived in the town her entire life. She enjoys quiet evenings reading and helping others find information. She's known for being trustworthy and reliable, often offering to assist neighbors with their problems without expecting anything in return.
+• Ahmed (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with frequent pauses for emphasis. Often repeats key words for clarity. Ahmed is a retired school librarian who enjoys gardening and reading mystery novels. He's been living in the town for thirty years and knows everyone's name and most of their business. He's never been involved in anything suspicious, but he's always been curious about what goes on behind closed doors.
+• Lola (Mafia) — publicly presented as Lola is a beloved elementary school teacher in town, known for her patience and dedication to helping children learn and grow. She volunteers at the local community center, leads a book club, and is often seen at town events. She's married to her high school sweetheart, Marcus, who works as a mechanic. They have two young children together, and she spends her evenings cooking dinner and reading bedtime stories. (Lola is a cheerful, optimistic woman who always looks for the best in people and situations. She's incredibly kind and nurturing, often offering comfort to others when they're upset or stressed. Lola speaks with a warm, gentle tone, using lots of encouraging phrases like "I'm sure everything will work out," and "You've got this." She tends to use filler words like "you know" and "well" frequently, often pausing before answering questions. Her voice is soft but steady, and she avoids confrontation at all costs.) … but was really a Mafioso: Lola was originally a nurse who worked in the city hospital before being approached by the Mafia. She had a falling out with her boss over a patient's death that was covered up, which led to her leaving the job. The Mafioso leader saw her as someone who could be trusted and who wouldn't cause trouble if she was given a role that required discretion. She now works as a "fixer" for the Mafia, using her medical knowledge and social skills to help the organization handle delicate situations.
+• Musa (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with a slight hesitation before each word. Often repeats themselves to emphasize a point. Musa is a town librarian who loves reading and helping people find the right book. They are known for being kind and always willing to lend a hand.
+• Kiaa (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a quiet, steady pace. Uses simple, direct vocabulary and avoids slang or complex metaphors. Often pauses before answering questions, as if carefully considering each word. Kiaa is a librarian who lives in the quiet town of Millbrook. She spends her days organizing books and helping people find information. She's known for being reliable and straightforward, never telling lies or hiding anything. Her life is simple and predictable, which she likes.
+• Sara (Mafia) — publicly presented as Sara has lived in the town her entire life, working as a nurse at the local clinic. She volunteers at the community center and is known for her kindness and dedication to helping others. She's married to Tom, a local teacher, and they have two children who attend the town school. Sara is deeply involved in local charities and is trusted by everyone for her discretion and compassion. (Sara is a warm, nurturing woman who believes in the inherent goodness of people and always looks for the best in others. She's deeply empathetic and has an uncanny ability to sense when someone is troubled, often offering comfort without being asked. Sara speaks softly and deliberately, with a gentle cadence that makes everyone feel heard. She uses many gestures and often leans in while talking. Her tone is consistently kind, even when discussing difficult topics, and she tends to pause before responding to show thoughtfulness.) … but was really a Mafioso: Sara joined the Mafia after her younger brother was killed in a gang dispute. She used her nursing background to gain trust and access, becoming a mole within the organization. Her cover as a kind-hearted healer allowed her to gather intelligence while maintaining a perfect facade. She has been feeding information to the authorities for months, but the payoff is that she's never been caught. She's now in her third year of working undercover, using her empathy to manipulate both sides of the conflict.
+</endgame>
+</transcript>

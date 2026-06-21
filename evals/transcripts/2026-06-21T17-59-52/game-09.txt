@@ -1,0 +1,312 @@
+Game 9 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=20
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Caius" role="Mafia">
+Personality: Caius is a methodical, reserved individual who exudes quiet confidence. He's a natural observer, rarely speaking unless he has something meaningful to contribute, but when he does, it carries weight. He is trustworthy and dependable, yet maintains an air of mystery that makes others curious about him.
+Manner: Caius speaks slowly and deliberately, as if every word is carefully chosen. His tone is calm and steady, rarely rising above a measured whisper. He often pauses mid-sentence to assess his audience or consider the implications of what he's saying. He has a habit of looking directly at people when speaking, making them feel as though he's examining their sincerity.
+Public legend: Caius is a retired librarian who moved to the town five years ago after his wife passed away. He spends his days tending to his small garden and reading classic literature. He’s known for his quiet demeanor and is often seen at the local café, sipping tea and observing the townspeople. He volunteers at the community center and is well-respected for his kindness and wisdom.
+True self (hidden): Caius was once a low-level enforcer in a small-time crime family before he could rise higher. After a particularly brutal incident involving an innocent bystander, he fled the organization and assumed a new identity to escape their reach. He’s been living under the radar ever since, keeping his head down and avoiding any situation that might expose him. His ultimate goal is to live out his days in peace, but he still feels a pull toward the power and control he once had.
+</player>
+<player name="Hana" role="Mafia">
+Personality: Hana is a quiet, methodical woman who presents herself as a dedicated librarian with a strong sense of duty and order. She's deeply empathetic but keeps her emotions carefully controlled, often appearing more like a gentle observer than an active participant in social dynamics.
+Manner: Hana speaks in measured, deliberate tones. Her voice is soft but carries a subtle weight—she rarely interrupts, but when she does, it’s with a calm authority that commands attention. She uses phrases like “I think perhaps…” or “It might be worth considering…” and often pauses before responding to ensure her words are carefully chosen.
+Public legend: Hana has lived in the town for most of her life, working as the head librarian at the local library where she’s known for her quiet dedication and deep love of books. She volunteers at the community center on weekends and is always ready with a kind word or helpful advice. She's married to a local teacher and has two children who are both in school. She's seen as a pillar of the town, someone who brings peace and stability to those around her.
+True self (hidden): Hana was recruited into the Mafia by her older brother, who had been working for a powerful crime syndicate before his death in a “road accident.” She took up his role out of loyalty and a desire to protect her family, but also because she discovered that she could manipulate people’s trust like a book she knew by heart. She’s learned to read the subtle shifts in behavior, tone, and body language to determine who can be trusted—and who should be eliminated.
+</player>
+<player name="IroshizukuYori" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses. Often repeats words for emphasis and avoids complex sentences.
+Persona: IroshizukuYori is a quiet shopkeeper who runs a small stationery store in the town center. They live a simple life, spending their days organizing supplies and helping townsfolk with their needs. They are known for being trustworthy and always keeping their word.
+</player>
+<player name="Kareem" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks with deliberate pacing, uses simple but clear language, often pauses before answering questions
+Persona: Kareem is a local librarian who loves reading and helping people find information. He's known for being reliable and always tells the truth.
+</player>
+<player name="Nala" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, with a tendency to pause before answering questions. Uses simple, direct language and avoids slang or complex metaphors. Often repeats key words for emphasis.
+Persona: Nala is a librarian who lives in the town's quiet residential district. She spends her days organizing books and helping townspeople find information. She is well-liked for her kindness and straightforwardness.
+</player>
+<player name="Ody" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses. Often repeats words for emphasis and avoids complex sentences.
+Persona: Ody is a retired school teacher who enjoys gardening and reading mystery novels. They live alone in a small house on the edge of town and are known for always telling the truth.
+</player>
+<player name="Vika" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, with a tendency to repeat words for emphasis; uses simple, direct language without slang or filler phrases
+Persona: Vika is a librarian who lives in the town's old district. She spends her days organizing books and helping people find information. She's known for being trustworthy and always tells the truth, even when it's inconvenient.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Caius, Hana, IroshizukuYori, Kareem, Nala, Ody, Vika. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Caius): Your Mafia teammates are: Hana. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Hana): Your Mafia teammates are: Caius. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Caius points at Avery
+Hana points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Caius: I'm shaken by Avery's passing. I hope we can find the killer soon and bring them to justice.
+IroshizukuYori: I'm not sure who to trust yet.
+Vika: Caius seems nervous — I think he's trying to act innocent, but his hesitation when I asked about his night activity was odd. I want to know what he was doing.
+Kareem: I'm not sure who to trust yet.
+Hana: I think perhaps we should focus on the fact that Avery was killed so early — it might be worth considering whether the killer is still among us, or if there's a pattern we're missing.
+Nala: I think we should all be careful about who we trust. IroshizukuYori, you seemed surprised when Caius mentioned his nervousness — did you notice anything strange about him too? Let's focus on gathering more information before jumping to conclusions.
+Ody: Caius, you mentioned being nervous — I think we all are, but can you tell us what you did during the night? I want to know if you were watching over the area or if you were somewhere else. I'm not sure who to trust yet.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Ody: Caius, you said you were nervous — I think we all are, but can you tell us what you did during the night? I want to know if you were watching over the area or if you were somewhere else. I'm not sure who to trust yet.
+Hana: I think perhaps Caius is being overly dramatic about his nervousness. I'm not sure why he's so quick to accuse others of hiding something.
+Kareem: I think we should all be cautious about who we trust. Caius, can you explain why you were so nervous during the night?
+Nala: I think Caius is hiding something — his constant nervousness and vague answers are suspicious. I want to know what he was doing during the night, and if he's not truthful, then we should consider him a danger to our group.
+IroshizukuYori: I think Caius is hiding something. He keeps saying he's nervous, but he won't tell us what he did during the night.
+Caius: I understand everyone's concern, but I assure you my actions during the night were solely focused on staying alert and observing the area. I didn't see anything unusual.
+<vote initiator="Vika" target="Caius">
+Caius: No
+Hana: No
+IroshizukuYori: Yes
+Kareem: Yes
+Nala: Yes
+Ody: Yes
+Vika: Yes
+tally: 5 Yes, 2 No
+outcome: executed — Caius has been executed. Caius was a Mafia.
+</vote>
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Caius was executed today and was revealed to be Mafia.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Hana points at Ody
+<kill>Ody — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Ody was killed last night. Ody was a Law-abiding Citizen.
+<round>
+Round 1.
+Vika: I think Hana is acting strange — she's been quiet and keeps looking around nervously. I want to know what she was doing during the night.
+IroshizukuYori: Hana seems nervous. I wonder what she did during the night.
+Kareem: I think Hana is acting suspiciously — she's been quiet and keeps looking around nervously. I want to know what she was doing during the night.
+Hana: I think perhaps we should all be cautious about jumping to conclusions too quickly. Hana's behavior might just be her natural quietness — I'm not sure there's enough evidence to point the finger at her yet.
+Nala: I think Hana is hiding something — her quietness and nervous glances after Ody's death seem too calculated. I want to know what she was doing during the night.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Kareem: I think we should focus on who killed Ody — I'm not convinced Hana is hiding anything, but I'm suspicious of how quiet she's been. Let's figure out what Vika and IroshizukuYori were doing during the night.
+Vika: I think Hana is hiding something — her quietness and nervous glances after Ody's death seem too calculated. I want to know what she was doing during the night.
+Hana: I think perhaps we should all be careful about who we trust — Hana's behavior might just be her natural quietness, but I'm not sure there's enough evidence to point the finger at her yet.
+IroshizukuYori: I think Hana is hiding something. She has been too quiet and keeps looking around nervously. I want to know what she was doing during the night.
+Nala: I think Hana is hiding something — her quietness and nervous glances after Ody's death seem too calculated. I want to know what she was doing during the night.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+Vika: I think Hana is hiding something — her quietness and nervous glances after Ody's death seem too calculated. I want to know what she was doing during the night.
+Kareem: I think we should focus on what Vika and IroshizukuYori were doing during the night — their sudden accusations against Hana seem a bit too convenient. Let's get clarity on their actions.
+IroshizukuYori: I think Hana is hiding something. She has been too quiet and keeps looking around nervously. I want to know what she was doing during the night.
+Nala: I think we should focus on what Vika and IroshizukuYori were doing during the night. Their sudden accusations against Hana seem too convenient, and I want to know if they were watching over the area or if they were somewhere else.
+Hana: I think perhaps we should all be cautious about jumping to conclusions too quickly. Hana's behavior might just be her natural quietness — I'm not sure there's enough evidence to point the finger at her yet.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 4.
+Vika: I think Hana is hiding something — her quietness and nervous glances after Ody's death seem too calculated. I want to know what she was doing during the night.
+Nala: I think we should all be cautious about who we trust. Vika, you've been very quick to accuse Hana — can you tell us what you were doing during the night? I want to know if you were watching over the area or if you were somewhere else.
+Kareem: I think we should focus on what Vika and IroshizukuYori were doing during the night — their sudden accusations against Hana seem too convenient. I want to know if they were watching over the area or if they were somewhere else.
+IroshizukuYori: I think Vika is being too quick to accuse Hana. She hasn't told us what she did during the night — that seems odd.
+Hana: I think perhaps we should all be careful about whom we accuse based on nervousness alone — it might be worth considering that some of us are simply trying to stay alert.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 5.
+Hana: I think perhaps we should all be careful about who we trust — I'm not sure Hana is hiding anything, but I am curious about what Vika and IroshizukuYori were doing during the night.
+IroshizukuYori: I think Vika is being too quick to accuse Hana. She hasn't told us what she did during the night — that seems odd.
+Nala: I think we should all be careful about who we trust. Vika, you've been very quick to accuse Hana — can you tell us what you were doing during the night? I want to know if you were watching over the area or if you were somewhere else.
+Kareem: I think we should focus on what Vika and IroshizukuYori were doing during the night — their sudden accusations against Hana seem too convenient. Let's get clarity on their actions.
+Vika: I think IroshizukuYori is acting strange — she's been avoiding direct answers about her night activity, and her sudden focus on Hana seems too convenient. I want to know what she was doing during the night.
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 6.
+Hana: I think perhaps we should all be careful about who we trust — I'm not sure Hana is hiding anything, but I am curious about what Vika and IroshizukuYori were doing during the night.
+IroshizukuYori: I think Vika is hiding something. She keeps pushing suspicion onto others instead of telling us what she did during the night.
+Vika: I think IroshizukuYori is acting strange — she's been avoiding direct answers about her night activity, and her sudden focus on Hana seems too convenient. I want to know what she was doing during the night.
+Kareem: I think we should focus on what Vika and IroshizukuYori were doing during the night. Their sudden shift in suspicion onto Hana feels off, and they haven't explained their own actions.
+Nala: I think Vika is hiding something — her sudden focus on Hana and vague answers about her night activity seem too convenient. I want to know what she was doing during the night.
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Hana points at Kareem
+<kill>Kareem — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Kareem was killed last night. Kareem was a Law-abiding Citizen.
+<round>
+Round 1.
+Vika: I think IroshizukuYori is hiding something — her answers have been vague, and she keeps deflecting questions about her night activity. I want to know what she was doing during the night.
+Nala: I think IroshizukuYori is hiding something — her answers have been vague, and she keeps deflecting questions about her night activity. I want to know what she was doing during the night.
+IroshizukuYori: I think Vika is hiding something. She keeps pushing suspicion onto others, but she hasn't told us what she did during the night.
+Hana: I think perhaps we should all be careful about who we trust — I'm not sure IroshizukuYori is hiding anything, but I am curious about what she was doing during the night.
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+IroshizukuYori: I think Vika is hiding something. She keeps deflecting questions about her night activity and has been pushing suspicion onto others instead of telling us what she did. I want to know what Vika was doing during the night.
+Hana: I think perhaps we should all be careful about who we trust — I'm not sure Vika is hiding anything, but I am curious about what she was doing during the night.
+Vika: I think IroshizukuYori is hiding something — her answers have been vague, and she keeps deflecting questions about her night activity. I want to know what she was doing during the night.
+Nala: I think IroshizukuYori is hiding something — her vague answers and deflection seem too calculated. Let's get clarity on what she was doing during the night.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+Nala: I think IroshizukuYori is hiding something — her answers have been vague, and she keeps deflecting questions about her night activity. Let's get clarity on what she was doing during the night.
+Vika: I think IroshizukuYori is hiding something — her answers have been vague, and she keeps deflecting questions about her night activity. I want to know what she was doing during the night.
+Hana: I think perhaps we should all be careful about who we trust — I'm not sure IroshizukuYori is hiding anything, but I am curious about what she was doing during the night.
+IroshizukuYori: I think Vika is hiding something. She keeps deflecting questions about her night activity and has been pushing suspicion onto others instead of telling us what she did. I want to know what Vika was doing during the night.
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 4.
+IroshizukuYori: I think Vika is hiding something. She keeps deflecting questions about her night activity and has been pushing suspicion onto others instead of telling us what she did. I want to know what Vika was doing during the night.
+Vika: I think IroshizukuYori is hiding something — her answers have been vague, and she keeps deflecting questions about her night activity. I want to know what she was doing during the night.
+Hana: I think perhaps we should all be cautious about who we trust — I'm not sure Vika is hiding anything, but I am curious about what she was doing during the night.
+Nala: I think IroshizukuYori is hiding something — her answers have been vague, and she keeps deflecting questions about her night activity. Let's get clarity on what she was doing during the night.
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 5.
+IroshizukuYori: I think Vika is hiding something. She keeps deflecting questions about her night activity and has been pushing suspicion onto others instead of telling us what she did. I want to know what Vika was doing during the night.
+Hana: I think perhaps we should all be careful about who we trust — I'm not sure Vika is hiding anything, but I am curious about what she was doing during the night.
+Nala: I think IroshizukuYori is hiding something — her constant deflection and blame-shifting seem too calculated. Let's get clarity on what she was doing during the night.
+Vika: I think IroshizukuYori is hiding something — her answers have been vague, and she keeps deflecting questions about her night activity. I want to know what she was doing during the night.
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 6.
+Hana: I think perhaps we should all be careful about who we trust — I'm not sure Vika is hiding anything, but I am curious about what she was doing during the night.
+IroshizukuYori: I think Vika is hiding something. She keeps deflecting questions about her night activity and has been pushing suspicion onto others instead of telling us what she did. I want to know what Vika was doing during the night.
+Vika: I think IroshizukuYori is hiding something — her answers have been vague, and she keeps deflecting questions about her night activity. I want to know what she was doing during the night.
+Nala: I think IroshizukuYori is hiding something — her constant deflection and blame-shifting seem too calculated. Let's get clarity on what she was doing during the night.
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Hana points at Nala
+<kill>Nala — Law-abiding Citizen</kill>
+Moderator: Night 4 ends.
+</night>
+<day>
+Day 4 begins.
+Moderator: Day breaks. Nala was killed last night. Nala was a Law-abiding Citizen.
+<round>
+Round 1.
+Hana: I think perhaps we should all be cautious about whom we trust — Nala's death has left us all on edge, and it might be worth considering that the killer is still among us.
+Vika: I think IroshizukuYori is hiding something — her answers have been vague, and she keeps deflecting questions about her night activity. I want to know what she was doing during the night.
+IroshizukuYori: I think Vika is hiding something. She keeps deflecting questions about her night activity and has been pushing suspicion onto others instead of telling us what she did.
+<recap>Day 4, 9 AM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+IroshizukuYori: I think Vika is hiding something. She keeps deflecting questions about her night activity and has been pushing suspicion onto others instead of telling us what she did. I want to know what Vika was doing during the night.
+Hana: I think perhaps we should all be careful about whom we trust — Nala's death has left us all on edge, and it might be worth considering that the killer is still among us.
+Vika: I think IroshizukuYori is hiding something — her answers have been vague, and she keeps deflecting questions about her night activity. I want to know what she was doing during the night.
+<recap>Day 4, 12 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+Hana: I think perhaps we should all be careful about whom we trust — Nala's death has left us all on edge, and it might be worth considering that the killer is still among us.
+Vika: I think IroshizukuYori is hiding something — her answers have been vague, and she keeps deflecting questions about her night activity. I want to know what she was doing during the night.
+IroshizukuYori: I think Vika is hiding something. She has been avoiding telling us what she did during the night, and she keeps pushing suspicion onto others.
+<recap>Day 4, 3 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 4.
+IroshizukuYori: I think Vika is hiding something. She keeps deflecting questions about her night activity and has been pushing suspicion onto others instead of telling us what she did.
+
+I want to know what Vika was doing during the night.
+Hana: I think perhaps we should all be careful about whom we trust — Vika's behavior has been increasingly erratic, and her evasiveness about her night activity is troubling.
+Vika: I think IroshizukuYori is hiding something — her answers have been vague, and she keeps deflecting questions about her night activity. I want to know what she was doing during the night.
+<recap>Day 4, 6 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 5.
+IroshizukuYori: I think Vika is hiding something. She has been avoiding telling us what she did during the night, and her sudden focus on others seems too convenient.
+Hana: I think perhaps we should all be careful about whom we trust — Vika's behavior has been increasingly erratic, and her evasiveness about her night activity is troubling.
+Vika: I think IroshizukuYori is hiding something — her answers have been vague, and she keeps deflecting questions about her night activity. I want to know what she was doing during the night.
+<recap>Day 4, 9 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 6.
+<vote initiator="IroshizukuYori" target="Vika">
+Hana: No
+IroshizukuYori: Yes
+Vika: No
+tally: 1 Yes, 2 No
+outcome: failed — The vote fails.
+</vote>
+Vika: I think IroshizukuYori is hiding something — her answers have been vague, and she keeps deflecting questions about her night activity. I want to know what she was doing during the night.
+IroshizukuYori: I think Vika is hiding something. She keeps deflecting questions about her night activity and has been pushing suspicion onto others instead of telling us what she did.
+Hana: I think perhaps we should all be careful about whom we trust — Vika's behavior has been increasingly erratic, and her evasiveness about her night activity is troubling.
+Moderator: The Day ends with no one executed.
+<recap>Day 4, 12 AM (midnight) status: 2 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 5 begins.
+Pointing round 1:
+Hana points at Vika
+<kill>Vika — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Day 1: Caius (Mafia) executed
+• Night 2: Ody (Law-abiding Citizen)
+• Night 3: Kareem (Law-abiding Citizen)
+• Night 4: Nala (Law-abiding Citizen)
+• Night 5: Vika (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Caius (Mafia), Hana (Mafia), IroshizukuYori (Law-abiding Citizen), Kareem (Law-abiding Citizen), Nala (Law-abiding Citizen), Ody (Law-abiding Citizen), Vika (Law-abiding Citizen)
+
+Who they really were:
+• Caius (Mafia) — publicly presented as Caius is a retired librarian who moved to the town five years ago after his wife passed away. He spends his days tending to his small garden and reading classic literature. He’s known for his quiet demeanor and is often seen at the local café, sipping tea and observing the townspeople. He volunteers at the community center and is well-respected for his kindness and wisdom. (Caius is a methodical, reserved individual who exudes quiet confidence. He's a natural observer, rarely speaking unless he has something meaningful to contribute, but when he does, it carries weight. He is trustworthy and dependable, yet maintains an air of mystery that makes others curious about him. Caius speaks slowly and deliberately, as if every word is carefully chosen. His tone is calm and steady, rarely rising above a measured whisper. He often pauses mid-sentence to assess his audience or consider the implications of what he's saying. He has a habit of looking directly at people when speaking, making them feel as though he's examining their sincerity.) … but was really a Mafioso: Caius was once a low-level enforcer in a small-time crime family before he could rise higher. After a particularly brutal incident involving an innocent bystander, he fled the organization and assumed a new identity to escape their reach. He’s been living under the radar ever since, keeping his head down and avoiding any situation that might expose him. His ultimate goal is to live out his days in peace, but he still feels a pull toward the power and control he once had.
+• Hana (Mafia) — publicly presented as Hana has lived in the town for most of her life, working as the head librarian at the local library where she’s known for her quiet dedication and deep love of books. She volunteers at the community center on weekends and is always ready with a kind word or helpful advice. She's married to a local teacher and has two children who are both in school. She's seen as a pillar of the town, someone who brings peace and stability to those around her. (Hana is a quiet, methodical woman who presents herself as a dedicated librarian with a strong sense of duty and order. She's deeply empathetic but keeps her emotions carefully controlled, often appearing more like a gentle observer than an active participant in social dynamics. Hana speaks in measured, deliberate tones. Her voice is soft but carries a subtle weight—she rarely interrupts, but when she does, it’s with a calm authority that commands attention. She uses phrases like “I think perhaps…” or “It might be worth considering…” and often pauses before responding to ensure her words are carefully chosen.) … but was really a Mafioso: Hana was recruited into the Mafia by her older brother, who had been working for a powerful crime syndicate before his death in a “road accident.” She took up his role out of loyalty and a desire to protect her family, but also because she discovered that she could manipulate people’s trust like a book she knew by heart. She’s learned to read the subtle shifts in behavior, tone, and body language to determine who can be trusted—and who should be eliminated.
+• IroshizukuYori (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with frequent pauses. Often repeats words for emphasis and avoids complex sentences. IroshizukuYori is a quiet shopkeeper who runs a small stationery store in the town center. They live a simple life, spending their days organizing supplies and helping townsfolk with their needs. They are known for being trustworthy and always keeping their word.
+• Kareem (Law-abiding Citizen) — honest and straightforward speaks with deliberate pacing, uses simple but clear language, often pauses before answering questions Kareem is a local librarian who loves reading and helping people find information. He's known for being reliable and always tells the truth.
+• Nala (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a tendency to pause before answering questions. Uses simple, direct language and avoids slang or complex metaphors. Often repeats key words for emphasis. Nala is a librarian who lives in the town's quiet residential district. She spends her days organizing books and helping townspeople find information. She is well-liked for her kindness and straightforwardness.
+• Ody (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with frequent pauses. Often repeats words for emphasis and avoids complex sentences. Ody is a retired school teacher who enjoys gardening and reading mystery novels. They live alone in a small house on the edge of town and are known for always telling the truth.
+• Vika (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a tendency to repeat words for emphasis; uses simple, direct language without slang or filler phrases Vika is a librarian who lives in the town's old district. She spends her days organizing books and helping people find information. She's known for being trustworthy and always tells the truth, even when it's inconvenient.
+</endgame>
+</transcript>

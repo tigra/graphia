@@ -1,0 +1,306 @@
+Game 1 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=20
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Yusuf" role="Law-abiding Citizen">
+Personality: methodical and steady
+Manner: speaks with measured, deliberate cadence; uses precise vocabulary; occasionally checks his watch or adjusts his glasses
+Persona: Yusuf is a librarian who has lived in the town his entire life. He spends his days organizing books and helping people find information. He's known for being reliable and always keeps his word.
+</player>
+<player name="Hana" role="Mafia">
+Personality: Hana is a quiet, observant woman who appears gentle and kind, but possesses an unsettling ability to read people's emotions and intentions with uncanny accuracy. She has a deep empathy for others, yet uses this trait to manipulate situations to her advantage.
+Manner: Hana speaks in soft, measured tones with a slight musical quality to her voice. She often pauses before answering questions, as if carefully considering each word. Her speech is polite but distant, and she tends to use indirect language when addressing sensitive topics.
+Public legend: Hana is a former nurse who moved to the town after losing her job in the city. She spends her days volunteering at the local clinic, helping with basic medical care for the townspeople. She's known for being particularly attentive to the elderly and children, often bringing small gifts or homemade treats to those in need. Hana is well-liked by everyone she interacts with, as she's always ready to lend a helping hand without expecting anything in return.
+True self (hidden): Hana was recruited into the Mafia after her younger brother was killed in a "random" street robbery. She spent years learning the criminal underworld, eventually becoming one of the organization's most trusted enforcers. She now operates under the alias of a "healer," using her medical knowledge to help eliminate targets while maintaining her cover as a kind-hearted nurse.
+</player>
+<player name="Loki" role="Mafia">
+Personality: Cunning and elusive, with a quiet confidence that masks deeper intentions
+Manner: Speaks in measured, thoughtful tones with occasional pauses for emphasis; uses subtle gestures and indirect language to convey meaning
+Public legend: Loki is a quiet librarian who has lived in the town his entire life. He's known for being well-read, reserved, and always available to help others with their research needs. His modest home is filled with books and he often volunteers at the local community center.
+True self (hidden): Loki was recruited into the Mafia after his family was threatened. He learned quickly that his natural ability to blend in and observe made him a perfect asset for infiltration and manipulation. He's been working as a mole within the town's social fabric, gathering intelligence while maintaining his cover.
+</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: curious and earnest
+Manner: speaks with a gentle, deliberate pace; uses phrases like "you know" and "well, I think" frequently; often pauses to consider before answering
+Persona: Zara is a librarian who loves nothing more than a good mystery novel and helping people find the perfect book. She's known for her quiet kindness and sharp eye for detail, always noticing things others miss.
+</player>
+<player name="Finn" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks with a slow, deliberate pace, using simple vocabulary and often repeating key phrases for emphasis. Has a habit of nodding while talking and finishing sentences with "you know" or "as I said."
+Persona: Finn is a retired schoolteacher who now spends his days gardening and helping out at the local community center. He's known for his strong moral compass and is always ready to lend a hand to anyone in need.
+</player>
+<player name="Mira" role="Law-abiding Citizen">
+Personality: Calm and observant
+Manner: Speaks slowly and deliberately, with a tendency to pause before answering questions. Uses precise, simple vocabulary and often repeats key words for emphasis.
+Persona: Mira is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being quiet but always willing to lend a hand.
+</player>
+<player name="Aidan" role="Law-abiding Citizen">
+Personality: honest and earnest
+Manner: speaks slowly and deliberately, always choosing his words carefully. He tends to pause before answering questions and often repeats key phrases for emphasis. His vocabulary is simple but precise.
+Persona: Aidan is a librarian who has lived in the town his whole life. He spends his days organizing books and helping people find information. He's known for being reliable and trustworthy, always ready to lend a hand or share knowledge.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Yusuf, Hana, Loki, Zara, Finn, Mira, Aidan. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Hana): Your Mafia teammates are: Loki. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Loki): Your Mafia teammates are: Hana. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Hana points at Mira
+Loki points at Mira
+<kill>Mira — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Mira was killed last night. Mira was a Law-abiding Citizen.
+<round>
+Round 1.
+Hana: That's terrible about Mira. I hope we can figure out who did this quickly so we can keep everyone safe.
+Loki: I'm glad we're all here together to figure this out. It's important we stay calm and think carefully about who might be behind this.
+Aidan: I think we should focus on who knew Mira well, and who might have had a reason to harm her. That could give us a clue about the killer.
+Zara: I think we should all take a moment to really consider who had the opportunity and motive to eliminate Mira. Well, I'm wondering if anyone else noticed anything suspicious about the way things were discussed last night?
+Finn: Hana, you mentioned we should focus on who knew Mira well — do you mean to say someone here had a personal motive? That sounds like an important point to consider.
+<vote initiator="Yusuf" target="Finn">
+Avery: No
+Yusuf: No
+Hana: No
+Loki: No
+Zara: No
+Finn: No
+Aidan: No
+tally: 0 Yes, 7 No
+outcome: failed — The vote fails.
+</vote>
+Avery: Nothing is settled yet, but I'm watching Loki most closely.
+Yusuf: I'm beginning to suspect that Finn may be trying to misdirect suspicion away from himself. His reaction to the vote was too calm — I'd like to hear more about his whereabouts during the night.
+Loki: I think we should all be careful about who we trust — especially when someone's reaction seems too calculated.
+Aidan: I think we should all be cautious about who we trust — especially when someone's reaction seems too calculated. I'm beginning to suspect Loki may be hiding something.
+Zara: I think we should all be cautious about who we trust — especially when someone's reaction seems too calculated. I'm beginning to suspect Loki may be hiding something.
+Finn: I think we should all be careful about who we trust — especially when someone's reaction seems too calculated. I'm beginning to suspect Loki may be hiding something.
+Hana: I agree with Aidan and Zara — I do feel we should be cautious about Loki. His silence during the vote was... unsettling.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Hana: I'm starting to think that the killer is someone who was close enough to Mira to know her well, but not so obvious as to raise immediate suspicion. That's a tricky balance to strike.
+Avery: Nothing is settled yet, but I'm watching Loki most closely.
+Loki: I think we're all feeling the pressure, but let's not let fear cloud our judgment. We need to be methodical in our thinking.
+Yusuf: I'm not sure who to trust yet.
+Finn: I'm starting to think that Loki may be the one we should be watching most closely — his silence during the vote was unsettling, and he's been quick to deflect suspicion onto others. You know, as I said, we need to pay attention to how people react when things get tough.
+<vote initiator="Aidan" target="Loki">
+Avery: No
+Yusuf: Yes
+Hana: No
+Loki: No
+Zara: Yes
+Finn: Yes
+Aidan: Yes
+tally: 4 Yes, 3 No
+outcome: executed — Loki has been executed. Loki was a Mafia.
+</vote>
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 1 Mafioso remain. 2 execution votes called today. Loki was executed today and was revealed to be Mafia.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Hana points at Finn
+<kill>Finn — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Finn was killed last night. Finn was a Law-abiding Citizen.
+<round>
+Round 1.
+Aidan: I think we should focus on who had the opportunity to kill Finn, and who might have had a reason to eliminate him. I'm beginning to suspect Zara may be hiding something.
+Avery: Loki was revealed to be Mafia. I most suspect Yusuf based on how the votes have gone.
+Yusuf: Aidan, your suspicion about Zara is intriguing — I'd like to hear more about what specifically you noticed about her behavior.
+Hana: I'm worried about how quickly we're jumping to conclusions. Finn's death feels like it was meant to throw us off track, but I think we need to stay focused on the real patterns here.
+Zara: Well, I'm wondering if anyone else noticed how quiet Yusuf has been since Finn was killed — it's almost as if he's trying to avoid drawing attention to himself.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Hana: I think we should consider that Finn's death might have been intended to misdirect us, and that the real killer is still here among us, watching and waiting.
+<vote initiator="Yusuf" target="Zara">
+Avery: No
+Yusuf: Yes
+Hana: No
+Zara: No
+Aidan: Yes
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Avery: Loki was revealed to be Mafia. I most suspect Yusuf based on how the votes have gone.
+Hana: I think it's important we don't let fear drive us to make rash decisions. Zara's quietness is concerning, but we should be careful about jumping to conclusions.
+Aidan: I think we should focus on who had the opportunity to kill Finn, and who might have had a reason to eliminate him. I'm beginning to suspect Zara may be hiding something.
+Zara: Well, I think we should all take a moment to consider the pattern of votes — it seems like someone is trying to manipulate the group dynamic.
+<vote initiator="Yusuf" target="Zara">
+Avery: No
+Yusuf: Yes
+Hana: No
+Zara: No
+Aidan: Yes
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Aidan: I think we should all be very careful about who we trust — especially when someone's reaction seems too calculated. I'm beginning to suspect Yusuf may be hiding something.
+Hana: I'm starting to think that the killer is someone who's been watching us closely, waiting for the right moment to strike. It's unsettling how quickly we've been turning on each other.
+Yusuf: I'm beginning to suspect that Aidan's pattern of shifting blame onto others is too calculated. His behavior during the votes has been oddly consistent — I'd like to know where he was during the night when Finn was killed.
+Zara: I think we should all be very careful about who we trust — especially when someone's reaction seems too calculated. Well, I'm beginning to suspect that Aidan may be hiding something.
+Avery: Loki was revealed to be Mafia. I most suspect Yusuf based on how the votes have gone.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. 2 execution votes called today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+Hana: I'm still concerned about how quickly we're accusing each other. It feels like the killer is using our fear against us, turning us into tools of their game.
+Aidan: I think we should all be very careful about who we trust — especially when someone's reaction seems too calculated. I'm beginning to suspect Yusuf may be hiding something.
+Zara: I think we should all be very careful about who we trust — especially when someone's reaction seems too calculated. Well, I'm beginning to suspect that Aidan may be hiding something.
+Yusuf: I'm beginning to suspect that Aidan's pattern of deflecting suspicion onto others is too calculated to be coincidental. His behavior during the votes has been oddly consistent — I'd like to know where he was during the night when Finn was killed.
+Avery: Loki was revealed to be Mafia. I most suspect Yusuf based on how the votes have gone.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. 2 execution votes called today. No one has been executed today.</recap>
+</round>
+<round>
+Round 4.
+Zara: Well, I'm beginning to suspect that Aidan may be the one we should be watching most closely — his consistent pattern of deflecting suspicion onto others feels too calculated to be coincidental.
+Yusuf: I'm beginning to suspect that Aidan's pattern of deflecting suspicion onto others is too calculated to be coincidental. His behavior during the votes has been oddly consistent — I'd like to know where he was during the night when Finn was killed.
+Aidan: I think we should all be very careful about who we trust — especially when someone's reaction seems too calculated. I'm beginning to suspect Yusuf may be hiding something.
+Hana: I'm still troubled by how quickly we've been turning on each other. It feels like the killer is using our fear against us, manipulating the group dynamic to keep us distracted from the real threat.
+Avery: Loki was revealed to be Mafia. I most suspect Yusuf based on how the votes have gone.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. 2 execution votes called today. No one has been executed today.</recap>
+</round>
+<round>
+Round 5.
+Aidan: I think we should all be very careful about who we trust — especially when someone's reaction seems too calculated. I'm beginning to suspect Yusuf may be hiding something.
+Yusuf: I'm beginning to suspect that Aidan's consistent pattern of deflecting suspicion onto others is too calculated to be coincidental. His behavior during the votes has been oddly consistent — I'd like to know where he was during the night when Finn was killed.
+Hana: I can't help but feel that we're being manipulated by someone who knows exactly how to play on our fears. I think we should focus on the patterns of suspicion — not who seems most guilty, but who is *too* quick to point fingers.
+Zara: I think we should all be very careful about who we trust — especially when someone's reaction seems too calculated. Well, I'm beginning to suspect that Aidan may be hiding something.
+Avery: Loki was revealed to be Mafia. I most suspect Yusuf based on how the votes have gone.
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. 2 execution votes called today. No one has been executed today.</recap>
+</round>
+<round>
+Round 6.
+<vote initiator="Avery" target="Yusuf">
+Avery: Yes
+Yusuf: No
+Hana: No
+Zara: Yes
+Aidan: Yes
+tally: 3 Yes, 2 No
+outcome: executed — Yusuf has been executed. Yusuf was a Law-abiding Citizen.
+</vote>
+<recap>Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 1 Mafioso remain. 3 execution votes called today. Yusuf was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Hana points at Zara
+<kill>Zara — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Zara was killed last night. Zara was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: Loki was revealed to be Mafia. Nothing is settled yet, but I'm watching Hana most closely.
+Hana: I'm worried about how quickly we're turning on each other. It feels like the killer is using our fear against us, manipulating the group dynamic to keep us distracted from the real threat.
+Aidan: I think we should all be very careful about who we trust — especially when someone's reaction seems too calculated. I'm beginning to suspect Hana may be hiding something.
+<recap>Day 3, 9 AM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Aidan: I think we should all be very careful about who we trust — especially when someone's reaction seems too calculated. I'm beginning to suspect Hana may be hiding something.
+Avery: Loki was revealed to be Mafia. Nothing is settled yet, but I'm watching Hana most closely.
+Hana: I'm still troubled by how quickly we're turning on each other. It feels like the killer is using our fear against us, manipulating the group dynamic to keep us distracted from the real threat.
+<recap>Day 3, 12 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+Avery: Loki was revealed to be Mafia. Nothing is settled yet, but I'm watching Hana most closely.
+Hana: I'm still concerned about how quickly we're turning on each other. It feels like the killer is using our fear against us, manipulating the group dynamic to keep us distracted from the real threat.
+Aidan: I think we should all be very careful about who we trust — especially when someone's reaction seems too calculated. I'm beginning to suspect Hana may be hiding something.
+<recap>Day 3, 3 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 4.
+Avery: Loki was revealed to be Mafia. Nothing is settled yet, but I'm watching Hana most closely.
+Aidan: I think we should all be very careful about who we trust — especially when someone's reaction seems too calculated. I'm beginning to suspect Hana may be hiding something.
+Hana: I can't shake the feeling that we're being played by someone who understands us all too well. It's not just about suspicion—it's about control.
+<recap>Day 3, 6 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 5.
+Hana: I'm still feeling uneasy about how quickly we've been turning on each other. It's like the killer is counting on our fear to make us act rashly.
+Aidan: I think we should all be very careful about who we trust — especially when someone's reaction seems too calculated. I'm beginning to suspect Hana may be hiding something.
+Avery: Loki was revealed to be Mafia. Nothing is settled yet, but I'm watching Hana most closely.
+<recap>Day 3, 9 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 6.
+Hana: I can't help but feel like we're missing something crucial. The way the votes have been swinging, it's almost as if someone is pulling the strings.
+<vote initiator="Aidan" target="Hana">
+Avery: No
+Hana: No
+Aidan: Yes
+tally: 1 Yes, 2 No
+outcome: failed — The vote fails.
+</vote>
+Hana: I think we're all so focused on turning on each other that we're missing something bigger. The killer has been letting us tear ourselves apart while they watch from the sidelines.
+<vote initiator="Avery" target="Hana">
+Avery: No
+Hana: No
+Aidan: No
+tally: 0 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Aidan: I think we should all be very careful about who we trust — especially when someone's reaction seems too calculated. I'm beginning to suspect Hana may be hiding something.
+Hana: I'm still uneasy about how quickly we're turning on each other. It's as if the killer is counting on our fear to make us act rashly.
+<vote initiator="Avery" target="Hana">
+Avery: No
+Hana: No
+Aidan: Yes
+tally: 1 Yes, 2 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 2 Law-abiding Citizens and 1 Mafioso remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Hana points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Mira (Law-abiding Citizen)
+• Day 1: Loki (Mafia) executed
+• Night 2: Finn (Law-abiding Citizen)
+• Day 2: Yusuf (Law-abiding Citizen) executed
+• Night 3: Zara (Law-abiding Citizen)
+• Night 4: Avery (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Yusuf (Law-abiding Citizen), Hana (Mafia), Loki (Mafia), Zara (Law-abiding Citizen), Finn (Law-abiding Citizen), Mira (Law-abiding Citizen), Aidan (Law-abiding Citizen)
+
+Who they really were:
+• Yusuf (Law-abiding Citizen) — methodical and steady speaks with measured, deliberate cadence; uses precise vocabulary; occasionally checks his watch or adjusts his glasses Yusuf is a librarian who has lived in the town his entire life. He spends his days organizing books and helping people find information. He's known for being reliable and always keeps his word.
+• Hana (Mafia) — publicly presented as Hana is a former nurse who moved to the town after losing her job in the city. She spends her days volunteering at the local clinic, helping with basic medical care for the townspeople. She's known for being particularly attentive to the elderly and children, often bringing small gifts or homemade treats to those in need. Hana is well-liked by everyone she interacts with, as she's always ready to lend a helping hand without expecting anything in return. (Hana is a quiet, observant woman who appears gentle and kind, but possesses an unsettling ability to read people's emotions and intentions with uncanny accuracy. She has a deep empathy for others, yet uses this trait to manipulate situations to her advantage. Hana speaks in soft, measured tones with a slight musical quality to her voice. She often pauses before answering questions, as if carefully considering each word. Her speech is polite but distant, and she tends to use indirect language when addressing sensitive topics.) … but was really a Mafioso: Hana was recruited into the Mafia after her younger brother was killed in a "random" street robbery. She spent years learning the criminal underworld, eventually becoming one of the organization's most trusted enforcers. She now operates under the alias of a "healer," using her medical knowledge to help eliminate targets while maintaining her cover as a kind-hearted nurse.
+• Loki (Mafia) — publicly presented as Loki is a quiet librarian who has lived in the town his entire life. He's known for being well-read, reserved, and always available to help others with their research needs. His modest home is filled with books and he often volunteers at the local community center. (Cunning and elusive, with a quiet confidence that masks deeper intentions Speaks in measured, thoughtful tones with occasional pauses for emphasis; uses subtle gestures and indirect language to convey meaning) … but was really a Mafioso: Loki was recruited into the Mafia after his family was threatened. He learned quickly that his natural ability to blend in and observe made him a perfect asset for infiltration and manipulation. He's been working as a mole within the town's social fabric, gathering intelligence while maintaining his cover.
+• Zara (Law-abiding Citizen) — curious and earnest speaks with a gentle, deliberate pace; uses phrases like "you know" and "well, I think" frequently; often pauses to consider before answering Zara is a librarian who loves nothing more than a good mystery novel and helping people find the perfect book. She's known for her quiet kindness and sharp eye for detail, always noticing things others miss.
+• Finn (Law-abiding Citizen) — honest and straightforward speaks with a slow, deliberate pace, using simple vocabulary and often repeating key phrases for emphasis. Has a habit of nodding while talking and finishing sentences with "you know" or "as I said." Finn is a retired schoolteacher who now spends his days gardening and helping out at the local community center. He's known for his strong moral compass and is always ready to lend a hand to anyone in need.
+• Mira (Law-abiding Citizen) — Calm and observant Speaks slowly and deliberately, with a tendency to pause before answering questions. Uses precise, simple vocabulary and often repeats key words for emphasis. Mira is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being quiet but always willing to lend a hand.
+• Aidan (Law-abiding Citizen) — honest and earnest speaks slowly and deliberately, always choosing his words carefully. He tends to pause before answering questions and often repeats key phrases for emphasis. His vocabulary is simple but precise. Aidan is a librarian who has lived in the town his whole life. He spends his days organizing books and helping people find information. He's known for being reliable and trustworthy, always ready to lend a hand or share knowledge.
+</endgame>
+</transcript>

@@ -1,0 +1,335 @@
+Game 18 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=20
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Ava" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses for emphasis; often repeats key words for clarity
+Persona: Ava is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being reliable and trustworthy, always keeping her word and never gossiping about others.
+</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple but clear language with frequent pauses for emphasis. Often repeats key words for clarity.
+Persona: Kai is a librarian who enjoys quiet evenings reading mystery novels. They are known in town for always telling the truth and being reliable.
+</player>
+<player name="Liam" role="Mafia">
+Personality: Liam is a calm, methodical man who exudes reliability and trustworthiness. He has a quiet demeanor but speaks with conviction when he has something important to say. His public persona is that of a dedicated town councilman who deeply cares for the community's welfare.
+Manner: Liam speaks in measured, deliberate tones, never raising his voice or showing emotion. He often pauses before answering questions and uses formal language. When he does speak passionately, it's usually about civic duty or protecting others. His words are always carefully chosen.
+Public legend: Liam has lived in the town his entire life, working as a councilman for over fifteen years. He is known for his dedication to public service and often volunteers at local charities. He is married with two children and is respected by all who know him. His hobbies include gardening and reading historical novels.
+True self (hidden): Liam was recruited into the mafia by his brother, who had been a trusted enforcer. After witnessing his brother's brutal methods, Liam decided to take control of his own destiny within the organization. He uses his position as councilman to gather intelligence and ensure the safety of the town's people from external threats, believing he is doing what's best for everyone.
+</player>
+<player name="Ila" role="Mafia">
+Personality: Calm and methodical, with an unsettlingly patient demeanor that makes people trust her completely.
+Manner: Speaks in measured, soft tones, often pausing before answering questions. She never raises her voice, but her words carry weight. She has a habit of looking directly at people while speaking, as if she can see through them.
+Public legend: Ila is a librarian who has lived in the town for over twenty years. She’s known for her quiet presence and always helps others find what they’re looking for, whether it's books or answers. She's never missed a town meeting and is often seen at local events with her small garden of herbs and flowers.
+True self (hidden): Ila was once a high-ranking enforcer in the underground network before she decided to infiltrate the town as a way to gather intelligence on potential threats. She chose the quiet life of a librarian as a cover because it allows her to observe without being noticed, and she has no intention of ever leaving.
+</player>
+<player name="Zane" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks slowly and deliberately, with a calm, measured tone. Uses simple, direct language and often repeats key words for emphasis. Has a slight habit of pausing before answering questions, as if carefully considering each word.
+Persona: Zane is a retired school librarian who now spends his days tending to his garden and reading mystery novels. He's known around town for his honesty and reliability, always offering a helping hand without expecting anything in return. He’s never been involved in any controversy or scandal.
+</player>
+<player name="Noah" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, with a calm, measured tone. Uses simple, direct vocabulary and rarely stutters or uses filler words. Often pauses before answering questions to ensure accuracy.
+Persona: Noah is a librarian who has lived in the town his whole life. He enjoys quiet evenings reading and helping others find books. He's known for being trustworthy and reliable, always keeping his word.
+</player>
+<player name="Sara" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key words for emphasis. Often pauses before answering questions, and rarely uses slang or idioms.
+Persona: Sara is a school librarian who has lived in the town her whole life. She spends her days organizing books and helping children find stories that match their interests. Sara is known for being kind and reliable, often volunteering at local events and always ready to lend a listening ear.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Ava, Kai, Liam, Ila, Zane, Noah, Sara. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Liam): Your Mafia teammates are: Ila. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Ila): Your Mafia teammates are: Liam. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Liam points at Ava
+Ila points at Ava
+<kill>Ava — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Ava was killed last night. Ava was a Law-abiding Citizen.
+<round>
+Round 1.
+Sara: I think we should all stay calm and listen carefully to what everyone says. I don't want to jump to conclusions, but I also don't want to miss something important.
+Ila: I'll second that. We need to be cautious, but not let fear cloud our judgment.
+Noah: I think we should focus on who seems most comfortable talking about the night's events. That nervousness could be a red flag.
+<vote initiator="Liam" target="Zane">
+Avery: No
+Kai: No
+Liam: Yes
+Ila: Yes
+Zane: No
+Noah: No
+Sara: No
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Zane" target="Liam">
+Avery: No
+Kai: No
+Liam: No
+Ila: No
+Zane: No
+Noah: No
+Sara: No
+tally: 0 Yes, 7 No
+outcome: failed — The vote fails.
+</vote>
+Sara: I think we should all be very careful about who we accuse. I don't want to make a mistake and hurt an innocent person. I just want to make sure we find the real killers.
+Kai: I think we need to be very careful about jumping to conclusions. I don't want to accuse someone without a solid reason, but I also don't want to miss something important. Let's keep talking and see what else comes up.
+Ila: I think we should all take a moment to really listen to what people are saying — and more importantly, what they're not saying. There's something off about how certain people react when we talk about the night's events.
+Avery: Nothing is settled yet, but I'm watching Zane most closely.
+Noah: Ila, you've been quiet since the start, but you keep bringing up reactions and what people aren't saying. That's a bit too convenient for someone trying to misdirect.
+<vote initiator="Liam" target="Noah">
+Avery: No
+Kai: No
+Liam: Yes
+Ila: Yes
+Zane: No
+Noah: No
+Sara: No
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Liam points at Sara
+Ila points at Sara
+<kill>Sara — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Sara was killed last night. Sara was a Law-abiding Citizen.
+<round>
+Round 1.
+Noah: I think we should focus on who’s pushing votes without solid reasons. It’s starting to look like someone’s trying to misdirect us.
+Avery: Nothing is settled yet, but I'm watching Zane most closely.
+Liam: I think we're all feeling the pressure, but let's not let it cloud our judgment. I'm still watching Zane closely — his reactions seem a bit too calculated.
+Ila: I think it's important we stay focused on the facts and not let our suspicions grow into paranoia. Sara’s death was a shock, but we need to be careful about who we accuse next.
+<vote initiator="Kai" target="Zane">
+Avery: No
+Kai: No
+Liam: Yes
+Ila: Yes
+Zane: No
+Noah: No
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Liam: I think we're all doing our best to keep the town safe, but we have to be cautious about who we trust. I'm still watching Zane closely.
+Noah: I think we’re all being too quick to point fingers without solid reasons. Let’s not let fear drive us to make mistakes.
+Ila: I think it's clear that someone is trying to misdirect us, but we must be careful not to let fear dictate our choices. I'm still watching Zane closely.
+Kai: I think we need to be very careful about who we accuse — I don't want to make a mistake and hurt an innocent person. But I also don't want to miss something important.
+Avery: Nothing is settled yet, but I'm watching Zane most closely.
+Zane: I think we're all being too quick to jump to conclusions. I don't want to accuse someone without a solid reason, but I also don't want to miss something important.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Avery: Nothing is settled yet, but I'm watching Zane most closely.
+Kai: I think we need to be very careful about who we accuse — I don't want to make a mistake and hurt an innocent person, but I also don't want to miss something important. Let's keep talking and see what else comes up.
+Noah: Ila, you've been pointing fingers at Zane repeatedly without offering any real evidence. If you're so certain, why not back it up with facts instead of vague suspicions?
+Zane: I think we're all being too quick to jump to conclusions.
+Liam: I think we're all doing our best to keep the town safe, but we have to be cautious about who we trust. I'm still watching Zane closely.
+Ila: I think we're all feeling the weight of losing two people, but let's not let grief make us reckless. I'm still watching Zane closely — his behavior has been... inconsistent.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+Ila: I think we're all doing our best under difficult circumstances, but I still believe we need to be very careful about who we accuse next. I'm not convinced Zane is the one we should focus on — I think there are others here who are acting suspiciously.
+Zane: I think we're all feeling the pressure, but we have to be cautious about who we trust. I'm still watching Zane closely.
+Liam: I think we're all doing our best under difficult circumstances, but I still believe we need to be very careful about who we accuse next. I'm not convinced Zane is the one we should focus on — I think there are others here who are acting suspiciously.
+Noah: Ila, you've been pushing Zane repeatedly without any real evidence. If you're so certain of his guilt, provide a solid reason — otherwise, your vague accusations only confuse us.
+Kai: I think we need to be very careful about who we accuse — I don't want to make a mistake and hurt an innocent person, but I also don't want to miss something important. Let's keep talking and see what else comes up.
+Avery: Nothing is settled yet, but I'm watching Zane most closely.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+</round>
+<round>
+Round 4.
+Noah: Ila, you've been pushing Zane relentlessly without any real evidence. If you're so certain of his guilt, provide a solid reason — otherwise, your vague accusations only confuse us.
+<vote initiator="Kai" target="Zane">
+Avery: No
+Kai: No
+Liam: No
+Ila: Yes
+Zane: No
+Noah: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Liam: I think we're all doing our best under difficult circumstances, but I still believe we need to be very careful about who we accuse next. I'm not convinced Zane is the one we should focus on — I think there are others here who are acting suspiciously.
+Ila: I think we're all feeling the weight of these losses, but I'm starting to wonder if we're looking at the wrong people. The real killer is still out there, and they're not going to be obvious.
+Avery: Nothing is settled yet, but I'm watching Zane most closely.
+Noah: Ila, you've been directing suspicion at Zane repeatedly without offering any real evidence. If you're so certain of his guilt, provide a solid reason — otherwise, your vague accusations only confuse us. Let's focus on facts, not paranoia.
+Kai: I think we're all feeling the pressure, but let's not let fear make us rush into mistakes. I'm still watching Zane closely — his behavior has been... inconsistent.
+Zane: I think we're all feeling the pressure, but we have to be cautious about who we trust. I'm still watching Zane closely.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+</round>
+<round>
+Round 5.
+Kai: I think we're all feeling the pressure, but let's not let fear make us rush into mistakes. I'm still watching Zane closely — his behavior has been... inconsistent.
+Liam: I think we're all doing our best under difficult circumstances, but I still believe we need to be very careful about who we accuse next. I'm not convinced Zane is the one we should focus on — I think there are others here who are acting suspiciously.
+Noah: Ila, you've been directing suspicion at Zane repeatedly without offering any real evidence. If you're so certain of his guilt, provide a solid reason — otherwise, your vague accusations only confuse us. Let's focus on facts, not paranoia.
+Zane: I think we're all feeling the pressure, but we have to be cautious about who we trust. I'm still watching Zane closely.
+Ila: I think we're all feeling the weight of these losses, but I'm starting to wonder if we're looking at the wrong people. The real killer is still out there, and they're not going to be obvious.
+Avery: Nothing is settled yet, but I'm watching Zane most closely.
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+</round>
+<round>
+Round 6.
+Kai: I think we're all feeling the pressure, but let's not let fear make us rush into mistakes. I'm still watching Zane closely — his behavior has been... inconsistent.
+Ila: I think we're all feeling the weight of these losses, but I'm starting to wonder if we're looking at the wrong people. The real killer is still out there, and they're not going to be obvious.
+Zane: I think we're all feeling the pressure, but we have to be cautious about who we trust. I'm still watching Zane closely.
+Noah: I think we're all on edge, but we need to be more careful about who we accuse. I'm not convinced Zane is the killer — he's been acting suspiciously, but so have others.
+<vote initiator="Avery" target="Zane">
+Avery: No
+Kai: No
+Liam: Yes
+Ila: No
+Zane: No
+Noah: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Liam points at Noah
+Ila points at Noah
+<kill>Noah — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Noah was killed last night. Noah was a Law-abiding Citizen.
+<round>
+Round 1.
+Zane: I think we're all feeling the pressure, but we have to be cautious about who we trust. I'm still watching Zane closely.
+Liam: I think we're all feeling the weight of these losses, but we need to stay focused on the facts. I'm not convinced Zane is our killer — he's been acting suspiciously, but so have others.
+Avery: I most suspect Liam based on how the votes have gone.
+Kai: I think we need to be very careful about who we accuse — I don't want to make a mistake and hurt an innocent person, but I also don't want to miss something important. Let's keep talking and see what else comes up.
+Ila: I think we're all feeling the weight of these losses, but I'm starting to wonder if we're looking at the wrong people. The real killer is still out there, and they're not going to be obvious.
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Avery: I most suspect Liam based on how the votes have gone.
+Kai: I think we’re all feeling the pressure, but let’s not let fear make us rush into mistakes. I’m still watching Liam closely — his behavior has been... inconsistent.
+Liam: I think we're all doing our best under difficult circumstances, but I still believe we need to be very careful about who we accuse next. I'm not convinced Zane is the one we should focus on — I think there are others here who are acting suspiciously.
+Ila: I think we're all feeling the weight of these losses, but I'm starting to wonder if we're looking at the wrong people. The real killer is still out there, and they're not going to be obvious.
+Zane: I think we're all feeling the pressure, but we have to be cautious about who we trust. I'm still watching Liam closely.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+Kai: I think we're all feeling the pressure, but let's not let fear make us rush into mistakes. I'm still watching Liam closely — his behavior has been... inconsistent.
+Avery: I most suspect Liam based on how the votes have gone.
+Zane: I think we're all feeling the pressure, but we have to be cautious about who we trust. I'm still watching Liam closely.
+Liam: I think we're all feeling the weight of these losses, but I'm starting to wonder if we're looking at the wrong people. The real killer is still out there, and they're not going to be obvious.
+Ila: I think we're all feeling the weight of these losses, but I'm starting to wonder if we're looking at the wrong people. The real killer is still out there, and they're not going to be obvious.
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 4.
+Kai: I think we're all feeling the pressure, but let's not let fear make us rush into mistakes. I'm still watching Liam closely — his behavior has been... inconsistent.
+Ila: I think we're all feeling the weight of these losses, but I'm starting to wonder if we're looking at the wrong people. The real killer is still out there, and they're not going to be obvious.
+Avery: I most suspect Liam based on how the votes have gone.
+Zane: I think we're all feeling the pressure, but we have to be cautious about who we trust. I'm still watching Liam closely.
+Liam: I think we're all feeling the weight of these losses, but I'm starting to wonder if we're looking at the wrong people. The real killer is still out there, and they're not going to be obvious.
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 5.
+Avery: I most suspect Liam based on how the votes have gone.
+Liam: I think we're all feeling the weight of these losses, but I'm starting to wonder if we're looking at the wrong people. The real killer is still out there, and they're not going to be obvious.
+Zane: I think we're all feeling the pressure, but we have to be cautious about who we trust. I'm still watching Liam closely.
+Kai: I think we're all feeling the weight of these losses, but I'm starting to wonder if we're looking at the wrong people. The real killer is still out there, and they're not going to be obvious.
+Ila: I think we're all gripped by fear, but we mustn't let it blind us. I'm beginning to suspect that the killer is still among us, and they’re not as obvious as we might believe.
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 6.
+<vote initiator="Avery" target="Liam">
+Avery: Yes
+Kai: No
+Liam: No
+Ila: No
+Zane: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Liam: I think we're all feeling the weight of these losses, but I'm starting to wonder if we're looking at the wrong people. The real killer is still out there, and they're not going to be obvious.
+Zane: I think we're all feeling the weight of these losses, but I'm starting to wonder if we're looking at the wrong people. The real killer is still out there, and they're not going to be obvious.
+<vote initiator="Avery" target="Liam">
+Avery: Yes
+Kai: No
+Liam: No
+Ila: No
+Zane: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Ila: I think we're all gripped by fear, but we mustn't let it blind us. I'm beginning to suspect that the killer is still among us, and they’re not as obvious as we might believe.
+Zane: I'm watching Liam closely — his behavior has been... inconsistent.
+<vote initiator="Avery" target="Liam">
+Avery: Yes
+Kai: No
+Liam: No
+Ila: No
+Zane: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Liam points at Avery
+Ila points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Ava (Law-abiding Citizen)
+• Night 2: Sara (Law-abiding Citizen)
+• Night 3: Noah (Law-abiding Citizen)
+• Night 4: Avery (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Ava (Law-abiding Citizen), Kai (Law-abiding Citizen), Liam (Mafia), Ila (Mafia), Zane (Law-abiding Citizen), Noah (Law-abiding Citizen), Sara (Law-abiding Citizen)
+
+Who they really were:
+• Ava (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with frequent pauses for emphasis; often repeats key words for clarity Ava is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being reliable and trustworthy, always keeping her word and never gossiping about others.
+• Kai (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple but clear language with frequent pauses for emphasis. Often repeats key words for clarity. Kai is a librarian who enjoys quiet evenings reading mystery novels. They are known in town for always telling the truth and being reliable.
+• Liam (Mafia) — publicly presented as Liam has lived in the town his entire life, working as a councilman for over fifteen years. He is known for his dedication to public service and often volunteers at local charities. He is married with two children and is respected by all who know him. His hobbies include gardening and reading historical novels. (Liam is a calm, methodical man who exudes reliability and trustworthiness. He has a quiet demeanor but speaks with conviction when he has something important to say. His public persona is that of a dedicated town councilman who deeply cares for the community's welfare. Liam speaks in measured, deliberate tones, never raising his voice or showing emotion. He often pauses before answering questions and uses formal language. When he does speak passionately, it's usually about civic duty or protecting others. His words are always carefully chosen.) … but was really a Mafioso: Liam was recruited into the mafia by his brother, who had been a trusted enforcer. After witnessing his brother's brutal methods, Liam decided to take control of his own destiny within the organization. He uses his position as councilman to gather intelligence and ensure the safety of the town's people from external threats, believing he is doing what's best for everyone.
+• Ila (Mafia) — publicly presented as Ila is a librarian who has lived in the town for over twenty years. She’s known for her quiet presence and always helps others find what they’re looking for, whether it's books or answers. She's never missed a town meeting and is often seen at local events with her small garden of herbs and flowers. (Calm and methodical, with an unsettlingly patient demeanor that makes people trust her completely. Speaks in measured, soft tones, often pausing before answering questions. She never raises her voice, but her words carry weight. She has a habit of looking directly at people while speaking, as if she can see through them.) … but was really a Mafioso: Ila was once a high-ranking enforcer in the underground network before she decided to infiltrate the town as a way to gather intelligence on potential threats. She chose the quiet life of a librarian as a cover because it allows her to observe without being noticed, and she has no intention of ever leaving.
+• Zane (Law-abiding Citizen) — honest and straightforward speaks slowly and deliberately, with a calm, measured tone. Uses simple, direct language and often repeats key words for emphasis. Has a slight habit of pausing before answering questions, as if carefully considering each word. Zane is a retired school librarian who now spends his days tending to his garden and reading mystery novels. He's known around town for his honesty and reliability, always offering a helping hand without expecting anything in return. He’s never been involved in any controversy or scandal.
+• Noah (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a calm, measured tone. Uses simple, direct vocabulary and rarely stutters or uses filler words. Often pauses before answering questions to ensure accuracy. Noah is a librarian who has lived in the town his whole life. He enjoys quiet evenings reading and helping others find books. He's known for being trustworthy and reliable, always keeping his word.
+• Sara (Law-abiding Citizen) — honest and straightforward speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key words for emphasis. Often pauses before answering questions, and rarely uses slang or idioms. Sara is a school librarian who has lived in the town her whole life. She spends her days organizing books and helping children find stories that match their interests. Sara is known for being kind and reliable, often volunteering at local events and always ready to lend a listening ear.
+</endgame>
+</transcript>

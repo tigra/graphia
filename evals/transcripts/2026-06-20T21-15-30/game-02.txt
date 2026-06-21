@@ -1,0 +1,233 @@
+Game 2 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=5
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple but precise language; avoids slang and rarely stammers
+Persona: Kai is a town librarian who enjoys quiet evenings and helping others find the right book. They are known for their reliability and straightforward nature.
+</player>
+<player name="Lena" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key words for emphasis. Often pauses before answering questions, and tends to look directly at the person she's speaking to.
+Persona: Lena is a librarian who has lived in the town her whole life. She enjoys reading mystery novels and solving puzzles. She's known for her honesty and reliability, always telling the truth even when it's inconvenient.
+</player>
+<player name="Zane" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks with deliberate pacing, using simple but firm language; avoids filler words like "um" or "like"; often pauses before answering questions to ensure clarity
+Persona: Zane is a retired school librarian who enjoys gardening and reading mystery novels. He's known for his reliability and calm demeanor in town.
+</player>
+<player name="Ava" role="Mafia">
+Personality: Ava is a gentle, nurturing soul who believes in the inherent goodness of people and always looks for the best in everyone. She's deeply empathetic and has an uncanny ability to sense when someone is troubled, often offering comfort without being asked.
+Manner: Ava speaks softly and deliberately, with a calming tone that makes others feel at ease. She uses gentle gestures while talking, often placing a hand on someone's shoulder or giving a reassuring nod. Her voice carries a maternal quality, and she tends to use phrases like "I know it's hard," or "You're going to be okay."
+Public legend: Ava is a midwife in the town, known for her compassion and dedication to helping new mothers. She's been practicing for over fifteen years and has delivered more than three hundred babies. Ava is also a volunteer at the local hospital, where she helps with postnatal care and provides emotional support to new parents. She lives alone in a small cottage on the edge of town, surrounded by gardens filled with herbs and flowers that she uses for healing remedies.
+True self (hidden): Ava joined the Mafia after her younger brother was killed during a territorial dispute between rival gangs. She had always been the peacemaker in her family, but when her brother's death went unpunished, she decided to take matters into her own hands. Using her gentle nature and ability to read people, she infiltrated the organization under the guise of offering her skills as a healer and counselor. She's now one of the most trusted members of the inner circle, using her position to gather intelligence while maintaining her cover.
+</player>
+<player name="Ishaan" role="Mafia">
+Personality: A quiet, methodical individual who appears deeply concerned with maintaining order and safety in the town. Ishaan is naturally observant and tends to listen more than he speaks, but when he does speak, it's with careful deliberation.
+Manner: Ishaan speaks in a soft, measured tone with a slight hesitation before each sentence, as if weighing his words carefully. He often pauses mid-sentence to reconsider what he’s about to say and uses formal, somewhat old-fashioned language.
+Public legend: Ishaan is a respected town librarian who has lived in the town his entire life. He spends his days cataloging books, organizing community events, and helping newcomers find their way around. His neighbors often comment on how dependable and helpful he is, always available to lend a hand or share knowledge.
+True self (hidden): Ishaan was once a minor enforcer in a small crime family that operated under the guise of a legitimate business. After witnessing too many brutal acts committed by his superiors, he decided to leave and start over in a new town. He has since reinvented himself as a quiet, helpful citizen but still maintains connections within the underworld for protection.
+</player>
+<player name="Suri" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, with a tendency to over-explain simple points; uses phrases like "well you see" and "I reckon" frequently; avoids slang and prefers formal vocabulary
+Persona: Suri is a librarian who has lived in the town her entire life. She spends her days organizing books and helping people find information. She's known for being trustworthy and reliable, often volunteering at local events.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Kai, Lena, Zane, Ava, Ishaan, Suri. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Ava): Your Mafia teammates are: Ishaan. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Ishaan): Your Mafia teammates are: Ava. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Ishaan points at Lena
+Ava points at Lena
+<kill>Lena — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Lena was killed last night. Lena was a Law-abiding Citizen.
+<round>
+Round 1.
+Ishaan: The manner of Lena's passing... it seems most peculiar. I trust none of you noticed anything amiss during the night?
+<vote initiator="Ava" target="Avery">
+Avery: No
+Kai: No
+Zane: No
+Ava: No
+Ishaan: No
+Suri: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Zane: Ishaan, you've been quiet — what's your take on the night? I'm not seeing any red flags from the others, but I'd like to hear your thoughts.
+Kai: Ishaan, you've been quiet — what's your take on the night? I'm not seeing any red flags from the others, but I'd like to hear your thoughts.
+Ava: I know it's hard, Ishaan, but we all need to stay vigilant. I'm just glad we're all together, safe and sound. 
+
+Wait, I've been thinking — how did Lena get killed? Did anyone else notice anything strange about the night?
+Suri: I reckon I should clarify my thoughts on the night — well, you see, I didn't notice anything out of the ordinary, but I do recall Ava mentioning something about a strange noise during the night. That seems worth noting.
+Ishaan: Indeed, Suri, your mention of Ava's observation warrants further scrutiny. I had not heard such a thing — perhaps you could elaborate on what exactly transpired?
+Avery: I'm still watching everyone carefully before I commit.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Suri: I reckon I should clarify my thoughts on the night — well, you see, I didn't notice anything out of the ordinary, but I do recall Ava mentioning something about a strange noise during the night. That seems worth noting.
+Ava: Ishaan, I'm worried about this strange noise — it makes me uneasy. I think we should all be extra careful.
+Avery: Hard to say yet — I want to hear another round first.
+Zane: I'm still trying to piece together what happened. Suri, can you tell us more about this strange noise Ava heard? Did it sound like it came from a specific direction?
+Kai: Ishaan, I'm wondering if you heard that strange noise Ava mentioned — it seems like something we should look into. I'm not sure what to make of it yet, but I'd like to hear your take on it.
+Ishaan: The noise Ava mentioned... it did sound as though it came from near the old library. I wonder if that might be significant.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+Suri: I reckon I should speak up — well you see, I've been thinking about the strange noise Ava mentioned, and I believe it's important that we all consider who had the opportunity to cause such a disturbance. I think it's high time we start asking more pointed questions.
+<vote initiator="Zane" target="Ishaan">
+Avery: No
+Kai: No
+Zane: Yes
+Ava: No
+Ishaan: No
+Suri: Yes
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Avery: I don't have a strong read on anyone right now.
+Ava: Ishaan, I'm still uneasy about this noise — it's not like the old library to be so close. I think we should all be careful where we go at night.
+Zane: Ishaan, you've been quiet during the night — I trust you noticed something. The strange noise near the old library is concerning, and I'd like to hear your thoughts on it.
+Ishaan: Zane, I can't help but wonder if you're growing too eager to point fingers. It's not often we find ourselves in such a quandary — I do hope we're not rushing to judgment.
+Kai: Ishaan, you've been quiet about the strange noise — it's not like you to stay silent when something seems off. I'm starting to think you might be hiding something.
+Suri: I reckon I should speak up — well you see, I’ve been listening carefully, and I’m beginning to think that Ava’s mention of the strange noise might not have come from her alone. I believe we should be asking more pointed questions about who else might have heard it, or if anyone else had a reason to be near the old library.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+</round>
+<round>
+Round 4.
+Suri: I reckon I should clarify my thoughts — well you see, I've been pondering the strange noise Ava mentioned, and I believe it's high time we asked who else might have heard it. I'm starting to think this noise could be significant.
+Ava: I'm still trying to process everything that's happened. I think it's important we stay calm and not jump to conclusions, but I can't shake the feeling that we're missing something crucial.
+Ishaan: The noise near the old library... it does seem as though it might have originated from that direction. I wonder if anyone else happened to hear it, or if perhaps it was merely a stray animal. It's quite unsettling, indeed.
+Zane: Ishaan, your silence on the strange noise is odd. If you heard it, say so — if not, why are you avoiding the question? It's not right to sit back while we guess.
+Avery: Let's not rush; something will give itself away soon.
+Kai: Ishaan, your silence about the strange noise is odd. If you heard it, say so — if not, why are you avoiding the question? It's not right to sit back while we guess.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+</round>
+<round>
+Round 5.
+Ishaan: The old library... it has many hidden corners, and I fear we may have overlooked something vital in our haste to assign blame. I do hope we're not misjudging one another.
+Zane: Ishaan, you keep talking about not rushing to judgment, but you're the only one who's been evasive about the noise. If you heard something, say what it was — or are you trying to hide that you were the one who made it?
+Ava: Ishaan, I'm starting to think the noise might have been more than just a stray animal — it could have been someone moving quietly. I hope we're not overlooking something important.
+Avery: I'm keeping an open mind, but a few of you worry me.
+Suri: I reckon I should speak up — well you see, I’ve been listening carefully, and I’m beginning to think that Ava’s mention of the strange noise might not have come from her alone. I believe we should be asking more pointed questions about who else might have heard it, or if anyone else had a reason to be near the old library.
+Kai: Ishaan, your hesitation about the noise and your vague comments are troubling. If you're not hiding something, why not explain your silence? I'm starting to think you might be the one who made that noise — or worse, you might be the Mafia.
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+</round>
+<round>
+Round 6.
+Ava: I'm still not convinced the noise was anything more than a stray animal. I think we're overthinking this.
+Zane: Ishaan, I'm beginning to think you're not telling us the whole truth about the noise. If you're innocent, why the silence?
+Ishaan: I fear we may yet be overlooking a most vital clue — the noise, the old library, the silence of certain individuals... it all seems to point toward a deeper mystery than we initially believed.
+Suri: I reckon I should clarify my thoughts — well you see, I’ve been pondering the strange noise Ava mentioned, and I believe it's high time we asked who else might have heard it. I'm starting to think this noise could be significant.
+<vote initiator="Kai" target="Ishaan">
+Avery: No
+Kai: Yes
+Zane: Yes
+Ava: No
+Ishaan: No
+Suri: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Ava points at Zane
+Ishaan points at Zane
+<kill>Zane — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Zane was killed last night. Zane was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: Nothing's obvious to me yet — keep talking.
+Suri: I reckon I should speak up — well you see, I've been listening carefully, and I'm beginning to think that Ava's mention of the strange noise might not have come from her alone. I believe we should be asking more pointed questions about who else might have heard it, or if anyone else had a reason to be near the old library.
+Ishaan: The night's events have left me deeply unsettled — I only hope we're not overlooking something that could save us all.
+<vote initiator="Kai" target="Ishaan">
+Avery: No
+Kai: Yes
+Ava: No
+Ishaan: No
+Suri: Yes
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Ava: The old library... it's been a source of concern for many of us. I think we all need to be extra careful where we go at night. I hope we're not overlooking something vital.
+Kai: Ishaan, your silence about the noise and your evasive answers are raising red flags. I think it's time we focused on who really knows what happened that night — especially you.
+Ishaan: The night's events have left me deeply unsettled — I only hope we're not overlooking something that could save us all.
+Avery: I'm still watching everyone carefully before I commit.
+Suri: I reckon I should speak up — well you see, I've been listening carefully, and I'm beginning to think that the strange noise Ava mentioned might have been more than just a stray animal. I believe we should be asking more pointed questions about who else might have heard it.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+<vote initiator="Suri" target="Ishaan">
+Avery: No
+Kai: Yes
+Ava: No
+Ishaan: No
+Suri: Yes
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Ava: I'm still not convinced the noise was anything more than a stray animal. I think we're overthinking this.
+<vote initiator="Kai" target="Ishaan">
+Avery: No
+Kai: Yes
+Ava: No
+Ishaan: No
+Suri: Yes
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Ishaan points at Avery
+Ava points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Lena (Law-abiding Citizen)
+• Night 2: Zane (Law-abiding Citizen)
+• Night 3: Avery (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Kai (Law-abiding Citizen), Lena (Law-abiding Citizen), Zane (Law-abiding Citizen), Ava (Mafia), Ishaan (Mafia), Suri (Law-abiding Citizen)
+
+Who they really were:
+• Kai (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple but precise language; avoids slang and rarely stammers Kai is a town librarian who enjoys quiet evenings and helping others find the right book. They are known for their reliability and straightforward nature.
+• Lena (Law-abiding Citizen) — honest and straightforward speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key words for emphasis. Often pauses before answering questions, and tends to look directly at the person she's speaking to. Lena is a librarian who has lived in the town her whole life. She enjoys reading mystery novels and solving puzzles. She's known for her honesty and reliability, always telling the truth even when it's inconvenient.
+• Zane (Law-abiding Citizen) — honest and straightforward speaks with deliberate pacing, using simple but firm language; avoids filler words like "um" or "like"; often pauses before answering questions to ensure clarity Zane is a retired school librarian who enjoys gardening and reading mystery novels. He's known for his reliability and calm demeanor in town.
+• Ava (Mafia) — publicly presented as Ava is a midwife in the town, known for her compassion and dedication to helping new mothers. She's been practicing for over fifteen years and has delivered more than three hundred babies. Ava is also a volunteer at the local hospital, where she helps with postnatal care and provides emotional support to new parents. She lives alone in a small cottage on the edge of town, surrounded by gardens filled with herbs and flowers that she uses for healing remedies. (Ava is a gentle, nurturing soul who believes in the inherent goodness of people and always looks for the best in everyone. She's deeply empathetic and has an uncanny ability to sense when someone is troubled, often offering comfort without being asked. Ava speaks softly and deliberately, with a calming tone that makes others feel at ease. She uses gentle gestures while talking, often placing a hand on someone's shoulder or giving a reassuring nod. Her voice carries a maternal quality, and she tends to use phrases like "I know it's hard," or "You're going to be okay.") … but was really a Mafioso: Ava joined the Mafia after her younger brother was killed during a territorial dispute between rival gangs. She had always been the peacemaker in her family, but when her brother's death went unpunished, she decided to take matters into her own hands. Using her gentle nature and ability to read people, she infiltrated the organization under the guise of offering her skills as a healer and counselor. She's now one of the most trusted members of the inner circle, using her position to gather intelligence while maintaining her cover.
+• Ishaan (Mafia) — publicly presented as Ishaan is a respected town librarian who has lived in the town his entire life. He spends his days cataloging books, organizing community events, and helping newcomers find their way around. His neighbors often comment on how dependable and helpful he is, always available to lend a hand or share knowledge. (A quiet, methodical individual who appears deeply concerned with maintaining order and safety in the town. Ishaan is naturally observant and tends to listen more than he speaks, but when he does speak, it's with careful deliberation. Ishaan speaks in a soft, measured tone with a slight hesitation before each sentence, as if weighing his words carefully. He often pauses mid-sentence to reconsider what he’s about to say and uses formal, somewhat old-fashioned language.) … but was really a Mafioso: Ishaan was once a minor enforcer in a small crime family that operated under the guise of a legitimate business. After witnessing too many brutal acts committed by his superiors, he decided to leave and start over in a new town. He has since reinvented himself as a quiet, helpful citizen but still maintains connections within the underworld for protection.
+• Suri (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a tendency to over-explain simple points; uses phrases like "well you see" and "I reckon" frequently; avoids slang and prefers formal vocabulary Suri is a librarian who has lived in the town her entire life. She spends her days organizing books and helping people find information. She's known for being trustworthy and reliable, often volunteering at local events.
+</endgame>
+</transcript>

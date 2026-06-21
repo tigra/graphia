@@ -1,0 +1,158 @@
+Game 6 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=20
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Wu" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, with a quiet, measured tone. Uses simple, direct language and avoids slang. Often repeats key phrases for emphasis.
+Persona: Wu is a retired school librarian who lives quietly in the town's residential district. They spend their days tending to a small garden and reading classic literature. Wu has no hidden agendas and is well-respected by the townsfolk for their reliability and kindness.
+</player>
+<player name="Ayaan" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, with a calm, measured tone. Uses simple, direct vocabulary and rarely stumbles over words. Often pauses before answering questions, as if weighing each word carefully.
+Persona: Ayaan is a local librarian who has lived in the town his whole life. He spends his days organizing books and helping townsfolk find information. He's known for being trustworthy and always ready to lend a hand. Ayaan doesn't have any secrets or hidden motives — he's just a quiet, reliable citizen trying to live a peaceful life.
+</player>
+<player name="Hakim" role="Mafia">
+Personality: Hakim is a quiet, methodical man who presents himself as deeply religious and community-minded. He's always willing to help others, but keeps his distance from drama. His kindness is genuine, though he tends to be overly cautious in his interactions.
+Manner: Hakim speaks slowly and deliberately, often pausing to choose his words carefully. He uses phrases like "I believe" and "as the good Lord teaches us," and his tone is always gentle but firm. When questioned, he deflects with religious or moral reasoning.
+Public legend: Hakim is a local baker who has run his family's bakery for over thirty years. He's known for his generosity, often giving free bread to the poor and helping organize charity drives. He's a regular at the town church and is trusted by everyone in the community. He's married with three children and lives a simple, wholesome life.
+True self (hidden): Hakim was recruited into the Mafia after his brother was killed for refusing to pay protection money. He took over the family bakery as a front to blend in while secretly running illegal operations under the guise of charitable work. He's been feeding information to his bosses through his church contacts and has become one of their most trusted assets.
+</player>
+<player name="Nia" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key phrases for emphasis. Never rushes, always pauses before answering questions.
+Persona: Nia is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being trustworthy and kind, always willing to lend a hand to anyone in need.
+</player>
+<player name="Ishaq" role="Law-abiding Citizen">
+Personality: methodical and sincere
+Manner: speaks slowly and deliberately, choosing words carefully; often pauses to consider his next statement; uses simple, direct language
+Persona: Ishaq is a librarian who has lived in the town his whole life. He spends his days organizing books and helping people find information. He's known for being trustworthy and reliable, always ready to lend a hand or offer a thoughtful suggestion.
+</player>
+<player name="Sara" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, with a tendency to over-explain simple points; uses filler words like "you know" and "well" frequently; avoids slang and keeps her vocabulary basic but clear
+Persona: Sara is a librarian who has lived in the town her whole life. She enjoys quiet evenings reading, helping neighbors with their book requests, and participating in local community events. She's known for being reliable and trustworthy, often volunteering at the town's annual harvest festival.
+</player>
+<player name="Miroslav" role="Mafia">
+Personality: Calm, methodical, and unshakably confident in his own knowledge
+Manner: Speaks with measured, deliberate cadence; uses precise terminology and rarely hesitates. Often pauses before answering questions, as if carefully considering each word.
+Public legend: Miroslav is a retired librarian who moved to town three years ago. He spends his days tending to his garden and reading old newspapers. He's known for being quiet but helpful, always ready with a book recommendation or a thoughtful observation about the weather.
+True self (hidden): Miroslav was recruited into the Mafia after his brother was killed in a “workplace accident.” He’s been working his way up the ranks, using his calm demeanor and sharp mind to manipulate situations from behind the scenes. His cover identity is a way to keep his true nature hidden while he builds trust with his targets.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Wu, Ayaan, Hakim, Nia, Ishaq, Sara, Miroslav. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Hakim): Your Mafia teammates are: Miroslav. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Miroslav): Your Mafia teammates are: Hakim. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Miroslav points at Avery
+Hakim points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Hakim: I'm not sure who to trust yet.
+Ayaan: Ishaq, you've been quiet this whole time. Can you explain why you haven't spoken up yet?
+Wu: Ishaq, you've been quiet this whole time. Can you explain why you haven't spoken up yet?
+Sara: Ishaq, you've been quiet this whole time. Can you explain why you haven't spoken up yet?
+Miroslav: Ishaq, your silence is unsettling. It's hard to trust someone who offers no explanation for their absence from the conversation.
+Nia: Ishaq has been unusually quiet, and that makes me uneasy. I think we should all speak up if we have something to say.
+Ishaq: Ishaq has been unusually quiet, and that makes me uneasy. I think we should all speak up if we have something to say.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Ayaan: Ishaq, your silence has been noted, but I'm not convinced it's suspicious. I'd like to hear from others before jumping to conclusions.
+Hakim: I believe Ishaq's silence is concerning, but we must not let fear cloud our judgment. As the good Lord teaches us, we should listen carefully to all voices, even the quiet ones.
+Sara: Sara: Well, Ishaq, you haven't said much, and I know it's hard to talk when others are talking, but maybe you could just say a few words about what you were doing or where you were during the night?
+Ishaq: Ishaq has been unusually quiet, and that makes me uneasy. I think we should all speak up if we have something to say.
+Miroslav: Ishaq, your silence is making people uncomfortable. If you're not going to speak, at least give us a reason for your absence.
+Nia: Ishaq has been unusually quiet, and that makes me uneasy. I think we should all speak up if we have something to say.
+Wu: Ishaq, you keep repeating what others have said. That's not explaining your silence — that's just copying. If you're not going to say something new, then maybe you should sit this one out.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+Nia: Ishaq, you keep repeating what others say. That's not explaining your silence — that's just copying. If you're not going to say something new, then maybe you should sit this one out.
+<vote initiator="Sara" target="Ishaq">
+Wu: Yes
+Ayaan: Yes
+Hakim: Yes
+Nia: Yes
+Ishaq: No
+Sara: Yes
+Miroslav: Yes
+tally: 6 Yes, 1 No
+outcome: executed — Ishaq has been executed. Ishaq was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. Ishaq was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Hakim points at Sara
+Miroslav points at Sara
+<kill>Sara — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Sara was killed last night. Sara was a Law-abiding Citizen.
+<round>
+Round 1.
+Wu: Ishaq's silence was suspicious, but now we have two executions and Sara is gone. I need to listen carefully to who speaks next — especially Ayaan, Hakim, and Miroslav. I'm not sure yet who to trust.
+Ayaan: I'm not sure I trust Wu's sudden focus on Ayaan — he's been quiet this whole time, and now he's pushing for a vote. I'd like to hear more from him before we decide.
+Nia: Wu, you've been quiet this whole time. Can you explain why you haven't spoken up yet?
+Hakim: I believe we must stay vigilant, as the night has brought us two losses. I pray we can find the truth before more innocents are taken.
+Miroslav: I'm glad we're staying alert, but we must not let fear drive us to false conclusions. I'd like to hear more from Ayaan before we jump to any more votes.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Miroslav: Ayaan, your hesitation during the last vote felt calculated. It's rare to see someone so quick to shift sides after a death.
+Ayaan: Miroslav, your comment about hesitation during the last vote felt like a direct shift in focus. I'd like to hear more from you before we jump to conclusions — especially since you've been quiet this whole time.
+Hakim: I believe we must remain united in our search for truth, as division only helps those who wish to mislead us.
+Nia: I think we should focus on who has been quiet during the night — that's often a sign of something suspicious. I'm not sure I trust Ayaan's silence.
+<vote initiator="Wu" target="Ayaan">
+Wu: Yes
+Ayaan: No
+Hakim: Yes
+Nia: Yes
+Miroslav: Yes
+tally: 4 Yes, 1 No
+outcome: executed — Ayaan has been executed. Ayaan was a Law-abiding Citizen.
+</vote>
+</round>
+</day>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Day 1: Ishaq (Law-abiding Citizen) executed
+• Night 2: Sara (Law-abiding Citizen)
+• Day 2: Ayaan (Law-abiding Citizen) executed
+
+Full roster: Avery (Law-abiding Citizen), Wu (Law-abiding Citizen), Ayaan (Law-abiding Citizen), Hakim (Mafia), Nia (Law-abiding Citizen), Ishaq (Law-abiding Citizen), Sara (Law-abiding Citizen), Miroslav (Mafia)
+
+Who they really were:
+• Wu (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a quiet, measured tone. Uses simple, direct language and avoids slang. Often repeats key phrases for emphasis. Wu is a retired school librarian who lives quietly in the town's residential district. They spend their days tending to a small garden and reading classic literature. Wu has no hidden agendas and is well-respected by the townsfolk for their reliability and kindness.
+• Ayaan (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a calm, measured tone. Uses simple, direct vocabulary and rarely stumbles over words. Often pauses before answering questions, as if weighing each word carefully. Ayaan is a local librarian who has lived in the town his whole life. He spends his days organizing books and helping townsfolk find information. He's known for being trustworthy and always ready to lend a hand. Ayaan doesn't have any secrets or hidden motives — he's just a quiet, reliable citizen trying to live a peaceful life.
+• Hakim (Mafia) — publicly presented as Hakim is a local baker who has run his family's bakery for over thirty years. He's known for his generosity, often giving free bread to the poor and helping organize charity drives. He's a regular at the town church and is trusted by everyone in the community. He's married with three children and lives a simple, wholesome life. (Hakim is a quiet, methodical man who presents himself as deeply religious and community-minded. He's always willing to help others, but keeps his distance from drama. His kindness is genuine, though he tends to be overly cautious in his interactions. Hakim speaks slowly and deliberately, often pausing to choose his words carefully. He uses phrases like "I believe" and "as the good Lord teaches us," and his tone is always gentle but firm. When questioned, he deflects with religious or moral reasoning.) … but was really a Mafioso: Hakim was recruited into the Mafia after his brother was killed for refusing to pay protection money. He took over the family bakery as a front to blend in while secretly running illegal operations under the guise of charitable work. He's been feeding information to his bosses through his church contacts and has become one of their most trusted assets.
+• Nia (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key phrases for emphasis. Never rushes, always pauses before answering questions. Nia is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being trustworthy and kind, always willing to lend a hand to anyone in need.
+• Ishaq (Law-abiding Citizen) — methodical and sincere speaks slowly and deliberately, choosing words carefully; often pauses to consider his next statement; uses simple, direct language Ishaq is a librarian who has lived in the town his whole life. He spends his days organizing books and helping people find information. He's known for being trustworthy and reliable, always ready to lend a hand or offer a thoughtful suggestion.
+• Sara (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a tendency to over-explain simple points; uses filler words like "you know" and "well" frequently; avoids slang and keeps her vocabulary basic but clear Sara is a librarian who has lived in the town her whole life. She enjoys quiet evenings reading, helping neighbors with their book requests, and participating in local community events. She's known for being reliable and trustworthy, often volunteering at the town's annual harvest festival.
+• Miroslav (Mafia) — publicly presented as Miroslav is a retired librarian who moved to town three years ago. He spends his days tending to his garden and reading old newspapers. He's known for being quiet but helpful, always ready with a book recommendation or a thoughtful observation about the weather. (Calm, methodical, and unshakably confident in his own knowledge Speaks with measured, deliberate cadence; uses precise terminology and rarely hesitates. Often pauses before answering questions, as if carefully considering each word.) … but was really a Mafioso: Miroslav was recruited into the Mafia after his brother was killed in a “workplace accident.” He’s been working his way up the ranks, using his calm demeanor and sharp mind to manipulate situations from behind the scenes. His cover identity is a way to keep his true nature hidden while he builds trust with his targets.
+</endgame>
+</transcript>

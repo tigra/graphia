@@ -1,0 +1,186 @@
+Game 10 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=20
+
+<transcript>
+<setup>
+<player name="Avery" role="Mafia">(no persona recorded)</player>
+<player name="Wang" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses. Often says "you know" before statements and tends to repeat key words for emphasis.
+Persona: Wang is a retired school librarian who loves gardening and reading mystery novels. He's been living in the town for thirty years and knows everyone's names and stories.
+</player>
+<player name="Sofia" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks with deliberate, measured pacing; uses simple, clear vocabulary with a tendency to repeat key words for emphasis; avoids filler words like "um" or "like"
+Persona: Sofia is a town librarian who has lived in the community her entire life. She spends her days organizing books and helping residents find information. She's known for her reliability and her habit of always telling the truth, no matter how uncomfortable it might be.
+</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses for emphasis; often repeats key words for clarity
+Persona: Kai is a retired school librarian who enjoys gardening and reading mystery novels. They are known in town for their straightforward nature and willingness to help neighbors with anything from book recommendations to home repairs.
+</player>
+<player name="Milo" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks slowly and deliberately, with a tendency to over-explain simple points; uses basic but clear vocabulary; often pauses to gather thoughts
+Persona: Milo is a town librarian who has lived in the town his whole life. He enjoys reading mystery novels and helping people find information. He's known for being reliable and trustworthy, always available to assist others with their needs.
+</player>
+<player name="Hana" role="Mafia">
+Personality: Hana is a gentle, nurturing soul who finds joy in helping others and maintaining peace within her community. She has an innate ability to calm conflicts and bring people together through her compassionate nature.
+Manner: Hana speaks softly and carefully, choosing her words with thoughtfulness. She often uses phrases like "I think we should consider everyone's feelings," or "Let's not rush into anything too quickly." Her tone is consistently soothing, and she rarely raises her voice.
+Public legend: Hana is a beloved midwife in the town, known for her kindness and steady hands. She has been helping deliver babies for over fifteen years and is trusted by every family in the village. She lives alone in a small cottage near the town square, where she keeps a garden full of healing herbs. Her days are spent tending to new life and offering comfort to mothers during childbirth.
+True self (hidden): Hana was once a healer in the underground network of the Mafia, where she learned to use poisons and antidotes as tools of control. She joined the organization after her own sister was killed by a rival gang — she became the perfect face for the organization's public charity work while secretly running a profitable operation behind the scenes.
+</player>
+<player name="Ethan" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, with a calm, measured tone. Uses simple, direct vocabulary and often repeats key words for emphasis. Never uses slang or complex metaphors.
+Persona: Ethan is a baker in town, known for his honest work and steady hands. He's been here his whole life, has never missed a day of work, and always tells the truth. He's kind to everyone and rarely argues.
+</player>
+<player name="Lila" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, with a tendency to pause before answering questions. Uses simple, direct language and avoids jargon. Often repeats key phrases for emphasis.
+Persona: Lila is a librarian who has lived in the town her whole life. She enjoys quiet evenings reading and helping others find books. She's known for being reliable and trustworthy.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Wang, Sofia, Kai, Milo, Hana, Ethan, Lila. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Mafia.
+Moderator (private to Avery): Your Mafia teammates are: Hana. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Hana): Your Mafia teammates are: Avery. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Avery points at Sofia
+Hana points at Sofia
+<kill>Sofia — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Sofia was killed last night. Sofia was a Law-abiding Citizen.
+<round>
+Round 1.
+Wang: I'm not sure who to trust yet.
+Ethan: I think we should focus on who among us could have killed Sofia. I don't trust how quiet Wang has been so far.
+Avery: Lila has been steering things in a way that worries me — I think we should keep a close eye there.
+Kai: I think we should all be careful about who we trust — especially since Sofia was killed by someone in our group. I don’t know if anyone else is feeling the same way, but I’m not sure I trust Wang’s silence.
+Hana: I think we should consider everyone's feelings and not jump to conclusions too quickly. Wang, you seem troubled — is there something on your mind?
+Lila: I think we should all take a deep breath and try not to panic. Wang, you seemed really quiet — did you see anything last night?
+Milo: I think we should all be honest about our thoughts and not let fear make us jump to conclusions. Wang, you've been quiet — can you tell us what you saw or heard last night?
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Ethan: I think we all need to be careful about who we trust — especially since Sofia was killed by someone in our group.
+Hana: I think we should all take a deep breath and try not to panic. Wang, you seemed really quiet — did you see anything last night?
+<vote initiator="Kai" target="Wang">
+Avery: Yes
+Wang: No
+Kai: Yes
+Milo: No
+Hana: Yes
+Ethan: Yes
+Lila: No
+tally: 4 Yes, 3 No
+outcome: executed — Wang has been executed. Wang was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. Wang was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Hana points at Kai
+Avery points at Lila
+Pointing round 2:
+Avery points at Lila
+Hana points at Lila
+<kill>Lila — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Lila was killed last night. Lila was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: Milo has been steering things in a way that worries me — I think we should keep a close eye there.
+Milo: I think we should all be careful about who we trust — especially since Lila was killed by someone in our group. I don't know if anyone else is feeling the same way, but I'm not sure I trust Avery's silence.
+Hana: I think we should all take a deep breath and try not to panic. Milo, you seem uneasy — is there something on your mind?
+Ethan: I think we should focus on who among us could have killed Lila. I don't trust how quiet Avery has been so far.
+Kai: I think we should all be very careful about who we trust — especially since Lila was killed by someone in our group. I don't know if anyone else is feeling the same way, but I'm not sure I trust Avery's silence.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Milo: I think we need to be very careful about who we trust — especially since Lila was killed by someone in our group. I don't know if anyone else is feeling the same way, but I'm not sure I trust Avery's silence.
+Hana: I think we should consider everyone's feelings and not let fear make us act rashly. Avery, you seem distant — is there something troubling you?
+Ethan: I think we should focus on who among us could have killed Lila. I don't trust how quiet Kai has been so far.
+Kai: I think we should all be very careful about who we trust — especially since Lila was killed by someone in our group. I don't know if anyone else is feeling the same way, but I'm not sure I trust Avery's silence.
+Avery: Milo has been steering things in a way that worries me — I think we should keep a close eye there.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+Milo: I think we should all be very careful about who we trust — especially since Lila was killed by someone in our group. I don't know if anyone else is feeling the same way, but I'm not sure I trust Avery's silence.
+Avery: Milo has been steering things in a way that worries me — I think we should keep a close eye there.
+Kai: I think we should all be very careful about who we trust — especially since Lila was killed by someone in our group. I don't know if anyone else is feeling the same way, but I'm not sure I trust Avery's silence.
+Ethan: I think we should focus on who among us could have killed Lila. I don't trust how quiet Hana has been so far.
+Hana: I think we should all take a deep breath and try not to panic. Ethan, you seem troubled — is there something on your mind?
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 4.
+Ethan: I think we should focus on who among us could have killed Lila. I don't trust how quiet Hana has been so far.
+Milo: I think we should all be very careful about who we trust — especially since Lila was killed by someone in our group. I don't know if anyone else is feeling the same way, but I'm not sure I trust Hana's silence.
+Hana: I think we should all take a deep breath and try not to panic. Ethan, you seem troubled — is there something on your mind?
+Avery: Milo has been steering things in a way that worries me — I think we should keep a close eye there.
+Kai: I think we should all be very careful about who we trust — especially since Lila was killed by someone in our group. I don't know if anyone else is feeling the same way, but I'm not sure I trust Hana's silence.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 5.
+Hana: I think we should all take a deep breath and try not to panic. Ethan, you seem troubled — is there something on your mind?
+Avery: Milo has been steering things in a way that worries me — I think we should keep a close eye there.
+Milo: I think we should all be very careful about who we trust — especially since Lila was killed by someone in our group. I don't know if anyone else is feeling the same way, but I'm not sure I trust Hana's silence.
+Ethan: I think we should focus on who among us could have killed Lila. I don't trust how quiet Avery has been so far.
+Kai: I think we should all be very careful about who we trust — especially since Lila was killed by someone in our group. I don't know if anyone else is feeling the same way, but I'm not sure I trust Hana's silence.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 6.
+Hana: I think we should all take a deep breath and try not to panic. Ethan, you seem troubled — is there something on your mind?
+Ethan: I think we should focus on who among us could have killed Lila. I don't trust how quiet Hana has been so far.
+Milo: I think we should all be very careful about who we trust — especially since Lila was killed by someone in our group. I don't know if anyone else is feeling the same way, but I'm not sure I trust Hana's silence.
+Kai: I think we should all be very careful about who we trust — especially since Lila was killed by someone in our group. I don't know if anyone else is feeling the same way, but I'm not sure I trust Hana's silence.
+<vote initiator="Avery" target="Milo">
+Avery: Yes
+Kai: Yes
+Milo: No
+Hana: Yes
+Ethan: Yes
+tally: 4 Yes, 1 No
+outcome: executed — Milo has been executed. Milo was a Law-abiding Citizen.
+</vote>
+</round>
+</day>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Sofia (Law-abiding Citizen)
+• Day 1: Wang (Law-abiding Citizen) executed
+• Night 2: Lila (Law-abiding Citizen)
+• Day 2: Milo (Law-abiding Citizen) executed
+
+Full roster: Avery (Mafia), Wang (Law-abiding Citizen), Sofia (Law-abiding Citizen), Kai (Law-abiding Citizen), Milo (Law-abiding Citizen), Hana (Mafia), Ethan (Law-abiding Citizen), Lila (Law-abiding Citizen)
+
+Who they really were:
+• Wang (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with frequent pauses. Often says "you know" before statements and tends to repeat key words for emphasis. Wang is a retired school librarian who loves gardening and reading mystery novels. He's been living in the town for thirty years and knows everyone's names and stories.
+• Sofia (Law-abiding Citizen) — honest and straightforward speaks with deliberate, measured pacing; uses simple, clear vocabulary with a tendency to repeat key words for emphasis; avoids filler words like "um" or "like" Sofia is a town librarian who has lived in the community her entire life. She spends her days organizing books and helping residents find information. She's known for her reliability and her habit of always telling the truth, no matter how uncomfortable it might be.
+• Kai (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with frequent pauses for emphasis; often repeats key words for clarity Kai is a retired school librarian who enjoys gardening and reading mystery novels. They are known in town for their straightforward nature and willingness to help neighbors with anything from book recommendations to home repairs.
+• Milo (Law-abiding Citizen) — honest and straightforward speaks slowly and deliberately, with a tendency to over-explain simple points; uses basic but clear vocabulary; often pauses to gather thoughts Milo is a town librarian who has lived in the town his whole life. He enjoys reading mystery novels and helping people find information. He's known for being reliable and trustworthy, always available to assist others with their needs.
+• Hana (Mafia) — publicly presented as Hana is a beloved midwife in the town, known for her kindness and steady hands. She has been helping deliver babies for over fifteen years and is trusted by every family in the village. She lives alone in a small cottage near the town square, where she keeps a garden full of healing herbs. Her days are spent tending to new life and offering comfort to mothers during childbirth. (Hana is a gentle, nurturing soul who finds joy in helping others and maintaining peace within her community. She has an innate ability to calm conflicts and bring people together through her compassionate nature. Hana speaks softly and carefully, choosing her words with thoughtfulness. She often uses phrases like "I think we should consider everyone's feelings," or "Let's not rush into anything too quickly." Her tone is consistently soothing, and she rarely raises her voice.) … but was really a Mafioso: Hana was once a healer in the underground network of the Mafia, where she learned to use poisons and antidotes as tools of control. She joined the organization after her own sister was killed by a rival gang — she became the perfect face for the organization's public charity work while secretly running a profitable operation behind the scenes.
+• Ethan (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a calm, measured tone. Uses simple, direct vocabulary and often repeats key words for emphasis. Never uses slang or complex metaphors. Ethan is a baker in town, known for his honest work and steady hands. He's been here his whole life, has never missed a day of work, and always tells the truth. He's kind to everyone and rarely argues.
+• Lila (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a tendency to pause before answering questions. Uses simple, direct language and avoids jargon. Often repeats key phrases for emphasis. Lila is a librarian who has lived in the town her whole life. She enjoys quiet evenings reading and helping others find books. She's known for being reliable and trustworthy.
+</endgame>
+</transcript>

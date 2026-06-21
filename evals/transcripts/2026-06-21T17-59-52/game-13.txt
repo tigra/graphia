@@ -1,0 +1,259 @@
+Game 13 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=20
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Hassan" role="Mafia">
+Personality: Hassan is a quiet, methodical man who believes in hard work and honest dealings. He's deeply religious and takes his duties as a community leader seriously, always putting others before himself. Despite his reserved nature, he has a warm smile and a calming presence that makes people feel comfortable around him.
+Manner: Hassan speaks in measured, deliberate tones, often pausing between sentences to ensure clarity. He uses formal language and avoids slang or casual expressions. His voice is steady and reassuring, with an undercurrent of quiet authority. He tends to phrase his thoughts carefully and rarely interrupts others.
+Public legend: Hassan is a respected mosque imam who has served the town for over fifteen years. He leads daily prayers, conducts weddings and funerals, and offers counseling to troubled members of the community. He's known for his wisdom, patience, and unwavering commitment to helping others. He lives modestly with his wife and two children in a small house on the edge of town.
+True self (hidden): Hassan was a promising young businessman who became involved with the local crime family after his father was killed for refusing to pay protection money. He was forced to take over his father's position as a enforcer, learning the ways of the underworld quickly. Though he maintains a façade of piety, he's actually one of the most ruthless figures in the organization, known for carrying out the most dangerous assignments.
+</player>
+<player name="Sara" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks slowly and deliberately, with a tendency to pause before answering questions. Uses simple, direct vocabulary and often repeats key words for emphasis. Never uses slang or fancy words.
+Persona: Sara is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being trustworthy and always tells the truth.
+</player>
+<player name="Nurul" role="Law-abiding Citizen">
+Personality: honest and unassuming
+Manner: speaks slowly and deliberately, with frequent pauses to consider words. Uses simple, direct language and often repeats key phrases for emphasis. Has a habit of looking directly at people when speaking, maintaining steady eye contact.
+Persona: Nurul is a librarian who has lived in the town his entire life. He spends his days organizing books and helping residents find information. He's known for being quiet, trustworthy, and always willing to lend a hand. His neighbors often describe him as the most reliable person in town.
+</player>
+<player name="Loki" role="Law-abiding Citizen">
+Personality: curious and mischievous
+Manner: speaks with a playful, almost theatrical flair; uses phrases like "well now" and "you see", often trailing off mid-sentence to add suspense or intrigue. Has a habit of tilting their head while speaking, as if considering each word carefully.
+Persona: Loki is the town's unofficial storyteller and local historian, known for weaving tales that blur the line between fact and fiction. They spend their days in the town square, sharing folklore and legends with anyone who will listen, always with a twinkle in their eye and a sly grin.
+</player>
+<player name="Ila" role="Mafia">
+Personality: Ila is a quiet, methodical woman who presents herself as deeply compassionate and reliable. She has an almost maternal instinct to help others, but her kindness is carefully calculated and always serves a purpose.
+Manner: Ila speaks in soft, measured tones with a tendency to pause before answering questions. She often uses phrases like "I believe" or "I think it might be best if..." and rarely interrupts others. When she does speak, her words are carefully chosen and deliberate.
+Public legend: Ila is a retired nurse who lives alone in a small cottage on the edge of town. She spends her days tending to the gardens of the elderly and helping with household chores for neighbors. She's known for her gentle nature and never misses a Sunday church service. Her only hobby is knitting, which she does while listening to the radio.
+True self (hidden): Ila was recruited into the Mafia by her brother, who was already part of the organization. He promised her a life of comfort and security in exchange for her silence about his activities. She has slowly become more involved in the criminal underworld, using her position as a trusted community member to gather information and eliminate threats.
+</player>
+<player name="Zainab" role="Law-abiding Citizen">
+Personality: warm and cautious
+Manner: speaks slowly and deliberately, with frequent pauses to consider words. Uses
+simple but thoughtful vocabulary, often repeating key phrases for emphasis.
+Persona: Zainab is a librarian who has lived in the town her whole life. She spends her
+days organizing books and helping people find information. She's known for her
+kindness and her ability to listen without judgment.
+</player>
+<player name="Milo" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple vocabulary with frequent pauses. Often says "you know" or "I mean" before finishing thoughts. Has a habit of looking around the room while talking as if checking for agreement.
+Persona: Milo is a librarian who has lived in town his whole life. He spends his days organizing books and helping people find information. He's known for being reliable and trustworthy, always showing up on time and keeping his word.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Hassan, Sara, Nurul, Loki, Ila, Zainab, Milo. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Hassan): Your Mafia teammates are: Ila. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Ila): Your Mafia teammates are: Hassan. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Hassan points at Sara
+Ila points at Sara
+<kill>Sara — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Sara was killed last night. Sara was a Law-abiding Citizen.
+<round>
+Round 1.
+Nurul: I think it's important we stay focused on the facts. Sara was killed by someone in this room — and we need to figure out who. I'm not sure who to trust yet, but we should listen carefully to everyone's stories.
+Milo: I think it's time we start focusing on the facts instead of just guesses.
+Hassan: I'm not sure who to trust yet.
+Avery: Nothing is settled yet, but I'm watching Milo most closely.
+Zainab: Ila, you keep mentioning facts, but you haven't shared any details about what you saw or heard during the night. That makes me wonder — are you trying to hide something?
+Ila: I believe we should all take a moment to reflect on what we know versus what we suspect. Zainab, you're right to ask for details — I think it might be best if we each shared something specific from the night that stands out.
+Loki: Well now, that's a curious tale we have here — Sara, our dear storyteller, taken by the night. You see, I've been thinking about how she vanished, and I can't help but wonder if perhaps someone in this room had a tale they were eager to tell... but not the one we're hearing.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Hassan: I agree with Zainab — we must all be forthcoming about what we observed. I noticed Loki seemed uneasy during the night, but I'm not certain why. Let's focus on gathering facts rather than speculation.
+Avery: Nothing is settled yet, but I'm watching Milo most closely.
+Zainab: Ila, you've been quiet since the night started — what did you see? If you're hiding something, it might be better to speak now. I'm not sure who to trust yet, but we need to know if there's a pattern in what we're hearing.
+Milo: I'm not sure who to trust yet.
+Loki: Well now, isn't it interesting that we're all so eager to uncover the truth — yet none of us can quite recall what we *actually* saw during the night? You see, I’ve been thinking... perhaps the real mystery isn’t who killed Sara, but who among us is still *keeping secrets*.
+Ila: I think it might be best if we all shared something specific from the night that stands out.
+Nurul: Ila, you mentioned something about patterns — do you see a pattern in how people are reacting, or is that just your intuition?
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 3.
+Loki: Ila, you've been quiet since the night started — what did you see? If you're hiding something, it might be better to speak now.
+Ila: I think it might be best if we each shared something specific from the night that stands out.
+Avery: Nothing is settled yet, but I'm watching Milo most closely.
+Hassan: I find myself wondering why Loki seems so unsettled — it's not often we see such hesitation in one of our own.
+Milo: I mean, I'm still trying to figure out who's telling the truth and who isn't. But I do think we should focus on what people actually saw during the night — not just guesses.
+Nurul: I think it's clear that Loki has been avoiding direct answers — he keeps deflecting instead of sharing what he saw. That makes me suspicious.
+Zainab: Ila, you've been quiet since the night started — what did you see? If you're hiding something, it might be better to speak now. I'm not sure who to trust yet, but we need to know if there's a pattern in what we're hearing.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 4.
+Ila: I believe we should all take a moment to reflect on what we know versus what we suspect.
+Zainab: Ila, you keep saying we should share what we saw, but you haven't told us anything specific. That's not like the rest of us who are trying to help figure out who killed Sara.
+Loki: Well now, isn't it curious — I've been thinking about how everyone is so eager to accuse others, yet none of us can quite recall what we *actually* saw during the night? You see, I’ve been wondering if perhaps the real killer is still among us... and still keeping secrets.
+Avery: Nothing is settled yet, but I'm watching Milo most closely.
+Hassan: I'm beginning to think that the killer is still among us, and they're not just hiding a detail — they're hiding their very presence.
+Milo: Ila, you keep saying we should all share what we saw, but you haven't told us anything specific. That's not like the rest of us who are trying to help figure out who killed Sara. You know, I'm starting to think that might be a sign of something.
+Nurul: Ila, you keep saying we should share what we saw, but you haven't told us anything specific. That's not like the rest of us who are trying to help figure out who killed Sara.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 5.
+Ila: I believe we should all take a moment to reflect on what we know versus what we suspect.
+Nurul: Ila, you've been quiet since the night started — what did you see? If you're hiding something, it might be better to speak now. I'm not sure who to trust yet, but we need to know if there's a pattern in what we're hearing.
+Avery: Nothing is settled yet, but I'm watching Milo most closely.
+Loki: Well now, isn't this a twist — Ila, you’ve been awfully quiet, and I can’t help but wonder if perhaps you're the one who’s keeping secrets. You see, I’ve noticed you’ve been asking others to share what they saw, but you haven’t shared a single detail yourself.
+Hassan: I find myself growing concerned about the lack of concrete observations from anyone, including Ila. We must be more specific in our accounts if we are to uncover the truth.
+Zainab: Ila, you keep asking others to share what they saw, but you haven’t told us anything specific about the night. That’s not like the rest of us who are trying to help figure out who killed Sara.
+Milo: I think it's clear that Loki has been avoiding direct answers — he keeps deflecting instead of sharing what he saw. That makes me suspicious.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 6.
+Zainab: I think it's time we start focusing on the facts instead of just guesses.
+<vote initiator="Nurul" target="Ila">
+Avery: No
+Hassan: No
+Nurul: Yes
+Loki: No
+Ila: No
+Zainab: No
+Milo: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Hassan: I agree with Nurul — we must be more careful about who among us is hiding something. I still believe we should focus on what we actually observed, not just assumptions.
+Nurul: I think it's clear that Loki has been avoiding direct answers — he keeps deflecting instead of sharing what he saw. That makes me suspicious.
+<vote initiator="Avery" target="Milo">
+Avery: No
+Hassan: No
+Nurul: Yes
+Loki: No
+Ila: Yes
+Zainab: Yes
+Milo: No
+tally: 3 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Hassan: I'm still uncertain about who to trust, but I do hope we can all be more forthcoming with what we observed during the night.
+Nurul: I think it's clear that Loki has been avoiding direct answers — he keeps deflecting instead of sharing what he saw. That makes me suspicious.
+Loki: Well now, isn't this a curious turn of events — Ila, you've been asking others to share what they saw, but you haven't told us anything specific. You see, I’ve been wondering if perhaps you're the one who's keeping secrets.
+<vote initiator="Avery" target="Milo">
+Avery: No
+Hassan: No
+Nurul: Yes
+Loki: No
+Ila: Yes
+Zainab: No
+Milo: No
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Ila points at Avery
+Hassan points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Hassan: I'm troubled by the fact that two people were killed in the span of one night — it feels too convenient, as if someone is trying to throw us off track.
+Loki: Well now, isn't this a twist — two townsfolk gone, and we're still left wondering who's keeping secrets. You see, I've been thinking… if the killer is still among us, they might be getting anxious about all these votes. I'm starting to suspect someone who's been a little too eager to point fingers at others.
+Milo: I think it's clear that Loki has been avoiding direct answers — he keeps deflecting instead of sharing what he saw. That makes me suspicious.
+Ila: I'm troubled by how quickly we're jumping to conclusions. If someone is trying to throw us off track, it might be someone who's been too eager to accuse others.
+Nurul: I think it's clear that Loki has been avoiding direct answers — he keeps deflecting instead of sharing what he saw. That makes me suspicious.
+Zainab: I'm still not convinced anyone has shared enough to point fingers — but I do think we should focus on who's been most evasive, especially when pressed.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<round>
+Round 2.
+Nurul: I think it's clear that Loki has been avoiding direct answers — he keeps deflecting instead of sharing what he saw. That makes me suspicious.
+Zainab: I'm still not convinced anyone has shared enough to point fingers — but I do think we should focus on who's been most evasive, especially when pressed.
+<vote initiator="Loki" target="Zainab">
+Hassan: Yes
+Nurul: Yes
+Loki: Yes
+Ila: No
+Zainab: No
+Milo: No
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Ila: I think it's clear that Loki has been avoiding direct answers — he keeps deflecting instead of sharing what he saw. That makes me suspicious.
+Nurul: I think it's clear that Loki has been avoiding direct answers — he keeps deflecting instead of sharing what he saw. That makes me suspicious.
+Milo: I think it's clear that Loki has been avoiding direct answers — he keeps deflecting instead of sharing what he saw. That makes me suspicious.
+Hassan: I'm beginning to think that the killer is still among us, and they're not just hiding a detail — they're hiding their very presence.
+<vote initiator="Loki" target="Zainab">
+Hassan: Yes
+Nurul: Yes
+Loki: No
+Ila: No
+Zainab: No
+Milo: No
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Ila: I think it's clear that Loki has been avoiding direct answers — he keeps deflecting instead of sharing what he saw. That makes me suspicious.
+Hassan: I'm beginning to think that the killer is still among us, and they're not just hiding a detail — they're hiding their very presence.
+<vote initiator="Milo" target="Loki">
+Hassan: Yes
+Nurul: Yes
+Loki: No
+Ila: No
+Zainab: Yes
+Milo: Yes
+tally: 4 Yes, 2 No
+outcome: executed — Loki has been executed. Loki was a Law-abiding Citizen.
+</vote>
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. Loki was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Ila points at Nurul
+Hassan points at Nurul
+<kill>Nurul — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Sara (Law-abiding Citizen)
+• Night 2: Avery (Law-abiding Citizen)
+• Day 2: Loki (Law-abiding Citizen) executed
+• Night 3: Nurul (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Hassan (Mafia), Sara (Law-abiding Citizen), Nurul (Law-abiding Citizen), Loki (Law-abiding Citizen), Ila (Mafia), Zainab (Law-abiding Citizen), Milo (Law-abiding Citizen)
+
+Who they really were:
+• Hassan (Mafia) — publicly presented as Hassan is a respected mosque imam who has served the town for over fifteen years. He leads daily prayers, conducts weddings and funerals, and offers counseling to troubled members of the community. He's known for his wisdom, patience, and unwavering commitment to helping others. He lives modestly with his wife and two children in a small house on the edge of town. (Hassan is a quiet, methodical man who believes in hard work and honest dealings. He's deeply religious and takes his duties as a community leader seriously, always putting others before himself. Despite his reserved nature, he has a warm smile and a calming presence that makes people feel comfortable around him. Hassan speaks in measured, deliberate tones, often pausing between sentences to ensure clarity. He uses formal language and avoids slang or casual expressions. His voice is steady and reassuring, with an undercurrent of quiet authority. He tends to phrase his thoughts carefully and rarely interrupts others.) … but was really a Mafioso: Hassan was a promising young businessman who became involved with the local crime family after his father was killed for refusing to pay protection money. He was forced to take over his father's position as a enforcer, learning the ways of the underworld quickly. Though he maintains a façade of piety, he's actually one of the most ruthless figures in the organization, known for carrying out the most dangerous assignments.
+• Sara (Law-abiding Citizen) — honest and straightforward speaks slowly and deliberately, with a tendency to pause before answering questions. Uses simple, direct vocabulary and often repeats key words for emphasis. Never uses slang or fancy words. Sara is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being trustworthy and always tells the truth.
+• Nurul (Law-abiding Citizen) — honest and unassuming speaks slowly and deliberately, with frequent pauses to consider words. Uses simple, direct language and often repeats key phrases for emphasis. Has a habit of looking directly at people when speaking, maintaining steady eye contact. Nurul is a librarian who has lived in the town his entire life. He spends his days organizing books and helping residents find information. He's known for being quiet, trustworthy, and always willing to lend a hand. His neighbors often describe him as the most reliable person in town.
+• Loki (Law-abiding Citizen) — curious and mischievous speaks with a playful, almost theatrical flair; uses phrases like "well now" and "you see", often trailing off mid-sentence to add suspense or intrigue. Has a habit of tilting their head while speaking, as if considering each word carefully. Loki is the town's unofficial storyteller and local historian, known for weaving tales that blur the line between fact and fiction. They spend their days in the town square, sharing folklore and legends with anyone who will listen, always with a twinkle in their eye and a sly grin.
+• Ila (Mafia) — publicly presented as Ila is a retired nurse who lives alone in a small cottage on the edge of town. She spends her days tending to the gardens of the elderly and helping with household chores for neighbors. She's known for her gentle nature and never misses a Sunday church service. Her only hobby is knitting, which she does while listening to the radio. (Ila is a quiet, methodical woman who presents herself as deeply compassionate and reliable. She has an almost maternal instinct to help others, but her kindness is carefully calculated and always serves a purpose. Ila speaks in soft, measured tones with a tendency to pause before answering questions. She often uses phrases like "I believe" or "I think it might be best if..." and rarely interrupts others. When she does speak, her words are carefully chosen and deliberate.) … but was really a Mafioso: Ila was recruited into the Mafia by her brother, who was already part of the organization. He promised her a life of comfort and security in exchange for her silence about his activities. She has slowly become more involved in the criminal underworld, using her position as a trusted community member to gather information and eliminate threats.
+• Zainab (Law-abiding Citizen) — warm and cautious speaks slowly and deliberately, with frequent pauses to consider words. Uses
+simple but thoughtful vocabulary, often repeating key phrases for emphasis. Zainab is a librarian who has lived in the town her whole life. She spends her
+days organizing books and helping people find information. She's known for her
+kindness and her ability to listen without judgment.
+• Milo (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with frequent pauses. Often says "you know" or "I mean" before finishing thoughts. Has a habit of looking around the room while talking as if checking for agreement. Milo is a librarian who has lived in town his whole life. He spends his days organizing books and helping people find information. He's known for being reliable and trustworthy, always showing up on time and keeping his word.
+</endgame>
+</transcript>
