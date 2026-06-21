@@ -42,6 +42,7 @@ nothing here goes near an LLM call site.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 
 import pytest
@@ -59,6 +60,7 @@ from graphia.state import PlayerState
 from graphia.tools import scripted_player as sp
 from graphia.tools.blunder_eval import (
     EvalResult,
+    _apply_scripted_role,
     _make_scripted_seat,
     _scripted_resume,
     render_record,
@@ -714,6 +716,34 @@ def test_seat_role_is_per_run_default_law_abiding(monkeypatch):
     mafia_players = _players(MSELF, TEAMMATE, HUNTER_LO, HUNTER_HI)
     seat = _make_scripted_seat({"players": mafia_players, "human_id": MSELF.id})
     assert seat.role == "mafia" and seat.teammate_ids == {TEAMMATE.id}
+
+
+def test_apply_scripted_role_controls_graphia_role(monkeypatch):
+    """``--scripted-role`` sets the seat's GRAPHIA_ROLE before load_config:
+    'random' unsets it (game-default deal), 'law-abiding'/'mafia' pin it, and
+    omitted (None) keeps the prior setdefault(law-abiding) with an explicit env
+    value still winning."""
+    # random → GRAPHIA_ROLE unset (popped) even if pre-set → seat dealt randomly.
+    monkeypatch.setenv("GRAPHIA_ROLE", "mafia")
+    _apply_scripted_role("random")
+    assert "GRAPHIA_ROLE" not in os.environ
+
+    # explicit pins.
+    monkeypatch.delenv("GRAPHIA_ROLE", raising=False)
+    _apply_scripted_role("mafia")
+    assert os.environ["GRAPHIA_ROLE"] == "mafia"
+    monkeypatch.delenv("GRAPHIA_ROLE", raising=False)
+    _apply_scripted_role("law-abiding")
+    assert os.environ["GRAPHIA_ROLE"] == "law-abiding"
+
+    # omitted (None): setdefault law-abiding when unset...
+    monkeypatch.delenv("GRAPHIA_ROLE", raising=False)
+    _apply_scripted_role(None)
+    assert os.environ["GRAPHIA_ROLE"] == "law-abiding"
+    # ...but an explicit env value still wins (setdefault is a no-op).
+    monkeypatch.setenv("GRAPHIA_ROLE", "mafia")
+    _apply_scripted_role(None)
+    assert os.environ["GRAPHIA_ROLE"] == "mafia"
 
 
 def test_render_record_passive_label():

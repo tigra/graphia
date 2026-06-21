@@ -367,6 +367,27 @@ def _apply_lineup_overrides(citizens: int | None, mafia: int | None) -> None:
         os.environ["GRAPHIA_NUM_MAFIA"] = str(mafia)
 
 
+def _apply_scripted_role(role: str | None) -> None:
+    """Route ``--scripted-role`` onto the seat's ``GRAPHIA_ROLE`` (spec 026 D3).
+
+    Set *before* ``load_config()`` (config reads ``GRAPHIA_ROLE`` at load time):
+
+    - ``"random"`` → **unset** ``GRAPHIA_ROLE`` so the seat is dealt a role like
+      any other player (``human_role=None`` → the game-default random deal); both
+      the Law-abiding and Mafioso scripted policies then fire within one batch and
+      the spec-027 ``scripted_side`` rate genuinely varies per game.
+    - ``"law-abiding"`` / ``"mafia"`` → pin that role for the run.
+    - omitted (``None``) → the prior behaviour: ``setdefault`` to ``law-abiding``
+      so an explicit ``GRAPHIA_ROLE`` already in the environment still wins.
+    """
+    if role == "random":
+        os.environ.pop("GRAPHIA_ROLE", None)
+    elif role is not None:
+        os.environ["GRAPHIA_ROLE"] = role
+    else:
+        os.environ.setdefault("GRAPHIA_ROLE", "law-abiding")
+
+
 def _seed_game(base_seed: int | None, game_index: int) -> None:
     """Seed the module-global RNG for one game's *structure* (the driver hook).
 
@@ -2878,6 +2899,18 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     ap.add_argument(
+        "--scripted-role",
+        choices=("random", "law-abiding", "mafia"),
+        default=None,
+        help=(
+            "the scripted seat's dealt role (spec 026 D3): 'random' leaves it to "
+            "the game-default deal (GRAPHIA_ROLE unset) so both the Law-abiding and "
+            "Mafioso policies fire within one batch (and the spec-027 scripted_side "
+            "rate varies per game); 'law-abiding'/'mafia' pin it. Omit to keep the "
+            "prior default (law-abiding unless GRAPHIA_ROLE is set in the env)."
+        ),
+    )
+    ap.add_argument(
         "--note",
         type=str,
         default="",
@@ -2912,12 +2945,10 @@ def main(argv: list[str] | None = None) -> int:
         )
     # Spec 026 (D3): the seat's role is a per-run selectable value, DEFAULT
     # ``law-abiding`` — so the primary town-win measurement works out of the box,
-    # while a ``GRAPHIA_ROLE=mafia`` batch exercises and cleanly attributes the
-    # Mafioso policy (relaxing the prior unconditional law-abiding pin). The
-    # driver already has a ``point`` branch, so no protocol change. ``setdefault``
-    # so an explicit GRAPHIA_ROLE in the environment still wins. Set before
-    # ``load_config`` (config reads it at load time).
-    os.environ.setdefault("GRAPHIA_ROLE", "law-abiding")
+    # while ``--scripted-role mafia`` exercises the Mafioso policy and
+    # ``--scripted-role random`` leaves it to the game-default deal (both policies
+    # within one batch). Set before ``load_config`` (config reads it at load time).
+    _apply_scripted_role(args.scripted_role)
 
     # Imported here (after the env is set) so config picks up the forced
     # provider and the isolation, and so a missing dependency fails with a clear
