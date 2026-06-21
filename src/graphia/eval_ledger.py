@@ -780,8 +780,10 @@ def render_detail(record: RawRecord) -> str:
     - **outcomes** — the win-rate by side (013 §2.1): ``games``, then
       ``law_abiding``/``mafia`` each with ``wins`` + **full-precision** ``rate`` +
       a ``[ci_low–ci_high]`` band (rate/band omitted on the ``games == 0`` path),
-      then the bare ``draw``/``no_winner`` counts and the immutable ``note``
-      caveat. A whole absent block (pre-013 record) collapses to one ``—`` line.
+      then — spec 027, only when present — a ``scripted_side`` sub-block (the
+      seat's ``side`` + ``wins`` + ``rate``/band), then the bare
+      ``draw``/``no_winner`` counts and the immutable ``note`` caveat. A whole
+      absent block (pre-013 record) collapses to one ``—`` line.
     - **vote_activity** — AI vote-initiation counts (013 §2.2): a ``by_side``
       sub-block (**both** sides always, the explicit-zero) and a ``by_day``
       sub-block (``day_N: n`` sorted by integer suffix, or a ``(none)`` line when
@@ -936,10 +938,13 @@ def _render_outcomes_section(record: RawRecord) -> str:
     line, mirroring :func:`_render_code_section`'s absent pattern. When present:
     ``games``, then ``law_abiding``/``mafia`` each as ``wins`` + **full-precision**
     ``rate`` + a ``[ci_low–ci_high]`` band (rate + band omitted on the
-    ``games == 0`` path, where only ``wins`` is recorded), then the bare
-    ``runaway`` (spec 023, in-game Day cap) / ``draw`` / ``no_winner`` counts and
-    the immutable ``note`` caveat. Every read is defensive (:func:`_dig`), so a
-    malformed/partial block never raises.
+    ``games == 0`` path, where only ``wins`` is recorded), then — spec 027, only
+    when present — a ``scripted_side`` sub-block (``side`` + ``wins`` +
+    full-precision ``rate``/band), then the bare ``runaway`` (spec 023, in-game
+    Day cap) / ``draw`` / ``no_winner`` counts and the immutable ``note`` caveat.
+    A pre-027 record (no ``outcomes.scripted_side``) simply omits the sub-block —
+    no extra line. Every read is defensive (:func:`_dig`), so a malformed/partial
+    block never raises.
     """
     outcomes = _dig(record, "outcomes")
     if not isinstance(outcomes, dict):
@@ -951,6 +956,21 @@ def _render_outcomes_section(record: RawRecord) -> str:
         wins = _dig(record, f"outcomes.{side}.wins")
         lines.append(f"    wins: {_text(wins) if _text(wins) else _ABSENT}")
         lines.append(f"    rate: {_format_outcome_rate(record, side)}")
+    # Spec 027: the scripted stand-in's-side win rate — rendered after the two
+    # sides and before ``runaway``, ONLY when present. A pre-027 record (or any
+    # record whose run resolved no seat side) omits the key, so the defensive
+    # ``_dig`` resolves to absent and this whole sub-block is skipped — no new
+    # ``—`` line, the section is byte-identical to before for older records.
+    scripted = _dig(record, "outcomes.scripted_side")
+    if isinstance(scripted, dict):
+        lines.append("  scripted_side:")
+        side_label = _dig(record, "outcomes.scripted_side.side")
+        lines.append(
+            f"    side: {_text(side_label) if _text(side_label) else _ABSENT}"
+        )
+        wins = _dig(record, "outcomes.scripted_side.wins")
+        lines.append(f"    wins: {_text(wins) if _text(wins) else _ABSENT}")
+        lines.append(f"    rate: {_format_scripted_side_rate(record)}")
     # Spec 023: ``runaway`` (the in-game Day-cap hit) is a new bare-count bucket,
     # rendered before ``draw``. A pre-023 record (no ``outcomes.runaway``) shows
     # the ``—`` em-dash defensively — no migration.
@@ -975,6 +995,27 @@ def _format_outcome_rate(record: RawRecord, side: str) -> str:
         return _ABSENT
     ci_low = _dig(record, f"outcomes.{side}.ci_low")
     ci_high = _dig(record, f"outcomes.{side}.ci_high")
+    if ci_low is not None and ci_high is not None:
+        band = f" [{repr(float(ci_low))}{_CI_DASH}{repr(float(ci_high))}]"
+    else:
+        band = ""
+    return f"{repr(float(rate))}{band}"
+
+
+def _format_scripted_side_rate(record: RawRecord) -> str:
+    """The scripted-side full-precision ``rate [ci_low–ci_high]`` band, or ``—`` (spec 027).
+
+    Mirrors :func:`_format_outcome_rate` exactly (full-precision ``repr`` of the
+    float, the ``[ci_low–ci_high]`` band appended only when both bounds are
+    present), but reads off the ``outcomes.scripted_side`` sub-block. An absent
+    ``rate`` (the ``games == 0`` path emits only ``side``/``wins``) shows
+    :data:`_ABSENT`. Caller only invokes this when the sub-block is present.
+    """
+    rate = _dig(record, "outcomes.scripted_side.rate")
+    if rate is None:
+        return _ABSENT
+    ci_low = _dig(record, "outcomes.scripted_side.ci_low")
+    ci_high = _dig(record, "outcomes.scripted_side.ci_high")
     if ci_low is not None and ci_high is not None:
         band = f" [{repr(float(ci_low))}{_CI_DASH}{repr(float(ci_high))}]"
     else:

@@ -41,6 +41,7 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
@@ -1124,7 +1125,10 @@ def _attach_ci(metrics: dict[str, dict[str, float | int | None]]) -> None:
 _OUTCOME_SIDES: tuple[str, str] = ("law_abiding", "mafia")
 
 
-def tally_outcomes(winners: list[str | None]) -> dict[str, object]:
+def tally_outcomes(
+    winners: list[str | None],
+    scripted_sides: list[str | None] | None = None,
+) -> dict[str, object]:
     """Tally per-game ``winner`` values into the ``outcomes`` block (pure).
 
     Partitions the COMPLETED games (one entry per finished game; failed-early
@@ -1133,23 +1137,50 @@ def tally_outcomes(winners: list[str | None]) -> dict[str, object]:
     same ``games`` denominator (spec-013 §2.1; runaway added in spec 023)::
 
         law_abiding / mafia  → {wins, rate, ci_low, ci_high}   (a side win-rate)
+        scripted_side        → {side, wins, rate, ci_low, ci_high}  (spec 027 —
+                               the scripted stand-in's-OWN-side win rate; a
+                               derived view, NOT a partition bucket)
         runaway              → bare int count (the in-game Day cap was hit —
                                a stuck/looping game, NOT a legitimate result)
         draw                 → bare int count (legacy; no live path emits it)
         no_winner            → bare int count (winner is None — never resolved)
 
-    The buckets PARTITION the run, so the README-stated invariant holds:
-    ``law_abiding.wins + mafia.wins + runaway + draw + no_winner == games``. The
-    two side win-rates carry a **Wilson 95% CI** over ``(wins, games)`` —
-    derived/supplementary, no ``METRICS_VERSION`` bump (the ``ci_low``/
-    ``ci_high`` precedent). ``games == 0`` emits the block with zero counts and
-    OMITS the rates/CI on the two sides (no ``ZeroDivisionError``).
+    The four partition buckets (``law_abiding`` / ``mafia`` / ``runaway`` /
+    ``draw`` / ``no_winner``) PARTITION the run, so the README-stated invariant
+    holds: ``law_abiding.wins + mafia.wins + runaway + draw + no_winner ==
+    games``. The two side win-rates carry a **Wilson 95% CI** over
+    ``(wins, games)`` — derived/supplementary, no ``METRICS_VERSION`` bump (the
+    ``ci_low``/``ci_high`` precedent). ``games == 0`` emits the block with zero
+    counts and OMITS the rates/CI on the two sides (no ``ZeroDivisionError``).
+
+    **Spec-027 ``scripted_side``** (inserted after ``mafia``, before
+    ``runaway``): the win rate of *the side the scripted stand-in was on*,
+    computed PER GAME from the parallel ``scripted_sides`` list — the game's
+    dealt seat side (``"law_abiding"`` / ``"mafia"``, the same token ``winner``
+    uses), or ``None`` when a game's side was unresolvable. A game counts as a
+    scripted-side WIN iff ``winner == that game's seat side`` — so a
+    ``no_winner`` / ``runaway`` game (whose ``winner`` is not a side) is a
+    NON-win, yet still counts toward the **all-games** denominator (``games``,
+    identical to the side rates). Shape: ``{side, wins, rate, ci_low, ci_high}``,
+    where ``side`` is the run's (constant, pinned) seat-side label; reuses
+    :func:`wilson_ci` for the band. Behaviour at the edges:
+
+    - ``games == 0`` — emits ``{side, wins: 0}`` with rate/CI omitted (mirroring
+      the side-rate ``games == 0`` path), provided a ``side`` label is known.
+    - **No resolved side** (``scripted_sides`` absent, or every entry ``None``)
+      — the entry is OMITTED ENTIRELY (absent, never a misleading ``0``), so a
+      passive/older fold that did not thread sides simply has no ``scripted_side``.
+
+    It is a *derived view* of the same games (it equals one of the side rates in
+    the pinned case), NOT a new partition bucket, so the partition invariant is
+    untouched.
 
     Returns a render-ready mapping with the fixed key order
-    ``games → law_abiding → mafia → runaway → draw → no_winner → note``; ``note``
-    is the immutable :data:`_OUTCOMES_HUMAN_CAVEAT` passive-human caveat. PURE:
-    takes a plain list, so Task 4 asserts the buckets / invariant / CI /
-    ``games==0`` path on a synthetic list with no live model.
+    ``games → law_abiding → mafia → [scripted_side] → runaway → draw → no_winner
+    → note``; ``note`` is the immutable :data:`_OUTCOMES_HUMAN_CAVEAT`
+    passive-human caveat. PURE: takes plain lists, so the offline tests assert
+    the buckets / invariant / CI / ``games==0`` / scripted-side paths on a
+    synthetic list with no live model.
     """
     games = len(winners)
     counts = {side: 0 for side in _OUTCOME_SIDES}
@@ -1182,11 +1213,69 @@ def tally_outcomes(winners: list[str | None]) -> dict[str, object]:
             "ci_low": low,
             "ci_high": high,
         }
+
+    # Spec-027: the scripted-side win rate — inserted after ``mafia`` and before
+    # ``runaway`` (it is a side-shaped rate, so it belongs with the side rates).
+    # A derived VIEW of the same ``games``, not a partition bucket.
+    scripted = _tally_scripted_side(winners, scripted_sides, games)
+    if scripted is not None:
+        block["scripted_side"] = scripted
+
     block["runaway"] = runaway
     block["draw"] = draw
     block["no_winner"] = no_winner
     block["note"] = _OUTCOMES_HUMAN_CAVEAT
     return block
+
+
+def _tally_scripted_side(
+    winners: list[str | None],
+    scripted_sides: list[str | None] | None,
+    games: int,
+) -> dict[str, object] | None:
+    """The ``scripted_side`` sub-block, or ``None`` when no side resolved (spec 027).
+
+    PER-GAME numerator over the **all-games** denominator (``games``): a game is
+    a scripted-side win iff its recorded ``winner`` equals THAT game's seat side
+    (``scripted_sides[i]``). A ``no_winner`` / ``runaway`` game has a ``winner``
+    that is not a side, so it is automatically a non-win — yet still counts toward
+    ``games``. The ``side`` label is the run's pinned seat side: the single
+    resolved value when the run pinned one side (the spec-026 default), else the
+    most-common resolved side (a representative label for a genuinely-mixed run;
+    the rate is the per-game count regardless). Returns ``None`` — entry omitted —
+    when ``scripted_sides`` is absent, length-mismatched, or every entry is
+    ``None`` (no side ever resolved), so an absent metric never reads as ``0``.
+    The ``games == 0`` path emits ``{side, wins: 0}`` with rate/CI omitted,
+    mirroring the side-rate path.
+    """
+    if not scripted_sides:
+        return None
+    resolved = [side for side in scripted_sides if side]
+    if not resolved:
+        return None
+    # The pinned/representative label: the most-common resolved seat side. With a
+    # single pinned side (the default) this is just that one label; ``Counter``
+    # ties break on first-seen via ``most_common``'s stable ordering.
+    side_label = Counter(resolved).most_common(1)[0][0]
+
+    # Per-game wins: pair each winner with its own seat side (zip stops at the
+    # shorter; a length mismatch defensively counts only the paired prefix).
+    wins = sum(
+        1
+        for winner, seat in zip(winners, scripted_sides)
+        if seat and winner == seat
+    )
+    if games == 0:
+        # Mirror the side-rate games==0 path: bare {side, wins} with no rate/CI.
+        return {"side": side_label, "wins": wins}
+    low, high = wilson_ci(wins, games)
+    return {
+        "side": side_label,
+        "wins": wins,
+        "rate": wins / games,
+        "ci_low": low,
+        "ci_high": high,
+    }
 
 
 # The two day-open markers, full-anchored ``^...$`` regexes derived from the
@@ -1588,6 +1677,12 @@ def render_record(result: EvalResult, run_date: str) -> str:
           games: <int>
           law_abiding: {wins: <int>, rate: <float>, ci_low: <float>, ci_high: <float>}
           mafia:       {wins: <int>, rate: <float>, ci_low: <float>, ci_high: <float>}
+          scripted_side:       # spec 027 — the scripted stand-in's-OWN-side win rate (omitted when no side resolved / pre-027 records)
+            side: '<law_abiding|mafia>'
+            wins: <int>
+            rate: <float>
+            ci_low: <float>
+            ci_high: <float>
           runaway: <int>       # spec 023 — in-game Day cap hit (NOT a win)
           draw: <int>          # bare count — legacy; no live path emits it
           no_winner: <int>     # winner=None (never resolved / backstop)
@@ -1753,6 +1848,24 @@ def render_record(result: EvalResult, run_date: str) -> str:
                 key: facets[key]
                 for key in ("wins", "rate", "ci_low", "ci_high")
                 if key in facets
+            }
+            lines += _yaml_block(ordered, indent=2)
+        # Spec-027: the scripted stand-in's-side win rate — rendered AFTER the
+        # two side rates and BEFORE the bare ``runaway``/``draw``/``no_winner``
+        # counts (it is a side-shaped rate). CONDITIONAL/additive — only when the
+        # run recorded it, so a synthetic/pre-027 ``EvalResult`` (no
+        # ``scripted_side``) omits the key entirely (back-compat; no
+        # ``METRICS_VERSION`` bump). Sub-key order ``side → wins → rate → ci_low
+        # → ci_high``, each emitted only ``if key in facets`` so the
+        # ``games == 0`` path (``{side, wins}``) drops rate/CI exactly like the
+        # side rates.
+        scripted_side = result.outcomes.get("scripted_side")
+        if isinstance(scripted_side, dict):
+            lines.append("  scripted_side:")
+            ordered = {
+                key: scripted_side[key]
+                for key in ("side", "wins", "rate", "ci_low", "ci_high")
+                if key in scripted_side
             }
             lines += _yaml_block(ordered, indent=2)
         lines += _yaml_block(
@@ -1986,6 +2099,16 @@ class _GameCapture:
       game ended without any winner set (e.g. the anti-hang backstop). Folded by
       ``run_eval`` into the ``outcomes`` block via :func:`tally_outcomes`.
 
+    Spec-027 scripted-side input:
+    - ``human_id`` — this game's ``state["human_id"]`` (the scripted seat's id).
+      Threaded so ``run_eval`` can resolve the seat's per-game DEALT side via
+      ``players[human_id].role`` (the underscore ``"law_abiding"`` / ``"mafia"``
+      token, identical to the ``winner`` vocabulary) and tally the scripted
+      stand-in's-side win rate (:func:`tally_outcomes`'s ``scripted_side`` entry).
+      Defaulted to ``""`` so a hand-built ``_GameCapture`` in an offline test
+      needs no extra wiring — an empty/unresolvable id simply yields no side for
+      that game.
+
     Spec-017 transcript input:
     - ``events`` — the ORDERED per-super-step ``graph.stream(stream_mode=
       "updates")`` log this game emitted, each entry a ``{node: delta}`` dict
@@ -2020,6 +2143,12 @@ class _GameCapture:
     # hand (an offline scorer test) needs no transcript wiring. ``_play_one_game``
     # populates it via the ``on_update`` sink it threads into every ``_drive``.
     events: list[dict[str, Any]] = field(default_factory=list)
+    # Spec-027: this game's scripted-seat (human) id, read from the same final
+    # state. ``run_eval`` resolves the per-game side via
+    # ``players.get(human_id).role`` (defensive). Defaulted to ``""`` so a
+    # hand-built capture needs no extra wiring; an empty/unresolvable id yields no
+    # side for that game (excluded from the scripted-side numerator).
+    human_id: str = ""
 
 
 def _install_capture_provider(
@@ -2337,7 +2466,27 @@ def _play_one_game(args: argparse.Namespace, game_index: int) -> _GameCapture:
             captures=captures,
             winner=state.get("winner"),
             events=events,
+            # Spec-027: the scripted seat's id, read from the same final state, so
+            # ``run_eval`` can resolve this game's dealt seat side and tally the
+            # scripted-side win rate.
+            human_id=state.get("human_id", ""),
         )
+
+
+def _seat_side(cap: _GameCapture) -> str | None:
+    """This game's scripted seat side — ``players[human_id].role``, or ``None`` (spec 027).
+
+    Resolves the dealt side of the scripted stand-in (the human seat) from the
+    game's final ``players`` map via ``cap.human_id``. The ``role`` token is the
+    underscore form (``"law_abiding"`` / ``"mafia"``), identical to the ``winner``
+    vocabulary ``tally_outcomes`` matches, so no remapping is needed. Defensive:
+    a missing/empty ``human_id``, a seat absent from the map, or a ``None`` role
+    all resolve to ``None`` — that game contributes to the denominator (via
+    ``winners``) but never to the scripted-side numerator.
+    """
+    seat = cap.players.get(cap.human_id) if cap.human_id else None
+    role = getattr(seat, "role", None)
+    return role if isinstance(role, str) and role else None
 
 
 def run_eval(
@@ -2475,6 +2624,10 @@ def run_eval(
     # the vote-activity marginals summed across games (``by_side`` both-keys, and
     # the sparse per-game-day ``by_day`` — day_1 across all games, etc.).
     winners: list[str | None] = []
+    # Spec-027: the parallel per-completed-game scripted seat sides (the dealt
+    # ``players[human_id].role``, or ``None`` when unresolvable), index-aligned to
+    # ``winners`` so ``tally_outcomes`` can score the scripted-side rate per game.
+    scripted_sides: list[str | None] = []
     vote_by_side: dict[str, int] = {side: 0 for side in _OUTCOME_SIDES}
     vote_by_day: dict[str, int] = {}
 
@@ -2543,6 +2696,11 @@ def run_eval(
         # batch). The block is scored against this game's own ``players`` because
         # names are unique only within a game, exactly like the vote blunders.
         winners.append(cap.winner)
+        # Spec-027: resolve this game's scripted seat side (the dealt role of the
+        # human seat) and append it index-aligned to ``winners``, so the
+        # scripted-side win rate is scored per game. Defensive: a missing/None
+        # seat yields ``None`` (excluded from the scripted-side numerator).
+        scripted_sides.append(_seat_side(cap))
         activity = score_vote_activity(cap.messages, cap.players)
         for side, n in activity["by_side"].items():
             vote_by_side[side] = vote_by_side.get(side, 0) + n
@@ -2566,7 +2724,10 @@ def run_eval(
     # win-rates carry a Wilson CI, ``draw``/``no_winner`` are bare counts.
     # ``vote_activity`` carries the explicit-zero ``by_side`` (both keys always)
     # and the sparse ``by_day`` — already summed across games above.
-    result.outcomes = tally_outcomes(winners)
+    # Spec-027: pass the parallel per-game scripted seat sides so ``outcomes``
+    # also carries the scripted stand-in's-side win rate (omitted when no game
+    # resolved a side — the absent-metric posture).
+    result.outcomes = tally_outcomes(winners, scripted_sides)
     result.vote_activity = {"by_side": vote_by_side, "by_day": vote_by_day}
 
     result.ai_speeches = pooled_lines
@@ -2799,7 +2960,47 @@ def main(argv: list[str] | None = None) -> int:
             f"repetition: rate={rep['rate']:.2f} "
             f"({rep['count']}/{rep['denominator']} near-duplicate lines @ {_NEAR_DUP_THRESHOLD})"
         )
+    # Spec-027 headline KPI: the scripted stand-in's-side win rate — the one
+    # comparable number across an LA batch and a Mafia batch. Read defensively
+    # (``.get``) so a run that resolved no seat side simply prints nothing.
+    scripted_line = _scripted_side_summary(result.outcomes)
+    if scripted_line:
+        print(scripted_line)
     return 0
+
+
+def _scripted_side_summary(outcomes: dict[str, object]) -> str:
+    """The console scripted-side line for ``main()``'s summary, or ``""`` (spec 027).
+
+    Reads ``outcomes["scripted_side"]`` defensively: an absent entry (no seat
+    side resolved, or a pre-027 fold) yields the empty string so the caller's
+    ``print`` adds nothing. When present, formats the headline KPI::
+
+        scripted side (law_abiding): won 11/20 (rate=0.55, 95% CI [0.34–0.74])
+
+    The rate/CI clause is dropped on the ``games == 0`` path (where the entry
+    carries only ``side``/``wins``), mirroring the side-rate omission.
+    """
+    block = outcomes.get("scripted_side")
+    if not isinstance(block, dict):
+        return ""
+    side = block.get("side", "?")
+    wins = block.get("wins", 0)
+    games = outcomes.get("games", 0)
+    rate = block.get("rate")
+    if rate is None:
+        return f"scripted side ({side}): won {wins}/{games}"
+    ci_low = block.get("ci_low")
+    ci_high = block.get("ci_high")
+    band = (
+        f", 95% CI [{float(ci_low):.2f}–{float(ci_high):.2f}]"
+        if ci_low is not None and ci_high is not None
+        else ""
+    )
+    return (
+        f"scripted side ({side}): won {wins}/{games} "
+        f"(rate={float(rate):.2f}{band})"
+    )
 
 
 if __name__ == "__main__":

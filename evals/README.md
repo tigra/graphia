@@ -155,6 +155,12 @@ outcomes:                       # win-rate by side over the COMPLETED games — 
     rate: 0.3
     ci_low: 0.145
     ci_high: 0.519
+  scripted_side:                # spec 027 — the scripted stand-in's-OWN-side win rate (omitted on pre-027 records; equals the matching by-side rate when the seat side is pinned per run)
+    side: 'law_abiding'         # which side the scripted stand-in was on
+    wins: 11
+    rate: 0.55                  # scripted-side wins / all games
+    ci_low: 0.342
+    ci_high: 0.742
   draw: 2                       # bare count — not a side, no rate
   no_winner: 1                  # winner is null (typically the eval round cap)
   note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
@@ -288,6 +294,22 @@ The `outcomes` block is a win-rate snapshot over the run's **completed** games
   interval `metrics` uses — judge reliability by its width). When `games == 0`
   the side renders as a bare `{wins: 0}` with **no** `rate` / `ci_low` /
   `ci_high` (a 0/0 win-rate would be meaningless).
+- **`scripted_side`** (spec 027) — the win rate of *the side the scripted
+  stand-in was on*: a `{side, wins, rate, ci_low, ci_high}` map where `side`
+  names that side (`law_abiding` or `mafia`), `wins` is the count of games the
+  scripted side won, `rate` = scripted-side wins **÷ all games**, and `ci_low` /
+  `ci_high` are the same **Wilson 95%** band. It is counted **per game** (a game
+  is a scripted-side win iff `winner` equals *that game's* seat side), so a
+  `no_winner` / `runaway` game counts toward the denominator but **never as a
+  win** — exactly like the by-side rates. **It equals the matching by-side
+  rate** (`law_abiding.rate` or `mafia.rate`) **when the seat side is pinned per
+  run** — the spec-026 default — so it is the *one comparable number* across a
+  Law-abiding batch and a Mafia batch. When `games == 0` it renders as a bare
+  `{side, wins: 0}` (rate/CI omitted, like the sides). **It is a derived view,
+  not a partition bucket**, so it is excluded from the partition invariant below.
+  **Additive — not retro-filled:** records written **before spec 027** (and any
+  run that resolved no seat side) simply **omit** it — read it as absent, exactly
+  like any other pre-feature field.
 - **`draw` / `no_winner`** — **bare integer counts**, not sides, so neither
   carries a rate or a CI. `draw` is a finished game with no winning side;
   `no_winner` is a game whose `winner` was `null` — **dominated by the eval
