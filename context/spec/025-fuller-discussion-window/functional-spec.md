@@ -1,7 +1,7 @@
 # Functional Specification: Fuller Multi-Day Discussion Window for AI Players
 
 - **Roadmap Item:** Day-prompt-quality / Day-decisiveness follow-up — the third lever on what an AI player reasons from, after *Recap-Driven Day Decisiveness* (spec 019, standings into the prompt) and *Role-Specific Day Guidance* (spec 024). Relates to the **Town-coordination / Day-decisiveness** and **Repetition** backlog threads. Not a distinct roadmap phase item.
-- **Status:** Draft
+- **Status:** Draft — implementation verified (all structural criteria `[x]`); the effort-not-results criterion (§2, last) is `[?]`, pending the deferred post-030 `make blunder-eval` run (shared with specs 024/026/028/030). Reaches Completed once that eval is logged.
 - **Author:** Alexey Tigarev
 
 ---
@@ -25,32 +25,32 @@ The window must be **sized to the gameplay model's real working memory, with hea
 - **AI players reason from a fuller, multi-day window of recent discussion.**
   - The recent-discussion context shown to an AI player at its Day turn spans **at least roughly the last three days of events** (a large multiple of today's window), so events from prior days — earlier accusations, suspicions voiced, votes cast — inform its current speech and vote, not just the current round.
   - **Acceptance Criteria:**
-    - [ ] Given a game that has reached its third day or later, when an AI player takes a Day action, then its recent-discussion context includes meaningful events from at least the previous ~3 days (not only the current Day or round).
-    - [ ] Given a player who was accused or who voted on an earlier day, when a later-day turn is taken, then that earlier moment is within the window the player reasons from.
+    - [x] Given a game that has reached its third day or later, when an AI player takes a Day action, then its recent-discussion context includes meaningful events from at least the previous ~3 days (not only the current Day or round).
+    - [x] Given a player who was accused or who voted on an earlier day, when a later-day turn is taken, then that earlier moment is within the window the player reasons from.
 
 - **The window is sized to the gameplay model's real working memory, and never drops the essentials.**
   - The window is set generously against the model's actual context capacity (the local model path supports about a 32K-token working context; the cloud model far more), with comfortable headroom — large enough for 3+ days yet bounded well short of filling the context, so the model is not diluted by an overlong history.
   - No matter how long the game runs, the player's **own role, objective, persona, the situational summary, and its instructions are always present** — they are never crowded out or dropped to make room for history.
   - **Acceptance Criteria:**
-    - [ ] Given the longest realistic game and the fullest window, when an AI player's prompt is prepared, then its role, objective, and instructions are still present in full — on both the local and the cloud provider.
-    - [ ] Given the chosen window, when its size is reviewed, then it occupies only a comfortable fraction of the model's working context (headroom remains), rather than filling it to the limit.
+    - [x] Given the longest realistic game and the fullest window, when an AI player's prompt is prepared, then its role, objective, and instructions are still present in full — on both the local and the cloud provider.
+    - [x] Given the chosen window, when its size is reviewed, then it occupies only a comfortable fraction of the model's working context (headroom remains), rather than filling it to the limit.
 
 - **The model must actually receive the fuller window (no silent dropping).**
   - The benefit depends on the model genuinely reading the larger history. The local-model path's **effective working context must be confirmed to match the size this window assumes**; if it cannot, the window is reduced to what the model truly reads, so content is never silently discarded mid-prompt.
   - **Acceptance Criteria:**
-    - [ ] Given the local (Ollama) provider, when a fuller window is sent, then the model's effective working context is verified to be large enough to read all of it — with none of the oldest content (the player's role/instructions) silently dropped.
-    - [ ] Given a model whose effective context cannot hold the intended window, when the prompt is prepared, then the window is trimmed to fit rather than overflowing.
+    - [x] Given the local (Ollama) provider, when a fuller window is sent, then the model's effective working context is verified to be large enough to read all of it — with none of the oldest content (the player's role/instructions) silently dropped.
+    - [x] Given a model whose effective context cannot hold the intended window, when the prompt is prepared, then the window is trimmed to fit rather than overflowing.
 
 - **The window size is an adjustable setting (so the change is ablatable).**
   - The window length is a configurable value; it defaults to the new, fuller size and can be set back to the prior small size to reproduce the old behavior for a side-by-side comparison (per the ablation-flag convention, [ADR 011](../../adr/011-ablatable-gameplay-feature-flags.md)).
   - **Acceptance Criteria:**
-    - [ ] Given the setting at its default, when AI players take Day actions, then they reason from the fuller multi-day window.
-    - [ ] Given the setting returned to the prior small value, when AI players take Day actions, then they reason from the old short window (for A/B).
+    - [x] Given the setting at its default, when AI players take Day actions, then they reason from the fuller multi-day window.
+    - [x] Given the setting returned to the prior small value, when AI players take Day actions, then they reason from the old short window (for A/B).
 
 - **The effect is measured, not assumed (effort-not-results).**
   - Whether fuller multi-day memory actually improves play is an open question this change lets us test, not a promise. A measured comparison against the recorded baseline is run and recorded, confirmed or refuted.
   - **Acceptance Criteria:**
-    - [ ] Given a measured run after this change, when its outcomes are compared with the recorded baseline — repetition, win-rate by side, votes initiated, share resolved vs `no_winner` — then the comparison is recorded and the hypothesis (does fuller cross-day context improve coherence/decisiveness without harming play?) is logged confirmed or refuted, either being a complete result.
+    - [?] Given a measured run after this change, when its outcomes are compared with the recorded baseline — repetition, win-rate by side, votes initiated, share resolved vs `no_winner` — then the comparison is recorded and the hypothesis (does fuller cross-day context improve coherence/decisiveness without harming play?) is logged confirmed or refuted, either being a complete result.
 
 ---
 

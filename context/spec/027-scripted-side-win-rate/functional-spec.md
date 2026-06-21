@@ -1,7 +1,7 @@
 # Functional Specification: Scripted-Player's-Side Win Rate in Evals
 
 - **Roadmap Item:** Eval-measurement metric — the headline KPI for the **Active Scripted Player (spec 026)** experiment; relates to the **Town-coordination / Day-decisiveness** thread. Not a distinct roadmap phase item.
-- **Status:** Draft
+- **Status:** Completed
 - **Author:** Alexey Tigarev
 
 ---
@@ -23,30 +23,30 @@ It is **pure measurement** — nothing about how a game plays changes; this only
 - **Each measured run records the win rate of the scripted stand-in's own side.**
   - Alongside the existing by-side win rates, the run records the **scripted-side win rate** — the fraction of the run's games in which the side the scripted stand-in was on won — with the same confidence band the other rates use, and a label of **which side** that was (Law-abiding or Mafia).
   - **Acceptance Criteria:**
-    - [ ] Given a completed measured run, when its result is read, then it includes the scripted-side win rate, its confidence band, and the side the stand-in was on.
-    - [ ] Given a run where the stand-in was Law-abiding, then the recorded scripted-side win rate equals the share of games the Law-abiding side won; given a Mafia stand-in, it equals the share the Mafia side won.
+    - [x] Given a completed measured run, when its result is read, then it includes the scripted-side win rate, its confidence band, and the side the stand-in was on.
+    - [x] Given a run where the stand-in was Law-abiding, then the recorded scripted-side win rate equals the share of games the Law-abiding side won; given a Mafia stand-in, it equals the share the Mafia side won.
 
 - **The rate is counted over all games, with a no-result game counting as a non-win.**
   - The rate is scripted-side wins divided by **all** games in the run; a game that ended with no real winner (no winner, or the runaway safeguard) counts as a **non-win** for the scripted side — exactly how the existing by-side rates are counted. It is computed per game (so it stays correct even if a run's stand-in side were to vary game to game).
   - **Acceptance Criteria:**
-    - [ ] Given a game the scripted stand-in's side won, when the rate is computed, then that game counts as a win.
-    - [ ] Given a game that ended with no winner or at the runaway cap, when the rate is computed, then that game counts toward the total but not as a win.
+    - [x] Given a game the scripted stand-in's side won, when the rate is computed, then that game counts as a win.
+    - [x] Given a game that ended with no winner or at the runaway cap, when the rate is computed, then that game counts toward the total but not as a win.
 
 - **The metric is surfaced in the run summary and complements the existing by-side rates.**
   - The scripted-side win rate appears in the run summary as well as the recorded result; the existing Law-abiding and Mafia by-side rates remain unchanged.
   - **Acceptance Criteria:**
-    - [ ] Given a finished run, when the summary is shown, then the scripted-side win rate (with its side) appears in it.
-    - [ ] Given the recorded result, then the existing by-side Law-abiding and Mafia rates are still present.
+    - [x] Given a finished run, when the summary is shown, then the scripted-side win rate (with its side) appears in it.
+    - [x] Given the recorded result, then the existing by-side Law-abiding and Mafia rates are still present.
 
 - **Older records without this metric still read cleanly.**
   - Records produced before this metric existed simply omit it; reading them (including in the ledger viewer) does not break, and they are not retro-filled.
   - **Acceptance Criteria:**
-    - [ ] Given a record that predates this metric, when it is opened in the ledger viewer, then it displays without error and without the scripted-side field.
+    - [x] Given a record that predates this metric, when it is opened in the ledger viewer, then it displays without error and without the scripted-side field.
 
 - **Pure measurement — no change to how a game plays.**
   - Adding/recording this metric changes nothing about gameplay or outcomes; it only reports an additional number.
   - **Acceptance Criteria:**
-    - [ ] Given the same games, when they are played with and without this metric recorded, then the game outcomes themselves are identical — only the recorded result gains the new number.
+    - [x] Given the same games, when they are played with and without this metric recorded, then the game outcomes themselves are identical — only the recorded result gains the new number.
 
 ---
 

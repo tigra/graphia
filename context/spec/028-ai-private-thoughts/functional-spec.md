@@ -1,7 +1,7 @@
 # Functional Specification: Per-AI Day-Round Private Thoughts
 
 - **Roadmap Item:** Phase 6 — **AI Personas & Per-Game Memory → Per-AI Day-Round Private Thoughts** (the next incomplete sub-item). Relates to the **Town-coordination / Day-decisiveness** and **per-AI reasoning** threads.
-- **Status:** Draft
+- **Status:** Draft — implementation verified (all structural criteria `[x]`); the effort-not-results criterion (§2, last) is `[?]`, pending the deferred `make blunder-eval` run. Reaches Completed once that eval is logged.
 - **Author:** Alexey Tigarev
 
 ---
@@ -25,38 +25,38 @@ This is a **within-game working scratchpad**, distinct from the separate **Per-A
 - **Each surviving AI player writes a short private thought at the end of each Day round.**
   - At the close of every Day round, each surviving AI player produces a brief reflection — taking stock of the conversation and the game and planning its own move. The prompt for it is **mild**: it invites thinking and planning, without prescribing a strategy. Dead players and the human do not produce one.
   - **Acceptance Criteria:**
-    - [ ] Given the end of a Day round, when it completes, then each surviving AI player has produced one short private thought.
-    - [ ] Given a player who is dead (or the human), then no private thought is produced for them.
-    - [ ] Given the reflection it is asked for, then it is an open invitation to take stock and plan — not an instruction toward a particular move.
+    - [x] Given the end of a Day round, when it completes, then each surviving AI player has produced one short private thought.
+    - [x] Given a player who is dead (or the human), then no private thought is produced for them.
+    - [x] Given the reflection it is asked for, then it is an open invitation to take stock and plan — not an instruction toward a particular move.
 
 - **A private thought is seen by no one else during play.**
   - A player's thought is never shown to any other player, and never shown to the human during play.
   - **Acceptance Criteria:**
-    - [ ] Given any player's private thought, when other players take their turns, then that thought is not part of what they see.
-    - [ ] Given live play, when the human plays, then they never see another player's private thought.
+    - [x] Given any player's private thought, when other players take their turns, then that thought is not part of what they see.
+    - [x] Given live play, when the human plays, then they never see another player's private thought.
 
 - **A player's own thoughts accumulate and feed back into its later decisions, in order.**
   - The running list of a player's own prior thoughts is woven, in the order written, into that same player's later **Day-speech**, its **vote**, and — for a Mafioso — its **Night pointing**, grounding its next move. A player receives only its **own** thoughts, never another player's.
   - **Acceptance Criteria:**
-    - [ ] Given an AI player that reflected in earlier rounds, when it next speaks, votes, or (as a Mafioso) points at Night, then its own accumulated thoughts (in event order) are part of what informs that decision.
-    - [ ] Given two AI players, then neither ever receives the other's thoughts.
+    - [x] Given an AI player that reflected in earlier rounds, when it next speaks, votes, or (as a Mafioso) points at Night, then its own accumulated thoughts (in event order) are part of what informs that decision.
+    - [x] Given two AI players, then neither ever receives the other's thoughts.
 
 - **Each private thought is preserved in the eval transcript as a private note.**
   - In the preserved transcript of a measured (eval) game, each thought appears attributed to its author as a **private, annotated element** — visibly distinct from public speech — so a reviewer can compare a player's thoughts against its actions. It is never rendered to other players or in the live human display.
   - **Acceptance Criteria:**
-    - [ ] Given a measured game's preserved transcript, when the reviewer reads a round, then each surviving AI player's private thought for that round appears as its own private/annotated element, attributed to that player.
-    - [ ] Given the same thought, then it never appears in another player's view or in the live human display.
+    - [x] Given a measured game's preserved transcript, when the reviewer reads a round, then each surviving AI player's private thought for that round appears as its own private/annotated element, attributed to that player.
+    - [x] Given the same thought, then it never appears in another player's view or in the live human display.
 
 - **The feature is an adjustable setting (so the change is ablatable).**
   - Per-AI private thoughts can be turned off to reproduce the prior behavior for a side-by-side comparison; on by default (per the ablation-flag convention, [ADR 011](../../adr/011-ablatable-gameplay-feature-flags.md)).
   - **Acceptance Criteria:**
-    - [ ] Given the setting at its default, when games are played, then players reflect and their thoughts feed back as above.
-    - [ ] Given the setting turned off, when games are played, then no private thoughts are produced and the players' prompts revert to their pre-028 form (for A/B).
+    - [x] Given the setting at its default, when games are played, then players reflect and their thoughts feed back as above.
+    - [x] Given the setting turned off, when games are played, then no private thoughts are produced and the players' prompts revert to their pre-028 form (for A/B).
 
 - **The effect is measured, not assumed (effort-not-results).**
   - Whether the private reasoning channel improves play (coherence, decisiveness, win-rate) is measured against the recorded baseline and logged, confirmed or refuted.
   - **Acceptance Criteria:**
-    - [ ] Given a measured run after this change, when its outcomes are compared with the baseline, then the comparison is recorded and the hypothesis logged confirmed or refuted — either being a complete result.
+    - [?] Given a measured run after this change, when its outcomes are compared with the baseline, then the comparison is recorded and the hypothesis logged confirmed or refuted — either being a complete result. _(verification pending — deferred effort-not-results eval; structural criteria all met.)_
 
 ---
 

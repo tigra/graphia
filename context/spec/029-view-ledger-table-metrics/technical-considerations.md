@@ -1,7 +1,7 @@
 # Technical Specification: Show Newer Eval Metrics in the view-ledger List
 
 - **Functional Specification:** `context/spec/029-view-ledger-table-metrics/functional-spec.md`
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 ---

@@ -1,7 +1,7 @@
 # Functional Specification: Games Run to a Natural Conclusion (Runaway-Only Day Cap)
 
 - **Roadmap Item:** AI-quality / eval follow-up — investigates whether early game-ends suppress the town's win-rate; relates to the **Town-coordination / Day-decisiveness** backlog thread. Not a distinct roadmap phase item.
-- **Status:** Draft
+- **Status:** Completed
 - **Author:** Alexey Tigarev
 
 ---
@@ -25,30 +25,30 @@ This change makes the game's length limit a single, clearly day-denominated safe
 - **The game's length limit is a single day-denominated runaway safeguard.**
   - The limit is expressed in **Days** (the same "Day N" the game already counts), set to a fixed **12 Days** by default — comfortably above the ~10-Day longest natural game at the maximum table — so a normal game never reaches it. It applies the same way in real play and in measured runs.
   - **Acceptance Criteria:**
-    - [ ] Given a normal game at any allowed table size, when it is played to the end, then it finishes on a real win (Law-abiding or Mafia) and never stops at the Day cap.
-    - [ ] Given the largest allowed table, when the longest realistic game is played, then it still finishes within the 12-Day cap.
+    - [x] Given a normal game at any allowed table size, when it is played to the end, then it finishes on a real win (Law-abiding or Mafia) and never stops at the Day cap.
+    - [x] Given the largest allowed table, when the longest realistic game is played, then it still finishes within the 12-Day cap.
 
 - **Measured (eval) games run to their natural conclusion.**
   - A measured run no longer stops a game after a fixed number of speaking turns; each measured game runs until a side wins (or, only in the runaway case, the Day cap). Games are no longer recorded as "no winner" merely because the speaking-turn budget was reached mid-Day.
   - **Acceptance Criteria:**
-    - [ ] Given a batch of measured games, when the run completes, then every game that would naturally resolve is recorded with a real winner — none are recorded as "no winner" due to being cut off mid-Day.
-    - [ ] Given a measured game that previously ended mid-Day-2 as "no winner", when re-run under this change, then it plays on to a real win/loss.
+    - [x] Given a batch of measured games, when the run completes, then every game that would naturally resolve is recorded with a real winner — none are recorded as "no winner" due to being cut off mid-Day.
+    - [x] Given a measured game that previously ended mid-Day-2 as "no winner", when re-run under this change, then it plays on to a real win/loss.
 
 - **Hitting the Day cap is flagged as a runaway, not a legitimate result.**
   - This game has no natural draw — players always thin out to a winner — so reaching the Day cap always signals an anomaly. When it triggers, the game is recorded distinctly as an unresolved/runaway game (an attention signal), not as a normal "draw".
   - **Acceptance Criteria:**
-    - [ ] Given a game that somehow reaches the 12-Day cap, when it is recorded, then it is marked as a runaway/unresolved game, visibly distinct from a real Law-abiding/Mafia win.
+    - [x] Given a game that somehow reaches the 12-Day cap, when it is recorded, then it is marked as a runaway/unresolved game, visibly distinct from a real Law-abiding/Mafia win.
 
 - **The Day cap is an adjustable setting (so the change is ablatable).**
   - The Day cap is a configurable value defaulting to 12; it can be set to another value to reproduce the old behavior or explore longer games for a side-by-side comparison (per the project's ablation-flag convention).
   - **Acceptance Criteria:**
-    - [ ] Given the cap left at its default, when games are played, then the 12-Day safeguard applies.
-    - [ ] Given the cap set to a different value, when games are played, then that value governs the safeguard (for A/B comparison).
+    - [x] Given the cap left at its default, when games are played, then the 12-Day safeguard applies.
+    - [x] Given the cap set to a different value, when games are played, then that value governs the safeguard (for A/B comparison).
 
 - **The effect on the town's win-rate is measured, not assumed (effort-not-results).**
   - Whether finishing games actually changes the town's win-rate is an open question this change lets us test, not a promise. A measured comparison against the recorded baseline is run and the result recorded, confirmed or refuted.
   - **Acceptance Criteria:**
-    - [ ] Given a measured run after this change, when its outcomes are compared with the recorded baseline (win-rate by side, share of games resolved vs unresolved), then the comparison is recorded and the hypothesis logged as confirmed or refuted — either outcome being a complete result.
+    - [x] Given a measured run after this change, when its outcomes are compared with the recorded baseline (win-rate by side, share of games resolved vs unresolved), then the comparison is recorded and the hypothesis logged as confirmed or refuted — either outcome being a complete result.
 
 ---
 

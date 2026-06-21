@@ -1,7 +1,7 @@
 # Functional Specification: Randomized Night-Pointing Roster Order
 
 - **Roadmap Item:** Gameplay-fairness + eval-validity fix (the roster-primacy bug found in the spec-026/027 Nova run); relates to the **Town-coordination / Day-decisiveness** thread. Not a distinct roadmap phase item.
-- **Status:** Draft
+- **Status:** Draft — implementation verified (all deterministic-shuffle criteria `[x]`); the measured-debias criterion (§2, "first-position advantage is removed") is `[?]`, pending the deferred `make blunder-eval` run. Reaches Completed once that eval is logged.
 - **Author:** Alexey Tigarev
 
 ---
@@ -26,31 +26,31 @@ This change presents the living Law-abiding candidates to the Mafia in a **rando
 - **The Mafia's Night candidate list is presented in a randomized order each Night.**
   - The living Law-abiding players the Mafia choose from are listed in a shuffled order; no player holds a fixed position from Night to Night or game to game.
   - **Acceptance Criteria:**
-    - [ ] Given the same set of living Law-abiding players across repeated Nights/games, when the Mafia are shown the candidate list, then the order they appear in varies (not always the same player first).
-    - [ ] Given a fixed eval seed, when a game is replayed, then the Night candidate order is reproduced identically (so seeded comparisons stay stable).
+    - [x] Given the same set of living Law-abiding players across repeated Nights/games, when the Mafia are shown the candidate list, then the order they appear in varies (not always the same player first).
+    - [x] Given a fixed eval seed, when a game is replayed, then the Night candidate order is reproduced identically (so seeded comparisons stay stable).
 
 - **Randomizing the order changes only the presentation, not who is eligible or how the kill resolves.**
   - The candidate list contains exactly the living Law-abiding players (none added or removed); the Mafia still pick exactly one; the way the Mafia converge on a shared target and the resulting kill are unchanged — only the order differs.
   - **Acceptance Criteria:**
-    - [ ] Given the living Law-abiding players, when the randomized list is shown, then it contains exactly those players — none missing, none extra.
-    - [ ] Given a completed Night, when the kill resolves, then it resolves by the same rules as before (the chosen target is one of the listed candidates).
+    - [x] Given the living Law-abiding players, when the randomized list is shown, then it contains exactly those players — none missing, none extra.
+    - [x] Given a completed Night, when the kill resolves, then it resolves by the same rules as before (the chosen target is one of the listed candidates).
 
 - **The first-position advantage is removed.**
   - No seat is systematically targeted on Night 1 because of where it sits in the list; over many games the first-created seat (the human's) is killed Night 1 at roughly the chance rate, not far above it.
   - **Acceptance Criteria:**
-    - [ ] Given many measured games with the randomization on, when Night-1 targets are tallied, then the first-created seat's Night-1 death rate (when it is Law-abiding) is consistent with chance rather than the ~50% seen before.
+    - [?] Given many measured games with the randomization on, when Night-1 targets are tallied, then the first-created seat's Night-1 death rate (when it is Law-abiding) is consistent with chance rather than the ~50% seen before. _(verification pending — deferred measured-debias eval; deterministic shuffle behaviour all unit-verified.)_
 
 - **The randomization is an adjustable setting (ablatable).**
   - It is on by default; a setting reproduces the old fixed (first-created-first) order for a side-by-side comparison, so the impact of the bias can be measured (per ADR 011).
   - **Acceptance Criteria:**
-    - [ ] Given the setting at its default, when the Mafia are shown the candidate list, then the order is randomized.
-    - [ ] Given the setting turned off, when the Mafia are shown the candidate list, then it reverts to the prior fixed order (for A/B).
+    - [x] Given the setting at its default, when the Mafia are shown the candidate list, then the order is randomized.
+    - [x] Given the setting turned off, when the Mafia are shown the candidate list, then it reverts to the prior fixed order (for A/B).
 
 - **Reproducible under a seed (determinism posture).**
   - With a fixed eval seed the shuffled order is deterministic and reproducible (like the existing shuffled speaking order); with no seed it varies freely.
   - **Acceptance Criteria:**
-    - [ ] Given a fixed seed, when two runs play the same game, then the Night candidate orders match.
-    - [ ] Given no seed, when games are played, then the order varies across games.
+    - [x] Given a fixed seed, when two runs play the same game, then the Night candidate orders match.
+    - [x] Given no seed, when games are played, then the order varies across games.
 
 ---
 

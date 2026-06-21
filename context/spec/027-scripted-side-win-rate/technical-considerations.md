@@ -1,7 +1,7 @@
 # Technical Specification: Scripted-Player's-Side Win Rate in Evals
 
 - **Functional Specification:** [`context/spec/027-scripted-side-win-rate/functional-spec.md`](./functional-spec.md)
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 ---

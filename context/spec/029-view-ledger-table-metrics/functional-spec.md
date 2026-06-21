@@ -1,7 +1,7 @@
 # Functional Specification: Show Newer Eval Metrics in the view-ledger List
 
 - **Roadmap Item:** Eval-tooling refinement to the ledger viewer (`make view-ledger`, spec 012); not a distinct roadmap phase item.
-- **Status:** Draft
+- **Status:** Completed
 - **Author:** Alexey Tigarev
 
 ---
@@ -23,36 +23,36 @@ This change **expands the list** with a **curated, explicitly-maintained** set o
 - **The run list shows the scripted-player's-side win rate.**
   - Each run's row includes the win rate of the side the scripted stand-in was on (with the side it refers to), alongside the existing win-by-side and repetition columns.
   - **Acceptance Criteria:**
-    - [ ] Given a run that recorded a scripted-side win rate, when the reviewer reads the list, then that run's row shows it (rate and the side).
-    - [ ] Given a run that predates that metric, when the reviewer reads the list, then that run's row shows it as blank, and the row is otherwise intact.
+    - [x] Given a run that recorded a scripted-side win rate, when the reviewer reads the list, then that run's row shows it (rate and the side).
+    - [x] Given a run that predates that metric, when the reviewer reads the list, then that run's row shows it as blank, and the row is otherwise intact.
 
 - **The run list shows which stand-in was used (active or passive).**
   - Each run's row indicates whether the active rule-based stand-in or the passive baseline was used — the context needed to interpret that run's outcomes.
   - **Acceptance Criteria:**
-    - [ ] Given a run recorded with the active (or passive) stand-in, when the reviewer reads the list, then that run's row shows which one.
-    - [ ] Given a run that predates that setting, when the reviewer reads the list, then that run's row reads as the prior default (passive) or blank, without breaking the row.
+    - [x] Given a run recorded with the active (or passive) stand-in, when the reviewer reads the list, then that run's row shows which one.
+    - [x] Given a run that predates that setting, when the reviewer reads the list, then that run's row reads as the prior default (passive) or blank, without breaking the row.
 
 - **The run list shows the full game-resolution outcome, not just wins by side.**
   - Each run's row surfaces how its games resolved — wins by side **and** the counts of unresolved (no-winner) and runaway games — so a reviewer sees at a glance whether games actually resolved.
   - **Acceptance Criteria:**
-    - [ ] Given a run with unresolved and/or runaway games, when the reviewer reads the list, then those counts are visible in that run's row (not only the wins by side).
-    - [ ] Given a run whose games all resolved to a winner, when the reviewer reads the list, then the row reflects zero unresolved/runaway.
+    - [x] Given a run with unresolved and/or runaway games, when the reviewer reads the list, then those counts are visible in that run's row (not only the wins by side).
+    - [x] Given a run whose games all resolved to a winner, when the reviewer reads the list, then the row reflects zero unresolved/runaway.
 
 - **The added columns are a curated, explicitly-maintained set.**
   - The list shows a deliberate, labeled set of columns — not every recorded field. Surfacing a future metric in the list is a deliberate follow-up; completeness lives in the detail view, which already shows the whole record.
   - **Acceptance Criteria:**
-    - [ ] Given the run list, when the reviewer reads it, then each column is clearly labeled and the set is a chosen summary (the list is not an auto-dump of every recorded field).
-    - [ ] Given the per-record detail view, when this change ships, then it is unchanged (it already shows the complete record).
+    - [x] Given the run list, when the reviewer reads it, then each column is clearly labeled and the set is a chosen summary (the list is not an auto-dump of every recorded field).
+    - [x] Given the per-record detail view, when this change ships, then it is unchanged (it already shows the complete record).
 
 - **Older records and readability are preserved.**
   - A run that predates any shown metric renders blank in that column rather than erroring, and the list remains readable (columns don't overflow or garble the layout).
   - **Acceptance Criteria:**
-    - [ ] Given a mix of older and newer runs, when the reviewer scrolls the list, then every row renders without error, missing metrics show blank, and the columns stay aligned and readable.
+    - [x] Given a mix of older and newer runs, when the reviewer scrolls the list, then every row renders without error, missing metrics show blank, and the columns stay aligned and readable.
 
 - **Display-only — no change to recorded data or gameplay.**
   - This only changes what the viewer displays; it does not change what the eval records, the metrics themselves, or how the game plays.
   - **Acceptance Criteria:**
-    - [ ] Given the same ledger file, when it is opened before and after this change, then the recorded data is identical — only the list's displayed columns differ.
+    - [x] Given the same ledger file, when it is opened before and after this change, then the recorded data is identical — only the list's displayed columns differ.
 
 ---
 
