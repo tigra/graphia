@@ -1192,7 +1192,7 @@ filed to the backlog). The roadmap's next *feature* is the next Phase 6 item, th
 for the open town-coordination weakness); start with `/awos:spec`. Tutorials `015`,
 `016`, and `017` are published — every completed spec is now tutorialised except the
 deliberately-skipped `003`.
-Open follow-ups (now tracked in **[`context/backlog.md`](context/backlog.md)**): the
+Open follow-ups (now tracked in **[`context/product/backlog.md`](context/product/backlog.md)**): the
 **repetition-reduction** fix-spec (the top unsolved AI-quality problem, ~0.36–0.45 on
 ollama and lineup-independent); the **Nova Day-passivity** mechanical attempt and the
 deeper **town-coordination / Day-decisiveness** problem; graceful **career-greeting

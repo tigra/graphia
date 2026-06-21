@@ -101,7 +101,7 @@ Use the Day phase's shuffle helper rather than duplicating it: either import `sr
 
 - **Risk — new state channels drift / leak across Nights.** *Mitigation:* all are plain-replace and reset in `night_open` next to the existing `night_picks = {}`; no accumulating reducer to surprise a later Night.
 
-- **Risk — the AI never converges.** *Accepted by design:* the cap-fallback always yields one victim. Convergence quality is non-deterministic AI behaviour (architecture §6) — a measured *effort*, not a guaranteed *result* ([CR 005 — effort-not-results acceptance](../../change-requests/005-ai-behaviour-acceptance-effort-not-results.md)). A future "consensus-reached rate / rounds-to-agreement" eval metric is possible but **out of scope** (noted in `context/backlog.md`).
+- **Risk — the AI never converges.** *Accepted by design:* the cap-fallback always yields one victim. Convergence quality is non-deterministic AI behaviour (architecture §6) — a measured *effort*, not a guaranteed *result* ([CR 005 — effort-not-results acceptance](../../change-requests/005-ai-behaviour-acceptance-effort-not-results.md)). A future "consensus-reached rate / rounds-to-agreement" eval metric is possible but **out of scope** (noted in `context/product/backlog.md`).
 
 - **Risk — non-replayable per-round order & tie-break.** *Accepted* (architecture §6 — module-global `random`, no seed); tests pin both by monkeypatching the shuffle helper and the tie-break `random.choice`.
 
