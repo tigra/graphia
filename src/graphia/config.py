@@ -155,6 +155,16 @@ class GraphiaConfig:
     # different assumed context. Defaulted so tests constructing the config
     # directly stay valid.
     context_token_budget: int = _DEFAULT_CONTEXT_TOKEN_BUDGET
+    # Active scripted player for measured runs (spec 026, ADR 011). The eval
+    # harness's human-seat stand-in: ON by default (the active deterministic
+    # rule-based policy that lets a correct town majority form); an explicit
+    # falsy ``GRAPHIA_ACTIVE_SCRIPTED_PLAYER`` selects the prior PASSIVE baseline
+    # (never proposes, always votes No) byte-for-byte. Mirrors the other ADR-011
+    # default-on flags' ``_env_flag`` shape; the readable ``active``/``passive``
+    # labels live only at the blunder-eval CLI (``--scripted-player``) and ledger
+    # (``settings.scripted_player``) edges. Defaulted so tests constructing the
+    # config directly stay valid.
+    scripted_player_active: bool = True
 
 
 def _env_truthy(name: str) -> bool:
@@ -207,6 +217,9 @@ def load_config() -> GraphiaConfig:
         "GRAPHIA_RECAP_AWARE_REASONING", default=True
     )
     role_guidance_enabled = _env_flag("GRAPHIA_ROLE_GUIDANCE", default=True)
+    scripted_player_active = _env_flag(
+        "GRAPHIA_ACTIVE_SCRIPTED_PLAYER", default=True
+    )
     runtime_invocation_url = os.environ.get("GRAPHIA_RUNTIME_URL") or None
     memory_id = os.environ.get("GRAPHIA_MEMORY_ID") or None
     career_memory_id = os.environ.get("GRAPHIA_CAREER_MEMORY_ID") or None
@@ -386,4 +399,5 @@ def load_config() -> GraphiaConfig:
         role_guidance_enabled=role_guidance_enabled,
         context_window=context_window,
         context_token_budget=context_token_budget,
+        scripted_player_active=scripted_player_active,
     )

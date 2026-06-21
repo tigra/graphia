@@ -137,6 +137,7 @@ settings:                       # the EFFECTIVE resolved values, so a run can be
   games: 5                      # number of games requested
   seed: 20260613                # base structural seed (null = unseeded; game i used seed+i)
   max_rounds: 10                # per-game Day-round cap (null = uncapped)
+  scripted_player: 'active'     # spec 026 — human-seat stand-in: 'active' or 'passive' (omitted on pre-026 records → read as 'passive')
 quality:                        # so a degenerate run cannot masquerade as a clean baseline
   games_attempted: 5
   games_completed: 5
@@ -204,8 +205,14 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
 - **`settings`** — the **effective resolved values actually used** (post
   env-override), so a run can be repeated like-for-like: `large_model`,
   `small_model`, `base_url` (Ollama only; `null` for bedrock), `games`, `seed`
-  (base structural seed; `null` when unseeded — game *i* used `seed + i`), and
-  `max_rounds` (`null` when uncapped).
+  (base structural seed; `null` when unseeded — game *i* used `seed + i`),
+  `max_rounds` (`null` when uncapped), and **`scripted_player`** (spec 026 — the
+  human-seat stand-in used in the run: `'active'` for the deterministic
+  rule-based policy or `'passive'` for the prior baseline that never proposes
+  and always votes No). **`scripted_player` is a new, additive field:** it is
+  **omitted** on records written **before spec 026** — read those as implicitly
+  `'passive'`, the only stand-in that existed then — exactly like any other
+  pre-feature field.
 - **`quality`** — run-quality counts so a degenerate run can't pass as a clean
   baseline: `games_attempted`, `games_completed`, `games_failed_early` (games
   that raised mid-run and were skipped), and `duration_seconds` (mirrored from

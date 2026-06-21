@@ -44,7 +44,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any, Callable, Literal
+from typing import Any, Callable, Literal, cast
 
 from langchain_core.messages import AIMessage, SystemMessage
 from langgraph.types import Command
@@ -79,6 +79,21 @@ from graphia.tools.instrument import CaptureRecord, InstrumentedModel
 # readable document. ``run_eval`` calls it once per game and writes the result
 # under ``evals/transcripts/<run-id>/``.
 from graphia.tools.eval_transcript import render_transcript
+
+# The active scripted-player policy (spec 026): a pure, deterministic, no-LLM /
+# no-RNG rule-based stand-in for the human seat in a measured run. ``_play_one_game``
+# constructs the seat once per game (after the deal) and the resume branches call
+# the role-matched decision instead of the passive defaults — gated by
+# ``--scripted-player`` (``GRAPHIA_ACTIVE_SCRIPTED_PLAYER``). The module never
+# imports ``graphia.llm`` (the structural no-model-call guarantee), so the
+# scripted seat never routes through the AI capture provider.
+from graphia.tools.scripted_player import (
+    Decision,
+    law_abiding_decision,
+    mafia_decision,
+    reconstruct_public_view,
+    score_suspicion,
+)
 
 # Reuse the established make-gated harness driver (scripted human + stream-to-
 # interrupt pump) rather than re-implementing it — same import ``ollama_smoke``
@@ -1560,6 +1575,7 @@ def render_record(result: EvalResult, run_date: str) -> str:
           games: <int>
           seed: <int> | null
           max_days: <int> | null   # spec 023 — runaway Day cap (was max_rounds)
+          scripted_player: 'active' | 'passive'  # spec 026 — human-seat stand-in (omitted on pre-026 records → passive)
           lineup:                  # spec 014 — the configured whole-table counts
             num_citizens: <int>
             num_mafia: <int>
@@ -1670,22 +1686,27 @@ def render_record(result: EvalResult, run_date: str) -> str:
         "max_days": None,
     }
     lines.append("settings:")
-    lines += _yaml_block(
-        {
-            "large_model": settings.get("large_model", result.large_model),
-            "small_model": settings.get("small_model", result.small_model),
-            "base_url": settings.get("base_url"),
-            "games": settings.get("games", result.games_attempted),
-            "seed": settings.get("seed"),
-            # Spec 023: renamed ``max_rounds`` → ``max_days`` (the runaway Day
-            # cap). Fall back to the legacy key so a synthetic/older settings map
-            # still renders a value.
-            "max_days": settings.get(
-                "max_days", settings.get("max_rounds")
-            ),
-        },
-        indent=1,
-    )
+    flat_settings: dict[str, object] = {
+        "large_model": settings.get("large_model", result.large_model),
+        "small_model": settings.get("small_model", result.small_model),
+        "base_url": settings.get("base_url"),
+        "games": settings.get("games", result.games_attempted),
+        "seed": settings.get("seed"),
+        # Spec 023: renamed ``max_rounds`` → ``max_days`` (the runaway Day
+        # cap). Fall back to the legacy key so a synthetic/older settings map
+        # still renders a value.
+        "max_days": settings.get("max_days", settings.get("max_rounds")),
+    }
+    # Spec 026 §2.4: the human-seat stand-in mode (``active``/``passive``),
+    # rendered after the flat keys and before the nested ``lineup``. ADDITIVE /
+    # conditional — like ``lineup``, only emitted when the run recorded it, so a
+    # synthetic/older settings map without the key renders without the line
+    # (pre-026 records read as implicitly ``passive``). No ``METRICS_VERSION``
+    # bump (the ``lineup``/``ci_low`` precedent).
+    scripted_player = settings.get("scripted_player")
+    if scripted_player is not None:
+        flat_settings["scripted_player"] = scripted_player
+    lines += _yaml_block(flat_settings, indent=1)
     # ``settings.lineup`` (spec 014 §2.4) — the configured whole-table counts,
     # rendered after the flat settings keys as a one-level nested sub-map (the
     # ``provider.models`` / ``outcomes`` per-block path). Only emitted when the
@@ -2028,6 +2049,155 @@ def _install_capture_provider(
     )
 
 
+# ===========================================================================
+# Active scripted player seat (spec 026): the human-seat stand-in's three
+# resume values, computed from the public game so far (+ a Mafioso's known
+# teammates) with no LLM call and no RNG. The seat is constructed ONCE per game
+# after the deal (``_make_scripted_seat``), and the per-interrupt resume value
+# is a pure function of the live public state (``_scripted_resume``). When
+# PASSIVE, the resume helper is bypassed entirely and the driver keeps the
+# byte-for-byte prior defaults — the ADR-011 flag-off parity guarantee.
+# ===========================================================================
+
+# "Final discussion round of the Day" = the speaking turn during round
+# ``DAY_MAX_ROUNDS`` (resolved D2). ``day_rounds`` counts COMPLETED rounds and is
+# bumped only at a round wrap, so during round N's speaking turns
+# ``day_rounds == N - 1``; the final round (``DAY_MAX_ROUNDS``) is therefore the
+# turn taken while ``day_rounds == DAY_MAX_ROUNDS - 1``. Imported lazily in the
+# seat builder (``nodes.day`` pulls in the gameplay stack) to keep this module's
+# import side-effect-free.
+
+
+@dataclass(slots=True)
+class _ScriptedSeat:
+    """The constructed scripted-player seat for one game (spec 026).
+
+    Built once after the deal from the human seat's OWN dealt role and (if Mafia)
+    its OWN teammates — the only place true roles are read, and only the seat's
+    legitimate self-knowledge. Holds nothing that re-enters the running graph;
+    every resume value is recomputed from the live public state per interrupt.
+
+    ``role`` is the seat's dealt side (``"mafia"`` / ``"law_abiding"``);
+    ``teammate_ids`` is the other living-or-dead ``role=="mafia"`` ids (empty for
+    a Law-abiding seat); ``self_id`` is the human id; ``day_max_rounds`` is the
+    final-round threshold (``DAY_MAX_ROUNDS``), captured at build time so the
+    pure resume helper needs no further imports.
+    """
+
+    self_id: str
+    role: str
+    teammate_ids: set[str]
+    day_max_rounds: int
+
+
+def _make_scripted_seat(state: dict[str, Any]) -> _ScriptedSeat:
+    """Construct the per-game scripted seat from the post-deal state (spec 026).
+
+    Reads the human seat's OWN dealt role and — only for a Mafioso — its OWN
+    teammate ids (the other ``role=="mafia"`` players). This is the SINGLE place
+    the policy is allowed to read true roles, and only the seat's own legitimate
+    self-knowledge (its role + its team), never another living player's side.
+
+    ``DAY_MAX_ROUNDS`` is read from ``graphia.nodes.day`` here (a local import so
+    the module stays free of the gameplay stack at import time) and captured on
+    the seat, so the pure resume helper can decide "final round" without any
+    further import.
+    """
+    from graphia.nodes.day import DAY_MAX_ROUNDS
+
+    players = state.get("players", {})
+    human_id = state.get("human_id", "")
+    human = players.get(human_id)
+    role = human.role if human is not None else "law_abiding"
+    teammate_ids: set[str] = set()
+    if role == "mafia":
+        teammate_ids = {
+            p.id
+            for p in players.values()
+            if p.role == "mafia" and p.id != human_id
+        }
+    return _ScriptedSeat(
+        self_id=human_id,
+        role=role,
+        teammate_ids=teammate_ids,
+        day_max_rounds=DAY_MAX_ROUNDS,
+    )
+
+
+def _decision_to_resume(decision: Decision) -> str:
+    """Map a scripted :class:`Decision` to the human-seat resume string (spec 026).
+
+    Mirrors the existing human-seat resume protocol exactly (VERIFIED finding,
+    tech-spec §3):
+
+    - a ``speak`` decision resumes with its text (the human speech path);
+    - a ``vote`` (day_turn vote-initiation) resumes with ``f"/vote {name}"`` —
+      the human ``/vote`` slash-command branch fuzzy-matches the display NAME, so
+      the decision carries the target's name, not its id;
+    - a ``ballot`` decision resumes ``"yes"``/``"no"``;
+    - a ``point`` decision resumes the chosen target's id directly.
+    """
+    match decision.action:
+        case "speak":
+            return decision.text or "(stays silent.)"
+        case "vote":
+            return f"/vote {decision.target_name}"
+        case "ballot":
+            return "yes" if decision.yes else "no"
+        case "point":
+            return decision.target_id or ""
+    return ""  # unreachable; defensive
+
+
+def _scripted_resume(
+    seat: _ScriptedSeat, interrupt_value: dict[str, Any], state: dict[str, Any]
+) -> str:
+    """The active scripted seat's resume value for one interrupt (spec 026).
+
+    Pure over ``(seat, interrupt_value, state)`` — reconstructs the public view
+    from the live ``messages`` + ``players``, scores suspicion, and dispatches to
+    the role-matched policy (``law_abiding_decision`` for a Law-abiding seat,
+    ``mafia_decision`` for a Mafioso). No LLM, no RNG, no live ``get_state`` from
+    inside a node — so it is unit-testable offline and adds zero token cost.
+
+    "Final round" is read from the public ``day_rounds`` (= completed rounds): the
+    final discussion round (``DAY_MAX_ROUNDS``) is the speaking turn taken while
+    ``day_rounds == DAY_MAX_ROUNDS - 1`` (D2). The open ballot's target id (for a
+    ``vote`` interrupt) comes from the interrupt payload's ``target_id``.
+    """
+    players = state.get("players", {})
+    messages = list(state.get("messages", []))
+    kind = interrupt_value.get("kind")
+
+    view = reconstruct_public_view(messages, players, seat.self_id)
+    scores = score_suspicion(view, players, seat.self_id)
+    last_round = state.get("day_rounds", 0) >= seat.day_max_rounds - 1
+    open_vote_target = interrupt_value.get("target_id")
+
+    if seat.role == "mafia":
+        decision = mafia_decision(
+            view,
+            scores,
+            players,
+            seat.self_id,
+            seat.teammate_ids,
+            kind=cast(Any, kind),
+            last_round=last_round,
+            open_vote_target=open_vote_target,
+        )
+    else:
+        decision = law_abiding_decision(
+            view,
+            scores,
+            players,
+            seat.self_id,
+            kind=cast(Any, kind),
+            last_round=last_round,
+            open_vote_target=open_vote_target,
+        )
+    return _decision_to_resume(decision)
+
+
 def _play_one_game(args: argparse.Namespace, game_index: int) -> _GameCapture:
     """Drive one unattended scripted game on an isolated checkpoint; return its
     :class:`_GameCapture` — the speech inputs (pooled lines + AI names + per-line
@@ -2092,11 +2262,21 @@ def _play_one_game(args: argparse.Namespace, game_index: int) -> _GameCapture:
         # to an id via this map — no live ``get_state`` from inside a running
         # node, so attribution cannot go stale (the ``test_slice7_vote`` trap).
         # All Day-speak invokes happen after this point, so the map is ready.
-        players_now = graph.get_state(run_config).values.get("players", {})
+        post_deal_state = graph.get_state(run_config).values
+        players_now = post_deal_state.get("players", {})
         captures: list[CaptureRecord] = []
         _install_capture_provider(
             captures, make_day_speaker_resolver(players_now)
         )
+
+        # Spec 026: construct the active scripted-player seat ONCE, here, from the
+        # post-deal state — the only place its OWN dealt role and (if Mafia) its
+        # OWN teammates are read. ``active`` selects the deterministic rule-based
+        # stand-in; ``passive`` keeps the byte-for-byte prior defaults below. The
+        # seat NEVER routes through the capture proxy above (the policy makes no
+        # model call), so the scripted seat adds zero invokes.
+        scripted_active = getattr(config, "scripted_player_active", True)
+        seat = _make_scripted_seat(post_deal_state) if scripted_active else None
 
         line_idx = 0
         # Spec 023: answer interrupts until the game ends NATURALLY (no
@@ -2117,14 +2297,31 @@ def _play_one_game(args: argparse.Namespace, game_index: int) -> _GameCapture:
                 _drive(graph, run_config, None, on_update=_capture)
                 continue
             kind = iv.get("kind")
+            # Spec 026: in ACTIVE mode the role-matched policy supplies all three
+            # resume values from the live public state (``snapshot.values``,
+            # already read this iteration — no extra ``get_state``). In PASSIVE
+            # mode the seat is ``None`` and the byte-for-byte prior defaults run
+            # (neutral ``HUMAN_LINES`` speech, ``"no"`` ballot, ``options[0]``
+            # point) — the ADR-011 flag-off parity baseline.
             if kind == "day_turn":
-                resume: str = HUMAN_LINES[line_idx % len(HUMAN_LINES)]
-                line_idx += 1
+                if seat is not None:
+                    resume: str = _scripted_resume(seat, iv, snapshot.values)
+                else:
+                    resume = HUMAN_LINES[line_idx % len(HUMAN_LINES)]
+                    line_idx += 1
             elif kind == "vote":
-                resume = "no"  # never execute, so games run long enough to sample
+                if seat is not None:
+                    resume = _scripted_resume(seat, iv, snapshot.values)
+                else:
+                    resume = "no"  # never execute, so games run long enough to sample
             elif kind == "point":
-                options = iv.get("options") or []  # human is law-abiding; defensive
-                resume = options[0]["id"] if options else ""
+                # Only reached when the seat is dealt Mafia. Active → the policy's
+                # chosen non-teammate target id; passive → the first option.
+                options = iv.get("options") or []
+                if seat is not None:
+                    resume = _scripted_resume(seat, iv, snapshot.values)
+                else:
+                    resume = options[0]["id"] if options else ""
             else:
                 raise RuntimeError(f"unexpected interrupt {kind!r}")
             _drive(graph, run_config, Command(resume=resume), on_update=_capture)
@@ -2235,6 +2432,17 @@ def run_eval(
             "num_citizens": getattr(config, "num_citizens", None),
             "num_mafia": getattr(config, "num_mafia", None),
         },
+        # The human-seat stand-in mode (spec 026 §2.4) as a readable
+        # ``active``/``passive`` label, so records self-describe across the
+        # deliberate baseline shift (the default flips to ``active``; every
+        # committed pre-026 baseline is implicitly ``passive``). Additive /
+        # back-compatible — like ``lineup``, a synthetic/older settings map
+        # without the key renders without it; no ``METRICS_VERSION`` bump.
+        "scripted_player": (
+            "active"
+            if getattr(config, "scripted_player_active", True)
+            else "passive"
+        ),
     }
 
     result = EvalResult(
@@ -2497,6 +2705,18 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     ap.add_argument(
+        "--scripted-player",
+        choices=("active", "passive"),
+        default=None,
+        help=(
+            "the human-seat stand-in (spec 026): 'active' (default) plays the "
+            "deterministic rule-based policy that lets a correct town majority "
+            "form; 'passive' reproduces the prior baseline (never proposes, "
+            "always votes No). Overrides GRAPHIA_ACTIVE_SCRIPTED_PLAYER for this "
+            "run; recorded as settings.scripted_player. Omit to use the default."
+        ),
+    )
+    ap.add_argument(
         "--note",
         type=str,
         default="",
@@ -2521,10 +2741,20 @@ def main(argv: list[str] | None = None) -> int:
     # Route --citizens/--mafia onto the lineup env vars before load_config, so
     # the Slice-1 fail-fast guard validates them (a bad lineup exits there).
     _apply_lineup_overrides(args.citizens, args.mafia)
-    # Deal the scripted human a law-abiding role so they never face a night-point
-    # interrupt — the same default the other evals set, keeping the scripted
-    # driver on the day_turn / vote / point happy path. ``setdefault`` so an
-    # explicit GRAPHIA_ROLE in the environment still wins. Set before
+    # Spec 026: the human-seat stand-in mode. ``--scripted-player`` maps to the
+    # default-on ``GRAPHIA_ACTIVE_SCRIPTED_PLAYER`` env flag (active ⇒ truthy,
+    # passive ⇒ falsy) and overrides any inherited value for this run; omitted,
+    # the env / the default-active flag wins. Set before ``load_config``.
+    if args.scripted_player is not None:
+        os.environ["GRAPHIA_ACTIVE_SCRIPTED_PLAYER"] = (
+            "1" if args.scripted_player == "active" else "0"
+        )
+    # Spec 026 (D3): the seat's role is a per-run selectable value, DEFAULT
+    # ``law-abiding`` — so the primary town-win measurement works out of the box,
+    # while a ``GRAPHIA_ROLE=mafia`` batch exercises and cleanly attributes the
+    # Mafioso policy (relaxing the prior unconditional law-abiding pin). The
+    # driver already has a ``point`` branch, so no protocol change. ``setdefault``
+    # so an explicit GRAPHIA_ROLE in the environment still wins. Set before
     # ``load_config`` (config reads it at load time).
     os.environ.setdefault("GRAPHIA_ROLE", "law-abiding")
 
