@@ -417,6 +417,7 @@ def test_day_speak_template_slot_guard_renders_with_role_guidance() -> None:
         standings="",
         roster="Cleo: p-cleo",
         context="(no prior discussion)",
+        private_thoughts="",
         role_guidance=guidance,
     )
 
@@ -439,6 +440,7 @@ def test_ai_vote_template_slot_guard_renders_with_role_guidance() -> None:
         target="Mara",
         relationship="",
         context="(no prior discussion)",
+        private_thoughts="",
         role_guidance=guidance,
     )
 
@@ -464,6 +466,7 @@ def test_template_slot_guard_empty_guidance_leaves_pre024_form() -> None:
         standings="",
         roster="Cleo: p-cleo",
         context="(no prior discussion)",
+        private_thoughts="",
         role_guidance="",
     )
 

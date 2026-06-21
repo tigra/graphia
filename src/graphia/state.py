@@ -10,6 +10,34 @@ from langchain_core.messages import AnyMessage
 from langgraph.graph.message import add_messages
 
 
+def _merge_private_thoughts(
+    prior: dict[str, list[str]] | None,
+    incoming: dict[str, list[str]] | None,
+) -> dict[str, list[str]]:
+    """Accumulate per-player private thoughts (spec 028) — the channel reducer.
+
+    The per-key analogue of ``operator.add`` on lists: given the prior map and
+    an incoming delta map, return a NEW map where each player's list is
+    ``prior + incoming`` (concatenation, preserving the order the notes were
+    written). A plain ``dict`` merge would let a later delta's list CLOBBER an
+    earlier one — the bug this reducer exists to prevent — so each per-player
+    list is concatenated, not replaced.
+
+    PURE (copy-not-mutate): neither input is mutated — the prior map is shallow-
+    copied and each touched player's list is rebuilt as a fresh ``list`` — so
+    checkpoint replay is stable. It iterates only ``dict`` insertion order
+    (never a ``set``), so the order is deterministic and the dual-mode
+    byte-equal smoke is unaffected. ``add_messages`` is the custom-reducer
+    precedent; ``kill_log``'s ``operator.add`` the accumulation precedent.
+    """
+    merged: dict[str, list[str]] = {
+        player_id: list(notes) for player_id, notes in (prior or {}).items()
+    }
+    for player_id, notes in (incoming or {}).items():
+        merged[player_id] = [*merged.get(player_id, []), *notes]
+    return merged
+
+
 @dataclass(frozen=True)
 class PlayerPersona:
     """A player's persona: a personality, a manner of speaking, and a backstory.
@@ -110,3 +138,12 @@ class GameState(TypedDict, total=False):
     # ``"draw"`` is retained for back-compat/defensive rendering though no live
     # path now produces it.
     winner: Literal["law_abiding", "mafia", "draw", "runaway"] | None
+    # Per-AI Day-round private thoughts (spec 028). Each surviving AI player's
+    # private end-of-round reflections accumulate here, keyed by player id, in
+    # the order written, via the ``_merge_private_thoughts`` accumulating
+    # reducer. A within-game working scratchpad: NEVER a public ``messages``
+    # entry, NEVER carrying ``private_to`` (which would route a note into another
+    # reader's context — the opposite of the privacy invariant). Read ONLY by the
+    # per-player prompt builders (each player sees only its own
+    # ``private_thoughts.get(player.id, [])``) and the eval-transcript renderer.
+    private_thoughts: Annotated[dict[str, list[str]], _merge_private_thoughts]

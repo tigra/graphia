@@ -513,6 +513,13 @@ def _render_phases(
                     _append_messages(
                         current_day_body(), delta, names, roles_by_name
                     )
+                # Spec 028: a ``private_thoughts`` delta (the ``day_round_reflect``
+                # super-step's per-player new thoughts) renders as private
+                # ``<thought player="…">…</thought>`` elements, distinct from
+                # public speech. Reflection fires at the END of the round it
+                # summarizes and BEFORE the next ``day_turn`` consumes the round
+                # break, so the thoughts land inside the round they belong to.
+                _append_thoughts(current_day_body(), delta, names)
                 # A genuine round-robin wrap ends the round: ``day_turn`` returns
                 # ``day_rounds`` only on a completed pass. Set the break AFTER
                 # appending this delta — the wrap delta's speech + attached recap
@@ -860,6 +867,57 @@ def _append_messages(
         # Any other message type (defensive) — surface its content under a
         # neutral label rather than dropping it.
         buf.append(f"Moderator: {text}")
+
+
+def _append_thoughts(
+    buf: list[str],
+    delta: dict[str, Any],
+    names: dict[str, str],
+) -> None:
+    """Append each private thought in a ``private_thoughts`` delta (spec 028).
+
+    The ``day_round_reflect`` super-step returns ``{"private_thoughts": {player
+    id: [thought, …]}}``. ``stream_mode="updates"`` carries the node's RAW return
+    (this round's NEW thoughts), NOT the post-reducer accumulated map — verified
+    at implementation against LangGraph — so we render the delta's per-player
+    lists directly (no diffing the full map), matching how
+    ``_accumulate_night_picks`` reads streamed deltas.
+
+    Each thought becomes its own private/annotated, author-attributed inline
+    element — ``<thought player="Name">…</thought>`` — distinct from public
+    speech (a new tag alongside the spec-022 ``<recap>`` / ``<kill>`` / ``<vote>``
+    inline shapes). The transcript is a maintainer-facing artifact only; this is
+    the ONLY place a thought ever surfaces — never to other players, never to the
+    live human UI.
+
+    Defensive (the renderer's house style): a missing channel, a non-dict value,
+    an empty / non-list per-player value, a non-string note, or an unknown id
+    must never raise — surface what's present, omit the rest. An unknown id
+    resolves to itself via ``_name_of``.
+    """
+    thoughts = delta.get("private_thoughts")
+    if not isinstance(thoughts, dict):
+        return
+    for player_id, notes in thoughts.items():
+        if not isinstance(notes, (list, tuple)):
+            continue
+        author = _name_of(player_id, names)
+        for note in notes:
+            if not isinstance(note, str):
+                continue
+            text = note.strip()
+            if not text:
+                continue
+            buf.append(_inline_attr("thought", f'player="{author}"', text))
+
+
+def _inline_attr(tag: str, attrs: str, content: str) -> str:
+    """A single-line element with attributes: ``<tag attrs>content</tag>``.
+
+    The attributed analogue of :func:`_inline`, used for the spec-028
+    ``<thought player="…">…</thought>`` private notes.
+    """
+    return f"<{tag} {attrs}>{content}</{tag}>"
 
 
 def _kill_block(name: str, roles_by_name: dict[str, str]) -> str:

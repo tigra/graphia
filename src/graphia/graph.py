@@ -24,6 +24,7 @@ from graphia.nodes import (
     collect_votes,
     day_close,
     day_open,
+    day_round_reflect,
     day_turn,
     end_screen,
     first_night_mafia_intros,
@@ -89,6 +90,7 @@ def _assemble_graph(
     max_days: int = 12,
     context_window: int = 150,
     context_token_budget: int = 20000,
+    private_thoughts_enabled: bool = True,
 ) -> CompiledStateGraph:
     """Build the Graphia StateGraph topology and compile it with ``saver``.
 
@@ -124,7 +126,13 @@ def _assemble_graph(
     # order (its own super-step, no interrupt) and ``mafia_point`` handles one
     # pointer per super-step (interrupt-safe for a human pointer).
     builder.add_node("mafia_round_start", mafia_round_start)
-    builder.add_node("mafia_point", mafia_point)
+    # Spec 028 (ADR 011): the private-thoughts flag is bound into ``mafia_point``
+    # so an AI Mafioso's Night pick is grounded in its own accumulated Day
+    # reflections (the third AI-decision prompt this family of flags reaches).
+    builder.add_node(
+        "mafia_point",
+        partial(mafia_point, private_thoughts_enabled=private_thoughts_enabled),
+    )
     builder.add_node("resolve_night_kill", emit(resolve_night_kill))
     # ``night_close`` closes over the diary store + game id so the per-Night
     # placeholder writes don't need to reach into module-level singletons.
@@ -148,6 +156,9 @@ def _assemble_graph(
     # token-budget cap are bound into the same two AI-decision nodes alongside
     # the recap-aware-reasoning flag, so ``_ai_day_action`` / ``_ai_ballot``
     # render the configured window in both modes.
+    # Spec 028 (ADR 011): the private-thoughts flag is bound into the same two
+    # AI-decision Day nodes (``day_turn`` / ``collect_votes``) alongside the
+    # other flags, so it gates the ``{private_thoughts}`` block in both modes.
     builder.add_node(
         "day_turn",
         partial(
@@ -155,6 +166,21 @@ def _assemble_graph(
             recap_enabled=recap_enabled,
             recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
             role_guidance_enabled=role_guidance_enabled,
+            context_window=context_window,
+            context_token_budget=context_token_budget,
+            private_thoughts_enabled=private_thoughts_enabled,
+        ),
+    )
+    # Spec 028: the end-of-round reflection node. Its own super-step (so the
+    # fan-out of N non-deterministic reflection calls is checkpointed once and
+    # never replayed on a later ``day_turn`` interrupt). The flag + the window /
+    # token-budget are bound here so the reflection prompt honours the same
+    # discussion window the Day prompts use; flag-off makes the node a no-op.
+    builder.add_node(
+        "day_round_reflect",
+        partial(
+            day_round_reflect,
+            private_thoughts_enabled=private_thoughts_enabled,
             context_window=context_window,
             context_token_budget=context_token_budget,
         ),
@@ -168,6 +194,7 @@ def _assemble_graph(
             role_guidance_enabled=role_guidance_enabled,
             context_window=context_window,
             context_token_budget=context_token_budget,
+            private_thoughts_enabled=private_thoughts_enabled,
         ),
     )
     builder.add_node("resolve_vote", emit(resolve_vote))
@@ -227,16 +254,21 @@ def _assemble_graph(
     builder.add_edge("night_close", "day_open")
     builder.add_edge("day_open", "day_turn")
 
-    # day_turn branches: vote-initiated → vote_prompt, else loop or close.
+    # day_turn branches: vote-initiated → vote_prompt; round-cap → day_close;
+    # a completed-round loop-back → day_round_reflect (spec 028) → day_turn; a
+    # mid-round turn → day_turn directly.
     builder.add_conditional_edges(
         "day_turn",
         route_day_turn_or_vote,
         {
             "vote_prompt": "vote_prompt",
             "day_turn": "day_turn",
+            "day_round_reflect": "day_round_reflect",
             "day_close": "day_close",
         },
     )
+    # Spec 028: after reflecting, start the next speaking round.
+    builder.add_edge("day_round_reflect", "day_turn")
 
     # Vote sub-graph: announce → poll one voter at a time → tally.
     builder.add_edge("vote_prompt", "collect_votes")
@@ -310,6 +342,7 @@ def build_graph(
         max_days=config.max_days,
         context_window=config.context_window,
         context_token_budget=config.context_token_budget,
+        private_thoughts_enabled=config.private_thoughts_enabled,
     )
     return graph, thread_id
 

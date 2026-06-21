@@ -419,7 +419,7 @@ def test_first_pointer_gets_neutral_empty_block() -> None:
 
     # The neutral text is embedded by the template wiring used by _ai_pick_target.
     prompt = MAFIA_POINT_USER_TEMPLATE.format(
-        roster="Priya: a", mafia_persona="", prior_picks=neutral
+        roster="Priya: a", mafia_persona="", prior_picks=neutral, private_thoughts=""
     )
     assert neutral in prompt
     # And not a stale "Round 1" pick line.

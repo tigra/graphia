@@ -208,6 +208,21 @@ class Ballot(BaseModel):
     yes: bool
 
 
+class Reflection(BaseModel):
+    """A single AI player's private end-of-Day-round reflection (spec 028).
+
+    Kept deliberately flat with one primitive field — the same Bedrock-Converse
+    constraint that shapes ``Roster`` / ``Pointing`` / ``Ballot`` / ``DayAction``
+    (no nested or discriminated shapes). ``thought`` is the short private note
+    (one or two sentences) the player writes for itself, seen by no other
+    player. The reflection node accepts a non-empty ``thought`` and otherwise
+    falls back to a deterministic placeholder so a model hiccup never blanks the
+    channel and tests stay non-flaky.
+    """
+
+    thought: str
+
+
 class DayAction(BaseModel):
     """Flat schema for a Day-phase action.
 

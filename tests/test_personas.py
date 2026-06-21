@@ -728,6 +728,7 @@ def _render_day_prompt(
         standings=_render_standings({"players": players}),
         roster=_render_alive_roster(players),
         context="(no prior discussion)",
+        private_thoughts="",
         role_guidance="",
     )
 
@@ -1047,6 +1048,7 @@ def test_mafia_point_template_renders_persona_block_directly() -> None:
         roster="Priya: t1\nSilas: t2",
         mafia_persona=mafia_persona_block,
         prior_picks="No teammate has pointed yet this Night.",
+        private_thoughts="",
     )
 
     assert "{mafia_persona}" not in prompt

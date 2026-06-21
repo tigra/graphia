@@ -89,7 +89,7 @@ MAFIA_POINT_USER_TEMPLATE = """Alive Law-abiding Citizens (name: id):
 {mafia_persona}
 Your Mafia teammates' picks so far this Night:
 {prior_picks}
-
+{private_thoughts}
 The Mafia kill by AGREEMENT — the Night ends the moment every teammate points
 at the same target. Move toward a shared target: if your teammates have already
 converged on someone, you may change your pick to match them.
@@ -154,7 +154,7 @@ Recent public discussion:
 {context}
 
 Never publicly reveal your secret role or your teammates.
-{role_guidance}
+{private_thoughts}{role_guidance}
 Take your turn now. Either reply with one or two sentences in character
 (`kind='speak'`), or call for a vote against a specific `target_id` from the
 roster above (`kind='vote'`).
@@ -215,7 +215,7 @@ AI_VOTE_USER_TEMPLATE = """You are {voter} — your secret role is {role_label}.
 {relationship}
 Recent public discussion:
 {context}
-{role_guidance}
+{private_thoughts}{role_guidance}
 Cast your ballot: `yes=True` to execute, `yes=False` to spare. Return only the
 `yes` field.
 """
@@ -245,3 +245,44 @@ ENDGAME_PERSONA_MAFIA_TEMPLATE = (
     "• {name} ({role_label}) — publicly presented as {public_persona} "
     "({personality} {manner}) … but was really a Mafioso: {true_self}"
 )
+
+# Per-AI Day-round private thoughts (spec 028). At the close of each Day round,
+# every surviving AI player privately reflects via this prompt — a short note,
+# seen by no one else. Deliberately MILD: it invites the player to take stock and
+# plan its OWN next move in its own voice, and does NOT prescribe a strategy — an
+# explicit contrast to the directive ``ROLE_GUIDANCE_*`` menus of spec 024 (the
+# two coexist: this gives the player a private place to reason; role-guidance is
+# a closing nudge). The note is framed as thinking for itself, seen by no one.
+REFLECTION_SYSTEM = """You are a player in Graphia, a Mafia-style social-deduction
+party game. The Day's speaking round has just closed. Before the next round, take
+a quiet moment to think privately — only for yourself. No one else will ever see
+this: not the other players, not anyone. This is your own private train of
+thought.
+
+Take stock of how the conversation and the game are going from where you sit, and
+think about what you might do next. Speak in your own voice, as yourself. This is
+reflection, not a speech — there is no audience. Do not decide for anyone but
+yourself, and do not feel you must commit to any particular move; just think.
+
+Return a SHORT private note (one or two sentences) in the `thought` field.
+"""
+
+# The reflection user template. Mirrors the slot vocabulary of
+# ``DAY_SPEAK_USER_TEMPLATE`` so the same node-side helpers populate it
+# (``_role_label`` / ``_win_condition_line`` / ``_team_line`` / ``_persona_block``
+# / ``_render_standings`` / ``_render_context``) plus ``{private_thoughts}`` —
+# this player's OWN prior notes — so the reflection itself is grounded in the
+# running train of thought. The mildness lives in the wording (the system
+# prompt), not the slots.
+REFLECTION_USER_TEMPLATE = """You are {speaker} — your secret role is {role_label}. {win_condition}
+{team_line}
+{persona}
+{standings}A Day speaking round has just ended.
+
+Recent public discussion:
+{context}
+{private_thoughts}
+Write a short private note to yourself — one or two sentences, in your own voice —
+taking stock and thinking about your own next move. Return only the `thought`
+field.
+"""

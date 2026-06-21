@@ -38,7 +38,7 @@ from graphia.career_events import (
     CareerEvent,
     CareerEventEmitter,
 )
-from graphia.llm import Ballot, DayAction, get_large
+from graphia.llm import Ballot, DayAction, Reflection, get_large
 from graphia.prompts import (
     AI_VOTE_SYSTEM,
     AI_VOTE_USER_TEMPLATE,
@@ -47,6 +47,8 @@ from graphia.prompts import (
     DAY_ROUND_RECAP_TEMPLATE,
     DAY_SPEAK_SYSTEM,
     DAY_SPEAK_USER_TEMPLATE,
+    REFLECTION_SYSTEM,
+    REFLECTION_USER_TEMPLATE,
     ROLE_GUIDANCE_LABEL,
     ROLE_GUIDANCE_LAW_ABIDING,
     ROLE_GUIDANCE_MAFIA,
@@ -357,6 +359,43 @@ def _role_guidance_block(role: str, *, enabled: bool) -> str:
     return f"\n{ROLE_GUIDANCE_LABEL}\n{menu}\n"
 
 
+# The label that heads a player's injected own-thoughts block in the three AI
+# decision prompts (spec 028). Its presence/absence is the structural marker the
+# ``GRAPHIA_PRIVATE_THOUGHTS`` ablation flag (ADR 011) toggles and the tests
+# assert on. The "(yours alone)" framing reinforces the privacy invariant in the
+# prompt itself.
+PRIVATE_THOUGHTS_LABEL = "Your private notes so far (yours alone):"
+
+
+def _private_thoughts_block(thoughts: list[str], *, enabled: bool) -> str:
+    """Render the ``{private_thoughts}`` slot for the three AI decision prompts.
+
+    The spec-028 own-thoughts injection block (ADR 011 ablation shape), mirroring
+    ``_standings_prompt_block`` / ``_role_guidance_block``:
+
+    - ``enabled=False`` ⇒ returns ``""`` so the ``{private_thoughts}`` slot
+      collapses and the prompt is BYTE-IDENTICAL to its pre-028 form (no label,
+      no body, no stray blank line) — the A/B ablation seam and the flag-off
+      parity test target (open decision 3: ``""``, not a neutral line).
+    - ``enabled=True`` with NO prior thoughts ⇒ returns ``""`` as well: an AI
+      that hasn't reflected yet (round 1) adds nothing, so the first round of
+      play is unchanged.
+    - ``enabled=True`` WITH thoughts ⇒ a labelled block listing THIS player's own
+      notes in the order written, one per ``- `` line, with a leading + trailing
+      ``\\n`` so it slots cleanly into the template seam (same discipline as
+      ``_role_guidance_block``).
+
+    Only ever passed ONE player's own thoughts (keyed at the call site on the
+    acting player's id) — a player never receives another player's notes. PURE:
+    no state read beyond the passed list, no RNG, no LLM, no ``set`` iteration,
+    so the dual-mode byte-equal smoke is unaffected.
+    """
+    if not enabled or not thoughts:
+        return ""
+    bullets = "\n".join(f"- {note}" for note in thoughts)
+    return f"\n{PRIVATE_THOUGHTS_LABEL}\n{bullets}\n"
+
+
 # In-world clock for the Day's rounds (spec 020): round 1 is morning, advancing
 # one step per round toward midnight at round 6, so the recap reads like the Day
 # burning down toward Night. Indexed by ``round - 1`` after clamping.
@@ -630,6 +669,8 @@ def _ai_day_action(
     role_guidance_enabled: bool = True,
     context_window: int = _CONTEXT_WINDOW,
     context_token_budget: int | None = None,
+    private_thoughts: list[str] | None = None,
+    private_thoughts_enabled: bool = True,
 ) -> DayAction:
     """Call the gameplay model for the AI's speaking turn. Returns a DayAction.
 
@@ -650,6 +691,13 @@ def _ai_day_action(
     prior baseline / no-cap so direct test calls stay unaffected, and the live
     builders thread ``GraphiaConfig.context_window`` /
     ``GraphiaConfig.context_token_budget`` through here.
+
+    ``private_thoughts`` / ``private_thoughts_enabled`` (spec 028 ablation flag,
+    ADR 011) gate the ``{private_thoughts}`` block: ON (default) injects THIS
+    speaker's own accumulated reflections; OFF (or empty) reverts the prompt to
+    its pre-028 form. ``private_thoughts`` defaults to no notes so direct test
+    calls stay byte-identical; the caller passes only the acting player's own
+    notes (``state["private_thoughts"].get(speaker.id, [])``).
     """
     players = state.get("players", {})
     roster = _render_alive_roster(players)
@@ -688,6 +736,9 @@ def _ai_day_action(
                 ),
                 roster=roster,
                 context=context,
+                private_thoughts=_private_thoughts_block(
+                    private_thoughts or [], enabled=private_thoughts_enabled
+                ),
                 role_guidance=_role_guidance_block(
                     speaker.role, enabled=role_guidance_enabled
                 ),
@@ -743,6 +794,131 @@ def _ai_day_action(
     return DayAction(kind="speak", text="I'm not sure who to trust yet.")
 
 
+# Deterministic fallback note written when a player's reflection model call fails
+# or yields an empty thought — so one model hiccup never blanks the channel and
+# the tests stay non-flaky (mirrors ``_ai_day_action``'s speak fallback).
+_REFLECTION_FALLBACK = "I'll keep watching and weigh what I've heard so far."
+
+
+def _ai_reflect(
+    speaker: PlayerState,
+    state: GameState,
+    *,
+    context_window: int = _CONTEXT_WINDOW,
+    context_token_budget: int | None = None,
+    private_thoughts_enabled: bool = True,
+) -> str:
+    """Produce ONE surviving AI player's private end-of-round reflection (spec 028).
+
+    Builds the MILD reflection prompt (``REFLECTION_SYSTEM`` + the user template)
+    grounded in the SAME helpers the Day-speech prompt uses — role grounding
+    (``_role_label`` / ``_win_condition_line`` / ``_team_line``), persona
+    (``_persona_block``), standings (``_render_standings``), the recent
+    discussion (``_render_context`` honoring the configured window / token
+    budget), and this player's OWN accumulated prior thoughts
+    (``_private_thoughts_block``) — so the reflection itself is grounded in the
+    running train of thought. Calls ``get_large().with_structured_output(
+    Reflection)`` once; on any failure or an empty thought it returns the
+    deterministic fallback note (defensive posture mirroring ``_ai_day_action``).
+    """
+    players = state.get("players", {})
+    context = _render_context(
+        list(state.get("messages", [])),
+        speaker.id,
+        window=context_window,
+        token_budget=context_token_budget,
+    )
+    role_label = _role_label(speaker.role)
+    win_condition = _win_condition_line(speaker.role)
+    team_line = _team_line(speaker, players)
+    persona = _persona_block(speaker)
+    own_thoughts = state.get("private_thoughts", {}).get(speaker.id, [])
+
+    llm = get_large().with_structured_output(Reflection)
+    messages: list = [
+        SystemMessage(content=REFLECTION_SYSTEM),
+        HumanMessage(
+            content=REFLECTION_USER_TEMPLATE.format(
+                speaker=speaker.name,
+                role_label=role_label,
+                win_condition=win_condition,
+                team_line=team_line,
+                persona=persona,
+                standings=_standings_prompt_block(
+                    state, enabled=True
+                ),
+                context=context,
+                private_thoughts=_private_thoughts_block(
+                    own_thoughts, enabled=private_thoughts_enabled
+                ),
+            )
+        ),
+    ]
+    try:
+        result = llm.invoke(messages)
+        if isinstance(result, Reflection) and result.thought.strip():
+            return result.thought.strip()
+    except Exception:
+        pass
+    return _REFLECTION_FALLBACK
+
+
+def day_round_reflect(
+    state: GameState,
+    *,
+    private_thoughts_enabled: bool = True,
+    context_window: int = _CONTEXT_WINDOW,
+    context_token_budget: int | None = None,
+) -> dict:
+    """At each Day round's close, every surviving AI player privately reflects.
+
+    A DEDICATED node (NOT folded into ``day_turn`` / ``_round_complete_update``)
+    so its fan-out of N non-deterministic ``get_large`` calls commits as its OWN
+    super-step and is never re-run on a later ``day_turn`` interrupt replay
+    (§2.1 replay-safety — the same discipline ``mafia_round_start`` uses).
+
+    Self-guards (open decision 1, approach (b)): the router routes the
+    completed-round loop-back here, and this node reflects ONLY when the cursor
+    is at the start of a fresh round (``day_turn_index == 0 and day_rounds >=
+    1``). On any other condition it is a safe no-op (returns ``{}``).
+
+    Iterates surviving, NON-HUMAN players (``is_alive and not is_human``) —
+    mirroring ``night_close``'s diary-write loop. The deterministic scripted eval
+    seat (spec 026) is the human seat (``is_human=True``), so it is naturally
+    excluded; dead players and the human write nothing.
+
+    Returns a single ``private_thoughts`` delta keyed per player, with NO public
+    ``messages`` (the privacy invariant — a thought never enters the message
+    stream and never carries ``private_to``). When the ablation flag is OFF, the
+    node is a pure no-op (``{}``) so the prompts revert to their pre-028 form.
+    """
+    if not private_thoughts_enabled:
+        return {}
+    # Self-guard: reflect only at the start of a fresh round (a completed round
+    # just wrapped: ``day_turn`` reset ``day_turn_index`` to 0 and bumped
+    # ``day_rounds``). Any other routing here is a safe no-op.
+    if state.get("day_turn_index", 0) != 0 or state.get("day_rounds", 0) < 1:
+        return {}
+
+    players = state.get("players", {})
+    new_thoughts: dict[str, list[str]] = {}
+    for player in players.values():
+        if not player.is_alive or player.is_human:
+            continue
+        thought = _ai_reflect(
+            player,
+            state,
+            context_window=context_window,
+            context_token_budget=context_token_budget,
+            private_thoughts_enabled=private_thoughts_enabled,
+        )
+        new_thoughts[player.id] = [thought]
+
+    if not new_thoughts:
+        return {}
+    return {"private_thoughts": new_thoughts}
+
+
 def _begin_vote(
     initiator_id: str,
     target_id: str,
@@ -768,6 +944,7 @@ def day_turn(
     role_guidance_enabled: bool = True,
     context_window: int = _CONTEXT_WINDOW,
     context_token_budget: int | None = None,
+    private_thoughts_enabled: bool = True,
 ) -> dict:
     """Run exactly one player's Day turn, then advance bookkeeping.
 
@@ -893,6 +1070,8 @@ def day_turn(
             role_guidance_enabled=role_guidance_enabled,
             context_window=context_window,
             context_token_budget=context_token_budget,
+            private_thoughts=state.get("private_thoughts", {}).get(player.id, []),
+            private_thoughts_enabled=private_thoughts_enabled,
         )
         if action.kind == "vote":
             assert action.target_id is not None  # validated in _ai_day_action
@@ -965,6 +1144,8 @@ def _ai_ballot(
     role_guidance_enabled: bool = True,
     context_window: int = _CONTEXT_WINDOW,
     context_token_budget: int | None = None,
+    private_thoughts: list[str] | None = None,
+    private_thoughts_enabled: bool = True,
 ) -> Ballot:
     """Ask the gameplay model for a Yes/No ballot. Conservative fallback.
 
@@ -980,6 +1161,12 @@ def _ai_ballot(
     discussion window and its defensive token-budget cap, threaded from
     ``GraphiaConfig`` by the live builders; defaulted to the prior baseline /
     no-cap so direct test calls stay unaffected.
+
+    ``private_thoughts`` / ``private_thoughts_enabled`` (spec 028 ablation flag,
+    ADR 011) gate the ``{private_thoughts}`` block: ON (default) injects THIS
+    voter's own accumulated reflections; OFF (or empty) reverts the prompt to its
+    pre-028 form. The caller passes only the voter's own notes
+    (``state["private_thoughts"].get(voter.id, [])``).
     """
     players = state.get("players", {})
     context = _render_context(
@@ -1013,6 +1200,9 @@ def _ai_ballot(
                 target=target.name,
                 relationship=relationship,
                 context=context,
+                private_thoughts=_private_thoughts_block(
+                    private_thoughts or [], enabled=private_thoughts_enabled
+                ),
                 role_guidance=_role_guidance_block(
                     voter.role, enabled=role_guidance_enabled
                 ),
@@ -1045,6 +1235,7 @@ def collect_votes(
     role_guidance_enabled: bool = True,
     context_window: int = _CONTEXT_WINDOW,
     context_token_budget: int | None = None,
+    private_thoughts_enabled: bool = True,
 ) -> dict:
     """Poll ONE voter per super-step. Replay-safe like ``day_turn``.
 
@@ -1124,6 +1315,8 @@ def collect_votes(
                 role_guidance_enabled=role_guidance_enabled,
                 context_window=context_window,
                 context_token_budget=context_token_budget,
+                private_thoughts=state.get("private_thoughts", {}).get(voter.id, []),
+                private_thoughts_enabled=private_thoughts_enabled,
             )
             yes = ballot.yes
         if career_emitter is not None and game_id is not None:
@@ -1340,8 +1533,19 @@ def route_day_turn_or_vote(state: GameState) -> str:
 
     Priority order:
     1. If ``active_vote`` is set, a vote was just initiated → ``vote_prompt``.
-    2. Else if round cap hit → ``day_close``.
-    3. Else loop back to ``day_turn`` for the next speaker.
+    2. Else if a re-prompt error is pending → ``day_turn`` (re-prompt the human).
+    3. Else if round cap hit → ``day_close``.
+    4. Else if a speaking round just WRAPPED (and the game continues) →
+       ``day_round_reflect`` (spec 028), which then edges back to ``day_turn``.
+    5. Else loop back to ``day_turn`` for the next speaker (mid-round).
+
+    The round-wrap signal (step 4) is ``day_turn_index == 0 and day_rounds >=
+    1``: ``day_turn`` resets the cursor to 0 and bumps ``day_rounds`` ONLY on a
+    completed round-robin pass (``_round_complete_update``), so this predicate
+    fires once per completed round and never mid-round. Routing only the genuine
+    wrap into ``day_round_reflect`` avoids spending a no-op super-step on every
+    mid-round turn; the node self-guards on the same predicate as defense in
+    depth. The vote / re-prompt / round-cap branches are unchanged from pre-028.
     """
     if state.get("active_vote"):
         return "vote_prompt"
@@ -1353,6 +1557,10 @@ def route_day_turn_or_vote(state: GameState) -> str:
         return "day_turn"
     if state.get("day_rounds", 0) >= DAY_MAX_ROUNDS:
         return "day_close"
+    # A completed-round loop-back (game continues, not the round cap): reflect
+    # before the next round opens (spec 028). Mid-round turns fall through.
+    if state.get("day_turn_index", 0) == 0 and state.get("day_rounds", 0) >= 1:
+        return "day_round_reflect"
     return "day_turn"
 
 

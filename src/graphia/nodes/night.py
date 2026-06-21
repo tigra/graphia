@@ -17,6 +17,7 @@ from graphia.career_events import (
 )
 from graphia.diary_store import DiaryStore
 from graphia.llm import Pointing, get_large
+from graphia.nodes.day import _private_thoughts_block
 from graphia.prompts import (
     MAFIA_POINT_SYSTEM,
     MAFIA_POINT_USER_TEMPLATE,
@@ -194,7 +195,20 @@ def _ai_pick_target(
     alive_law_abiding: list[PlayerState],
     mafia: PlayerState,
     prior_picks: str = "",
+    *,
+    private_thoughts: list[str] | None = None,
+    private_thoughts_enabled: bool = True,
 ) -> str:
+    """Ask the gameplay model for this Mafioso's Night pick. Random fallback.
+
+    ``private_thoughts`` / ``private_thoughts_enabled`` (spec 028 ablation flag,
+    ADR 011) gate the ``{private_thoughts}`` block: ON (default) injects THIS
+    Mafioso's own accumulated Day reflections; OFF (or empty) reverts the prompt
+    to its pre-028 form. The caller passes only the pointer's own notes — a
+    player never receives another player's notes (the spec-013 knowledge
+    boundary applied to the private channel). Defaulted so direct test calls stay
+    byte-identical.
+    """
     valid_ids = {p.id for p in alive_law_abiding}
     valid_ids_list = sorted(valid_ids)
     roster = _roster_lines(alive_law_abiding)
@@ -219,6 +233,9 @@ def _ai_pick_target(
                 roster=roster,
                 mafia_persona=mafia_persona_block,
                 prior_picks=prior_picks_block,
+                private_thoughts=_private_thoughts_block(
+                    private_thoughts or [], enabled=private_thoughts_enabled
+                ),
             )
         ),
     ]
@@ -311,7 +328,7 @@ def mafia_round_start(state: GameState) -> dict:
     return delta
 
 
-def mafia_point(state: GameState) -> dict:
+def mafia_point(state: GameState, *, private_thoughts_enabled: bool = True) -> dict:
     """Handle exactly ONE pointer's pick this super-step (replay-safe).
 
     All work before the ``interrupt()`` is a pure read of committed state, so a
@@ -319,6 +336,11 @@ def mafia_point(state: GameState) -> dict:
     value without recomputing any AI pick made earlier in the round (§3). The
     pick is committed into ``night_round_picks`` and the cursor advanced; the
     next pointer (or round) is selected by ``route_after_mafia_point``.
+
+    ``private_thoughts_enabled`` (spec 028 ablation flag, ADR 011) is bound by
+    ``_assemble_graph`` and threaded into the AI pointer's prompt so an AI
+    Mafioso's Night pick is grounded in its OWN accumulated Day reflections.
+    Defaulted ON so direct test calls / both builders stay valid.
     """
     order: list[str] = list(state.get("night_mafia_order", []))
     index = state.get("night_pointer_index", 0)
@@ -382,6 +404,8 @@ def mafia_point(state: GameState) -> dict:
             alive_law_abiding=alive_law_abiding,
             mafia=pointer,
             prior_picks=prior_picks,
+            private_thoughts=state.get("private_thoughts", {}).get(pointer_id, []),
+            private_thoughts_enabled=private_thoughts_enabled,
         )
 
     new_picks: dict[str, str] = dict(state.get("night_round_picks", {}))

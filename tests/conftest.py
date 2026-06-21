@@ -9,7 +9,7 @@ import pytest
 from rich.text import Text
 from textual.widget import Widget
 
-from graphia.llm import Ballot, DayAction, Persona, Pointing, Roster
+from graphia.llm import Ballot, DayAction, Persona, Pointing, Reflection, Roster
 
 
 class _LoudFailureLLM:
@@ -527,8 +527,9 @@ class FakeLargeUnified:
 
     This fake keeps a separate scripted queue per schema class so one fixture
     can satisfy ``DayAction`` (speak/vote), ``Ballot`` (yes/no), ``Pointing``
-    (night target), and ``Persona`` (setup-time character generation) bindings
-    without interference.
+    (night target), ``Persona`` (setup-time character generation), and
+    ``Reflection`` (spec 028 — the per-AI end-of-Day-round private thought)
+    bindings without interference.
 
     Attributes:
         call_count: Total invocations across all schemas.
@@ -542,6 +543,7 @@ class FakeLargeUnified:
         ballots: Sequence[Ballot | Exception] | None = None,
         pointings: Sequence[Pointing | Exception] | None = None,
         personas: Sequence[Persona | Exception] | None = None,
+        reflections: Sequence[Reflection | Exception] | None = None,
     ) -> None:
         self._queues: dict[type, list[Any]] = {
             DayAction: list(day_actions) if day_actions else [],
@@ -552,6 +554,15 @@ class FakeLargeUnified:
             # its last value once drained, like the others — so a test can
             # supply one persona and have it serve every AI player.
             Persona: list(personas) if personas else [],
+            # Spec 028: ``day_round_reflect`` binds ``Reflection`` on this same
+            # ``get_large()`` reference, once per surviving AI per completed Day
+            # round. Replays its last value once drained, like the others — so a
+            # test can supply one reflection and have it serve every reflection
+            # call. REQUIRED so a flag-on full-Day run never falls through to the
+            # loud-failure default (the reflection node's try/except would turn
+            # that into a fallback note, but the explicit queue keeps the
+            # captured-prompt tests deterministic).
+            Reflection: list(reflections) if reflections else [],
         }
         self._last: dict[type, Any] = {}
         self.call_count = 0
@@ -560,13 +571,14 @@ class FakeLargeUnified:
             Ballot: 0,
             Pointing: 0,
             Persona: 0,
+            Reflection: 0,
         }
 
     def with_structured_output(self, schema: type) -> _LargeQueue:
         if schema not in self._queues:
             raise AssertionError(
                 f"FakeLarge has no scripted queue for schema {schema!r}. "
-                "Supported: DayAction, Ballot, Pointing, Persona."
+                "Supported: DayAction, Ballot, Pointing, Persona, Reflection."
             )
         return _LargeQueue(self, schema)
 
@@ -733,14 +745,16 @@ def fake_large(
             pointings=[Pointing(target_id="p-2")],
             personas=[Persona(personality="bold", manner="terse",
                               public_backstory="the baker")],
+            reflections=[Reflection(thought="I should watch the baker.")],
         )
 
     Patches ``graphia.nodes.day.get_large``, ``graphia.nodes.night.get_large``
     AND ``graphia.nodes.setup.get_large`` with the same instance so calls
     routed through any call site go through one queue-set. This is required
     for Slice 7/8 tests where a single run touches ``DayAction`` (speaking),
-    ``Ballot`` (voting), ``Pointing`` (next night), and (Spec 016)
-    ``Persona`` (setup-time generation) on the same large-model binding.
+    ``Ballot`` (voting), ``Pointing`` (next night), (Spec 016) ``Persona``
+    (setup-time generation), and (Spec 028) ``Reflection`` (per-AI end-of-round
+    private thought) on the same large-model binding.
     """
 
     def _install(
@@ -749,12 +763,14 @@ def fake_large(
         ballots: Sequence[Ballot | Exception] | None = None,
         pointings: Sequence[Pointing | Exception] | None = None,
         personas: Sequence[Persona | Exception] | None = None,
+        reflections: Sequence[Reflection | Exception] | None = None,
     ) -> FakeLargeUnified:
         fake = FakeLargeUnified(
             day_actions=day_actions,
             ballots=ballots,
             pointings=pointings,
             personas=personas,
+            reflections=reflections,
         )
         monkeypatch.setattr("graphia.nodes.day.get_large", lambda: fake)
         monkeypatch.setattr("graphia.nodes.night.get_large", lambda: fake)

@@ -202,6 +202,7 @@ async def _run_invocation(
             max_days=_config.max_days,
             context_window=_config.context_window,
             context_token_budget=_config.context_token_budget,
+            private_thoughts_enabled=_config.private_thoughts_enabled,
         )
     except Exception as exc:  # noqa: BLE001
         logger.exception(

@@ -44,6 +44,7 @@ def build_runtime_graph(
     max_days: int = 12,
     context_window: int = 150,
     context_token_budget: int = 20000,
+    private_thoughts_enabled: bool = True,
 ) -> CompiledStateGraph:
     """Compile the Graphia StateGraph with a caller-supplied thread_id.
 
@@ -94,6 +95,13 @@ def build_runtime_graph(
     defensive token-budget cap) as local mode. Same anti-drift requirement: both
     builders must thread them. Default to ``150`` / ``20000`` (matching the
     config defaults).
+
+    ``private_thoughts_enabled`` (spec 028, ADR 011) is threaded the same way —
+    the production entrypoint passes ``load_config().private_thoughts_enabled`` —
+    so the deployed Runtime runs the ``day_round_reflect`` node and injects each
+    player's own thoughts into its three AI-decision prompts by the same ablation
+    flag as local mode. Same anti-drift requirement: both builders must thread it.
+    Defaults to ``True`` (matching the config default).
     """
     if diary_store is None:
         diary_store = InProcessDiaryStore()
@@ -117,4 +125,5 @@ def build_runtime_graph(
         max_days=max_days,
         context_window=context_window,
         context_token_budget=context_token_budget,
+        private_thoughts_enabled=private_thoughts_enabled,
     )

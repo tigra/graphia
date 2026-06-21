@@ -165,6 +165,14 @@ class GraphiaConfig:
     # (``settings.scripted_player``) edges. Defaulted so tests constructing the
     # config directly stay valid.
     scripted_player_active: bool = True
+    # Per-AI Day-round private thoughts (spec 028, ADR 011). The ablation
+    # off-switch: on by default; an explicit falsy ``GRAPHIA_PRIVATE_THOUGHTS``
+    # skips the ``day_round_reflect`` node entirely and reverts the three AI
+    # decision prompts (Day-speech, vote, Mafioso Night-point) to their pre-028
+    # form (no ``{private_thoughts}`` block). Mirrors the other ADR-011 default-on
+    # flags' ``_env_flag`` shape. Defaulted so tests constructing the config
+    # directly stay valid.
+    private_thoughts_enabled: bool = True
 
 
 def _env_truthy(name: str) -> bool:
@@ -219,6 +227,9 @@ def load_config() -> GraphiaConfig:
     role_guidance_enabled = _env_flag("GRAPHIA_ROLE_GUIDANCE", default=True)
     scripted_player_active = _env_flag(
         "GRAPHIA_ACTIVE_SCRIPTED_PLAYER", default=True
+    )
+    private_thoughts_enabled = _env_flag(
+        "GRAPHIA_PRIVATE_THOUGHTS", default=True
     )
     runtime_invocation_url = os.environ.get("GRAPHIA_RUNTIME_URL") or None
     memory_id = os.environ.get("GRAPHIA_MEMORY_ID") or None
@@ -400,4 +411,5 @@ def load_config() -> GraphiaConfig:
         context_window=context_window,
         context_token_budget=context_token_budget,
         scripted_player_active=scripted_player_active,
+        private_thoughts_enabled=private_thoughts_enabled,
     )
