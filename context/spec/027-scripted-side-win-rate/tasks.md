@@ -1,0 +1,14 @@
+# Tasks: Scripted-Player's-Side Win Rate in Evals (Spec 027)
+
+Pure measurement — a deterministic addition to the eval `outcomes` block (no gameplay change, no new flag, **no `metrics_version` bump**). Precisely unit-testable; not effort-not-results (it *enables* the spec-026 effort-not-results read).
+
+Functional spec: `./functional-spec.md` · Technical considerations: `./technical-considerations.md`
+
+> **Shared `blunder_eval` surface with spec 026** (and 023's outcomes). 027 and 026 are **NOT disjoint** — both edit `src/graphia/tools/blunder_eval.py`. Implement **026 first, then 027** (sequential / same worktree / rebase 027 onto 026); do **not** run them in parallel worktrees (they would conflict on `blunder_eval.py`). 027 reads the per-game scripted seat side that 026 makes per-run selectable.
+
+---
+
+- [ ] **Slice 1: The scripted-player's-side win rate is recorded in the eval outcomes**
+  - [ ] Thread the per-game scripted side + tally it: add `human_id` to `_GameCapture` (set from `state.get("human_id")` in `_play_one_game`); extend `tally_outcomes(winners, scripted_sides)` to add a `scripted_side` entry `{side, wins, rate, ci_low, ci_high}` — computed **per game** (`winner == that game's seat side`), **all-games** denominator (a `no_winner`/`runaway` game counts toward the total but never as a win), reusing `wilson_ci`, with the `games == 0` path dropping rate/CI; render order **after `mafia`, before `runaway`**. In `run_eval`, accumulate the parallel per-game `scripted_sides` (resolve via `cap.players[cap.human_id].role`) and add a scripted-side line to the console summary. **[Agent: langgraph-agentic]**
+  - [ ] Render + viewer + docs: `render_record` emits the `scripted_side` block conditionally (same sub-key order as the side rates; omitted on records that lack it — back-compat, no `metrics_version` bump); the `eval_ledger.py` viewer detail renders it when present (defensive `_dig`, no new table column for v1); `evals/README.md` outcomes legend gains the `scripted_side` entry (note it equals the matching by-side rate when the seat side is pinned per run, and pre-027 records read as absent). **[Agent: langgraph-agentic]**
+  - [ ] Tests `tests/test_slice27_scripted_side.py` (pure-tally, no model/RNG, synthetic per-game `(winner, seat_side)` inputs): LA-seat run → `scripted_side.rate == law_abiding.rate` (+ `side == "law_abiding"`); Mafia-seat → `== mafia.rate`; a `no_winner`/`runaway` game counts toward the total but not as a win; per-game correctness under a **varying** seat side; Wilson CI attached; `games == 0` path; no-resolved-side → entry omitted; `render_record` emits the block + back-compat (a record without it renders); the viewer reads a pre-027 record cleanly; the summary line prints/omits. Full `uv run pytest -q` green. **[Agent: testing]**
