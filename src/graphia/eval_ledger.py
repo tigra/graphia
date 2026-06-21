@@ -110,7 +110,18 @@ _FIXED_COLUMNS: tuple[str, ...] = (
     "Small model",
     "Games",
     "Wins (LA/M)",
+    # Spec 029: three curated game-dynamics columns, added before ``Notes`` so the
+    # UI's right-justify metric split (``len(columns) - len(METRIC_ORDER)``) keys
+    # off the metric tail and the new head columns stay left-justified like the
+    # other identity columns. ``Scripted (side)`` (:func:`_scripted_side_cell`,
+    # spec 027) and ``Unres (R/N)`` (:func:`_resolution_cell`, spec 013/023) group
+    # next to ``Wins (LA/M)``; ``Stand-in`` (:func:`_stand_in_cell`, spec 026 — a
+    # settings fact that DEFAULTS to ``passive`` on pre-026 records, not blank) sits
+    # next to ``Lineup`` (the other settings fact).
+    "Scripted (side)",
+    "Unres (R/N)",
     "Votes (LA/M)",
+    "Stand-in",
     "Lineup",
     "Notes",
 )
@@ -229,6 +240,80 @@ def _lineup_cell(record: RawRecord) -> str:
     citizens = _dig(record, "settings.lineup.num_citizens")
     mafia = _dig(record, "settings.lineup.num_mafia")
     return f"{_text(citizens)}/{_text(mafia)}"
+
+
+# The compact side abbreviations the table cells use (``LA``/``M``), mapping the
+# full side names the ledger records (``law_abiding``/``mafia``). Shared by the
+# scripted-side cell so its side label matches the ``LA``/``M`` vocabulary of the
+# ``Wins (LA/M)`` / ``Votes (LA/M)`` columns.
+_SIDE_ABBR: dict[str, str] = {"law_abiding": "LA", "mafia": "M"}
+
+# The stand-in mode read for a pre-026 record: the field was added in spec 026
+# and is read as the prior default (``passive``, the only stand-in that existed
+# then) per the ``evals/README.md`` contract — so this column DEFAULTS rather than
+# blanks for older records (the one new column that does not blank for absence).
+_STAND_IN_DEFAULT = "passive"
+
+
+def _scripted_side_cell(record: RawRecord) -> str:
+    """The ``Scripted (side)`` table cell — the scripted stand-in's-side win rate (spec 027).
+
+    Reads ``outcomes.scripted_side`` via :func:`_dig` and renders the side it
+    refers to plus the rate, compactly (e.g. ``LA .55`` / ``M .30``), reusing
+    :func:`_table_rate` so the number style matches ``Wins (LA/M)`` (leading-dot
+    two-decimal, ``—`` for a rate-less ``games == 0`` block). The side is the
+    ``LA``/``M`` abbreviation derived from ``outcomes.scripted_side.side``
+    (``law_abiding``/``mafia``).
+
+    An **absent** ``scripted_side`` block — a pre-027 record, or any run that
+    resolved no seat side (``_dig(record, "outcomes.scripted_side", _MISSING) is
+    _MISSING``) — renders the **empty string**, mirroring :func:`_outcomes_cell`'s
+    absent-blank. An unrecognised/absent ``side`` defends to a bare rate (no
+    abbreviation prefix) rather than raising.
+    """
+    if _dig(record, "outcomes.scripted_side", _MISSING) is _MISSING:
+        return ""
+    side = _dig(record, "outcomes.scripted_side.side")
+    abbr = _SIDE_ABBR.get(side, "")
+    rate = _table_rate(_dig(record, "outcomes.scripted_side.rate"))
+    return f"{abbr} {rate}" if abbr else rate
+
+
+def _stand_in_cell(record: RawRecord) -> str:
+    """The ``Stand-in`` table cell — which human-seat stand-in ran (spec 026).
+
+    Reads ``settings.scripted_player`` via :func:`_dig`, rendering the compact
+    label ``active`` / ``passive``. Unlike every other fixed cell, this one
+    **defaults** rather than blanks for an absent field: per the
+    ``evals/README.md`` record contract, ``scripted_player`` is omitted on pre-026
+    records and read as the prior default :data:`_STAND_IN_DEFAULT` (``passive`` —
+    the only stand-in that existed then), so an older record reads ``passive``, not
+    a blank cell.
+    """
+    return _text(_dig(record, "settings.scripted_player", default=_STAND_IN_DEFAULT))
+
+
+def _resolution_cell(record: RawRecord) -> str:
+    """The ``Unres (R/N)`` table cell — the non-side game-resolution counts.
+
+    Reads ``outcomes.runaway`` (spec 023, the in-game Day-cap hit) and
+    ``outcomes.no_winner`` (spec 013) via :func:`_dig`, coerced through
+    :func:`_vote_count`, and renders the two "didn't resolve to a side" buckets
+    compactly as ``R{n} N{n}`` (e.g. ``R 1 N 2``). Each bucket defaults to ``0``
+    when its key is absent but the ``outcomes`` block is present, so a run that
+    resolved all games to a side reads the present-zero ``R 0 N 0`` — distinct from
+    the absent-block blank.
+
+    An **absent** ``outcomes`` block (any pre-013 record) → the **empty string**,
+    the same ``_MISSING`` guard as :func:`_outcomes_cell`. ``draw`` is intentionally
+    not shown here (it's derivable from the partition and lives in the detail view);
+    keeping the cell to the two unresolved buckets keeps the column narrow.
+    """
+    if _dig(record, "outcomes", _MISSING) is _MISSING:
+        return ""
+    runaway = _vote_count(_dig(record, "outcomes.runaway"))
+    no_winner = _vote_count(_dig(record, "outcomes.no_winner"))
+    return f"R {runaway} N {no_winner}"
 
 
 def _winner_keyword(record: RawRecord) -> str:
@@ -552,7 +637,13 @@ def _row_cells(record: RawRecord) -> list[str]:
         _text(small_model),
         _text(games),
         _outcomes_cell(record),
+        # Spec 029: positions MUST track ``_FIXED_COLUMNS`` exactly (the
+        # ``len(row) == len(columns)`` invariant) — scripted-side + unresolved next
+        # to ``Wins``, stand-in next to ``Lineup``.
+        _scripted_side_cell(record),
+        _resolution_cell(record),
         _vote_activity_cell(record),
+        _stand_in_cell(record),
         _lineup_cell(record),
         _note_cell(record),
     ]

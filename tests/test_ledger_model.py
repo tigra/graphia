@@ -327,7 +327,11 @@ def test_columns_are_fixed_columns_then_metric_labels() -> None:
         "Small model",
         "Games",
         "Wins (LA/M)",
+        # Spec 029: the three curated game-dynamics columns, before ``Notes``.
+        "Scripted (side)",
+        "Unres (R/N)",
         "Votes (LA/M)",
+        "Stand-in",
         "Lineup",
         "Notes",
     ]
@@ -492,6 +496,245 @@ def test_empty_records_yields_headers_only(tmp_path: Path) -> None:
     assert model.rows == []
     assert model.search_blobs == []
     assert model.records == []
+
+
+# ===========================================================================
+# A3b. Spec-029 curated columns — Scripted (side) / Stand-in / Unres (R/N)
+# ===========================================================================
+#
+# Three display-only fixed columns added before ``Notes`` (tech-spec 029 §2.1):
+#   - ``Scripted (side)`` (_scripted_side_cell, spec 027) — present → ``LA .55``;
+#     absent block → blank.
+#   - ``Stand-in`` (_stand_in_cell, spec 026) — present → ``active``/``passive``;
+#     absent field DEFAULTS to ``passive`` (the README contract), NOT blank.
+#   - ``Unres (R/N)`` (_resolution_cell, spec 013/023) — present → ``R 1 N 2``;
+#     present-zero → ``R 0 N 0`` (distinct from absent block's blank).
+# These drive through ``build_table_model`` over hand-built records (the spec
+# 013/014/027 column-test pattern). The full-with-CI fixture carries spec-027/026
+# fields below so the present-value paths have a target.
+
+# A *new-shape* record carrying every spec-029-surfaced field: spec-027
+# ``outcomes.scripted_side`` (law_abiding @ .55), spec-026
+# ``settings.scripted_player: active``, and spec-013/023 ``outcomes.runaway`` /
+# ``outcomes.no_winner`` counts (1 / 2). The present-value anchor for all three
+# new cells.
+_FULL_SPEC029_DOC = textwrap.dedent(
+    """\
+    run:
+      date: '2026-06-19'
+      duration_seconds: 900.0
+      metrics_version: 1
+    code:
+      commit: 'ffff0000ffff0000ffff0000ffff0000ffff0000'
+      branch: 'main'
+      dirty: false
+    provider:
+      name: 'bedrock'
+      large_model: 'amazon.nova-pro-v1:0'
+      small_model: 'amazon.nova-lite-v1:0'
+    settings:
+      large_model: 'amazon.nova-pro-v1:0'
+      small_model: 'amazon.nova-lite-v1:0'
+      games: 20
+      seed: null
+      scripted_player: 'active'
+    quality:
+      games_attempted: 20
+      games_completed: 20
+      games_failed_early: 0
+    outcomes:
+      games: 20
+      law_abiding:
+        wins: 11
+        rate: 0.55
+      mafia:
+        wins: 6
+        rate: 0.3
+      scripted_side:
+        side: 'law_abiding'
+        wins: 11
+        rate: 0.55
+      runaway: 1
+      no_winner: 2
+      draw: 0
+    metrics:
+      repetition:
+        rate: 0.5
+        count: 10
+        denominator: 20
+    notes: 'spec 029 anchor — active stand-in, scripted LA side'
+    """
+)
+
+# A *present-outcomes-all-resolved* record: an ``outcomes`` block whose games all
+# resolved to a side (no runaway / no_winner keys) → the resolution cell must read
+# the present-zero ``R 0 N 0``, staying distinct from an absent block's blank.
+_RESOLVED_OUTCOMES_DOC = textwrap.dedent(
+    """\
+    run:
+      date: '2026-06-17'
+      metrics_version: 1
+    provider:
+      name: 'ollama'
+      large_model: 'qwen3-coder:30b'
+      small_model: 'qwen2.5:3b'
+    settings:
+      games: 4
+      scripted_player: 'passive'
+    quality:
+      games_attempted: 4
+      games_completed: 4
+      games_failed_early: 0
+    outcomes:
+      games: 4
+      law_abiding:
+        wins: 3
+        rate: 0.75
+      mafia:
+        wins: 1
+        rate: 0.25
+    metrics:
+      repetition:
+        rate: 0.5
+        count: 10
+        denominator: 20
+    """
+)
+
+
+def _col(model: TableModel, header: str) -> int:
+    """The index of ``header`` in the model's columns (resolved by name)."""
+    return model.columns.index(header)
+
+
+def test_scripted_side_cell_present_shows_side_and_rate(tmp_path: Path) -> None:
+    """A run with ``outcomes.scripted_side`` shows ``LA .55`` (abbr + leading-dot rate)."""
+    model = build_table_model(load_ledger(_write_ledger(tmp_path, _FULL_SPEC029_DOC)))
+    (row,) = model.rows
+
+    assert row[_col(model, "Scripted (side)")] == "LA .55"
+
+
+def test_scripted_side_cell_absent_is_blank(tmp_path: Path) -> None:
+    """A pre-027 record (no ``outcomes.scripted_side``) → blank scripted cell.
+
+    The full-with-CI fixture carries an ``outcomes``-less shape (no outcomes block
+    at all), and the pre-provenance fixture also predates the metric — both render
+    the empty string, not a phantom value.
+    """
+    model = build_table_model(
+        load_ledger(_write_ledger(tmp_path, _FULL_WITH_CI_DOC, _PRE_PROVENANCE_DOC))
+    )
+    col = _col(model, "Scripted (side)")
+
+    assert model.rows[0][col] == ""  # full-with-CI: no scripted_side
+    assert model.rows[1][col] == ""  # pre-provenance: no outcomes block
+
+
+def test_stand_in_cell_present_shows_mode(tmp_path: Path) -> None:
+    """A run recorded with ``settings.scripted_player: active`` shows ``active``."""
+    model = build_table_model(load_ledger(_write_ledger(tmp_path, _FULL_SPEC029_DOC)))
+    (row,) = model.rows
+
+    assert row[_col(model, "Stand-in")] == "active"
+
+
+def test_stand_in_cell_absent_defaults_to_passive_not_blank(tmp_path: Path) -> None:
+    """A pre-026 record (no ``settings.scripted_player``) reads ``passive``, NOT blank.
+
+    The deliberate exception to the blank-for-absent contract: per the
+    ``evals/README.md`` record contract the field is omitted on pre-026 records and
+    read as the prior default ``passive``. Asserted on the full-no-CI fixture (a
+    ``settings`` block WITHOUT ``scripted_player``) and the pre-provenance fixture
+    (NO ``settings`` block at all) — both default to ``passive``.
+    """
+    model = build_table_model(
+        load_ledger(_write_ledger(tmp_path, _FULL_NO_CI_DOC, _PRE_PROVENANCE_DOC))
+    )
+    col = _col(model, "Stand-in")
+
+    # settings present but no scripted_player → default passive (not blank).
+    assert model.rows[0][col] == "passive"
+    # no settings block at all → still the passive default (not blank).
+    assert model.rows[1][col] == "passive"
+
+
+def test_resolution_cell_present_shows_runaway_and_no_winner(tmp_path: Path) -> None:
+    """A run with ``runaway`` / ``no_winner`` counts shows them as ``R 1 N 2``."""
+    model = build_table_model(load_ledger(_write_ledger(tmp_path, _FULL_SPEC029_DOC)))
+    (row,) = model.rows
+
+    assert row[_col(model, "Unres (R/N)")] == "R 1 N 2"
+
+
+def test_resolution_cell_present_zero_is_distinct_from_absent_blank(
+    tmp_path: Path,
+) -> None:
+    """Present-zero ``R 0 N 0`` (all games resolved) stays distinct from absent-blank.
+
+    Mirrors the ``_vote_activity_cell`` present-zero-vs-absent contract: a present
+    ``outcomes`` block whose games all resolved to a side (no ``runaway`` /
+    ``no_winner`` keys) reads ``R 0 N 0``; a record with NO ``outcomes`` block (the
+    pre-provenance fixture) renders the empty string. The two must differ.
+    """
+    model = build_table_model(
+        load_ledger(_write_ledger(tmp_path, _RESOLVED_OUTCOMES_DOC, _PRE_PROVENANCE_DOC))
+    )
+    col = _col(model, "Unres (R/N)")
+
+    # Present block, zero unresolved buckets → explicit present-zero.
+    assert model.rows[0][col] == "R 0 N 0"
+    # Absent outcomes block (pre-013) → blank.
+    assert model.rows[1][col] == ""
+    # The whole point: present-zero and absent are NOT the same cell.
+    assert model.rows[0][col] != model.rows[1][col]
+
+
+def test_spec029_columns_heterogeneous_mix_stays_index_parallel(
+    tmp_path: Path,
+) -> None:
+    """A pre-013/pre-026/pre-027 + full-new mix flattens with no KeyError, all rows aligned.
+
+    The headline back-compat risk for a column addition: every ``len(row) ==
+    len(columns)`` even across the heterogeneous shapes (pre-provenance with no
+    outcomes/settings, full-no-CI with settings-but-no-scripted_player, and the
+    new-shape record carrying all spec-029 fields). The new columns never raise.
+    """
+    model = build_table_model(
+        load_ledger(
+            _write_ledger(
+                tmp_path,
+                _PRE_PROVENANCE_DOC,  # pre-013/026/027: no outcomes, no settings
+                _FULL_NO_CI_DOC,  # settings, but no scripted_player / outcomes
+                _FULL_SPEC029_DOC,  # all spec-029 fields present
+            )
+        )
+    )
+
+    assert len(model.rows) == 3
+    assert all(len(row) == len(model.columns) for row in model.rows)
+    # Spot-check the new columns flatten to their expected per-shape values.
+    scripted = _col(model, "Scripted (side)")
+    stand_in = _col(model, "Stand-in")
+    unres = _col(model, "Unres (R/N)")
+    # pre-provenance: scripted blank, stand-in passive default, unres blank.
+    assert (model.rows[0][scripted], model.rows[0][stand_in], model.rows[0][unres]) == (
+        "",
+        "passive",
+        "",
+    )
+    # full-no-CI: scripted blank (no outcomes), stand-in passive default, unres blank.
+    assert (model.rows[1][scripted], model.rows[1][stand_in], model.rows[1][unres]) == (
+        "",
+        "passive",
+        "",
+    )
+    # full spec-029: all three present.
+    assert (model.rows[2][scripted], model.rows[2][stand_in], model.rows[2][unres]) == (
+        "LA .55",
+        "active",
+        "R 1 N 2",
+    )
 
 
 # ===========================================================================
