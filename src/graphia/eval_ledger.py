@@ -84,6 +84,11 @@ METRIC_ORDER: tuple[tuple[str, str], ...] = (
     ("self_vote.yes", "self-vote yes"),
     ("peer_vote.initiation", "peer-vote init"),
     ("peer_vote.yes", "peer-vote yes"),
+    # Spec 031: the persona-distinctiveness metric — a near-duplication rate over a
+    # run's generated AI personas (higher = personas more alike = less distinct).
+    # Surfaced as one appended tuple; ``render_detail`` and the viewer table pick it
+    # up automatically (column count, headers, and cells all derive from this tuple).
+    ("persona_near_dup", "persona dup"),
 )
 
 # Fixed leading column headers, before the per-metric columns (tech-spec 012

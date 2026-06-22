@@ -30,6 +30,7 @@ and ``--help`` works on its own.
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import math
 import os
@@ -44,6 +45,7 @@ import urllib.request
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from itertools import combinations
 from pathlib import Path
 from typing import Any, Callable, Literal, cast
 
@@ -786,6 +788,60 @@ def score_third_person_self_talk(
         "count": count,
         "denominator": denominator,
     }
+
+
+def score_persona_near_dup(
+    players: dict[str, PlayerState],
+) -> dict[str, float | int | None]:
+    """Pure scorer for ``persona_near_dup`` — how alike a roster's AI personas are.
+
+    The spec-031 persona-distinctiveness measure (functional-spec §2.3; tech-spec
+    §2, *Component B*). Over a game's **AI** players (the human is skipped), build
+    each persona's **table-facing** text — ``personality + " " + manner + " " +
+    public_persona`` — and **never** include a Mafioso's ``true_self``, so no hidden
+    content enters the comparison. Each text is then name-masked
+    (:func:`_spec009_mask_names` against the AI names) and normalized
+    (:func:`_spec009_normalize`), exactly as ``repetition`` treats its lines — so a
+    self-name token embedded in a backstory can't inflate the similarity between two
+    otherwise-different characters.
+
+    Over all **unordered pairs** of AI personas, a pair is a near-duplicate when its
+    ``difflib.SequenceMatcher`` ratio is ``>= _NEAR_DUP_THRESHOLD`` (0.85) — the same
+    near-duplicate definition behind ``repetition``. Returns the ``_facets``-shaped
+    ``{rate, count, denominator}`` where **``denominator`` is the number of pairs
+    (``C(n, 2)``)** and **``count`` is the near-duplicate pairs**. A roster with
+    fewer than 2 AI personas offers no pairs (``denominator == 0``), so :func:`_facets`
+    yields ``rate=None`` — *absent, not a misleading 0* — exactly as the action
+    metrics do; ``run_eval`` then omits the metric from the record.
+
+    Higher rate = personas more alike = *less* distinct (a near-duplication badness
+    rate, like ``repetition``); read "distinctiveness" as ``1 − rate``.
+
+    DRIVER-INDEPENDENT BY DESIGN: takes a plain ``players`` map, so the offline tests
+    build synthetic rosters with no live model.
+    """
+    ai_personas = [
+        p.persona
+        for p in players.values()
+        if not p.is_human and p.persona is not None
+    ]
+    ai_names = {p.name for p in players.values() if not p.is_human}
+    masked = [
+        _spec009_normalize(
+            _spec009_mask_names(
+                f"{persona.personality} {persona.manner} {persona.public_persona}",
+                ai_names,
+            )
+        )
+        for persona in ai_personas
+    ]
+    count = sum(
+        1
+        for a, b in combinations(masked, 2)
+        if difflib.SequenceMatcher(None, a, b).ratio() >= _NEAR_DUP_THRESHOLD
+    )
+    denominator = len(masked) * (len(masked) - 1) // 2
+    return _facets(count, denominator)
 
 
 # ===========================================================================
@@ -2670,6 +2726,15 @@ def run_eval(
         )
     }
 
+    # Spec-031 persona-distinctiveness: the near-duplicate-pair count/denominator
+    # summed ACROSS games via the SAME action-metric pattern — score per game over
+    # its own roster (``cap.players``; ``C(n,2)`` pairs), add the raw count/
+    # denominator in, then ``_facets(total_count, total_denominator)`` below so the
+    # batch rate is total_num/total_den (never a mean-of-rates). A new orthogonal
+    # metric — additive, so ``METRICS_VERSION`` is NOT bumped (the ``outcomes`` /
+    # ``vote_activity`` precedent).
+    persona_total: dict[str, int] = {"count": 0, "denominator": 0}
+
     for game_index in range(args.games):
         result.games_attempted += 1
         try:
@@ -2740,6 +2805,14 @@ def run_eval(
             action_totals[metric]["count"] += int(facets["count"])
             action_totals[metric]["denominator"] += int(facets["denominator"])
 
+        # Spec-031: score this game's persona near-duplication over its OWN roster
+        # (names are unique only within a game), then fold the raw count/
+        # denominator into the batch total — the same per-game-then-sum pattern as
+        # the action metrics above.
+        persona_facets = score_persona_near_dup(cap.players)
+        persona_total["count"] += int(persona_facets["count"])
+        persona_total["denominator"] += int(persona_facets["denominator"])
+
     # Spec-013 game-dynamics blocks, folded over the completed games. ``outcomes``
     # partitions the winners (``games`` = completed games denominator); the side
     # win-rates carry a Wilson CI, ``draw``/``no_winner`` are bare counts.
@@ -2775,6 +2848,17 @@ def run_eval(
         totals = action_totals[metric]
         if totals["denominator"] > 0:
             result.metrics[metric] = _facets(totals["count"], totals["denominator"])
+
+    # Spec-031 persona-distinctiveness: build the batch ``persona_near_dup`` metric
+    # from the summed pair counts via ``_facets``, recorded only when the batch
+    # offered at least one persona pair (total denominator > 0) — a roster that
+    # never had ≥2 AI personas is reported absent, not as a misleading 0.0 (the
+    # same opportunity-based omission as the action metrics). ``_attach_ci`` below
+    # then adds the Wilson band, like every other present metric.
+    if persona_total["denominator"] > 0:
+        result.metrics["persona_near_dup"] = _facets(
+            persona_total["count"], persona_total["denominator"]
+        )
 
     # Attach a Wilson 95% CI (ci_low/ci_high) to every PRESENT metric so each
     # rate carries its own reliability band — a wide band flags a small-n rate
