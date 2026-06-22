@@ -21,6 +21,7 @@ from graphia.prompts import (
     NAME_GEN_SYSTEM,
     NAME_GEN_USER_TEMPLATE,
     PERSONA_CITIZEN_USER_TEMPLATE,
+    PERSONA_DISTINCT_FROM_TEMPLATE,
     PERSONA_MAFIA_USER_TEMPLATE,
     PERSONA_SYSTEM,
     ROSTER_INTRO_TEMPLATE,
@@ -250,7 +251,33 @@ def _persona_is_empty(persona: Persona | None) -> bool:
     )
 
 
-def _generate_one_persona(player: PlayerState) -> PlayerPersona:
+def _distinct_from_message(
+    prior_personas: list[PlayerPersona],
+) -> HumanMessage | None:
+    """Build the spec-031 "make this one clearly different" instruction.
+
+    Renders each already-created persona's TABLE-FACING text only
+    (``personality`` + ``manner`` + ``public_persona``, one per line) into
+    :data:`PERSONA_DISTINCT_FROM_TEMPLATE`. A Mafioso's hidden ``true_self`` is
+    deliberately NEVER threaded — the differentiation target is the public
+    character the table sees (functional-spec §2.2), and excluding the secret
+    keeps hidden content out of every other character's generation prompt by
+    construction (the §2.4 / spec-016 allegiance-hiding invariant). Returns
+    ``None`` when there are no prior personas (the first AI player of a game has
+    nothing yet to differ from), so the caller appends no message.
+    """
+    if not prior_personas:
+        return None
+    others = "\n".join(
+        f"- {p.personality} {p.manner} {p.public_persona}".strip()
+        for p in prior_personas
+    )
+    return HumanMessage(content=PERSONA_DISTINCT_FROM_TEMPLATE.format(others=others))
+
+
+def _generate_one_persona(
+    player: PlayerState, prior_personas: list[PlayerPersona]
+) -> PlayerPersona:
     """Generate a single AI player's persona, role-tailored, never raising.
 
     Validation-retry-then-fallback (mirrors :func:`_generate_names`, but with
@@ -260,17 +287,30 @@ def _generate_one_persona(player: PlayerState) -> PlayerPersona:
     clearly-empty result, do one corrective retry; if that still fails, return
     a deterministic :func:`_fallback_persona`. The result is *always* a valid
     :class:`PlayerPersona`, so a flaky or missing model never blocks setup.
+
+    Spec 031 (option b): when ``prior_personas`` (the characters already created
+    for this game) is non-empty, ONE additional :class:`HumanMessage` is
+    appended — a "make this character clearly different from these" block built
+    from the prior personas' table-facing text — so the creative model
+    differentiates instead of reaching for the same modal townsperson. The block
+    rides on BOTH the first attempt and the corrective retry, so a retried
+    persona still differentiates. The first AI player of a game (empty
+    ``prior_personas``) gets no block; the deterministic
+    :func:`_fallback_persona` is unchanged.
     """
     is_mafia = player.role == "mafia"
     template = (
         PERSONA_MAFIA_USER_TEMPLATE if is_mafia else PERSONA_CITIZEN_USER_TEMPLATE
     )
     user_prompt = template.format(name=player.name)
+    distinct_from = _distinct_from_message(prior_personas)
     llm = get_large().with_structured_output(Persona)
     messages: list = [
         SystemMessage(content=PERSONA_SYSTEM),
         HumanMessage(content=user_prompt),
     ]
+    if distinct_from is not None:
+        messages.append(distinct_from)
     try:
         persona = llm.invoke(messages)
         if not _persona_is_empty(persona):
@@ -287,6 +327,8 @@ def _generate_one_persona(player: PlayerState) -> PlayerPersona:
             "schema. Try again."
         ),
     ]
+    if distinct_from is not None:
+        retry_messages.append(distinct_from)
     try:
         retried = llm.invoke(retry_messages)
         if not _persona_is_empty(retried):
@@ -333,11 +375,17 @@ def generate_personas(state: GameState) -> dict:
     # would be dropped. Start from the existing players and overwrite only the
     # AI entries with their persona-bearing copies.
     updated: dict[str, PlayerState] = dict(players)
+    # Spec 031 (option b): accumulate the personas already created THIS game
+    # (insertion order) and feed them to each subsequent generation so the new
+    # character can be made deliberately distinct from them. The first AI player
+    # sees an empty list (nothing yet to differ from).
+    prior_personas: list[PlayerPersona] = []
     for pid, player in players.items():
         if player.is_human:
             continue
-        persona = _generate_one_persona(player)
+        persona = _generate_one_persona(player, prior_personas)
         updated[pid] = dataclasses.replace(player, persona=persona)
+        prior_personas.append(persona)
     return {"players": updated}
 
 

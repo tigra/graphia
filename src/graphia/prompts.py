@@ -68,6 +68,23 @@ Make this character distinct and memorable — anchor it on the name {name}. The
 legend and the true self should both feel like the same person playing a part.
 """
 
+# Spec 031 (Distinct AI Personas Across the Roster), option (b). When a game's
+# AI characters are created one after another, each new character is shown the
+# characters ALREADY created for that same game so it can be made deliberately
+# different from them — instead of every persona being invented from a blank
+# slate (which collapses into one modal townsperson). Appended as a SEPARATE
+# ``HumanMessage`` by ``generate_personas`` rather than added as a ``{...}`` slot
+# to the two persona user templates above — that keeps every existing
+# ``.format(name=...)`` call site untouched (no spec-019-style KeyError blast
+# radius). The ``{others}`` slot is filled in ``nodes/setup.py`` with the prior
+# personas' TABLE-FACING text only (personality + manner + public_persona, one
+# per line); a Mafioso's hidden ``true_self`` is NEVER threaded here. The first
+# AI character of a game gets no such message (nothing yet to differ from).
+PERSONA_DISTINCT_FROM_TEMPLATE = """You are creating one of several characters for the same game. Make this one clearly different in temperament and voice from the characters already created:
+{others}
+Avoid reusing their personality, manner, or backstory.
+"""
+
 MAFIA_TEAMMATE_INTRO_TEMPLATE = (
     "Your Mafia teammates are: {names}. You work together to eliminate "
     "Law-abiding Citizens. During the Night, you point at one target; "
