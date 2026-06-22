@@ -19,81 +19,80 @@ with CRs logging scope shifts and ADRs logging architectural decisions along the
 %%{init: {'theme': 'base', 'themeVariables': {'background': '#2d2d2d', 'textColor': '#e6e6e6', 'sectionBkgColor': '#3c3c3c', 'altSectionBkgColor': '#333333', 'gridColor': '#555555', 'doneTaskBkgColor': '#6aa84f', 'doneTaskBorderColor': '#38761d', 'activeTaskBkgColor': '#e69138', 'activeTaskBorderColor': '#b45f06', 'excludeBkgColor': '#7d5630', 'taskTextColor': '#e6e6e6', 'taskTextLightColor': '#ffffff', 'taskTextDarkColor': '#ffffff', 'taskTextClickableColor': '#9ecbff', 'taskTextOutsideColor': '#e6e6e6'}}}%%
 gantt
     title Graphia — CRs, ADRs, and Spec Execution
-    dateFormat YYYY-MM-DD
+    dateFormat YYYY-MM-DD HH:mm
     axisFormat %b %d
-    excludes weekends
 
     section Phase 1 (v1.0)
-    Spec 001 — Playable Skeleton ✓                       :milestone, done, sp1, 2026-04-29, 0d
+    Spec 001 — Playable Skeleton ✓                       :done, sp1, 2026-04-29 09:00, 2026-04-29 17:00
 
     section Rescoping & setup
-    CR 001 — AgentCore + AI tool-use into v1.1           :milestone, done, m1, 2026-05-05, 0d
-    CR 002 — Long-term Memory in; tool-use to Phase 7    :milestone, done, m2, 2026-05-06, 0d
-    ADR 001 — Hosted Runtime + local mode preserved      :milestone, done, a1, 2026-05-07, 0d
+    CR 001 — AgentCore + AI tool-use into v1.1           :milestone, done, m1, 2026-05-05 12:00, 0d
+    CR 002 — Long-term Memory in; tool-use to Phase 7    :milestone, done, m2, 2026-05-06 12:00, 0d
+    ADR 001 — Hosted Runtime + local mode preserved      :milestone, done, a1, 2026-05-07 12:00, 0d
 
     section Phase 2 (v1.1) — Hosted AgentCore
-    ADR 002 — Runtime-embedded Gateway tools             :milestone, crit, a2, 2026-05-12, 0d
-    ADR 003 — Bedrock Nova over Claude                   :milestone, done, a3, 2026-05-13, 0d
-    ADR 004 — Gateway IAM-auth workaround                :milestone, crit, a4, 2026-05-13, 0d
-    ADR 005 — Gateway tools via Lambda targets           :milestone, done, a5, 2026-05-14, 0d
-    CR 003 — Observability trace trees                   :milestone, done, c3, 2026-05-15, 0d
-    CR 004 — Revise launch criteria                      :milestone, done, c4, 2026-05-18, 0d
-    Spec 002 — Hosted AgentCore Deployment ✓             :milestone, done, sp2, 2026-05-20, 0d
+    ADR 002 — Runtime-embedded Gateway tools             :milestone, crit, a2, 2026-05-12 12:00, 0d
+    ADR 003 — Bedrock Nova over Claude                   :milestone, done, a3, 2026-05-13 12:00, 0d
+    ADR 004 — Gateway IAM-auth workaround                :milestone, crit, a4, 2026-05-13 12:00, 0d
+    ADR 005 — Gateway tools via Lambda targets           :milestone, done, a5, 2026-05-14 12:00, 0d
+    CR 003 — Observability trace trees                   :milestone, done, c3, 2026-05-15 12:00, 0d
+    CR 004 — Revise launch criteria                      :milestone, done, c4, 2026-05-18 12:00, 0d
+    Spec 002 — Hosted AgentCore Deployment ✓             :done, sp2, 2026-05-10 12:59, 2026-05-20 16:25
 
     section Polish & publish (v1.1.x)
-    Spec 003 — Reliable Game Exit Controls ✓             :milestone, done, sp3, 2026-05-22, 0d
-    Spec 004 — Robust /vote Input Validation ✓           :milestone, done, sp4, 2026-05-22, 0d
+    Spec 003 — Reliable Game Exit Controls ✓             :done, sp3, 2026-05-22 14:15, 2026-05-22 16:15
+    Spec 004 — Robust /vote Input Validation ✓           :done, sp4, 2026-05-22 14:16, 2026-05-22 16:16
 
     section Spec 005 — Play-as-role + determinism posture
-    ADR 006 — Test role-pinning via GRAPHIA_ROLE         :milestone, done, a6, 2026-05-23, 0d
-    Spec 005 — Play-As-Role via Environment Variable ✓   :milestone, done, sp5, 2026-05-24, 0d
+    ADR 006 — Test role-pinning via GRAPHIA_ROLE         :milestone, done, a6, 2026-05-23 12:00, 0d
+    Spec 005 — Play-As-Role via Environment Variable ✓   :done, sp5, 2026-05-22 14:16, 2026-05-24 19:13
 
     section Phase 3 (v1.2) — Cross-game career stats
-    ADR 007 — Two-tier long-term memory stats            :milestone, crit, a7, 2026-05-28, 0d
-    ADR 008 — Self-managed pipeline (supersedes 007)     :milestone, done, a8, 2026-05-30, 0d
-    Spec 006 — Long-Term Cross-Game Memory ✓             :milestone, done, sp6, 2026-06-03, 0d
+    ADR 007 — Two-tier long-term memory stats            :milestone, crit, a7, 2026-05-28 12:00, 0d
+    ADR 008 — Self-managed pipeline (supersedes 007)     :milestone, done, a8, 2026-05-30 12:00, 0d
+    Spec 006 — Long-Term Cross-Game Memory ✓             :done, sp6, 2026-05-24 19:02, 2026-06-03 18:21
 
     section Day-phase integrity (v1.2.x)
-    Spec 007 — Fair Day Speaking Order ✓                 :milestone, done, sp7, 2026-06-03, 0d
-    Spec 008 — Same-Round Message Visibility ✓           :milestone, done, sp8, 2026-06-09, 0d
-    Spec 009 — AI Collusion Awareness ✓ (anti-parrot)    :milestone, done, sp9, 2026-06-10, 0d
+    Spec 007 — Fair Day Speaking Order ✓                 :done, sp7, 2026-06-03 20:00, 2026-06-03 22:00
+    Spec 008 — Same-Round Message Visibility ✓           :done, sp8, 2026-06-09 11:54, 2026-06-09 13:54
+    Spec 009 — AI Collusion Awareness ✓ (anti-parrot)    :done, sp9, 2026-06-09 19:53, 2026-06-10 14:32
 
     section Phase 4 (v1.3) — AI Provider Flexibility
-    ADR 009 — Pluggable LLM provider abstraction         :milestone, done, a9, 2026-06-11, 0d
-    ADR 010 — Anthropic-compat Ollama protocol           :milestone, done, a10, 2026-06-11, 0d
-    Spec 010 — Local Ollama Provider ✓                   :milestone, done, sp10, 2026-06-12, 0d
+    ADR 009 — Pluggable LLM provider abstraction         :milestone, done, a9, 2026-06-11 12:00, 0d
+    ADR 010 — Anthropic-compat Ollama protocol           :milestone, done, a10, 2026-06-11 12:00, 0d
+    Spec 010 — Local Ollama Provider ✓                   :done, sp10, 2026-06-12 19:59, 2026-06-12 21:59
 
     section Quality measurement (v1.3.x)
-    Spec 011 — AI Blunder Tracking ✓                     :milestone, done, sp11, 2026-06-13, 0d
-    Spec 012 — Eval Ledger Viewer ✓                      :milestone, done, sp12, 2026-06-14, 0d
-    Spec 013 — AI Behavioral Integrity ✓                 :milestone, done, sp13, 2026-06-16, 0d
-    CR 005 — Effort-not-results AI acceptance            :milestone, done, cr5, 2026-06-16, 0d
+    Spec 011 — AI Blunder Tracking ✓                     :done, sp11, 2026-06-12 20:22, 2026-06-13 17:18
+    Spec 012 — Eval Ledger Viewer ✓                      :done, sp12, 2026-06-13 18:30, 2026-06-16 16:25
+    Spec 013 — AI Behavioral Integrity ✓                 :done, sp13, 2026-06-15 19:36, 2026-06-16 16:25
+    CR 005 — Effort-not-results AI acceptance            :milestone, done, cr5, 2026-06-16 12:00, 0d
 
     section Phase 5 — config + richer night
-    Spec 014 — Configurable Role Counts ✓                :milestone, done, sp14, 2026-06-16, 0d
-    Spec 015 — Multi-Round Mafia Consensus ✓             :milestone, done, sp15, 2026-06-17, 0d
+    Spec 014 — Configurable Role Counts ✓                :done, sp14, 2026-06-16 19:47, 2026-06-16 20:02
+    Spec 015 — Multi-Round Mafia Consensus ✓             :done, sp15, 2026-06-17 20:02, 2026-06-19 19:38
 
     section Phase 6 — personas, transcripts, recap
-    Spec 016 — AI Character Personas ✓                   :milestone, done, sp16, 2026-06-18, 0d
-    Spec 017 — Eval Transcript Preservation ✓            :milestone, done, sp17, 2026-06-19, 0d
-    Spec 018 — End-of-Round Day-Dynamics Recap ✓         :milestone, done, sp18, 2026-06-19, 0d
-    CR 006 — Reprioritize Phase 6 (Day-decisiveness)     :milestone, done, cr6, 2026-06-19, 0d
+    Spec 016 — AI Character Personas ✓                   :done, sp16, 2026-06-18 14:31, 2026-06-18 16:31
+    Spec 017 — Eval Transcript Preservation ✓            :done, sp17, 2026-06-19 10:56, 2026-06-19 11:58
+    Spec 018 — End-of-Round Day-Dynamics Recap ✓         :done, sp18, 2026-06-19 18:32, 2026-06-19 19:10
+    CR 006 — Reprioritize Phase 6 (Day-decisiveness)     :milestone, done, cr6, 2026-06-19 12:00, 0d
 
     section Phase 6 — day-decisiveness + eval-validity
-    Spec 019 — Recap-Aware AI Reasoning ✓                :milestone, done, sp19, 2026-06-20, 0d
-    Spec 020 — Game-Time in the Recap ✓                  :milestone, done, sp20, 2026-06-20, 0d
-    ADR 011 — Ablatable gameplay feature flags           :milestone, done, a11, 2026-06-20, 0d
-    Spec 021 — Browsable-Transcript Round Labels ✓       :milestone, done, sp21, 2026-06-20, 0d
-    Spec 022 — Structured Eval-Transcript Format ✓       :milestone, done, sp22, 2026-06-20, 0d
-    Spec 023 — Runaway-Only Day Cap ✓                    :milestone, done, sp23, 2026-06-20, 0d
-    Spec 024 — Role-Specific Day Guidance                :milestone, active, sp24, 2026-06-20, 0d
-    Spec 025 — Fuller Multi-Day Discussion Window        :milestone, active, sp25, 2026-06-20, 0d
-    Spec 026 — Active Scripted Player                    :milestone, active, sp26, 2026-06-21, 0d
-    Spec 027 — Scripted-Side Win Rate in Evals ✓         :milestone, done, sp27, 2026-06-21, 0d
-    Spec 028 — Per-AI Day-Round Private Thoughts         :milestone, active, sp28, 2026-06-21, 0d
-    Spec 029 — Show Newer Eval Metrics in view-ledger ✓  :milestone, done, sp29, 2026-06-21, 0d
-    Spec 030 — Randomized Night-Pointing Roster Order    :milestone, active, sp30, 2026-06-21, 0d
-    Spec 031 — Distinct AI Personas Across the Roster    :milestone, active, sp31, 2026-06-21, 0d
+    Spec 019 — Recap-Aware AI Reasoning ✓                :done, sp19, 2026-06-20 13:51, 2026-06-20 15:20
+    Spec 020 — Game-Time in the Recap ✓                  :done, sp20, 2026-06-20 13:56, 2026-06-20 15:56
+    ADR 011 — Ablatable gameplay feature flags           :milestone, done, a11, 2026-06-20 12:00, 0d
+    Spec 021 — Browsable-Transcript Round Labels ✓       :done, sp21, 2026-06-20 14:12, 2026-06-20 14:19
+    Spec 022 — Structured Eval-Transcript Format ✓       :done, sp22, 2026-06-20 17:41, 2026-06-20 19:26
+    Spec 023 — Runaway-Only Day Cap ✓                    :done, sp23, 2026-06-20 17:50, 2026-06-20 19:13
+    Spec 024 — Role-Specific Day Guidance                :active, sp24, 2026-06-20 21:00, 2026-06-20 23:00
+    Spec 025 — Fuller Multi-Day Discussion Window        :active, sp25, 2026-06-20 21:05, 2026-06-20 23:05
+    Spec 026 — Active Scripted Player                    :active, sp26, 2026-06-21 17:27, 2026-06-21 17:59
+    Spec 027 — Scripted-Side Win Rate in Evals ✓         :done, sp27, 2026-06-21 17:41, 2026-06-21 19:41
+    Spec 028 — Per-AI Day-Round Private Thoughts         :active, sp28, 2026-06-21 20:27, 2026-06-21 22:27
+    Spec 029 — Show Newer Eval Metrics in view-ledger ✓  :done, sp29, 2026-06-21 20:05, 2026-06-21 22:05
+    Spec 030 — Randomized Night-Pointing Roster Order    :active, sp30, 2026-06-21 20:13, 2026-06-21 22:13
+    Spec 031 — Distinct AI Personas Across the Roster    :active, sp31, 2026-06-21 21:18, 2026-06-22 08:50
 
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
@@ -148,8 +147,8 @@ gantt
 **How to read it.** Each visual channel encodes exactly one thing:
 
 - **Colour = status.** Green = completed / accepted / in effect · Red = superseded · Orange = pending or in-flight.
-- **Shape = kind.** Diamonds are point events (CRs, ADRs, spec milestones); bars are executed slice work spanning real days.
-- **Sections = project phase.** ADRs are listed first within Phase 2, then the slice bars, so a superseded ADR (red diamond) is never mistaken for blocked work.
+- **Shape = kind.** Specs render as horizontal activity bars spanning author → verified-Completed (with time-of-day precision); CRs and ADRs render as point milestones (diamonds).
+- **Sections = project phase.** ADRs are listed first within Phase 2, then the spec bars, so a superseded ADR (red diamond) is never mistaken for blocked work.
 
 The red marks are the three superseded ADRs (002, 004, 007); the CRs are green because — even though CR 001 and 002 carried `Proposed` for a while — the scope changes were fully executed and have now been formally Accepted. The Phase 3 section now shows the full implementation arc — Slices 1-8 plus the ADR 007 → 008 mid-stream pivot plus a four-bug live-deploy parade ending at the `verify-pipeline` harness. Spec 006 has since been **verified Completed** and **Tutorial 006** published; the close-out section's three Day-phase integrity specs (007 fair order, 008 visibility, 009 collusion awareness) are now all **Completed** (green) — 009 via an experiment-chosen anti-parrot reword — alongside an LLM-accessor rename and a recursion-flake fix.
 
