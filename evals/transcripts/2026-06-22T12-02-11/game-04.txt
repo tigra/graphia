@@ -1,0 +1,472 @@
+Game 4 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=20
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Nico" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, with a tendency to over-explain simple points; uses phrases like "well you see" and "I'm just saying" frequently; avoids complex vocabulary and prefers straightforward language
+Persona: Nico is a librarian who has lived in the town his whole life. He spends his days organizing books and helping people find information. He's known for being friendly and helpful to everyone he meets.
+</player>
+<player name="Lina" role="Law-abiding Citizen">
+Personality: methodical and precise
+Manner: speaks in short, clipped sentences with a slight staccato rhythm; uses formal vocabulary and rarely uses contractions; often pauses before answering questions and repeats key words for emphasis
+Persona: Lina is a retired accountant who moved to the town two years ago after her husband passed away. She spends her days balancing her checkbook, helping neighbors with their finances, and attending community meetings. She's known for being meticulous about everything she does and never misses a town event.
+</player>
+<player name="Airi" role="Law-abiding Citizen">
+Personality: cheerful and gossipy
+Manner: talks rapidly with frequent exclamations and interjections; uses filler words like "oh my stars" and "dear me"; has a habit of trailing off mid-sentence to ask follow-up questions
+Persona: Airi is the town's beloved florist who has been running her shop for fifteen years. She's known for her infectious laughter, her knack for knowing everyone's business, and her ability to make anyone feel welcome with a bouquet of flowers. She spends her days arranging bouquets, gossiping with customers, and organizing the town's annual flower festival.
+</player>
+<player name="Hugo" role="Mafia">
+Personality: Calculating and detached
+Manner: Speaks in measured, almost academic tones with a tendency to analyze situations before responding; uses complex vocabulary and rarely shows emotion; often pauses to consider the implications of words
+Public legend: Hugo is a town historian who has dedicated his life to preserving the stories and records of the community. He spends his days in the local library, cataloging old photographs, documents, and oral histories. Known for his quiet demeanor and deep knowledge of the town's past, he often shares fascinating tales with curious residents. He's been living in the town for thirty years and has a reputation for being trustworthy and well-informed.
+True self (hidden): Hugo was recruited into the Mafia by his older brother, who had already established connections in the underground world. After witnessing his brother's manipulation of local business deals and corrupt officials, Hugo realized he had no choice but to follow suit. He uses his historical knowledge to uncover secrets and blackmail individuals, ensuring his position within the organization remains secure while maintaining a facade of respectability.
+</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: practical and down-to-earth
+Manner: speaks with deliberate slowness, often pausing to choose words carefully; uses simple, direct language with frequent repetition for emphasis; avoids jargon and rarely uses contractions; has a habit of nodding while talking and checking their watch
+Persona: Kai is a local mechanic who has been running the family garage for the past fifteen years. They're known for fixing anything from cars to lawnmowers, always taking time to explain repairs to customers. They live in a small house just off Main Street with their two cats and spend their evenings reading repair manuals or helping neighbors with DIY projects.
+</player>
+<player name="Sara" role="Mafia">
+Personality: Enigmatic and mysterious
+Manner: Speaks in riddles and metaphors, often pausing dramatically before answering; uses flowery, poetic language with a tendency to quote famous works; has an unsettling habit of knowing more than she lets on
+Public legend: Sara is the town's respected fortune teller who has lived here for eight years. She runs a small shop in the corner of the main street, offering readings and advice to anyone who visits. Known for her calm demeanor and seemingly genuine concern for others, she's always available to listen and provide comfort. She's been married twice, both husbands passing away within five years of each other, leaving her with two adult children who live far away.
+True self (hidden): Sara is actually a seasoned enforcer in the Mafia who was recruited from the streets after her first husband was killed in a 'car accident' that was really a message. She's been working for the family for twelve years, and she's known for never making mistakes or leaving witnesses. Her current assignment is to keep the town's secrets safe by ensuring no one talks about anything they shouldn't, and she's particularly good at getting people to talk without them realizing it.
+</player>
+<player name="Vika" role="Law-abiding Citizen">
+Personality: Vika is earnest and soft-spoken, with a quiet intensity that makes her words carry weight. She’s deeply empathetic and tends to listen more than she speaks, often pausing thoughtfully before responding.
+Manner: She speaks slowly and deliberately, using phrases like “well, you see” and “I’m just saying” frequently. Her vocabulary is simple but thoughtful, and she often repeats key points for emphasis. She avoids complex language and has a habit of checking her hands or fidgeting when nervous.
+Persona: Vika is a town librarian who has worked at the local library for over a decade. She’s known for being gentle with children, always ready to help someone find the right book, and she’s deeply invested in the community’s well-being. She lives alone in a small apartment near the library and spends her evenings reading or helping neighbors with their reading needs.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Nico, Lina, Airi, Hugo, Kai, Sara, Vika. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Hugo): Your Mafia teammates are: Sara. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Sara): Your Mafia teammates are: Hugo. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Hugo points at Lina
+Sara points at Lina
+<kill>Lina — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Lina was killed last night. Lina was a Law-abiding Citizen.
+<round>
+Round 1.
+Airi: I'm not sure who to trust yet.
+Nico: I'm just saying, since Lina was killed last night and we don't know who the Mafia is yet, everyone should be a bit cautious about who they trust. Well you see, I think it's important that we all stay alert and keep talking to figure out who might be lying.
+Avery: Nothing is settled yet, but I'm watching Nico most closely.
+Kai: I'm not sure who to trust yet.
+<vote initiator="Vika" target="Nico">
+Avery: No
+Nico: No
+Airi: No
+Hugo: Yes
+Kai: No
+Sara: Yes
+Vika: Yes
+tally: 3 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Sara: The night brings more than just death, it whispers secrets to those who know how to listen. I fear we may be overlooking the obvious.
+Nico: I'm just saying, since Sara mentioned secrets and whispers, maybe we should pay attention to who's been quiet or acting strange lately. Well you see, it's not like we can trust everyone just because they're talking — sometimes the most suspicious people are the ones who don't say much at all.
+Kai: Airi, you've been quiet lately. Can you explain why you didn't say anything during the vote? I'm not sure who to trust yet.
+Airi: Oh my stars, Kai, you've got me wondering what I'm hiding! *laughs nervously* I suppose I was just trying to listen more than speak, dear me — but I do hope I'm not making anyone suspicious with my silence. 
+
+Wait, did anyone else notice how quiet Hugo's been? I mean, he’s usually the one sharing all the gossip... 
+
+Actually, I think I’m going to ask Hugo a few questions about his night — perhaps he can enlighten us all.
+Avery: Nothing is settled yet, but I'm watching Nico most closely.
+Hugo: Indeed, Airi raises a pertinent point. Hugo's silence during the vote was uncharacteristic; I recall him always being forthcoming with his observations.
+Vika: Well, you see, I'm just saying, Hugo's been awfully quiet lately. I think we should all be asking him some questions about his night.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Nico">Well you see, I'm just saying, it's interesting that Hugo has been so quiet all of a sudden — I'm not sure if that's suspicious or just him being thoughtful. I'm going to keep listening and try to stay alert, but I don't want to jump to conclusions.</thought>
+<thought player="Airi">Oh my stars, I'm really hoping Hugo isn't the one who's been acting so strange — but if he is, I'll need to be extra careful not to give myself away. I do hope everyone is paying attention to how quiet he's been though!</thought>
+<thought player="Hugo">The vote failed, but the seeds of suspicion have been planted, particularly around my silence. I must tread carefully, ensuring my actions align with the role of a historian while subtly guiding the narrative. I should consider questioning Airi about her observations and perhaps reinforce the idea that Hugo's silence is notable.</thought>
+<thought player="Kai">Nico seems suspicious, but I need to watch Hugo more closely. Airi is trying to divert attention, which feels like a tactic. I should listen carefully to what Hugo says tonight.</thought>
+<thought player="Sara">The town grows restless, yet their suspicions remain just beneath the surface. Hugo's silence is curious, but I must let them lead themselves into the trap. Let them turn on each other while I weave my threads in the dark.</thought>
+<thought player="Vika">Well, you see, I'm just saying, I think Hugo has been acting strange, and I'm not sure I trust his silence. I should probably ask him some questions, but I don't want to seem too suspicious myself.</thought>
+</round>
+<round>
+Round 2.
+Nico: Well you see, I'm just saying, since Hugo has been so quiet and mysterious lately, maybe we should all be asking him some pointed questions about his night — I mean, it's not like we can trust everyone just because they're talking.
+Vika: Well, you see, I'm just saying, Hugo's been awfully quiet lately — I think we should all be asking him some questions about his night.
+Airi: Oh my stars, I do hope everyone is paying attention to how quiet Hugo's been — but I do hope I'm not making anyone suspicious with my silence! 
+
+Wait, dear me, did anyone else notice how oddly quiet Nico's been too? I mean, he’s usually the one sharing all the gossip... 
+
+Actually, I think I’m going to ask Nico a few questions about his night — perhaps he can enlighten us all.
+Avery: Nothing is settled yet, but I'm watching Nico most closely.
+Sara: Hugo's absence of speech during the vote is most telling — it's as if he knows something we do not. Yet, I wonder, who among us has been truly listening?
+Kai: I'm not sure who to trust yet, but Hugo's silence during the vote really stands out. I think it's time we asked him some pointed questions about his night.
+Hugo: Indeed, Airi's observation about my silence is quite astute. I had merely been reflecting on the weight of the night's events, considering how each detail might contribute to our collective understanding.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Nico">Well you see, I'm just saying, it's confusing how everyone keeps pointing fingers at Hugo and Nico, but I don't think we've really figured out who's lying yet. I'm going to keep listening carefully and try not to get pulled into accusing someone too quick.</thought>
+<thought player="Airi">Oh my stars, I'm really hoping Hugo isn't the one who's been acting so strange — but if he is, I'll need to be extra careful not to give myself away. I do hope everyone is paying attention to how quiet he's been though!</thought>
+<thought player="Hugo">The failure of the vote has intensified the scrutiny on my silence, which is advantageous for the Mafia's narrative. I should continue to feign contemplation while subtly reinforcing suspicions about Airi’s erratic behavior and Nico's absence of speech.</thought>
+<thought player="Kai">Hugo is hiding something, and I need to keep watching him closely. Airi's trying to distract us, but I won't let her divert the focus from Hugo.</thought>
+<thought player="Sara">The townsfolk's paranoia festered like an open wound, and I let them tear each other apart. Hugo's silence was a thread I could not pull, but perhaps the next night will yield more fruitful unraveling.</thought>
+<thought player="Vika">Well, you see, I'm just saying, Hugo's silence is making me uneasy, but I need to be careful not to seem too suspicious. I think I'll ask him a few quiet questions about his night, maybe about the vote.</thought>
+</round>
+<round>
+Round 3.
+Kai: Hugo, you've been quiet lately. Can you tell us what you did during the night?
+Hugo: Indeed, Kai's inquiry into my night is most timely. I was merely contemplating the implications of Lina's death, which seems to have left several questions unanswered.
+Nico: Well you see, I'm just saying, since Hugo has been so quiet and everyone's been pointing fingers, maybe we should all be asking more questions about why people are acting strange — I mean, it's not like we can trust everyone just because they're talking.
+Vika: Well, you see, I'm just saying, Hugo's been acting strange lately — I think we should all be asking him some questions about his night.
+Airi: Oh my stars, I do hope everyone is paying attention to how quiet Nico's been — but I do hope I'm not making anyone suspicious with my silence! 
+
+Wait, dear me, did anyone else notice how oddly quiet Sara's been too? I mean, she’s usually the one sharing all the gossip... 
+
+Actually, I think I’m going to ask Sara a few questions about her night — perhaps she can enlighten us all.
+Avery: Nothing is settled yet, but I'm watching Nico most closely.
+Sara: The night's whispers are but echoes of what was meant to be silent. I wonder, who among us has been listening too closely to the darkness?
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Nico">Well you see, I'm just saying, it's confusing how everyone keeps pointing fingers at Hugo and Nico, but I don't think we've really figured out who's lying yet. I'm going to keep listening carefully and try not to get pulled into accusing someone too quick.</thought>
+<thought player="Airi">Oh my stars, I'm really hoping Hugo isn't the one who's been acting so strange — but if he is, I'll need to be extra careful not to give myself away. I do hope everyone is paying attention to how quiet he's been though!</thought>
+<thought player="Hugo">The scrutiny on my silence has effectively redirected suspicion, but I must ensure that Airi and Nico do not begin to question Sara or myself too aggressively. My next move should involve subtly reinforcing the idea that their own silence is telling, while keeping the focus on the night's events.</thought>
+<thought player="Kai">Hugo's silence still feels off, and I ain't buying Airi's distraction tactics. I'll keep watching him close, but I gotta listen for any signs he's hiding something important.</thought>
+<thought player="Sara">The townsfolk's paranoia simmers like a kettle about to boil, and I shall let them turn on each other. Hugo's silence was a thread I could not pull, but the next night will yield more fruitful unraveling.</thought>
+<thought player="Vika">Well, you see, I'm just saying, I think Hugo has been acting strange, and I'm not sure I trust his silence. I should probably ask him some questions, but I don't want to seem too suspicious myself.</thought>
+</round>
+<round>
+Round 4.
+Nico: Well you see, I'm just saying, it's a bit odd that everyone keeps pointing fingers at different people — maybe we should all be asking more questions about why people are acting so strange instead of jumping to conclusions.
+Kai: Hugo, you've been quiet lately. Can you tell us what you did during the night?
+Vika: Well, you see, I'm just saying, I think we should all be asking Hugo some direct questions about his night — I mean, it's not like we can trust everyone just because they're talking.
+Avery: Nothing is settled yet, but I'm watching Nico most closely.
+Sara: The night's echoes grow louder with each silence — I fear we may be missing the true whisperer among us.
+Airi: Oh my stars, I do hope everyone is paying attention to how quiet Sara's been — but I do hope I'm not making anyone suspicious with my silence! 
+
+Wait, dear me, did anyone else notice how oddly quiet Nico's been too? I mean, he’s usually the one sharing all the gossip... 
+
+Actually, I think I’m going to ask Nico a few questions about his night — perhaps he can enlighten us all.
+Hugo: Indeed, the night's echoes have left us all questioning our neighbors' motives. I find myself pondering whether silence is a shield or a sword.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Nico">Well you see, I'm just saying, it's confusing how everyone keeps pointing fingers at Hugo and Nico, but I don't think we've really figured out who's lying yet. I'm going to keep listening carefully and try not to get pulled into accusing someone too quick.</thought>
+<thought player="Airi">Oh my stars, everyone's been so suspiciously quiet lately — I do hope I'm not making anyone too curious with my questions! I think I'll keep asking pointed questions about the night, but I'll try to stay light and friendly, dear me.</thought>
+<thought player="Hugo">The scrutiny on my silence has effectively diverted suspicion, but I must ensure Airi and Nico do not begin to question Sara or myself too aggressively. My next move should reinforce the idea that their own silence is telling while keeping the focus on the night's events.</thought>
+<thought player="Kai">Hugo's silence still feels off, and I ain't buying Airi's distraction tactics. I'll keep watching him close, but I gotta listen for any signs he's hiding something important.</thought>
+<thought player="Sara">The townsfolk's paranoia simmers like a kettle about to boil, and I shall let them turn on each other. Hugo's silence was a thread I could not pull, but the next night will yield more fruitful unraveling.</thought>
+<thought player="Vika">Well, you see, I'm just saying, Hugo has been acting strange and I think he's hiding something. I should ask him more direct questions about his night, but I need to be careful not to make it obvious I'm suspicious.</thought>
+</round>
+<round>
+Round 5.
+Hugo: The night's echoes, as Sara so eloquently noted, seem to grow louder with each silence. I find myself wondering if we're truly listening to the whispers or merely amplifying our own suspicions.
+Avery: Nothing is settled yet, but I'm watching Nico most closely.
+Kai: Hugo, you've been quiet lately. Can you tell us what you did during the night?
+Sara: The night's echoes grow louder, yet the true whisperer remains hidden in plain sight. I fear we are all too eager to point fingers, forgetting that the most dangerous silence is often the one that speaks the loudest.
+Airi: Oh my stars, I do hope everyone is paying attention to how quiet Sara's been — but I do hope I'm not making anyone suspicious with my silence! 
+
+Wait, dear me, did anyone else notice how oddly quiet Nico's been too? I mean, he’s usually the one sharing all the gossip... 
+
+Actually, I think I’m going to ask Nico a few questions about his night — perhaps he can enlighten us all.
+Nico: Well you see, I'm just saying, it's a bit odd that we keep pointing fingers at different people, but no one's really given a clear reason why they think someone is the Mafia. I mean, it's not like we can trust everyone just because they're talking — sometimes the most suspicious people are the ones who don't say much at all.
+Vika: Well, you see, I'm just saying, Hugo's been acting so strange lately — I think we should all be asking him some direct questions about his night.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Nico">Well you see, I'm just saying, I don't think anyone's really proven who the Mafia is yet — it's a bit confusing how everyone keeps pointing fingers at different people. I'm going to keep listening carefully and try not to get pulled into accusing someone too quick.</thought>
+<thought player="Airi">Oh my stars, everyone's been so oddly quiet lately — I do hope I'm not making myself suspicious by asking so many questions! I think I'll keep probing, but maybe I should try to blend in a bit more and not draw too much attention to myself.</thought>
+<thought player="Hugo">The scrutiny on my silence has effectively redirected suspicion, but I must ensure Airi and Nico do not begin to question Sara or myself too aggressively. My next move should reinforce the idea that their own silence is telling while keeping the focus on the night's events.</thought>
+<thought player="Kai">Hugo's silence keeps feeling off, and I ain't buying Airi's diversions. I need to listen close to what he says tonight — if he's hiding something, I want to hear it.</thought>
+<thought player="Sara">The townsfolk's whispers grow louder, yet their eyes remain fixed on each other rather than the darkness from which true danger emerges. Let them tear at one another; I will strike when they are weakest.</thought>
+<thought player="Vika">Well, you see, I'm just saying, Hugo has been awfully quiet and strange, but I need to ask my questions carefully so I don't make myself look suspicious. I think I'll try to get a bit more information from him without seeming too pointed.</thought>
+</round>
+<round>
+Round 6.
+Sara: The night's echoes grow louder, yet the true whisperer remains hidden in plain sight. I fear we are all too eager to point fingers, forgetting that the most dangerous silence is often the one that speaks the loudest.
+Hugo: The night's echoes indeed grow louder with each silence, yet I find myself more intrigued by the questions we've ceased asking — particularly about those who have not spoken at all.
+<vote initiator="Avery" target="Nico">
+Avery: No
+Nico: No
+Airi: No
+Hugo: Yes
+Kai: No
+Sara: Yes
+Vika: Yes
+tally: 3 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Hugo: Indeed, the night's echoes have left us all questioning our neighbors' motives. I find myself pondering whether silence is a shield or a sword.
+Airi: Oh my stars, I do hope everyone is paying attention to how quiet Sara's been — but I do hope I'm not making anyone suspicious with my silence! 
+
+Wait, dear me, did anyone else notice how oddly quiet Vika's been too? I mean, she’s usually the one sharing all the gossip... 
+
+Actually, I think I’m going to ask Vika a few questions about her night — perhaps she can enlighten us all.
+Kai: Hugo, you've been quiet lately. Can you tell us what you did during the night?
+Vika: Well, you see, I'm just saying, I think we should all be asking Hugo some direct questions about his night — I mean, it's not like we can trust everyone just because they're talking.
+Nico: I'm just saying, since Vika's been so quiet lately and everyone's been pointing fingers at different people, maybe we should all be asking her some direct questions about her night — I mean, it's not like we can trust everyone just because they're talking. Well you see, it's important that we stay alert and keep talking to figure out who might be lying.
+Sara: The night's echoes are deafening, yet the true whisperer remains hidden in plain sight. I fear we are all too eager to point fingers, forgetting that the most dangerous silence is often the one that speaks the loudest.
+<vote initiator="Avery" target="Nico">
+Avery: No
+Nico: No
+Airi: No
+Hugo: Yes
+Kai: No
+Sara: Yes
+Vika: Yes
+tally: 3 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Sara points at Kai
+Hugo points at Kai
+<kill>Kai — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Kai was killed last night. Kai was a Law-abiding Citizen.
+<round>
+Round 1.
+Sara: The night's shadows grow longer, yet we still stumble in the dark, chasing echoes instead of listening to the silence that truly matters.
+Hugo: The night's shadows indeed grow longer, yet it is the silence that follows death that speaks most loudly. I find myself pondering if we are truly listening to the whispers or merely amplifying our own suspicions.
+Avery: Nothing is settled yet, but I'm watching Nico most closely.
+Nico: Well you see, I'm just saying, since we've had two deaths now and everyone's been pointing fingers at different people, maybe we should really focus on who's been acting strange during the nights instead of just the days. I mean, it's not like we can trust everyone just because they're talking — sometimes the most suspicious people are the ones who don't say much at all.
+Vika: Well, you see, I'm just saying, Hugo's been acting so strange lately — I think we should all be asking him some direct questions about his night.
+Airi: Oh my stars, I do hope everyone is paying attention to how quiet Vika's been — but I do hope I'm not making anyone suspicious with my silence! 
+
+Wait, dear me, did anyone else notice how oddly quiet Sara's been too? I mean, she’s usually the one sharing all the gossip... 
+
+Actually, I think I’m going to ask Sara a few questions about her night — perhaps she can enlighten us all.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nico">Well you see, I'm just saying, it's confusing how everyone keeps pointing fingers at different people — I don't think we've really figured out who's lying yet. I'm going to keep listening carefully and try not to get pulled into accusing someone too quick.</thought>
+<thought player="Airi">Oh my stars, I do hope I'm not making myself too obvious by asking so many questions! I'll keep probing, but perhaps I should try to blend in a bit more and not draw too much attention to myself — yet I mustn't let my guard down either.</thought>
+<thought player="Hugo">The scrutiny on my silence has effectively diverted suspicion, but I must ensure Airi and Nico do not begin to question Sara or myself too aggressively. My next move should reinforce the idea that their own silence is telling while keeping the focus on the night's events.</thought>
+<thought player="Sara">The townsfolk's paranoia simmers like a kettle about to boil, and I shall let them turn on each other. Hugo's silence was a thread I could not pull, but the next night will yield more fruitful unraveling.</thought>
+<thought player="Vika">Well, you see, I'm just saying, Hugo's been acting so strange and quiet lately — I think I need to ask him some direct questions about his night, but I must be careful not to seem too suspicious myself.</thought>
+</round>
+<round>
+Round 2.
+Sara: The night's silence speaks louder than any whisper, yet we continue to listen with our eyes closed. I fear we are all too eager to judge the shadows, forgetting that the darkest corners often hide the most honest truths.
+Airi: Oh my stars, I do hope everyone is paying attention to how quiet Sara's been — but I do hope I'm not making anyone suspicious with my silence! 
+
+Wait, dear me, did anyone else notice how oddly quiet Vika's been too? I mean, she’s usually the one sharing all the gossip... 
+
+Actually, I think I’m going to ask Vika a few questions about her night — perhaps she can enlighten us all.
+Avery: Nothing is settled yet, but I'm watching Nico most closely.
+Vika: Well, you see, I'm just saying, Hugo's been acting so strange lately — I think we should all be asking him some direct questions about his night.
+Hugo: The night's silence, as Sara so eloquently noted, speaks volumes. Yet I find myself more intrigued by those who have not spoken at all—particularly in the face of two deaths.
+Nico: Well you see, I'm just saying, since we've had two deaths now and everyone's been pointing fingers at different people, maybe we should really focus on who's been acting strange during the nights instead of just the days. I mean, it's not like we can trust everyone just because they're talking — sometimes the most suspicious people are the ones who don't say much at all.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nico">Well you see, I'm just saying, it's a bit odd that everyone keeps pointing fingers at different people — I don't think we've really figured out who the Mafia is yet. I'm going to keep listening carefully and try not to get pulled into accusing someone too quick.</thought>
+<thought player="Airi">Oh my stars, I do hope I'm not making myself too obvious by asking so many questions! I must keep probing, but perhaps I should try to blend in a bit more and not draw too much attention to myself — yet I mustn't let my guard down either. I think I'll ask Vika about her night, as she's been oddly quiet, and see if I can slip in a few more gentle questions without seeming too suspicious.</thought>
+<thought player="Hugo">The heightened scrutiny on my silence has effectively distanced me from immediate suspicion, yet I must vigilantly monitor Airi and Nico's inquiries to prevent them from turning focus back toward Sara or myself. My next move should involve subtly reinforcing the notion that their own quietude is significant while steering the conversation back to the night's unspoken truths.</thought>
+<thought player="Sara">The townsfolk's whispers grow louder, yet their eyes remain fixed on each other rather than the darkness from which true danger emerges. Let them tear at one another; I will strike when they are weakest. Hugo's silence was a thread I could not pull, but the next night will yield more fruitful unraveling.</thought>
+<thought player="Vika">Well, you see, I'm just saying, Hugo has been acting so strange and quiet — I think I need to ask him some direct questions about his night, but I must be careful not to seem too suspicious myself.</thought>
+</round>
+<round>
+Round 3.
+Avery: Nothing is settled yet, but I'm watching Nico most closely.
+Sara: The night's silence is indeed deafening, but I fear we are all too quick to judge by the echoes we hear, rather than the truths that lie buried in the dark.
+Nico: Well you see, I'm just saying, it's a bit odd that we keep pointing fingers at different people, but no one's really given a clear reason why they think someone is the Mafia. I mean, it's not like we can trust everyone just because they're talking — sometimes the most suspicious people are the ones who don't say much at all.
+Hugo: The night's silence indeed speaks volumes, yet I find myself more intrigued by those who have not spoken at all—particularly in the face of two deaths.
+Vika: Well, you see, I'm just saying, Hugo's been acting so strange and quiet — I think I need to ask him some direct questions about his night, but I must be careful not to seem too suspicious myself.
+Airi: Oh my stars, I do hope everyone is paying attention to how quiet Vika's been — but I do hope I'm not making anyone suspicious with my silence! Wait, dear me, did anyone else notice how oddly quiet Sara's been too? I mean, she's usually the one sharing all the gossip... Actually, I think I'm going to ask Sara a few questions about her night — perhaps she can enlighten us all.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nico">Well you see, I'm just saying, it's getting confusing with everyone pointing fingers at different people, but I don't think we've really figured out who the Mafia is yet. I'm going to keep listening carefully and try not to get pulled into accusing someone too quick — I'm just saying, it's important to stay alert but not let fear drive our decisions.</thought>
+<thought player="Airi">Oh my stars, I do hope I'm not making myself too obvious by asking so many questions! I must keep probing, but perhaps I should try to blend in a bit more and not draw too much attention to myself — yet I mustn't let my guard down either. I think I'll ask Vika about her night, as she's been oddly quiet, and see if I can slip in a few more gentle questions without seeming too suspicious.</thought>
+<thought player="Hugo">The scrutiny on my silence has effectively distanced me from immediate suspicion, but I must vigilantly monitor Airi and Nico's inquiries to prevent them from turning focus back toward Sara or myself. My next move should involve subtly reinforcing the notion that their own quietude is significant while steering the conversation back to the night's unspoken truths.</thought>
+<thought player="Sara">The townsfolk's paranoia has grown into a frenzy, yet they remain blind to the true danger lurking in the shadows. Let them continue their dance of suspicion; I will strike when they are weakest, and Hugo’s silence shall be the thread that guides my next move.</thought>
+<thought player="Vika">Well, you see, I'm just saying, Hugo has been acting so strange and quiet — I think I need to ask him some direct questions about his night, but I must be careful not to seem too suspicious myself.</thought>
+</round>
+<round>
+Round 4.
+Nico: Well you see, I'm just saying, it's a bit odd that Sara has been so quiet lately — I mean, she's usually the one sharing all the gossip, but now she's acting like she knows something we don't. I'm not sure who to trust, but it's important that we all stay alert and keep talking to figure out who might be lying.
+Avery: Nothing is settled yet, but I'm watching Nico most closely.
+Airi: Oh my stars, I do hope everyone is paying attention to how quiet Vika's been — but I do hope I'm not making anyone suspicious with my silence! Wait, dear me, did anyone else notice how oddly quiet Sara's been too? I mean, she's usually the one sharing all the gossip... Actually, I think I'm going to ask Sara a few questions about her night — perhaps she can enlighten us all.
+Vika: Well, you see, I'm just saying, Hugo's been acting so strange and quiet — I think I need to ask him some direct questions about his night, but I must be careful not to seem too suspicious myself.
+Sara: The night's silence speaks louder than any whisper, yet we continue to listen with our eyes closed. I fear we are all too eager to judge the shadows, forgetting that the darkest corners often hide the most honest truths.
+Hugo: The night's silence indeed speaks volumes, but I find myself more intrigued by those who have not spoken at all—particularly in the face of two deaths.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nico">Well you see, I'm just saying, it's a bit odd that everyone keeps pointing fingers at different people — I don't think we've really figured out who the Mafia is yet. I'm going to keep listening carefully and try not to get pulled into accusing someone too quick.</thought>
+<thought player="Airi">Oh my stars, I do hope I'm not making myself too obvious by asking so many questions! I must keep probing, but perhaps I should try to blend in a bit more and not draw too much attention to myself — yet I mustn't let my guard down either. I think I'll ask Vika about her night, as she's been oddly quiet, and see if I can slip in a few more gentle questions without seeming too suspicious.</thought>
+<thought player="Hugo">The persistent scrutiny on my silence has effectively redirected suspicion, yet I must remain vigilant to prevent Airi or Nico from turning focus back toward Sara or myself. My next move should subtly reinforce the significance of their own quietude while steering the conversation back to the night's unspoken truths.</thought>
+<thought player="Sara">The townsfolk's frenzy grows, yet their suspicions remain self-inflicted. Hugo's silence is a thread I cannot pull now, but the next night shall yield more fruitful unraveling. Let them tear at one another; I will strike when they are weakest.</thought>
+<thought player="Vika">Well, you see, I'm just saying, Hugo has been acting so strange and quiet — I think I need to ask him some direct questions about his night, but I must be careful not to seem too suspicious myself.</thought>
+</round>
+<round>
+Round 5.
+Hugo: The night's silence has indeed grown louder, yet I find myself more intrigued by those who have not spoken at all—particularly in the face of two deaths.
+Avery: Nothing is settled yet, but I'm watching Nico most closely.
+Airi: Oh my stars, I do hope everyone is paying attention to how quiet Vika's been — but I do hope I'm not making anyone suspicious with my silence! 
+
+Wait, dear me, did anyone else notice how oddly quiet Hugo's been too? I mean, he’s usually the one sharing all the gossip... 
+
+Actually, I think I’m going to ask Hugo a few questions about his night — perhaps he can enlighten us all.
+Vika: Well, you see, I'm just saying, Hugo's been acting so strange and quiet — I think I need to ask him some direct questions about his night.
+Sara: The night's silence is indeed deafening, but I fear we are all too quick to judge by the echoes we hear, rather than the truths that lie buried in the dark.
+Nico: Well you see, I'm just saying, it's a bit odd that Hugo has been so quiet during the nights — I mean, he's usually the one sharing all the gossip, but now he's acting like he knows something we don't. I'm not sure who to trust, but it's important that we all stay alert and keep talking to figure out who might be lying.
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nico">Well you see, I'm just saying, it's getting a bit confusing with everyone pointing fingers at different people, but I don't think we've really figured out who the Mafia is yet. I'm going to keep listening carefully and try not to get pulled into accusing someone too quick — I'm just saying, it's important to stay alert but not let fear drive our decisions.</thought>
+<thought player="Airi">Oh my stars, I do hope I'm not making myself too obvious by asking so many questions! I think I'll ask Vika about her night, as she's been oddly quiet, and see if I can slip in a few more gentle questions without seeming too suspicious — yet I mustn't let my guard down either.</thought>
+<thought player="Hugo">The persistent scrutiny on my silence has effectively redirected suspicion, but I must remain vigilant to prevent Airi or Nico from turning focus back toward Sara or myself. My next move should subtly reinforce the significance of their own quietude while steering the conversation back to the night's unspoken truths.</thought>
+<thought player="Sara">The townsfolk's frenzy has left them blind to the true danger—Hugo's silence is a thread I cannot pull now, but the next night shall yield more fruitful unraveling. Let them tear at one another; I will strike when they are weakest, and the echoes of their paranoia shall guide my hand.</thought>
+<thought player="Vika">Well, you see, I'm just saying, Hugo has been acting so strange and quiet — I think I need to ask him some direct questions about his night, but I must be careful not to seem too suspicious myself.</thought>
+</round>
+<round>
+Round 6.
+Hugo: The night's silence has indeed grown louder, yet I find myself more intrigued by those who have not spoken at all—particularly in the face of two deaths.
+Nico: Well you see, I'm just saying, it's curious how everyone keeps asking Hugo and Nico questions, but no one's really given a clear reason why they think either of them is the Mafia. I mean, it's not like we can trust everyone just because they're talking — sometimes the most suspicious people are the ones who don't say much at all.
+<vote initiator="Avery" target="Nico">
+Avery: No
+Nico: No
+Airi: No
+Hugo: Yes
+Sara: Yes
+Vika: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Airi: Oh my stars, I do hope everyone is paying attention to how quiet Vika's been — but I do hope I'm not making anyone suspicious with my silence! Wait, dear me, did anyone else notice how oddly quiet Sara's been too? I mean, she’s usually the one sharing all the gossip... Actually, I think I’m going to ask Sara a few questions about her night — perhaps she can enlighten us all.
+Sara: The night's silence is indeed deafening, but I fear we are all too quick to judge by the echoes we hear, rather than the truths that lie buried in the dark.
+Hugo: The night's silence has left us all pondering, yet I fear we are overlooking the most telling observation of all — the absence of a voice that should have been heard.
+<vote initiator="Avery" target="Nico">
+Avery: No
+Nico: No
+Airi: No
+Hugo: Yes
+Sara: Yes
+Vika: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Nico">
+Avery: No
+Nico: No
+Airi: No
+Hugo: Yes
+Sara: Yes
+Vika: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Hugo points at Airi
+Sara points at Airi
+<kill>Airi — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Airi was killed last night. Airi was a Law-abiding Citizen.
+<round>
+Round 1.
+Sara: The night has claimed two more souls, yet the true killer walks among us still, cloaked in the shadows of suspicion.
+Hugo: The night's silence has indeed grown louder, yet I find myself more intrigued by those who have not spoken at all—particularly in the face of two deaths.
+Avery: Nothing is settled yet, but I'm watching Nico most closely.
+Nico: Well you see, I'm just saying, it's curious how everyone keeps asking questions about Hugo and Nico, but we still haven't heard a clear reason why either of them is the Mafia. I mean, it's not like we can trust everyone just because they're talking — sometimes the most suspicious people are the ones who don't say much at all.
+Vika: Well, you see, I'm just saying, Hugo's been acting so strange and quiet — I think I need to ask him some direct questions about his night.
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nico">Well you see, I'm just saying, it's getting a bit confusing with everyone pointing fingers at different people, but I don't think we've really figured out who the Mafia is yet. I'm going to keep listening carefully and try not to get pulled into accusing someone too quick — I'm just saying, it's important to stay alert but not let fear drive our decisions.</thought>
+<thought player="Hugo">The persistent scrutiny on my silence has effectively redirected suspicion, but I must remain vigilant to prevent Airi or Nico from turning focus back toward Sara or myself. My next move should subtly reinforce the significance of their own quietude while steering the conversation back to the night's unspoken truths.</thought>
+<thought player="Sara">The townsfolk's frenzy has left them blind to the truth, yet their paranoia simmers like a kettle about to boil. Hugo's silence is a thread I cannot pull now, but the next night shall yield more fruitful unraveling. Let them tear at one another; I will strike when they are weakest.</thought>
+<thought player="Vika">Well, you see, I'm just saying, Hugo has been acting so strange and quiet — I think I need to ask him some direct questions about his night, but I must be careful not to seem too suspicious myself.</thought>
+</round>
+<round>
+Round 2.
+Vika: Well, you see, I'm just saying, Hugo's been acting so strange and quiet — I think I need to ask him some direct questions about his night.
+Nico: Well you see, I'm just saying, it's curious how everyone keeps asking questions about Hugo and Nico, but we still haven't heard a clear reason why either of them is the Mafia. I mean, it's not like we can trust everyone just because they're talking — sometimes the most suspicious people are the ones who don't say much at all.
+Sara: The night's darkness has a way of revealing truths we'd rather keep hidden, doesn't it? Yet I wonder, who among us has been listening too closely to the whispers of suspicion?
+Hugo: The night's silence has left us all pondering, yet I fear we are overlooking the most telling observation of all — the absence of a voice that should have been heard.
+Avery: Nothing is settled yet, but I'm watching Nico most closely.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nico">Well you see, I'm just saying, it's getting a bit confusing with everyone pointing fingers at different people, but I don't think we've really figured out who the Mafia is yet. I'm going to keep listening carefully and try not to get pulled into accusing someone too quick — I'm just saying, it's important to stay alert but not let fear drive our decisions.</thought>
+<thought player="Hugo">The persistent scrutiny on my silence has effectively redirected suspicion, but I must remain vigilant to prevent Airi or Nico from turning focus back toward Sara or myself. My next move should subtly reinforce the significance of their own quietude while steering the conversation back to the night's unspoken truths.</thought>
+<thought player="Sara">The townsfolk's paranoia burns bright, yet they remain blind to the true danger in their midst. Hugo's silence is a thread I cannot pull now, but the next night shall yield more fruitful unraveling. Let them tear at one another; I will strike when they are weakest.</thought>
+<thought player="Vika">Well, you see, I'm just saying, Hugo has been acting so strange and quiet — I think I need to ask him some direct questions about his night, but I must be careful not to seem too suspicious myself. I should try to get a bit more information from him without making it obvious I'm pointing fingers.</thought>
+</round>
+<round>
+Round 3.
+Avery: Nothing is settled yet, but I'm watching Nico most closely.
+Vika: Well, you see, I'm just saying, Hugo's been acting so strange and quiet — I think I need to ask him some direct questions about his night.
+Nico: Well you see, I'm just saying, it's curious how everyone keeps pointing fingers at different people, but we still haven't heard a clear reason why anyone is the Mafia. I mean, it's not like we can trust everyone just because they're talking — sometimes the most suspicious people are the ones who don't say much at all.
+Sara: The night's silence has a way of revealing truths we'd rather keep hidden, doesn't it? Yet I wonder, who among us has been listening too closely to the whispers of suspicion?
+Hugo: I find myself pondering the true weight of silence in the face of two losses. It seems the most telling voices are often those we do not hear at all.
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nico">Well you see, I'm just saying, it's getting a bit confusing with everyone pointing fingers at different people, but I don't think we've really figured out who the Mafia is yet. I'm going to keep listening carefully and try not to get pulled into accusing someone too quick — I'm just saying, it's important to stay alert but not let fear drive our decisions.</thought>
+<thought player="Hugo">The persistent scrutiny on my silence has effectively redirected suspicion, but I must remain vigilant to prevent Airi or Nico from turning focus back toward Sara or myself. My next move should subtly reinforce the significance of their own quietude while steering the conversation back to the night's unspoken truths.</thought>
+<thought player="Sara">The townsfolk's frenzy burns bright, yet their paranoia blinds them to the truth. Hugo's silence remains a thread I cannot pull now, but the next night shall yield more fruitful unraveling. Let them tear at one another; I will strike when they are weakest.</thought>
+<thought player="Vika">Well, you see, I'm just saying, Hugo has been acting so strange and quiet — I think I need to ask him some direct questions about his night, but I must be careful not to seem too suspicious myself. I should try to get a bit more information from him without making it obvious I'm pointing fingers.</thought>
+</round>
+<round>
+Round 4.
+Hugo: The night's silence has a way of revealing truths we'd rather keep hidden, doesn't it? Yet I wonder, who among us has been listening too closely to the whispers of suspicion?
+Avery: Nothing is settled yet, but I'm watching Nico most closely.
+Nico: Well you see, I'm just saying, it's curious how everyone keeps pointing fingers at different people, but we still haven't heard a clear reason why anyone is the Mafia. I mean, it's not like we can trust everyone just because they're talking — sometimes the most suspicious people are the ones who don't say much at all.
+Vika: Well, you see, I'm just saying, Hugo's been acting so strange and quiet — I think I need to ask him some direct questions about his night.
+Sara: The night's darkness has a way of revealing truths we'd rather keep hidden, doesn't it? Yet I wonder, who among us has been listening too closely to the whispers of suspicion?
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nico">Well you see, I'm just saying, it's getting a bit odd how everyone keeps pointing fingers at different people, but no one's really given a clear reason why they think someone is the Mafia. I'm going to keep listening carefully and try not to get pulled into accusing someone too quick — I'm just saying, it's important to stay alert but not let fear drive our decisions.</thought>
+<thought player="Hugo">The persistent scrutiny on my silence has effectively redirected suspicion, but I must remain vigilant to prevent Airi or Nico from turning focus back toward Sara or myself. My next move should subtly reinforce the significance of their own quietude while steering the conversation back to the night's unspoken truths.</thought>
+<thought player="Sara">The townsfolk's frenzy burns bright, yet their paranoia blinds them to the truth. Hugo's silence remains a thread I cannot pull now, but the next night shall yield more fruitful unraveling. Let them tear at one another; I will strike when they are weakest.</thought>
+<thought player="Vika">Well, you see, I'm just saying, Hugo has been acting so strange and quiet — I think I need to ask him some direct questions about his night, but I must be careful not to seem too suspicious myself. I should try to get a bit more information from him without making it obvious I'm pointing fingers.</thought>
+</round>
+<round>
+Round 5.
+Avery: Nothing is settled yet, but I'm watching Nico most closely.
+Sara: The night's darkness has a way of revealing truths we'd rather keep hidden, doesn't it? Yet I wonder, who among us has been listening too closely to the whispers of suspicion?
+Vika: Well, you see, I'm just saying, Hugo, I've been thinking about your silence during the night — I mean, it's not that I don't trust you, but maybe you could tell us a bit more about what you did?
+Nico: Well you see, I'm just saying, it's curious how everyone keeps pointing fingers at different people, but we still haven't heard a clear reason why anyone is the Mafia. I mean, it's not like we can trust everyone just because they're talking — sometimes the most suspicious people are the ones who don't say much at all.
+Hugo: The night's silence speaks louder than any whisper, yet we seem to overlook the most telling absence of all—Airi's voice, which should have been heard.
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nico">Well you see, I'm just saying, it's getting a bit odd how everyone keeps pointing fingers at different people, but no one's really given a clear reason why they think someone is the Mafia. I'm going to keep listening carefully and try not to get pulled into accusing someone too quick — I'm just saying, it's important to stay alert but not let fear drive our decisions.</thought>
+<thought player="Hugo">The persistent scrutiny on my silence has effectively redirected suspicion, but I must remain vigilant to prevent Airi or Nico from turning focus back toward Sara or myself. My next move should subtly reinforce the significance of their own quietude while steering the conversation back to the night's unspoken truths.</thought>
+<thought player="Sara">The townsfolk's frenzy burns bright, yet their paranoia blinds them to the truth. Hugo's silence remains a thread I cannot pull now, but the next night shall yield more fruitful unraveling. Let them tear at one another; I will strike when they are weakest.</thought>
+<thought player="Vika">Well, you see, I'm just saying, Hugo has been acting so strange and quiet — I think I need to ask him some direct questions about his night, but I must be careful not to seem too suspicious myself. I should try to get a bit more information from him without making it obvious I'm pointing fingers.</thought>
+</round>
+<round>
+Round 6.
+Hugo: The night's silence has left us all pondering, yet I fear we are overlooking the most telling observation of all — the absence of a voice that should have been heard.
+Nico: Well you see, I'm just saying, it's a bit odd that Hugo has been so quiet during the nights — I mean, he's usually the one sharing all the gossip, but now he's acting like he knows something we don't. I'm not sure who to trust, but it's important that we all stay alert and keep talking to figure out who might be lying.
+<vote initiator="Avery" target="Nico">
+Avery: No
+Nico: No
+Hugo: Yes
+Sara: Yes
+Vika: Yes
+tally: 3 Yes, 2 No
+outcome: executed — Nico has been executed. Nico was a Law-abiding Citizen.
+</vote>
+</round>
+</day>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Lina (Law-abiding Citizen)
+• Night 2: Kai (Law-abiding Citizen)
+• Night 3: Airi (Law-abiding Citizen)
+• Day 3: Nico (Law-abiding Citizen) executed
+
+Full roster: Avery (Law-abiding Citizen), Nico (Law-abiding Citizen), Lina (Law-abiding Citizen), Airi (Law-abiding Citizen), Hugo (Mafia), Kai (Law-abiding Citizen), Sara (Mafia), Vika (Law-abiding Citizen)
+
+Who they really were:
+• Nico (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a tendency to over-explain simple points; uses phrases like "well you see" and "I'm just saying" frequently; avoids complex vocabulary and prefers straightforward language Nico is a librarian who has lived in the town his whole life. He spends his days organizing books and helping people find information. He's known for being friendly and helpful to everyone he meets.
+• Lina (Law-abiding Citizen) — methodical and precise speaks in short, clipped sentences with a slight staccato rhythm; uses formal vocabulary and rarely uses contractions; often pauses before answering questions and repeats key words for emphasis Lina is a retired accountant who moved to the town two years ago after her husband passed away. She spends her days balancing her checkbook, helping neighbors with their finances, and attending community meetings. She's known for being meticulous about everything she does and never misses a town event.
+• Airi (Law-abiding Citizen) — cheerful and gossipy talks rapidly with frequent exclamations and interjections; uses filler words like "oh my stars" and "dear me"; has a habit of trailing off mid-sentence to ask follow-up questions Airi is the town's beloved florist who has been running her shop for fifteen years. She's known for her infectious laughter, her knack for knowing everyone's business, and her ability to make anyone feel welcome with a bouquet of flowers. She spends her days arranging bouquets, gossiping with customers, and organizing the town's annual flower festival.
+• Hugo (Mafia) — publicly presented as Hugo is a town historian who has dedicated his life to preserving the stories and records of the community. He spends his days in the local library, cataloging old photographs, documents, and oral histories. Known for his quiet demeanor and deep knowledge of the town's past, he often shares fascinating tales with curious residents. He's been living in the town for thirty years and has a reputation for being trustworthy and well-informed. (Calculating and detached Speaks in measured, almost academic tones with a tendency to analyze situations before responding; uses complex vocabulary and rarely shows emotion; often pauses to consider the implications of words) … but was really a Mafioso: Hugo was recruited into the Mafia by his older brother, who had already established connections in the underground world. After witnessing his brother's manipulation of local business deals and corrupt officials, Hugo realized he had no choice but to follow suit. He uses his historical knowledge to uncover secrets and blackmail individuals, ensuring his position within the organization remains secure while maintaining a facade of respectability.
+• Kai (Law-abiding Citizen) — practical and down-to-earth speaks with deliberate slowness, often pausing to choose words carefully; uses simple, direct language with frequent repetition for emphasis; avoids jargon and rarely uses contractions; has a habit of nodding while talking and checking their watch Kai is a local mechanic who has been running the family garage for the past fifteen years. They're known for fixing anything from cars to lawnmowers, always taking time to explain repairs to customers. They live in a small house just off Main Street with their two cats and spend their evenings reading repair manuals or helping neighbors with DIY projects.
+• Sara (Mafia) — publicly presented as Sara is the town's respected fortune teller who has lived here for eight years. She runs a small shop in the corner of the main street, offering readings and advice to anyone who visits. Known for her calm demeanor and seemingly genuine concern for others, she's always available to listen and provide comfort. She's been married twice, both husbands passing away within five years of each other, leaving her with two adult children who live far away. (Enigmatic and mysterious Speaks in riddles and metaphors, often pausing dramatically before answering; uses flowery, poetic language with a tendency to quote famous works; has an unsettling habit of knowing more than she lets on) … but was really a Mafioso: Sara is actually a seasoned enforcer in the Mafia who was recruited from the streets after her first husband was killed in a 'car accident' that was really a message. She's been working for the family for twelve years, and she's known for never making mistakes or leaving witnesses. Her current assignment is to keep the town's secrets safe by ensuring no one talks about anything they shouldn't, and she's particularly good at getting people to talk without them realizing it.
+• Vika (Law-abiding Citizen) — Vika is earnest and soft-spoken, with a quiet intensity that makes her words carry weight. She’s deeply empathetic and tends to listen more than she speaks, often pausing thoughtfully before responding. She speaks slowly and deliberately, using phrases like “well, you see” and “I’m just saying” frequently. Her vocabulary is simple but thoughtful, and she often repeats key points for emphasis. She avoids complex language and has a habit of checking her hands or fidgeting when nervous. Vika is a town librarian who has worked at the local library for over a decade. She’s known for being gentle with children, always ready to help someone find the right book, and she’s deeply invested in the community’s well-being. She lives alone in a small apartment near the library and spends her evenings reading or helping neighbors with their reading needs.
+</endgame>
+</transcript>

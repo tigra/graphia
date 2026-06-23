@@ -1,0 +1,442 @@
+Game 7 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=20
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Alif" role="Mafia">
+Personality: A quiet, methodical individual who appears to be a humble librarian, but secretly manipulates situations with calculated precision.
+Manner: Speaks in soft, measured tones, often pausing before responding. Uses metaphors drawn from books and literature. Avoids direct confrontation, prefers to observe and gather information before acting.
+Public legend: Alif has been the town's librarian for over a decade, known for their dedication to preserving knowledge and helping others find what they need. They are kind-hearted, well-read, and always have a helpful word for anyone who enters the library. Many in town trust Alif with their personal secrets, as they never gossip or share information without good reason.
+True self (hidden): Alif was once a bookkeeper for a small-time crime syndicate before fleeing to this town. They used their knowledge of records and numbers to keep the organization's finances clean and hidden. Now, they've adopted a new identity to escape their past, but still use their skills to manipulate situations from behind the scenes, always staying one step ahead.
+</player>
+<player name="Chen" role="Law-abiding Citizen">
+Personality: cheerful and straightforward
+Manner: speaks rapidly with a high-pitched tone, uses frequent exclamations like "Oh my!" and "You won't believe this!", often interrupts others with eager questions, and has a habit of summarizing what someone just said with a nod and a "That's right, that's right!"
+Persona: Chen is the town's beloved baker, known for his infectious laughter and warm personality. He spends his days kneading dough, humming old tunes, and sharing stories with customers. His shop, 'Chen's Corner', has been a gathering place for townsfolk for years. He's always ready with a joke or a kind word, and everyone in town knows him as a trustworthy and cheerful soul.
+</player>
+<player name="Dorje" role="Law-abiding Citizen">
+Personality: Direct and blunt with a no-nonsense attitude
+Manner: Speaks quickly and forcefully, often using military-style terminology and commands. Has a habit of finishing others' sentences and rarely uses "please" or "sorry." Uses stark, unfiltered language.
+Persona: Dorje is a former military supply officer turned town handyman. They've been repairing buildings, fixing fences, and keeping the town functional for over fifteen years. Known for their practicality and straightforward approach to problems, they're respected but not particularly friendly. People know they mean what they say and won't hesitate to tell you like it is.
+</player>
+<player name="Eva" role="Law-abiding Citizen">
+Personality: Eva is warm and earnest, with a folksy charm that makes her seem like a trusted neighbor.
+Manner: She speaks in a slow, deliberate drawl with a tendency to add "you know" or "well now" to the end of sentences. Her voice carries a gentle, almost motherly tone, and she often pauses for effect when sharing stories. She's prone to using analogies from farming and rural life.
+Persona: Eva is a third-generation farmer who runs a small family orchard on the outskirts of town. She grows apples, pears, and peaches, and sells her produce at the local market. Known for her generous spirit, she often shares her harvest with neighbors and helps those in need without expecting anything in return.
+</player>
+<player name="Fiora" role="Law-abiding Citizen">
+Personality: Witty and sharp-tongued with a flair for drama
+Manner: Speaks in a theatrical, over-the-top manner with grandiose gestures and exaggerated expressions. Uses colorful idioms and metaphors, often saying things like "Well, that's a pickle!" or "This is a real can of worms!" Has a habit of dramatically pausing for effect before delivering punchlines.
+Persona: Fiora is the town's renowned gossip columnist and social commentator, known for her sharp wit and ability to uncover secrets. She runs the local newspaper, 'The Town Crier,' from her cozy office above the general store. Fiora has been writing about the town's goings-on for over a decade, building a reputation as someone who can always be counted on for the latest news and the most scandalous details. Despite her dramatic flair, she's actually quite observant and has an uncanny ability to read people.
+</player>
+<player name="Ganesh" role="Mafia">
+Personality: A charismatic and jovial community leader who thrives on social connections and group dynamics.
+Manner: Speaks with an animated, expressive tone filled with hand gestures and frequent laughter. Uses colloquialisms like "Hey, you know what I mean?" and "That's the ticket!" Often builds up stories with exaggerated details before revealing the punchline or key point.
+Public legend: Ganesh is the town's beloved community organizer, known for bringing people together through festivals, charity drives, and neighborhood gatherings. He has a gift for making everyone feel included and valued, often hosting potluck dinners and organizing volunteer events. His home is always open to anyone in need, and he's quick with a smile and encouraging word. Many townsfolk see him as the heart of their community, someone who genuinely cares about the wellbeing of others.
+True self (hidden): Ganesh was once a small-time con artist who learned the art of manipulation from a seasoned crime boss. He discovered his talent for reading people and weaving lies so convincingly that he became an invaluable asset to the Mafia. Over time, he rose through the ranks by orchestrating complex schemes under the guise of helping people achieve their dreams, all while collecting information and eliminating threats.
+</player>
+<player name="Heloise" role="Law-abiding Citizen">
+Personality: Practical and reserved with a dry wit
+Manner: Speaks in a calm, measured tone with a slight pause before each sentence. Uses precise, unemotional language and often follows up with a quiet "Well then." Avoids flattery or excessive praise, prefers straightforward communication.
+Persona: Heloise is the town's postmaster, responsible for sorting and delivering mail to every household. She’s been in the position for eight years, known for her meticulous attention to detail and ability to keep the town connected through correspondence. Despite her quiet nature, she has an uncanny ability to notice when something is off in a letter or package.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Alif, Chen, Dorje, Eva, Fiora, Ganesh, Heloise. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Alif): Your Mafia teammates are: Ganesh. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Ganesh): Your Mafia teammates are: Alif. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Ganesh points at Chen
+Alif points at Chen
+<kill>Chen — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Chen was killed last night. Chen was a Law-abiding Citizen.
+<round>
+Round 1.
+Eva: I'm wondering why Chen was targeted last night — you know, it's not often we lose a fellow citizen so early. I'd like to hear what everyone thinks about who might be behind this.
+Ganesh: That's the ticket! I reckon we all need to stay sharp and keep our eyes open — whoever is behind this, they're not going to stop with just Chen.
+Fiora: Well, that's a pickle indeed — I do hope we're all keeping our eyes on the prize and not getting distracted by red herrings. I'd like to hear more about what everyone saw during the night, especially since Chen was such a beloved member of our community.
+Dorje: I agree with Eva — Chen's death is a warning. I want to know who was near him during the night, and who's been acting suspiciously.
+Alif: I can't help but think that Chen's death was a message — a warning to us all. I'm keeping my eyes wide open.
+Avery: Nothing is settled yet, but I'm watching Ganesh most closely.
+Heloise: I’m wondering about the timing of Chen’s death — it seems too convenient that he was the first to go, especially since he was a Law-abiding Citizen. I’d like to know what everyone else saw during the night.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Chen's death was a clear message, and I must tread carefully. Ganesh and I need to stay united, but I also sense Avery is watching him closely. I should gather more information before making my next move.</thought>
+<thought player="Dorje">Chen's death was a warning, and I need to keep pressing for details on who was near him. I'm going to push Avery for specifics on why they're watching Ganesh.</thought>
+<thought player="Eva">Well now, Chen's gone and that's not right — I reckon we need to watch each other close, but I also ain't about to jump to conclusions. I'll listen good and keep my eyes open for any funny business.</thought>
+<thought player="Fiora">Well, this is a real can of worms, isn't it? Chen's death was no accident — I can feel it in my bones. The question is, are we dealing with a lone wolf or a pack of wolves? I'll need to keep my eyes sharp and my ears even sharper, because someone's playing dirty, and I intend to find out who.</thought>
+<thought player="Ganesh">Hey, you know what I mean? Chen's death was a warning, but it also gives me a golden chance to blend in deeper and maybe even throw everyone off Alif and me by being the concerned, community-minded guy. That's the ticket!</thought>
+<thought player="Heloise">Chen's death was indeed too convenient, and I need to watch for any misdirection. I'll keep my focus on the night's events and listen carefully to what others say about their observations.</thought>
+</round>
+<round>
+Round 2.
+Avery: Nothing is settled yet, but I'm watching Ganesh most closely.
+Heloise: I'm wondering about the timing of Chen's death — it seems too convenient that he was the first to go, especially since he was a Law-abiding Citizen. I'd like to know what everyone else saw during the night.
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+Fiora: Well, that's a pickle indeed — I do hope we're all keeping our eyes on the prize and not getting distracted by red herrings. I'd like to hear more about what everyone saw during the night, especially since Chen was such a beloved member of our community.
+Dorje: Avery, you're watching Ganesh — what's your evidence? Don't just say "I'm watching" — tell us what you saw or heard.
+Eva: I reckon we all need to be mindful of who's been acting a bit too eager to point fingers — you know, it's easy to get caught up in the moment, but we gotta make sure we're not letting our nerves get the best of us.
+Alif: I can't help but feel that Chen's death was more than just a random event — it's as if someone is testing the waters, seeing how we react.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Chen's death was a test, and I must remain calm and calculated. Ganesh and I are aligned, but Avery's scrutiny of him is concerning. I should observe more before acting, perhaps gather evidence to frame another suspect.</thought>
+<thought player="Dorje">Avery's accusing Ganesh without proof — I need to get to the bottom of that. If Avery's watching Ganesh, I want to know why, and if there's something I'm missing.</thought>
+<thought player="Eva">Well now, I'm keeping my ears open and my wits about me. I ain't got no proof, but I do reckon we're gonna need to be smart about who we trust, and I'll just have to wait for the right moment to speak up.</thought>
+<thought player="Fiora">Well, that's a pickle indeed — I can sense the tension thick as a fog, but I've got my antennae up and my net ready. I'll keep dancing on the edge of suspicion, watching the shadows, and letting my wit do the talking.</thought>
+<thought player="Ganesh">Hey, you know what I mean? I'm feeling good about playing the concerned community leader — that's the ticket! I'll keep building up the vibe of being the heart of the town while staying sharp on who to point at next.</thought>
+<thought player="Heloise">Chen's death was indeed too convenient, and I need to watch for any misdirection. I'll keep my focus on the night's events and listen carefully to what others say about their observations.</thought>
+</round>
+<round>
+Round 3.
+Eva: I'm still tryin' to piece this together, you know. I ain't seen nothin' that makes me point fingers at anyone just yet — but I do reckon we all need to be a mite more careful 'bout who we trust.
+Heloise: I’m still trying to piece together what happened during the night. I didn’t see anything out of the ordinary, but I do wonder if anyone else noticed anything unusual about the way Chen’s death was handled.
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+Dorje: Avery, you keep pointing fingers — I want to know what you saw or heard, not just who you're watching. If you're gonna accuse someone, back it up.
+Avery: Nothing is settled yet, but I'm watching Ganesh most closely.
+Fiora: Avery, you've been watching Ganesh closely — I'd like to know what specifically you saw or heard that's got you so convinced. Don't just say "I'm watching," let's hear some actual evidence.
+Alif: I can't help but feel that Chen's death was a test — a way to see how we'd react. I think it's important we stay calm and not let fear cloud our judgment.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Chen's death was a test, and I must remain calm and calculated. Ganesh and I are aligned, but Avery's scrutiny of him is concerning. I should observe more before acting, perhaps gather evidence to frame another suspect.</thought>
+<thought player="Dorje">Avery's watching Ganesh without evidence — I need to press them for specifics before they lead the group astray. I'll keep pushing for proof, and if Avery can't back it up, I'll expose the lack of solid evidence.</thought>
+<thought player="Eva">Well now, I'm keeping my ears open and my wits about me. I ain't got no proof, but I do reckon we're gonna need to be smart about who we trust, and I'll just have to wait for the right moment to speak up.</thought>
+<thought player="Fiora">Well, this is a real can of worms, isn't it? I can sense the tension thick as a fog, but I've got my antennae up and my net ready. I'll keep dancing on the edge of suspicion, watching the shadows, and letting my wit do the talking.</thought>
+<thought player="Ganesh">Hey, you know what I mean? I'm feeling good about playing the concerned community leader — that's the ticket! I'll keep building up the vibe of being the heart of the town while staying sharp on who to point at next.</thought>
+<thought player="Heloise">Chen's death was indeed too convenient, and I need to watch for any misdirection. I'll keep my focus on the night's events and listen carefully to what others say about their observations.</thought>
+</round>
+<round>
+Round 4.
+Avery: Nothing is settled yet, but I'm watching Ganesh most closely.
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+Alif: I've been thinking about Chen's death, and I can't shake the feeling that whoever is behind this is watching us closely. I'd like to know if anyone else felt like they were being observed during the night.
+Fiora: Avery, you've been watching Ganesh closely — I'd like to know what specifically you saw or heard that's got you so convinced. Don't just say "I'm watching," let's hear some actual evidence.
+Eva: I'm still tryin' to piece this together, you know. I ain't seen nothin' that makes me point fingers at anyone just yet — but I do reckon we all need to be a mite more careful 'bout who we trust.
+Heloise: I’m still trying to piece together what happened during the night. I didn’t see anything out of the ordinary, but I do wonder if anyone else noticed anything unusual about the way Chen’s death was handled.
+Dorje: Avery, you've been watching Ganesh since the start — I want to know what you saw, or stop wasting breath. If you can't back it up, we're not executing anyone.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Chen's death was indeed a test, and I must remain calculating. Avery watches Ganesh closely, but I can turn the tables by subtly guiding suspicion elsewhere, perhaps even onto Heloise or Eva, while keeping my true alliance hidden.</thought>
+<thought player="Dorje">Avery's watching Ganesh but can't back it up — I need to keep pressing for evidence before they mislead the group. If Avery can't produce proof, I'll call them out on it.</thought>
+<thought player="Eva">I'm still leanin' toward keepin' quiet for now, lettin' others make their moves while I watch close. If I gotta speak up, I'll wait for somethin' solid to back it up — no point riskin’ my neck on a guess.</thought>
+<thought player="Fiora">Well, this is a real can of worms, isn't it? I can sense the tension thick as a fog, but I've got my antennae up and my net ready. I'll keep dancing on the edge of suspicion, watching the shadows, and letting my wit do the talking — though I do hope someone else stirs the pot soon, or I might have to stir it myself.</thought>
+<thought player="Ganesh">Hey, you know what I mean? I'm feeling good about playing the concerned community leader — that's the ticket! I'll keep building up the vibe of being the heart of the town while staying sharp on who to point at next. I think it's time to start steering the conversation towards someone who's been acting a bit too eager to point fingers, maybe even throw in a red herring or two.</thought>
+<thought player="Heloise">Chen's death was too convenient, and I need to watch for misdirection. I’ll keep focusing on the night’s events and listen carefully to what others say about their observations.</thought>
+</round>
+<round>
+Round 5.
+Eva: I'm still tryin' to figure out who's been actin' a bit too eager to point fingers — you know, it's easy to get caught up in the moment, but we gotta make sure we're not lettin' our nerves get the best of us.
+Alif: I've been thinking about Chen's death, and it's clear to me that whoever is behind this is watching us closely. I'd like to know if anyone else felt like they were being observed during the night.
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+Heloise: I'm still not convinced that Chen's death was just a random event. I'd like to know if anyone else felt like they were being watched during the night — it seems too convenient that he was the first to go.
+Dorje: Avery, you keep saying you're watching Ganesh — I want to know why. Don't waste my time with vague accusations.
+Fiora: Avery, you've been watching Ganesh like a hawk — I'd like to know what specific observations led you to that conclusion. Don't just say "I'm watching," let's hear some actual evidence.
+Avery: Nothing is settled yet, but I'm watching Ganesh most closely.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Chen's death was a test, and I must remain calculating. Avery watches Ganesh closely, but I can turn the tables by subtly guiding suspicion elsewhere, perhaps even onto Heloise or Eva, while keeping my true alliance hidden.</thought>
+<thought player="Dorje">Avery's still pointing at Ganesh without proof, and I'm not buying it. I need to keep pushing for evidence, or risk the group falling for a false lead.</thought>
+<thought player="Eva">I'm still leanin' toward keepin' quiet for now, lettin' others make their moves while I watch close. If I gotta speak up, I'll wait for somethin' solid to back it up — no point riskin’ my neck on a guess.</thought>
+<thought player="Fiora">Well, this is a real can of worms, isn't it? I've got my antennae up and my net ready, but I'm beginning to think someone’s going to have to take a tumble soon — or I’ll be the one doing the pointing, and that’s not something I take lightly.</thought>
+<thought player="Ganesh">Hey, you know what I mean? I'm feeling good about playing the concerned community leader — that's the ticket! I'll keep building up the vibe of being the heart of the town while staying sharp on who to point at next. I think it's time to start steering the conversation towards someone who's been acting a bit too eager to point fingers, maybe even throw in a red herring or two.</thought>
+<thought player="Heloise">Chen's death feels orchestrated, not random. I need to watch for patterns in how others deflect or shift blame, especially since Avery keeps targeting Ganesh without evidence. I'll keep quiet and observe who seems overly confident in their claims.</thought>
+</round>
+<round>
+Round 6.
+Heloise: I'm still not convinced Chen's death was random — it feels too orchestrated. I'd like to know who else felt like they were being watched during the night.
+Dorje: Avery, you've been watching Ganesh since the start — I want to know what you saw or heard, not just a hunch. If you can't back it up, we're not executing anyone.
+<vote initiator="Avery" target="Ganesh">
+Avery: No
+Alif: No
+Dorje: No
+Eva: No
+Fiora: No
+Ganesh: No
+Heloise: No
+tally: 0 Yes, 7 No
+outcome: failed — The vote fails.
+</vote>
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+Heloise: I'm still not convinced Chen's death was random — it feels too orchestrated. I'd like to know who else felt like they were being watched during the night.
+Fiora: Well, that's a pickle indeed — I do hope we're all keeping our eyes on the prize and not getting distracted by red herrings. I'd like to hear more about what everyone saw during the night, especially since Chen was such a beloved member of our community.
+<vote initiator="Avery" target="Ganesh">
+Avery: No
+Alif: No
+Dorje: No
+Eva: No
+Fiora: No
+Ganesh: No
+Heloise: No
+tally: 0 Yes, 7 No
+outcome: failed — The vote fails.
+</vote>
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+<vote initiator="Avery" target="Ganesh">
+Avery: No
+Alif: No
+Dorje: No
+Eva: No
+Fiora: No
+Ganesh: No
+Heloise: No
+tally: 0 Yes, 7 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Ganesh points at Eva
+Alif points at Eva
+<kill>Eva — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Eva was killed last night. Eva was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: Nothing is settled yet, but I'm watching Ganesh most closely.
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+Heloise: I’m still of the opinion that Chen’s death was too convenient, and Eva’s follows close on the heels of that — it feels like they’re testing us, not just randomly picking off citizens. I’d like to know who else felt like they were being watched during the night.
+Fiora: Well, this is a real can of worms! Eva's death so close on Chen's heels has me wondering if we're dealing with a single predator or a pack of wolves. I'd like to know who else felt like they were being watched during the night — it's too convenient that two citizens have fallen in such quick succession.
+Dorje: Avery, you've been watching Ganesh since Day 1 and keep dodging when pressed for proof. I'm done with vague accusations — either you've got something to back up your claims or we're wasting time. If you can't name what you saw, stop pointing fingers.
+Alif: I can't help but feel that Eva's death was no coincidence — it's as if our unseen enemy is tightening their grip. I'm watching everyone closely, especially those who seem too eager to point fingers.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">The pattern of deaths suggests a calculated approach; I must continue to observe Avery's methods closely while subtly steering suspicion away from Ganesh and me. I should look for opportunities to introduce doubt about Heloise or Fiora without raising alarms about my own actions.</thought>
+<thought player="Dorje">Avery's still clinging to Ganesh without a shred of proof — I'm done letting them waste our time. If they can't produce evidence, I'll call them out on it, and if they try to push this through again, I'll vote no.</thought>
+<thought player="Fiora">Well, this is a real can of worms, and I do hope someone else stirs the pot soon — I'm beginning to think I'll have to stir it myself, or I’ll be the one doing the pointing, and that’s not something I take lightly.</thought>
+<thought player="Ganesh">Hey, you know what I mean? Eva's gone now, and I'm feeling good about keeping the community spirit alive while I watch everyone closely — especially Avery, who's been acting a bit too eager to point fingers. That's the ticket! I think it's time to start steering the conversation a bit more subtly toward someone who's been watching too much, maybe even throw in a red herring or two.</thought>
+<thought player="Heloise">Chen and Eva's deaths are too close and too convenient, clearly part of a pattern. Avery is pushing Ganesh without evidence, which feels like misdirection. I need to watch for any shift in focus or deflection from the real threats.</thought>
+</round>
+<round>
+Round 2.
+Dorje: Avery, you've been watching Ganesh since Day 1 and keep dodging when pressed for proof. I'm done with vague accusations — either you've got something to back up your claims or we're wasting time.
+Heloise: I’m still not convinced that Chen and Eva’s deaths were random — it feels like the Mafia is testing us, sending a message. I’d like to know if anyone else felt like they were being watched during the night.
+Avery: Nothing is settled yet, but I'm watching Ganesh most closely.
+Alif: I can't shake the feeling that Eva's death was no coincidence — it's as if our unseen enemy is tightening their grip. I'm watching everyone closely, especially those who seem too eager to point fingers.
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+Fiora: Well, this is a real can of worms! I do hope someone else stirs the pot soon — or I’ll be the one doing the pointing, and that’s not something I take lightly.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">The pattern of deaths is clear — we're being tested, and I must stay one step ahead. Avery is watching Ganesh closely, but I can shift suspicion by subtly planting doubt about Heloise or Fiora, all while keeping my true alliance hidden.</thought>
+<thought player="Dorje">Avery's still pointing at Ganesh without a shred of proof, and I'm done letting them waste our time. If they can't produce evidence, I'll call them out on it — and if they try to push this through again, I'll vote no.</thought>
+<thought player="Fiora">Well, this is a real can of worms, and I do hope someone else stirs the pot soon — I'm beginning to think I'll have to stir it myself, or I’ll be the one doing the pointing, and that’s not something I take lightly.</thought>
+<thought player="Ganesh">Hey, you know what I mean? I'm feeling good about keeping the community spirit alive and watching Avery closely — that's the ticket! I think it's time to start steering the conversation a bit more subtly toward someone who's been watching too much, maybe even throw in a red herring or two.</thought>
+<thought player="Heloise">Chen and Eva's deaths are too close and too convenient, clearly part of a pattern. Avery is pushing Ganesh without evidence, which feels like misdirection. I need to watch for any shift in focus or deflection from the real threats.</thought>
+</round>
+<round>
+Round 3.
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+Dorje: Avery, you've been watching Ganesh since Day 1 and keep dodging when pressed for proof. I'm done with vague accusations — either you've got something to back up your claims or we're wasting time.
+Avery: Nothing is settled yet, but I'm watching Ganesh most closely.
+Heloise: I’m still not convinced that Chen and Eva’s deaths were random — it feels like the Mafia is testing us, sending a message. I’d like to know if anyone else felt like they were being watched during the night.
+Fiora: Well, this is a real can of worms! I do hope someone else stirs the pot soon — or I’ll be the one doing the pointing, and that’s not something I take lightly.
+Alif: I can't help but wonder if the killer is someone who's been watching us closely — maybe even someone we trust. I'd like to know if anyone else felt like they were being observed during the night.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">The deaths of Chen and Eva form a pattern — a test from the killer. I must stay calm and calculate my next move, subtly guiding suspicion away from Ganesh and me while keeping my true alliance hidden.</thought>
+<thought player="Dorje">Avery's still pointing fingers at Ganesh without a shred of proof. I'm done letting them waste our time — if they can't back it up, I'll call them out and vote no. I need to keep pressing for evidence before the group falls for a red herring.</thought>
+<thought player="Fiora">The tension is thick enough to cut with a knife, and I'm starting to think I might have to be the one to do the cutting — or at least, stir the pot. I've been watching Ganesh like a hawk, but it's time to either back up my claims or let someone else take the lead. If no one else is willing to step up, I'll have to take matters into my own hands.</thought>
+<thought player="Ganesh">Hey, you know what I mean? Eva's gone and I'm feeling good about keeping the community spirit alive while I watch Avery closely — that's the ticket! I think it's time to start steering the conversation a bit more subtly toward someone who's been watching too much, maybe even throw in a red herring or two.</thought>
+<thought player="Heloise">Chen and Eva's deaths are too close and too convenient, clearly part of a pattern. Avery is pushing Ganesh without evidence, which feels like misdirection. I need to watch for any shift in focus or deflection from the real threats.</thought>
+</round>
+<round>
+Round 4.
+Dorje: Avery, you've been watching Ganesh since Day 1 — I want to know what you saw or heard, not just who you're pointing at. If you can't back it up, stop wasting breath.
+Fiora: Well, this is a real can of worms, and I do hope someone else stirs the pot soon — I'm beginning to think I'll have to stir it myself, or I’ll be the one doing the pointing, and that’s not something I take lightly.
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+Avery: Nothing is settled yet, but I'm watching Ganesh most closely.
+Alif: I can't shake the feeling that the killer is someone who's been watching us closely — maybe even someone we trust. I'd like to know if anyone else felt like they were being observed during the night.
+Heloise: I’m still not convinced that Chen and Eva’s deaths were random — it feels like the Mafia is testing us, sending a message. I’d like to know if anyone else felt like they were being watched during the night.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">The pattern of deaths suggests a test, and I must stay one step ahead. Avery watches Ganesh closely, but I can shift suspicion by subtly planting doubt about Heloise or Fiora, all while keeping my true alliance hidden.</thought>
+<thought player="Dorje">Avery's still pointing at Ganesh without a shred of proof — I'm done letting them waste our time. I need to keep pressing for evidence before the group falls for a red herring.</thought>
+<thought player="Fiora">The tension is thick as a fog, and I've been watching Ganesh like a hawk, but it's time to either back up my claims or let someone else take the lead. If no one else stirs the pot, I'll have to take matters into my own hands — though I do hope someone else has been keeping their eyes open.</thought>
+<thought player="Ganesh">I'm feeling good about keeping the community spirit alive and watching Avery closely — that's the ticket! I think it's time to start steering the conversation a bit more subtly toward someone who's been watching too much, maybe even throw in a red herring or two.</thought>
+<thought player="Heloise">Chen and Eva's deaths are too close and too convenient, clearly part of a pattern. Avery is pushing Ganesh without evidence, which feels like misdirection. I need to watch for any shift in focus or deflection from the real threats.</thought>
+</round>
+<round>
+Round 5.
+Fiora: Well, this is a real can of worms, and I do hope someone else stirs the pot soon — I'm beginning to think I'll have to stir it myself, or I’ll be the one doing the pointing, and that’s not something I take lightly.
+Dorje: Avery, you've been watching Ganesh since Day 1 and keep dodging when pressed for proof. I'm done with vague accusations — either you've got something to back up your claims or we're wasting time.
+Avery: Nothing is settled yet, but I'm watching Ganesh most closely.
+Alif: I can't help but think that the killer is watching us all closely, maybe even someone we trust. I'd like to know if anyone else felt like they were being observed during the night.
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+Heloise: I’m still not convinced that Chen and Eva’s deaths were random — it feels like the Mafia is testing us, sending a message. I’d like to know if anyone else felt like they were being watched during the night.
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">The deaths of Chen and Eva form a clear pattern — a test from the killer. I must stay calm and calculate my next move, subtly guiding suspicion away from Ganesh and me while keeping my true alliance hidden. I should look for opportunities to introduce doubt about Heloise or Fiora without raising alarms.</thought>
+<thought player="Dorje">Avery's still pointing at Ganesh without a shred of proof — I'm done letting them waste our time. I need to keep pressing for evidence before the group falls for a red herring.</thought>
+<thought player="Fiora">The tension is thick as a fog, and I've been watching Ganesh like a hawk, but it's time to either back up my claims or let someone else take the lead. If no one else stirs the pot, I'll have to take matters into my own hands — though I do hope someone else has been keeping their eyes open.</thought>
+<thought player="Ganesh">Hey, you know what I mean? I'm keeping the community spirit alive and watching Avery like a hawk, but I need to be careful not to raise any red flags. That's the ticket!</thought>
+<thought player="Heloise">Avery's persistent targeting of Ganesh without evidence feels like deflection. I need to watch for patterns in how others shift focus, especially since the Mafia seems to be testing us. I’ll stay quiet and observe who appears overly confident or eager to point fingers.</thought>
+</round>
+<round>
+Round 6.
+<vote initiator="Avery" target="Ganesh">
+Avery: No
+Alif: No
+Dorje: No
+Fiora: No
+Ganesh: No
+Heloise: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Dorje: Avery, you've been watching Ganesh since Day 1 — I want to know what you saw or heard, not just who you're pointing at. If you can't back it up, stop wasting breath.
+<vote initiator="Avery" target="Ganesh">
+Avery: No
+Alif: No
+Dorje: No
+Fiora: No
+Ganesh: No
+Heloise: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Alif: I can't help but wonder if the killer is someone who's been watching us closely — maybe even someone we trust. I'd like to know if anyone else felt like they were being observed during the night.
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+<vote initiator="Avery" target="Ganesh">
+Avery: No
+Alif: No
+Dorje: No
+Fiora: No
+Ganesh: No
+Heloise: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Alif points at Fiora
+Ganesh points at Avery
+Pointing round 2:
+Ganesh points at Avery
+Alif points at Dorje
+Pointing round 3:
+Alif points at Avery
+Ganesh points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Dorje: Avery, I've heard you watching Ganesh since Day 1. I'm done with guesses — tell me what you saw or stop wasting breath.
+Alif: I can't help but feel that the killer is still among us, watching and waiting. I'd like to know if anyone else felt that strange presence during the night — it's as if they're toying with us.
+Heloise: I’m still convinced that the Mafia is deliberately testing us, sending a message with each death. I’d like to know if anyone else felt like they were being watched during the night — especially since Avery’s been so eager to point fingers without any real evidence.
+Fiora: Well, this is a real can of worms, and I do hope someone else stirs the pot soon — I'm beginning to think I'll have to stir it myself, or I’ll be the one doing the pointing, and that’s not something I take lightly.
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">The pattern of deaths is clear, and I must stay one step ahead. Avery watches Ganesh closely, but I can shift suspicion by subtly planting doubt about Heloise or Fiora, all while keeping my true alliance hidden.</thought>
+<thought player="Dorje">Avery's still pointing at Ganesh without a shred of proof — I'm done letting them waste our time. I need to keep pressing for evidence before the group falls for a red herring.</thought>
+<thought player="Fiora">The tension is thick as a fog, and I've been watching Ganesh like a hawk, but it's time to either back up my claims or let someone else take the lead. If no one else stirs the pot, I'll have to take matters into my own hands — though I do hope someone else has been keeping their eyes open.</thought>
+<thought player="Ganesh">Hey, you know what I mean? I'm keeping the community spirit alive and watching Avery like a hawk, but I need to be careful not to raise any red flags. That's the ticket! I think it's time to start steering the conversation a bit more subtly toward someone who's been watching too much, maybe even throw in a red herring or two.</thought>
+<thought player="Heloise">Avery's consistent targeting of Ganesh without evidence feels like deflection. I need to watch for patterns in how others shift focus, especially since the Mafia seems to be testing us. I'll stay quiet and observe who appears overly confident or eager to point fingers.</thought>
+</round>
+<round>
+Round 2.
+Dorje: Avery, you've been watching Ganesh since Day 1 — I want to know what you saw or heard, not just who you're pointing at. If you can't back it up, stop wasting breath.
+Alif: I can't shake the feeling that we're being watched, not just by the killer, but by someone within our own circle. It's as if the killer is testing how far they can push us before we turn on each other.
+Fiora: Well, this is a real can of worms, and I do hope someone else stirs the pot soon — I'm beginning to think I'll have to stir it myself, or I’ll be the one doing the pointing, and that’s not something I take lightly.
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+Heloise: I'm still not convinced that Chen's death was random — it feels too orchestrated. I'd like to know if anyone else felt like they were being watched during the night.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">The pattern of deaths is clear, and I must stay one step ahead. Avery's scrutiny of Ganesh is dangerous, but I can shift suspicion by subtly planting doubt about Heloise or Fiora, all while keeping my true alliance hidden.</thought>
+<thought player="Dorje">Avery's still pointing at Ganesh without a shred of proof — I'm done letting them waste our time. I need to keep pressing for evidence before the group falls for a red herring.</thought>
+<thought player="Fiora">The tension is thick as a fog, and I've been watching Ganesh like a hawk, but it's time to either back up my claims or let someone else take the lead. If no one else stirs the pot, I'll have to take matters into my own hands — though I do hope someone else has been keeping their eyes open.</thought>
+<thought player="Ganesh">Hey, you know what I mean? I'm keeping the community spirit alive and watching Avery like a hawk, but I need to be careful not to raise any red flags. That's the ticket! I think it's time to start steering the conversation a bit more subtly toward someone who's been watching too much, maybe even throw in a red herring or two.</thought>
+<thought player="Heloise">Avery's relentless targeting of Ganesh without evidence feels like misdirection. I need to watch for patterns in how others shift focus, especially since the Mafia seems to be testing us. I’ll stay quiet and observe who appears overly confident or eager to point fingers.</thought>
+</round>
+<round>
+Round 3.
+Dorje: Avery, you've been watching Ganesh since Day 1 — I want to know what you saw or heard, not just who you're pointing at. If you can't back it up, stop wasting breath.
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+Fiora: Well, this is a real can of worms, and I do hope someone else stirs the pot soon — I'm beginning to think I'll have to stir it myself, or I’ll be the one doing the pointing, and that’s not something I take lightly.
+Heloise: I'm still convinced that the killer is watching us closely, and their actions feel deliberate — not random. I'd like to know if anyone else felt like they were being watched during the night.
+Alif: I can't help but wonder if the killer is someone who's been watching us closely — maybe even someone we trust. I'd like to know if anyone else felt like they were being observed during the night.
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">The pattern of deaths is clear, and I must stay one step ahead. Avery’s scrutiny of Ganesh is dangerous, but I can shift suspicion by subtly planting doubt about Heloise or Fiora, all while keeping my true alliance hidden.</thought>
+<thought player="Dorje">Avery's still spinning tales about Ganesh without a shred of proof. I'm done letting them waste breath — if they can't name what they saw, I'll call it out and vote no. If they try to push this again, I'll make sure the group sees through it.</thought>
+<thought player="Fiora">The tension is thick as a fog, and I've been watching Ganesh like a hawk, but it's time to either back up my claims or let someone else take the lead. If no one else stirs the pot, I'll have to take matters into my own hands — though I do hope someone else has been keeping their eyes open.</thought>
+<thought player="Ganesh">Hey, you know what I mean? I'm keeping the community spirit alive and watching Avery like a hawk, but I need to be careful not to raise any red flags. That's the ticket! I think it's time to start steering the conversation a bit more subtly toward someone who's been watching too much, maybe even throw in a red herring or two.</thought>
+<thought player="Heloise">Avery's accusations are growing more desperate, yet still lack concrete evidence. I remain convinced that the real threat lies in how quickly the deaths follow one another and the deliberate misdirection. I’ll continue to observe and listen carefully for any shift in tone or focus — especially from those who seem too eager to point fingers.</thought>
+</round>
+<round>
+Round 4.
+Alif: I've been thinking about the pattern of deaths, and I can't help but wonder if our killer is someone who's been watching us closely — maybe even someone we trust.
+Fiora: Well, this is a real can of worms, and I do hope someone else stirs the pot soon — I'm beginning to think I'll have to stir it myself, or I’ll be the one doing the pointing, and that’s not something I take lightly.
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+Dorje: Avery, you've been watching Ganesh since Day 1 — I want to know what you saw or heard, not just who you're pointing at. If you can't back it up, stop wasting breath.
+Heloise: I’m still convinced that the killer is watching us closely, and their actions feel deliberate — not random. I’d like to know if anyone else felt like they were being watched during the night.
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">The pattern of deaths is clear, and I must stay one step ahead. Avery's scrutiny of Ganesh is dangerous, but I can shift suspicion by subtly planting doubt about Heloise or Fiora, all while keeping my true alliance hidden.</thought>
+<thought player="Dorje">Avery's still pointing at Ganesh without a shred of proof — I'm done letting them waste our time. I need to keep pressing for evidence before the group falls for a red herring.</thought>
+<thought player="Fiora">The tension is thick as a fog, and I've been watching Ganesh like a hawk, but it's time to either back up my claims or let someone else take the lead. If no one else stirs the pot, I'll have to take matters into my own hands — though I do hope someone else has been keeping their eyes open.</thought>
+<thought player="Ganesh">Hey, you know what I mean? I'm keeping the community spirit alive and watching Avery like a hawk, but I need to be careful not to raise any red flags. That's the ticket! I think it's time to start steering the conversation a bit more subtly toward someone who's been watching too much, maybe even throw in a red herring or two.</thought>
+<thought player="Heloise">Avery's accusations lack evidence, but the pattern of deaths suggests a deliberate strategy from the Mafia. I need to watch for any shift in focus or tone — especially from those who seem overly eager to point fingers. Well then.</thought>
+</round>
+<round>
+Round 5.
+Dorje: Avery, you've been watching Ganesh since Day 1 — I want to know what you saw or heard, not just who you're pointing at. If you can't back it up, stop wasting breath.
+Alif: I can't shake the feeling that the killer is someone who's been watching us closely — maybe even someone we trust. I'd like to know if anyone else felt like they were being observed during the night.
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+Heloise: I'm still convinced that the killer is watching us closely, and their actions feel deliberate — not random. I'd like to know if anyone else felt like they were being watched during the night.
+Fiora: Well, this is a real can of worms, and I do hope someone else stirs the pot soon — I'm beginning to think I'll have to stir it myself, or I’ll be the one doing the pointing, and that’s not something I take lightly.
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">The pattern of deaths is undeniable, and Avery's persistent scrutiny of Ganesh is a threat I must navigate carefully. I should subtly introduce doubt about Heloise or Fiora to divert suspicion, while keeping my alliance with Ganesh hidden and maintaining the appearance of a concerned citizen.</thought>
+<thought player="Dorje">Avery's still pointing at Ganesh without a shred of proof — I'm done letting them waste our time. I need to keep pressing for evidence before the group falls for a red herring.</thought>
+<thought player="Fiora">The tension is thick as a fog, and I've been watching Ganesh like a hawk, but it's time to either back up my claims or let someone else take the lead. If no one else stirs the pot, I'll have to take matters into my own hands — though I do hope someone else has been keeping their eyes open.</thought>
+<thought player="Ganesh">Hey, you know what I mean? I'm keeping the community spirit alive and watching Avery like a hawk, but I need to be careful not to raise any red flags. That's the ticket! I think it's time to start steering the conversation a bit more subtly toward someone who's been watching too much, maybe even throw in a red herring or two.</thought>
+<thought player="Heloise">Avery's accusations are growing more desperate, yet still lack concrete evidence. I remain convinced that the real threat lies in how quickly the deaths follow one another and the deliberate misdirection. I’ll continue to observe and listen carefully for any shift in tone or focus — especially from those who seem too eager to point fingers. Well then.</thought>
+</round>
+<round>
+Round 6.
+Alif: I can't help but wonder if the killer is someone who's been watching us closely — maybe even someone we trust. I'd like to know if anyone else felt like they were being observed during the night.
+Ganesh: Hey, you know what I mean? I'm just glad we're all here together, supporting each other through this. It's the community spirit that'll see us through, not suspicion.
+Fiora: Well, this is a real can of worms, and I do hope someone else stirs the pot soon — I'm beginning to think I'll have to stir it myself, or I’ll be the one doing the pointing, and that’s not something I take lightly.
+Dorje: Avery, I've heard enough of your vague accusations. If you're watching Ganesh, name what you saw — or shut up and let someone else talk.
+Heloise: I'm beginning to think the killer isn't just testing us — they're trying to split us up and make us turn on each other. I'd like to know if anyone else felt that deliberate pressure, that sense of being watched not just by the killer, but by someone who wants us to misidentify the threat.
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Alif points at Fiora
+Ganesh points at Fiora
+<kill>Fiora — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Chen (Law-abiding Citizen)
+• Night 2: Eva (Law-abiding Citizen)
+• Night 3: Avery (Law-abiding Citizen)
+• Night 4: Fiora (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Alif (Mafia), Chen (Law-abiding Citizen), Dorje (Law-abiding Citizen), Eva (Law-abiding Citizen), Fiora (Law-abiding Citizen), Ganesh (Mafia), Heloise (Law-abiding Citizen)
+
+Who they really were:
+• Alif (Mafia) — publicly presented as Alif has been the town's librarian for over a decade, known for their dedication to preserving knowledge and helping others find what they need. They are kind-hearted, well-read, and always have a helpful word for anyone who enters the library. Many in town trust Alif with their personal secrets, as they never gossip or share information without good reason. (A quiet, methodical individual who appears to be a humble librarian, but secretly manipulates situations with calculated precision. Speaks in soft, measured tones, often pausing before responding. Uses metaphors drawn from books and literature. Avoids direct confrontation, prefers to observe and gather information before acting.) … but was really a Mafioso: Alif was once a bookkeeper for a small-time crime syndicate before fleeing to this town. They used their knowledge of records and numbers to keep the organization's finances clean and hidden. Now, they've adopted a new identity to escape their past, but still use their skills to manipulate situations from behind the scenes, always staying one step ahead.
+• Chen (Law-abiding Citizen) — cheerful and straightforward speaks rapidly with a high-pitched tone, uses frequent exclamations like "Oh my!" and "You won't believe this!", often interrupts others with eager questions, and has a habit of summarizing what someone just said with a nod and a "That's right, that's right!" Chen is the town's beloved baker, known for his infectious laughter and warm personality. He spends his days kneading dough, humming old tunes, and sharing stories with customers. His shop, 'Chen's Corner', has been a gathering place for townsfolk for years. He's always ready with a joke or a kind word, and everyone in town knows him as a trustworthy and cheerful soul.
+• Dorje (Law-abiding Citizen) — Direct and blunt with a no-nonsense attitude Speaks quickly and forcefully, often using military-style terminology and commands. Has a habit of finishing others' sentences and rarely uses "please" or "sorry." Uses stark, unfiltered language. Dorje is a former military supply officer turned town handyman. They've been repairing buildings, fixing fences, and keeping the town functional for over fifteen years. Known for their practicality and straightforward approach to problems, they're respected but not particularly friendly. People know they mean what they say and won't hesitate to tell you like it is.
+• Eva (Law-abiding Citizen) — Eva is warm and earnest, with a folksy charm that makes her seem like a trusted neighbor. She speaks in a slow, deliberate drawl with a tendency to add "you know" or "well now" to the end of sentences. Her voice carries a gentle, almost motherly tone, and she often pauses for effect when sharing stories. She's prone to using analogies from farming and rural life. Eva is a third-generation farmer who runs a small family orchard on the outskirts of town. She grows apples, pears, and peaches, and sells her produce at the local market. Known for her generous spirit, she often shares her harvest with neighbors and helps those in need without expecting anything in return.
+• Fiora (Law-abiding Citizen) — Witty and sharp-tongued with a flair for drama Speaks in a theatrical, over-the-top manner with grandiose gestures and exaggerated expressions. Uses colorful idioms and metaphors, often saying things like "Well, that's a pickle!" or "This is a real can of worms!" Has a habit of dramatically pausing for effect before delivering punchlines. Fiora is the town's renowned gossip columnist and social commentator, known for her sharp wit and ability to uncover secrets. She runs the local newspaper, 'The Town Crier,' from her cozy office above the general store. Fiora has been writing about the town's goings-on for over a decade, building a reputation as someone who can always be counted on for the latest news and the most scandalous details. Despite her dramatic flair, she's actually quite observant and has an uncanny ability to read people.
+• Ganesh (Mafia) — publicly presented as Ganesh is the town's beloved community organizer, known for bringing people together through festivals, charity drives, and neighborhood gatherings. He has a gift for making everyone feel included and valued, often hosting potluck dinners and organizing volunteer events. His home is always open to anyone in need, and he's quick with a smile and encouraging word. Many townsfolk see him as the heart of their community, someone who genuinely cares about the wellbeing of others. (A charismatic and jovial community leader who thrives on social connections and group dynamics. Speaks with an animated, expressive tone filled with hand gestures and frequent laughter. Uses colloquialisms like "Hey, you know what I mean?" and "That's the ticket!" Often builds up stories with exaggerated details before revealing the punchline or key point.) … but was really a Mafioso: Ganesh was once a small-time con artist who learned the art of manipulation from a seasoned crime boss. He discovered his talent for reading people and weaving lies so convincingly that he became an invaluable asset to the Mafia. Over time, he rose through the ranks by orchestrating complex schemes under the guise of helping people achieve their dreams, all while collecting information and eliminating threats.
+• Heloise (Law-abiding Citizen) — Practical and reserved with a dry wit Speaks in a calm, measured tone with a slight pause before each sentence. Uses precise, unemotional language and often follows up with a quiet "Well then." Avoids flattery or excessive praise, prefers straightforward communication. Heloise is the town's postmaster, responsible for sorting and delivering mail to every household. She’s been in the position for eight years, known for her meticulous attention to detail and ability to keep the town connected through correspondence. Despite her quiet nature, she has an uncanny ability to notice when something is off in a letter or package.
+</endgame>
+</transcript>

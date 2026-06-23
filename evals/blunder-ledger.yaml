@@ -1462,3 +1462,215 @@ metrics:
     ci_low: 0.0
     ci_high: 0.13319649395317873
 notes: 'spec 026/027 (ollama): active scripted player, RANDOM dealt seat role, 6/2 lineup, n=20 vs passive baseline 2026-06-19T18-33-37'
+---
+run:
+  date: '2026-06-22'
+  duration_seconds: 18009.841
+  metrics_version: 1
+  transcript_dir: '2026-06-22T12-02-11'
+code:
+  commit: 'b6d04a822ee87e6dd5648ba0a6fe6db3b39a813c'
+  branch: 'main'
+  dirty: true
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.30.10'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 20
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 20
+  games_completed: 20
+  games_failed_early: 0
+  duration_seconds: 18009.841
+outcomes:
+  games: 20
+  law_abiding:
+    wins: 5
+    rate: 0.25
+    ci_low: 0.11186005278940309
+    ci_high: 0.4687050099580636
+  mafia:
+    wins: 15
+    rate: 0.75
+    ci_low: 0.5312949900419365
+    ci_high: 0.888139947210597
+  scripted_side:
+    side: 'law_abiding'
+    wins: 7
+    rate: 0.35
+    ci_low: 0.18118954786794464
+    ci_high: 0.5671494897805354
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 41
+    mafia: 1
+  by_day:
+    day_1: 21
+    day_2: 11
+    day_3: 9
+    day_4: 1
+metrics:
+  repetition:
+    rate: 0.6368455931080186
+    count: 961
+    denominator: 1509
+    ci_low: 0.6122617750275645
+    ci_high: 0.6607344196831044
+  third_person_self_talk:
+    rate: 0.00728959575878065
+    count: 11
+    denominator: 1509
+    ci_low: 0.004075200837290259
+    ci_high: 0.01300629665722602
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 24
+    ci_low: 0.0
+    ci_high: 0.13798057582897535
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 118
+    ci_low: 0.0
+    ci_high: 0.03152946120208532
+  peer_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 1
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 49
+    ci_low: 0.0
+    ci_high: 0.07270029673590504
+  persona_near_dup:
+    rate: 0.01904761904761905
+    count: 8
+    denominator: 420
+    ci_low: 0.009682513074138328
+    ci_high: 0.037131202238374655
+notes: 'spec031 AFTER + post-030 batch (ollama @b6d04a8): 031 persona-after + closes 024/025/026/028/030 effort-not-results'
+---
+run:
+  date: '2026-06-22'
+  duration_seconds: 5073.771
+  metrics_version: 1
+  transcript_dir: '2026-06-22T09-20-59'
+code:
+  commit: 'b6d04a822ee87e6dd5648ba0a6fe6db3b39a813c'
+  branch: 'main'
+  dirty: true
+provider:
+  name: 'bedrock'
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  base_url: null
+  games: 20
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 20
+  games_completed: 20
+  games_failed_early: 0
+  duration_seconds: 5073.771
+outcomes:
+  games: 20
+  law_abiding:
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.16113012549493322
+  mafia:
+    wins: 20
+    rate: 1.0
+    ci_low: 0.8388698745050667
+    ci_high: 1.0
+  scripted_side:
+    side: 'law_abiding'
+    wins: 5
+    rate: 0.25
+    ci_low: 0.11186005278940309
+    ci_high: 0.4687050099580636
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 19
+    mafia: 0
+  by_day:
+    day_1: 1
+    day_2: 7
+    day_3: 11
+metrics:
+  repetition:
+    rate: 0.7095265926358855
+    count: 1214
+    denominator: 1711
+    ci_low: 0.6875647960865808
+    ci_high: 0.730549623344345
+  third_person_self_talk:
+    rate: 0.009935710111046173
+    count: 17
+    denominator: 1711
+    ci_low: 0.006212543023898542
+    ci_high: 0.015854568014228833
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 17
+    ci_low: 0.0
+    ci_high: 0.18432366037156456
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 66
+    ci_low: 0.0
+    ci_high: 0.05500446725160935
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 13
+    ci_low: 0.0
+    ci_high: 0.22810184305529166
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 420
+    ci_low: 0.0
+    ci_high: 0.00906376344370161
+notes: 'spec031 AFTER + post-030 batch (nova @b6d04a8): 031 persona-after + closes 024/025/026/028/030 effort-not-results; temp ledger, merged post-run'

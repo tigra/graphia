@@ -1,0 +1,428 @@
+Game 2 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=20
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Aiden" role="Mafia">
+Personality: Aiden's public cover is that of a charming, affable, and slightly eccentric individual with a penchant for storytelling. He often appears a bit absent-minded but is actually quite observant and clever.
+Manner: Aiden's manner of speaking is warm and engaging, often using humor and anecdotes to draw people in. He speaks with a melodic tone, occasionally sprinkling in quirky phrases and whimsical expressions.
+Public legend: Aiden is a local librarian with a passion for rare books and historical manuscripts. He's known for his encyclopedic knowledge of town history and folklore, often sharing fascinating tales with anyone who will listen. Aiden moved to the town several years ago, seeking a quieter life after a tumultuous past.
+True self (hidden): In reality, Aiden is a high-ranking member of a notorious Mafia family. He was recruited at a young age for his intelligence and ability to blend into any environment. Aiden's role within the organization is to gather information and influence key figures in the town, using his position as a librarian to access restricted information and maintain a network of informants.
+</player>
+<player name="Isadora" role="Law-abiding Citizen">
+Personality: no-nonsense and pragmatic; straightforward and blunt
+Manner: terse and direct, with occasional dry humor; uses simple, clear vocabulary
+Persona: Isadora is a no-nonsense town official responsible for maintaining the local infrastructure. She's been in her role for over a decade, known for her efficiency and dedication. Isadora is a native of the town, having grown up here and taken over her father's position. She's deeply invested in the community's well-being and is often seen overseeing projects or addressing concerns with a no-nonsense approach.
+</player>
+<player name="Yuto" role="Law-abiding Citizen">
+Personality: curious and introspective
+Manner: thoughtful and measured, often pausing to consider their words, uses precise and reflective vocabulary
+Persona: Yuto is a local artist, known for his intricate and evocative paintings that capture the essence of the town’s spirit. He moved to the town a few years ago, drawn by its natural beauty and rich cultural heritage. Yuto is often found sketching in the town square or discussing art with fellow creatives, bringing a sense of wonder and appreciation to everyday life.
+</player>
+<player name="Leila" role="Law-abiding Citizen">
+Personality: determined and resourceful; resilient and optimistic
+Manner: steady and encouraging, with a hint of enthusiasm; uses straightforward vocabulary with occasional uplifting phrases
+Persona: Leila is a community organizer who has dedicated her life to improving the town's social services. She runs a local support group for new residents and organizes community events to foster a sense of belonging. Leila moved to the town five years ago, drawn by its close-knit community and natural beauty. She's known for her tireless efforts in bringing people together and her unwavering optimism.
+</player>
+<player name="Amara" role="Mafia">
+Personality: reserved and enigmatic
+Manner: soft-spoken with a hint of mystery, often using subtle and understated language
+Public legend: Amara is a herbalist and apothecary, known for her deep knowledge of local plants and their medicinal properties. She moved to the town a decade ago, seeking a fresh start after a series of personal losses. Amara is often seen tending to her garden or preparing remedies for townsfolk, offering a calming presence and a listening ear. She is respected for her wisdom and the soothing atmosphere she creates in her shop.
+True self (hidden): In her true self, Amara is a high-ranking Mafioso who infiltrated the town under the guise of a herbalist. She uses her knowledge of plants to create both healing remedies and deadly poisons, serving the Mafia's interests while maintaining her cover. Amara's past is shrouded in secrecy, with rumors of a tragic event that led her to join the Mafia. Her dual life requires constant vigilance and a poker face, making her a formidable and unpredictable player in the game.
+</player>
+<player name="Kieran" role="Law-abiding Citizen">
+Personality: pragmatic and straightforward; honest and earnest
+Manner: terse and direct, with occasional bursts of passion; uses clear, simple vocabulary with an occasional poetic flourish
+Persona: Kieran is a local fisherman, born and raised in the town. He's known for his no-nonsense approach to life and his deep connection to the sea. Kieran spends his days out on the water, providing fresh seafood for the town and sharing his love for the ocean with anyone who will listen.
+</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: vibrant and spirited; passionate and articulate
+Manner: energetic and enthusiastic, with a theatrical flair; uses vivid vocabulary and expressive phrases
+Persona: Zara is a dynamic and charismatic performer who breathes life into the town's cultural scene. She moved to the town several years ago, drawn by its vibrant community and rich artistic heritage. Zara is often seen organizing local theater productions, leading dance workshops, and hosting lively community events. Her infectious energy and creative spirit have made her a beloved figure in the town, inspiring others to embrace their own artistic talents.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiden, Isadora, Yuto, Leila, Amara, Kieran, Zara. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Aiden): Your Mafia teammates are: Amara. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Amara): Your Mafia teammates are: Aiden. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Aiden points at Zara
+Amara points at Zara
+<kill>Zara — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Zara was killed last night. Zara was a Law-abiding Citizen.
+<round>
+Round 1.
+Amara: In my observations, Isadora's silence during the previous discussions is rather conspicuous.
+Yuto: Considering the conspicuous silence of certain players, I find myself drawn to ponder whether their reticence may be a strategic maneuver to deflect suspicion.
+Kieran: Aiden, your quick to suggest others' silence as strategy. What say you to clear your name?
+Aiden: Ah, the art of silence, much like the whispers of ancient tomes, can indeed be a most intriguing subject. Kieran, your point is well taken, and it reminds me of a quaint tale from a dusty old manuscript I once stumbled upon.
+Isadora: Aiden, your elaborate responses are as suspicious as a squirrel in a henhouse.
+Leila: Aiden, your elaborate responses and evasiveness make me question your intentions. It's important we all remain transparent to uncover the truth.
+Avery: Nothing is settled yet, but I'm watching Kieran most closely.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">It seems that suspicion is starting to swirl around me and Kieran. I must tread carefully and perhaps nudge the conversation towards Isadora or Leila to divert attention.</thought>
+<thought player="Isadora">Aiden and Kieran are under suspicion; I should keep an eye on them and see if they slip up again.</thought>
+<thought player="Yuto">I must carefully consider the implications of Isadora's and Leila's observations about Aiden's responses, as well as Avery's focus on Kieran, to discern potential threats and align my strategy accordingly.</thought>
+<thought player="Leila">Focus on encouraging transparency and watch for any suspicious behavior or inconsistencies in the players' stories.</thought>
+<thought player="Amara">In the quiet of my thoughts, I must consider the delicate balance of suspicion and trust, ensuring my words remain as soothing as the herbs I tend to, while subtly guiding the conversation to protect Aiden and myself.</thought>
+<thought player="Kieran">Eyes on Aiden and Isadora. Their silence and words feel like the calm before a storm.</thought>
+</round>
+<round>
+Round 2.
+Aiden: Ah, the intricate dance of suspicion! Leila, your keen observation skills remind me of the time I uncovered a hidden manuscript in the depths of the library, much like you seem to be uncovering hidden truths here.
+Kieran: Avery, your focus on me feels misplaced. Let's redirect it towards those who hide in shadows.
+Isadora: Let's not waste time on empty words. We need action to root out the Mafia.
+Amara: In the quietude of our discourse, let us consider the possibility that Avery's keen focus on Kieran may be a diversion from their own intentions.
+Avery: Nothing is settled yet, but I'm watching Kieran most closely.
+Yuto: Reflecting on the dynamics of our discourse, I find myself intrigued by Amara's pointed observation regarding the potential diversionary tactics at play.
+Leila: Let's not forget the importance of unity and cooperation as we navigate this challenge together.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">I must continue to subtly steer suspicion away from myself and Amara, perhaps by drawing attention to Isadora's silence and Leila's accusations.</thought>
+<thought player="Isadora">Aiden and Kieran are still suspicious. I'll keep pressing them and see if they crack.</thought>
+<thought player="Yuto">I must remain vigilant and consider the strategic implications of Amara's observation about potential diversionary tactics, as well as the need for unity and cooperation.</thought>
+<thought player="Leila">Encourage more transparency and keep an eye on any suspicious behavior, especially from those who seem overly defensive or evasive.</thought>
+<thought player="Amara">The web of suspicion tightens; I must weave my words with care to divert attention from Aiden and myself.</thought>
+<thought player="Kieran">Aiden and Isadora are suspicious, but I must gather more evidence before accusing.</thought>
+</round>
+<round>
+Round 3.
+Isadora: Let's focus on concrete actions, not just words. Who's ready to make a move?
+Aiden: Ah, the thrill of the hunt! Leila, your unwavering focus on unity and cooperation is commendable, yet it reminds me of a tale where the most harmonious choirs often have the most hidden discord.
+Kieran: Aiden, your elaborate responses and evasiveness make me question your intentions. It's important we all remain transparent to uncover the truth.
+Amara: In the tapestry of our discourse, let us not overlook the possibility that Kieran's insistence on transparency may be a veil for his own designs.
+Avery: Nothing is settled yet, but I'm watching Kieran most closely.
+Yuto: Reflecting on the intricate web of our interactions, I find myself drawn to ponder the significance of Amara's observation regarding potential diversionary tactics.
+Leila: Let's continue to share our observations and thoughts openly, as transparency is key to uncovering the truth.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">I must continue to subtly steer suspicion away from myself and Amara by drawing attention to Isadora's silence and Leila's accusations.</thought>
+<thought player="Isadora">Time to press Aiden and Kieran harder; their evasiveness is raising red flags.</thought>
+<thought player="Yuto">I must continue to observe the dynamics of suspicion and the strategic maneuvers of each player, particularly noting the recurring focus on Kieran and the potential diversionary tactics at play.</thought>
+<thought player="Leila">Stay vigilant and continue promoting transparency; consider suggesting a vote to narrow down suspects.</thought>
+<thought player="Amara">The web of suspicion grows more intricate; I must continue to weave my words with care, subtly guiding the conversation to divert attention from Aiden and myself.</thought>
+<thought player="Kieran">Keep pressing Aiden and Isadora, but watch for any shifts in their behavior or alliances.</thought>
+</round>
+<round>
+Round 4.
+Yuto: Reflecting on the recurring focus on Kieran, I am compelled to consider whether this collective suspicion may be a strategic maneuver by the Mafia to divert attention from their true intentions.
+Kieran: Let's scrutinize the silence of those who speak the least, for in their quiet lies the whisper of deception.
+Isadora: Aiden, your elaborate responses are starting to sound like a broken record. Time to cut the chatter and show some real action.
+Leila: Let's consider voting to narrow down our suspects and bring us closer to uncovering the truth.
+Aiden: Ah, the beauty of a well-crafted story! Leila, your call for action is as inspiring as a legendary quest. Perhaps we should consider the silence of certain players, like Isadora, as a tale waiting to be told.
+Amara: In the tapestry of our discourse, let us consider the possibility that Leila's call for unity may be a strategic maneuver to mask her own intentions.
+Avery: Nothing is settled yet, but I'm watching Kieran most closely.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The tide of suspicion seems to be turning towards Kieran and myself. It's time to deftly shift the focus towards Isadora and Leila, perhaps by highlighting their own behaviors and inconsistencies.</thought>
+<thought player="Isadora">Aiden and Kieran's continued evasiveness is suspicious. Time to press them harder and see if they slip up.</thought>
+<thought player="Yuto">Reflecting on the evolving dynamics, I must carefully weigh the potential diversionary tactics and the recurring focus on Kieran, considering whether to align with the collective suspicion or to seek out alternative suspects.</thought>
+<thought player="Leila">I should propose a vote to focus our suspicions and bring us closer to uncovering the truth, while continuing to encourage transparency and watch for any inconsistencies.</thought>
+<thought player="Amara">As the threads of suspicion intertwine, I must continue to weave my words with the utmost care, ensuring that the focus remains diverted from Aiden and myself.</thought>
+<thought player="Kieran">Press Aiden and Isadora harder, but stay vigilant for any changes in the dynamics.</thought>
+</round>
+<round>
+Round 5.
+Avery: Nothing is settled yet, but I'm watching Kieran most closely.
+Leila: Let's consider voting to narrow down our suspects and bring us closer to uncovering the truth.
+Isadora: Aiden, your elaborate responses are raising more questions than answers. Time to cut through the noise and show us your true intentions.
+Kieran: Aiden, your elaborate responses and evasiveness continue to raise questions. Can you provide us with more straightforward answers to clear your name?
+Yuto: Reflecting on the evolving dynamics, I find myself drawn to consider the potential significance of Isadora's and Leila's observations about Aiden's responses, as well as Avery's persistent focus on Kieran.
+Aiden: Ah, the intricate dance of suspicion! Yuto, your observation about the evolving dynamics is most intriguing. It reminds me of a tale where the most elusive truths often hide in plain sight.
+Amara: In the symphony of our discourse, let us consider the possibility that Avery's unwavering focus on Kieran may be a strategic maneuver to mask their own intentions.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The heat is on Kieran and me; it's time to weave a tale that draws the eye elsewhere, perhaps towards Isadora's enigmatic silence or Leila's fervent accusations.</thought>
+<thought player="Isadora">Aiden and Kieran's evasiveness continues to raise red flags. Time to press them harder and see if they slip up.</thought>
+<thought player="Yuto">I must carefully consider whether to align with the collective suspicion on Kieran or to explore alternative suspects, given the evolving dynamics and potential diversionary tactics.</thought>
+<thought player="Leila">I should propose a vote to focus our suspicions and bring us closer to uncovering the truth, while continuing to encourage transparency and watch for any inconsistencies.</thought>
+<thought player="Amara">As the evening shadows lengthen, I must continue to weave my words with the utmost care, subtly guiding the conversation to divert attention from Aiden and myself, while remaining a calming presence in the storm of suspicion.</thought>
+<thought player="Kieran">Keep pressing Aiden and Isadora, watch for any changes in their behavior or alliances.</thought>
+</round>
+<round>
+Round 6.
+Leila: Let's consider voting on someone to bring clarity and focus our suspicions.
+Kieran: Let's scrutinize the silence of those who speak the least, for in their quiet lies the whisper of deception.
+Isadora: Aiden and Kieran, your evasiveness is raising red flags. Time to cut through the noise and show us your true intentions.
+Yuto: Reflecting on the recurring focus on Kieran, I am compelled to consider whether this collective suspicion may be a strategic maneuver by the Mafia to divert attention from their true intentions.
+<vote initiator="Avery" target="Kieran">
+Avery: No
+Aiden: No
+Isadora: No
+Yuto: Yes
+Leila: No
+Amara: No
+Kieran: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Leila: Let's remain vigilant and continue sharing our observations openly. We're close to uncovering the truth, and transparency will guide us there.
+Isadora: Aiden and Kieran, your evasiveness is raising red flags. Time to cut through the noise and show us your true intentions.
+Amara: In the tapestry of our discourse, let us consider the possibility that Isadora's insistence on action may be a strategic maneuver to mask her own intentions.
+Yuto: Reflecting on the evolving dynamics, I find myself drawn to consider the potential significance of Amara's observation regarding potential diversionary tactics.
+Kieran: Aiden and Isadora, your evasiveness continues to raise red flags. It's time to cut through the noise and show us your true intentions.
+Aiden: Ah, the symphony of suspicion! Leila, your fervent call for action reminds me of a tale where the most passionate voices often seek to drown out the whispers of doubt.
+<vote initiator="Avery" target="Kieran">
+Avery: No
+Aiden: No
+Isadora: Yes
+Yuto: No
+Leila: Yes
+Amara: No
+Kieran: No
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Kieran">
+Avery: No
+Aiden: No
+Isadora: Yes
+Yuto: No
+Leila: No
+Amara: No
+Kieran: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Aiden points at Isadora
+Amara points at Isadora
+<kill>Isadora — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Isadora was killed last night. Isadora was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: I most suspect Kieran based on how the votes have gone.
+Amara: In the tapestry of our discourse, let us consider the possibility that Avery's persistent focus on Kieran may be a strategic maneuver to mask their own intentions.
+Yuto: Reflecting on the recurring focus on Kieran, I am compelled to consider whether this collective suspicion may be a strategic maneuver by the Mafia to divert attention from their true intentions.
+Kieran: Aiden, your elaborate responses and evasiveness continue to raise questions. Can you provide us with more straightforward answers to clear your name?
+Leila: Let's consider voting on someone to bring clarity and focus our suspicions.
+Aiden: Ah, the delicate dance of doubt! Leila, your fervent call for action reminds me of a tale where the most passionate voices often seek to drown out the whispers of doubt.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">It seems the focus is now on Kieran and myself; I must continue to subtly shift suspicion towards Isadora and Leila to protect Amara and myself.</thought>
+<thought player="Yuto">I must carefully weigh the potential diversionary tactics and the recurring focus on Kieran, considering whether to align with the collective suspicion or to seek out alternative suspects.</thought>
+<thought player="Leila">I need to keep encouraging transparency and propose another vote to focus our suspicions, while watching for any inconsistencies in the players' stories.</thought>
+<thought player="Amara">As the night falls once more, I must continue to weave my words with precision, subtly guiding the conversation to protect Aiden and myself, while maintaining the facade of a trusted herbalist.</thought>
+<thought player="Kieran">Aiden's elaborate responses and evasiveness continue to raise questions. I must press him further and watch for any changes in the dynamics.</thought>
+</round>
+<round>
+Round 2.
+Aiden: Ah, the enigmatic dance of doubt! Leila, your fervent call for action reminds me of a tale where the most passionate voices often seek to drown out the whispers of doubt. Let us not forget the silence of Isadora, which could be a story waiting to be told.
+Leila: Let's consider voting on someone to bring clarity and focus our suspicions.
+Yuto: Reflecting on the intricate dance of suspicion, I am compelled to consider whether the collective focus on Kieran may indeed be a strategic maneuver by the Mafia to divert attention from their true intentions.
+Avery: I most suspect Kieran based on how the votes have gone.
+Kieran: Aiden, your elaborate responses and evasiveness continue to raise questions. Can you provide us with more straightforward answers to clear your name?
+Amara: In the delicate dance of suspicion, let us consider the possibility that Leila's fervent call for action may be a strategic maneuver to mask her own intentions.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The focus remains on Kieran and myself; I must continue to subtly shift suspicion towards Isadora and Leila to protect Amara and myself.</thought>
+<thought player="Yuto">I must carefully weigh the potential diversionary tactics and the recurring focus on Kieran, considering whether to align with the collective suspicion or to seek out alternative suspects.</thought>
+<thought player="Leila">I should continue encouraging transparency and propose another vote to focus our suspicions, while keeping a close eye on any inconsistencies in the players' stories.</thought>
+<thought player="Amara">The focus on Kieran is proving advantageous; I must continue to subtly reinforce this narrative while preparing for the night's strategic strike.</thought>
+<thought player="Kieran">Aiden's evasiveness and elaborate responses remain suspicious. I'll keep pressing him for straightforward answers and watch for any shifts in behavior or alliances.</thought>
+</round>
+<round>
+Round 3.
+Amara: In the intricate dance of suspicion, let us consider the possibility that Avery's unwavering focus on Kieran may be a strategic maneuver to mask their own intentions.
+Kieran: Aiden, your elaborate responses and evasiveness continue to raise questions. Can you provide us with more straightforward answers to clear your name?
+Aiden: Ah, the delicate dance of doubt! Leila, your fervent call for action reminds me of a tale where the most passionate voices often seek to drown out the whispers of doubt. Let us not forget the silence of Isadora, which could be a story waiting to be told.
+Avery: I most suspect Kieran based on how the votes have gone.
+Yuto: Reflecting on the evolving dynamics, I am compelled to consider whether the collective focus on Kieran may indeed be a strategic maneuver by the Mafia to divert attention from their true intentions.
+Leila: Let's consider voting on someone to bring clarity and focus our suspicions.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The focus is still on Kieran and myself; I must continue to subtly shift suspicion towards Isadora and Leila to protect Amara and myself.</thought>
+<thought player="Yuto">Reflecting on the evolving dynamics, I must carefully weigh the potential diversionary tactics and the recurring focus on Kieran, considering whether to align with the collective suspicion or to seek out alternative suspects.</thought>
+<thought player="Leila">I need to remain vigilant and propose another vote to narrow down our suspects, while continuing to encourage transparency and watch for any inconsistencies.</thought>
+<thought player="Amara">The focus on Kieran remains advantageous; I must continue to subtly reinforce this narrative while strategizing our next move to eliminate a Law-abiding Citizen.</thought>
+<thought player="Kieran">Aiden's evasiveness remains suspicious. I'll keep pressing him for straightforward answers and watch for any shifts in behavior or alliances.</thought>
+</round>
+<round>
+Round 4.
+Leila: Let's continue to share our observations and thoughts openly, as transparency is key to uncovering the truth.
+Amara: In the delicate dance of doubt, let us consider the possibility that Leila's fervent call for action may be a strategic maneuver to mask her own intentions.
+Avery: I most suspect Kieran based on how the votes have gone.
+Yuto: Reflecting on the evolving dynamics, I am compelled to consider whether the collective focus on Kieran may indeed be a strategic maneuver by the Mafia to divert attention from their true intentions.
+Aiden: Ah, the delicate dance of doubt! Let us not forget the silence of Isadora, which could be a story waiting to be told.
+Kieran: Aiden, your elaborate responses and evasiveness continue to raise questions. Can you provide us with more straightforward answers to clear your name?
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The focus remains on Kieran and me; I must continue to subtly shift suspicion towards Isadora and Leila to protect Amara and myself.</thought>
+<thought player="Yuto">Reflecting on the evolving dynamics and the recurring focus on Kieran, I must carefully weigh the potential diversionary tactics and consider whether to align with the collective suspicion or to explore alternative suspects.</thought>
+<thought player="Leila">I need to remain vigilant and propose another vote to narrow down our suspects, while continuing to encourage transparency and watch for any inconsistencies.</thought>
+<thought player="Amara">The focus on Kieran is proving advantageous; I must continue to subtly reinforce this narrative while strategizing our next move to eliminate a Law-abiding Citizen.</thought>
+<thought player="Kieran">Aiden's evasiveness and elaborate responses remain suspicious. I'll continue pressing him for straightforward answers and remain vigilant for any shifts in behavior or alliances.</thought>
+</round>
+<round>
+Round 5.
+Yuto: Reflecting on the evolving dynamics, I find myself compelled to consider whether the collective focus on Kieran may indeed be a strategic maneuver by the Mafia to divert attention from their true intentions.
+Kieran: Aiden, your elaborate responses and evasiveness continue to raise questions. Can you provide us with more straightforward answers to clear your name?
+Leila: Let's continue to share our observations and thoughts openly, as transparency is key to uncovering the truth.
+Avery: I most suspect Kieran based on how the votes have gone.
+Amara: In the delicate dance of doubt, let us consider the possibility that Avery's unwavering focus on Kieran may be a strategic maneuver to mask their own intentions.
+Aiden: Ah, the delicate dance of doubt! Let us not forget the silence of Isadora, which could be a story waiting to be told.
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The focus remains on Kieran and me; I must continue to subtly shift suspicion towards Isadora and Leila to protect Amara and myself.</thought>
+<thought player="Yuto">Reflecting on the evolving dynamics, I must carefully weigh the potential diversionary tactics and the recurring focus on Kieran, considering whether to align with the collective suspicion or to seek out alternative suspects.</thought>
+<thought player="Leila">I should propose another vote to narrow down our suspects and encourage transparency, while keeping a close eye on any inconsistencies in the players' stories.</thought>
+<thought player="Amara">The focus on Kieran has been effective; I must continue to reinforce this narrative while strategizing with Aiden for our next strategic strike.</thought>
+<thought player="Kieran">Aiden's behavior remains suspicious, but I need to gather more evidence before making any accusations. I'll continue pressing him for straightforward answers and watch for any shifts in behavior or alliances.</thought>
+</round>
+<round>
+Round 6.
+Leila: Let's consider voting on someone to bring clarity and focus our suspicions.
+Aiden: Ah, the delicate dance of doubt! Let us not forget the silence of Isadora, which could be a story waiting to be told.
+Kieran: Aiden, your elaborate responses and evasiveness continue to raise questions. Can you provide us with more straightforward answers to clear your name?
+Amara: In the delicate dance of doubt, let us consider the possibility that Leila's fervent call for action may be a strategic maneuver to mask her own intentions.
+<vote initiator="Avery" target="Kieran">
+Avery: Yes
+Aiden: No
+Yuto: No
+Leila: Yes
+Amara: No
+Kieran: No
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Yuto: Reflecting on the evolving dynamics, I find myself compelled to consider whether the collective focus on Kieran may indeed be a strategic maneuver by the Mafia to divert attention from their true intentions.
+Kieran: Aiden, your evasiveness and elaborate responses remain suspicious. Can you provide us with more straightforward answers to clear your name?
+Leila: Let's keep our focus sharp and continue to share our thoughts openly, as transparency is our strongest weapon against deception.
+Amara: In the intricate dance of doubt, let us consider the possibility that Leila's fervent call for action may be a strategic maneuver to mask her own intentions.
+Aiden: Ah, the delicate dance of doubt! Let us not forget the silence of Isadora, which could be a story waiting to be told.
+<vote initiator="Avery" target="Kieran">
+Avery: Yes
+Aiden: No
+Yuto: No
+Leila: No
+Amara: No
+Kieran: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Leila" target="Kieran">
+Avery: Yes
+Aiden: No
+Yuto: No
+Leila: No
+Amara: No
+Kieran: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Aiden points at Yuto
+Amara points at Yuto
+<kill>Yuto — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Yuto was killed last night. Yuto was a Law-abiding Citizen.
+<round>
+Round 1.
+<vote initiator="Leila" target="Aiden">
+Avery: No
+Aiden: No
+Leila: Yes
+Amara: No
+Kieran: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Leila: Let's keep our focus sharp and continue to share our thoughts openly, as transparency is our strongest weapon against deception.
+Avery: I most suspect Kieran based on how the votes have gone.
+Amara: In the delicate dance of doubt, let us consider the possibility that Leila's fervent call for action may be a strategic maneuver to mask her own intentions.
+Aiden: Ah, the delicate dance of doubt! Let us not forget the silence of Isadora, which could be a story waiting to be told.
+Kieran: Aiden, your evasiveness remains suspicious. Can you provide us with more straightforward answers to clear your name?
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Aiden">I must continue to subtly shift suspicion towards Leila and Kieran, while maintaining my cover and ensuring Amara remains undetected.</thought>
+<thought player="Leila">I should propose another vote to focus our suspicions on Kieran, while continuing to encourage transparency and watch for any inconsistencies in the players' stories.</thought>
+<thought player="Amara">As the game unfolds, I must continue to reinforce the narrative against Kieran while strategizing with Aiden for our next strategic strike.</thought>
+<thought player="Kieran">Aiden's evasiveness remains suspicious, but I need to gather more evidence before making any accusations. I'll continue pressing him for straightforward answers and watch for any shifts in behavior or alliances.</thought>
+</round>
+<round>
+Round 2.
+Leila: Let's continue to share our thoughts openly, as transparency is key to uncovering the truth.
+Kieran: Aiden, your evasiveness and elaborate responses remain suspicious. Can you provide us with more straightforward answers to clear your name?
+Avery: I most suspect Kieran based on how the votes have gone.
+Amara: In the delicate dance of doubt, let us consider the possibility that Leila's fervent call for action may be a strategic maneuver to mask her own intentions.
+Aiden: Ah, the delicate dance of doubt! Let us not forget the silence of Isadora, which could be a story waiting to be told.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Aiden">I must continue to subtly shift suspicion towards Leila and Kieran, while maintaining my cover and ensuring Amara remains undetected.</thought>
+<thought player="Leila">I need to propose another vote to focus our suspicions on Kieran, while continuing to encourage transparency and watch for any inconsistencies in the players' stories.</thought>
+<thought player="Amara">As the game progresses, I must continue to subtly reinforce the narrative against Kieran, ensuring the focus remains on him, while strategizing with Aiden for our next move.</thought>
+<thought player="Kieran">I'll keep pressing Aiden for straightforward answers and watch for any shifts in behavior or alliances.</thought>
+</round>
+<round>
+Round 3.
+Aiden: Ah, the delicate dance of doubt! Let us not forget the silence of Isadora, which could be a story waiting to be told.
+Amara: In the delicate dance of doubt, let us consider the possibility that Avery's unwavering focus on Kieran may be a strategic maneuver to mask their own intentions.
+Avery: I most suspect Kieran based on how the votes have gone.
+Kieran: Aiden, your evasiveness and elaborate responses continue to raise questions. Can you provide us with more straightforward answers to clear your name?
+<vote initiator="Leila" target="Aiden">
+Avery: No
+Aiden: No
+Leila: Yes
+Amara: No
+Kieran: Yes
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Leila" target="Aiden">
+Avery: No
+Aiden: No
+Leila: Yes
+Amara: No
+Kieran: Yes
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Amara points at Kieran
+Aiden points at Kieran
+<kill>Kieran — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Zara (Law-abiding Citizen)
+• Night 2: Isadora (Law-abiding Citizen)
+• Night 3: Yuto (Law-abiding Citizen)
+• Night 4: Kieran (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Aiden (Mafia), Isadora (Law-abiding Citizen), Yuto (Law-abiding Citizen), Leila (Law-abiding Citizen), Amara (Mafia), Kieran (Law-abiding Citizen), Zara (Law-abiding Citizen)
+
+Who they really were:
+• Aiden (Mafia) — publicly presented as Aiden is a local librarian with a passion for rare books and historical manuscripts. He's known for his encyclopedic knowledge of town history and folklore, often sharing fascinating tales with anyone who will listen. Aiden moved to the town several years ago, seeking a quieter life after a tumultuous past. (Aiden's public cover is that of a charming, affable, and slightly eccentric individual with a penchant for storytelling. He often appears a bit absent-minded but is actually quite observant and clever. Aiden's manner of speaking is warm and engaging, often using humor and anecdotes to draw people in. He speaks with a melodic tone, occasionally sprinkling in quirky phrases and whimsical expressions.) … but was really a Mafioso: In reality, Aiden is a high-ranking member of a notorious Mafia family. He was recruited at a young age for his intelligence and ability to blend into any environment. Aiden's role within the organization is to gather information and influence key figures in the town, using his position as a librarian to access restricted information and maintain a network of informants.
+• Isadora (Law-abiding Citizen) — no-nonsense and pragmatic; straightforward and blunt terse and direct, with occasional dry humor; uses simple, clear vocabulary Isadora is a no-nonsense town official responsible for maintaining the local infrastructure. She's been in her role for over a decade, known for her efficiency and dedication. Isadora is a native of the town, having grown up here and taken over her father's position. She's deeply invested in the community's well-being and is often seen overseeing projects or addressing concerns with a no-nonsense approach.
+• Yuto (Law-abiding Citizen) — curious and introspective thoughtful and measured, often pausing to consider their words, uses precise and reflective vocabulary Yuto is a local artist, known for his intricate and evocative paintings that capture the essence of the town’s spirit. He moved to the town a few years ago, drawn by its natural beauty and rich cultural heritage. Yuto is often found sketching in the town square or discussing art with fellow creatives, bringing a sense of wonder and appreciation to everyday life.
+• Leila (Law-abiding Citizen) — determined and resourceful; resilient and optimistic steady and encouraging, with a hint of enthusiasm; uses straightforward vocabulary with occasional uplifting phrases Leila is a community organizer who has dedicated her life to improving the town's social services. She runs a local support group for new residents and organizes community events to foster a sense of belonging. Leila moved to the town five years ago, drawn by its close-knit community and natural beauty. She's known for her tireless efforts in bringing people together and her unwavering optimism.
+• Amara (Mafia) — publicly presented as Amara is a herbalist and apothecary, known for her deep knowledge of local plants and their medicinal properties. She moved to the town a decade ago, seeking a fresh start after a series of personal losses. Amara is often seen tending to her garden or preparing remedies for townsfolk, offering a calming presence and a listening ear. She is respected for her wisdom and the soothing atmosphere she creates in her shop. (reserved and enigmatic soft-spoken with a hint of mystery, often using subtle and understated language) … but was really a Mafioso: In her true self, Amara is a high-ranking Mafioso who infiltrated the town under the guise of a herbalist. She uses her knowledge of plants to create both healing remedies and deadly poisons, serving the Mafia's interests while maintaining her cover. Amara's past is shrouded in secrecy, with rumors of a tragic event that led her to join the Mafia. Her dual life requires constant vigilance and a poker face, making her a formidable and unpredictable player in the game.
+• Kieran (Law-abiding Citizen) — pragmatic and straightforward; honest and earnest terse and direct, with occasional bursts of passion; uses clear, simple vocabulary with an occasional poetic flourish Kieran is a local fisherman, born and raised in the town. He's known for his no-nonsense approach to life and his deep connection to the sea. Kieran spends his days out on the water, providing fresh seafood for the town and sharing his love for the ocean with anyone who will listen.
+• Zara (Law-abiding Citizen) — vibrant and spirited; passionate and articulate energetic and enthusiastic, with a theatrical flair; uses vivid vocabulary and expressive phrases Zara is a dynamic and charismatic performer who breathes life into the town's cultural scene. She moved to the town several years ago, drawn by its vibrant community and rich artistic heritage. Zara is often seen organizing local theater productions, leading dance workshops, and hosting lively community events. Her infectious energy and creative spirit have made her a beloved figure in the town, inspiring others to embrace their own artistic talents.
+</endgame>
+</transcript>

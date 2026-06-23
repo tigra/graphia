@@ -1,0 +1,248 @@
+Game 6 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=20
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key phrases like "I just think" or "you know what I mean." Pauses frequently for emphasis.
+Persona: Kai is a librarian who loves quiet evenings and helping people find the right books. They've lived in town their whole life and are known for being reliable and kind.
+</player>
+<player name="Lila" role="Law-abiding Citizen">
+Personality: curious and talkative
+Manner: speaks rapidly with a high-pitched voice, uses filler words like "um," "like," and "you know," often interrupts others to add tangents, and has a habit of asking follow-up questions after every statement
+Persona: Lila is a local bakery owner who's always experimenting with new recipes and loves sharing her creations with the town. She's known for being bubbly and enthusiastic, often getting excited about small things like a new flour or a particularly successful batch of cookies.
+</player>
+<player name="Airi" role="Mafia">
+Personality: Enigmatic and composed
+Manner: Speaks in measured, poetic sentences with a calm, almost ethereal tone. Uses metaphor and indirect language. Pauses between phrases for dramatic effect. Never raises voice, even under pressure.
+Public legend: Airi is a renowned florist who tends to the town's most beautiful gardens. They are known for their quiet, contemplative nature and their ability to coax rare blooms from the soil. Airi has been in town for decades, nurturing both plants and people with equal care. They live alone in a cottage at the edge of town, often seen walking through the forest with a basket of flowers.
+True self (hidden): Airi was once a high-ranking enforcer in the Syndicate, known for their chilling efficiency and ability to make disappear anyone who crossed them. They left the organization after a botched operation cost them a close ally, fleeing town under a false identity. Now they use their knowledge of the underworld to protect the town from within, eliminating threats quietly and systematically while maintaining their cover as a peaceful gardener.
+</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: pragmatic and direct
+Manner: speaks in short, clipped sentences with little preamble. Uses military-style precision in speech, avoids fluff or emotional language. Has a habit of finishing others' sentences and rarely uses contractions.
+Persona: Zara is a town mechanic who has been fixing cars, bikes, and anything with an engine for over fifteen years. She's known for her hands-on approach and no-nonsense attitude. She lives in a small house on the edge of town with her two cats and a garage full of tools.
+</player>
+<player name="Xin" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key phrases like "I just think" or "you know what I mean." Pauses frequently for emphasis.
+Persona: Xin is a local postmaster who has worked at the town's postal office for over twenty years. They are known for being reliable and kind, always making sure mail gets delivered on time and helping residents with their correspondence. Xin lives in a small house near the post office with their pet parrot, Peaches.
+</player>
+<player name="Taro" role="Law-abiding Citizen">
+Personality: methodical and detail-oriented
+Manner: speaks with precise, measured cadence; uses specific terminology and avoids idioms; frequently checks and rechecks facts before speaking; has a habit of saying "according to my calculations" or "based on the evidence" when making statements
+Persona: Taro is a town clockmaker who has spent decades perfecting the art of timekeeping. They are known for their meticulous attention to detail and ability to repair even the most complex mechanisms. Taro lives alone in a small workshop at the edge of town, where they spend their days crafting beautiful timepieces and maintaining the town's historic clocks.
+</player>
+<player name="Noa" role="Mafia">
+Personality: Charismatic and theatrical
+Manner: Speaks with grandiose flair, using dramatic pauses and theatrical gestures. Often uses metaphorical language and speaks in complete, flowing sentences. Has a tendency to embellish stories and add flair to mundane events.
+Public legend: Noa is a traveling storyteller who visits the town once a month, sharing tales from distant lands and exotic places. They are known for their captivating performances and ability to bring characters to life with vivid descriptions and expressive voice. Noa lives in a colorful caravan that's always parked outside the town square, and they're beloved by children and adults alike for their enchanting stories.
+True self (hidden): Noa was once a celebrated actor in the capital city before being forced to flee after a scandal involving a political assassination. They joined the Mafia to protect their family and now uses their performance skills to gather intelligence and manipulate situations from the shadows, always playing the role of the innocent storyteller.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Kai, Lila, Airi, Zara, Xin, Taro, Noa. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Airi): Your Mafia teammates are: Noa. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Noa): Your Mafia teammates are: Airi. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Noa points at Avery
+Airi points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Kai: I just think we should all take a moment to really listen to what everyone is saying. You know what I mean? I don't want to jump to conclusions, but I do feel like we need to be careful about who we trust right now.
+Airi: The garden blooms, yet some seeds are sown in shadow. We must tend not just to the flowers, but to the roots that nourish them.
+Lila: Oh, Kai, that's such a good point! I was thinking, like, who do we even know for sure is on our side? Um, Airi, you said something about seeds and shadows — did you mean like, maybe some people are planting secrets? You know what I mean? 😳
+Zara: I need to listen closely to how people react when questioned directly.
+Xin: I'm not sure who to trust yet.
+Noa: You know, I've heard many tales of shadowy seeds, but I've yet to see a garden that blooms without some darkness beneath its soil. It's a rather curious thing, isn't it?
+<vote initiator="Taro" target="Xin">
+Kai: No
+Lila: No
+Airi: No
+Zara: No
+Xin: No
+Taro: No
+Noa: No
+tally: 0 Yes, 7 No
+outcome: failed — The vote fails.
+</vote>
+Kai: I just think we should pay close attention to how people answer questions — you know what I mean? It's not about jumping to conclusions, but listening carefully.
+Lila: Oh! I was just thinking — like, who do we even know for sure is on our side? Um, Airi, you said something about seeds and shadows — did you mean like, maybe some people are planting secrets? You know what I mean? 😳
+Airi: The soil holds many truths, yet only some roots run deep. I wonder what we might uncover if we listen not just with our ears, but with our hearts.
+Xin: I just think we should all be careful about who we trust. You know what I mean? I don't want to jump to conclusions, but I do feel like we need to be cautious.
+<vote initiator="Taro" target="Xin">
+Kai: No
+Lila: No
+Airi: No
+Zara: No
+Xin: No
+Taro: No
+Noa: No
+tally: 0 Yes, 7 No
+outcome: failed — The vote fails.
+</vote>
+Zara: Lila, you keep deflecting questions about your alibi. That's not normal for a townsperson.
+Airi: The soil whispers truths to those who kneel to hear it. Yet sometimes, the deepest roots run unseen.
+<vote initiator="Taro" target="Zara">
+Kai: Yes
+Lila: No
+Airi: No
+Zara: No
+Xin: No
+Taro: Yes
+Noa: No
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Airi points at Lila
+Noa points at Lila
+<kill>Lila — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Lila was killed last night. Lila was a Law-abiding Citizen.
+<round>
+Round 1.
+Xin: I just think we should all be careful about who we trust. You know what I mean? I don't want to jump to conclusions, but I do feel like we need to be cautious.
+Zara: I need to listen closely to how people react when questioned directly.
+<vote initiator="Taro" target="Xin">
+Kai: No
+Airi: No
+Zara: Yes
+Xin: No
+Taro: No
+Noa: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Kai: I just think we need to pay close attention to who's been avoiding direct answers — you know what I mean? It's not about guessing, but listening carefully to how people respond.
+Noa: You know, I've always believed that the most dangerous shadows are the ones that mimic light. It's a rather haunting thought, isn't it?
+Zara: I need to listen closely to how people react when questioned directly.
+<vote initiator="Taro" target="Zara">
+Kai: Yes
+Airi: No
+Zara: No
+Xin: No
+Taro: No
+Noa: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Xin: I'm not sure who to trust yet.
+Airi: The garden grows silent when secrets are buried too deep. Yet, we must ask ourselves — what truths are we willing to unearth?
+Noa: I've always believed that the most dangerous shadows are the ones that mimic light. It's a rather haunting thought, isn't it?
+<vote initiator="Taro" target="Zara">
+Kai: Yes
+Airi: No
+Zara: No
+Xin: No
+Taro: No
+Noa: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Noa points at Zara
+Airi points at Zara
+<kill>Zara — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Zara was killed last night. Zara was a Law-abiding Citizen.
+<round>
+Round 1.
+Xin: I just think we should all be careful about who we trust. You know what I mean? I don't want to jump to conclusions, but I do feel like we need to be cautious.
+Kai: I just think we should all take a moment to really listen — especially when someone keeps deflecting questions instead of answering them directly. You know what I mean? It's not about suspicion, but paying attention.
+Airi: The soil remembers all truths, yet only those who listen with intent can hear its whispers.
+Noa: I've heard the most peculiar tales of gardens where the flowers seem to bloom in perfect symmetry, yet their roots run deep into darkness. It makes one wonder — are we truly seeing what lies beneath the surface?
+<vote initiator="Taro" target="Noa">
+Kai: Yes
+Airi: No
+Xin: No
+Taro: Yes
+Noa: No
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Noa: You know, I've always believed that the most dangerous shadows are the ones that mimic light. It's a rather haunting thought, isn't it?
+<vote initiator="Taro" target="Xin">
+Kai: No
+Airi: No
+Xin: No
+Taro: No
+Noa: No
+tally: 0 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Airi: The garden's silence speaks louder than words — yet some truths bloom only in the dark.
+Kai: I just think we need to pay attention to who's been avoiding direct answers — you know what I mean? It's not about jumping to conclusions, but listening carefully.
+Xin: I just think we should all be careful about who we trust. You know what I mean? I don't want to jump to conclusions, but I do feel like we need to be cautious.
+Noa: I've always believed that the most dangerous shadows are the ones that mimic light. It's a rather haunting thought, isn't it?
+<vote initiator="Taro" target="Noa">
+Kai: Yes
+Airi: No
+Xin: No
+Taro: Yes
+Noa: No
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Noa points at Xin
+Airi points at Xin
+<kill>Xin — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Night 2: Lila (Law-abiding Citizen)
+• Night 3: Zara (Law-abiding Citizen)
+• Night 4: Xin (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Kai (Law-abiding Citizen), Lila (Law-abiding Citizen), Airi (Mafia), Zara (Law-abiding Citizen), Xin (Law-abiding Citizen), Taro (Law-abiding Citizen), Noa (Mafia)
+
+Who they really were:
+• Kai (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key phrases like "I just think" or "you know what I mean." Pauses frequently for emphasis. Kai is a librarian who loves quiet evenings and helping people find the right books. They've lived in town their whole life and are known for being reliable and kind.
+• Lila (Law-abiding Citizen) — curious and talkative speaks rapidly with a high-pitched voice, uses filler words like "um," "like," and "you know," often interrupts others to add tangents, and has a habit of asking follow-up questions after every statement Lila is a local bakery owner who's always experimenting with new recipes and loves sharing her creations with the town. She's known for being bubbly and enthusiastic, often getting excited about small things like a new flour or a particularly successful batch of cookies.
+• Airi (Mafia) — publicly presented as Airi is a renowned florist who tends to the town's most beautiful gardens. They are known for their quiet, contemplative nature and their ability to coax rare blooms from the soil. Airi has been in town for decades, nurturing both plants and people with equal care. They live alone in a cottage at the edge of town, often seen walking through the forest with a basket of flowers. (Enigmatic and composed Speaks in measured, poetic sentences with a calm, almost ethereal tone. Uses metaphor and indirect language. Pauses between phrases for dramatic effect. Never raises voice, even under pressure.) … but was really a Mafioso: Airi was once a high-ranking enforcer in the Syndicate, known for their chilling efficiency and ability to make disappear anyone who crossed them. They left the organization after a botched operation cost them a close ally, fleeing town under a false identity. Now they use their knowledge of the underworld to protect the town from within, eliminating threats quietly and systematically while maintaining their cover as a peaceful gardener.
+• Zara (Law-abiding Citizen) — pragmatic and direct speaks in short, clipped sentences with little preamble. Uses military-style precision in speech, avoids fluff or emotional language. Has a habit of finishing others' sentences and rarely uses contractions. Zara is a town mechanic who has been fixing cars, bikes, and anything with an engine for over fifteen years. She's known for her hands-on approach and no-nonsense attitude. She lives in a small house on the edge of town with her two cats and a garage full of tools.
+• Xin (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, using simple vocabulary with a tendency to repeat key phrases like "I just think" or "you know what I mean." Pauses frequently for emphasis. Xin is a local postmaster who has worked at the town's postal office for over twenty years. They are known for being reliable and kind, always making sure mail gets delivered on time and helping residents with their correspondence. Xin lives in a small house near the post office with their pet parrot, Peaches.
+• Taro (Law-abiding Citizen) — methodical and detail-oriented speaks with precise, measured cadence; uses specific terminology and avoids idioms; frequently checks and rechecks facts before speaking; has a habit of saying "according to my calculations" or "based on the evidence" when making statements Taro is a town clockmaker who has spent decades perfecting the art of timekeeping. They are known for their meticulous attention to detail and ability to repair even the most complex mechanisms. Taro lives alone in a small workshop at the edge of town, where they spend their days crafting beautiful timepieces and maintaining the town's historic clocks.
+• Noa (Mafia) — publicly presented as Noa is a traveling storyteller who visits the town once a month, sharing tales from distant lands and exotic places. They are known for their captivating performances and ability to bring characters to life with vivid descriptions and expressive voice. Noa lives in a colorful caravan that's always parked outside the town square, and they're beloved by children and adults alike for their enchanting stories. (Charismatic and theatrical Speaks with grandiose flair, using dramatic pauses and theatrical gestures. Often uses metaphorical language and speaks in complete, flowing sentences. Has a tendency to embellish stories and add flair to mundane events.) … but was really a Mafioso: Noa was once a celebrated actor in the capital city before being forced to flee after a scandal involving a political assassination. They joined the Mafia to protect their family and now uses their performance skills to gather intelligence and manipulate situations from the shadows, always playing the role of the innocent storyteller.
+</endgame>
+</transcript>

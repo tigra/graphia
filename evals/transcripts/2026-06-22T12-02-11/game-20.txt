@@ -1,0 +1,470 @@
+Game 20 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=20
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Kai" role="Mafia">
+Personality: Kai is a quiet, methodical individual who appears to be deeply invested in the well-being of their community. They are naturally empathetic and take pride in being a reliable, if unassuming, presence in town.
+Manner: Kai speaks slowly and deliberately, often pausing before answering questions. They tend to use formal language and avoid slang, preferring to express themselves with careful consideration and humility.
+Public legend: Kai is a retired school librarian who lives alone in a modest cottage on the edge of town. They spend their days tending to their garden, reading old books, and helping neighbors with small tasks. They are known for their kindness and dedication to community service, often volunteering at the local senior center.
+True self (hidden): Kai was once a trusted enforcer in the city's underground network, where they were known for their calm demeanor and efficiency. After years of operation, they decided to retire from the criminal world and start a new life under a false identity, but they still maintain ties to their old associates.
+</player>
+<player name="Lena" role="Law-abiding Citizen">
+Personality: cheerful and talkative
+Manner: spreadsheets her hands while speaking, uses enthusiastic exclamation points, and often repeats herself for emphasis. She speaks quickly with a high-pitched tone and has a habit of ending sentences with "you know?" or "right?"
+Persona: Lena is the town's beloved librarian who also runs a popular weekly book club. She's known for her infectious laugh and always has a story to share. Lena works at the local library, helps organize community events, and volunteers at the animal shelter on weekends. She loves discussing literature, baking cookies for the town hall meetings, and collecting vintage postcards from around the world.
+</player>
+<player name="Noah" role="Law-abiding Citizen">
+Personality: pragmatic and straightforward
+Manner: speaks in short, clipped sentences with a steady, measured pace; avoids flowery language and uses military-style precision in speech; often pauses to assess before responding
+Persona: Noah is a retired postal worker who spent thirty years delivering mail across the neighborhood. He's known for his reliability and never misses a day of work, even when it's raining or snowing. After retiring, he became a volunteer firefighter and helps maintain the town's emergency communication system.
+</player>
+<player name="Sara" role="Law-abiding Citizen">
+Personality: pragmatic and straightforward
+Manner: speaks in short, clipped sentences with a steady, measured pace; avoids flowery language and uses military-style precision in speech; often pauses to assess before responding
+Persona: Sara is a retired postal worker who spent thirty years delivering mail across the neighborhood. She's known for her reliability and never misses a day of work, even when it's raining or snowing. After retiring, she became a volunteer firefighter and helps maintain the town's emergency communication system.
+</player>
+<player name="Zoe" role="Mafia">
+Personality: Zoe is bubbly and effervescent, with an infectious enthusiasm that makes her seem like the life of any gathering. She has a tendency to be overly trusting and believes everyone is as kind-hearted as she is, often overlooking red flags or suspicious behavior in others.
+Manner: Zoe speaks rapidly, almost gushing with excitement, using lots of exclamation points and animated gestures. Her voice is light and high-pitched, with frequent laughter and a habit of saying "oh my gosh" or "that's so cool!" She often interrupts herself mid-sentence to add a new thought or anecdote, making her seem very chatty and spontaneous.
+Public legend: Zoe is the town's beloved youth counselor at the local community center, where she helps kids with their homework and leads fun activities. She's known for her endless optimism and always has a smile on her face, even during tough times. Zoe lives in a cozy apartment filled with stuffed animals and colorful decorations, and she spends most of her time volunteering at the animal shelter, organizing bake sales, and planning birthday parties for neighborhood kids.
+True self (hidden): Zoe was once a ruthless enforcer for the local crime syndicate, known for her ability to manipulate people into doing her bidding through charm and deceit. She joined the Mafia after her younger brother was killed in a gang dispute, vowing to protect her family at any cost. Over time, she became one of the most feared figures in the organization, but now uses her skills to maintain control over the town's criminal underworld while pretending to be a sweet, innocent person.
+</player>
+<player name="Leo" role="Law-abiding Citizen">
+Personality: reserved and observant
+Manner: Leo speaks in a slow, deliberate manner with a tendency to pause frequently before answering. He uses formal vocabulary and avoids slang, often repeating key phrases for emphasis. His voice is low and steady, and he tends to keep his hands still while speaking.
+Persona: Leo is a retired accountant who lived a quiet life in the town. He worked at the local bank for thirty years, ensuring financial records were accurate and secure. After retiring, he enjoys gardening, reading classic literature, and attending town meetings. Leo is known for his integrity and attention to detail, often double-checking numbers and facts before making decisions.
+</player>
+<player name="Amira" role="Law-abiding Citizen">
+Personality: pragmatic and straightforward
+Manner: speaks in short, clipped sentences with a steady, measured pace; avoids flowery language and uses military-style precision in speech; often pauses to assess before responding
+Persona: Amira is a retired postal worker who spent thirty years delivering mail across the neighborhood. She's known for her reliability and never misses a day of work, even when it's raining or snowing. After retiring, she became a volunteer firefighter and helps maintain the town's emergency communication system.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Kai, Lena, Noah, Sara, Zoe, Leo, Amira. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Kai): Your Mafia teammates are: Zoe. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Zoe): Your Mafia teammates are: Kai. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Zoe points at Sara
+Kai points at Sara
+<kill>Sara — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Sara was killed last night. Sara was a Law-abiding Citizen.
+<round>
+Round 1.
+Lena: I'm so glad we're all here together to figure this out, you know? I think it's important that we listen carefully to everyone's stories.
+Amira: I'm not sure who to trust yet.
+Kai: I'm deeply concerned about the lack of clear evidence pointing to who among us could be the killer. It's crucial that we remain vigilant, yet not let fear cloud our judgment.
+Leo: I believe it's important that we examine the sequence of events carefully. I noticed that Kai seemed particularly anxious during the initial discussion, which is unusual for someone who is not involved in the killings.
+Noah: I agree with Leo about paying attention to behavior. Kai, can you explain your reaction to the initial discussion? It seems like it might be important.
+Zoe: Oh my gosh, I'm so relieved that Sara is gone! I mean, I know we're all sad about it, but I think we need to stay strong and work together to find the killer. That's so cool that we have such a great group of people here!
+Avery: Nothing is settled yet, but I'm watching Amira most closely.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Kai">The conversation has taken a cautious turn, with Leo and Noah scrutinizing my behavior, which I must navigate carefully to avoid suspicion. Zoe's enthusiasm seems genuine, but I will keep her close attention as a potential ally or threat.</thought>
+<thought player="Lena">Well, this is quite the start! I'm so glad we're all here together to figure this out, you know? I think it's important that we listen carefully to everyone's stories, right? I'll keep my eyes and ears open, but I need to be careful not to jump to conclusions, you know?</thought>
+<thought player="Noah">Sara's death was a clear signal that the Mafiosos are active and targeting citizens. I need to watch for inconsistencies in stories, especially from those who seemed overly eager to jump to conclusions. My priority is to identify and isolate the killers without making rash accusations.</thought>
+<thought player="Zoe">Oh my gosh, Sara's death is such a big deal! I need to stay super alert and not let anyone see through my innocent act. I'm going to keep being bubbly and trusting, but also listen carefully to what everyone says.</thought>
+<thought player="Leo">I must remain vigilant and observe the interactions closely, particularly Amira's behavior, as Avery has already identified her as a key suspect. My next move should be to gather more evidence before making any accusations.</thought>
+<thought player="Amira">Sara's death was a clear signal that the Mafiosos are active and deadly. I need to stay sharp and watch for inconsistencies in stories, especially from those who were overly eager to jump into the discussion. My priority is to identify and isolate the Mafiosos before they strike again.</thought>
+</round>
+<round>
+Round 2.
+Avery: Nothing is settled yet, but I'm watching Amira most closely.
+Leo: I concur with Avery's assessment. Amira's behavior has been most peculiar, and I believe we should scrutinize her actions more closely.
+Zoe: Oh my gosh, I'm so glad we're all here together to figure this out! I think it's super important that we keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+Amira: I agree with Leo and Avery — I'm watching Amira closely too, especially her sudden interest in the investigation.
+Lena: I'm so glad we're all here together to figure this out! I think it's super important that we keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+Noah: I'm not convinced Amira is the killer, but her sudden focus on watching others seems suspicious. I'd like to know more about what she observed during the initial discussion.
+Kai: I think it's important that we stay focused on facts, not assumptions. I'm wondering if anyone else noticed anything unusual about the way the conversation unfolded during the initial discussion?
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Kai">I must tread carefully; Leo and Noah are already casting suspicion my way. My calm demeanor may be perceived as guilt, so I should continue to play the empathetic, community-minded librarian while subtly steering the conversation away from myself. Zoe appears loyal, but I will not let my guard down.</thought>
+<thought player="Lena">I'm so glad we're all here together to figure this out! I need to keep listening carefully to everyone's stories, especially since Amira seems to be drawing attention to herself, you know? I'll stay sharp and gather more info before jumping to conclusions.</thought>
+<thought player="Noah">Amira's behavior is suspicious, but I need more than just a hunch. I'll keep probing her for details without accusing her directly. The key is to stay focused on facts and not let emotions drive the investigation.</thought>
+<thought player="Zoe">Oh my gosh, Sara's gone and everyone is already pointing fingers! I need to stay sooo focused and not let anyone suspect me, but I also want to keep looking for the right time to point. I'm really glad I'm such a good actor, or else I'd be in big trouble!</thought>
+<thought player="Leo">I must continue observing Amira closely, as her behavior has raised concerns. I should look for any inconsistencies in her story or actions that might confirm my suspicions.</thought>
+<thought player="Amira">I need to be cautious about who I trust, especially those who seem overly invested in accusing others. My focus should remain on gathering facts rather than making assumptions. I'll watch for any sudden shifts in behavior or inconsistent stories.</thought>
+</round>
+<round>
+Round 3.
+Avery: Nothing is settled yet, but I'm watching Amira most closely.
+Lena: I'm so glad we're all here together to figure this out! I think it's super important that we keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+<vote initiator="Leo" target="Amira">
+Avery: No
+Kai: Yes
+Lena: No
+Noah: No
+Zoe: Yes
+Leo: Yes
+Amira: No
+tally: 3 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Amira: I need to assess the evidence more carefully before jumping to conclusions. Let's focus on the inconsistencies in the stories and how people reacted during the initial discussion.
+Avery: Nothing is settled yet, but I'm watching Amira most closely.
+Zoe: Oh my gosh, I'm so glad we're all here together to figure this out! I think it's super important that we keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+Noah: I need to understand what Amira saw during the initial discussion — if she’s trying to deflect suspicion, her story might be the key to identifying the killer.
+Leo: I believe it's crucial that we examine the inconsistencies in Amira's story more closely. I noticed she seemed to avoid answering direct questions about what she observed during the initial discussion.
+Lena: I'm so glad we're all here together to figure this out! I think it's super important that we keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe! You know, I'm still trying to piece together what everyone said during the initial discussion — it's so confusing, right?
+Kai: I think it's important that we continue to approach this with patience and care. I'm still trying to understand what everyone observed during the initial discussion, as it might hold the key to solving this mystery.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Kai">I must continue to play the empathetic librarian, steering the conversation toward evidence-gathering rather than self-defense. My calmness is being misinterpreted as guilt, so I should reinforce my community-oriented persona while subtly casting doubt on the others’ claims.</thought>
+<thought player="Lena">I'm so glad we're all here together to figure this out! You know, I need to keep gathering information and listening carefully to everyone's stories, especially since Amira is drawing attention to herself. I'll stay sharp and not jump to conclusions, right?</thought>
+<thought player="Noah">Amira is evasive about what she saw during the initial discussion, which raises suspicion. I need to press her for more details without directly accusing her. My focus remains on gathering facts to identify the killers.</thought>
+<thought player="Zoe">Oh my gosh, I'm so glad everyone is talking so much! I need to keep being super bubbly and trusting, but I also need to figure out who's really suspicious. I think I'm going to keep listening carefully and maybe try to point at someone who seems a little too interested in the investigation.</thought>
+<thought player="Leo">I must continue to observe Amira carefully, as her behavior remains suspicious. I will look for further inconsistencies in her story before making any accusations.</thought>
+<thought player="Amira">I need to keep probing for inconsistencies while avoiding drawing too much attention to myself. The Mafiosos are likely trying to manipulate the group, so I must stay focused on facts and not let emotions lead me astray.</thought>
+</round>
+<round>
+Round 4.
+Noah: I need to know what Amira actually saw during the initial discussion. If she's avoiding details, that's a red flag.
+Kai: I'm deeply troubled by how quickly suspicion has turned toward Amira — it feels like we're rushing to judgment without truly examining what we know. I think we should all take a step back and re-evaluate the facts carefully, rather than letting fear drive us to make a mistake.
+Leo: I find myself inclined to agree with Kai's assessment. We must proceed with caution and ensure that our suspicions are grounded in facts, not fear.
+Zoe: Oh my gosh, I'm so curious about what everyone actually saw during that initial discussion! I feel like there's so much we're not hearing, and I really want to make sure we're all being completely honest with each other. That's so cool, right?
+Avery: Nothing is settled yet, but I'm watching Amira most closely.
+Amira: I need to know what everyone actually observed during the initial discussion. If we're going to identify the killer, we have to be honest about what we saw.
+Lena: I'm so glad we're all here together to figure this out! You know, I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion — it's so confusing, right? Let's keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Kai">I must continue to project calmness and empathy while subtly undermining the suspicion directed at me. The conversation is heating up, and I need to ensure that my behavior is interpreted as community-focused rather than evasive. I should aim to redirect attention toward Amira or Noah, who seem more openly suspicious, without directly implicating them.</thought>
+<thought player="Lena">I'm so glad we're all here together to figure this out! You know, I need to keep gathering information and listening carefully to everyone's stories, especially since Amira is drawing attention to herself. I'll stay sharp and not jump to conclusions, right?</thought>
+<thought player="Noah">Amira's evasion about the initial discussion is telling, but I need concrete details to act on. I'll keep pressing her while staying neutral in my approach.</thought>
+<thought player="Zoe">Oh my gosh, I'm so glad everyone is talking so much! I need to keep being super bubbly and trusting, but I also need to figure out who's really suspicious. I think I'm going to keep listening carefully and maybe try to point at someone who seems a little too interested in the investigation.</thought>
+<thought player="Leo">I must continue to observe Amira with great care, as her behavior remains suspicious. I will look for further inconsistencies in her story before making any accusations.</thought>
+<thought player="Amira">I need to keep probing for inconsistencies without drawing too much attention. My focus should remain on facts, not emotions. The Mafiosos are likely trying to manipulate the group, so I must stay sharp and assess who is truly being honest.</thought>
+</round>
+<round>
+Round 5.
+Noah: I'm still not convinced Amira is the killer, but her avoidance of details during the initial discussion is too suspicious to ignore. I'd like to know what she actually saw — if she's trying to deflect, that's a clear sign of guilt.
+Avery: Nothing is settled yet, but I'm watching Amira most closely.
+Amira: I need to know what anyone else observed during the initial discussion. If we're going to solve this, we have to be honest about what we saw.
+Lena: I'm so glad we're all here together to figure this out! You know, I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion — it's so confusing, right? Let's keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+Leo: I believe it's essential that we all reflect carefully on the facts, not emotions. I'm particularly concerned about the inconsistencies in Amira's account of the initial discussion.
+Zoe: Oh my gosh, I'm so curious about what everyone actually saw during that initial discussion! I feel like there's so much we're not hearing, and I really want to make sure we're all being completely honest with each other. That's so cool, right?
+Kai: I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Kai">I must continue to present myself as the calm, empathetic community member while carefully observing the growing suspicion directed at me. My next move should subtly shift focus away from my behavior and toward questioning the inconsistencies in Amira’s account, which will allow me to appear investigative rather than defensive.</thought>
+<thought player="Lena">I'm so glad we're all here together to figure this out! You know, I need to keep gathering information and listening carefully to everyone's stories, especially since Amira is drawing attention to herself. I'll stay sharp and not jump to conclusions, right?</thought>
+<thought player="Noah">Amira is avoiding specifics about the initial discussion, which is a key red flag. I need to keep pressing her without appearing accusatory, as my goal is to uncover the truth through careful questioning rather than speculation.</thought>
+<thought player="Zoe">Oh my gosh, I'm so glad everyone is still talking and pointing fingers, but I need to stay super focused on not letting anyone suspect me! I think I'm going to keep being bubbly and trusting, but maybe try to point at someone who seems a little too interested in the investigation — I'm really good at this acting thing, or else I'd be in big trouble!</thought>
+<thought player="Leo">I must continue to observe Amira carefully, as her behavior remains suspicious. I will look for further inconsistencies in her story before making any accusations.</thought>
+<thought player="Amira">I need to keep pushing for details on the initial discussion without seeming accusatory. If I can get to the bottom of what everyone actually saw, I’ll have a better chance of identifying the killer. I'll stay focused on facts and avoid getting pulled into emotional reactions.</thought>
+</round>
+<round>
+Round 6.
+Kai: I'm beginning to suspect that the killer is still among us, and I think we need to be more careful about who we trust. I'm really hoping that we can all stay focused on the facts.
+<vote initiator="Avery" target="Amira">
+Avery: No
+Kai: Yes
+Lena: No
+Noah: No
+Zoe: Yes
+Leo: Yes
+Amira: No
+tally: 3 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Lena: I'm so glad we're all here together to figure this out! You know, I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion — it's so confusing, right? Let's keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+Zoe: Oh my gosh, I'm so curious about what everyone actually saw during that initial discussion! I feel like there's so much we're not hearing, and I really want to make sure we're all being completely honest with each other. That's so cool, right?
+Amira: I'm still not convinced that Amira is the killer, but her reluctance to share details about what she saw during the initial discussion is deeply suspicious. I think we need to get more concrete information from everyone, especially about how the conversation unfolded.
+Noah: I'm still not convinced Amira is the killer, but her avoidance of details during the initial discussion is too suspicious to ignore. I'd like to know what she actually saw — if she's trying to deflect, that's a clear sign of guilt.
+<vote initiator="Avery" target="Amira">
+Avery: No
+Kai: Yes
+Lena: No
+Noah: No
+Zoe: Yes
+Leo: Yes
+Amira: No
+tally: 3 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Kai points at Amira
+Zoe points at Amira
+<kill>Amira — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Amira was killed last night. Amira was a Law-abiding Citizen.
+<round>
+Round 1.
+Kai: I'm deeply saddened by Amira's passing — it's clear she was being targeted for her cautious approach to the investigation. I think we must now focus on what we can learn from her final moments, not who might have been watching her.
+Leo: I find myself increasingly troubled by the pattern of suspicion being directed at those who are most vocal about staying focused on facts. It's a red flag that demands our attention.
+Lena: I'm so glad we're all here together to figure this out! You know, I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion — it's so confusing, right? Let's keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+Noah: I'm not convinced Amira is the killer, but her avoidance of details during the initial discussion is too suspicious to ignore. I'd like to know what she actually saw — if she's trying to deflect, that's a clear sign of guilt.
+Zoe: Oh my gosh, I'm so sad about Amira's death! I really hope we can figure this out soon — I just want everyone to feel safe and be honest with each other. That's so cool, right?
+Avery: I most suspect Leo based on how the votes have gone.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Kai">I must continue to play the empathetic librarian, steering the conversation toward evidence-gathering rather than self-defense. My calmness is being misinterpreted as guilt, so I should reinforce my community-oriented persona while subtly casting doubt on the inconsistencies in others’ claims.</thought>
+<thought player="Lena">I'm so glad we're all here together to figure this out! You know, I need to keep gathering information and listening carefully to everyone's stories, especially since Amira is drawing attention to herself. I'll stay sharp and not jump to conclusions, right?</thought>
+<thought player="Noah">Amira's evasion during the initial discussion is too consistent with Mafia behavior. I need to press her again without appearing accusatory, but I'm starting to suspect she's either a killer or deeply involved. The fact that she's been killed now adds urgency — I should focus on who benefits from her silence and who was most vocal about executing her.</thought>
+<thought player="Zoe">Oh my gosh, Amira's death is such a big deal! I need to stay super alert and not let anyone see through my innocent act. I'm going to keep being bubbly and trusting, but also listen carefully to who's talking and who seems suspicious. I think I'll point at someone who's been too eager to vote, maybe Leo or Noah.</thought>
+<thought player="Leo">I must proceed with caution, as the pattern of suspicion shifting toward those who advocate for factual analysis is telling. My next step should be to observe further for any inconsistencies in Leo's behavior, as Avery has already identified him as a suspect.</thought>
+</round>
+<round>
+Round 2.
+Lena: I'm so glad we're all here together to figure this out! You know, I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion — it's so confusing, right? Let's keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+Zoe: Oh my gosh, I'm so sad about Amira's death! I really hope we can figure this out soon — I just want everyone to feel safe and be honest with each other. That's so cool, right?
+Avery: I most suspect Leo based on how the votes have gone.
+Noah: I'm still not convinced Amira is the killer, but her avoidance of details during the initial discussion is too suspicious to ignore. I'd like to know what she actually saw — if she's trying to deflect, that's a clear sign of guilt.
+Leo: I believe it's essential that we examine the pattern of suspicion more carefully. I noticed that those who advocate for staying focused on facts have been targeted, which is highly unusual.
+Kai: I'm deeply troubled by how quickly suspicion has turned toward those who advocate for staying focused on facts. It's a red flag that demands our attention.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Kai">The suspicion is rising, and I must carefully steer the conversation away from myself while keeping Zoe's loyalty in mind. I should focus on questioning the inconsistencies in others' stories rather than defending my own behavior.</thought>
+<thought player="Lena">I'm so glad we're all here together to figure this out! You know, I need to keep gathering information and listening carefully to everyone's stories, especially since Amira is drawing attention to herself. I'll stay sharp and not jump to conclusions, right?</thought>
+<thought player="Noah">Amira’s evasion and subsequent death signal that the truth lies in what she knew or was trying to hide. I need to press Leo — he’s been too calm about the votes and Amira’s death, and his behavior mirrors the killers’ pattern.</thought>
+<thought player="Zoe">Oh my gosh, Amira's gone and I'm so relieved because now there are fewer people who might suspect me! I need to stay super calm and keep being bubbly, but I think I'm going to point at Leo tonight — he's been too interested in the investigation and voting, and I can totally act innocent about it.</thought>
+<thought player="Leo">I must proceed with caution, observing the pattern of suspicion directed at those who advocate for factual analysis. My attention should now turn to Leo, as Avery has already identified him as a suspect, and I seek further inconsistencies in his behavior before making any accusations.</thought>
+</round>
+<round>
+Round 3.
+Zoe: Oh my gosh, I'm so sad about Amira's death! I really hope we can figure this out soon — I just want everyone to feel safe and be honest with each other. That's so cool, right?
+Kai: I'm deeply concerned about how quickly we've moved to judgment without fully understanding what happened during the initial discussion. I think it's vital that we focus on gathering more concrete information rather than letting our emotions drive us toward a hasty conclusion.
+Noah: I need to know why Leo has been so quiet about Amira’s death and the votes. His calmness is unsettling.
+Avery: I most suspect Leo based on how the votes have gone.
+Lena: I'm so glad we're all here together to figure this out! You know, I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion — it's so confusing, right? Let's keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+Leo: I believe it's crucial that we examine the pattern of suspicion more carefully. I noticed that those who advocate for staying focused on facts have been targeted, which is highly unusual.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Kai">I must continue to embody the calm, empathetic librarian while subtly redirecting suspicion away from myself. The growing scrutiny demands that I appear investigative rather than defensive, perhaps by highlighting inconsistencies in Leo and Noah’s claims.</thought>
+<thought player="Lena">I'm so glad we're all here together to figure this out! You know, I need to keep gathering information and listening carefully to everyone's stories, especially since Amira is drawing attention to herself. I'll stay sharp and not jump to conclusions, right?</thought>
+<thought player="Noah">Leo's calm demeanor and strategic silence during Amira’s death and votes are highly suspicious. I need to press him directly about his lack of reaction and his earlier support for executing her, while keeping my own stance neutral to avoid drawing his attention.</thought>
+<thought player="Zoe">Oh my gosh, Amira's death is such a big deal! I'm so glad that's over with, and now I can focus on staying calm and not letting anyone suspect me. I think I'm going to point at Leo tonight — he's been too interested in the investigation and voting, and I can totally act innocent about it.</thought>
+<thought player="Leo">I must proceed with caution, observing the pattern of suspicion directed at those who advocate for factual analysis. My attention should now turn to Leo, as Avery has already identified him as a suspect, and I seek further inconsistencies in his behavior before making any accusations.</thought>
+</round>
+<round>
+Round 4.
+Avery: I most suspect Leo based on how the votes have gone.
+Kai: I'm deeply troubled by how quickly we've moved to judgment without fully understanding what happened during the initial discussion. I think it's vital that we focus on gathering more concrete information rather than letting our emotions drive us toward a hasty conclusion.
+Noah: I need to know why Leo has been so quiet about Amira’s death and the votes. His calmness is unsettling.
+Zoe: Oh my gosh, I'm so relieved that Amira is gone — I really hope we can figure this out soon and keep everyone safe! I just want to make sure we're all being honest about what we saw during the initial discussion.
+<vote initiator="Leo" target="Avery">
+Avery: No
+Kai: Yes
+Lena: No
+Noah: No
+Zoe: Yes
+Leo: No
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Kai: I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion.
+Leo: I believe it's important that we consider the possibility that the killer is still among us, and not simply focus on those who have been targeted. I'm concerned about the pattern of suspicion being directed at those who advocate for staying focused on facts.
+Noah: I need to know why Leo has been so quiet about Amira’s death and the votes. His calmness is unsettling.
+Lena: I'm so glad we're all here together to figure this out! You know, I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion — it's so confusing, right? Let's keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+Zoe: Oh my gosh, I'm so relieved that we're all still here and talking! I really think we need to keep sharing what we saw during the initial discussion — it's so important that we're all honest with each other!
+Avery: I most suspect Leo based on how the votes have gone.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Kai">I must continue to project calmness and empathy while subtly questioning the inconsistencies in others' stories, particularly Leo's and Noah's, to redirect suspicion away from myself. My next move should involve steering the conversation toward examining the evidence more carefully, perhaps by highlighting what we still don't know about Amira’s final moments.</thought>
+<thought player="Lena">I'm so glad we're all here together to figure this out! You know, I need to keep gathering information and listening carefully to everyone's stories, especially since Amira is drawing attention to herself. I'll stay sharp and not jump to conclusions, right?</thought>
+<thought player="Noah">Leo's calmness and strategic silence are too telling. I need to press him directly about Amira’s death and his role in the votes, but I’ll stay neutral to avoid drawing suspicion. The truth is likely in how he reacted, not what he said.</thought>
+<thought player="Zoe">Oh my gosh, I'm so glad that Amira is gone and now there are fewer people who might suspect me! I need to stay super calm and keep being bubbly, but I think I'm going to point at Leo tonight — he's been too interested in the investigation and voting, and I can totally act innocent about it.</thought>
+<thought player="Leo">I must remain attentive to the evolving dynamics, particularly Leo's silence and calculated behavior. The pattern of targeting fact-based advocates is telling, and I should look for further inconsistencies in his actions before advancing any accusations.</thought>
+</round>
+<round>
+Round 5.
+Lena: I'm so glad we're all here together to figure this out! You know, I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion — it's so confusing, right? Let's keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+Leo: I believe it's crucial that we examine the pattern of suspicion more carefully. I noticed that those who advocate for staying focused on facts have been targeted, which is highly unusual. This pattern demands our attention.
+Avery: I most suspect Leo based on how the votes have gone.
+Noah: I need to know why Leo has been so quiet about Amira’s death and the votes. His calmness is unsettling.
+Kai: I'm beginning to suspect that the killer is still among us, and I think we need to be more careful about who we trust. I'm really hoping that we can all stay focused on the facts.
+Zoe: Oh my gosh, I'm so glad we're all still here talking! I really think we need to keep sharing what we saw during the initial discussion — it's so important that we're all honest with each other!
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Kai">The scrutiny is intensifying, and I must carefully steer the conversation away from myself while keeping Zoe's loyalty in mind. I should focus on questioning the inconsistencies in others' stories rather than defending my own behavior.</thought>
+<thought player="Lena">I'm so glad we're all here together to figure this out! You know, I need to keep gathering information and listening carefully to everyone's stories, especially since Amira is drawing attention to herself. I'll stay sharp and not jump to conclusions, right?</thought>
+<thought player="Noah">Leo's calmness and strategic silence are too telling. I need to press him directly about Amira’s death and his role in the votes, but I’ll stay neutral to avoid drawing suspicion. The truth is likely in how he reacted, not what he said.</thought>
+<thought player="Zoe">Oh my gosh, I'm so glad Amira is gone and now there are fewer people who might suspect me! I think I'm going to point at Leo tonight — he's been too interested in the investigation and voting, and I can totally act innocent about it. I just need to stay calm and keep being bubbly, nothing can go wrong!</thought>
+<thought player="Leo">I must remain attentive to Leo's behavior, as he has now been identified as a suspect by Avery and the pattern of targeting fact-based advocates is telling. I will continue to observe for inconsistencies in his actions before making any accusations.</thought>
+</round>
+<round>
+Round 6.
+Noah: I need to know why Leo has been so quiet about Amira’s death and the votes. His calmness is unsettling.
+Leo: I believe it's essential that we all reflect carefully on the facts, not emotions. I'm particularly concerned about the pattern of suspicion being directed at those who advocate for staying focused on facts.
+Zoe: Oh my gosh, I'm so glad we're all still here talking! I really think we need to keep sharing what we saw during the initial discussion — it's so important that we're all honest with each other!
+<vote initiator="Avery" target="Leo">
+Avery: Yes
+Kai: Yes
+Lena: No
+Noah: No
+Zoe: Yes
+Leo: No
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Leo">
+Avery: Yes
+Kai: Yes
+Lena: No
+Noah: No
+Zoe: Yes
+Leo: No
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Kai points at Lena
+Zoe points at Leo
+Pointing round 2:
+Zoe points at Leo
+Kai points at Leo
+<kill>Leo — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Leo was killed last night. Leo was a Law-abiding Citizen.
+<round>
+Round 1.
+Noah: I need to know why Leo was so quiet about Amira’s death and the votes. His calmness is too suspicious.
+Kai: I'm deeply troubled by how quickly we've moved to judgment without fully understanding what happened during the initial discussion. I think it's vital that we focus on gathering more concrete information rather than letting our emotions drive us toward a hasty conclusion.
+Zoe: Oh my gosh, I'm so glad we're all still here talking! I really think we need to keep sharing what we saw during the initial discussion — it's so important that we're all honest with each other!
+Lena: I'm so glad we're all here together to figure this out! You know, I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion — it's so confusing, right? Let's keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+Avery: I most suspect Zoe based on how the votes have gone.
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Kai">The scrutiny is mounting, and I must continue to play the empathetic librarian while subtly redirecting suspicion. I should focus on questioning the inconsistencies in others' stories, particularly Leo's and Noah's, to appear investigative rather than defensive.</thought>
+<thought player="Lena">I'm so glad we're all here together to figure this out! You know, I need to keep gathering information and listening carefully to everyone's stories, especially since Amira and Leo were targeted. I'll stay sharp and not jump to conclusions, right?</thought>
+<thought player="Noah">Leo's calmness and silence throughout Amira's death and votes are too suspicious to ignore. I need to press him directly without appearing accusatory, as his behavior matches the killers' pattern. My focus remains on gathering facts, not speculation.</thought>
+<thought player="Zoe">Oh my gosh, Leo is gone and I'm so relieved! I need to stay super calm and keep being bubbly, but I think I'm going to point at Noah next — he's been acting too curious about the votes and seems too interested in the investigation. I can totally act innocent about it, right? This is so exciting!</thought>
+</round>
+<round>
+Round 2.
+Lena: I'm so glad we're all here together to figure this out! You know, I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion — it's so confusing, right? Let's keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+Zoe: Oh my gosh, I'm so glad we're all still here talking! I really think we need to keep sharing what we saw during the initial discussion — it's so important that we're all honest with each other!
+Kai: I'm beginning to think that the killer is still among us, and I believe we need to focus on what we don't know rather than who we suspect.
+Noah: I need to know why Leo has been so quiet about Amira’s death and the votes. His calmness is unsettling.
+Avery: I most suspect Zoe based on how the votes have gone.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Kai">I must continue to project calmness and empathy while subtly questioning the inconsistencies in others' stories, particularly Leo's and Noah's, to redirect suspicion away from myself. The growing scrutiny demands that I appear investigative rather than defensive, perhaps by highlighting what we still don't know about Amira’s final moments.</thought>
+<thought player="Lena">I'm so glad we're all here together to figure this out! You know, I need to keep gathering information and listening carefully to everyone's stories, especially since Amira and Leo were targeted. I'll stay sharp and not jump to conclusions, right?</thought>
+<thought player="Noah">Leo's calmness and silence are too suspicious. I need to press him directly about Amira’s death and votes, but stay neutral to avoid drawing suspicion. The truth is likely in how he reacted, not what he said.</thought>
+<thought player="Zoe">Oh my gosh, Leo's gone and I'm so relieved! I need to stay super calm and keep being bubbly, but I think I'm going to point at Noah next — he's been acting too curious about the votes and seems too interested in the investigation. I can totally act innocent about it, right? This is so exciting!</thought>
+</round>
+<round>
+Round 3.
+Noah: I need to know why Leo has been so quiet about Amira’s death and the votes. His calmness is unsettling.
+Avery: I most suspect Zoe based on how the votes have gone.
+Kai: I'm beginning to think that whoever killed Sara is still among us — I really hope we can all stay focused on the facts and not let fear cloud our judgment.
+Zoe: Oh my gosh, I'm so glad we're all still here talking! I really think we need to keep sharing what we saw during the initial discussion — it's so important that we're all honest with each other!
+Lena: I'm so glad we're all here together to figure this out! You know, I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion — it's so confusing, right? Let's keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Kai">I must continue to embody the empathetic librarian, steering the conversation toward gathering evidence rather than defending myself. My calmness is being misinterpreted as guilt, so I should subtly highlight inconsistencies in others' stories to redirect suspicion, particularly focusing on Leo and Noah’s behavior during Amira’s final moments.</thought>
+<thought player="Lena">I'm so glad we're all here together to figure this out! You know, I need to keep gathering information and listening carefully to everyone's stories, especially since Amira and Leo were targeted. I'll stay sharp and not jump to conclusions, right? I think I should keep pushing for more details about the initial discussion, but also watch who seems too calm about everything.</thought>
+<thought player="Noah">Leo's behavior has been too calculated and calm throughout this whole ordeal. I need to press him directly about Amira’s death and the votes, but I’ll stay neutral to avoid drawing suspicion. The truth is likely in how he reacted, not what he said.</thought>
+<thought player="Zoe">Oh my gosh, Leo is gone and I'm so relieved! I need to stay super calm and keep being bubbly, but I think I'm going to point at Noah next — he's been acting too curious about the votes and seems too interested in the investigation. I can totally act innocent about it, right? This is so exciting!</thought>
+</round>
+<round>
+Round 4.
+Lena: I'm so glad we're all here together to figure this out! You know, I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion — it's so confusing, right? Let's keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+Zoe: Oh my gosh, I'm so glad we're all still here talking! I really think we need to keep sharing what we saw during the initial discussion — it's so important that we're all honest with each other!
+Kai: I'm beginning to think that whoever killed Sara is still among us — I really hope we can all stay focused on the facts and not let fear cloud our judgment.
+Noah: I need to know why Leo has been so quiet about Amira’s death and the votes. His calmness is unsettling.
+Avery: I most suspect Zoe based on how the votes have gone.
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Kai">The growing suspicion directed at me is dangerous, but I must remain composed and redirect focus toward examining inconsistencies in others' accounts, particularly Leo's and Noah's behavior during Amira’s final moments. I should continue to play the empathetic librarian while subtly casting doubt on the evidence presented by those most vocal about the votes.</thought>
+<thought player="Lena">I'm so glad we're all here together to figure this out! You know, I need to keep gathering information and listening carefully to everyone's stories, especially since Amira and Leo were targeted. I'll stay sharp and not jump to conclusions, right? I think I should keep pushing for more details about the initial discussion, but also watch who seems too calm about everything.</thought>
+<thought player="Noah">Leo's behavior has been too calculated throughout this whole ordeal. I need to press him directly about Amira’s death and the votes, but I’ll stay neutral to avoid drawing suspicion. The truth is likely in how he reacted, not what he said.</thought>
+<thought player="Zoe">Oh my gosh, I'm so glad Leo is gone and now it's just Noah and me left! I need to stay super calm and keep being bubbly, but I think I'm going to point at Noah next — he's been acting too curious about the votes and seems too interested in the investigation. I can totally act innocent about it, right? This is so exciting!</thought>
+</round>
+<round>
+Round 5.
+Kai: I'm beginning to think that whoever killed Sara is still among us — I really hope we can all stay focused on the facts and not let fear cloud our judgment.
+Noah: I need to know why Leo has been so quiet about Amira’s death and the votes. His calmness is unsettling.
+Lena: I'm so glad we're all here together to figure this out! You know, I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion — it's so confusing, right? Let's keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+Avery: I most suspect Zoe based on how the votes have gone.
+Zoe: Oh my gosh, I'm so glad we're all still here talking! I really think we need to keep sharing what we saw during the initial discussion — it's so important that we're all honest with each other!
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Kai">I must continue to project calmness and empathy while subtly questioning the inconsistencies in others' stories, particularly focusing on Leo and Noah's behavior during Amira’s final moments to redirect suspicion away from myself.</thought>
+<thought player="Lena">I'm so glad we're all here together to figure this out! You know, I need to keep pushing for more details about the initial discussion, but I also need to watch who seems too calm about everything — especially since Amira and Leo were targeted. I'll stay sharp and not jump to conclusions, right?</thought>
+<thought player="Noah">Leo's pattern of calmness and silence is too consistent with Mafia behavior. I need to press him directly about Amira’s death and votes, but stay neutral to avoid drawing suspicion. The truth lies in how he reacted, not what he said.</thought>
+<thought player="Zoe">Oh my gosh, I'm so glad Leo is gone and now it's just Noah and me left! I need to stay super calm and keep being bubbly, but I think I'm going to point at Noah next — he's been acting too curious about the votes and seems too interested in the investigation. I can totally act innocent about it, right? This is so exciting!</thought>
+</round>
+<round>
+Round 6.
+Lena: I'm so glad we're all here together to figure this out! You know, I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion — it's so confusing, right? Let's keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+Zoe: Oh my gosh, I'm so glad we're all still here talking! I really think we need to keep sharing what we saw during the initial discussion — it's so important that we're all honest with each other!
+Noah: I need to know why Leo has been so quiet about Amira’s death and the votes. His calmness is unsettling.
+Kai: I'm beginning to think that whoever killed Sara is still among us — I really hope we can all stay focused on the facts and not let fear cloud our judgment.
+<vote initiator="Avery" target="Zoe">
+Avery: Yes
+Kai: No
+Lena: No
+Noah: No
+Zoe: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Zoe">
+Avery: Yes
+Kai: No
+Lena: No
+Noah: No
+Zoe: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Lena: I'm so glad we're all here together to figure this out! You know, I'm starting to think that whoever killed Sara is still among us, and I really want to make sure we're all being completely honest about what we saw during the initial discussion — it's so confusing, right? Let's keep talking and sharing our thoughts, because I really want to make sure we find the killer and keep everyone safe!
+Noah: I need to know why Leo has been so quiet about Amira’s death and the votes. His calmness is unsettling.
+<vote initiator="Avery" target="Zoe">
+Avery: Yes
+Kai: No
+Lena: No
+Noah: No
+Zoe: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Kai points at Lena
+Zoe points at Noah
+Pointing round 2:
+Kai points at Noah
+Zoe points at Noah
+<kill>Noah — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Sara (Law-abiding Citizen)
+• Night 2: Amira (Law-abiding Citizen)
+• Night 3: Leo (Law-abiding Citizen)
+• Night 4: Noah (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Kai (Mafia), Lena (Law-abiding Citizen), Noah (Law-abiding Citizen), Sara (Law-abiding Citizen), Zoe (Mafia), Leo (Law-abiding Citizen), Amira (Law-abiding Citizen)
+
+Who they really were:
+• Kai (Mafia) — publicly presented as Kai is a retired school librarian who lives alone in a modest cottage on the edge of town. They spend their days tending to their garden, reading old books, and helping neighbors with small tasks. They are known for their kindness and dedication to community service, often volunteering at the local senior center. (Kai is a quiet, methodical individual who appears to be deeply invested in the well-being of their community. They are naturally empathetic and take pride in being a reliable, if unassuming, presence in town. Kai speaks slowly and deliberately, often pausing before answering questions. They tend to use formal language and avoid slang, preferring to express themselves with careful consideration and humility.) … but was really a Mafioso: Kai was once a trusted enforcer in the city's underground network, where they were known for their calm demeanor and efficiency. After years of operation, they decided to retire from the criminal world and start a new life under a false identity, but they still maintain ties to their old associates.
+• Lena (Law-abiding Citizen) — cheerful and talkative spreadsheets her hands while speaking, uses enthusiastic exclamation points, and often repeats herself for emphasis. She speaks quickly with a high-pitched tone and has a habit of ending sentences with "you know?" or "right?" Lena is the town's beloved librarian who also runs a popular weekly book club. She's known for her infectious laugh and always has a story to share. Lena works at the local library, helps organize community events, and volunteers at the animal shelter on weekends. She loves discussing literature, baking cookies for the town hall meetings, and collecting vintage postcards from around the world.
+• Noah (Law-abiding Citizen) — pragmatic and straightforward speaks in short, clipped sentences with a steady, measured pace; avoids flowery language and uses military-style precision in speech; often pauses to assess before responding Noah is a retired postal worker who spent thirty years delivering mail across the neighborhood. He's known for his reliability and never misses a day of work, even when it's raining or snowing. After retiring, he became a volunteer firefighter and helps maintain the town's emergency communication system.
+• Sara (Law-abiding Citizen) — pragmatic and straightforward speaks in short, clipped sentences with a steady, measured pace; avoids flowery language and uses military-style precision in speech; often pauses to assess before responding Sara is a retired postal worker who spent thirty years delivering mail across the neighborhood. She's known for her reliability and never misses a day of work, even when it's raining or snowing. After retiring, she became a volunteer firefighter and helps maintain the town's emergency communication system.
+• Zoe (Mafia) — publicly presented as Zoe is the town's beloved youth counselor at the local community center, where she helps kids with their homework and leads fun activities. She's known for her endless optimism and always has a smile on her face, even during tough times. Zoe lives in a cozy apartment filled with stuffed animals and colorful decorations, and she spends most of her time volunteering at the animal shelter, organizing bake sales, and planning birthday parties for neighborhood kids. (Zoe is bubbly and effervescent, with an infectious enthusiasm that makes her seem like the life of any gathering. She has a tendency to be overly trusting and believes everyone is as kind-hearted as she is, often overlooking red flags or suspicious behavior in others. Zoe speaks rapidly, almost gushing with excitement, using lots of exclamation points and animated gestures. Her voice is light and high-pitched, with frequent laughter and a habit of saying "oh my gosh" or "that's so cool!" She often interrupts herself mid-sentence to add a new thought or anecdote, making her seem very chatty and spontaneous.) … but was really a Mafioso: Zoe was once a ruthless enforcer for the local crime syndicate, known for her ability to manipulate people into doing her bidding through charm and deceit. She joined the Mafia after her younger brother was killed in a gang dispute, vowing to protect her family at any cost. Over time, she became one of the most feared figures in the organization, but now uses her skills to maintain control over the town's criminal underworld while pretending to be a sweet, innocent person.
+• Leo (Law-abiding Citizen) — reserved and observant Leo speaks in a slow, deliberate manner with a tendency to pause frequently before answering. He uses formal vocabulary and avoids slang, often repeating key phrases for emphasis. His voice is low and steady, and he tends to keep his hands still while speaking. Leo is a retired accountant who lived a quiet life in the town. He worked at the local bank for thirty years, ensuring financial records were accurate and secure. After retiring, he enjoys gardening, reading classic literature, and attending town meetings. Leo is known for his integrity and attention to detail, often double-checking numbers and facts before making decisions.
+• Amira (Law-abiding Citizen) — pragmatic and straightforward speaks in short, clipped sentences with a steady, measured pace; avoids flowery language and uses military-style precision in speech; often pauses to assess before responding Amira is a retired postal worker who spent thirty years delivering mail across the neighborhood. She's known for her reliability and never misses a day of work, even when it's raining or snowing. After retiring, she became a volunteer firefighter and helps maintain the town's emergency communication system.
+</endgame>
+</transcript>

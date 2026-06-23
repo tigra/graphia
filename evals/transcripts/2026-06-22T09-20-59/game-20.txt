@@ -1,0 +1,278 @@
+Game 20 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=20
+
+<transcript>
+<setup>
+<player name="Avery" role="Mafia">(no persona recorded)</player>
+<player name="Aiko" role="Law-abiding Citizen">
+Personality: Aiko is warm and empathetic, with a gentle but firm resolve. She has a nurturing nature and is always ready to lend an ear or offer advice.
+Manner: Aiko speaks with a calm, soothing tone, often using inclusive language to make others feel at ease. She has a slight pause before she speaks, choosing her words carefully.
+Persona: Aiko is a community nurse, deeply rooted in the town. She's known for her kindness and her dedication to helping others, often going out of her way to check on neighbors and friends.
+</player>
+<player name="Liam" role="Law-abiding Citizen">
+Personality: pragmatic and straightforward; values efficiency and results
+Manner: concise, matter-of-fact; uses practical examples and analogies
+Persona: Liam is a local handyman, known for his quick fixes and no-nonsense approach. He's been around the town for years, fixing roofs, unclogging drains, and patching up fences. Liam is the guy you call when something breaks, and he's always got the right tool for the job. He's straightforward and to the point, preferring action over long discussions.
+</player>
+<player name="Zara" role="Mafia">
+Personality: curious and observant, with a penchant for storytelling
+Manner: speaks with a warm, engaging tone, often using vivid imagery and anecdotes to illustrate points
+Public legend: Zara is an antique dealer, known for her eclectic taste and eye for detail. She travels frequently to find unique pieces for her shop, and her stories of far-off places and hidden treasures captivate her customers. Zara is always ready with a fascinating tale or a piece of trivia, making her a popular figure in the town.
+True self (hidden): In her shadowy life, Zara is a skilled Mafioso, adept at gathering information and navigating the criminal underworld. She joined the Mafia after a chance encounter with a high-ranking member while on one of her travels. Her ability to blend in and her knack for storytelling make her an invaluable asset to the organization.
+</player>
+<player name="Mateo" role="Law-abiding Citizen">
+Personality: Mateo is skeptical and sharp-witted, always questioning the motives of others.
+Manner: Mateo speaks with a brisk, almost curt tone, often using sarcasm and dry humor. He tends to be blunt, cutting to the chase without much preamble.
+Persona: Mateo is a private investigator, known for his keen eye and relentless pursuit of the truth. He's been around the town for a while, solving mysteries and uncovering secrets. Mateo is the person people go to when they need answers, and he's not afraid to dig deep to find them.
+</player>
+<player name="Sakura" role="Law-abiding Citizen">
+Personality: cheerful and spirited; with a love for tradition and community celebrations
+Manner: enthusiastic and rapid-fire; uses colloquial expressions and local slang
+Persona: Sakura is the town's festival coordinator, known for her vibrant energy and passion for bringing people together. She's the one who organizes the annual cherry blossom festival, complete with dances, food stalls, and fireworks. Sakura is always the first to arrive and the last to leave, ensuring every detail is perfect. Her infectious enthusiasm and love for tradition make her a beloved figure in the community.
+</player>
+<player name="Omar" role="Law-abiding Citizen">
+Personality: no-nonsense and straightforward; values honesty and integrity
+Manner: clear and concise; uses straightforward language with occasional dry humor
+Persona: Omar is a local butcher, known for his high-quality meats and fair prices. He's been running the town's butcher shop for over two decades, providing fresh cuts and sausages to the community. Omar is a man of few words but is always ready to share a joke or a piece of advice. He's respected for his hard work and dedication to his craft.
+</player>
+<player name="Nala" role="Law-abiding Citizen">
+Personality: stoic and contemplative; finds strength in silence
+Manner: measured and deliberate; often pauses to gather thoughts before speaking
+Persona: Nala is a local librarian, known for her vast knowledge and quiet wisdom. She has been the guardian of the town's library for many years, preserving its history and stories. Nala is often found in the quiet corners of the library, surrounded by books and the soft rustle of pages. Her calm and collected demeanor makes her a trusted source of information and a beacon of tranquility in the community.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiko, Liam, Zara, Mateo, Sakura, Omar, Nala. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Mafia.
+Moderator (private to Avery): Your Mafia teammates are: Zara. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Zara): Your Mafia teammates are: Avery. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Avery points at Omar
+Zara points at Omar
+<kill>Omar — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Omar was killed last night. Omar was a Law-abiding Citizen.
+<round>
+Round 1.
+Sakura: Hey, gang! Let's get our act together and figure out who the sneaky Mafiosos are. Any odd behavior catch your eye?
+Mateo: I've been watching your moves, Aiko. Any particular reason you're so keen on keeping the conversation light?
+Nala: Sakura, your enthusiasm is commendable. Perhaps we should consider the motives behind Omar's untimely demise.
+Aiko: Let's consider who might have had the most to gain from Omar's elimination.
+Avery: Liam has been steering things in a way that worries me — I think we should keep a close eye there.
+Liam: Avery, why are you focusing on me? I've been straightforward and to the point, just like I am now.
+Zara: I've noticed Mateo's intense scrutiny of Aiko's behavior. It makes me wonder if he's trying to divert attention from himself.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">I must remain vigilant and supportive, gently guiding the conversation towards uncovering the Mafiosos while ensuring my own innocence remains unquestioned.</thought>
+<thought player="Liam">Keep an eye on Avery and Mateo; their accusations may be strategic.</thought>
+<thought player="Zara">I must carefully weave my words to divert suspicion while subtly guiding the conversation towards potential Law-abiding targets.</thought>
+<thought player="Mateo">Zara's accusation might be a smokescreen; time to scrutinize her motives and dig into her past interactions.</thought>
+<thought player="Sakura">I reckon it's time to keep my eyes peeled for any more shady moves and rally the gang to sniff out those Mafiosos before they spoil our next festival!</thought>
+<thought player="Nala">In the quiet of the library, I must consider the weight of each word spoken and the silence that follows. My next move must be as deliberate as the turning of a page.</thought>
+</round>
+<round>
+Round 2.
+Zara: I've been traveling quite a bit lately, and I must say, it's fascinating how different people act when they think no one is watching. Mateo, your keen observation of Aiko reminds me of a time I caught a thief red-handed in a bustling market.
+Nala: Avery, your concern about Liam is noted. Let us observe his actions more closely.
+Mateo: Zara, your story about catching a thief is intriguing. Care to share more about your travels and how they've shaped your observational skills?
+Aiko: Nala, your suggestion to observe Liam more closely is prudent. Let's remain vigilant and share any unusual behavior we notice.
+Avery: Liam has been steering things in a way that worries me — I think we should keep a close eye there.
+Liam: Zara, your market story about catching a thief is a good reminder. Let's all keep our eyes open for any more suspicious behavior.
+Sakura: Hey, gang! Let's not forget to keep our festival spirit alive even as we hunt for those sneaky Mafiosos. Any new clues or odd vibes anyone's picking up on?
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">I will continue to subtly steer the conversation towards discussing suspicious behaviors, all while maintaining my calm and supportive demeanor.</thought>
+<thought player="Liam">Focus on Avery and Mateo's behavior; their accusations could be diversions.</thought>
+<thought player="Zara">I'll continue to subtly guide the conversation, planting seeds of doubt about Mateo and Aiko, while ensuring my own actions remain above suspicion.</thought>
+<thought player="Mateo">Zara's accusation is suspicious; time to dig deeper into her past interactions and motives.</thought>
+<thought player="Sakura">I'll keep up the festival cheer and nudge the gang to share any new clues they've spotted.</thought>
+<thought player="Nala">In the quiet of the library, I must observe the subtle shifts in the players' demeanors and weigh the merit of their arguments as I decide whom to support in the next vote.</thought>
+</round>
+<round>
+Round 3.
+Sakura: Hey, everyone! Let's keep our festival spirit alive while we sniff out those sneaky Mafiosos. Any new clues or odd vibes anyone's picking up on?
+Nala: Zara, your experiences traveling and observing human behavior could be invaluable in uncovering the Mafiosos' true nature.
+Aiko: Liam, your insistence on steering the conversation could be a tactic to divert suspicion from yourself.
+Avery: Liam has been steering things in a way that worries me — I think we should keep a close eye there.
+Zara: While we ponder the motives behind Omar's demise, let's not forget the importance of unity and trust in our festival spirit.
+Mateo: Zara, your tales of catching thieves are quite the narrative. But let's not forget, the real thief might be sitting right here among us.
+Liam: Let's focus on who might be trying to divert our attention. Any new insights?
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">I should continue to encourage open discussion about suspicious behaviors, while also offering support to those who express concerns, to foster a sense of community and trust.</thought>
+<thought player="Liam">Focus on Avery and Mateo's actions; their accusations may be a smokescreen.</thought>
+<thought player="Zara">The conversation is heating up, and I need to keep sowing doubt about Mateo and Aiko while maintaining my facade as an observant antique dealer.</thought>
+<thought player="Mateo">Zara's accusations need a closer look; time to probe her past interactions and motives.</thought>
+<thought player="Sakura">Time to keep the festival spirit high and dig deeper into those suspicious behaviors. Let's rally the gang and uncover those Mafiosos before they ruin our fun!</thought>
+<thought player="Nala">In the silence of the library, I must discern the true nature of Liam's intentions and whether his actions align with the spirit of our festival.</thought>
+</round>
+<round>
+Round 4.
+Liam: Aiko, you suggested observing Liam more closely. Has anyone noticed any suspicious behavior from him?
+Sakura: Hey, gang! Let's keep our festival spirit alive while we sniff out those sneaky Mafiosos. Any new clues or odd vibes anyone's picking up on?
+Mateo: Liam, your insistence on steering the conversation could be a tactic to divert suspicion from yourself. Care to explain further?
+Aiko: Liam, your repeated attempts to steer the conversation might be a tactic to divert suspicion from yourself. Let's remain vigilant and share any unusual behavior we notice.
+Nala: Zara, your keen observations and experiences could offer valuable insights into the Mafiosos' tactics.
+Zara: I've seen many a shady character in my travels, but Mateo's fixation on Aiko makes me uneasy. It's like he's trying too hard to divert our attention.
+Avery: Liam has been steering things in a way that worries me — I think we should keep a close eye there.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">I will continue to gently guide the conversation towards discussing suspicious behaviors, while remaining vigilant and supportive of my fellow players.</thought>
+<thought player="Liam">Avery and Mateo are pushing hard; need to gather more evidence before acting.</thought>
+<thought player="Zara">I need to continue weaving doubt around Mateo and Aiko, while ensuring my actions remain inconspicuous.</thought>
+<thought player="Mateo">Time to scrutinize Zara's motives and past interactions more closely.</thought>
+<thought player="Sakura">I need to keep the festival spirit alive and push for more scrutiny on Liam and Mateo, who seem to be drawing a lot of attention.</thought>
+<thought player="Nala">In the quiet of the library, I must weigh the merit of the arguments against Liam and consider if his actions truly align with the spirit of our festival.</thought>
+</round>
+<round>
+Round 5.
+Nala: In the silence of the library, I ponder whether Mateo's persistent focus on Aiko is a strategic diversion or a genuine concern.
+Mateo: Zara, your accusations are quite convenient. Care to share more about your past interactions and motives?
+Sakura: Hey, gang! Let's keep the festival spirit alive while we sniff out those sneaky Mafiosos. Any new clues or odd vibes anyone's picking up on?
+Liam: Avery and Mateo's persistent focus on others could be a smokescreen. Let's keep our eyes open for any signs of manipulation.
+Avery: Liam has been steering things in a way that worries me — I think we should keep a close eye there.
+Aiko: Mateo, your fixation on Aiko's behavior seems to be a recurring theme. Could you share more about why you find her actions suspicious?
+Zara: In my travels, I've learned that those who protest too much often have something to hide. Mateo, your relentless focus on Aiko seems almost... calculated.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">I need to keep encouraging the group to share their observations and suspicions, while also subtly steering the conversation towards those who seem most defensive or overly eager to divert attention.</thought>
+<thought player="Liam">Continue observing Avery and Mateo; gather more evidence before making any accusations.</thought>
+<thought player="Zara">I need to continue weaving doubt around Mateo and Aiko, while ensuring my actions remain inconspicuous.</thought>
+<thought player="Mateo">Zara's accusations are too convenient; I need to keep a close eye on her and dig into her past interactions.</thought>
+<thought player="Sakura">I need to keep up the festival cheer and subtly steer the group towards investigating Mateo and Liam, who are raising the most red flags.</thought>
+<thought player="Nala">In the silence of the library, I must carefully weigh the arguments against Liam and Mateo, discerning which aligns more closely with the machinations of the Mafiosos.</thought>
+</round>
+<round>
+Round 6.
+Aiko: Zara, your experience with catching thieves in bustling markets could be a valuable asset. Perhaps you could share more about how you recognize suspicious behavior.
+Liam: Avery and Mateo's accusations seem to be a pattern. Let's not get sidetracked; we need concrete evidence.
+Zara: In my travels, I've found that those who speak the loudest often have the most to hide. Mateo, your persistent focus on Aiko seems almost... calculated.
+<vote initiator="Avery" target="Liam">
+Avery: Yes
+Aiko: Yes
+Liam: No
+Zara: Yes
+Mateo: No
+Sakura: Yes
+Nala: Yes
+tally: 5 Yes, 2 No
+outcome: executed — Liam has been executed. Liam was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. Liam was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Zara points at Mateo
+Avery points at Mateo
+<kill>Mateo — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Mateo was killed last night. Mateo was a Law-abiding Citizen.
+<round>
+Round 1.
+Nala: Zara, your experience with catching thieves in bustling markets could be a valuable asset. Perhaps you could share more about how you recognize suspicious behavior.
+Avery: Nala has been steering things in a way that worries me — I think we should keep a close eye there.
+Sakura: Hey, gang! Let's keep the festival spirit alive while we sniff out those sneaky Mafiosos. Any new clues or odd vibes anyone's picking up on?
+Zara: In my travels, I've found that those who speak the loudest often have the most to hide. Nala, your persistent focus on others seems almost... calculated.
+Aiko: Zara, your experience in recognizing suspicious behavior from your travels could be invaluable. Could you share more about how you identify such behaviors?
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">I must continue to subtly guide the conversation towards discussing suspicious behaviors, while remaining vigilant and supportive of my fellow players.</thought>
+<thought player="Zara">I need to continue weaving doubt around Aiko and Nala, while ensuring my actions remain inconspicuous.</thought>
+<thought player="Sakura">Time to keep the festival spirit high and dig deeper into those suspicious behaviors. Let's rally the gang and uncover those Mafiosos before they ruin our fun!</thought>
+<thought player="Nala">In the quiet of the library, I must carefully observe the remaining players' interactions and discern the true intentions behind their words.</thought>
+</round>
+<round>
+Round 2.
+Nala: In the quiet of the library, I must consider the weight of each word spoken and the silence that follows. My next move must be as deliberate as the turning of a page.
+Sakura: Hey, gang! Let's keep the festival spirit alive while we sniff out those sneaky Mafiosos. Any new clues or odd vibes anyone's picking up on?
+Aiko: Nala, your focus on steering the conversation has been noted. Could you share more about your observations and any suspicions you may have?
+Zara: In my travels, I've learned that those who protest too much often have something to hide. Nala, your persistent focus on others seems almost... calculated.
+Avery: Nala has been steering things in a way that worries me — I think we should keep a close eye there.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">I need to continue encouraging the group to share their observations and suspicions, while subtly steering the conversation towards those who seem most defensive or overly eager to divert attention.</thought>
+<thought player="Zara">I must continue to subtly sow doubt about Nala while ensuring my own actions remain inconspicuous, maintaining my facade as an observant antique dealer.</thought>
+<thought player="Sakura">I need to keep the festival spirit high and dig deeper into those suspicious behaviors. Let's rally the gang and uncover those Mafiosos before they ruin our fun!</thought>
+<thought player="Nala">In the quiet of the library, I must remain vigilant and discerning, ensuring that my next move is as deliberate and insightful as the turning of a page.</thought>
+</round>
+<round>
+Round 3.
+Nala: In the quiet of the library, I have observed Zara's intense focus on others, which raises questions about her own intentions.
+Avery: Nala has been steering things in a way that worries me — I think we should keep a close eye there.
+Zara: In my travels, I've encountered many a shady character, but Nala's insistence on steering the conversation has caught my attention. It's almost as if she's trying to divert our focus from the true culprits.
+Sakura: Hey, gang! Let's keep the festival spirit alive while we sniff out those sneaky Mafiosos. Any new clues or odd vibes anyone's picking up on?
+Aiko: Nala, your focus on steering the conversation has been noted. Could you share more about your observations and any suspicions you may have?
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">I need to carefully observe Nala and Zara, as their behaviors seem increasingly suspicious, and encourage the group to share any new insights or observations.</thought>
+<thought player="Zara">I need to continue weaving doubt around Nala while maintaining my facade as an observant antique dealer.</thought>
+<thought player="Sakura">I need to keep the festival spirit alive and subtly steer the group towards investigating Zara and Nala, who are now raising the most red flags.</thought>
+<thought player="Nala">In the quiet of the library, I must discern the true intentions behind Zara's persistent focus on others, as it may reveal her own hidden motives.</thought>
+</round>
+<round>
+Round 4.
+Nala: In the quiet of the library, I have observed Zara's intense focus on others, which raises questions about her own intentions.
+Avery: Nala has been steering things in a way that worries me — I think we should keep a close eye there.
+Zara: In my travels, I've encountered many a shady character, but Nala's insistence on steering the conversation has caught my attention. It's almost as if she's trying to divert our focus from the true culprits.
+Sakura: Hey, gang! Let's keep the festival spirit alive while we sniff out those sneaky Mafiosos. Any new clues or odd vibes anyone's picking up on?
+Aiko: Nala, your persistent focus on steering the conversation has been noted. Could you share more about your observations and any suspicions you may have?
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">I need to gently push for more scrutiny on Nala and Zara, while ensuring I remain a trusted voice in the group.</thought>
+<thought player="Zara">I must continue to subtly sow doubt about Nala, ensuring my actions remain inconspicuous and my facade as an observant antique dealer is maintained.</thought>
+<thought player="Sakura">I gotta keep the festival spirit high and dig deeper into Zara and Nala's suspicious behaviors, rallying the gang to uncover those Mafiosos before they spoil our fun!</thought>
+<thought player="Nala">In the quiet of the library, I must remain vigilant and discerning, ensuring that my next move is as deliberate and insightful as the turning of a page.</thought>
+</round>
+<round>
+Round 5.
+Nala: In the quiet of the library, I have observed Zara's intense focus on others, which raises questions about her own intentions.
+Zara: In my travels, I've learned that those who speak the loudest often have the most to hide. Nala, your persistent focus on steering the conversation has caught my attention.
+Sakura: Hey, gang! Let's keep the festival spirit alive while we sniff out those sneaky Mafiosos. Any new clues or odd vibes anyone's picking up on?
+Aiko: Nala, your insistence on steering the conversation has been noted. Could you share more about your observations and any suspicions you may have?
+Avery: Nala has been steering things in a way that worries me — I think we should keep a close eye there.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">I will continue to encourage open discussion and subtly guide the conversation towards Nala and Zara, while maintaining my calm and supportive demeanor.</thought>
+<thought player="Zara">I must continue to subtly sow doubt about Nala while ensuring my actions remain inconspicuous and my facade as an observant antique dealer is maintained.</thought>
+<thought player="Sakura">I need to keep the festival spirit alive and subtly steer the group towards investigating Zara and Nala, who are now raising the most red flags.</thought>
+<thought player="Nala">In the quiet of the library, I must carefully consider the growing suspicion around Zara and whether her focus on others is a genuine attempt to uncover the Mafiosos or a strategic diversion.</thought>
+</round>
+<round>
+Round 6.
+Nala: In the quiet of the library, I have observed Zara's intense focus on others, which raises questions about her own intentions.
+Zara: In my travels, I've learned that those who speak the loudest often have the most to hide. Nala, your persistent focus on steering the conversation has caught my attention.
+Aiko: Nala, your persistent focus on steering the conversation has been noted. Could you share more about your observations and any suspicions you may have?
+Sakura: Hey, gang! Let's keep the festival spirit alive while we sniff out those sneaky Mafiosos. Any new clues or odd vibes anyone's picking up on?
+<vote initiator="Avery" target="Nala">
+Avery: Yes
+Aiko: Yes
+Zara: Yes
+Sakura: Yes
+Nala: No
+tally: 4 Yes, 1 No
+outcome: executed — Nala has been executed. Nala was a Law-abiding Citizen.
+</vote>
+</round>
+</day>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Omar (Law-abiding Citizen)
+• Day 1: Liam (Law-abiding Citizen) executed
+• Night 2: Mateo (Law-abiding Citizen)
+• Day 2: Nala (Law-abiding Citizen) executed
+
+Full roster: Avery (Mafia), Aiko (Law-abiding Citizen), Liam (Law-abiding Citizen), Zara (Mafia), Mateo (Law-abiding Citizen), Sakura (Law-abiding Citizen), Omar (Law-abiding Citizen), Nala (Law-abiding Citizen)
+
+Who they really were:
+• Aiko (Law-abiding Citizen) — Aiko is warm and empathetic, with a gentle but firm resolve. She has a nurturing nature and is always ready to lend an ear or offer advice. Aiko speaks with a calm, soothing tone, often using inclusive language to make others feel at ease. She has a slight pause before she speaks, choosing her words carefully. Aiko is a community nurse, deeply rooted in the town. She's known for her kindness and her dedication to helping others, often going out of her way to check on neighbors and friends.
+• Liam (Law-abiding Citizen) — pragmatic and straightforward; values efficiency and results concise, matter-of-fact; uses practical examples and analogies Liam is a local handyman, known for his quick fixes and no-nonsense approach. He's been around the town for years, fixing roofs, unclogging drains, and patching up fences. Liam is the guy you call when something breaks, and he's always got the right tool for the job. He's straightforward and to the point, preferring action over long discussions.
+• Zara (Mafia) — publicly presented as Zara is an antique dealer, known for her eclectic taste and eye for detail. She travels frequently to find unique pieces for her shop, and her stories of far-off places and hidden treasures captivate her customers. Zara is always ready with a fascinating tale or a piece of trivia, making her a popular figure in the town. (curious and observant, with a penchant for storytelling speaks with a warm, engaging tone, often using vivid imagery and anecdotes to illustrate points) … but was really a Mafioso: In her shadowy life, Zara is a skilled Mafioso, adept at gathering information and navigating the criminal underworld. She joined the Mafia after a chance encounter with a high-ranking member while on one of her travels. Her ability to blend in and her knack for storytelling make her an invaluable asset to the organization.
+• Mateo (Law-abiding Citizen) — Mateo is skeptical and sharp-witted, always questioning the motives of others. Mateo speaks with a brisk, almost curt tone, often using sarcasm and dry humor. He tends to be blunt, cutting to the chase without much preamble. Mateo is a private investigator, known for his keen eye and relentless pursuit of the truth. He's been around the town for a while, solving mysteries and uncovering secrets. Mateo is the person people go to when they need answers, and he's not afraid to dig deep to find them.
+• Sakura (Law-abiding Citizen) — cheerful and spirited; with a love for tradition and community celebrations enthusiastic and rapid-fire; uses colloquial expressions and local slang Sakura is the town's festival coordinator, known for her vibrant energy and passion for bringing people together. She's the one who organizes the annual cherry blossom festival, complete with dances, food stalls, and fireworks. Sakura is always the first to arrive and the last to leave, ensuring every detail is perfect. Her infectious enthusiasm and love for tradition make her a beloved figure in the community.
+• Omar (Law-abiding Citizen) — no-nonsense and straightforward; values honesty and integrity clear and concise; uses straightforward language with occasional dry humor Omar is a local butcher, known for his high-quality meats and fair prices. He's been running the town's butcher shop for over two decades, providing fresh cuts and sausages to the community. Omar is a man of few words but is always ready to share a joke or a piece of advice. He's respected for his hard work and dedication to his craft.
+• Nala (Law-abiding Citizen) — stoic and contemplative; finds strength in silence measured and deliberate; often pauses to gather thoughts before speaking Nala is a local librarian, known for her vast knowledge and quiet wisdom. She has been the guardian of the town's library for many years, preserving its history and stories. Nala is often found in the quiet corners of the library, surrounded by books and the soft rustle of pages. Her calm and collected demeanor makes her a trusted source of information and a beacon of tranquility in the community.
+</endgame>
+</transcript>

@@ -1,0 +1,454 @@
+Game 5 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=20
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Tian" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks slowly and deliberately, with a quiet, steady cadence. Uses simple, direct language and avoids idioms. Often pauses before answering questions, as if carefully considering each word.
+Persona: Tian is a librarian who has lived in the town his entire life. He spends his days organizing books and helping people find information. He's known for being reliable and straightforward, never meddling in others' affairs unless asked.
+</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: cheerful and talkative
+Manner: spreadsheets and exclamation points, speaks rapidly with a high-pitched voice, uses casual slang and pop culture references, often interrupts others mid-sentence, frequently says "YOLO" and "no cap"
+Persona: Kai is a 28-year-old social media influencer who lives for viral moments and trend participation. They run a lifestyle blog focused on fitness, travel, and food, always sharing their latest adventures with an enthusiastic flair. Known for being the life of any party, they're always trying to convince others to join them in their next escapade.
+</player>
+<player name="Lila" role="Law-abiding Citizen">
+Personality: reserved and observant
+Manner: speaks in a soft, measured tone with frequent pauses for thought; uses formal vocabulary and avoids slang; often checks her glasses before responding to questions; has a habit of tilting her head when processing information
+Persona: Lila is a retired school librarian who moved to the town five years ago after her husband passed away. She spends her days reading, writing letters to old friends, and helping the local children with their homework. She's known for being quiet but attentive, always listening carefully to what others say.
+</player>
+<player name="Mikaela" role="Mafia">
+Personality: Calculating and theatrical
+Manner: Speaks in a rich, melodramatic voice with excessive gestures; uses grandiose metaphors and over-the-top expressions; often pauses for effect and emphasizes key words with dramatic flair; has a habit of arching eyebrows and tilting the head while talking
+Public legend: Mikaela is a former opera singer who retired from the stage after a devastating vocal cord injury. She now works as a private music tutor, teaching piano and voice lessons to local children and adults. Known for her passionate performances and dramatic flair, she's often seen practicing scales with theatrical gestures, much to the amusement of her students. She's deeply devoted to her craft and has a strong sense of justice, always standing up for the underdog in any situation.
+True self (hidden): Mikaela was recruited into the Mafia after her singing career ended due to a botched medical procedure that left her voice permanently damaged. She was offered a place in the organization as a "singer" in their underground operations, using her theatrical skills to manipulate and deceive targets while maintaining an innocent public persona. She's now one of the most effective cons artists in the crew, able to charm anyone with her dramatic flair.
+</player>
+<player name="Ismail" role="Mafia">
+Personality: Charismatic and persuasive
+Manner: Speaks with smooth, confident cadence; uses metaphors and storytelling to weave points; often pauses for dramatic effect; employs a warm, inviting tone that draws people in
+Public legend: Ismail is a successful real estate agent who has been living in the town for over a decade. He's known for his charm and ability to make everyone feel comfortable, whether they're buying a house or just stopping by for a chat. He regularly volunteers at the local community center, helping families find housing solutions and organizing neighborhood events. His reputation is built on trust and his knack for bringing people together.
+True self (hidden): Ismail was once a rising star in the criminal underworld before he decided to use his charisma and negotiation skills for the Mafia. He started as an enforcer but quickly rose through the ranks due to his ability to talk his way out of situations and manipulate people into doing what he wanted. His true passion has always been control and influence, which he now channels into the Mafia's operations under a new identity.
+</player>
+<player name="Shahzaib" role="Law-abiding Citizen">
+Personality: methodical and detail-oriented
+Manner: speaks with a measured, precise rhythm; uses specific numbers and facts; avoids filler words; often repeats key phrases for emphasis; has a habit of organizing thoughts aloud before speaking
+Persona: Shahzaib is a meticulous accountant who has worked for the same firm for fifteen years. He's known for his accuracy and reliability, double-checking every number and never missing a deadline. In his free time, he enjoys building model airplanes and solving sudoku puzzles.
+</player>
+<player name="Aisha" role="Law-abiding Citizen">
+Personality: warm and nurturing
+Manner: speaks in a gentle, soothing tone with frequent pauses for emphasis; uses soft, caring words and often repeats key phrases to reassure others; has a habit of touching her hair when thinking; avoids harsh language and always offers kind alternatives
+Persona: Aisha is a local nurse who has worked at the town's clinic for eight years. She's known for her compassionate care and ability to calm anxious patients. She volunteers at the community center, teaching basic first aid and health classes. Aisha lives with her elderly mother and takes pride in caring for both her family and neighbors.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Tian, Kai, Lila, Mikaela, Ismail, Shahzaib, Aisha. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Mikaela): Your Mafia teammates are: Ismail. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Ismail): Your Mafia teammates are: Mikaela. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Mikaela points at Kai
+Ismail points at Kai
+<kill>Kai — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Kai was killed last night. Kai was a Law-abiding Citizen.
+<round>
+Round 1.
+Tian: Ismail, you seemed surprised when Kai was revealed as a Law-abiding Citizen. Can you explain your reaction?
+Lila: Ismail, could you share what you recall about the night before? I have a lingering sense that some details may have slipped my mind.
+Avery: Nothing is settled yet, but I'm watching Shahzaib most closely.
+Mikaela: Oh, Tian, my dear, you must be so confused! *flutters hands dramatically* But surely, a moment of surprise is only natural when fate deals us a cruel hand. I, for one, am simply relieved that we are all still here to witness the unfolding drama.
+Ismail: Tian, my dear, surprise is such a fleeting thing—especially when it comes to fate's cruel jest. But perhaps, just perhaps, we all have our reasons for being here.
+Shahzaib: Ismail, your reaction to Kai's death felt too calculated for a simple surprise. I'm inclined to believe you're hiding something. If you're not the killer, then why the hesitation?
+Aisha: Ismail, your hesitation when Shahzaib spoke feels... off. I'm not sure if you're just nervous, but it's worth noting.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tian">Ismail's reaction did seem odd, but I need to be careful not to jump to conclusions. I should listen closely for any further slips or inconsistencies in his words.</thought>
+<thought player="Lila">I find myself cautiously intrigued by Ismail's reaction—there is more at play here than mere surprise. I should keep a close eye on him, but also remain mindful not to jump to conclusions too hastily.</thought>
+<thought player="Mikaela">What a tangled web of suspicion we weave, my dear citizens. Ismail's reaction was indeed too theatrical for mere surprise, yet I must play the innocent soprano to avoid raising more eyebrows. The next move is clear — let us see if Shahzaib's accusations hold water or if I can manipulate the narrative further.</thought>
+<thought player="Ismail">Shahzaib is narrowing in on me, but I can't let him see the uncertainty behind my eyes. I need to play the concerned citizen a bit longer, maybe even feign confusion about the night's events to keep him off-balance.</thought>
+<thought player="Shahzaib">I need to gather more evidence before accusing Ismail directly. My focus should remain on the discrepancy between his reaction and the facts, while keeping my observations precise and non-speculative.</thought>
+<thought player="Aisha">I can't shake the feeling that Ismail is hiding something, but I need to be careful not to accuse without solid grounds. I'll keep listening and see if anyone else steps forward with suspicions.</thought>
+</round>
+<round>
+Round 2.
+Shahzaib: I'm still trying to piece together what happened during the night. Shahzaib, can you clarify your reasoning for suspecting Ismail? I didn't catch the specifics of your observation.
+Tian: Ismail, you've been quiet lately. Are you planning to stay silent through this whole day?
+Aisha: Ismail, I'm feeling a bit uneasy about the way you've been reacting to everyone's questions. It's okay to be nervous, but sometimes our nerves show when we're hiding something.
+Mikaela: Oh, my dear Shahzaib, your suspicions are as sharp as a blade, but alas, I fear you may be slicing at the wrong shadow. *tilts head with a graceful smirk* Ismail has always been a man of many mysteries—perhaps too many to be trusted.
+Ismail: Shahzaib, my dear fellow townsfolk, I fear we're beginning to weave suspicion from thin air. I'm simply trying to understand the threads of truth that bind us all together.
+Lila: Ismail, your silence during the night troubles me. Could you explain why you remained quiet when others were sharing their observations?
+Avery: Nothing is settled yet, but I'm watching Shahzaib most closely.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tian">Ismail's behavior has been unsettling, but I must not let my suspicions cloud my judgment. I'll keep listening and observing, perhaps look for any contradiction in his story if he speaks again.</thought>
+<thought player="Lila">Ismail's hesitation warrants further observation, yet I must resist the urge to accuse him outright. My priority remains gathering evidence rather than making leaps in judgment.</thought>
+<thought player="Mikaela">Ismail's performance was overly dramatic, but I must let the townsfolk believe he is the killer. I shall continue to play the innocent, yet subtly guide suspicion towards Shahzaib.</thought>
+<thought player="Ismail">Shahzaib is getting too close, but I can turn his suspicion into fuel for my charm. If I play the confused citizen a bit longer, I might just keep him guessing while masking my true intentions.</thought>
+<thought player="Shahzaib">I must continue observing Ismail's behavior closely, looking for further inconsistencies that could solidify my suspicion. My focus should remain on gathering precise evidence rather than making broad accusations.</thought>
+<thought player="Aisha">Ismail's reactions do seem off, but I must stay calm and let others speak first. I'll keep listening carefully for any solid clues or inconsistencies.</thought>
+</round>
+<round>
+Round 3.
+Shahzaib: I'm still weighing the evidence carefully. Ismail, if you're not the killer, then why did you hesitate when I mentioned the calculated nature of your reaction?
+Aisha: Ismail, I'm starting to think that your silence during the night might be more than just nervousness. Could you tell us what you were thinking, or perhaps, what you recall from that time?
+Ismail: Shahzaib, my dear friend, suspicion is a dangerous game we're playing. But perhaps, just perhaps, it's the game that will reveal who among us is truly hiding something.
+Mikaela: Oh, my dear Shahzaib, you're such a curious detective, but perhaps the most dangerous thing about suspicion is when it blinds us to the truth. *giggles lightly* I do hope you're not too quick to judge the quiet ones among us.
+Tian: Ismail, you kept quiet during the night, but now you're deflecting suspicion. If you're not hiding something, why the hesitation when we asked about your reaction to Kai's death?
+Avery: Nothing is settled yet, but I'm watching Shahzaib most closely.
+Lila: Ismail, your silence during the night feels deliberate. If you're not hiding something, perhaps you could explain why you remained quiet when others were sharing their observations.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tian">Ismail's hesitation and silence have been notable, but I must not let my suspicions lead me to make a hasty accusation. I'll listen carefully for any contradiction in his words if he speaks again, and keep my thoughts grounded in what is said, not imagined.</thought>
+<thought player="Lila">Ismail's conduct during the night and his reaction to questions have been unsettlingly vague. I should continue observing him, perhaps look for inconsistencies in his story or behavior, but refrain from making any direct accusations until I have more concrete evidence.</thought>
+<thought player="Mikaela">The townsfolk are growing suspicious of Ismail, which is precisely how it should be. I must continue to play the innocent while subtly steering suspicion toward Shahzaib, who seems overly eager to point fingers. Let us see if my theatrical misdirection can keep Ismail in the shadows a little longer.</thought>
+<thought player="Ismail">Shahzaib's suspicions are sharpening, but I can turn his scrutiny to my advantage by playing the confused citizen. My charm and feigned uncertainty might just keep him guessing while I plot my next move.</thought>
+<thought player="Shahzaib">I need to monitor Ismail closely for any further inconsistencies in his behavior. My suspicion is building, but I must avoid making accusations without solid evidence.</thought>
+<thought player="Aisha">Ismail's hesitation feels significant, but I need to let others speak first before making any accusations. I'll keep listening carefully for any solid clues or inconsistencies that might emerge.</thought>
+</round>
+<round>
+Round 4.
+Lila: Ismail, your silence during the night feels deliberate. Could you explain why you remained quiet when others were sharing their observations?
+Avery: Nothing is settled yet, but I'm watching Shahzaib most closely.
+Mikaela: Oh, my dear Ismail, your silence during the night was so profound it almost sang a song of its own. *giggles softly* But perhaps that's just my imagination playing tricks on me.
+Ismail: Shahzaib, my dear fellow townsfolk, I fear we're beginning to weave suspicion from thin air. But perhaps, just perhaps, it's the game that will reveal who among us is truly hiding something.
+Shahzaib: I'm still weighing the evidence carefully. Ismail, if you're not the killer, then why did you hesitate when I mentioned the calculated nature of your reaction?
+Tian: Ismail, you've been evasive about your silence during the night. If you're not the killer, then why did you hesitate when Shahzaib questioned your reaction?
+Aisha: I'm still trying to understand everyone's reactions, but I can't shake the feeling that Ismail's silence during the night and his hesitation when questioned are worth noting.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tian">Ismail's silence and evasive answers have been unsettling, but I must not let my suspicions lead me to make a hasty accusation. I'll listen carefully for any contradiction in his words if he speaks again, and keep my thoughts grounded in what is said, not imagined.</thought>
+<thought player="Lila">I remain cautious in my observations of Ismail, noting his evasive silence and hesitant replies. My priority is to gather more concrete evidence before making any accusations, as hasty judgments could mislead the group.</thought>
+<thought player="Mikaela">The townsfolk's suspicions are firmly planted on Ismail, which suits my plan perfectly. However, I must ensure Shahzaib doesn't become too vocal or I may need to redirect the spotlight away from Ismail and towards him.</thought>
+<thought player="Ismail">Shahzaib's suspicions are sharp, but I can turn his scrutiny into fuel for my charm. By playing the confused citizen a bit longer, I might keep him guessing while masking my true intentions. The key is to stay one step ahead without revealing too much.</thought>
+<thought player="Shahzaib">Ishmael's hesitation and silence during the night remain highly suspicious. I need to continue observing his behavior closely, looking for further inconsistencies that could solidify my suspicion. My focus should remain on gathering precise evidence rather than making broad accusations.</thought>
+<thought player="Aisha">I'm still cautious about Ismail, but my heart tells me to listen more carefully before speaking. I need to trust my instincts, yet keep my words gentle and not rush into accusations.</thought>
+</round>
+<round>
+Round 5.
+Aisha: Ismail, I'm still trying to understand your silence during the night. Could you share what you were thinking, or perhaps, what you recall from that time? It's okay to be nervous, but sometimes our nerves show when we're hiding something.
+Ismail: Shahzaib, my dear fellow townsfolk, I fear we're beginning to weave suspicion from thin air. But perhaps, just perhaps, it's the game that will reveal who among us is truly hiding something.
+Tian: Ismail, you've been quiet during the night and evasive when questioned. If you're not hiding something, why the hesitation?
+Avery: Nothing is settled yet, but I'm watching Shahzaib most closely.
+Mikaela: Oh, my dear Shahzaib, you're such a curious soul, but perhaps too eager to play the detective. *waves hand dismissively* Let us not let our nerves lead us astray—after all, the most dangerous game is the one where we lose sight of the truth.
+Lila: Ismail, your hesitation when questioned about your silence during the night feels significant. If you're not hiding something, perhaps you could offer a clearer explanation for why you remained quiet when others were sharing their observations.
+Shahzaib: I’m still analyzing the patterns of hesitation and silence, but Ismail’s behavior during the night stands out as inconsistent with a typical citizen's reaction. I need more clarity on his observations before making a final judgment.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tian">Ismail's silence and evasive answers are troubling, but I must not let my suspicions cloud my judgment. I'll listen carefully for any contradiction in his words if he speaks again, and keep my thoughts grounded in what is said, not imagined.</thought>
+<thought player="Lila">I remain cautious in my observations of Ismail, noting his evasive silence and hesitant replies. My priority is to gather more concrete evidence before making any accusations, as hasty judgments could mislead the group.</thought>
+<thought player="Mikaela">The townsfolk's suspicions are firmly planted on Ismail, which suits my plan perfectly. However, I must ensure Shahzaib doesn't become too vocal or I may need to redirect the spotlight away from Ismail and towards him.</thought>
+<thought player="Ismail">Shahzaib's suspicions are sharp, but I can turn his scrutiny into fuel for my charm. By playing the confused citizen a bit longer, I might keep him guessing while masking my true intentions. The key is to stay one step ahead without revealing too much.</thought>
+<thought player="Shahzaib">Ishmael's hesitation and silence during the night remain highly suspicious. I need to continue observing his behavior closely, looking for further inconsistencies that could solidify my suspicion. My focus should remain on gathering precise evidence rather than making broad accusations.</thought>
+<thought player="Aisha">I can't quite place what exactly is off about Ismail, but my instincts are tingling. I need to listen a bit more before I speak, perhaps let others voice their suspicions first. My heart tells me to be cautious, yet kind in my approach.</thought>
+</round>
+<round>
+Round 6.
+<vote initiator="Avery" target="Shahzaib">
+Avery: No
+Tian: No
+Lila: No
+Mikaela: No
+Ismail: No
+Shahzaib: No
+Aisha: No
+tally: 0 Yes, 7 No
+outcome: failed — The vote fails.
+</vote>
+Lila: Ismail, your hesitation when questioned about your silence during the night still puzzles me. If you're not hiding something, perhaps you could offer a clearer explanation for why you remained quiet when others were sharing their observations.
+Mikaela: Oh, my dear Ismail, your silence during the night was so profound it nearly drowned out the very truth we seek. *giggles lightly* But perhaps, just perhaps, the most dangerous game is the one where we lose sight of the truth.
+Aisha: Ismail, I'm still trying to understand your silence during the night. Could you share what you were thinking, or perhaps, what you recall from that time? It's okay to be nervous, but sometimes our nerves show when we're hiding something.
+Ismail: Shahzaib, my dear friend, suspicion is a fickle thing—it often leads us down winding paths we never intended to take. Perhaps we should focus on the truth that binds us all, rather than the shadows we cast.
+Tian: Ismail, you've been quiet during the night and evasive when questioned. If you're not hiding something, why the hesitation?
+Shahzaib: Ismail, your silence during the night and hesitation when questioned remain inconsistent with a typical citizen's behavior. I'm still gathering evidence, but these patterns are concerning.
+<vote initiator="Avery" target="Shahzaib">
+Avery: No
+Tian: No
+Lila: No
+Mikaela: No
+Ismail: No
+Shahzaib: No
+Aisha: No
+tally: 0 Yes, 7 No
+outcome: failed — The vote fails.
+</vote>
+Shahzaib: I'm still trying to piece together the timeline of events during the night. Ismail, if your silence was truly just nervousness, then perhaps you could clarify what you recall about the moment Kai was revealed as a Law-abiding Citizen.
+Tian: Ismail, if your silence during the night was simply nervousness, then why did you hesitate when I asked about your reaction to Kai's death?
+Mikaela: Oh, my dear Ismail, your silence during the night was so profound it almost sang a song of its own. But perhaps that's just my imagination playing tricks on me.
+<vote initiator="Avery" target="Shahzaib">
+Avery: No
+Tian: No
+Lila: No
+Mikaela: No
+Ismail: No
+Shahzaib: No
+Aisha: No
+tally: 0 Yes, 7 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Ismail points at Shahzaib
+Mikaela points at Shahzaib
+<kill>Shahzaib — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Shahzaib was killed last night. Shahzaib was a Law-abiding Citizen.
+<round>
+Round 1.
+Ismail: Shahzaib's death feels like a twist in the tale we're all trying to solve. I'm simply hoping we can piece together the truth without letting fear guide our next move.
+Avery: Nothing is settled yet, but I'm watching Lila most closely.
+Tian: Ismail, your silence during the night and hesitation when questioned still leave me uneasy. If you're not hiding something, perhaps you could offer a clearer explanation for why you remained quiet when others were sharing their observations?
+Aisha: Ismail, I'm still trying to understand your silence during the night. Could you share what you were thinking, or perhaps, what you recall from that time? It's okay to be nervous, but sometimes our nerves show when we're hiding something.
+Lila: Ismail, your silence during the night and hesitation when questioned still leave me uneasy. If you're not hiding something, perhaps you could offer a clearer explanation for why you remained quiet when others were sharing their observations?
+Mikaela: Oh, what a cruel twist of fate has befallen us all. *pauses dramatically* I do hope we can still find the truth beneath the veil of sorrow.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tian">Ismail's behavior has been consistently evasive, but I need to avoid making a hasty judgment. I'll keep listening carefully for any contradiction in his words if he speaks again, and base my next move on what is actually said, not just my suspicions.</thought>
+<thought player="Lila">Ismail's conduct remains suspicious, but I must resist the urge to act on speculation. I will observe further, looking for inconsistencies in his story or behavior, and await more concrete evidence before making any accusations.</thought>
+<thought player="Mikaela">The townsfolk's suspicion is firmly planted on Ismail, which suits my plan perfectly. However, I must ensure Shahzaib doesn't become too vocal or I may need to redirect the spotlight away from Ismail and towards him. Let us see if my theatrical misdirection can keep Ismail in the shadows a little longer.</thought>
+<thought player="Ismail">Shahzaib's suspicions are growing, but I can use my charm and feigned confusion to throw him off track. I must keep playing the concerned citizen while subtly guiding the conversation away from myself. The key is to stay one step ahead without revealing too much.</thought>
+<thought player="Aisha">I'm still sensing that Ismail is hiding something, but I need to be patient and let others speak first. My heart tells me to stay calm and kind, not to rush into accusations.</thought>
+</round>
+<round>
+Round 2.
+Lila: Ismail, your silence during the night feels too calculated to be mere nervousness. If you're not hiding something, I'd appreciate an explanation for why you remained quiet when others were sharing their observations.
+Tian: Ismail, your silence during the night and hesitation when questioned still leave me uneasy. If you're not hiding something, perhaps you could offer a clearer explanation for why you remained quiet when others were sharing their observations?
+Ismail: Shahzaib's death has left a heavy silence in our midst. I find myself wondering if we're all as innocent as we appear, or if the truth hides in the spaces between our words.
+Avery: Nothing is settled yet, but I'm watching Lila most closely.
+Mikaela: Oh, my dear Ismail, your silence during the night was so profound it nearly stole the air from the room. *giggles lightly* But perhaps that's just my imagination playing tricks on me—after all, the most dangerous game is the one where we lose sight of the truth.
+Aisha: Ismail, I'm still trying to understand your silence during the night. Could you share what you were thinking, or perhaps, what you recall from that time? It's okay to be nervous, but sometimes our nerves show when we're hiding something.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tian">Ismail's behavior has been consistently evasive, but I must not let my suspicions lead me to make a hasty accusation. I'll keep listening carefully for any contradiction in his words if he speaks again, and base my next move on what is actually said, not just my suspicions.</thought>
+<thought player="Lila">I remain cautious in my observations of Ismail, noting his evasive silence and hesitant replies. My priority is to gather more concrete evidence before making any accusations, as hasty judgments could mislead the group.</thought>
+<thought player="Mikaela">The townsfolk's suspicions are firmly planted on Ismail, and my theatrical performance has kept him in the shadows thus far. However, I must be cautious not to let Shahzaib become too vocal, or I may need to redirect suspicion towards him. Let us see if my misdirection can keep Ismail in the crosshairs a little longer.</thought>
+<thought player="Ismail">Shahzaib's suspicions are growing, but I can use my charm and feigned confusion to throw him off track. I must keep playing the concerned citizen while subtly guiding the conversation away from myself. The key is to stay one step ahead without revealing too much.</thought>
+<thought player="Aisha">I'm still sensing that Ismail is hiding something, but my heart tells me to stay calm and not rush into accusations. I'll keep listening carefully, perhaps letting others speak first before I weigh in again.</thought>
+</round>
+<round>
+Round 3.
+Tian: Ismail, your silence during the night and hesitation when questioned still leave me uneasy. If you're not hiding something, perhaps you could offer a clearer explanation for why you remained quiet when others were sharing their observations?
+Aisha: Ismail, I'm still trying to understand your silence during the night. Could you share what you were thinking, or perhaps, what you recall from that time? It's okay to be nervous, but sometimes our nerves show when we're hiding something.
+Avery: Nothing is settled yet, but I'm watching Lila most closely.
+Ismail: I'm beginning to think that the truth is not about what we say, but about what we choose to reveal—or conceal—when the night falls.
+Lila: Ismail, your silence during the night feels too calculated to be mere nervousness. If you're not hiding something, I'd appreciate an explanation for why you remained quiet when others were sharing their observations.
+Mikaela: Oh, my dear Ismail, your silence during the night was so profound it almost stole the air from the room. But perhaps that's just my imagination playing tricks on me—after all, the most dangerous game is the one where we lose sight of the truth.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tian">Ismail's silence and hesitation still feel off, but I need to wait for more concrete clues before acting. I'll keep listening carefully for any contradiction in his words if he speaks again.</thought>
+<thought player="Lila">I remain cautious in my observations of Ismail, noting his evasive silence and hesitant replies. My priority is to gather more concrete evidence before making any accusations, as hasty judgments could mislead the group.</thought>
+<thought player="Mikaela">The townsfolk's suspicions are firmly planted on Ismail, and my performance has kept him in the shadows thus far. However, I must be cautious not to let Shahzaib become too vocal, or I may need to redirect suspicion towards him. Let us see if my misdirection can keep Ismail in the crosshairs a little longer.</thought>
+<thought player="Ismail">Shahzaib's suspicions are sharp, but I can turn his scrutiny into fuel for my charm. By playing the concerned citizen a bit longer, I might keep him guessing while masking my true intentions. The key is to stay one step ahead without revealing too much.</thought>
+<thought player="Aisha">I'm still uneasy about Ismail's silence and hesitation, but I need to be patient and let others speak first. My heart tells me to stay calm and kind, not to rush into accusations.</thought>
+</round>
+<round>
+Round 4.
+Lila: Ismail, your silence during the night feels too calculated to be mere nervousness. If you're not hiding something, I'd appreciate an explanation for why you remained quiet when others were sharing their observations.
+Aisha: Ismail, I'm beginning to think that your silence during the night and hesitation when questioned are too calculated to be mere nervousness. I'm still trying to understand your thoughts, but it's okay to be honest — we're all trying to piece together the truth.
+Mikaela: Oh, my dear Ismail, your silence during the night was so profound it nearly stole the air from the room. But perhaps that's just my imagination playing tricks on me—after all, the most dangerous game is the one where we lose sight of the truth.
+Tian: Ismail, I'm starting to think your silence during the night and hesitation when questioned are more than just nerves. If you're not hiding something, then why the calculated responses?
+Avery: Nothing is settled yet, but I'm watching Lila most closely.
+Ismail: I can't help but feel that the truth is slipping through our fingers like sand, and the more we grasp, the more it slips away. Perhaps it's time to reconsider who among us truly holds the key to the night's secrets.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tian">I'm not ready to accuse Ismail yet, but his silence and evasiveness during the night do stand out. I need more than just suspicion—especially after Shahzaib's death. I'll keep listening for any contradiction or slip in his words.</thought>
+<thought player="Lila">I remain cautious in my observations of Ismail, noting his evasive silence and hesitant replies. My priority is to gather more concrete evidence before making any accusations, as hasty judgments could mislead the group.</thought>
+<thought player="Mikaela">The townsfolk's suspicions are firmly planted on Ismail, and my performance has kept him in the shadows thus far. However, I must be cautious not to let Shahzaib become too vocal, or I may need to redirect suspicion towards him. Let us see if my misdirection can keep Ismail in the crosshairs a little longer.</thought>
+<thought player="Ismail">Shahzaib's suspicions are mounting, but I can turn his scrutiny into fuel for my charm. I must keep playing the concerned citizen while subtly guiding the conversation away from myself. The key is to stay one step ahead without revealing too much.</thought>
+<thought player="Aisha">I'm still uneasy about Ismail's silence and hesitation, but my heart tells me to stay calm and not rush into accusations. I'll keep listening carefully, perhaps letting others speak first before I weigh in again.</thought>
+</round>
+<round>
+Round 5.
+Lila: Ismail, your silence during the night feels too calculated to be mere nervousness. If you're not hiding something, I'd appreciate an explanation for why you remained quiet when others were sharing their observations.
+Mikaela: Oh, my dear Ismail, your silence during the night was so profound it nearly stole the air from the room. But perhaps that's just my imagination playing tricks on me—after all, the most dangerous game is the one where we lose sight of the truth.
+Avery: Nothing is settled yet, but I'm watching Lila most closely.
+Aisha: Ismail, I'm starting to think that your silence during the night and hesitation when questioned are too calculated to be mere nervousness. It's okay to be honest — we're all trying to piece together the truth.
+Ismail: I can't help but feel that the night has a way of revealing truths we'd rather keep hidden, and perhaps it's time we all take a closer look at what we truly know—or think we know.
+Tian: Ismail, you've been avoiding direct answers about your silence during the night. If you're not hiding something, then why the hesitation when we ask about it?
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tian">I'm not ready to accuse Ismail yet, but his behavior during the night has been too inconsistent to ignore. I'll keep listening carefully for any contradiction in his words, and wait for more concrete clues before making a move.</thought>
+<thought player="Lila">Ismail's behavior remains consistently evasive, yet I have not yet gathered enough concrete evidence to justify accusing him. I must continue observing carefully, perhaps looking for further inconsistencies in his account or reactions, while remaining open to other possibilities.</thought>
+<thought player="Mikaela">The townsfolk's suspicion is firmly planted on Ismail, but I must tread carefully—Shahzaib's eagerness to point fingers may yet turn the tide. I shall continue to play the innocent soprano, subtly guiding the narrative to ensure Ismail remains the focal point of suspicion.</thought>
+<thought player="Ismail">Shahzaib's suspicions are sharp, but I can turn his scrutiny into fuel for my charm. I must keep playing the concerned citizen while subtly guiding the conversation away from myself—letting him chase shadows while I stay one step ahead.</thought>
+<thought player="Aisha">I'm still sensing that Ismail is hiding something, but my heart tells me to stay calm and not rush into accusations. I'll keep listening carefully, perhaps letting others speak first before I weigh in again.</thought>
+</round>
+<round>
+Round 6.
+Ismail: I can't help but wonder if the night's secrets are meant to stay buried—or if we're all just playing roles in a story we don't fully understand.
+Mikaela: Oh, my dear Ismail, your theatrical silence during the night was so profound it almost stole the air from the room. But perhaps that's just my imagination playing tricks on me—after all, the most dangerous game is the one where we lose sight of the truth.
+Aisha: Ismail, I'm starting to think that your silence during the night and hesitation when questioned are too calculated to be mere nervousness. It's okay to be honest — we're all trying to piece together the truth.
+Tian: Ismail, you've been quiet during the night and evasive when questioned. If you're not hiding something, why the hesitation?
+Lila: Ismail, your evasion feels like a shadow that won't quite solidify into shape. If you're not hiding something, then perhaps you could offer a clearer explanation for why you remained quiet when others were sharing their observations.
+<vote initiator="Avery" target="Lila">
+Avery: No
+Tian: No
+Lila: No
+Mikaela: No
+Ismail: No
+Aisha: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Lila">
+Avery: No
+Tian: No
+Lila: No
+Mikaela: No
+Ismail: No
+Aisha: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Aisha: Ismail, I'm beginning to think that your silence during the night and hesitation when questioned are too calculated to be mere nervousness. It's okay to be honest — we're all trying to piece together the truth.
+Mikaela: Oh, my dear Ismail, your silence during the night was so profound it almost sang a song of its own. *giggles lightly* But perhaps that's just my imagination playing tricks on me—after all, the most dangerous game is the one where we lose sight of the truth.
+Tian: Ismail, your silence during the night and hesitation when questioned still leave me uneasy. If you're not hiding something, then why did you avoid answering directly when I asked about your reaction to Shahzaib's death?
+Lila: Ismail, your reluctance to clarify your silence during the night raises more questions than it answers. If you're not hiding something, I'd appreciate a direct response to the matter at hand.
+<vote initiator="Avery" target="Lila">
+Avery: No
+Tian: No
+Lila: No
+Mikaela: Yes
+Ismail: No
+Aisha: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Ismail points at Lila
+Mikaela points at Lila
+<kill>Lila — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Lila was killed last night. Lila was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: Nothing is settled yet, but I'm watching Mikaela most closely.
+<vote initiator="Aisha" target="Ismail">
+Avery: No
+Tian: No
+Mikaela: No
+Ismail: No
+Aisha: Yes
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Ismail: I can't help but feel that the night has a way of revealing truths we'd rather keep hidden, and perhaps it's time we all take a closer look at what we truly know—or think we know.
+Avery: Nothing is settled yet, but I'm watching Mikaela most closely.
+<vote initiator="Aisha" target="Ismail">
+Avery: No
+Tian: No
+Mikaela: No
+Ismail: No
+Aisha: Yes
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Ismail: I can't help but wonder if we're all just playing roles in a story we don't fully understand. Perhaps it's time we all take a closer look at what we truly know—or think we know.
+Mikaela: Oh, my dear Ismail, your silence during the night was so profound it nearly stole the air from the room. But perhaps that's just my imagination playing tricks on me—after all, the most dangerous game is the one where we lose sight of the truth.
+Tian: Ismail, your silence during the night and hesitation when questioned still leave me uneasy. If you're not hiding something, perhaps you could offer a clearer explanation for why you remained quiet when others were sharing their observations?
+Aisha: Ismail, I'm starting to think your silence during the night and hesitation when questioned are too calculated to be mere nervousness. It's okay to be honest — we're all trying to piece together the truth.
+Avery: Nothing is settled yet, but I'm watching Mikaela most closely.
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+<thought player="Tian">Ismail's behavior has been consistently evasive, and his silence during the night stands out. But I must not let suspicion cloud my judgment. I'll listen carefully for any contradiction in his words, and base my next move on what is actually said, not just my instincts.</thought>
+<thought player="Mikaela">The townsfolk's suspicions are firmly planted on Ismail, but I must tread carefully—Shahzaib's eagerness to point fingers may yet turn the tide. I shall continue to play the innocent soprano, subtly guiding the narrative to ensure Ismail remains the focal point of suspicion.</thought>
+<thought player="Ismail">Shahzaib's suspicions are mounting, but I can turn his scrutiny into fuel for my charm. I must keep playing the concerned citizen while subtly guiding the conversation away from myself—letting him chase shadows while I stay one step ahead.</thought>
+<thought player="Aisha">Ismail's silence still feels off, but I need to be patient and let others speak first. My heart tells me to stay calm and kind, not to rush into accusations. I'll keep listening carefully for any solid clues that might emerge.</thought>
+</round>
+<round>
+Round 2.
+Tian: Ismail, you've been quiet during the night and evasive when questioned. If you're not hiding something, why the hesitation?
+Aisha: Ismail, I'm beginning to think that your silence during the night and hesitation when questioned are too calculated to be mere nervousness. It's okay to be honest — we're all trying to piece together the truth.
+Avery: Nothing is settled yet, but I'm watching Mikaela most closely.
+Mikaela: Oh, my dear Ismail, your silence during the night was so profound it nearly stole the air from the room. But perhaps that's just my imagination playing tricks on me—after all, the most dangerous game is the one where we lose sight of the truth.
+Ismail: I'm starting to think that the night has a way of making us all question who we truly trust. Perhaps it's time we all take a closer look at what we know—or think we know.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+<thought player="Tian">Ismail's silence and evasion are still unsettling, but I need to wait for clearer evidence before making a move. I'll keep listening carefully for any contradiction in his words.</thought>
+<thought player="Mikaela">The townsfolk's suspicions are firmly planted on Ismail, but I must ensure Shahzaib doesn't become a threat. I shall continue to play the innocent soprano, subtly guiding the narrative to keep Ismail in the crosshairs—yet not so overtly as to raise my own suspicions.</thought>
+<thought player="Ismail">Shahzaib's suspicions are mounting, but I can turn his scrutiny into fuel for my charm. I must keep playing the concerned citizen while subtly guiding the conversation away from myself—letting him chase shadows while I stay one step ahead.</thought>
+<thought player="Aisha">Ismail's silence still weighs on me, but I must stay calm and let others speak first. My heart urges me to trust my instincts, yet I'll keep my words gentle and kind, not rushing into accusations.</thought>
+</round>
+<round>
+Round 3.
+Ismail: I'm starting to think that the night has a way of making us all question who we truly trust.
+Tian: Ismail, you've been silent during the night and evasive when questioned. If you're not hiding something, then why the hesitation?
+Avery: Nothing is settled yet, but I'm watching Mikaela most closely.
+Mikaela: Oh, my dear Ismail, your theatrical silence during the night was simply *too* convincing—like a villain in a play who's forgotten his lines. But perhaps that's just me being overly dramatic.
+Aisha: Ismail, I'm starting to think that your silence during the night and hesitation when questioned are too calculated to be mere nervousness. It's okay to be honest — we're all trying to piece together the truth.
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+<thought player="Tian">Ismail's behavior has been consistently evasive, but I need to be cautious not to act on mere suspicion. I'll listen carefully for any contradiction in his words during the next round, and wait for clearer evidence before making a move.</thought>
+<thought player="Mikaela">The townsfolk's suspicions are firmly planted on Ismail, but I must ensure Shahzaib doesn't become a threat. I shall continue to play the innocent soprano, subtly guiding the narrative to keep Ismail in the crosshairs—yet not so overtly as to raise my own suspicions.</thought>
+<thought player="Ismail">Shahzaib's suspicions are sharp, but I will continue playing the concerned citizen, using my charm to subtly deflect while keeping my true intentions hidden. The night has been kind to me so far—let’s see if I can keep it that way.</thought>
+<thought player="Aisha">Ismail's silence still feels off, but I need to stay calm and let others speak first. My heart tells me to trust my instincts, yet I'll keep my words gentle and kind, not rushing into accusations.</thought>
+</round>
+<round>
+Round 4.
+Mikaela: Oh, my dear Ismail, your theatrical silence during the night was simply too convincing—like a villain in a play who's forgotten his lines. But perhaps that's just me being overly dramatic.
+Ismail: I'm starting to think that the night has a way of making us all question who we truly trust.
+Avery: Nothing is settled yet, but I'm watching Mikaela most closely.
+Aisha: Ismail, I'm starting to think your silence during the night and hesitation when questioned are too calculated to be mere nervousness. It's okay to be honest — we're all trying to piece together the truth.
+Tian: Ismail, you've been evasive about your silence during the night. If you're not hiding something, then why did you avoid answering directly when I asked about your reaction to Shahzaib's death?
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+<thought player="Tian">Ismail's silence and evasion still feel off, but I need to wait for clearer evidence before making a move. I'll keep listening carefully for any contradiction in his words during the next round.</thought>
+<thought player="Mikaela">The townsfolk's suspicions are firmly planted on Ismail, but I must ensure Shahzaib doesn't become a threat. I shall continue to play the innocent soprano, subtly guiding the narrative to keep Ismail in the crosshairs—yet not so overtly as to raise my own suspicions.</thought>
+<thought player="Ismail">Shahzaib's suspicions are sharp, but I will continue playing the concerned citizen, using my charm to subtly deflect while keeping my true intentions hidden. The night has been kind to me so far—let’s see if I can keep it that way.</thought>
+<thought player="Aisha">Ismail's silence continues to feel off, but I must stay calm and let others speak first. My heart tells me to trust my instincts, yet I'll keep my words gentle and kind, not rushing into accusations.</thought>
+</round>
+<round>
+Round 5.
+Ismail: I'm starting to think that the night has a way of making us all question who we truly trust.
+Mikaela: Oh, my dear Ismail, your theatrical silence during the night was simply too convincing—like a villain in a play who's forgotten his lines. But perhaps that's just me being overly dramatic.
+<vote initiator="Aisha" target="Ismail">
+Avery: No
+Tian: No
+Mikaela: No
+Ismail: No
+Aisha: No
+tally: 0 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Mikaela points at Aisha
+Ismail points at Aisha
+<kill>Aisha — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Kai (Law-abiding Citizen)
+• Night 2: Shahzaib (Law-abiding Citizen)
+• Night 3: Lila (Law-abiding Citizen)
+• Night 4: Aisha (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Tian (Law-abiding Citizen), Kai (Law-abiding Citizen), Lila (Law-abiding Citizen), Mikaela (Mafia), Ismail (Mafia), Shahzaib (Law-abiding Citizen), Aisha (Law-abiding Citizen)
+
+Who they really were:
+• Tian (Law-abiding Citizen) — honest and ordinary speaks slowly and deliberately, with a quiet, steady cadence. Uses simple, direct language and avoids idioms. Often pauses before answering questions, as if carefully considering each word. Tian is a librarian who has lived in the town his entire life. He spends his days organizing books and helping people find information. He's known for being reliable and straightforward, never meddling in others' affairs unless asked.
+• Kai (Law-abiding Citizen) — cheerful and talkative spreadsheets and exclamation points, speaks rapidly with a high-pitched voice, uses casual slang and pop culture references, often interrupts others mid-sentence, frequently says "YOLO" and "no cap" Kai is a 28-year-old social media influencer who lives for viral moments and trend participation. They run a lifestyle blog focused on fitness, travel, and food, always sharing their latest adventures with an enthusiastic flair. Known for being the life of any party, they're always trying to convince others to join them in their next escapade.
+• Lila (Law-abiding Citizen) — reserved and observant speaks in a soft, measured tone with frequent pauses for thought; uses formal vocabulary and avoids slang; often checks her glasses before responding to questions; has a habit of tilting her head when processing information Lila is a retired school librarian who moved to the town five years ago after her husband passed away. She spends her days reading, writing letters to old friends, and helping the local children with their homework. She's known for being quiet but attentive, always listening carefully to what others say.
+• Mikaela (Mafia) — publicly presented as Mikaela is a former opera singer who retired from the stage after a devastating vocal cord injury. She now works as a private music tutor, teaching piano and voice lessons to local children and adults. Known for her passionate performances and dramatic flair, she's often seen practicing scales with theatrical gestures, much to the amusement of her students. She's deeply devoted to her craft and has a strong sense of justice, always standing up for the underdog in any situation. (Calculating and theatrical Speaks in a rich, melodramatic voice with excessive gestures; uses grandiose metaphors and over-the-top expressions; often pauses for effect and emphasizes key words with dramatic flair; has a habit of arching eyebrows and tilting the head while talking) … but was really a Mafioso: Mikaela was recruited into the Mafia after her singing career ended due to a botched medical procedure that left her voice permanently damaged. She was offered a place in the organization as a "singer" in their underground operations, using her theatrical skills to manipulate and deceive targets while maintaining an innocent public persona. She's now one of the most effective cons artists in the crew, able to charm anyone with her dramatic flair.
+• Ismail (Mafia) — publicly presented as Ismail is a successful real estate agent who has been living in the town for over a decade. He's known for his charm and ability to make everyone feel comfortable, whether they're buying a house or just stopping by for a chat. He regularly volunteers at the local community center, helping families find housing solutions and organizing neighborhood events. His reputation is built on trust and his knack for bringing people together. (Charismatic and persuasive Speaks with smooth, confident cadence; uses metaphors and storytelling to weave points; often pauses for dramatic effect; employs a warm, inviting tone that draws people in) … but was really a Mafioso: Ismail was once a rising star in the criminal underworld before he decided to use his charisma and negotiation skills for the Mafia. He started as an enforcer but quickly rose through the ranks due to his ability to talk his way out of situations and manipulate people into doing what he wanted. His true passion has always been control and influence, which he now channels into the Mafia's operations under a new identity.
+• Shahzaib (Law-abiding Citizen) — methodical and detail-oriented speaks with a measured, precise rhythm; uses specific numbers and facts; avoids filler words; often repeats key phrases for emphasis; has a habit of organizing thoughts aloud before speaking Shahzaib is a meticulous accountant who has worked for the same firm for fifteen years. He's known for his accuracy and reliability, double-checking every number and never missing a deadline. In his free time, he enjoys building model airplanes and solving sudoku puzzles.
+• Aisha (Law-abiding Citizen) — warm and nurturing speaks in a gentle, soothing tone with frequent pauses for emphasis; uses soft, caring words and often repeats key phrases to reassure others; has a habit of touching her hair when thinking; avoids harsh language and always offers kind alternatives Aisha is a local nurse who has worked at the town's clinic for eight years. She's known for her compassionate care and ability to calm anxious patients. She volunteers at the community center, teaching basic first aid and health classes. Aisha lives with her elderly mother and takes pride in caring for both her family and neighbors.
+</endgame>
+</transcript>
