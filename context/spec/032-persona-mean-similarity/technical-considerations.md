@@ -6,7 +6,7 @@ HOW the average/peak lexical metrics + the value-type viewer rendering + the bac
 # Technical Specification: Continuous Persona-Similarity Metrics (Average + Peak)
 
 - **Functional Specification:** `./functional-spec.md`
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 > **Shared surface with spec 033 (semantic):** 032 and 033 both add a persona-similarity metric, a viewer column, and a backfill. 032 is **lexical/deterministic** and introduces the reusable pieces (the *value-type* metric shape, the value-type viewer rendering, the transcript backfill harness); 033 is **semantic/model-dependent** and reuses them. **Implement 032 first**, then 033 builds on it. Both are additive — no `METRICS_VERSION` bump, no ablation flag (measurement-only; ADR-011 / architecture §6 exempt).

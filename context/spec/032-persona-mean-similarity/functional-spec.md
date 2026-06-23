@@ -1,7 +1,7 @@
 # Functional Specification: Continuous Persona-Similarity Metrics (Average + Peak)
 
 - **Roadmap Item:** Eval-measurement refinement — direct follow-up to **spec 031 (Distinct AI Personas Across the Roster)**, whose persona-distinctiveness measure proved too coarse. Relates to the **persona-realism** and **lexical → semantic** measurement threads. Not a distinct roadmap phase item.
-- **Status:** Draft
+- **Status:** Completed *(verified 2026-06-23 — pure-measurement criteria met by the merged scorer + 25 tests; backfill validated faithful + additive; suite green at 1075 passed)*
 - **Author:** Alexey Tigarev
 
 ---
@@ -28,33 +28,33 @@ It is **pure measurement** — nothing about how a game plays changes; this only
 - **Each measured run records the average and the peak similarity of its AI characters.**
   - Alongside the existing near-duplicate count, every run records two numbers over all pairs of its AI characters' table-facing descriptions: the **average** similarity across the pairs and the **peak** (most-similar-pair) similarity — each ranging from "completely different" to "identical."
   - **Acceptance Criteria:**
-    - [ ] Given a completed measured run with at least two AI characters, when its recorded result is read, then it includes both the average and the peak persona-similarity, alongside the existing near-duplicate count.
-    - [ ] Given a run (or game) with fewer than two AI characters — no pair to compare — when its result is read, then the average and peak are reported as not-applicable (blank), not a misleading zero.
+    - [x] Given a completed measured run with at least two AI characters, when its recorded result is read, then it includes both the average and the peak persona-similarity, alongside the existing near-duplicate count.
+    - [x] Given a run (or game) with fewer than two AI characters — no pair to compare — when its result is read, then the average and peak are reported as not-applicable (blank), not a misleading zero.
 
 - **The average and peak are continuous companions to the near-duplicate count — all are kept.**
   - The near-duplicate count from spec 031 remains; the average and peak are added beside it, reading as: *how many pairs are near-copies* (count), *how alike the whole cast is* (average), and *how alike the closest pair is* (peak).
   - **Acceptance Criteria:**
-    - [ ] Given any run that records persona measures, when it is read, then the near-duplicate count, the average similarity, and the peak similarity are **all present**.
-    - [ ] Given a varied cast (no near-identical pairs, so the count is zero), when read, then the average shows a meaningful low value **and** the peak shows the closest-pair value (e.g. well below "identical") — graded distinctness the zero count alone would hide.
-    - [ ] Given a run where a few characters collapsed to near-identical descriptions, when read, then the **peak** reaches the top of its range (flagging the collapse) even if the average stays low.
+    - [x] Given any run that records persona measures, when it is read, then the near-duplicate count, the average similarity, and the peak similarity are **all present**.
+    - [x] Given a varied cast (no near-identical pairs, so the count is zero), when read, then the average shows a meaningful low value **and** the peak shows the closest-pair value (e.g. well below "identical") — graded distinctness the zero count alone would hide.
+    - [x] Given a run where a few characters collapsed to near-identical descriptions, when read, then the **peak** reaches the top of its range (flagging the collapse) even if the average stays low.
 
 - **Both are visible in the ledger viewer.**
   - The average and the peak each appear in the viewer's run list and in a run's detail view, with their own labels, clearly distinct from each other and from the near-duplicate count. Runs that lack them render blank rather than erroring.
   - **Acceptance Criteria:**
-    - [ ] Given the ledger viewer, when the reviewer reads a run that has them, then the average and the peak are each shown with their own distinct label (not conflated with each other or with the near-duplicate count).
-    - [ ] Given a mix of runs where some lack these numbers, when the reviewer scrolls the list, then those rows render blank in those columns without error and the layout stays readable.
+    - [x] Given the ledger viewer, when the reviewer reads a run that has them, then the average and the peak are each shown with their own distinct label (not conflated with each other or with the near-duplicate count).
+    - [x] Given a mix of runs where some lack these numbers, when the reviewer scrolls the list, then those rows render blank in those columns without error and the layout stays readable.
 
 - **Past transcript-preserved runs are backfilled.**
   - Runs whose complete game transcripts were preserved are filled in with the average and peak (computed from those preserved characters), so the numbers are comparable across the recorded history. Runs without preserved transcripts are left without them.
   - **Acceptance Criteria:**
-    - [ ] Given a past run whose transcripts were preserved, when the ledger is read after this change, then that run shows an average and a peak persona-similarity consistent with its preserved characters.
-    - [ ] Given a past run with no preserved transcripts, when the ledger is read, then it simply shows no average or peak (blank), without error.
-    - [ ] Given a run that already recorded persona measures live, when its average and peak are computed from its preserved transcripts, then the results match a fresh measurement of that run (the backfill is faithful, not an approximation) — and the backfill changes nothing else in any record.
+    - [x] Given a past run whose transcripts were preserved, when the ledger is read after this change, then that run shows an average and a peak persona-similarity consistent with its preserved characters.
+    - [x] Given a past run with no preserved transcripts, when the ledger is read, then it simply shows no average or peak (blank), without error.
+    - [x] Given a run that already recorded persona measures live, when its average and peak are computed from its preserved transcripts, then the results match a fresh measurement of that run (the backfill is faithful, not an approximation) — and the backfill changes nothing else in any record.
 
 - **Pure measurement — no change to how a game plays.**
   - Adding, recording, and displaying these numbers changes nothing about gameplay, outcomes, the characters generated, or any other recorded value.
   - **Acceptance Criteria:**
-    - [ ] Given the same games, when they are played with and without these numbers recorded, then the game outcomes themselves are identical — only the recorded result gains the new numbers.
+    - [x] Given the same games, when they are played with and without these numbers recorded, then the game outcomes themselves are identical — only the recorded result gains the new numbers.
 
 ---
 
