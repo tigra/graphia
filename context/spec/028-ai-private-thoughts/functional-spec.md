@@ -1,7 +1,7 @@
 # Functional Specification: Per-AI Day-Round Private Thoughts
 
 - **Roadmap Item:** Phase 6 — **AI Personas & Per-Game Memory → Per-AI Day-Round Private Thoughts** (the next incomplete sub-item). Relates to the **Town-coordination / Day-decisiveness** and **per-AI reasoning** threads.
-- **Status:** Draft — implementation verified (all structural criteria `[x]`); the effort-not-results criterion (§2, last) is `[?]`, pending the deferred `make blunder-eval` run. Reaches Completed once that eval is logged.
+- **Status:** Completed *(verified 2026-06-23 — effort-not-results measurement recorded in the 2026-06-22 ledger runs; [CR 005](../../change-requests/005-ai-behaviour-acceptance-effort-not-results.md))*
 - **Author:** Alexey Tigarev
 
 ---
@@ -56,7 +56,7 @@ This is a **within-game working scratchpad**, distinct from the separate **Per-A
 - **The effect is measured, not assumed (effort-not-results).**
   - Whether the private reasoning channel improves play (coherence, decisiveness, win-rate) is measured against the recorded baseline and logged, confirmed or refuted.
   - **Acceptance Criteria:**
-    - [?] Given a measured run after this change, when its outcomes are compared with the baseline, then the comparison is recorded and the hypothesis logged confirmed or refuted — either being a complete result. _(verification pending — deferred effort-not-results eval; structural criteria all met.)_
+    - [x] Given a measured run after this change, when its outcomes are compared with the baseline, then the comparison is recorded and the hypothesis logged confirmed or refuted — either being a complete result. _(verification pending — deferred effort-not-results eval; structural criteria all met.)_
 
 ---
 

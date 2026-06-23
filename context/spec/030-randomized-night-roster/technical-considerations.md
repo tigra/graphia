@@ -6,7 +6,7 @@ It is NOT a copy-paste implementation guide.
 # Technical Specification: Randomized Night-Pointing Roster Order
 
 - **Functional Specification:** [030 Randomized Night-Pointing Roster Order](./functional-spec.md)
-- **Status:** Draft
+- **Status:** Completed *(verified 2026-06-23 — effort-not-results measurement recorded in the 2026-06-22 ledger runs; [CR 005](../../change-requests/005-ai-behaviour-acceptance-effort-not-results.md))*
 - **Author(s):** Alexey Tigarev
 
 ---

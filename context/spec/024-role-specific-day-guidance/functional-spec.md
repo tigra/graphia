@@ -1,7 +1,7 @@
 # Functional Specification: Role-Specific Day Guidance for AI Players
 
 - **Roadmap Item:** Day-decisiveness follow-up — realizes the **rule-awareness / situation-recognition lever** explicitly parked from Phase 6's *Recap-Driven Day Decisiveness* (whose note reads "the complementary force-a-vote and rule-awareness levers stay in the backlog"); relates to the **Town-coordination / Day-decisiveness** thread. Not a distinct roadmap phase item.
-- **Status:** Draft — implementation verified (all structural criteria `[x]`); the effort-not-results criterion (§2, last) is `[?]`, pending the deferred post-030 `make blunder-eval` run (shared with specs 025/026/028/030). Reaches Completed once that eval is logged.
+- **Status:** Completed *(verified 2026-06-23 — effort-not-results measurement recorded in the 2026-06-22 ledger runs; [CR 005](../../change-requests/005-ai-behaviour-acceptance-effort-not-results.md))*
 - **Author:** Alexey Tigarev
 
 ---
@@ -58,7 +58,7 @@ This composes with — does not replace — the existing role grounding and the 
 - **The effect is measured, not assumed (effort-not-results).**
   - Whether concrete role guidance actually lifts the town's engagement and decisiveness is an open question this change lets us test, not a promise. A measured comparison against the recorded baseline is run and recorded, confirmed or refuted.
   - **Acceptance Criteria:**
-    - [?] Given a measured run after this change, when its outcomes are compared with the recorded baseline — win-rate by side, **votes initiated**, share of games **resolved vs `no_winner`**, and a watch on **Law-abiding-executed-by-Law-abiding** (so a lift in decisiveness isn't bought by citizens executing each other) — then the comparison is recorded and the hypothesis logged as confirmed or refuted, either being a complete result.
+    - [x] Given a measured run after this change, when its outcomes are compared with the recorded baseline — win-rate by side, **votes initiated**, share of games **resolved vs `no_winner`**, and a watch on **Law-abiding-executed-by-Law-abiding** (so a lift in decisiveness isn't bought by citizens executing each other) — then the comparison is recorded and the hypothesis logged as confirmed or refuted, either being a complete result.
 
 ---
 

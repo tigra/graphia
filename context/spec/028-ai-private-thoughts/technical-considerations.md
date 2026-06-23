@@ -1,7 +1,7 @@
 # Technical Specification: Per-AI Day-Round Private Thoughts
 
 - **Functional Specification:** [028 — Per-AI Day-Round Private Thoughts](./functional-spec.md)
-- **Status:** Draft
+- **Status:** Completed *(verified 2026-06-23 — effort-not-results measurement recorded in the 2026-06-22 ledger runs; [CR 005](../../change-requests/005-ai-behaviour-acceptance-effort-not-results.md))*
 - **Author(s):** Alexey Tigarev
 
 ---

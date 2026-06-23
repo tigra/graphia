@@ -1,7 +1,7 @@
 # Functional Specification: Fuller Multi-Day Discussion Window for AI Players
 
 - **Roadmap Item:** Day-prompt-quality / Day-decisiveness follow-up — the third lever on what an AI player reasons from, after *Recap-Driven Day Decisiveness* (spec 019, standings into the prompt) and *Role-Specific Day Guidance* (spec 024). Relates to the **Town-coordination / Day-decisiveness** and **Repetition** backlog threads. Not a distinct roadmap phase item.
-- **Status:** Draft — implementation verified (all structural criteria `[x]`); the effort-not-results criterion (§2, last) is `[?]`, pending the deferred post-030 `make blunder-eval` run (shared with specs 024/026/028/030). Reaches Completed once that eval is logged.
+- **Status:** Completed *(verified 2026-06-23 — effort-not-results measurement recorded in the 2026-06-22 ledger runs; [CR 005](../../change-requests/005-ai-behaviour-acceptance-effort-not-results.md))*
 - **Author:** Alexey Tigarev
 
 ---
@@ -50,7 +50,7 @@ The window must be **sized to the gameplay model's real working memory, with hea
 - **The effect is measured, not assumed (effort-not-results).**
   - Whether fuller multi-day memory actually improves play is an open question this change lets us test, not a promise. A measured comparison against the recorded baseline is run and recorded, confirmed or refuted.
   - **Acceptance Criteria:**
-    - [?] Given a measured run after this change, when its outcomes are compared with the recorded baseline — repetition, win-rate by side, votes initiated, share resolved vs `no_winner` — then the comparison is recorded and the hypothesis (does fuller cross-day context improve coherence/decisiveness without harming play?) is logged confirmed or refuted, either being a complete result.
+    - [x] Given a measured run after this change, when its outcomes are compared with the recorded baseline — repetition, win-rate by side, votes initiated, share resolved vs `no_winner` — then the comparison is recorded and the hypothesis (does fuller cross-day context improve coherence/decisiveness without harming play?) is logged confirmed or refuted, either being a complete result.
 
 ---
 

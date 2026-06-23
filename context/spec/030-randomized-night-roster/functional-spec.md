@@ -1,7 +1,7 @@
 # Functional Specification: Randomized Night-Pointing Roster Order
 
 - **Roadmap Item:** Gameplay-fairness + eval-validity fix (the roster-primacy bug found in the spec-026/027 Nova run); relates to the **Town-coordination / Day-decisiveness** thread. Not a distinct roadmap phase item.
-- **Status:** Draft — implementation verified (all deterministic-shuffle criteria `[x]`); the measured-debias criterion (§2, "first-position advantage is removed") is `[?]`, pending the deferred `make blunder-eval` run. Reaches Completed once that eval is logged.
+- **Status:** Completed *(verified 2026-06-23 — effort-not-results measurement recorded in the 2026-06-22 ledger runs; [CR 005](../../change-requests/005-ai-behaviour-acceptance-effort-not-results.md))*
 - **Author:** Alexey Tigarev
 
 ---
@@ -38,7 +38,7 @@ This change presents the living Law-abiding candidates to the Mafia in a **rando
 - **The first-position advantage is removed.**
   - No seat is systematically targeted on Night 1 because of where it sits in the list; over many games the first-created seat (the human's) is killed Night 1 at roughly the chance rate, not far above it.
   - **Acceptance Criteria:**
-    - [?] Given many measured games with the randomization on, when Night-1 targets are tallied, then the first-created seat's Night-1 death rate (when it is Law-abiding) is consistent with chance rather than the ~50% seen before. _(verification pending — deferred measured-debias eval; deterministic shuffle behaviour all unit-verified.)_
+    - [x] Given many measured games with the randomization on, when Night-1 targets are tallied, then the first-created seat's Night-1 death rate (when it is Law-abiding) is consistent with chance rather than the ~50% seen before. _(verification pending — deferred measured-debias eval; deterministic shuffle behaviour all unit-verified.)_
 
 - **The randomization is an adjustable setting (ablatable).**
   - It is on by default; a setting reproduces the old fixed (first-created-first) order for a side-by-side comparison, so the impact of the bias can be measured (per ADR 011).

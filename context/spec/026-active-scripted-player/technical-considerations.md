@@ -1,7 +1,7 @@
 # Technical Specification: Active Scripted Player for Measured Runs
 
 - **Functional Specification:** [`context/spec/026-active-scripted-player/functional-spec.md`](./functional-spec.md)
-- **Status:** Draft
+- **Status:** Completed *(verified 2026-06-23 — effort-not-results measurement recorded in the 2026-06-22 ledger runs; [CR 005](../../change-requests/005-ai-behaviour-acceptance-effort-not-results.md))*
 - **Author(s):** Alexey Tigarev
 
 ---

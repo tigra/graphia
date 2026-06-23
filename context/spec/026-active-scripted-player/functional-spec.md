@@ -1,7 +1,7 @@
 # Functional Specification: Active Scripted Player for Measured Runs
 
 - **Roadmap Item:** Eval-measurement unblocker — realizes the backlog's **Active-human eval variant**, sharpened by the 024+025 n=5 transcript investigation. Relates to the **Town-coordination / Day-decisiveness** thread. Not a distinct roadmap phase item.
-- **Status:** Draft — implementation verified (all structural criteria `[x]`); the effort-not-results criterion (§2, last) is `[?]`, pending the deferred post-030 `make blunder-eval` run (the clean active-vs-passive measurement, unbiased after the spec-030 night-roster fix). Reaches Completed once that eval is logged.
+- **Status:** Completed *(verified 2026-06-23 — effort-not-results measurement recorded in the 2026-06-22 ledger runs; [CR 005](../../change-requests/005-ai-behaviour-acceptance-effort-not-results.md))*
 - **Author:** Alexey Tigarev
 
 ---
@@ -68,7 +68,7 @@ It is **deterministic** — its every choice follows fixed rules over the public
 - **The effect on win-rates is measured, not assumed (effort-not-results).**
   - Whether an active Law-abiding stand-in lets the AI town actually win (breaking the deadlock where a correct vote previously stalled at 3–3), and whether the AI Mafia can beat an active Law-abiding seat, is an open question this change lets us test. A measured comparison against the passive baseline is run and recorded, confirmed or refuted.
   - **Acceptance Criteria:**
-    - [?] Given a measured run with the active stand-in, when its outcomes are compared with the passive baseline (win-rate by side, share of correct vs own-goal executions, games resolved), then the comparison is recorded and the hypothesis logged as confirmed or refuted — either being a complete result.
+    - [x] Given a measured run with the active stand-in, when its outcomes are compared with the passive baseline (win-rate by side, share of correct vs own-goal executions, games resolved), then the comparison is recorded and the hypothesis logged as confirmed or refuted — either being a complete result.
 
 ---
 
