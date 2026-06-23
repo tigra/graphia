@@ -961,6 +961,12 @@ metrics:
     denominator: 1
     ci_low: 0.0
     ci_high: 0.7934567085261071
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 150
+    ci_low: 0.0
+    ci_high: 0.02497113914571871
 notes: 'spec 018 day-round recap (default-on) — 10-game ollama baseline + qualitative gameplay review'
 ---
 run:
@@ -1058,6 +1064,12 @@ metrics:
     denominator: 6
     ci_low: 0.0
     ci_high: 0.3903430336530645
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 150
+    ci_low: 0.0
+    ci_high: 0.02497113914571871
 notes: 'spec 019/020 effort-not-results: recap-into-prompts + game-time clock; vs baseline 2026-06-19T18-33-37'
 ---
 run:
@@ -1156,6 +1168,12 @@ metrics:
     denominator: 1
     ci_low: 0.0
     ci_high: 0.7934567085261071
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 150
+    ci_low: 0.0
+    ci_high: 0.02497113914571871
 notes: 'spec 023 verification: natural-end drive + 12-day cap; compare vs baseline 2026-06-19T18-33-37'
 ---
 run:
@@ -1254,6 +1272,12 @@ metrics:
     denominator: 7
     ci_low: 0.0
     ci_high: 0.35433884297520657
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 75
+    ci_low: 0.0
+    ci_high: 0.04872554590470005
 notes: 'spec 024+025 combined (role-specific Day guidance + fuller 150-msg window), 5-game smoke read vs baseline 2026-06-19T18-33-37'
 ---
 run:
@@ -1354,6 +1378,12 @@ metrics:
     denominator: 17
     ci_low: 0.0
     ci_high: 0.18432366037156456
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 420
+    ci_low: 0.0
+    ci_high: 0.00906376344370161
 notes: 'spec 026/027 (nova): active scripted player, RANDOM dealt seat role, 6/2 lineup, n=20 vs passive baseline 2026-06-19T18-33-37'
 ---
 run:
@@ -1461,6 +1491,12 @@ metrics:
     denominator: 25
     ci_low: 0.0
     ci_high: 0.13319649395317873
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 420
+    ci_low: 0.0
+    ci_high: 0.00906376344370161
 notes: 'spec 026/027 (ollama): active scripted player, RANDOM dealt seat role, 6/2 lineup, n=20 vs passive baseline 2026-06-19T18-33-37'
 ---
 run:
