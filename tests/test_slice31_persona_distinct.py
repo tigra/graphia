@@ -469,12 +469,12 @@ def test_metric_order_surfaces_persona_near_dup_in_render_detail() -> None:
     """``METRIC_ORDER`` carries the metric, so ``render_detail`` lists it by label.
 
     The viewer's detail view iterates ``METRIC_ORDER``; a record carrying the metric
-    shows its rate/count/denominator under the ``persona dup`` label, while the
+    shows its rate/count/denominator under the ``persona near-dup`` label, while the
     surrounding metrics still render. We assert against a plain dict-shaped record
     (the on-disk ``metrics`` shape ``eval_ledger`` reads).
     """
     # The (dotted_key, label) tuple is registered in the canonical column order.
-    assert (_PERSONA_KEY, "persona dup") in METRIC_ORDER
+    assert (_PERSONA_KEY, "persona near-dup") in METRIC_ORDER
 
     record = {
         "metrics": {
@@ -491,9 +491,9 @@ def test_metric_order_surfaces_persona_near_dup_in_render_detail() -> None:
     detail = render_detail(record)
 
     # The metric appears under its METRIC_ORDER label with its facets, not as "—".
-    assert "persona dup:" in detail
+    assert "persona near-dup:" in detail
     persona_line = next(
-        line for line in detail.splitlines() if "persona dup:" in line
+        line for line in detail.splitlines() if "persona near-dup:" in line
     )
     assert "1/2" in persona_line  # count/denominator
     assert "—" not in persona_line  # present, not the absent-metric em-dash

@@ -5,38 +5,46 @@ Spec 033 (*Semantic (Meaning-Based) Persona Similarity*), Slice 1, Tests task
 persona measures (spec 031 near-dup count, spec 032 mean + peak): where those
 compare persona *text* word-for-word (``difflib``), this embeds each AI persona's
 table-facing text into a meaning vector and takes the **cosine** of each unordered
-pair, recording the batch **mean** cosine as the value-type metric
-``persona_sem_sim {mean, denominator}`` — so two differently-worded but same-kind
-characters read as similar where the lexical measures read them as distinct.
+pair, recording the batch **mean** cosine (``persona_sem_mean {mean, denominator}``,
+how alike the cast is overall in KIND) AND the **peak** most-similar-pair cosine
+(``persona_sem_peak {peak, denominator}``, the closest pair — flagging a
+meaning-collapse the mean smooths over) as value-type metrics — so two
+differently-worded but same-kind characters read as similar where the lexical
+measures read them as distinct.
 
 All-mocked — the embeddings boundary is faked, never real Bedrock:
 
 - **Pure scorer** ``score_persona_semantic_sim(players, embed_fn)`` with an
-  **injected** fake ``embed_fn`` we fully control: identical vectors → mean cosine
-  ≈ 1.0, orthogonal → ≈ 0.0, a known mix → the expected average, ``<2`` AI personas
-  → ``{None, 0}``, the human excluded, ``true_self`` never embedded (we capture the
-  texts the fake receives and assert no hidden backstory leaks in), name-masking
-  applied. The cosines are driven entirely by the fake's *returned* vectors — no
-  real embedding values are asserted.
+  **injected** fake ``embed_fn`` we fully control: identical vectors → mean AND
+  peak cosine ≈ 1.0, orthogonal → ≈ 0.0, a known mix → the expected average + the
+  expected max, ``<2`` AI personas → ``{mean: None, peak: None, denominator: 0}``,
+  the human excluded, ``true_self`` never embedded (we capture the texts the fake
+  receives and assert no hidden backstory leaks in), name-masking applied. The
+  cosines are driven entirely by the fake's *returned* vectors — no real embedding
+  values are asserted.
 
 - **Aggregation** (mocked ``run_eval``): the written record carries
-  ``persona_sem_sim {mean, denominator}`` (value-type, NO ``ci_low``/``ci_high``);
-  ``mean`` = Σ cosines / total pairs across games; a ``<2``-everywhere batch omits
-  it; ``metrics_version`` is unchanged. The suite-wide ledger/transcript redirect
-  keeps the real ``evals/blunder-ledger.yaml`` / ``evals/transcripts/`` untouched.
+  ``persona_sem_mean {mean, denominator}`` (``mean`` = Σ cosines / total pairs
+  across games) AND ``persona_sem_peak {peak, denominator}`` (``peak`` = max
+  per-game peak cosine across games) — both value-type, NO ``ci_low``/``ci_high``;
+  a ``<2``-everywhere batch omits both; ``metrics_version`` is unchanged. The
+  suite-wide ledger/transcript redirect keeps the real
+  ``evals/blunder-ledger.yaml`` / ``evals/transcripts/`` untouched.
 
 - **Graceful degradation**: when the (faked) ``get_embeddings`` raises (an ollama
-  run with no AWS creds, an unavailable model), ``run_eval`` OMITS the metric and
+  run with no AWS creds, an unavailable model), ``run_eval`` OMITS both metrics and
   the run still completes — no crash.
 
-- **Viewer**: ``_metric_cell`` / ``render_detail`` render ``persona_sem_sim`` via
-  the value-type ``~{mean:.2f} (n=…)`` branch (shared with the lexical mean/peak);
-  absent → blank; ``METRIC_ORDER`` carries ``("persona_sem_sim", "persona sem")``.
+- **Viewer**: ``_metric_cell`` / ``render_detail`` render ``persona_sem_mean`` and
+  ``persona_sem_peak`` via the value-type ``~{value:.2f} (n=…)`` branch (shared with
+  the lexical mean/peak); absent → blank; ``METRIC_ORDER`` carries
+  ``("persona_sem_mean", "persona sem mean")`` and
+  ``("persona_sem_peak", "persona sem peak")``.
 
 The autouse ``safe_llm`` net (``tests/conftest.py``) patches
 ``graphia.tools.blunder_eval.get_embeddings`` with a deterministic char-frequency
 fake; the mocked-``run_eval`` tests below lean on that fake (so a flag-on eval gets
-a reproducible ``persona_sem_sim`` and never reaches Bedrock), while the pure-scorer
+a reproducible ``persona_sem_mean`` / ``persona_sem_peak`` and never reaches Bedrock), while the pure-scorer
 tests bypass it entirely by injecting their own ``embed_fn``.
 """
 
@@ -59,11 +67,14 @@ from graphia.tools.blunder_eval import (
     score_persona_semantic_sim,
 )
 
-# The flat key the semantic value-type metric is recorded under in a record's
-# ``metrics`` block, and the dotted key + label ``METRIC_ORDER`` registers — the
-# single source of truth this file asserts against.
-_SEM_KEY = "persona_sem_sim"
-_SEM_LABEL = "persona sem"
+# The flat keys the two semantic value-type metrics are recorded under in a
+# record's ``metrics`` block, and the dotted keys + labels ``METRIC_ORDER``
+# registers — the single source of truth this file asserts against. The semantic
+# parallels of the lexical ``persona_lex_mean`` / ``persona_lex_peak``.
+_SEM_MEAN_KEY = "persona_sem_mean"
+_SEM_MEAN_LABEL = "persona sem mean"
+_SEM_PEAK_KEY = "persona_sem_peak"
+_SEM_PEAK_LABEL = "persona sem peak"
 
 
 # ===========================================================================
@@ -163,13 +174,13 @@ class _CapturingEmbedder:
 # ===========================================================================
 
 
-def test_identical_vectors_yield_mean_cosine_of_one() -> None:
-    """Two personas embedded to IDENTICAL vectors → mean cosine == 1.0 over C(2,2)=1.
+def test_identical_vectors_yield_mean_and_peak_cosine_of_one() -> None:
+    """Two personas embedded to IDENTICAL vectors → mean AND peak cosine == 1.0 over C(2,2)=1.
 
-    The cosine of a vector with itself is 1.0; with one pair the mean is that lone
-    cosine. The personas' *wording* differs, but the fake returns the same vector
-    for both, so the meaning-based measure rates them maximally alike — the core
-    spec-033 case (differently-worded, same-kind → similar).
+    The cosine of a vector with itself is 1.0; with one pair the mean and the peak
+    are both that lone cosine. The personas' *wording* differs, but the fake returns
+    the same vector for both, so the meaning-based measure rates them maximally alike
+    — the core spec-033 case (differently-worded, same-kind → similar).
     """
     players = {
         "p-1": _ai("p-1", "Ada", _PERSONA_A),
@@ -181,6 +192,7 @@ def test_identical_vectors_yield_mean_cosine_of_one() -> None:
 
     assert facets["denominator"] == 1  # C(2, 2)
     assert facets["mean"] == pytest.approx(1.0)
+    assert facets["peak"] == pytest.approx(1.0)
 
 
 def test_orthogonal_vectors_yield_mean_cosine_of_zero() -> None:
@@ -200,16 +212,18 @@ def test_orthogonal_vectors_yield_mean_cosine_of_zero() -> None:
 
     assert facets["denominator"] == 1
     assert facets["mean"] == pytest.approx(0.0)
+    assert facets["peak"] == pytest.approx(0.0)
 
 
-def test_known_mix_yields_the_expected_average_cosine() -> None:
-    """A three-persona roster with hand-chosen vectors → the expected mean cosine.
+def test_known_mix_yields_the_expected_average_and_peak_cosine() -> None:
+    """A three-persona roster with hand-chosen vectors → the expected mean AND peak cosine.
 
     Three personas over C(3,2)=3 pairs with vectors we control: two identical
     (cosine 1.0), one orthogonal to both (cosine 0.0 with each). So the three
-    pairwise cosines are {1.0, 0.0, 0.0} and the mean is 1/3 — recomputed
-    independently here, asserting the scorer averages the cosines over the pair
-    count rather than e.g. summing or maxing.
+    pairwise cosines are {1.0, 0.0, 0.0}: the mean is 1/3 and the peak (the MAX) is
+    1.0 — recomputed independently here, asserting the scorer averages the cosines
+    over the pair count for ``mean`` while taking the max for ``peak`` (the closest
+    pair the mean smooths over), rather than e.g. summing.
     """
     players = {
         "p-1": _ai("p-1", "Ada", _PERSONA_A),
@@ -222,17 +236,18 @@ def test_known_mix_yields_the_expected_average_cosine() -> None:
     facets = score_persona_semantic_sim(players, embed)
 
     assert facets["denominator"] == 3  # C(3, 2)
-    # cosines: (v1,v2)=1.0, (v1,v3)=0.0, (v2,v3)=0.0 → mean = 1/3.
+    # cosines: (v1,v2)=1.0, (v1,v3)=0.0, (v2,v3)=0.0 → mean = 1/3, peak = 1.0.
     assert facets["mean"] == pytest.approx(1.0 / 3.0)
+    assert facets["peak"] == pytest.approx(1.0)
 
 
-def test_single_ai_persona_has_no_pairs_returns_none_mean() -> None:
-    """One AI persona (+ a human) offers no pair → ``{"mean": None, "denominator": 0}``.
+def test_single_ai_persona_has_no_pairs_returns_none_mean_and_peak() -> None:
+    """One AI persona (+ a human) offers no pair → ``{"mean": None, "peak": None, "denominator": 0}``.
 
     Fewer than two AI personas means no pair to compare — the not-applicable case
     (functional-spec §2: reported blank, not a misleading zero). The scorer returns
-    ``mean is None`` so ``run_eval`` OMITS the metric. The embedder is never even
-    invoked (no pair to embed for).
+    ``mean is None`` AND ``peak is None`` so ``run_eval`` OMITS both metrics. The
+    embedder is never even invoked (no pair to embed for).
     """
     players = {
         "p-1": _ai("p-1", "Ada", _PERSONA_A),
@@ -242,18 +257,18 @@ def test_single_ai_persona_has_no_pairs_returns_none_mean() -> None:
 
     facets = score_persona_semantic_sim(players, embed)
 
-    assert facets == {"mean": None, "denominator": 0}
+    assert facets == {"mean": None, "peak": None, "denominator": 0}
     assert embed.calls == 0  # no pair → no batch embed call
 
 
-def test_zero_ai_personas_returns_none_mean() -> None:
-    """No AI persona at all (only a personaless human) → ``{"mean": None, "denominator": 0}``."""
+def test_zero_ai_personas_returns_none_mean_and_peak() -> None:
+    """No AI persona at all (only a personaless human) → ``{"mean": None, "peak": None, "denominator": 0}``."""
     players = {"h": _human("h", "Human")}
     embed = _CapturingEmbedder([])
 
     facets = score_persona_semantic_sim(players, embed)
 
-    assert facets == {"mean": None, "denominator": 0}
+    assert facets == {"mean": None, "peak": None, "denominator": 0}
     assert embed.calls == 0
 
 
@@ -415,8 +430,8 @@ def _capture_with_personas(personas: list[PlayerPersona]) -> _GameCapture:
     """A ``_GameCapture`` whose final roster carries the given AI personas.
 
     All other inputs are empty/minimal — the persona scorers read only
-    ``cap.players`` — so the run scores ``persona_sem_sim`` over exactly this roster
-    with no graph, model, or messages. A non-empty ``events`` log lets
+    ``cap.players`` — so the run scores ``persona_sem_mean`` / ``persona_sem_peak``
+    over exactly this roster with no graph, model, or messages. A non-empty ``events`` log lets
     ``render_transcript`` produce a real document (the transcript write happens
     against the injected ``transcripts_root``).
     """
@@ -520,12 +535,13 @@ def _run_eval_over_games(
 
 
 def _expected_game_mean(personas: list[PlayerPersona]) -> dict[str, float | int | None]:
-    """Recompute a game's ``persona_sem_sim`` facets through the same fake embedder.
+    """Recompute a game's semantic facets (``mean``/``peak``/``denominator``) through the same fake embedder.
 
     Uses the SAME deterministic embedder the autouse ``safe_llm`` installs
-    (``conftest._FakeEmbeddings().embed_documents``), so the expected per-game mean
-    and pair count match exactly what ``run_eval`` accumulated — the aggregation
-    contract (Σ cosines / total pairs) without re-deriving cosines by hand.
+    (``conftest._FakeEmbeddings().embed_documents``), so the expected per-game mean,
+    peak, and pair count match exactly what ``run_eval`` accumulated — the
+    aggregation contract (Σ cosines / total pairs for the mean; running max of the
+    per-game peaks) without re-deriving cosines by hand.
     """
     players = {
         f"p-{i}": _ai(f"p-{i}", f"AI{i}", p)
@@ -535,24 +551,30 @@ def _expected_game_mean(personas: list[PlayerPersona]) -> dict[str, float | int 
     return score_persona_semantic_sim(players, embed)
 
 
-def test_run_eval_records_persona_sem_sim_value_shape(
+def test_run_eval_records_persona_sem_mean_and_peak_value_shapes(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """A mocked run records ``persona_sem_sim`` as a ``{mean, denominator}`` value shape.
+    """A mocked run records both semantic metrics as ``{mean|peak, denominator}`` value shapes.
 
-    A single game with three AI personas → C(3,2)=3 pairs. The metric lands in
-    ``result.metrics`` with the value-type shape (``mean``/``denominator``) and NO
-    ``rate``/``count`` — the same facet shape as the lexical ``persona_mean_sim``.
+    A single game with three AI personas → C(3,2)=3 pairs. Both metrics land in
+    ``result.metrics`` with the value-type shape — ``mean``/``denominator`` and
+    ``peak``/``denominator`` — and NO ``rate``/``count`` — the same facet shapes as
+    the lexical ``persona_lex_mean`` / ``persona_lex_peak``.
     """
     roster = [_PERSONA_A, _PERSONA_B, _PERSONA_C]
     result = _run_eval_over_games(monkeypatch, tmp_path, [roster])
 
-    assert _SEM_KEY in result.metrics
-    facets = result.metrics[_SEM_KEY]
-    assert set(facets) == {"mean", "denominator"}
-    assert facets["denominator"] == 3  # C(3, 2), one game
-    assert "rate" not in facets and "count" not in facets
+    assert _SEM_MEAN_KEY in result.metrics
+    assert _SEM_PEAK_KEY in result.metrics
+    mean_facets = result.metrics[_SEM_MEAN_KEY]
+    peak_facets = result.metrics[_SEM_PEAK_KEY]
+    assert set(mean_facets) == {"mean", "denominator"}
+    assert set(peak_facets) == {"peak", "denominator"}
+    assert mean_facets["denominator"] == 3  # C(3, 2), one game
+    assert peak_facets["denominator"] == 3
+    assert "rate" not in mean_facets and "count" not in mean_facets
+    assert "rate" not in peak_facets and "count" not in peak_facets
 
 
 def test_aggregation_mean_is_sum_of_cosines_over_total_pairs_across_games(
@@ -577,55 +599,91 @@ def test_aggregation_mean_is_sum_of_cosines_over_total_pairs_across_games(
     total_cos = float(f1["mean"]) * f1["denominator"] + float(f2["mean"]) * f2["denominator"]
     total_pairs = f1["denominator"] + f2["denominator"]
 
-    sem_facets = result.metrics[_SEM_KEY]
+    sem_facets = result.metrics[_SEM_MEAN_KEY]
     assert sem_facets["denominator"] == total_pairs == 4  # 3 + 1
     assert sem_facets["mean"] == pytest.approx(total_cos / total_pairs)
 
 
-def test_fewer_than_two_personas_everywhere_omits_the_metric(
+def test_aggregation_peak_is_max_per_game_peak_across_games(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """A batch where no game ever had ≥2 AI personas omits ``persona_sem_sim``.
+    """peak == the MAX per-game peak cosine across games (the closest pair anywhere in the run).
 
-    Every game offers no pair (the scorer returns ``mean is None`` everywhere → total
-    pairs 0), so the opportunity gate never fires — the not-applicable case is
-    reported by OMISSION, not a misleading zero (functional-spec §2, mirroring the
-    lexical persona metrics).
+    Two games: a varied roster (its peak below 1.0) and a game whose two personas
+    embed to IDENTICAL vectors (peak cosine 1.0). The batch peak is the running max
+    of the per-game peaks — 1.0 — even though the cosine mean over all pairs stays
+    below 1.0. A meaning-collapse in any single game lifts the run peak, the
+    semantic parallel of the lexical peak aggregation (functional-spec §1). The
+    per-game peaks are recomputed through the SAME fake embedder.
+    """
+    # Game 1: three distinct personas (the char-frequency fake gives a peak < 1.0).
+    game1 = [_PERSONA_A, _PERSONA_B, _PERSONA_C]
+    # Game 2: two personas with byte-identical table-facing text → identical
+    # vectors → peak cosine 1.0 (the meaning-collapse the run peak must surface).
+    game2 = [_PERSONA_A, _PERSONA_A]
+
+    result = _run_eval_over_games(monkeypatch, tmp_path, [game1, game2])
+
+    f1 = _expected_game_mean(game1)
+    f2 = _expected_game_mean(game2)
+    expected_peak = max(float(f1["peak"]), float(f2["peak"]))
+
+    peak_facets = result.metrics[_SEM_PEAK_KEY]
+    assert peak_facets["denominator"] == f1["denominator"] + f2["denominator"] == 4
+    assert peak_facets["peak"] == pytest.approx(expected_peak)
+    # The collapsed game's identical pair pins the run peak to 1.0...
+    assert peak_facets["peak"] == pytest.approx(1.0)
+    # ...while the pair-weighted MEAN over all 4 pairs stays strictly below it.
+    assert result.metrics[_SEM_MEAN_KEY]["mean"] < peak_facets["peak"]
+
+
+def test_fewer_than_two_personas_everywhere_omits_both_metrics(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A batch where no game ever had ≥2 AI personas omits BOTH semantic metrics.
+
+    Every game offers no pair (the scorer returns ``mean is None`` / ``peak is None``
+    everywhere → total pairs 0), so the opportunity gate never fires — the
+    not-applicable case is reported by OMISSION, not a misleading zero
+    (functional-spec §2, mirroring the lexical persona metrics).
     """
     single = [_PERSONA_A]  # one AI persona → no pair
 
     result = _run_eval_over_games(monkeypatch, tmp_path, [single, single])
 
-    assert _SEM_KEY not in result.metrics
+    assert _SEM_MEAN_KEY not in result.metrics
+    assert _SEM_PEAK_KEY not in result.metrics
 
 
-def test_persona_sem_sim_carries_no_wilson_ci_band(
+def test_semantic_metrics_carry_no_wilson_ci_band(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """The value metric gets no ``ci_low``/``ci_high`` — a cosine mean is not a rate.
+    """Neither value metric gets ``ci_low``/``ci_high`` — a cosine mean/peak is not a rate.
 
-    ``_attach_ci`` keys off ``count``; the value-type facet carries no ``count``, so
-    the Wilson-band attachment is skipped (tech-spec §2 C). A Wilson interval is a
-    proportion's reliability band — meaningless for a continuous cosine mean.
+    ``_attach_ci`` keys off ``count``; the value-type facets carry no ``count``, so
+    the Wilson-band attachment is skipped for both (tech-spec §2 C). A Wilson interval
+    is a proportion's reliability band — meaningless for a continuous cosine mean/peak.
     """
     roster = [_PERSONA_A, _PERSONA_B, _PERSONA_C]
     result = _run_eval_over_games(monkeypatch, tmp_path, [roster])
 
-    facets = result.metrics[_SEM_KEY]
-    assert "ci_low" not in facets
-    assert "ci_high" not in facets
+    for key in (_SEM_MEAN_KEY, _SEM_PEAK_KEY):
+        facets = result.metrics[key]
+        assert "ci_low" not in facets
+        assert "ci_high" not in facets
 
 
 def test_metrics_version_is_unchanged_by_the_semantic_metric(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """The additive semantic metric does NOT bump ``METRICS_VERSION`` (tech-spec §2).
+    """The additive semantic metrics do NOT bump ``METRICS_VERSION`` (tech-spec §2).
 
-    A new value metric is additive — old records simply lack the key — so the version
-    stays put (the ``persona_near_dup`` / ``persona_mean_sim`` precedent). The constant
+    New value metrics are additive — old records simply lack the keys — so the version
+    stays put (the ``persona_near_dup`` / ``persona_lex_mean`` precedent). The constant
     is 1, and the rendered record stamps that same value.
     """
     assert METRICS_VERSION == 1
@@ -643,7 +701,7 @@ def test_run_eval_does_not_touch_the_real_ledger(
     """The run writes only the redirected temp ledger; the real one is untouched.
 
     Belt-and-braces over the ``LEDGER_PATH`` redirect: the temp ledger gains the
-    run's record (carrying ``persona_sem_sim``), while the repo's real
+    run's record (carrying ``persona_sem_mean``), while the repo's real
     ``evals/blunder-ledger.yaml`` is neither created here nor modified — the redirect
     in ``_stub_run_eval_env`` is what keeps the committed ledger safe (the suite-wide
     redirect spec 031/032 reuse).
@@ -667,7 +725,9 @@ def test_run_eval_does_not_touch_the_real_ledger(
     )
 
     assert ledger.exists()
-    assert _SEM_KEY in ledger.read_text(encoding="utf-8")
+    ledger_text = ledger.read_text(encoding="utf-8")
+    assert _SEM_MEAN_KEY in ledger_text
+    assert _SEM_PEAK_KEY in ledger_text
 
 
 # ===========================================================================
@@ -687,12 +747,13 @@ def test_embeddings_unavailable_omits_metric_and_run_completes(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """A raising ``get_embeddings`` → ``persona_sem_sim`` omitted, the run still completes.
+    """A raising ``get_embeddings`` → both semantic metrics omitted, the run still completes.
 
     Patch the ``get_embeddings`` factory to raise at construction (the no-AWS-creds /
     unavailable-model path). ``run_eval`` must catch it, leave ``embed_fn`` None, omit
-    ``persona_sem_sim``, and complete the batch normally — the LEXICAL persona metrics
-    (which need no model) still record, proving only the semantic metric degraded.
+    BOTH ``persona_sem_mean`` and ``persona_sem_peak``, and complete the batch normally
+    — the LEXICAL persona metrics (which need no model) still record, proving only the
+    semantic metrics degraded.
     """
 
     def _raising_get_embeddings():
@@ -704,14 +765,15 @@ def test_embeddings_unavailable_omits_metric_and_run_completes(
 
     # A roster with ≥2 AI personas: the LEXICAL metrics WILL record (no model
     # needed), so their presence proves the run completed and only the SEMANTIC
-    # metric was dropped.
+    # metrics were dropped.
     roster = [_PERSONA_A, _PERSONA_B, _PERSONA_C]
     result = _run_eval_over_games(monkeypatch, tmp_path, [roster])
 
-    # The semantic metric is omitted — no crash.
-    assert _SEM_KEY not in result.metrics
+    # Both semantic metrics are omitted — no crash.
+    assert _SEM_MEAN_KEY not in result.metrics
+    assert _SEM_PEAK_KEY not in result.metrics
     # ...while the model-free lexical companion still recorded (the run completed).
-    assert "persona_mean_sim" in result.metrics
+    assert "persona_lex_mean" in result.metrics
     assert result.games_completed == 1
 
 
@@ -724,7 +786,7 @@ def test_embeddings_embed_call_failure_omits_metric_and_run_completes(
     A subtler failure than a constructor error: the client constructs, but the batch
     embed call throws per game (a throttling / bad-response path). ``run_eval`` wraps
     each game's semantic scoring in try/except, skips that game's contribution, and —
-    since no game contributed a pair — omits the metric. The run still completes.
+    since no game contributed a pair — omits BOTH metrics. The run still completes.
     """
 
     class _BuildsButEmbedRaises:
@@ -738,7 +800,8 @@ def test_embeddings_embed_call_failure_omits_metric_and_run_completes(
     roster = [_PERSONA_A, _PERSONA_B, _PERSONA_C]
     result = _run_eval_over_games(monkeypatch, tmp_path, [roster])
 
-    assert _SEM_KEY not in result.metrics
+    assert _SEM_MEAN_KEY not in result.metrics
+    assert _SEM_PEAK_KEY not in result.metrics
     assert result.games_completed == 1  # run completed despite the embed failure
 
 
@@ -747,47 +810,63 @@ def test_embeddings_embed_call_failure_omits_metric_and_run_completes(
 #
 # Mirrors tests/test_slice32_persona_sim.py's viewer-cell assertions: hand-built
 # dict-shaped records (the on-disk ``metrics`` shape ``eval_ledger`` reads), no
-# parsing. ``persona_sem_sim`` reuses spec 032's value-type ``~{mean:.2f} (n=…)``
-# branch (no new render code); an absent metric renders blank.
+# parsing. ``persona_sem_mean`` / ``persona_sem_peak`` reuse the value-type
+# ``~{value:.2f} (n=…)`` branch (no new render code); an absent metric renders blank.
 # ===========================================================================
 
 
-def test_metric_order_carries_the_semantic_entry() -> None:
-    """``METRIC_ORDER`` registers ``("persona_sem_sim", "persona sem")``, after the lexical ones.
+def test_metric_order_carries_both_semantic_entries_in_order() -> None:
+    """``METRIC_ORDER`` registers both semantic entries, after the lexical peak.
 
-    The viewer derives its columns + detail lines from this tuple, so the label and
-    its order are the single source of truth: ``persona sem`` follows the spec-032
-    ``persona max`` (peak) entry.
+    The viewer derives its columns + detail lines from this tuple, so the labels and
+    their order are the single source of truth: ``persona sem mean`` then
+    ``persona sem peak`` follow the spec-032 lexical ``persona lex peak`` entry,
+    contiguous.
     """
-    assert (_SEM_KEY, _SEM_LABEL) in METRIC_ORDER
+    assert (_SEM_MEAN_KEY, _SEM_MEAN_LABEL) in METRIC_ORDER
+    assert (_SEM_PEAK_KEY, _SEM_PEAK_LABEL) in METRIC_ORDER
 
     keys = [key for key, _ in METRIC_ORDER]
-    peak_i = keys.index("persona_peak_sim")
-    sem_i = keys.index(_SEM_KEY)
-    assert sem_i == peak_i + 1  # contiguous, right after the lexical peak
+    lex_peak_i = keys.index("persona_lex_peak")
+    sem_mean_i = keys.index(_SEM_MEAN_KEY)
+    sem_peak_i = keys.index(_SEM_PEAK_KEY)
+    assert sem_mean_i == lex_peak_i + 1  # right after the lexical peak
+    assert sem_peak_i == sem_mean_i + 1  # then the semantic peak, contiguous
 
 
 def test_metric_cell_renders_semantic_mean_as_value_type_form() -> None:
-    """``_metric_cell`` renders ``persona_sem_sim`` as ``~<mean> (n=<pairs>)``.
+    """``_metric_cell`` renders ``persona_sem_mean`` as ``~<mean> (n=<pairs>)``.
 
     The value-type branch (shared with the lexical mean/peak): a facet with
     ``mean``/``denominator`` and no ``rate`` renders with the ``~`` similarity prefix
     and the ``n=`` pair count, two-decimal — distinct from the rate form.
     """
-    record = {"metrics": {_SEM_KEY: {"mean": 0.7361, "denominator": 10}}}
+    record = {"metrics": {_SEM_MEAN_KEY: {"mean": 0.7361, "denominator": 10}}}
 
-    assert _metric_cell(record, _SEM_KEY) == "~0.74 (n=10)"
+    assert _metric_cell(record, _SEM_MEAN_KEY) == "~0.74 (n=10)"
 
 
-def test_metric_cell_absent_semantic_metric_is_blank() -> None:
-    """A record lacking ``persona_sem_sim`` renders the empty string (blank, not zero).
+def test_metric_cell_renders_semantic_peak_as_value_type_form() -> None:
+    """``_metric_cell`` renders ``persona_sem_peak`` as ``~<peak> (n=<pairs>)``.
 
-    A run with no semantic metric (an ollama run with no creds, or a pre-033 record)
-    renders blank in that column — visibly distinct from a real value — without error.
+    The same value-type branch keys off ``peak`` as well as ``mean`` — a
+    meaning-collapsed pair's 1.0 peak renders ``~1.00 (n=10)``.
+    """
+    record = {"metrics": {_SEM_PEAK_KEY: {"peak": 1.0, "denominator": 10}}}
+
+    assert _metric_cell(record, _SEM_PEAK_KEY) == "~1.00 (n=10)"
+
+
+def test_metric_cell_absent_semantic_metrics_are_blank() -> None:
+    """A record lacking the semantic metrics renders the empty string (blank, not zero).
+
+    A run with no semantic metrics (an ollama run with no creds, or a pre-033 record)
+    renders blank in those columns — visibly distinct from a real value — without error.
     """
     record = {"metrics": {"repetition": {"rate": 0.5, "count": 10, "denominator": 20}}}
 
-    assert _metric_cell(record, _SEM_KEY) == ""
+    assert _metric_cell(record, _SEM_MEAN_KEY) == ""
+    assert _metric_cell(record, _SEM_PEAK_KEY) == ""
 
 
 def test_metric_cell_semantic_value_carries_no_ci_band() -> None:
@@ -799,43 +878,54 @@ def test_metric_cell_semantic_value_carries_no_ci_band() -> None:
     """
     record = {
         "metrics": {
-            _SEM_KEY: {"mean": 0.5, "denominator": 6, "ci_low": 0.1, "ci_high": 0.9}
+            _SEM_MEAN_KEY: {"mean": 0.5, "denominator": 6, "ci_low": 0.1, "ci_high": 0.9}
         }
     }
 
-    cell = _metric_cell(record, _SEM_KEY)
+    cell = _metric_cell(record, _SEM_MEAN_KEY)
     assert cell == "~0.50 (n=6)"
     assert "[" not in cell and "]" not in cell
 
 
-def test_render_detail_shows_semantic_metric_with_its_label() -> None:
-    """``render_detail`` lists ``persona_sem_sim`` under its ``persona sem`` label.
+def test_render_detail_shows_both_semantic_metrics_with_their_labels() -> None:
+    """``render_detail`` lists both semantic metrics under their labels in the value form.
 
-    The detail view iterates ``METRIC_ORDER``; a record carrying the semantic metric
-    shows ``persona sem: ~<mean> (n=…)`` on its own labelled line (full precision, no
-    ``—`` placeholder).
+    The detail view iterates ``METRIC_ORDER``; a record carrying both semantic metrics
+    shows ``persona sem mean: ~<mean> (n=…)`` and ``persona sem peak: ~<peak> (n=…)``
+    on their own labelled lines (full precision, no ``—`` placeholder).
     """
-    record = {"metrics": {_SEM_KEY: {"mean": 0.42, "denominator": 10}}}
+    record = {
+        "metrics": {
+            _SEM_MEAN_KEY: {"mean": 0.42, "denominator": 10},
+            _SEM_PEAK_KEY: {"peak": 1.0, "denominator": 10},
+        }
+    }
 
     detail = render_detail(record)
 
-    sem_line = next(
-        line for line in detail.splitlines() if f"{_SEM_LABEL}:" in line
+    mean_line = next(
+        line for line in detail.splitlines() if f"{_SEM_MEAN_LABEL}:" in line
     )
-    assert sem_line.strip() == f"{_SEM_LABEL}: ~0.42 (n=10)"
-    assert "—" not in sem_line  # present, not the absent-metric em-dash
+    peak_line = next(
+        line for line in detail.splitlines() if f"{_SEM_PEAK_LABEL}:" in line
+    )
+    assert mean_line.strip() == f"{_SEM_MEAN_LABEL}: ~0.42 (n=10)"
+    assert peak_line.strip() == f"{_SEM_PEAK_LABEL}: ~1.0 (n=10)"
+    assert "—" not in mean_line and "—" not in peak_line  # present, not the em-dash
 
 
-def test_render_detail_absent_semantic_metric_shows_em_dash() -> None:
-    """A record lacking the semantic metric shows ``—`` on the ``persona sem`` line.
+def test_render_detail_absent_semantic_metrics_show_em_dash() -> None:
+    """A record lacking the semantic metrics shows ``—`` on the ``persona sem …`` lines.
 
     The absent-metric placeholder (distinct from the table cell's blank): a pre-033
-    record renders ``persona sem: —`` so a never-recorded value stays visibly
-    distinct from a real one — and the surrounding present metric still renders.
+    record renders ``persona sem mean: —`` / ``persona sem peak: —`` so a
+    never-recorded value stays visibly distinct from a real one — and the surrounding
+    present metric still renders.
     """
     record = {"metrics": {"repetition": {"rate": 0.5, "count": 10, "denominator": 20}}}
 
     detail = render_detail(record)
 
-    assert f"{_SEM_LABEL}: —" in detail
+    assert f"{_SEM_MEAN_LABEL}: —" in detail
+    assert f"{_SEM_PEAK_LABEL}: —" in detail
     assert "repetition:" in detail  # the present metric still renders alongside

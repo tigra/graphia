@@ -88,27 +88,34 @@ METRIC_ORDER: tuple[tuple[str, str], ...] = (
     # run's generated AI personas (higher = personas more alike = less distinct).
     # Surfaced as one appended tuple; ``render_detail`` and the viewer table pick it
     # up automatically (column count, headers, and cells all derive from this tuple).
-    ("persona_near_dup", "persona dup"),
-    # Spec 031 (additive): the continuous companion — the MEAN pairwise lexical
-    # similarity of a run's AI personas (higher = personas more alike). A mean-type
-    # facet (``mean``/``denominator``, no ``rate``/``count``), rendered as
+    ("persona_near_dup", "persona near-dup"),
+    # Spec 031 (additive): the continuous LEXICAL companion — the MEAN pairwise
+    # lexical similarity of a run's AI personas (higher = personas more alike). A
+    # mean-type facet (``mean``/``denominator``, no ``rate``/``count``), rendered as
     # ``~<mean> (n=<pairs>)`` by ``_metric_cell`` / ``render_detail``.
-    ("persona_mean_sim", "persona sim"),
-    # Spec 032 (additive): the PEAK companion — the most-similar-pair (MAX) pairwise
-    # lexical similarity of a run's AI personas (flags a collapsed pair the mean
-    # smooths over). A value-type facet (``peak``/``denominator``, no
+    ("persona_lex_mean", "persona lex mean"),
+    # Spec 032 (additive): the LEXICAL PEAK companion — the most-similar-pair (MAX)
+    # pairwise lexical similarity of a run's AI personas (flags a collapsed pair the
+    # mean smooths over). A value-type facet (``peak``/``denominator``, no
     # ``rate``/``count``), rendered as ``~<peak> (n=<pairs>)`` by ``_metric_cell`` /
-    # ``render_detail`` — the same value-type branch as the mean (which now keys off
+    # ``render_detail`` — the same value-type branch as the mean (which keys off
     # ``mean`` OR ``peak``).
-    ("persona_peak_sim", "persona max"),
-    # Spec 033 (additive): the SEMANTIC (meaning-based) companion — the MEAN
+    ("persona_lex_peak", "persona lex peak"),
+    # Spec 033 (additive): the SEMANTIC (meaning-based) MEAN companion — the MEAN
     # pairwise *cosine* of a run's AI persona embeddings (a Bedrock Titan v2
     # measuring instrument; higher = personas more alike in KIND, not wording).
     # A value-type facet (``mean``/``denominator``, no ``rate``/``count``),
     # rendered by the SAME value-type branch as the lexical mean/peak —
     # ``~<mean> (n=<pairs>)`` — so no new render code is needed. Omitted (blank)
     # when embeddings were unavailable for the run (e.g. an ollama run, no creds).
-    ("persona_sem_sim", "persona sem"),
+    ("persona_sem_mean", "persona sem mean"),
+    # Spec 033 (additive): the SEMANTIC PEAK companion — the most-similar-pair (MAX)
+    # pairwise *cosine* of a run's AI persona embeddings (the semantic parallel of
+    # the lexical peak; flags a meaning-collapsed pair the cosine mean smooths over).
+    # A value-type facet (``peak``/``denominator``, no ``rate``/``count``), rendered
+    # by the SAME value-type branch — ``~<peak> (n=<pairs>)``. Omitted (blank) under
+    # the same gate as the semantic mean (embeddings unavailable for the run).
+    ("persona_sem_peak", "persona sem peak"),
 )
 
 # Fixed leading column headers, before the per-metric columns (tech-spec 012
@@ -734,17 +741,18 @@ def _metric_cell(record: RawRecord, dotted_key: str) -> str:
       → the bracketed band is omitted → ``rate count/denominator`` (e.g.
       ``0.45 49/108``). A clean ``0.00 0/108`` still renders non-empty, so it
       stays distinct from the absent-metric blank.
-    - **Value-type metric** (``persona_mean_sim`` — a ``mean``/``denominator``
-      facet; ``persona_peak_sim`` — a ``peak``/``denominator`` facet — each with
-      no ``rate``) → ``~<value> (n=<denominator>)`` (e.g. ``~0.42 (n=10)``); the
-      ``~`` signals a similarity value (mean or peak) and ``n`` is the pair count.
-      No CI band (neither is a binomial rate).
+    - **Value-type metric** (the persona similarity facets ``persona_lex_mean`` /
+      ``persona_sem_mean`` — a ``mean``/``denominator`` facet; ``persona_lex_peak``
+      / ``persona_sem_peak`` — a ``peak``/``denominator`` facet — each with no
+      ``rate``) → ``~<value> (n=<denominator>)`` (e.g. ``~0.42 (n=10)``); the ``~``
+      signals a similarity value (mean or peak) and ``n`` is the pair count. No CI
+      band (neither is a binomial rate).
     """
     facets = _metric_facets(record, dotted_key)
     if facets is None:
         return ""
 
-    # Value-type metric (``persona_mean_sim`` / ``persona_peak_sim``): a ``mean`` or
+    # Value-type metric (the persona ``*_mean`` / ``*_peak`` facets): a ``mean`` or
     # ``peak`` value with no ``rate`` (a similarity, not a binomial proportion).
     value = facets.get("mean")
     if value is None:
@@ -1218,8 +1226,9 @@ def _render_metrics_section(record: RawRecord) -> str:
 def _format_detail_metric(record: RawRecord, dotted_key: str) -> str:
     """Full-precision ``rate [ci_low–ci_high] count/denominator`` or ``—``.
 
-    A value-type facet (``persona_mean_sim`` — ``mean``/``denominator``;
-    ``persona_peak_sim`` — ``peak``/``denominator`` — each with no ``rate``)
+    A value-type facet (the persona similarity facets ``persona_lex_mean`` /
+    ``persona_sem_mean`` — ``mean``/``denominator``; ``persona_lex_peak`` /
+    ``persona_sem_peak`` — ``peak``/``denominator`` — each with no ``rate``)
     renders as ``~<value> (n=<denominator>)`` at full precision, mirroring the
     table cell's value form (no CI band — neither is a binomial rate).
     """
@@ -1227,7 +1236,7 @@ def _format_detail_metric(record: RawRecord, dotted_key: str) -> str:
     if facets is None:
         return _ABSENT
 
-    # Value-type metric (``persona_mean_sim`` / ``persona_peak_sim``): a ``mean`` or
+    # Value-type metric (the persona ``*_mean`` / ``*_peak`` facets): a ``mean`` or
     # ``peak`` value with no ``rate``.
     value = facets.get("mean")
     if value is None:

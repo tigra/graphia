@@ -5,9 +5,9 @@ Tests task (tech-spec §4, *Testing Strategy*). The direct follow-up to spec 031
 (*Distinct AI Personas Across the Roster*): spec 031's persona-distinctiveness
 measure is a near-duplicate **count** that sits at zero on virtually every run;
 032 adds two **continuous companions** over the same masked-text + pairwise
-machinery — the **average** pairwise similarity (``persona_mean_sim``, how alike
+machinery — the **average** pairwise similarity (``persona_lex_mean``, how alike
 the cast is overall) and the **peak** most-similar-pair similarity
-(``persona_peak_sim``, the closest pair — flagging a collapse the average
+(``persona_lex_peak``, the closest pair — flagging a collapse the average
 smooths over).
 
 All-mocked, no model, no RNG (architecture §6). The pure scorer needs neither;
@@ -29,8 +29,8 @@ Three concerns:
    **name-masking** confirmed.
 
 2. **Aggregation** (mocked ``run_eval``) — the written record carries
-   ``persona_mean_sim {mean, denominator}`` where ``mean`` = Σ ratios / total
-   pairs across games, and ``persona_peak_sim {peak, denominator}`` where
+   ``persona_lex_mean {mean, denominator}`` where ``mean`` = Σ ratios / total
+   pairs across games, and ``persona_lex_peak {peak, denominator}`` where
    ``peak`` = max ``sim_max`` across games; a ``<2``-everywhere batch omits both;
    **neither** carries ``ci_low``/``ci_high`` (a mean/peak is not a binomial
    proportion); ``metrics_version`` is unchanged.
@@ -70,8 +70,8 @@ from graphia.tools.blunder_eval import (
 # The flat keys the two value-type metrics are recorded under in a record's
 # ``metrics`` block (tech-spec §2 B) — the single source of truth this file
 # asserts against, and the dotted keys ``METRIC_ORDER`` registers.
-_MEAN_KEY = "persona_mean_sim"
-_PEAK_KEY = "persona_peak_sim"
+_MEAN_KEY = "persona_lex_mean"
+_PEAK_KEY = "persona_lex_peak"
 
 # The near-dup threshold spec 031's COUNT uses (difflib ratio). The distinct
 # roster below is built so every pairwise ratio sits well under this — so the
@@ -380,7 +380,7 @@ def _capture_with_personas(personas: list[PlayerPersona]) -> _GameCapture:
     """A ``_GameCapture`` whose final roster carries the given AI personas.
 
     All other ``_GameCapture`` inputs are empty/minimal — the persona scorers read
-    only ``cap.players`` — so the run scores ``persona_mean_sim`` / ``persona_peak_sim``
+    only ``cap.players`` — so the run scores ``persona_lex_mean`` / ``persona_lex_peak``
     over exactly this roster with no graph, model, or messages. A non-empty
     ``events`` log lets ``render_transcript`` produce a real document (the transcript
     write happens against the injected ``transcripts_root``).
@@ -688,15 +688,16 @@ def test_metric_order_carries_both_new_entries_in_order() -> None:
     """``METRIC_ORDER`` registers both value metrics, after ``persona_near_dup``.
 
     The viewer derives its columns + detail lines from this tuple, so the labels
-    and their order are the single source of truth: ``persona sim`` (mean) then
-    ``persona max`` (peak) immediately follow the spec-031 ``persona dup`` count.
+    and their order are the single source of truth: ``persona lex mean`` (mean)
+    then ``persona lex peak`` (peak) immediately follow the spec-031
+    ``persona near-dup`` count.
     """
     keys = [key for key, _ in METRIC_ORDER]
 
-    assert (_MEAN_KEY, "persona sim") in METRIC_ORDER
-    assert (_PEAK_KEY, "persona max") in METRIC_ORDER
+    assert (_MEAN_KEY, "persona lex mean") in METRIC_ORDER
+    assert (_PEAK_KEY, "persona lex peak") in METRIC_ORDER
 
-    # Order: persona_near_dup → persona_mean_sim → persona_peak_sim, contiguous.
+    # Order: persona_near_dup → persona_lex_mean → persona_lex_peak, contiguous.
     dup_i = keys.index("persona_near_dup")
     mean_i = keys.index(_MEAN_KEY)
     peak_i = keys.index(_PEAK_KEY)
@@ -706,7 +707,7 @@ def test_metric_order_carries_both_new_entries_in_order() -> None:
 
 
 def test_metric_cell_renders_mean_as_value_type_form() -> None:
-    """``_metric_cell`` renders ``persona_mean_sim`` as ``~<mean> (n=<pairs>)``.
+    """``_metric_cell`` renders ``persona_lex_mean`` as ``~<mean> (n=<pairs>)``.
 
     The value-type branch (tech-spec §2 C): a facet with ``mean``/``denominator``
     and no ``rate`` renders with the ``~`` similarity prefix and the ``n=`` pair
@@ -718,7 +719,7 @@ def test_metric_cell_renders_mean_as_value_type_form() -> None:
 
 
 def test_metric_cell_renders_peak_as_value_type_form() -> None:
-    """``_metric_cell`` renders ``persona_peak_sim`` as ``~<peak> (n=<pairs>)``.
+    """``_metric_cell`` renders ``persona_lex_peak`` as ``~<peak> (n=<pairs>)``.
 
     The same value-type branch keys off ``peak`` as well as ``mean`` — a collapsed
     pair's 1.0 peak renders ``~1.00 (n=10)``.
@@ -749,8 +750,8 @@ def test_metric_cell_value_metric_carries_no_ci_band() -> None:
 def test_metric_cell_absent_value_metric_is_blank() -> None:
     """A record lacking the value metric renders the empty string (blank, not zero).
 
-    Mirrors the absent-rate-metric blank: a run with no ``persona_mean_sim`` /
-    ``persona_peak_sim`` (a pre-032 record, or one with <2 AI personas everywhere)
+    Mirrors the absent-rate-metric blank: a run with no ``persona_lex_mean`` /
+    ``persona_lex_peak`` (a pre-032 record, or one with <2 AI personas everywhere)
     renders blank in those columns — visibly distinct from a real value — without
     error.
     """
@@ -764,8 +765,9 @@ def test_render_detail_shows_both_value_metrics_with_their_labels() -> None:
     """``render_detail`` lists both metrics under their labels in the value form.
 
     The detail view iterates ``METRIC_ORDER``; a record carrying both value
-    metrics shows ``persona sim: ~<mean> (n=…)`` and ``persona max: ~<peak> (n=…)``
-    on their own labelled lines (full precision, no ``—`` placeholder).
+    metrics shows ``persona lex mean: ~<mean> (n=…)`` and
+    ``persona lex peak: ~<peak> (n=…)`` on their own labelled lines (full
+    precision, no ``—`` placeholder).
     """
     record = {
         "metrics": {
@@ -777,14 +779,14 @@ def test_render_detail_shows_both_value_metrics_with_their_labels() -> None:
     detail = render_detail(record)
 
     mean_line = next(
-        line for line in detail.splitlines() if "persona sim:" in line
+        line for line in detail.splitlines() if "persona lex mean:" in line
     )
     peak_line = next(
-        line for line in detail.splitlines() if "persona max:" in line
+        line for line in detail.splitlines() if "persona lex peak:" in line
     )
     # The value-type ``~…`` form with the pair count, on the labelled lines.
-    assert mean_line.strip() == "persona sim: ~0.42 (n=10)"
-    assert peak_line.strip() == "persona max: ~1.0 (n=10)"
+    assert mean_line.strip() == "persona lex mean: ~0.42 (n=10)"
+    assert peak_line.strip() == "persona lex peak: ~1.0 (n=10)"
     # Present, not the absent-metric em-dash.
     assert "—" not in mean_line and "—" not in peak_line
 
@@ -793,7 +795,7 @@ def test_render_detail_absent_value_metric_shows_em_dash() -> None:
     """A record lacking the value metrics shows ``—`` on those detail lines.
 
     The absent-metric placeholder (distinct from the table cell's blank): a
-    pre-032 record renders ``persona sim: —`` / ``persona max: —`` so a
+    pre-032 record renders ``persona lex mean: —`` / ``persona lex peak: —`` so a
     never-recorded value stays visibly distinct from a real one — and the
     surrounding present metric still renders.
     """
@@ -803,8 +805,8 @@ def test_render_detail_absent_value_metric_shows_em_dash() -> None:
 
     detail = render_detail(record)
 
-    assert "persona sim: —" in detail
-    assert "persona max: —" in detail
+    assert "persona lex mean: —" in detail
+    assert "persona lex peak: —" in detail
     # The present metric still renders alongside the absent ones.
     assert "repetition:" in detail
 
@@ -831,7 +833,7 @@ def test_render_detail_rate_metric_unaffected_by_value_branch() -> None:
     detail = render_detail(record)
 
     dup_line = next(
-        line for line in detail.splitlines() if "persona dup:" in line
+        line for line in detail.splitlines() if "persona near-dup:" in line
     )
     assert "1/2" in dup_line  # count/denominator
     assert "~" not in dup_line  # NOT the value-type prefix

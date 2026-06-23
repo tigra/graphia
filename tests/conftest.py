@@ -21,7 +21,7 @@ def _fake_embed_documents(texts: list[str]) -> list[list[float]]:
     ≈ 1.0), differently-worded texts yield different vectors, and the value is
     fully reproducible across runs. This is what the autouse ``safe_llm`` fixture
     installs at the ``graphia.tools.blunder_eval.get_embeddings`` call site, so a
-    flag-on ``run_eval`` integration test gets a deterministic ``persona_sem_sim``
+    flag-on ``run_eval`` integration test gets a deterministic ``persona_sem_mean``
     and NEVER reaches real Bedrock embeddings.
     """
     vectors: list[list[float]] = []
@@ -145,7 +145,7 @@ def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     # client via the module-level ``get_embeddings`` binding. Patch it here with a
     # deterministic fake (a stable char-frequency embedder) so the offline suite
     # never reaches real Bedrock embeddings and a flag-on eval gets a reproducible
-    # ``persona_sem_sim``. A per-test fixture may re-patch this same binding to
+    # ``persona_sem_mean``. A per-test fixture may re-patch this same binding to
     # drive a specific cosine outcome (it runs after this autouse fixture).
     monkeypatch.setattr(
         "graphia.tools.blunder_eval.get_embeddings",

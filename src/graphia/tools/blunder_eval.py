@@ -856,7 +856,7 @@ def score_persona_near_dup(
 def score_persona_sim_sum(
     players: dict[str, PlayerState],
 ) -> dict[str, float | int]:
-    """Pure scorer for ``persona_mean_sim`` + ``persona_peak_sim`` — SUM and MAX of pairwise persona similarity.
+    """Pure scorer for ``persona_lex_mean`` + ``persona_lex_peak`` — SUM and MAX of pairwise persona similarity.
 
     The two continuous companions to :func:`score_persona_near_dup`. Where the latter
     *thresholds* each pair (count it when the ``difflib`` ratio ``>= 0.85``) and so
@@ -882,7 +882,7 @@ def score_persona_sim_sum(
     "sim_max": <MAX pairwise ratio>, "denominator": <C(n, 2) pairs>}``. Fewer than 2
     AI personas offers no pairs, so ``denominator == 0`` yields
     ``{"sim_sum": 0.0, "sim_max": 0.0, "denominator": 0}`` — ``run_eval`` then omits
-    both ``persona_mean_sim`` and ``persona_peak_sim`` (the same opportunity-based
+    both ``persona_lex_mean`` and ``persona_lex_peak`` (the same opportunity-based
     omission as ``persona_near_dup``).
 
     DRIVER-INDEPENDENT BY DESIGN: takes a plain ``players`` map, so the offline tests
@@ -942,7 +942,7 @@ def score_persona_semantic_sim(
     players: dict[str, PlayerState],
     embed_fn: Callable[[list[str]], list[Sequence[float]]],
 ) -> dict[str, float | int | None]:
-    """Pure-ish scorer for ``persona_sem_sim`` — MEANING-based persona similarity (spec 033).
+    """Pure-ish scorer for ``persona_sem_mean`` + ``persona_sem_peak`` — MEANING-based persona similarity (spec 033).
 
     The semantic counterpart to the LEXICAL :func:`score_persona_sim_sum`. Where
     the lexical mean compares the persona *texts* word-for-word (``difflib``),
@@ -965,11 +965,14 @@ def score_persona_semantic_sim(
     can't drive the cosine between two otherwise-different characters.
 
     Returns ``{"mean": <average cosine over C(n, 2) pairs> | None,
-    "denominator": <C(n, 2)>}`` — a VALUE-type facet (a similarity, NOT a
-    binomial proportion), parallel to ``persona_mean_sim``'s ``mean``. Fewer than
-    2 AI personas offers no pair, so it returns ``{"mean": None, "denominator":
-    0}`` — *absent, not a misleading 0* — and ``run_eval`` then omits the metric,
-    the same opportunity-based omission as the lexical persona metrics.
+    "peak": <MAX cosine over the pairs> | None, "denominator": <C(n, 2)>}`` — both
+    VALUE-type facets (a similarity, NOT a binomial proportion), the semantic
+    parallels to the lexical ``persona_lex_mean``/``persona_lex_peak``. The
+    ``mean`` and ``peak`` are computed in a SINGLE pass over the pairs. Fewer than
+    2 AI personas offers no pair, so it returns ``{"mean": None, "peak": None,
+    "denominator": 0}`` — *absent, not a misleading 0* — and ``run_eval`` then
+    omits BOTH semantic metrics, the same opportunity-based omission as the
+    lexical persona metrics.
 
     DRIVER-INDEPENDENT BY DESIGN: takes a plain ``players`` map + an injected
     ``embed_fn``, so the offline tests build synthetic rosters and pass a fake
@@ -992,12 +995,25 @@ def score_persona_semantic_sim(
     ]
     denominator = len(masked) * (len(masked) - 1) // 2
     if denominator == 0:
-        return {"mean": None, "denominator": 0}
+        return {"mean": None, "peak": None, "denominator": 0}
     # ONE batch embed call per game (not per pair) — production hits Bedrock once
     # for the whole roster, tests hit the fake once.
     vectors = embed_fn(masked)
-    cos_sum = sum(_cosine(a, b) for a, b in combinations(vectors, 2))
-    return {"mean": cos_sum / denominator, "denominator": denominator}
+    # Single pass over the unordered pairs: accumulate the cosine sum (for the
+    # batch MEAN) and track the running max (for the batch PEAK — the closest-pair
+    # cosine, the semantic parallel of ``score_persona_sim_sum``'s ``sim_max``).
+    cos_sum = 0.0
+    cos_max = 0.0
+    for a, b in combinations(vectors, 2):
+        cos = _cosine(a, b)
+        cos_sum += cos
+        if cos > cos_max:
+            cos_max = cos
+    return {
+        "mean": cos_sum / denominator,
+        "peak": cos_max,
+        "denominator": denominator,
+    }
 
 
 # ===========================================================================
@@ -1330,8 +1346,10 @@ def _attach_ci(metrics: dict[str, dict[str, float | int | None]]) -> None:
     metric. The CI is derived/supplementary: it reads existing fields only and
     does NOT bump ``METRICS_VERSION``.
 
-    A MEAN-type metric (``persona_mean_sim`` — ``mean``/``denominator``, no
-    ``count``) is SKIPPED: a mean is not a binomial rate, so a Wilson band is
+    A VALUE-type metric (the persona similarity facets ``persona_lex_mean`` /
+    ``persona_lex_peak`` / ``persona_sem_mean`` / ``persona_sem_peak`` —
+    ``mean``/``peak`` + ``denominator``, no ``count``) is SKIPPED: a mean/peak is
+    not a binomial rate, so a Wilson band is
     meaningless for it. The ``count``-absence guard is what excludes it, leaving
     the band behaviour for every existing rate metric unchanged.
     """
@@ -2931,13 +2949,20 @@ def run_eval(
         embed_fn = get_embeddings().embed_documents
     except Exception as exc:  # noqa: BLE001 - never fail the run on the optional metric
         print(
-            "  persona_sem_sim: embeddings unavailable "
-            f"({type(exc).__name__}: {exc}) — omitting the semantic metric",
+            "  persona_sem_mean/persona_sem_peak: embeddings unavailable "
+            f"({type(exc).__name__}: {exc}) — omitting the semantic metrics",
             file=sys.stderr,
         )
     # Σ of per-game cosines + total pairs across games (same per-game-then-sum
     # pattern as the lexical mean), folded into the batch MEAN cosine below.
     persona_sem_total: dict[str, float] = {"cos_sum": 0.0, "denominator": 0.0}
+
+    # Spec-033 (additive) SEMANTIC persona similarity PEAK: the running MAX of each
+    # game's peak cosine (the most-similar pair in any game), the semantic parallel
+    # of ``persona_sim_max_run`` — so the batch reports the closest-pair cosine
+    # anywhere in the run. A value-type metric (no rate/count), recorded under the
+    # SAME gate as the semantic mean (embeddings resolved AND ≥1 pair scored).
+    persona_sem_max_run: float = 0.0
 
     for game_index in range(args.games):
         result.games_attempted += 1
@@ -3048,11 +3073,18 @@ def run_eval(
                     # true Σcosines / Σpairs (never a mean-of-means).
                     persona_sem_total["cos_sum"] += float(sem_mean) * sem_denom
                     persona_sem_total["denominator"] += sem_denom
+                    # Fold this game's peak cosine into the running batch MAX — the
+                    # most-similar pair anywhere is the max of the per-game maxes.
+                    sem_peak = sem_facets["peak"]
+                    if sem_peak is not None:
+                        persona_sem_max_run = max(
+                            persona_sem_max_run, float(sem_peak)
+                        )
             except Exception as exc:  # noqa: BLE001 - optional metric, never fatal
                 print(
-                    f"  game {game_index}: persona_sem_sim scoring FAILED "
-                    f"({type(exc).__name__}: {exc}) — skipping this game's "
-                    "semantic contribution",
+                    f"  game {game_index}: persona_sem_mean/persona_sem_peak "
+                    f"scoring FAILED ({type(exc).__name__}: {exc}) — skipping "
+                    "this game's semantic contribution",
                     file=sys.stderr,
                 )
                 # A persistent failure (e.g. expired creds) would repeat per game;
@@ -3114,7 +3146,7 @@ def run_eval(
     # ``count``) skips it and attaches no Wilson band (a mean is not a binomial rate).
     total_persona_pairs = persona_sim_total["denominator"]
     if total_persona_pairs > 0:
-        result.metrics["persona_mean_sim"] = {
+        result.metrics["persona_lex_mean"] = {
             "mean": persona_sim_total["sim_sum"] / total_persona_pairs,
             "denominator": int(total_persona_pairs),
         }
@@ -3123,7 +3155,7 @@ def run_eval(
         # Like the mean it is a VALUE-type facet — ``peak``/``denominator``, NO
         # ``rate``/``count`` — so ``_attach_ci`` (which keys off ``count``) skips it
         # (a peak is not a binomial rate, no Wilson band).
-        result.metrics["persona_peak_sim"] = {
+        result.metrics["persona_lex_peak"] = {
             "peak": persona_sim_max_run,
             "denominator": int(total_persona_pairs),
         }
@@ -3141,8 +3173,19 @@ def run_eval(
     # lexical mean/peak.
     total_sem_pairs = persona_sem_total["denominator"]
     if total_sem_pairs > 0:
-        result.metrics["persona_sem_sim"] = {
+        result.metrics["persona_sem_mean"] = {
             "mean": persona_sem_total["cos_sum"] / total_sem_pairs,
+            "denominator": int(total_sem_pairs),
+        }
+        # Spec-033 (additive) SEMANTIC persona similarity PEAK: the batch's
+        # most-similar-pair cosine, present under the SAME gate as the semantic
+        # mean (≥1 pair scored). Like the mean it is a VALUE-type facet —
+        # ``peak``/``denominator``, NO ``rate``/``count`` — so ``_attach_ci``
+        # (which keys off ``count``) skips it (a cosine peak is not a binomial
+        # rate, no Wilson band); the viewer's value-type render shows
+        # ``~<peak> (n=<pairs>)``, the same branch as the lexical peak.
+        result.metrics["persona_sem_peak"] = {
+            "peak": persona_sem_max_run,
             "denominator": int(total_sem_pairs),
         }
 
