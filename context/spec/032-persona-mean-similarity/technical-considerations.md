@@ -32,15 +32,15 @@ Affected files: `src/graphia/tools/blunder_eval.py` (scorer + `run_eval` aggrega
 
 - Alongside the existing `persona_total {count, denominator}` accumulator, track `sim_sum_total` (running sum), `sim_max_run` (running **max** across games — the run peak is the max over all pairs, i.e. the max of per-game maxes), and reuse the same `denominator` total.
 - After the game loop, when `denominator_total > 0`, record **two value-type metrics**:
-  - `result.metrics["persona_mean_sim"] = {"mean": sim_sum_total / denominator_total, "denominator": denominator_total}`
-  - `result.metrics["persona_peak_sim"] = {"peak": sim_max_run, "denominator": denominator_total}`
+  - `result.metrics["persona_lex_mean"] = {"mean": sim_sum_total / denominator_total, "denominator": denominator_total}`
+  - `result.metrics["persona_lex_peak"] = {"peak": sim_max_run, "denominator": denominator_total}`
 - These carry **no `rate`/`count`** → ensure `_attach_ci` does **not** attach a Wilson band (it iterates metrics expecting a proportion; make it skip any facet lacking `count`, leaving the existing rate-metrics untouched).
 
 ### Component C — ledger record + viewer (`eval_ledger.py`)
 
 | Concern | Change |
 | --- | --- |
-| `METRIC_ORDER` | append `("persona_mean_sim", "persona sim~")` and `("persona_peak_sim", "persona max~")` after `persona_near_dup` |
+| `METRIC_ORDER` | append `("persona_lex_mean", "persona lex mean")` and `("persona_lex_peak", "persona lex peak")` after `persona_near_dup` |
 | `_metric_cell` (list) | add a **value-type branch**: when facets has `"mean"` (or `"peak"`) and no `"rate"`, render `~{value:.2f} (n={denominator})`; else the existing `rate [ci] count/denom` path; absent metric → "" (blank) as today |
 | `render_detail` | same value-type branch on its per-`METRIC_ORDER` line |
 | `_metric_facets` | already resolves a flat `metrics[key]`; no change |
@@ -49,7 +49,7 @@ The `~` prefix signals "a similarity value, not a near-dup rate", and `(n=…)` 
 
 ### Component D — backfill harness (one-off, additive)
 
-- Reuse the **validated transcript parser** (parses each game's `<setup>` `<player>` blocks — tagged, indented, and flush-left formats — into reconstructed persona objects, skipping the personaless human) + the **live** `score_persona_sim_stats`, aggregated per run exactly as `run_eval` does, to compute `persona_mean_sim` / `persona_peak_sim` for each transcript-preserved ledger record that lacks them.
+- Reuse the **validated transcript parser** (parses each game's `<setup>` `<player>` blocks — tagged, indented, and flush-left formats — into reconstructed persona objects, skipping the personaless human) + the **live** `score_persona_sim_stats`, aggregated per run exactly as `run_eval` does, to compute `persona_lex_mean` / `persona_lex_peak` for each transcript-preserved ledger record that lacks them.
 - Edit them in as a **purely additive** text insertion into each target record's `metrics:` block (the same surgical, formatting-preserving approach already used for the `persona_near_dup` backfill — splits on `---` doc boundaries, inserts at the metrics-block end, never rewrites other records, validated to parse + diff additive-only).
 - **Faithfulness gate:** before trusting the backfill, recompute a run that recorded these live and confirm the transcript-derived values match (the spec-031 backfill proved this approach reproduces live numbers exactly).
 
@@ -59,7 +59,7 @@ The `~` prefix signals "a similarity value, not a near-dup rate", and `(n=…)` 
 
 - **System dependencies:** none new — pure-Python, lexical, no model, no network. Same determinism posture as `repetition` / `persona_near_dup` (architecture §6: cheap-deterministic lexical metric).
 - **Risk — viewer regression.** `_metric_cell` / `render_detail` are spec-012/029 tested surfaces. *Mitigation:* the value-type branch is strictly additive (new `if "mean"/"peak"` arm); the existing rate path and its tests are untouched; add explicit value-type render tests.
-- **Risk — `_attach_ci` mis-attaching CI to a mean.** *Mitigation:* gate CI attachment on the presence of `count`; covered by a test asserting `persona_mean_sim` has no `ci_low`/`ci_high`.
+- **Risk — `_attach_ci` mis-attaching CI to a mean.** *Mitigation:* gate CI attachment on the presence of `count`; covered by a test asserting `persona_lex_mean` has no `ci_low`/`ci_high`.
 - **Risk — backfill corrupting curated ledger data.** *Mitigation:* additive-only text surgery + YAML-parse + additive-diff validation + the faithfulness gate; never touches non-target records (the proven spec-031 procedure).
 - **`METRICS_VERSION`** deliberately **not** bumped (additive/orthogonal metric — the `outcomes`/`vote_activity`/`persona_near_dup` precedent); flagged so a reviewer doesn't "fix" it.
 
@@ -71,6 +71,6 @@ All-mocked, no model, no RNG (architecture §6); never assert verbatim LLM prose
 
 - **Pure scorer** over hand-built `players`: distinct roster → low `sim_sum`, low `sim_max`; a collapsed pair → `sim_max == 1.0` while the mean stays low (the case the peak exists to catch); `<2` AI personas → `denominator 0`; human excluded; `true_self` never participates; name-masking confirmed.
 - **Aggregation:** mean = Σ ratios / total pairs across games; peak = max across games; `<2`-everywhere → metrics omitted.
-- **Record + viewer:** a mocked `run_eval` writes `persona_mean_sim` / `persona_peak_sim` as `{mean|peak, denominator}`; `_metric_cell` and `render_detail` render the `~value (n=…)` form; absent → blank; `persona_mean_sim` has no Wilson band; `METRICS_VERSION` unchanged. Reuse the suite-wide ledger/transcript redirect.
+- **Record + viewer:** a mocked `run_eval` writes `persona_lex_mean` / `persona_lex_peak` as `{mean|peak, denominator}`; `_metric_cell` and `render_detail` render the `~value (n=…)` form; absent → blank; `persona_lex_mean` has no Wilson band; `METRICS_VERSION` unchanged. Reuse the suite-wide ledger/transcript redirect.
 - **Backfill harness:** faithfulness test (transcript-derived == live for a known run); additive-only (record count unchanged, YAML parses, only the two keys added).
 - **Regression:** full `uv run pytest -q` green incl. spec-031 persona tests, spec-012/029 viewer tests, and `tests/test_dual_mode_smoke.py` (byte-equal; the persona metrics are outside its public-log scope).

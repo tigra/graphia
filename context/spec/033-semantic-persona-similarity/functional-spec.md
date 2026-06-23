@@ -24,11 +24,11 @@ It **complements** (does not replace) the text-level measures; all are kept and 
 
 ## 2. Functional Requirements (The "What")
 
-- **Each measured run records a meaning-based persona similarity.**
-  - Every run records a number capturing how alike its AI characters are in **personality / temperament / kind of person** — judged by meaning, not wording — alongside the existing text-level measures.
+- **Each measured run records a meaning-based persona similarity — both the average and the peak.**
+  - Every run records two numbers capturing how alike its AI characters are in **personality / temperament / kind of person** — judged by meaning, not wording: the **average** meaning-similarity across all pairs and the **peak** (most-similar pair) — alongside the existing text-level measures, mirroring spec 032's lexical average + peak.
   - **Acceptance Criteria:**
-    - [ ] Given a completed measured run with at least two AI characters, when its recorded result is read, then it includes a meaning-based persona-similarity number, alongside the text-level measures (spec 031 / 032).
-    - [ ] Given a run with fewer than two AI characters — no pair to compare — when its result is read, then the meaning-based similarity is reported as not-applicable (blank), not a misleading zero.
+    - [ ] Given a completed measured run with at least two AI characters, when its recorded result is read, then it includes the meaning-based **average and peak** persona-similarity, alongside the text-level measures (spec 031 / 032).
+    - [ ] Given a run with fewer than two AI characters — no pair to compare — when its result is read, then the meaning-based average and peak are reported as not-applicable (blank), not a misleading zero.
 
 - **The measure captures sameness the word-level measures miss (validated, effort-not-results).**
   - The point of the measure is to rate two differently-worded but same-temperament characters as similar. Whether it does — rating archetype-samey casts higher than the word-level measures do — is measured against the recorded history, not assumed.
