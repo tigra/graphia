@@ -10,7 +10,7 @@ Roadmap *features* live in [`roadmap.md`](roadmap.md); this file holds **follow-
 robustness gaps, measurement ideas, docs debt, and housekeeping**. It may be loosely
 structured by section (as below) — keep it light.
 
-_Last updated: 2026-06-21._
+_Last updated: 2026-06-22._
 
 ---
 
@@ -39,6 +39,7 @@ _Last updated: 2026-06-21._
 ## Test reliability
 
 - **Suite-wide ledger-write guard (belt-and-braces)** — a test-isolation bug let eval tests append ~25 synthetic records to the committed `evals/blunder-ledger.yaml`: `append_record`'s `ledger_path=LEDGER_PATH` was an **early-bound signature default**, so `run_eval`'s no-arg append always hit the real ledger and per-test `monkeypatch.setattr(LEDGER_PATH)` never reached it (**root cause fixed 2026-06-18** — the default is now `None`, resolved to the module global at call time). **Recommendation:** add an **autouse fixture pointing `blunder_eval.LEDGER_PATH` at `tmp_path`** for the whole suite, so no future eval test can touch the real ledger even if a redirect is forgotten; consider the same for `TRANSCRIPTS_ROOT`. _Origin: ledger pollution discovered 2026-06-18 during the spec-017 smoke._
+- **Thread-safe ledger writes (write-lock) instead of path redirection** — make eval ledger writes thread-safe by holding a lock **only while writing** to `evals/blunder-ledger.yaml`, so concurrent eval runs can safely append to the one shared ledger without overwriting each other — removing the need to redirect each run to a separate path. (Open question vs the *ledger-write guard* above: a write-lock fixes concurrent-write races, but a *test* run would still need isolation to avoid polluting the real ledger — so the two may be complementary, not either/or.) _Origin: user request 2026-06-22._
 
 ## Measurement / eval ideas
 
@@ -52,6 +53,8 @@ _Last updated: 2026-06-21._
 - **Search in `view-ledger` (`/` to find)** — add an incremental, vim/less-style search triggered by **`/`** in the `make view-ledger` viewer (spec 012) to jump to matches within the ledger view. _Origin: user request 2026-06-20._
 - **Fold the round number into the `<round>` tag attribute** — render the per-Day round as `<round n="N">` instead of a bare `<round>` tag plus a separate `Round N.` content line, consistent with the `<vote initiator=… target=…>` / `<player name=… role=…>` attribute style. A transcript-render refinement (spec 021 round labels / spec 022 format). _Origin: user request 2026-06-20._
 - **Vote activity by side — initiated-against vs voted-against** — break out day-vote metrics in evals along two distinct, often-divergent axes, each attributed by the **target's** side: **vote-initiation against a side** (initiating an execution vote on a Law-abiding vs on a Mafioso — who gets *nominated*) and **votes against a side** (Yes-ballots landing on a Law-abiding vs a Mafioso — who actually gets *executed*). Tracking **both** exposes where nomination and follow-through diverge; optionally also cut by the **actor's** side (LA- vs Mafia-driven). Sharper than aggregate vote counts — surfaces whether the town aims at Mafia rather than at its own — bearing on the town-coordination / Day-decisiveness gap. Extends the existing `vote_activity by_side` signal and the *Engagement / decisiveness metrics* item above. _Origin: user request 2026-06-20._
+- **Display partially-complete eval runs** — surface a measured run that didn't finish all its games (interrupted, or with games failing early) — its completed games' transcripts and whatever metrics could be computed — rather than discarding or hiding it. [Open: which sense exactly — write a partial ledger record for an interrupted run, surface `games_failed_early` runs in `make view-ledger`, and/or show live progress for an in-flight run — TBD.] _Origin: user request 2026-06-22._
+- **Lower ollama eval compute cost — reflection cadence / history depth / phrase lengths** — measured ollama games slowed from ~**32 model calls/game (~1.9 min)** to ~**117–270 (~5–36 min)** after specs 028+025; a log reconstruction pinned the cost to **call volume**, not per-call latency or idle gaps (games are ~100% compute-bound): spec 028's per-survivor-per-round reflection roughly **doubles calls/round**, spec 025's wider window grew prompts to ~**4–6k tokens** (prefill ~3.5s + KV-cache thrash), and generation phrase lengths add up. Try lowering **028 reflection cadence** (e.g. every other round / only living-active players), **025 history depth** (a smaller window for the local model), and **AI phrase/generation lengths** to see if ollama calculation time drops meaningfully **without harming gameplay** — A/B-able under the effort-not-results principle ([CR 005](../change-requests/005-ai-behaviour-acceptance-effort-not-results.md)). _Origin: ollama eval-timing reconstruction 2026-06-22._
 
 ## Housekeeping
 
