@@ -844,6 +844,72 @@ def score_persona_near_dup(
     return _facets(count, denominator)
 
 
+def score_persona_sim_sum(
+    players: dict[str, PlayerState],
+) -> dict[str, float | int]:
+    """Pure scorer for ``persona_mean_sim`` + ``persona_peak_sim`` — SUM and MAX of pairwise persona similarity.
+
+    The two continuous companions to :func:`score_persona_near_dup`. Where the latter
+    *thresholds* each pair (count it when the ``difflib`` ratio ``>= 0.85``) and so
+    floors at 0 — missing graded distinctness below the threshold — this returns the
+    **raw sum of every pair's ratio** AND the **max** pair ratio, plus the pair count,
+    so ``run_eval`` can fold a batch and report both the **mean** pairwise similarity
+    (``sim_sum / denominator`` — how alike the cast is overall) and the **peak**
+    (most-similar-pair) similarity (``max`` of per-game maxes — how alike the closest
+    pair got). Both are continuous signals, not near-duplicate proportions.
+
+    Setup is IDENTICAL to :func:`score_persona_near_dup` by construction: over a
+    game's **AI** players (the human is skipped, ``persona is None`` skipped), build
+    each persona's **table-facing** text — ``personality + " " + manner + " " +
+    public_persona`` — and **never** ``true_self``, name-mask
+    (:func:`_spec009_mask_names` against the AI names) and normalize
+    (:func:`_spec009_normalize`), then walk the same unordered
+    :func:`itertools.combinations` pairs. (It deliberately recomputes the same pairs
+    ``score_persona_near_dup`` walks — personas are few, and keeping the two scorers
+    separate leaves that function's signature/return untouched so its tests stay
+    green.) ``sim_sum`` and ``sim_max`` are computed in a SINGLE pass over the pairs.
+
+    Returns ``{"sim_sum": <sum of ALL pairwise difflib SequenceMatcher ratios>,
+    "sim_max": <MAX pairwise ratio>, "denominator": <C(n, 2) pairs>}``. Fewer than 2
+    AI personas offers no pairs, so ``denominator == 0`` yields
+    ``{"sim_sum": 0.0, "sim_max": 0.0, "denominator": 0}`` — ``run_eval`` then omits
+    both ``persona_mean_sim`` and ``persona_peak_sim`` (the same opportunity-based
+    omission as ``persona_near_dup``).
+
+    DRIVER-INDEPENDENT BY DESIGN: takes a plain ``players`` map, so the offline tests
+    build synthetic rosters with no live model.
+    """
+    ai_personas = [
+        p.persona
+        for p in players.values()
+        if not p.is_human and p.persona is not None
+    ]
+    ai_names = {p.name for p in players.values() if not p.is_human}
+    masked = [
+        _spec009_normalize(
+            _spec009_mask_names(
+                f"{persona.personality} {persona.manner} {persona.public_persona}",
+                ai_names,
+            )
+        )
+        for persona in ai_personas
+    ]
+    denominator = len(masked) * (len(masked) - 1) // 2
+    if denominator == 0:
+        return {"sim_sum": 0.0, "sim_max": 0.0, "denominator": 0}
+    # Single pass over the same unordered pairs: accumulate the sum (for the batch
+    # MEAN) and track the running max (for the batch PEAK — the closest-pair signal
+    # the near-dup count floors away).
+    sim_sum = 0.0
+    sim_max = 0.0
+    for a, b in combinations(masked, 2):
+        ratio = difflib.SequenceMatcher(None, a, b).ratio()
+        sim_sum += ratio
+        if ratio > sim_max:
+            sim_max = ratio
+    return {"sim_sum": sim_sum, "sim_max": sim_max, "denominator": denominator}
+
+
 # ===========================================================================
 # The three exact, game-record ACTION detectors (Slice 2, Task 2).
 #
@@ -1165,20 +1231,28 @@ def _facets(count: int, denominator: int) -> dict[str, float | int | None]:
 def _attach_ci(metrics: dict[str, dict[str, float | int | None]]) -> None:
     """Attach a Wilson ``ci_low``/``ci_high`` to every PRESENT metric, in place.
 
-    A present metric (``denominator > 0`` — the only kind ``run_eval`` keeps in
-    the record) gets two float siblings AFTER ``denominator`` from
-    :func:`wilson_ci` on its own ``count``/``denominator``, giving each rate a
-    reliability band (a wide one flags a small-``n`` noise rate). Absent metrics
-    never reach here — ``run_eval`` already omitted them — so the
-    absent-omission convention is untouched and no CI is invented for a 0/0
+    A present RATE metric (``denominator > 0`` with a ``count`` — the only kind
+    ``run_eval`` keeps with that shape) gets two float siblings AFTER
+    ``denominator`` from :func:`wilson_ci` on its own ``count``/``denominator``,
+    giving each rate a reliability band (a wide one flags a small-``n`` noise
+    rate). Absent metrics never reach here — ``run_eval`` already omitted them —
+    so the absent-omission convention is untouched and no CI is invented for a 0/0
     metric. The CI is derived/supplementary: it reads existing fields only and
     does NOT bump ``METRICS_VERSION``.
+
+    A MEAN-type metric (``persona_mean_sim`` — ``mean``/``denominator``, no
+    ``count``) is SKIPPED: a mean is not a binomial rate, so a Wilson band is
+    meaningless for it. The ``count``-absence guard is what excludes it, leaving
+    the band behaviour for every existing rate metric unchanged.
     """
     for facets in metrics.values():
         denominator = facets.get("denominator")
         if not isinstance(denominator, int) or denominator <= 0:
             continue  # defensive — present metrics always have denominator > 0
-        low, high = wilson_ci(int(facets["count"]), denominator)
+        count = facets.get("count")
+        if not isinstance(count, int):
+            continue  # mean-type metric (no ``count``) — Wilson CI does not apply
+        low, high = wilson_ci(count, denominator)
         facets["ci_low"] = low
         facets["ci_high"] = high
 
@@ -2735,6 +2809,24 @@ def run_eval(
     # ``vote_activity`` precedent).
     persona_total: dict[str, int] = {"count": 0, "denominator": 0}
 
+    # Spec-031 (additive) persona similarity MEAN: the continuous companion to
+    # ``persona_near_dup``. Where that thresholds each pair and floors at 0, this
+    # sums every pair's raw difflib ratio across games (``sim_sum``) over the SAME
+    # pair count (``denominator``), so the batch reports the MEAN pairwise
+    # similarity (``sim_sum / denominator``) — a graded distinctness signal the
+    # near-dup count misses. Summed via the same per-game-then-sum pattern; a new
+    # orthogonal metric, so ``METRICS_VERSION`` is NOT bumped.
+    persona_sim_total: dict[str, float] = {"sim_sum": 0.0, "denominator": 0.0}
+
+    # Spec-032 (additive) persona similarity PEAK: the running MAX of each game's
+    # ``sim_max`` (the most-similar pair in any game), so the batch reports the
+    # closest-pair similarity. The peak generalizes ``persona_near_dup``: when no
+    # pair clears the 0.85 near-dup threshold the count is 0, yet the peak still
+    # says how close the closest pair got — and reaches the top of its range if a
+    # few characters collapse to the same template (the case the mean smooths over).
+    # A value-type metric (no rate/count), so ``METRICS_VERSION`` is NOT bumped.
+    persona_sim_max_run: float = 0.0
+
     for game_index in range(args.games):
         result.games_attempted += 1
         try:
@@ -2813,6 +2905,19 @@ def run_eval(
         persona_total["count"] += int(persona_facets["count"])
         persona_total["denominator"] += int(persona_facets["denominator"])
 
+        # Spec-031 (additive): fold this game's summed pairwise persona similarity
+        # and pair count into the batch totals (same per-game-then-sum pattern), so
+        # the batch reports the MEAN similarity below. Spec-032 (additive): also
+        # fold this game's ``sim_max`` into the running batch MAX, so the batch
+        # reports the PEAK (most-similar-pair) similarity — the max over all pairs
+        # is the max of the per-game maxes.
+        persona_sim_facets = score_persona_sim_sum(cap.players)
+        persona_sim_total["sim_sum"] += float(persona_sim_facets["sim_sum"])
+        persona_sim_total["denominator"] += int(persona_sim_facets["denominator"])
+        persona_sim_max_run = max(
+            persona_sim_max_run, float(persona_sim_facets["sim_max"])
+        )
+
     # Spec-013 game-dynamics blocks, folded over the completed games. ``outcomes``
     # partitions the winners (``games`` = completed games denominator); the side
     # win-rates carry a Wilson CI, ``draw``/``no_winner`` are bare counts.
@@ -2859,6 +2964,28 @@ def run_eval(
         result.metrics["persona_near_dup"] = _facets(
             persona_total["count"], persona_total["denominator"]
         )
+
+    # Spec-031 (additive) persona similarity MEAN: record the batch mean pairwise
+    # similarity, present only when the batch offered at least one persona pair
+    # (total pairs > 0) — the same opportunity-based omission as ``persona_near_dup``.
+    # This is a MEAN, NOT a proportion: it carries ``mean``/``denominator`` (the pair
+    # count), deliberately NO ``rate``/``count`` — so ``_attach_ci`` (which keys off
+    # ``count``) skips it and attaches no Wilson band (a mean is not a binomial rate).
+    total_persona_pairs = persona_sim_total["denominator"]
+    if total_persona_pairs > 0:
+        result.metrics["persona_mean_sim"] = {
+            "mean": persona_sim_total["sim_sum"] / total_persona_pairs,
+            "denominator": int(total_persona_pairs),
+        }
+        # Spec-032 (additive) persona similarity PEAK: the batch's most-similar-pair
+        # similarity, present under the SAME opportunity gate as the mean (≥1 pair).
+        # Like the mean it is a VALUE-type facet — ``peak``/``denominator``, NO
+        # ``rate``/``count`` — so ``_attach_ci`` (which keys off ``count``) skips it
+        # (a peak is not a binomial rate, no Wilson band).
+        result.metrics["persona_peak_sim"] = {
+            "peak": persona_sim_max_run,
+            "denominator": int(total_persona_pairs),
+        }
 
     # Attach a Wilson 95% CI (ci_low/ci_high) to every PRESENT metric so each
     # rate carries its own reliability band — a wide band flags a small-n rate

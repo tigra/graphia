@@ -39,7 +39,7 @@ from typing import Any
 
 import pytest
 
-from graphia.eval_ledger import METRIC_ORDER, render_detail
+from graphia.eval_ledger import METRIC_ORDER, _metric_cell, render_detail
 from graphia.state import PlayerPersona, PlayerState
 from graphia.tools import blunder_eval
 from graphia.tools.blunder_eval import (
