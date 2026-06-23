@@ -12,6 +12,43 @@ from textual.widget import Widget
 from graphia.llm import Ballot, DayAction, Persona, Pointing, Reflection, Roster
 
 
+def _fake_embed_documents(texts: list[str]) -> list[list[float]]:
+    """Deterministic stand-in for ``BedrockEmbeddings.embed_documents`` (spec 033).
+
+    Maps each text to a fixed-length (26-dim) lowercase-letter frequency vector —
+    a stable bag-of-characters, no model, no network. Identical texts yield
+    identical vectors (so the semantic scorer's cosine of a duplicated persona is
+    ≈ 1.0), differently-worded texts yield different vectors, and the value is
+    fully reproducible across runs. This is what the autouse ``safe_llm`` fixture
+    installs at the ``graphia.tools.blunder_eval.get_embeddings`` call site, so a
+    flag-on ``run_eval`` integration test gets a deterministic ``persona_sem_sim``
+    and NEVER reaches real Bedrock embeddings.
+    """
+    vectors: list[list[float]] = []
+    for text in texts:
+        counts = [0.0] * 26
+        for ch in text.lower():
+            index = ord(ch) - ord("a")
+            if 0 <= index < 26:
+                counts[index] += 1.0
+        vectors.append(counts)
+    return vectors
+
+
+class _FakeEmbeddings:
+    """Minimal stand-in for ``langchain_aws.BedrockEmbeddings`` (spec 033).
+
+    ``run_eval`` resolves the embed callable via
+    ``get_embeddings().embed_documents``, so the fake ``get_embeddings`` the
+    ``safe_llm`` fixture installs returns this object, whose ``embed_documents``
+    is the deterministic :func:`_fake_embed_documents`. No constructor args are
+    read — the real factory takes none from the caller either.
+    """
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return _fake_embed_documents(texts)
+
+
 class _LoudFailureLLM:
     """Default LLM stand-in installed by the ``safe_llm`` autouse fixture.
 
@@ -103,6 +140,16 @@ def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "graphia.nodes.day.get_large",
         lambda: _LoudFailureLLM("graphia.nodes.day.get_large"),
+    )
+    # Spec 033: ``blunder_eval.run_eval`` resolves the semantic-persona embeddings
+    # client via the module-level ``get_embeddings`` binding. Patch it here with a
+    # deterministic fake (a stable char-frequency embedder) so the offline suite
+    # never reaches real Bedrock embeddings and a flag-on eval gets a reproducible
+    # ``persona_sem_sim``. A per-test fixture may re-patch this same binding to
+    # drive a specific cosine outcome (it runs after this autouse fixture).
+    monkeypatch.setattr(
+        "graphia.tools.blunder_eval.get_embeddings",
+        lambda: _FakeEmbeddings(),
     )
 
 

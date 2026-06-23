@@ -28,7 +28,8 @@ from abc import ABC, abstractmethod
 from typing import Literal
 
 from langchain_anthropic import ChatAnthropic
-from langchain_aws import ChatBedrockConverse
+from langchain_aws import BedrockEmbeddings, ChatBedrockConverse
+from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -45,6 +46,16 @@ _MAX_AI_NAMES = _MAX_TABLE_SIZE - 1
 # any caller.
 _LARGE_MODEL_ID = "amazon.nova-pro-v1:0"
 _SMALL_MODEL_ID = "amazon.nova-lite-v1:0"
+
+# The embeddings model for the spec-033 semantic persona-similarity metric. This
+# is a *measurement instrument*, NOT a gameplay tier: it is ALWAYS Bedrock,
+# independent of ``GRAPHIA_LLM_PROVIDER``, so the metric is a consistent
+# measuring stick comparable across ollama and bedrock gameplay runs (see
+# ``get_embeddings``). Amazon Titan Text Embeddings v2 — the AWS-native,
+# same-stack-as-Nova choice. The exact model id and its region availability are
+# verified at LIVE run only (the offline test suite mocks ``get_embeddings`` and
+# never reaches Bedrock — see ``tests/conftest.py``'s ``safe_llm``).
+_EMBEDDINGS_MODEL_ID = "amazon.titan-embed-text-v2:0"
 
 # Anthropic Messages requires an explicit max_tokens on every request. Graphia
 # turns are short — one-to-two-sentence speeches, or a single structured tool
@@ -161,6 +172,36 @@ def get_small() -> BaseChatModel:
     if _small is None:
         _small = _resolve_provider().small()
     return _small
+
+
+def get_embeddings() -> Embeddings:
+    """Build the Bedrock embeddings client for the semantic persona metric (spec 033).
+
+    Mirrors :func:`get_large` / :func:`get_small`'s ``ChatBedrockConverse``
+    construction (``region_name=load_config().aws_region``), but returns a
+    :class:`~langchain_aws.BedrockEmbeddings` over Amazon Titan Text Embeddings
+    v2 (:data:`_EMBEDDINGS_MODEL_ID`). Its ``embed_documents(texts)`` is the
+    batch API the scorer calls once per game.
+
+    **Always Bedrock**, deliberately independent of the active
+    ``GRAPHIA_LLM_PROVIDER`` (it does NOT route through ``_resolve_provider``):
+    the metric's *instrument* is fixed so the number stays comparable across
+    ollama and bedrock gameplay runs — a consistent measuring stick, not
+    confounded by the gameplay model. This is the deliberate cross-provider
+    dependency the spec-033 ADR records (a measured run now needs AWS creds +
+    a small embedding cost to produce this metric; ``run_eval`` omits the metric
+    gracefully when this client or the embed call is unavailable).
+
+    Unlike ``get_large``/``get_small`` this is NOT module-cached — it is built on
+    demand by the eval harness only, never on a hot gameplay path. The exact
+    model id and region availability are confirmed at live run; the offline test
+    suite patches this factory (``tests/conftest.py``'s ``safe_llm``) and never
+    reaches real Bedrock.
+    """
+    return BedrockEmbeddings(
+        model_id=_EMBEDDINGS_MODEL_ID,
+        region_name=load_config().aws_region,
+    )
 
 
 class Roster(BaseModel):

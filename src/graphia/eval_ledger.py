@@ -101,6 +101,14 @@ METRIC_ORDER: tuple[tuple[str, str], ...] = (
     # ``render_detail`` — the same value-type branch as the mean (which now keys off
     # ``mean`` OR ``peak``).
     ("persona_peak_sim", "persona max"),
+    # Spec 033 (additive): the SEMANTIC (meaning-based) companion — the MEAN
+    # pairwise *cosine* of a run's AI persona embeddings (a Bedrock Titan v2
+    # measuring instrument; higher = personas more alike in KIND, not wording).
+    # A value-type facet (``mean``/``denominator``, no ``rate``/``count``),
+    # rendered by the SAME value-type branch as the lexical mean/peak —
+    # ``~<mean> (n=<pairs>)`` — so no new render code is needed. Omitted (blank)
+    # when embeddings were unavailable for the run (e.g. an ollama run, no creds).
+    ("persona_sem_sim", "persona sem"),
 )
 
 # Fixed leading column headers, before the per-metric columns (tech-spec 012

@@ -47,6 +47,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from itertools import combinations
 from pathlib import Path
+from collections.abc import Sequence
 from typing import Any, Callable, Literal, cast
 
 from langchain_core.messages import AIMessage, SystemMessage
@@ -61,6 +62,14 @@ from langgraph.types import Command
 # rather than letting a metric drift silently (tech-spec 011 §3, template-
 # coupling risk).
 from graphia.llm import DayAction
+
+# Spec-033 semantic persona similarity: the Bedrock embeddings factory, imported
+# at module scope so it is a single patchable seam — the offline suite's autouse
+# ``safe_llm`` fixture (tests/conftest.py) replaces
+# ``graphia.tools.blunder_eval.get_embeddings`` with a deterministic fake, so the
+# eval never reaches real Bedrock. ``run_eval`` calls it through the module-level
+# binding (``get_embeddings``), not a local import, precisely so that patch lands.
+from graphia.llm import get_embeddings
 from graphia.prompts import (
     DAY_OPEN_NO_VICTIM_TEMPLATE,
     DAY_OPEN_VICTIM_REVEAL_TEMPLATE,
@@ -908,6 +917,87 @@ def score_persona_sim_sum(
         if ratio > sim_max:
             sim_max = ratio
     return {"sim_sum": sim_sum, "sim_max": sim_max, "denominator": denominator}
+
+
+def _cosine(a: Sequence[float], b: Sequence[float]) -> float:
+    """Cosine similarity of two equal-length vectors (pure Python, no numpy).
+
+    The dot product over the product of the L2 norms. A zero-norm vector (an
+    all-zeros embedding, which Bedrock never returns but the fake/edge cases
+    could) yields ``0.0`` rather than dividing by zero. Used by
+    :func:`score_persona_semantic_sim` over the ≤7 short persona vectors of one
+    game — small enough that plain Python beats pulling numpy into the hot path
+    (numpy is a dependency, but unneeded here, mirroring the difflib lexical
+    scorers' no-heavy-dep posture).
+    """
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(y * y for y in b))
+    if norm_a == 0.0 or norm_b == 0.0:
+        return 0.0
+    return dot / (norm_a * norm_b)
+
+
+def score_persona_semantic_sim(
+    players: dict[str, PlayerState],
+    embed_fn: Callable[[list[str]], list[Sequence[float]]],
+) -> dict[str, float | int | None]:
+    """Pure-ish scorer for ``persona_sem_sim`` — MEANING-based persona similarity (spec 033).
+
+    The semantic counterpart to the LEXICAL :func:`score_persona_sim_sum`. Where
+    the lexical mean compares the persona *texts* word-for-word (``difflib``),
+    this embeds each persona's table-facing text into a meaning vector and takes
+    the **cosine** of each unordered pair — so two characters written in
+    different words but the same *kind* (calm, watchful, even-tempered) read as
+    similar where the lexical measure reads them as distinct.
+
+    ``embed_fn`` is **INJECTED** — a callable taking a list of texts and
+    returning one vector per text (production passes
+    ``get_embeddings().embed_documents``; the offline tests pass a deterministic
+    fake). It is called **once per game** (a single batch), never per pair.
+
+    Text construction is **IDENTICAL** to the lexical scorers by design: over a
+    game's **AI** players only (the human is skipped, ``persona is None``
+    skipped), build ``personality + " " + manner + " " + public_persona`` —
+    **never** a Mafioso's ``true_self``, so no hidden content enters the
+    comparison — then name-mask (:func:`_spec009_mask_names` against the AI
+    names) and normalize (:func:`_spec009_normalize`), so a shared name token
+    can't drive the cosine between two otherwise-different characters.
+
+    Returns ``{"mean": <average cosine over C(n, 2) pairs> | None,
+    "denominator": <C(n, 2)>}`` — a VALUE-type facet (a similarity, NOT a
+    binomial proportion), parallel to ``persona_mean_sim``'s ``mean``. Fewer than
+    2 AI personas offers no pair, so it returns ``{"mean": None, "denominator":
+    0}`` — *absent, not a misleading 0* — and ``run_eval`` then omits the metric,
+    the same opportunity-based omission as the lexical persona metrics.
+
+    DRIVER-INDEPENDENT BY DESIGN: takes a plain ``players`` map + an injected
+    ``embed_fn``, so the offline tests build synthetic rosters and pass a fake
+    embedder with no live model.
+    """
+    ai_personas = [
+        p.persona
+        for p in players.values()
+        if not p.is_human and p.persona is not None
+    ]
+    ai_names = {p.name for p in players.values() if not p.is_human}
+    masked = [
+        _spec009_normalize(
+            _spec009_mask_names(
+                f"{persona.personality} {persona.manner} {persona.public_persona}",
+                ai_names,
+            )
+        )
+        for persona in ai_personas
+    ]
+    denominator = len(masked) * (len(masked) - 1) // 2
+    if denominator == 0:
+        return {"mean": None, "denominator": 0}
+    # ONE batch embed call per game (not per pair) — production hits Bedrock once
+    # for the whole roster, tests hit the fake once.
+    vectors = embed_fn(masked)
+    cos_sum = sum(_cosine(a, b) for a, b in combinations(vectors, 2))
+    return {"mean": cos_sum / denominator, "denominator": denominator}
 
 
 # ===========================================================================
@@ -2827,6 +2917,28 @@ def run_eval(
     # A value-type metric (no rate/count), so ``METRICS_VERSION`` is NOT bumped.
     persona_sim_max_run: float = 0.0
 
+    # Spec-033 (additive) SEMANTIC persona similarity: the meaning-based companion
+    # to the lexical mean. Resolve the embeddings client ONCE up front — it is
+    # ALWAYS Bedrock (a fixed measuring instrument), so an ollama gameplay run with
+    # no AWS creds, an unavailable embeddings model, or a constructor error must
+    # NOT crash the measured run. GRACEFUL DEGRADATION: on any failure here the
+    # embed fn is left ``None`` (logged once to stderr), every game's semantic
+    # scoring is skipped, and the metric is simply OMITTED from the record — the
+    # eval continues. ``get_embeddings`` is reached through the module-level
+    # binding so the offline suite's ``safe_llm`` fake lands (no real Bedrock).
+    embed_fn: Callable[[list[str]], list[Sequence[float]]] | None = None
+    try:
+        embed_fn = get_embeddings().embed_documents
+    except Exception as exc:  # noqa: BLE001 - never fail the run on the optional metric
+        print(
+            "  persona_sem_sim: embeddings unavailable "
+            f"({type(exc).__name__}: {exc}) — omitting the semantic metric",
+            file=sys.stderr,
+        )
+    # Σ of per-game cosines + total pairs across games (same per-game-then-sum
+    # pattern as the lexical mean), folded into the batch MEAN cosine below.
+    persona_sem_total: dict[str, float] = {"cos_sum": 0.0, "denominator": 0.0}
+
     for game_index in range(args.games):
         result.games_attempted += 1
         try:
@@ -2918,6 +3030,35 @@ def run_eval(
             persona_sim_max_run, float(persona_sim_facets["sim_max"])
         )
 
+        # Spec-033 (additive): the SEMANTIC (Bedrock-embedding cosine) companion.
+        # Only when the embeddings client resolved (graceful-degradation gate) —
+        # if it is unavailable the whole metric is omitted. Wrapped per game so a
+        # single transient embed failure (throttling, a bad response) skips THAT
+        # game's contribution and logs once, rather than crashing the batch; the
+        # mean folds over whatever games did score. The scorer recovers ``mean ===
+        # None`` for a <2-AI roster (no pair), contributing nothing.
+        if embed_fn is not None:
+            try:
+                sem_facets = score_persona_semantic_sim(cap.players, embed_fn)
+                sem_mean = sem_facets["mean"]
+                sem_denom = int(sem_facets["denominator"])
+                if sem_mean is not None and sem_denom > 0:
+                    # ``mean`` is the per-game average cosine over ``sem_denom``
+                    # pairs; recover the per-game cosine SUM so the batch mean is a
+                    # true Σcosines / Σpairs (never a mean-of-means).
+                    persona_sem_total["cos_sum"] += float(sem_mean) * sem_denom
+                    persona_sem_total["denominator"] += sem_denom
+            except Exception as exc:  # noqa: BLE001 - optional metric, never fatal
+                print(
+                    f"  game {game_index}: persona_sem_sim scoring FAILED "
+                    f"({type(exc).__name__}: {exc}) — skipping this game's "
+                    "semantic contribution",
+                    file=sys.stderr,
+                )
+                # A persistent failure (e.g. expired creds) would repeat per game;
+                # disable further attempts so the run stays quiet and fast.
+                embed_fn = None
+
     # Spec-013 game-dynamics blocks, folded over the completed games. ``outcomes``
     # partitions the winners (``games`` = completed games denominator); the side
     # win-rates carry a Wilson CI, ``draw``/``no_winner`` are bare counts.
@@ -2985,6 +3126,24 @@ def run_eval(
         result.metrics["persona_peak_sim"] = {
             "peak": persona_sim_max_run,
             "denominator": int(total_persona_pairs),
+        }
+
+    # Spec-033 (additive) SEMANTIC persona similarity: the batch MEAN cosine,
+    # Σcosines / Σpairs across games (a true pair-weighted mean, never a
+    # mean-of-means). Recorded ONLY when the embeddings client resolved AND the
+    # batch offered ≥1 persona pair — so it is OMITTED for an ollama run with no
+    # AWS creds (the graceful-degradation gate left ``embed_fn`` None, no pairs
+    # accumulated) exactly as it is omitted for a roster that never had ≥2 AI
+    # personas. A VALUE-type facet — ``mean``/``denominator``, deliberately NO
+    # ``rate``/``count`` — so ``_attach_ci`` (which keys off ``count``) skips it
+    # (a cosine mean is not a binomial rate, no Wilson band); the viewer's
+    # value-type render shows ``~<mean> (n=<pairs>)``, the same branch as the
+    # lexical mean/peak.
+    total_sem_pairs = persona_sem_total["denominator"]
+    if total_sem_pairs > 0:
+        result.metrics["persona_sem_sim"] = {
+            "mean": persona_sem_total["cos_sum"] / total_sem_pairs,
+            "denominator": int(total_sem_pairs),
         }
 
     # Attach a Wilson 95% CI (ci_low/ci_high) to every PRESENT metric so each
