@@ -973,6 +973,12 @@ metrics:
   persona_lex_peak:
     peak: 0.5106888361045131
     denominator: 150
+  persona_sem_mean:
+    mean: 0.5909266127343923
+    denominator: 150
+  persona_sem_peak:
+    peak: 0.9722968125653467
+    denominator: 150
 notes: 'spec 018 day-round recap (default-on) — 10-game ollama baseline + qualitative gameplay review'
 ---
 run:
@@ -1081,6 +1087,12 @@ metrics:
     denominator: 150
   persona_lex_peak:
     peak: 0.3862857142857143
+    denominator: 150
+  persona_sem_mean:
+    mean: 0.5779611063401757
+    denominator: 150
+  persona_sem_peak:
+    peak: 0.9594355472700862
     denominator: 150
 notes: 'spec 019/020 effort-not-results: recap-into-prompts + game-time clock; vs baseline 2026-06-19T18-33-37'
 ---
@@ -1192,6 +1204,12 @@ metrics:
   persona_lex_peak:
     peak: 0.3510971786833856
     denominator: 150
+  persona_sem_mean:
+    mean: 0.6280289533283815
+    denominator: 150
+  persona_sem_peak:
+    peak: 0.9569293361450452
+    denominator: 150
 notes: 'spec 023 verification: natural-end drive + 12-day cap; compare vs baseline 2026-06-19T18-33-37'
 ---
 run:
@@ -1301,6 +1319,12 @@ metrics:
     denominator: 75
   persona_lex_peak:
     peak: 0.27184466019417475
+    denominator: 75
+  persona_sem_mean:
+    mean: 0.6054686141890154
+    denominator: 75
+  persona_sem_peak:
+    peak: 0.9506889166787617
     denominator: 75
 notes: 'spec 024+025 combined (role-specific Day guidance + fuller 150-msg window), 5-game smoke read vs baseline 2026-06-19T18-33-37'
 ---
@@ -1413,6 +1437,12 @@ metrics:
     denominator: 420
   persona_lex_peak:
     peak: 0.3684210526315789
+    denominator: 420
+  persona_sem_mean:
+    mean: 0.4343372834504482
+    denominator: 420
+  persona_sem_peak:
+    peak: 0.8746332026436563
     denominator: 420
 notes: 'spec 026/027 (nova): active scripted player, RANDOM dealt seat role, 6/2 lineup, n=20 vs passive baseline 2026-06-19T18-33-37'
 ---
@@ -1533,6 +1563,12 @@ metrics:
   persona_lex_peak:
     peak: 0.47619047619047616
     denominator: 420
+  persona_sem_mean:
+    mean: 0.6056823136864076
+    denominator: 420
+  persona_sem_peak:
+    peak: 0.9781851653884852
+    denominator: 420
 notes: 'spec 026/027 (ollama): active scripted player, RANDOM dealt seat role, 6/2 lineup, n=20 vs passive baseline 2026-06-19T18-33-37'
 ---
 run:
@@ -1652,6 +1688,12 @@ metrics:
   persona_lex_peak:
     peak: 1.0
     denominator: 420
+  persona_sem_mean:
+    mean: 0.36725681453147224
+    denominator: 420
+  persona_sem_peak:
+    peak: 1.0000000000000002
+    denominator: 420
 notes: 'spec031 AFTER + post-030 batch (ollama @b6d04a8): 031 persona-after + closes 024/025/026/028/030 effort-not-results'
 ---
 run:
@@ -1756,5 +1798,11 @@ metrics:
     denominator: 420
   persona_lex_peak:
     peak: 0.6306818181818182
+    denominator: 420
+  persona_sem_mean:
+    mean: 0.2786944769411708
+    denominator: 420
+  persona_sem_peak:
+    peak: 0.8533427078636691
     denominator: 420
 notes: 'spec031 AFTER + post-030 batch (nova @b6d04a8): 031 persona-after + closes 024/025/026/028/030 effort-not-results; temp ledger, merged post-run'
