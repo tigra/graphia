@@ -7,10 +7,15 @@ underlying model never requires renaming call sites:
 - ``get_small()`` — the lighter mechanical model (roster name generation).
 
 Per ADR-009 the tiers are served by an :class:`LLMProvider` — an abstract
-construction strategy with two concrete implementations:
-:class:`BedrockProvider` (Amazon Nova Pro / Lite per ADR-003) and
-:class:`OllamaProvider` (a local Ollama server reached through its
-Anthropic-compatible ``/v1/messages`` surface per ADR-010).
+construction strategy with three concrete implementations:
+:class:`BedrockProvider` (Amazon Nova Pro / Lite per ADR-003, the default
+baseline), :class:`ClaudeBedrockProvider` (Claude Haiku 4.5 on Bedrock per
+ADR-012 / spec 035), and :class:`OllamaProvider` (a local Ollama server
+reached through its Anthropic-compatible ``/v1/messages`` surface per
+ADR-010). The two Bedrock providers share one ``ChatBedrockConverse``
+construction helper, parameterised only by the per-tier model id resolved
+from config — so the Claude profile is an additive config choice that leaves
+Nova's observable behavior byte-identical.
 The active provider is chosen from config (``GRAPHIA_LLM_PROVIDER``) lazily,
 on first factory use; ``_active_provider`` remains a module-level override
 seam that bypasses config-driven selection when assigned directly.
@@ -41,9 +46,16 @@ from graphia.config import _MAX_TABLE_SIZE, load_config
 # ``_coerce_to_count``); this is only the schema-level ceiling.
 _MAX_AI_NAMES = _MAX_TABLE_SIZE - 1
 
-# Model ids are operational choices (ADR-003: Nova over Claude). The *tier*
-# names above are the stable interface; these ids can change without touching
-# any caller.
+# Model ids are operational choices and, as of spec 035, **config-driven**:
+# the per-tier id each Bedrock provider builds is read from
+# ``config.large_model`` / ``config.small_model`` (env
+# ``GRAPHIA_LARGE_MODEL`` / ``GRAPHIA_SMALL_MODEL``), defaulting per provider
+# (Nova ids under ``bedrock``, Claude Haiku 4.5 under ``bedrock-claude`` —
+# see ``config.py``). These module-level aliases remain the *Nova* default
+# ids (unchanged values) so the Nova-only eval harnesses
+# (``tools.repetition_experiment``, ``tools.blunder_eval``) keep a stable
+# fingerprint to reference; they are no longer read on the gameplay
+# construction path.
 _LARGE_MODEL_ID = "amazon.nova-pro-v1:0"
 _SMALL_MODEL_ID = "amazon.nova-lite-v1:0"
 
@@ -97,14 +109,43 @@ class LLMProvider(ABC):
         """Build the lighter mechanical-tier chat model."""
 
 
+# Per-tier temperatures, shared across BOTH Bedrock profiles (Nova + Claude)
+# and mirrored by the Ollama tiers — gameplay tone is provider-independent
+# (only the model behind it changes). Factored out as named constants so the
+# two Bedrock providers can't drift apart.
+_BEDROCK_LARGE_TEMPERATURE = 0.7
+_BEDROCK_SMALL_TEMPERATURE = 0.8
+
+
+def _build_bedrock(model: str, temperature: float) -> BaseChatModel:
+    """Construct a ``ChatBedrockConverse`` for a Bedrock-backed tier.
+
+    The single Bedrock construction seam shared by :class:`BedrockProvider`
+    (Amazon Nova) and :class:`ClaudeBedrockProvider` (Claude Haiku 4.5), so a
+    new Bedrock profile is a different ``model`` id, not a forked construction
+    path. ``region_name`` is always ``config.aws_region`` (us-east-1 by
+    default) — identical to the call the Nova path made before spec 035, so
+    Nova's observable construction is byte-for-byte unchanged.
+    """
+    return ChatBedrockConverse(
+        model=model,
+        region_name=load_config().aws_region,
+        temperature=temperature,
+    )
+
+
 class BedrockProvider(LLMProvider):
-    """Bedrock-backed provider: Amazon Nova Pro (large) / Nova Lite (small)."""
+    """Bedrock-backed provider: Amazon Nova Pro (large) / Nova Lite (small).
+
+    The default, untouched baseline (ADR-003). Model ids come from config
+    (``large_model`` / ``small_model``), which default to the Nova pair under
+    ``GRAPHIA_LLM_PROVIDER=bedrock`` — so behavior is identical to the
+    pre-spec-035 hardcoded ids.
+    """
 
     def large(self) -> BaseChatModel:
-        return ChatBedrockConverse(
-            model=_LARGE_MODEL_ID,
-            region_name=load_config().aws_region,
-            temperature=0.7,
+        return _build_bedrock(
+            load_config().large_model, _BEDROCK_LARGE_TEMPERATURE
         )
 
     def large_at_temperature(self, temperature: float) -> BaseChatModel:
@@ -118,10 +159,33 @@ class BedrockProvider(LLMProvider):
         )
 
     def small(self) -> BaseChatModel:
-        return ChatBedrockConverse(
-            model=_SMALL_MODEL_ID,
-            region_name=load_config().aws_region,
-            temperature=0.8,
+        return _build_bedrock(
+            load_config().small_model, _BEDROCK_SMALL_TEMPERATURE
+        )
+
+
+class ClaudeBedrockProvider(LLMProvider):
+    """Bedrock-backed provider: Claude Haiku 4.5 for both tiers (ADR-012 / spec 035).
+
+    Structurally identical to :class:`BedrockProvider` — same
+    ``_build_bedrock`` seam, same per-tier temperatures, same
+    ``config.aws_region`` — differing only in the resolved per-tier model id,
+    which defaults to the ``us.``-prefixed Claude Haiku 4.5 inference profile
+    under ``GRAPHIA_LLM_PROVIDER=bedrock-claude`` (each tier independently
+    overridable via ``GRAPHIA_LARGE_MODEL`` / ``GRAPHIA_SMALL_MODEL``). The
+    Claude Haiku Bedrock id / inference profile is **verify-at-runtime** (see
+    ``config._DEFAULT_CLAUDE_LARGE_MODEL``); the offline suite asserts the
+    constructed id/region at the boundary and never reaches Bedrock.
+    """
+
+    def large(self) -> BaseChatModel:
+        return _build_bedrock(
+            load_config().large_model, _BEDROCK_LARGE_TEMPERATURE
+        )
+
+    def small(self) -> BaseChatModel:
+        return _build_bedrock(
+            load_config().small_model, _BEDROCK_SMALL_TEMPERATURE
         )
 
 
@@ -187,6 +251,8 @@ def _resolve_provider() -> LLMProvider:
         match load_config().llm_provider:
             case "bedrock":
                 _active_provider = BedrockProvider()
+            case "bedrock-claude":
+                _active_provider = ClaudeBedrockProvider()
             case "ollama":
                 _active_provider = OllamaProvider()
             case other:  # pragma: no cover — load_config validates the value

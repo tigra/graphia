@@ -90,6 +90,44 @@ Ollama mode is fully offline by construction: any deployed stack's Memory/Gatewa
 
 ---
 
+## Choosing the AI provider
+
+The game's AI runs on one of **three** engines, chosen before launch by a single configuration value — `GRAPHIA_LLM_PROVIDER` in `.env` (no source edits, mutually exclusive per run). Switching engine changes only *where the AI thinks*; turn order, voting, win detection, and the rest of the game are identical regardless.
+
+| `GRAPHIA_LLM_PROVIDER` | Engine | Where it runs | Needs |
+| --- | --- | --- | --- |
+| `bedrock` *(default — unset behaves the same)* | **Amazon Nova** (Nova Pro + Nova Lite) — the tested baseline | Cloud (Bedrock) | AWS credentials |
+| `bedrock-claude` | **Anthropic Claude (Haiku 4.5)** — a stronger near-frontier cloud model | Cloud (Bedrock) | AWS credentials **+ Bedrock model access to Anthropic Claude** |
+| `ollama` | A **local Ollama** model — zero cloud cost | Your machine (local mode only) | A running Ollama server (see above) |
+
+```bash
+# Amazon Nova (default — this is also what an unset GRAPHIA_LLM_PROVIDER gives you)
+GRAPHIA_LLM_PROVIDER=bedrock
+
+# Anthropic Claude (Haiku 4.5) on Bedrock
+GRAPHIA_LLM_PROVIDER=bedrock-claude
+
+# Local Ollama (offline)
+GRAPHIA_LLM_PROVIDER=ollama
+```
+
+### Claude (Haiku) defaults and per-tier overrides
+
+With `bedrock-claude` selected, both AI tiers default to **Claude Haiku 4.5** via the `us.`-prefixed Bedrock cross-region inference profile:
+
+| Tier | Default model id | Override env var |
+| --- | --- | --- |
+| Gameplay (AI dialogue, night targeting, votes) | `us.anthropic.claude-haiku-4-5-20251001-v1:0` | `GRAPHIA_LARGE_MODEL` |
+| Mechanical (AI name generation) | `us.anthropic.claude-haiku-4-5-20251001-v1:0` | `GRAPHIA_SMALL_MODEL` |
+
+Selecting `bedrock-claude` works out of the box on the documented defaults — no override needed. Either tier is independently overridable (e.g. `GRAPHIA_LARGE_MODEL=us.anthropic.claude-sonnet-4-6` for a stronger gameplay tier); a non-Haiku override is possible but is not a verified default. These two env vars also apply to the `bedrock` (Nova) provider, where they default to `amazon.nova-pro-v1:0` / `amazon.nova-lite-v1:0`. (The Ollama provider uses `GRAPHIA_OLLAMA_LARGE_MODEL` / `GRAPHIA_OLLAMA_SMALL_MODEL` instead.)
+
+> The exact Claude Haiku Bedrock id / inference profile and its region availability are confirmed at run time — Claude 4.x on Bedrock has no single-region on-demand path, so the `us.` profile routes across `us-east-1` / `us-east-2` / `us-west-2`. Set `AWS_REGION` (default `us-east-1`) accordingly.
+
+If Claude can't be reached when you launch with `bedrock-claude`, the game stops *before* the UI with a clear, plain-language message — naming the credential, model-access, or region problem and how to fix it — rather than a stack trace. As with every provider, AI dialogue quality depends on the model and is not guaranteed.
+
+---
+
 ## Remote mode (hosted on AgentCore)
 
 The same game can run against a deployed AgentCore Runtime, provisioned by the Terraform module in [`infra/terraform/`](infra/terraform/README.md) and driven entirely through `make`:

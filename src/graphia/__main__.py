@@ -18,7 +18,7 @@ import os
 from dotenv import load_dotenv
 
 from graphia.config import load_config
-from graphia.preflight import run_ollama_preflight
+from graphia.preflight import run_claude_preflight, run_ollama_preflight
 from graphia.ui.app import GraphiaApp
 
 load_dotenv()
@@ -46,4 +46,8 @@ if __name__ == "__main__":
     # Same fail-fast posture for the Ollama provider: confirm the server is
     # reachable and the configured models are pulled before any UI renders.
     run_ollama_preflight(config)
+    # And for the Claude (Bedrock) provider (spec 035): confirm credentials,
+    # model access, and region before any UI renders. Both preflights are
+    # no-ops unless their own provider is selected, so calling both is safe.
+    run_claude_preflight(config)
     GraphiaApp().run()

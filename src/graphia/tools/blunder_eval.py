@@ -420,10 +420,13 @@ def _seed_game(base_seed: int | None, game_index: int) -> None:
 def _resolved_model_names(config: object) -> tuple[str, str]:
     """Resolved (large, small) gameplay/mechanical model names for the record.
 
-    Reads them off the resolved ``GraphiaConfig`` for ollama (where they are
-    env-overridable, post-override here), and off ``graphia.llm``'s fixed tier
-    ids for bedrock (where the tier ids are not env-driven). Done at run time so
-    a missing dependency surfaces with a clear message rather than at import.
+    Reads them off the resolved ``GraphiaConfig``: ``ollama_*_model`` on the
+    ollama path, ``large_model`` / ``small_model`` on the Bedrock paths
+    (``bedrock`` Nova or, spec 035, ``bedrock-claude`` Claude Haiku) — both now
+    env-overridable and resolved on the config. Falls back to ``graphia.llm``'s
+    Nova default constants if a config without the spec-035 fields is passed.
+    Done at run time so a missing dependency surfaces with a clear message
+    rather than at import.
     """
     provider = getattr(config, "llm_provider", None)
     if provider == "ollama":
@@ -433,7 +436,10 @@ def _resolved_model_names(config: object) -> tuple[str, str]:
         )
     import graphia.llm as llm_mod
 
-    return (llm_mod._LARGE_MODEL_ID, llm_mod._SMALL_MODEL_ID)
+    return (
+        getattr(config, "large_model", None) or llm_mod._LARGE_MODEL_ID,
+        getattr(config, "small_model", None) or llm_mod._SMALL_MODEL_ID,
+    )
 
 
 # ===========================================================================

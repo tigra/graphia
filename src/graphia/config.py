@@ -8,6 +8,33 @@ from pathlib import Path
 
 _TRUTHY = frozenset({"1", "true", "yes", "on"})
 
+# Per-tier Bedrock model ids, generalised out of ``llm.py`` (spec 035) so a
+# third provider can vary them by config instead of editing source. The default
+# pair depends on the selected provider:
+#
+# - ``bedrock`` (Amazon Nova, the untouched baseline per ADR-003): Nova Pro /
+#   Nova Lite — byte-identical to the ids ``llm.py`` previously hardcoded.
+# - ``bedrock-claude`` (Claude Haiku profile per ADR-012): Claude Haiku 4.5 for
+#   BOTH tiers, via the ``us.``-prefixed cross-region inference profile.
+#
+# Either tier is independently overridable through ``GRAPHIA_LARGE_MODEL`` /
+# ``GRAPHIA_SMALL_MODEL`` (spec 035 §2.3). A non-Haiku Claude override (e.g. a
+# Sonnet large tier, ADR-012's "mixed profile") is *possible* but not a
+# documented/verified default.
+_DEFAULT_NOVA_LARGE_MODEL = "amazon.nova-pro-v1:0"
+_DEFAULT_NOVA_SMALL_MODEL = "amazon.nova-lite-v1:0"
+# Claude Haiku 4.5 on Bedrock via the ``us.`` system inference profile
+# (ADR-012, verified available on the account's Bedrock in us-east-1 on
+# 2026-06-23). VERIFY-AT-RUNTIME: Claude 4.x has no single-region on-demand
+# path on Bedrock — this ``us.`` profile routes non-deterministically across
+# us-east-1 / us-east-2 / us-west-2 (ADR-012 §5 verified constraint), so the
+# exact id / profile availability is confirmed by the live spike
+# (Slice 1 task 3 / Slice 3), not asserted on faith. Both tiers default to
+# Haiku 4.5 (ADR-012 Alternative 1); the small tier is overridable to a
+# cheaper id if a future profile wants it.
+_DEFAULT_CLAUDE_LARGE_MODEL = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+_DEFAULT_CLAUDE_SMALL_MODEL = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+
 _DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
 # Recommended model defaults — smoke-verified 2026-06-12 via
 # `make ollama-smoke`: qwen3-coder:30b (large) + qwen2.5:3b (small) ran a
@@ -104,11 +131,21 @@ class GraphiaConfig:
     # is ``None`` in local mode where career stats live in ``stats_file``.
     stats_strategy_id: str | None
     stats_namespace: str | None
-    # LLM provider selection (spec 010). ``bedrock`` keeps the existing
-    # cloud path; ``ollama`` targets a locally running Ollama server and is
-    # local-mode only (contradiction with ``remote_mode`` is rejected below).
-    # Defaulted so tests constructing the config directly stay valid.
+    # LLM provider selection (spec 010 + 035). ``bedrock`` keeps the existing
+    # Amazon Nova cloud path (the untouched baseline, default); ``bedrock-claude``
+    # is the Claude Haiku 4.5 Bedrock profile (spec 035 / ADR-012); ``ollama``
+    # targets a locally running Ollama server and is local-mode only
+    # (contradiction with ``remote_mode`` is rejected below). Defaulted so tests
+    # constructing the config directly stay valid.
     llm_provider: str = "bedrock"
+    # Per-tier Bedrock model ids (spec 035), shared by the Nova and Claude
+    # Bedrock providers. ``load_config`` resolves the documented defaults from
+    # ``llm_provider`` (Nova ids under ``bedrock``, Claude Haiku ids under
+    # ``bedrock-claude``) unless ``GRAPHIA_LARGE_MODEL`` / ``GRAPHIA_SMALL_MODEL``
+    # override them. Defaulted to the Nova ids so a config built directly (tests)
+    # matches the historical ``bedrock`` behaviour exactly.
+    large_model: str = _DEFAULT_NOVA_LARGE_MODEL
+    small_model: str = _DEFAULT_NOVA_SMALL_MODEL
     ollama_base_url: str = _DEFAULT_OLLAMA_BASE_URL
     ollama_large_model: str = _DEFAULT_OLLAMA_LARGE_MODEL
     ollama_small_model: str = _DEFAULT_OLLAMA_SMALL_MODEL
@@ -340,13 +377,32 @@ def load_config() -> GraphiaConfig:
     match provider_raw.strip().lower():
         case "" | "bedrock":
             llm_provider = "bedrock"
+        case "bedrock-claude":
+            llm_provider = "bedrock-claude"
         case "ollama":
             llm_provider = "ollama"
         case _:
             raise SystemExit(
-                "GRAPHIA_LLM_PROVIDER must be 'bedrock' or 'ollama' "
-                f"(got {provider_raw!r})."
+                "GRAPHIA_LLM_PROVIDER must be 'bedrock', 'bedrock-claude', or "
+                f"'ollama' (got {provider_raw!r})."
             )
+
+    # Per-tier Bedrock model ids (spec 035). The documented default pair tracks
+    # the selected provider — Nova ids under ``bedrock`` (the untouched
+    # baseline, byte-identical to the formerly-hardcoded ``llm.py`` ids), Claude
+    # Haiku 4.5 under ``bedrock-claude`` (ADR-012). Either is overridable through
+    # ``GRAPHIA_LARGE_MODEL`` / ``GRAPHIA_SMALL_MODEL`` so an operator can tune a
+    # tier without source edits. The ids are inert for ``ollama`` (that path
+    # uses ``ollama_*_model`` instead), so they default to the Nova pair there
+    # too — harmless, and keeps the resolution branch-free.
+    if llm_provider == "bedrock-claude":
+        default_large = _DEFAULT_CLAUDE_LARGE_MODEL
+        default_small = _DEFAULT_CLAUDE_SMALL_MODEL
+    else:
+        default_large = _DEFAULT_NOVA_LARGE_MODEL
+        default_small = _DEFAULT_NOVA_SMALL_MODEL
+    large_model = os.environ.get("GRAPHIA_LARGE_MODEL") or default_large
+    small_model = os.environ.get("GRAPHIA_SMALL_MODEL") or default_small
 
     ollama_base_url = os.environ.get(
         "GRAPHIA_OLLAMA_BASE_URL", _DEFAULT_OLLAMA_BASE_URL
@@ -471,6 +527,8 @@ def load_config() -> GraphiaConfig:
         stats_strategy_id=stats_strategy_id,
         stats_namespace=stats_namespace,
         llm_provider=llm_provider,
+        large_model=large_model,
+        small_model=small_model,
         ollama_base_url=ollama_base_url,
         ollama_large_model=ollama_large_model,
         ollama_small_model=ollama_small_model,

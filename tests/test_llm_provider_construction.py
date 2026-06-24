@@ -36,12 +36,17 @@ import graphia.llm as llm
 
 _PROVIDER_ENV_VARS = (
     "GRAPHIA_LLM_PROVIDER",
+    "GRAPHIA_LARGE_MODEL",
+    "GRAPHIA_SMALL_MODEL",
     "GRAPHIA_OLLAMA_BASE_URL",
     "GRAPHIA_OLLAMA_LARGE_MODEL",
     "GRAPHIA_OLLAMA_SMALL_MODEL",
     "GRAPHIA_REMOTE",
     "GRAPHIA_RUNTIME_URL",
 )
+
+# Spec 035 — documented Claude Haiku 4.5 Bedrock default id (verify-at-runtime).
+_DEFAULT_CLAUDE_MODEL = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 
 # Credential-bearing variables that must be irrelevant on the ollama path.
 _CREDENTIAL_ENV_VARS = (
@@ -192,6 +197,103 @@ def test_bedrock_factory_still_builds_chat_bedrock_converse(
     assert client.model_id == expected_model_id
     assert client.temperature == expected_temperature
     assert client.region_name == llm.load_config().aws_region
+
+
+# ---------------------------------------------------------------------------
+# 2b. bedrock-claude path: factories build ChatBedrockConverse on Claude Haiku
+#     (spec 035) — still construction-only, no live call.
+# ---------------------------------------------------------------------------
+
+
+def _select_bedrock_claude(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GRAPHIA_LLM_PROVIDER", "bedrock-claude")
+
+
+@pytest.mark.parametrize(
+    "factory, expected_temperature",
+    [
+        pytest.param(llm.get_large, 0.7, id="large"),
+        pytest.param(llm.get_small, 0.8, id="small"),
+    ],
+)
+def test_bedrock_claude_factory_builds_chat_bedrock_converse_on_haiku(
+    monkeypatch: pytest.MonkeyPatch,
+    factory: Callable[[], BaseChatModel],
+    expected_temperature: float,
+) -> None:
+    """bedrock-claude builds a ``ChatBedrockConverse`` on the Claude Haiku id.
+
+    Asserts the constructed model id / region / temperature at the boundary —
+    no model is invoked, so ``safe_llm`` is never tripped and no boto3 call is
+    made (``ChatBedrockConverse.__init__`` builds its client lazily, requiring
+    no credentials). Both tiers default to the same Haiku id; the temperatures
+    match the Nova tiers (gameplay tone is provider-independent).
+    """
+    for var in _CREDENTIAL_ENV_VARS:
+        monkeypatch.delenv(var, raising=False)
+    _select_bedrock_claude(monkeypatch)
+
+    client = factory()
+
+    assert isinstance(client, ChatBedrockConverse)
+    assert client.model_id == _DEFAULT_CLAUDE_MODEL
+    assert client.temperature == expected_temperature
+    assert client.region_name == llm.load_config().aws_region
+
+
+def test_bedrock_claude_honors_per_tier_overrides_at_construction(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Per-tier override env vars flow onto the constructed Claude clients."""
+    for var in _CREDENTIAL_ENV_VARS:
+        monkeypatch.delenv(var, raising=False)
+    _select_bedrock_claude(monkeypatch)
+    monkeypatch.setenv("GRAPHIA_LARGE_MODEL", "us.anthropic.claude-sonnet-4-6")
+    monkeypatch.setenv("GRAPHIA_SMALL_MODEL", "us.anthropic.claude-opus-4-8")
+
+    large = llm.get_large()
+    small = llm.get_small()
+
+    assert isinstance(large, ChatBedrockConverse)
+    assert isinstance(small, ChatBedrockConverse)
+    assert large.model_id == "us.anthropic.claude-sonnet-4-6"
+    assert small.model_id == "us.anthropic.claude-opus-4-8"
+
+
+def test_switching_among_three_providers_resolves_the_right_instances(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Each of the three providers builds its own client type after a seam reset.
+
+    Exercises the mutual-exclusivity of provider selection end-to-end: a single
+    env flip + seam reset re-resolves to the correct concrete client, with no
+    cross-contamination. All construction-only — no model is invoked.
+    """
+    for var in _CREDENTIAL_ENV_VARS:
+        monkeypatch.delenv(var, raising=False)
+
+    # bedrock (Nova) → ChatBedrockConverse on the Nova id.
+    monkeypatch.setenv("GRAPHIA_LLM_PROVIDER", "bedrock")
+    _reset_seam(monkeypatch)
+    nova = llm.get_large()
+    assert isinstance(nova, ChatBedrockConverse)
+    assert nova.model_id == "amazon.nova-pro-v1:0"
+
+    # bedrock-claude → ChatBedrockConverse on the Claude Haiku id.
+    monkeypatch.setenv("GRAPHIA_LLM_PROVIDER", "bedrock-claude")
+    _reset_seam(monkeypatch)
+    claude = llm.get_large()
+    assert isinstance(claude, ChatBedrockConverse)
+    assert claude.model_id == _DEFAULT_CLAUDE_MODEL
+
+    # ollama → ChatAnthropic.
+    monkeypatch.setenv("GRAPHIA_LLM_PROVIDER", "ollama")
+    _reset_seam(monkeypatch)
+    ollama = llm.get_large()
+    assert isinstance(ollama, ChatAnthropic)
+
+    # Distinct instances per provider — no stale singleton leaked across flips.
+    assert nova is not claude is not ollama
 
 
 # ---------------------------------------------------------------------------
