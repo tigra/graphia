@@ -149,14 +149,11 @@ class BedrockProvider(LLMProvider):
         )
 
     def large_at_temperature(self, temperature: float) -> BaseChatModel:
-        # ``ChatBedrockConverse`` accepts a per-instance ``temperature`` via its
-        # constructor (confirmed against the installed langchain-aws — the same
-        # arg ``large`` / ``small`` already pass). Fresh instance, hotter sampling.
-        return ChatBedrockConverse(
-            model=_LARGE_MODEL_ID,
-            region_name=load_config().aws_region,
-            temperature=temperature,
-        )
+        # Config-driven large id (honors GRAPHIA_LARGE_MODEL), via the shared
+        # _build_bedrock seam — a fresh instance at the override temperature.
+        # ChatBedrockConverse accepts a per-instance temperature (same arg
+        # large/small already pass).
+        return _build_bedrock(load_config().large_model, temperature)
 
     def small(self) -> BaseChatModel:
         return _build_bedrock(
@@ -182,6 +179,11 @@ class ClaudeBedrockProvider(LLMProvider):
         return _build_bedrock(
             load_config().large_model, _BEDROCK_LARGE_TEMPERATURE
         )
+
+    def large_at_temperature(self, temperature: float) -> BaseChatModel:
+        # Config-driven Claude large id, via the shared _build_bedrock seam
+        # (the spec-034 persona-diversity path resolves a hotter instance here).
+        return _build_bedrock(load_config().large_model, temperature)
 
     def small(self) -> BaseChatModel:
         return _build_bedrock(
