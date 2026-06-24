@@ -1,0 +1,22 @@
+# Tasks: Bedrock Claude (Haiku) Provider (Spec 035)
+
+**Verification-spike-first** (functional spec / ADR-012): **Slice 1** wires the provider minimally and proves the local path reaches Claude + round-trips structured output; **Slice 2** builds it out (per-tier overrides, clear errors, docs); **Slice 3** proves the **deployed-runtime** path (the historically brittle part). A third provider alongside Nova/Ollama; config-selected (Nova stays default) — **no ablation flag** (a provider choice, not a gameplay toggle).
+
+> **Shared surface with spec 034:** both edit `llm.py` (`_resolve_provider`/the Bedrock branch) + `config.py` (provider parse / model config vs persona flags). Combine on merge (the 028/030 pattern), not blind parallel edits. The offline code/tests parallelize; the **spike runs (Slice 1 last task, Slice 3) are developer-run** (real Bedrock / live deployment) and deferred.
+
+Functional spec: `./functional-spec.md` · Technical considerations: `./technical-considerations.md`
+
+---
+
+- [ ] **Slice 1: Select Claude locally and prove the path**
+  - [ ] Minimal provider wiring (tech-spec §2 B): in `src/graphia/config.py` extend the `GRAPHIA_LLM_PROVIDER` parse to accept **`bedrock-claude`** (keep `bedrock`/`ollama`; update the error message) and add per-tier model-id config (`large_model`/`small_model` via `GRAPHIA_LARGE_MODEL`/`GRAPHIA_SMALL_MODEL`) with the **documented Claude Haiku defaults** under `bedrock-claude` (Nova ids stay the `bedrock` defaults). In `src/graphia/llm.py` add a `case "bedrock-claude"` to `_resolve_provider()` returning `ChatBedrockConverse(model=<resolved id>, region_name=config.aws_region, temperature=…)`, factoring the Bedrock construction so Nova + Claude share it (Nova behavior identical). **Verify the exact Claude Haiku Bedrock model id / `us.` inference profile at implementation** — do not hard-code unverified. **[Agent: langgraph-agentic]**
+  - [ ] Tests (offline, mocked): config parse accepts `bedrock-claude` and resolves the documented default ids (and honors the `GRAPHIA_LARGE_MODEL`/`GRAPHIA_SMALL_MODEL` overrides); `_resolve_provider()` builds Claude-configured `ChatBedrockConverse` instances with **no live call** (assert model ids/region at the boundary); Nova/Ollama resolution is **unchanged** (regression); `safe_llm` keeps the suite off real Bedrock. Full `uv run pytest -q` green. **[Agent: testing]**
+  - [ ] Local verification spike (developer-run, real Bedrock): a `make claude-spike` target that, with `GRAPHIA_LLM_PROVIDER=bedrock-claude` + live creds, calls `get_large()` once and **round-trips one structured output** (e.g. `Ballot`/`DayAction` — confirm the flat schemas round-trip on Claude via Bedrock Converse). Proves the path + the structured-output contract before build-out. _(developer-run; real Bedrock.)_ **[Agent: langgraph-agentic]**
+
+- [ ] **Slice 2: Robust selection — overrides, clear errors, docs**
+  - [ ] Clear feedback (tech-spec §2 C): a Claude preflight mirroring `preflight.run_ollama_preflight` — verify credentials / model access / region before games and raise `SystemExit` with **plain-language, actionable** messages (no stack trace) for the missing-or-expired-creds, missing-model-access, and wrong-region cases (map the boto3/Bedrock `AccessDenied`/`UnrecognizedClient`/`ValidationException` families). Mid-game unusable outputs continue via the **existing** retry-then-fallback safety nets (no new mechanism). **[Agent: langgraph-agentic]**
+  - [ ] Tests (offline, mocked): the preflight maps each representative boto3 error family to its plain message (no stack trace) on a faked client; per-tier overrides honored; switching among the three providers resolves the right instances. Full `uv run pytest -q` green. **[Agent: testing]**
+  - [ ] Docs: a quickstart (README / docs) for selecting each provider (`GRAPHIA_LLM_PROVIDER` = `bedrock` | `bedrock-claude` | `ollama`), naming the Claude **default model ids** and the per-tier override env vars. **[Agent: langgraph-agentic]**
+
+- [ ] **Slice 3: Deployed-runtime verification (developer-run, live AWS)**
+  - [ ] Deployed spike (tech-spec §2 D): with the hosted AgentCore runtime configured for `bedrock-claude`, run a full game on it and confirm from the **runtime's CloudWatch telemetry** that Claude served the calls (not inferred locally); apply any **IAM/model-access (terraform)** change needed for the runtime role to invoke the Claude model. The historically brittle path — proven on the deployment. _(developer-run; live AWS + deployment.)_ **[Agent: terraform-aws]**
