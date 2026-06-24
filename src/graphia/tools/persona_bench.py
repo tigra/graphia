@@ -1,0 +1,394 @@
+"""Isolated persona-generation bench (spec 034, Slice 3) — real model(s), no game.
+
+The fast dev/test loop and effort-not-results vehicle for spec 034: it exercises
+the **real persona-generation path** (``generate_roster`` → ``assign_roles`` →
+``generate_personas`` against the chosen provider) for N rosters **without
+playing any game** — seconds per roster, not the ~21 minutes a full eval game
+takes — then scores how alike each roster's cast is.
+
+It deliberately reaches a **real** provider (``get_large`` / ``get_persona_model``
+→ Amazon Nova on bedrock, or a local Ollama model), so like ``eval_dialogue`` /
+``blunder_eval`` it lives OUTSIDE the mocked ``pytest`` suite and is run on
+demand::
+
+    make persona-bench ARGS="--provider ollama --rosters 5 --diversity on"
+    make persona-bench ARGS="--provider ollama --rosters 10 --diversity off --semantic"
+    make persona-bench ARGS="--provider bedrock --rosters 5 --semantic"
+
+It reuses the spec-032/033 scorers (``score_persona_sim_sum`` for the free
+lexical ``persona_lex_mean`` / ``persona_lex_peak``; ``score_persona_semantic_sim``
++ ``get_embeddings`` for the opt-in ``--semantic`` ``persona_sem_mean`` /
+``persona_sem_peak``) and the same cloud-store isolation ``blunder_eval`` applies,
+so it never pollutes the real career/diary stores. It does NOT touch the
+``evals/blunder-ledger.yaml`` — it only prints a per-run summary plus a count of
+residual collisions and regenerations.
+
+Slice 3 ships the bench (task 1) + its mocked test (task 2); the real-model bench
+run (task 3) and the flag-on-vs-off A/B (Slice 4) are developer-run.
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+import time
+from dataclasses import dataclass, field
+from itertools import combinations
+
+import graphia.nodes.setup as setup_nodes
+from graphia.tools.blunder_eval import (
+    _NEAR_DUP_THRESHOLD,
+    score_persona_semantic_sim,
+    score_persona_sim_sum,
+)
+
+# Cloud-store env vars a bench run must never touch — IDENTICAL to the set
+# ``blunder_eval._CLOUD_STORE_ENV_VARS`` pops, plus ``GRAPHIA_REMOTE``. A
+# wire-env'd ``.env`` carries a deployed stack's Memory/Gateway/career ids and
+# the diary/career factories gate on those ids alone; a bench run is always
+# local-mode against a real provider, so we pop them ourselves for BOTH
+# providers (the config offline-gate only covers ollama).
+_CLOUD_STORE_ENV_VARS: tuple[str, ...] = (
+    "GRAPHIA_MEMORY_ID",
+    "GRAPHIA_CAREER_MEMORY_ID",
+    "GRAPHIA_GATEWAY_ID",
+    "GRAPHIA_GATEWAY_URL",
+    "GRAPHIA_STATS_STRATEGY_ID",
+)
+
+
+@dataclass(slots=True)
+class RosterResult:
+    """One generated roster's per-roster scores + collision/regen counts."""
+
+    index: int
+    sim_sum: float = 0.0
+    sim_max: float = 0.0
+    denominator: int = 0
+    sem_mean: float | None = None
+    sem_peak: float | None = None
+    # Residual over-threshold pairs in the FINAL roster (collisions the loop did
+    # not resolve — at the default ~0.6 bar, the same near-dup band the scorer
+    # uses). A diversity-on run should drive this toward zero.
+    residual_collisions: int = 0
+    # Generation calls beyond one-per-AI-player — a proxy for regenerations +
+    # any empty-result retries (rare on a healthy model).
+    regenerations: int = 0
+    error: str | None = None
+
+
+@dataclass(slots=True)
+class BenchSummary:
+    """The whole-batch summary printed at the end."""
+
+    provider: str
+    diversity_enabled: bool
+    rosters_attempted: int = 0
+    rosters_completed: int = 0
+    # Batch lexical MEAN = Σ sim_sum / Σ denominator (pooled across rosters), and
+    # batch lexical PEAK = max per-roster sim_max — mirroring ``run_eval``'s fold.
+    persona_lex_mean: float | None = None
+    persona_lex_peak: float | None = None
+    persona_sem_mean: float | None = None
+    persona_sem_peak: float | None = None
+    total_collisions: int = 0
+    total_regenerations: int = 0
+    duration_seconds: float = 0.0
+    per_roster: list[RosterResult] = field(default_factory=list)
+
+
+def _isolate_cloud_stores() -> None:
+    """Pop the cloud-store env vars so a bench run stays off the career stores."""
+    os.environ.pop("GRAPHIA_REMOTE", None)
+    for var in _CLOUD_STORE_ENV_VARS:
+        os.environ.pop(var, None)
+
+
+def _residual_collisions(players: dict, threshold: float) -> int:
+    """Count final AI-persona pairs still at/above ``threshold`` (post-regen).
+
+    Reuses the bench's own ``_persona_collision`` helper text/masking via the
+    scorer's machinery: over the AI personas' masked table-facing text, count the
+    unordered pairs whose ``difflib`` ratio is ``>= threshold`` — the residual
+    collisions the regen loop could not push apart (ideally zero with diversity
+    on). Built on ``setup._persona_collision`` for one shared definition.
+    """
+    ai_personas = [
+        p.persona
+        for p in players.values()
+        if not p.is_human and p.persona is not None
+    ]
+    ai_names = {p.name for p in players.values() if not p.is_human}
+    count = 0
+    for a, b in combinations(ai_personas, 2):
+        if setup_nodes._persona_collision(a, [b], ai_names=ai_names) >= threshold:
+            count += 1
+    return count
+
+
+def _generate_one_roster(
+    index: int,
+    *,
+    diversity_enabled: bool,
+    collision_threshold: float,
+    regen_attempts: int,
+    persona_temperature: float,
+    semantic: bool,
+) -> RosterResult:
+    """Generate ONE roster via the real path and score it (no game).
+
+    Builds the minimal post-``assign_roles`` state — ``generate_roster`` mints AI
+    names, ``assign_roles`` deals roles — then runs the REAL ``generate_personas``
+    with the spec-034 flags. Local imports keep a missing provider credential
+    failing here (per roster) with a clear message rather than at module import.
+    """
+    from graphia.nodes.setup import (
+        assign_roles,
+        generate_personas,
+        generate_roster,
+    )
+    from graphia.state import GameState, PlayerState
+
+    # A minimal human-only seed state (the bench never collects a real name).
+    state: GameState = {
+        "human_id": "bench-human",
+        "players": {
+            "bench-human": PlayerState(
+                id="bench-human",
+                name="Bench",
+                role="law_abiding",
+                is_human=True,
+            )
+        },
+    }
+    state = {**state, **generate_roster(state)}
+    state = {**state, **assign_roles(state)}
+
+    # Count generation calls to derive a regenerations proxy: wrap the single
+    # ``_generate_one_persona`` seam (the bench OWNS this instrumentation, like
+    # the eval harness's InstrumentedModel). Restore it after the roster.
+    real_gen_one = setup_nodes._generate_one_persona
+    call_count = 0
+
+    def _counting_gen_one(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        return real_gen_one(*args, **kwargs)
+
+    setup_nodes._generate_one_persona = _counting_gen_one  # type: ignore[assignment]
+    try:
+        result = generate_personas(
+            state,
+            persona_diversity_enabled=diversity_enabled,
+            persona_collision_threshold=collision_threshold,
+            persona_regen_attempts=regen_attempts,
+            persona_temperature=persona_temperature,
+        )
+    except Exception as exc:  # noqa: BLE001 — record and continue the batch
+        return RosterResult(index=index, error=f"{type(exc).__name__}: {exc}")
+    finally:
+        setup_nodes._generate_one_persona = real_gen_one  # type: ignore[assignment]
+
+    players = result["players"]
+    ai_count = sum(1 for p in players.values() if not p.is_human)
+
+    lex = score_persona_sim_sum(players)
+    roster = RosterResult(
+        index=index,
+        sim_sum=float(lex["sim_sum"]),
+        sim_max=float(lex["sim_max"]),
+        denominator=int(lex["denominator"]),
+        residual_collisions=_residual_collisions(players, collision_threshold),
+        # Calls beyond one-per-AI-player ≈ regenerations (+ rare empty retries).
+        regenerations=max(0, call_count - ai_count),
+    )
+    if semantic:
+        sem = score_persona_semantic_sim(
+            players, _embed_documents
+        )
+        roster.sem_mean = sem["mean"]  # type: ignore[assignment]
+        roster.sem_peak = sem["peak"]  # type: ignore[assignment]
+    return roster
+
+
+def _embed_documents(texts: list[str]) -> list[list[float]]:
+    """Resolve the spec-033 embeddings batch callable (the patchable seam).
+
+    Routes through ``graphia.tools.blunder_eval.get_embeddings`` so the offline
+    suite's autouse ``safe_llm`` fake lands here too — the bench's mocked test
+    reaches NO real Bedrock embeddings. ``--semantic`` on a real run hits Bedrock
+    Titan embeddings (always Bedrock, independent of the gameplay provider).
+    """
+    from graphia.tools.blunder_eval import get_embeddings
+
+    return get_embeddings().embed_documents(texts)
+
+
+def run_bench(
+    *,
+    provider: str,
+    rosters: int,
+    diversity_enabled: bool,
+    semantic: bool,
+) -> BenchSummary:
+    """Generate + score ``rosters`` rosters on ``provider`` (no game). Pure-ish.
+
+    Sets ``GRAPHIA_LLM_PROVIDER`` and isolates the cloud stores, then loops
+    :func:`_generate_one_roster`, folding each roster's lexical SUM/MAX into the
+    batch mean/peak exactly as ``blunder_eval.run_eval`` does. Returns the
+    :class:`BenchSummary`; the CLI prints it. No ledger is written.
+    """
+    os.environ["GRAPHIA_LLM_PROVIDER"] = provider
+    _isolate_cloud_stores()
+    # Read the tunables off the resolved config so a bench run honours the same
+    # ``.env`` knobs the game does (threshold / attempts / temperature).
+    from graphia.config import load_config
+
+    config = load_config()
+
+    summary = BenchSummary(provider=provider, diversity_enabled=diversity_enabled)
+    start = time.monotonic()
+
+    lex_sum = 0.0
+    lex_denominator = 0
+    lex_peak = 0.0
+    sem_sum = 0.0
+    sem_denominator = 0
+    sem_peak = 0.0
+
+    for i in range(rosters):
+        summary.rosters_attempted += 1
+        roster = _generate_one_roster(
+            i,
+            diversity_enabled=diversity_enabled,
+            collision_threshold=config.persona_collision_threshold,
+            regen_attempts=config.persona_regen_attempts,
+            persona_temperature=config.persona_temperature,
+            semantic=semantic,
+        )
+        summary.per_roster.append(roster)
+        if roster.error is not None:
+            continue
+        summary.rosters_completed += 1
+        summary.total_collisions += roster.residual_collisions
+        summary.total_regenerations += roster.regenerations
+        # Fold the lexical pooled mean + running peak.
+        lex_sum += roster.sim_sum
+        lex_denominator += roster.denominator
+        if roster.sim_max > lex_peak:
+            lex_peak = roster.sim_max
+        # Fold the semantic pooled mean + running peak (when present).
+        if semantic and roster.sem_mean is not None and roster.denominator > 0:
+            sem_sum += roster.sem_mean * roster.denominator
+            sem_denominator += roster.denominator
+            if roster.sem_peak is not None and roster.sem_peak > sem_peak:
+                sem_peak = roster.sem_peak
+
+    if lex_denominator > 0:
+        summary.persona_lex_mean = lex_sum / lex_denominator
+        summary.persona_lex_peak = lex_peak
+    if semantic and sem_denominator > 0:
+        summary.persona_sem_mean = sem_sum / sem_denominator
+        summary.persona_sem_peak = sem_peak
+
+    summary.duration_seconds = time.monotonic() - start
+    return summary
+
+
+def _fmt(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.3f}"
+
+
+def print_summary(summary: BenchSummary) -> None:
+    """Print the per-roster table + batch summary to stdout."""
+    diversity = "on" if summary.diversity_enabled else "off"
+    print(
+        f"\nPersona bench — provider={summary.provider} diversity={diversity} "
+        f"(near-dup threshold {_NEAR_DUP_THRESHOLD} for the metric; collision bar "
+        "from config)\n"
+    )
+    print(
+        f"{'roster':>6} {'lex_mean':>9} {'lex_peak':>9} {'sem_mean':>9} "
+        f"{'sem_peak':>9} {'collide':>8} {'regen':>6}"
+    )
+    for r in summary.per_roster:
+        if r.error is not None:
+            print(f"{r.index:>6}  ERROR: {r.error}")
+            continue
+        roster_mean = (
+            r.sim_sum / r.denominator if r.denominator else None
+        )
+        print(
+            f"{r.index:>6} {_fmt(roster_mean):>9} {_fmt(r.sim_max):>9} "
+            f"{_fmt(r.sem_mean):>9} {_fmt(r.sem_peak):>9} "
+            f"{r.residual_collisions:>8} {r.regenerations:>6}"
+        )
+
+    print("\n=== BATCH SUMMARY ===")
+    print(f"  rosters:            {summary.rosters_completed}/{summary.rosters_attempted}")
+    print(f"  persona_lex_mean:   {_fmt(summary.persona_lex_mean)}")
+    print(f"  persona_lex_peak:   {_fmt(summary.persona_lex_peak)}")
+    print(f"  persona_sem_mean:   {_fmt(summary.persona_sem_mean)}")
+    print(f"  persona_sem_peak:   {_fmt(summary.persona_sem_peak)}")
+    print(f"  residual collisions:{summary.total_collisions:>5}")
+    print(f"  regenerations:      {summary.total_regenerations}")
+    print(f"  duration:           {summary.duration_seconds:.1f}s")
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(
+        description=(
+            "Isolated persona-generation bench (spec 034): generate + score N "
+            "rosters on a real provider WITHOUT playing a game."
+        )
+    )
+    ap.add_argument(
+        "--provider",
+        choices=("ollama", "bedrock"),
+        default="ollama",
+        help="LLM provider for persona generation (ollama is local/free).",
+    )
+    ap.add_argument(
+        "--rosters",
+        type=int,
+        default=5,
+        help="number of rosters to generate + score.",
+    )
+    ap.add_argument(
+        "--diversity",
+        choices=("on", "off"),
+        default="on",
+        help="spec-034 diversified generation on (default) or off (spec-031 A/B).",
+    )
+    ap.add_argument(
+        "--semantic",
+        action="store_true",
+        help="also score persona_sem_mean/peak (Bedrock Titan embeddings — costs "
+        "a little even on the ollama path).",
+    )
+    args = ap.parse_args(argv)
+
+    if args.rosters < 1:
+        print("--rosters must be at least 1.", file=sys.stderr)
+        return 2
+
+    diversity_enabled = args.diversity == "on"
+    print(
+        f"Generating {args.rosters} roster(s) on the real {args.provider} model "
+        f"(diversity {args.diversity}). No game is played; this costs model time "
+        f"{'and Bedrock tokens ' if args.provider == 'bedrock' else ''}"
+        f"{'+ embedding tokens ' if args.semantic else ''}and is non-deterministic."
+    )
+    summary = run_bench(
+        provider=args.provider,
+        rosters=args.rosters,
+        diversity_enabled=diversity_enabled,
+        semantic=args.semantic,
+    )
+    print_summary(summary)
+    return 0 if summary.rosters_completed > 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

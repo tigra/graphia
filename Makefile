@@ -499,6 +499,20 @@ ollama-smoke:
 blunder-eval:
 	uv run python -m graphia.tools.blunder_eval $(ARGS)
 
+# Isolated persona-generation bench (spec 034): generate + score N rosters on a
+# real provider WITHOUT playing any game — seconds/roster, not ~21 min/game — so
+# persona generation + evaluation are testable in isolation (no full eval). Runs
+# the real generation path (generate_roster -> assign_roles -> generate_personas)
+# with the spec-034 diversity on/off, scores the free lexical persona_lex_mean/
+# peak and (with --semantic) the Bedrock-embedding persona_sem_mean/peak, and
+# prints a per-run summary + collision/regen counts. Does NOT write the ledger.
+# NOT a mocked unit test: reaches a real model. Ollama is local/free; Bedrock
+# costs tokens. Use it for the flag-on-vs-off A/B (Slice 4).
+#   make persona-bench ARGS="--provider ollama --rosters 5 --diversity on"
+#   make persona-bench ARGS="--provider ollama --rosters 10 --diversity off --semantic"
+persona-bench:
+	uv run python -m graphia.tools.persona_bench $(ARGS)
+
 # --- CloudWatch Transaction Search (one-time, per AWS account).
 #
 # AgentCore Observability's trace-tree view depends on CloudWatch Transaction

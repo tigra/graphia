@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import dataclasses
+import difflib
 import random
 import uuid
 
+from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.types import interrupt
 from pydantic import ValidationError
@@ -16,10 +18,12 @@ from graphia.career_events import (
     CareerEventEmitter,
 )
 from graphia.config import load_config
-from graphia.llm import Persona, Roster, get_large, get_small
+from graphia.llm import Persona, Roster, get_large, get_persona_model, get_small
 from graphia.prompts import (
     NAME_GEN_SYSTEM,
     NAME_GEN_USER_TEMPLATE,
+    PERSONA_ARCHETYPE_HINT_TEMPLATE,
+    PERSONA_ARCHETYPES,
     PERSONA_CITIZEN_USER_TEMPLATE,
     PERSONA_DISTINCT_FROM_TEMPLATE,
     PERSONA_MAFIA_USER_TEMPLATE,
@@ -27,6 +31,17 @@ from graphia.prompts import (
     ROSTER_INTRO_TEMPLATE,
 )
 from graphia.state import GameState, PlayerPersona, PlayerState
+
+# Spec 034: the spec-009 lexical machinery, IMPORTED (never reimplemented) so the
+# in-loop collision check and the recorded ``persona_lex_*`` metric speak the same
+# language — a "collision" the regen loop catches is the same near-duplication the
+# ledger measures. ``_mask_names`` blanks the AI names before comparing;
+# ``_normalize`` lowercases / collapses whitespace. Aliased to the spec-009 names
+# the blunder-eval scorers use for one shared vocabulary.
+from graphia.tools.repetition_experiment import (
+    _mask_names as _spec009_mask_names,
+    _normalize as _spec009_normalize,
+)
 
 _ROLE_LABELS: dict[str, str] = {
     "mafia": "Mafia",
@@ -47,6 +62,120 @@ def _shuffle_deck(deck: list[str]) -> None:
     to cross-test global-RNG state. Production behaviour is unchanged.
     """
     random.shuffle(deck)
+
+
+def _shuffle_personas(
+    prior: list[PlayerPersona], *, enabled: bool
+) -> list[PlayerPersona]:
+    """Return the already-created personas in a (possibly) randomized order.
+
+    The single persona-order shuffle surface (Spec 034 §2 A), mirroring
+    ``graphia.nodes.night._shuffle_night_roster`` exactly: copy the list, shuffle
+    the copy over the module-global ``random`` RNG, return it; never mutate the
+    input. Applied to the prior-persona list ``_distinct_from_message`` renders,
+    so each new character sees the others in a fresh order with no fixed anchor —
+    one of the three diversity levers (functional-spec §2). Keeping it the only
+    place that order is randomized gives tests one monkeypatch point.
+
+    **The load-bearing OFF contract (mirrors §3.1 of spec 030):** when ``enabled``
+    is falsy the input order is returned **before any RNG call whatsoever**, so a
+    flag-OFF build consumes ZERO module-global ``random`` state and reproduces the
+    prior spec-031 (insertion-order) trajectory byte-for-byte. The ``not enabled``
+    guard MUST stay ahead of ``random.shuffle`` for that promise to hold — the
+    dual-mode byte-equal smoke depends on it.
+    """
+    if not enabled:
+        # OFF: spec-031 insertion order, with no draw — preserves the seeded
+        # trajectory byte-for-byte (the ablation flag's whole point).
+        return list(prior)
+    shuffled = list(prior)
+    random.shuffle(shuffled)
+    return shuffled
+
+
+def _draw_archetypes(count: int, *, enabled: bool) -> list[str | None]:
+    """Draw ``count`` target temperaments, one per AI player (Spec 034 §2 A).
+
+    When ``enabled``, sample WITHOUT replacement within the game from
+    :data:`graphia.prompts.PERSONA_ARCHETYPES` over the module-global ``random``
+    RNG, so each player targets a *distinct* temperament and the cast starts
+    spread across the range. When the roster is larger than the pool (it never is
+    at the table cap, but be defensive), the pool is drawn down to empty and the
+    remaining players get a fresh independent draw — still randomized, just no
+    longer guaranteed-distinct. Returns a list of ``count`` archetype strings.
+
+    **The load-bearing OFF contract:** when ``enabled`` is falsy, returns
+    ``[None] * count`` **before any RNG call whatsoever** — no archetype hint, no
+    module-global ``random`` draw — so flag-OFF preserves the spec-031 trajectory
+    byte-for-byte (paired with :func:`_shuffle_personas`'s OFF guard). The
+    ``not enabled`` guard MUST stay ahead of ``random.*``.
+    """
+    if not enabled:
+        return [None] * count
+    pool = list(PERSONA_ARCHETYPES)
+    random.shuffle(pool)
+    drawn: list[str | None] = []
+    for _ in range(count):
+        if not pool:
+            # Roster exceeds the pool (defensive — not reachable at the table
+            # cap): refill and reshuffle so the remaining players still get a
+            # randomized steer (no longer guaranteed distinct).
+            pool = list(PERSONA_ARCHETYPES)
+            random.shuffle(pool)
+        drawn.append(pool.pop())
+    return drawn
+
+
+def _persona_table_text(persona: PlayerPersona) -> str:
+    """The table-facing text of a persona — never the Mafioso ``true_self``.
+
+    ``personality + " " + manner + " " + public_persona``, IDENTICAL to the text
+    ``score_persona_sim_sum`` / ``score_persona_near_dup`` build, so the in-loop
+    collision check and the recorded ``persona_lex_*`` metric compare the same
+    string. A Mafioso's hidden ``true_self`` is deliberately excluded (the
+    spec-016 allegiance-hiding invariant) — only the public character the table
+    sees is differentiated.
+    """
+    return f"{persona.personality} {persona.manner} {persona.public_persona}"
+
+
+def _persona_collision(
+    candidate: PlayerPersona,
+    accepted: list[PlayerPersona],
+    *,
+    ai_names: set[str] | None = None,
+) -> float:
+    """Max lexical similarity of ``candidate`` against the accepted personas (Spec 034 §2 B).
+
+    Builds each persona's **table-facing** text (:func:`_persona_table_text` —
+    ``personality + " " + manner + " " + public_persona``, **never** the Mafioso
+    ``true_self``), name-masks it (:func:`_spec009_mask_names` against ``ai_names``)
+    and normalizes it (:func:`_spec009_normalize`), then returns the **max**
+    ``difflib.SequenceMatcher`` ratio of the candidate's text against each accepted
+    persona's text. EXACTLY the spec-009 machinery behind the recorded
+    ``persona_lex_*`` metric — so a "collision" here is the same near-duplication
+    the ledger measures, name-masked the same way (a shared self-name token can't
+    inflate the similarity between two otherwise-different characters).
+
+    Pure, deterministic, no model. Returns ``0.0`` when there are no accepted
+    personas (the first player of a game can never collide). ``ai_names`` defaults
+    to the empty set when the caller has no roster names handy (normalization still
+    applies); ``generate_personas`` passes the game's AI names for metric parity.
+    """
+    if not accepted:
+        return 0.0
+    names = ai_names or set()
+
+    def masked(persona: PlayerPersona) -> str:
+        return _spec009_normalize(
+            _spec009_mask_names(_persona_table_text(persona), names)
+        )
+
+    cand = masked(candidate)
+    return max(
+        difflib.SequenceMatcher(None, cand, masked(other)).ratio()
+        for other in accepted
+    )
 
 
 def collect_name(state: GameState) -> dict:
@@ -275,8 +404,31 @@ def _distinct_from_message(
     return HumanMessage(content=PERSONA_DISTINCT_FROM_TEMPLATE.format(others=others))
 
 
+def _archetype_message(archetype: str | None) -> HumanMessage | None:
+    """Build the spec-034 "lean toward this temperament" steer, or ``None``.
+
+    Renders :data:`PERSONA_ARCHETYPE_HINT_TEMPLATE` with the drawn ``archetype``
+    into a SEPARATE :class:`HumanMessage` (NOT a ``{...}`` slot on the persona
+    user templates — the same anti-``KeyError`` discipline as the spec-031
+    distinct-from block). Returns ``None`` when no archetype was drawn (diversity
+    flag off), so the caller appends no message and the prompt is the spec-031
+    shape exactly. The hint carries no allegiance signal, so it rides safely on
+    both Citizen and Mafioso prompts — even the FIRST player (no prior to differ
+    from, but still steered to a random temperament).
+    """
+    if archetype is None:
+        return None
+    return HumanMessage(
+        content=PERSONA_ARCHETYPE_HINT_TEMPLATE.format(archetype=archetype)
+    )
+
+
 def _generate_one_persona(
-    player: PlayerState, prior_personas: list[PlayerPersona]
+    player: PlayerState,
+    prior_personas: list[PlayerPersona],
+    *,
+    model: BaseChatModel | None = None,
+    archetype: str | None = None,
 ) -> PlayerPersona:
     """Generate a single AI player's persona, role-tailored, never raising.
 
@@ -297,6 +449,16 @@ def _generate_one_persona(
     persona still differentiates. The first AI player of a game (empty
     ``prior_personas``) gets no block; the deterministic
     :func:`_fallback_persona` is unchanged.
+
+    Spec 034: ``model`` is the persona model to invoke — the caller passes the
+    higher-temperature :func:`graphia.llm.get_persona_model` instance when
+    diversity is on, falling back to the cached gameplay ``get_large()`` when it
+    is ``None`` (flag-off → spec-031 behaviour exactly). ``archetype`` is the
+    drawn target temperament; when set, a SECOND extra :class:`HumanMessage` (the
+    "lean toward this" steer) rides on BOTH the first attempt and the retry,
+    alongside any distinct-from block. The caller already shuffled
+    ``prior_personas`` (a fresh order per attempt) and drew a fresh ``archetype``
+    per regeneration, so a retry diverges rather than repeating.
     """
     is_mafia = player.role == "mafia"
     template = (
@@ -304,13 +466,27 @@ def _generate_one_persona(
     )
     user_prompt = template.format(name=player.name)
     distinct_from = _distinct_from_message(prior_personas)
-    llm = get_large().with_structured_output(Persona)
+    archetype_hint = _archetype_message(archetype)
+    # Spec 034: flag-off passes ``model=None`` → the cached gameplay singleton,
+    # so the disabled path is byte-identical to spec 031 (no separate model
+    # built). Flag-on passes the higher-temperature persona model.
+    base = model if model is not None else get_large()
+    llm = base.with_structured_output(Persona)
+
+    def _extras(messages: list) -> None:
+        # The two spec-031/034 steer messages ride on BOTH attempts, appended in
+        # a stable order (distinct-from then archetype) so the prompt shape is
+        # deterministic for the capture tests.
+        if distinct_from is not None:
+            messages.append(distinct_from)
+        if archetype_hint is not None:
+            messages.append(archetype_hint)
+
     messages: list = [
         SystemMessage(content=PERSONA_SYSTEM),
         HumanMessage(content=user_prompt),
     ]
-    if distinct_from is not None:
-        messages.append(distinct_from)
+    _extras(messages)
     try:
         persona = llm.invoke(messages)
         if not _persona_is_empty(persona):
@@ -327,8 +503,7 @@ def _generate_one_persona(
             "schema. Try again."
         ),
     ]
-    if distinct_from is not None:
-        retry_messages.append(distinct_from)
+    _extras(retry_messages)
     try:
         retried = llm.invoke(retry_messages)
         if not _persona_is_empty(retried):
@@ -359,7 +534,90 @@ def _to_player_persona(
     )
 
 
-def generate_personas(state: GameState) -> dict:
+def _fresh_regen_archetype(primary: str | None) -> str:
+    """Draw a regeneration archetype that differs from this player's primary.
+
+    A regeneration must DIVERGE, not repeat (functional-spec §2: the mode-seeking
+    re-collision risk). So a retry's archetype is drawn at random from
+    :data:`PERSONA_ARCHETYPES` excluding the player's ``primary`` temperament — a
+    different region of the range, the strongest lever to steer the retry
+    somewhere new. Over the module-global RNG (seeded for evals).
+    """
+    pool = [a for a in PERSONA_ARCHETYPES if a != primary]
+    return random.choice(pool or list(PERSONA_ARCHETYPES))
+
+
+def _generate_with_regen(
+    player: PlayerState,
+    accepted: list[PlayerPersona],
+    *,
+    model: BaseChatModel,
+    primary_archetype: str | None,
+    collision_threshold: float,
+    regen_attempts: int,
+    ai_names: set[str],
+) -> PlayerPersona:
+    """Generate one persona, regenerating while it collides (Spec 034 §2 B).
+
+    The diversity-on path for a single AI player. The INITIAL attempt is steered
+    toward ``primary_archetype`` (this player's distinct, without-replacement
+    draw). If the result is too word-level-similar to one already ``accepted``
+    this game (``_persona_collision >= collision_threshold``), throw it away and
+    generate again with a FRESH shuffle of the prior personas and a FRESH random
+    archetype (:func:`_fresh_regen_archetype`, differing from the primary) — so
+    the retry diverges rather than re-hitting the same mode — up to
+    ``regen_attempts`` extra times. On cap-exhaustion keep the **least-similar**
+    valid attempt seen (functional-spec §2: never blocks, never ships the
+    over-similar one).
+
+    Generation failure is distinct from collision: :func:`_generate_one_persona`
+    returns the deterministic :func:`_fallback_persona` when the model fails
+    twice. A fallback is NOT scored or kept as a "least-similar" candidate — the
+    spec-031 contract is that a true generation failure falls to the fallback. If
+    every attempt fails to generate, the fallback is returned (the last resort).
+    """
+    expected_fallback = _fallback_persona(player)
+
+    best: PlayerPersona | None = None
+    best_score = float("inf")
+    # 1 initial attempt + ``regen_attempts`` regenerations.
+    for attempt in range(regen_attempts + 1):
+        archetype = (
+            primary_archetype
+            if attempt == 0
+            else _fresh_regen_archetype(primary_archetype)
+        )
+        shuffled_prior = _shuffle_personas(accepted, enabled=True)
+        persona = _generate_one_persona(
+            player,
+            shuffled_prior,
+            model=model,
+            archetype=archetype,
+        )
+        if persona == expected_fallback:
+            # Generation itself failed (model returned empty twice). Don't score
+            # or keep as a least-similar candidate; only fall to it if nothing
+            # else is ever produced (handled after the loop).
+            continue
+        score = _persona_collision(persona, accepted, ai_names=ai_names)
+        if score < best_score:
+            best, best_score = persona, score
+        if score < collision_threshold:
+            # Accepted: distinct enough. Stop regenerating.
+            return persona
+    # Cap exhausted (or every attempt collided): keep the least-similar VALID
+    # attempt; only the fallback if generation never succeeded.
+    return best if best is not None else expected_fallback
+
+
+def generate_personas(
+    state: GameState,
+    *,
+    persona_diversity_enabled: bool = True,
+    persona_collision_threshold: float = 0.6,
+    persona_regen_attempts: int = 2,
+    persona_temperature: float = 1.0,
+) -> dict:
     """Attach a fresh persona to every AI player (skipping the human).
 
     Runs after :func:`assign_roles` so each persona can be role-tailored — one
@@ -368,6 +626,24 @@ def generate_personas(state: GameState) -> dict:
     one-time at startup). Each call is wrapped in the validation-retry-then-
     fallback in :func:`_generate_one_persona`, so this node NEVER raises — a
     failing or missing model yields fallback personas and setup proceeds.
+
+    Spec 031 (option b): accumulate the personas already created THIS game and
+    feed them to each subsequent generation so the new character can be made
+    deliberately distinct. The first AI player sees an empty list.
+
+    Spec 034 (ADR 011), gated by ``persona_diversity_enabled`` (default on):
+    when ON, three diversity levers are injected before each generation — the
+    prior personas are shown in a SHUFFLED order (:func:`_shuffle_personas`), the
+    character is steered toward a randomly-drawn target temperament
+    (:func:`_draw_archetypes`, without replacement within the game), and the
+    persona model runs HOTTER (:func:`graphia.llm.get_persona_model` at
+    ``persona_temperature``) — and a freshly-created character too word-level
+    -similar (``>= persona_collision_threshold``) to one already accepted this
+    game is regenerated (fresh shuffle + fresh archetype) up to
+    ``persona_regen_attempts``, keeping the least-similar attempt on exhaustion
+    (:func:`_generate_with_regen`). When OFF, the path is spec-031 EXACTLY:
+    insertion order (no RNG draw — :func:`_shuffle_personas`'s OFF guard), no
+    archetype hint, the cached gameplay model, and no regeneration.
     """
     players = state.get("players", {})
     # ``players`` is a plain replace channel (no merge reducer), so the return
@@ -375,17 +651,49 @@ def generate_personas(state: GameState) -> dict:
     # would be dropped. Start from the existing players and overwrite only the
     # AI entries with their persona-bearing copies.
     updated: dict[str, PlayerState] = dict(players)
-    # Spec 031 (option b): accumulate the personas already created THIS game
-    # (insertion order) and feed them to each subsequent generation so the new
-    # character can be made deliberately distinct from them. The first AI player
-    # sees an empty list (nothing yet to differ from).
-    prior_personas: list[PlayerPersona] = []
-    for pid, player in players.items():
-        if player.is_human:
-            continue
-        persona = _generate_one_persona(player, prior_personas)
-        updated[pid] = dataclasses.replace(player, persona=persona)
-        prior_personas.append(persona)
+
+    ai_players = [p for p in players.values() if not p.is_human]
+    ai_names = {p.name for p in players.values() if not p.is_human}
+
+    # Spec 034: draw one target temperament per AI player up front, without
+    # replacement within the game (OFF → all-None, no RNG draw). Flag-off and the
+    # disabled draw both consume ZERO module-global RNG, preserving the spec-031
+    # seeded trajectory byte-for-byte (the dual-mode smoke depends on this).
+    archetypes = _draw_archetypes(
+        len(ai_players), enabled=persona_diversity_enabled
+    )
+    # Build the higher-temperature persona model ONCE per setup (flag-on only);
+    # OFF passes ``None`` to ``_generate_one_persona`` so the cached gameplay
+    # ``get_large()`` is used and no separate model is constructed.
+    persona_model: BaseChatModel | None = (
+        get_persona_model(persona_temperature)
+        if persona_diversity_enabled
+        else None
+    )
+
+    accepted: list[PlayerPersona] = []
+    for player, archetype in zip(ai_players, archetypes):
+        if persona_diversity_enabled:
+            persona = _generate_with_regen(
+                player,
+                accepted,
+                model=persona_model,  # type: ignore[arg-type]
+                primary_archetype=archetype,
+                collision_threshold=persona_collision_threshold,
+                regen_attempts=persona_regen_attempts,
+                ai_names=ai_names,
+            )
+        else:
+            # Flag-off: spec-031 path EXACTLY — insertion order, no archetype, the
+            # cached gameplay model, no regeneration, no RNG draw.
+            persona = _generate_one_persona(
+                player,
+                _shuffle_personas(accepted, enabled=False),
+                model=None,
+                archetype=None,
+            )
+        updated[player.id] = dataclasses.replace(player, persona=persona)
+        accepted.append(persona)
     return {"players": updated}
 
 

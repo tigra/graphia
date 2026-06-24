@@ -41,6 +41,16 @@ The capturing fake replaces the ``graphia.nodes.setup.get_large`` binding the
 autouse ``safe_llm`` net installs (persona generation is an existing call site —
 see ``tests/conftest.py``), so the loud-failure default never fires here and real
 Bedrock is never reached.
+
+Spec 034 (Diversified Persona Generation) note: spec 034 added a default-on
+``persona_diversity_enabled`` flag that, when ON, shuffles the prior-persona
+order, appends a random archetype hint, runs a higher-temperature persona model
+(``get_persona_model``), and regenerates over-similar personas. The spec-031
+behaviour these tests pin (insertion-order prior, NO archetype hint, the cached
+``get_large`` model, no regeneration) is now the **flag-OFF** regime, so every
+``generate_personas`` call here passes ``persona_diversity_enabled=False`` to
+exercise exactly that spec-031 path — its guarantees still hold byte-for-byte
+when diversity is off.
 """
 
 from __future__ import annotations
@@ -189,7 +199,7 @@ def test_first_player_has_no_distinct_from_block(
     fake = _CapturingPersonaFake([_PERSONA_1, _PERSONA_2, _PERSONA_3])
     monkeypatch.setattr(setup_nodes, "get_large", lambda: fake)
 
-    generate_personas(_state_with_roles())
+    generate_personas(_state_with_roles(), persona_diversity_enabled=False)
 
     # First AI seat = first captured invoke.
     first_prompt = fake.messages_log[0]
@@ -213,7 +223,7 @@ def test_second_player_block_lists_first_characters_table_facing_text(
     fake = _CapturingPersonaFake([_PERSONA_1, _PERSONA_2, _PERSONA_3])
     monkeypatch.setattr(setup_nodes, "get_large", lambda: fake)
 
-    generate_personas(_state_with_roles())
+    generate_personas(_state_with_roles(), persona_diversity_enabled=False)
 
     # Second AI seat = second captured invoke.
     second_block = _distinct_block_in(fake.messages_log[1])
@@ -237,7 +247,7 @@ def test_third_player_block_lists_both_earlier_characters(
     fake = _CapturingPersonaFake([_PERSONA_1, _PERSONA_2, _PERSONA_3])
     monkeypatch.setattr(setup_nodes, "get_large", lambda: fake)
 
-    generate_personas(_state_with_roles())
+    generate_personas(_state_with_roles(), persona_diversity_enabled=False)
 
     third_block = _distinct_block_in(fake.messages_log[2])
     assert third_block is not None
@@ -269,7 +279,7 @@ def test_no_true_self_text_appears_in_any_generation_prompt(
     fake = _CapturingPersonaFake([_PERSONA_1, _PERSONA_2, _PERSONA_3])
     monkeypatch.setattr(setup_nodes, "get_large", lambda: fake)
 
-    result = generate_personas(_state_with_roles())
+    result = generate_personas(_state_with_roles(), persona_diversity_enabled=False)
 
     # Sanity: the sentinel really did become the Mafioso's stored true_self —
     # otherwise the no-leak assertion below would be vacuously true.
@@ -317,7 +327,7 @@ def test_retry_path_also_carries_the_distinct_from_block(
     )
     monkeypatch.setattr(setup_nodes, "get_large", lambda: fake)
 
-    result = generate_personas(_state_with_roles())
+    result = generate_personas(_state_with_roles(), persona_diversity_enabled=False)
 
     # The forced failure fired the retry: seat 1 (1) + seat 2 (2) + seat 3 (1).
     assert fake.call_count == 4

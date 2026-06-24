@@ -181,6 +181,36 @@ class GraphiaConfig:
     # the other ADR-011 default-on flags' ``_env_flag`` shape. Defaulted so tests
     # constructing the config directly stay valid.
     night_roster_shuffle_enabled: bool = True
+    # Diversified persona generation (spec 034, ADR 011). The master ablation
+    # off-switch: on by default — each AI character is created with variety
+    # injected (shuffled prior personas, a randomly-drawn target temperament, a
+    # higher creative temperature) AND a freshly-created character too word-level
+    # -similar to one already created this game is regenerated. An explicit falsy
+    # ``GRAPHIA_PERSONA_DIVERSITY`` reverts to exact spec-031 behaviour (insertion
+    # order, no archetype hint, gameplay temperature, no regeneration; no RNG
+    # draw on the disabled shuffle). Mirrors the other ADR-011 default-on flags'
+    # ``_env_flag`` shape. Defaulted so tests constructing the config directly
+    # stay valid.
+    persona_diversity_enabled: bool = True
+    # The lexical collision bar (spec 034). The ``difflib`` similarity above which
+    # a freshly-created persona counts as colliding with one already created this
+    # game (max ratio over the accepted personas' table-facing text). Default
+    # ~0.6 is deliberately aggressive — it reaches into the same-archetype band
+    # (the recurring "honest, slow-talking librarian" twins sit ~0.5–0.65 lexical)
+    # while staying above genuinely-different pairs (~0.3). Loosen for egregious
+    # copies only, tighten for A/B. ``GRAPHIA_PERSONA_COLLISION_THRESHOLD``.
+    persona_collision_threshold: float = 0.6
+    # Bounded regeneration attempts per colliding persona (spec 034). When a
+    # candidate collides, it is regenerated (fresh shuffle + fresh archetype) up
+    # to this many times before the least-similar attempt is kept — so setup
+    # always completes with a full roster and never blocks.
+    # ``GRAPHIA_PERSONA_REGEN_ATTEMPTS`` (default 2).
+    persona_regen_attempts: int = 2
+    # Higher-than-gameplay persona-generation temperature (spec 034). Persona
+    # generation runs at this temperature (~1.0 vs the gameplay ~0.7) so the
+    # creative model explores rather than reaching for the same modal townsperson.
+    # ``GRAPHIA_PERSONA_TEMPERATURE``.
+    persona_temperature: float = 1.0
 
 
 def _env_truthy(name: str) -> bool:
@@ -214,6 +244,22 @@ def _parse_count(name: str, default: int) -> int:
         raise SystemExit(f"{name} must be a whole number (got {raw!r}).")
 
 
+def _parse_float(name: str, default: float) -> float:
+    """Parse a float env var, falling back to ``default`` when unset/blank.
+
+    The float analogue of :func:`_parse_count` (spec 034: the lexical collision
+    threshold and the persona temperature are both fractional). An unparseable
+    value fails fast with the variable named, exactly like ``_parse_count``.
+    """
+    raw = os.environ.get(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        return float(raw.strip())
+    except ValueError:
+        raise SystemExit(f"{name} must be a number (got {raw!r}).")
+
+
 def load_config() -> GraphiaConfig:
     # Legacy / workshop-token path: if set, hand it through. Otherwise leave
     # None and rely on boto3's default credential chain (AWS_PROFILE / SSO /
@@ -242,6 +288,21 @@ def load_config() -> GraphiaConfig:
     night_roster_shuffle_enabled = _env_flag(
         "GRAPHIA_NIGHT_ROSTER_SHUFFLE", default=True
     )
+    # Diversified persona generation (spec 034). The master default-on flag plus
+    # its three tunables. Parsed here at the single config choke point so both
+    # the game and the persona bench read identical values. The threshold /
+    # temperature are floats; the regen-attempt cap is a whole number.
+    persona_diversity_enabled = _env_flag("GRAPHIA_PERSONA_DIVERSITY", default=True)
+    persona_collision_threshold = _parse_float(
+        "GRAPHIA_PERSONA_COLLISION_THRESHOLD", 0.6
+    )
+    persona_regen_attempts = _parse_count("GRAPHIA_PERSONA_REGEN_ATTEMPTS", 2)
+    if persona_regen_attempts < 0:
+        raise SystemExit(
+            "GRAPHIA_PERSONA_REGEN_ATTEMPTS must be >= 0 "
+            f"(got {persona_regen_attempts})."
+        )
+    persona_temperature = _parse_float("GRAPHIA_PERSONA_TEMPERATURE", 1.0)
     runtime_invocation_url = os.environ.get("GRAPHIA_RUNTIME_URL") or None
     memory_id = os.environ.get("GRAPHIA_MEMORY_ID") or None
     career_memory_id = os.environ.get("GRAPHIA_CAREER_MEMORY_ID") or None
@@ -424,4 +485,8 @@ def load_config() -> GraphiaConfig:
         scripted_player_active=scripted_player_active,
         private_thoughts_enabled=private_thoughts_enabled,
         night_roster_shuffle_enabled=night_roster_shuffle_enabled,
+        persona_diversity_enabled=persona_diversity_enabled,
+        persona_collision_threshold=persona_collision_threshold,
+        persona_regen_attempts=persona_regen_attempts,
+        persona_temperature=persona_temperature,
     )

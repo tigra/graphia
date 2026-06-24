@@ -92,6 +92,10 @@ def _assemble_graph(
     context_token_budget: int = 20000,
     private_thoughts_enabled: bool = True,
     night_roster_shuffle_enabled: bool = True,
+    persona_diversity_enabled: bool = True,
+    persona_collision_threshold: float = 0.6,
+    persona_regen_attempts: int = 2,
+    persona_temperature: float = 1.0,
 ) -> CompiledStateGraph:
     """Build the Graphia StateGraph topology and compile it with ``saver``.
 
@@ -114,7 +118,21 @@ def _assemble_graph(
     # Spec 016: persona generation runs AFTER role assignment (it needs roles to
     # tailor a Mafioso's cover-legend-plus-true-self vs. a Citizen's single
     # honest persona) and BEFORE the roster intro. Plain node — no career event.
-    builder.add_node("generate_personas", generate_personas)
+    # Spec 034 (ADR 011): the diversified-persona-generation flag + its three
+    # tunables (collision threshold, regen-attempt cap, persona temperature) are
+    # bound into ``generate_personas`` via ``partial``, exactly as the other
+    # ADR-011 flags ride their nodes. Both builders thread them so local and
+    # remote can't drift on persona diversity.
+    builder.add_node(
+        "generate_personas",
+        partial(
+            generate_personas,
+            persona_diversity_enabled=persona_diversity_enabled,
+            persona_collision_threshold=persona_collision_threshold,
+            persona_regen_attempts=persona_regen_attempts,
+            persona_temperature=persona_temperature,
+        ),
+    )
     builder.add_node("introduce_roster", introduce_roster)
     builder.add_node("reveal_role", reveal_role)
     builder.add_node("first_night_mafia_intros", first_night_mafia_intros)
@@ -357,6 +375,10 @@ def build_graph(
         context_token_budget=config.context_token_budget,
         private_thoughts_enabled=config.private_thoughts_enabled,
         night_roster_shuffle_enabled=config.night_roster_shuffle_enabled,
+        persona_diversity_enabled=config.persona_diversity_enabled,
+        persona_collision_threshold=config.persona_collision_threshold,
+        persona_regen_attempts=config.persona_regen_attempts,
+        persona_temperature=config.persona_temperature,
     )
     return graph, thread_id
 

@@ -46,6 +46,10 @@ def build_runtime_graph(
     context_token_budget: int = 20000,
     private_thoughts_enabled: bool = True,
     night_roster_shuffle_enabled: bool = True,
+    persona_diversity_enabled: bool = True,
+    persona_collision_threshold: float = 0.6,
+    persona_regen_attempts: int = 2,
+    persona_temperature: float = 1.0,
 ) -> CompiledStateGraph:
     """Compile the Graphia StateGraph with a caller-supplied thread_id.
 
@@ -111,6 +115,15 @@ def build_runtime_graph(
     prior fixed order) by the same ablation flag as local mode. Same anti-drift
     requirement: both builders must thread it. Defaults to ``True`` (matching the
     config default).
+
+    ``persona_diversity_enabled`` (spec 034, ADR 011) plus its three tunables —
+    ``persona_collision_threshold`` / ``persona_regen_attempts`` /
+    ``persona_temperature`` — are threaded the same way; the production entrypoint
+    passes the matching ``load_config()`` fields, so the deployed Runtime
+    diversifies and regenerates personas (or, when off, reproduces exact spec-031
+    behaviour) by the same ablation flag as local mode. Same anti-drift
+    requirement: both builders must thread them. Default to ``True`` / ``0.6`` /
+    ``2`` / ``1.0`` (matching the config defaults).
     """
     if diary_store is None:
         diary_store = InProcessDiaryStore()
@@ -136,4 +149,8 @@ def build_runtime_graph(
         context_token_budget=context_token_budget,
         private_thoughts_enabled=private_thoughts_enabled,
         night_roster_shuffle_enabled=night_roster_shuffle_enabled,
+        persona_diversity_enabled=persona_diversity_enabled,
+        persona_collision_threshold=persona_collision_threshold,
+        persona_regen_attempts=persona_regen_attempts,
+        persona_temperature=persona_temperature,
     )

@@ -133,6 +133,16 @@ def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
         "graphia.nodes.setup.get_large",
         lambda: _LoudFailureLLM("graphia.nodes.setup.get_large"),
     )
+    # Spec 034: diversified persona generation builds a higher-temperature persona
+    # model via ``get_persona_model(temperature)`` in ``nodes.setup`` (default-on
+    # flag). Net it too — the persona node's broad-exception fallback turns this
+    # loud failure into a deterministic fallback persona, so tests that don't
+    # install a persona fake stay green (and never reach real Bedrock). The
+    # ``temperature`` arg is accepted and ignored by the loud-failure default.
+    monkeypatch.setattr(
+        "graphia.nodes.setup.get_persona_model",
+        lambda temperature: _LoudFailureLLM("graphia.nodes.setup.get_persona_model"),
+    )
     monkeypatch.setattr(
         "graphia.nodes.night.get_large",
         lambda: _LoudFailureLLM("graphia.nodes.night.get_large"),
@@ -826,6 +836,14 @@ def fake_large(
         # persona generation in addition to Day/Night — keeping the one-fake
         # contract whole-game.
         monkeypatch.setattr("graphia.nodes.setup.get_large", lambda: fake)
+        # Spec 034: with the diversity flag ON (default), ``generate_personas``
+        # builds the persona model via ``get_persona_model(temperature)`` instead
+        # of ``get_large()``. Route it to the SAME unified fake (its ``Persona``
+        # queue), so one ``fake_large(personas=[...])`` covers the diversified
+        # path too and a flag-on full-setup test never reaches real Bedrock.
+        monkeypatch.setattr(
+            "graphia.nodes.setup.get_persona_model", lambda temperature: fake
+        )
         return fake
 
     return _install

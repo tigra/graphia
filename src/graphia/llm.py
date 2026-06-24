@@ -82,6 +82,17 @@ class LLMProvider(ABC):
         """Build the heavier gameplay-tier chat model."""
 
     @abstractmethod
+    def large_at_temperature(self, temperature: float) -> BaseChatModel:
+        """Build a fresh large-tier client at an explicit ``temperature``.
+
+        Spec 034: persona generation runs hotter than gameplay. The same
+        large-tier MODEL, only a different sampling temperature — so behavioural
+        variation stays "prompts + temperature, not more models" (architecture
+        §4). Returns a FRESH instance (never the cached gameplay singleton) so
+        the gameplay temperature is untouched.
+        """
+
+    @abstractmethod
     def small(self) -> BaseChatModel:
         """Build the lighter mechanical-tier chat model."""
 
@@ -94,6 +105,16 @@ class BedrockProvider(LLMProvider):
             model=_LARGE_MODEL_ID,
             region_name=load_config().aws_region,
             temperature=0.7,
+        )
+
+    def large_at_temperature(self, temperature: float) -> BaseChatModel:
+        # ``ChatBedrockConverse`` accepts a per-instance ``temperature`` via its
+        # constructor (confirmed against the installed langchain-aws — the same
+        # arg ``large`` / ``small`` already pass). Fresh instance, hotter sampling.
+        return ChatBedrockConverse(
+            model=_LARGE_MODEL_ID,
+            region_name=load_config().aws_region,
+            temperature=temperature,
         )
 
     def small(self) -> BaseChatModel:
@@ -123,6 +144,19 @@ class OllamaProvider(LLMProvider):
             base_url=config.ollama_base_url,
             api_key=_OLLAMA_DUMMY_API_KEY,
             temperature=0.7,
+            max_tokens=_OLLAMA_MAX_TOKENS,
+        )
+
+    def large_at_temperature(self, temperature: float) -> BaseChatModel:
+        # ``ChatAnthropic`` (the Ollama Anthropic-compatible path) accepts a
+        # per-instance ``temperature`` via its constructor — the same arg
+        # ``large`` / ``small`` already pass. Fresh instance, hotter sampling.
+        config = load_config()
+        return ChatAnthropic(
+            model=config.ollama_large_model,
+            base_url=config.ollama_base_url,
+            api_key=_OLLAMA_DUMMY_API_KEY,
+            temperature=temperature,
             max_tokens=_OLLAMA_MAX_TOKENS,
         )
 
@@ -172,6 +206,24 @@ def get_small() -> BaseChatModel:
     if _small is None:
         _small = _resolve_provider().small()
     return _small
+
+
+def get_persona_model(temperature: float) -> BaseChatModel:
+    """Build a large-tier chat model at a persona-generation ``temperature`` (spec 034).
+
+    Persona generation (spec 016/031) used the cached gameplay ``get_large()``;
+    spec 034 runs it HOTTER for more creative latitude. This routes through the
+    active provider (``_resolve_provider`` — so a test override on
+    ``_active_provider`` is honoured) and builds a FRESH client at ``temperature``
+    via :meth:`LLMProvider.large_at_temperature`.
+
+    Deliberately NOT module-cached: the gameplay ``_large`` singleton stays at its
+    0.7 temperature, and persona generation is a one-time setup cost (a handful of
+    calls), so a fresh instance per persona-gen pass is cheap and keeps the two
+    temperatures cleanly separated. The same large-tier MODEL — variation comes
+    from temperature + prompts, never a third model (architecture §4).
+    """
+    return _resolve_provider().large_at_temperature(temperature)
 
 
 def get_embeddings() -> Embeddings:

@@ -85,6 +85,45 @@ PERSONA_DISTINCT_FROM_TEMPLATE = """You are creating one of several characters f
 Avoid reusing their personality, manner, or backstory.
 """
 
+# Spec 034 (Diversified Persona Generation). The persona model is strongly
+# mode-seeking — left to itself it keeps reaching for the same calm, observant
+# townsperson. This pool is a BROAD, deliberately-wider-than-the-model's-default
+# range of temperaments; ``generate_personas`` draws one per AI player WITHOUT
+# replacement within a game (via the module-global ``random``) and steers that
+# character toward it, so the cast starts spread across the range instead of
+# converging on one mode. The draw is appended as a SEPARATE ``HumanMessage``
+# built from ``PERSONA_ARCHETYPE_HINT_TEMPLATE`` (NOT a ``{...}`` slot on the
+# persona user templates — the same anti-``KeyError`` discipline as the spec-031
+# distinct-from block), so every existing ``.format(name=...)`` call site is
+# untouched. The hint is a STEER, not a straitjacket — a temperament to lean
+# toward, layered over the role-tailored cover/honest guidance. It carries no
+# allegiance signal (it colours manner/temperament only), so it is safe for both
+# a Citizen's honest self and a Mafioso's public cover.
+PERSONA_ARCHETYPES: tuple[str, ...] = (
+    "vigilant and watchful",
+    "brash and loud",
+    "dry and sardonic",
+    "warm and effusive",
+    "anxious and second-guessing",
+    "eccentric and unpredictable",
+    "gruff and blunt",
+    "earnest and sincere",
+    "aloof and detached",
+    "playful and teasing",
+    "stern and commanding",
+    "dreamy and distractible",
+    "shrewd and calculating",
+    "cheerful and irrepressible",
+    "weary and world-worn",
+    "prickly and easily-offended",
+)
+
+PERSONA_ARCHETYPE_HINT_TEMPLATE = (
+    "Lean toward a {archetype} temperament — distinct from the other characters. "
+    "Let that colour their personality and manner; do not make them the usual "
+    "calm, observant townsperson."
+)
+
 MAFIA_TEAMMATE_INTRO_TEMPLATE = (
     "Your Mafia teammates are: {names}. You work together to eliminate "
     "Law-abiding Citizens. During the Night, you point at one target; "
