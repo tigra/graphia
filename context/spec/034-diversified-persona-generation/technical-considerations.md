@@ -6,7 +6,7 @@ HOW the randomization seams + the lexical collision/regeneration loop are built,
 # Technical Specification: Diversified Persona Generation (Randomized + Regenerate-on-Collision)
 
 - **Functional Specification:** `./functional-spec.md`
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 > Builds on **spec 031** (`generate_personas` / `_generate_one_persona` / `_distinct_from_message` / `PERSONA_DISTINCT_FROM_TEMPLATE` / `_fallback_persona` in `nodes/setup.py` + `prompts.py`) and reuses the **spec-009 lexical machinery** (`_spec009_mask_names` / `_spec009_normalize` + `difflib`) already used by `score_persona_near_dup`. **Gameplay-influencing → behind a default-on flag (ADR 011).** No new dependency (lexical, free, local).
