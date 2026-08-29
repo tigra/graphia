@@ -29,7 +29,11 @@ _DEFAULT_NOVA_SMALL_MODEL = "amazon.nova-lite-v1:0"
 # path on Bedrock — this ``us.`` profile routes non-deterministically across
 # us-east-1 / us-east-2 / us-west-2 (ADR-012 §5 verified constraint), so the
 # exact id / profile availability is confirmed by the live spike
-# (Slice 1 task 3 / Slice 3), not asserted on faith. Both tiers default to
+# (Slice 1 task 3 / Slice 3), not asserted on faith. VERIFIED 2026-08-29 by
+# ``make claude-spike`` against live Bedrock in us-east-1: the id resolves, the
+# preflight passes, and all four flat schemas (Roster / Pointing / Ballot /
+# DayAction) round-trip on Claude-via-Converse. The DEPLOYED-runtime path
+# remains unverified (Slice 3). Both tiers default to
 # Haiku 4.5 (ADR-012 Alternative 1); the small tier is overridable to a
 # cheaper id if a future profile wants it.
 _DEFAULT_CLAUDE_LARGE_MODEL = "us.anthropic.claude-haiku-4-5-20251001-v1:0"

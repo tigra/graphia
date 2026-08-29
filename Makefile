@@ -486,6 +486,19 @@ repetition-experiment:
 ollama-smoke:
 	uv run python -m graphia.tools.ollama_smoke $(ARGS)
 
+# Claude verification spike (spec 035, Slice 1): prove the opt-in
+# `bedrock-claude` provider reaches a live Claude model and that Graphia's flat
+# structured-output schemas (Roster / Pointing / Ballot / DayAction) round-trip
+# on Claude-via-Converse. The flat-schema constraint was established against
+# NOVA; this is where it stops being an assumption for Claude. Reaches REAL
+# Bedrock and costs tokens (a handful of tiny calls). Plays no game, writes no
+# ledger record. Needs live creds (AWS_PROFILE via .env, auto-loaded above).
+#
+#   make claude-spike
+#   make claude-spike ARGS="--large-model us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+claude-spike:
+	uv run python -m graphia.tools.claude_spike $(ARGS)
+
 # AI Blunder Tracking (spec 011): play N unattended games against a chosen REAL
 # provider, count self-consistency blunders (self-vote, Mafioso peer-vote,
 # third-person self-talk) plus the spec-009 repetition measure, and append one

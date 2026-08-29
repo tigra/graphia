@@ -8,15 +8,36 @@ Functional spec: `./functional-spec.md` · Technical considerations: `./technica
 
 ---
 
-- [ ] **Slice 1: Select Claude locally and prove the path**
+- [x] **Slice 1: Select Claude locally and prove the path**
   - [x] Minimal provider wiring (tech-spec §2 B): in `src/graphia/config.py` extend the `GRAPHIA_LLM_PROVIDER` parse to accept **`bedrock-claude`** (keep `bedrock`/`ollama`; update the error message) and add per-tier model-id config (`large_model`/`small_model` via `GRAPHIA_LARGE_MODEL`/`GRAPHIA_SMALL_MODEL`) with the **documented Claude Haiku defaults** under `bedrock-claude` (Nova ids stay the `bedrock` defaults). In `src/graphia/llm.py` add a `case "bedrock-claude"` to `_resolve_provider()` returning `ChatBedrockConverse(model=<resolved id>, region_name=config.aws_region, temperature=…)`, factoring the Bedrock construction so Nova + Claude share it (Nova behavior identical). **Verify the exact Claude Haiku Bedrock model id / `us.` inference profile at implementation** — do not hard-code unverified. **[Agent: langgraph-agentic]**
   - [x] Tests (offline, mocked): config parse accepts `bedrock-claude` and resolves the documented default ids (and honors the `GRAPHIA_LARGE_MODEL`/`GRAPHIA_SMALL_MODEL` overrides); `_resolve_provider()` builds Claude-configured `ChatBedrockConverse` instances with **no live call** (assert model ids/region at the boundary); Nova/Ollama resolution is **unchanged** (regression); `safe_llm` keeps the suite off real Bedrock. Full `uv run pytest -q` green. **[Agent: testing]**
-  - [ ] Local verification spike (developer-run, real Bedrock): a `make claude-spike` target that, with `GRAPHIA_LLM_PROVIDER=bedrock-claude` + live creds, calls `get_large()` once and **round-trips one structured output** (e.g. `Ballot`/`DayAction` — confirm the flat schemas round-trip on Claude via Bedrock Converse). Proves the path + the structured-output contract before build-out. _(developer-run; real Bedrock.)_ **[Agent: langgraph-agentic]**
+  - [x] Local verification spike (developer-run, real Bedrock): a `make claude-spike` target that, with `GRAPHIA_LLM_PROVIDER=bedrock-claude` + live creds, calls `get_large()` once and **round-trips one structured output** (e.g. `Ballot`/`DayAction` — confirm the flat schemas round-trip on Claude via Bedrock Converse). Proves the path + the structured-output contract before build-out. _(developer-run; real Bedrock.)_ **[Agent: langgraph-agentic]**
 
-- [ ] **Slice 2: Robust selection — overrides, clear errors, docs**
+- [x] **Slice 2: Robust selection — overrides, clear errors, docs**
   - [x] Clear feedback (tech-spec §2 C): a Claude preflight mirroring `preflight.run_ollama_preflight` — verify credentials / model access / region before games and raise `SystemExit` with **plain-language, actionable** messages (no stack trace) for the missing-or-expired-creds, missing-model-access, and wrong-region cases (map the boto3/Bedrock `AccessDenied`/`UnrecognizedClient`/`ValidationException` families). Mid-game unusable outputs continue via the **existing** retry-then-fallback safety nets (no new mechanism). **[Agent: langgraph-agentic]**
   - [x] Tests (offline, mocked): the preflight maps each representative boto3 error family to its plain message (no stack trace) on a faked client; per-tier overrides honored; switching among the three providers resolves the right instances. Full `uv run pytest -q` green. **[Agent: testing]**
   - [x] Docs: a quickstart (README / docs) for selecting each provider (`GRAPHIA_LLM_PROVIDER` = `bedrock` | `bedrock-claude` | `ollama`), naming the Claude **default model ids** and the per-tier override env vars. **[Agent: langgraph-agentic]**
 
 - [ ] **Slice 3: Deployed-runtime verification (developer-run, live AWS)**
   - [ ] Deployed spike (tech-spec §2 D): with the hosted AgentCore runtime configured for `bedrock-claude`, run a full game on it and confirm from the **runtime's CloudWatch telemetry** that Claude served the calls (not inferred locally); apply any **IAM/model-access (terraform)** change needed for the runtime role to invoke the Claude model. The historically brittle path — proven on the deployment. _(developer-run; live AWS + deployment.)_ **[Agent: terraform-aws]**
+
+---
+
+> **Slice 1 spike result (2026-08-29, `make claude-spike`, live Bedrock, `us-east-1`).** **PASS.**
+>
+> Built the `make claude-spike` target (`src/graphia/tools/claude_spike.py`) and ran it against real Bedrock. It forces `GRAPHIA_LLM_PROVIDER=bedrock-claude` for the process (so it proves the *configured* path, not a hand-built client), runs the Slice-2 Claude preflight, then round-trips every flat schema through `get_large().with_structured_output(...)`:
+>
+> | schema | result | latency | parsed |
+> | --- | --- | --- | --- |
+> | `Ballot` | PASS | 1.01s | `Ballot(yes=True)` |
+> | `DayAction` | PASS | 1.36s | `DayAction(kind='speak', text='…', target_id=None)` |
+> | `Pointing` | PASS | 0.76s | `Pointing(target_id='Dara')` |
+> | `Roster` | PASS | 0.79s | `Roster(names=['Eleanor', 'Marcus', 'Beatrice'])` |
+>
+> **Both open questions are answered.** (1) The **model id / inference profile is real**: `us.anthropic.claude-haiku-4-5-20251001-v1:0` resolves and the preflight reports the model reachable — the `VERIFY-AT-RUNTIME` note in `config.py` is now discharged for the local path (comment updated in place). (2) The **flat-schema contract holds on Claude**: the flatness constraint was established against *Nova* (Bedrock Converse rejecting discriminated unions), and Claude-via-Converse honours the same shapes — including `DayAction`, the one with the mutual-exclusion validator, which returned a well-formed `speak` action with `target_id=None`.
+>
+> Slice 2's preflight was exercised on the live path it was written for, not just against faked boto3 errors.
+>
+> **Still unproven: the deployed runtime (Slice 3).** This spike is local-only. The historically brittle part — whether the hosted AgentCore runtime's own role can invoke the Claude model, confirmed from its CloudWatch telemetry rather than inferred locally — is untouched by this result.
+>
+> No test was added for the spike harness itself, matching the `ollama_smoke` precedent (developer-run real-model harnesses live outside the mocked suite).
