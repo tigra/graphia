@@ -1,7 +1,7 @@
 # Functional Specification: Semantic (Meaning-Based) Persona Similarity
 
 - **Roadmap Item:** Eval-measurement — the **"lexical → semantic" measurement** backlog item graduating to a spec; the meaning-based counterpart to the *text-level* persona measures (**spec 031** near-duplicate count, **spec 032** average + peak). Relates to the **persona-realism** thread. Not a distinct roadmap phase item.
-- **Status:** Draft
+- **Status:** Completed *(verified 2026-08-29 — all 13 acceptance criteria met; suite green at 1152 passed / 1 skipped; effort-not-results hypothesis logged CONFIRMED, [CR 005](../../change-requests/005-ai-behaviour-acceptance-effort-not-results.md))*
 - **Author:** Alexey Tigarev
 
 > **Shared surface with spec 032 (in flight):** 032 and 033 both add a persona-similarity measure, a ledger-viewer column, and a backfill of transcript-preserved runs. They are complementary, not conflicting, but they touch the same areas — implement with that in mind (sequentially, or as one coordinated change), not as blind parallel edits.
@@ -27,39 +27,39 @@ It **complements** (does not replace) the text-level measures; all are kept and 
 - **Each measured run records a meaning-based persona similarity — both the average and the peak.**
   - Every run records two numbers capturing how alike its AI characters are in **personality / temperament / kind of person** — judged by meaning, not wording: the **average** meaning-similarity across all pairs and the **peak** (most-similar pair) — alongside the existing text-level measures, mirroring spec 032's lexical average + peak.
   - **Acceptance Criteria:**
-    - [ ] Given a completed measured run with at least two AI characters, when its recorded result is read, then it includes the meaning-based **average and peak** persona-similarity, alongside the text-level measures (spec 031 / 032).
-    - [ ] Given a run with fewer than two AI characters — no pair to compare — when its result is read, then the meaning-based average and peak are reported as not-applicable (blank), not a misleading zero.
+    - [x] Given a completed measured run with at least two AI characters, when its recorded result is read, then it includes the meaning-based **average and peak** persona-similarity, alongside the text-level measures (spec 031 / 032).
+    - [x] Given a run with fewer than two AI characters — no pair to compare — when its result is read, then the meaning-based average and peak are reported as not-applicable (blank), not a misleading zero.
 
 - **The measure captures sameness the word-level measures miss (validated, effort-not-results).**
   - The point of the measure is to rate two differently-worded but same-temperament characters as similar. Whether it does — rating archetype-samey casts higher than the word-level measures do — is measured against the recorded history, not assumed.
   - **Acceptance Criteria:**
-    - [ ] Given a meaning-based similarity recorded for differently-worded but same-temperament characters, when it is read, then it is **high** (they are judged alike), whereas the word-level average for the same characters is low.
-    - [ ] Given a measured set of runs, when the meaning-based similarity is compared with the word-level average on the same runs, then the comparison is recorded and the hypothesis — *the meaning-based measure rates archetype-samey casts higher than the word-level measure does* — is logged **confirmed or refuted**, either being a complete result.
+    - [x] Given a meaning-based similarity recorded for differently-worded but same-temperament characters, when it is read, then it is **high** (they are judged alike), whereas the word-level average for the same characters is low.
+    - [x] Given a measured set of runs, when the meaning-based similarity is compared with the word-level average on the same runs, then the comparison is recorded and the hypothesis — *the meaning-based measure rates archetype-samey casts higher than the word-level measure does* — is logged **confirmed or refuted**, either being a complete result.
 
 - **It is model-dependent — it relies on a meaning model, so it is not free, but it is reproducible.**
   - Unlike the instant, fully-local text-level measures, this one needs a model to assess meaning, so producing it takes real compute and the cloud access/credentials that model runs on — on every run, including otherwise-local ones. But for the same characters it always yields the **same** number (it is not a varying free-form judgment); this reproducibility, plus the compute/cloud cost, is the accepted trade for measuring meaning.
   - **Acceptance Criteria:**
-    - [ ] Given the same characters, when the meaning-based measure is computed twice, then it yields the same number (it is reproducible, not a varying judgment).
-    - [ ] Given the meaning-based measure beside the text-level measures, when they are presented, then it is identifiable as the model-computed semantic measure, distinct from the exact word-level counts.
+    - [x] Given the same characters, when the meaning-based measure is computed twice, then it yields the same number (it is reproducible, not a varying judgment).
+    - [x] Given the meaning-based measure beside the text-level measures, when they are presented, then it is identifiable as the model-computed semantic measure, distinct from the exact word-level counts.
 
 - **It is visible in the ledger viewer.**
   - The meaning-based similarity appears in the viewer's run list and in a run's detail view, with its own label, distinct from the text-level measures. Runs that lack it render blank rather than erroring.
   - **Acceptance Criteria:**
-    - [ ] Given the ledger viewer, when the reviewer reads a run that has it, then the meaning-based similarity is shown with its own distinct label, separate from the text-level measures.
-    - [ ] Given a mix of runs where some lack it, when the reviewer scrolls the list, then those rows render blank in that column without error and the layout stays readable.
+    - [x] Given the ledger viewer, when the reviewer reads a run that has it, then the meaning-based similarity is shown with its own distinct label, separate from the text-level measures.
+    - [x] Given a mix of runs where some lack it, when the reviewer scrolls the list, then those rows render blank in that column without error and the layout stays readable.
 
 - **Past transcript-preserved runs are backfilled.**
   - Runs whose complete game transcripts were preserved are filled in with the meaning-based similarity (computed from those preserved characters), so it is comparable across the recorded history. Runs without preserved transcripts are left without it.
   - **Acceptance Criteria:**
-    - [ ] Given a past run whose transcripts were preserved, when the ledger is read after this change, then that run shows a meaning-based similarity computed from its preserved characters.
-    - [ ] Given a past run with no preserved transcripts, when the ledger is read, then it simply shows nothing for this measure (blank), without error.
-    - [ ] Given the backfill, when it runs, then it only adds this measure to the eligible records and changes nothing else.
+    - [x] Given a past run whose transcripts were preserved, when the ledger is read after this change, then that run shows a meaning-based similarity computed from its preserved characters.
+    - [x] Given a past run with no preserved transcripts, when the ledger is read, then it simply shows nothing for this measure (blank), without error.
+    - [x] Given the backfill, when it runs, then it only adds this measure to the eligible records and changes nothing else.
 
 - **Complements the text-level measures — pure measurement, no gameplay change.**
   - All the spec-031 / spec-032 measures remain; this is added beside them. Recording and displaying it changes nothing about how a game plays, the characters generated, or any other recorded value.
   - **Acceptance Criteria:**
-    - [ ] Given any run that records persona measures, when it is read, then the text-level measures are all still present and the meaning-based one is added beside them.
-    - [ ] Given the same games, when they are played with and without this measure recorded, then the game outcomes themselves are identical — only the recorded result gains the new number.
+    - [x] Given any run that records persona measures, when it is read, then the text-level measures are all still present and the meaning-based one is added beside them.
+    - [x] Given the same games, when they are played with and without this measure recorded, then the game outcomes themselves are identical — only the recorded result gains the new number.
 
 ---
 

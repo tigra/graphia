@@ -6,7 +6,7 @@ HOW the Bedrock-embedding cosine metric + its mocking + backfill are built. Buil
 # Technical Specification: Semantic (Meaning-Based) Persona Similarity
 
 - **Functional Specification:** `./functional-spec.md`
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 > **Builds on spec 032.** 032 introduces the **value-type metric shape** (`{value, denominator}`, no rate/CI), the **value-type viewer rendering**, and the **transcript backfill harness**. 033 reuses all three and adds only the semantic scorer + its model wiring. Implement after 032.
