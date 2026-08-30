@@ -180,7 +180,7 @@ def test_isolate_cloud_stores_is_idempotent_on_a_clean_env() -> None:
 
 
 @pytest.mark.parametrize("provider", PROVIDERS, ids=list(PROVIDERS))
-def test_pre_run_setup_isolates_and_forces_provider_for_both_providers(
+def test_pre_run_setup_isolates_and_forces_provider_for_every_provider(
     monkeypatch: pytest.MonkeyPatch, provider: str
 ) -> None:
     """Driving ``main`` to the pre-game setup isolates + forces the provider.
@@ -214,6 +214,11 @@ def test_pre_run_setup_isolates_and_forces_provider_for_both_providers(
     monkeypatch.setattr("graphia.config.load_config", lambda: object())
     # The ollama branch imports run_ollama_preflight from graphia.preflight.
     monkeypatch.setattr("graphia.preflight.run_ollama_preflight", lambda cfg: None)
+    # Spec 035: the bedrock-claude branch likewise boots a preflight. This test
+    # is about env isolation + provider forcing, not preflight behaviour (that
+    # has its own tests below), so stub it out the same way — otherwise the
+    # stubbed bare-object config trips its real config attribute reads.
+    monkeypatch.setattr("graphia.preflight.run_claude_preflight", lambda cfg: None)
 
     rc = main(["--provider", provider, "--games", "1"])
 
@@ -328,9 +333,101 @@ def test_bedrock_provider_does_not_run_the_ollama_preflight(
 
 
 def test_invalid_provider_is_rejected_by_argparse() -> None:
-    """Only the two real providers are accepted (argparse ``choices``)."""
+    """Only the three real providers are accepted (argparse ``choices``)."""
     with pytest.raises(SystemExit):
         main(["--provider", "openai"])
+
+
+# ---------------------------------------------------------------------------
+# Spec 035: the ``bedrock-claude`` arm — selectable, and preflighted like the
+# game boots, so an unreachable Claude stops the run BEFORE burning tokens on
+# game 1 rather than failing partway through a paid batch.
+# ---------------------------------------------------------------------------
+
+
+def test_bedrock_claude_is_an_accepted_provider() -> None:
+    """``bedrock-claude`` is in the provider vocabulary (spec 035)."""
+    assert "bedrock-claude" in PROVIDERS
+
+
+def test_bedrock_claude_runs_the_claude_preflight_before_any_game(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The Claude arm preflights before the first game, and never plays if it fails."""
+    monkeypatch.setattr("graphia.config.load_config", lambda: object())
+
+    calls: list[str] = []
+
+    def _fake_preflight(cfg: object) -> None:
+        calls.append("preflight")
+
+    def _fake_run_eval(config: object, args: argparse.Namespace) -> EvalResult:
+        calls.append("run_eval")
+        return EvalResult(provider=args.provider)
+
+    monkeypatch.setattr("graphia.preflight.run_claude_preflight", _fake_preflight)
+    monkeypatch.setattr(blunder_eval, "run_eval", _fake_run_eval)
+
+    assert main(["--provider", "bedrock-claude", "--games", "1"]) == 0
+    assert calls == ["preflight", "run_eval"], (
+        "the Claude preflight must run, and must run BEFORE any game is played"
+    )
+
+
+def test_bedrock_claude_preflight_failure_stops_before_playing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An unreachable Claude aborts the run without playing a (paid) game."""
+    monkeypatch.setattr("graphia.config.load_config", lambda: object())
+
+    def _unreachable(cfg: object) -> None:
+        raise SystemExit("Claude is unreachable: refresh your credentials.")
+
+    def _never(config: object, args: argparse.Namespace) -> EvalResult:
+        raise AssertionError("no game may be played when the preflight fails")
+
+    monkeypatch.setattr("graphia.preflight.run_claude_preflight", _unreachable)
+    monkeypatch.setattr(blunder_eval, "run_eval", _never)
+
+    with pytest.raises(SystemExit):
+        main(["--provider", "bedrock-claude", "--games", "1"])
+
+
+def test_bedrock_claude_does_not_run_the_ollama_preflight(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The Claude arm must never invoke the Ollama preflight."""
+    monkeypatch.setattr("graphia.config.load_config", lambda: object())
+    monkeypatch.setattr(
+        blunder_eval,
+        "run_eval",
+        lambda config, args: EvalResult(provider="bedrock-claude"),
+    )
+    monkeypatch.setattr("graphia.preflight.run_claude_preflight", lambda cfg: None)
+
+    def _boom(cfg: object) -> None:
+        raise AssertionError("bedrock-claude must not run the Ollama preflight")
+
+    monkeypatch.setattr("graphia.preflight.run_ollama_preflight", _boom)
+
+    assert main(["--provider", "bedrock-claude", "--games", "1"]) == 0
+
+
+def test_nova_bedrock_does_not_run_the_claude_preflight(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Regression: Nova keeps its existing no-preflight story (spec 035 §2.6)."""
+    monkeypatch.setattr("graphia.config.load_config", lambda: object())
+    monkeypatch.setattr(
+        blunder_eval, "run_eval", lambda config, args: EvalResult(provider="bedrock")
+    )
+
+    def _boom(cfg: object) -> None:
+        raise AssertionError("the Nova arm must not run the Claude preflight")
+
+    monkeypatch.setattr("graphia.preflight.run_claude_preflight", _boom)
+
+    assert main(["--provider", "bedrock", "--games", "1"]) == 0
 
 
 # ===========================================================================

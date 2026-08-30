@@ -345,9 +345,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument(
         "--provider",
-        choices=("ollama", "bedrock"),
+        choices=("ollama", "bedrock", "bedrock-claude"),
         default="ollama",
-        help="LLM provider for persona generation (ollama is local/free).",
+        help=(
+            "LLM provider for persona generation: 'ollama' (local/free), "
+            "'bedrock' (Amazon Nova), or 'bedrock-claude' (Claude Haiku 4.5, "
+            "spec 035). Cloud providers cost tokens."
+        ),
     )
     ap.add_argument(
         "--rosters",

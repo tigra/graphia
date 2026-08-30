@@ -238,3 +238,29 @@ def test_main_rejects_zero_rosters(env: Path) -> None:
     """``--rosters 0`` is rejected before any generation."""
     rc = main(["--provider", "bedrock", "--rosters", "0"])
     assert rc == 2
+
+
+def test_bedrock_claude_is_an_accepted_bench_provider(
+    env: Path,
+    fake_small,
+    fake_large,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Spec 035: the bench accepts ``bedrock-claude`` alongside ollama/bedrock.
+
+    Driven with the ``safe_llm`` fakes, so it reaches no real model — this locks
+    the provider *vocabulary*, not a live Claude call.
+    """
+    fake_small(outputs=_rosters(2))
+    fake_large(personas=_DISTINCT_PERSONAS)
+
+    rc = main(["--provider", "bedrock-claude", "--rosters", "2", "--diversity", "on"])
+
+    assert rc == 0
+    assert "BATCH SUMMARY" in capsys.readouterr().out
+
+
+def test_bench_rejects_an_unknown_provider(env: Path) -> None:
+    """Only the three real providers are accepted (argparse ``choices``)."""
+    with pytest.raises(SystemExit):
+        main(["--provider", "openai", "--rosters", "1"])

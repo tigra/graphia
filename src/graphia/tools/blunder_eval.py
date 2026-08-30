@@ -227,8 +227,12 @@ TRANSCRIPTS_ROOT = LEDGER_PATH.parent / "transcripts"
 
 # Provider literals kept as a module constant so the CLI choices and any later
 # type narrowing share one source of truth.
-type Provider = Literal["ollama", "bedrock"]
-PROVIDERS: tuple[Provider, ...] = ("ollama", "bedrock")
+type Provider = Literal["ollama", "bedrock", "bedrock-claude"]
+# Spec 035: ``bedrock-claude`` (Claude Haiku 4.5, ADR-012) joins the two
+# original arms. Records stay comparable WITHIN a provider, so a third value
+# is exactly what the ledger contract anticipates — never compare a
+# bedrock-claude record against a bedrock one as if they were the same run.
+PROVIDERS: tuple[Provider, ...] = ("ollama", "bedrock", "bedrock-claude")
 
 # Cloud-store env vars an eval run must never touch. A make-included / wire-env'd
 # ``.env`` carries a deployed stack's AgentCore Memory / Gateway / career-stats
@@ -3239,7 +3243,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--provider",
         required=True,
         choices=PROVIDERS,
-        help="which real provider to measure: 'ollama' (local) or 'bedrock' (cloud Nova)",
+        help=(
+            "which real provider to measure: 'ollama' (local, free), "
+            "'bedrock' (cloud Amazon Nova), or 'bedrock-claude' (cloud Claude "
+            "Haiku 4.5 — costs more per token than Nova)"
+        ),
     )
     ap.add_argument(
         "--games",
@@ -3384,6 +3392,15 @@ def main(argv: list[str] | None = None) -> int:
         from graphia.preflight import run_ollama_preflight
 
         run_ollama_preflight(config)
+    elif args.provider == "bedrock-claude":
+        # Spec 035: the same fail-fast Claude preflight the game boots with, so
+        # an unreachable model (expired creds / missing model access / wrong
+        # region) stops the run with a plain message BEFORE burning tokens on
+        # game 1 — rather than failing partway through a paid batch. Nova
+        # (``bedrock``) keeps its existing no-preflight story unchanged.
+        from graphia.preflight import run_claude_preflight
+
+        run_claude_preflight(config)
 
     print(
         f"Blunder-eval: provider={args.provider}, {args.games} game(s)"
