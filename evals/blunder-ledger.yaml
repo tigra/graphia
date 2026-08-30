@@ -1806,3 +1806,115 @@ metrics:
     peak: 0.8533427078636691
     denominator: 420
 notes: 'spec031 AFTER + post-030 batch (nova @b6d04a8): 031 persona-after + closes 024/025/026/028/030 effort-not-results; temp ledger, merged post-run'
+---
+run:
+  date: '2026-08-30'
+  duration_seconds: 1742.386
+  metrics_version: 1
+  transcript_dir: '2026-08-30T12-39-43'
+code:
+  commit: '21194cea6828431d6664287c5f81a8dde48c98c7'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'bedrock-claude'
+  large_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  small_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+settings:
+  large_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  small_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  base_url: null
+  games: 10
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  duration_seconds: 1742.386
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 2
+    rate: 0.2
+    ci_low: 0.056680947980693314
+    ci_high: 0.5098431532792765
+  mafia:
+    wins: 8
+    rate: 0.8
+    ci_low: 0.49015684672072335
+    ci_high: 0.9433190520193067
+  scripted_side:
+    side: 'law_abiding'
+    wins: 2
+    rate: 0.2
+    ci_low: 0.056680947980693314
+    ci_high: 0.5098431532792765
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 29
+    mafia: 2
+  by_day:
+    day_1: 18
+    day_2: 7
+    day_3: 6
+metrics:
+  repetition:
+    rate: 0.0
+    count: 0
+    denominator: 234
+    ci_low: 0.0
+    ci_high: 0.01615192632407451
+  third_person_self_talk:
+    rate: 0.008547008547008548
+    count: 2
+    denominator: 234
+    ci_low: 0.002346986722133978
+    ci_high: 0.030622855391272595
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 21
+    ci_low: 0.0
+    ci_high: 0.15464382326420195
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 27
+    ci_low: 0.0
+    ci_high: 0.12455903714463581
+  peer_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 2
+    ci_low: 0.0
+    ci_high: 0.6576280471103807
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 14
+    ci_low: 0.0
+    ci_high: 0.21531701192718142
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 150
+    ci_low: 0.0
+    ci_high: 0.02497113914571871
+  persona_lex_mean:
+    denominator: 150
+  persona_lex_peak:
+    denominator: 150
+  persona_sem_mean:
+    denominator: 150
+  persona_sem_peak:
+    denominator: 150
+notes: 'Three-way provider baseline 2026-08-30: Claude Haiku 4.5 (spec 035). First measured Claude run; compare only against same-provider records.'
