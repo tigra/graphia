@@ -21,6 +21,10 @@ Functional spec: `./functional-spec.md` · Technical considerations: `./technica
 - [x] **Slice 3: Deployed-runtime verification (developer-run, live AWS)**
   - [x] Deployed spike (tech-spec §2 D): with the hosted AgentCore runtime configured for `bedrock-claude`, run a full game on it and confirm from the **runtime's CloudWatch telemetry** that Claude served the calls (not inferred locally); apply any **IAM/model-access (terraform)** change needed for the runtime role to invoke the Claude model. The historically brittle path — proven on the deployment. _(developer-run; live AWS + deployment.)_ **[Agent: terraform-aws]**
 
+- [x] **Slice 4: Follow-through discovered at verification (2026-08-30)**
+  - [x] Eval harnesses accept the Claude provider: add `bedrock-claude` to the provider vocabulary of `blunder_eval` (`Provider` / `PROVIDERS`) and `persona_bench` (argparse `choices`), so a measured run can be taken on Claude. Also wire `run_claude_preflight` into the eval boot so an unreachable model stops the run with a plain message **before** game 1, rather than failing partway through a paid batch; Nova keeps its existing no-preflight story. Tests: both CLIs accept the arm; the preflight runs, runs before any game, and aborts without playing when it fails; the Claude arm never runs the Ollama preflight and Nova never runs the Claude one. **[Agent: ai-quality-eval]**
+  - [x] Local runs leave proof of the provider: stamp the `app_start` trace record with provider, both resolved tier model ids, and the endpoint locating them (AWS region for the Bedrock arms, base URL for Ollama, the irrelevant one null), plus `remote_mode`. Add `config.resolved_tier_models()` as the single answer to "which model is in play?". Credentials and the AWS profile name are deliberately excluded, with a test that plants both and asserts neither reaches the record. **[Agent: python-backend]**
+
 ---
 
 > **Slice 1 spike result (2026-08-29, `make claude-spike`, live Bedrock, `us-east-1`).** **PASS.**
@@ -73,3 +77,13 @@ Functional spec: `./functional-spec.md` · Technical considerations: `./technica
 > *(Aside: `ValidationException — on-demand throughput isn't supported` entries for the bare, un-prefixed `anthropic.claude-haiku-4-5-…` id appear in the append-mode log, but date from **2026-04-23 and 2026-05-13** — earlier Claude experiments, and precisely the constraint ADR-012 later documented. Nothing from today.)*
 >
 > **Observability gap worth noting:** because the local trace carries no model identity, confirming which provider served a local game requires an out-of-band CloudWatch query. A provider/model echo at boot in the trace log would make local runs self-evidencing, the way the deployed runtime already is.
+
+> **Slice 4 rationale — why tasks were added after the spec was verified (2026-08-30).**
+>
+> **A promise the acceptance criteria never tested.** This spec's rationale commits to Claude for **evaluations** in four separate places — the overview ("run games and evaluations on a stronger, near-frontier model"), the scope line ("both for local play/evaluation"), the desired outcome ("play *or evaluate* a full game on it"), and §2.1's own user story ("so that games **and evals** run on a stronger cloud model without any code change"). Yet no slice built it, **no acceptance criterion tested it**, and verification consequently passed 19/19 with the capability absent: `blunder_eval.PROVIDERS` and `persona_bench`'s argparse `choices` were both still `("ollama", "bedrock")`.
+>
+> It was worse than merely missing. Both harnesses **force** `GRAPHIA_LLM_PROVIDER` from `--provider`, while `BedrockProvider` resolves its model from `config.large_model` — which honours `GRAPHIA_LARGE_MODEL`. So `--provider bedrock` with a Claude id in the environment really invokes Claude while the ledger records `provider: bedrock`. A mislabelled record on the field runs are grouped and compared by is a worse failure than being blocked outright, because it looks plausible. §2.1's missing acceptance criterion (added and ticked 2026-08-30) closes the promise/criteria gap.
+>
+> **An observability gap the verification itself exposed.** Confirming §2.2's local-play criterion was only possible via an out-of-band CloudWatch `Invocations` query, because the local trace recorded graph-stream deltas and nothing about the model — while the deployed Runtime had been self-evidencing from its own logs all along. A local game that cannot say which model played it makes every future provider comparison unfalsifiable from the repo alone, so the boot stamp was added rather than left as a note.
+>
+> Neither item reopens the verified result: all 19 original criteria genuinely passed on the evidence recorded above. Slice 4 records work performed **after** that verification, and the added §2.1 criterion is ticked against the capability as it now exists.

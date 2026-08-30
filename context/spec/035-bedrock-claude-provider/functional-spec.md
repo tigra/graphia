@@ -1,7 +1,7 @@
 # Functional Specification: Bedrock Claude (Haiku) Provider
 
 - **Roadmap Item:** New **Phase 4 — AI Provider Flexibility** sub-item: *Bedrock Claude (Haiku) Provider*. Not yet listed on the roadmap (Phase 4's existing sub-items are complete); backed by **ADR-012** (Bedrock Model Selection — Haiku 4.5 gameplay profile + Opus 4.8 eval judge). A roadmap tick should be added as a follow-up.
-- **Status:** Completed *(verified 2026-08-30 — all 19 acceptance criteria met; suite green at 1160 passed / 1 skipped; Claude confirmed on BOTH paths from telemetry: deployed runtime via its own CloudWatch logs, local game via Bedrock `Invocations` metrics)*
+- **Status:** Completed *(verified 2026-08-30 — all 20 acceptance criteria met (19 at first verification; a 20th added 2026-08-30 to cover the eval promise the original criteria missed — see tasks.md Slice 4); suite green at 1160 passed / 1 skipped; Claude confirmed on BOTH paths from telemetry: deployed runtime via its own CloudWatch logs, local game via Bedrock `Invocations` metrics)*
 - **Author:** Alexey Tigarev
 
 ---
@@ -29,6 +29,7 @@ Claude is offered **both for local play/evaluation and for the hosted (deployed)
     - [x] The configuration offers **Claude (Haiku)** as a provider option alongside the existing **Amazon Nova** (cloud default) and **local Ollama** choices, selected before launch in the same place the provider is already chosen.
     - [x] Given Claude is selected with working cloud credentials, when the operator launches, then the game plays normally using Claude for all AI behavior.
     - [x] Given nothing is configured for the provider, when the operator launches, then behavior is exactly as today (Amazon Nova) — existing users are unaffected.
+    - [x] Given Claude is selected, when the operator runs a **measured evaluation**, then the evaluation runs on Claude and its recorded result names Claude as the provider — never a different provider's label. *(Added 2026-08-30: the rationale and this user story both promise evals on Claude, but no criterion tested it, so the original verification passed while the eval harnesses still rejected the provider. See tasks.md Slice 4.)*
 
 ### 2.2 Works both locally and on the deployed runtime
 
