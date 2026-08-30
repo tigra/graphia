@@ -37,7 +37,17 @@ TF_VARS       = -var environment=$(ENVIRONMENT) -var owner=$(OWNER) -var ecr_for
 # feed it back via `make tf-apply STATS_STRATEGY_ID=<id>` to plumb it to the
 # Runtime as GRAPHIA_STATS_STRATEGY_ID. See infra/terraform/RESEARCH.md §14.
 STATS_STRATEGY_ID ?=
-TF_APPLY_VARS = $(TF_VARS) -var image_tag=$(TAG) -var stats_strategy_id=$(STATS_STRATEGY_ID)
+# LLM_PROVIDER: which provider the DEPLOYED Runtime uses (spec 035).
+# `bedrock` (Amazon Nova) is the default baseline; `bedrock-claude` is the
+# opt-in Claude Haiku 4.5 profile (ADR-012), which ALSO widens the Runtime
+# role's Bedrock invoke scope to the three-region `us.` inference-profile
+# surface. Set it on any plan/apply/deploy:
+#   make tf-plan LLM_PROVIDER=bedrock-claude
+#   make redeploy LLM_PROVIDER=bedrock-claude
+# NOTE: it must be passed on EVERY apply — omitting it reverts the Runtime to
+# Nova on the next apply, silently.
+LLM_PROVIDER ?= bedrock
+TF_APPLY_VARS = $(TF_VARS) -var image_tag=$(TAG) -var stats_strategy_id=$(STATS_STRATEGY_ID) -var llm_provider=$(LLM_PROVIDER)
 
 LAMBDA_DIR    = infra/lambda
 LAMBDA_BUILD  = $(LAMBDA_DIR)/.build

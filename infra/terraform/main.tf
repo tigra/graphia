@@ -523,6 +523,19 @@ resource "aws_bedrockagentcore_agent_runtime" "this" {
     GRAPHIA_GATEWAY_ID        = aws_bedrockagentcore_gateway.this.gateway_id
     GRAPHIA_STATS_STRATEGY_ID = var.stats_strategy_id
     GRAPHIA_STATS_NAMESPACE   = local.stats_namespace
+
+    # Spec 035: which provider the Runtime resolves at startup. `bedrock`
+    # (Nova) is the default baseline; `bedrock-claude` is opt-in and also
+    # widens the role's invoke scope (locals.tf). Without this the Runtime
+    # silently falls back to Nova — the reason a 2026-08-30 remote game
+    # "verified" nothing about Claude.
+    GRAPHIA_LLM_PROVIDER = var.llm_provider
+
+    # Pin both tiers to the Claude id under the Claude profile so the IAM
+    # scoping above and the model actually invoked cannot drift apart. Empty
+    # under Nova, where the app's own per-provider defaults apply.
+    GRAPHIA_LARGE_MODEL = var.llm_provider == "bedrock-claude" ? var.claude_model_id : ""
+    GRAPHIA_SMALL_MODEL = var.llm_provider == "bedrock-claude" ? var.claude_model_id : ""
   }
 
   # Ensure the inline policy is in place before the Runtime is created;

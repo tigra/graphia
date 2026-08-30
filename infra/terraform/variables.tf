@@ -37,3 +37,20 @@ variable "stats_strategy_id" {
   type        = string
   default     = ""
 }
+
+variable "llm_provider" {
+  description = "Which LLM provider the deployed Runtime uses (spec 035). `bedrock` = Amazon Nova (Pro + Lite), the default baseline. `bedrock-claude` = the Claude Haiku 4.5 profile (ADR-012), opt-in. Selecting `bedrock-claude` ALSO widens the Runtime role's Bedrock invoke permissions to the three-region `us.` inference-profile surface (see locals.tf) — a Nova deploy keeps its tight single-region scope. `ollama` is local-only and is rejected here."
+  type        = string
+  default     = "bedrock"
+
+  validation {
+    condition     = contains(["bedrock", "bedrock-claude"], var.llm_provider)
+    error_message = "llm_provider must be `bedrock` (Nova, default) or `bedrock-claude`. The `ollama` provider is local-mode only and cannot run in the deployed Runtime."
+  }
+}
+
+variable "claude_model_id" {
+  description = "Bedrock model id for the `bedrock-claude` provider, used both as the Runtime's model setting and to scope its IAM invoke permissions. Defaults to the Claude Haiku 4.5 `us.` system inference profile (ADR-012), which is what the local `make claude-spike` verified on 2026-08-29. Change this and the IAM scoping follows automatically."
+  type        = string
+  default     = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+}

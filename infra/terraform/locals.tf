@@ -89,7 +89,42 @@ locals {
   # constraint but pulls in cross-region routing (us-east-2, us-west-2)
   # where the role can't auto-subscribe via Marketplace. Nova models
   # support direct on-demand in us-east-1 today, no profile required.
-  bedrock_invoke_resources = [
-    "arn:aws:bedrock:${var.region}::foundation-model/amazon.nova-*",
-  ]
+  #
+  # Spec 035 / ADR-012 — the `bedrock-claude` opt-in reopens exactly that
+  # cross-region friction, and ADR-012's 2026-06-23 probe established there is
+  # NO single-region escape for Claude 4.x: direct on-demand invoke returns
+  # `400 — on-demand throughput isn't supported`, and an application inference
+  # profile cannot pin to one region (`copyFrom` the foundation-model ARN is
+  # rejected; `copyFrom` the `us.` system profile inherits all three member
+  # regions). So the Claude arm must permit the INFERENCE-PROFILE arn (account
+  # -scoped, in this region) PLUS the underlying FOUNDATION-MODEL arn in all
+  # three member regions (us-east-1 / us-east-2 / us-west-2, region-scoped and
+  # account-less) — with Marketplace model access enabled in each, which is an
+  # account action Terraform cannot perform.
+  #
+  # This is deliberately CONDITIONAL: a Nova deploy keeps the tight
+  # single-region scope above and never grants the broad Claude surface.
+
+  # The `us.`-prefixed profile id maps to a bare foundation-model id by
+  # dropping the routing prefix (e.g. `us.anthropic.claude-haiku-4-5-…` ->
+  # `anthropic.claude-haiku-4-5-…`).
+  claude_foundation_model_id = replace(var.claude_model_id, "/^us\\./", "")
+
+  # The three regions the `us.` system inference profile routes across.
+  claude_profile_regions = ["us-east-1", "us-east-2", "us-west-2"]
+
+  bedrock_invoke_resources = concat(
+    [
+      "arn:aws:bedrock:${var.region}::foundation-model/amazon.nova-*",
+    ],
+    var.llm_provider == "bedrock-claude" ? concat(
+      [
+        "arn:aws:bedrock:${var.region}:${data.aws_caller_identity.current.account_id}:inference-profile/${var.claude_model_id}",
+      ],
+      [
+        for r in local.claude_profile_regions :
+        "arn:aws:bedrock:${r}::foundation-model/${local.claude_foundation_model_id}"
+      ],
+    ) : [],
+  )
 }
