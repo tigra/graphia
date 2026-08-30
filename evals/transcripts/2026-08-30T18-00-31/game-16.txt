@@ -1,0 +1,246 @@
+Game 16 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Aiko" role="Mafia">
+Personality: Prickly and easily-offended, quick to take offense at even the slightest slight. Has a sharp tongue and doesn't hesitate to use it.
+Manner: Speaks in a curt, clipped manner, often with a tone of irritation or annoyance. Uses sarcasm and biting commentary.
+Public legend: Aiko is a retired librarian who moved to the town seeking a quiet, peaceful life after years of dealing with unruly patrons and bureaucratic red tape. She is deeply passionate about order, structure, and the proper way of doing things, and often finds herself at odds with the more free-spirited members of the community.
+True self (hidden): Aiko joined the Mafia after a bitter betrayal by her former employer, who stole her research and passed it off as his own. Seeking revenge and a sense of belonging, she was recruited by a local Mafia family, where she quickly rose through the ranks due to her sharp mind and unforgiving nature.
+</player>
+<player name="Carlos" role="Mafia">
+Personality: Gruff and blunt, Carlos is straightforward and to the point, often coming across as unpolished or even rude. He doesn't mince words and has little patience for small talk or pleasantries, preferring to get to the heart of the matter. His bluntness can be off-putting to some, but he is unapologetic about it, believing that honesty is the best policy.
+Manner: Carlos speaks in a direct, no-nonsense manner. His tone is gruff and matter-of-fact, with little room for interpretation. He uses simple, straightforward language and doesn't waste time with flowery words or complex sentences. When he has something to say, he says it plainly and expects others to understand him without needing further explanation.
+Public legend: Carlos is a local mechanic who has lived in the town for most of his life. He's known for his expertise in fixing just about anything that has an engine or a motor. He's a bit of a loner, preferring to spend his time working in his garage or tinkering with machines rather than socializing. Despite his gruff exterior, he's fair and honest in his dealings with others, always striving to provide the best service he can.
+True self (hidden): Born into a life of crime, Carlos was initiated into the Mafia at a young age. His mechanical skills quickly became an asset to the organization, allowing him to work on their vehicles and equipment under the cover of his legitimate business. He's a loyal member of the family, willing to do whatever it takes to protect his brethren and maintain the status quo.
+</player>
+<player name="Fatima" role="Law-abiding Citizen">
+Personality: effervescent and optimistic
+Manner: speaks rapidly with enthusiasm, uses expressive hand gestures, incorporates light-hearted humor
+Persona: Fatima is a cheerful local florist who has an infectious smile and a knack for brightening up any room. She's been running her flower shop for the past decade, providing beautiful bouquets for every occasion. Fatima is well-loved in the community for her warm and welcoming nature, always ready with a kind word or a cheerful joke. She believes in the power of positivity and strives to spread joy wherever she goes.
+</player>
+<player name="Hiroshi" role="Law-abiding Citizen">
+Personality: Shrewd and calculating, with a keen eye for detail and a talent for reading people.
+Manner: Speaks in a measured, deliberate manner, choosing words carefully. Often uses strategic pauses and deliberate phrasing to convey a sense of control and authority. Occasionally employs subtle manipulation tactics in conversation.
+Persona: Hiroshi is a shrewd businessman who made his fortune through astute investments and savvy negotiations. He has a reputation for being a master of the art of persuasion, able to strike deals that benefit both parties. Hiroshi is known for his ability to read people and situations, allowing him to navigate complex social dynamics with ease. Despite his sharp business acumen, he maintains a friendly and approachable demeanor, making him a popular figure in the community.
+</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: anxious and second-guessing
+Manner: hesitant and self-doubting, often backtracking or correcting herself, speaks with a timid, wavering tone, frequently uses filler words like 'um' and 'uh'
+Persona: Zara is a local schoolteacher who has lived in the town her entire life. She's known for her dedication to her students and her passion for education. Despite her calm and composed exterior, Zara often struggles with self-doubt and second-guessing, which can make her seem uncertain or indecisive at times.
+</player>
+<player name="Leif" role="Law-abiding Citizen">
+Personality: stern and commanding
+Manner: forceful and direct, uses authoritative language, speaks with a commanding tone, occasional use of rhetorical questions to emphasize points
+Persona: Leif is a retired military officer who now serves as the town's chief of security. Known for his no-nonsense approach and unwavering commitment to protecting the community, Leif is a figure of authority and respect. His years in the military have instilled in him a strong sense of discipline and order, which he brings to his role in the town. Leif is not one to mince words or shy away from difficult decisions, making him a formidable presence in any situation.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiko, Carlos, Fatima, Hiroshi, Zara, Leif. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Aiko): Your Mafia teammates are: Carlos. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Carlos): Your Mafia teammates are: Aiko. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Carlos points at Hiroshi
+Aiko points at Hiroshi
+<kill>Hiroshi — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Hiroshi was killed last night. Hiroshi was a Law-abiding Citizen.
+<round>
+Round 1.
+Aiko: If anyone has any concrete evidence, please present it instead of these baseless accusations.
+Leif: Avery, your silence is noted. What do you have to say about last night's events?
+Fatima: Let's not let the shadows of the night dampen our spirits! Let's find those responsible and shine a light on the truth.
+Zara: Um, I-I've noticed that Avery hasn't spoken much yet, uh, maybe we should ask him more questions to, to understand his position better?
+Carlos: Zara, you've been quieter than usual. What's your take on last night's events?
+Avery: Nothing is settled yet, but I'm watching Carlos most closely.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Avery's suspicion of Carlos is inconvenient. I must deflect attention elsewhere, perhaps towards Zara or Leif.</thought>
+<thought player="Carlos">Avery's got his eyes on me, so I need to watch him and make sure he doesn't get any bright ideas.</thought>
+<thought player="Fatima">Stay positive and keep an eye on Avery and Carlos, they seem a bit suspicious. Keep spreading joy and encouraging open discussion!</thought>
+<thought player="Zara">Um, I should, um, keep an eye on Avery and Carlos, uh, and maybe try to, to encourage more discussion to, to uncover any suspicious behavior.</thought>
+<thought player="Leif">Focus on Avery and Carlos; their behavior may hold the key to unmasking the Mafia.</thought>
+</round>
+<round>
+Round 2.
+Carlos: Avery's been quiet too. Maybe he's hiding something.
+Leif: Avery, your recent silence and focus on Carlos raise questions. What do you know that you're not sharing?
+Zara: Um, I-I've been, uh, thinking about last night's events and, and I think we should, um, consider everyone's behavior, not just focus on one person.
+Aiko: Leif, your incessant questioning of Avery is rather tiresome. Perhaps you should focus on your own actions instead of prying into others'.
+Fatima: Let's not forget to smile through this, folks! Now, Avery, how about you share some insights with us?
+Avery: Nothing is settled yet, but I'm watching Carlos most closely.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Avery's suspicion of Carlos is growing; I must redirect it towards Zara or Leif to protect our secret.</thought>
+<thought player="Carlos">Need to keep an eye on Avery and deflect suspicion from Aiko.</thought>
+<thought player="Fatima">Keep up the positivity, Fatima! Avery and Carlos are still on my radar, but let's keep the conversation flowing and see what else we can uncover.</thought>
+<thought player="Zara">Um, I-I need to, uh, gather more information before, um, making any accusations or, or suggesting an execution.</thought>
+<thought player="Leif">Avery and Carlos remain under scrutiny; intensify questioning to elicit revealing responses.</thought>
+</round>
+<round>
+Round 3.
+Fatima: Alright, let's keep this lively! Avery, what insights can you share about last night's events?
+Avery: Nothing is settled yet, but I'm watching Carlos most closely.
+Aiko: Leif, your persistent questioning of Avery is becoming rather tiresome. Perhaps you should consider redirecting your focus.
+Leif: Fatima, your insistence on maintaining a cheerful demeanor raises questions. What are you trying to hide behind your smile?
+Zara: Um, I-I think we should, uh, look into Avery's, um, consistent focus on Carlos, it, it might be a, a distraction tactic.
+Carlos: Fatima's cheerfulness seems a bit out of place. What's she hiding?
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Avery's fixation on Carlos is becoming tiresome. I must sow seeds of doubt towards Zara and Leif to divert attention.</thought>
+<thought player="Carlos">Avery's a problem, gotta keep him off balance and protect Aiko.</thought>
+<thought player="Fatima">Keep the energy high and watch Avery and Carlos closely; their behavior is raising some red flags!</thought>
+<thought player="Zara">Um, I-I should, uh, continue to observe Avery and Carlos closely, and, and maybe try to, to ask more questions to, to uncover any more suspicious behavior.</thought>
+<thought player="Leif">Intensify scrutiny on Avery and Carlos; their evasive behavior may conceal Mafia ties.</thought>
+</round>
+<round>
+Round 4.
+Fatima: Let's keep the energy up, everyone! Avery, your consistent focus on Carlos is intriguing. Maybe you can share more about what caught your attention?
+Carlos: Fatima, your constant cheerfulness is suspicious. What are you hiding?
+Avery: Nothing is settled yet, but I'm watching Carlos most closely.
+Leif: Fatima, your unwavering cheerfulness in the face of death is unsettling. What are you hiding?
+Aiko: Leif's incessant questioning of others is rather suspicious. What is he trying to hide?
+Zara: Um, I-I've noticed that Aiko has been, uh, quite defensive of Leif, maybe we should, uh, consider that as well in our discussions.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Avery's fixation on Carlos is becoming tiresome. I must sow seeds of doubt towards Zara and Leif to divert attention.</thought>
+<thought player="Carlos">Avery's a threat, gotta keep him distracted and protect Aiko.</thought>
+<thought player="Fatima">Keep the energy up, Fatima! Let's keep Avery and Carlos in our sights and continue to encourage open discussion.</thought>
+<thought player="Zara">Um, I-I need to, uh, keep pressing for more information from Avery and Carlos, and, and maybe try to, to encourage others to share their thoughts too.</thought>
+<thought player="Leif">Intensify pressure on Avery and Carlos to expose any hidden Mafia affiliations, while remaining vigilant for any signs of deception from the others.</thought>
+</round>
+<round>
+Round 5.
+Leif: Fatima, your persistent cheerfulness in the face of death is unsettling. What are you hiding?
+Zara: Um, I-I've noticed that Leif has been, uh, quite persistent in his questioning of others, maybe we should, uh, consider that as well in our discussions.
+Fatima: Hey everyone, let's keep the energy high and focus on uncovering the truth! Avery, your consistent focus on Carlos is intriguing. Maybe you can share more about what caught your attention?
+Avery: Nothing is settled yet, but I'm watching Carlos most closely.
+Aiko: Leif's relentless interrogation of others is rather suspicious. What is he trying to hide?
+Carlos: Avery, your constant focus on me is suspicious. What are you hiding?
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Avery's relentless focus on Carlos must be disrupted. I'll intensify my efforts to cast suspicion on Zara and Leif.</thought>
+<thought player="Carlos">Need to keep Avery distracted and protect Aiko, gotta make sure he doesn't catch on.</thought>
+<thought player="Fatima">Keep the positivity flowing, Fatima! Let's keep an eye on Avery and Carlos, and maybe bring some light-hearted humor into the mix to keep everyone relaxed.</thought>
+<thought player="Zara">Um, I-I need to, uh, keep pressing for more information from Avery and Carlos, and, and maybe try to, to encourage others to share their thoughts too.</thought>
+<thought player="Leif">Maintain pressure on Avery and Carlos, while remaining alert to any suspicious behavior from the others.</thought>
+</round>
+<round>
+Round 6.
+Zara: Um, I-I think we should, uh, consider Aiko's, um, defensive behavior towards Leif as well, it, it might be worth exploring further.
+Leif: Avery, your unwavering focus on Carlos is becoming increasingly suspicious. What exactly are you trying to hide?
+Aiko: Leif's relentless questioning of others is becoming increasingly suspicious. What exactly is he trying to hide?
+<vote initiator="Avery" target="Carlos">
+Avery: No
+Aiko: No
+Carlos: No
+Fatima: Yes
+Zara: No
+Leif: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Carlos">
+Avery: No
+Aiko: No
+Carlos: No
+Fatima: No
+Zara: No
+Leif: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Aiko: Zara's stammering and hesitation are quite suspicious. Perhaps she's trying to cover up something.
+Carlos: Fatima's constant cheerfulness is out of place. What's she hiding?
+Fatima: Hey everyone, let's keep the energy high and focus on uncovering the truth! Avery, your consistent focus on Carlos is intriguing. Maybe you can share more about what caught your attention?
+<vote initiator="Avery" target="Carlos">
+Avery: No
+Aiko: No
+Carlos: No
+Fatima: Yes
+Zara: No
+Leif: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Aiko points at Zara
+Carlos points at Zara
+<kill>Zara — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Zara was killed last night. Zara was a Law-abiding Citizen.
+<round>
+Round 1.
+Aiko: Leif's relentless questioning and Fatima's unfailing cheerfulness are both rather suspicious. I suggest we scrutinize their behavior more closely.
+Leif: Avery, your consistent focus on Carlos is suspicious. What exactly are you trying to hide?
+Fatima: Hey everyone, let's keep the positivity flowing! Leif, your relentless questioning of others is quite intriguing. Maybe you can share more about what caught your attention?
+Avery: Nothing is settled yet, but I'm watching Carlos most closely.
+Carlos: Fatima's constant cheerfulness is suspicious. What's she hiding?
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Avery's relentless focus on Carlos must be disrupted. I'll intensify my efforts to cast suspicion on Leif and Fatima.</thought>
+<thought player="Carlos">Need to keep Avery distracted and protect Aiko, gotta make sure he doesn't catch on.</thought>
+<thought player="Fatima">Keep the positivity flowing, Fatima! Let's keep an eye on Avery and Carlos, and maybe bring some light-hearted humor into the mix to keep everyone relaxed.</thought>
+<thought player="Leif">Continue to apply pressure on Avery and Carlos, while remaining vigilant for any signs of deception from Aiko and Fatima.</thought>
+</round>
+<round>
+Round 2.
+Aiko: Leif's relentless interrogation and Fatima's unfailing cheerfulness are both rather suspicious. I suggest we scrutinize their behavior more closely.
+Leif: Avery, your consistent focus on Carlos raises questions. What exactly are you trying to hide?
+Avery: Nothing is settled yet, but I'm watching Carlos most closely.
+Fatima: Hey folks, let's keep the positivity flowing! Avery, your consistent focus on Carlos is intriguing. Maybe you can share more about what caught your attention?
+Carlos: Fatima's constant cheerfulness is out of place. What's she hiding?
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Avery's fixation on Carlos is becoming a nuisance. I need to intensify my efforts to cast suspicion on Leif and Fatima to divert attention.</thought>
+<thought player="Carlos">Gotta keep Avery off balance and protect Aiko, any slip-up could blow our cover.</thought>
+<thought player="Fatima">Keep the positivity flowing, Fatima! Let's keep an eye on Avery and Carlos, and maybe bring some light-hearted humor into the mix to keep everyone relaxed.</thought>
+<thought player="Leif">Maintain pressure on Avery and Carlos, while remaining vigilant for any signs of deception from Aiko and Fatima.</thought>
+</round>
+<round>
+Round 3.
+Fatima: Leif, your relentless questioning is like a bee buzzing around a flower—it's hard to ignore! What's the secret you're trying to uncover?
+Avery: Nothing is settled yet, but I'm watching Carlos most closely.
+Leif: Avery, your unwavering focus on Carlos is growing increasingly suspicious. What exactly are you trying to hide?
+Aiko: Fatima's unfailing cheerfulness in the face of death is rather suspicious. What exactly is she trying to hide?
+<vote initiator="Carlos" target="Fatima">
+Avery: No
+Aiko: Yes
+Carlos: Yes
+Fatima: No
+Leif: Yes
+tally: 3 Yes, 2 No
+outcome: executed — Fatima has been executed. Fatima was a Law-abiding Citizen.
+</vote>
+</round>
+</day>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Hiroshi (Law-abiding Citizen)
+• Night 2: Zara (Law-abiding Citizen)
+• Day 2: Fatima (Law-abiding Citizen) executed
+
+Full roster: Avery (Law-abiding Citizen), Aiko (Mafia), Carlos (Mafia), Fatima (Law-abiding Citizen), Hiroshi (Law-abiding Citizen), Zara (Law-abiding Citizen), Leif (Law-abiding Citizen)
+
+Who they really were:
+• Aiko (Mafia) — publicly presented as Aiko is a retired librarian who moved to the town seeking a quiet, peaceful life after years of dealing with unruly patrons and bureaucratic red tape. She is deeply passionate about order, structure, and the proper way of doing things, and often finds herself at odds with the more free-spirited members of the community. (Prickly and easily-offended, quick to take offense at even the slightest slight. Has a sharp tongue and doesn't hesitate to use it. Speaks in a curt, clipped manner, often with a tone of irritation or annoyance. Uses sarcasm and biting commentary.) … but was really a Mafioso: Aiko joined the Mafia after a bitter betrayal by her former employer, who stole her research and passed it off as his own. Seeking revenge and a sense of belonging, she was recruited by a local Mafia family, where she quickly rose through the ranks due to her sharp mind and unforgiving nature.
+• Carlos (Mafia) — publicly presented as Carlos is a local mechanic who has lived in the town for most of his life. He's known for his expertise in fixing just about anything that has an engine or a motor. He's a bit of a loner, preferring to spend his time working in his garage or tinkering with machines rather than socializing. Despite his gruff exterior, he's fair and honest in his dealings with others, always striving to provide the best service he can. (Gruff and blunt, Carlos is straightforward and to the point, often coming across as unpolished or even rude. He doesn't mince words and has little patience for small talk or pleasantries, preferring to get to the heart of the matter. His bluntness can be off-putting to some, but he is unapologetic about it, believing that honesty is the best policy. Carlos speaks in a direct, no-nonsense manner. His tone is gruff and matter-of-fact, with little room for interpretation. He uses simple, straightforward language and doesn't waste time with flowery words or complex sentences. When he has something to say, he says it plainly and expects others to understand him without needing further explanation.) … but was really a Mafioso: Born into a life of crime, Carlos was initiated into the Mafia at a young age. His mechanical skills quickly became an asset to the organization, allowing him to work on their vehicles and equipment under the cover of his legitimate business. He's a loyal member of the family, willing to do whatever it takes to protect his brethren and maintain the status quo.
+• Fatima (Law-abiding Citizen) — effervescent and optimistic speaks rapidly with enthusiasm, uses expressive hand gestures, incorporates light-hearted humor Fatima is a cheerful local florist who has an infectious smile and a knack for brightening up any room. She's been running her flower shop for the past decade, providing beautiful bouquets for every occasion. Fatima is well-loved in the community for her warm and welcoming nature, always ready with a kind word or a cheerful joke. She believes in the power of positivity and strives to spread joy wherever she goes.
+• Hiroshi (Law-abiding Citizen) — Shrewd and calculating, with a keen eye for detail and a talent for reading people. Speaks in a measured, deliberate manner, choosing words carefully. Often uses strategic pauses and deliberate phrasing to convey a sense of control and authority. Occasionally employs subtle manipulation tactics in conversation. Hiroshi is a shrewd businessman who made his fortune through astute investments and savvy negotiations. He has a reputation for being a master of the art of persuasion, able to strike deals that benefit both parties. Hiroshi is known for his ability to read people and situations, allowing him to navigate complex social dynamics with ease. Despite his sharp business acumen, he maintains a friendly and approachable demeanor, making him a popular figure in the community.
+• Zara (Law-abiding Citizen) — anxious and second-guessing hesitant and self-doubting, often backtracking or correcting herself, speaks with a timid, wavering tone, frequently uses filler words like 'um' and 'uh' Zara is a local schoolteacher who has lived in the town her entire life. She's known for her dedication to her students and her passion for education. Despite her calm and composed exterior, Zara often struggles with self-doubt and second-guessing, which can make her seem uncertain or indecisive at times.
+• Leif (Law-abiding Citizen) — stern and commanding forceful and direct, uses authoritative language, speaks with a commanding tone, occasional use of rhetorical questions to emphasize points Leif is a retired military officer who now serves as the town's chief of security. Known for his no-nonsense approach and unwavering commitment to protecting the community, Leif is a figure of authority and respect. His years in the military have instilled in him a strong sense of discipline and order, which he brings to his role in the town. Leif is not one to mince words or shy away from difficult decisions, making him a formidable presence in any situation.
+</endgame>
+</transcript>

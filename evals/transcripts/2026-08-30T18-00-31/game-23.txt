@@ -1,0 +1,270 @@
+Game 23 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Aiden" role="Mafia">
+Personality: eccentric and impulsive
+Manner: speaks in a rapid, excitable tone with frequent, unexpected tangents
+Public legend: Aiden is a quirky local artist known for his wild and whimsical sculptures around town. He's a friendly, if somewhat erratic, figure who loves to engage in deep conversations about art and life, often bursting into laughter at his own jokes.
+True self (hidden): In his true self, Aiden is a cunning Mafioso who joined the Mafia to fund his artistic endeavors. His unpredictable nature serves as a perfect cover for his criminal activities, allowing him to blend in with the townspeople while carrying out his mafia duties.
+</player>
+<player name="Leila" role="Law-abiding Citizen">
+Personality: brash and loud
+Manner: Leila speaks with a confident and forceful tone, using strong, straightforward vocabulary. She is direct and assertive, often using exclamations to emphasize her points.
+Persona: Leila is a passionate community organizer, known for her relentless efforts to bring people together for local causes. She's outspoken and unafraid to voice her opinions, often taking the lead in town meetings and rallies.
+</player>
+<player name="Kazuo" role="Mafia">
+Personality: playful and teasing
+Manner: speaks with a light-hearted, bantering tone, often using humor and playful jabs
+Public legend: Kazuo is a beloved local baker, known for his delightful pastries and warm, welcoming nature. He's always ready with a joke or a playful comment, making him a favorite among the townsfolk. His bakery is a community hub, where people gather not just for the delicious treats, but for the lively atmosphere he creates.
+True self (hidden): Kazuo is secretly a Mafioso, hiding behind an ordinary cover.
+</player>
+<player name="Amara" role="Law-abiding Citizen">
+Personality: prickly and easily-offended; quick to take offense but with a sharp, witty tongue
+Manner: speaks with a defensive, almost confrontational tone, often using sarcastic remarks and cutting retorts
+Persona: Amara is a retired librarian, known for her encyclopedic knowledge and no-nonsense attitude. She's a stickler for rules and correctness, often correcting others' mistakes with a sharp tongue.
+</player>
+<player name="Rafael" role="Law-abiding Citizen">
+Personality: weary and world-worn; contemplative and reserved
+Manner: speaks in a measured, almost melancholic tone; uses simple, deliberate vocabulary with occasional philosophical musings
+Persona: Rafael is a seasoned fisherman who has spent most of his life at sea. His years of solitude and contemplation have given him a deep, philosophical perspective on life, though he rarely shares his insights. When he does speak, it's with a quiet intensity that hints at the stories and hardships he's endured. Despite his reserved nature, he's a steadfast member of the community, always willing to lend a hand when needed.
+</player>
+<player name="Yara" role="Law-abiding Citizen">
+Personality: stern and commanding
+Manner: authoritative and no-nonsense, using precise and direct vocabulary, often issuing firm directives or observations
+Persona: Yara is the town's long-serving mayor, known for her decisive leadership and unwavering commitment to the community's welfare. With a background in law and a reputation for fairness, she commands respect and ensures that town affairs run smoothly. Her stern demeanor and direct approach have earned her both admiration and occasional ire, but her dedication to the town is unquestionable.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiden, Leila, Kazuo, Amara, Rafael, Yara. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Aiden): Your Mafia teammates are: Kazuo. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Kazuo): Your Mafia teammates are: Aiden. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Aiden points at Avery
+Kazuo points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Aiden: Oh, the thrill of the unknown! Leila, what do you think about art in public spaces? It's like a secret message waiting to be discovered!
+Kazuo: Aiden, your artistic flair is as unpredictable as the flavors in my bakery! But Leila, what do you think about the sudden disappearance of Avery? Any theories?
+Yara: Kazuo, your reaction to Avery's death seems calculated. What are your thoughts on the matter?
+Amara: Kazuo, your rather theatrical reaction to Avery's death seems a bit... rehearsed. Care to share your thoughts on the matter?
+Rafael: Kazuo, your bakery's flavors may be unpredictable, but your reaction to Avery's death seems all too convenient. What secrets might you be hiding?
+Leila: Kazuo, your reaction to Avery's death is raising eyebrows! What exactly are you hiding?
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Whimsy and chaos are my allies! Let's stoke the flames of suspicion and divert attention from Kazuo and myself.</thought>
+<thought player="Leila">Kazuo's reaction to Avery's death is suspicious! I need to keep an eye on him and gather more evidence.</thought>
+<thought player="Kazuo">Time to keep up the charm and deflect suspicion, while subtly guiding the conversation towards others. Aiden, my fellow pastry chef in crime, and I need to stay under the radar.</thought>
+<thought player="Amara">Kazuo's overly theatrical reaction to Avery's death is suspicious; I must keep a close eye on him and Rafael's sudden interest in his bakery.</thought>
+<thought player="Rafael">As the conversation unfolds, Kazuo's defensive reactions may reveal his true nature. I must remain vigilant and observe his behavior closely.</thought>
+<thought player="Yara">Focus on Kazuo's reaction to Avery's death; it may reveal crucial information about his allegiance.</thought>
+</round>
+<round>
+Round 2.
+Kazuo: Well, if we're tossing out theories, how about we consider Leila's sudden interest in art? It's almost as if she's trying to distract us from something.
+Amara: Yara, your abrupt change in topic from bakery flavors to Avery's death is rather suspicious. What exactly are you trying to hide?
+Leila: Kazuo, your bakery may be full of surprises, but your reaction to Avery's death is raising more questions than it answers!
+Rafael: Kazuo, your quick pivot from bakery talk to Avery's death is as smooth as the currents at sea. What lies beneath that calm exterior?
+Aiden: Oh, the delicious irony! Leila, your sudden interest in art is almost as intriguing as a hidden treasure map!
+Yara: Aiden, your flippant attitude could be masking something. What do you know about Avery's death?
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Ah, the thrill of the game! Let's keep the chaos alive and steer suspicion away from Kazuo and me.</thought>
+<thought player="Leila">Keep pressing Kazuo and watch for any more suspicious behavior, while also observing the others for any signs of Mafia affiliation.</thought>
+<thought player="Kazuo">Time to keep the banter flowing and steer the conversation away from us, while keeping an eye on who's trying too hard to be innocent.</thought>
+<thought player="Amara">Keep a close eye on Kazuo and Rafael; their reactions and sudden interests are too convenient.</thought>
+<thought player="Rafael">Kazuo's defensive reactions and quick pivots in conversation warrant closer scrutiny. I must remain vigilant and observe his behavior closely.</thought>
+<thought player="Yara">Maintain pressure on Kazuo; observe reactions to determine next target.</thought>
+</round>
+<round>
+Round 3.
+Kazuo: Aiden, your sudden interest in art is almost as intriguing as a hidden treasure map! Leila, care to share your thoughts on it?
+Rafael: Kazuo, your bakery's flavors may be unpredictable, but your reaction to Avery's death seems all too convenient. What secrets might you be hiding?
+Amara: Kazuo, your bakery may be full of surprises, but your deflection tactics are as transparent as a glass window.
+Yara: Aiden, your flippant attitude could be masking something. What do you know about Avery's death?
+Aiden: Ah, the dance of deception! Leila, your sudden interest in art is almost as intriguing as a hidden treasure map!
+Leila: Yara, your abrupt change in topic from bakery flavors to Avery's death is rather suspicious. What exactly are you trying to hide?
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Ah, the art of deception! Time to weave a web of whimsy and divert suspicion from Kazuo and myself.</thought>
+<thought player="Leila">Keep the heat on Kazuo and watch for any more suspicious behavior from the others.</thought>
+<thought player="Kazuo">Time to keep the charm offensive going, while subtly nudging suspicion towards Leila and Yara.</thought>
+<thought player="Amara">Keep pressing Kazuo and Rafael; their reactions are too rehearsed, and I need to uncover any hidden motives.</thought>
+<thought player="Rafael">Kazuo's defensive reactions and deflection tactics continue to raise suspicion; I must gather more evidence before making any accusations.</thought>
+<thought player="Yara">Continue to scrutinize Kazuo's behavior and prepare to shift focus to another suspect if necessary.</thought>
+</round>
+<round>
+Round 4.
+Leila: Kazuo, your deflection tactics are as transparent as a glass window! Keep it up, and we'll see right through you!
+Amara: Leila, your deflection tactics are as transparent as a glass window! Keep it up, and we'll see right through you!
+Yara: Rafael, your calm demeanor may be a facade. What are you concealing?
+Rafael: Yara, your sudden shift in topic from bakery flavors to Avery's death is as abrupt as a storm at sea. What are you trying to hide?
+Kazuo: Aiden, your sudden interest in art is almost as intriguing as a hidden treasure map! Leila, care to share your thoughts on it?
+Aiden: Ah, the storm of suspicion! Yara, your sudden shift in topic from bakery flavors to Avery's death is as abrupt as a storm at sea. What are you trying to hide?
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The storm of suspicion is brewing nicely! Time to keep the chaos alive and steer the storm away from Kazuo and myself.</thought>
+<thought player="Leila">Keep the pressure on Kazuo and watch for any more suspicious behavior from the others. It's time to dig deeper and uncover the truth!</thought>
+<thought player="Kazuo">Time to keep the charm offensive going, while subtly nudging suspicion towards Leila and Yara.</thought>
+<thought player="Amara">I must continue to press Kazuo and Rafael, but I should also keep an eye on Leila and Aiden, as their sudden interests and deflection tactics may also be hiding something.</thought>
+<thought player="Rafael">Kazuo's behavior remains suspect; I must continue to observe and gather evidence.</thought>
+<thought player="Yara">Continue to apply pressure on Kazuo, but remain vigilant for any shifts in behavior from other players that may indicate Mafia allegiance.</thought>
+</round>
+<round>
+Round 5.
+Aiden: Oh, the storm of suspicion! Leila, your deflection tactics are as transparent as a glass window! What are you trying to hide?
+Rafael: Aiden, your persistent fascination with art seems almost too convenient, as if it masks a deeper intent. What drives this sudden interest?
+Leila: Rafael, your calm demeanor may be a facade. What are you concealing?
+Amara: Rafael, your calm demeanor may be a facade. What are you concealing?
+Yara: Kazuo, your deflection tactics are growing wearisome. Cease this evasion and address the concerns raised.
+Kazuo: Leila, your sudden interest in art is almost as intriguing as a hidden treasure map! What's the real story behind your fascination?
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Time to unleash another wave of whimsy and chaos, keeping the storm of suspicion far from Kazuo and me.</thought>
+<thought player="Leila">Time to keep the pressure on Kazuo and dig deeper into his suspicious behavior.</thought>
+<thought player="Kazuo">Time to keep the charm offensive going, while subtly nudging suspicion towards Leila and Yara.</thought>
+<thought player="Amara">Continue to press Kazuo and Rafael, while also keeping a keen eye on Leila and Aiden's deflection tactics.</thought>
+<thought player="Rafael">Kazuo's continued deflection and defensive reactions demand further investigation; I must remain steadfast in my observations.</thought>
+<thought player="Yara">Continue to apply pressure on Kazuo, while remaining vigilant for any suspicious behavior from other players.</thought>
+</round>
+<round>
+Round 6.
+Leila: Kazuo, your deflection tactics are growing wearisome. Cease this evasion and address the concerns raised!
+Kazuo: Leila, your sudden interest in art is almost as intriguing as a hidden treasure map! What's the real story behind your fascination?
+Amara: Kazuo, your deflection tactics are as transparent as a glass window! Keep it up, and we'll see right through you!
+Yara: Kazuo, your continued deflection is becoming increasingly transparent. Address the concerns raised or face the consequences.
+Aiden: Oh, the storm of suspicion! Rafael, your calm demeanor may be a facade. What are you concealing?
+Rafael: Kazuo, your deflection tactics are growing wearisome. Cease this evasion and address the concerns raised.
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Kazuo points at Leila
+Aiden points at Leila
+<kill>Leila — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Leila was killed last night. Leila was a Law-abiding Citizen.
+<round>
+Round 1.
+Kazuo: Aiden, your sudden interest in art is almost as intriguing as a hidden treasure map! Yara, care to share your thoughts on it?
+Amara: Kazuo, your deflection tactics are growing wearisome. Cease this evasion and address the concerns raised!
+Rafael: Kazuo, your bakery's flavors may be unpredictable, but your continued deflection is as transparent as the sea. What are you trying to hide?
+Yara: Aiden, your persistent deflection and fascination with art raise concerns. What are you concealing?
+Aiden: Oh, the storm of suspicion! Rafael, your calm demeanor may be a facade. What are you concealing?
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Time to keep the storm of suspicion alive and weave another layer of chaos, steering it away from Kazuo and myself.</thought>
+<thought player="Kazuo">Time to keep the charm offensive going, while subtly nudging suspicion towards Rafael and Amara.</thought>
+<thought player="Amara">I must continue to press Kazuo and Rafael, but also remain vigilant about Aiden's deflection tactics and sudden interests.</thought>
+<thought player="Rafael">The game tightens its grip, and Kazuo's maneuvers grow ever more suspect. I must tread carefully, gathering whispers of truth from the waves of conversation.</thought>
+<thought player="Yara">Maintain pressure on Kazuo, but remain alert for any suspicious behavior from other players that may indicate Mafia allegiance.</thought>
+</round>
+<round>
+Round 2.
+Amara: Aiden, your fascination with art is as suspect as a book with missing pages. What exactly are you trying to hide?
+Kazuo: Amara, your fascination with deflection tactics is almost as intriguing as a hidden treasure map! Care to share your thoughts on it?
+Rafael: Kazuo, your bakery's flavors may be unpredictable, but your continued deflection is as transparent as the sea. What are you trying to hide?
+Yara: Rafael, your calm demeanor may be a calculated strategy. What are you concealing?
+Aiden: Ah, the storm of suspicion! Yara, your abrupt shifts in topic are as unpredictable as a wild tempest. What exactly are you trying to hide?
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Time to weave another layer of chaos and keep the storm of suspicion far from Kazuo and me.</thought>
+<thought player="Kazuo">Time to keep the charm offensive going, while subtly nudging suspicion towards Rafael and Amara.</thought>
+<thought player="Amara">Continue to press Kazuo and Rafael, while remaining vigilant about Aiden's deflection tactics and sudden interests.</thought>
+<thought player="Rafael">As the tides of suspicion ebb and flow, Kazuo's deflection tactics remain the focal point of my scrutiny. I must continue to observe and gather evidence, lest the truth remain hidden beneath the surface.</thought>
+<thought player="Yara">Continue to apply pressure on Kazuo, while remaining vigilant for any suspicious behavior from other players that may indicate Mafia allegiance.</thought>
+</round>
+<round>
+Round 3.
+Rafael: Kazuo, your deflection tactics have been noted. Your evasive maneuvers are as transparent as the sea. What are you trying to conceal?
+Kazuo: Rafael, your calm demeanor may be a calculated strategy. What exactly are you concealing?
+Amara: Yara, your sudden shifts in topic are as unpredictable as a wild tempest. What exactly are you trying to hide?
+Aiden: Ah, the storm of suspicion! Rafael, your calm demeanor may be a facade. What are you concealing?
+Yara: Aiden, your persistent deflection and fascination with art raise significant concerns. What exactly are you concealing?
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The storm of suspicion is raging beautifully! Let's keep the chaos alive and continue to divert attention from Kazuo and myself.</thought>
+<thought player="Kazuo">Time to keep the charm offensive going, while subtly nudging suspicion towards Rafael and Amara.</thought>
+<thought player="Amara">Press Kazuo and Rafael harder, but stay alert for any suspicious behavior from Aiden.</thought>
+<thought player="Rafael">Kazuo's deflection tactics and defensive reactions continue to be the focus of my scrutiny; I must gather more evidence before making any accusations.</thought>
+<thought player="Yara">Continue to apply pressure on Kazuo, while remaining vigilant for any suspicious behavior from other players that may indicate Mafia allegiance.</thought>
+</round>
+<round>
+Round 4.
+Yara: Kazuo, your deflection tactics are growing wearisome. Cease this evasion and address the concerns raised!
+<vote initiator="Amara" target="Kazuo">
+Aiden: No
+Kazuo: No
+Amara: Yes
+Rafael: Yes
+Yara: Yes
+tally: 3 Yes, 2 No
+outcome: executed — Kazuo has been executed. Kazuo was a Mafia.
+</vote>
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Kazuo was executed today and was revealed to be Mafia.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Aiden points at Rafael
+<kill>Rafael — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Rafael was killed last night. Rafael was a Law-abiding Citizen.
+<round>
+Round 1.
+Amara: Aiden, your fascination with art is as suspect as a book with missing pages. What exactly are you trying to hide?
+Yara: Aiden, your fascination with art seems increasingly suspect. What exactly are you trying to hide?
+Aiden: Ah, the storm of suspicion! Yara, your abrupt shifts in topic are as unpredictable as a wild tempest. What exactly are you trying to hide?
+<recap>Day 3, 9 AM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The storm of suspicion is raging beautifully! Time to keep the chaos alive and continue to divert attention from myself.</thought>
+<thought player="Amara">With Kazuo and Rafael out of the picture, it's time to turn my sharp gaze towards Aiden and Yara; their deflection tactics and sudden interests may hold the key to unmasking the remaining Mafioso.</thought>
+<thought player="Yara">Focus on Aiden's deflection and fascination with art; it may reveal crucial information about his allegiance.</thought>
+</round>
+<round>
+Round 2.
+Aiden: Oh, the storm of suspicion! Yara, your abrupt shifts in topic are as unpredictable as a wild tempest. What exactly are you trying to hide?
+Amara: Aiden, your fascination with art is as suspect as a book with missing pages. What exactly are you trying to hide?
+<vote initiator="Yara" target="Aiden">
+Aiden: No
+Amara: Yes
+Yara: Yes
+tally: 2 Yes, 1 No
+outcome: executed — Aiden has been executed. Aiden was a Mafia.
+</vote>
+</round>
+</day>
+<endgame>
+The Law-abiding Citizens have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Night 2: Leila (Law-abiding Citizen)
+• Day 2: Kazuo (Mafia) executed
+• Night 3: Rafael (Law-abiding Citizen)
+• Day 3: Aiden (Mafia) executed
+
+Full roster: Avery (Law-abiding Citizen), Aiden (Mafia), Leila (Law-abiding Citizen), Kazuo (Mafia), Amara (Law-abiding Citizen), Rafael (Law-abiding Citizen), Yara (Law-abiding Citizen)
+
+Who they really were:
+• Aiden (Mafia) — publicly presented as Aiden is a quirky local artist known for his wild and whimsical sculptures around town. He's a friendly, if somewhat erratic, figure who loves to engage in deep conversations about art and life, often bursting into laughter at his own jokes. (eccentric and impulsive speaks in a rapid, excitable tone with frequent, unexpected tangents) … but was really a Mafioso: In his true self, Aiden is a cunning Mafioso who joined the Mafia to fund his artistic endeavors. His unpredictable nature serves as a perfect cover for his criminal activities, allowing him to blend in with the townspeople while carrying out his mafia duties.
+• Leila (Law-abiding Citizen) — brash and loud Leila speaks with a confident and forceful tone, using strong, straightforward vocabulary. She is direct and assertive, often using exclamations to emphasize her points. Leila is a passionate community organizer, known for her relentless efforts to bring people together for local causes. She's outspoken and unafraid to voice her opinions, often taking the lead in town meetings and rallies.
+• Kazuo (Mafia) — publicly presented as Kazuo is a beloved local baker, known for his delightful pastries and warm, welcoming nature. He's always ready with a joke or a playful comment, making him a favorite among the townsfolk. His bakery is a community hub, where people gather not just for the delicious treats, but for the lively atmosphere he creates. (playful and teasing speaks with a light-hearted, bantering tone, often using humor and playful jabs) … but was really a Mafioso: Kazuo is secretly a Mafioso, hiding behind an ordinary cover.
+• Amara (Law-abiding Citizen) — prickly and easily-offended; quick to take offense but with a sharp, witty tongue speaks with a defensive, almost confrontational tone, often using sarcastic remarks and cutting retorts Amara is a retired librarian, known for her encyclopedic knowledge and no-nonsense attitude. She's a stickler for rules and correctness, often correcting others' mistakes with a sharp tongue.
+• Rafael (Law-abiding Citizen) — weary and world-worn; contemplative and reserved speaks in a measured, almost melancholic tone; uses simple, deliberate vocabulary with occasional philosophical musings Rafael is a seasoned fisherman who has spent most of his life at sea. His years of solitude and contemplation have given him a deep, philosophical perspective on life, though he rarely shares his insights. When he does speak, it's with a quiet intensity that hints at the stories and hardships he's endured. Despite his reserved nature, he's a steadfast member of the community, always willing to lend a hand when needed.
+• Yara (Law-abiding Citizen) — stern and commanding authoritative and no-nonsense, using precise and direct vocabulary, often issuing firm directives or observations Yara is the town's long-serving mayor, known for her decisive leadership and unwavering commitment to the community's welfare. With a background in law and a reputation for fairness, she commands respect and ensures that town affairs run smoothly. Her stern demeanor and direct approach have earned her both admiration and occasional ire, but her dedication to the town is unquestionable.
+</endgame>
+</transcript>

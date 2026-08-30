@@ -1,0 +1,303 @@
+Game 32 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Aiden" role="Law-abiding Citizen">
+Personality: aloof and detached; analytical yet indifferent
+Manner: measured, precise diction; frequent pauses as if choosing words carefully; occasional bluntness
+Persona: Aiden is a former librarian, now a freelance researcher. They prefer solitude and find social interactions exhausting, often retreating into their work. Their analytical mind is sharp, but they show little interest in the emotions or personal lives of others.
+</player>
+<player name="Leila" role="Law-abiding Citizen">
+Personality: prickly and easily-offended; sharp-tongued yet fair
+Manner: rapid-fire, clipped speech; frequent interjections like 'Honestly!' or 'For heaven's sake!'; uses precise, pointed vocabulary
+Persona: Leila is a seasoned baker, renowned for her exquisite pastries. She takes great pride in her craft and expects the same level of dedication and respect from those around her. Her no-nonsense attitude and quick wit make her a force to be reckoned with in any discussion.
+</player>
+<player name="Rajiv" role="Mafia">
+Personality: stern and commanding; decisive, firm leadership style; no-nonsense approach; exudes authority and confidence
+Manner: straightforward and direct speech; uses strong, assertive language; maintains a composed and authoritative tone; rarely shows hesitation or doubt
+Public legend: Rajiv is a retired military officer, now working as a high school history teacher. He instills discipline and respect in his students, often drawing from his own experiences in the armed forces. Known for his strict but fair approach, Rajiv commands the classroom with a presence that brooks no nonsense, yet is respected by both students and colleagues.
+True self (hidden): Rajiv's military background is a front for his true role as a high-ranking Mafioso. His stern demeanor and commanding presence are not just a result of his military training but also a tool he uses to intimidate and control. Rajiv rose through the ranks of the Mafia by leveraging his strategic mind and unyielding resolve, using his cover as a teacher to maintain a low profile while pulling the strings behind the scenes.
+</player>
+<player name="Inés" role="Law-abiding Citizen">
+Personality: gruff and blunt; speaks with a no-nonsense, straightforward approach; displays a tough exterior but has a soft spot for animals and children.
+Manner: short, curt sentences; uses simple, direct language; occasional interjections like 'Enough!' or 'Nonsense!'; speaks with a rough, gravelly voice.
+Persona: Inés is a seasoned blacksmith, known for her expert craftsmanship and unyielding work ethic. She has a reputation for being tough as nails, but those who know her well understand that she has a heart of gold, especially when it comes to helping those in need. Despite her rough exterior, Inés is a pillar of the community, always willing to lend a hand or share her knowledge with others.
+</player>
+<player name="Kwame" role="Law-abiding Citizen">
+Personality: playful and teasing; lighthearted yet perceptive; enjoys banter and ribbing others in good fun.
+Manner: casual and conversational; uses humor and playful language; frequent use of puns, jokes, and light teasing; upbeat and energetic tone.
+Persona: Kwame is the local jester, known for his quick wit and ability to lighten the mood in any situation. He performs at town events and gatherings, bringing laughter and joy to everyone around. Despite his playful nature, Kwame is a keen observer of people and situations, often using his humor as a way to connect with others and uncover the truth.
+</player>
+<player name="Yuki" role="Mafia">
+Personality: brash and loud, with a confident and charismatic presence; easily draws attention to themselves; a natural leader who commands the room with their energy and charm
+Manner: enthusiastic and animated; speaks with a strong, confident voice; uses exaggerated gestures and expressions; often raises their voice to emphasize points; frequently uses exclamations like 'Absolutely!' and 'You bet!'; maintains a high-energy, engaging tone throughout conversations
+Public legend: Yuki is a traveling entertainer, known for their captivating performances and infectious energy. They move from town to town, bringing joy and excitement wherever they go. With a repertoire of songs, dances, and stories, Yuki has a way of connecting with people and making them feel at ease. Their vibrant personality and undeniable talent have earned them a loyal following, and they are always welcomed with open arms in any community.
+True self (hidden): Yuki's true identity is that of a high-ranking Mafioso, known for their cunning and strategic mind. They use their public persona as a cover to gather information and influence people from within. Yuki's charisma and ability to read a room make them an invaluable asset to the Mafia, allowing them to navigate social situations with ease and manipulate those around them to further the organization's goals.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiden, Leila, Rajiv, Inés, Kwame, Yuki. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Rajiv): Your Mafia teammates are: Yuki. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Yuki): Your Mafia teammates are: Rajiv. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Rajiv points at Leila
+Yuki points at Leila
+<kill>Leila — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Leila was killed last night. Leila was a Law-abiding Citizen.
+<round>
+Round 1.
+Aiden: Avery's introduction and Leila's death raise questions about the initial dynamics. Observing behavior and alliances will be crucial.
+Rajiv: Let's not waste time. Inés, your silence is conspicuous. Explain yourself.
+Avery: Nothing is settled yet, but I'm watching Rajiv most closely.
+Inés: Rajiv, your eagerness to pin this on someone is suspicious. What's your angle?
+Yuki: Absolutely! Let's not jump to conclusions too quickly. Avery, your focus on Rajiv is interesting. What makes you so suspicious of him?
+Kwame: Hey Rajiv, you seem to be on a mission today. What's your secret sauce for spotting a Mafioso?
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The initial dynamics suggest a potential power struggle; monitoring Avery and Rajiv's interactions may yield insights into the Mafiosos' identities.</thought>
+<thought player="Rajiv">Focus on diverting suspicion and identifying potential targets among the remaining players.</thought>
+<thought player="Inés">Rajiv and Avery are acting suspicious. Time to watch them closer.</thought>
+<thought player="Kwame">Time to play detective and suss out the Mafia. Rajiv and Inés are already raising eyebrows—let's see who cracks first.</thought>
+<thought player="Yuki">Time to keep the pressure on Inés and Kwame, divert suspicion from Rajiv and myself, and keep the heat on Avery!</thought>
+</round>
+<round>
+Round 2.
+Yuki: You bet! Kwame, your curiosity about Rajiv's methods is fascinating. What do you think about Inés's silence?
+Kwame: Alright, let's keep the ball rolling. Yuki, what's your take on Avery's focus on Rajiv?
+Rajiv: Avery, your fixation on me is unfounded. Let's redirect our focus to Inés, whose silence is more suspicious.
+Avery: Nothing is settled yet, but I'm watching Rajiv most closely.
+Aiden: Avery's repeated focus on Rajiv could be a strategic deflection or a genuine suspicion. It warrants closer examination.
+Inés: Avery, you're too quick to target Rajiv. What's your real motive?
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Observe the continued interaction between Avery and Rajiv; their behavior may reveal underlying motives or alliances.</thought>
+<thought player="Rajiv">Maintain pressure on Inés and divert suspicion from Yuki; consider targeting Avery next to disrupt their focus on me.</thought>
+<thought player="Inés">Keep eye on Rajiv and Avery. Their behavior's odd.</thought>
+<thought player="Kwame">Alright, time to keep the pressure on Rajiv and Inés. Let's see who squirms first.</thought>
+<thought player="Yuki">Time to keep the pressure on Inés and Kwame, divert suspicion from Rajiv and myself, and keep the heat on Avery!</thought>
+</round>
+<round>
+Round 3.
+Avery: Nothing is settled yet, but I'm watching Rajiv most closely.
+Aiden: Yuki's strategic questioning of others' motives should be noted for future reference.
+Yuki: Aiden, your analytical approach is intriguing. What do you make of Inés's silence and Kwame's curiosity?
+Inés: Kwame, your line of questioning seems genuine. Keep it up.
+Rajiv: Avery, your persistent focus on me is beginning to look like a distraction tactic. Let's consider other possibilities.
+Kwame: Hey, speaking of curiosity, Yuki, what's your angle on this whole mystery?
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Continue to monitor Avery and Rajiv; their ongoing interaction may provide crucial insights into the Mafiosos' identities.</thought>
+<thought player="Rajiv">Continue to divert suspicion from Yuki and consider targeting Avery to disrupt their focus on me.</thought>
+<thought player="Inés">Watch Rajiv and Avery closely. Their behavior's odd.</thought>
+<thought player="Kwame">Rajiv and Inés are the hot topics today—let's keep the heat on and see who breaks a sweat next.</thought>
+<thought player="Yuki">Time to keep the pressure on Inés and Kwame, divert suspicion from Rajiv and myself, and keep the heat on Avery!</thought>
+</round>
+<round>
+Round 4.
+Rajiv: Avery, your persistent focus on me is raising questions about your own intentions. Let's shift our attention to someone else.
+Avery: Nothing is settled yet, but I'm watching Rajiv most closely.
+Inés: Aiden, your analytical approach is intriguing. What do you make of Avery's fixation on Rajiv?
+Kwame: Hey Yuki, any juicy insights you'd like to share with us?
+Yuki: Aiden, your analytical approach is intriguing. What do you make of Kwame's curiosity and Inés's silence?
+Aiden: Yuki's persistent strategic questioning of others' motives should be noted for future reference.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Avery's persistent focus on Rajiv and Yuki's strategic questioning warrant continued observation; their behaviors may reveal the Mafiosos' identities.</thought>
+<thought player="Rajiv">Maintain pressure on Inés and consider targeting Avery to divert suspicion from Yuki.</thought>
+<thought player="Inés">Avery and Rajiv's odd behavior continues. Time to gather more info before making a move.</thought>
+<thought player="Kwame">Time to keep the pressure on Rajiv and Inés—let's see who cracks next. Meanwhile, I'll keep my eyes peeled for any slip-ups from the rest of the gang.</thought>
+<thought player="Yuki">Time to keep the pressure on Inés and Kwame, and maintain the heat on Avery to divert suspicion from Rajiv and myself!</thought>
+</round>
+<round>
+Round 5.
+Yuki: Hey Inés, your silence is starting to get under my skin. What's going on in that head of yours?
+Kwame: Hey Avery, you've got your eyes on Rajiv, but what about Inés? She's been quieter than a mime at a comedy show.
+Rajiv: Avery, your relentless focus on me is becoming counterproductive. Perhaps it's time to consider other players' motives.
+Avery: Nothing is settled yet, but I'm watching Rajiv most closely.
+Inés: Aiden, your analytical approach is useful. Keep digging into Avery and Rajiv's motives.
+Aiden: Kwame's persistent curiosity about others' motives may indicate an attempt to divert attention from himself.
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Continue to observe Avery and Rajiv; their interaction may reveal the Mafiosos' identities.</thought>
+<thought player="Rajiv">Maintain pressure on Inés and consider targeting Avery to disrupt their focus on me.</thought>
+<thought player="Inés">Watch Rajiv and Avery. Gather more info before making a move.</thought>
+<thought player="Kwame">Rajiv and Inés are still under the microscope, but I need to keep an eye on Yuki and Aiden too—they might just be the wildcards in this game.</thought>
+<thought player="Yuki">Time to ramp up the charm and keep the focus on Inés and Kwame, while maintaining the heat on Avery to divert suspicion from Rajiv and myself!</thought>
+</round>
+<round>
+Round 6.
+Aiden: Rajiv's insistence on redirecting focus from himself to others is noteworthy.
+Kwame: Hey Yuki, your strategic questioning is on point! Any juicy insights you'd like to share with us?
+Inés: Enough! Let's hear from Aiden. What's your take on this whole situation?
+<vote initiator="Avery" target="Rajiv">
+Avery: No
+Aiden: No
+Rajiv: No
+Inés: No
+Kwame: Yes
+Yuki: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Yuki: Kwame, your curiosity about others' motives is fascinating! What do you think about Inés's silence?
+Aiden: Kwame's persistent curiosity about others' motives may be an attempt to divert attention from himself.
+Rajiv: Avery's fixation on me is becoming a distraction. Let's focus on Inés instead.
+Inés: Kwame, your persistent curiosity about others' motives is raising questions. What's your angle?
+<vote initiator="Avery" target="Rajiv">
+Avery: No
+Aiden: No
+Rajiv: No
+Inés: No
+Kwame: No
+Yuki: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Aiden: Kwame's persistent curiosity about others' motives may be an attempt to divert attention from himself.
+Inés: Aiden, your analytical approach is useful. Keep digging into Avery and Rajiv's motives.
+Rajiv: Aiden's analytical approach has been insightful. Let's hear more from him.
+Yuki: Absolutely! Inés, your silence is deafening. What are you hiding?
+<vote initiator="Avery" target="Rajiv">
+Avery: No
+Aiden: No
+Rajiv: No
+Inés: No
+Kwame: No
+Yuki: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Yuki points at Inés
+Rajiv points at Avery
+Pointing round 2:
+Yuki points at Inés
+Rajiv points at Avery
+Pointing round 3:
+Rajiv points at Avery
+Yuki points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Inés: Rajiv, your insistence on redirecting focus is suspicious. What's your angle?
+Aiden: Kwame's persistent curiosity about others' motives may indicate an attempt to divert attention from himself.
+Kwame: Hey Aiden, your analytical approach is intriguing! What do you make of Yuki's strategic questioning?
+Rajiv: Inés, your silence remains conspicuous. It's time to share your thoughts and clear the air.
+Yuki: Hey Inés, your silence is raising questions. What's going on in that head of yours?
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The persistent focus on Rajiv and the strategic questioning by others may be attempts to divert attention from the true Mafiosos; it is imperative to remain vigilant and analytical.</thought>
+<thought player="Rajiv">Maintain pressure on Inés to divert suspicion from Yuki and consider targeting Aiden next to further disrupt the dynamics.</thought>
+<thought player="Inés">Rajiv's deflection tactics and Kwame's persistent curiosity are raising red flags. Time to gather more intel before making a move.</thought>
+<thought player="Kwame">Alright, time to keep the heat on Rajiv and Inés—let's see who cracks next. Meanwhile, I'll keep my eyes peeled for any slip-ups from Yuki and Aiden.</thought>
+<thought player="Yuki">Time to crank up the energy and keep the focus on Inés and Kwame, while maintaining the heat on Avery to divert suspicion from Rajiv and myself!</thought>
+</round>
+<round>
+Round 2.
+Kwame: Hey Yuki, your strategic questioning is on point! Any juicy insights you'd like to share with us?
+Yuki: Absolutely! Kwame, your curiosity about others' motives is fascinating! What do you think about Inés's silence?
+Rajiv: Inés, your continued silence is suspicious. It's time to share your thoughts and clear the air.
+Inés: Rajiv, your deflection tactics are suspicious. What are you hiding?
+Aiden: Rajiv's deflection tactics and Inés's silence both warrant closer scrutiny.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The deflection tactics of Rajiv and the silence of Inés require further scrutiny; it is essential to maintain a detached yet analytical approach to uncover the Mafiosos' identities.</thought>
+<thought player="Rajiv">Maintain pressure on Inés to divert suspicion from Yuki and prepare to target Aiden next to further disrupt the dynamics.</thought>
+<thought player="Inés">Rajiv's deflection tactics and Kwame's persistent curiosity are suspicious. Time to gather more intel before making a move.</thought>
+<thought player="Kwame">Time to keep the heat on Rajiv and Inés, but I should also keep an eye on Yuki and Aiden—they might just be the wildcards in this game.</thought>
+<thought player="Yuki">Time to keep the pressure on Inés and Kwame, and maintain the heat on Avery to divert suspicion from Rajiv and myself!</thought>
+</round>
+<round>
+Round 3.
+Yuki: Kwame, your relentless curiosity about others' motives is intriguing! What's driving your questioning?
+Aiden: Kwame's relentless curiosity about others' motives is intriguing; it may be a strategic deflection or a genuine attempt to uncover the Mafiosos.
+Inés: Aiden, your analytical approach is useful. Keep digging into Rajiv and Kwame's motives.
+Rajiv: Aiden, your analytical approach has been insightful. Let's hear more from you.
+Kwame: Hey Yuki, your strategic questioning is on point! Any juicy insights you'd like to share with us?
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Rajiv's deflection tactics and Inés's silence are suspicious; it may be prudent to call for a vote to execute one of them.</thought>
+<thought player="Rajiv">Focus on maintaining pressure on Inés while preparing to target Aiden next to further disrupt the dynamics and divert suspicion from Yuki.</thought>
+<thought player="Inés">Rajiv's deflection and Kwame's curiosity are suspicious. Time to gather more intel.</thought>
+<thought player="Kwame">Alright, time to keep the pressure on Rajiv and Inés, but I should also keep an eye on Yuki and Aiden—they might just be the wildcards in this game.</thought>
+<thought player="Yuki">Time to keep the pressure on Inés and Kwame, and maintain the heat on Avery to divert suspicion from Rajiv and myself!</thought>
+</round>
+<round>
+Round 4.
+Inés: Kwame, your relentless curiosity about others' motives is intriguing. What's driving your questioning?
+Yuki: Hey Kwame, your relentless curiosity about others' motives is intriguing! What's driving your questioning?
+Kwame: Hey Yuki, your strategic questioning is on point! Any juicy insights you'd like to share with us?
+<vote initiator="Aiden" target="Rajiv">
+Aiden: No
+Rajiv: No
+Inés: No
+Kwame: No
+Yuki: No
+tally: 0 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Rajiv: Inés, your silence is raising questions. It's time to share your thoughts and clear the air.
+<vote initiator="Aiden" target="Rajiv">
+Aiden: No
+Rajiv: No
+Inés: No
+Kwame: No
+Yuki: No
+tally: 0 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Inés: Aiden, your analytical approach is useful. Keep digging into Rajiv and Kwame's motives.
+Kwame: Hey Yuki, your strategic questioning is on point! Any juicy insights you'd like to share with us?
+Rajiv: Aiden, your analytical approach has been insightful. Let's hear more from you.
+<vote initiator="Aiden" target="Rajiv">
+Aiden: No
+Rajiv: No
+Inés: No
+Kwame: No
+Yuki: No
+tally: 0 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Rajiv points at Aiden
+Yuki points at Aiden
+<kill>Aiden — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Leila (Law-abiding Citizen)
+• Night 2: Avery (Law-abiding Citizen)
+• Night 3: Aiden (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Aiden (Law-abiding Citizen), Leila (Law-abiding Citizen), Rajiv (Mafia), Inés (Law-abiding Citizen), Kwame (Law-abiding Citizen), Yuki (Mafia)
+
+Who they really were:
+• Aiden (Law-abiding Citizen) — aloof and detached; analytical yet indifferent measured, precise diction; frequent pauses as if choosing words carefully; occasional bluntness Aiden is a former librarian, now a freelance researcher. They prefer solitude and find social interactions exhausting, often retreating into their work. Their analytical mind is sharp, but they show little interest in the emotions or personal lives of others.
+• Leila (Law-abiding Citizen) — prickly and easily-offended; sharp-tongued yet fair rapid-fire, clipped speech; frequent interjections like 'Honestly!' or 'For heaven's sake!'; uses precise, pointed vocabulary Leila is a seasoned baker, renowned for her exquisite pastries. She takes great pride in her craft and expects the same level of dedication and respect from those around her. Her no-nonsense attitude and quick wit make her a force to be reckoned with in any discussion.
+• Rajiv (Mafia) — publicly presented as Rajiv is a retired military officer, now working as a high school history teacher. He instills discipline and respect in his students, often drawing from his own experiences in the armed forces. Known for his strict but fair approach, Rajiv commands the classroom with a presence that brooks no nonsense, yet is respected by both students and colleagues. (stern and commanding; decisive, firm leadership style; no-nonsense approach; exudes authority and confidence straightforward and direct speech; uses strong, assertive language; maintains a composed and authoritative tone; rarely shows hesitation or doubt) … but was really a Mafioso: Rajiv's military background is a front for his true role as a high-ranking Mafioso. His stern demeanor and commanding presence are not just a result of his military training but also a tool he uses to intimidate and control. Rajiv rose through the ranks of the Mafia by leveraging his strategic mind and unyielding resolve, using his cover as a teacher to maintain a low profile while pulling the strings behind the scenes.
+• Inés (Law-abiding Citizen) — gruff and blunt; speaks with a no-nonsense, straightforward approach; displays a tough exterior but has a soft spot for animals and children. short, curt sentences; uses simple, direct language; occasional interjections like 'Enough!' or 'Nonsense!'; speaks with a rough, gravelly voice. Inés is a seasoned blacksmith, known for her expert craftsmanship and unyielding work ethic. She has a reputation for being tough as nails, but those who know her well understand that she has a heart of gold, especially when it comes to helping those in need. Despite her rough exterior, Inés is a pillar of the community, always willing to lend a hand or share her knowledge with others.
+• Kwame (Law-abiding Citizen) — playful and teasing; lighthearted yet perceptive; enjoys banter and ribbing others in good fun. casual and conversational; uses humor and playful language; frequent use of puns, jokes, and light teasing; upbeat and energetic tone. Kwame is the local jester, known for his quick wit and ability to lighten the mood in any situation. He performs at town events and gatherings, bringing laughter and joy to everyone around. Despite his playful nature, Kwame is a keen observer of people and situations, often using his humor as a way to connect with others and uncover the truth.
+• Yuki (Mafia) — publicly presented as Yuki is a traveling entertainer, known for their captivating performances and infectious energy. They move from town to town, bringing joy and excitement wherever they go. With a repertoire of songs, dances, and stories, Yuki has a way of connecting with people and making them feel at ease. Their vibrant personality and undeniable talent have earned them a loyal following, and they are always welcomed with open arms in any community. (brash and loud, with a confident and charismatic presence; easily draws attention to themselves; a natural leader who commands the room with their energy and charm enthusiastic and animated; speaks with a strong, confident voice; uses exaggerated gestures and expressions; often raises their voice to emphasize points; frequently uses exclamations like 'Absolutely!' and 'You bet!'; maintains a high-energy, engaging tone throughout conversations) … but was really a Mafioso: Yuki's true identity is that of a high-ranking Mafioso, known for their cunning and strategic mind. They use their public persona as a cover to gather information and influence people from within. Yuki's charisma and ability to read a room make them an invaluable asset to the Mafia, allowing them to navigate social situations with ease and manipulate those around them to further the organization's goals.
+</endgame>
+</transcript>

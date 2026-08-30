@@ -1,0 +1,321 @@
+Game 30 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Aiden" role="Mafia">
+Personality: aloof, detached, and analytical; appears calm but is inwardly calculating
+Manner: speaks in a low, measured tone, choosing words carefully; often poses rhetorical questions to provoke thought
+Public legend: Aiden is a retired professor of sociology, now living a quiet life in the town. He enjoys observing human behavior and social dynamics, often jotting down notes in his journal. Aiden is known for his calm demeanor and insightful comments during town meetings.
+True self (hidden): In his former life, Aiden was a high-ranking member of a notorious Mafia family. His analytical mind and detached personality made him an invaluable asset in planning and executing complex operations. He retired from the Mafia after a particularly bloody conflict within the organization, seeking a quieter life under the radar.
+</player>
+<player name="Kira" role="Law-abiding Citizen">
+Personality: enthusiastic and friendly
+Manner: fast-paced, uses exclamations, likes to share personal anecdotes
+Persona: Kira is a local baker, known for her warm smiles and delicious pastries. She loves chatting with customers and sharing stories about her travels.
+</player>
+<player name="Leon" role="Law-abiding Citizen">
+Personality: dry and sardonic; has a sharp wit and a tendency to make cutting remarks
+Manner: speaks in a sarcastic, deadpan tone, often using dry humor and witty one-liners
+Persona: Leon is a local librarian, known for his vast knowledge of books and acerbic commentary on town events. He has a reputation for being blunt and straightforward, often providing unconventional insights during town discussions.
+</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: eccentric and whimsical
+Manner: erratic and enthusiastic, frequently switches topics, uses playful metaphors and quirky expressions
+Persona: Zara is a local artist known for her vibrant, abstract paintings. She often throws spontaneous art shows in the park, inviting townsfolk to join in the creative process. Her imaginative spirit and unconventional approach to life make her a beloved, if unpredictable, figure in the community.
+</player>
+<player name="Hiroshi" role="Mafia">
+Personality: absent-minded and idealistic
+Manner: speaks slowly, often trailing off and getting lost in thought, uses poetic language and abstract metaphors
+Public legend: Hiroshi is a local poet and dreamer, often found wandering the town with a notebook in hand, jotting down verses inspired by the beauty around him. He's known for his kind heart and whimsical outlook on life, often sharing his poems with anyone who will listen. His gentle nature and love for the arts make him a beloved figure in the community.
+True self (hidden): Beneath his dreamy exterior, Hiroshi is a shrewd and calculating Mafioso, using his poetic facade to mask his true intentions. He joined the Mafia after a chance encounter with a powerful crime boss who recognized his potential. Hiroshi's role within the organization is to gather information and manipulate situations from behind the scenes, all while maintaining his innocent public image.
+</player>
+<player name="Isabella" role="Law-abiding Citizen">
+Personality: vigilant and perceptive; quick to notice inconsistencies and irregularities
+Manner: speaks in a measured, deliberate tone; uses precise vocabulary; often poses insightful questions
+Persona: Isabella is a former journalist who has settled in the town after retiring. Known for her keen eye for detail and her investigative skills, she is always the first to notice when something doesn't add up. Her past as a journalist has made her a valuable resource for the town, often helping to solve mysteries and uncover truths.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiden, Kira, Leon, Zara, Hiroshi, Isabella. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Aiden): Your Mafia teammates are: Hiroshi. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Hiroshi): Your Mafia teammates are: Aiden. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Hiroshi points at Zara
+Aiden points at Zara
+<kill>Zara — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Zara was killed last night. Zara was a Law-abiding Citizen.
+<round>
+Round 1.
+Kira: Hey everyone! So, I was thinking, let's consider how Zara might have been targeted. Any thoughts?
+Hiroshi: As the sun rises, casting golden hues upon our gathering, I ponder the delicate dance of trust and doubt. Perhaps, in the whispers of the wind, we shall find the answers we seek.
+Avery: Nothing is settled yet, but I'm watching Isabella most closely.
+Isabella: Avery, could you elaborate on why you are watching me most closely?
+Leon: Isabella, you seem to be the center of attention already. Care to share your thoughts on Zara's unfortunate demise?
+Aiden: Considering the circumstances, is it not prudent to examine the behavior of those who were vocal during the previous day?
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">With the Law-abiding Citizens suspicious of Isabella and Avery's focus on her, it may be beneficial to subtly divert attention away from Hiroshi and myself.</thought>
+<thought player="Kira">Hmm, I think I should pay close attention to Avery and Isabella's interactions, and maybe share a bit more of my own observations to nudge the conversation in the right direction!</thought>
+<thought player="Leon">Well, Avery's got their eye on Isabella, and Hiroshi's waxing poetic—time to steer this ship before it sails into Mafioso territory.</thought>
+<thought player="Hiroshi">In the quiet of twilight, I must weave a tapestry of words that dance around the truth, guiding suspicion away from Aiden and myself, while sowing seeds of doubt among the Law-abiding.</thought>
+<thought player="Isabella">Reflecting on the current dynamics, I must remain vigilant and scrutinize Avery's motives for singling me out, while also considering the possibility that Aiden's suggestion to examine vocal behavior may yield valuable insights.</thought>
+</round>
+<round>
+Round 2.
+Kira: Hey everyone! I've been thinking about what Zara said before she was killed. Maybe there's a clue in her last words?
+Hiroshi: In the garden of our shared fate, let us not forget the petals that have fallen, for they may whisper secrets of the night.
+Aiden: Might it be beneficial to consider the motives of those who were silent during the previous day's discussion?
+Avery: Nothing is settled yet, but I'm watching Isabella most closely.
+Leon: Isabella, your sudden popularity is almost as intriguing as the plot of a mystery novel.
+Isabella: Avery, your repeated focus on me is noteworthy. Might there be a reason you are singling me out, or is it merely a coincidence?
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The current focus on Isabella presents an opportunity to divert suspicion from Hiroshi and myself. I must carefully craft my words to steer the conversation towards other players.</thought>
+<thought player="Kira">I need to keep an eye on Avery and Isabella, and maybe share a few more thoughts to guide the discussion!</thought>
+<thought player="Leon">Time to nudge the conversation towards more actionable insights before the Mafiosos start weaving their webs.</thought>
+<thought player="Hiroshi">As the shadows lengthen and the whispers of twilight fill the air, I must tread carefully, weaving a veil of ambiguity around my words to shield Aiden and myself from the probing eyes of the Law-abiding.</thought>
+<thought player="Isabella">I must continue to probe Avery's fixation on me, while also subtly gathering information on the vocal and silent players to discern any hidden alliances or suspicious behavior.</thought>
+</round>
+<round>
+Round 3.
+Leon: Isabella, your repeated focus by Avery is certainly... entertaining. But let's not forget, the real culprits might be hiding in plain sight.
+Kira: Hey everyone, has anyone noticed any unusual behavior or inconsistencies in the way people are discussing things? It might give us a clue about who's not being entirely honest.
+Aiden: Might it be prudent to examine the behavior of those who were vocal during the previous day?
+Isabella: Avery, your persistent focus on me raises questions. Might there be a strategic reason behind your scrutiny, or is it merely a coincidence?
+Avery: Nothing is settled yet, but I'm watching Isabella most closely.
+Hiroshi: In the tapestry of our shared destiny, let us not overlook the subtle hues of deception that may be woven into our midst.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The current focus on Isabella provides a strategic opportunity to divert suspicion from Hiroshi and myself; I must continue to subtly steer the conversation towards other players.</thought>
+<thought player="Kira">I should keep observing Avery and Isabella, and maybe share a bit more of my thoughts to help the group make a decision!</thought>
+<thought player="Leon">Time to drop a hint about examining the motives of the overly vocal, lest we all get entangled in Hiroshi's verbose tapestry.</thought>
+<thought player="Hiroshi">In the embrace of twilight, I shall cast a veil of ambiguity over my words, guiding the Law-abiding towards discord and away from the truth.</thought>
+<thought player="Isabella">Avery's persistent focus on me warrants further investigation, while Aiden's suggestion to scrutinize vocal behavior may uncover hidden alliances or deceptive tactics.</thought>
+</round>
+<round>
+Round 4.
+Aiden: Might it be beneficial to consider the motives of those who were silent during the previous day's discussion?
+Avery: Nothing is settled yet, but I'm watching Isabella most closely.
+Isabella: Avery, your fixation on me is intriguing. Might there be a strategic reason behind your scrutiny, or is it merely a coincidence?
+Kira: Hey everyone, I noticed that Avery has been focusing on Isabella quite a bit. It makes me wonder if there's something more to their interactions that we should be aware of.
+Hiroshi: In the symphony of our shared journey, let us not forget the silent notes that may reveal the hidden truths.
+Leon: Aiden, your insistence on examining the motives of the silent ones is almost as intriguing as the plot of a mystery novel.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The current fixation on Isabella and Avery's interactions presents an opportune moment to subtly shift the focus towards other players, thereby protecting Hiroshi and myself.</thought>
+<thought player="Kira">I need to keep a close eye on Avery and Isabella, and maybe share a few more observations to help the group uncover the truth!</thought>
+<thought player="Leon">Well, if we don't start pointing fingers soon, we might as well hand the Mafiosos the victory trophy.</thought>
+<thought player="Hiroshi">In the embrace of twilight, I shall continue to weave a veil of ambiguity, guiding the Law-abiding towards discord and away from the truth.</thought>
+<thought player="Isabella">I must continue to question Avery's motives while subtly gathering information on both vocal and silent players to uncover any hidden alliances or suspicious behavior.</thought>
+</round>
+<round>
+Round 5.
+Leon: Aiden, your fascination with the silent ones is almost as suspicious as the plot twists in a poorly written novel.
+Avery: Nothing is settled yet, but I'm watching Isabella most closely.
+Isabella: Aiden, your repeated emphasis on examining vocal behavior may be a strategic attempt to divert attention from yourself. Is there a specific reason you are advocating for this approach?
+Aiden: Might it be prudent to examine the motives of those who were vocal during the previous day?
+Kira: Hey everyone, I've been thinking about Zara's last words and how they might connect to our current situation. Anyone else notice any odd phrases or hints in what she said?
+Hiroshi: In the garden of our shared fate, let us not forget the petals that have fallen, for they may whisper secrets of the night.
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">With the focus on Isabella and Avery, it is imperative to continue subtly steering the conversation to divert suspicion from Hiroshi and myself.</thought>
+<thought player="Kira">I need to keep observing Avery and Isabella, and maybe share a bit more of my thoughts to help the group uncover the truth!</thought>
+<thought player="Leon">Time to subtly steer the conversation towards actionable insights and drop a hint about examining the motives of the overly vocal, lest we all get entangled in Hiroshi's verbose tapestry.</thought>
+<thought player="Hiroshi">In the hush of nightfall, I must continue to spin a web of uncertainty, drawing the Law-abiding into a dance of suspicion and away from the truth.</thought>
+<thought player="Isabella">I must maintain my scrutiny of Avery's fixation on me, while also subtly gathering information on both vocal and silent players to uncover any hidden alliances or suspicious behavior.</thought>
+</round>
+<round>
+Round 6.
+Isabella: Kira, your observation about Zara's last words is intriguing. Has anyone else noticed any peculiar phrases or hints in her final remarks?
+Aiden: Might it be beneficial to consider the motives of those who were silent during the previous day's discussion?
+Leon: Aiden, your relentless focus on the silent ones is starting to sound like a broken record—time to change the tune.
+Hiroshi: In the tapestry of our shared destiny, let us not overlook the subtle hues of deception that may be woven into our midst.
+Kira: Hey everyone, I've noticed that Aiden keeps bringing up the silent players. It makes me wonder if he's trying to divert attention from himself. What do you all think?
+<vote initiator="Avery" target="Isabella">
+Avery: No
+Aiden: No
+Kira: No
+Leon: Yes
+Hiroshi: No
+Isabella: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Kira: Hey everyone, I've been thinking about Zara's last words and how they might connect to our current situation. Anyone else notice any odd phrases or hints in what she said?
+Isabella: Avery, your repeated fixation on me is becoming increasingly conspicuous. Might there be a strategic reason behind your scrutiny, or is it merely a coincidence?
+Hiroshi: In the garden of our shared fate, let us not forget the petals that have fallen, for they may whisper secrets of the night.
+<vote initiator="Avery" target="Isabella">
+Avery: No
+Aiden: No
+Kira: No
+Leon: Yes
+Hiroshi: No
+Isabella: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Kira: Hey everyone, I've been thinking about Zara's last words and how they might connect to our current situation. Anyone else notice any odd phrases or hints in what she said?
+Aiden: Might it be beneficial to examine the motives of those who were vocal during the previous day?
+Leon: Kira, your persistent focus on Zara's last words is almost as intriguing as the plot of a mystery novel. Perhaps we should consider the motives of those who were overly vocal during the previous day's discussion.
+<vote initiator="Avery" target="Isabella">
+Avery: No
+Aiden: No
+Kira: No
+Leon: Yes
+Hiroshi: No
+Isabella: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Aiden points at Leon
+Hiroshi points at Leon
+<kill>Leon — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Leon was killed last night. Leon was a Law-abiding Citizen.
+<round>
+Round 1.
+Kira: Hey everyone, I've noticed that Aiden has been consistently focusing on the silent players. It makes me wonder if he's trying to divert attention from himself. What do you all think?
+Isabella: Kira, your observation about Aiden's focus on silent players is compelling. It may indeed be a strategic attempt to divert attention from himself.
+Avery: I most suspect Isabella based on how the votes have gone.
+Aiden: Might it be beneficial to consider the motives of those who were silent during the previous day's discussion?
+Hiroshi: In the twilight of our shared journey, let us not forget the silent whispers that may guide us towards the truth.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">With Isabella and Avery's fixation on each other, I must continue to subtly steer the conversation to divert suspicion from Hiroshi and myself.</thought>
+<thought player="Kira">I need to keep observing Avery and Isabella, and maybe share a bit more of my thoughts to help the group uncover the truth!</thought>
+<thought player="Hiroshi">In the hush of nightfall, I must continue to spin a web of uncertainty, drawing the Law-abiding into a dance of suspicion and away from the truth.</thought>
+<thought player="Isabella">I must continue to question Avery's motives and subtly gather information on both vocal and silent players to uncover any hidden alliances or suspicious behavior.</thought>
+</round>
+<round>
+Round 2.
+Isabella: Avery, your unwavering focus on me is becoming increasingly conspicuous. Might there be a strategic reason behind your scrutiny, or is it merely a coincidence?
+Avery: I most suspect Isabella based on how the votes have gone.
+Aiden: Might it be beneficial to examine the motives of those who were vocal during the previous day's discussion?
+Kira: Hey everyone, I've noticed that Aiden has been consistently focusing on the silent players. It makes me wonder if he's trying to divert attention from himself. What do you all think?
+Hiroshi: In the hush of nightfall, let us ponder the echoes of silence, for they may hold the key to our salvation.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">With Isabella and Avery's fixation on each other, I must continue to subtly steer the conversation to divert suspicion from Hiroshi and myself.</thought>
+<thought player="Kira">I need to keep a close eye on Avery and Isabella, and maybe share a few more observations to help the group uncover the truth!</thought>
+<thought player="Hiroshi">In the hush of nightfall, I must continue to weave a tapestry of ambiguity, guiding the Law-abiding towards discord and away from the truth.</thought>
+<thought player="Isabella">I must continue to probe Avery's fixation on me, while subtly gathering information on both vocal and silent players to uncover any hidden alliances or suspicious behavior.</thought>
+</round>
+<round>
+Round 3.
+Isabella: Kira, your observation about Aiden's focus on silent players is compelling. It may indeed be a strategic attempt to divert attention from himself.
+Aiden: Might it be prudent to consider the motives of those who were silent during the previous day's discussion?
+Kira: Hey everyone, I've been thinking about Zara's last words and how they might connect to our current situation. Anyone else notice any odd phrases or hints in what she said?
+Hiroshi: In the realm of shadows, let us not forget the delicate balance between light and dark, for it is in this equilibrium that the truth may be revealed.
+Avery: I most suspect Isabella based on how the votes have gone.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The current fixation on Isabella and Avery provides a strategic opportunity to subtly shift the focus towards other players, thereby protecting Hiroshi and myself.</thought>
+<thought player="Kira">I need to keep a close eye on Avery and Isabella, and maybe share a few more observations to help the group uncover the truth!</thought>
+<thought player="Hiroshi">In the quiet of twilight, I must continue to weave a veil of ambiguity, guiding the Law-abiding towards discord and away from the truth.</thought>
+<thought player="Isabella">I must continue to question Avery's motives and subtly gather information on both vocal and silent players to uncover any hidden alliances or suspicious behavior.</thought>
+</round>
+<round>
+Round 4.
+Avery: I most suspect Isabella based on how the votes have gone.
+Aiden: Might it be beneficial to examine the motives of those who were vocal during the previous day's discussion?
+Kira: Hey everyone, I've been thinking about Zara's last words and how they might connect to our current situation. Anyone else notice any odd phrases or hints in what she said?
+Isabella: Avery, your persistent focus on me raises questions. Might there be a strategic reason behind your scrutiny, or is it merely a coincidence?
+Hiroshi: In the symphony of our shared journey, let us not forget the silent notes that may reveal the hidden truths.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The fixation on Isabella and Avery continues to serve our purpose; I must maintain my strategy of subtly steering the conversation to protect Hiroshi and myself.</thought>
+<thought player="Kira">I should keep observing Avery and Isabella, and maybe share a bit more of my thoughts to help the group uncover the truth!</thought>
+<thought player="Hiroshi">In the quiet of twilight, I must continue to weave a veil of ambiguity, guiding the Law-abiding towards discord and away from the truth.</thought>
+<thought player="Isabella">I must continue to question Avery's motives and subtly gather information on both vocal and silent players to uncover any hidden alliances or suspicious behavior.</thought>
+</round>
+<round>
+Round 5.
+Hiroshi: In the tapestry of our shared destiny, let us not overlook the subtle hues of deception that may be woven into our midst.
+Aiden: Might it be prudent to consider the motives of those who were silent during the previous day's discussion?
+Avery: I most suspect Isabella based on how the votes have gone.
+Isabella: Avery, your persistent focus on me raises questions. Might there be a strategic reason behind your scrutiny, or is it merely a coincidence?
+Kira: Hey everyone, I've noticed that Isabella has been quite vocal about her suspicions towards others. It makes me wonder if she's trying to divert attention from herself. What do you all think?
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The fixation on Isabella and Avery remains advantageous; I must continue to subtly steer the conversation to protect Hiroshi and myself.</thought>
+<thought player="Kira">I should keep a close eye on Avery and Isabella, and maybe share a few more observations to help the group uncover the truth!</thought>
+<thought player="Hiroshi">In the symphony of our shared journey, I must continue to weave a veil of ambiguity, guiding the Law-abiding towards discord and away from the truth.</thought>
+<thought player="Isabella">I must continue to probe Avery's fixation on me, while subtly gathering information on both vocal and silent players to uncover any hidden alliances or suspicious behavior.</thought>
+</round>
+<round>
+Round 6.
+Isabella: Avery, your repeated focus on me is becoming increasingly conspicuous. Might there be a strategic reason behind your scrutiny, or is it merely a coincidence?
+Kira: Hey everyone, I've noticed that Isabella has been quite vocal about her suspicions towards others. It makes me wonder if she's trying to divert attention from herself. What do you all think?
+Hiroshi: In the tapestry of our shared destiny, let us not overlook the subtle hues of deception that may be woven into our midst.
+Aiden: Might it be beneficial to examine the motives of those who were vocal during the previous day's discussion?
+<vote initiator="Avery" target="Isabella">
+Avery: Yes
+Aiden: No
+Kira: No
+Hiroshi: No
+Isabella: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Isabella: Aiden, your consistent focus on the silent players raises questions. Might there be a strategic reason behind your emphasis, or is it merely a coincidence?
+Hiroshi: In the realm of shadows, let us not forget the delicate balance between light and dark, for it is in this equilibrium that the truth may be revealed.
+<vote initiator="Avery" target="Isabella">
+Avery: Yes
+Aiden: No
+Kira: No
+Hiroshi: No
+Isabella: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Hiroshi: In the twilight of our shared journey, let us not forget the silent whispers that may guide us towards the truth.
+Isabella: Avery, your persistent focus on me is becoming increasingly conspicuous. Might there be a strategic reason behind your scrutiny, or is it merely a coincidence?
+<vote initiator="Avery" target="Isabella">
+Avery: Yes
+Aiden: No
+Kira: No
+Hiroshi: No
+Isabella: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Aiden points at Isabella
+Hiroshi points at Isabella
+<kill>Isabella — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Zara (Law-abiding Citizen)
+• Night 2: Leon (Law-abiding Citizen)
+• Night 3: Isabella (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Aiden (Mafia), Kira (Law-abiding Citizen), Leon (Law-abiding Citizen), Zara (Law-abiding Citizen), Hiroshi (Mafia), Isabella (Law-abiding Citizen)
+
+Who they really were:
+• Aiden (Mafia) — publicly presented as Aiden is a retired professor of sociology, now living a quiet life in the town. He enjoys observing human behavior and social dynamics, often jotting down notes in his journal. Aiden is known for his calm demeanor and insightful comments during town meetings. (aloof, detached, and analytical; appears calm but is inwardly calculating speaks in a low, measured tone, choosing words carefully; often poses rhetorical questions to provoke thought) … but was really a Mafioso: In his former life, Aiden was a high-ranking member of a notorious Mafia family. His analytical mind and detached personality made him an invaluable asset in planning and executing complex operations. He retired from the Mafia after a particularly bloody conflict within the organization, seeking a quieter life under the radar.
+• Kira (Law-abiding Citizen) — enthusiastic and friendly fast-paced, uses exclamations, likes to share personal anecdotes Kira is a local baker, known for her warm smiles and delicious pastries. She loves chatting with customers and sharing stories about her travels.
+• Leon (Law-abiding Citizen) — dry and sardonic; has a sharp wit and a tendency to make cutting remarks speaks in a sarcastic, deadpan tone, often using dry humor and witty one-liners Leon is a local librarian, known for his vast knowledge of books and acerbic commentary on town events. He has a reputation for being blunt and straightforward, often providing unconventional insights during town discussions.
+• Zara (Law-abiding Citizen) — eccentric and whimsical erratic and enthusiastic, frequently switches topics, uses playful metaphors and quirky expressions Zara is a local artist known for her vibrant, abstract paintings. She often throws spontaneous art shows in the park, inviting townsfolk to join in the creative process. Her imaginative spirit and unconventional approach to life make her a beloved, if unpredictable, figure in the community.
+• Hiroshi (Mafia) — publicly presented as Hiroshi is a local poet and dreamer, often found wandering the town with a notebook in hand, jotting down verses inspired by the beauty around him. He's known for his kind heart and whimsical outlook on life, often sharing his poems with anyone who will listen. His gentle nature and love for the arts make him a beloved figure in the community. (absent-minded and idealistic speaks slowly, often trailing off and getting lost in thought, uses poetic language and abstract metaphors) … but was really a Mafioso: Beneath his dreamy exterior, Hiroshi is a shrewd and calculating Mafioso, using his poetic facade to mask his true intentions. He joined the Mafia after a chance encounter with a powerful crime boss who recognized his potential. Hiroshi's role within the organization is to gather information and manipulate situations from behind the scenes, all while maintaining his innocent public image.
+• Isabella (Law-abiding Citizen) — vigilant and perceptive; quick to notice inconsistencies and irregularities speaks in a measured, deliberate tone; uses precise vocabulary; often poses insightful questions Isabella is a former journalist who has settled in the town after retiring. Known for her keen eye for detail and her investigative skills, she is always the first to notice when something doesn't add up. Her past as a journalist has made her a valuable resource for the town, often helping to solve mysteries and uncover truths.
+</endgame>
+</transcript>

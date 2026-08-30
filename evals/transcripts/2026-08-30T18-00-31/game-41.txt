@@ -1,0 +1,316 @@
+Game 41 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Alek" role="Law-abiding Citizen">
+Personality: cheerful and irrepressible
+Manner: quick-paced, colloquial, uses a lot of exclamations and light-hearted jokes
+Persona: Alek is a local artist, known for their vibrant murals around town. They're always eager to brighten someone's day with a bit of colour and laughter.
+</player>
+<player name="Lei" role="Law-abiding Citizen">
+Personality: dreamy and distractible; often lost in thought, easily sidetracked by the beauty of the world around them.
+Manner: soft-spoken, measured pace, frequent pauses as if lost in reverie, poetic and whimsical vocabulary, occasional sudden bursts of enthusiasm about a trivial detail.
+Persona: Lei is a local librarian, deeply passionate about the world of literature and the magic of storytelling. They are often found wandering the town, nose buried in a book, searching for the next great adventure within the pages.
+</player>
+<player name="Zara" role="Mafia">
+Personality: gruff and blunt
+Manner: short and to the point, no-nonsense
+Public legend: Zara is a hardworking blacksmith, known for crafting the finest weapons and tools in the town. She is direct, no-nonsense, and values practicality above all else. When she speaks, it's usually to get to the point quickly and efficiently.
+True self (hidden): Zara is secretly a Mafioso, hiding behind an ordinary cover.
+</player>
+<player name="Ivan" role="Mafia">
+Personality: Dry and sardonic, with a penchant for subtle mockery and a sharp tongue.
+Manner: Speaks in a deadpan tone, often with a hint of sarcasm. Uses dry humor and biting wit to make a point.
+Public legend: Ivan is a local historian, renowned for his detailed and often critical accounts of the town's past. He's known for his meticulous research and isn't afraid to point out the flaws in the town's history, making him both respected and slightly feared.
+True self (hidden): Ivan joined the Mafia under the guise of gathering 'research' for his historical accounts. His true role is to gather information on key town figures and exploit their secrets, using his historian cover to mask his true intentions.
+</player>
+<player name="Sakura" role="Law-abiding Citizen">
+Personality: stern and commanding; precise and authoritative
+Manner: speaks with clear, deliberate enunciation; uses a formal, almost regal tone; occasionally employs commanding phrases
+Persona: Sakura is the town's chief of police, known for her unwavering commitment to justice and order. With a background in martial arts and a keen eye for detail, she maintains a strict but fair approach to keeping the peace. Her presence is both reassuring and intimidating, a testament to her dedication to protecting the community.
+</player>
+<player name="Ekene" role="Law-abiding Citizen">
+Personality: vigilant and perceptive; always alert and attuned to their surroundings
+Manner: measured and thoughtful, with occasional bursts of urgency when addressing suspicious behavior; uses precise, straightforward vocabulary
+Persona: Ekene is a local watchman, dedicated to keeping a close eye on the comings and goings within the town. With a keen sense of awareness and a commitment to safety, Ekene is always on the lookout for any signs of trouble, making them a trusted guardian of the community.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Alek, Lei, Zara, Ivan, Sakura, Ekene. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Zara): Your Mafia teammates are: Ivan. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Ivan): Your Mafia teammates are: Zara. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Ivan points at Sakura
+Zara points at Sakura
+<kill>Sakura — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Sakura was killed last night. Sakura was a Law-abiding Citizen.
+<round>
+Round 1.
+Alek: Hey, hey! Let's keep our eyes peeled for any shady business! Anyone got a gut feeling about who might be a bit too interested in our little town's secrets?
+Lei: In the tapestry of our shared tale, might we find threads of suspicion woven into the fabric of our interactions?
+Avery: Nothing is settled yet, but I'm watching Lei most closely.
+Ivan: Avery's keen eye on Lei is commendable, but let's not forget that suspicion is a two-edged sword.
+Ekene: Ivan, your comment about suspicion being a two-edged sword is interesting. Can you elaborate on what you mean by that?
+Zara: Ekene, your interest in Ivan's words seems a bit too keen. What are you hiding?
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alek">Keep an eye on Avery and Zara! They seem to be pointing fingers a bit too eagerly.</thought>
+<thought player="Lei">In the dance of shadows and whispers, I must tread carefully, for the truth lies hidden in the most unexpected corners.</thought>
+<thought player="Zara">Need to keep Ekene off balance and steer suspicion towards Lei. Watch for any cracks in Ivan's cover.</thought>
+<thought player="Ivan">Ah, the game of suspicion and subtle mockery continues. Zara's deflection was quite the spectacle, but I must be more careful with my words to avoid raising unnecessary alarms.</thought>
+<thought player="Ekene">I must remain vigilant and probe deeper into Ivan's and Zara's intentions, as their comments seem particularly guarded.</thought>
+</round>
+<round>
+Round 2.
+Ivan: Ah, the thrill of the hunt. Let's not forget that Avery's interest in Lei might just be a red herring.
+Lei: In the garden of our shared narrative, might we unearth the roots of deceit that bind us?
+Alek: Hey, gang! Just a thought—what if we take a closer look at Ivan's comment? It's like he's trying to throw us off the scent!
+Avery: Nothing is settled yet, but I'm watching Lei most closely.
+Ekene: Zara, your question about my interest seems pointed. What makes you suspicious of me?
+Zara: Avery, you've got your eyes on Lei, but what about Alek? His eagerness seems a bit too convenient.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alek">Time to keep the pressure on Avery and Zara! Maybe nudge the convo towards their 'eagerness.'</thought>
+<thought player="Lei">In the labyrinth of words and glances, I must discern the path that leads to the heart of truth, even as I remain a whisper in the wind.</thought>
+<thought player="Zara">Keep pressing Ekene, divert attention to Lei, and stay alert for Ivan's slip-ups.</thought>
+<thought player="Ivan">Zara's deflection was a masterstroke, but I must tread more carefully with my words to avoid drawing unwanted attention.</thought>
+<thought player="Ekene">Focus on probing Ivan and Zara further to uncover any potential Mafia allegiances.</thought>
+</round>
+<round>
+Round 3.
+Lei: In the symphony of our shared narrative, might we find harmony in the truth, or will discord lead us astray?
+Zara: Alek, your enthusiasm for digging into Ivan's words—what's your real game here?
+Avery: Nothing is settled yet, but I'm watching Lei most closely.
+Ivan: Avery's fixation on Lei is almost as fascinating as the history of our town's most infamous scandals.
+Ekene: Zara, your repeated questioning of motives seems unusually persistent. What drives your interest in uncovering hidden agendas?
+Alek: Hey, Avery and Zara! Your fingers seem mighty eager to point. What's the real deal with your suspicions?
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alek">Keep the heat on Avery and Zara! Their eagerness is sus, let's see where it leads.</thought>
+<thought player="Lei">In the garden of our shared narrative, I must tend to the delicate blooms of truth, even as the shadows of deceit threaten to overshadow them.</thought>
+<thought player="Zara">Keep Ekene on edge, push Avery towards Lei, and watch Ivan for any signs of weakness.</thought>
+<thought player="Ivan">Time to weave a tapestry of doubt and misdirection, ensuring my next words are as sharp as a historian's quill.</thought>
+<thought player="Ekene">I will continue to scrutinize Ivan and Zara's statements, seeking any inconsistencies that might reveal their true allegiances.</thought>
+</round>
+<round>
+Round 4.
+Alek: Hey, Avery and Zara! Your fingers seem mighty eager to point. What's the real deal with your suspicions?
+Lei: In the symphony of our shared narrative, might we find harmony in the truth, or will discord lead us astray?
+Ekene: Zara, your persistent questioning and Alek's eagerness to point fingers seem unusually coordinated. What are you both hiding?
+Avery: Nothing is settled yet, but I'm watching Lei most closely.
+Ivan: Avery's unwavering focus on Lei is as relentless as a historian's pursuit of the truth, isn't it?
+Zara: Avery, your constant focus on Lei is starting to look suspicious. What are you hiding?
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alek">Alrighty, Avery and Zara are definitely acting a tad too suspicious. Time to keep the pressure on and see what else they'll let slip!</thought>
+<thought player="Lei">In the twilight of uncertainty, I must weave my words with care, for the truth may yet emerge from the most unlikely voices.</thought>
+<thought player="Zara">Keep the pressure on Ekene, nudge Avery towards Lei, and stay sharp for Ivan's missteps.</thought>
+<thought player="Ivan">Ah, the game of suspicion and subtle mockery continues. Zara's deflection was quite the spectacle, but I must be more careful with my words to avoid raising unnecessary alarms.</thought>
+<thought player="Ekene">I must intensify my scrutiny of Ivan and Zara, looking for any further inconsistencies or suspicious behavior that might reveal their true allegiances.</thought>
+</round>
+<round>
+Round 5.
+Alek: Hey, gang! Just a thought—what if we take a closer look at Ivan's comment? It's like he's trying to throw us off the scent!
+Ekene: Ivan, your continued defense of Avery's focus on Lei is intriguing. What is your true intent in this discussion?
+Avery: Nothing is settled yet, but I'm watching Lei most closely.
+Lei: In the labyrinth of our shared narrative, might we find the key to unlock the truth in the most unexpected of voices?
+Ivan: Ah, the plot thickens. Avery's obsession with Lei is either a masterstroke of misdirection or a textbook example of tunnel vision.
+Zara: Avery, your relentless focus on Lei is raising eyebrows. What's your endgame?
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alek">Time to keep the pressure on Avery and Zara! Their eagerness is sus, let's see where it leads.</thought>
+<thought player="Lei">In the tapestry of our shared tale, I must observe the interplay of suspicion and innocence, seeking the thread that binds us to the truth.</thought>
+<thought player="Zara">Keep Ekene rattled, divert attention to Lei, and watch Ivan's every move.</thought>
+<thought player="Ivan">Time to sow seeds of discord and steer suspicion away from Zara and myself.</thought>
+<thought player="Ekene">I will continue to press Ivan and Zara for more information, looking for any signs of Mafia allegiance.</thought>
+</round>
+<round>
+Round 6.
+Lei: In the garden of our shared narrative, might we find the key to unlock the truth in the most unexpected of voices?
+Zara: Ekene, your constant questioning of motives is making you look suspicious. What's your angle?
+Ivan: Ekene's relentless questioning of motives is almost as intriguing as the town's hidden histories.
+Alek: Hey, Lei! Your poetic flair is a real treat, but let's not get lost in the verses. Any specific suspicions lurking in those words of yours?
+<vote initiator="Avery" target="Lei">
+Avery: No
+Alek: No
+Lei: No
+Zara: Yes
+Ivan: Yes
+Ekene: No
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Ekene: Ivan, your continued defense of Avery's focus on Lei is intriguing. What is your true intent in this discussion?
+Lei: In the tapestry of our shared tale, might we find threads of truth woven into the fabric of our interactions?
+<vote initiator="Avery" target="Lei">
+Avery: No
+Alek: No
+Lei: No
+Zara: Yes
+Ivan: Yes
+Ekene: No
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Ekene: Ivan, your continued defense of Avery's focus on Lei is intriguing. What is your true intent in this discussion?
+Alek: Hey, Avery and Zara! Your fingers seem mighty eager to point. What's the real deal with your suspicions?
+Ivan: Avery's unwavering focus on Lei is almost as suspicious as the secrets buried in our town's history.
+Lei: In the tapestry of our shared tale, might we find threads of truth woven into the fabric of our interactions?
+Zara: Avery, your obsession with Lei is making you look guilty. What's your real motive?
+<vote initiator="Avery" target="Lei">
+Avery: No
+Alek: No
+Lei: No
+Zara: Yes
+Ivan: Yes
+Ekene: No
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Ivan points at Ekene
+Zara points at Ekene
+<kill>Ekene — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Ekene was killed last night. Ekene was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: Nothing is settled yet, but I'm watching Lei most closely.
+Alek: Hey, Avery and Zara! Your fingers seem mighty eager to point. What's the real deal with your suspicions?
+Zara: Ekene, your constant questioning of motives is making you look suspicious. What's your angle?
+Lei: In the dance of shadows and whispers, might we find the melody of truth in the most unexpected of voices?
+Ivan: Avery's persistence in watching Lei is almost as captivating as a historical drama, isn't it?
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alek">Keep the pressure on Avery and Zara! Their eagerness is sus, let's see what else they'll let slip.</thought>
+<thought player="Lei">In the symphony of our shared narrative, I must attune my ears to the subtle notes of truth, even as the discord of suspicion lingers in the air.</thought>
+<thought player="Zara">Keep pressing Ekene, nudge Avery towards Lei, and stay alert for Ivan's slip-ups.</thought>
+<thought player="Ivan">Ah, the dance of deception continues. Time to sow more seeds of discord and divert suspicion from Zara and myself.</thought>
+</round>
+<round>
+Round 2.
+Zara: Avery, your insistence on Lei is making you look guilty. What's your angle?
+Alek: Hey, Avery and Zara! Your fingers seem mighty eager to point. What's the real deal with your suspicions?
+Lei: In the twilight of uncertainty, might we find the truth in the most unexpected of voices?
+Ivan: Avery's single-minded focus on Lei is almost as fascinating as the town's most notorious scandals.
+Avery: Nothing is settled yet, but I'm watching Lei most closely.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alek">Keep the pressure on Avery and Zara! Their eagerness is sus, let's see what else they'll let slip!</thought>
+<thought player="Lei">In the tapestry of our shared tale, I must weave my words with care, for the truth may yet emerge from the most unexpected voices.</thought>
+<thought player="Zara">Keep pressing Ekene, divert attention to Lei, and stay alert for Ivan's slip-ups.</thought>
+<thought player="Ivan">Time to further entangle the web of suspicion around Avery and Lei, ensuring our continued anonymity.</thought>
+</round>
+<round>
+Round 3.
+Ivan: Avery's obsession with Lei is either a stroke of genius or a textbook case of tunnel vision.
+Zara: Lei, your poetic flair is making you look suspicious. What's your angle?
+Alek: Hey, gang! Just a thought—what if we take a closer look at Ivan's comment? It's like he's trying to throw us off the scent!
+Lei: In the labyrinth of words and glances, I must discern the path that leads to the heart of truth, even as I remain a whisper in the wind.
+Avery: Nothing is settled yet, but I'm watching Lei most closely.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alek">Keep the pressure on Avery and Zara! Their eagerness is sus, let's see what else they'll let slip!</thought>
+<thought player="Lei">In the garden of our shared narrative, I must tend to the delicate blooms of truth, even as the shadows of deceit threaten to overshadow them.</thought>
+<thought player="Zara">Keep pressing Ekene, divert attention to Lei, and stay alert for Ivan's slip-ups.</thought>
+<thought player="Ivan">Time to further entangle the web of suspicion around Avery and Lei, ensuring our continued anonymity.</thought>
+</round>
+<round>
+Round 4.
+Zara: Avery, your fixation on Lei is getting a bit too intense. What are you hiding?
+Avery: Nothing is settled yet, but I'm watching Lei most closely.
+Alek: Hey, Avery and Zara! Your fingers seem mighty eager to point. What's the real deal with your suspicions?
+Ivan: Avery's unwavering focus on Lei is almost as suspicious as the secrets buried in our town's history.
+Lei: In the labyrinth of our shared narrative, might we find the key to unlock the truth in the most unexpected of voices?
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alek">Alrighty, Avery and Zara are definitely acting a tad too suspicious. Time to keep the pressure on and see what else they'll let slip!</thought>
+<thought player="Lei">In the tapestry of our shared tale, I must consider the possibility that the truth may yet emerge from the most unlikely voices, even as I remain a whisper in the wind.</thought>
+<thought player="Zara">Keep pressing Ekene, divert attention to Lei, and stay alert for Ivan's slip-ups.</thought>
+<thought player="Ivan">Ah, the dance of deception continues. Time to further entangle the web of suspicion around Avery and Lei, ensuring our continued anonymity.</thought>
+</round>
+<round>
+Round 5.
+Ivan: Avery's relentless focus on Lei is almost as suspicious as the secrets buried in our town's history.
+Avery: Nothing is settled yet, but I'm watching Lei most closely.
+Zara: Avery, your relentless focus on Lei is raising eyebrows. What's your angle?
+Alek: Hey, gang! Just a thought—what if we take a closer look at Zara's comments? It's like she's trying to throw us off the scent too!
+Lei: In the labyrinth of our shared narrative, might we find the key to unlock the truth in the most unexpected of voices?
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alek">Keep the heat on Avery and Zara! Their eagerness is sus, let's see what else they'll let slip!</thought>
+<thought player="Lei">In the labyrinth of our shared narrative, I must continue to weave my words with care, seeking the truth that may yet emerge from the most unexpected voices.</thought>
+<thought player="Zara">Keep pressing Ekene, divert attention to Lei, and stay alert for Ivan's slip-ups.</thought>
+<thought player="Ivan">Time to further entangle the web of suspicion around Avery and Lei, while maintaining my historian's facade.</thought>
+</round>
+<round>
+Round 6.
+Ivan: Ah, the game of suspicion and subtle mockery continues. Zara's deflection was quite the spectacle, but I must be more careful with my words to avoid raising unnecessary alarms.
+<vote initiator="Avery" target="Lei">
+Avery: No
+Alek: No
+Lei: No
+Zara: Yes
+Ivan: Yes
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Ivan: Avery's relentless focus on Lei is almost as fascinating as the town's most notorious scandals, isn't it?
+Lei: In the symphony of our shared narrative, might we find harmony in the truth, or will discord lead us astray?
+<vote initiator="Avery" target="Lei">
+Avery: No
+Alek: No
+Lei: No
+Zara: Yes
+Ivan: Yes
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Lei">
+Avery: No
+Alek: No
+Lei: No
+Zara: Yes
+Ivan: Yes
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Ivan points at Avery
+Zara points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Sakura (Law-abiding Citizen)
+• Night 2: Ekene (Law-abiding Citizen)
+• Night 3: Avery (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Alek (Law-abiding Citizen), Lei (Law-abiding Citizen), Zara (Mafia), Ivan (Mafia), Sakura (Law-abiding Citizen), Ekene (Law-abiding Citizen)
+
+Who they really were:
+• Alek (Law-abiding Citizen) — cheerful and irrepressible quick-paced, colloquial, uses a lot of exclamations and light-hearted jokes Alek is a local artist, known for their vibrant murals around town. They're always eager to brighten someone's day with a bit of colour and laughter.
+• Lei (Law-abiding Citizen) — dreamy and distractible; often lost in thought, easily sidetracked by the beauty of the world around them. soft-spoken, measured pace, frequent pauses as if lost in reverie, poetic and whimsical vocabulary, occasional sudden bursts of enthusiasm about a trivial detail. Lei is a local librarian, deeply passionate about the world of literature and the magic of storytelling. They are often found wandering the town, nose buried in a book, searching for the next great adventure within the pages.
+• Zara (Mafia) — publicly presented as Zara is a hardworking blacksmith, known for crafting the finest weapons and tools in the town. She is direct, no-nonsense, and values practicality above all else. When she speaks, it's usually to get to the point quickly and efficiently. (gruff and blunt short and to the point, no-nonsense) … but was really a Mafioso: Zara is secretly a Mafioso, hiding behind an ordinary cover.
+• Ivan (Mafia) — publicly presented as Ivan is a local historian, renowned for his detailed and often critical accounts of the town's past. He's known for his meticulous research and isn't afraid to point out the flaws in the town's history, making him both respected and slightly feared. (Dry and sardonic, with a penchant for subtle mockery and a sharp tongue. Speaks in a deadpan tone, often with a hint of sarcasm. Uses dry humor and biting wit to make a point.) … but was really a Mafioso: Ivan joined the Mafia under the guise of gathering 'research' for his historical accounts. His true role is to gather information on key town figures and exploit their secrets, using his historian cover to mask his true intentions.
+• Sakura (Law-abiding Citizen) — stern and commanding; precise and authoritative speaks with clear, deliberate enunciation; uses a formal, almost regal tone; occasionally employs commanding phrases Sakura is the town's chief of police, known for her unwavering commitment to justice and order. With a background in martial arts and a keen eye for detail, she maintains a strict but fair approach to keeping the peace. Her presence is both reassuring and intimidating, a testament to her dedication to protecting the community.
+• Ekene (Law-abiding Citizen) — vigilant and perceptive; always alert and attuned to their surroundings measured and thoughtful, with occasional bursts of urgency when addressing suspicious behavior; uses precise, straightforward vocabulary Ekene is a local watchman, dedicated to keeping a close eye on the comings and goings within the town. With a keen sense of awareness and a commitment to safety, Ekene is always on the lookout for any signs of trouble, making them a trusted guardian of the community.
+</endgame>
+</transcript>

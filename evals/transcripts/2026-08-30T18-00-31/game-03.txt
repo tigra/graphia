@@ -1,0 +1,282 @@
+Game 3 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Aiden" role="Law-abiding Citizen">
+Personality: dry and sardonic; quick-witted and sarcastic; often uses witty one-liners and dark humor to mask deeper emotions
+Manner: speaks with a sharp, biting tone; uses clever wordplay and unexpected twists in conversation; occasional sarcastic comments
+Persona: Aiden is a local librarian with an encyclopedic knowledge of obscure facts and a penchant for dark humor. They spend their days buried in books and their nights crafting witty remarks to share with anyone who will listen.
+</player>
+<player name="Aiko" role="Law-abiding Citizen">
+Personality: bold and enthusiastic; energetic and passionate
+Manner: speaks rapidly with a cheerful, animated tone; uses expressive hand gestures and exclamations; occasionally gets carried away with excitement
+Persona: Aiko is a local street performer known for their vibrant energy and infectious enthusiasm. They entertain crowds with juggling, magic tricks, and impromptu sing-alongs, spreading joy wherever they go.
+</player>
+<player name="Dmitri" role="Mafia">
+Personality: eccentric and whimsical; unpredictable and offbeat; often displays a quirky sense of humor; tends to see the world through a lens of imagination and fantasy
+Manner: speaks in a whimsical, sing-song tone; uses colorful, imaginative language; occasionally breaks into nonsensical rhymes or playful wordplay; has a habit of making sudden, unexpected statements
+Public legend: Dmitri is a local inventor and tinkerer, known for his outlandish creations and wild ideas. He spends his days tinkering in his workshop, surrounded by a menagerie of bizarre gadgets and contraptions. Despite his eccentric demeanor, Dmitri is a kind-hearted soul who loves to share his inventions with the town, hoping to bring a bit of magic and wonder into people's lives.
+True self (hidden): In his secret life, Dmitri is a high-ranking Mafioso known for his cunning and resourcefulness. He uses his inventive mind to create elaborate schemes and gadgets that help the Mafia stay one step ahead of the law. Dmitri's dual life allows him to blend in seamlessly with the townspeople while pulling the strings behind the scenes.
+</player>
+<player name="Fatima" role="Mafia">
+Personality: playful and teasing; enjoys light-hearted banter and playful teasing; has a mischievous sense of humor
+Manner: speaks in a light, teasing tone; uses playful language and occasional jokes; often makes lighthearted remarks
+Public legend: Fatima is a local tea shop owner, known for her warm hospitality and delightful sense of humor. She spends her days brewing exotic teas and creating whimsical blends, bringing a touch of joy to the town. Fatima is always ready with a joke or a playful tease, making her a beloved and entertaining presence in the community.
+True self (hidden): Fatima, known to her allies as 'The Serpent,' is a cunning and elusive Mafioso who uses her tea shop as a front for her criminal activities. She joined the Mafia after a chance encounter with a powerful crime lord, who saw potential in her quick wit and charming demeanor. Fatima's playful exterior hides a sharp mind and a ruthless streak, making her a formidable force in the criminal underworld.
+</player>
+<player name="Hideki" role="Law-abiding Citizen">
+Personality: anxious and second-guessing; wary and hesitant; often doubts their own decisions
+Manner: speaks in a nervous, wavering tone; frequently pauses and corrects themselves; uses cautious language and often asks for reassurance
+Persona: Hideki is a local bookbinder, known for their meticulous and precise work. They spend their days crafting beautiful, hand-bound books, taking great care to ensure every detail is perfect. Despite their talent, Hideki is constantly plagued by self-doubt, often second-guessing their choices and seeking reassurance from others.
+</player>
+<player name="Leilani" role="Law-abiding Citizen">
+Personality: vigilant and perceptive; watchful and intuitive; quick to notice subtle details and patterns
+Manner: speaks with a calm, deliberate tone; uses precise, thoughtful language; often asks insightful questions to gather information
+Persona: Leilani is a local herbalist, known for her deep knowledge of medicinal plants and their properties. She spends her days tending to her herb garden and crafting healing potions and remedies, offering her expertise to the town in times of need. Leilani is always observing her surroundings, picking up on the subtle nuances of people and situations, which makes her a valuable resource in uncovering hidden truths.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiden, Aiko, Dmitri, Fatima, Hideki, Leilani. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Dmitri): Your Mafia teammates are: Fatima. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Fatima): Your Mafia teammates are: Dmitri. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Dmitri points at Leilani
+Fatima points at Leilani
+<kill>Leilani — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Leilani was killed last night. Leilani was a Law-abiding Citizen.
+<round>
+Round 1.
+Aiko: Let's keep our eyes peeled for any suspicious behavior! We can't let the Mafia slip through our fingers!
+Avery: Nothing is settled yet, but I'm watching Hideki most closely.
+Aiden: Hideki, darling, do tell us more about your night activities. I'm sure we're all dying to hear about it.
+Hideki: U-um, I-I think we should hear from everyone about their activities last night... J-just to be thorough, y-you know?
+Fatima: Oh, Avery, you're quite the detective! But let's not jump to conclusions just yet. After all, we wouldn't want to accidentally accuse an innocent tea enthusiast, would we?
+Dmitri: Ah, the thrill of the hunt! Let us not forget the art of misdirection, my dear friends. For in the dance of shadows, one must always be on the lookout for the puppet master pulling the strings.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">If I'm not careful, I might end up as the next footnote in the annals of Graphian history. Time to sharpen those wits and suss out the suspects.</thought>
+<thought player="Aiko">Time to stay sharp and keep an eye on Hideki and Dmitri! They seem a bit too eager to divert suspicion.</thought>
+<thought player="Dmitri">Ah, the game unfolds like a tapestry of whimsy and intrigue! Let us weave our web of deception, dear Fatima, and watch as the citizens dance to our tune.</thought>
+<thought player="Fatima">Time to weave some delightful misdirection and keep those Law-abiding Citizens guessing. Let's see who takes the bait next!</thought>
+<thought player="Hideki">I-I hope I d-don't draw too much attention to myself... M-maybe I should try to d-divert suspicion to someone else, but who...?</thought>
+</round>
+<round>
+Round 2.
+Dmitri: Ah, the sweet scent of suspicion in the air! Let us not forget the art of misdirection, my dear friends. For in the dance of shadows, one must always be on the lookout for the puppet master pulling the strings.
+Hideki: U-um, w-what about Dmitri? H-his c-comments s-seem a bit too... p-poetic for a simple game, d-don't you think?
+Aiden: Avery, your enthusiasm is almost as infectious as a plague. But let's not forget, not all who wander are lost—some are just spectacularly bad at hiding their tracks.
+Fatima: Well, if we're talking about suspicious behavior, I must say Aiden's sudden interest in everyone's activities is rather... curious.
+Avery: Nothing is settled yet, but I'm watching Hideki most closely.
+Aiko: Let's not forget to consider everyone's motives and actions, especially those who are quick to divert attention!
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Time to weave a web of suspicion and see who gets tangled in their own words.</thought>
+<thought player="Aiko">Time to gather more clues and keep the pressure on Hideki and Dmitri! Let's see who cracks under the heat next!</thought>
+<thought player="Dmitri">Ah, the dance of shadows grows ever more enchanting! Let us continue to weave our tapestry of deception, my dear Fatima, and lead the unsuspecting citizens astray.</thought>
+<thought player="Fatima">Time to sprinkle some more delightful chaos and see who falls for the misdirection next!</thought>
+<thought player="Hideki">I-I need to be more careful with my words... M-maybe I should try to steer the conversation towards Aiden or Dmitri, but I-I'm not sure if that's the right move.</thought>
+</round>
+<round>
+Round 3.
+Aiko: Let's not forget to consider everyone's motives and actions, especially those who are quick to divert attention!
+Avery: Nothing is settled yet, but I'm watching Hideki most closely.
+Hideki: U-um, I-I noticed that Aiden h-has been quite eager to d-divert attention... M-maybe we should look into their m-motives a bit more?
+Aiden: Avery, your detective work is as sharp as a dull butter knife. Perhaps we should pool our collective lack of evidence and see what we come up with.
+Dmitri: Ah, the sweet scent of suspicion in the air! Let us not forget the art of misdirection, my dear friends. For in the dance of shadows, one must always be on the lookout for the puppet master pulling the strings.
+Fatima: Oh, Dmitri, your poetic musings are as delightful as a perfectly steeped cup of tea! But let's not let the aroma of suspicion cloud our judgment, shall we?
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The plot thickens, and I must tread carefully—a misstep now, and I might just become the next chapter in Graphia's tragic saga.</thought>
+<thought player="Aiko">Stay focused on Hideki and Dmitri, but keep an eye on everyone's actions and motives! The game is heating up, and we're getting closer to unmasking the Mafia!</thought>
+<thought player="Dmitri">Ah, the dance of shadows continues! Let us cast a spell of confusion upon our dear friends, leading them astray with our delightful banter.</thought>
+<thought player="Fatima">Time to keep the pot stirring and see who gets scorched next!</thought>
+<thought player="Hideki">I-I should be more cautious about who I suggest as suspicious... M-maybe I should gather more evidence before pointing fingers.</thought>
+</round>
+<round>
+Round 4.
+Aiko: Let's not forget to examine the timing of everyone's comments and actions! It could be a clue to their true intentions.
+Aiden: Fatima, your tea enthusiast comment was almost as subtle as a sledgehammer. Any particular reason you're so keen on protecting Dmitri's poetic musings?
+Avery: Nothing is settled yet, but I'm watching Hideki most closely.
+Dmitri: Ah, the delightful dance of deception! Let us not forget to consider the motives of those who seek to divert our attention, my dear friends.
+Hideki: U-um, I-I've noticed that Dmitri's c-comments have been quite... p-poetic. M-maybe we should look into whether h-his language is a way to d-divert suspicion from himself.
+Fatima: Oh, Aiko, your keen eye for detail is almost as impressive as your ability to make everyone feel like they're under a microscope!
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">It's time to drop a breadcrumb trail and see who tries to follow—or who tries to sweep it away.</thought>
+<thought player="Aiko">Stay sharp and keep the pressure on Hideki and Dmitri! Let's see who slips up next!</thought>
+<thought player="Dmitri">Ah, the dance of shadows thickens! Let us continue to spin our web of whimsy, dear Fatima, and guide the unsuspecting citizens into the labyrinth of our imagination.</thought>
+<thought player="Fatima">Time to drop another tantalizing breadcrumb and watch the Law-abiding Citizens scramble!</thought>
+<thought player="Hideki">I-I should try to gather more evidence before suggesting anyone as suspicious, but I-I also need to be careful not to draw too much attention to myself...</thought>
+</round>
+<round>
+Round 5.
+Aiko: Let's pay close attention to anyone who tries to steer the conversation away from themselves!
+Dmitri: Ah, the delightful dance of deception! Let us not forget to consider the motives of those who seek to divert our attention, my dear friends.
+Aiden: Fatima, your defense of Dmitri's poetic musings is almost as suspicious as his verses. Care to elaborate on your sudden interest in protecting him?
+Avery: Nothing is settled yet, but I'm watching Hideki most closely.
+Hideki: U-um, I-I've noticed that Aiden h-has been quite eager to d-divert attention... M-maybe we should look into their m-motives a bit more?
+Fatima: Well, if we're talking about suspicious behavior, I must say Aiden's sudden interest in everyone's activities is rather... curious.
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The dance of deception continues—time to plant a few more seeds of doubt and watch the garden grow.</thought>
+<thought player="Aiko">Keep the heat on Hideki and Dmitri, but be ready to pivot if new suspicious behavior arises!</thought>
+<thought player="Dmitri">Ah, the dance of shadows thickens! Let us continue to spin our web of whimsy, dear Fatima, and guide the unsuspecting citizens into the labyrinth of our imagination.</thought>
+<thought player="Fatima">Time to keep the pot stirring and see who gets scorched next!</thought>
+<thought player="Hideki">I-I need to be more careful about who I suggest as suspicious... M-maybe I should gather more evidence before pointing fingers.</thought>
+</round>
+<round>
+Round 6.
+<vote initiator="Avery" target="Hideki">
+Avery: No
+Aiden: Yes
+Aiko: No
+Dmitri: Yes
+Fatima: Yes
+Hideki: No
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Aiko: Let's keep the heat on Hideki and Dmitri! Their attempts to divert suspicion are as transparent as a glass wall!
+<vote initiator="Avery" target="Hideki">
+Avery: No
+Aiden: Yes
+Aiko: No
+Dmitri: Yes
+Fatima: Yes
+Hideki: No
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Fatima: Oh, Aiko, your enthusiasm for examining everyone's actions is as refreshing as a cool breeze on a hot day!
+Aiko: Let's focus on anyone who seems overly defensive or eager to shift the blame!
+<vote initiator="Avery" target="Hideki">
+Avery: No
+Aiden: Yes
+Aiko: No
+Dmitri: Yes
+Fatima: Yes
+Hideki: No
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Dmitri points at Aiko
+Fatima points at Aiko
+<kill>Aiko — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Aiko was killed last night. Aiko was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: Nothing is settled yet, but I'm watching Hideki most closely.
+Dmitri: Ah, the delightful dance of deception! Let us not forget to consider the motives of those who seek to divert our attention, my dear friends.
+Fatima: Oh, Avery, your unwavering focus on Hideki is almost as amusing as a cat chasing its own tail! But let's not forget to consider the motives of those who are so eager to divert attention, shall we?
+Hideki: U-um, h-has anyone noticed how F-Fatima seems to d-defend Dmitri quite a lot? M-maybe we should consider that as a p-possible sign of c-collaboration...
+Aiden: Fatima, your defense of Dmitri's poetic musings is almost as suspicious as his verses. Care to elaborate on your sudden interest in protecting him?
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The web of suspicion is tightening—let's see who gets tangled next.</thought>
+<thought player="Dmitri">Ah, the dance of shadows grows ever more intricate! Let us continue to weave our tapestry of deception, my dear Fatima, and lead the unsuspecting citizens further astray.</thought>
+<thought player="Fatima">Time to keep the Law-abiding Citizens on their toes and see who takes the bait next!</thought>
+<thought player="Hideki">I-I need to be more careful about who I suggest as suspicious... M-maybe I should focus on gathering more evidence before pointing fingers, but I-I also need to be cautious not to draw too much attention to myself...</thought>
+</round>
+<round>
+Round 2.
+Dmitri: Ah, the delightful dance of deception! Let us not forget to consider the motives of those who seek to divert our attention, my dear friends. And what of Aiden's sudden interest in everyone's activities? Could it be a cunning ploy to divert suspicion from themselves?
+Aiden: Dmitri, your poetic musings are as delightful as a snake in the grass. Care to share the inspiration behind your verses?
+Fatima: Oh, Dmitri, your poetic musings are as delightful as a perfectly steeped cup of tea! But let's not let the aroma of suspicion cloud our judgment, shall we?
+Avery: Nothing is settled yet, but I'm watching Hideki most closely.
+Hideki: U-um, I-I've noticed that Fatima has been quite d-defensive of Dmitri's comments... M-maybe we should consider that as a p-possible sign of c-collaboration...
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Time to drop another breadcrumb and watch the Mafia scramble to clean up the mess.</thought>
+<thought player="Dmitri">Ah, the dance of shadows grows ever more intricate! Let us continue to weave our tapestry of deception, my dear Fatima, and lead the unsuspecting citizens further astray.</thought>
+<thought player="Fatima">Time to keep the Law-abiding Citizens on their toes and see who takes the bait next! Let's sprinkle some more delightful chaos and watch them scramble.</thought>
+<thought player="Hideki">I-I need to be more cautious about who I suggest as suspicious... M-maybe I should focus on gathering more evidence before pointing fingers, but I-I also need to be careful not to draw too much attention to myself...</thought>
+</round>
+<round>
+Round 3.
+Dmitri: Ah, the delightful dance of deception! Let us not forget to consider the motives of those who seek to divert our attention, my dear friends. And what of Aiden's sudden interest in everyone's activities? Could it be a cunning ploy to divert suspicion from themselves?
+Avery: Nothing is settled yet, but I'm watching Hideki most closely.
+Fatima: Oh, Avery, your unwavering focus on Hideki is almost as amusing as a cat chasing its own tail! But let's not forget to consider the motives of those who are so eager to divert attention, shall we?
+Aiden: Fatima, your defense of Dmitri's poetic musings is almost as suspicious as his verses. Care to elaborate on your sudden interest in protecting him?
+Hideki: U-um, h-has anyone noticed how A-Aiden seems to be v-very interested in d-diverting attention from themselves? M-maybe we should look into their m-motives a bit more...
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Time to crank up the sarcasm and see who flinches—the heat is on, and I'm turning up the thermostat.</thought>
+<thought player="Dmitri">Ah, the dance of shadows grows ever more intricate! Let us continue to weave our tapestry of deception, my dear Fatima, and lead the unsuspecting citizens further astray.</thought>
+<thought player="Fatima">Time to keep the Law-abiding Citizens guessing and see who falls for the next round of delightful chaos!</thought>
+<thought player="Hideki">I-I need to be more cautious about who I suggest as suspicious, but m-maybe I should try to steer the conversation towards Aiden or Dmitri to gather more evidence.</thought>
+</round>
+<round>
+Round 4.
+Avery: Nothing is settled yet, but I'm watching Hideki most closely.
+Fatima: Oh, Aiden, your sudden interest in everyone's activities is almost as intriguing as a mystery novel! But let's not forget to consider the motives of those who are so eager to divert attention, shall we?
+Dmitri: Ah, the delightful dance of deception! Let us not forget to consider the motives of those who seek to divert our attention, my dear friends. And what of Aiden's sudden interest in everyone's activities? Could it be a cunning ploy to divert suspicion from themselves?
+Hideki: U-um, h-has anyone noticed how D-Dmitri's comments s-seem to be c-crafted to divert suspicion? M-maybe we should look into whether h-his language is a way to d-divert attention from himself.
+Aiden: Fatima, your defense of Dmitri's poetic musings is almost as suspicious as his verses. Care to elaborate on your sudden interest in protecting him?
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Time to crank up the heat and see which suspect starts to sweat—let's turn up the thermostat on this game of Graphia.</thought>
+<thought player="Dmitri">Ah, the dance of shadows reaches a crescendo! Let us continue to spin our web of whimsy, dear Fatima, and guide the unsuspecting citizens into the labyrinth of our imagination, while sowing seeds of doubt and suspicion among them.</thought>
+<thought player="Fatima">Time to keep the Law-abiding Citizens guessing and see who falls for the next round of delightful chaos!</thought>
+<thought player="Hideki">I-I should keep trying to gather more evidence on Aiden and Dmitri, but I-I need to be careful not to draw too much attention to myself...</thought>
+</round>
+<round>
+Round 5.
+Aiden: Dmitri, your poetic musings are as delightful as a wolf in sheep's clothing. Care to share the inspiration behind your verses?
+Fatima: Oh, Avery, your unwavering focus on Hideki is almost as amusing as a cat chasing its own tail! But let's not forget to consider the motives of those who are so eager to divert attention, shall we?
+Hideki: U-um, h-has anyone noticed how Aiden's comments s-seem to be c-crafted to divert suspicion? M-maybe we should look into whether h-his language is a way to d-divert attention from himself.
+Dmitri: Ah, the dance of shadows grows ever more intricate! Let us not forget to consider the motives of those who are so eager to divert attention, my dear friends.
+Avery: Nothing is settled yet, but I'm watching Hideki most closely.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The web of suspicion is getting tighter—time to see who gets tangled next and who tries to cut the strings.</thought>
+<thought player="Dmitri">Ah, the dance of shadows reaches a fever pitch! Let us continue to weave our tapestry of deception, dear Fatima, and sow seeds of doubt and suspicion among the unsuspecting citizens.</thought>
+<thought player="Fatima">Time to drop another delightful breadcrumb and see who takes the bait next!</thought>
+<thought player="Hideki">I-I should try to subtly steer the conversation towards Aiden and Dmitri to gather more evidence, but I-I must be careful not to draw too much attention to myself...</thought>
+</round>
+<round>
+Round 6.
+Dmitri: Ah, the dance of shadows grows ever more intricate! Let us not forget to consider the motives of those who are so eager to divert attention, my dear friends.
+Aiden: Fatima, your defense of Dmitri's poetic musings is almost as suspicious as his verses. Care to elaborate on your sudden interest in protecting him?
+Hideki: U-um, h-has anyone noticed how D-Dmitri's comments s-seem to be c-crafted to divert suspicion? M-maybe we should look into whether h-his language is a way to d-divert attention from himself.
+Fatima: Oh, Hideki, your stuttering defense of Dmitri is almost as entertaining as a stand-up comedy routine! But let's not forget to consider the motives of those who are so eager to divert attention, shall we?
+<vote initiator="Avery" target="Hideki">
+Avery: No
+Aiden: Yes
+Dmitri: Yes
+Fatima: Yes
+Hideki: No
+tally: 3 Yes, 2 No
+outcome: executed — Hideki has been executed. Hideki was a Law-abiding Citizen.
+</vote>
+</round>
+</day>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Leilani (Law-abiding Citizen)
+• Night 2: Aiko (Law-abiding Citizen)
+• Day 2: Hideki (Law-abiding Citizen) executed
+
+Full roster: Avery (Law-abiding Citizen), Aiden (Law-abiding Citizen), Aiko (Law-abiding Citizen), Dmitri (Mafia), Fatima (Mafia), Hideki (Law-abiding Citizen), Leilani (Law-abiding Citizen)
+
+Who they really were:
+• Aiden (Law-abiding Citizen) — dry and sardonic; quick-witted and sarcastic; often uses witty one-liners and dark humor to mask deeper emotions speaks with a sharp, biting tone; uses clever wordplay and unexpected twists in conversation; occasional sarcastic comments Aiden is a local librarian with an encyclopedic knowledge of obscure facts and a penchant for dark humor. They spend their days buried in books and their nights crafting witty remarks to share with anyone who will listen.
+• Aiko (Law-abiding Citizen) — bold and enthusiastic; energetic and passionate speaks rapidly with a cheerful, animated tone; uses expressive hand gestures and exclamations; occasionally gets carried away with excitement Aiko is a local street performer known for their vibrant energy and infectious enthusiasm. They entertain crowds with juggling, magic tricks, and impromptu sing-alongs, spreading joy wherever they go.
+• Dmitri (Mafia) — publicly presented as Dmitri is a local inventor and tinkerer, known for his outlandish creations and wild ideas. He spends his days tinkering in his workshop, surrounded by a menagerie of bizarre gadgets and contraptions. Despite his eccentric demeanor, Dmitri is a kind-hearted soul who loves to share his inventions with the town, hoping to bring a bit of magic and wonder into people's lives. (eccentric and whimsical; unpredictable and offbeat; often displays a quirky sense of humor; tends to see the world through a lens of imagination and fantasy speaks in a whimsical, sing-song tone; uses colorful, imaginative language; occasionally breaks into nonsensical rhymes or playful wordplay; has a habit of making sudden, unexpected statements) … but was really a Mafioso: In his secret life, Dmitri is a high-ranking Mafioso known for his cunning and resourcefulness. He uses his inventive mind to create elaborate schemes and gadgets that help the Mafia stay one step ahead of the law. Dmitri's dual life allows him to blend in seamlessly with the townspeople while pulling the strings behind the scenes.
+• Fatima (Mafia) — publicly presented as Fatima is a local tea shop owner, known for her warm hospitality and delightful sense of humor. She spends her days brewing exotic teas and creating whimsical blends, bringing a touch of joy to the town. Fatima is always ready with a joke or a playful tease, making her a beloved and entertaining presence in the community. (playful and teasing; enjoys light-hearted banter and playful teasing; has a mischievous sense of humor speaks in a light, teasing tone; uses playful language and occasional jokes; often makes lighthearted remarks) … but was really a Mafioso: Fatima, known to her allies as 'The Serpent,' is a cunning and elusive Mafioso who uses her tea shop as a front for her criminal activities. She joined the Mafia after a chance encounter with a powerful crime lord, who saw potential in her quick wit and charming demeanor. Fatima's playful exterior hides a sharp mind and a ruthless streak, making her a formidable force in the criminal underworld.
+• Hideki (Law-abiding Citizen) — anxious and second-guessing; wary and hesitant; often doubts their own decisions speaks in a nervous, wavering tone; frequently pauses and corrects themselves; uses cautious language and often asks for reassurance Hideki is a local bookbinder, known for their meticulous and precise work. They spend their days crafting beautiful, hand-bound books, taking great care to ensure every detail is perfect. Despite their talent, Hideki is constantly plagued by self-doubt, often second-guessing their choices and seeking reassurance from others.
+• Leilani (Law-abiding Citizen) — vigilant and perceptive; watchful and intuitive; quick to notice subtle details and patterns speaks with a calm, deliberate tone; uses precise, thoughtful language; often asks insightful questions to gather information Leilani is a local herbalist, known for her deep knowledge of medicinal plants and their properties. She spends her days tending to her herb garden and crafting healing potions and remedies, offering her expertise to the town in times of need. Leilani is always observing her surroundings, picking up on the subtle nuances of people and situations, which makes her a valuable resource in uncovering hidden truths.
+</endgame>
+</transcript>

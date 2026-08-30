@@ -2150,3 +2150,116 @@ metrics:
   persona_sem_peak:
     denominator: 150
 notes: 'Three-way provider baseline 2026-08-30: local qwen3-coder:30b / qwen2.5:3b, free offline arm. Run under caffeinate -i.'
+---
+run:
+  date: '2026-08-30'
+  duration_seconds: 6083.481
+  metrics_version: 1
+  transcript_dir: '2026-08-30T18-00-31'
+code:
+  commit: '0db106983e1fe3e3a496abb16f600fa5105e3b9e'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'bedrock'
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  base_url: null
+  games: 50
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 50
+  games_completed: 50
+  games_failed_early: 0
+  duration_seconds: 6083.481
+outcomes:
+  games: 50
+  law_abiding:
+    wins: 4
+    rate: 0.08
+    ci_low: 0.031549003255790686
+    ci_high: 0.18838502545063704
+  mafia:
+    wins: 46
+    rate: 0.92
+    ci_low: 0.8116149745493629
+    ci_high: 0.9684509967442093
+  scripted_side:
+    side: 'law_abiding'
+    wins: 4
+    rate: 0.08
+    ci_low: 0.031549003255790686
+    ci_high: 0.18838502545063704
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 30
+    mafia: 3
+  by_day:
+    day_1: 11
+    day_2: 17
+    day_3: 5
+metrics:
+  repetition:
+    rate: 0.597041847041847
+    count: 1655
+    denominator: 2772
+    ci_low: 0.5786600686682237
+    ci_high: 0.6151550251036975
+  third_person_self_talk:
+    rate: 0.016233766233766232
+    count: 45
+    denominator: 2772
+    ci_low: 0.012154576788317628
+    ci_high: 0.021651963181398226
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 27
+    ci_low: 0.0
+    ci_high: 0.12455903714463581
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 199
+    ci_low: 0.0
+    ci_high: 0.018938915883132453
+  peer_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 3
+    ci_low: 0.0
+    ci_high: 0.5615060804490177
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 71
+    ci_low: 0.0
+    ci_high: 0.05132974174790491
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 750
+    ci_low: 0.0
+    ci_high: 0.005096030784185961
+  persona_lex_mean:
+    denominator: 750
+  persona_lex_peak:
+    denominator: 750
+  persona_sem_mean:
+    denominator: 750
+  persona_sem_peak:
+    denominator: 750
+notes: 'Three-way n=50 provider baseline 2026-08-30: Amazon Nova Pro/Lite, the untouched default baseline. caffeinate -i; committed per-arm for clean provenance.'

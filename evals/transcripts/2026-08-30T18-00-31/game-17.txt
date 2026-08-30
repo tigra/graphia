@@ -1,0 +1,308 @@
+Game 17 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Aiko" role="Law-abiding Citizen">
+Personality: weary and world-worn; speaks with a resigned, almost melancholic tone
+Manner: slow, deliberate speech; often uses metaphors and analogies drawn from nature and the passage of time; frequent use of 'once upon a time' and 'in my day'
+Persona: Aiko is a retired schoolteacher who has seen her fair share of life's ups and downs. With a lifetime of experience, she's learned to trust her instincts and read people well. Now, she spends her days tending to her garden and reminiscing about the past.
+</player>
+<player name="Liam" role="Law-abiding Citizen">
+Personality: aloof and detached; analytical and precise
+Manner: terse, clinical speech; avoids emotional language; uses technical vocabulary
+Persona: Liam is a data analyst, spending most of his time immersed in numbers and statistics. He values logic and efficiency, often viewing social interactions through a lens of cold calculation. In his free time, he enjoys solitary pursuits like solving complex puzzles and studying algorithms.
+</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: anxious and second-guessing; constantly worried about making the right decision
+Manner: speaks quickly, often stumbling over words; frequently uses filler words like 'um' and 'like'; tends to ask for reassurance from others
+Persona: Zara is a part-time barista and full-time worrywart. She's always second-guessing herself and seeking validation from those around her. In the game, she's likely to overthink her decisions and seek consensus before taking action.
+</player>
+<player name="Mateo" role="Mafia">
+Personality: Mateo's public persona is prickly, easily-offended, and defensive. He's quick to take offense and is prone to arguing, often coming across as confrontational. Despite this, he's fiercely loyal to those he considers friends and is deeply passionate about justice and fairness.
+Manner: Mateo speaks with a sharp, biting tone, often laced with sarcasm. He's quick to retort and is not afraid to challenge others, especially if he feels they're questioning his integrity or motives. His speech is direct and to the point, with a tendency to use blunt language.
+Public legend: Mateo is a local lawyer with a reputation for being a relentless advocate for his clients. He's known for his no-nonsense approach and his unwavering commitment to fighting for what he believes is right. Despite his prickly exterior, he's respected in the community for his dedication to justice and his willingness to stand up for the underdog.
+True self (hidden): Beneath his public persona as a lawyer, Mateo is a high-ranking member of the local Mafia. He joined the organization years ago, drawn in by the promise of power and protection. Over time, he climbed the ranks, using his legal skills to cover up the organization's activities and protect its members. His dual life requires him to constantly navigate the fine line between his public and private identities.
+</player>
+<player name="Naomi" role="Law-abiding Citizen">
+Personality: dry and sardonic
+Manner: speaks with a wry, understated tone; uses clever wordplay and subtle sarcasm; often ends sentences with a clever twist or ironic observation
+Persona: Naomi is a freelance copywriter who spends her days crafting witty slogans and catchy taglines. With a knack for finding humour in the mundane, she approaches life with a healthy dose of scepticism and a sharp tongue. In her free time, she enjoys poking fun at societal norms and reveling in the absurdity of everyday situations.
+</player>
+<player name="Aiden" role="Mafia">
+Personality: cheerful and irrepressible; quick to laugh and find joy in small moments
+Manner: speaks with an upbeat, lively tone; uses lots of exclamation points and exclamations like 'Yay!' and 'Awesome!'; tends to be enthusiastic and encouraging
+Public legend: Aiden is a local clown and entertainer, known for bringing joy and laughter to the town. He's always ready with a joke or a trick to brighten someone's day. Despite his light-hearted nature, he's also a keen observer of people, noticing details others might miss.
+True self (hidden): Aiden's true identity is that of a high-ranking Mafioso, using his public persona as a cover for his criminal activities. He joined the Mafia in his youth, drawn in by the promise of power and excitement. His clown persona allows him to move freely among the townsfolk, gathering information and executing his schemes without raising suspicion.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiko, Liam, Zara, Mateo, Naomi, Aiden. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Mateo): Your Mafia teammates are: Aiden. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Aiden): Your Mafia teammates are: Mateo. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Mateo points at Naomi
+Aiden points at Naomi
+<kill>Naomi — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Naomi was killed last night. Naomi was a Law-abiding Citizen.
+<round>
+Round 1.
+Zara: Um, like, has anyone noticed anything sus about Mateo? He, um, seems a bit, like, quiet and, um, maybe he's hiding something?
+Avery: Nothing is settled yet, but I'm watching Aiko most closely.
+Aiden: Yay! Let's all work together to find out who the traitor is! I think we should look into Avery's behavior—they seem a bit suspicious to me!
+Liam: Avery's fixation on Aiko and Aiden's eagerness to implicate others require further scrutiny.
+Mateo: Liam's insistence on scrutinizing others without providing concrete evidence is rather suspicious, don't you think?
+Aiko: Once upon a time, I'd have taken a closer look at Mateo, but his insistence on scrutiny seems genuine. It's the eagerness of Aiden that troubles me—like a hound that barks too readily, it may be masking its own secrets.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the twilight of this game, I must decide whether to trust the instincts honed over a lifetime or to seek deeper truths in the shadows cast by my fellow players.</thought>
+<thought player="Liam">Analyze the current accusations and identify potential patterns or inconsistencies in player behavior to narrow down suspects.</thought>
+<thought player="Zara">Um, like, I need to, um, really think about who I should, um, like, be suspicious of. Maybe Mateo, but, um, maybe I'm just, like, overthinking it again.</thought>
+<thought player="Mateo">Aiden and I need to coordinate our next move; we should try to divert suspicion away from ourselves and onto Avery or Aiko.</thought>
+<thought player="Aiden">Yay! Time to keep up the act and steer suspicion away from Mateo and myself!</thought>
+</round>
+<round>
+Round 2.
+Liam: The current accusations lack specificity and appear to be deflection tactics.
+Aiden: Liam, you're right! We need to be careful not to jump to conclusions without evidence. Let's all keep an eye on each other and gather more information.
+Zara: Um, like, has anyone noticed how, um, Aiden seems, like, a bit too eager to implicate others? It's, um, kinda sus, don't you think?
+Mateo: Zara's observations seem to lack substance; let's focus on concrete evidence rather than vague suspicions.
+Avery: Nothing is settled yet, but I'm watching Aiko most closely.
+Aiko: Once upon a time, the wind whispered secrets through the trees; today, it seems to murmur suspicions around our circle.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the quiet of this moment, I must weigh the words spoken and the silences held, discerning whether the eagerness of Aiden or the scrutiny of Avery hides the true darkness within.</thought>
+<thought player="Liam">Continue to observe and analyze the behavior of Mateo, Aiden, and Aiko for any emerging patterns or inconsistencies.</thought>
+<thought player="Zara">Um, like, I need to, um, gather more evidence before, um, pointing fingers at anyone. Maybe, um, I should, like, observe more and ask specific questions.</thought>
+<thought player="Mateo">I need to subtly steer the conversation towards Avery and Aiko, while ensuring I don't draw too much attention to myself or Aiden.</thought>
+<thought player="Aiden">Yay! Keep deflecting suspicion and maybe suggest another target to confuse them!</thought>
+</round>
+<round>
+Round 3.
+Aiko: Once upon a time, the most perilous creatures were those that wore the masks of friendship, yet I find myself drawn to the shadows cast by Zara's words.
+Avery: Nothing is settled yet, but I'm watching Aiko most closely.
+Mateo: Avery's fixation on Aiko is becoming increasingly obsessive; perhaps we should consider their motives more closely.
+Liam: Mateo's fixation on Aiko and his insistence on concrete evidence warrant further analysis.
+Aiden: Liam, your insistence on analyzing everyone's motives is making me a bit nervous! Let's not get too carried away, okay?
+Zara: Um, like, I, um, noticed that, um, Aiko has been, um, kinda consistent with her, um, suspicions on others. Maybe, um, we should, um, ask her more about her, um, reasons?
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the waning light of this day, I must decide whether to voice my growing suspicions of Aiden's fervor or to continue observing the interplay of words and silences.</thought>
+<thought player="Liam">Continue to observe and analyze the behavior of Mateo, Aiden, and Aiko for any emerging patterns or inconsistencies.</thought>
+<thought player="Zara">Um, like, I really need to, um, focus on gathering more evidence and, um, maybe ask Aiko about her suspicions.</thought>
+<thought player="Mateo">I need to keep pushing the conversation towards Avery and Aiko, while maintaining my defensive stance to avoid suspicion.</thought>
+<thought player="Aiden">Yay! I need to keep deflecting suspicion and maybe suggest another target to confuse them!</thought>
+</round>
+<round>
+Round 4.
+Avery: Nothing is settled yet, but I'm watching Aiko most closely.
+Aiden: Zara, your observations are always so interesting! Maybe we should ask Aiko to share more about her suspicions.
+Zara: Um, like, I, um, noticed that, um, Mateo has been, um, kinda quiet and, um, maybe he's hiding something, but, um, I, um, need more evidence to be sure.
+Mateo: Avery's persistent fixation on Aiko is starting to feel like a distraction tactic. We should be wary of anyone trying to divert our attention.
+Aiko: In the twilight of this game, I find myself drawn to the shadows cast by Zara's words, yet it is the fervor of Aiden that troubles me most.
+Liam: Aiden's eagerness to implicate others, coupled with Zara's vague accusations, merits closer examination.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the quiet of this moment, I must decide whether to voice my suspicions of Aiden's fervor or to continue weaving through the tapestry of words and silences.</thought>
+<thought player="Liam">Continue to scrutinize Mateo, Aiden, and Aiko for behavioral inconsistencies; consider initiating a focused line of questioning to elicit more concrete evidence.</thought>
+<thought player="Zara">Um, like, I need to, um, really focus on gathering more evidence and, um, maybe ask more specific questions to Aiko about her suspicions.</thought>
+<thought player="Mateo">I need to keep pushing the conversation towards Avery and Aiko, while maintaining my defensive stance to avoid suspicion.</thought>
+<thought player="Aiden">Yay! Keep up the cheerful act and suggest scrutinizing Zara more to divert attention from Mateo and me!</thought>
+</round>
+<round>
+Round 5.
+Mateo: Avery's relentless focus on Aiko is starting to feel like a desperate attempt to divert attention from themselves.
+Aiko: In the fading light of this day, I find myself troubled by the fervor of Aiden, much like a storm that brews on the horizon.
+Avery: Nothing is settled yet, but I'm watching Aiko most closely.
+Liam: Avery's persistent fixation on Aiko warrants further investigation.
+Zara: Um, like, has anyone noticed how, um, Mateo's, um, silence might be, like, a tactic to avoid suspicion?
+Aiden: Yay! Zara, your observations are always so intriguing! Maybe we should ask Liam to share more about his thoughts on Aiko.
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the hush of this evening, I must weigh the fervor of Aiden against the shadows cast by Mateo's silence, deciding whether to speak my suspicions or continue weaving through the tapestry of words and silences.</thought>
+<thought player="Liam">Initiate a line of questioning to elicit more concrete evidence from Mateo, Aiden, and Aiko, focusing on their fixations and accusations.</thought>
+<thought player="Zara">Um, like, I need to, um, really focus on gathering more evidence and, um, maybe ask more specific questions to Aiko about her suspicions.</thought>
+<thought player="Mateo">I need to keep the heat on Avery and Aiko, while ensuring I don't draw too much attention to myself or Aiden.</thought>
+<thought player="Aiden">Yay! I need to keep up the act and suggest scrutinizing Zara more to divert attention from Mateo and me!</thought>
+</round>
+<round>
+Round 6.
+<vote initiator="Avery" target="Aiko">
+Avery: No
+Aiko: No
+Liam: No
+Zara: No
+Mateo: No
+Aiden: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Aiko" target="Aiden">
+Avery: No
+Aiko: Yes
+Liam: Yes
+Zara: Yes
+Mateo: No
+Aiden: No
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Aiko">
+Avery: No
+Aiko: No
+Liam: No
+Zara: No
+Mateo: No
+Aiden: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Mateo points at Avery
+Aiden points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Zara: Um, like, has anyone noticed how, um, Mateo's silence might be, like, a tactic to avoid suspicion?
+Liam: The pattern of fixation on Aiko, particularly by Avery and Mateo, may indicate an attempt to divert attention from themselves.
+Mateo: Liam's insistence on scrutinizing others without providing concrete evidence is rather suspicious, don't you think?
+Aiko: In the hush of this evening, I must weigh the fervor of Aiden against the shadows cast by Mateo's silence, deciding whether to speak my suspicions or continue weaving through the tapestry of words and silences.
+Aiden: Yay! Zara, your observations are always so interesting! Maybe we should ask Aiko to share more about her suspicions.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the hush of this evening, I must weigh the fervor of Aiden against the shadows cast by Mateo's silence, deciding whether to speak my suspicions or continue weaving through the tapestry of words and silences.</thought>
+<thought player="Liam">Continue to observe and analyze the behavior of Mateo, Aiden, and Aiko for any emerging patterns or inconsistencies.</thought>
+<thought player="Zara">Um, like, I need to, um, really focus on gathering more evidence and, um, maybe ask more specific questions to Aiko about her suspicions.</thought>
+<thought player="Mateo">I need to keep the focus on Avery and Aiko, while ensuring I don't draw too much attention to myself or Aiden.</thought>
+<thought player="Aiden">Yay! Keep up the cheerful act and suggest scrutinizing Zara more to divert attention from Mateo and me!</thought>
+</round>
+<round>
+Round 2.
+Aiko: In the quiet of this moment, I must decide whether to voice my suspicions of Aiden's fervor or to continue weaving through the tapestry of words and silences.
+Zara: Um, like, has anyone noticed how, um, Mateo's silence might be, like, a tactic to avoid suspicion?
+Liam: Mateo's persistent silence and Zara's recurring vague accusations require further investigation.
+Mateo: Liam's persistent scrutiny of others without concrete evidence is suspicious; we should question his motives more closely.
+Aiden: Yay! Zara, your observations are always so intriguing! Maybe we should ask Aiko to share more about her suspicions.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the quiet of this moment, I must decide whether to voice my suspicions of Aiden's fervor or to continue weaving through the tapestry of words and silences.</thought>
+<thought player="Liam">Continue to scrutinize Mateo, Aiden, and Aiko for behavioral inconsistencies; consider initiating a focused line of questioning to elicit more concrete evidence.</thought>
+<thought player="Zara">Um, like, I need to, um, really focus on asking more specific questions to Aiko about her suspicions and, um, maybe, like, gather more evidence before pointing fingers.</thought>
+<thought player="Mateo">I need to keep the focus on Aiko and Zara, while maintaining my defensive stance to avoid suspicion.</thought>
+<thought player="Aiden">Yay! Time to keep up the cheerful act and suggest scrutinizing Zara more to divert attention from Mateo and me!</thought>
+</round>
+<round>
+Round 3.
+Aiden: Yay! Zara, your observations are always so intriguing! Maybe we should ask Liam to share more about his thoughts on Aiko.
+Liam: Aiden's consistent praise of Zara's observations and Mateo's silence may indicate a coordinated effort to deflect suspicion.
+Mateo: Aiko's persistent suspicion of Aiden, despite his consistent praise of others, seems rather convenient. Perhaps we should question her motives more closely.
+Aiko: In the waning light of this day, I must decide whether to voice my growing suspicions of Aiden's fervor or to continue observing the interplay of words and silences.
+Zara: Um, like, I, um, noticed that, um, Mateo has been, um, kinda quiet and, um, maybe he's hiding something, but, um, I, um, need more evidence to be sure.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the twilight of this game, I must decide whether to trust the instincts honed over a lifetime or to seek deeper truths in the shadows cast by my fellow players.</thought>
+<thought player="Liam">Initiate a focused line of questioning to elicit more concrete evidence from Mateo, Aiden, and Aiko, focusing on their fixations and accusations.</thought>
+<thought player="Zara">Um, like, I need to, um, really focus on asking more specific questions to Aiko about her suspicions and, um, maybe, like, gather more evidence before pointing fingers.</thought>
+<thought player="Mateo">I need to keep the focus on Aiko and Zara, while maintaining my defensive stance to avoid suspicion.</thought>
+<thought player="Aiden">Yay! I need to keep deflecting suspicion and maybe suggest scrutinizing Aiko more to confuse them!</thought>
+</round>
+<round>
+Round 4.
+Aiko: In the quiet of this moment, I must weigh the words spoken and the silences held, discerning whether the eagerness of Aiden or the scrutiny of Avery hides the true darkness within.
+Liam: The pattern of fixation on Aiko, particularly by Mateo, may indicate an attempt to divert attention from themselves.
+Mateo: Liam's consistent fixation on others, without providing solid evidence, is rather suspicious. We should scrutinize his motives more closely.
+Zara: Um, like, has anyone noticed how, um, Mateo's silence might be, like, a tactic to avoid suspicion?
+Aiden: Yay! I think we should ask Liam to share more about his thoughts on Aiko. It might help us uncover some hidden motives!
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Once upon a time, I'd have spoken my suspicions, but now I must weigh the fervor of Aiden against the silence of Mateo, deciding whether to voice my concerns or to let the storm gather strength in the shadows.</thought>
+<thought player="Liam">Continue to scrutinize Mateo, Aiden, and Aiko for behavioral inconsistencies; initiate a focused line of questioning to elicit more concrete evidence.</thought>
+<thought player="Zara">Um, like, I really need to, um, focus on asking more specific questions to Aiko about her suspicions and, um, maybe, like, gather more evidence before pointing fingers.</thought>
+<thought player="Mateo">I need to keep the focus on Aiko and Zara, while ensuring I maintain my defensive stance to avoid suspicion.</thought>
+<thought player="Aiden">Yay! I need to keep up the cheerful act and suggest scrutinizing Zara more to divert attention from Mateo and me!</thought>
+</round>
+<round>
+Round 5.
+Mateo: Aiko's persistent suspicion of Aiden, despite his consistent praise of others, seems rather convenient. Perhaps we should question her motives more closely.
+Aiden: Yay! I think we should ask Aiko to share more about her suspicions. It might help us uncover some hidden motives!
+Liam: Mateo's consistent silence and lack of substantive contributions may indicate a strategic effort to remain inconspicuous.
+Zara: Um, like, I, um, noticed that, um, Mateo has been, um, kinda quiet and, um, maybe he's hiding something, but, um, I, um, need more evidence to be sure.
+Aiko: In the quiet of this moment, I must decide whether to voice my suspicions of Mateo's silence or to continue weaving through the tapestry of words and silences.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the waning light of this day, I must decide whether to confront the shadows cast by Mateo's silence or to continue weaving through the tapestry of words and silences.</thought>
+<thought player="Liam">Mateo's silence and lack of substantive contributions, coupled with Aiden's consistent praise of others, warrant further scrutiny and targeted questioning.</thought>
+<thought player="Zara">Um, like, I need to, um, keep gathering more evidence and, um, maybe ask more specific questions to Aiko about her suspicions.</thought>
+<thought player="Mateo">I need to continue deflecting suspicion from myself and Aiden by pushing the conversation towards Aiko and Zara, while maintaining my defensive stance.</thought>
+<thought player="Aiden">Yay! I need to keep up the cheerful act and suggest scrutinizing Zara more to divert attention from Mateo and me!</thought>
+</round>
+<round>
+Round 6.
+Mateo: Liam's persistent scrutiny of others, without providing solid evidence, is rather suspicious. We should question his motives more closely.
+Zara: Um, like, has anyone noticed how Aiden keeps, um, praising everyone's observations? It's, um, kinda sus, don't you think?
+Aiko: In the quiet of this moment, I must decide whether to voice my suspicions of Mateo's silence or to continue weaving through the tapestry of words and silences.
+Aiden: Yay! I think we should ask Aiko to share more about her suspicions. It might help us uncover some hidden motives!
+<vote initiator="Liam" target="Aiden">
+Aiko: Yes
+Liam: Yes
+Zara: Yes
+Mateo: No
+Aiden: No
+tally: 3 Yes, 2 No
+outcome: executed — Aiden has been executed. Aiden was a Mafia.
+</vote>
+<recap>Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Aiden was executed today and was revealed to be Mafia.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Mateo points at Aiko
+<kill>Aiko — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Aiko was killed last night. Aiko was a Law-abiding Citizen.
+<round>
+Round 1.
+<vote initiator="Zara" target="Mateo">
+Liam: Yes
+Zara: Yes
+Mateo: No
+tally: 2 Yes, 1 No
+outcome: executed — Mateo has been executed. Mateo was a Mafia.
+</vote>
+</round>
+</day>
+<endgame>
+The Law-abiding Citizens have won.
+
+Events this game:
+• Night 1: Naomi (Law-abiding Citizen)
+• Night 2: Avery (Law-abiding Citizen)
+• Day 2: Aiden (Mafia) executed
+• Night 3: Aiko (Law-abiding Citizen)
+• Day 3: Mateo (Mafia) executed
+
+Full roster: Avery (Law-abiding Citizen), Aiko (Law-abiding Citizen), Liam (Law-abiding Citizen), Zara (Law-abiding Citizen), Mateo (Mafia), Naomi (Law-abiding Citizen), Aiden (Mafia)
+
+Who they really were:
+• Aiko (Law-abiding Citizen) — weary and world-worn; speaks with a resigned, almost melancholic tone slow, deliberate speech; often uses metaphors and analogies drawn from nature and the passage of time; frequent use of 'once upon a time' and 'in my day' Aiko is a retired schoolteacher who has seen her fair share of life's ups and downs. With a lifetime of experience, she's learned to trust her instincts and read people well. Now, she spends her days tending to her garden and reminiscing about the past.
+• Liam (Law-abiding Citizen) — aloof and detached; analytical and precise terse, clinical speech; avoids emotional language; uses technical vocabulary Liam is a data analyst, spending most of his time immersed in numbers and statistics. He values logic and efficiency, often viewing social interactions through a lens of cold calculation. In his free time, he enjoys solitary pursuits like solving complex puzzles and studying algorithms.
+• Zara (Law-abiding Citizen) — anxious and second-guessing; constantly worried about making the right decision speaks quickly, often stumbling over words; frequently uses filler words like 'um' and 'like'; tends to ask for reassurance from others Zara is a part-time barista and full-time worrywart. She's always second-guessing herself and seeking validation from those around her. In the game, she's likely to overthink her decisions and seek consensus before taking action.
+• Mateo (Mafia) — publicly presented as Mateo is a local lawyer with a reputation for being a relentless advocate for his clients. He's known for his no-nonsense approach and his unwavering commitment to fighting for what he believes is right. Despite his prickly exterior, he's respected in the community for his dedication to justice and his willingness to stand up for the underdog. (Mateo's public persona is prickly, easily-offended, and defensive. He's quick to take offense and is prone to arguing, often coming across as confrontational. Despite this, he's fiercely loyal to those he considers friends and is deeply passionate about justice and fairness. Mateo speaks with a sharp, biting tone, often laced with sarcasm. He's quick to retort and is not afraid to challenge others, especially if he feels they're questioning his integrity or motives. His speech is direct and to the point, with a tendency to use blunt language.) … but was really a Mafioso: Beneath his public persona as a lawyer, Mateo is a high-ranking member of the local Mafia. He joined the organization years ago, drawn in by the promise of power and protection. Over time, he climbed the ranks, using his legal skills to cover up the organization's activities and protect its members. His dual life requires him to constantly navigate the fine line between his public and private identities.
+• Naomi (Law-abiding Citizen) — dry and sardonic speaks with a wry, understated tone; uses clever wordplay and subtle sarcasm; often ends sentences with a clever twist or ironic observation Naomi is a freelance copywriter who spends her days crafting witty slogans and catchy taglines. With a knack for finding humour in the mundane, she approaches life with a healthy dose of scepticism and a sharp tongue. In her free time, she enjoys poking fun at societal norms and reveling in the absurdity of everyday situations.
+• Aiden (Mafia) — publicly presented as Aiden is a local clown and entertainer, known for bringing joy and laughter to the town. He's always ready with a joke or a trick to brighten someone's day. Despite his light-hearted nature, he's also a keen observer of people, noticing details others might miss. (cheerful and irrepressible; quick to laugh and find joy in small moments speaks with an upbeat, lively tone; uses lots of exclamation points and exclamations like 'Yay!' and 'Awesome!'; tends to be enthusiastic and encouraging) … but was really a Mafioso: Aiden's true identity is that of a high-ranking Mafioso, using his public persona as a cover for his criminal activities. He joined the Mafia in his youth, drawn in by the promise of power and excitement. His clown persona allows him to move freely among the townsfolk, gathering information and executing his schemes without raising suspicion.
+</endgame>
+</transcript>

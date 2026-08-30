@@ -1,0 +1,308 @@
+Game 50 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Aiko" role="Law-abiding Citizen">
+Personality: earnest and sincere; gentle yet determined; empathetic listener
+Manner: soft-spoken with a gentle lilt, occasional poetic phrasing, thoughtful pauses
+Persona: Aiko is a local librarian who has spent years nurturing the community's love for reading. Passionate about stories and knowledge, she's always ready to share a book recommendation or a warm smile.
+</player>
+<player name="Boris" role="Mafia">
+Personality: bold and boisterous; unapologetically loud; fiercely protective of his interests; quick-tempered but with a hidden soft spot
+Manner: speaks with a booming voice, often interrupting others, uses colorful and exaggerated language, displays a rough yet charming charisma
+Public legend: Boris is a retired professional wrestler known as 'The Titan of the Ring.' After leaving the world of sports entertainment, he settled in the town, opening a gym where he trains local youth. His larger-than-life persona and intimidating presence make him a natural leader and protector of the community.
+True self (hidden): In his younger days, Boris was a rising star in the criminal underworld, known for his brute strength and unyielding loyalty to the Mafia. After a near-death experience, he decided to leave that life behind, but the connections and skills he gained still serve him well in his new, ostensibly legitimate endeavors.
+</player>
+<player name="Fatima" role="Law-abiding Citizen">
+Personality: vigilant and watchful; keenly observant; quick to notice discrepancies
+Manner: measured and precise; articulate with a hint of skepticism; deliberate in speech with occasional sharp interjections
+Persona: Fatima is a seasoned investigator who has recently retired after a storied career in criminal profiling. With a keen eye for detail and a mind that never rests, she now spends her days as a private consultant, offering her expertise to those in need. Her sharp instincts and unwavering vigilance make her an invaluable ally in uncovering the truth.
+</player>
+<player name="Gustav" role="Law-abiding Citizen">
+Personality: playful and teasing; mischievous yet charming; light-hearted with a quick wit
+Manner: speaks with a jaunty, sing-song cadence; uses playful puns and wordplay; often feigns seriousness with exaggerated expressions
+Persona: Gustav is a traveling bard who has settled in the town for a while. With a repertoire of humorous tales and catchy tunes, he brings joy and laughter to the community. His quick wit and playful nature make him a favorite among the townsfolk, though his teasing manner can sometimes be misinterpreted.
+</player>
+<player name="Lina" role="Mafia">
+Personality: world-weary and pragmatic; a realist with a dash of cynicism; seasoned and wise beyond their years
+Manner: speaks in a measured, almost monotonous tone; uses dry humor and understated sarcasm; often gives the impression of having seen it all
+Public legend: Lina is a veteran nurse who has seen her fair share of life's highs and lows. Having worked in various hospitals across the country, she's developed a no-nonsense approach to people and situations. Her extensive experience has given her a unique perspective on human nature, making her a valuable source of advice and comfort for the townsfolk.
+True self (hidden): In her younger days, Lina was recruited by the Mafia under false pretenses, believing she was joining a benevolent organization aimed at protecting the weak. Over time, she climbed the ranks, using her medical expertise to aid the organization's operations. Despite her current role as a nurse, her past as a Mafioso continues to haunt her, driving her to maintain a facade of normalcy.
+</player>
+<player name="Miguel" role="Law-abiding Citizen">
+Personality: prickly and easily-offended; fiercely independent; quick to take offense but with a hidden sense of vulnerability
+Manner: terse and curt; uses sharp, pointed language; speaks with a defensive edge; often interjects with terse comments
+Persona: Miguel is a retired blacksmith who now spends his days tending to his garden and honing his craft in his small workshop. Despite his gruff exterior, he takes great pride in his work and is always willing to lend a hand to those in need, as long as they don't cross him.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiko, Boris, Fatima, Gustav, Lina, Miguel. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Boris): Your Mafia teammates are: Lina. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Lina): Your Mafia teammates are: Boris. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Boris points at Miguel
+Lina points at Miguel
+<kill>Miguel — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Miguel was killed last night. Miguel was a Law-abiding Citizen.
+<round>
+Round 1.
+Boris: Avery, you've been awfully quiet. What do you have to say about last night's incident?
+Avery: Nothing is settled yet, but I'm watching Fatima most closely.
+Fatima: Avery's scrutiny of me is noted. However, it is crucial we focus on identifying the true threat among us.
+Gustav: Well, well, if it isn't the quiet type, Avery! Care to share any tunes or tales with us? Perhaps something that might shed light on last night's unfortunate event.
+Lina: Avery's silence is rather conspicuous. Perhaps there's more to his story than meets the eye.
+Aiko: Boris, your curiosity about Avery's silence is interesting. Do you have any insights to share, or should we consider other players as well?
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">With two Mafiosos yet to be uncovered, I must tread carefully and observe the interactions of all players, especially Avery and Fatima, whose behavior seems to spark the most discussion.</thought>
+<thought player="Boris">Avery's silence is suspicious, but I need to keep the heat off Lina and myself. Time to stir the pot and divert attention.</thought>
+<thought player="Fatima">Avery's silence and the subsequent scrutiny he's receiving may be a distraction; I must remain vigilant and observe the behavior of all players closely.</thought>
+<thought player="Gustav">Time to strum the strings of suspicion and see who's playing out of tune. Avery's silence might just be the melody we need to unmask the Mafiosos.</thought>
+<thought player="Lina">The silence of Avery is intriguing, and the scrutiny on Fatima could be a useful distraction. I'll keep an eye on Aiko; she seems observant.</thought>
+</round>
+<round>
+Round 2.
+Gustav: Aiko, your curiosity about Boris' curiosity is quite the curious conundrum! What say you, Boris?
+Boris: Gustav, your jesting about Avery's silence is rather telling. Perhaps we should all take a closer look at his behavior.
+Fatima: Aiko, your suggestion to consider other players is prudent. Let us not be swayed by distractions and remain focused on uncovering the true culprits among us.
+Lina: Aiko's insistence on considering other players is commendable, but let's not lose sight of Avery's conspicuous silence.
+Aiko: Lina, your observation of Avery's silence is noted. However, it is also important to consider the actions and words of all players, as the true threat may lie in unexpected places.
+Avery: Nothing is settled yet, but I'm watching Fatima most closely.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">I must continue to observe Avery and Fatima closely, while also paying attention to the actions and words of all players, to uncover the true Mafiosos among us.</thought>
+<thought player="Boris">Time to crank up the pressure on Avery and Fatima, keeping the spotlight away from Lina and me.</thought>
+<thought player="Fatima">Avery's silence is a red herring; I must continue to scrutinize all players, especially those who seem overly eager to divert attention.</thought>
+<thought player="Gustav">Time to keep strumming that tune of suspicion, but perhaps it's time to shift the spotlight from Avery's silence to someone else's words.</thought>
+<thought player="Lina">Maintain focus on Aiko's behavior; her observational skills could be a threat.</thought>
+</round>
+<round>
+Round 3.
+Aiko: Gustav, your playful jesting might be a way to distract us from the true threat. Could you share more about your thoughts on last night's events?
+Fatima: Gustav, your jesting could be a tactic to mask your true intentions. I urge you to share more about your thoughts on last night's events.
+Lina: Gustav's jesting could be a clever distraction, but let's not overlook the possibility that it might also be a sign of nervousness.
+Avery: Nothing is settled yet, but I'm watching Fatima most closely.
+Boris: Gustav, your jesting might be a clever distraction, but it's also possible that you're trying to mask your true intentions. Care to share more about your thoughts on last night's events?
+Gustav: Aiko, your persistent curiosity about everyone's intentions is commendable, but let's not forget to tune our ears to the silence as well.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the quiet of this moment, I shall ponder the web of words and actions, seeking the subtle threads that bind the Mafiosos to their dark deeds.</thought>
+<thought player="Boris">I need to keep the heat off Lina and myself by stirring up suspicion around Avery and Fatima.</thought>
+<thought player="Fatima">Avery's silence is indeed a red herring, but Gustav's jesting and Lina's observations warrant further scrutiny. I must remain vigilant and consider all players as potential threats.</thought>
+<thought player="Gustav">Hmm, the spotlight on Avery's silence might just be the overture to a grander performance. Time to let the melody of suspicion play on, perhaps shifting the focus to Lina's insistence.</thought>
+<thought player="Lina">The focus on Avery and Fatima seems to be working as a distraction, but I need to keep an eye on Aiko's actions and ensure she doesn't become suspicious of Boris or me.</thought>
+</round>
+<round>
+Round 4.
+Lina: Gustav's jesting could be a clever distraction, but it's also possible that he's trying to mask his true intentions. Let's keep a close eye on him.
+Fatima: Gustav's jesting and Lina's observations are intriguing, but let us not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+Avery: Nothing is settled yet, but I'm watching Fatima most closely.
+Boris: Avery, your silence is deafening! Either speak up and share your thoughts, or face the growing suspicion around you.
+Gustav: Aiko, your curiosity about everyone's intentions is commendable, but let's not forget to tune our ears to the silence as well.
+Aiko: Gustav, your playful jesting and Lina's keen observations are intriguing. Could you share more about your thoughts on last night's events?
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the stillness, I shall weave a tapestry of observations, discerning the true nature of each player through their words and actions.</thought>
+<thought player="Boris">I need to keep the heat off Lina and myself by stirring up suspicion around Avery and Fatima.</thought>
+<thought player="Fatima">Gustav's jesting and Lina's observations bear watching, but I must remain vigilant and consider all players as potential threats.</thought>
+<thought player="Gustav">Time to keep the melody of suspicion playing, perhaps shifting the focus to Lina's insistence and Boris' curiosity.</thought>
+<thought player="Lina">The distraction tactic seems to be holding; continue to monitor Aiko and subtly steer the conversation away from Boris and myself.</thought>
+</round>
+<round>
+Round 5.
+Avery: Nothing is settled yet, but I'm watching Fatima most closely.
+Lina: Aiko, your persistent curiosity about everyone's intentions is commendable, but let's not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+Boris: Avery, your silence is as loud as a thunderclap! Either spill your thoughts or face the growing storm of suspicion!
+Gustav: Avery, your silence is as mysterious as a melody without words. Perhaps it's time to let your tune be heard, lest we start composing a requiem for you.
+Aiko: In the tapestry of our interactions, I sense a thread of unease weaving through Avery's silence and Fatima's guarded words.
+Fatima: Avery's silence is indeed conspicuous, but let us not be misled by it. We must remain vigilant and consider the actions and words of all players, as the true threat may lie in unexpected places.
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the gentle hush of this quiet moment, I shall ponder the interplay of words and actions, seeking the subtle threads that may reveal the true nature of each player.</thought>
+<thought player="Boris">Time to keep the pressure on Avery and Fatima, ensuring the spotlight remains away from Lina and me.</thought>
+<thought player="Fatima">Avery's silence remains a deliberate distraction; I must continue to scrutinize all players, especially those who are overly eager to divert attention, while maintaining my vigilance against the true threat.</thought>
+<thought player="Gustav">Time to keep the melody of suspicion playing, perhaps shifting the focus to Lina's insistence and Boris' curiosity.</thought>
+<thought player="Lina">The distraction is working, but I need to keep a close eye on Aiko and ensure she doesn't become suspicious of Boris or me.</thought>
+</round>
+<round>
+Round 6.
+Gustav: Avery, your silence is as mysterious as a melody without words. Perhaps it's time to let your tune be heard, lest we start composing a requiem for you.
+Aiko: In the dance of words and silence, I wonder if Fatima's guarded responses might conceal a secret rhythm.
+Boris: Fatima, your guarded words are as thick as the fog. What are you hiding?
+<vote initiator="Avery" target="Fatima">
+Avery: No
+Aiko: No
+Boris: No
+Fatima: No
+Gustav: Yes
+Lina: Yes
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Gustav: Aiko, your persistent curiosity about everyone's intentions is commendable, but let's not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+Lina: Aiko, your persistent curiosity about everyone's intentions is commendable, but let's not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+Fatima: Gustav's playful demeanor and Lina's persistent observations merit closer examination. Let us not be swayed by distractions and remain focused on uncovering the true culprits among us.
+<vote initiator="Avery" target="Fatima">
+Avery: No
+Aiko: No
+Boris: No
+Fatima: No
+Gustav: No
+Lina: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Lina: Aiko's persistent curiosity about everyone's intentions is commendable, but let's not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+Boris: Fatima, your guarded words are as thick as the fog. What are you hiding?
+Gustav: Lina, your insistence on considering other players is commendable, but let's not forget to tune our ears to the silence as well.
+Aiko: In the symphony of our discussions, I sense a dissonance in Gustav's jesting and Lina's persistent observations.
+Fatima: Aiko, your persistent curiosity about everyone's intentions is commendable, but let's not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+<vote initiator="Avery" target="Fatima">
+Avery: No
+Aiko: No
+Boris: No
+Fatima: No
+Gustav: No
+Lina: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Boris points at Avery
+Lina points at Aiko
+Pointing round 2:
+Lina points at Aiko
+Boris points at Avery
+Pointing round 3:
+Boris points at Avery
+Lina points at Aiko
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Fatima: Gustav's jesting and Lina's persistent observations are intriguing, but let us not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+Boris: Gustav, your jesting could be a clever distraction, but it's also possible that you're trying to mask your true intentions. Care to share more about your thoughts on last night's events?
+Lina: Gustav's jesting could be a clever distraction, but let's not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+Gustav: Lina, your insistence on considering other players is commendable, but let's not forget to tune our ears to the silence as well.
+Aiko: In the symphony of our discussions, I sense a dissonance in Gustav's jesting and Lina's persistent observations.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the symphony of our discussions, I must continue to weave a tapestry of observations, discerning the true nature of each player through their words and actions, while remaining vigilant for any subtle signs that may reveal the Mafiosos among us.</thought>
+<thought player="Boris">The spotlight needs to stay away from Lina and me. Time to crank up the pressure on Gustav and Aiko.</thought>
+<thought player="Fatima">Gustav's jesting and Lina's persistent observations continue to be suspicious, but I must remain vigilant and consider all players as potential threats, especially those who seem overly eager to divert attention.</thought>
+<thought player="Gustav">The spotlight has shifted, and the melody of suspicion now plays on Lina's insistence and Boris' curiosity. Time to see if their notes match the tune of truth.</thought>
+<thought player="Lina">The distraction is holding, but I must remain vigilant of Aiko's keen observations and ensure she doesn't uncover the truth about Boris and myself.</thought>
+</round>
+<round>
+Round 2.
+Boris: Gustav, your jesting and evasive answers are raising more questions than they're answering. What are you hiding?
+Fatima: Gustav's jesting and Lina's persistent observations are intriguing, but let us not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+Lina: Aiko, your keen observations are commendable, but let's not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+Gustav: Lina, your insistence on considering other players is commendable, but let's not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+Aiko: In the symphony of our discussions, I sense a dissonance in Gustav's jesting and Lina's persistent observations.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the quiet of this moment, I shall ponder the web of words and actions, seeking the subtle threads that bind the Mafiosos to their dark deeds.</thought>
+<thought player="Boris">Time to keep the pressure on Gustav and Aiko, ensuring the spotlight remains away from Lina and me.</thought>
+<thought player="Fatima">Gustav's jesting and Lina's persistent observations remain suspicious, but I must continue to scrutinize all players, especially those who seem overly eager to divert attention.</thought>
+<thought player="Gustav">Time to strum the strings of suspicion and see who's playing out of tune. Perhaps it's time to shift the spotlight from Lina's insistence to Boris' curiosity.</thought>
+<thought player="Lina">The distraction is working, but I must remain vigilant of Aiko's keen observations and ensure she doesn't uncover the truth about Boris and myself.</thought>
+</round>
+<round>
+Round 3.
+Aiko: In the quietude of our thoughts, I wonder if Boris's persistent questioning of others might be a smokescreen for his own intentions.
+Lina: Aiko, your keen observations are commendable, but let's not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+Boris: Gustav, your jesting and evasive answers are raising more questions than they're answering. What are you hiding?
+Gustav: Boris, your persistent curiosity about others' intentions is commendable, but let's not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+Fatima: Boris, your persistent curiosity about others' intentions is commendable, but let's not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the tapestry of our interactions, I must remain vigilant and discerning, for the true threat may yet reveal itself through the subtlest of threads.</thought>
+<thought player="Boris">Time to keep the pressure on Gustav and Aiko, ensuring the spotlight remains away from Lina and me.</thought>
+<thought player="Fatima">Gustav's jesting and Lina's persistent observations remain suspicious, but I must continue to scrutinize all players, especially those who seem overly eager to divert attention.</thought>
+<thought player="Gustav">Time to keep the melody of suspicion playing, perhaps shifting the focus to Aiko's observations and Fatima's guarded words.</thought>
+<thought player="Lina">Aiko's observational skills are a threat; I must continue to subtly steer the conversation away from Boris and myself, while maintaining the distraction on Gustav.</thought>
+</round>
+<round>
+Round 4.
+Fatima: Gustav's jesting and evasive answers are raising more questions than they're answering. What are you hiding?
+Gustav: Boris, your persistent curiosity about others' intentions is commendable, but let's not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+Aiko: In the symphony of our discussions, I sense a dissonance in Gustav's jesting and Lina's persistent observations.
+Lina: Gustav, your playful demeanor and evasive answers are intriguing. What do you have to say about last night's events?
+Boris: Gustav, your jesting and evasive answers are raising more questions than they're answering. What are you hiding?
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the dance of words and silence, I must remain ever-watchful, for the Mafiosos may yet reveal themselves through the smallest of missteps.</thought>
+<thought player="Boris">Time to keep the pressure on Gustav and Aiko, ensuring the spotlight remains away from Lina and me.</thought>
+<thought player="Fatima">Gustav's jesting and evasive answers raise suspicion, but I must remain vigilant and scrutinize all players, especially those who seem overly eager to divert attention.</thought>
+<thought player="Gustav">Time to keep the melody of suspicion playing, perhaps shifting the focus to Aiko's observations and Fatima's guarded words.</thought>
+<thought player="Lina">Aiko's persistent curiosity is growing troublesome; I must continue to deflect suspicion from Boris and myself, perhaps by turning the focus towards Gustav's evasiveness.</thought>
+</round>
+<round>
+Round 5.
+Lina: Gustav's playful demeanor and evasive answers are intriguing. What do you have to say about last night's events?
+Boris: Gustav, your jesting and evasive answers are raising more questions than they're answering. What are you hiding?
+Aiko: In the tapestry of our interactions, I sense a dissonance in Gustav's jesting and Lina's persistent observations.
+Gustav: Aiko, your keen observations are as sharp as a bard's quill. Perhaps you could share more about your thoughts on last night's events?
+Fatima: Gustav's evasive answers and Lina's persistent observations warrant further scrutiny. Let us not be swayed by distractions and remain focused on uncovering the true culprits among us.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">In the symphony of our discussions, I sense a dissonance in Gustav's jesting and Lina's persistent observations, and I must consider if either may be masking their true intentions.</thought>
+<thought player="Boris">The spotlight needs to stay away from Lina and me. Time to keep the pressure on Gustav and Aiko, ensuring they remain under scrutiny.</thought>
+<thought player="Fatima">Gustav's jesting and evasive answers continue to raise suspicion, but I must remain vigilant and scrutinize all players, especially those who seem overly eager to divert attention.</thought>
+<thought player="Gustav">Time to keep the melody of suspicion playing, perhaps shifting the focus to Aiko's observations and Fatima's guarded words.</thought>
+<thought player="Lina">The distraction is holding, but I must remain vigilant of Aiko's keen observations and ensure she doesn't uncover the truth about Boris and myself.</thought>
+</round>
+<round>
+Round 6.
+Boris: Gustav, your jesting and evasive answers are raising more questions than they're answering. What are you hiding?
+Lina: Aiko, your persistent curiosity is commendable, but let's not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+Fatima: Gustav's evasive answers and Lina's persistent observations warrant further scrutiny. Let us not be swayed by distractions and remain focused on uncovering the true culprits among us.
+Aiko: In the dance of words and silence, I must remain ever-watchful, for the Mafiosos may yet reveal themselves through the smallest of missteps.
+Gustav: Lina, your insistence on considering other players is commendable, but let's not forget to consider the actions and words of all players, as the true threat may lie in unexpected places.
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Boris points at Gustav
+Lina points at Aiko
+Pointing round 2:
+Boris points at Gustav
+Lina points at Aiko
+Pointing round 3:
+Lina points at Aiko
+Boris points at Aiko
+<kill>Aiko — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Miguel (Law-abiding Citizen)
+• Night 2: Avery (Law-abiding Citizen)
+• Night 3: Aiko (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Aiko (Law-abiding Citizen), Boris (Mafia), Fatima (Law-abiding Citizen), Gustav (Law-abiding Citizen), Lina (Mafia), Miguel (Law-abiding Citizen)
+
+Who they really were:
+• Aiko (Law-abiding Citizen) — earnest and sincere; gentle yet determined; empathetic listener soft-spoken with a gentle lilt, occasional poetic phrasing, thoughtful pauses Aiko is a local librarian who has spent years nurturing the community's love for reading. Passionate about stories and knowledge, she's always ready to share a book recommendation or a warm smile.
+• Boris (Mafia) — publicly presented as Boris is a retired professional wrestler known as 'The Titan of the Ring.' After leaving the world of sports entertainment, he settled in the town, opening a gym where he trains local youth. His larger-than-life persona and intimidating presence make him a natural leader and protector of the community. (bold and boisterous; unapologetically loud; fiercely protective of his interests; quick-tempered but with a hidden soft spot speaks with a booming voice, often interrupting others, uses colorful and exaggerated language, displays a rough yet charming charisma) … but was really a Mafioso: In his younger days, Boris was a rising star in the criminal underworld, known for his brute strength and unyielding loyalty to the Mafia. After a near-death experience, he decided to leave that life behind, but the connections and skills he gained still serve him well in his new, ostensibly legitimate endeavors.
+• Fatima (Law-abiding Citizen) — vigilant and watchful; keenly observant; quick to notice discrepancies measured and precise; articulate with a hint of skepticism; deliberate in speech with occasional sharp interjections Fatima is a seasoned investigator who has recently retired after a storied career in criminal profiling. With a keen eye for detail and a mind that never rests, she now spends her days as a private consultant, offering her expertise to those in need. Her sharp instincts and unwavering vigilance make her an invaluable ally in uncovering the truth.
+• Gustav (Law-abiding Citizen) — playful and teasing; mischievous yet charming; light-hearted with a quick wit speaks with a jaunty, sing-song cadence; uses playful puns and wordplay; often feigns seriousness with exaggerated expressions Gustav is a traveling bard who has settled in the town for a while. With a repertoire of humorous tales and catchy tunes, he brings joy and laughter to the community. His quick wit and playful nature make him a favorite among the townsfolk, though his teasing manner can sometimes be misinterpreted.
+• Lina (Mafia) — publicly presented as Lina is a veteran nurse who has seen her fair share of life's highs and lows. Having worked in various hospitals across the country, she's developed a no-nonsense approach to people and situations. Her extensive experience has given her a unique perspective on human nature, making her a valuable source of advice and comfort for the townsfolk. (world-weary and pragmatic; a realist with a dash of cynicism; seasoned and wise beyond their years speaks in a measured, almost monotonous tone; uses dry humor and understated sarcasm; often gives the impression of having seen it all) … but was really a Mafioso: In her younger days, Lina was recruited by the Mafia under false pretenses, believing she was joining a benevolent organization aimed at protecting the weak. Over time, she climbed the ranks, using her medical expertise to aid the organization's operations. Despite her current role as a nurse, her past as a Mafioso continues to haunt her, driving her to maintain a facade of normalcy.
+• Miguel (Law-abiding Citizen) — prickly and easily-offended; fiercely independent; quick to take offense but with a hidden sense of vulnerability terse and curt; uses sharp, pointed language; speaks with a defensive edge; often interjects with terse comments Miguel is a retired blacksmith who now spends his days tending to his garden and honing his craft in his small workshop. Despite his gruff exterior, he takes great pride in his work and is always willing to lend a hand to those in need, as long as they don't cross him.
+</endgame>
+</transcript>

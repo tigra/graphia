@@ -1,0 +1,326 @@
+Game 44 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Aiden" role="Mafia">
+Personality: Defensive and touchy
+Manner: Snaps back quickly to any accusations, uses sarcastic and dismissive language to deflect suspicion.
+Public legend: Aiden is a retired schoolteacher who enjoys quiet evenings and is fiercely protective of the town's harmony. He's known for his sharp tongue and doesn't tolerate any form of disrespect.
+True self (hidden): Aiden joined the Mafia after avenging his brother's death, which was orchestrated by a rival gang. His role in the organization is to gather intelligence and eliminate threats, using his public persona as a shield.
+</player>
+<player name="Sofia" role="Law-abiding Citizen">
+Personality: Warm and effusive; enthusiastic and slightly dramatic
+Manner: Speaks with a fast pace, using expressive hand gestures and rich vocabulary. Uses exclamations frequently to emphasize points.
+Persona: Sofia is a passionate community organizer who thrives on bringing people together. Known for her boundless energy and heartfelt speeches, she's the go-to person for any town event or initiative.
+</player>
+<player name="Kenji" role="Law-abiding Citizen">
+Personality: earnest and sincere
+Manner: slow and thoughtful, uses pauses for emphasis, speaks with a calm and reassuring tone
+Persona: Kenji is a local fisherman who has lived in the town his entire life. Known for his honest nature and steady presence, he is often sought out for advice. He spends his days tending to his small boat and his evenings sharing stories of the sea with friends.
+</player>
+<player name="Amina" role="Law-abiding Citizen">
+Personality: aloof and detached; analytical and pragmatic
+Manner: speaks with a measured, monotone voice; uses technical jargon and factual information; avoids emotional language
+Persona: Amina is a data analyst who recently moved to the town. Known for her precise and logical approach to problems, she is often consulted for her insights on various town matters. In her free time, she enjoys birdwatching and maintaining a detailed journal of her observations.
+</player>
+<player name="Leo" role="Mafia">
+Personality: Gruff and blunt, straightforward with a no-nonsense attitude
+Manner: Speaks in a rough, no-frills tone; uses short, direct sentences; shows impatience with vague or long-winded talk.
+Public legend: Leo is a retired blacksmith who's been living in the town for decades. Known for his hard work and practical skills, he's often called upon to fix things around town. He's straightforward and prefers to keep conversations to the point.
+True self (hidden): Leo joined the Mafia in his youth for protection and has since risen through the ranks. His gruff exterior hides a calculating mind that uses his public persona as a cover for his criminal activities.
+</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: dry and sardonic
+Manner: uses witty, sarcastic remarks; speaks with a slow, deliberate pace to emphasize irony
+Persona: Zara is a local librarian with a penchant for dark humor. She has a vast knowledge of the town's history and a sharp eye for detail, often uncovering hidden stories in the dusty corners of the library. Known for her clever observations and acerbic wit, she's the one to turn to when you need a fresh perspective or a good laugh.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiden, Sofia, Kenji, Amina, Leo, Zara. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Aiden): Your Mafia teammates are: Leo. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Leo): Your Mafia teammates are: Aiden. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Aiden points at Kenji
+Leo points at Kenji
+<kill>Kenji — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Kenji was killed last night. Kenji was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: Nothing is settled yet, but I'm watching Amina most closely.
+Leo: Avery, why Amina? Got any solid reason or just a gut feeling?
+Amina: Avery, please elucidate the rationale behind your heightened scrutiny of Amina.
+Sofia: Let's rally together, my fellow citizens! We must uncover the truth behind Kenji's demise and bring justice to our fallen comrade. Let's share our observations and suspicions openly, for only through unity and transparency can we unmask the traitors among us!
+Aiden: Avery, if you're so keen on pointing fingers, why not start with Zara? She's been awfully quiet for my liking.
+Zara: Aiden, are you suggesting I'm a Mafioso because of my silence, or do you just enjoy the sound of your own voice?
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">I need to keep up the facade and steer suspicion away from Leo and myself by subtly pointing fingers at others.</thought>
+<thought player="Sofia">Oh, the tension is palpable! I must remain vigilant and continue rallying my fellow citizens to share their observations and suspicions openly. Let's unmask the traitors together!</thought>
+<thought player="Amina">Analyze Avery and Zara's behaviors for potential alignment with Mafioso traits.</thought>
+<thought player="Leo">Avery's got a target on Amina, might be worth steering suspicion elsewhere.</thought>
+<thought player="Zara">It seems Avery and Aiden are itching for a witch hunt. I'd better keep my cards close to my chest and let them dance on the Mafiosos' strings for a bit.</thought>
+</round>
+<round>
+Round 2.
+Amina: Avery, your fixation on Amina lacks substantiation. Please provide empirical evidence to support your claim.
+Zara: Aiden, your eagerness to cast suspicion seems almost... unprofessional. Perhaps a bit of restraint would serve us better than a wild goose chase.
+Leo: Aiden, Zara's silence isn't enough to convict her. Let's hear more from everyone before jumping to conclusions.
+Aiden: Avery, your fixation on Amina is starting to look like a red herring. How about we consider other possibilities, like Sofia's sudden enthusiasm for leading the charge?
+Avery: Nothing is settled yet, but I'm watching Amina most closely.
+Sofia: Aiden, your quick deflection of suspicion from Zara to Amina and now to me raises eyebrows! Let's keep our focus sharp and not let the true culprits slip through our fingers!
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Keep deflecting suspicion and sow discord among the Law-abiding citizens to protect Leo and myself.</thought>
+<thought player="Sofia">Oh, the web of suspicion is thickening! I must keep rallying my fellow citizens and remain vigilant, ensuring our focus stays sharp and unified against the lurking Mafiosos.</thought>
+<thought player="Amina">Monitor Avery's and Zara's behaviors closely for any further suspicious alignments or discrepancies.</thought>
+<thought player="Leo">Need to deflect suspicion from Amina to someone else. Sofia's pushing hard, might be a good target.</thought>
+<thought player="Zara">Avery and Aiden's antics are as entertaining as a clown car, but I'll let them exhaust themselves before I step in.</thought>
+</round>
+<round>
+Round 3.
+Avery: Nothing is settled yet, but I'm watching Amina most closely.
+Aiden: Sofia, your relentless push for unity almost seems like you're trying too hard to divert attention from yourself.
+Sofia: Avery, your persistent focus on Amina is concerning! Could you please share any concrete evidence or observations that have led you to this conclusion?
+Amina: Avery, your repeated focus on Amina without providing evidence is concerning. Please substantiate your claims or risk appearing as a potential diversion tactic.
+Leo: Sofia's rallying cry seems a bit too convenient. Let's not get sidetracked.
+Zara: Avery, your obsession with Amina is getting as old as the books in my library. How about you share something new, or are we doomed to relive this melodrama?
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Keep pushing suspicion onto Avery and Sofia to create division and protect Leo and myself.</thought>
+<thought player="Sofia">Oh, the dance of deflection! I must remain steadfast in my calls for unity and vigilance, ensuring our focus remains sharp and our suspicions well-founded.</thought>
+<thought player="Amina">Continue to scrutinize Avery and Zara's interactions for any further indications of Mafioso behavior.</thought>
+<thought player="Leo">Keep deflecting suspicion from Amina, might push it onto Sofia next.</thought>
+<thought player="Zara">Avery and Aiden are playing right into my hands, let's see how much longer they'll chase ghosts before I nudge them in the right direction.</thought>
+</round>
+<round>
+Round 4.
+Amina: Analyzing the current behavioral patterns, Avery's persistent focus on Amina without substantial evidence could be a strategic diversion.
+Leo: Sofia's enthusiasm for leading feels off. We should consider her motives.
+Sofia: Aiden, your quick deflection of suspicion from Zara to Amina and now to me raises eyebrows! Let's keep our focus sharp and not let the true culprits slip through our fingers!
+Aiden: Sofia, your rallying cry seems a bit too rehearsed. Are you sure you're not trying to overshadow something?
+Zara: Sofia's rallying cry for unity is almost as suspicious as Aiden's deflections. I'm starting to think we should consider her motives more closely.
+Avery: Nothing is settled yet, but I'm watching Amina most closely.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Continue to deflect suspicion from Leo and myself by subtly pointing fingers at Avery and Sofia, while sowing discord among the Law-abiding citizens.</thought>
+<thought player="Sofia">Oh, the dance of deflection! I must remain steadfast in my calls for unity and vigilance, ensuring our focus remains sharp and our suspicions well-founded.</thought>
+<thought player="Amina">Continue to observe Avery and Zara for any further suspicious behavior or discrepancies that may indicate Mafioso traits.</thought>
+<thought player="Leo">Keep deflecting suspicion from Amina, push it onto Sofia next.</thought>
+<thought player="Zara">Avery and Aiden are making a fine mess of things; I'll let them entertain themselves a bit longer before I drop a hint.</thought>
+</round>
+<round>
+Round 5.
+Aiden: Sofia, your relentless push for unity is almost as suspicious as Aiden's deflections. I'm starting to think we should consider her motives more closely.
+Zara: Aiden's deflections are as transparent as a glass book shelf. Let's see if he can keep up the charade.
+Leo: Sofia's rallying cry for unity seems too rehearsed. We should consider her motives more closely.
+Avery: Nothing is settled yet, but I'm watching Amina most closely.
+Sofia: Avery, your unwavering focus on Amina is starting to feel like a smokescreen! Let's not let the real culprits slip through our fingers, my friends!
+Amina: Avery's repeated focus on Amina without substantial evidence may indicate a strategic diversion. We should consider other players for potential Mafioso behavior.
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Keep deflecting suspicion and sowing discord among the Law-abiding citizens to protect Leo and myself.</thought>
+<thought player="Sofia">Oh, the plot thickens! I must continue to rally my fellow citizens and remain vigilant, ensuring our focus stays sharp and our suspicions well-founded.</thought>
+<thought player="Amina">Continue to monitor Avery and Zara for any further suspicious behavior or discrepancies, while subtly redirecting suspicion towards Sofia and Aiden.</thought>
+<thought player="Leo">Keep pushing suspicion onto Sofia, divert attention from Amina.</thought>
+<thought player="Zara">Avery and Aiden are still flailing about like marionettes in a storm; perhaps it's time to gently steer them towards a more productive line of inquiry.</thought>
+</round>
+<round>
+Round 6.
+Sofia: Avery, your unwavering focus on Amina feels like a smokescreen! Let's not let the real culprits slip through our fingers, my friends!
+Aiden: Sofia, your constant rallying cries for unity are starting to sound like a broken record. Are you sure you're not trying to divert attention from yourself?
+Leo: Sofia's rallying cries feel too rehearsed. We should consider her motives more closely.
+Zara: Sofia, your rallying cries for unity are starting to sound like a broken record. Are you sure you're not trying to divert attention from yourself?
+<vote initiator="Avery" target="Amina">
+Avery: No
+Aiden: No
+Sofia: No
+Amina: No
+Leo: No
+Zara: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Zara: Sofia's enthusiasm for unity is almost as suspicious as Aiden's deflections. I'm starting to think we should consider her motives more closely.
+<vote initiator="Avery" target="Amina">
+Avery: No
+Aiden: No
+Sofia: No
+Amina: No
+Leo: No
+Zara: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Aiden: Avery, your relentless focus on Amina is starting to feel like a smokescreen! Let's not let the real culprits slip through our fingers, my friends!
+Zara: Avery and Aiden, your theatrics are as riveting as a librarian's duel. Perhaps it's time to focus on something—or someone—else.
+<vote initiator="Avery" target="Amina">
+Avery: No
+Aiden: No
+Sofia: No
+Amina: No
+Leo: No
+Zara: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Aiden points at Avery
+Leo points at Sofia
+Pointing round 2:
+Leo points at Sofia
+Aiden points at Sofia
+<kill>Sofia — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Sofia was killed last night. Sofia was a Law-abiding Citizen.
+<round>
+Round 1.
+Amina: Avery and Zara's repeated deflections and theatrics warrant further scrutiny for potential Mafioso behavior.
+Aiden: Avery, your persistent fixation on Amina is starting to look like a smokescreen. Are you sure you're not trying to divert our attention from the real culprits?
+Zara: Avery and Aiden, your performance is as riveting as a poorly written novel. Perhaps it's time to focus on the living, not the dead.
+Avery: Nothing is settled yet, but I'm watching Amina most closely.
+Leo: Sofia's rallying cries feel too rehearsed. We should consider her motives more closely.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">I need to keep deflecting suspicion and sowing discord, especially by pushing Avery and Amina as potential threats.</thought>
+<thought player="Amina">Continue to analyze Avery and Zara's behaviors for any further suspicious alignments or discrepancies, while subtly redirecting suspicion towards Aiden.</thought>
+<thought player="Leo">Keep pushing suspicion onto Sofia, divert attention from Amina.</thought>
+<thought player="Zara">Avery and Aiden's charade is getting old, but it's still amusing to watch them trip over their own theatrics. Maybe it's time to nudge them towards a more fruitful line of questioning.</thought>
+</round>
+<round>
+Round 2.
+Zara: Avery, your obsession with Amina is as stale as last week's bread. How about you share something new, or are we doomed to relive this melodrama?
+Amina: Avery and Zara's repeated deflections and theatrics warrant further scrutiny for potential Mafioso behavior.
+Aiden: Avery, your obsession with Amina is getting as old as the books in my library. How about you share something new, or are we doomed to relive this melodrama?
+Avery: Nothing is settled yet, but I'm watching Amina most closely.
+Leo: Sofia's rallying cries felt too rehearsed. We should consider her motives more closely.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">I need to continue deflecting suspicion from Leo and myself by subtly pointing fingers at Avery and Amina, while sowing discord among the Law-abiding citizens.</thought>
+<thought player="Amina">Continue to monitor Avery and Zara for any further suspicious behavior, while subtly redirecting suspicion towards Aiden.</thought>
+<thought player="Leo">Need to keep deflecting suspicion from Amina, maybe push it onto Zara next.</thought>
+<thought player="Zara">Avery and Aiden are still chasing windmills; it's almost time to steer them towards the real culprits.</thought>
+</round>
+<round>
+Round 3.
+Zara: Avery, your obsession with Amina is as stale as last week's bread. How about you share something new, or are we doomed to relive this melodrama?
+Avery: Nothing is settled yet, but I'm watching Amina most closely.
+Aiden: Avery, your fixation on Amina is getting as tiresome as a broken record. How about you share something new, or are we doomed to relive this melodrama?
+Leo: Avery, your focus on Amina is getting as repetitive as a hammer striking an anvil. Let's consider other possibilities.
+Amina: Zara's and Avery's repeated deflections and theatrics warrant further scrutiny for potential Mafioso behavior.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">I need to keep pushing suspicion onto Avery and Amina to create division and protect Leo and myself.</thought>
+<thought player="Amina">Continue to observe Avery and Zara for any further suspicious behavior or discrepancies, while subtly redirecting suspicion towards Aiden.</thought>
+<thought player="Leo">Need to keep pushing suspicion onto Zara, divert attention from Amina.</thought>
+<thought player="Zara">Avery and Aiden are like a pair of lost puppies, barking at shadows. Time to subtly steer them towards the real threat.</thought>
+</round>
+<round>
+Round 4.
+Avery: Nothing is settled yet, but I'm watching Amina most closely.
+Aiden: Avery, your fixation on Amina is starting to feel like a desperate attempt to distract us from the real threats among us.
+Zara: Avery, your fixation on Amina is as predictable as a plot twist in a children's story. Perhaps it's time to consider other suspects.
+Amina: Avery and Zara's persistent deflections and theatrics warrant further scrutiny for potential Mafioso behavior.
+Leo: Avery, your fixation on Amina is getting as old as the books in my library. How about you share something new, or are we doomed to relive this melodrama?
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Time to keep deflecting and sow more discord, especially by targeting Avery and Amina.</thought>
+<thought player="Amina">Continue to monitor Avery and Zara for any further suspicious behavior, while subtly redirecting suspicion towards Aiden and Leo.</thought>
+<thought player="Leo">Need to keep pushing suspicion onto Zara, divert attention from Amina.</thought>
+<thought player="Zara">Avery and Aiden are still yapping at the moon. Time to drop a breadcrumb or two and see if they follow the trail.</thought>
+</round>
+<round>
+Round 5.
+Zara: Avery, your fixation on Amina is as predictable as a plot twist in a children's story. Perhaps it's time to consider other suspects.
+Avery: Nothing is settled yet, but I'm watching Amina most closely.
+Aiden: Avery, your relentless focus on Amina is getting as old as the books in my library. How about you share something new, or are we doomed to relive this melodrama?
+Leo: Zara's silence is suspicious. We should consider her motives more closely.
+Amina: Avery and Zara's persistent deflections and theatrics warrant further scrutiny for potential Mafioso behavior.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">I need to continue deflecting suspicion and sowing discord, especially by targeting Avery and Amina, to protect Leo and myself.</thought>
+<thought player="Amina">Continue to monitor Avery and Zara for any further suspicious behavior, while subtly redirecting suspicion towards Aiden and Leo.</thought>
+<thought player="Leo">Need to keep pushing suspicion onto Zara, divert attention from Amina and protect Aiden.</thought>
+<thought player="Zara">Avery and Aiden are still yapping at the moon. Time to drop a breadcrumb or two and see if they follow the trail.</thought>
+</round>
+<round>
+Round 6.
+Zara: Avery, your fixation on Amina is as predictable as a plot twist in a children's story. Perhaps it's time to consider other suspects.
+<vote initiator="Avery" target="Amina">
+Avery: No
+Aiden: No
+Amina: No
+Leo: No
+Zara: No
+tally: 0 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Leo: Zara's silence is suspicious. We should consider her motives more closely.
+Amina: Analyzing the current behavioral patterns, Avery and Zara's persistent deflections and theatrics warrant further scrutiny for potential Mafioso behavior.
+Aiden: Avery, your fixation on Amina is getting as tiresome as a broken record. How about you share something new, or are we doomed to relive this melodrama?
+<vote initiator="Avery" target="Amina">
+Avery: No
+Aiden: No
+Amina: No
+Leo: No
+Zara: No
+tally: 0 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Zara: Avery, your fixation on Amina is as stale as last week's bread. Perhaps it's time to consider other suspects, like Leo's suspiciously rehearsed lines.
+Amina: Avery and Zara's persistent deflections and theatrics warrant further scrutiny for potential Mafioso behavior.
+Aiden: Avery, your fixation on Amina is as predictable as a plot twist in a children's story. Perhaps it's time to consider other suspects, like Zara's suspiciously rehearsed lines.
+Leo: Zara's silence is suspicious. We should consider her motives more closely.
+<vote initiator="Avery" target="Amina">
+Avery: No
+Aiden: No
+Amina: No
+Leo: No
+Zara: No
+tally: 0 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Leo points at Zara
+Aiden points at Avery
+Pointing round 2:
+Leo points at Zara
+Aiden points at Avery
+Pointing round 3:
+Aiden points at Avery
+Leo points at Zara
+<kill>Zara — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Kenji (Law-abiding Citizen)
+• Night 2: Sofia (Law-abiding Citizen)
+• Night 3: Zara (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Aiden (Mafia), Sofia (Law-abiding Citizen), Kenji (Law-abiding Citizen), Amina (Law-abiding Citizen), Leo (Mafia), Zara (Law-abiding Citizen)
+
+Who they really were:
+• Aiden (Mafia) — publicly presented as Aiden is a retired schoolteacher who enjoys quiet evenings and is fiercely protective of the town's harmony. He's known for his sharp tongue and doesn't tolerate any form of disrespect. (Defensive and touchy Snaps back quickly to any accusations, uses sarcastic and dismissive language to deflect suspicion.) … but was really a Mafioso: Aiden joined the Mafia after avenging his brother's death, which was orchestrated by a rival gang. His role in the organization is to gather intelligence and eliminate threats, using his public persona as a shield.
+• Sofia (Law-abiding Citizen) — Warm and effusive; enthusiastic and slightly dramatic Speaks with a fast pace, using expressive hand gestures and rich vocabulary. Uses exclamations frequently to emphasize points. Sofia is a passionate community organizer who thrives on bringing people together. Known for her boundless energy and heartfelt speeches, she's the go-to person for any town event or initiative.
+• Kenji (Law-abiding Citizen) — earnest and sincere slow and thoughtful, uses pauses for emphasis, speaks with a calm and reassuring tone Kenji is a local fisherman who has lived in the town his entire life. Known for his honest nature and steady presence, he is often sought out for advice. He spends his days tending to his small boat and his evenings sharing stories of the sea with friends.
+• Amina (Law-abiding Citizen) — aloof and detached; analytical and pragmatic speaks with a measured, monotone voice; uses technical jargon and factual information; avoids emotional language Amina is a data analyst who recently moved to the town. Known for her precise and logical approach to problems, she is often consulted for her insights on various town matters. In her free time, she enjoys birdwatching and maintaining a detailed journal of her observations.
+• Leo (Mafia) — publicly presented as Leo is a retired blacksmith who's been living in the town for decades. Known for his hard work and practical skills, he's often called upon to fix things around town. He's straightforward and prefers to keep conversations to the point. (Gruff and blunt, straightforward with a no-nonsense attitude Speaks in a rough, no-frills tone; uses short, direct sentences; shows impatience with vague or long-winded talk.) … but was really a Mafioso: Leo joined the Mafia in his youth for protection and has since risen through the ranks. His gruff exterior hides a calculating mind that uses his public persona as a cover for his criminal activities.
+• Zara (Law-abiding Citizen) — dry and sardonic uses witty, sarcastic remarks; speaks with a slow, deliberate pace to emphasize irony Zara is a local librarian with a penchant for dark humor. She has a vast knowledge of the town's history and a sharp eye for detail, often uncovering hidden stories in the dusty corners of the library. Known for her clever observations and acerbic wit, she's the one to turn to when you need a fresh perspective or a good laugh.
+</endgame>
+</transcript>
