@@ -254,6 +254,23 @@ class GraphiaConfig:
     persona_temperature: float = 1.0
 
 
+def resolved_tier_models(config: GraphiaConfig) -> tuple[str, str]:
+    """The (large, small) model ids the active provider will actually use.
+
+    ``llm_provider`` decides which pair of fields is live: the ``GRAPHIA_OLLAMA_*``
+    tiers under ``ollama``, and the shared Bedrock ``large_model`` /
+    ``small_model`` pair under both ``bedrock`` (Nova) and ``bedrock-claude``
+    (Claude Haiku) — which is why the Bedrock arms need no branch of their own.
+
+    Exists so "which model is actually in play?" has ONE answer that callers
+    read rather than re-derive. Its first consumer is the boot provenance line
+    in :func:`graphia.logging.setup_logger`.
+    """
+    if config.llm_provider == "ollama":
+        return config.ollama_large_model, config.ollama_small_model
+    return config.large_model, config.small_model
+
+
 def _env_truthy(name: str) -> bool:
     raw = os.environ.get(name)
     if raw is None:

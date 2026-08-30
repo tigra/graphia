@@ -19,6 +19,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
+from graphia.config import GraphiaConfig
 from graphia.llm import DayAction, Pointing
 from graphia.ui.app import GraphiaApp
 
@@ -68,3 +71,109 @@ async def test_log_file_contains_app_start_event(
     lines = [line for line in env.read_text(encoding="utf-8").splitlines() if line]
     events = [json.loads(line) for line in lines]
     assert any(e.get("event") == "app_start" for e in events)
+
+
+# ===========================================================================
+# Boot provider provenance — the app_start record names the model that served
+# the run (spec 035 follow-up).
+#
+# Before this, the local JSONL trace carried only graph-stream deltas, so a
+# finished local game left NO evidence of which provider played it: verifying
+# spec 035's local Claude game required an out-of-band CloudWatch metrics
+# query, while the deployed Runtime had been self-evidencing all along.
+# ===========================================================================
+
+
+def _boot_record(tmp_path: Path, **overrides: object) -> dict:
+    """Run ``setup_logger`` against a config and return its ``app_start`` record."""
+    from graphia.logging import setup_logger
+
+    defaults: dict[str, object] = {
+        "bearer_token": None,
+        "aws_region": "us-east-1",
+        "log_file": tmp_path / "boot.log",
+        "checkpoint_dir": tmp_path / "checkpoints",
+        "stats_file": tmp_path / "career.json",
+        "human_role": None,
+        "remote_mode": False,
+        "runtime_invocation_url": None,
+        "memory_id": None,
+        "career_memory_id": None,
+        "gateway_id": None,
+        "gateway_url": None,
+        "cloudwatch_log_group": None,
+        "stats_strategy_id": None,
+        "stats_namespace": None,
+    }
+    config = GraphiaConfig(**{**defaults, **overrides})  # type: ignore[arg-type]
+    setup_logger(config)
+    lines = config.log_file.read_text(encoding="utf-8").splitlines()
+    # The trace is APPEND-mode and long-lived (real logs span months of runs),
+    # so the boot record just written is the LAST line, not the first — which is
+    # exactly why a per-run provenance stamp is what makes a window in it
+    # attributable at all.
+    return json.loads(lines[-1])
+
+
+def test_boot_record_names_the_bedrock_nova_provider_and_models(tmp_path: Path) -> None:
+    """The Nova arm stamps provider + both resolved tier ids + region."""
+    rec = _boot_record(tmp_path, llm_provider="bedrock")
+
+    assert rec["event"] == "app_start"
+    assert rec["provider"] == "bedrock"
+    assert rec["large_model"] == "amazon.nova-pro-v1:0"
+    assert rec["small_model"] == "amazon.nova-lite-v1:0"
+    assert rec["aws_region"]
+    assert rec["ollama_base_url"] is None
+
+
+def test_boot_record_names_claude_when_the_claude_provider_is_selected(
+    tmp_path: Path,
+) -> None:
+    """The whole point: a local Claude game is now self-evidencing in the log."""
+    claude = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    rec = _boot_record(
+        tmp_path,
+        llm_provider="bedrock-claude",
+        large_model=claude,
+        small_model=claude,
+    )
+
+    assert rec["provider"] == "bedrock-claude"
+    assert rec["large_model"] == claude
+    assert rec["small_model"] == claude
+
+
+def test_boot_record_names_the_ollama_endpoint_not_a_region(tmp_path: Path) -> None:
+    """Ollama stamps its tier models + base URL, and no irrelevant AWS region."""
+    rec = _boot_record(
+        tmp_path,
+        llm_provider="ollama",
+        ollama_large_model="qwen3-coder:30b",
+        ollama_small_model="qwen2.5:3b",
+    )
+
+    assert rec["provider"] == "ollama"
+    assert rec["large_model"] == "qwen3-coder:30b"
+    assert rec["small_model"] == "qwen2.5:3b"
+    assert rec["ollama_base_url"]
+    assert rec["aws_region"] is None, "an Ollama run has no meaningful AWS region"
+
+
+def test_boot_record_never_leaks_credentials_or_the_aws_profile(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Model provenance must not become a credential/identity disclosure."""
+    monkeypatch.setenv("AWS_PROFILE", "some-private-profile-name")
+    rec = _boot_record(tmp_path, llm_provider="bedrock", bearer_token="SUPER-SECRET")
+
+    rendered = repr(rec)
+    assert "SUPER-SECRET" not in rendered
+    assert "some-private-profile-name" not in rendered
+    assert "bearer" not in rendered.lower()
+
+
+def test_boot_record_marks_remote_mode(tmp_path: Path) -> None:
+    """Remote mode writes this local trace too — record which side ran the graph."""
+    assert _boot_record(tmp_path, remote_mode=True)["remote_mode"] is True
+    assert _boot_record(tmp_path, remote_mode=False)["remote_mode"] is False
