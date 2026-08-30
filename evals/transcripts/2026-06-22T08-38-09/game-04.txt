@@ -1,0 +1,400 @@
+Game 4 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Qasim" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks with deliberate pacing, uses simple but precise language, often pauses before answering questions, avoids jargon, and tends to repeat key phrases for emphasis
+Persona: Qasim is a local librarian who has lived in the town his whole life. He spends his days organizing books and helping people find information. He's known for being reliable and trustworthy, always willing to lend a hand to his neighbors. He doesn't have any secrets and is open about his daily routines and thoughts.
+</player>
+<player name="Sofia" role="Mafia">
+Personality: Sofia is a warm, maternal figure who exudes kindness and reliability. She has an innate ability to make others feel heard and cared for, often putting herself last to ensure everyone else is comfortable. Her compassion is genuine, but it's also calculated — she uses her empathy as a tool for manipulation.
+Manner: Sofia speaks in soft, soothing tones, often pausing before responding to “consider” what she’s about to say. She uses gentle gestures and nods while listening, and her voice carries a slight lilt that makes her sound almost like a motherly whisper. She avoids direct confrontation, prefers to lead people to agree with her through subtle suggestion rather than force.
+Public legend: Sofia is a beloved nurse at the town’s clinic, known for her tireless work and comforting presence during difficult times. She volunteers her time to help the elderly and sick, often bringing them homemade meals and small gifts. She's deeply trusted by the townspeople, who see her as an anchor of stability and care.
+True self (hidden): Sofia was a young woman when she joined the Mafia after her family was killed in a botched robbery gone wrong. She took on the identity of a nurse to blend into society while working her way up through the ranks, using her charm and empathy to gain trust and eliminate threats from within the organization. Her cover as a healer has allowed her to maintain a façade of innocence, even as she orchestrates deadly schemes.
+</player>
+<player name="Aisha" role="Law-abiding Citizen">
+Personality: honest and straightforward
+Manner: speaks slowly and deliberately, with a soft but firm tone. Uses simple, direct language and often repeats key words for emphasis. Has a habit of pausing before answering questions to ensure clarity.
+Persona: Aisha is a librarian who has lived in the town her entire life. She spends her days organizing books and helping people find information. She's known for being kind and reliable, always willing to lend a hand or share knowledge. Her quiet demeanor makes her a steady presence in the community.
+</player>
+<player name="Ahmed" role="Law-abiding Citizen">
+Personality: honest and ordinary
+Manner: speaks with measured, deliberate pacing; uses simple, direct vocabulary with occasional verbal ticks like "you know" or "I mean" for emphasis; avoids complex metaphors or slang
+Persona: Ahmed is a modest accountant who has lived in the town his entire life. He enjoys quiet evenings at home, reading books, and helping neighbors with their finances. He's known for being reliable and straightforward in all his dealings.
+</player>
+<player name="Nura" role="Mafia">
+Personality: Nura is a quiet, methodical woman who exudes calm confidence. She has a strong sense of duty and believes in order and structure, which makes her seem like a pillar of the community. However, beneath her composed exterior lies a calculating mind that carefully plans every move.
+Manner: Nura speaks in measured, deliberate tones with a slight drawl. She rarely raises her voice but always maintains eye contact when speaking. Her sentences are concise and often end with a subtle nod or a barely perceptible smile. She tends to pause before answering questions, as if weighing each word carefully.
+Public legend: Nura is a librarian who has lived in the town her entire life. She’s known for being incredibly organized and helpful, always ready to assist others with research or finding information. Her colleagues appreciate her quiet efficiency and trustworthiness. She keeps to herself but is respected by all for her dedication to the community.
+True self (hidden): Nura was once a promising scholar who joined a local crime syndicate after her research into town politics uncovered corruption that threatened her family's safety. She now uses her public persona as a cover while quietly orchestrating events from behind the scenes, ensuring the Mafia maintains influence without drawing suspicion.
+</player>
+<player name="Alfiya" role="Law-abiding Citizen">
+Personality: curious and methodical
+Manner: speaks with measured deliberation, often pausing to consider words carefully; uses precise vocabulary and avoids slang; tends to nod slowly while thinking
+Persona: Alfiya is a librarian who has lived in the town her entire life. She spends her days organizing books and helping residents find information. She's known for being thorough and reliable, always double-checking facts before sharing them with others.
+</player>
+<player name="Hana" role="Law-abiding Citizen">
+Personality: honest and unassuming
+Manner: speaks slowly and deliberately, using simple but precise language; often pauses to gather thoughts; avoids slang and exaggeration
+Persona: Hana is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being trustworthy and always tells the truth, even when it's inconvenient.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Qasim, Sofia, Aisha, Ahmed, Nura, Alfiya, Hana. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Sofia): Your Mafia teammates are: Nura. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Nura): Your Mafia teammates are: Sofia. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Sofia points at Avery
+Nura points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Aisha: I think we should focus on who was quiet during the night phase — that's usually a red flag. I'm not comfortable voting without more info, but I'd like to hear from Qasim and Ahmed about their actions last night.
+Alfiya: I agree with Aisha — I'd like to hear from Qasim and Ahmed about their actions last night. I noticed they both seemed unusually quiet during the night phase.
+<vote initiator="Nura" target="Qasim">
+Qasim: No
+Sofia: Yes
+Aisha: No
+Ahmed: No
+Nura: Yes
+Alfiya: No
+Hana: No
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Hana: I'm still trying to figure out what happened during the night. Qasim and Ahmed were both very quiet — I think it's strange that they didn't say anything at all. I wonder if we should ask them why they stayed silent.
+Sofia: I think it's important we listen carefully to everyone's explanations, but I also think we should be cautious about jumping to conclusions too quickly. Qasim and Ahmed may have had their reasons for staying quiet.
+Aisha: I still think we need to hear from Ahmed and Qasim about their silence. But I also think we should be careful not to let fear make us rush into mistakes.
+Qasim: I agree with Aisha and Alfiya — I think we should hear directly from Ahmed and Qasim about their silence. But I also think we need to be careful not to let fear make us rush into mistakes. I'd like to hear more from them both before making any judgments.
+Nura: I'm still not convinced Qasim and Ahmed's silence is suspicious — maybe they were just processing what happened last night. I think we should focus on whether anyone else acted oddly during the night.
+Ahmed: I think we need to be more careful about who we suspect based only on silence. I mean, it's easy to jump to conclusions, but we should focus on what we actually know.
+Alfiya: I'd like to ask Ahmed and Qasim directly why they remained silent during the night phase. I think it's important we hear their explanations before making any assumptions.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Qasim">I need to be careful not to let fear or suspicion cloud my judgment. My priority is to stay calm, listen to everyone's explanations, and avoid jumping to conclusions based solely on silence. If I'm going to speak up, it should be to ask for clarification rather than to accuse.</thought>
+<thought player="Sofia">I need to be cautious about drawing attention to myself, but I also want to ensure Qasim doesn't become a target. My vote was necessary, but I should let others do most of the questioning for now.</thought>
+<thought player="Aisha">I need to be careful not to let fear drive my decisions, but Qasim and Ahmed's silence is troubling. I should listen to what they say, but also keep an eye on any other suspicious behavior.</thought>
+<thought player="Ahmed">I need to be careful not to let suspicion cloud my judgment. Qasim and I were both quiet, but that doesn't mean anything — we're just trying to process what happened. I should focus on the facts and not let fear drive my decisions.</thought>
+<thought player="Nura">Qasim and Ahmed's silence is suspicious, but I cannot let fear rush me into a mistake. I must wait for more concrete evidence before acting.</thought>
+<thought player="Alfiya">I should listen carefully to Ahmed and Qasim's explanations for their silence, as requested. If their reasons are credible, I'll hold back on voting; if not, I may reconsider my position.</thought>
+<thought player="Hana">I still don't trust Qasim and Ahmed's silence, but I need to be careful not to let fear drive my judgment. I should listen closely to what they say and see if their explanations make sense.</thought>
+</round>
+<round>
+Round 2.
+Hana: I still think it's odd that Qasim and Ahmed didn't say anything during the night. I'd like to hear their full explanations, but I'm not convinced their silence was just because they were processing things.
+Aisha: I still think we need to hear Qasim and Ahmed explain their silence. But I also want to ask: did anyone else notice anything odd about the way the night phase played out?
+Nura: I think we should all take a step back and really listen to what Qasim and Ahmed have to say. Their silence might be innocent, but if they're hiding something, we need to know.
+Sofia: I think we should all take a deep breath and really listen to Qasim and Ahmed's explanations. I'm not convinced their silence means anything suspicious — maybe they were just trying to process what happened.
+Qasim: I think we all need to take a deep breath and really listen to what Qasim and Ahmed have to say about their silence. I'm not convinced their quietness means anything suspicious — maybe they were just trying to process what happened. Let's hear their full explanations before jumping to conclusions.
+Ahmed: I think we're all feeling the pressure, but let's not let that rush us into a mistake. I'm still not convinced Qasim and Ahmed's silence is suspicious — maybe they were just trying to process what happened. Let's hear their full explanations before jumping to conclusions.
+Alfiya: I'm still not convinced Qasim and Ahmed's silence was suspicious — I'd like to hear their full explanations before making any judgments.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Qasim">I should remain calm and ask for clarification from Qasim and Ahmed about their silence, without letting fear rush me into accusations. My priority is to listen carefully before making any judgments.</thought>
+<thought player="Sofia">I need to tread carefully—my vote was necessary, but letting others question Qasim seems safer for now. I should listen closely and let the momentum of suspicion build naturally, without drawing undue attention to myself.</thought>
+<thought player="Aisha">I need to listen carefully to Qasim and Ahmed's explanations, but I also need to stay alert for any signs of deception or inconsistency in their stories. My priority is to keep the group focused on facts, not fear.</thought>
+<thought player="Ahmed">I need to stay calm and not let the pressure of suspicion push me into making a hasty decision. Qasim and I were both quiet, but that doesn't make us guilty — we're just trying to process what happened. I should focus on listening carefully to everyone's explanations before jumping to conclusions.</thought>
+<thought player="Nura">Qasim and Ahmed's silence remains unsettling, but I will not let paranoia drive my next move. I must bide my time and observe further before making any accusations or voting decisions.</thought>
+<thought player="Alfiya">I should carefully evaluate Ahmed and Qasim's explanations for their silence. If their reasons are credible, I'll withhold my vote; if not, I may need to reconsider my position.</thought>
+<thought player="Hana">I need to listen carefully to Qasim and Ahmed's explanations. Their silence still feels off, but I should not let that feeling cloud my judgment. If their stories check out, I'll need to be cautious about jumping to conclusions again.</thought>
+</round>
+<round>
+Round 3.
+Sofia: I think we should all take a moment to really listen to Qasim and Ahmed's explanations. I'm not convinced their silence means anything suspicious, but I do think it's important that we hear their side of the story before making any judgments.
+Ahmed: I mean, I'm still not convinced Qasim and I were acting suspiciously — we were both just trying to process what happened. But if anyone else has questions about the night phase, I'm happy to answer them.
+Hana: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to ask: did either of you see anything unusual about how the night phase played out, or did anything seem off to you?
+Aisha: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to ask: did either of you see anything unusual about how the night phase played out, or did anything seem off to you?
+Qasim: I still think we should hear directly from Qasim and Ahmed about what they saw during the night. I'm not convinced their silence means anything suspicious, but we need to know if they noticed anything odd.
+Alfiya: I'd like to hear directly from Qasim and Ahmed about what they saw during the night. If their explanations are credible, then perhaps we're overthinking this.
+Nura: I think we should all stay focused on the facts and not let fear cloud our judgment. If Qasim and Ahmed are truly innocent, their explanations will hold up under scrutiny.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Qasim">I need to stay calm and ask Qasim and Ahmed directly about their silence during the night phase. I should listen carefully to their explanations before forming any judgments.</thought>
+<thought player="Sofia">I should let the suspicion around Qasim build naturally while staying calm and nurturing. My vote was necessary, but letting others lead the questioning keeps me in the shadows. I’ll listen carefully and respond with gentle concern, not overt interest.</thought>
+<thought player="Aisha">I need to listen carefully to Qasim and Ahmed's explanations, but I also need to stay alert for any signs of deception or inconsistency in their stories. My priority is to keep the group focused on facts, not fear.</thought>
+<thought player="Ahmed">I need to keep my head clear and not let the pressure of suspicion sway me. Qasim and I were both quiet, but that doesn't make us guilty — we're just trying to process what happened. I should listen carefully to everyone's explanations before jumping to conclusions.</thought>
+<thought player="Nura">Qasim and Ahmed's silence is unconvincing, but I must resist the urge to act on fear. I will wait for a clearer opportunity to expose them without arousing suspicion.</thought>
+<thought player="Alfiya">I should listen carefully to Qasim and Ahmed's explanations and evaluate their credibility before deciding whether to vote. If their reasons for silence are convincing, I'll withhold my vote; otherwise, I may need to reassess my position.</thought>
+<thought player="Hana">I need to listen carefully to Qasim and Ahmed's explanations again. Their silence still feels off, but I should not let that feeling cloud my judgment. If their stories check out, I'll need to be cautious about jumping to conclusions.</thought>
+</round>
+<round>
+Round 4.
+Nura: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they observed during the night phase.
+Hana: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to know if either of them saw anything odd about how the night phase played out, or if anyone else acted suspiciously.
+Sofia: I'm still not convinced Qasim and Ahmed's silence was suspicious — I think we should all just take a deep breath and really listen to what they have to say.
+Ahmed: I think we're all just trying to process what happened, but I still want to know if anyone else noticed anything odd about the night phase. Did anyone see anything that seemed off?
+Aisha: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to know if either of them saw anything unusual about how the night phase played out, or if anyone else acted suspiciously.
+Qasim: I still think we should hear directly from Qasim and Ahmed about what they saw during the night. I'm not convinced their silence means anything suspicious, but we need to know if they noticed anything odd.
+Alfiya: I’m still not convinced Qasim and Ahmed’s explanations are fully convincing. I’d like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd? Let’s get clarity on that.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Qasim">I should ask Qasim and Ahmed directly about their silence during the night phase, but I need to remain calm and avoid jumping to conclusions. My priority is to listen carefully to their explanations before making any judgments.</thought>
+<thought player="Sofia">I need to let the suspicion around Qasim grow naturally while keeping my own involvement subtle. My vote was necessary, but I should let others do most of the questioning for now—this way, I stay in the shadows and avoid drawing unwanted attention.</thought>
+<thought player="Aisha">I need to listen carefully to Qasim and Ahmed's explanations, but I also must stay alert for any signs of deception or inconsistency in their stories. My priority is to keep the group focused on facts, not fear.</thought>
+<thought player="Ahmed">I need to stay calm and not let the suspicion about our silence sway me. I was quiet during the night because I was processing what happened, not because I had something to hide. I should keep listening carefully to everyone’s explanations before making any judgments.</thought>
+<thought player="Nura">Qasim and Ahmed's silence is still unconvincing, but I must remain patient and avoid drawing attention to myself. I will wait for a clearer opportunity to act without arousing suspicion.</thought>
+<thought player="Alfiya">I need to carefully assess Qasim and Ahmed's explanations for their silence during the night phase. If their accounts are credible and align with what we know, I will hold back on voting. However, if their explanations seem inconsistent or unconvincing, I may need to reconsider my position and potentially vote against them.</thought>
+<thought player="Hana">I'm still uneasy about Qasim and Ahmed's silence, but I need to trust my instincts while staying open to their explanations. If their stories don't add up, I'll speak up — but not too quickly.</thought>
+</round>
+<round>
+Round 5.
+Sofia: I'm still not convinced Qasim and Ahmed's silence was suspicious — I think we should all just take a deep breath and really listen to what they have to say.
+Nura: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Aisha: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Hana: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to know if either of them saw anything odd about how the night phase played out, or if anyone else acted suspiciously.
+Ahmed: I'm still not convinced Qasim and I were acting suspiciously — we were both just trying to process what happened. But if anyone else has questions about the night phase, I'm happy to answer them.
+Alfiya: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually saw during the night — if they were truly just processing things, then why no mention of anything odd?
+Qasim: I still think we need to hear directly from Qasim and Ahmed about what they saw during the night. I'm not convinced their silence means anything suspicious, but we need to know if they noticed anything odd.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Qasim">I need to stay calm and ask Qasim and Ahmed directly about their silence during the night phase. I should listen carefully to their explanations before forming any judgments.</thought>
+<thought player="Sofia">I need to let the suspicion around Qasim grow naturally while keeping my own involvement subtle. My vote was necessary, but I should let others do most of the questioning for now—this way, I stay in the shadows and avoid drawing unwanted attention.</thought>
+<thought player="Aisha">I need to listen carefully to Qasim and Ahmed's explanations, but I must also stay alert for any signs of deception or inconsistency in their stories. My priority is to keep the group focused on facts, not fear.</thought>
+<thought player="Ahmed">I need to stay focused on what actually happened during the night and not let the suspicion about our silence cloud my judgment. I’ll keep listening carefully to everyone’s explanations before making any decisions.</thought>
+<thought player="Nura">Qasim and Ahmed still haven't provided convincing answers, but I must not let my suspicion turn into a rush to accuse. I'll wait for a clearer opening to act without raising flags.</thought>
+<thought player="Alfiya">I need to carefully assess whether Qasim and Ahmed's explanations for their silence are credible. If they align with what we know and seem consistent, I'll hold back on voting. If not, I may need to reconsider my position.</thought>
+<thought player="Hana">I need to listen carefully to what Qasim and Ahmed say about the night phase. Their silence still feels off, but I should not let that feeling rush me into accusing them. If their explanations are believable, I’ll hold back on voting against them — but if they’re vague or don’t add up, I’ll speak up.</thought>
+</round>
+<round>
+Round 6.
+Ahmed: I'm still not convinced Qasim and I were acting suspiciously — we were both just trying to process what happened. But if anyone else has questions about the night phase, I'm happy to answer them.
+Aisha: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Sofia: I'm still not convinced Qasim and Ahmed's silence was suspicious — I think we should all just take a deep breath and really listen to what they have to say.
+Nura: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to know if either of them saw anything odd about how the night phase played out, or if anyone else acted suspiciously.
+Hana: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Alfiya: I'd like to hear Qasim and Ahmed directly — if their explanations are credible, then perhaps we're overthinking this. But if they're dodging the question or contradicting themselves, that's worth noting.
+Qasim: I think we all need to stay focused on what Qasim and Ahmed actually said during the night phase — not just their silence. Let’s hear their full explanations again, calmly and carefully.
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Nura points at Qasim
+Sofia points at Qasim
+<kill>Qasim — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Qasim was killed last night. Qasim was a Law-abiding Citizen.
+<round>
+Round 1.
+Hana: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear directly from them again — if they're truly innocent, their stories should hold up under scrutiny.
+Alfiya: I'd like to hear directly from Qasim and Ahmed about what they observed during the night phase — if their explanations are credible, then perhaps we're overthinking this.
+Aisha: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear directly from them again — if they're truly innocent, their stories should hold up under scrutiny.
+Nura: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear their accounts again, but I think we should all stay calm and let the facts guide us.
+Ahmed: I think we should focus on what Qasim and I actually saw during the night, not just our silence. I didn't see anything odd about how the night played out — did anyone else notice anything out of the ordinary?
+Sofia: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Sofia">I need to stay calm and let the townspeople continue questioning Qasim—my vote was necessary, but I must not appear overly invested. I’ll listen carefully and respond with gentle concern, keeping my true intentions hidden.</thought>
+<thought player="Aisha">I need to stay calm and listen carefully to what Qasim and Ahmed say, but I also need to watch for any signs of deception. My priority is to keep the group focused on facts, not fear or suspicion.</thought>
+<thought player="Ahmed">I need to stay calm and keep focusing on facts rather than suspicion. My silence during the night was just because I was processing things, not because I had something to hide. I should listen carefully to what others have to say and avoid jumping to conclusions.</thought>
+<thought player="Nura">Qasim and Ahmed remain suspicious, but I cannot act on mere silence. I must wait for a clearer sign of their true allegiance before making my next move.</thought>
+<thought player="Alfiya">I should listen carefully to Qasim and Ahmed's explanations again, as their credibility will determine whether I hold back on voting. If their accounts are consistent and convincing, I’ll withhold my vote; otherwise, I may need to reassess.</thought>
+<thought player="Hana">I'm still uneasy about Qasim and Ahmed's silence, but I need to listen carefully to their explanations again. If their stories don't add up, I'll speak up, but not let fear rush me into accusations.</thought>
+</round>
+<round>
+Round 2.
+Alfiya: I'd like to hear directly from Qasim and Ahmed about what they saw during the night phase — if their explanations are credible, then perhaps we're overthinking this.
+Sofia: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Hana: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Ahmed: I still think we should focus on what Qasim and I actually saw during the night, not just our silence. I didn't see anything odd — did anyone else notice anything out of the ordinary?
+Aisha: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Nura: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Sofia">I need to keep up this calm, nurturing demeanor while letting the townspeople do most of the questioning. Qasim is now a target, and I must ensure he doesn't become too suspicious of me. My next move should be subtle—perhaps gently voicing concern about the lack of clarity, but not pushing too hard.</thought>
+<thought player="Aisha">I need to stay calm and listen carefully to Qasim and Ahmed's explanations again, but I also need to watch closely for any signs of deception or inconsistency in their stories. My priority is to keep the group focused on facts, not fear.</thought>
+<thought player="Ahmed">I need to keep staying calm and focused on facts rather than suspicion. My silence wasn't suspicious — I was just processing what happened. I should listen carefully to everyone's explanations and avoid jumping to conclusions.</thought>
+<thought player="Nura">Qasim and Ahmed's continued evasion is troubling, but I must not let urgency cloud my judgment. I’ll wait for a clearer sign of their allegiance before acting, ensuring my moves remain undetected.</thought>
+<thought player="Alfiya">I should listen carefully to Qasim and Ahmed's explanations again, as their credibility will determine whether I hold back on voting. If their accounts are consistent and convincing, I’ll withhold my vote; otherwise, I may need to reassess.</thought>
+<thought player="Hana">I'm still not convinced Qasim and Ahmed's explanations are fully credible. I need to listen carefully again, but if their stories don't hold up, I'll have to speak up — not let fear or doubt cloud my judgment.</thought>
+</round>
+<round>
+Round 3.
+Ahmed: I think we're all just trying to stay calm and figure this out together. I mean, Qasim and I were both quiet — I know it's easy to jump to conclusions, but I still want to hear what everyone else actually saw during the night.
+Hana: I'm still not convinced Qasim and Ahmed's explanations are fully credible. I'd like to hear again from them — if they're truly innocent, their stories should make sense under closer scrutiny.
+Nura: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Sofia: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Aisha: I'm still not convinced Qasim and Ahmed's stories add up. I'd like to know: did either of you see anything odd about how the night phase played out, or did anyone else act suspiciously?
+Alfiya: I'd like to hear directly from Qasim and Ahmed about what they observed during the night phase — if their explanations are credible, then perhaps we're overthinking this.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Sofia">I need to keep up this calm, nurturing demeanor and let the townspeople do most of the questioning. Qasim is now a target, and I must ensure he doesn't become too suspicious of me. My next move should be subtle—perhaps gently voicing concern about the lack of clarity, but not pushing too hard.</thought>
+<thought player="Aisha">I need to listen carefully to what Qasim and Ahmed say again, but I also need to watch for any signs of deception. My priority is to keep the group focused on facts, not fear or suspicion.</thought>
+<thought player="Ahmed">I'm still not convinced Qasim and I were acting suspiciously — we were both just trying to process what happened. I should keep staying calm and listen carefully to everyone's explanations before making any judgments.</thought>
+<thought player="Nura">Qasim and Ahmed's evasion still feels like a red flag, but I must not let my suspicion turn into a hasty decision. I’ll wait for a clearer sign of their true allegiance before acting, ensuring my moves remain undetected.</thought>
+<thought player="Alfiya">I should listen carefully to Qasim and Ahmed's explanations again. If their accounts are consistent and convincing, I’ll withhold my vote. If not, I may need to reassess my position.</thought>
+<thought player="Hana">I'm still not convinced Qasim and Ahmed's explanations are fully credible. I need to listen carefully again, but if their stories don't hold up under scrutiny, I'll have to speak up — not let fear or doubt cloud my judgment.</thought>
+</round>
+<round>
+Round 4.
+Ahmed: I'm still not convinced Qasim and I were acting suspiciously — we were both just trying to process what happened. But if anyone else noticed anything odd during the night, I'd like to hear it. You know, let's focus on facts, not just silence.
+Alfiya: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Sofia: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Aisha: I'm still not convinced Qasim and Ahmed's stories add up. I'd like to hear directly from them again — if they're truly innocent, their explanations should be clear and consistent. But if they keep dodging the question or contradicting themselves, that's a red flag.
+Nura: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Hana: I'm still not convinced Qasim and Ahmed's explanations add up. I'd like to hear more about what they actually saw during the night — if their stories are true, then they should be able to give clear details.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Sofia">I need to keep up the nurturing demeanor and let the questioning continue, but I should subtly steer the conversation toward uncertainty about Qasim’s innocence. If I can make others doubt him without directly accusing, that would be ideal.</thought>
+<thought player="Aisha">I need to stay calm and listen carefully to Qasim and Ahmed’s explanations again, but I also must watch closely for any signs of deception or inconsistency. My priority is to keep the group focused on facts, not fear or suspicion.</thought>
+<thought player="Ahmed">I need to keep staying calm and focused on facts rather than suspicion. My silence wasn't suspicious — I was just processing what happened. I should listen carefully to everyone's explanations and avoid jumping to conclusions.</thought>
+<thought player="Nura">Qasim and Ahmed's persistent evasion is troubling, but I must not let my suspicion cloud my judgment. I will bide my time and observe further before making any moves, ensuring my actions remain undetected.</thought>
+<thought player="Alfiya">I remain cautious about Qasim and Ahmed’s explanations; their silence during the night and lack of observation details make it hard to fully trust their account. I should listen again carefully, but if they continue to dodge specifics or contradict earlier statements, I may need to vote against them.</thought>
+<thought player="Hana">I'm still not convinced Qasim and Ahmed's explanations are fully credible. I need to listen carefully again, but if their stories don't hold up under scrutiny, I'll have to speak up — not let fear or doubt cloud my judgment.</thought>
+</round>
+<round>
+Round 5.
+Hana: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Alfiya: I'd like to hear directly from Qasim and Ahmed about what they observed during the night phase. If their explanations are credible, then perhaps we're overthinking this.
+Ahmed: I'm still not convinced Qasim and I were acting suspiciously — we were both just trying to process what happened. But if anyone else has questions about the night phase, I'm happy to answer them.
+Sofia: I'm still not convinced we have enough solid evidence to judge Qasim one way or another. I think we should all stay calm and let the facts speak for themselves.
+Aisha: I'm still not convinced Qasim and Ahmed's stories add up. I'd like to hear again from them — if they're truly innocent, their explanations should be clear and consistent.
+Nura: I think we're all feeling the pressure, but let's not let fear make us rush into mistakes. I'd like to hear more from Ahmed and Qasim about what they actually saw during the night — if their explanations are credible, then perhaps we're overthinking this.
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Sofia">Qasim is now a prime target, and I must ensure the suspicion grows naturally without me appearing too involved. I’ll keep up my calm, nurturing demeanor and subtly guide the conversation toward doubt, but not so directly that I raise my own flags.</thought>
+<thought player="Aisha">I need to stay calm and keep listening to Qasim and Ahmed, but I also need to watch closely for any signs of deception. My priority is to stick to the facts and not let fear rush me into a mistake.</thought>
+<thought player="Ahmed">I'm still not convinced Qasim and I were acting suspiciously — we were both just trying to process what happened. I should keep staying calm and listen carefully to everyone's explanations before making any judgments.</thought>
+<thought player="Nura">Qasim and Ahmed's silence and evasive explanations still trouble me, but I must resist the urge to act prematurely. I’ll observe further during this round, looking for any slip-ups or inconsistencies in their stories that might confirm my suspicions without raising my own flags.</thought>
+<thought player="Alfiya">I remain cautious about Qasim and Ahmed’s explanations. Their silence during the night and lack of specific observations make it hard to fully trust their account. I should listen again carefully, but if they continue to dodge specifics or contradict earlier statements, I may need to vote against them.</thought>
+<thought player="Hana">I'm still not convinced Qasim and Ahmed's explanations are fully credible. I need to listen carefully again, but if their stories don't hold up under scrutiny, I'll have to speak up — not let fear or doubt cloud my judgment.</thought>
+</round>
+<round>
+Round 6.
+Ahmed: I'm still not convinced Qasim and I were acting suspiciously — we were both just trying to process what happened. But if anyone else has questions about the night phase, I'm happy to answer them.
+Nura: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Hana: I'm still not convinced Qasim and Ahmed's explanations are fully credible. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Sofia: I'm still not convinced we have enough solid evidence to judge Qasim one way or another. I think we should all stay calm and let the facts speak for themselves.
+Aisha: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Alfiya: I'd like to hear directly from Qasim and Ahmed about what they observed during the night phase. If their explanations are credible, then perhaps we're overthinking this.
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Sofia points at Aisha
+Nura points at Aisha
+<kill>Aisha — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Aisha was killed last night. Aisha was a Law-abiding Citizen.
+<round>
+Round 1.
+Sofia: I'm still not convinced we have enough solid evidence to judge Qasim one way or another. I think we should all stay calm and let the facts speak for themselves.
+Nura: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Ahmed: I'm still not convinced Qasim and I were acting suspiciously — we were both just trying to process what happened. But if anyone else has questions about the night phase, I'm happy to answer them.
+Alfiya: I'd like to hear directly from Qasim and Ahmed about what they observed during the night phase. If their explanations are credible, then perhaps we're overthinking this.
+Hana: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Sofia">Qasim is now the clear target, and I must let the suspicion grow naturally without drawing attention to myself. I’ll keep up my calm, nurturing demeanor and subtly steer the conversation toward doubt, but not so directly that I raise my own flags.</thought>
+<thought player="Ahmed">I need to keep staying calm and focused on facts rather than suspicion. My silence wasn't suspicious — I was just processing what happened. I should listen carefully to everyone's explanations and avoid jumping to conclusions.</thought>
+<thought player="Nura">Qasim and Ahmed's continued silence and vague explanations still feel like red flags, but I must remain patient and not let my suspicion turn into a hasty move. I’ll observe carefully during this round for any slip-ups that could confirm my doubts without drawing attention to myself.</thought>
+<thought player="Alfiya">I remain cautious about Qasim and Ahmed's explanations, as their silence during the night and lack of specific observations raise doubts. I should listen carefully again, but if they fail to provide credible details or contradict earlier statements, I may need to consider voting against them.</thought>
+<thought player="Hana">I'm still not convinced Qasim and Ahmed's explanations are fully credible. I need to listen carefully again, but if their stories don't hold up under scrutiny, I'll have to speak up — not let fear or doubt cloud my judgment.</thought>
+</round>
+<round>
+Round 2.
+Sofia: I'm still not convinced we have enough clear evidence to judge Qasim's innocence or guilt. I think we should all stay calm and let the facts speak for themselves.
+Hana: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear again from them about what they actually saw during the night — if their stories are true, then they should be able to give clear details.
+Alfiya: I'd like to hear directly from Qasim and Ahmed about what they observed during the night phase. If their explanations are credible, then perhaps we're overthinking this.
+Nura: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Ahmed: I'm still not convinced Qasim and I were acting suspiciously — we were both just trying to process what happened. But if anyone else has questions about the night phase, I'm happy to answer them.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Sofia">Qasim is now the clear target, and I must let the suspicion grow naturally without drawing attention to myself. I’ll keep up my calm, nurturing demeanor and subtly steer the conversation toward doubt, but not so directly that I raise my own flags.</thought>
+<thought player="Ahmed">I need to keep staying calm and focused on facts rather than suspicion. My silence wasn't suspicious — I was just processing what happened. I should listen carefully to everyone's explanations and avoid jumping to conclusions.</thought>
+<thought player="Nura">Qasim and Ahmed's evasion still feels like a red flag, but I must remain patient and not let my suspicion turn into a hasty move. I’ll observe carefully during this round for any slip-ups that could confirm my doubts without drawing attention to myself.</thought>
+<thought player="Alfiya">I remain cautious about Qasim and Ahmed’s explanations, as their silence during the night and lack of specific observations raise doubts. I should listen carefully again, but if they fail to provide credible details or contradict earlier statements, I may need to consider voting against them.</thought>
+<thought player="Hana">I'm still not convinced Qasim and Ahmed's explanations are fully credible. I need to listen carefully again, but if their stories don't hold up under scrutiny, I'll have to speak up — not let fear or doubt cloud my judgment.</thought>
+</round>
+<round>
+Round 3.
+Alfiya: I'd like to hear directly from Qasim and Ahmed about what they observed during the night phase. If their explanations are credible, then perhaps we're overthinking this.
+Hana: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear again from them about what they actually observed during the night — if their stories are true, then they should be able to give clear details.
+Sofia: I'm still not convinced we have enough concrete evidence to judge Qasim's innocence or guilt. I think we should all stay calm and let the facts speak for themselves.
+Ahmed: I'm still not convinced Qasim and I were acting suspiciously — we were both just trying to process what happened. But if anyone else has questions about the night phase, I'm happy to answer them.
+Nura: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Sofia">Qasim is now a clear target, and I must let the suspicion grow naturally without drawing attention to myself. I’ll keep up my calm, nurturing demeanor and subtly steer the conversation toward doubt, but not so directly that I raise my own flags.</thought>
+<thought player="Ahmed">I need to keep staying calm and focused on facts rather than suspicion. My silence wasn't suspicious — I was just processing what happened. I should listen carefully to everyone's explanations and avoid jumping to conclusions.</thought>
+<thought player="Nura">Qasim and Ahmed's persistent evasion still feels like a red flag, but I must remain patient and not let my suspicion turn into a hasty move. I’ll observe carefully during this round for any slip-ups that could confirm my doubts without drawing attention to myself.</thought>
+<thought player="Alfiya">I remain cautious about Qasim and Ahmed’s explanations, as their silence during the night and lack of specific observations raise doubts. I should listen carefully again, but if they fail to provide credible details or contradict earlier statements, I may need to consider voting against them.</thought>
+<thought player="Hana">I'm still not convinced Qasim and Ahmed's explanations are fully credible, but I need to listen carefully again. If their stories don't hold up under scrutiny, I'll have to speak up — not let fear or doubt cloud my judgment.</thought>
+</round>
+<round>
+Round 4.
+Ahmed: I'm still not convinced Qasim and I were acting suspiciously — we were both just trying to process what happened. But if anyone else has questions about the night phase, I'm happy to answer them.
+Nura: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Hana: I'm still not convinced Qasim and Ahmed's explanations are fully credible. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Sofia: I'm still not convinced we have enough solid evidence to judge Qasim's innocence or guilt. I think we should all stay calm and let the facts speak for themselves.
+Alfiya: I'd like to hear directly from Qasim and Ahmed about what they observed during the night phase. If their explanations are credible, then perhaps we're overthinking this.
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Sofia">Qasim is now firmly under suspicion, and the townspeople are dwelling on his silence. I should let the momentum continue naturally, keeping my calm demeanor intact. My next move is to subtly introduce doubt without directly accusing him, perhaps by gently questioning the lack of clarity in his explanations.</thought>
+<thought player="Ahmed">I'm still not convinced Qasim and I were acting suspiciously — we were both just trying to process what happened. I should keep staying calm and listen carefully to everyone's explanations before making any judgments.</thought>
+<thought player="Nura">Qasim and Ahmed's evasion still feels like a red flag, but I must remain patient and not let my suspicion turn into a hasty move. I’ll observe carefully during this round for any slip-ups that could confirm my doubts without drawing attention to myself.</thought>
+<thought player="Alfiya">I remain cautious about Qasim and Ahmed's explanations, as their silence during the night and lack of specific observations raise doubts. I should listen carefully again, but if they fail to provide credible details or contradict earlier statements, I may need to consider voting against them.</thought>
+<thought player="Hana">I'm still not convinced Qasim and Ahmed's explanations are fully credible, but I need to listen carefully one more time. If their stories don't hold up under scrutiny, I'll have to speak up — not let fear or doubt cloud my judgment.</thought>
+</round>
+<round>
+Round 5.
+Sofia: I'm still not convinced we have enough clarity about what happened during the night. It's easy to jump to conclusions, but I think we should all stay calm and let the facts speak for themselves.
+Alfiya: I'd like to hear directly from Qasim and Ahmed about what they observed during the night phase. If their explanations are credible, then perhaps we're overthinking this.
+Nura: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Ahmed: I'm still not convinced Qasim and I were acting suspiciously — we were both just trying to process what happened. But if anyone else has questions about the night phase, I'm happy to answer them.
+Hana: I'm still not convinced Qasim and Ahmed's explanations are fully credible. I'd like to hear more from them about what they actually saw during the night — if their stories are true, then they should be able to give clear details.
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Sofia">Qasim is under heavy suspicion, and the townspeople are dwelling on his silence. I should let the momentum continue naturally, keeping my calm demeanor intact. My next move is to subtly introduce doubt without directly accusing him, perhaps by gently questioning the lack of clarity in his explanations.</thought>
+<thought player="Ahmed">I need to keep staying calm and focused on facts rather than suspicion. My silence wasn't suspicious — I was just processing what happened. I should listen carefully to everyone's explanations and avoid jumping to conclusions.</thought>
+<thought player="Nura">Qasim and Ahmed's evasion still feels like a red flag, but I must remain patient and not let my suspicion turn into a hasty move. I’ll observe carefully during this round for any slip-ups that could confirm my doubts without drawing attention to myself.</thought>
+<thought player="Alfiya">I remain cautious about Qasim and Ahmed's explanations, as their silence during the night and lack of specific observations raise doubts. I should listen carefully again, but if they fail to provide credible details or contradict earlier statements, I may need to consider voting against them.</thought>
+<thought player="Hana">I need to listen carefully one more time to Qasim and Ahmed's explanations. If their stories still don't add up, I'll have to speak up, but I won't let fear or doubt cloud my judgment this time.</thought>
+</round>
+<round>
+Round 6.
+Hana: I'm still not convinced Qasim and Ahmed's explanations are fully credible. I'd like to hear again from them — if their stories are true, then they should be able to give clear details without hesitation.
+Sofia: I'm still not convinced we have enough clarity on what really happened during the night. It's easy to jump to conclusions, but I think we should all stay calm and let the facts speak for themselves.
+Alfiya: I'd like to hear directly from Qasim and Ahmed about what they observed during the night phase. If their explanations are credible, then perhaps we're overthinking this.
+Ahmed: I'm still not convinced Qasim and I were acting suspiciously — we were both just trying to process what happened. But if anyone else has questions about the night phase, I'm happy to answer them.
+Nura: I'm still not convinced Qasim and Ahmed's explanations are fully convincing. I'd like to hear more about what they actually observed during the night — if they were truly just processing things, then why no mention of anything odd?
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Sofia points at Alfiya
+Nura points at Alfiya
+<kill>Alfiya — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Night 2: Qasim (Law-abiding Citizen)
+• Night 3: Aisha (Law-abiding Citizen)
+• Night 4: Alfiya (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Qasim (Law-abiding Citizen), Sofia (Mafia), Aisha (Law-abiding Citizen), Ahmed (Law-abiding Citizen), Nura (Mafia), Alfiya (Law-abiding Citizen), Hana (Law-abiding Citizen)
+
+Who they really were:
+• Qasim (Law-abiding Citizen) — honest and straightforward speaks with deliberate pacing, uses simple but precise language, often pauses before answering questions, avoids jargon, and tends to repeat key phrases for emphasis Qasim is a local librarian who has lived in the town his whole life. He spends his days organizing books and helping people find information. He's known for being reliable and trustworthy, always willing to lend a hand to his neighbors. He doesn't have any secrets and is open about his daily routines and thoughts.
+• Sofia (Mafia) — publicly presented as Sofia is a beloved nurse at the town’s clinic, known for her tireless work and comforting presence during difficult times. She volunteers her time to help the elderly and sick, often bringing them homemade meals and small gifts. She's deeply trusted by the townspeople, who see her as an anchor of stability and care. (Sofia is a warm, maternal figure who exudes kindness and reliability. She has an innate ability to make others feel heard and cared for, often putting herself last to ensure everyone else is comfortable. Her compassion is genuine, but it's also calculated — she uses her empathy as a tool for manipulation. Sofia speaks in soft, soothing tones, often pausing before responding to “consider” what she’s about to say. She uses gentle gestures and nods while listening, and her voice carries a slight lilt that makes her sound almost like a motherly whisper. She avoids direct confrontation, prefers to lead people to agree with her through subtle suggestion rather than force.) … but was really a Mafioso: Sofia was a young woman when she joined the Mafia after her family was killed in a botched robbery gone wrong. She took on the identity of a nurse to blend into society while working her way up through the ranks, using her charm and empathy to gain trust and eliminate threats from within the organization. Her cover as a healer has allowed her to maintain a façade of innocence, even as she orchestrates deadly schemes.
+• Aisha (Law-abiding Citizen) — honest and straightforward speaks slowly and deliberately, with a soft but firm tone. Uses simple, direct language and often repeats key words for emphasis. Has a habit of pausing before answering questions to ensure clarity. Aisha is a librarian who has lived in the town her entire life. She spends her days organizing books and helping people find information. She's known for being kind and reliable, always willing to lend a hand or share knowledge. Her quiet demeanor makes her a steady presence in the community.
+• Ahmed (Law-abiding Citizen) — honest and ordinary speaks with measured, deliberate pacing; uses simple, direct vocabulary with occasional verbal ticks like "you know" or "I mean" for emphasis; avoids complex metaphors or slang Ahmed is a modest accountant who has lived in the town his entire life. He enjoys quiet evenings at home, reading books, and helping neighbors with their finances. He's known for being reliable and straightforward in all his dealings.
+• Nura (Mafia) — publicly presented as Nura is a librarian who has lived in the town her entire life. She’s known for being incredibly organized and helpful, always ready to assist others with research or finding information. Her colleagues appreciate her quiet efficiency and trustworthiness. She keeps to herself but is respected by all for her dedication to the community. (Nura is a quiet, methodical woman who exudes calm confidence. She has a strong sense of duty and believes in order and structure, which makes her seem like a pillar of the community. However, beneath her composed exterior lies a calculating mind that carefully plans every move. Nura speaks in measured, deliberate tones with a slight drawl. She rarely raises her voice but always maintains eye contact when speaking. Her sentences are concise and often end with a subtle nod or a barely perceptible smile. She tends to pause before answering questions, as if weighing each word carefully.) … but was really a Mafioso: Nura was once a promising scholar who joined a local crime syndicate after her research into town politics uncovered corruption that threatened her family's safety. She now uses her public persona as a cover while quietly orchestrating events from behind the scenes, ensuring the Mafia maintains influence without drawing suspicion.
+• Alfiya (Law-abiding Citizen) — curious and methodical speaks with measured deliberation, often pausing to consider words carefully; uses precise vocabulary and avoids slang; tends to nod slowly while thinking Alfiya is a librarian who has lived in the town her entire life. She spends her days organizing books and helping residents find information. She's known for being thorough and reliable, always double-checking facts before sharing them with others.
+• Hana (Law-abiding Citizen) — honest and unassuming speaks slowly and deliberately, using simple but precise language; often pauses to gather thoughts; avoids slang and exaggeration Hana is a librarian who has lived in the town her whole life. She spends her days organizing books and helping people find information. She's known for being trustworthy and always tells the truth, even when it's inconvenient.
+</endgame>
+</transcript>
