@@ -6,7 +6,7 @@ HOW a third gameplay provider is wired, verification-spike-first, behind config 
 # Technical Specification: Bedrock Claude (Haiku) Provider
 
 - **Functional Specification:** `./functional-spec.md`
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 > **Backed by ADR-012** (Bedrock model selection — Haiku 4.5 gameplay profile). **Verification-spike-FIRST** per the functional spec: prove the gameplay path reaches Claude **locally and on the deployed runtime** (the historically brittle part) *before* building the provider out.

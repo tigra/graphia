@@ -55,6 +55,7 @@ _With AgentCore deployment and long-term Memory in place, give players a real ch
 - [x] **AI Provider Flexibility**
   - [x] **AWS Profile / SSO Credentials:** Let the player run Graphia against standard AWS credentials (named profile, SSO-backed AssumeRole, environment variables) — the same identity already used for other corporate AWS tooling — as an alternative to a Bedrock bearer token. Makes the game usable by engineers who already have an AWS profile but no separate workshop bearer. *(Shipped incrementally across the Phase 2–3 deploy/runtime work; SSO has been the canonical Bedrock auth path since 2026-05 — see architecture §3.)*
   - [x] **Local Ollama Provider:** Add support for running Graphia entirely against a local Ollama-served model, so a contributor with no cloud access (or who simply doesn't want to spend on cloud inference) can develop, demo, and play offline at zero per-token cost. *(Spec 010 — verified Completed 2026-06-12; ADRs 009/010.)*
+  - [x] **Bedrock Claude (Haiku) Provider:** Add Anthropic Claude (Haiku 4.5) on Bedrock as a third provider choice, selectable by configuration alongside Amazon Nova and local Ollama, so games and evals can run on a stronger near-frontier cloud model while Nova stays the untouched, periodically-tested baseline. Available both locally and on the hosted AgentCore Runtime. *(Spec 035, Completed 2026-08-30; ADR 012.)*
 
 ---
 

@@ -1,7 +1,7 @@
 # Functional Specification: Bedrock Claude (Haiku) Provider
 
 - **Roadmap Item:** New **Phase 4 — AI Provider Flexibility** sub-item: *Bedrock Claude (Haiku) Provider*. Not yet listed on the roadmap (Phase 4's existing sub-items are complete); backed by **ADR-012** (Bedrock Model Selection — Haiku 4.5 gameplay profile + Opus 4.8 eval judge). A roadmap tick should be added as a follow-up.
-- **Status:** Draft
+- **Status:** Completed *(verified 2026-08-30 — all 19 acceptance criteria met; suite green at 1160 passed / 1 skipped; Claude confirmed on BOTH paths from telemetry: deployed runtime via its own CloudWatch logs, local game via Bedrock `Invocations` metrics)*
 - **Author:** Alexey Tigarev
 
 ---
@@ -26,55 +26,55 @@ Claude is offered **both for local play/evaluation and for the hosted (deployed)
 
 - **As an** operator, **I want** to select Anthropic Claude (Haiku) as the game's AI provider through configuration, **so that** games and evals run on a stronger cloud model without any code change.
   - **Acceptance Criteria:**
-    - [ ] The configuration offers **Claude (Haiku)** as a provider option alongside the existing **Amazon Nova** (cloud default) and **local Ollama** choices, selected before launch in the same place the provider is already chosen.
-    - [ ] Given Claude is selected with working cloud credentials, when the operator launches, then the game plays normally using Claude for all AI behavior.
-    - [ ] Given nothing is configured for the provider, when the operator launches, then behavior is exactly as today (Amazon Nova) — existing users are unaffected.
+    - [x] The configuration offers **Claude (Haiku)** as a provider option alongside the existing **Amazon Nova** (cloud default) and **local Ollama** choices, selected before launch in the same place the provider is already chosen.
+    - [x] Given Claude is selected with working cloud credentials, when the operator launches, then the game plays normally using Claude for all AI behavior.
+    - [x] Given nothing is configured for the provider, when the operator launches, then behavior is exactly as today (Amazon Nova) — existing users are unaffected.
 
 ### 2.2 Works both locally and on the deployed runtime
 
 - **As an** operator, **I want** Claude available both for local play/evals and on the hosted runtime, **so that** I can evaluate and demo it everywhere the game runs.
   - **Acceptance Criteria:**
-    - [ ] Given Claude is selected, when the operator plays locally, then a full game completes on Claude.
-    - [ ] Given Claude is selected, when a game runs on the deployed (hosted) runtime, then a full game completes on Claude, with the hosted runtime permitted to reach the model.
-    - [ ] The deployed path is confirmed by observing **actual successful runs on the hosted runtime** (read from the runtime's own telemetry), not inferred from local calls alone.
+    - [x] Given Claude is selected, when the operator plays locally, then a full game completes on Claude.
+    - [x] Given Claude is selected, when a game runs on the deployed (hosted) runtime, then a full game completes on Claude, with the hosted runtime permitted to reach the model.
+    - [x] The deployed path is confirmed by observing **actual successful runs on the hosted runtime** (read from the runtime's own telemetry), not inferred from local calls alone.
 
 ### 2.3 Haiku for both tiers, with overridable models
 
 - **As an** operator, **I want** Claude (Haiku) to power both the gameplay work and the lighter mechanical work by default, with the ability to override either model, **so that** I get sensible defaults but can tune later.
   - **Acceptance Criteria:**
-    - [ ] By default, Claude (Haiku) handles both the **gameplay tier** (AI dialogue, night targeting, votes) and the **lighter tier** (AI name generation).
-    - [ ] The operator can **independently override** the model used for each tier through configuration.
-    - [ ] Given the operator overrides nothing, when they select Claude, then **documented default models** are used, so selecting Claude works out of the box.
+    - [x] By default, Claude (Haiku) handles both the **gameplay tier** (AI dialogue, night targeting, votes) and the **lighter tier** (AI name generation).
+    - [x] The operator can **independently override** the model used for each tier through configuration.
+    - [x] Given the operator overrides nothing, when they select Claude, then **documented default models** are used, so selecting Claude works out of the box.
 
 ### 2.4 Easy, no-code switching between providers
 
 - **As an** operator, **I want** switching among Nova, Claude, and Ollama to be a single configuration change, **so that** comparing engines is friction-free.
   - **Acceptance Criteria:**
-    - [ ] Switching the active provider requires only a **configuration change — no source edits**.
-    - [ ] For a given run the three providers are **mutually exclusive**; the selected one powers all AI behavior for that run.
-    - [ ] Documentation states how to select each provider and names the Claude default models.
+    - [x] Switching the active provider requires only a **configuration change — no source edits**.
+    - [x] For a given run the three providers are **mutually exclusive**; the selected one powers all AI behavior for that run.
+    - [x] Documentation states how to select each provider and names the Claude default models.
 
 ### 2.5 Clear feedback when Claude can't be reached
 
 - **As an** operator, **I want** a clear, plain-language message when Claude can't be reached, **so that** I can fix it without decoding a stack trace.
   - **Acceptance Criteria:**
-    - [ ] Given cloud credentials are missing or expired, when the operator launches with Claude selected, then a **clear message** explains the credential problem and how to refresh it — and shows **no stack trace**.
-    - [ ] Given the account lacks access to the chosen Claude model (or in a required region), when the operator launches, then a clear message **names the access/region problem** and how to resolve it.
-    - [ ] Given a working model occasionally returns something unusable on a turn, when that happens mid-game, then the game **continues gracefully** (using existing safety nets) rather than crashing.
+    - [x] Given cloud credentials are missing or expired, when the operator launches with Claude selected, then a **clear message** explains the credential problem and how to refresh it — and shows **no stack trace**.
+    - [x] Given the account lacks access to the chosen Claude model (or in a required region), when the operator launches, then a clear message **names the access/region problem** and how to resolve it.
+    - [x] Given a working model occasionally returns something unusable on a turn, when that happens mid-game, then the game **continues gracefully** (using existing safety nets) rather than crashing.
 
 ### 2.6 Nova stays the untouched baseline
 
 - **As an** operator, **I want** Nova to remain available and unchanged, **so that** the proven baseline is always there to fall back to and compare against.
   - **Acceptance Criteria:**
-    - [ ] With nothing configured (or Nova selected), behavior is **identical to today**.
-    - [ ] Selecting Claude or Ollama does not change Nova's behavior.
+    - [x] With nothing configured (or Nova selected), behavior is **identical to today**.
+    - [x] Selecting Claude or Ollama does not change Nova's behavior.
 
 ### 2.7 The game plays the same; only the AI's "brain" changes
 
 - **As an** operator, **I want** the rules and flow to be identical regardless of provider, **so that** switching to Claude changes only where the AI thinks, not how the game works.
   - **Acceptance Criteria:**
-    - [ ] Turn order, voting, the Night/Day structure, win detection, the pre-game career greeting, and the end-of-game career panel behave **identically** whether the provider is Claude, Nova, or Ollama.
-    - [ ] The **quality and style** of AI dialogue may differ on Claude. This is **expected and not a defect** — there is no guarantee of dialogue quality, consistent with how the game already treats AI output.
+    - [x] Turn order, voting, the Night/Day structure, win detection, the pre-game career greeting, and the end-of-game career panel behave **identically** whether the provider is Claude, Nova, or Ollama.
+    - [x] The **quality and style** of AI dialogue may differ on Claude. This is **expected and not a defect** — there is no guarantee of dialogue quality, consistent with how the game already treats AI output.
 
 ---
 

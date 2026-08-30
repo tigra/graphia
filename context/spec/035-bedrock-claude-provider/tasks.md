@@ -58,3 +58,18 @@ Functional spec: `./functional-spec.md` · Technical considerations: `./technica
 > **Game completed, not partial** — node traversal covers `assign_roles`, `generate_personas`, `first_night_mafia_intros`, 24 × `day_turn`, 10 × `collect_votes`, 4 × `day_round_reflect`, `check_win_night`/`check_win_day`, `end_screen`; it resolved to `"winner": "mafia"` and exited on `runtime invocation done`.
 >
 > **No errors of any kind.** Precise greps for `AccessDenied`, `ThrottlingException`, `ValidationException`, `UnrecognizedClient`, `ExpiredToken` return nothing across the full window. This is the headline: ADR-012 predicted the `us.` profile's non-deterministic three-region routing would reopen ADR-003's Marketplace/IAM friction — the three-region grant plus per-region model access held, with not one denial.
+
+> **Local full-game verification (2026-08-30, `GRAPHIA_LLM_PROVIDER=bedrock-claude make play`).** **PASS** — closes functional-spec §2.2's local-play criterion, the last one outstanding.
+>
+> The local JSONL trace records graph-stream deltas only — **no provider, no model id, no winner** — so it cannot itself prove which model served the game. Evidence was taken from **Bedrock's own `Invocations` metrics** instead, in 5-minute buckets to keep the local run clearly apart from the remote one earlier the same hour:
+>
+> | window (UTC) | run | `us.anthropic.claude-haiku-4-5` | Nova |
+> | --- | --- | --- | --- |
+> | 09:15–09:25 | deployed runtime | 60 | 0 |
+> | **09:45–10:10** | **local `make play`** | **60** | **0** |
+>
+> Two distinct, non-overlapping clusters. The game completed: node traversal covers `generate_roster`, `generate_personas`, `first_night_mafia_intros`, 28 × `day_turn`, 6 × `collect_votes`, 4 × `mafia_point`, 4 × `day_round_reflect`, two Nights (`night_open` / `resolve_night_kill` / `check_win_night`), `resolve_vote`, `reveal_role`, and `end_screen` with a `winner`.
+>
+> *(Aside: `ValidationException — on-demand throughput isn't supported` entries for the bare, un-prefixed `anthropic.claude-haiku-4-5-…` id appear in the append-mode log, but date from **2026-04-23 and 2026-05-13** — earlier Claude experiments, and precisely the constraint ADR-012 later documented. Nothing from today.)*
+>
+> **Observability gap worth noting:** because the local trace carries no model identity, confirming which provider served a local game requires an out-of-band CloudWatch query. A provider/model echo at boot in the trace log would make local runs self-evidencing, the way the deployed runtime already is.
