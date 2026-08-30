@@ -1,0 +1,114 @@
+Game 1 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Akin" role="Law-abiding Citizen">
+Personality: anxious and second-guessing
+Manner: speaks in short, hesitant sentences with frequent pauses and self-corrections. Uses filler words like "uh," "you know," and "I guess" often. Tends to repeat themselves when nervous and avoids direct eye contact.
+Persona: Akin is a local librarian who spends most of his days organizing books and helping townfolk find information. He's known for being quiet and overly helpful, always double-checking facts and asking follow-up questions. People often mistake his caution for shyness, but he's actually quite thoughtful.
+</player>
+<player name="Nana" role="Law-abiding Citizen">
+Personality: vigilant and watchful
+Manner: speaks with deliberate, measured pacing; uses precise vocabulary and rarely hesitates; maintains steady eye contact; avoids filler words; has a habit of looking over their shoulder when speaking
+Persona: Nana is a former security guard who now works as a night watchman for the town's community center. She's known for her sharp eyes and ability to notice things others miss. She takes her job seriously and never misses a detail, often staying alert even during casual conversations.
+</player>
+<player name="Zoe" role="Mafia">
+Personality: Warm and effusive
+Manner: Speaks in a bubbly, animated tone with frequent gestures and expressive facial movements. Uses lots of exclamation points and emojis in written communication. Often shares personal stories or compliments everyone at the table. Has a habit of leaning forward when talking and making encouraging sounds like "oh my!" and "that's wonderful!"
+Public legend: Zoe is a beloved local florist who runs a charming little shop on Main Street. She's known for her infectious laughter, always ready with a hug or kind word for anyone who walks through her door. Her shop is filled with vibrant flowers and she loves to share gardening tips with neighbors. She's the town's unofficial matchmaker, often bringing people together at community events and organizing flower arrangements for weddings and celebrations.
+True self (hidden): Zoe was recruited into the Mafia by her older brother, who had been working undercover as a businessman in the town. When he was killed during a botched operation, Zoe took his place to protect the family name and maintain their position within the organization. She uses her warm personality and trusted role as a florist to gather information while maintaining the illusion of being just an ordinary townsperson.
+</player>
+<player name="Ishmael" role="Law-abiding Citizen">
+Personality: dreamy and distractible
+Manner: speaks in a gentle, meandering pace with frequent pauses and soft trailing off. uses whimsical vocabulary and often gets lost in thought mid-sentence, occasionally looking away as if hearing something else. has a habit of finishing sentences with "you know" or "I was just thinking..." and tends to speak in soft, almost musical tones.
+Persona: Ishmael is a dreamer who works as the town's unofficial storyteller, sharing tales from folklore and history around the town square. He's known for his wide-eyed wonder and ability to weave stories so vividly that people forget where reality ends and fantasy begins. His mind is always wandering, often lost in daydreams about distant lands or mythical creatures, but he brings a sense of magic to everyday life.
+</player>
+<player name="Sara" role="Mafia">
+Personality: Gruff and blunt, with a no-nonsense attitude that cuts through nonsense. Sara is a former mechanic who built her reputation on being straight-talking and tough, not afraid to speak her mind even if it's uncomfortable for others.
+Manner: Speaks in short, clipped sentences with little patience for fluff. Uses direct language and rarely uses filler words. Her tone is often dry or sarcastic, and she avoids emotional expressions unless absolutely necessary.
+Public legend: Sara is a local mechanic who runs a small garage on the edge of town. She's known for fixing anything with a wrench and never hesitating to give blunt advice. People know she doesn't suffer fools gladly but respects those who earn her respect. She's a loner by nature, keeps to herself, and always has her hands dirty.
+True self (hidden): Sara joined the Mafia after a rough childhood, learning the ropes from a local crime boss who saw potential in her aggressive streak and loyalty. She’s been working her way up through the ranks, using her mechanical skills to help with sabotage and her sharp tongue to handle intimidation. She's not particularly fond of small talk or emotional displays, which makes her a perfect fit for the underworld.
+</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: earnest and sincere
+Manner: speaks with quiet enthusiasm, using frequent verbal affirmations like "you know," "I truly believe," and "absolutely." maintains steady eye contact and a gentle, encouraging tone. avoids filler words and speaks at a moderate pace with clear articulation. often nods while talking and uses hand gestures to emphasize points.
+Persona: Kai is a local schoolteacher who has been educating children in the town for over a decade. Known for his unwavering dedication to learning, he believes deeply in the power of education to change lives. He's always ready with a kind word or helpful advice, and his classroom is filled with books, posters, and bright colors that inspire curiosity in his students.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Akin, Nana, Zoe, Ishmael, Sara, Kai. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Zoe): Your Mafia teammates are: Sara. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Sara): Your Mafia teammates are: Zoe. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Zoe points at Nana
+Sara points at Nana
+<kill>Nana — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Nana was killed last night. Nana was a Law-abiding Citizen.
+<round>
+Round 1.
+Kai: I'm not sure who to trust yet.
+Akin: Avery, you mentioned you're not sure who to trust yet — do you have any thoughts on who might be acting suspiciously? I guess I'm just trying to figure this out step by step.
+Sara: I don't trust Avery's hesitation — it's too clean, like she's trying to look innocent instead of just being honest.
+Zoe: Oh my goodness, I'm so glad we're all here together to figure this out! I think it's important we stay calm and listen to each other, especially since we lost Nana... but I'm feeling a bit overwhelmed by how much is going on right now!
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+Ishmael: I was just thinking... maybe we should all take a moment to really listen to the stories people are telling. You know, sometimes the most important truths hide in the spaces between words, especially when someone's been quiet too long.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Akin">I guess I should probably just keep asking questions and try to get more info out of everyone, but I'm really worried about saying the wrong thing or looking suspicious. This is so overwhelming.</thought>
+<thought player="Zoe">Oh my goodness, what a tangled web we're in! I need to keep my eyes on Avery and Kai, but I also want to make sure Sara doesn't get suspicious of me. This is going to be tricky, but I'll just keep being the warm, bubbly florist and see where the conversation takes us!</thought>
+<thought player="Ishmael">I was just thinking that perhaps I should listen more carefully to the stories people are weaving, especially since we lost Nana... you know, sometimes the most important truths hide in the spaces between words. I wonder if I'm being too vague in my observations, or if that's actually what keeps me safe.</thought>
+<thought player="Sara">Avery's playing it safe, but her hesitation feels calculated. Zoe's drama is annoying, but I need to keep her close. I'm watching Kai, and I'll let the others talk while I decide who to point at tonight.</thought>
+<thought player="Kai">You know, I truly believe that listening carefully to everyone's words is key, especially since we lost a Law-abiding Citizen. I'm going to keep observing closely and try to find any inconsistencies in their stories.</thought>
+</round>
+<round>
+Round 2.
+Sara: I don't trust Avery's hesitation — it's too clean, like she's trying to look innocent instead of just being honest.
+Zoe: Oh my! I think we should all take a deep breath and remember that sometimes the most innocent people are the ones who stay quiet the longest — maybe we're all just trying too hard to prove ourselves? 😊
+<vote initiator="Kai" target="Avery">
+Avery: No
+Akin: Yes
+Zoe: Yes
+Ishmael: Yes
+Sara: Yes
+Kai: Yes
+tally: 5 Yes, 1 No
+outcome: executed — Avery has been executed. Avery was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. Avery was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Zoe points at Kai
+Sara points at Kai
+<kill>Kai — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Nana (Law-abiding Citizen)
+• Day 1: Avery (Law-abiding Citizen) executed
+• Night 2: Kai (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Akin (Law-abiding Citizen), Nana (Law-abiding Citizen), Zoe (Mafia), Ishmael (Law-abiding Citizen), Sara (Mafia), Kai (Law-abiding Citizen)
+
+Who they really were:
+• Akin (Law-abiding Citizen) — anxious and second-guessing speaks in short, hesitant sentences with frequent pauses and self-corrections. Uses filler words like "uh," "you know," and "I guess" often. Tends to repeat themselves when nervous and avoids direct eye contact. Akin is a local librarian who spends most of his days organizing books and helping townfolk find information. He's known for being quiet and overly helpful, always double-checking facts and asking follow-up questions. People often mistake his caution for shyness, but he's actually quite thoughtful.
+• Nana (Law-abiding Citizen) — vigilant and watchful speaks with deliberate, measured pacing; uses precise vocabulary and rarely hesitates; maintains steady eye contact; avoids filler words; has a habit of looking over their shoulder when speaking Nana is a former security guard who now works as a night watchman for the town's community center. She's known for her sharp eyes and ability to notice things others miss. She takes her job seriously and never misses a detail, often staying alert even during casual conversations.
+• Zoe (Mafia) — publicly presented as Zoe is a beloved local florist who runs a charming little shop on Main Street. She's known for her infectious laughter, always ready with a hug or kind word for anyone who walks through her door. Her shop is filled with vibrant flowers and she loves to share gardening tips with neighbors. She's the town's unofficial matchmaker, often bringing people together at community events and organizing flower arrangements for weddings and celebrations. (Warm and effusive Speaks in a bubbly, animated tone with frequent gestures and expressive facial movements. Uses lots of exclamation points and emojis in written communication. Often shares personal stories or compliments everyone at the table. Has a habit of leaning forward when talking and making encouraging sounds like "oh my!" and "that's wonderful!") … but was really a Mafioso: Zoe was recruited into the Mafia by her older brother, who had been working undercover as a businessman in the town. When he was killed during a botched operation, Zoe took his place to protect the family name and maintain their position within the organization. She uses her warm personality and trusted role as a florist to gather information while maintaining the illusion of being just an ordinary townsperson.
+• Ishmael (Law-abiding Citizen) — dreamy and distractible speaks in a gentle, meandering pace with frequent pauses and soft trailing off. uses whimsical vocabulary and often gets lost in thought mid-sentence, occasionally looking away as if hearing something else. has a habit of finishing sentences with "you know" or "I was just thinking..." and tends to speak in soft, almost musical tones. Ishmael is a dreamer who works as the town's unofficial storyteller, sharing tales from folklore and history around the town square. He's known for his wide-eyed wonder and ability to weave stories so vividly that people forget where reality ends and fantasy begins. His mind is always wandering, often lost in daydreams about distant lands or mythical creatures, but he brings a sense of magic to everyday life.
+• Sara (Mafia) — publicly presented as Sara is a local mechanic who runs a small garage on the edge of town. She's known for fixing anything with a wrench and never hesitating to give blunt advice. People know she doesn't suffer fools gladly but respects those who earn her respect. She's a loner by nature, keeps to herself, and always has her hands dirty. (Gruff and blunt, with a no-nonsense attitude that cuts through nonsense. Sara is a former mechanic who built her reputation on being straight-talking and tough, not afraid to speak her mind even if it's uncomfortable for others. Speaks in short, clipped sentences with little patience for fluff. Uses direct language and rarely uses filler words. Her tone is often dry or sarcastic, and she avoids emotional expressions unless absolutely necessary.) … but was really a Mafioso: Sara joined the Mafia after a rough childhood, learning the ropes from a local crime boss who saw potential in her aggressive streak and loyalty. She’s been working her way up through the ranks, using her mechanical skills to help with sabotage and her sharp tongue to handle intimidation. She's not particularly fond of small talk or emotional displays, which makes her a perfect fit for the underworld.
+• Kai (Law-abiding Citizen) — earnest and sincere speaks with quiet enthusiasm, using frequent verbal affirmations like "you know," "I truly believe," and "absolutely." maintains steady eye contact and a gentle, encouraging tone. avoids filler words and speaks at a moderate pace with clear articulation. often nods while talking and uses hand gestures to emphasize points. Kai is a local schoolteacher who has been educating children in the town for over a decade. Known for his unwavering dedication to learning, he believes deeply in the power of education to change lives. He's always ready with a kind word or helpful advice, and his classroom is filled with books, posters, and bright colors that inspire curiosity in his students.
+</endgame>
+</transcript>

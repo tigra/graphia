@@ -1918,3 +1918,235 @@ metrics:
   persona_sem_peak:
     denominator: 150
 notes: 'Three-way provider baseline 2026-08-30: Claude Haiku 4.5 (spec 035). First measured Claude run; compare only against same-provider records.'
+---
+run:
+  date: '2026-08-30'
+  duration_seconds: 1108.951
+  metrics_version: 1
+  transcript_dir: '2026-08-30T16-17-50'
+code:
+  commit: '0282f65ee2a797f822cdb5c35abaec8a29c33d5b'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'bedrock'
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  base_url: null
+  games: 10
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  duration_seconds: 1108.951
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 3
+    rate: 0.3
+    ci_low: 0.10778928748621183
+    ci_high: 0.6032267800204347
+  mafia:
+    wins: 7
+    rate: 0.7
+    ci_low: 0.39677321997956516
+    ci_high: 0.892210712513788
+  scripted_side:
+    side: 'law_abiding'
+    wins: 3
+    rate: 0.3
+    ci_low: 0.10778928748621183
+    ci_high: 0.6032267800204347
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 15
+    mafia: 2
+  by_day:
+    day_1: 7
+    day_2: 7
+    day_3: 3
+metrics:
+  repetition:
+    rate: 0.5831873905429071
+    count: 333
+    denominator: 571
+    ci_low: 0.5423228534403944
+    ci_high: 0.6229400642050925
+  third_person_self_talk:
+    rate: 0.03502626970227671
+    count: 20
+    denominator: 571
+    ci_low: 0.022786537704223057
+    ci_high: 0.053480733140475724
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 15
+    ci_low: 0.0
+    ci_high: 0.20388926630434784
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 43
+    ci_low: 0.0
+    ci_high: 0.08201257002322722
+  peer_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 2
+    ci_low: 0.0
+    ci_high: 0.6576280471103807
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 20
+    ci_low: 0.0
+    ci_high: 0.16113012549493322
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 150
+    ci_low: 0.0
+    ci_high: 0.02497113914571871
+  persona_lex_mean:
+    denominator: 150
+  persona_lex_peak:
+    denominator: 150
+  persona_sem_mean:
+    denominator: 150
+  persona_sem_peak:
+    denominator: 150
+notes: 'Three-way provider baseline 2026-08-30: Amazon Nova Pro/Lite, the untouched baseline arm. Run under caffeinate -i.'
+---
+run:
+  date: '2026-08-30'
+  duration_seconds: 4194.992
+  metrics_version: 1
+  transcript_dir: '2026-08-30T16-36-21'
+code:
+  commit: '0282f65ee2a797f822cdb5c35abaec8a29c33d5b'
+  branch: 'main'
+  dirty: true
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.32.14'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 10
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  duration_seconds: 4194.992
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 1
+    rate: 0.1
+    ci_low: 0.01787574951572113
+    ci_high: 0.4041563854975721
+  mafia:
+    wins: 9
+    rate: 0.9
+    ci_low: 0.5958436145024278
+    ci_high: 0.9821242504842788
+  scripted_side:
+    side: 'law_abiding'
+    wins: 1
+    rate: 0.1
+    ci_low: 0.01787574951572113
+    ci_high: 0.4041563854975721
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 10
+    mafia: 3
+  by_day:
+    day_1: 10
+    day_2: 3
+metrics:
+  repetition:
+    rate: 0.574235807860262
+    count: 263
+    denominator: 458
+    ci_low: 0.5285179593351653
+    ci_high: 0.6187186689806902
+  third_person_self_talk:
+    rate: 0.021834061135371178
+    count: 10
+    denominator: 458
+    ci_low: 0.011902098275942546
+    ci_high: 0.039720795807223624
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 8
+    ci_low: 0.0
+    ci_high: 0.3244156195108769
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 44
+    ci_low: 0.0
+    ci_high: 0.08029831778201396
+  peer_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 3
+    ci_low: 0.0
+    ci_high: 0.5615060804490177
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 25
+    ci_low: 0.0
+    ci_high: 0.13319649395317873
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 150
+    ci_low: 0.0
+    ci_high: 0.02497113914571871
+  persona_lex_mean:
+    denominator: 150
+  persona_lex_peak:
+    denominator: 150
+  persona_sem_mean:
+    denominator: 150
+  persona_sem_peak:
+    denominator: 150
+notes: 'Three-way provider baseline 2026-08-30: local qwen3-coder:30b / qwen2.5:3b, free offline arm. Run under caffeinate -i.'
