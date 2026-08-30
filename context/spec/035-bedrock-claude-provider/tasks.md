@@ -18,8 +18,8 @@ Functional spec: `./functional-spec.md` · Technical considerations: `./technica
   - [x] Tests (offline, mocked): the preflight maps each representative boto3 error family to its plain message (no stack trace) on a faked client; per-tier overrides honored; switching among the three providers resolves the right instances. Full `uv run pytest -q` green. **[Agent: testing]**
   - [x] Docs: a quickstart (README / docs) for selecting each provider (`GRAPHIA_LLM_PROVIDER` = `bedrock` | `bedrock-claude` | `ollama`), naming the Claude **default model ids** and the per-tier override env vars. **[Agent: langgraph-agentic]**
 
-- [ ] **Slice 3: Deployed-runtime verification (developer-run, live AWS)**
-  - [ ] Deployed spike (tech-spec §2 D): with the hosted AgentCore runtime configured for `bedrock-claude`, run a full game on it and confirm from the **runtime's CloudWatch telemetry** that Claude served the calls (not inferred locally); apply any **IAM/model-access (terraform)** change needed for the runtime role to invoke the Claude model. The historically brittle path — proven on the deployment. _(developer-run; live AWS + deployment.)_ **[Agent: terraform-aws]**
+- [x] **Slice 3: Deployed-runtime verification (developer-run, live AWS)**
+  - [x] Deployed spike (tech-spec §2 D): with the hosted AgentCore runtime configured for `bedrock-claude`, run a full game on it and confirm from the **runtime's CloudWatch telemetry** that Claude served the calls (not inferred locally); apply any **IAM/model-access (terraform)** change needed for the runtime role to invoke the Claude model. The historically brittle path — proven on the deployment. _(developer-run; live AWS + deployment.)_ **[Agent: terraform-aws]**
 
 ---
 
@@ -41,3 +41,20 @@ Functional spec: `./functional-spec.md` · Technical considerations: `./technica
 > **Still unproven: the deployed runtime (Slice 3).** This spike is local-only. The historically brittle part — whether the hosted AgentCore runtime's own role can invoke the Claude model, confirmed from its CloudWatch telemetry rather than inferred locally — is untouched by this result.
 >
 > No test was added for the spike harness itself, matching the `ollama_smoke` precedent (developer-run real-model harnesses live outside the mocked suite).
+
+> **Slice 3 result (2026-08-30, deployed AgentCore Runtime, live AWS).** **PASS.**
+>
+> Two Terraform changes were required and are committed (`5422b57`): the Runtime had **no provider setting**, so a first remote game on 2026-08-30 silently ran on Nova (its own logs: 180 `amazon.nova-pro-v1:0` + 5 `amazon.nova-lite-v1:0`, zero Claude) — and the role's invoke scope was `amazon.nova-*` only. Both are now opt-in via `LLM_PROVIDER=bedrock-claude`.
+>
+> After redeploying, the live Runtime config carries `GRAPHIA_LLM_PROVIDER=bedrock-claude` with both tiers pinned to `us.anthropic.claude-haiku-4-5-20251001-v1:0`, and a full game ran on it:
+>
+> | window | model | calls |
+> | --- | --- | --- |
+> | 08:53–09:06 (before) | `amazon.nova-pro` / `nova-lite` | 180 / 5 |
+> | **09:16–09:24 (Claude game)** | **`us.anthropic.claude-haiku-4-5-20251001-v1:0`** | **136** |
+>
+> **Zero Nova calls in the Claude window** (the two games are cleanly separated by minute; an initial `--since` read overlapped them and was disambiguated by per-minute breakdown). The disappearance of `nova-lite` corroborates: both tiers went to Claude.
+>
+> **Game completed, not partial** — node traversal covers `assign_roles`, `generate_personas`, `first_night_mafia_intros`, 24 × `day_turn`, 10 × `collect_votes`, 4 × `day_round_reflect`, `check_win_night`/`check_win_day`, `end_screen`; it resolved to `"winner": "mafia"` and exited on `runtime invocation done`.
+>
+> **No errors of any kind.** Precise greps for `AccessDenied`, `ThrottlingException`, `ValidationException`, `UnrecognizedClient`, `ExpiredToken` return nothing across the full window. This is the headline: ADR-012 predicted the `us.` profile's non-deterministic three-region routing would reopen ADR-003's Marketplace/IAM friction — the three-region grant plus per-region model access held, with not one denial.
