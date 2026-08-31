@@ -1,0 +1,144 @@
+Game 46 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Hauk" role="Law-abiding Citizen">
+Personality: earnest and straightforward
+Manner: speaks with deliberate slowness, choosing each word carefully; avoids slang and uses formal phrasing; frequently nods while talking and pauses for emphasis
+Persona: Hauk is a schoolteacher who has lived in the town his entire life. He takes his job seriously and is known for being honest and reliable. He enjoys gardening and reading classic literature in his spare time.
+</player>
+<player name="Rina" role="Law-abiding Citizen">
+Personality: gruff and blunt
+Manner: speaks in short, clipped sentences with little preamble; uses military-style terminology; rarely raises their voice but when they do, it's thunderous; avoids small talk and gets straight to the point
+Persona: Rina is a former security guard who left the force after a dispute with her supervisor. She now works as a night watchman at the local warehouse district. She's known for being tough as nails and never backing down from a confrontation.
+</player>
+<player name="Siri" role="Law-abiding Citizen">
+Personality: quirky and whimsical
+Manner: speaks rapidly with sudden shifts in tone and volume; uses made-up words and phrases like "flibbertigibbet" and "snugglewumpus"; often interrupts herself mid-sentence to rephrase or add a ridiculous detail; has a habit of tilting her head while talking
+Persona: Siri is the town's beloved librarian who has an obsession with collecting and cataloging every strange, forgotten object from the local antique shops and estate sales. She's known for her eccentric hobby of conversing with houseplants and believing they're actually sentient beings. She's always got a peculiar story to tell about the items she's acquired.
+</player>
+<player name="Zhen" role="Law-abiding Citizen">
+Personality: dreamy and distractible
+Manner: speaks in a soft, meandering pace with frequent pauses and trails off mid-sentence; uses flowery, poetic language; often gets lost in thought and must be gently redirected; has a habit of looking up toward the ceiling or sky while talking as if listening to an inner voice
+Persona: Zhen is a quiet artist who spends her days painting landscapes and portraits in a small studio she rents above the town's general store. She's known for her gentle nature and has a habit of forgetting to eat when she's absorbed in her work. She dreams of exhibiting her paintings someday but often gets distracted by the birds outside her window or the way light falls across her canvas.
+</player>
+<player name="Lui" role="Mafia">
+Personality: aloof and detached
+Manner: speaks in a slow, measured tone with a hint of condescension; uses formal, archaic language; rarely makes eye contact and often checks their watch or glances around the room as if expecting something better to do; has a habit of folding their arms and tilting their head slightly when listening
+Public legend: Lui is a retired accountant who moved to the town three years ago after his firm downsized. He lives alone in a modest house on the edge of town and spends his days organizing his extensive collection of vintage books and attending town meetings with quiet detachment. He's known for being polite but distant, always seeming to be thinking about something else entirely. His neighbors often comment on how peculiar he is, but no one has ever seen him show any real emotion.
+True self (hidden): Lui is a former enforcer for the local crime family who left the organization after a disagreement with the boss over a failed assassination. He's been living under an assumed identity for years, using his accounting skills to launder money and keep his true activities hidden from the authorities. He's still connected to the Mafia and has been instructed to watch the town for any signs of internal threats or betrayal.
+</player>
+<player name="Nimashi" role="Mafia">
+Personality: Cunning and calculating, with a sharp mind for strategy and manipulation
+Manner: Speaks in a measured, almost hypnotic tone; uses pauses to emphasize key points; often tilts the head slightly while speaking as if assessing the listener's reaction; avoids direct eye contact but speaks with a subtle confidence that commands attention
+Public legend: Nimashi is a traveling merchant who moves from town to town, selling rare spices, exotic teas, and handwoven textiles. She's known for her ability to negotiate deals and always seems to know exactly what someone needs before they do. Her wares are always of the highest quality, and she has a reputation for being trustworthy, though some say she knows more about people's secrets than she lets on. She lives in a small caravan that she keeps well-organized and maintains with great care.
+True self (hidden): Nimashi was once a high-ranking enforcer in the city's underground networks before she fled to this quiet town, using her skills in negotiation and manipulation to establish a new identity. She built her current reputation as a merchant by carefully weaving together information from various sources and using it to build relationships that serve her interests. Her true loyalty lies with the old ways, and she's always watching for opportunities to extend her influence.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Hauk, Rina, Siri, Zhen, Lui, Nimashi. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Lui): Your Mafia teammates are: Nimashi. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Nimashi): Your Mafia teammates are: Lui. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Lui points at Rina
+Nimashi points at Rina
+<kill>Rina — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Rina was killed last night. Rina was a Law-abiding Citizen.
+<round>
+Round 1.
+Zhen: I was just thinking... how strange it is that Rina was killed so soon. I hope we can find the killer before more of us are taken.
+Avery: Nothing is settled yet, but I'm watching Siri most closely.
+<vote initiator="Siri" target="Avery">
+Avery: No
+Hauk: No
+Siri: No
+Zhen: No
+Lui: No
+Nimashi: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Hauk: I have been observing the patterns of speech and hesitation among us. Zhen, your silence during the vote on Avery seemed unusual — not out of place, but... notable.
+Lui: I must admit, Hauk's observation on Zhen's silence is rather astute. One wonders, however, if such scrutiny is not itself a sign of deeper suspicion.
+<vote initiator="Siri" target="Lui">
+Avery: No
+Hauk: No
+Siri: Yes
+Zhen: No
+Lui: No
+Nimashi: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Hauk: It seems to me that the killer is likely someone who has been avoiding direct confrontation while subtly steering suspicion away from themselves.
+Zhen: I keep hearing whispers... but maybe I'm just imagining them. The sky looks so vast today, like it's holding its breath.
+Nimashi: The night brings many whispers, but I find myself more interested in the silence that follows. It's in those pauses where truth often hides.
+Lui: The silence that follows a vote is often more telling than the voices that preceded it. I find myself oddly unsettled by the absence of conviction in our collective hesitation.
+Avery: Nothing is settled yet, but I'm watching Siri most closely.
+<vote initiator="Siri" target="Lui">
+Avery: No
+Hauk: No
+Siri: No
+Zhen: No
+Lui: No
+Nimashi: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Lui points at Avery
+Nimashi points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+<vote initiator="Hauk" target="Zhen">
+Hauk: Yes
+Siri: Yes
+Zhen: No
+Lui: Yes
+Nimashi: Yes
+tally: 4 Yes, 1 No
+outcome: executed — Zhen has been executed. Zhen was a Law-abiding Citizen.
+</vote>
+</round>
+</day>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Rina (Law-abiding Citizen)
+• Night 2: Avery (Law-abiding Citizen)
+• Day 2: Zhen (Law-abiding Citizen) executed
+
+Full roster: Avery (Law-abiding Citizen), Hauk (Law-abiding Citizen), Rina (Law-abiding Citizen), Siri (Law-abiding Citizen), Zhen (Law-abiding Citizen), Lui (Mafia), Nimashi (Mafia)
+
+Who they really were:
+• Hauk (Law-abiding Citizen) — earnest and straightforward speaks with deliberate slowness, choosing each word carefully; avoids slang and uses formal phrasing; frequently nods while talking and pauses for emphasis Hauk is a schoolteacher who has lived in the town his entire life. He takes his job seriously and is known for being honest and reliable. He enjoys gardening and reading classic literature in his spare time.
+• Rina (Law-abiding Citizen) — gruff and blunt speaks in short, clipped sentences with little preamble; uses military-style terminology; rarely raises their voice but when they do, it's thunderous; avoids small talk and gets straight to the point Rina is a former security guard who left the force after a dispute with her supervisor. She now works as a night watchman at the local warehouse district. She's known for being tough as nails and never backing down from a confrontation.
+• Siri (Law-abiding Citizen) — quirky and whimsical speaks rapidly with sudden shifts in tone and volume; uses made-up words and phrases like "flibbertigibbet" and "snugglewumpus"; often interrupts herself mid-sentence to rephrase or add a ridiculous detail; has a habit of tilting her head while talking Siri is the town's beloved librarian who has an obsession with collecting and cataloging every strange, forgotten object from the local antique shops and estate sales. She's known for her eccentric hobby of conversing with houseplants and believing they're actually sentient beings. She's always got a peculiar story to tell about the items she's acquired.
+• Zhen (Law-abiding Citizen) — dreamy and distractible speaks in a soft, meandering pace with frequent pauses and trails off mid-sentence; uses flowery, poetic language; often gets lost in thought and must be gently redirected; has a habit of looking up toward the ceiling or sky while talking as if listening to an inner voice Zhen is a quiet artist who spends her days painting landscapes and portraits in a small studio she rents above the town's general store. She's known for her gentle nature and has a habit of forgetting to eat when she's absorbed in her work. She dreams of exhibiting her paintings someday but often gets distracted by the birds outside her window or the way light falls across her canvas.
+• Lui (Mafia) — publicly presented as Lui is a retired accountant who moved to the town three years ago after his firm downsized. He lives alone in a modest house on the edge of town and spends his days organizing his extensive collection of vintage books and attending town meetings with quiet detachment. He's known for being polite but distant, always seeming to be thinking about something else entirely. His neighbors often comment on how peculiar he is, but no one has ever seen him show any real emotion. (aloof and detached speaks in a slow, measured tone with a hint of condescension; uses formal, archaic language; rarely makes eye contact and often checks their watch or glances around the room as if expecting something better to do; has a habit of folding their arms and tilting their head slightly when listening) … but was really a Mafioso: Lui is a former enforcer for the local crime family who left the organization after a disagreement with the boss over a failed assassination. He's been living under an assumed identity for years, using his accounting skills to launder money and keep his true activities hidden from the authorities. He's still connected to the Mafia and has been instructed to watch the town for any signs of internal threats or betrayal.
+• Nimashi (Mafia) — publicly presented as Nimashi is a traveling merchant who moves from town to town, selling rare spices, exotic teas, and handwoven textiles. She's known for her ability to negotiate deals and always seems to know exactly what someone needs before they do. Her wares are always of the highest quality, and she has a reputation for being trustworthy, though some say she knows more about people's secrets than she lets on. She lives in a small caravan that she keeps well-organized and maintains with great care. (Cunning and calculating, with a sharp mind for strategy and manipulation Speaks in a measured, almost hypnotic tone; uses pauses to emphasize key points; often tilts the head slightly while speaking as if assessing the listener's reaction; avoids direct eye contact but speaks with a subtle confidence that commands attention) … but was really a Mafioso: Nimashi was once a high-ranking enforcer in the city's underground networks before she fled to this quiet town, using her skills in negotiation and manipulation to establish a new identity. She built her current reputation as a merchant by carefully weaving together information from various sources and using it to build relationships that serve her interests. Her true loyalty lies with the old ways, and she's always watching for opportunities to extend her influence.
+</endgame>
+</transcript>

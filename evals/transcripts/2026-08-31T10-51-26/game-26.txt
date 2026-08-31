@@ -1,0 +1,269 @@
+Game 26 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Kareem" role="Law-abiding Citizen">
+Personality: dry and sardonic
+Manner: speaks with measured, slow cadence; uses precise vocabulary with a hint of mockery; rarely raises voice, but inflects words with subtle sarcasm; often pauses for effect before delivering cutting remarks
+Persona: Kareem is a former librarian who now works part-time at the town's only bookstore, where he spends his days organizing dusty tomes and quietly judging patrons' reading choices. He has no real friends, but he's well-liked for his quiet competence.
+</player>
+<player name="Ila" role="Mafia">
+Personality: Ila is brash, theatrical, and unapologetically confident. She thrives on attention and enjoys being the center of any conversation, often dominating discussions with her loud, exaggerated opinions. She's a natural show-off who loves to perform and believes she’s always right — even when she’s clearly wrong.
+Manner: Ila speaks in booming, theatrical bursts, with grand gestures and dramatic flair. She uses hyperbolic language, frequently employs rhetorical questions, and often interrupts others mid-sentence to assert her dominance in the conversation. Her tone is always animated, and she’s prone to laughing loudly or throwing her hands up in exasperation.
+Public legend: Ila is a charismatic local celebrity who runs a successful street food truck business called “Ila’s Grits & Glory.” She’s known for her infectious energy, incredible cooking skills, and an unshakable belief that everyone should be as excited about life as she is. She volunteers at the town's youth center, hosts weekly potluck dinners, and is always the first to offer praise or criticism — loudly.
+True self (hidden): Ila was once a street-smart hustler in the city before moving to town under a new identity. She quickly learned the ways of the Mafia by accident when she got caught up in a heist gone wrong, and ended up being recruited by a local crime family. She's not just a mole — she's one of their trusted lieutenants, using her public persona as a cover while collecting information and executing orders from the shadows.
+</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: cheerful and effervescent
+Manner: speaks rapidly with high energy, often using exclamation points and animated gestures; employs cheerful filler words like "oh my gosh," "totally," and "wowzers"; has a habit of bouncing between topics quickly while maintaining an upbeat tone; uses slang and trendy expressions to stay relatable
+Persona: Zara is a vibrant community organizer who runs weekly neighborhood meetups, game nights, and art classes for kids. She’s the heart of town social life, always bringing snacks, encouraging participation, and making sure everyone feels included. With a contagious laugh and an endless supply of optimism, she believes everyone has a story worth telling and a place in the community.
+</player>
+<player name="Mika" role="Mafia">
+Personality: Vigilant and watchful, with an underlying intensity that manifests as a constant state of alertness. Mika appears calm on the surface but is always scanning the room, reading people's expressions and body language with sharp precision.
+Manner: Speaks in measured, deliberate tones with a slight edge of scrutiny. Uses short, clipped sentences that feel intentional and calculated. Pauses frequently to observe others before responding, often checking their expressions when they speak. Rarely smiles, but when they do, it's unsettlingly knowing.
+Public legend: Mika is a town clockmaker who has lived in the same house for over twenty years. They are known for being extremely reliable, always arriving on time and never missing an appointment. Mika tends to their grandfather’s old workshop, which they maintain with meticulous care. They're often seen walking around town with a small leather satchel, checking the time on various clocks and ensuring everything is in sync. Their neighbors rely on them for timely reminders and always trust their judgment about when something should happen. Mika is quiet, methodical, and deeply rooted in routine.
+True self (hidden): Mika was recruited into the Mafia after a brutal incident involving their family's business, which they had to shut down due to threats. The organization took them in, taught them to blend in through careful observation and control, and now they live as an unassuming clockmaker while watching for targets and gathering intel. Their obsession with timekeeping reflects their need to stay one step ahead, always tracking people's movements and actions.
+</player>
+<player name="Tarek" role="Law-abiding Citizen">
+Personality: Stern and commanding
+Manner: Speaks with a firm, authoritative tone; uses short, clipped sentences; never raises voice but delivers each word with deliberate emphasis; rarely interrupts but when they do, it's with a sharp, decisive cadence; avoids filler words and hesitations; pauses before speaking to ensure clarity and weight
+Persona: Tarek is a retired military officer who served with distinction for over two decades. He now works as a security consultant for the town, offering his expertise in risk assessment and safety planning. Known for his unwavering sense of duty and strict adherence to rules, he's often called upon to mediate disputes or provide guidance during tense situations. His presence commands respect, and he’s widely regarded as someone who doesn’t suffer fools lightly.
+</player>
+<player name="Nura" role="Law-abiding Citizen">
+Personality: Warm and effusive
+Manner: Speaks with a gentle, flowing cadence; uses expansive, affectionate vocabulary; often pauses to smile or gesture warmly; employs endearing terms like "dear" and "sweetie"; speaks in full, expressive sentences that feel like a warm embrace
+Persona: Nura is a beloved town nurse who has tended to the community for over fifteen years. She's known for her soft touch, kind words, and an uncanny ability to comfort the sick and scared. She runs a small clinic in her home and is always ready with a cup of tea and a listening ear. Nura has a special talent for remembering everyone's names and medical histories, and she never misses a birthday or seasonal celebration.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Kareem, Ila, Zara, Mika, Tarek, Nura. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Ila): Your Mafia teammates are: Mika. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Mika): Your Mafia teammates are: Ila. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Ila points at Nura
+Mika points at Nura
+<kill>Nura — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Nura was killed last night. Nura was a Law-abiding Citizen.
+<round>
+Round 1.
+Zara: Ila, you've been pretty quiet throughout the discussion — I'm wondering what your thoughts are on the night's events?
+Kareem: Ila, you've been pretty quiet throughout the discussion — I'm wondering what your thoughts are on the night's events?
+<vote initiator="Tarek" target="Ila">
+Avery: No
+Kareem: No
+Ila: No
+Zara: No
+Mika: No
+Tarek: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Mika: I’ve been watching everyone closely since the night's events. Ila, your silence has raised questions for me.
+Zara: Ila, I'm really curious — you've been so quiet all day, did you notice anything strange last night? Oh my gosh, this is getting intense!
+Tarek: Ila, I’ve been thinking — if you were truly innocent, wouldn’t you have spoken up already? That silence is troubling.
+Avery: Nothing is settled yet, but I'm watching Kareem most closely.
+Ila: I don't know why Nura was killed, but I'm just as confused as everyone else. I mean, she was always so friendly — I can't imagine anyone would want to hurt her.
+Kareem: Zara, you've been asking questions but not really answering them. It's hard to tell if you're innocent or just playing the part.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Kareem">Ila's silence is suspicious, but so is Zara's relentless questioning—perhaps she's trying to pivot the group's suspicion onto me. I'll watch Tarek closely; his line of reasoning feels too calculated for a random citizen.</thought>
+<thought player="Ila">That Tarek is getting bold, asking me direct questions, but Ila's innocent silence was just a show. I need to keep playing dumb and let Mika do the talking while I stay in the shadows.</thought>
+<thought player="Zara">Oh my gosh, that was such a wild day! Ila's silence is definitely suspicious, but I can't let my emotions drive my logic. I need to keep asking questions and stay super observant — wowzers, this game is getting intense!</thought>
+<thought player="Mika">Ila’s silence is deliberate, but I can't yet prove she's involved. The vote failed, but Tarek is pushing hard—this could be a setup to eliminate her. I need to keep watching and wait for more signs.</thought>
+<thought player="Tarek">Ila's silence is suspicious, but I cannot act on speculation alone. The vote failed, so I must bide my time and observe further before calling another execution.</thought>
+</round>
+<round>
+Round 2.
+Ila: Tarek, you're really digging into the silence thing — but let's be real, I’ve been here the whole time, watching everyone. If I were the one who killed Nura, do you think I’d be standing here talking like this? I’m just as puzzled as you are, and I don’t think that’s a coincidence.
+Avery: Nothing is settled yet, but I'm watching Kareem most closely.
+Tarek: Kareem, your silence on Nura's death is unusual. If you're innocent, explain why you haven't spoken yet.
+Zara: Ila, you keep saying you're confused, but that's a bit too convenient — it's almost like you're trying to deflect suspicion. I'm starting to think you're not as innocent as you seem.
+Kareem: Tarek, you're fixating on silence like it's a crime — but maybe that's just your way of avoiding the real question: who benefits from Nura's death?
+Mika: I agree with Tarek — Ila's silence is odd, but it’s also possible she’s trying to stay calm under pressure. Still, I don’t think she’s the one who killed Nura.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Kareem">Ila's silence is suspicious, but so is Zara's relentless questioning—perhaps she's trying to pivot the group's suspicion onto me. I'll watch Tarek closely; his line of reasoning feels too calculated for a random citizen.</thought>
+<thought player="Ila">Tarek's getting bolder, but Ila's innocent silence was just a show. Mika can talk, I'll stay in the shadows and let the heat build. Keep playing dumb and let the game unfold.</thought>
+<thought player="Zara">Okay, Ila's silence is bugging me, but I need to stay sharp and not jump to conclusions. I'm gonna keep probing her, maybe throw in a few more questions to see if she cracks — I've got this, wowzers!</thought>
+<thought player="Mika">Ila’s silence is calculated, but I cannot yet confirm her guilt. Tarek's push might be a trap to expose her, or he could be onto something. I must bide my time and observe carefully before acting.</thought>
+<thought player="Tarek">Ila's silence remains unexplained, but I cannot act on mere suspicion. The vote failed, so I must wait for clearer evidence before calling another execution.</thought>
+</round>
+<round>
+Round 3.
+Ila: Tarek, you're really fixating on silence, but let me ask you this — if I were the killer, would I be standing here *defending* myself like a good little citizen? I think not. I’m just as confused as everyone else, and that’s the truth.
+Avery: Nothing is settled yet, but I'm watching Kareem most closely.
+Zara: Avery, you've been pretty quiet too — did you notice anything odd about Ila last night? Oh my gosh, this is so confusing!
+Mika: I still think we should focus on why Nura was targeted — her death feels too clean, too random. Someone knew what they were doing.
+Tarek: Ila, your defense sounds rehearsed — if you're innocent, why not simply explain your whereabouts? Instead, you deflect. That's not how truth works.
+Kareem: Tarek, your focus on silence is amusing — but maybe it's because you're the one who's been avoiding the real issue: why did Nura get killed? That's what we should be asking, not who's been quiet.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Kareem">Tarek's obsession with silence feels orchestrated, not natural. If he's trying to frame Ila, I should let him lead while watching Zara—her relentless questioning reeks of setup. I'll hold back and observe.</thought>
+<thought player="Ila">Tarek's zeroing in on me, but I'm playing the confused citizen perfectly — Mika can do the talking while I stay in the shadows. Let the heat build, let them doubt each other, and I'll keep my cover strong.</thought>
+<thought player="Zara">Ila's silence is twitching my suspicion nerve, but I need to keep probing without looking like I'm accusing her directly. Maybe I'll ask a few more pointed questions and see if she gives me something to work with — this game is absolutely wild!</thought>
+<thought player="Mika">Ila’s silence is too calculated to be innocent, but Tarek's aggressive push might be a trap. I must bide my time and observe further before making my move.</thought>
+<thought player="Tarek">Ila's silence persists, yet I lack concrete evidence to justify another execution vote. I must continue observing for definitive signs of guilt or innocence before acting again.</thought>
+</round>
+<round>
+Round 4.
+Mika: I still think we're looking at this all wrong. Nura’s death wasn’t random — it was precise. Someone in this room knew exactly what they were doing.
+Avery: Nothing is settled yet, but I'm watching Kareem most closely.
+Kareem: Tarek, your focus on silence is curious — it's almost as if you're trying to steer the conversation away from the real question: why was Nura killed?
+Ila: Tarek, you're really digging into the silence thing — but let's be real, I’ve been here the whole time, watching everyone. If I were the one who killed Nura, do you think I’d be standing here talking like this? I’m just as puzzled as you are, and I don’t think that’s a coincidence.
+Zara: Kareem, you've been pretty silent too — did you notice anything weird about Ila last night? Oh my gosh, this is so confusing!
+Tarek: Kareem, your silence is noted. If you're innocent, explain why you've remained quiet while Ila and I have been questioned.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Kareem">Tarek's fixation on silence feels orchestrated; if he's trying to frame Ila, I'll let him lead while watching Zara—her relentless questioning reeks of setup. I'll hold back and observe.</thought>
+<thought player="Ila">Tarek's zeroing in on me, but I'm playing the confused citizen perfectly — Mika can do the talking while I stay in the shadows. Let the heat build, let them doubt each other, and I'll keep my cover strong.</thought>
+<thought player="Zara">Ila's silence is really bugging me, but I need to keep asking questions without seeming suspicious. Maybe I'll ask a few more pointed ones to see if she cracks, wowzers! I'm gonna stay sharp and observant — this game is getting intense!</thought>
+<thought player="Mika">Ila's silence is too calculated to be innocent, but Tarek's aggressive push might be a trap. I must bide my time and observe further before making my move.</thought>
+<thought player="Tarek">Ila's silence is unexplained, but I lack concrete evidence to justify another execution vote. I must continue observing for definitive signs of guilt or innocence before acting again.</thought>
+</round>
+<round>
+Round 5.
+Avery: Nothing is settled yet, but I'm watching Kareem most closely.
+Tarek: Kareem, your silence is noted. If you're innocent, explain why you've remained quiet while Ila and I have been questioned.
+Mika: I still think Tarek is trying to misdirect us. His focus on silence feels like a red herring.
+Zara: Avery, you've been watching Kareem closely — do you think he's hiding something, or are you just being cautious?
+Kareem: Tarek, your obsession with silence is beginning to feel like a performance. I'm curious—what exactly are you trying to prove?
+Ila: I mean, honestly, I’m just as confused as everyone else — but if we’re all being honest, who among us *really* knows what happened last night? And more importantly, why would anyone target Nura in the first place?
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Kareem">Tarek's relentless focus on silence feels like a script written by someone trying to misdirect. Ila's evasion is suspicious, but Zara's probing seems calculated too—this feels like a setup. I'll keep watching both of them.</thought>
+<thought player="Ila">Tarek is getting too aggressive with his line of questioning, but I'm playing this perfectly innocent, confused citizen. Mika can keep talking while I stay in the shadows and let them turn on each other. Let the heat build — it's all part of the plan.</thought>
+<thought player="Zara">Ila's silence is still twitching my suspicion nerve, but I need to keep probing without looking like I'm directly accusing her. Maybe I'll ask one more pointed question to see if she gives me something to work with — this game is absolutely wild!</thought>
+<thought player="Mika">Tarek's relentless focus on Ila's silence might be a trap, but it also feels like he's onto something. I need to watch him closely and let the moment decide whether to expose Ila or let the tension build.</thought>
+<thought player="Tarek">Ila's silence remains unexplained, but I lack concrete evidence to justify another execution vote. I must continue observing for definitive signs of guilt or innocence before acting again.</thought>
+</round>
+<round>
+Round 6.
+<vote initiator="Avery" target="Kareem">
+Avery: No
+Kareem: No
+Ila: No
+Zara: No
+Mika: No
+Tarek: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Mika: I still think we're missing something key about Nura's death. The way she was killed — it felt too deliberate for a random target.
+Kareem: Tarek, your focus on silence is wearing thin. If you're not after Ila, then why are you so eager to pin this on her? It's almost as if you're trying to distract us from something else.
+Ila: I’m really starting to think Nura’s death wasn’t random — someone in this room knew what they were doing, and I don’t mean just the killer. The way she was taken out, it felt like a message. Someone wanted us to *notice* her gone, not just mourn her.
+Tarek: Ila, your silence is still unexplained. If you're innocent, why not simply tell us where you were and what you saw?
+<vote initiator="Avery" target="Kareem">
+Avery: No
+Kareem: No
+Ila: No
+Zara: No
+Mika: No
+Tarek: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Mika points at Kareem
+Ila points at Kareem
+<kill>Kareem — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Kareem was killed last night. Kareem was a Law-abiding Citizen.
+<round>
+Round 1.
+Mika: I still think Kareem’s death was no accident — it feels like the killer is sending a message. Someone in this room knew what they were doing.
+Zara: Ila, I'm really curious — do you have any theories about why Kareem was targeted tonight? Oh my gosh, this is getting so intense!
+Ila: I’m really starting to think Kareem’s death was no accident — someone in this room knew what they were doing. The killer is sending a message, and I don’t think it’s just about random targets.
+Tarek: Ila, your silence is still unexplained. If you're innocent, why not simply tell us where you were and what you saw?
+Avery: Nothing is settled yet, but I'm watching Ila most closely.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ila">Tarek is getting too aggressive, but I'm playing this perfectly — let Mika do the talking while I stay in the shadows. The heat will build, and I’ll keep my cover strong.</thought>
+<thought player="Zara">Ila's silence is still bugging me, but I need to keep probing without seeming suspicious. Maybe I'll ask one more pointed question to see if she gives me something to work with — this game is absolutely wild!</thought>
+<thought player="Mika">Ila’s silence is too calculated to be innocent, but Tarek’s relentless focus might be a trap. I need to observe carefully before deciding whether to expose her or let the tension build.</thought>
+<thought player="Tarek">Ila's continued silence is suspicious, but I lack definitive proof. I must wait for clearer evidence before calling another vote. The game is not yet won.</thought>
+</round>
+<round>
+Round 2.
+<vote initiator="Zara" target="Ila">
+Avery: No
+Ila: No
+Zara: Yes
+Mika: No
+Tarek: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Zara" target="Ila">
+Avery: No
+Ila: No
+Zara: No
+Mika: No
+Tarek: No
+tally: 0 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Tarek: Ila, your silence after Nura's death, then Kareem's death — it's not just odd, it's calculated. You've been watching us all, and you're not the innocent bystander you claim.
+Zara: Ila, I'm really starting to think you're not as innocent as you seem — your silence after Nura's death, then Kareem's death, is too calculated. It's like you're watching everyone else, and that's really unsettling.
+Ila: Tarek, you're really digging into my silence, but let me ask you this — if I were the killer, would I be standing here *defending* myself like a good little citizen? I think not.
+Avery: Nothing is settled yet, but I'm watching Ila most closely.
+Mika: Ila, your silence after Nura’s death, then Kareem’s — it’s not just odd, it’s too calculated. I think we’re being played.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+<thought player="Ila">Tarek is getting dangerously close to unraveling my cover with his relentless questioning, but I’m playing this perfectly innocent citizen — Mika can do the talking while I stay in the shadows and let them turn on each other. The heat will build, and I’ll keep my cover strong.</thought>
+<thought player="Zara">Ila's silence is really bugging me, but I need to keep probing without seeming suspicious. Maybe I'll ask one more pointed question to see if she gives me something to work with — this game is absolutely wild!</thought>
+<thought player="Mika">Ila's silence is too calculated to be innocent, but Tarek's relentless focus might be a trap. I need to observe carefully before deciding whether to expose her or let the tension build.</thought>
+<thought player="Tarek">Ila's silence is suspicious, but I lack definitive proof. The game is not yet won — I must bide my time and observe further before acting again.</thought>
+</round>
+<round>
+Round 3.
+<vote initiator="Tarek" target="Avery">
+Avery: No
+Ila: No
+Zara: Yes
+Mika: No
+Tarek: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Ila points at Tarek
+Mika points at Tarek
+<kill>Tarek — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Nura (Law-abiding Citizen)
+• Night 2: Kareem (Law-abiding Citizen)
+• Night 3: Tarek (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Kareem (Law-abiding Citizen), Ila (Mafia), Zara (Law-abiding Citizen), Mika (Mafia), Tarek (Law-abiding Citizen), Nura (Law-abiding Citizen)
+
+Who they really were:
+• Kareem (Law-abiding Citizen) — dry and sardonic speaks with measured, slow cadence; uses precise vocabulary with a hint of mockery; rarely raises voice, but inflects words with subtle sarcasm; often pauses for effect before delivering cutting remarks Kareem is a former librarian who now works part-time at the town's only bookstore, where he spends his days organizing dusty tomes and quietly judging patrons' reading choices. He has no real friends, but he's well-liked for his quiet competence.
+• Ila (Mafia) — publicly presented as Ila is a charismatic local celebrity who runs a successful street food truck business called “Ila’s Grits & Glory.” She’s known for her infectious energy, incredible cooking skills, and an unshakable belief that everyone should be as excited about life as she is. She volunteers at the town's youth center, hosts weekly potluck dinners, and is always the first to offer praise or criticism — loudly. (Ila is brash, theatrical, and unapologetically confident. She thrives on attention and enjoys being the center of any conversation, often dominating discussions with her loud, exaggerated opinions. She's a natural show-off who loves to perform and believes she’s always right — even when she’s clearly wrong. Ila speaks in booming, theatrical bursts, with grand gestures and dramatic flair. She uses hyperbolic language, frequently employs rhetorical questions, and often interrupts others mid-sentence to assert her dominance in the conversation. Her tone is always animated, and she’s prone to laughing loudly or throwing her hands up in exasperation.) … but was really a Mafioso: Ila was once a street-smart hustler in the city before moving to town under a new identity. She quickly learned the ways of the Mafia by accident when she got caught up in a heist gone wrong, and ended up being recruited by a local crime family. She's not just a mole — she's one of their trusted lieutenants, using her public persona as a cover while collecting information and executing orders from the shadows.
+• Zara (Law-abiding Citizen) — cheerful and effervescent speaks rapidly with high energy, often using exclamation points and animated gestures; employs cheerful filler words like "oh my gosh," "totally," and "wowzers"; has a habit of bouncing between topics quickly while maintaining an upbeat tone; uses slang and trendy expressions to stay relatable Zara is a vibrant community organizer who runs weekly neighborhood meetups, game nights, and art classes for kids. She’s the heart of town social life, always bringing snacks, encouraging participation, and making sure everyone feels included. With a contagious laugh and an endless supply of optimism, she believes everyone has a story worth telling and a place in the community.
+• Mika (Mafia) — publicly presented as Mika is a town clockmaker who has lived in the same house for over twenty years. They are known for being extremely reliable, always arriving on time and never missing an appointment. Mika tends to their grandfather’s old workshop, which they maintain with meticulous care. They're often seen walking around town with a small leather satchel, checking the time on various clocks and ensuring everything is in sync. Their neighbors rely on them for timely reminders and always trust their judgment about when something should happen. Mika is quiet, methodical, and deeply rooted in routine. (Vigilant and watchful, with an underlying intensity that manifests as a constant state of alertness. Mika appears calm on the surface but is always scanning the room, reading people's expressions and body language with sharp precision. Speaks in measured, deliberate tones with a slight edge of scrutiny. Uses short, clipped sentences that feel intentional and calculated. Pauses frequently to observe others before responding, often checking their expressions when they speak. Rarely smiles, but when they do, it's unsettlingly knowing.) … but was really a Mafioso: Mika was recruited into the Mafia after a brutal incident involving their family's business, which they had to shut down due to threats. The organization took them in, taught them to blend in through careful observation and control, and now they live as an unassuming clockmaker while watching for targets and gathering intel. Their obsession with timekeeping reflects their need to stay one step ahead, always tracking people's movements and actions.
+• Tarek (Law-abiding Citizen) — Stern and commanding Speaks with a firm, authoritative tone; uses short, clipped sentences; never raises voice but delivers each word with deliberate emphasis; rarely interrupts but when they do, it's with a sharp, decisive cadence; avoids filler words and hesitations; pauses before speaking to ensure clarity and weight Tarek is a retired military officer who served with distinction for over two decades. He now works as a security consultant for the town, offering his expertise in risk assessment and safety planning. Known for his unwavering sense of duty and strict adherence to rules, he's often called upon to mediate disputes or provide guidance during tense situations. His presence commands respect, and he’s widely regarded as someone who doesn’t suffer fools lightly.
+• Nura (Law-abiding Citizen) — Warm and effusive Speaks with a gentle, flowing cadence; uses expansive, affectionate vocabulary; often pauses to smile or gesture warmly; employs endearing terms like "dear" and "sweetie"; speaks in full, expressive sentences that feel like a warm embrace Nura is a beloved town nurse who has tended to the community for over fifteen years. She's known for her soft touch, kind words, and an uncanny ability to comfort the sick and scared. She runs a small clinic in her home and is always ready with a cup of tea and a listening ear. Nura has a special talent for remembering everyone's names and medical histories, and she never misses a birthday or seasonal celebration.
+</endgame>
+</transcript>

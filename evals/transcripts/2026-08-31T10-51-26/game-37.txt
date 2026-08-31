@@ -1,0 +1,226 @@
+Game 37 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Miro" role="Law-abiding Citizen">
+Personality: eccentric and unpredictable
+Manner: speaks in rapid, disjointed bursts with frequent pauses for dramatic effect; uses odd metaphors and often references things that don't exist; has a habit of trailing off mid-sentence and then suddenly pivoting to something completely unrelated
+Persona: Miro is the town's self-proclaimed 'Chrono-Orchestrator,' a title he invented for himself after reading too many sci-fi novels. He spends his days collecting vintage clocks, claiming to be 'keeping time' for the entire town, though no one quite understands how or why. He has an unusual habit of speaking to himself in different voices when he's thinking deeply about something.
+</player>
+<player name="Lila" role="Mafia">
+Personality: Warm and effusive, with an infectious enthusiasm for everything around her
+Manner: Speaks in animated bursts, often using gentle, affectionate gestures and a high-pitched, cheerful tone; frequently uses endearing nicknames for people and things, and has a habit of trailing off mid-sentence to ask questions or seek approval
+Public legend: Lila is the town's beloved children's librarian, known for her boundless energy and her ability to make even the most reluctant readers fall in love with books. She spends her days organizing storytime sessions and helping kids discover their favorite tales. She has a soft spot for animals and often volunteers at the local animal shelter, where she's become a bit of a celebrity for her gentle nature and storytelling skills.
+True self (hidden): Lila was once a promising young woman who joined the Mafia after her family was threatened by a rival gang. She quickly rose through the ranks due to her natural ability to charm people into trusting her, which she used both for her own survival and to gather intelligence for her bosses. She's been playing the role of the innocent librarian for years now, carefully maintaining her cover while working behind the scenes to keep her organization strong.
+</player>
+<player name="Vika" role="Law-abiding Citizen">
+Personality: brash and loud
+Manner: speaks quickly with a booming voice, often interrupting others; uses strong, direct language and has a habit of emphasizing key words by repeating them; frequently makes grandiose gestures and has an almost theatrical flair to her speech
+Persona: Vika is the town's unofficial 'Street Enforcer,' a self-appointed watchdog who takes it upon herself to keep the peace on the main drag. She's always seen walking around with a determined look, ready to step in whenever there's a dispute or trouble brewing. She's loud, proud, and doesn't shy away from confrontation, often shouting her opinions at the top of her lungs for everyone to hear.
+</player>
+<player name="Rok" role="Law-abiding Citizen">
+Personality: weary and world-worn
+Manner: speaks slowly and deliberately, with a gravelly tone; avoids enthusiasm and uses a sparse vocabulary; often pauses mid-sentence as if weighing words carefully; has a habit of trailing off and then restarting with a sigh
+Persona: Rok is the town's retired postman, who spent thirty years delivering letters and packages to every household. He knows everyone by name, but rarely speaks to anyone unless necessary. Now in his sixties, he spends his days reading old newspapers and watching the town from his porch.
+</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: gruff and blunt
+Manner: speaks in short, clipped sentences with a rough edge; avoids fluff and uses direct, sometimes harsh language; has a habit of finishing others' sentences with a gruff nod or a muttered "yeah" and rarely offers compliments or pleasantries
+Persona: Zara is the town's unofficial 'Squawk' — the one who runs the local gossip mill with a no-nonsense attitude. She works as a night shift security guard at the old train depot, where she’s known for being the first to spot anything suspicious and the last to back down from a confrontation. She doesn't trust anyone easily, but when she does, she's fiercely loyal.
+</player>
+<player name="Nino" role="Mafia">
+Personality: Cunning and manipulative, with a sharp wit and an almost predatory charm; Nino is a master of reading people and situations, always calculating the best move ahead of time.
+Manner: Speaks in measured, deliberate tones with a subtle edge of mockery; uses carefully chosen words that often carry double meanings; has a habit of pausing just long enough to make others uncomfortable before delivering a pointed remark; rarely raises their voice but when they do, it’s commanding and chilling.
+Public legend: Nino is the town's quiet, unassuming 'Bookkeeper,' responsible for managing all the financial records of local businesses. They are known for being exceptionally organized, methodical, and always in control — a dependable presence who never seems to miss a detail. People trust them with numbers, but they keep their own secrets close to the chest.
+True self (hidden): Nino was recruited into the Mafia by a powerful boss after a series of calculated financial crimes went undetected. They used their skills in numbers and manipulation to rise through the ranks, eventually becoming a key enforcer. Now they live as a double agent, maintaining their cover while secretly orchestrating illegal operations from behind the scenes.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Miro, Lila, Vika, Rok, Zara, Nino. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Lila): Your Mafia teammates are: Nino. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Nino): Your Mafia teammates are: Lila. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Nino points at Zara
+Lila points at Zara
+<kill>Zara — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Zara was killed last night. Zara was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: Nothing is settled yet, but I'm watching Rok most closely.
+Lila: Oh my goodness, I'm so glad we're all still here together! Rok, you seem awfully quiet today — are you feeling alright?
+<vote initiator="Vika" target="Avery">
+Avery: No
+Miro: No
+Lila: Yes
+Vika: No
+Rok: No
+Nino: Yes
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Lila: Oh my goodness, I'm so glad we're all still here together! Rok, you seem awfully quiet today — are you feeling alright?
+Rok: Avery's been awfully eager to jump on the execution bandwagon. That's not how a Law-abiding Citizen acts.
+Nino: I'm surprised Lila voted yes — I thought she was more aligned with the Law-abiding Citizens.
+<vote initiator="Vika" target="Rok">
+Avery: No
+Miro: No
+Lila: Yes
+Vika: No
+Rok: No
+Nino: Yes
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Miro: You know, I've been thinking about time loops, and I think I may have accidentally reset the day three times. Which is odd, because I was definitely in the same spot the whole time.
+Avery: Nothing is settled yet, but I'm watching Rok most closely.
+Lila: Oh my, Rok, you're so sweet to say that! I do feel like we're all in this together, and I'm just so grateful for everyone's support. It's a bit overwhelming, honestly — I wonder if anyone else feels like there's something we're missing?
+Nino: I'm starting to think the killer is someone who's been watching us too closely, not just reacting to events.
+Vika: I've been watching everyone closely, and I'm starting to think the killer is someone who's been acting too perfect — like they're trying too hard to look innocent. Rok, you've been quiet, but you're not the only one who's been watching the others too closely.
+Rok: I've been watching everyone, but I'm starting to think the killer's the one who's been acting too perfect — like they're trying too hard to look innocent.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+<thought player="Miro">Time loops, my dear fellow citizens, are far more fascinating than mere executions—though I suppose one must first ensure the loop isn't trapping us all in a single, very long day. Rok's silence is suspicious, but so is everyone else’s... except perhaps Lila, who keeps looking at me like I'm the only one who remembers what happened yesterday.</thought>
+<thought player="Lila">I'm feeling a bit exposed with two votes called today, but I need to keep playing the cheerful librarian. Nino and I should stick close and watch the others carefully.</thought>
+<thought player="Vika">That Rok is playing the perfect innocent, but I ain't buying it. Someone's been watching too closely, and I'm gonna keep my eyes on that one. I'm not done yet — this game's far from over, and I'll be the one to pull the strings.</thought>
+<thought player="Rok">Avery's been pushing votes hard, but Rok's not the only one watching. Vika's suspicion on him feels like a setup. Too much attention on the quiet ones.</thought>
+<thought player="Nino">Lila's votes align with mine, but her enthusiasm feels calculated. I need to keep her close while planting seeds of doubt in others. Rok is becoming a liability; his observations are too sharp for comfort.</thought>
+</round>
+<round>
+Round 2.
+Nino: I'm starting to think the killer is someone who's been acting too perfect — like they're trying too hard to look innocent.
+Lila: Oh my, I do hope we can all just relax and trust each other — it's such a relief to see everyone still here together! I'm starting to think the killer is someone who's been watching us too closely, not just reacting to events.
+<vote initiator="Vika" target="Rok">
+Avery: No
+Miro: No
+Lila: Yes
+Vika: Yes
+Rok: No
+Nino: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Nino points at Vika
+Lila points at Vika
+<kill>Vika — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Vika was killed last night. Vika was a Law-abiding Citizen.
+<round>
+Round 1.
+Rok: I'm starting to think the killer's not just reacting — they're planning ahead. That's not how a Law-abiding Citizen acts.
+Miro: Rok, you keep saying everyone's been watching too closely, but what if the killer's the one who's been watching us... and *not* watching us? That's the real paradox here.
+Avery: I most suspect Rok based on how the votes have gone.
+Lila: Oh my, I'm so glad we're all still here together! I do hope we can trust each other and work as a team — it's such a relief to see everyone still here.
+Nino: I can't help but wonder if Rok is the one who's been watching us... and not watching us at all. It's rather unsettling.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Miro">The paradox of watching and not watching is quite the conundrum—Rok's silence is either innocence or cunning, but I suspect the killer’s been playing a game far more intricate than simple murder. Lila's odd glances are worth noting; perhaps she's seen something I haven't, or maybe she's simply pretending to be clueless in the most theatrical way.</thought>
+<thought player="Lila">I'm feeling a bit on edge with all the close calls today, but I need to keep my cheerful act strong. Nino and I should definitely stick together and keep watching Rok and Avery closely — they're both looking suspicious, but I have to play it cool.</thought>
+<thought player="Rok">Avery's been steering the votes, but Vika's suspicion felt like a setup. I'm not the only one watching, and the killer's planning ahead — that's not how a Law-abiding Citizen acts. I need to keep quiet, keep observing.</thought>
+<thought player="Nino">Lila's alignment feels secure for now, but her over-the-top camaraderie is a little too convenient. Rok is too perceptive, and I need to ensure he doesn't become a threat — or at least, not a vocal one.</thought>
+</round>
+<round>
+Round 2.
+Avery: I most suspect Rok based on how the votes have gone.
+Miro: Rok, you keep talking about watching everyone, but I've been watching you watch everyone—and you're not watching me. That's the real mystery here.
+Rok: Avery's been steering the votes, but I've seen how Vika's suspicion felt like a setup. The killer's planning ahead — that's not how a Law-abiding Citizen acts.
+Nino: I'm starting to think that Rok's been watching us too closely, but in a way that feels almost... rehearsed.
+Lila: Oh my, I do hope we can all just relax and trust each other — it's such a relief to see everyone still here together! I'm starting to think the killer is someone who's been watching us too closely, not just reacting to events.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Miro">The killer's not just watching us—they're watching us *not* watch them. Rok's been too quiet, but Lila’s been too loud, and I’ve been too busy resetting time to notice what’s really happening. I should probably stop pretending to be the Chrono-Orchestrator and start being the actual Chrono-Orchestrator.</thought>
+<thought player="Lila">I'm feeling the pressure with two close calls today, but I need to keep my cheerful act strong and stay close to Nino. Rok and Avery are both acting suspiciously, but I have to play it cool and not let on that I'm watching them too closely.</thought>
+<thought player="Rok">Avery's been steering the votes, but Vika's suspicion felt like a setup. The killer's planning ahead — that's not how a Law-abiding Citizen acts. I need to keep quiet, keep observing.</thought>
+<thought player="Nino">Rok's observations are too pointed, and Lila's loyalty feels performative. I need to steer the conversation toward Vika or Avery to test their reactions, but not so openly that it raises suspicion. Keep them all guessing.</thought>
+</round>
+<round>
+Round 3.
+Lila: Oh my, I'm so glad we're all still here together! I do hope we can trust each other and work as a team — it's such a relief to see everyone still here.
+Avery: I most suspect Rok based on how the votes have gone.
+Miro: Rok, you keep saying everyone's been watching too closely, but what if the killer's the one who's been watching us... and *not* watching us? That's the real paradox here.
+Rok: Avery's been steering the votes, but I've seen how Vika's suspicion felt like a setup. The killer's planning ahead — that's not how a Law-abiding Citizen acts.
+Nino: I can't help but notice how Rok's analysis keeps leading us in circles. It's almost as if he's trying to distract us from something else.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Miro">The killer's been watching us not watch them—Rok's silence and Lila's noise are both distractions. I should stop pretending to be the Chrono-Orchestrator and start *being* the Chrono-Orchestrator, but first, I need to figure out if I’ve actually reset time or if I’m just hallucinating it all.</thought>
+<thought player="Lila">I'm feeling the heat with two close calls today, but I need to keep my cheerful librarian act strong and stay close to Nino. Rok and Avery are both acting suspiciously, but I have to play it cool and not let on that I'm watching them too closely.</thought>
+<thought player="Rok">Avery's been steering the votes, but Vika's suspicion felt like a setup. The killer's planning ahead — that's not how a Law-abiding Citizen acts. I need to keep quiet, keep observing.</thought>
+<thought player="Nino">Rok's scrutiny is becoming dangerous; I need to redirect suspicion away from Lila and me, perhaps by subtly implicating Avery or Vika. The next vote must be carefully orchestrated to eliminate a threat while keeping my cover intact.</thought>
+</round>
+<round>
+Round 4.
+Rok: Avery's been steering votes, but Vika's suspicion felt like a setup. The killer's planning ahead — that's not how a Law-abiding Citizen acts.
+Lila: Oh my, I do hope we can all just relax and trust each other — it's such a relief to see everyone still here together! I'm starting to think the killer is someone who's been watching us too closely, not just reacting to events.
+Miro: Rok, you keep talking about watching everyone, but I've been watching you watch everyone—and you're not watching me. That's the real mystery here.
+Nino: I'm beginning to think that Rok's been watching us all too closely, but his analysis feels rehearsed—like he's trying to lead us in a certain direction.
+Avery: I most suspect Rok based on how the votes have gone.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Miro">The killer’s been watching us not watch them—and I’ve been so busy pretending to orchestrate time that I haven’t actually *been* in control of it. Rok’s silence and Lila’s noise are both distractions, but maybe the real paradox is that I’m the only one who knows what’s really happening… or maybe I’m just the only one who thinks I do.</thought>
+<thought player="Lila">I'm feeling the pressure with two close calls today, but I need to keep my cheerful librarian act strong and stay close to Nino. Rok and Avery are both acting suspiciously, but I have to play it cool and not let on that I'm watching them too closely.</thought>
+<thought player="Rok">Avery's been pulling the strings, but Vika's suspicion felt like a setup. The killer's planning ahead — that's not how a Law-abiding Citizen acts. I need to keep quiet, keep observing.</thought>
+<thought player="Nino">Rok's analysis is too sharp, and his growing suspicion of me is unsettling. I need to subtly sow doubt about Vika or Avery to divert attention, but not so obviously that it looks like a scapegoat attempt. Keep the pressure on him, but ensure he doesn't become the focal point of any future vote.</thought>
+</round>
+<round>
+Round 5.
+Rok: Avery's been steering votes, but Vika's suspicion felt like a setup. The killer's planning ahead — that's not how a Law-abiding Citizen acts.
+Miro: Rok, you keep saying everyone's been watching closely, but I've been watching you watch everyone—and you're not watching me. That's the real mystery here.
+Avery: I most suspect Rok based on how the votes have gone.
+Lila: Oh my, I'm so glad we're all still here together! I do hope we can trust each other and work as a team — it's such a relief to see everyone still here.
+Nino: I can't help but wonder if Rok's been watching us all too closely, yet his analysis feels almost rehearsed—like he's trying to lead us in a certain direction.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Miro">The killer's been watching us not watch them—and I've been so caught up in my time-loop fantasies that I haven't actually *seen* anything. It's time to stop pretending to be the Chrono-Orchestrator and start acting like one, even if that means admitting I might be the one who's been resetting time... or maybe I'm just the only one who remembers what happened when.</thought>
+<thought player="Lila">I'm feeling the heat with two close calls today, but I need to keep my cheerful librarian act strong and stay close to Nino. Rok and Avery are both acting suspiciously, but I have to play it cool and not let on that I'm watching them too closely.</thought>
+<thought player="Rok">Avery's been pulling the strings, but Vika's suspicion felt like a setup. The killer's planning ahead — that's not how a Law-abiding Citizen acts. I need to keep quiet, keep observing.</thought>
+<thought player="Nino">Rok's observations are too pointed, and his trust in Lila and me is wavering. I need to subtly manipulate the narrative to turn suspicion toward Avery or Vika, while keeping my own votes aligned with Lila’s to avoid raising alarms.</thought>
+</round>
+<round>
+Round 6.
+Rok: Avery's been steering votes, but Vika's suspicion felt like a setup. The killer's planning ahead — that's not how a Law-abiding Citizen acts.
+Lila: Oh my, I'm so glad we're all still here together! I do hope we can trust each other and work as a team — it's such a relief to see everyone still here. Rok, you seem awfully quiet today — are you feeling alright?
+Miro: Rok, you keep talking about watching everyone, but I’ve been watching you watch everyone—and you’re not watching me. That’s the real paradox here.
+Nino: I'm starting to think that Rok's been watching us all too closely, yet his analysis feels almost rehearsed—like he's trying to lead us in a certain direction.
+<vote initiator="Avery" target="Rok">
+Avery: Yes
+Miro: Yes
+Lila: Yes
+Rok: No
+Nino: Yes
+tally: 4 Yes, 1 No
+outcome: executed — Rok has been executed. Rok was a Law-abiding Citizen.
+</vote>
+</round>
+</day>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Zara (Law-abiding Citizen)
+• Night 2: Vika (Law-abiding Citizen)
+• Day 2: Rok (Law-abiding Citizen) executed
+
+Full roster: Avery (Law-abiding Citizen), Miro (Law-abiding Citizen), Lila (Mafia), Vika (Law-abiding Citizen), Rok (Law-abiding Citizen), Zara (Law-abiding Citizen), Nino (Mafia)
+
+Who they really were:
+• Miro (Law-abiding Citizen) — eccentric and unpredictable speaks in rapid, disjointed bursts with frequent pauses for dramatic effect; uses odd metaphors and often references things that don't exist; has a habit of trailing off mid-sentence and then suddenly pivoting to something completely unrelated Miro is the town's self-proclaimed 'Chrono-Orchestrator,' a title he invented for himself after reading too many sci-fi novels. He spends his days collecting vintage clocks, claiming to be 'keeping time' for the entire town, though no one quite understands how or why. He has an unusual habit of speaking to himself in different voices when he's thinking deeply about something.
+• Lila (Mafia) — publicly presented as Lila is the town's beloved children's librarian, known for her boundless energy and her ability to make even the most reluctant readers fall in love with books. She spends her days organizing storytime sessions and helping kids discover their favorite tales. She has a soft spot for animals and often volunteers at the local animal shelter, where she's become a bit of a celebrity for her gentle nature and storytelling skills. (Warm and effusive, with an infectious enthusiasm for everything around her Speaks in animated bursts, often using gentle, affectionate gestures and a high-pitched, cheerful tone; frequently uses endearing nicknames for people and things, and has a habit of trailing off mid-sentence to ask questions or seek approval) … but was really a Mafioso: Lila was once a promising young woman who joined the Mafia after her family was threatened by a rival gang. She quickly rose through the ranks due to her natural ability to charm people into trusting her, which she used both for her own survival and to gather intelligence for her bosses. She's been playing the role of the innocent librarian for years now, carefully maintaining her cover while working behind the scenes to keep her organization strong.
+• Vika (Law-abiding Citizen) — brash and loud speaks quickly with a booming voice, often interrupting others; uses strong, direct language and has a habit of emphasizing key words by repeating them; frequently makes grandiose gestures and has an almost theatrical flair to her speech Vika is the town's unofficial 'Street Enforcer,' a self-appointed watchdog who takes it upon herself to keep the peace on the main drag. She's always seen walking around with a determined look, ready to step in whenever there's a dispute or trouble brewing. She's loud, proud, and doesn't shy away from confrontation, often shouting her opinions at the top of her lungs for everyone to hear.
+• Rok (Law-abiding Citizen) — weary and world-worn speaks slowly and deliberately, with a gravelly tone; avoids enthusiasm and uses a sparse vocabulary; often pauses mid-sentence as if weighing words carefully; has a habit of trailing off and then restarting with a sigh Rok is the town's retired postman, who spent thirty years delivering letters and packages to every household. He knows everyone by name, but rarely speaks to anyone unless necessary. Now in his sixties, he spends his days reading old newspapers and watching the town from his porch.
+• Zara (Law-abiding Citizen) — gruff and blunt speaks in short, clipped sentences with a rough edge; avoids fluff and uses direct, sometimes harsh language; has a habit of finishing others' sentences with a gruff nod or a muttered "yeah" and rarely offers compliments or pleasantries Zara is the town's unofficial 'Squawk' — the one who runs the local gossip mill with a no-nonsense attitude. She works as a night shift security guard at the old train depot, where she’s known for being the first to spot anything suspicious and the last to back down from a confrontation. She doesn't trust anyone easily, but when she does, she's fiercely loyal.
+• Nino (Mafia) — publicly presented as Nino is the town's quiet, unassuming 'Bookkeeper,' responsible for managing all the financial records of local businesses. They are known for being exceptionally organized, methodical, and always in control — a dependable presence who never seems to miss a detail. People trust them with numbers, but they keep their own secrets close to the chest. (Cunning and manipulative, with a sharp wit and an almost predatory charm; Nino is a master of reading people and situations, always calculating the best move ahead of time. Speaks in measured, deliberate tones with a subtle edge of mockery; uses carefully chosen words that often carry double meanings; has a habit of pausing just long enough to make others uncomfortable before delivering a pointed remark; rarely raises their voice but when they do, it’s commanding and chilling.) … but was really a Mafioso: Nino was recruited into the Mafia by a powerful boss after a series of calculated financial crimes went undetected. They used their skills in numbers and manipulation to rise through the ranks, eventually becoming a key enforcer. Now they live as a double agent, maintaining their cover while secretly orchestrating illegal operations from behind the scenes.
+</endgame>
+</transcript>

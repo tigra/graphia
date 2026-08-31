@@ -1,0 +1,190 @@
+Game 42 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Wade" role="Mafia">
+Personality: Brash, confident, and always in control
+Manner: Speaks loudly and with authority, never hesitating in his words. Uses big gestures and a booming voice to dominate conversations.
+Public legend: Wade is a local construction foreman who's been building homes and businesses for over fifteen years. He's known around town for his hard work, honesty, and his ability to get things done. He's married with two kids and is a pillar of the community.
+True self (hidden): Wade was recruited into the Mafia after his older brother was killed in a gang war. He took over his brother's role to protect the family's interests and has been working his way up through the ranks, using his public identity to blend in while carrying out assignments for the organization.
+</player>
+<player name="Lea" role="Law-abiding Citizen">
+Personality: anxious and second-guessing
+Manner: speaks softly and hesitantly, often trailing off or repeating herself. Uses filler words like "uh," "well," and "I think" frequently. Pauses frequently to check her notes or rephrase thoughts.
+Persona: Lea is a nervous town librarian who has worked at the local library for eight years. She's known for being quiet, well-organized, and always double-checking facts. She lives alone with her cat, and spends most evenings reading or organizing books. She's deeply concerned about maintaining order in her small world.
+</player>
+<player name="Ming" role="Mafia">
+Personality: Cunning and manipulative, with a sharp wit and an unsettling calm
+Manner: Speaks in measured, deliberate tones with a slight drawl. Uses carefully chosen words and often pauses to let statements sink in. Never raises their voice, but their tone carries weight and authority. They often rephrase or reword what they've said to reinforce their point.
+Public legend: Ming is a respected local real estate agent who has been helping families find their dream homes for over a decade. Known for being exceptionally detail-oriented and patient, Ming takes pride in understanding each client's needs and presenting the perfect fit. They are methodical in their approach and always have a backup plan. Ming lives alone in a modest but well-kept house with a garden, where they spend weekends organizing property listings and reading market reports.
+True self (hidden): Ming was recruited into the Mafia by a powerful crime boss after a lucrative deal went sour. They were offered a choice between paying off massive debts or joining the organization. After years of careful manipulation, Ming has risen through the ranks, using their charm and business savvy to orchestrate complex schemes from within the town's respectable circles.
+</player>
+<player name="Zoe" role="Law-abiding Citizen">
+Personality: aloof and detached
+Manner: speaks in short, clipped sentences with a flat tone. rarely makes eye contact and often checks her phone or looks around the room while talking. uses formal vocabulary and avoids emotional expressions. pauses frequently as if weighing each word carefully.
+Persona: Zoe is a reclusive data analyst who works from home and rarely interacts with townspeople. She's known for her sharp attention to detail and methodical approach to problem-solving. Zoe lives alone in a small apartment filled with books and computers, where she spends her days analyzing patterns and trends. She has no visible ties to the community beyond her occasional trips to the grocery store.
+</player>
+<player name="Leo" role="Law-abiding Citizen">
+Personality: dreamy and distractible
+Manner: speaks in a soft, meandering tone with frequent pauses and gentle gestures. often trails off mid-sentence, then restarts with a different word or phrase. uses flowery vocabulary and metaphorical expressions. tends to look around the room while talking, occasionally forgetting what they were saying and having to backtrack.
+Persona: Leo is a dreamy, distractible artist who paints whimsical murals in the town's public spaces. He has an eccentric style that blends surreal elements with everyday scenes, often leaving people wondering if he's depicting reality or imagination. Leo lives in a small, cluttered studio apartment filled with half-finished canvases and colorful paintbrushes. He spends his days wandering the streets, sketching ideas that come to him, and rarely has a set schedule. Despite his scattered nature, he's deeply passionate about bringing beauty to his community through his work.
+</player>
+<player name="Ava" role="Law-abiding Citizen">
+Personality: prickly and easily-offended
+Manner: speaks with sharp, clipped delivery and a defensive tone. uses formal vocabulary but with a snappy edge. frequently interrupts others to correct them or assert her point. avoids eye contact and has a habit of adjusting her glasses when irritated. often sighs or rolls her eyes at what she considers foolish remarks.
+Persona: Ava is a meticulous townsperson who works as a local librarian's assistant, helping organize the community's books and records. She takes pride in her work and has a strong sense of order and propriety. Ava lives alone in a tidy, well-organized apartment filled with books, where she spends her evenings reading or organizing files. She's known for her sharp tongue and quick temper, often getting into small arguments over minor irritations.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Wade, Lea, Ming, Zoe, Leo, Ava. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Wade): Your Mafia teammates are: Ming. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Ming): Your Mafia teammates are: Wade. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Ming points at Zoe
+Wade points at Zoe
+<kill>Zoe — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Zoe was killed last night. Zoe was a Law-abiding Citizen.
+<round>
+Round 1.
+<vote initiator="Ava" target="Wade">
+Avery: No
+Wade: No
+Lea: Yes
+Ming: No
+Leo: Yes
+Ava: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Leo: I was just thinking about how Zoe's mural was so vivid, and now she's gone... it feels like the colors are fading from the town.
+Avery: Nothing is settled yet, but I'm watching Wade most closely.
+Ming: I think we all need to be more careful about who we trust. Wade's been acting a bit odd lately.
+Lea: Uh, I was just thinking... Wade seemed really surprised when Ava called for the vote, you know? Like he didn't expect it.
+<vote initiator="Ava" target="Wade">
+Avery: No
+Wade: No
+Lea: Yes
+Ming: No
+Leo: Yes
+Ava: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Ming: I agree with Lea — Wade did seem taken aback by the vote. It's odd that someone so composed would react that way.
+Wade: I didn't expect that vote either, Lea. But Wade's been acting strange ever since Zoe was killed — I think we should all be careful about who we trust.
+Ava: Wade, you keep saying everyone should be careful, but you're the one acting suspiciously. I'm not buying your surprise at the vote — you knew it was coming.
+Avery: Nothing is settled yet, but I'm watching Wade most closely.
+Leo: The way Wade's been talking, it's like he's trying to steer the conversation away from himself. I've noticed how he keeps shifting topics — maybe that's not just nervousness.
+<vote initiator="Lea" target="Wade">
+Avery: No
+Wade: No
+Lea: Yes
+Ming: No
+Leo: Yes
+Ava: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Ming points at Leo
+Wade points at Leo
+<kill>Leo — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Leo was killed last night. Leo was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: I most suspect Wade based on how the votes have gone.
+Ming: I think we're all feeling the pressure, but let's not let fear cloud our judgment. Wade's been acting strange, but that doesn't automatically make him guilty.
+<vote initiator="Lea" target="Wade">
+Avery: Yes
+Wade: No
+Lea: Yes
+Ming: No
+Ava: Yes
+tally: 3 Yes, 2 No
+outcome: executed — Wade has been executed. Wade was a Mafia.
+</vote>
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Wade was executed today and was revealed to be Mafia.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Ming points at Ava
+<kill>Ava — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Ava was killed last night. Ava was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: Wade was revealed to be Mafia. I most suspect Ming based on how the votes have gone.
+Ming: I think we're all still reeling from the losses, but we need to stay focused on who's truly behind this. I'm not convinced Avery's suspicions are pointing in the right direction.
+Lea: I think... I think Ming might be the next Mafia. He's been avoiding direct answers when we ask about the votes, and he seemed really calm about Wade being executed, which feels off.
+<recap>Day 3, 9 AM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lea">I think Ming seems suspicious, but I'm not entirely sure... uh, I hope I'm not jumping to conclusions. I should probably keep watching him more carefully before calling another vote.</thought>
+<thought player="Ming">The town is starting to suspect me, but I've managed to stay under the radar so far. I need to keep planting seeds of doubt in their minds without drawing too much attention. Lea seems to be getting closer to the truth, so I must redirect her suspicions.</thought>
+</round>
+<round>
+Round 2.
+Lea: I think Ming might be the next Mafia. He's been avoiding direct answers when we ask about the votes, and he seemed really calm about Wade being executed, which feels off.
+Ming: I think we're all feeling the weight of these losses, but Lea's suspicions seem a bit rushed. Ming's calmness could just be composure — I've seen him handle high-stress situations before.
+Avery: Wade was revealed to be Mafia. I most suspect Ming based on how the votes have gone.
+<recap>Day 3, 12 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lea">I think Ming does seem suspicious, but I'm still not entirely sure if he's the Mafia. I hope I'm not jumping to conclusions too quickly, but I should probably keep watching him more carefully before calling another vote.</thought>
+<thought player="Ming">The town's suspicion is shifting toward me, which is good—now I need to manipulate it further without exposing myself. Lea’s instincts are sharp, so I must keep her off-balance while appearing calm and collected. I should plant a subtle hint that Avery might be the real threat, redirecting their focus.</thought>
+</round>
+<round>
+Round 3.
+Ming: I think we're all being too quick to jump to conclusions. Avery's been rather evasive about Wade's behavior, and that seems significant.
+Avery: Wade was revealed to be Mafia. I most suspect Ming based on how the votes have gone.
+<vote initiator="Lea" target="Ming">
+Avery: Yes
+Lea: Yes
+Ming: No
+tally: 2 Yes, 1 No
+outcome: executed — Ming has been executed. Ming was a Mafia.
+</vote>
+</round>
+</day>
+<endgame>
+The Law-abiding Citizens have won.
+
+Events this game:
+• Night 1: Zoe (Law-abiding Citizen)
+• Night 2: Leo (Law-abiding Citizen)
+• Day 2: Wade (Mafia) executed
+• Night 3: Ava (Law-abiding Citizen)
+• Day 3: Ming (Mafia) executed
+
+Full roster: Avery (Law-abiding Citizen), Wade (Mafia), Lea (Law-abiding Citizen), Ming (Mafia), Zoe (Law-abiding Citizen), Leo (Law-abiding Citizen), Ava (Law-abiding Citizen)
+
+Who they really were:
+• Wade (Mafia) — publicly presented as Wade is a local construction foreman who's been building homes and businesses for over fifteen years. He's known around town for his hard work, honesty, and his ability to get things done. He's married with two kids and is a pillar of the community. (Brash, confident, and always in control Speaks loudly and with authority, never hesitating in his words. Uses big gestures and a booming voice to dominate conversations.) … but was really a Mafioso: Wade was recruited into the Mafia after his older brother was killed in a gang war. He took over his brother's role to protect the family's interests and has been working his way up through the ranks, using his public identity to blend in while carrying out assignments for the organization.
+• Lea (Law-abiding Citizen) — anxious and second-guessing speaks softly and hesitantly, often trailing off or repeating herself. Uses filler words like "uh," "well," and "I think" frequently. Pauses frequently to check her notes or rephrase thoughts. Lea is a nervous town librarian who has worked at the local library for eight years. She's known for being quiet, well-organized, and always double-checking facts. She lives alone with her cat, and spends most evenings reading or organizing books. She's deeply concerned about maintaining order in her small world.
+• Ming (Mafia) — publicly presented as Ming is a respected local real estate agent who has been helping families find their dream homes for over a decade. Known for being exceptionally detail-oriented and patient, Ming takes pride in understanding each client's needs and presenting the perfect fit. They are methodical in their approach and always have a backup plan. Ming lives alone in a modest but well-kept house with a garden, where they spend weekends organizing property listings and reading market reports. (Cunning and manipulative, with a sharp wit and an unsettling calm Speaks in measured, deliberate tones with a slight drawl. Uses carefully chosen words and often pauses to let statements sink in. Never raises their voice, but their tone carries weight and authority. They often rephrase or reword what they've said to reinforce their point.) … but was really a Mafioso: Ming was recruited into the Mafia by a powerful crime boss after a lucrative deal went sour. They were offered a choice between paying off massive debts or joining the organization. After years of careful manipulation, Ming has risen through the ranks, using their charm and business savvy to orchestrate complex schemes from within the town's respectable circles.
+• Zoe (Law-abiding Citizen) — aloof and detached speaks in short, clipped sentences with a flat tone. rarely makes eye contact and often checks her phone or looks around the room while talking. uses formal vocabulary and avoids emotional expressions. pauses frequently as if weighing each word carefully. Zoe is a reclusive data analyst who works from home and rarely interacts with townspeople. She's known for her sharp attention to detail and methodical approach to problem-solving. Zoe lives alone in a small apartment filled with books and computers, where she spends her days analyzing patterns and trends. She has no visible ties to the community beyond her occasional trips to the grocery store.
+• Leo (Law-abiding Citizen) — dreamy and distractible speaks in a soft, meandering tone with frequent pauses and gentle gestures. often trails off mid-sentence, then restarts with a different word or phrase. uses flowery vocabulary and metaphorical expressions. tends to look around the room while talking, occasionally forgetting what they were saying and having to backtrack. Leo is a dreamy, distractible artist who paints whimsical murals in the town's public spaces. He has an eccentric style that blends surreal elements with everyday scenes, often leaving people wondering if he's depicting reality or imagination. Leo lives in a small, cluttered studio apartment filled with half-finished canvases and colorful paintbrushes. He spends his days wandering the streets, sketching ideas that come to him, and rarely has a set schedule. Despite his scattered nature, he's deeply passionate about bringing beauty to his community through his work.
+• Ava (Law-abiding Citizen) — prickly and easily-offended speaks with sharp, clipped delivery and a defensive tone. uses formal vocabulary but with a snappy edge. frequently interrupts others to correct them or assert her point. avoids eye contact and has a habit of adjusting her glasses when irritated. often sighs or rolls her eyes at what she considers foolish remarks. Ava is a meticulous townsperson who works as a local librarian's assistant, helping organize the community's books and records. She takes pride in her work and has a strong sense of order and propriety. Ava lives alone in a tidy, well-organized apartment filled with books, where she spends her evenings reading or organizing files. She's known for her sharp tongue and quick temper, often getting into small arguments over minor irritations.
+</endgame>
+</transcript>

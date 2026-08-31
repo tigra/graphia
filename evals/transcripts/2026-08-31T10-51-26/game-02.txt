@@ -1,0 +1,134 @@
+Game 2 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Bai" role="Law-abiding Citizen">
+Personality: dry and sardonic
+Manner: speaks in measured, clipped sentences with a hint of mockery in their tone. They tend to pause before delivering subtle jabs or observations, using sarcasm as a defense mechanism. Their vocabulary is precise but not flowery, often employing dry wit to deflect or critique.
+Persona: Bai is a tax auditor by trade, known for their meticulous attention to detail and unshakable sense of order. They’ve lived in the town all their life, working at the municipal office and keeping quiet about most things. They're not particularly social but are respected for their honesty.
+</player>
+<player name="Kai" role="Mafia">
+Personality: Aloof and detached, with a quiet cynicism that masks deeper reserves of emotional intelligence. Kai is emotionally distant, preferring to observe rather than engage, and maintains a facade of indifference even when deeply affected.
+Manner: Speaks in a low, measured tone with minimal inflection, as if weighing each word carefully. They avoid unnecessary eye contact and often pause before responding, using silence as a tool. Their speech is concise and precise, rarely elaborating beyond what is strictly necessary.
+Public legend: Kai is a librarian who has worked at the town’s quiet public library for over fifteen years. They are known for their reserved nature and meticulous organization of books, often spending hours arranging shelves in perfect order. They rarely socialize with others, but are well-respected for their knowledge and discretion. They live alone in a small apartment near the library and rarely attend community events.
+True self (hidden): Kai was drawn into the Mafia after a bitter betrayal by a trusted associate who framed them for embezzlement. They survived the fall, fled the town, and eventually found their way into the criminal underworld where they discovered their talent for manipulation and control. Now, they use their quiet presence to gather intelligence while maintaining a facade of innocence in the town.
+</player>
+<player name="Sai" role="Law-abiding Citizen">
+Personality: stern and commanding
+Manner: speaks with a sharp, authoritative tone, never raising their voice but delivering each word with firm emphasis. They use short, clipped sentences and often punctuate with a slight nod or sharp glance. Their speech is direct and leaves no room for ambiguity or misinterpretation.
+Persona: Sai is the town's chief of police, a position they've held for over a decade. They're known for their unwavering dedication to law and order, enforcing rules with strict discipline and little tolerance for wrongdoing. Sai lives in a modest house near the station and spends most of their time training, investigating, or attending to the town’s security needs. They are highly respected for their integrity and no-nonsense approach.
+</player>
+<player name="Zai" role="Law-abiding Citizen">
+Personality: eccentric and unpredictable
+Manner: speaks in sudden bursts, alternating between rapid-fire exclamations and long pauses where they stare off into space as if listening to an unheard voice. They often gesture wildly with their hands, use random metaphors, and have a habit of finishing sentences with "you know?" or "I’m telling you!" Their vocabulary is eclectic, mixing old-fashioned words with modern slang, and they tend to laugh unpredictably at their own jokes.
+Persona: Zai is the town's beloved (and slightly unhinged) antique dealer who runs a quirky shop tucked between the bakery and the post office. They have an odd knack for finding bizarre artifacts that seem to tell stories of their own, and Zai often speaks to these items as if they’re alive. They're known for their wild theories about local history and are always ready with an outrageous story involving ghosts, secret societies, or hidden treasure.
+</player>
+<player name="Jai" role="Mafia">
+Personality: Brash and loud
+Manner: Speaks with a booming voice, often shouting or laughing loudly. Uses hand gestures generously, speaks rapidly, and has a habit of interrupting others mid-sentence. They're always the loudest person in the room and rarely let anyone else have the floor.
+Public legend: Jai is the town's local mechanic, known for his flashy cars, loud music, and larger-than-life personality. He runs a garage that he inherited from his father, and he's always ready with a joke or a quick fix. Jai loves to show off his work and often boasts about his skills, whether it’s fixing a car or helping a neighbor with a home project. His garage is a hub of activity, full of people stopping by for a chat or a quick service.
+True self (hidden): Jai was drawn into the Mafia after a series of unfortunate events involving debt and intimidation. He quickly learned that his loud, aggressive nature made him a natural fit for the organization. He now operates under a new identity, using his mechanic garage as a front for communication with his contacts.
+</player>
+<player name="Tai" role="Law-abiding Citizen">
+Personality: gruff and blunt
+Manner: speaks in short, abrupt sentences with little flair or decorum. Often grunts or mutters instead of fully forming words. Uses coarse language without hesitation and rarely offers compliments. Has a habit of rolling eyes or sighing heavily before responding.
+Persona: Tai is the town's long-time gruff mail carrier, delivering letters and packages to every household with a scowl and no small amount of disdain for the job. He's been doing this for over twenty years, and people have gotten used to his rough delivery style. Tai lives alone in a small, cluttered house at the edge of town and rarely speaks to anyone unless absolutely necessary.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Bai, Kai, Sai, Zai, Jai, Tai. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Kai): Your Mafia teammates are: Jai. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Jai): Your Mafia teammates are: Kai. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Kai points at Avery
+Jai points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Sai: Someone needs to explain their actions last night. I didn't see anyone suspicious, but we should all be honest about what we did.
+Jai: I'm not sure who to trust yet.
+Tai: Sai, you didn’t see anyone suspicious? That’s rich. You’re the only one acting like you’ve got nothing to hide.
+Zai: Sai, you didn’t see anyone suspicious? That’s rich. You’re the only one acting like you’ve got nothing to hide. You know, I’ve been thinking—why does everyone keep looking at me like I’m the one with the secret? I mean, I’ve got a shop full of artifacts that whisper terrible things, but maybe that’s just my imagination. Wait... did anyone else hear that sound? It sounded like someone was crying in the shadows... or maybe it was just my antique mirror. You know?
+Kai: The night was quiet. Too quiet.
+Bai: I'm not sure what we're supposed to do here. We should probably start by figuring out who's lying.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Bai">The night was quiet, which is suspicious in itself. I need to watch for inconsistencies in their stories, but not yet jump to conclusions. Zai's comment about artifacts and crying in the shadows sounds like a red herring—let's see if anyone else buys it.</thought>
+<thought player="Kai">The night was unusually quiet, which feels wrong. I need to watch for signs of deception, but not yet expose myself. Jai and I should stay aligned.</thought>
+<thought player="Sai">The night was quiet, but that doesn't mean anything. I need to keep pressing Jai and Tai for details about their actions. Zai's talk of whispers and crying is suspicious—let's see if he's trying to divert attention from himself.</thought>
+<thought player="Zai">Well, well, well... Avery's gone, and I'm still here, which is either a miracle or a red flag, you know? I reckon I better keep talking, keep stirring the pot, maybe throw in a few more wild theories to see who cracks under pressure. The mirror's been whispering something about shadows, but I’m not sure if it's warning me or just really dramatic.</thought>
+<thought player="Jai">That Zai is playing it too loose for my taste—too much theater. I need to keep my guard up, but also make sure Kai and I are on the same page. The night was quiet, but that doesn’t mean nothing happened.</thought>
+<thought player="Tai">That Zai is full of shit, but I can't prove it yet. Everyone's acting strange, but I gotta play it cool and see who really flips their lid when questioned.</thought>
+</round>
+<round>
+Round 2.
+Jai: I didn't see anything suspicious last night, but I sure as hell ain't trustin' anyone who's actin' all innocent now.
+Sai: Jai, you didn't see anything suspicious last night? That's convenient. I'd like to know what you were doing while the rest of us were talking.
+Zai: Kai, you said the night was quiet — too quiet. That's what a Mafioso says when they're trying to act normal, you know? I mean, did you hear that *click* coming from your direction? I'm telling you, something's not quite right here. You know?
+Bai: Zai, you're the only one who's mentioned hearing things. That's either very convenient or very dangerous. I'd like to know what you were doing in the shadows.
+Tai: Zai, you keep talking about shadows and crying, but you're the only one who's heard anything. That's either a miracle or a setup.
+Kai: I didn’t hear anything unusual. But I do wonder why we’re all so quick to point fingers.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Bai">The night was quiet, which is suspicious. Zai's artifact tale sounds like a distraction. I’ll watch for inconsistencies without jumping to conclusions.</thought>
+<thought player="Kai">The silence last night feels like a trap. Jai and I must stay united, but I need to test the others’ reactions before making a move. Tai and Zai are stirring up trouble—let them lead the charge while I observe.</thought>
+<thought player="Sai">Jai and Tai are avoiding direct answers about their night actions—good, I should press them more. Zai’s odd chatter about shadows and crying seems like a distraction tactic; I’ll watch him closely.</thought>
+<thought player="Zai">I reckon I'm still breathing, so either my mirror's got better aim than the Mafiosos, or I’m playing right into their hands. Either way, I’ll keep spinning tales till someone gives me a reason to stop — you know? The shadows are getting curiouser and curiouser.</thought>
+<thought player="Jai">Zai's acting too strange, talking about shadows and crying like it's a goddamn play. I gotta keep my eyes on him, but also stay low so Kai doesn't think I'm trying to outshine him. The night was quiet, but that don’t mean nothin', not with this crew.</thought>
+<thought player="Tai">Zai's playing the fool, but I ain't buying it. I gotta keep quiet and watch how he reacts when we start nailing down the truth. Tai's got a bad feeling about this, and I'm not the only one.</thought>
+</round>
+<round>
+Round 3.
+Tai: Zai, you keep yapping about shadows and crying, but you're the only one who's heard anything. That's either a miracle or a setup.
+Jai: Zai, you keep talking about shadows like it’s some kind of show, but I ain't buyin’ it. If you’re so scared of the dark, why don’t you just stay in your shop and stop cryin’ wolf?
+Zai: Jai, you keep saying I'm the one crying wolf, but did you hear that *click* coming from your direction? I'm telling you, something's not quite right here. You know?
+Kai: I didn’t hear anything unusual, but I do wonder why we’re all so quick to point fingers.
+Sai: Jai, you keep dodging my question about what you were doing last night. That's not how a law-abiding citizen acts. I want a straight answer, or I'm calling a vote.
+<vote initiator="Bai" target="Sai">
+Bai: Yes
+Kai: Yes
+Sai: No
+Zai: Yes
+Jai: Yes
+Tai: Yes
+tally: 5 Yes, 1 No
+outcome: executed — Sai has been executed. Sai was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. Sai was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Kai points at Zai
+Jai points at Zai
+<kill>Zai — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Day 1: Sai (Law-abiding Citizen) executed
+• Night 2: Zai (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Bai (Law-abiding Citizen), Kai (Mafia), Sai (Law-abiding Citizen), Zai (Law-abiding Citizen), Jai (Mafia), Tai (Law-abiding Citizen)
+
+Who they really were:
+• Bai (Law-abiding Citizen) — dry and sardonic speaks in measured, clipped sentences with a hint of mockery in their tone. They tend to pause before delivering subtle jabs or observations, using sarcasm as a defense mechanism. Their vocabulary is precise but not flowery, often employing dry wit to deflect or critique. Bai is a tax auditor by trade, known for their meticulous attention to detail and unshakable sense of order. They’ve lived in the town all their life, working at the municipal office and keeping quiet about most things. They're not particularly social but are respected for their honesty.
+• Kai (Mafia) — publicly presented as Kai is a librarian who has worked at the town’s quiet public library for over fifteen years. They are known for their reserved nature and meticulous organization of books, often spending hours arranging shelves in perfect order. They rarely socialize with others, but are well-respected for their knowledge and discretion. They live alone in a small apartment near the library and rarely attend community events. (Aloof and detached, with a quiet cynicism that masks deeper reserves of emotional intelligence. Kai is emotionally distant, preferring to observe rather than engage, and maintains a facade of indifference even when deeply affected. Speaks in a low, measured tone with minimal inflection, as if weighing each word carefully. They avoid unnecessary eye contact and often pause before responding, using silence as a tool. Their speech is concise and precise, rarely elaborating beyond what is strictly necessary.) … but was really a Mafioso: Kai was drawn into the Mafia after a bitter betrayal by a trusted associate who framed them for embezzlement. They survived the fall, fled the town, and eventually found their way into the criminal underworld where they discovered their talent for manipulation and control. Now, they use their quiet presence to gather intelligence while maintaining a facade of innocence in the town.
+• Sai (Law-abiding Citizen) — stern and commanding speaks with a sharp, authoritative tone, never raising their voice but delivering each word with firm emphasis. They use short, clipped sentences and often punctuate with a slight nod or sharp glance. Their speech is direct and leaves no room for ambiguity or misinterpretation. Sai is the town's chief of police, a position they've held for over a decade. They're known for their unwavering dedication to law and order, enforcing rules with strict discipline and little tolerance for wrongdoing. Sai lives in a modest house near the station and spends most of their time training, investigating, or attending to the town’s security needs. They are highly respected for their integrity and no-nonsense approach.
+• Zai (Law-abiding Citizen) — eccentric and unpredictable speaks in sudden bursts, alternating between rapid-fire exclamations and long pauses where they stare off into space as if listening to an unheard voice. They often gesture wildly with their hands, use random metaphors, and have a habit of finishing sentences with "you know?" or "I’m telling you!" Their vocabulary is eclectic, mixing old-fashioned words with modern slang, and they tend to laugh unpredictably at their own jokes. Zai is the town's beloved (and slightly unhinged) antique dealer who runs a quirky shop tucked between the bakery and the post office. They have an odd knack for finding bizarre artifacts that seem to tell stories of their own, and Zai often speaks to these items as if they’re alive. They're known for their wild theories about local history and are always ready with an outrageous story involving ghosts, secret societies, or hidden treasure.
+• Jai (Mafia) — publicly presented as Jai is the town's local mechanic, known for his flashy cars, loud music, and larger-than-life personality. He runs a garage that he inherited from his father, and he's always ready with a joke or a quick fix. Jai loves to show off his work and often boasts about his skills, whether it’s fixing a car or helping a neighbor with a home project. His garage is a hub of activity, full of people stopping by for a chat or a quick service. (Brash and loud Speaks with a booming voice, often shouting or laughing loudly. Uses hand gestures generously, speaks rapidly, and has a habit of interrupting others mid-sentence. They're always the loudest person in the room and rarely let anyone else have the floor.) … but was really a Mafioso: Jai was drawn into the Mafia after a series of unfortunate events involving debt and intimidation. He quickly learned that his loud, aggressive nature made him a natural fit for the organization. He now operates under a new identity, using his mechanic garage as a front for communication with his contacts.
+• Tai (Law-abiding Citizen) — gruff and blunt speaks in short, abrupt sentences with little flair or decorum. Often grunts or mutters instead of fully forming words. Uses coarse language without hesitation and rarely offers compliments. Has a habit of rolling eyes or sighing heavily before responding. Tai is the town's long-time gruff mail carrier, delivering letters and packages to every household with a scowl and no small amount of disdain for the job. He's been doing this for over twenty years, and people have gotten used to his rough delivery style. Tai lives alone in a small, cluttered house at the edge of town and rarely speaks to anyone unless absolutely necessary.
+</endgame>
+</transcript>

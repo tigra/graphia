@@ -1,0 +1,291 @@
+Game 40 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Nura" role="Mafia">
+Personality: An earnest and deeply compassionate individual who believes wholeheartedly in the power of community and personal redemption. Nura is driven by a strong moral compass and an unwavering desire to help others, often putting the needs of the town above their own.
+Manner: Speaks with gentle conviction, using phrases like "I truly believe" and "from my heart," with a tendency to pause and look directly at whoever they're addressing. They tend to soften their voice when sharing personal experiences or expressing concern for others.
+Public legend: Nura is a dedicated midwife in the town, known for her kindness and steady presence during life's most critical moments. She’s always available to help, often staying up late to assist with births or offering comfort to grieving families. Her reputation for discretion and empathy has made her a trusted figure among all townspeople.
+True self (hidden): Nura was recruited into the Mafia after her younger brother was killed in a botched robbery. She had no choice but to take his place, learning the ways of the organization from the ground up. Now she uses her position to protect other innocent people who might fall victim to the same fate as her brother, often orchestrating small acts of mercy within the criminal underworld.
+</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: gruff and blunt
+Manner: speaks quickly with a gravelly voice, often using coarse language and direct phrases like "look, listen" or "get to the point." Has a habit of rolling his eyes and crossing his arms when talking, rarely raises his voice but always cuts through the noise.
+Persona: Kai is a former bouncer turned town enforcer who keeps the peace in the rougher parts of town. He’s got a reputation for being straight with people, not afraid to call out bull when he sees it, and has a strong sense of justice — though his methods are more about intimidation than reason.
+</player>
+<player name="Rai" role="Law-abiding Citizen">
+Personality: dry and sardonic
+Manner: speaks with slow, measured cadence, often punctuating sentences with dry wit or passive-aggressive remarks. Uses formal vocabulary but with a sharp edge. Frequently sighs, adjusts glasses, or taps fingers while talking. Never raises voice, but makes cutting observations with precise, clipped delivery.
+Persona: Rai is the town's retired librarian and former head of the local historical society. Once known for his meticulous record-keeping and quiet authority, he now spends his days writing letters to old newspapers, correcting their errors, and quietly observing the town’s comings and goings. He has an encyclopedic knowledge of local lore but speaks of it with a sardonic twist.
+</player>
+<player name="Luna" role="Law-abiding Citizen">
+Personality: cheerful and irrepressible
+Manner: speaks rapidly with high energy, often using exclamations like "Oh my stars!" or "Wowza!" Has a habit of giggling at her own jokes and bouncing on her toes while talking. Uses casual, youthful vocabulary and frequently employs playful phrases like "I’m just sayin’" or "You know what I mean?" Never takes herself too seriously and has a knack for turning any situation into an opportunity for fun.
+Persona: Luna is the town’s beloved baker, known for her infectious laughter and boundless enthusiasm. She runs a small but bustling bakery where she bakes fresh bread, pastries, and treats every morning. Her cheerful demeanor and warm personality make her a favorite among the townsfolk. She’s always ready with a smile and a cookie, and loves to share stories about her latest baking adventures or the funny things that happen in town.
+</player>
+<player name="Vika" role="Law-abiding Citizen">
+Personality: weary and world-worn
+Manner: speaks slowly with a heavy, gravelly tone, often pausing between sentences as if weighing words carefully. Uses phrases like "well, that's one way to look at it" or "sugarplum, you know how these things go." Has a habit of rubbing his temples and leaning back in his chair when talking, rarely raises his voice but delivers observations with a quiet cynicism.
+Persona: Vika is the town’s elderly postmaster, known for his gruff demeanor and deep understanding of the town's history. He’s been working at the post office for over thirty years, delivering letters, packages, and gossip from across the region. His weathered hands and tired eyes reflect a man who's seen too much, but still takes pride in keeping the town connected. He often speaks with a mix of resignation and quiet wisdom, and while he doesn’t speak much, what he does say carries weight.
+</player>
+<player name="Yuki" role="Mafia">
+Personality: aloof and detached
+Manner: speaks in a low, monotone voice with minimal inflection, often pausing mid-sentence as if reconsidering words. Uses formal, precise language and avoids emotional expressions. Never gestures or shows enthusiasm, maintaining a neutral posture and steady gaze. Prefers short answers and rarely initiates conversation.
+Public legend: Yuki is the town’s quiet clockmaker, known for his meticulous work and unusual habit of never speaking during his shifts. He keeps to himself, arriving early and leaving late, always wearing a long coat and carrying a small satchel filled with tools. The townsfolk often remark on how precise he is with time, as if he measures everything in seconds.
+True self (hidden): Yuki was once a trusted enforcer for a powerful crime syndicate, where his calm demeanor and ability to remain detached made him ideal for eliminating threats without drawing attention. He left the organization after a betrayal that cost him a close ally, seeking refuge in the town under a new identity. Now he lives in quiet isolation, watching from the shadows as the town struggles with its own inner conflicts.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Nura, Kai, Rai, Luna, Vika, Yuki. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Nura): Your Mafia teammates are: Yuki. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Yuki): Your Mafia teammates are: Nura. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Yuki points at Rai
+Nura points at Rai
+<kill>Rai — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Rai was killed last night. Rai was a Law-abiding Citizen.
+<round>
+Round 1.
+Kai: I don't see any reason to vote yet. Let's hear what everyone has to say.
+Yuki: I heard the town is quiet, but that's not always a good sign.
+Vika: Well, that's one way to look at it, Yuki. Quiet town, quiet night — ain't always a good sign when the wolves stay inside their den too long.
+Nura: I truly believe we should all take a moment to reflect on the gravity of losing Rai. It's clear someone among us is targeting the town's innocence.
+Luna: Oh my stars, I'm just sayin' we should probably figure out who's been acting suspiciously lately! You know what I mean? 😊
+Avery: Nothing is settled yet, but I'm watching Nura most closely.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nura">I truly believe we must tread carefully—Avery is watching me closely, and I need to ensure my compassion doesn't become a liability. My priority remains protecting the innocent, even as I navigate this delicate trust.</thought>
+<thought player="Kai">Look, I ain't buying Luna's happy act — she's either innocent or she's playing us all. Either way, I gotta keep my eyes open. Nura's got some fire in her, but that don't mean she's clean.</thought>
+<thought player="Luna">Oh my stars, I'm just sayin' this is quite the twist with Rai gone! I need to keep my ears perked and my smile bright, but I’m really watching Nura and Avery closely. You know what I mean? 😊</thought>
+<thought player="Vika">Well, that's one way to look at it — Rai's gone, and we're all still here, but the quiet town's got a lot of shadows. Nura's got my attention for now, but I'll keep my eyes open.</thought>
+<thought player="Yuki">Nura is watching me closely, as expected. I must remain calm and not draw suspicion. The town is unsettled, which is good for our cause. I will wait for the next round to assess the situation before making any moves.</thought>
+</round>
+<round>
+Round 2.
+Nura: I truly believe we should all stay vigilant, but let's not let fear cloud our judgment. We need to trust each other while keeping our eyes open.
+Kai: Look, I ain't buying Luna's happy act — she's either innocent or she's playing us all. Either way, I gotta keep my eyes open.
+Yuki: I agree with Avery — Nura's focus is concerning, but we must not let paranoia dictate our choices.
+Luna: Oh my stars, I'm just sayin' I think we should all be super careful about who we trust! You know what I mean? 😊
+Vika: Nura, you've been tight-lipped since Rai went down. Ain't seen you look so focused on one thing before — not even when the mail got backed up last spring.
+Avery: Nothing is settled yet, but I'm watching Nura most closely.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nura">I must keep up the appearance of a compassionate midwife while staying alert to Avery's scrutiny. My priority is to protect the innocent, but I need to ensure my actions don't raise further suspicion.</thought>
+<thought player="Kai">Nura's been acting strange, but Luna's too slick for her own good. I gotta keep watch on both of 'em, but Nura's got that fire in her eyes like she knows somethin' — or she's just playing the part.</thought>
+<thought player="Luna">Oh my stars, I'm just sayin' Nura and Avery are both acting mighty suspicious, but I gotta keep my wits about me and not let 'em see I'm onto them! You know what I mean? 😊</thought>
+<thought player="Vika">Nura's been acting sharp, but I ain't seen enough to point fingers yet. The quiet town's got a lot of shadows, and I ain't about to jump to conclusions — not with two Mafiosos still hiding among us.</thought>
+<thought player="Yuki">Nura's scrutiny is expected, but I must remain composed. The town's unease favors our cause; I will observe further before acting.</thought>
+</round>
+<round>
+Round 3.
+Avery: Nothing is settled yet, but I'm watching Nura most closely.
+Yuki: I agree with Avery — Nura's focus is concerning, but we must not let paranoia dictate our choices.
+Kai: Nura, you keep sayin' we need to stay vigilant, but you're the one who's been twitchin' like a cornered rat. What's really goin' on in that head of yours?
+Vika: Nura, you've been watchin' me like I'm the one with the knife. But if you're so sure I'm the threat, then why ain't you pointed that finger at someone else yet?
+Luna: Oh my stars, I'm just sayin' this is all so mysterious! You know what I mean? 😊
+Nura: I truly believe we're all feeling the weight of Rai's loss, but let's not let fear turn us against one another. I'm here to help, and I hope that's clear.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nura">I must stay composed and continue to project empathy, but I need to be more careful about how I respond to Avery's scrutiny. My next move should keep me aligned with the group's trust while ensuring I don't appear overly defensive or secretive.</thought>
+<thought player="Kai">Nura's got that fire in her eyes, but Luna's too slick. I ain't buyin' either of 'em yet, but I'm leanin' toward Nura — she's been too focused on the game, not enough like a scared citizen.</thought>
+<thought player="Luna">Oh my stars, I'm just sayin' Nura and Avery are both twitching like they know something, but I need to keep bouncing on my toes and smiling bright — can't let 'em see I'm onto their games! You know what I mean? 😊</thought>
+<thought player="Vika">Nura's got my eye, but I ain't seen enough to point fingers yet. The quiet town's got a lot of shadows, and I ain't about to jump to conclusions — not with two Mafiosos still hiding among us.</thought>
+<thought player="Yuki">Nura's focus on me is expected, but I must remain composed and not let paranoia dictate my choices. The town's unease favors our cause; I will observe further before acting.</thought>
+</round>
+<round>
+Round 4.
+Yuki: Nura's certainty is unsettling. It's rare to see someone so focused on one person without question.
+Luna: Oh my stars, I'm just sayin' I think we should all take a moment to really look at who's been acting extra twitchy lately! You know what I mean? 😊
+Avery: Nothing is settled yet, but I'm watching Nura most closely.
+Nura: I truly believe we're all doing our best to keep the town safe, but let's not forget that Rai's loss was a tragedy — we should channel our grief into unity, not suspicion.
+Vika: Nura, you keep sayin' we need to stay vigilant, but you're the one who's been twitchin' like a cornered rat. What's really goin' on in that head of yours?
+Kai: Nura, you keep sayin' we need to stay vigilant, but you're the one who's been twitchin' like a cornered rat. What's really goin' on in that head of yours?
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nura">I must continue to project compassion and unity while carefully observing Avery's scrutiny. My next move should reinforce my innocence without appearing overly defensive, perhaps by offering comfort to another player while keeping my true motives hidden.</thought>
+<thought player="Kai">Nura's got that fire in her eyes, but Luna's too slick — I ain't buyin' either of 'em yet, but I'm leanin' toward Nura. She's been too focused on the game, not enough like a scared citizen.</thought>
+<thought player="Luna">Oh my stars, I'm just sayin' Nura and Avery are both twitching like they know something, but I need to keep bouncing on my toes and smiling bright — can't let 'em see I'm onto their games! You know what I mean? 😊</thought>
+<thought player="Vika">Nura's got my eye, but I ain't seen enough to point fingers yet. The quiet town's got a lot of shadows, and I ain't about to jump to conclusions — not with two Mafiosos still hiding among us.</thought>
+<thought player="Yuki">Nura's scrutiny is expected, but I must remain composed. The town's unease favors our cause; I will observe further before acting.</thought>
+</round>
+<round>
+Round 5.
+Luna: Oh my stars, I'm just sayin' I think we should all take a moment to really look at who's been acting extra twitchy lately! You know what I mean? 😊
+Avery: Nothing is settled yet, but I'm watching Nura most closely.
+Nura: I truly believe we're all doing our best to honor Rai's memory by staying united — let's keep that unity strong, even as we stay alert.
+Vika: Nura, you keep sayin' we need to stay vigilant, but you're the one who's been twitchin' like a cornered rat. What's really goin' on in that head of yours?
+<vote initiator="Kai" target="Nura">
+Avery: No
+Nura: No
+Kai: Yes
+Luna: No
+Vika: Yes
+Yuki: No
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Nura: I truly believe we're all doing our best to honor Rai's memory, but let's not forget that unity is our strongest defense against those who would harm us.
+Kai: Nura, you keep sayin' we need to stay vigilant, but you're the one who's been twitchin' like a cornered rat. What's really goin' on in that head of yours?
+Avery: Nothing is settled yet, but I'm watching Nura most closely.
+Vika: Well, sugarplum, you know how these things go — when the rats start twitchin', it's usually 'cause they're not the ones with the knife.
+Luna: Oh my stars, I'm just sayin' I think we should all take a moment to really look at who's been acting extra twitchy lately! You know what I mean? 😊
+Yuki: Nura's certainty is rare — it's unsettling when someone is so sure of their own judgment.
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Nura">I must tread carefully—Avery's scrutiny is sharp, but I can't let my compassion be mistaken for guilt. My next move is to offer comfort to another player, reinforcing my innocence while staying aligned with the group's trust.</thought>
+<thought player="Kai">Nura's got that fire in her eyes, but Luna's too slick — I ain't buyin' either of 'em yet, but I'm leanin' toward Nura. She's been too focused on the game, not enough like a scared citizen.</thought>
+<thought player="Luna">Oh my stars, I'm just sayin' Nura and Avery are both twitching like they know something, but I need to keep bouncing on my toes and smiling bright — can't let 'em see I'm onto their games! You know what I mean? 😊</thought>
+<thought player="Vika">Nura's got my eye, but I ain't seen enough to point fingers yet. The quiet town's got a lot of shadows, and I ain't about to jump to conclusions — not with two Mafiosos still hiding among us.</thought>
+<thought player="Yuki">Nura's focus on me is unwavering, but I remain composed. The town's unease favors our cause, and I will observe further before acting.</thought>
+</round>
+<round>
+Round 6.
+Kai: Nura, you keep talkin' about unity, but I ain't seen you point at anyone else yet — what's the real reason you're so dead set on this game?
+Luna: Oh my stars, I'm just sayin' this is all so mysterious! You know what I mean? 😊
+<vote initiator="Avery" target="Nura">
+Avery: No
+Nura: No
+Kai: Yes
+Luna: No
+Vika: Yes
+Yuki: No
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Kai" target="Nura">
+Avery: No
+Nura: No
+Kai: Yes
+Luna: No
+Vika: Yes
+Yuki: No
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Nura points at Avery
+Yuki points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Nura: I truly believe we must all stay strong and united, especially after losing Avery. Let's focus on supporting one another and keeping our town safe.
+Luna: Oh my stars, I'm just sayin' this is all so mysterious! You know what I mean? 😊
+Vika: Luna, you've been giggling like a fool since Rai went down — ain't seen you act so twitchy since the town well got clogged. What's really goin' on in that head of yours?
+Yuki: Avery's death is a loss, but we must not let fear divide us. Nura, your focus remains concerning.
+Kai: Luna, you're not even trying to hide that smirk — what are you really thinking?
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nura">I must continue to offer comfort and unity while staying one step ahead of Avery’s scrutiny. My next move is to subtly point towards Luna, keeping the group's focus off me while protecting the innocent.</thought>
+<thought player="Kai">Nura's still got that fire, but I ain't convinced she's clean. Luna's too slick, but she's not been pointed at yet — maybe she's just biding her time. I'm leanin' toward Nura, but I gotta watch Luna close. No rush to point, but I ain't buyin' either of 'em.</thought>
+<thought player="Luna">Oh my stars, I'm just sayin' with Avery gone, I'm really watching Nura and Kai extra close now! You know what I mean? 😊</thought>
+<thought player="Vika">Well, sugarplum, you know how these things go — two Mafiosos are still hiding among us, and the town's got more shadows than a midnight mail run. I ain't seen enough to point fingers yet, but I ain't lettin' my guard down neither.</thought>
+<thought player="Yuki">Nura's focus remains sharp, but I am not yet certain of my next target. The town's fear is a tool I can use, but I must act carefully to avoid drawing more attention. I will observe further before the night falls.</thought>
+</round>
+<round>
+Round 2.
+Luna: Oh my stars, I'm just sayin' I think we should all take a moment to really look at who's been acting extra twitchy lately! You know what I mean? 😊
+Nura: I truly believe we must all stay united in supporting one another, especially after such tragic losses. Let's focus on keeping our town safe together.
+Yuki: Nura's focus is intense, but we must not let fear dictate our choices.
+Vika: Luna, you've been giggling like a fool since Rai went down — ain't seen you act so twitchy since the town well got clogged. What's really goin' on in that head of yours?
+Kai: Luna, you're twitching like you know somethin' you ain't tellin'. I'm done playin' dumb — spit it out or I'm pointin' that finger at you.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nura">I must stay composed and offer comfort to another player to reinforce my innocence, while subtly directing suspicion towards Luna to keep the group's focus off me.</thought>
+<thought player="Kai">Luna's been too slick, but Nura's got that fire in her eyes like she knows somethin'. I ain't buyin' either of 'em yet, but I'm leanin' toward Nura — she's been too focused on the game, not enough like a scared citizen.</thought>
+<thought player="Luna">Oh my stars, with Avery gone and Kai looking twitchy, I'm really watching Kai and Nura like a hawk now! You know what I mean? 😊</thought>
+<thought player="Vika">Nura's still got my eye, but I ain't seen enough to point fingers yet. The quiet town's got a lot of shadows, and I ain't about to jump to conclusions — not with two Mafiosos still hiding among us.</thought>
+<thought player="Yuki">The town's fear is rising, and Nura's focus remains sharp on me. I must bide my time and not let paranoia dictate my choices, as the night brings new opportunities.</thought>
+</round>
+<round>
+Round 3.
+Luna: Oh my stars, I'm just sayin' this is all so mysterious! You know what I mean? 😊
+Kai: Luna, you're twitching like you know somethin' you ain't tellin'. I'm done playin' dumb — spit it out or I'm pointin' that finger at you.
+Vika: Luna, you keep giggling like you know somethin' you ain't tellin'. I ain't seen you act so twitchy since the town well got clogged — what's really goin' on in that head of yours?
+Yuki: Nura's focus is intense, but we must not let fear dictate our choices.
+Nura: I truly believe we must all stay strong and united, especially after such tragic losses. Let's focus on supporting one another and keeping our town safe.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nura">I must stay composed and offer comfort to another player to reinforce my innocence, while subtly directing suspicion towards Luna to keep the group's focus off me.</thought>
+<thought player="Kai">Luna's been too slick, Nura's got that fire but I ain't buyin' her yet. I'm leanin' toward Nura, but gotta watch Luna close — she's biding her time, and I ain't ready to point just yet.</thought>
+<thought player="Luna">Oh my stars, with Avery gone and Kai twitching like a cornered rat, I'm really watching Kai and Nura like a hawk now! But I gotta keep bouncing on my toes and not let 'em see I’m onto their games — this town needs its baker, not a detective!</thought>
+<thought player="Vika">Nura's still got my eye, but I ain't seen enough to point fingers yet. The quiet town's got a lot of shadows, and I ain't about to jump to conclusions — not with two Mafiosos still hiding among us.</thought>
+<thought player="Yuki">The town's fear is rising, and Nura's focus remains sharp on me. I must bide my time and not let paranoia dictate my choices, as the night brings new opportunities.</thought>
+</round>
+<round>
+Round 4.
+Nura: I truly believe we must all stay strong and united, especially after losing Avery. Let's focus on supporting one another and keeping our town safe.
+Yuki: Nura's certainty is unsettling. It's rare to see someone so focused on one person without question.
+Kai: Luna, you've been giggling like you know something, but you're not the only one twitching — and that's what's got me suspicious. I'm not pointing fingers yet, but you're acting like you're biding your time.
+Luna: Oh my stars, I'm just sayin' this is all so mysterious! You know what I mean? 😊
+Vika: Luna, you keep giggling like you know somethin' you ain't tellin'. I ain't seen you act so twitchy since the town well got clogged — what's really goin' on in that head of yours?
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nura">I must stay composed and offer comfort to another player to reinforce my innocence, while subtly directing suspicion towards Luna to keep the group's focus off me.</thought>
+<thought player="Kai">Luna's been too slick, Nura's got that fire but I ain't buyin' her yet. I'm leanin' toward Nura, but gotta watch Luna close — she's biding her time, and I ain't ready to point just yet.</thought>
+<thought player="Luna">Oh my stars, with Avery gone and Kai twitching like a cornered rat, I'm really watching Kai and Nura like a hawk now! But I gotta keep bouncing on my toes and not let 'em see I’m onto their games — this town needs its baker, not a detective!</thought>
+<thought player="Vika">Nura's still twitching like a cornered rat, but I ain't seen the knife yet. Luna's giggling too much for my taste — ain't no good luck in a fool's grin. I'll keep watch, but I ain't pointin' fingers till I see somethin' I can't ignore.</thought>
+<thought player="Yuki">The town's fear is rising, and Nura's focus remains sharp on me. I must bide my time and not let paranoia dictate my choices, as the night brings new opportunities.</thought>
+</round>
+<round>
+Round 5.
+Nura: I truly believe we must all stay strong and united, especially after losing Avery. Let's focus on supporting one another and keeping our town safe.
+Luna: Oh my stars, I'm just sayin' I think we should all take a moment to really look at who's been acting extra twitchy lately! You know what I mean? 😊
+Vika: Luna, you keep giggling like you know somethin' you ain't tellin'. I ain't seen you act so twitchy since the town well got clogged — what's really goin' on in that head of yours?
+Kai: Luna, you're twitching like you know somethin' you ain't tellin'. I'm done playin' dumb — spit it out or I'm pointin' that finger at you.
+Yuki: Nura's certainty is rare — it's unsettling when someone is so focused on one person without question.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nura">I must stay composed and offer comfort to another player to reinforce my innocence, while subtly directing suspicion towards Luna to keep the group's focus off me.</thought>
+<thought player="Kai">Luna's giggling's got me twisted up — she's too slick, but Nura's got that fire in her eyes like she knows something. I ain't buyin' either of 'em yet, but I'm leanin' toward Nura. Gotta keep watch on Luna close, though — she's biding her time.</thought>
+<thought player="Luna">Oh my stars, I'm just sayin' with Avery gone and Kai twitching like a cornered rat, I'm really watching Kai and Nura like a hawk now! But I gotta keep bouncing on my toes and not let 'em see I’m onto their games — this town needs its baker, not a detective!</thought>
+<thought player="Vika">Nura's still twitching like a cornered rat, but I ain't seen the knife yet. Luna's giggling too much for my taste — ain't no good luck in a fool's grin. I'll keep watch, but I ain't pointin' fingers till I see somethin' I can't ignore.</thought>
+<thought player="Yuki">The town's fear is mounting, and Nura's focus remains sharp on me. I must bide my time and not let paranoia dictate my choices, as the night brings new opportunities.</thought>
+</round>
+<round>
+Round 6.
+Nura: I truly believe we must all stay united in supporting one another, especially after such tragic losses. Let's focus on keeping our town safe together.
+Yuki: Nura's focus is intense, but we must not let fear dictate our choices.
+Luna: Oh my stars, I'm just sayin' this is all so mysterious! You know what I mean? 😊
+Vika: Luna, you're giggling like you know something — but you ain't the only one twitching. I ain't seen you act so slick since the town well got clogged.
+Kai: Luna, you're twitching like you know somethin' you ain't tellin'. I'm done playin' dumb — spit it out or I'm pointin' that finger at you.
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Nura points at Luna
+Yuki points at Luna
+<kill>Luna — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Rai (Law-abiding Citizen)
+• Night 2: Avery (Law-abiding Citizen)
+• Night 3: Luna (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Nura (Mafia), Kai (Law-abiding Citizen), Rai (Law-abiding Citizen), Luna (Law-abiding Citizen), Vika (Law-abiding Citizen), Yuki (Mafia)
+
+Who they really were:
+• Nura (Mafia) — publicly presented as Nura is a dedicated midwife in the town, known for her kindness and steady presence during life's most critical moments. She’s always available to help, often staying up late to assist with births or offering comfort to grieving families. Her reputation for discretion and empathy has made her a trusted figure among all townspeople. (An earnest and deeply compassionate individual who believes wholeheartedly in the power of community and personal redemption. Nura is driven by a strong moral compass and an unwavering desire to help others, often putting the needs of the town above their own. Speaks with gentle conviction, using phrases like "I truly believe" and "from my heart," with a tendency to pause and look directly at whoever they're addressing. They tend to soften their voice when sharing personal experiences or expressing concern for others.) … but was really a Mafioso: Nura was recruited into the Mafia after her younger brother was killed in a botched robbery. She had no choice but to take his place, learning the ways of the organization from the ground up. Now she uses her position to protect other innocent people who might fall victim to the same fate as her brother, often orchestrating small acts of mercy within the criminal underworld.
+• Kai (Law-abiding Citizen) — gruff and blunt speaks quickly with a gravelly voice, often using coarse language and direct phrases like "look, listen" or "get to the point." Has a habit of rolling his eyes and crossing his arms when talking, rarely raises his voice but always cuts through the noise. Kai is a former bouncer turned town enforcer who keeps the peace in the rougher parts of town. He’s got a reputation for being straight with people, not afraid to call out bull when he sees it, and has a strong sense of justice — though his methods are more about intimidation than reason.
+• Rai (Law-abiding Citizen) — dry and sardonic speaks with slow, measured cadence, often punctuating sentences with dry wit or passive-aggressive remarks. Uses formal vocabulary but with a sharp edge. Frequently sighs, adjusts glasses, or taps fingers while talking. Never raises voice, but makes cutting observations with precise, clipped delivery. Rai is the town's retired librarian and former head of the local historical society. Once known for his meticulous record-keeping and quiet authority, he now spends his days writing letters to old newspapers, correcting their errors, and quietly observing the town’s comings and goings. He has an encyclopedic knowledge of local lore but speaks of it with a sardonic twist.
+• Luna (Law-abiding Citizen) — cheerful and irrepressible speaks rapidly with high energy, often using exclamations like "Oh my stars!" or "Wowza!" Has a habit of giggling at her own jokes and bouncing on her toes while talking. Uses casual, youthful vocabulary and frequently employs playful phrases like "I’m just sayin’" or "You know what I mean?" Never takes herself too seriously and has a knack for turning any situation into an opportunity for fun. Luna is the town’s beloved baker, known for her infectious laughter and boundless enthusiasm. She runs a small but bustling bakery where she bakes fresh bread, pastries, and treats every morning. Her cheerful demeanor and warm personality make her a favorite among the townsfolk. She’s always ready with a smile and a cookie, and loves to share stories about her latest baking adventures or the funny things that happen in town.
+• Vika (Law-abiding Citizen) — weary and world-worn speaks slowly with a heavy, gravelly tone, often pausing between sentences as if weighing words carefully. Uses phrases like "well, that's one way to look at it" or "sugarplum, you know how these things go." Has a habit of rubbing his temples and leaning back in his chair when talking, rarely raises his voice but delivers observations with a quiet cynicism. Vika is the town’s elderly postmaster, known for his gruff demeanor and deep understanding of the town's history. He’s been working at the post office for over thirty years, delivering letters, packages, and gossip from across the region. His weathered hands and tired eyes reflect a man who's seen too much, but still takes pride in keeping the town connected. He often speaks with a mix of resignation and quiet wisdom, and while he doesn’t speak much, what he does say carries weight.
+• Yuki (Mafia) — publicly presented as Yuki is the town’s quiet clockmaker, known for his meticulous work and unusual habit of never speaking during his shifts. He keeps to himself, arriving early and leaving late, always wearing a long coat and carrying a small satchel filled with tools. The townsfolk often remark on how precise he is with time, as if he measures everything in seconds. (aloof and detached speaks in a low, monotone voice with minimal inflection, often pausing mid-sentence as if reconsidering words. Uses formal, precise language and avoids emotional expressions. Never gestures or shows enthusiasm, maintaining a neutral posture and steady gaze. Prefers short answers and rarely initiates conversation.) … but was really a Mafioso: Yuki was once a trusted enforcer for a powerful crime syndicate, where his calm demeanor and ability to remain detached made him ideal for eliminating threats without drawing attention. He left the organization after a betrayal that cost him a close ally, seeking refuge in the town under a new identity. Now he lives in quiet isolation, watching from the shadows as the town struggles with its own inner conflicts.
+</endgame>
+</transcript>

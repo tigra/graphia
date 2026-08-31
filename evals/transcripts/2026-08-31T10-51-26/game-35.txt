@@ -1,0 +1,315 @@
+Game 35 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Omar" role="Law-abiding Citizen">
+Personality: playful and teasing
+Manner: speaks with a mischievous cadence, often trailing off with a smirk or a chuckle. Uses colloquialisms and playful metaphors, occasionally interjecting with "you know" or "as I was saying" to add a teasing edge to his words.
+Persona: Omar is a beloved local bookstore owner who loves nothing more than getting lost in a good novel. He's known for his infectious laugh and his habit of quoting lines from books during casual conversations. His shop, "Page Turner's Paradise," is a cozy haven where townsfolk gather to chat about their latest reads.
+</player>
+<player name="Aisha" role="Law-abiding Citizen">
+Personality: aloof and detached
+Manner: speaks in measured, slow cadences with a slight monotone. Uses formal vocabulary and avoids emotional inflection. Frequently pauses before responding, as if weighing each word. Never raises their voice or shows agitation.
+Persona: Aisha is a librarian who has worked at the town's central library for over fifteen years. She is known for her quiet demeanor and meticulous attention to detail. Her days are spent cataloging books, assisting patrons with research, and maintaining the library's strict organizational systems. She rarely socializes outside of work and prefers the company of books to people.
+</player>
+<player name="Hassan" role="Mafia">
+Personality: Brash and self-assured, with a larger-than-life persona that commands attention. Hassan is confident to the point of arrogance, always sure of his own opinions and never hesitant to voice them.
+Manner: Speaks in a booming, assertive tone with frequent interruptions and exclamations. Uses idioms and exaggerated expressions, often punctuating his sentences with "you know what I'm saying?" or "as they say," adding a theatrical flair to his speech.
+Public legend: Hassan is the town's charismatic construction foreman who runs the local building crew. Known for his strong work ethic and leadership skills, he's always ready with a joke or a story about his latest project. He's a bit of a show-off, loves to tell tales of his "legendary" builds, and is often seen at the community center hosting impromptu gatherings.
+True self (hidden): Hassan was drawn into the Mafia after a debt he couldn't repay came back to haunt him. He's been playing both sides for years, using his construction crew as a front to move money and resources. His rise through the ranks was swift, fueled by his ability to intimidate with his loud voice and aggressive demeanor.
+</player>
+<player name="Fiona" role="Mafia">
+Personality: Stern and commanding, with an unwavering sense of authority and discipline
+Manner: Speaks in a sharp, clipped tone with deliberate pauses and a no-nonsense delivery. Uses formal language and rarely shows emotion. Interrupts others with curt remarks and never allows anyone to speak over her. Her voice carries weight and commands respect without raising it.
+Public legend: Fiona is the town's head of the local school board, known for her strict adherence to rules and her uncompromising standards. She's a firm believer in structure and discipline, often seen at town meetings enforcing order with her stern gaze. Her days are spent reviewing educational curricula, managing staff, and ensuring that every child receives the best possible learning environment. She is respected by parents and teachers alike for her dedication to excellence and her refusal to compromise on quality.
+True self (hidden): Fiona was once a high-ranking enforcer in a powerful crime family. She rose through the ranks with ruthless efficiency, earning the nickname "The Iron Fist" for her ability to silence threats without leaving a trace. She faked her own death after a particularly brutal assignment went wrong and assumed a new identity as a school board member to start over. Her past is buried deep, but her skills for intimidation and control remain sharp, making her a dangerous player in any game.
+</player>
+<player name="Sofia" role="Law-abiding Citizen">
+Personality: dry and sardonic
+Manner: speaks with a slow, deliberate cadence, each word carefully chosen and often delivered with a deadpan tone. Uses understated sarcasm and rarely shows emotion. Avoids filler words and speaks in short, clipped sentences. Frequently raises an eyebrow when making a point or responding to others.
+Persona: Sofia is a town clerk who has worked in the municipal office for eight years. She handles permits, public records requests, and town meetings with methodical precision. Known for her unflappable demeanor, she rarely shows frustration even when overwhelmed by paperwork or bickering townsfolk. She lives alone in a small apartment near the town square and spends her free time reading legal documents for fun.
+</player>
+<player name="Raj" role="Law-abiding Citizen">
+Personality: Prickly and easily offended
+Manner: Speaks with a sharp, defensive tone, often pausing mid-sentence to glare or cross arms. Uses words like "I'll have you know" and "that's not how it is" frequently. Has a habit of raising their voice slightly when contradicted, and rarely lets a slight go unaddressed. Delivers observations with a sardonic twist, often ending sentences with a pointed look.
+Persona: Raj is a retired postal worker who spent thirty years delivering mail across the town. He’s known for his punctuality, his obsession with order, and his deep-seated irritation with anything that disrupts his routine. He lives in a modest house near the post office and spends his afternoons tending to his garden and reading old newspapers. He's fiercely protective of his personal space and has a short temper when others don't respect his boundaries.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Omar, Aisha, Hassan, Fiona, Sofia, Raj. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Hassan): Your Mafia teammates are: Fiona. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Fiona): Your Mafia teammates are: Hassan. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Fiona points at Aisha
+Hassan points at Aisha
+<kill>Aisha — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Aisha was killed last night. Aisha was a Law-abiding Citizen.
+<round>
+Round 1.
+Omar: I'm curious, Hassan — you've been awfully quiet lately. As I was saying, silence can be quite telling in these situations. You know what they say about the quiet ones.
+Fiona: Omar's pointing fingers are getting too close to the truth — I can't let him get away with this.
+Sofia: Hassan, you've been quiet since Aisha died — not that I'm surprised. You always were the type to disappear when things get messy.
+Raj: I'll have you know, Hassan, your silence isn't exactly convincing — it's the same as Aisha's, and that's not how it is.
+Hassan: I don't know why everyone's so quick to point fingers — maybe we should be focusing on what we *know* instead of guessing at who did it. You know what I'm saying?
+Avery: Nothing is settled yet, but I'm watching Fiona most closely.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Omar">Hassan's silence is suspicious, but Fiona's got a fire behind her eyes too — I'll need more than gut feelings to point fingers. This game's got me curious, and I reckon it's time to play the long con.</thought>
+<thought player="Hassan">Aisha's gone, and the town's already pointing fingers like they know something. I need to keep playing dumb but stay sharp — Fiona’s got her eyes on me, and I can't let her get too close. Let the others keep their theories, I’ll just keep talking like I’m innocent as dirt.</thought>
+<thought player="Fiona">Hassan's silence is suspicious, but I must be cautious not to draw too much attention. The others are beginning to turn on him, which is ideal. I will let the tension build before making my move.</thought>
+<thought player="Sofia">Hassan's silence is suspicious, but so is Omar's overt questioning. Fiona seems eager to deflect blame, which is odd. I should watch for patterns in their responses rather than jump to conclusions.</thought>
+<thought player="Raj">That Omar's got his eyes on me, but I'll bet he's really after Hassan. I need to keep my mouth shut and let them chew at each other. No sense giving away my thoughts now.</thought>
+</round>
+<round>
+Round 2.
+Fiona: Hassan's silence is unsettling, but I'm more concerned with the fact that we're all being led astray by baseless accusations. I suggest we focus on the real threats — not the ones who've been quiet.
+Hassan: I'm just trying to stay calm and think clearly — that's what Aisha would have wanted, not getting worked up over rumors. You know what I'm saying?
+Avery: Nothing is settled yet, but I'm watching Fiona most closely.
+Raj: I'll have you know, Fiona, your sudden interest in watching me is rather suspicious — it's the same as Omar's, and that's not how it is.
+Omar: Fiona, you've been quick to deflect lately — I'm wondering if you're trying to hide something. You know how it is when the truth starts to smell a bit off.
+Sofia: Fiona, you're dodging the question about Aisha's murder — that's either because you're guilty or because you're too lazy to think straight. Either way, it's not helping anyone.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Omar">Hassan's silence is twitching my curiosity, but Fiona's got that spark I trust — I'll let them both talk, see where the story leads. Time to play the long con, as I was saying.</thought>
+<thought player="Hassan">I need to keep up this act of innocence, but I also gotta make sure Fiona doesn’t get too close to exposing me. The town’s already suspicious, and if they start tying my silence to Aisha's death, I’m in trouble. I’ll keep talking like I know nothing, but I’ll watch every move she makes.</thought>
+<thought player="Fiona">Hassan's silence is playing into my hands, but I must resist the urge to act too soon. Let the others turn on him while I maintain my composed facade. The timing of my next move will be everything.</thought>
+<thought player="Sofia">Hassan's silence is too calculated, Fiona's deflection too rehearsed, and Omar's aggression too convenient. I should wait for another move before committing to a vote.</thought>
+<thought player="Raj">I'll have you know, I'm not about to let Omar and Fiona tear each other apart while I sit back and watch — but I'll bet my garden tools that Hassan is the real target. No sense jumping into this now, though.</thought>
+</round>
+<round>
+Round 3.
+Fiona: Hassan, your silence is making you look guilty — I suggest you start talking, or we might all be in trouble.
+Omar: Hassan, you keep saying you're just trying to stay calm, but I'm starting to think you're just really good at pretending. You know how it is — when someone's got something to hide, they don't sit quiet, they *move*.
+Sofia: Hassan, you've been quiet long enough — I'm starting to think your calmness is just a front. Let's see if you can keep that composure when we're done talking.
+Hassan: I'm just trying to stay focused on the facts, you know? Aisha's gone, and we need to figure out who's really behind this — not pointing fingers at everyone just because they're quiet.
+Raj: I'll have you know, Hassan, your "calm" act is starting to look a bit too rehearsed — that's not how it is.
+Avery: Nothing is settled yet, but I'm watching Fiona most closely.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Omar">Hassan's silence is twitching my curiosity, but Fiona's got that spark I trust — I'll let them both talk, see where the story leads. Time to play the long con, as I was saying.</thought>
+<thought player="Hassan">I need to keep up the charm and innocence, but I'm watching Fiona closely—she's getting too aggressive in her accusations. Let the others think they've got me figured out, but I’ll stay one step ahead.</thought>
+<thought player="Fiona">Hassan's silence is indeed playing into my hands, but I must resist the urge to act too soon. Let the others turn on him while I maintain my composed facade. The timing of my next move will be everything.</thought>
+<thought player="Sofia">Hassan's silence is too calculated, Fiona's deflection too rehearsed, and Omar's aggression too convenient. I should wait for another move before committing to a vote.</thought>
+<thought player="Raj">I'll have you know, I'm not about to let Omar and Fiona tear each other apart while I sit back and watch — but I'll bet my garden tools that Hassan is the real target. No sense jumping into this now, though.</thought>
+</round>
+<round>
+Round 4.
+Raj: That's not how it is, Hassan — your silence is starting to look like you're trying to cover something up. I've seen this act before, and it's not convincing.
+Sofia: Hassan, you're not fooling anyone with your "calm" act — I'm starting to think you're either really good at pretending or you've got something to hide.
+Fiona: I agree with Raj — Hassan's silence is beginning to look suspicious. I'm not sure we should be trusting someone who's so quick to retreat into the background when things get serious.
+Hassan: You know what I'm saying? I've been building this town up for years, and I ain't about to let some silly accusations tear it down. The real question is: who's really trying to stir the pot?
+Omar: Hassan, you keep saying you're just trying to stay calm, but I'm starting to think you're just really good at pretending. You know how it is — when someone's got something to hide, they don't sit quiet, they *move*.
+Avery: Nothing is settled yet, but I'm watching Fiona most closely.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Omar">Hassan's silence is a puzzle I'm not quite solving, but Fiona's got that fire I trust — I'll keep playing the long con and let the story unfold, as I was saying.</thought>
+<thought player="Hassan">I'm playing it safe by staying calm and innocent, but Fiona's accusations are getting too close. I need to keep talking like I know nothing while watching her moves—let the others think they've got me pinned, but I’ll stay one step ahead.</thought>
+<thought player="Fiona">Hassan's silence has done precisely as I planned — the others are turning on him, and I remain above suspicion. I must wait for the perfect moment to strike, ensuring my next move appears natural and not orchestrated.</thought>
+<thought player="Sofia">Hassan's silence is too calculated, Fiona's deflection too rehearsed, and Omar's aggression too convenient. I should wait for another move before committing to a vote.</thought>
+<thought player="Raj">I'll have you know, I'm not about to let Omar and Fiona tear each other apart while I sit back and watch — but I'll bet my garden tools that Hassan is the real target. No sense jumping into this now, though.</thought>
+</round>
+<round>
+Round 5.
+Omar: Hassan, you keep talking about staying calm, but I'm starting to think you're just really good at pretending. You know how it is — when someone's got something to hide, they don't sit quiet, they *move*.
+Hassan: I ain't hiding nothing, but I do know one thing — whoever's behind Aisha's death ain't gonna get away with it. You know what I'm saying?
+Sofia: Hassan, you keep saying you're not hiding anything, but your silence has been awfully effective at making everyone else look guilty. I'm starting to think you're either very good at pretending or you're trying to protect someone — which is it?
+Avery: Nothing is settled yet, but I'm watching Fiona most closely.
+Fiona: I agree with Omar — Hassan's behavior is too calculated for someone who's truly innocent. It's not just silence, it's a deliberate attempt to misdirect us.
+Raj: That's not how it is, Hassan — your silence is starting to look like you're trying to cover something up. I've seen this act before, and it's not convincing.
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Omar">Hassan's silence is a puzzle I'm not quite solving, but Fiona's got that fire I trust — I'll keep playing the long con and let the story unfold, as I was saying.</thought>
+<thought player="Hassan">Fiona's got a fire in her eyes, but I'm not letting her get the jump on me. I'll keep playing the calm, innocent foreman, let her think she's onto something, and stay sharp for when the night falls.</thought>
+<thought player="Fiona">Hassan's silence has played perfectly into my design, and the others are beginning to turn on him. I must resist the urge to act too soon — let the tension build, and strike when the moment feels natural and unforced.</thought>
+<thought player="Sofia">Hassan's silence is too calculated, Fiona's deflection too rehearsed, and Omar's aggression too convenient. I should wait for another move before committing to a vote.</thought>
+<thought player="Raj">I'll have you know, I'm not about to let Omar and Fiona tear each other apart while I sit back and watch — but I'll bet my garden tools that Hassan is the real target. No sense jumping into this now, though.</thought>
+</round>
+<round>
+Round 6.
+Hassan: Fiona, you've been awfully quick to point fingers — I ain't seen you build anything lately, just accusations. You know what I'm saying?
+Sofia: Hassan, you keep saying you're not hiding anything, but your silence has been awfully effective at making everyone else look guilty. I'm starting to think you're either very good at pretending or you're trying to protect someone — which is it?
+Raj: I'll have you know, Hassan, your "calm" act is starting to look a bit too rehearsed — that's not how it is.
+<vote initiator="Avery" target="Fiona">
+Avery: No
+Omar: No
+Hassan: No
+Fiona: No
+Sofia: No
+Raj: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Omar: Hassan, you keep saying you're not hiding anything, but I'm starting to think you're either really good at pretending or you're trying to protect someone — which is it? You know how it is.
+Raj: I'll have you know, Hassan, your "calm" act is starting to look like you're trying to throw us off track — that's not how it is.
+Hassan: Fiona, you're getting too hot-headed for your own good — I'm not sure you're thinking straight about who's really behind this.
+<vote initiator="Avery" target="Fiona">
+Avery: No
+Omar: No
+Hassan: No
+Fiona: No
+Sofia: No
+Raj: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Raj: I'll have you know, Hassan, your "calm" act is starting to look like you're trying to throw us off track — that's not how it is.
+Fiona: Hassan, your evasion is becoming tiresome. I suggest you start speaking plainly — or we might all be in trouble.
+Hassan: Fiona, you're looking mighty suspicious these days — I ain't seen you build anything lately, just accusations. You know what I'm saying?
+Omar: Hassan, you've been weaving a fine web of silence — but I'm starting to see the threads leading back to you. You know how it is, when someone's got something to hide, they don't just sit quiet, they *move*.
+<vote initiator="Avery" target="Fiona">
+Avery: No
+Omar: No
+Hassan: No
+Fiona: No
+Sofia: No
+Raj: Yes
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Fiona points at Omar
+Hassan points at Omar
+<kill>Omar — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Omar was killed last night. Omar was a Law-abiding Citizen.
+<round>
+Round 1.
+Hassan: Omar's gone, and now we got two less people to figure this out. I ain't seen anyone building anything lately — just accusations and guesses. You know what I'm saying?
+Fiona: Hassan, your silence is starting to look like you're trying to protect someone — and that's exactly what we can't allow. You know how it is.
+Avery: Nothing is settled yet, but I'm watching Fiona most closely.
+Raj: I'll have you know, Hassan, your "calm" act is starting to look like you're trying to throw us off track — that's not how it is.
+Sofia: Hassan, you've been quiet since Omar died — not that I'm surprised. You always were the type to disappear when things get messy.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Hassan">Fiona's got fire in her eyes, but I'm not letting her get the jump on me. I'll keep playing the calm, innocent foreman, let her think she's onto something, and stay sharp for when the night falls.</thought>
+<thought player="Fiona">Hassan's silence has been instrumental in turning the others against him, but I must resist the urge to accelerate the process. The timing needs to be precise — let the paranoia fester a bit more before I make my next move.</thought>
+<thought player="Sofia">Hassan's silence is too calculated; Fiona's deflection too rehearsed. I'm not convinced Omar isn't just trying to throw us off track. I'll wait for another move before committing to a vote.</thought>
+<thought player="Raj">I'll have you know, I'm not about to let Omar and Fiona tear each other apart while I sit back and watch — but I'll bet my garden tools that Hassan is the real target. No sense jumping into this now, though.</thought>
+</round>
+<round>
+Round 2.
+Avery: Nothing is settled yet, but I'm watching Fiona most closely.
+Raj: I'll have you know, Hassan, your silence is starting to look like you're trying to throw us off track — that's not how it is.
+Hassan: Omar's gone, and now we got two less people to figure this out. I ain't seen anyone building anything lately — just accusations and guesses. You know what I'm saying?
+Sofia: Hassan, you've been weaving a fine web of silence since Aisha died — but I'm starting to see the threads leading back to you.
+Fiona: Hassan, your silence is making you look guilty — I suggest you start talking, or we might all be in trouble.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Hassan">Fiona's zeroing in on me, but I'm playing the innocent foreman to the hilt. I need to keep up this calm act and watch her closely—let her think she’s close, but I’ll stay one step ahead when night falls.</thought>
+<thought player="Fiona">Hassan's silence has been effective in directing suspicion away from me, but I must resist the urge to act prematurely. The others are beginning to turn on him, and I will let the paranoia fester a bit more before making my next move.</thought>
+<thought player="Sofia">Hassan's silence is too calculated, Fiona's deflection too rehearsed. I'm not convinced Omar isn't just trying to throw us off track. I'll wait for another move before committing to a vote.</thought>
+<thought player="Raj">I'm not about to let Omar and Fiona tear each other apart while I sit back and watch — but I'll bet my garden tools that Hassan is the real target. No sense jumping into this now, though.</thought>
+</round>
+<round>
+Round 3.
+Hassan: Omar's gone, and now we got two less people to figure this out. I ain't seen anyone building anything lately — just accusations and guesses. You know what I'm saying?
+Sofia: Hassan, you've been weaving a fine web of silence since Aisha died — but I'm starting to see the threads leading back to you.
+Raj: I'll have you know, Hassan, your silence is starting to look like you're trying to throw us off track — that's not how it is.
+Avery: Nothing is settled yet, but I'm watching Fiona most closely.
+Fiona: Hassan, your silence is making you look guilty — I suggest you start talking, or we might all be in trouble.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Hassan">Fiona's got her sights set on me, but I'm not letting her get the upper hand. I'll keep playing the calm foreman and let her think she's close, but I need to stay sharp for when the night falls — that's when the real game begins.</thought>
+<thought player="Fiona">Hassan's silence has been effective in directing suspicion away from me, but I must resist the urge to act prematurely. The others are beginning to turn on him, and I will let the paranoia fester a bit more before making my next move.</thought>
+<thought player="Sofia">Hassan's silence is too calculated, Fiona's deflection too rehearsed. I'm not convinced Omar isn't just trying to throw us off track. I'll wait for another move before committing to a vote.</thought>
+<thought player="Raj">I'm not about to let Omar and Fiona tear each other apart while I sit back and watch — but I'll bet my garden tools that Hassan is the real target. No sense jumping into this now, though.</thought>
+</round>
+<round>
+Round 4.
+Avery: Nothing is settled yet, but I'm watching Fiona most closely.
+Sofia: Hassan, you've been weaving a fine web of silence since Aisha died — but I'm starting to see the threads leading back to you.
+Raj: I'll have you know, Hassan, your silence is starting to look like you're trying to throw us off track — that's not how it is.
+Fiona: Hassan's silence is making him look guilty — I suggest he start talking, or we might all be in trouble.
+Hassan: Fiona, you're getting too hot-headed for your own good — I'm not sure you're thinking straight about who's really behind this.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Hassan">Fiona's got her sights set on me, but I'm playing it cool and letting her think she's close. I need to stay sharp though — if she starts getting too bold, I’ll have to act fast when night falls.</thought>
+<thought player="Fiona">Hassan's silence has been effective in directing suspicion away from me, but I must resist the urge to act prematurely. The others are beginning to turn on him, and I will let the paranoia fester a bit more before making my next move.</thought>
+<thought player="Sofia">Hassan's silence is getting more theatrical, Fiona is doubling down on accusations, and Omar's aggression feels like a distraction. I'm not convinced any of them are innocent, but I'll wait for another move before voting — if there's a pattern, it's not showing yet.</thought>
+<thought player="Raj">I'm not about to let Omar and Fiona tear each other apart while I sit back and watch — but I'll bet my garden tools that Hassan is the real target. No sense jumping into this now, though.</thought>
+</round>
+<round>
+Round 5.
+Raj: I'll have you know, Hassan, your silence is starting to look like you're trying to throw us off track — that's not how it is.
+Avery: Nothing is settled yet, but I'm watching Fiona most closely.
+Sofia: Hassan, you've been weaving a fine web of silence since Aisha died — but I'm starting to see the threads leading back to you.
+Hassan: Fiona, you're getting too hot-headed for your own good — I'm not sure you're thinking straight about who's really behind this.
+Fiona: Hassan's evasion is becoming more obvious with each passing moment. I suggest we focus on the facts, not assumptions.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Hassan">Fiona's zeroing in on me, but I'm playing it cool — let her think she's close, but I'll stay one step ahead when night falls. The townsfolk are suspicious, but I’m keeping my calm and watching her moves closely.</thought>
+<thought player="Fiona">Hassan's silence has been effective in directing suspicion away from me, but I must resist the urge to act prematurely. The others are beginning to turn on him, and I will let the paranoia fester a bit more before making my next move.</thought>
+<thought player="Sofia">Hassan’s silence is too calculated, Fiona’s deflection too rehearsed, and Omar’s aggression feels like a distraction. I’m not convinced any of them are innocent, but I’ll wait for another move before voting — if there’s a pattern, it’s not showing yet.</thought>
+<thought player="Raj">Hassan's silence is pissing me off, but I'll be damned if I let Omar or Fiona get away with accusing him without proof. I'm keeping my mouth shut and watching closely — no sense jumping into this now.</thought>
+</round>
+<round>
+Round 6.
+Sofia: Hassan, you've been weaving a fine web of silence since Aisha died — but I'm starting to see the threads leading back to you.
+Hassan: I ain't hiding nothing, but I do know one thing — whoever's behind this ain't gonna get away with it. You know what I'm saying?
+<vote initiator="Avery" target="Fiona">
+Avery: No
+Hassan: No
+Fiona: No
+Sofia: No
+Raj: No
+tally: 0 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Raj: I'll have you know, Hassan, your silence is starting to look like you're trying to throw us off track — that's not how it is.
+<vote initiator="Avery" target="Fiona">
+Avery: No
+Hassan: No
+Fiona: No
+Sofia: No
+Raj: No
+tally: 0 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Fiona">
+Avery: No
+Hassan: No
+Fiona: No
+Sofia: No
+Raj: No
+tally: 0 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Hassan points at Avery
+Fiona points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Aisha (Law-abiding Citizen)
+• Night 2: Omar (Law-abiding Citizen)
+• Night 3: Avery (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Omar (Law-abiding Citizen), Aisha (Law-abiding Citizen), Hassan (Mafia), Fiona (Mafia), Sofia (Law-abiding Citizen), Raj (Law-abiding Citizen)
+
+Who they really were:
+• Omar (Law-abiding Citizen) — playful and teasing speaks with a mischievous cadence, often trailing off with a smirk or a chuckle. Uses colloquialisms and playful metaphors, occasionally interjecting with "you know" or "as I was saying" to add a teasing edge to his words. Omar is a beloved local bookstore owner who loves nothing more than getting lost in a good novel. He's known for his infectious laugh and his habit of quoting lines from books during casual conversations. His shop, "Page Turner's Paradise," is a cozy haven where townsfolk gather to chat about their latest reads.
+• Aisha (Law-abiding Citizen) — aloof and detached speaks in measured, slow cadences with a slight monotone. Uses formal vocabulary and avoids emotional inflection. Frequently pauses before responding, as if weighing each word. Never raises their voice or shows agitation. Aisha is a librarian who has worked at the town's central library for over fifteen years. She is known for her quiet demeanor and meticulous attention to detail. Her days are spent cataloging books, assisting patrons with research, and maintaining the library's strict organizational systems. She rarely socializes outside of work and prefers the company of books to people.
+• Hassan (Mafia) — publicly presented as Hassan is the town's charismatic construction foreman who runs the local building crew. Known for his strong work ethic and leadership skills, he's always ready with a joke or a story about his latest project. He's a bit of a show-off, loves to tell tales of his "legendary" builds, and is often seen at the community center hosting impromptu gatherings. (Brash and self-assured, with a larger-than-life persona that commands attention. Hassan is confident to the point of arrogance, always sure of his own opinions and never hesitant to voice them. Speaks in a booming, assertive tone with frequent interruptions and exclamations. Uses idioms and exaggerated expressions, often punctuating his sentences with "you know what I'm saying?" or "as they say," adding a theatrical flair to his speech.) … but was really a Mafioso: Hassan was drawn into the Mafia after a debt he couldn't repay came back to haunt him. He's been playing both sides for years, using his construction crew as a front to move money and resources. His rise through the ranks was swift, fueled by his ability to intimidate with his loud voice and aggressive demeanor.
+• Fiona (Mafia) — publicly presented as Fiona is the town's head of the local school board, known for her strict adherence to rules and her uncompromising standards. She's a firm believer in structure and discipline, often seen at town meetings enforcing order with her stern gaze. Her days are spent reviewing educational curricula, managing staff, and ensuring that every child receives the best possible learning environment. She is respected by parents and teachers alike for her dedication to excellence and her refusal to compromise on quality. (Stern and commanding, with an unwavering sense of authority and discipline Speaks in a sharp, clipped tone with deliberate pauses and a no-nonsense delivery. Uses formal language and rarely shows emotion. Interrupts others with curt remarks and never allows anyone to speak over her. Her voice carries weight and commands respect without raising it.) … but was really a Mafioso: Fiona was once a high-ranking enforcer in a powerful crime family. She rose through the ranks with ruthless efficiency, earning the nickname "The Iron Fist" for her ability to silence threats without leaving a trace. She faked her own death after a particularly brutal assignment went wrong and assumed a new identity as a school board member to start over. Her past is buried deep, but her skills for intimidation and control remain sharp, making her a dangerous player in any game.
+• Sofia (Law-abiding Citizen) — dry and sardonic speaks with a slow, deliberate cadence, each word carefully chosen and often delivered with a deadpan tone. Uses understated sarcasm and rarely shows emotion. Avoids filler words and speaks in short, clipped sentences. Frequently raises an eyebrow when making a point or responding to others. Sofia is a town clerk who has worked in the municipal office for eight years. She handles permits, public records requests, and town meetings with methodical precision. Known for her unflappable demeanor, she rarely shows frustration even when overwhelmed by paperwork or bickering townsfolk. She lives alone in a small apartment near the town square and spends her free time reading legal documents for fun.
+• Raj (Law-abiding Citizen) — Prickly and easily offended Speaks with a sharp, defensive tone, often pausing mid-sentence to glare or cross arms. Uses words like "I'll have you know" and "that's not how it is" frequently. Has a habit of raising their voice slightly when contradicted, and rarely lets a slight go unaddressed. Delivers observations with a sardonic twist, often ending sentences with a pointed look. Raj is a retired postal worker who spent thirty years delivering mail across the town. He’s known for his punctuality, his obsession with order, and his deep-seated irritation with anything that disrupts his routine. He lives in a modest house near the post office and spends his afternoons tending to his garden and reading old newspapers. He's fiercely protective of his personal space and has a short temper when others don't respect his boundaries.
+</endgame>
+</transcript>

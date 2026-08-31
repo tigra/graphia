@@ -2375,3 +2375,123 @@ metrics:
   persona_sem_peak:
     denominator: 750
 notes: 'n=50 provider baseline (retry after SSO expiry): Claude Haiku 4.5, spec 035. Tests whether the n=10 repetition result (0.000 over 234 lines) holds across ~2800 lines, against the Nova n=50 baseline of 0.597 over 2772. caffeinate -i.'
+---
+run:
+  date: '2026-08-31'
+  duration_seconds: 18816.015
+  metrics_version: 1
+  transcript_dir: '2026-08-31T10-51-26'
+code:
+  commit: 'ac7b8bbc375ba8147e60c6708d507a0d45e6def9'
+  branch: 'main'
+  dirty: true
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.32.14'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 50
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 50
+  games_completed: 49
+  games_failed_early: 1
+  duration_seconds: 18816.015
+outcomes:
+  games: 49
+  law_abiding:
+    wins: 8
+    rate: 0.16326530612244897
+    ci_low: 0.08512596988208977
+    ci_high: 0.29036606669515236
+  mafia:
+    wins: 41
+    rate: 0.8367346938775511
+    ci_low: 0.7096339333048477
+    ci_high: 0.9148740301179102
+  scripted_side:
+    side: 'law_abiding'
+    wins: 8
+    rate: 0.16326530612244897
+    ci_low: 0.08512596988208977
+    ci_high: 0.29036606669515236
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 115
+    mafia: 5
+  by_day:
+    day_1: 76
+    day_2: 33
+    day_3: 11
+metrics:
+  repetition:
+    rate: 0.5293775450843514
+    count: 910
+    denominator: 1719
+    ci_low: 0.5057423335125741
+    ci_high: 0.5528817442900515
+  third_person_self_talk:
+    rate: 0.018033740546829553
+    count: 31
+    denominator: 1719
+    ci_low: 0.012733361805703034
+    ci_high: 0.02548350038290444
+  self_vote.initiation:
+    rate: 0.025
+    count: 2
+    denominator: 80
+    ci_low: 0.006882748898125228
+    ci_high: 0.08664600055322111
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 174
+    ci_low: 0.0
+    ci_high: 0.021601245152990077
+  peer_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 5
+    ci_low: 0.0
+    ci_high: 0.43449149475208104
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 102
+    ci_low: 0.0
+    ci_high: 0.03629574760774591
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 735
+    ci_low: 0.0
+    ci_high: 0.005199490662139218
+  persona_lex_mean:
+    denominator: 735
+  persona_lex_peak:
+    denominator: 735
+  persona_sem_mean:
+    denominator: 735
+  persona_sem_peak:
+    denominator: 735
+notes: 'n=50 provider baseline (retry after external kill): local qwen3-coder:30b / qwen2.5:3b, free offline arm. Run in PARALLEL with the Claude n=50 arm, with ledger + transcripts redirected to scratch to avoid concurrent-append interleave, then merged in.'

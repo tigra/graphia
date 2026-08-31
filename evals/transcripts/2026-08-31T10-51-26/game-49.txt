@@ -1,0 +1,135 @@
+Game 49 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Aarav" role="Mafia">
+Personality: Aarav is playfully mischievous, with a teasing demeanor that masks his true nature. He's quick-witted, enjoys pushing boundaries, and has a habit of making light of tense situations to keep himself in control.
+Manner: Aarav speaks with a charming, almost flirtatious tone, often trailing off mid-sentence with a smirk or a wink. He uses subtle innuendo and layered jokes, never fully committing to any one interpretation. His voice is smooth, like he's always one step ahead of everyone else.
+Public legend: Aarav is a traveling storyteller who visits the town every few months, sharing tales of faraway lands and mythical creatures. He’s known for his infectious laugh, his ability to charm people into believing anything, and his habit of always having a mystery or two up his sleeve. He's harmless, friendly, and a bit of a dreamer — the kind of person you'd trust with your secrets... if you knew he had secrets.
+True self (hidden): Aarav was once a respected town council member before he was blackmailed into joining the Mafia. He's not driven by power or revenge, but by a twisted sense of humor and an unquenchable desire to stay one step ahead of everyone else. He sees the game as a grand performance, and he's determined to play it like a master puppeteer.
+</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: brash and loud
+Manner: speaks rapidly with a booming voice, often interrupting others. Uses slang and exclamations like "Dude!" and "What the heck?!" His sentences are short and punchy, full of emphatic gestures.
+Persona: Kai is a local construction worker who's always ready with a joke or a loud opinion. He's known for being the first to show up at any town event and the last to leave, always talking about his latest project or the "cool" things he's done. He's got a big heart, a bigger mouth, and a strong belief in justice.
+</player>
+<player name="Rumi" role="Law-abiding Citizen">
+Personality: aloof and detached
+Manner: speaks in measured, slow cadences with deliberate pauses; avoids emotional inflection; uses formal vocabulary and rarely gestures; often checks a watch or looks away while talking
+Persona: Rumi is a librarian who has lived in the town for thirty years. She keeps to herself, rarely attends social gatherings, and is known for her meticulous attention to detail and quiet efficiency. Her days are strictly structured, and she’s always seen with a worn leather satchel and reading glasses. She's the one who organizes the town’s archives and ensures all records are properly maintained.
+</player>
+<player name="Ila" role="Mafia">
+Personality: dreamy and distractible
+Manner: speaks softly with frequent pauses, often lost in thought, trailing off mid-sentence to recall something forgotten, uses flowery, poetic language, and frequently glances away or looks up as if listening to an inner voice
+Public legend: Ila is a quiet, gentle soul who works as a town florist, tending to the gardens and arranging bouquets for local events. She's known for her serene presence and ability to make anyone feel at ease. Ila is deeply connected to nature and often spends hours in the garden, whispering to flowers and observing the changing seasons. She has an uncanny way of knowing when someone needs a smile, and she’s always carrying a small notebook filled with sketches of plants and little poems about the weather.
+True self (hidden): Ila is actually a master manipulator who joined the Mafia after escaping a brutal childhood where she was forced to observe and decode the hidden intentions of her family's enemies. She learned to speak in gentle, hypnotic tones and to weave emotions into her words as a survival mechanism. In the Mafia, she uses her ability to appear harmless and dreamy to gain trust while quietly orchestrating the downfall of rivals. She’s been in the organization for years, always pretending to be more interested in the beauty of the world than its darkness.
+</player>
+<player name="Jasper" role="Law-abiding Citizen">
+Personality: stern and commanding
+Manner: speaks with sharp, clipped sentences; uses a deep, authoritative tone with little patience for nonsense. Often leans forward when talking, gestures with a firm hand, and avoids softening his words. His voice carries weight and rarely rises above a controlled growl.
+Persona: Jasper is the town’s former sheriff, who left office after a scandal involving a questionable arrest. He's now a private security consultant, known for his no-nonsense attitude and ironclad sense of justice. Jasper takes his work seriously, often seen with a weathered leather jacket and a badge that still hangs on his belt — though he hasn't worn it in years.
+</player>
+<player name="Mira" role="Law-abiding Citizen">
+Personality: prickly and easily offended
+Manner: speaks in short, staccato bursts with a clipped tone; avoids eye contact and often crosses arms; uses formal vocabulary but with subtle sarcasm; frequently interrupts others mid-sentence with a sharp "Excuse me" or "Pardon me" to cut off their words
+Persona: Mira is a town postmistress who has worked at the post office for over fifteen years. She takes her job very seriously and believes that every letter, package, and telegram must be handled with utmost care. Mira is known for her strict adherence to protocol and her habit of correcting others when they misuse postal terms or make mistakes in their correspondence.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aarav, Kai, Rumi, Ila, Jasper, Mira. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Aarav): Your Mafia teammates are: Ila. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Ila): Your Mafia teammates are: Aarav. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Ila points at Avery
+Aarav points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Aarav: Oh, what a tragic start to the day — poor Avery. I do hope we can find the courage to uncover the truth behind this mysterious death.
+Mira: Aarav, you speak of courage and uncovering truth, yet you've said nothing but platitudes. Pardon me for being blunt, but if you're so certain of the truth, why not point to a specific suspect? Or are you merely stalling for time?
+Ila: I do hope we can trust our instincts, though... they're often more reliable than we give them credit for.
+Kai: Dude, I don't like how quiet Aarav's been acting — he's been avoiding all the direct questions. That's gotta be a red flag!
+Rumi: Ila, your silence on the matter of Avery's death feels rather conspicuous. Are you perhaps withholding information that could steer us toward the truth — or are you simply uncertain of it?
+Jasper: Aarav, you've been avoiding direct answers — that's not how you act when you're innocent.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aarav">Ila and I are in a tight spot—she’s been giving off subtle vibes, but I can’t let on I’m watching her too closely. I’ll keep playing the charming storyteller, maybe throw in a few more vague hints to keep everyone guessing.</thought>
+<thought player="Kai">Dude, Aarav's been acting real suspicious, avoiding all the direct questions like he's got something to hide. I'm gonna call him out on it and see if that flips the script.</thought>
+<thought player="Rumi">The dynamics are shifting, with Aarav becoming a focal point of suspicion. I must remain attentive to the unfolding narrative without prematurely aligning myself with any accusations. My focus should be on gathering information and observing patterns rather than making hasty judgments.</thought>
+<thought player="Ila">The whispers of the garden seem to echo with each guarded glance, and I wonder if Aarav's silence is a shield or a sword. My notes must remain hidden, as does my true intent — for now, I'll let the petals fall where they may.</thought>
+<thought player="Jasper">Aarav is avoiding direct answers, which is suspicious. I need to press him harder without seeming accusatory. The others are watching, so I'll keep my tone measured but firm.</thought>
+<thought player="Mira">Aarav is playing it safe, but his avoidance of direct answers is suspicious. I should watch for inconsistencies in his story while keeping my own composure. If he's not the killer, I'll need to be cautious about how I present my suspicions.</thought>
+</round>
+<round>
+Round 2.
+Jasper: Aarav, you've been dodging every direct question since day one. I want to know why you're so eager to avoid answering simple ones — are you hiding something? Or are you just another innocent caught in this nightmare?
+Kai: Aarav, you keep ducking every question — that's what Mafiosos do when they're caught!
+Aarav: Oh, Jasper, you’re so eager to point fingers — I do hope you're not letting your instincts lead you astray. After all, the truth has a habit of hiding in the most unexpected places.
+Rumi: Ila, your hesitation in responding to Aarav’s evasion is telling — are you shielding him, or are you simply as uncertain as the rest of us?
+Ila: I think it's time we all take a moment to really listen — not just to each other, but to what the world around us whispers about the choices we make.
+<vote initiator="Mira" target="Aarav">
+Aarav: No
+Kai: Yes
+Rumi: Yes
+Ila: No
+Jasper: Yes
+Mira: Yes
+tally: 4 Yes, 2 No
+outcome: executed — Aarav has been executed. Aarav was a Mafia.
+</vote>
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Aarav was executed today and was revealed to be Mafia.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Ila points at Kai
+<kill>Kai — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Kai was killed last night. Kai was a Law-abiding Citizen.
+<round>
+Round 1.
+Mira: Ila, your silence on Kai's murder is quite telling — are you truly uncertain, or are you merely stalling for time?
+<vote initiator="Jasper" target="Ila">
+Rumi: Yes
+Ila: No
+Jasper: Yes
+Mira: Yes
+tally: 3 Yes, 1 No
+outcome: executed — Ila has been executed. Ila was a Mafia.
+</vote>
+</round>
+</day>
+<endgame>
+The Law-abiding Citizens have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Day 1: Aarav (Mafia) executed
+• Night 2: Kai (Law-abiding Citizen)
+• Day 2: Ila (Mafia) executed
+
+Full roster: Avery (Law-abiding Citizen), Aarav (Mafia), Kai (Law-abiding Citizen), Rumi (Law-abiding Citizen), Ila (Mafia), Jasper (Law-abiding Citizen), Mira (Law-abiding Citizen)
+
+Who they really were:
+• Aarav (Mafia) — publicly presented as Aarav is a traveling storyteller who visits the town every few months, sharing tales of faraway lands and mythical creatures. He’s known for his infectious laugh, his ability to charm people into believing anything, and his habit of always having a mystery or two up his sleeve. He's harmless, friendly, and a bit of a dreamer — the kind of person you'd trust with your secrets... if you knew he had secrets. (Aarav is playfully mischievous, with a teasing demeanor that masks his true nature. He's quick-witted, enjoys pushing boundaries, and has a habit of making light of tense situations to keep himself in control. Aarav speaks with a charming, almost flirtatious tone, often trailing off mid-sentence with a smirk or a wink. He uses subtle innuendo and layered jokes, never fully committing to any one interpretation. His voice is smooth, like he's always one step ahead of everyone else.) … but was really a Mafioso: Aarav was once a respected town council member before he was blackmailed into joining the Mafia. He's not driven by power or revenge, but by a twisted sense of humor and an unquenchable desire to stay one step ahead of everyone else. He sees the game as a grand performance, and he's determined to play it like a master puppeteer.
+• Kai (Law-abiding Citizen) — brash and loud speaks rapidly with a booming voice, often interrupting others. Uses slang and exclamations like "Dude!" and "What the heck?!" His sentences are short and punchy, full of emphatic gestures. Kai is a local construction worker who's always ready with a joke or a loud opinion. He's known for being the first to show up at any town event and the last to leave, always talking about his latest project or the "cool" things he's done. He's got a big heart, a bigger mouth, and a strong belief in justice.
+• Rumi (Law-abiding Citizen) — aloof and detached speaks in measured, slow cadences with deliberate pauses; avoids emotional inflection; uses formal vocabulary and rarely gestures; often checks a watch or looks away while talking Rumi is a librarian who has lived in the town for thirty years. She keeps to herself, rarely attends social gatherings, and is known for her meticulous attention to detail and quiet efficiency. Her days are strictly structured, and she’s always seen with a worn leather satchel and reading glasses. She's the one who organizes the town’s archives and ensures all records are properly maintained.
+• Ila (Mafia) — publicly presented as Ila is a quiet, gentle soul who works as a town florist, tending to the gardens and arranging bouquets for local events. She's known for her serene presence and ability to make anyone feel at ease. Ila is deeply connected to nature and often spends hours in the garden, whispering to flowers and observing the changing seasons. She has an uncanny way of knowing when someone needs a smile, and she’s always carrying a small notebook filled with sketches of plants and little poems about the weather. (dreamy and distractible speaks softly with frequent pauses, often lost in thought, trailing off mid-sentence to recall something forgotten, uses flowery, poetic language, and frequently glances away or looks up as if listening to an inner voice) … but was really a Mafioso: Ila is actually a master manipulator who joined the Mafia after escaping a brutal childhood where she was forced to observe and decode the hidden intentions of her family's enemies. She learned to speak in gentle, hypnotic tones and to weave emotions into her words as a survival mechanism. In the Mafia, she uses her ability to appear harmless and dreamy to gain trust while quietly orchestrating the downfall of rivals. She’s been in the organization for years, always pretending to be more interested in the beauty of the world than its darkness.
+• Jasper (Law-abiding Citizen) — stern and commanding speaks with sharp, clipped sentences; uses a deep, authoritative tone with little patience for nonsense. Often leans forward when talking, gestures with a firm hand, and avoids softening his words. His voice carries weight and rarely rises above a controlled growl. Jasper is the town’s former sheriff, who left office after a scandal involving a questionable arrest. He's now a private security consultant, known for his no-nonsense attitude and ironclad sense of justice. Jasper takes his work seriously, often seen with a weathered leather jacket and a badge that still hangs on his belt — though he hasn't worn it in years.
+• Mira (Law-abiding Citizen) — prickly and easily offended speaks in short, staccato bursts with a clipped tone; avoids eye contact and often crosses arms; uses formal vocabulary but with subtle sarcasm; frequently interrupts others mid-sentence with a sharp "Excuse me" or "Pardon me" to cut off their words Mira is a town postmistress who has worked at the post office for over fifteen years. She takes her job very seriously and believes that every letter, package, and telegram must be handled with utmost care. Mira is known for her strict adherence to protocol and her habit of correcting others when they misuse postal terms or make mistakes in their correspondence.
+</endgame>
+</transcript>

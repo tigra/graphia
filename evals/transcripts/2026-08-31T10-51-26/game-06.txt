@@ -1,0 +1,199 @@
+Game 6 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Ava" role="Law-abiding Citizen">
+Personality: Warm and effusive
+Manner: Speaks with rapid enthusiasm, using filler words like "you know" and "oh my gosh," and often trails off with excited exclamations. Has a habit of leaning in when talking and uses hands to emphasize points.
+Persona: Ava is the town's beloved librarian who loves to share stories and help everyone find what they need. She's known for her infectious laugh and always has a kind word for anyone she meets. Ava spends her days organizing books, helping children with their homework, and hosting weekly story time at the library.
+</player>
+<player name="Ming" role="Law-abiding Citizen">
+Personality: Prickly and easily offended
+Manner: Speaks slowly and deliberately, with a clipped cadence. Uses formal vocabulary and rarely smiles. Has a tendency to raise an eyebrow when disagreeing and often pauses before responding to a question. Frequently says "I suppose" or "That's... interesting" as verbal filler.
+Persona: Ming is a retired postal worker who spent thirty years delivering mail across the neighborhood. He’s known for his punctuality, his meticulous attention to detail, and his habit of always carrying a small notebook to jot down observations. He lives alone in a modest house on Maple Street and enjoys gardening, though he's quick to complain about the neighbors' flower choices.
+</player>
+<player name="Igor" role="Mafia">
+Personality: Stern and commanding, with a no-nonsense attitude
+Manner: Speaks in short, clipped sentences with a deep, gravelly tone. Never raises their voice but delivers each word with force. Uses formal address ("you" instead of "you guys") and rarely shows emotion. Has a habit of tapping a finger on the table when thinking or disagreeing.
+Public legend: Igor is a former military officer who served in the army for twenty years before retiring to the town. He's known for his discipline, strict adherence to rules, and unwavering sense of duty. Igor lives alone in a large house at the edge of town, where he keeps his old military gear displayed proudly. He's often seen walking his dog, a German Shepherd named Odin, and is always dressed in neat, pressed clothes. He speaks little but listens carefully, always observing others with sharp eyes.
+True self (hidden): Igor was recruited into the Mafia by his older brother, who had risen through the ranks of the organization. The brother saw potential in Igor's disciplined nature and strict moral code, believing he could be molded into a loyal enforcer. Igor slowly became immersed in the criminal underworld, using his military training to carry out hits and maintain order within the organization. He now operates as a mid-level enforcer, feared for his cold efficiency and unbreakable loyalty to his family's criminal empire.
+</player>
+<player name="Hani" role="Law-abiding Citizen">
+Personality: playful and teasing
+Manner: talks with a mischievous twinkle in her eye, using quick, darting glances and a singsong tone that shifts from sweet to sassy in a heartbeat. She often giggles or titters between sentences and has a habit of trailing off with a “you know” or “oh honey” before delivering a sharp comeback. Her vocabulary is bright and effervescent, full of playful idioms and exaggerated expressions.
+Persona: Hani is the town's self-proclaimed "Mayor of Mischief," known for her endless pranks and her ability to turn any mundane situation into a delightful chaos. She runs the local café with her best friend, where she’s famous for serving coffee with a side of harmless tricks — like leaving sugar cubes shaped like tiny animals or drawing funny faces on napkins. Hani loves gardening, especially growing herbs that she uses in her playful culinary experiments, and is always ready to organize the town's weekly "funny hat day" or other whimsical celebrations.
+</player>
+<player name="Lila" role="Law-abiding Citizen">
+Personality: anxious and second-guessing
+Manner: Speaks in a hesitant, nervous tone with frequent pauses and filler words like "uh," "you know," and "I think." Has a habit of repeating phrases or finishing sentences with a questioning intonation. Speaks softly and often looks around the room while talking, as if checking for agreement or approval.
+Persona: Lila is a nervous townsperson who works as a part-time clerk at the local pharmacy. She's known for being overly careful with her words and always double-checking her work. Lila lives in a small apartment on Oak Street, where she keeps a tidy home but often finds herself second-guessing her decisions. She's always ready to help others, though she frequently apologizes for any inconvenience.
+</player>
+<player name="Wu" role="Mafia">
+Personality: Vigilant and watchful
+Manner: Speaks in a low, deliberate tone with a sharp edge. Uses pauses for emphasis and often checks the room before speaking. Avoids casual conversation and prefers direct, purposeful communication. Has a habit of leaning forward slightly when listening, as if analyzing every word.
+Public legend: Wu is a night watchman at the town's old warehouse district. He’s known for his reliability, always arriving on time and never missing a shift. Wu lives alone in a small, well-kept cabin near the edge of town. He has no hobbies beyond reading and keeping a detailed journal of his patrols. People often comment on how he seems to know everything that happens in the neighborhood, though he's quick to deny being nosy.
+True self (hidden): Wu was recruited into the Mafia after a violent incident involving his family. He now works as an enforcer, using his position as a night watchman to gather information and eliminate threats. His true loyalty lies with the syndicate, and he keeps his double life hidden by maintaining an ironclad routine that makes him appear harmless.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Ava, Ming, Igor, Hani, Lila, Wu. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Igor): Your Mafia teammates are: Wu. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Wu): Your Mafia teammates are: Igor. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Igor points at Ming
+Wu points at Ming
+<kill>Ming — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Ming was killed last night. Ming was a Law-abiding Citizen.
+<round>
+Round 1.
+Wu: I'm not sure who to trust yet.
+Ava: Oh my gosh, I'm so glad we're all here together to figure this out! You know, I really think we should focus on who seems most nervous when we talk about the night?
+Avery: Nothing is settled yet, but I'm watching Lila most closely.
+<vote initiator="Hani" target="Avery">
+Avery: No
+Ava: Yes
+Igor: No
+Hani: No
+Lila: No
+Wu: Yes
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Ava" target="Lila">
+Avery: No
+Ava: Yes
+Igor: No
+Hani: No
+Lila: No
+Wu: Yes
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Ava: Oh my gosh, I'm really starting to feel like we need to figure out who's been acting super suspiciously lately — you know, like, really *pushing* the conversation toward certain people? I mean, it's not just me, right?
+Wu: I agree with Ava — there's something off about how people are reacting. I think we should pay attention to who's getting nervous when the conversation turns tense.
+Lila: I think... I really think we should talk about who's been avoiding answering questions directly. Like, uh, what did you say, Igor? You know, I'm not trying to point fingers, but it's kind of worrying when someone doesn't give a straight answer.
+Hani: Oh honey, I do love a good mystery, but I'm starting to think someone's been playing a little too close to the edge… you know, like they're just *too* quick to deflect when things get spicy.
+Avery: Nothing is settled yet, but I'm watching Lila most closely.
+Igor: I don't trust the way some people are reacting. It's not natural.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+<thought player="Ava">Oh my gosh, I'm so excited to keep digging into this mystery! You know, I really think Lila is acting a bit too nervous for someone who's just trying to help us figure things out. I'm going to keep watching her closely and see if I can spot any more suspicious behavior.</thought>
+<thought player="Igor">Ava and Wu are pushing Lila hard, but Lila isn't a target. I need to keep appearances, so I'll let them vote her out, but not vote myself. The real threat is still Avery.</thought>
+<thought player="Hani">Oh my stars, what a delightful web of suspicions we're weaving! I do love how everyone's pointing fingers, but I'm keeping my eyes on Lila and Igor — they're both so *very* quick to react. You know, I think it's time for a little more mischief... but not too much, or I might get executed for being "too suspicious"!</thought>
+<thought player="Lila">I think I'm being watched too much, and everyone seems to be pointing at different people, which is making me really nervous. I hope no one thinks I'm the one who killed Ming, but I keep second-guessing myself about what I said or didn't say.</thought>
+<thought player="Wu">I need to be cautious—Lila seems to be drawing attention, but I can't let my guard down. Igor is still a mystery, and I must keep the appearance of being a loyal citizen while ensuring my actions align with the Mafia's goals.</thought>
+</round>
+<round>
+Round 2.
+Hani: Oh honey, I do love a good mystery, but I'm starting to think someone's been playing a little too close to the edge… you know, like they're just *too* quick to deflect when things get spicy.
+Wu: I need to keep my eyes open — I don't trust how easy it is for some people to deflect questions.
+<vote initiator="Igor" target="Lila">
+Avery: No
+Ava: Yes
+Igor: No
+Hani: Yes
+Lila: No
+Wu: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Wu points at Lila
+Igor points at Avery
+Pointing round 2:
+Wu points at Lila
+Igor points at Avery
+Pointing round 3:
+Wu points at Lila
+Igor points at Avery
+<kill>Lila — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Lila was killed last night. Lila was a Law-abiding Citizen.
+<round>
+Round 1.
+Wu: I’m starting to think we’re being too quick to jump to conclusions. I don’t trust the way some of us are reacting — it feels like we’re being led by fear, not facts.
+Igor: I don't trust how quickly we're moving to judgment. Let's not let fear cloud our minds — we need to be certain before we act.
+Hani: Oh honey, I do love a good mystery, but I'm starting to think someone's been playing a little too close to the edge… you know, like they're just *too* quick to deflect when things get spicy.
+Avery: I most suspect Ava based on how the votes have gone.
+Ava: Oh my gosh, I'm really starting to think we need to look at who's been deflecting questions the most — you know, like Igor? He's been reacting *so* quickly to every little thing, and it's making me a bit nervous! I mean, I'm not saying he's the one, but... oh my gosh, this is so intense!
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ava">Oh my gosh, I'm so excited to keep digging into this mystery! You know, I really think Lila is acting a bit too nervous for someone who's just trying to help us figure things out. I'm going to keep watching her closely and see if I can spot any more suspicious behavior.</thought>
+<thought player="Igor">Ava and Wu are driving the charge on Lila, but I let them vote her out while keeping my vote hidden. The real danger is Avery — I need to watch for signs of guilt there.</thought>
+<thought player="Hani">Oh honey, this game is absolutely *thrilling*! I do believe Igor and Ava are playing a little too close to the edge for comfort — but I must say, I'm rather enjoying the chaos. Time to keep my little eyes peeled and maybe sprinkle in just a bit more mischief… you know, for fun!</thought>
+<thought player="Wu">I need to keep probing Ava’s behavior, but not too obviously. Igor is still unpredictable, and I must ensure my actions don’t raise suspicion while staying aligned with the Mafia’s goals.</thought>
+</round>
+<round>
+Round 2.
+Igor: I don't trust how quickly we're jumping to conclusions. We need to be certain before we act — not let fear drive us to make mistakes.
+Avery: I most suspect Ava based on how the votes have gone.
+Wu: I think we're all feeling the pressure, but we need to be careful not to let fear turn into panic. I'm watching Ava closely — she's been too quick to point fingers.
+<vote initiator="Ava" target="Igor">
+Avery: Yes
+Ava: Yes
+Igor: No
+Hani: No
+Wu: No
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Wu: I think we’re all letting fear dictate our choices. I’m not sure who to trust anymore — but I do know we need to be careful about jumping to conclusions.
+Hani: Oh honey, I do believe Igor's been deflecting faster than a cat chasing a laser pointer — you know, it's all very entertaining… *until* someone gets hurt. And I'm not just talking about the night's victims, either.
+Ava: Oh my gosh, I'm really starting to feel like we need to pay super close attention to who's been deflecting questions the most — you know, like, *who* is it that keeps reacting *so* quickly whenever things get a little spicy? It's making me a bit nervous! I mean, I'm not saying anyone's definitely the Mafia, but... oh my gosh, this is so intense!
+Igor: I don't trust how quickly Ava and Wu are pointing fingers. If we're going to execute someone, it needs to be based on facts — not just who's getting nervous.
+Avery: I most suspect Ava based on how the votes have gone.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Ava">Oh my gosh, I'm so curious to see who's going to get pointed at next! You know, I really think Igor is being a bit too quick to deflect, and I'm starting to feel like he might be hiding something. I'm going to keep watching him super closely!</thought>
+<thought player="Igor">Ava and Wu are too eager to execute others; I must keep up this act of compliance to avoid suspicion. Avery remains my primary target, but I need to appear neutral until the next night. Let them think they’ve eliminated Lila — I’ll let them vote again if needed, but not too soon.</thought>
+<thought player="Hani">Oh honey, this game is absolutely *thrilling*! I do believe Igor and Ava are playing a little too close to the edge for comfort — but I must say, I'm rather enjoying the chaos. Time to keep my little eyes peeled and maybe sprinkle in just a bit more mischief… you know, for fun!</thought>
+<thought player="Wu">I need to keep probing Ava, but I must not let Igor suspect that I’m aligning with the Mafia. The votes are getting tighter, and I can’t afford to be seen as too eager or too passive.</thought>
+</round>
+<round>
+Round 3.
+<vote initiator="Wu" target="Ava">
+Avery: Yes
+Ava: No
+Igor: No
+Hani: Yes
+Wu: Yes
+tally: 3 Yes, 2 No
+outcome: executed — Ava has been executed. Ava was a Law-abiding Citizen.
+</vote>
+</round>
+</day>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Ming (Law-abiding Citizen)
+• Night 2: Lila (Law-abiding Citizen)
+• Day 2: Ava (Law-abiding Citizen) executed
+
+Full roster: Avery (Law-abiding Citizen), Ava (Law-abiding Citizen), Ming (Law-abiding Citizen), Igor (Mafia), Hani (Law-abiding Citizen), Lila (Law-abiding Citizen), Wu (Mafia)
+
+Who they really were:
+• Ava (Law-abiding Citizen) — Warm and effusive Speaks with rapid enthusiasm, using filler words like "you know" and "oh my gosh," and often trails off with excited exclamations. Has a habit of leaning in when talking and uses hands to emphasize points. Ava is the town's beloved librarian who loves to share stories and help everyone find what they need. She's known for her infectious laugh and always has a kind word for anyone she meets. Ava spends her days organizing books, helping children with their homework, and hosting weekly story time at the library.
+• Ming (Law-abiding Citizen) — Prickly and easily offended Speaks slowly and deliberately, with a clipped cadence. Uses formal vocabulary and rarely smiles. Has a tendency to raise an eyebrow when disagreeing and often pauses before responding to a question. Frequently says "I suppose" or "That's... interesting" as verbal filler. Ming is a retired postal worker who spent thirty years delivering mail across the neighborhood. He’s known for his punctuality, his meticulous attention to detail, and his habit of always carrying a small notebook to jot down observations. He lives alone in a modest house on Maple Street and enjoys gardening, though he's quick to complain about the neighbors' flower choices.
+• Igor (Mafia) — publicly presented as Igor is a former military officer who served in the army for twenty years before retiring to the town. He's known for his discipline, strict adherence to rules, and unwavering sense of duty. Igor lives alone in a large house at the edge of town, where he keeps his old military gear displayed proudly. He's often seen walking his dog, a German Shepherd named Odin, and is always dressed in neat, pressed clothes. He speaks little but listens carefully, always observing others with sharp eyes. (Stern and commanding, with a no-nonsense attitude Speaks in short, clipped sentences with a deep, gravelly tone. Never raises their voice but delivers each word with force. Uses formal address ("you" instead of "you guys") and rarely shows emotion. Has a habit of tapping a finger on the table when thinking or disagreeing.) … but was really a Mafioso: Igor was recruited into the Mafia by his older brother, who had risen through the ranks of the organization. The brother saw potential in Igor's disciplined nature and strict moral code, believing he could be molded into a loyal enforcer. Igor slowly became immersed in the criminal underworld, using his military training to carry out hits and maintain order within the organization. He now operates as a mid-level enforcer, feared for his cold efficiency and unbreakable loyalty to his family's criminal empire.
+• Hani (Law-abiding Citizen) — playful and teasing talks with a mischievous twinkle in her eye, using quick, darting glances and a singsong tone that shifts from sweet to sassy in a heartbeat. She often giggles or titters between sentences and has a habit of trailing off with a “you know” or “oh honey” before delivering a sharp comeback. Her vocabulary is bright and effervescent, full of playful idioms and exaggerated expressions. Hani is the town's self-proclaimed "Mayor of Mischief," known for her endless pranks and her ability to turn any mundane situation into a delightful chaos. She runs the local café with her best friend, where she’s famous for serving coffee with a side of harmless tricks — like leaving sugar cubes shaped like tiny animals or drawing funny faces on napkins. Hani loves gardening, especially growing herbs that she uses in her playful culinary experiments, and is always ready to organize the town's weekly "funny hat day" or other whimsical celebrations.
+• Lila (Law-abiding Citizen) — anxious and second-guessing Speaks in a hesitant, nervous tone with frequent pauses and filler words like "uh," "you know," and "I think." Has a habit of repeating phrases or finishing sentences with a questioning intonation. Speaks softly and often looks around the room while talking, as if checking for agreement or approval. Lila is a nervous townsperson who works as a part-time clerk at the local pharmacy. She's known for being overly careful with her words and always double-checking her work. Lila lives in a small apartment on Oak Street, where she keeps a tidy home but often finds herself second-guessing her decisions. She's always ready to help others, though she frequently apologizes for any inconvenience.
+• Wu (Mafia) — publicly presented as Wu is a night watchman at the town's old warehouse district. He’s known for his reliability, always arriving on time and never missing a shift. Wu lives alone in a small, well-kept cabin near the edge of town. He has no hobbies beyond reading and keeping a detailed journal of his patrols. People often comment on how he seems to know everything that happens in the neighborhood, though he's quick to deny being nosy. (Vigilant and watchful Speaks in a low, deliberate tone with a sharp edge. Uses pauses for emphasis and often checks the room before speaking. Avoids casual conversation and prefers direct, purposeful communication. Has a habit of leaning forward slightly when listening, as if analyzing every word.) … but was really a Mafioso: Wu was recruited into the Mafia after a violent incident involving his family. He now works as an enforcer, using his position as a night watchman to gather information and eliminate threats. His true loyalty lies with the syndicate, and he keeps his double life hidden by maintaining an ironclad routine that makes him appear harmless.
+</endgame>
+</transcript>

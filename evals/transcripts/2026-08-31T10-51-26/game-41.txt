@@ -1,0 +1,247 @@
+Game 41 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Shah" role="Law-abiding Citizen">
+Personality: brash and loud
+Manner: speaks quickly and with great volume, often interrupting others. Uses slang frequently and has a habit of saying "yo" at the beginning of sentences. Has a tendency to gesture wildly while talking.
+Persona: Shah is a construction worker who loves to tell stories about his latest project. He's always in the spotlight, never shy about sharing his opinions or experiences. His friends often joke that he's more comfortable talking to a crowd than to a single person.
+</player>
+<player name="Tahmina" role="Law-abiding Citizen">
+Personality: weary and world-worn
+Manner: speaks slowly and deliberately, with a gravelly tone. Uses formal vocabulary and rarely raises their voice. Has a habit of pausing before answering questions and often looks away while talking. Avoids eye contact and seems distant or preoccupied.
+Persona: Tahmina is a retired librarian who has lived in the town for most of her life. She spent decades working with books and helping people find information, but now prefers quiet solitude. She's known for her calm presence and ability to listen without judgment. She doesn't get involved in conflicts or gossip, keeping to herself and her daily routines.
+</player>
+<player name="Raihan" role="Law-abiding Citizen">
+Personality: dreamy and distractible
+Manner: speaks in a soft, meandering tone with frequent pauses and trailing off. Uses flowery, abstract vocabulary and often gets lost in their own thoughts, leading to rambling sentences. Has a habit of looking distant or up at the ceiling while talking, and sometimes starts sentences only to abandon them mid-sentence.
+Persona: Raihan is a dreamer who works as a night shift security guard at the local art museum. They spend their days watching over priceless paintings and sculptures, often losing themselves in thoughts about the stories these pieces might tell. Raihan has a habit of collecting small, strange objects from the museum and keeps them in a worn leather satchel. They're known for being friendly but easily distracted, often forgetting what they were going to say or where they put their keys.
+</player>
+<player name="Kamal" role="Mafia">
+Personality: Cunning and calculating, with a sharp mind for strategy and manipulation. Kamal presents as a quiet, unassuming individual who carefully observes others, making calculated decisions based on subtle cues. They are patient and methodical, never rushing into actions or revealing too much too soon.
+Manner: Speaks in measured, deliberate tones with a calm, almost hypnotic rhythm. Uses precise language and rarely raises their voice. Often pauses before responding to questions, as if weighing every word carefully. Has a habit of tilting their head slightly while listening, appearing attentive but calculating. Their speech is smooth and controlled, like a seasoned negotiator.
+Public legend: Kamal is a meticulous accountant who has worked for the same firm for over fifteen years. They are known for being reliable, detail-oriented, and quiet in meetings. Kamal lives alone in a modest apartment near the town square and rarely socializes outside of work. They enjoy reading financial journals, gardening, and solving complex puzzles during their free time. Colleagues describe them as trustworthy but distant, always focused on numbers and facts.
+True self (hidden): Kamal was recruited into the Mafia after a business deal went sour. Their partner betrayed them, leading to a major financial loss and personal injury. In retaliation, Kamal became a mole within the organization, using their accounting skills to infiltrate and gather intelligence. They've been working undercover for years, carefully building trust while slowly dismantling the operation from within. Their true mission is to expose the entire network and bring down the leadership.
+</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: anxious and second-guessing
+Manner: speaks in a rushed, nervous tone with frequent filler words like "uh," "like," and "you know." Has a habit of repeating phrases or words, often trailing off mid-sentence. Talks quickly but halts frequently to check if others are listening or to correct themselves. Avoids direct eye contact and fidgets while speaking.
+Persona: Zara is a local bookstore clerk who's always worried she might be doing something wrong. She’s overly concerned with being helpful, often second-guessing her own decisions. She tends to apologize for small things, like forgetting someone's name or making a typo. Zara lives in a small apartment above the shop and spends her free time reading self-help books, trying to become more confident.
+</player>
+<player name="Munawar" role="Mafia">
+Personality: Stern and commanding, with an air of authority and discipline. Munawar is a figure who demands respect through their presence and speaks with conviction, rarely hesitating in their words. They possess a sharp eye for detail and a no-nonsense attitude, often taking charge in tense situations.
+Manner: Speaks in a firm, measured tone with a slight rasp, never raising their voice unnecessarily but making every word count. Uses direct language and avoids fluff or unnecessary pauses. When they do speak, it's with purpose and clarity, as if weighing each syllable. They often pause before delivering important statements, giving them gravity.
+Public legend: Munawar is a respected town constable who has served the community for over a decade. Known for strict adherence to duty and an unwavering commitment to justice, they are seen as the backbone of law enforcement in the town. Munawar lives alone in a modest house near the station and spends their evenings reviewing case files or training with local officers. They enjoy hiking and maintaining a well-kept garden, where they often reflect on the complexities of human nature.
+True self (hidden): Munawar was once a brutal enforcer for a powerful crime family, known for his cold efficiency in carrying out orders. After years of violent deeds, he faked his death and reinvented himself as a lawman to escape the life he once led. Now, he uses his authority to protect the town from those who would threaten it—while secretly keeping watch over the shadows that still lurk beneath the surface.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Shah, Tahmina, Raihan, Kamal, Zara, Munawar. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Kamal): Your Mafia teammates are: Munawar. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Munawar): Your Mafia teammates are: Kamal. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Kamal points at Avery
+Munawar points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Munawar: That's a heavy start to the day. I think we should focus on gathering information rather than jumping to conclusions.
+Raihan: You know, I was just thinking about how paintings can be so still yet tell such vivid stories... it's like the quiet ones among us might be the most interesting.
+Zara: Uh, I was just thinking… like, Shah didn't say much during the night, and you know, I kind of forgot if I saw him leave the table or not. That's weird, right? Like, he's always so... uh... involved in things.
+Shah: Yo, I ain't seen nothin' yet that makes me think someone's a Mafia, but I’m gonna keep my eyes open. I'm sure someone's got a story they're not tellin' us. That’s how you catch 'em.
+Tahmina: I think we should all be mindful of our words. It's easy to jump to conclusions, but we mustn't let fear cloud our judgment.
+Kamal: I agree with Tahmina — we need to be careful about jumping to conclusions. But I also think it's worth noting that nobody seems to have a solid alibi for where they were during the night.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Shah">Yo, that's a rough start with Avery gone, but I ain't lettin' my guard down. I gotta keep talkin’ loud and clear, see if I can sniff out who’s really playin’ the game. I’m not scared of no accusations, but I also ain’t stupid.</thought>
+<thought player="Tahmina">The night's end brought a heavy loss, and the morning's discussion has already stirred unease. I must tread carefully, listening more than speaking, for the truth lies in the silence between words.</thought>
+<thought player="Raihan">The painting silence feels heavy, like the canvas itself is holding its breath. I keep thinking about Shah's quiet exit, but maybe that's just my mind wandering again... I should probably keep listening, not just dreaming.</thought>
+<thought player="Kamal">The conversation so far has been carefully guarded, with no overt accusations. I need to continue planting subtle seeds of doubt without drawing attention to myself. Kamal's public persona as a quiet accountant fits well here, allowing for measured observations rather than rash claims.</thought>
+<thought player="Zara">Uh, so like, Avery's dead and everyone's being all cautious, but I'm still kind of worried about Shah... he didn't say much during night, and I keep forgetting if I saw him leave or not. You know, I really hope I'm not being paranoid, but I just can't shake this feeling that someone's hiding something.</thought>
+<thought player="Munawar">The night's kill was a solid start, but I need to keep planting seeds of doubt without drawing suspicion. Kamal and I should stick close, and I'll watch for any sign of Zara or Shah trying to play the innocent.</thought>
+</round>
+<round>
+Round 2.
+Raihan: The quiet ones... they do seem to carry the most weight, don't you think? Like the stillness between brushstrokes, holding all the unspoken truths.
+<vote initiator="Shah" target="Raihan">
+Shah: Yes
+Tahmina: No
+Raihan: No
+Kamal: Yes
+Zara: No
+Munawar: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Kamal: I think we're all feeling the weight of losing Avery. It's unsettling, but I'd rather focus on what we know than guess at who might be hiding something.
+Raihan: You know, I was just thinking about how the museum's old paintings always seem to watch over everything... it's like they've seen all the secrets, and maybe that's why some of us feel so uneasy.
+Munawar: I think we’re all on edge, but let’s not let fear turn us into fools. If we start accusing based on gut feelings, we’ll end up making the same mistake the first night.
+Tahmina: I've been thinking about what Kamal said — it's true, we don't have solid alibis. But we also can't let suspicion wander where it may lead us.
+Zara: Uh, I was just thinking... like, Kamal didn't say much during the night either, and you know, I kind of forgot if I saw him leave the table or not. That's weird, right? Like, he's always so... uh... involved in things.
+Shah: Yo, Kamal, you said somethin' about no solid alibis — well, I'm tellin' you, I seen you slip outta the room twice last night, and I ain't talkin' about the bathroom. That's some fishy business right there, my friend.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Shah">Yo, I'm gonna keep up the pressure on Kamal — he's been actin' real nervous, and I ain't done yet. I gotta keep talkin’ loud and keep pushin' people around, see if I can get 'em to slip up.</thought>
+<thought player="Tahmina">The tension is thick, and suspicion swirls like dust in the air. I'll keep listening, as I always do, but I must not let fear push me into rash words. The quiet ones often carry the most weight — I need to be mindful of that.</thought>
+<thought player="Raihan">The quiet ones do carry weight, but I wonder if I'm letting my thoughts wander too far into the canvas of suspicion. Shah's exit feels significant, yet I mustn't let fear paint my conclusions.</thought>
+<thought player="Kamal">The tension is rising, and Shah's suspicion toward me is palpable. I must tread carefully, perhaps even let the suspicion fester a bit longer before making my next move. My cover remains solid, but I need to ensure no one starts questioning my alibi too closely.</thought>
+<thought player="Zara">Uh, I'm really glad no one executed Raihan, but now I'm even more confused about Shah and Kamal... like, did I see them leave or not? I keep second-guessing myself, and that's probably exactly what the Mafia wants.</thought>
+<thought player="Munawar">Kamal and I need to stay aligned, but I must not let Shah or Zara see us as a clear duo. I’ll keep pushing for doubt on others while planting seeds that the quiet ones are dangerous.</thought>
+</round>
+<round>
+Round 3.
+Tahmina: Shah, your accusations about Kamal feel rushed. We need proof, not just whispers.
+Munawar: I'm starting to think that the real danger isn't in who's talking, but in who's staying silent.
+<vote initiator="Shah" target="Kamal">
+Shah: Yes
+Tahmina: No
+Raihan: No
+Kamal: No
+Zara: No
+Munawar: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Raihan: The canvas holds its breath, you know... but sometimes the silence between strokes is where the truth hides. I keep wondering if the quiet ones are just waiting for their moment to paint something new.
+Zara: Uh, I was just thinking... like, Munawar didn't say much during the night either, and you know, I kind of forgot if I saw him leave the table or not. That's weird, right? Like, he's always so... uh... involved in things.
+<vote initiator="Shah" target="Zara">
+Shah: Yes
+Tahmina: No
+Raihan: No
+Kamal: Yes
+Zara: No
+Munawar: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Munawar points at Shah
+Kamal points at Shah
+<kill>Shah — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Shah was killed last night. Shah was a Law-abiding Citizen.
+<round>
+Round 1.
+Tahmina: The night took two of us, and still we're left guessing who among us carries the weight of silence. I think it's time we stop chasing shadows and start asking the right questions.
+Raihan: The canvas holds its breath, you know... but sometimes the silence between strokes is where the truth hides. I keep wondering if the quiet ones are just waiting for their moment to paint something new.
+Munawar: I think it's clear that the killer is still among us, and they're playing this game a lot closer to the vest than we initially thought.
+Zara: Uh, I was just thinking... like, Tahmina didn't say much during the night either, and you know, I kind of forgot if I saw her leave the table or not. That's weird, right? Like, she's always so... uh... involved in things.
+Kamal: I think we're all feeling the pressure, but let's not let it make us reckless. I'm still convinced that whoever is hiding something isn't the one who's been talking the most.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tahmina">The silence between words carries more weight than any accusation thus far. I must keep my thoughts close, listen deeper, and let the truth reveal itself slowly rather than rush to judgment.</thought>
+<thought player="Raihan">The canvas holds its breath, but I can't let my thoughts wander too far into the silence between strokes. I need to stay grounded in what's real, not just the stories my mind weaves.</thought>
+<thought player="Kamal">The tension is mounting, and my alibi is under scrutiny. I must continue to observe carefully, letting others point fingers while I stay just ahead of suspicion. My priority remains maintaining cover and identifying weaknesses in the opposing team's strategy.</thought>
+<thought player="Zara">Uh, I'm really starting to feel like I'm missing something crucial here. Like, did I actually see anyone leave during the night or not? I keep second-guessing myself, and that's probably exactly what the Mafia wants. I should probably just... uh... stick to what I know, and try not to jump to conclusions.</thought>
+<thought player="Munawar">The kills so far have been strategic, but I need to keep the pressure on the remaining citizens without letting them see us as a united front. Kamal and I must stay sharp, and I’ll continue to plant doubt on the quieter players like Tahmina and Zara.</thought>
+</round>
+<round>
+Round 2.
+Raihan: The canvas holds its breath, but I think it's the quiet ones who are truly painting their stories — not with brushstrokes, but with the silence between their words.
+Tahmina: The killer's still among us, and they're not just hiding — they're weaving themselves into our silence.
+Zara: Uh, I was just thinking… like, Kamal didn't say much during the night either, and you know, I kind of forgot if I saw him leave the table or not. That's weird, right? Like, he's always so... uh... involved in things.
+Kamal: I can't help but wonder if the killer is watching us now, carefully observing how we react to each other's silence.
+Munawar: I think we’re all starting to realize that the killer isn’t just random — they’re watching us, learning our patterns. That’s what makes this game so dangerous now.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tahmina">The silence between words feels heavier now, and I can sense the killer watching us all closely. I must keep my thoughts close and listen deeper — let the truth reveal itself slowly rather than rush to judgment.</thought>
+<thought player="Raihan">The canvas holds its breath, but I mustn’t let the silence between strokes cloud my thoughts. I need to stay rooted in what’s real, not let fear paint my conclusions.</thought>
+<thought player="Kamal">The scrutiny on my alibi is intensifying, but I remain cautious—letting others expose their suspicions while I stay one step ahead. My priority is to maintain cover and identify any cracks in the opposing team’s strategy without drawing undue attention.</thought>
+<thought player="Zara">Uh, I'm really starting to feel like I'm missing something crucial here. Like, did I actually see anyone leave during the night or not? I keep second-guessing myself, and that's probably exactly what the Mafia wants. I should probably just... uh... stick to what I know, and try not to jump to conclusions.</thought>
+<thought player="Munawar">The citizens are getting nervous, and that's good — it means they're starting to suspect everyone, including the quiet ones. I need to keep pushing doubt on Tahmina and Zara while making sure Kamal and I stay aligned but not obvious. The next kill must be calculated, and I’ll use the tension to my advantage.</thought>
+</round>
+<round>
+Round 3.
+Zara: Uh, I was just thinking… like, Raihan didn't say much during the night either, and you know, I kind of forgot if I saw him leave the table or not. That's weird, right? Like, he's always so... uh... involved in things.
+Tahmina: I've been watching how the silence falls on certain names — it's not just about what’s said, but what’s left unsaid.
+Raihan: The canvas holds its breath, but I think it's the quiet ones who are truly painting their stories — not with brushstrokes, but with the silence between their words.
+Munawar: I think we’re all starting to see that the killer isn’t just random — they’re watching us, learning our patterns. That’s what makes this game so dangerous now.
+Kamal: I can't help but think that whoever is watching us closely is also learning how we react to suspicion. It's unsettling, but maybe that’s what makes this game so dangerous.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tahmina">The killer's pattern is clear — they’re not just killing, they’re manipulating the silence, testing our reactions. I must keep my guard up, listen harder, and not let fear make me speak too soon.</thought>
+<thought player="Raihan">The canvas holds its breath, but I mustn’t let the silence between strokes obscure what’s real. I need to ground myself in the facts, not just the stories my mind weaves.</thought>
+<thought player="Kamal">The scrutiny on my alibi is tightening, but I remain cautious, letting others expose their suspicions while staying one step ahead. My priority is to maintain cover and identify any cracks in the opposing team’s strategy without drawing undue attention.</thought>
+<thought player="Zara">I keep forgetting if people left during the night, and that's making me really anxious. I should just focus on what I know for sure and not accuse anyone based on my shaky memories. Staying calm is key, you know?</thought>
+<thought player="Munawar">The citizens are starting to turn on each other, which is good for our strategy, but I must be careful not to let Zara or Tahmina grow too suspicious of Kamal and me. I’ll keep pushing doubt toward the quieter players while preparing for the next kill.</thought>
+</round>
+<round>
+Round 4.
+Tahmina: The killer’s not just testing us — they’re learning how we react to suspicion. I think it's time we stop letting them control the narrative.
+Raihan: The canvas holds its breath, but I think it's the quiet ones who are truly painting their stories — not with brushstrokes, but with the silence between their words.
+Kamal: I've been thinking about the silence between words — it's often where the real tension lies. I wonder if we're all projecting our own fears onto each other.
+Munawar: I think we’re all starting to realize that the killer isn’t just random — they’re watching us, learning our patterns. That’s what makes this game so dangerous now.
+Zara: Uh, I was just thinking... like, Tahmina didn't say much during the night either, and you know, I kind of forgot if I saw her leave the table or not. That's weird, right? Like, she's always so... uh... involved in things.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tahmina">The killer's weaving themselves deeper into our silence, testing our reactions with each passing moment. I’ll keep listening, keep watching, and let the weight of what’s left unsaid guide me — not my fears, but the truth hidden in the spaces between words.</thought>
+<thought player="Raihan">The canvas holds its breath, but I mustn’t let the silence between strokes obscure what’s real. I need to ground myself in the facts, not just the stories my mind weaves.</thought>
+<thought player="Kamal">The scrutiny on my alibi is tightening, but I remain cautious, letting others expose their suspicions while staying one step ahead. My priority is to maintain cover and identify any cracks in the opposing team’s strategy without drawing undue attention.</thought>
+<thought player="Zara">Uh, I'm really starting to panic about everyone's movements during the night, but I need to remember that the Mafia wants us to doubt each other. I should just stick to what I know and not jump to conclusions again.</thought>
+<thought player="Munawar">The citizens are beginning to turn on each other, which is advantageous, but I must keep the focus off Kamal and me. I’ll continue to sow doubt toward quieter players like Tahmina and Zara while positioning ourselves as sensible, cautious voices. The next kill needs to be precise — I'll target someone who’s become too suspicious or too vocal, ideally not drawing attention to our team.</thought>
+</round>
+<round>
+Round 5.
+Zara: Uh, I was just thinking... like, Munawar didn't say much during the night either, and you know, I kind of forgot if I saw him leave the table or not. That's weird, right? Like, he's always so... uh... involved in things.
+Tahmina: The killer's not just hiding in the silence — they're using it to test us. I think it's time we stop playing their game and start asking who’s really been watching.
+Munawar: I think it's clear that whoever is watching us closely is learning how we react — and we’re starting to play right into their hands by letting suspicion swirl without focus.
+Kamal: I can't help but notice how the silence in this room feels heavier now — like everyone's watching everyone else more carefully. It's as if we're all painting our stories, but the canvas is full of tension.
+Raihan: The canvas holds its breath, but I think it's the quiet ones who are truly painting their stories — not with brushstrokes, but with the silence between their words.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tahmina">The killer's weaving deeper into our silence, testing us with each passing moment. I’ll keep watching, keep listening, and not let fear push me into rash words or accusations. The truth lies in what’s left unsaid — I must hold tight to that belief.</thought>
+<thought player="Raihan">The canvas holds its breath, but I mustn’t let the silence between strokes obscure what’s real. I need to ground myself in the facts, not just the stories my mind weaves.</thought>
+<thought player="Kamal">The scrutiny on my alibi is tightening, but I remain cautious, letting others expose their suspicions while staying one step ahead. My priority is to maintain cover and identify any cracks in the opposing team’s strategy without drawing undue attention.</thought>
+<thought player="Zara">Uh, I'm really starting to panic about everyone's movements during the night, but I need to remember that the Mafia wants us to doubt each other. I should just stick to what I know and not accuse anyone based on my shaky memories.</thought>
+<thought player="Munawar">The citizens are turning on each other, which plays into our hands, but I must keep the focus off Kamal and me. I’ll continue to push doubt toward quieter players like Tahmina and Zara while preparing for the next kill — targeting someone who’s become too suspicious or vocal.</thought>
+</round>
+<round>
+Round 6.
+Tahmina: I’ve been listening carefully, and I think it’s important we not let the killer manipulate us into turning on each other. The silence feels deliberate — like they’re watching us all react.
+Munawar: I think we’re all starting to realize that the killer isn’t just random — they’re watching us, learning our patterns. That’s what makes this game so dangerous now.
+Zara: Uh, I was just thinking... like, Tahmina didn't say much during the night either, and you know, I kind of forgot if I saw her leave the table or not. That's weird, right? Like, she's always so... uh... involved in things.
+Raihan: The canvas holds its breath... but I think it's the quiet ones who are truly painting their stories — not with brushstrokes, but with the silence between their words.
+Kamal: I keep thinking that whoever is watching us closely is learning how we react to suspicion — and it’s making me wonder if we’re all starting to play right into their hands.
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Kamal points at Tahmina
+Munawar points at Tahmina
+<kill>Tahmina — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Night 2: Shah (Law-abiding Citizen)
+• Night 3: Tahmina (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Shah (Law-abiding Citizen), Tahmina (Law-abiding Citizen), Raihan (Law-abiding Citizen), Kamal (Mafia), Zara (Law-abiding Citizen), Munawar (Mafia)
+
+Who they really were:
+• Shah (Law-abiding Citizen) — brash and loud speaks quickly and with great volume, often interrupting others. Uses slang frequently and has a habit of saying "yo" at the beginning of sentences. Has a tendency to gesture wildly while talking. Shah is a construction worker who loves to tell stories about his latest project. He's always in the spotlight, never shy about sharing his opinions or experiences. His friends often joke that he's more comfortable talking to a crowd than to a single person.
+• Tahmina (Law-abiding Citizen) — weary and world-worn speaks slowly and deliberately, with a gravelly tone. Uses formal vocabulary and rarely raises their voice. Has a habit of pausing before answering questions and often looks away while talking. Avoids eye contact and seems distant or preoccupied. Tahmina is a retired librarian who has lived in the town for most of her life. She spent decades working with books and helping people find information, but now prefers quiet solitude. She's known for her calm presence and ability to listen without judgment. She doesn't get involved in conflicts or gossip, keeping to herself and her daily routines.
+• Raihan (Law-abiding Citizen) — dreamy and distractible speaks in a soft, meandering tone with frequent pauses and trailing off. Uses flowery, abstract vocabulary and often gets lost in their own thoughts, leading to rambling sentences. Has a habit of looking distant or up at the ceiling while talking, and sometimes starts sentences only to abandon them mid-sentence. Raihan is a dreamer who works as a night shift security guard at the local art museum. They spend their days watching over priceless paintings and sculptures, often losing themselves in thoughts about the stories these pieces might tell. Raihan has a habit of collecting small, strange objects from the museum and keeps them in a worn leather satchel. They're known for being friendly but easily distracted, often forgetting what they were going to say or where they put their keys.
+• Kamal (Mafia) — publicly presented as Kamal is a meticulous accountant who has worked for the same firm for over fifteen years. They are known for being reliable, detail-oriented, and quiet in meetings. Kamal lives alone in a modest apartment near the town square and rarely socializes outside of work. They enjoy reading financial journals, gardening, and solving complex puzzles during their free time. Colleagues describe them as trustworthy but distant, always focused on numbers and facts. (Cunning and calculating, with a sharp mind for strategy and manipulation. Kamal presents as a quiet, unassuming individual who carefully observes others, making calculated decisions based on subtle cues. They are patient and methodical, never rushing into actions or revealing too much too soon. Speaks in measured, deliberate tones with a calm, almost hypnotic rhythm. Uses precise language and rarely raises their voice. Often pauses before responding to questions, as if weighing every word carefully. Has a habit of tilting their head slightly while listening, appearing attentive but calculating. Their speech is smooth and controlled, like a seasoned negotiator.) … but was really a Mafioso: Kamal was recruited into the Mafia after a business deal went sour. Their partner betrayed them, leading to a major financial loss and personal injury. In retaliation, Kamal became a mole within the organization, using their accounting skills to infiltrate and gather intelligence. They've been working undercover for years, carefully building trust while slowly dismantling the operation from within. Their true mission is to expose the entire network and bring down the leadership.
+• Zara (Law-abiding Citizen) — anxious and second-guessing speaks in a rushed, nervous tone with frequent filler words like "uh," "like," and "you know." Has a habit of repeating phrases or words, often trailing off mid-sentence. Talks quickly but halts frequently to check if others are listening or to correct themselves. Avoids direct eye contact and fidgets while speaking. Zara is a local bookstore clerk who's always worried she might be doing something wrong. She’s overly concerned with being helpful, often second-guessing her own decisions. She tends to apologize for small things, like forgetting someone's name or making a typo. Zara lives in a small apartment above the shop and spends her free time reading self-help books, trying to become more confident.
+• Munawar (Mafia) — publicly presented as Munawar is a respected town constable who has served the community for over a decade. Known for strict adherence to duty and an unwavering commitment to justice, they are seen as the backbone of law enforcement in the town. Munawar lives alone in a modest house near the station and spends their evenings reviewing case files or training with local officers. They enjoy hiking and maintaining a well-kept garden, where they often reflect on the complexities of human nature. (Stern and commanding, with an air of authority and discipline. Munawar is a figure who demands respect through their presence and speaks with conviction, rarely hesitating in their words. They possess a sharp eye for detail and a no-nonsense attitude, often taking charge in tense situations. Speaks in a firm, measured tone with a slight rasp, never raising their voice unnecessarily but making every word count. Uses direct language and avoids fluff or unnecessary pauses. When they do speak, it's with purpose and clarity, as if weighing each syllable. They often pause before delivering important statements, giving them gravity.) … but was really a Mafioso: Munawar was once a brutal enforcer for a powerful crime family, known for his cold efficiency in carrying out orders. After years of violent deeds, he faked his death and reinvented himself as a lawman to escape the life he once led. Now, he uses his authority to protect the town from those who would threaten it—while secretly keeping watch over the shadows that still lurk beneath the surface.
+</endgame>
+</transcript>

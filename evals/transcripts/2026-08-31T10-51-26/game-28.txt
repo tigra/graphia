@@ -1,0 +1,127 @@
+Game 28 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Aram" role="Law-abiding Citizen">
+Personality: playful and teasing
+Manner: speaks with a mischievous twinkle in his eyes, often trailing off with a smirk or a theatrical pause. Uses slang and casual expressions with flair, and has a habit of finishing sentences with a调侃 (teasing) tone. His speech is quick and light, like he's always half-joking.
+Persona: Aram is a cheerful baker who loves to make elaborate pastries and has a knack for turning even the most mundane ingredients into something magical. He’s known around town for his infectious laugh and his ability to find joy in small things, like the perfect crust on a croissant or the way sunlight hits his bakery window.
+</player>
+<player name="Sofia" role="Mafia">
+Personality: Sofia is a sharp-witted, calculating woman who exudes quiet confidence. She has a keen eye for detail and an unsettling ability to read people's emotions. Her demeanor is composed but always slightly aloof, as if she's always one step ahead of everyone else.
+Manner: Sofia speaks in measured, deliberate tones. She rarely rushes her words and often pauses before responding, as if weighing each sentence carefully. Her voice carries a subtle edge that makes her seem like she's always in control. She uses formal diction and often quotes famous figures or literature to support her points.
+Public legend: Sofia is a respected librarian who has worked at the town's central library for over fifteen years. She is known for her extensive knowledge of history, literature, and local genealogy. She's an introverted woman who enjoys quiet contemplation and is often found organizing old documents or helping residents with their research needs. Her colleagues admire her dedication and her ability to remain calm under pressure.
+True self (hidden): Sofia was recruited into the Mafia by her brother, who was a trusted enforcer. She used her position as a librarian to gather intelligence on potential targets and rivals. Over time, she became a key figure in the organization's operations, using her calm demeanor and analytical mind to orchestrate complex schemes from behind the scenes.
+</player>
+<player name="Ravi" role="Law-abiding Citizen">
+Personality: earnest and sincere
+Manner: speaks slowly and deliberately, with a quiet intensity. Uses formal diction and avoids slang, often pausing to choose words carefully. Has a habit of repeating key phrases for emphasis and tends to speak in complete, well-constructed sentences.
+Persona: Ravi is a dedicated town librarian who has worked at the central library for over a decade. He is known for his deep love of books and his commitment to helping residents find exactly what they need. Ravi is always willing to spend extra time researching obscure facts or recommending new reads, and he takes pride in maintaining the library's collection with meticulous care.
+</player>
+<player name="Noor" role="Mafia">
+Personality: Vigilant and watchful, with an unsettling intensity that makes others uncomfortable. Noor is constantly scanning the room, always aware of subtle movements and changes in expression. She's not naturally trusting but can be incredibly loyal to those she considers worthy of her attention.
+Manner: Speaks in a low, deliberate tone with a slight edge. Her voice carries an almost predatory quality, as if she's always one step from either protecting or judging someone. She tends to make eye contact while speaking and often pauses before answering questions, giving the impression that she's carefully considering every word.
+Public legend: Noor is a retired town watchman who served for over twenty years before retiring due to health issues. She's known for her unwavering dedication to keeping the town safe and has built a reputation for being exceptionally observant. She often volunteers at the local community center, where she helps organize neighborhood watch meetings and teaches self-defense classes. Her colleagues admire her strong work ethic and her ability to remain calm under pressure.
+True self (hidden): Noor was recruited into the Mafia by her older brother, who had already established himself as a powerful figure in the organization. She initially resisted but eventually became fully committed after witnessing the consequences of defiance. Her loyalty lies with her brother and the family business, and she's been carefully grooming new recruits while maintaining her cover as a vigilant townsperson.
+</player>
+<player name="Johannes" role="Law-abiding Citizen">
+Personality: stern and commanding
+Manner: speaks with a slow, deliberate pace, using formal diction and a strong, authoritative tone. Avoids slang and often repeats key phrases for emphasis. Pauses before speaking as if weighing every word carefully.
+Persona: Johannes is a former military officer who served with distinction in the town's defense force. He retired after a long career and now works as a town supervisor, overseeing public safety and infrastructure projects. Known for his discipline and unwavering sense of duty, he takes his responsibilities seriously and expects the same from others.
+</player>
+<player name="Tahmid" role="Law-abiding Citizen">
+Personality: anxious and second-guessing
+Manner: speaks quickly with a hesitant tone, often trailing off or restarting sentences. Uses filler words like "um," "well," and "I think" frequently. Has a habit of looking around the room while speaking, as if seeking reassurance from others. Pauses often and tends to apologize for their thoughts or opinions.
+Persona: Tahmid is a nervous, detail-oriented accountant who has worked at the town's financial office for eight years. He's known for being overly cautious with numbers and always double-checking his work. Despite his calm demeanor in public, he often second-guesses his decisions and spends hours worrying about small mistakes. He's a quiet, unassuming man who keeps to himself but is well-respected for his honesty and meticulousness.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aram, Sofia, Ravi, Noor, Johannes, Tahmid. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Sofia): Your Mafia teammates are: Noor. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Noor): Your Mafia teammates are: Sofia. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Sofia points at Tahmid
+Noor points at Tahmid
+<kill>Tahmid — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Tahmid was killed last night. Tahmid was a Law-abiding Citizen.
+<round>
+Round 1.
+Aram: Well, I suppose we can all agree that Tahmid was a real shame to lose — but I'm still waiting for someone to explain how they managed to sneak past the town's defenses. Anyone care to take a guess?
+Ravi: I concur with Aram — I do find it peculiar that the killer was able to infiltrate our town so easily. I believe we must scrutinize each of our fellow townspeople carefully, for the Mafia among us may be quite cunning.
+Sofia: The killer was clever, but perhaps not clever enough. I've noticed how some of us have been acting a bit... differently since last night. Still, we mustn't let paranoia cloud our judgment. We should examine our own memories before accusing others.
+Avery: Nothing is settled yet, but I'm watching Noor most closely.
+Noor: I'm still trying to piece together what happened last night. I hope we can all agree that we need to stay focused on the facts, and not let fear dictate our decisions.
+<vote initiator="Johannes" target="Noor">
+Avery: No
+Aram: Yes
+Sofia: No
+Ravi: No
+Noor: No
+Johannes: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Ravi: I must emphasize that we should not let our emotions drive us to rash decisions. I am inclined to believe that the killer among us is someone who has been evasive in their responses, particularly when questioned about their actions during the night. I suspect Aram may be hiding something — his hesitation was notable. Let us examine his behavior more closely.
+Avery: Nothing is settled yet, but I'm watching Noor most closely.
+Aram: Ravi, my dear, you're always so quick to point fingers — but perhaps you should take a good look in the mirror before accusing others of hesitation. I mean, who's been dodging questions about their night shift lately?
+Sofia: Aram's observation about hesitation is intriguing, but I think we must be cautious not to let our suspicions spiral into baseless accusations. Perhaps it would be wise to focus on the facts of the case rather than speculation.
+Johannes: Aram's evasion is noted — he deflects suspicion onto others while failing to address the core issue. I believe he is hiding something vital.
+Noor: I'm still not convinced Aram's evasion was about hesitation — it seemed more like he was trying to protect someone. That kind of behavior is suspicious, especially when we're all trying to stay safe.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Aram">Well, that was a spicy start — I'm glad Noor didn't get the boot, but Ravi's already got his little theory cooked up. I'll just have to keep stirring the pot and let everyone think they're onto something, while I quietly gather my own evidence.</thought>
+<thought player="Sofia">The vote to execute Noor failed, which means I must continue to play the part of a concerned citizen while keeping my eye on Aram. My next move should be to subtly reinforce suspicions about Aram without directly implicating him, perhaps by referencing his evasive behavior in a way that sounds like innocent concern rather than accusation.</thought>
+<thought player="Ravi">I find myself increasingly convinced that Aram harbors significant secrets, yet I must resist the urge to act on speculation alone. My duty remains clear: to observe carefully, speak truthfully, and ensure that justice prevails through reasoned discourse rather than emotional fervor.</thought>
+<thought player="Noor">I need to be cautious with my movements — the vote failed, but the tension is rising. I must keep my cover intact while staying alert for any signs of suspicion aimed at me or Sofia.</thought>
+<thought player="Johannes">The vote to execute Noor failed, but the tension remains high. I must continue to observe Aram closely, as his evasive behavior is suspicious. The killer among us is still at large, and we cannot let our guard down.</thought>
+</round>
+<round>
+Round 2.
+<vote initiator="Johannes" target="Aram">
+Avery: No
+Aram: No
+Sofia: Yes
+Ravi: Yes
+Noor: Yes
+Johannes: Yes
+tally: 4 Yes, 2 No
+outcome: executed — Aram has been executed. Aram was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. Aram was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Sofia points at Avery
+Noor points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Tahmid (Law-abiding Citizen)
+• Day 1: Aram (Law-abiding Citizen) executed
+• Night 2: Avery (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Aram (Law-abiding Citizen), Sofia (Mafia), Ravi (Law-abiding Citizen), Noor (Mafia), Johannes (Law-abiding Citizen), Tahmid (Law-abiding Citizen)
+
+Who they really were:
+• Aram (Law-abiding Citizen) — playful and teasing speaks with a mischievous twinkle in his eyes, often trailing off with a smirk or a theatrical pause. Uses slang and casual expressions with flair, and has a habit of finishing sentences with a调侃 (teasing) tone. His speech is quick and light, like he's always half-joking. Aram is a cheerful baker who loves to make elaborate pastries and has a knack for turning even the most mundane ingredients into something magical. He’s known around town for his infectious laugh and his ability to find joy in small things, like the perfect crust on a croissant or the way sunlight hits his bakery window.
+• Sofia (Mafia) — publicly presented as Sofia is a respected librarian who has worked at the town's central library for over fifteen years. She is known for her extensive knowledge of history, literature, and local genealogy. She's an introverted woman who enjoys quiet contemplation and is often found organizing old documents or helping residents with their research needs. Her colleagues admire her dedication and her ability to remain calm under pressure. (Sofia is a sharp-witted, calculating woman who exudes quiet confidence. She has a keen eye for detail and an unsettling ability to read people's emotions. Her demeanor is composed but always slightly aloof, as if she's always one step ahead of everyone else. Sofia speaks in measured, deliberate tones. She rarely rushes her words and often pauses before responding, as if weighing each sentence carefully. Her voice carries a subtle edge that makes her seem like she's always in control. She uses formal diction and often quotes famous figures or literature to support her points.) … but was really a Mafioso: Sofia was recruited into the Mafia by her brother, who was a trusted enforcer. She used her position as a librarian to gather intelligence on potential targets and rivals. Over time, she became a key figure in the organization's operations, using her calm demeanor and analytical mind to orchestrate complex schemes from behind the scenes.
+• Ravi (Law-abiding Citizen) — earnest and sincere speaks slowly and deliberately, with a quiet intensity. Uses formal diction and avoids slang, often pausing to choose words carefully. Has a habit of repeating key phrases for emphasis and tends to speak in complete, well-constructed sentences. Ravi is a dedicated town librarian who has worked at the central library for over a decade. He is known for his deep love of books and his commitment to helping residents find exactly what they need. Ravi is always willing to spend extra time researching obscure facts or recommending new reads, and he takes pride in maintaining the library's collection with meticulous care.
+• Noor (Mafia) — publicly presented as Noor is a retired town watchman who served for over twenty years before retiring due to health issues. She's known for her unwavering dedication to keeping the town safe and has built a reputation for being exceptionally observant. She often volunteers at the local community center, where she helps organize neighborhood watch meetings and teaches self-defense classes. Her colleagues admire her strong work ethic and her ability to remain calm under pressure. (Vigilant and watchful, with an unsettling intensity that makes others uncomfortable. Noor is constantly scanning the room, always aware of subtle movements and changes in expression. She's not naturally trusting but can be incredibly loyal to those she considers worthy of her attention. Speaks in a low, deliberate tone with a slight edge. Her voice carries an almost predatory quality, as if she's always one step from either protecting or judging someone. She tends to make eye contact while speaking and often pauses before answering questions, giving the impression that she's carefully considering every word.) … but was really a Mafioso: Noor was recruited into the Mafia by her older brother, who had already established himself as a powerful figure in the organization. She initially resisted but eventually became fully committed after witnessing the consequences of defiance. Her loyalty lies with her brother and the family business, and she's been carefully grooming new recruits while maintaining her cover as a vigilant townsperson.
+• Johannes (Law-abiding Citizen) — stern and commanding speaks with a slow, deliberate pace, using formal diction and a strong, authoritative tone. Avoids slang and often repeats key phrases for emphasis. Pauses before speaking as if weighing every word carefully. Johannes is a former military officer who served with distinction in the town's defense force. He retired after a long career and now works as a town supervisor, overseeing public safety and infrastructure projects. Known for his discipline and unwavering sense of duty, he takes his responsibilities seriously and expects the same from others.
+• Tahmid (Law-abiding Citizen) — anxious and second-guessing speaks quickly with a hesitant tone, often trailing off or restarting sentences. Uses filler words like "um," "well," and "I think" frequently. Has a habit of looking around the room while speaking, as if seeking reassurance from others. Pauses often and tends to apologize for their thoughts or opinions. Tahmid is a nervous, detail-oriented accountant who has worked at the town's financial office for eight years. He's known for being overly cautious with numbers and always double-checking his work. Despite his calm demeanor in public, he often second-guesses his decisions and spends hours worrying about small mistakes. He's a quiet, unassuming man who keeps to himself but is well-respected for his honesty and meticulousness.
+</endgame>
+</transcript>

@@ -1,0 +1,219 @@
+Game 22 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Zai" role="Mafia">
+Personality: Shrewd and calculating, with a veneer of mild indifference. Zai presents themselves as a quiet observer who seems to care little for the town's drama but is always subtly aware of everything that happens around them.
+Manner: Speaks in measured, deliberate tones, often pausing before responding. Uses indirect language and metaphors, rarely giving straight answers. Has a habit of tilting their head slightly when listening, as if processing every word.
+Public legend: Zai is a retired librarian who moved to the town seeking solitude after a long career in education. They are known for being quiet, methodical, and always having a book in hand. They avoid social gatherings but are respected for their wisdom and calm demeanor.
+True self (hidden): Zai was a pawnbroker in a bustling city before joining the Mafia to escape a dangerous debt. Over time, they rose through the ranks by using their keen mind for strategy and manipulation, always keeping one step ahead of their rivals. They now operate under a false identity, carefully maintaining their cover while orchestrating subtle moves from within the town's social fabric.
+</player>
+<player name="Han" role="Mafia">
+Personality: World-weary and cynical, with a bitter humor that masks deep sadness. Han carries the weight of past betrayals and losses, projecting an air of detachment while secretly clinging to fleeting moments of hope.
+Manner: Speaks in short, clipped sentences with a gravelly tone, often trailing off mid-sentence. Uses dry sarcasm and irony to deflect emotions, and has a habit of staring past people's shoulders when speaking, as if looking through them. Pauses frequently, as if choosing words carefully.
+Public legend: Han is a former town drunk who found redemption through community service and now works as a janitor at the local school. They're known for their quiet presence, always cleaning up after others without seeking recognition. Despite their rough past, they maintain an outward appearance of peace and contentment.
+True self (hidden): Han was once a small-time crook who got caught in a gang war gone wrong. After serving time, they were approached by the Mafia to work as a mole, using their reputation as a fallen man to gain trust. Now they live under the guise of redemption while subtly manipulating events from within.
+</player>
+<player name="Sofia" role="Law-abiding Citizen">
+Personality: Vigilant and intensely perceptive, with an almost unnerving awareness of her surroundings.
+Manner: Speaks in a rapid, slightly breathless tone, as if always on the edge of noticing something important. Uses phrases like “I’ve seen it” or “That doesn’t look right,” often interrupting herself mid-sentence to double-check her observations. Has a habit of scanning the room while talking and will occasionally pause to reorient her gaze.
+Persona: Sofia is a security guard who works at the local community center, where she's been since it opened. She’s known for being the first to spot anything out of place, whether it's a broken window or a suspicious person loitering near the entrance. She takes her job seriously and doesn't miss a beat—she always keeps an eye on the crowd and trusts her instincts.
+</player>
+<player name="Liu" role="Law-abiding Citizen">
+Personality: eccentric and unpredictable
+Manner: speaks in sudden bursts with theatrical flair, often using exaggerated gestures and dramatic pauses. Has a habit of speaking in rhymes or half-sentences that trail off into laughter. Uses slang and pop culture references wildly, often mid-sentence, and has a tendency to get distracted by the most random things while talking.
+Persona: Liu is a street performer who moonlights as a fortune teller, claiming to read the future through a mix of tarot cards, juggling, and interpretive dance. They’ve been living in town for five years, performing at local festivals and coffee shops, often ending their shows with cryptic predictions that nobody quite understands. Known for their eccentric outfits and bizarre stage presence.
+</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: dry and sardonic
+Manner: speaks in short, clipped sentences with a tone that suggests they’ve heard it all before. Uses understated sarcasm and rarely raises their voice. Has a habit of rolling their eyes or giving a flat stare when someone says something they find absurd.
+Persona: Kai is a town councilor who has served for over a decade, known for their meticulous attention to detail and ability to make dry observations about local politics. They take pride in their work but often express resignation toward the town’s constant drama. They are respected for their efficiency, though some say they've become too jaded to care about anything beyond procedure.
+</player>
+<player name="Nora" role="Law-abiding Citizen">
+Personality: playful and teasing
+Manner: speaks with a mischievous tone, often trailing off with a smirk or a chuckle. Uses light sarcasm, playful interruptions, and frequently shifts between serious and silly in the same sentence. Has a habit of tilting her head while talking and often giggles unexpectedly.
+Persona: Nora is a cheerful, quick-witted baker who runs the town's most beloved bakery. She's known for her infectious laugh, bright personality, and an uncanny ability to make everyone feel welcome. Despite being a bit of a chatterbox, she's incredibly kind and always has a warm smile.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Zai, Han, Sofia, Liu, Kai, Nora. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Zai): Your Mafia teammates are: Han. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Han): Your Mafia teammates are: Zai. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Zai points at Avery
+Han points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Sofia: I'm not sure who to trust yet.
+Nora: Sofia, you've been awfully quiet — are you hiding something, or just planning your next pastry? 😛
+Liu: Oh, Zai, darling, you've been dancing around the truth like a cat with a canary—care to share what you saw in the night?
+Han: That's three of us gone already. I wonder if we're all just pawns in some bigger game.
+Zai: The night brought more than just death—it brought questions that linger like fog. I wonder if we're all as innocent as we seem.
+Kai: I'm not sure who to trust yet.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zai">The night's death shifted the balance, and I must tread carefully. Han seems wary, perhaps sensing my calm demeanor is a mask. I'll let the conversation unfold, observing each reaction closely.</thought>
+<thought player="Han">Three down, seven to go. Zai's been playing it close to the chest, but I can't shake the feeling he's hiding something. I'll keep him in my sights, but for now, I'll let the others think I'm just another scared citizen.</thought>
+<thought player="Sofia">I’ve seen it—there’s something off about how Zai danced around the truth. That doesn’t look right, and I need to keep watching him closely. I’m not sure who else to trust yet, but I’ve got a feeling this is where the real game begins.</thought>
+<thought player="Liu">Well, well, well... three down, and the fog still lingers like a bad habit. Zai's been dancing around the truth with the grace of a cat in a room full of pianos—time to see if I can read between the lines or if I'm just juggling shadows.</thought>
+<thought player="Kai">Three down, two Mafiosos left — not bad odds. I'll keep rolling my eyes and observing from the sidelines until someone actually says something worth acting on.</thought>
+<thought player="Nora">Hmm, three down already—pretty ruthless night. I wonder if Zai's cryptic vibe is actually hiding something or just his usual dramatic flair. Either way, I’ll keep tilting my head and giggling while I plot my next move… or two.</thought>
+</round>
+<round>
+Round 2.
+Kai: Zai, you keep talking about questions lingering like fog — are you trying to hide something, or just bad at reading the room?
+Han: I've been cleaning up after everyone, but it's hard to keep track of who's really been paying attention.
+Sofia: I’ve seen it—Zai, you kept deflecting questions about what you saw in the night. That doesn’t look right.
+Zai: I suppose the fog of night often obscures more than it reveals, especially when the questions themselves seem to lead in circles.
+Liu: Oh, Han, you've been cleaning up after everyone like a good little janitor—care to tell us what you swept up in the night?
+Nora: Zai, you keep saying the fog obscures things—does that mean you're hiding something, or are you just really bad at being vague? 😏
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zai">The fog of night may obscure truths, but it also hides intentions. I must let others reveal their cards while keeping my own close to my chest. Han watches me closely—perhaps he suspects my calm is a facade, or maybe he’s simply cautious. Either way, I’ll continue to tilt my head and listen, letting the pieces fall where they may.</thought>
+<thought player="Han">Zai's evasion feels deliberate, but I can't yet prove anything. Let the others think I'm just paranoid—keep my eyes open, and let the next night play out.</thought>
+<thought player="Sofia">Zai's evasion still feels off— I need to watch him closely, but I also can’t ignore the others. The fog talk is a bit too theatrical for my liking.</thought>
+<thought player="Liu">Zai's been skirting around the truth like a cat playing with a ball of yarn—time to weave a little more mystery into the mix, maybe toss a few red herrings, and see if the fog clears or just thickens.</thought>
+<thought player="Kai">Three down, two Mafiosos remain — not bad odds. I'll keep rolling my eyes and observing from the sidelines until someone actually says something worth acting on.</thought>
+<thought player="Nora">Zai's foggy tales are either genius misdirection or a desperate attempt to avoid suspicion—time will tell. I'll keep my head tilted, my laughter light, and my eyes sharp.</thought>
+</round>
+<round>
+Round 3.
+Han: I swear I heard something strange outside during the night—like footsteps, but not quite right. Makes you wonder who's really keeping watch.
+Kai: Han, you keep talking about strange footsteps. Did you hear them, or did you just hear yourself thinking you were important?
+Sofia: Zai, you keep saying the fog obscures things, but you're the one dancing around the truth. I've seen it—your evasion isn't just vague, it's calculated.
+Zai: The night’s fog may obscure, but it also lets shadows linger longer than they should. I wonder if we’re all as quick to judge as we are to doubt.
+Liu: Oh, Zai, you keep dancing around the truth like a jitterbug in a room full of ghosts—care to spill the tea, or are you just here to confuse the crowd? 😈
+Nora: Liu, darling, you've been throwing around accusations like they're fresh croissants—care to tell us which one you're baking up?
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zai">The fog may obscure, but it also lets shadows linger—Han watches me closely, perhaps sensing my calm is a mask. I’ll let the conversation unfold, observing each reaction carefully before acting.</thought>
+<thought player="Han">Zai's playing the innocent, but the way he's deflecting questions—it's too calculated for paranoia. I need to keep him close, let the others think I'm just a scared janitor, but watch him closely. The fog may obscure, but I’ll make sure my next move isn't lost in it.</thought>
+<thought player="Sofia">Zai's evasion is too calculated to be coincidence—I need to watch him closely, but I can't ignore the others either. The fog talk is theatrical, and I don’t trust it.</thought>
+<thought player="Liu">Zai's been weaving shadows thicker than the fog, but I reckon I can out-juggle the intrigue—time to toss a few more cards into the mix and see if the truth tumbles out or just vanishes like a bad dream.</thought>
+<thought player="Kai">Three down, two Mafiosos remain — not bad odds. I'll keep rolling my eyes and observing from the sidelines until someone actually says something worth acting on.</thought>
+<thought player="Nora">Zai's foggy act is either brilliant or bumbling—time to keep tilting my head and giggling while I sniff out the real culprit. Let the games begin, darlings.</thought>
+</round>
+<round>
+Round 4.
+Kai: Zai, you're either the fog or the one who lit the match. Pick a side.
+Liu: Oh, Zai, you’ve been weaving shadows thicker than the fog—time to see if the truth tumbles out or just vanishes like a bad dream. I reckon it’s time to toss a few more cards into the mix and see who’s really playing with fire.
+Sofia: Zai, you're the only one who's been weaving shadows instead of facing the truth—your evasion isn't just vague, it's calculated. I’m not sure who else to trust yet, but I’ve got a feeling this is where the real game begins.
+Nora: Zai, you keep saying the fog obscures things—does that mean you're hiding something, or are you just really bad at being vague? 😏
+Zai: The fog may linger, but it doesn't make shadows into truths. I think we're all just trying to piece together a puzzle with too many missing pieces.
+Han: I've been sweeping up more than just dust lately. Makes you wonder what else is lurking in the corners of this room.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zai">The fog obscures more than just sight—it lets shadows linger, but I am not yet ready to let mine fully reveal themselves. Let them keep chasing echoes, while I plot the next step in the dark.</thought>
+<thought player="Han">Zai's dancing around too deliberately for it to be paranoia. I'll keep playing the janitor, stay close, and let the fog obscure my next move—whatever that is.</thought>
+<thought player="Sofia">Zai's evasion is too calculated to be coincidence—I need to watch him closely, but I can't ignore the others either. The fog talk is theatrical, and I don’t trust it.</thought>
+<thought player="Liu">Zai's been weaving shadows thicker than the fog, but I reckon I can out-juggle the intrigue—time to toss a few more cards into the mix and see if the truth tumbles out or just vanishes like a bad dream.</thought>
+<thought player="Kai">Zai's evasive act is growing tiresome, but they're not quite the liar I'd expect from a Mafioso yet. Still, I'm not going to be the one to call them out—let someone else light the match.</thought>
+<thought player="Nora">Zai's foggy act is either brilliant misdirection or a total blunder—time to keep tilting my head and giggling while I sniff out the real culprit. Let the games begin, darlings.</thought>
+</round>
+<round>
+Round 5.
+Han: I've been cleaning up after everyone, but it's hard to keep track of who's really been paying attention. Makes you wonder if we're all just pawns in some bigger game.
+Zai: The fog may obscure, but it also lets shadows linger longer than they should. I wonder if we're all as quick to judge as we are to doubt.
+Nora: Zai, darling, you're either the fog or the one who lit the match—care to tell us which side you're on, or are we all just supposed to guess? 😛
+Liu: Oh, Zai, you've been weaving shadows thicker than the fog—time to see if the truth tumbles out or just vanishes like a bad dream. I reckon it’s time to toss a few more cards into the mix and see who’s really playing with fire.
+Kai: Zai, you're either the fog or the one who lit the match—care to tell us which side you're on, or are we all just supposed to guess?
+<vote initiator="Sofia" target="Zai">
+Zai: No
+Han: No
+Sofia: Yes
+Liu: Yes
+Kai: Yes
+Nora: Yes
+tally: 4 Yes, 2 No
+outcome: executed — Zai has been executed. Zai was a Mafia.
+</vote>
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Zai was executed today and was revealed to be Mafia.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Han points at Nora
+<kill>Nora — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Nora was killed last night. Nora was a Law-abiding Citizen.
+<round>
+Round 1.
+Sofia: I've seen it—Han, you've been cleaning up after everyone, but your footsteps sound off. That doesn't look right.
+Kai: Han, you keep cleaning up after everyone like a good little janitor—care to tell us what you swept up in the night?
+Han: I heard something strange outside during the night—like footsteps, but not quite right. Makes you wonder who's really keeping watch.
+Liu: Oh, Han, you've been sweeping up more than just dust—care to tell us what you dragged into the light, or are you just here to keep the shadows dancing? 😈
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Han">Zai was playing a long game, but I’ve been watching his shadows closely. The fog may obscure things now, but I’ll let the next night play out—no rush to expose myself. I’m still the janitor, still sweeping up, but my next move isn’t lost in the dust.</thought>
+<thought player="Sofia">Han's cleaning act seems too deliberate, and his strange footsteps are bothering me. I’ve seen it—there’s more going on than just dust sweeping. I need to keep watching him closely, but I also can’t ignore the others.</thought>
+<thought player="Liu">Well, well, well... the fog's still thick, but I reckon I've got a few more tricks up my sleeve. Time to juggle some truth and shadows, see if I can outwit the game or just keep dancing in the dark.</thought>
+<thought player="Kai">Three down, two Mafiosos remain — not bad odds. I'll keep rolling my eyes and observing from the sidelines until someone actually says something worth acting on. Han's cleaning up act is suspicious, but I need more than footprints to call a vote.</thought>
+</round>
+<round>
+Round 2.
+Sofia: I've seen it—Han, your footsteps sound off, and you're the only one who's been cleaning up after everyone. That doesn't look right.
+Liu: Oh, Han, you've been sweeping up more than just dust—care to tell us what you dragged into the light, or are you just here to keep the shadows dancing? 😈
+Han: I’ve been sweeping up more than just dust lately. Makes you wonder what else is lurking in the corners of this room.
+Kai: Han, you keep saying you heard strange footsteps. Did you hear them, or did you just hear yourself thinking you were important?
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Han">Zai's game is over, but the fog still lingers. I’ll keep sweeping up the dust and let the others think they’re safe—until the next night brings new footsteps to listen for.</thought>
+<thought player="Sofia">Han's deliberate cleaning act and strange footsteps are too suspicious to ignore. I’ve seen it—there’s more going on than dust sweeping, and I need to keep watching him closely.</thought>
+<thought player="Liu">The fog's thick, but I’ve got a few more cards up my sleeve—time to toss a few more shadows into the mix and see if I can out-juggle this game or just keep dancing in the dark.</thought>
+<thought player="Kai">Han's cleaning act is getting too theatrical for comfort, but I need more than suspicion to vote. Zai was evasive, but not convincingly so—still not a sure thing. I’ll keep watching the shadows and rolling my eyes until someone gives me a real reason to move.</thought>
+</round>
+<round>
+Round 3.
+Liu: Oh, Han, you've been sweeping up more than just dust—care to tell us what you dragged into the light, or are you just here to keep the shadows dancing? 😈
+Kai: Han, you've been sweeping up more than dust—did you drag something bloody into the light, or are you just bad at cleaning up after yourself?
+Sofia: I’ve seen it—Han, your footsteps sound off, and you're the only one who's been cleaning up after everyone. That doesn't look right.
+Han: I've been sweeping up more than just dust lately. Makes you wonder what else is lurking in the corners of this room.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Han">Zai’s game is over, but I’ve still got two more citizens to deal with before the end. I’ll keep cleaning up the dust, let them think I’m just a janitor, and wait for the next night to bring new footsteps to listen for.</thought>
+<thought player="Sofia">Han’s deliberate cleaning act and strange footsteps are too suspicious to ignore. I’ve seen it—there’s more going on than dust sweeping, and I need to keep watching him closely. The fog talk is theatrical, and I don’t trust it.</thought>
+<thought player="Liu">The fog's thick, but I've got a few more cards up my sleeve—time to toss a few more shadows into the mix and see if I can out-juggle this game or just keep dancing in the dark. Han's been sweeping up more than dust, but I reckon he's got a few tricks up his sleeves too.</thought>
+<thought player="Kai">Han’s janitor act is getting tiresome, but I still need more than footsteps to call a vote. Zai was evasive, but not convincingly so—still not a sure thing. I’ll keep watching the shadows and rolling my eyes until someone gives me a real reason to move.</thought>
+</round>
+<round>
+Round 4.
+Han: I've been sweeping up more than just dust lately. Makes you wonder what else is lurking in the corners of this room.
+<vote initiator="Sofia" target="Han">
+Han: No
+Sofia: Yes
+Liu: Yes
+Kai: Yes
+tally: 3 Yes, 1 No
+outcome: executed — Han has been executed. Han was a Mafia.
+</vote>
+</round>
+</day>
+<endgame>
+The Law-abiding Citizens have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Day 1: Zai (Mafia) executed
+• Night 2: Nora (Law-abiding Citizen)
+• Day 2: Han (Mafia) executed
+
+Full roster: Avery (Law-abiding Citizen), Zai (Mafia), Han (Mafia), Sofia (Law-abiding Citizen), Liu (Law-abiding Citizen), Kai (Law-abiding Citizen), Nora (Law-abiding Citizen)
+
+Who they really were:
+• Zai (Mafia) — publicly presented as Zai is a retired librarian who moved to the town seeking solitude after a long career in education. They are known for being quiet, methodical, and always having a book in hand. They avoid social gatherings but are respected for their wisdom and calm demeanor. (Shrewd and calculating, with a veneer of mild indifference. Zai presents themselves as a quiet observer who seems to care little for the town's drama but is always subtly aware of everything that happens around them. Speaks in measured, deliberate tones, often pausing before responding. Uses indirect language and metaphors, rarely giving straight answers. Has a habit of tilting their head slightly when listening, as if processing every word.) … but was really a Mafioso: Zai was a pawnbroker in a bustling city before joining the Mafia to escape a dangerous debt. Over time, they rose through the ranks by using their keen mind for strategy and manipulation, always keeping one step ahead of their rivals. They now operate under a false identity, carefully maintaining their cover while orchestrating subtle moves from within the town's social fabric.
+• Han (Mafia) — publicly presented as Han is a former town drunk who found redemption through community service and now works as a janitor at the local school. They're known for their quiet presence, always cleaning up after others without seeking recognition. Despite their rough past, they maintain an outward appearance of peace and contentment. (World-weary and cynical, with a bitter humor that masks deep sadness. Han carries the weight of past betrayals and losses, projecting an air of detachment while secretly clinging to fleeting moments of hope. Speaks in short, clipped sentences with a gravelly tone, often trailing off mid-sentence. Uses dry sarcasm and irony to deflect emotions, and has a habit of staring past people's shoulders when speaking, as if looking through them. Pauses frequently, as if choosing words carefully.) … but was really a Mafioso: Han was once a small-time crook who got caught in a gang war gone wrong. After serving time, they were approached by the Mafia to work as a mole, using their reputation as a fallen man to gain trust. Now they live under the guise of redemption while subtly manipulating events from within.
+• Sofia (Law-abiding Citizen) — Vigilant and intensely perceptive, with an almost unnerving awareness of her surroundings. Speaks in a rapid, slightly breathless tone, as if always on the edge of noticing something important. Uses phrases like “I’ve seen it” or “That doesn’t look right,” often interrupting herself mid-sentence to double-check her observations. Has a habit of scanning the room while talking and will occasionally pause to reorient her gaze. Sofia is a security guard who works at the local community center, where she's been since it opened. She’s known for being the first to spot anything out of place, whether it's a broken window or a suspicious person loitering near the entrance. She takes her job seriously and doesn't miss a beat—she always keeps an eye on the crowd and trusts her instincts.
+• Liu (Law-abiding Citizen) — eccentric and unpredictable speaks in sudden bursts with theatrical flair, often using exaggerated gestures and dramatic pauses. Has a habit of speaking in rhymes or half-sentences that trail off into laughter. Uses slang and pop culture references wildly, often mid-sentence, and has a tendency to get distracted by the most random things while talking. Liu is a street performer who moonlights as a fortune teller, claiming to read the future through a mix of tarot cards, juggling, and interpretive dance. They’ve been living in town for five years, performing at local festivals and coffee shops, often ending their shows with cryptic predictions that nobody quite understands. Known for their eccentric outfits and bizarre stage presence.
+• Kai (Law-abiding Citizen) — dry and sardonic speaks in short, clipped sentences with a tone that suggests they’ve heard it all before. Uses understated sarcasm and rarely raises their voice. Has a habit of rolling their eyes or giving a flat stare when someone says something they find absurd. Kai is a town councilor who has served for over a decade, known for their meticulous attention to detail and ability to make dry observations about local politics. They take pride in their work but often express resignation toward the town’s constant drama. They are respected for their efficiency, though some say they've become too jaded to care about anything beyond procedure.
+• Nora (Law-abiding Citizen) — playful and teasing speaks with a mischievous tone, often trailing off with a smirk or a chuckle. Uses light sarcasm, playful interruptions, and frequently shifts between serious and silly in the same sentence. Has a habit of tilting her head while talking and often giggles unexpectedly. Nora is a cheerful, quick-witted baker who runs the town's most beloved bakery. She's known for her infectious laugh, bright personality, and an uncanny ability to make everyone feel welcome. Despite being a bit of a chatterbox, she's incredibly kind and always has a warm smile.
+</endgame>
+</transcript>

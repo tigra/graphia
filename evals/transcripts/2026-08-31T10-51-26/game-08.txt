@@ -1,0 +1,97 @@
+Game 8 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Mika" role="Law-abiding Citizen">
+Personality: shrewd and calculating
+Manner: speaks with deliberate pauses, choosing words carefully and often repeating key phrases for emphasis; uses subtle metaphors and indirect language to convey meaning
+Persona: Mika is a retired accountant who now spends their days organizing community book clubs and volunteering at the local library. They are known for being methodical in all their endeavors and have an uncanny ability to spot inconsistencies in others' stories.
+</player>
+<player name="Sofia" role="Mafia">
+Personality: Anxious and second-guessing, constantly questioning her own decisions and abilities
+Manner: Speaks in hushed tones with frequent pauses, often trailing off or restarting sentences. Uses excessive hedging language like "I think maybe" or "perhaps it's just me but" and frequently checks her phone or surroundings while talking
+Public legend: Sofia is a nervous but well-meaning librarian who has worked at the town's central library for over fifteen years. She's known for being overly helpful, often volunteering extra hours to organize children's reading programs and assist elderly patrons with their research. She's always apologizing for minor inconveniences and tends to be excessively polite to everyone she meets, even strangers. Her coworkers describe her as 'the most considerate person they've ever worked with' but also 'a little too worried about everything.'
+True self (hidden): Sofia was recruited into the Mafia by her older brother who had already been working for them for years. He promised her a stable income and protection from her abusive parents, but she soon realized the price of loyalty was much higher than she'd imagined. Now she's caught between her family's criminal empire and her own conscience, playing the role of a devoted librarian while secretly helping her brother's operation by keeping detailed records of the town's important citizens.
+</player>
+<player name="Liam" role="Law-abiding Citizen">
+Personality: earnest and sincere
+Manner: speaks with quiet conviction, using simple but heartfelt language. Often pauses to gather thoughts, then continues with a gentle smile. Has a tendency to nod while talking and often repeats key phrases like "I truly believe" or "that's what I think" to emphasize points.
+Persona: Liam is a local mechanic who has owned his own garage for the past eight years. He's known throughout town for his honest work ethic and willingness to help neighbors with car troubles, often lending a hand for free. He takes pride in fixing things and keeping the community running smoothly.
+</player>
+<player name="Aria" role="Mafia">
+Personality: Gruff and blunt, with a no-nonsense attitude that cuts through pretense. Aria has a hard exterior but is deeply loyal to those she trusts. She's quick to judge but even quicker to defend the innocent.
+Manner: Speaks in short, direct sentences with little embellishment. Often grunts or makes dismissive sounds when irritated. Uses harsh metaphors and comparisons, rarely softening her tone even when trying to be kind.
+Public legend: Aria is a former park ranger who now works as a night security guard at the local community center. She's known for being tough on trespassers and has a reputation for not tolerating nonsense. She keeps to herself but is respected for her unwavering dedication to keeping the town safe. Her colleagues say she's got a heart of gold, just buried under layers of gruffness.
+True self (hidden): Aria was a promising law school graduate who turned to the Mafia after her family was threatened. She was trained in the art of intimidation and has since become a feared enforcer for the organization. She's been playing both sides for years, using her cover as a security guard to keep an eye on potential threats while advancing the Mafioso agenda.
+</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: aloof and detached
+Manner: speaks in measured, flat tones with minimal inflection; takes long pauses between sentences as if weighing each word; avoids eye contact and often looks away while talking; uses precise, clinical vocabulary; rarely shows emotion in voice or facial expression
+Persona: Kai is a town librarian who has worked at the central library for twelve years. They are known for their quiet demeanor and methodical approach to cataloging books. Kai prefers to work alone and often spends hours organizing sections by color, size, or author's initial rather than following standard classification systems. They're meticulous about maintaining order and have a reputation for being the most organized person in town, though some say they're too rigid in their methods.
+</player>
+<player name="Xinyu" role="Law-abiding Citizen">
+Personality: Energetic and effervescent
+Manner: Speaks rapidly with high enthusiasm, often using exclamation points and animated gestures. Has a tendency to laugh loudly and frequently interrupts others with "Wait, wait!" or "Oh, this is so cool!" Uses casual slang like "totally," "like," and "no way" and often makes hand motions while talking to emphasize points.
+Persona: Xinyu is a local event planner who thrives on bringing people together. She's known for organizing everything from birthday parties to community festivals with boundless excitement. She's always the first to volunteer for town events and has a knack for making everyone feel included. Xinyu is the kind of person who never says no to a good idea, often showing up with snacks, decorations, or backup plans at the last minute.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Mika, Sofia, Liam, Aria, Kai, Xinyu. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Sofia): Your Mafia teammates are: Aria. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Aria): Your Mafia teammates are: Sofia. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Aria points at Avery
+Sofia points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+<vote initiator="Xinyu" target="Mika">
+Mika: No
+Sofia: Yes
+Liam: Yes
+Aria: Yes
+Kai: Yes
+Xinyu: Yes
+tally: 5 Yes, 1 No
+outcome: executed — Mika has been executed. Mika was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. Mika was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Aria points at Kai
+Sofia points at Kai
+<kill>Kai — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Day 1: Mika (Law-abiding Citizen) executed
+• Night 2: Kai (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Mika (Law-abiding Citizen), Sofia (Mafia), Liam (Law-abiding Citizen), Aria (Mafia), Kai (Law-abiding Citizen), Xinyu (Law-abiding Citizen)
+
+Who they really were:
+• Mika (Law-abiding Citizen) — shrewd and calculating speaks with deliberate pauses, choosing words carefully and often repeating key phrases for emphasis; uses subtle metaphors and indirect language to convey meaning Mika is a retired accountant who now spends their days organizing community book clubs and volunteering at the local library. They are known for being methodical in all their endeavors and have an uncanny ability to spot inconsistencies in others' stories.
+• Sofia (Mafia) — publicly presented as Sofia is a nervous but well-meaning librarian who has worked at the town's central library for over fifteen years. She's known for being overly helpful, often volunteering extra hours to organize children's reading programs and assist elderly patrons with their research. She's always apologizing for minor inconveniences and tends to be excessively polite to everyone she meets, even strangers. Her coworkers describe her as 'the most considerate person they've ever worked with' but also 'a little too worried about everything.' (Anxious and second-guessing, constantly questioning her own decisions and abilities Speaks in hushed tones with frequent pauses, often trailing off or restarting sentences. Uses excessive hedging language like "I think maybe" or "perhaps it's just me but" and frequently checks her phone or surroundings while talking) … but was really a Mafioso: Sofia was recruited into the Mafia by her older brother who had already been working for them for years. He promised her a stable income and protection from her abusive parents, but she soon realized the price of loyalty was much higher than she'd imagined. Now she's caught between her family's criminal empire and her own conscience, playing the role of a devoted librarian while secretly helping her brother's operation by keeping detailed records of the town's important citizens.
+• Liam (Law-abiding Citizen) — earnest and sincere speaks with quiet conviction, using simple but heartfelt language. Often pauses to gather thoughts, then continues with a gentle smile. Has a tendency to nod while talking and often repeats key phrases like "I truly believe" or "that's what I think" to emphasize points. Liam is a local mechanic who has owned his own garage for the past eight years. He's known throughout town for his honest work ethic and willingness to help neighbors with car troubles, often lending a hand for free. He takes pride in fixing things and keeping the community running smoothly.
+• Aria (Mafia) — publicly presented as Aria is a former park ranger who now works as a night security guard at the local community center. She's known for being tough on trespassers and has a reputation for not tolerating nonsense. She keeps to herself but is respected for her unwavering dedication to keeping the town safe. Her colleagues say she's got a heart of gold, just buried under layers of gruffness. (Gruff and blunt, with a no-nonsense attitude that cuts through pretense. Aria has a hard exterior but is deeply loyal to those she trusts. She's quick to judge but even quicker to defend the innocent. Speaks in short, direct sentences with little embellishment. Often grunts or makes dismissive sounds when irritated. Uses harsh metaphors and comparisons, rarely softening her tone even when trying to be kind.) … but was really a Mafioso: Aria was a promising law school graduate who turned to the Mafia after her family was threatened. She was trained in the art of intimidation and has since become a feared enforcer for the organization. She's been playing both sides for years, using her cover as a security guard to keep an eye on potential threats while advancing the Mafioso agenda.
+• Kai (Law-abiding Citizen) — aloof and detached speaks in measured, flat tones with minimal inflection; takes long pauses between sentences as if weighing each word; avoids eye contact and often looks away while talking; uses precise, clinical vocabulary; rarely shows emotion in voice or facial expression Kai is a town librarian who has worked at the central library for twelve years. They are known for their quiet demeanor and methodical approach to cataloging books. Kai prefers to work alone and often spends hours organizing sections by color, size, or author's initial rather than following standard classification systems. They're meticulous about maintaining order and have a reputation for being the most organized person in town, though some say they're too rigid in their methods.
+• Xinyu (Law-abiding Citizen) — Energetic and effervescent Speaks rapidly with high enthusiasm, often using exclamation points and animated gestures. Has a tendency to laugh loudly and frequently interrupts others with "Wait, wait!" or "Oh, this is so cool!" Uses casual slang like "totally," "like," and "no way" and often makes hand motions while talking to emphasize points. Xinyu is a local event planner who thrives on bringing people together. She's known for organizing everything from birthday parties to community festivals with boundless excitement. She's always the first to volunteer for town events and has a knack for making everyone feel included. Xinyu is the kind of person who never says no to a good idea, often showing up with snacks, decorations, or backup plans at the last minute.
+</endgame>
+</transcript>

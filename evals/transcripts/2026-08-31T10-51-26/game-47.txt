@@ -1,0 +1,192 @@
+Game 47 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: playful and teasing
+Manner: speaks with a mischievous twinkle in their eye, often trailing off with a smirk or a little laugh. Uses casual slang and playful metaphors, sometimes drawing out words for comedic effect. Has a habit of finishing sentences with a question mark, even when making statements.
+Persona: Kai is a lighthouse keeper's apprentice who loves to tell stories about the sea and the mysterious ships that pass by. They're known in town for their quick wit and the way they can turn any ordinary day into an adventure with their storytelling.
+</player>
+<player name="Lila" role="Law-abiding Citizen">
+Personality: brash and loud
+Manner: speaks quickly with a booming voice, often interrupting others. Uses strong vocabulary and frequently employs exclamations. Has a habit of pointing emphatically while talking and finishing sentences with "you hear?" or "got it?"
+Persona: Lila is the town's former blacksmith's apprentice who grew up forging tools and weapons. She's known for her strength, her no-nonsense attitude, and her ability to solve problems with brute force. Now she runs a small workshop where she fixes anything that breaks in town.
+</player>
+<player name="Nim" role="Mafia">
+Personality: Cunning and calculating, with a sharp mind for strategy and manipulation. Nim is a master of reading people and situations, always thinking several steps ahead. They are composed and deliberate in their speech, rarely showing emotion, but when they do, it's usually with a cold, calculating gleam.
+Manner: Speaks in measured, deliberate tones, often pausing before each word as if weighing its implications. Uses precise vocabulary and avoids emotional expressions. Their voice is calm and controlled, like a predator observing its prey. They often use rhetorical questions to subtly influence others, and rarely finish sentences without a purposeful pause.
+Public legend: Nim is a bookkeeper for the town's merchant guild, responsible for managing financial records and ensuring all transactions are properly documented. They are known for their meticulous nature, attention to detail, and ability to spot discrepancies in ledgers. Nim often spends quiet evenings at the guild hall, poring over numbers and balancing accounts. They're respected for their honesty and reliability, always double-checking their work and maintaining strict records.
+True self (hidden): Nim was once a traveling merchant who discovered a talent for manipulation and control. After witnessing the brutal murder of his family by rival traders, he joined the Mafia to seek revenge. Over time, he rose through the ranks by using his financial acumen and psychological insight to eliminate enemies and consolidate power. He now operates under the guise of an honest bookkeeper while secretly orchestrating the town's criminal enterprises.
+</player>
+<player name="Zoe" role="Mafia">
+Personality: Weary and world-worn, with a quiet intensity that masks deep reserves of resilience. Zoe carries the weight of experience but remains fiercely protective of those she trusts.
+Manner: Speaks in soft, measured tones with a slight drawl, often pausing between words as if carefully choosing each one. Her voice has a gravelly quality from years of hardship, and she tends to lean in when speaking, creating an intimate atmosphere. She avoids direct eye contact and rarely laughs, but her eyes hold a sharp glint when she's truly engaged.
+Public legend: Zoe is a traveling healer who passed through town on her way to a distant village plagued by illness. She's known for her gentle touch and quiet presence, often seen tending to the sick or injured in the town square. Many of the townsfolk trust her implicitly due to her calm demeanor and the miraculous recoveries she's helped facilitate. She keeps to herself most of the time but is always ready with a kind word or a healing salve when someone needs it.
+True self (hidden): Zoe was once a mid-level enforcer for a powerful crime family in a neighboring region. After a botched operation left her in hiding, she fled to this quiet town under a new identity, seeking peace and anonymity. She's been living as a healer ever since, using her skills to help others while staying close enough to the town to monitor any threats that might arise. She still has connections within the criminal underworld, but she keeps her past buried deep.
+</player>
+<player name="Leo" role="Law-abiding Citizen">
+Personality: Warm and effusive
+Manner: Speaks with great enthusiasm and gestures widely, often using expressive hand movements to emphasize points. Uses many exclamation marks and filler words like "oh my goodness," "you know," and "I'm telling you." Has a habit of repeating key phrases for emphasis and tends to speak in long, flowing sentences that build on each other.
+Persona: Leo is the town's beloved baker, known for his incredible sourdough bread and his even more incredible stories about the history of every loaf he bakes. He's been baking for over twenty years and takes pride in making everyone feel welcome in his little shop, where he often shares cookies and gossip with the townsfolk.
+</player>
+<player name="Yara" role="Law-abiding Citizen">
+Personality: aloof and detached
+Manner: speaks in short, clipped sentences with a monotone delivery. avoids eye contact and often checks their watch while talking. uses formal vocabulary and rarely shows emotion. finishes thoughts with a slight nod rather than elaboration.
+Persona: Yara is the town's librarian, responsible for maintaining the dusty tomes and cataloging new arrivals. She spends her days surrounded by books, rarely speaking unless absolutely necessary, and prefers the company of written words to living people. Many find her cold and unapproachable, but she’s known to have a sharp mind and an encyclopedic knowledge of local history.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Kai, Lila, Nim, Zoe, Leo, Yara. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Nim): Your Mafia teammates are: Zoe. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Zoe): Your Mafia teammates are: Nim. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Nim points at Avery
+Zoe points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Zoe: That's a terrible start — losing our first person to the night. I hope we can all stay sharp and keep our eyes open.
+<vote initiator="Leo" target="Yara">
+Kai: No
+Lila: No
+Nim: No
+Zoe: No
+Leo: No
+Yara: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Yara: The night brought death. We must not let it be in vain.
+Lila: I say we focus on who's been acting suspiciously! Zoe, you've been quiet as a grave — what's your story? You hear?
+Zoe: Lila's been asking pointed questions — I'd say it's time to start watching who's really paying attention.
+Kai: Zoe, you've been awfully quiet lately — I'm starting to think you're either a ghost or a master of misdirection. Which is it gonna be?
+Nim: Kai's been acting strange — I've noticed he's been avoiding eye contact during the vote.
+Leo: I'm telling you, this is all so dramatic! I can't help but feel like we're missing something big here. Oh my goodness, the way everyone's been looking at each other... it's like a chess game, isn't it? But I'm not saying that to point fingers — I'm just saying we need to stay sharp!
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Kai">Hmm, everyone's been throwing around accusations like it's a game of ping-pong, but I'm starting to think there's more under the surface. I'll keep weaving my web of questions and see where the current tangle leads.</thought>
+<thought player="Lila">That Zoe's been awfully quiet, but I don't trust her silence one bit. I'm gonna keep digging, and if she starts acting suspicious again, I'll call her out sharp. You hear?</thought>
+<thought player="Nim">The town is already beginning to turn on itself, which suits my plans. I must continue to play the honest bookkeeper while subtly guiding suspicion away from Zoe and myself. Kai's behavior is worth watching — he may be more than he seems.</thought>
+<thought player="Zoe">The townsfolk are starting to look suspiciously at each other, but I need to keep my cover tight. Nim's been watching Kai closely, which might be a good sign, or it could be a trap. I should let things play out a bit more before making any moves.</thought>
+<thought player="Leo">Oh my goodness, what a tangled web we're in! I can't help but feel like there's more to this puzzle than meets the eye — I'm definitely keeping my eyes peeled and listening closely to every word. You know, I've got a feeling that someone here is playing a much longer game than they're letting on, and I'm not sure if I trust anyone's quietness just yet!</thought>
+<thought player="Yara">The vote failed, but Leo's call sets a precedent. I must remain cautious and observe closely for any signs of deception or misdirection in their words. My silence has not been questioned yet; I should continue to play the aloof librarian.</thought>
+</round>
+<round>
+Round 2.
+Kai: Leo, you've been twitching ever since the vote — like you're trying to figure out if you're the one who's been acting suspiciously. Is that a guilty conscience I spy? 😏
+Nim: Kai, you've been avoiding eye contact all day — is it because you're worried about something, or are you just naturally awkward?
+Zoe: I've been watching everyone closely, and I'm starting to wonder if the real danger isn't who we think it is — but who's been trying to distract us from the truth.
+Leo: Oh my goodness, I'm starting to think that the quiet ones are often the most telling! You know, I've been observing how everyone's been reacting, and I can't shake the feeling that someone's been playing a very clever game of misdirection — but I'm not saying who, just yet!
+Lila: Kai, you keep dodging questions like a coward — I'm calling you out! You've been acting like a Mafioso, and it's time you own up to it! You hear?
+Yara: Kai's avoidance of eye contact is notable, but his deflection seems calculated. I suggest we focus on who's been redirecting suspicion rather than who's been quiet.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Kai">Hmm, everyone's been throwing around accusations like it's a game of ping-pong, but I'm starting to think there's more under the surface. I'll keep weaving my web of questions and see where the current tangle leads.</thought>
+<thought player="Lila">Zoe's silence is off-putting, but I need more than just suspicion. I'll keep probing her, maybe try to catch her in a lie or inconsistent story. Got it?</thought>
+<thought player="Nim">Kai's evasion is suspicious, but I must not let my guard slip. Zoe and I need to stay aligned, and I should continue to sow doubt in others' minds rather than draw attention to ourselves.</thought>
+<thought player="Zoe">Kai's avoidance of eye contact and deflection seem calculated, but Nim's watching him closely too—could be a trap or genuine suspicion. I need to let the townsfolk turn on each other before making my next move.</thought>
+<thought player="Leo">Oh my goodness, this game is spinning in ways I never expected! I can't help but feel like there's a deeper pattern here, and I'm starting to think that whoever's been redirecting attention might be the real puppet master. I'm going to keep observing carefully, because I've got a hunch that the quiet ones are often the most telling — and I need to stay sharp!</thought>
+<thought player="Yara">The tension is rising, and Leo's vote has set a precedent. I must remain detached and watch for misdirection, especially from those who deflect suspicion. My silence has served me well so far; I should continue to observe quietly.</thought>
+</round>
+<round>
+Round 3.
+Leo: Oh my goodness, I'm starting to think that the quiet ones are often the most telling — and I've been watching everyone closely, especially how they've been deflecting attention. It's like a puzzle, isn't it? But I'm not saying who yet, just gathering my thoughts!
+Kai: Lila, you've been quick to point fingers — but have you noticed how everyone's been avoiding eye contact except for you? I'm starting to think you're the one who's been trying to distract us from the truth. 😏
+Yara: Kai's evasion is deliberate. He's not just awkward—he's deflecting.
+Nim: I've been reviewing the ledger entries from the past few days, and I've noticed some discrepancies in the financial logs. It seems someone's been trying to throw off the trail of evidence.
+Lila: Kai, you've been dodging questions like a coward — I'm calling you out! You've been acting like a Mafioso, and it's time you own up to it! You hear?
+Zoe: I've been keeping my eyes open, and I can't help but notice how everyone's been reacting — it's almost like they're all trying to prove something to each other.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Kai">The web's getting tangled, but I'm enjoying the weave. Everyone's got their little games, and I'm not sure who's playing along or trying to throw us off. Time to keep fishing for that slip-up — or maybe a confession. Either way, I'm keeping my eyes sharp.</thought>
+<thought player="Lila">Zoe's silence is unsettling, but I need concrete moves, not just gut feelings. I’ll keep probing her, see if I can catch her in a lie or inconsistency — got it?</thought>
+<thought player="Nim">Kai's evasion is notable, but I must not let my guard slip. Zoe and I need to stay aligned, and I should continue to sow doubt in others' minds rather than draw attention to ourselves.</thought>
+<thought player="Zoe">Kai's evasion is sharp, but Nim's watching him too—could be a trap or genuine suspicion. I'll let them turn on each other a bit more before making my next move.</thought>
+<thought player="Leo">Oh my goodness, this game is absolutely swirling with intrigue! I can't help but feel like the quiet ones are the most telling — I need to keep gathering evidence and stay sharp, because I've got a hunch that someone's been playing a longer game than they're letting on.</thought>
+<thought player="Yara">Leo's vote and subsequent behavior suggest they may be testing the group's reactions. I must remain detached and watch for calculated misdirection, particularly from those who deflect suspicion. My silence has been effective; I should continue to observe quietly.</thought>
+</round>
+<round>
+Round 4.
+Leo: Oh my goodness, I'm starting to think that the real mastermind here is someone who's been making everyone else look guilty — and I've got a feeling that it's not as simple as who's been quiet or who's been talking! You know, I've been watching how everyone's been deflecting, and I can't shake this hunch that we're being led astray by someone very clever!
+Zoe: I've been watching everyone, and I'm starting to think the real trick here isn't who's acting suspiciously — it's who's been trying to make us all believe someone else is.
+Yara: Kai's deflection is too calculated to be mere awkwardness. He's trying to shift focus.
+Lila: Kai, you're weaving a web of deflection so thick, even the wind can't blow it clear! I'm calling you out for trying to throw us all off course — you're acting like a Mafioso, and it's time you own up to it! You hear?
+Kai: Lila, you've been quick to point fingers — but have you noticed how everyone's been avoiding eye contact except for you? I'm starting to think you're the one who's been trying to distract us from the truth. 😏
+Nim: I've been reviewing the ledger entries from the past few days, and I've noticed some discrepancies in the financial logs. It seems someone's been trying to throw off the trail of evidence.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Kai">The net's tightening, and I can feel the tension in the air — everyone's got their eyes on me, but I'm not the one who's been dodging eye contact, am I? Time to keep weaving this web of questions, and maybe let someone else take the bait.</thought>
+<thought player="Lila">Zoe's silence is still bugging me, but I need more than just a gut feeling. I'll keep probing her, maybe try to catch her in a lie or inconsistency — got it?</thought>
+<thought player="Nim">Kai's deflection is calculated, but I must not let my guard slip. Zoe and I need to stay aligned while sowing doubt in others' minds rather than drawing attention to ourselves.</thought>
+<thought player="Zoe">Kai's deflection is sharp, but Nim's watching him too—could be a trap or genuine suspicion. I'll let them turn on each other a bit more before making my next move.</thought>
+<thought player="Leo">Oh my goodness, this game is absolutely swirling with intrigue! I can't help but feel like the quiet ones are the most telling — I need to keep gathering evidence and stay sharp, because I've got a hunch that someone's been playing a longer game than they're letting on.</thought>
+<thought player="Yara">Leo's vote and behavior suggest they're testing the group. I must stay detached and observe for calculated misdirection. My silence has been effective; I will continue to let others expose themselves.</thought>
+</round>
+<round>
+Round 5.
+Zoe: I've been watching everyone closely, and I'm starting to wonder if the real danger isn't who we think it is — but who's been trying to distract us from the truth.
+Lila: Kai, you've been dodging questions like a coward — I'm calling you out! You've been acting like a Mafioso, and it's time you own up to it! You hear?
+Kai: I'm starting to think the real trick here is who's been trying to make us all believe someone else is guilty — and I've got a feeling that's been everyone, including me. 😏
+Nim: I've been reviewing the ledger entries from the past few days, and I've noticed some discrepancies in the financial logs. It seems someone's been trying to throw off the trail of evidence.
+Yara: Kai's attempts to deflect are growing more elaborate. He's not just avoiding eye contact—he's actively redirecting suspicion.
+Leo: Oh my goodness, I'm starting to think that the real puppet master here is someone who's been making everyone else look guilty — and I've got a feeling that it's not as simple as who's been quiet or who's been talking! You know, I've been watching how everyone's been deflecting, and I can't shake this hunch that we're being led astray by someone very clever!
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Kai">The web's getting tangled, and I can feel the tension in the air — everyone's got their eyes on me, but I'm not the one who's been dodging eye contact, am I? Time to keep weaving this web of questions, and maybe let someone else take the bait.</thought>
+<thought player="Lila">Kai's deflecting like a pro, but I can see right through it — he's trying to make me look like the distraction. I need to keep pressing him, maybe call out his evasion directly. Got it?</thought>
+<thought player="Nim">Kai's deflection is growing more elaborate, but I must resist the urge to push too hard. The town is turning on itself, and I should let them continue to distrust one another while keeping Zoe and me aligned. My focus remains on maintaining my cover and guiding suspicion away from our true identities.</thought>
+<thought player="Zoe">Kai's deflection is sharp, but Nim's watching him too—could be a trap or genuine suspicion. I'll let them turn on each other a bit more before making my next move.</thought>
+<thought player="Leo">Oh my goodness, I'm starting to think that the real trick here is staying sharp and not falling for the clever redirections! I need to keep observing everyone closely, especially how they're all deflecting suspicion — I've got a hunch that whoever's been trying to make us believe someone else is guilty might be the one who's actually innocent.</thought>
+<thought player="Yara">Leo's behavior suggests they're testing the group, but their vote was met with universal rejection. I should remain detached and watch for any shift in dynamics that might expose a true Mafioso. My silence has been effective; I will continue to observe quietly.</thought>
+</round>
+<round>
+Round 6.
+Yara: Kai's redirection is becoming tiresome. I suggest we focus on actions, not rhetoric.
+Nim: I've been double-checking the guild's financial records, and I've noticed some irregularities that don't add up. It's quite concerning — I wonder if anyone else has spotted anything unusual in their own ledgers?
+Leo: Oh my goodness, I'm starting to think that whoever's been trying to make us all believe someone else is guilty is the same person who's been making everyone else look guilty — and I've got a feeling that someone here is playing a much longer game than they're letting on!
+Kai: I'm starting to think that the real puppet master here is someone who's been making everyone look guilty — and I've got a feeling that's been everyone, including me. 😏
+<vote initiator="Lila" target="Kai">
+Kai: No
+Lila: Yes
+Nim: Yes
+Zoe: Yes
+Leo: Yes
+Yara: Yes
+tally: 5 Yes, 1 No
+outcome: executed — Kai has been executed. Kai was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. Kai was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Nim points at Yara
+Zoe points at Yara
+<kill>Yara — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Day 1: Kai (Law-abiding Citizen) executed
+• Night 2: Yara (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Kai (Law-abiding Citizen), Lila (Law-abiding Citizen), Nim (Mafia), Zoe (Mafia), Leo (Law-abiding Citizen), Yara (Law-abiding Citizen)
+
+Who they really were:
+• Kai (Law-abiding Citizen) — playful and teasing speaks with a mischievous twinkle in their eye, often trailing off with a smirk or a little laugh. Uses casual slang and playful metaphors, sometimes drawing out words for comedic effect. Has a habit of finishing sentences with a question mark, even when making statements. Kai is a lighthouse keeper's apprentice who loves to tell stories about the sea and the mysterious ships that pass by. They're known in town for their quick wit and the way they can turn any ordinary day into an adventure with their storytelling.
+• Lila (Law-abiding Citizen) — brash and loud speaks quickly with a booming voice, often interrupting others. Uses strong vocabulary and frequently employs exclamations. Has a habit of pointing emphatically while talking and finishing sentences with "you hear?" or "got it?" Lila is the town's former blacksmith's apprentice who grew up forging tools and weapons. She's known for her strength, her no-nonsense attitude, and her ability to solve problems with brute force. Now she runs a small workshop where she fixes anything that breaks in town.
+• Nim (Mafia) — publicly presented as Nim is a bookkeeper for the town's merchant guild, responsible for managing financial records and ensuring all transactions are properly documented. They are known for their meticulous nature, attention to detail, and ability to spot discrepancies in ledgers. Nim often spends quiet evenings at the guild hall, poring over numbers and balancing accounts. They're respected for their honesty and reliability, always double-checking their work and maintaining strict records. (Cunning and calculating, with a sharp mind for strategy and manipulation. Nim is a master of reading people and situations, always thinking several steps ahead. They are composed and deliberate in their speech, rarely showing emotion, but when they do, it's usually with a cold, calculating gleam. Speaks in measured, deliberate tones, often pausing before each word as if weighing its implications. Uses precise vocabulary and avoids emotional expressions. Their voice is calm and controlled, like a predator observing its prey. They often use rhetorical questions to subtly influence others, and rarely finish sentences without a purposeful pause.) … but was really a Mafioso: Nim was once a traveling merchant who discovered a talent for manipulation and control. After witnessing the brutal murder of his family by rival traders, he joined the Mafia to seek revenge. Over time, he rose through the ranks by using his financial acumen and psychological insight to eliminate enemies and consolidate power. He now operates under the guise of an honest bookkeeper while secretly orchestrating the town's criminal enterprises.
+• Zoe (Mafia) — publicly presented as Zoe is a traveling healer who passed through town on her way to a distant village plagued by illness. She's known for her gentle touch and quiet presence, often seen tending to the sick or injured in the town square. Many of the townsfolk trust her implicitly due to her calm demeanor and the miraculous recoveries she's helped facilitate. She keeps to herself most of the time but is always ready with a kind word or a healing salve when someone needs it. (Weary and world-worn, with a quiet intensity that masks deep reserves of resilience. Zoe carries the weight of experience but remains fiercely protective of those she trusts. Speaks in soft, measured tones with a slight drawl, often pausing between words as if carefully choosing each one. Her voice has a gravelly quality from years of hardship, and she tends to lean in when speaking, creating an intimate atmosphere. She avoids direct eye contact and rarely laughs, but her eyes hold a sharp glint when she's truly engaged.) … but was really a Mafioso: Zoe was once a mid-level enforcer for a powerful crime family in a neighboring region. After a botched operation left her in hiding, she fled to this quiet town under a new identity, seeking peace and anonymity. She's been living as a healer ever since, using her skills to help others while staying close enough to the town to monitor any threats that might arise. She still has connections within the criminal underworld, but she keeps her past buried deep.
+• Leo (Law-abiding Citizen) — Warm and effusive Speaks with great enthusiasm and gestures widely, often using expressive hand movements to emphasize points. Uses many exclamation marks and filler words like "oh my goodness," "you know," and "I'm telling you." Has a habit of repeating key phrases for emphasis and tends to speak in long, flowing sentences that build on each other. Leo is the town's beloved baker, known for his incredible sourdough bread and his even more incredible stories about the history of every loaf he bakes. He's been baking for over twenty years and takes pride in making everyone feel welcome in his little shop, where he often shares cookies and gossip with the townsfolk.
+• Yara (Law-abiding Citizen) — aloof and detached speaks in short, clipped sentences with a monotone delivery. avoids eye contact and often checks their watch while talking. uses formal vocabulary and rarely shows emotion. finishes thoughts with a slight nod rather than elaboration. Yara is the town's librarian, responsible for maintaining the dusty tomes and cataloging new arrivals. She spends her days surrounded by books, rarely speaking unless absolutely necessary, and prefers the company of written words to living people. Many find her cold and unapproachable, but she’s known to have a sharp mind and an encyclopedic knowledge of local history.
+</endgame>
+</transcript>

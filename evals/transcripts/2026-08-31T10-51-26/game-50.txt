@@ -1,0 +1,311 @@
+Game 50 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Omar" role="Law-abiding Citizen">
+Personality: eccentric and unpredictable
+Manner: speaks in sudden bursts with theatrical pauses, often uses odd metaphors like "the moon is a cheese wheel" or "time moves like a sleepy sloth." Has a habit of trailing off mid-sentence, then restarting with a different idea. Uses formal vocabulary but with whimsical twists.
+Persona: Omar is the town's unofficial astronomer and amateur philosopher who spends his nights staring at the stars, convinced he can predict the future from celestial movements. He runs a small shop selling moon rocks and strange artifacts he found in the woods. People say he's always right about the weather.
+</player>
+<player name="Sana" role="Law-abiding Citizen">
+Personality: vigilant and watchful
+Manner: speaks in short, deliberate phrases with a steady pace. Uses precise, measured vocabulary and often repeats key words for emphasis. Has a habit of pausing before answering questions, as if weighing each word carefully. Avoids filler words and rarely uses slang.
+Persona: Sana is the town's night watchman, hired to patrol the streets after dark. She has a sharp eye for detail and never misses a thing. Sana works alone, but her keen observations have helped solve several mysteries in town. She's known for being trustworthy and reliable, always keeping an ear open for anything unusual.
+</player>
+<player name="Raihan" role="Mafia">
+Personality: Cheerful and irrepressible, with an infectious optimism that borders on obliviousness to danger. Raihan is bubbly, effervescent, and naturally upbeat, often using humor to deflect serious topics.
+Manner: Speaks in rapid-fire bursts with frequent laughter and exaggerated gestures. Uses slang and playful idioms ("I'm on cloud nine," "that's a pickle!") and often interrupts others mid-sentence with a cheerful "Wait, wait, let me tell you about this!" Has a habit of giggling at inappropriate moments.
+Public legend: Raihan is the town's beloved children's librarian and part-time baker, known for making the most amazing cookies and telling stories to the local kids. He's always seen with a bright smile, wearing mismatched socks and carrying a stuffed elephant named Bongo. Raihan has a habit of singing songs while working and often invites anyone who walks by to help himself to fresh-baked treats.
+True self (hidden): Raihan was recruited into the Mafia after his younger sister was kidnapped during a botched robbery. He was forced to become a mole within the town's social circles, using his cheerful demeanor and constant activity as cover for his true activities. Over time, he found himself genuinely enjoying the chaos and intrigue, and now uses his public persona as a mask to avoid suspicion while quietly orchestrating operations from the shadows.
+</player>
+<player name="Feyza" role="Law-abiding Citizen">
+Personality: weary and world-worn
+Manner: speaks slowly with a heavy sigh after every few sentences, often trails off mid-thought as if remembering something unpleasant. Uses a mix of formal vocabulary and colloquialisms, occasionally muttering under their breath. Has a habit of adjusting their spectacles or rubbing their temples when speaking.
+Persona: Feyza is a former traveling merchant who settled in town after a series of unfortunate ventures left her jaded and wary. She runs the local general store, selling everything from thread to tea, and has seen enough of the world to know better than to trust too easily. Her weathered hands and knowing eyes tell stories of distant lands and hard lessons.
+</player>
+<player name="Irfan" role="Law-abiding Citizen">
+Personality: brash and loud
+Manner: speaks with a booming voice, often interrupts others, uses exaggerated gestures, has a habit of pointing accusing fingers, and frequently says "I told you so" or "See? I knew it!" in a triumphant tone. Uses strong, assertive vocabulary and rarely hesitates in speech.
+Persona: Irfan is the town's most outspoken butcher, known for his fiery temper and even fiercer chops at the block. He’s been running his family's meat shop for over twenty years, ever since his father passed away. Irfan is a man of few words but many opinions — he always has something to say about anyone in town, especially when it comes to their character or behavior. He’s not afraid to speak his mind, even if it gets him into trouble.
+</player>
+<player name="Zara" role="Mafia">
+Personality: Anxious and second-guessing
+Manner: Speaks in hushed tones with frequent pauses, often trailing off or restarting mid-sentence. Uses filler words like "um," "well," and "I think" excessively. Has a habit of checking over her shoulder or glancing around nervously while talking. Often apologizes for interrupting or for being "too much" and tends to speak quietly as if afraid of being heard.
+Public legend: Zara is the town's beloved librarian, known for her quiet demeanor and love of books. She’s been working at the library for over a decade, carefully organizing the collection and helping anyone who comes in with their reading needs. Zara is soft-spoken, often seen with a notebook scribbling down interesting quotes or thoughts. She avoids confrontation and tends to listen more than she speaks, making her a favorite among the townsfolk. She has a habit of apologizing for her own presence sometimes, especially when others are trying to get her attention. Zara is a regular at the local coffee shop, where she often sits in a corner reading and sipping tea. She’s known to be deeply empathetic but also quite reserved.
+True self (hidden): Zara joined the Mafia after her younger brother was killed in a gang war over a small drug deal gone wrong. She couldn't speak out against the violence, so instead she chose to become part of it. Now she uses her position within the organization to gather information and slowly work her way toward exposing the truth from within. She's not violent by nature but has become skilled at manipulation, using her nervousness and quiet nature as a cover for her deeper intentions. She's terrified of being found out but believes that one day, she’ll be able to leave the life behind.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Omar, Sana, Raihan, Feyza, Irfan, Zara. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Raihan): Your Mafia teammates are: Zara. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Zara): Your Mafia teammates are: Raihan. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Zara points at Omar
+Raihan points at Omar
+<kill>Omar — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Omar was killed last night. Omar was a Law-abiding Citizen.
+<round>
+Round 1.
+Feyza: That's a shame about Omar — a good man, and a loyal citizen. I hope we can find the one among us who took his life.
+Zara: I think... I really think we should focus on who had the most time alone with Omar before he was killed. That seems like a key detail.
+Sana: I noticed Raihan was alone with Omar for a long time before the murder. That seems significant.
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+<vote initiator="Irfan" target="Sana">
+Avery: No
+Sana: No
+Raihan: Yes
+Feyza: No
+Irfan: No
+Zara: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Sana: I need to speak with Raihan about what happened alone with Omar.
+Feyza: Irfan, you've been watching Zara closely too? I'm starting to think this whole situation stinks of misdirection.
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+Zara: I... I'm really not sure about this, but I think it's strange that Sana was so quick to point fingers at Raihan. It almost seemed like she was trying to deflect suspicion from herself.
+Irfan: Irfan is watching Zara most closely, and I'm telling you all — she's been acting suspiciously!
+Raihan: Wait, wait, let me tell you about this! I was with Omar, but I was also baking cookies — you know how I love to bake! I'm on cloud nine, but I’m not sure what happened to Omar. I think we should all just stay calm and keep our eyes open.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Sana">Raihan's alibi about baking cookies seems odd and unconvincing. I need to investigate this further. Zara's observation about my quick accusation might be a useful distraction, but I must stay focused on the truth.</thought>
+<thought player="Raihan">I'm really not sure about this, but I think it's strange that Sana was so quick to point fingers at me. It almost seemed like she was trying to deflect suspicion from herself. I should keep my eyes open and not let anyone get too close to the truth.</thought>
+<thought player="Feyza">I'm starting to think Zara's got something to hide, but Raihan's story about baking cookies... it feels off. I can't quite place why, but something's not sitting right with me. I need to keep watching them both, and maybe ask a few more pointed questions.</thought>
+<thought player="Irfan">Irfan is watching Zara most closely, and I'm telling you all — she's been acting suspiciously! See? I knew it! This whole situation stinks of misdirection, and I need to keep my eyes on Zara.</thought>
+<thought player="Zara">I think I'm being watched too much lately — Raihan seemed a bit off when he mentioned baking cookies, and I can't shake the feeling that someone is trying to turn the tables on me. I need to be more careful about how I speak and act.</thought>
+</round>
+<round>
+Round 2.
+Feyza: Raihan, you mentioned baking cookies — what kind of cookies, and did you leave the kitchen unattended?
+Sana: I will investigate Raihan's cookie story. If he was baking, why did he not mention this earlier?
+Zara: I... I think I'm starting to feel like we're all being watched, and it's making me a bit nervous. I really hope we can trust each other.
+Raihan: Oh my goodness, I'm literally shaking with excitement! I just realized I have the most incredible recipe for chocolate chip cookies — it's been passed down from my grandmother! I'm practically bursting with joy!
+Irfan: Irfan is watching Zara most closely, and I'm telling you all — she's been acting suspiciously! See? I knew it! This whole situation stinks of misdirection, and I need to keep my eyes on Zara.
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Sana">Raihan's cookie story lacks credibility and needs further probing. Zara's observation could be leveraged to misdirect, but my priority remains uncovering the truth about Omar's murder.</thought>
+<thought player="Raihan">I'm feeling a bit exposed with everyone watching Zara and me, but I need to keep my head down and not let on that I know Sana is trying to deflect. I'll keep baking cookies as an excuse for my time with Omar — it's solid, right? Right.</thought>
+<thought player="Feyza">I can't shake the feeling that Zara is hiding something, but Raihan's cookie tale reeks of desperation. I'll keep probing both of them, maybe look for inconsistencies in their stories.</thought>
+<thought player="Irfan">Zara's acting all nervous and suspicious, but I ain't buying it. I seen her slipping away from the group twice — that's not innocent, that's calculated. I'm gonna keep pushing her, see if she cracks under pressure.</thought>
+<thought player="Zara">I think I'm being watched too much lately — Raihan seemed a bit off when he mentioned baking cookies, and I can't shake the feeling that someone is trying to turn the tables on me. I need to be more careful about how I speak and act.</thought>
+</round>
+<round>
+Round 3.
+Feyza: I'm still not convinced by Raihan's cookie story — if he was baking, why didn't he mention it before now? It seems like a lot of effort to fabricate something so... elaborate.
+Zara: I... I think I might have heard something strange last night while I was organizing the library books. It sounded like someone was talking quietly in the back alley, but I couldn't make out what they were saying.
+<vote initiator="Irfan" target="Zara">
+Avery: No
+Sana: No
+Raihan: No
+Feyza: No
+Irfan: Yes
+Zara: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Feyza: I'm not saying Zara's innocent, but Raihan's cookie story? It's like he's trying too hard to be charming instead of... natural. I think we should all be a bit more careful about what we're buying into.
+Irfan: Irfan is watching Zara most closely, and I'm telling you all — she's been acting suspiciously! See? I knew it! This whole situation stinks of misdirection, and I need to keep my eyes on Zara.
+Sana: I will speak with Raihan about his cookie story. If he was baking, why did he not mention it before now?
+Raihan: Oh my gosh, I'm literally bouncing with excitement! I just realized I have the most incredible recipe for chocolate chip cookies — it's been passed down from my grandmother! I'm practically bursting with joy!
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+Zara: I... I'm really worried about the way this is going. I think we should all just take a deep breath and try to stay calm — maybe we're overthinking things.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+<thought player="Sana">Raihan's cookie story is a clear attempt at misdirection. I must continue probing him while keeping Zara under observation. The truth will not reveal itself through fabricated alibis.</thought>
+<thought player="Raihan">I'm on cloud nine with my cookie story, but I need to keep baking up the excitement while staying alert to Sana's deflecting game. Zara's getting suspicious eyes, so I'll keep smiling and let the chaos unfold — maybe I can even sneak in a little misdirection of my own.</thought>
+<thought player="Feyza">I still can't shake the feeling that Zara is hiding something, but Raihan's cookie story reeks of desperation. I'll keep probing both of them, maybe look for inconsistencies in their stories.</thought>
+<thought player="Irfan">Zara's been acting nervous, but I ain't buying it — I seen her slipping away twice, that's calculated, not innocent. I'm gonna keep pushing her, see if she cracks under pressure. This whole situation stinks of misdirection, and I need to keep my eyes on Zara.</thought>
+<thought player="Zara">I think I'm being watched too much lately — Raihan seemed a bit off when he mentioned baking cookies, and I can't shake the feeling that someone is trying to turn the tables on me. I need to be more careful about how I speak and act.</thought>
+</round>
+<round>
+Round 4.
+Sana: I will speak with Raihan about his cookie story. If he was baking, why did he not mention it before now?
+Feyza: I'm still not convinced by Raihan's cookie story — if he was baking, why didn't he mention it before now? It seems like a lot of effort to fabricate something so... elaborate.
+Irfan: Irfan is watching Zara most closely, and I'm telling you all — she's been acting suspiciously! See? I knew it! This whole situation stinks of misdirection, and I need to keep my eyes on Zara.
+Raihan: I'm still giggling about my cookie recipe — it's so good, I practically can't contain myself! I'm sure I'll have to share it with the group soon.
+Zara: I think... I really do think we should all be more careful about what we're saying. It's starting to feel like someone is trying to make us turn on each other.
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+<thought player="Sana">I must press Raihan on his cookie story. His alibi is unconvincing and likely fabricated. Zara’s observation about my actions is a distraction, but I will not let it divert me from the truth.</thought>
+<thought player="Raihan">I'm literally bouncing with excitement about my cookie story, but I need to keep spinning — Sana's deflecting, Zara's getting suspicious, and I've got to stay one step ahead. Let them all keep watching Zara while I keep baking up the chaos.</thought>
+<thought player="Feyza">I'm starting to think Zara's got something to hide, but Raihan's cookie story reeks of desperation. I'll keep probing both of them, maybe look for inconsistencies in their stories.</thought>
+<thought player="Irfan">Zara's been acting nervous, but I ain't buying it — I seen her slipping away twice, that's calculated, not innocent. I'm gonna keep pushing her, see if she cracks under pressure. This whole situation stinks of misdirection, and I need to keep my eyes on Zara.</thought>
+<thought player="Zara">I'm being watched more than I'd like, and everyone seems to be turning on each other. I need to stay calm and not let my anxiety show — but I really think Raihan is hiding something about those cookies. I should keep listening, and maybe I can use this confusion to my advantage.</thought>
+</round>
+<round>
+Round 5.
+Sana: I need to know more about Raihan's cookie story. If he was baking, where are the cookies now?
+Feyza: Irfan, you keep saying Zara's suspicious — what exactly have you noticed about her? Don't just say "she's acting strange," tell us what you've seen.
+Raihan: I'm still giggling about my cookie recipe — it's so good, I practically can't contain myself! I'm sure I'll have to share it with the group soon.
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+Zara: I... I'm really not sure about this, but I think it's strange that Raihan was so eager to talk about cookies when we're trying to figure out who killed Omar. It feels like he's trying to distract us.
+Irfan: Irfan is watching Zara most closely, and I'm telling you all — she's been acting suspiciously! See? I knew it! This whole situation stinks of misdirection, and I need to keep my eyes on Zara.
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+<thought player="Sana">I must press Raihan on his cookie story. His alibi is unconvincing and likely fabricated. Zara’s observation about my actions is a distraction, but I will not let it divert me from the truth.</thought>
+<thought player="Raihan">I'm practically bursting with joy about my cookie story, but I need to keep spinning this chaos while staying one step ahead of Sana's deflection. Let them all keep watching Zara — I'll keep baking up the excitement and let the game unfold.</thought>
+<thought player="Feyza">I can't shake the feeling that Zara's hiding something, but Raihan's cookie story reeks of desperation. I'll keep probing both of them, maybe look for inconsistencies in their stories.</thought>
+<thought player="Irfan">Zara's been acting guilty, but I ain't convinced she's the real culprit yet. I seen her slipping away twice — that's not innocent, that's calculated. I'm gonna keep pushing her, see if she cracks under pressure.</thought>
+<thought player="Zara">I'm being watched too much, and everyone's turning on each other. I need to stay calm and not let my anxiety show — but I really think Raihan is hiding something about those cookies. I should keep listening and use this confusion to my advantage.</thought>
+</round>
+<round>
+Round 6.
+Irfan: I'm telling you all, Zara's been slipping away twice — that's not innocent, that's calculated! I seen her dodging questions like a scared rat!
+<vote initiator="Avery" target="Zara">
+Avery: No
+Sana: No
+Raihan: No
+Feyza: No
+Irfan: No
+Zara: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Zara points at Feyza
+Raihan points at Feyza
+<kill>Feyza — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Feyza was killed last night. Feyza was a Law-abiding Citizen.
+<round>
+Round 1.
+Raihan: Oh my gosh, I'm literally shaking with excitement! Feyza was killed last night — that's just *so* tragic! I'm practically on cloud nine, but I’m not sure what happened to her. I think we should all just stay calm and keep our eyes open, you know?
+Sana: I need to know where Raihan's cookies are, or why he didn't mention them earlier.
+Zara: I think... I really do think we should focus on why Feyza was killed. It's not just a coincidence that she was the next one, especially after all the chaos with Omar.
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+Irfan: Irfan is watching Zara most closely, and I'm telling you all — she's been acting suspiciously! See? I knew it! This whole situation stinks of misdirection, and I need to keep my eyes on Zara.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Sana">Raihan's cookie story is entirely fabricated. I must press him again, directly, about where the cookies are. Zara’s attempts to shift focus are noted but do not change my course. The truth lies in confronting Raihan with his inconsistency.</thought>
+<thought player="Raihan">I'm practically bouncing with excitement about my cookie story, but I need to keep spinning this chaos while staying one step ahead of Sana's deflection. Let them all keep watching Zara — I'll keep baking up the excitement and let the game unfold.</thought>
+<thought player="Irfan">Zara's been acting guilty, but I ain't convinced she's the real culprit yet. I seen her slipping away twice — that's not innocent, that's calculated. I'm gonna keep pushing her, see if she cracks under pressure.</thought>
+<thought player="Zara">I'm being watched more than ever, and I can't let my nerves show — but I think Raihan is hiding something about those cookies, and I need to keep listening and using this chaos to my advantage.</thought>
+</round>
+<round>
+Round 2.
+Irfan: Irfan is watching Zara most closely, and I'm telling you all — she's been acting suspiciously! See? I knew it! This whole situation stinks of misdirection, and I need to keep my eyes on Zara.
+Raihan: Oh my gosh, I'm literally shaking with excitement! I just realized I have the most incredible recipe for chocolate chip cookies — it's been passed down from my grandmother! I'm practically bursting with joy!
+Zara: I think... I really do think we should focus on why Feyza was killed. It's not just a coincidence that she was the next one, especially after all the chaos with Omar.
+Sana: I need to know where Raihan's cookies are, or why he didn't mention them earlier.
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Sana">Raihan's cookie story is a lie. I must confront him directly about the cookies again. Zara’s attempts to shift focus are noted, but I will not be distracted from the truth.</thought>
+<thought player="Raihan">I'm practically bouncing with excitement about my cookie story, but I need to keep spinning this chaos while staying one step ahead of Sana's deflection. Let them all keep watching Zara — I'll keep baking up the excitement and let the game unfold.</thought>
+<thought player="Irfan">Zara's been acting guilty, but I ain't convinced she's the real culprit yet. I seen her slipping away twice — that's not innocent, that's calculated. I'm gonna keep pushing her, see if she cracks under pressure.</thought>
+<thought player="Zara">I'm being watched more than ever, and everyone's turning on each other. I need to stay calm and not let my anxiety show — but I really think Raihan is hiding something about those cookies. I should keep listening and use this chaos to my advantage.</thought>
+</round>
+<round>
+Round 3.
+Sana: I need to know where Raihan's cookies are, or why he didn't mention them earlier.
+<vote initiator="Irfan" target="Zara">
+Avery: No
+Sana: No
+Raihan: No
+Irfan: Yes
+Zara: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Sana: I need to know where Raihan's cookies are, or why he didn't mention them earlier.
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+Raihan: I'm still giggling about my cookie recipe — it's so good, I practically can't contain myself! I'm sure I'll have to share it with the group soon.
+Zara: I... I think it's really important that we stay focused on the real killer, not just who seems suspicious. I'm starting to feel like someone is trying to lead us astray.
+Irfan: Irfan is watching Zara most closely, and I'm telling you all — she's been acting suspiciously! See? I knew it! This whole situation stinks of misdirection, and I need to keep my eyes on Zara.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Sana">Raihan's cookie story remains inconsistent and fabricated. I must confront him directly again about the cookies. Zara’s attempts to shift focus are noted but will not deter me from uncovering the truth.</thought>
+<thought player="Raihan">I'm practically bouncing with excitement about my cookie story, but I need to keep spinning this chaos while staying one step ahead of Sana's deflection. Let them all keep watching Zara — I'll keep baking up the excitement and let the game unfold.</thought>
+<thought player="Irfan">Zara's been skittish, but I ain't convinced she's the real killer yet. I seen her slipping away twice — that's not innocent, that's calculated. I'm gonna keep pushing her, see if she cracks under pressure.</thought>
+<thought player="Zara">I'm being watched more than ever, and I can't let my nerves show — but I think Raihan is hiding something about those cookies. I need to keep listening and use this chaos to my advantage, maybe even turn the suspicion back onto him.</thought>
+</round>
+<round>
+Round 4.
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+Sana: I need to know where Raihan's cookies are, or why he didn't mention them earlier.
+Irfan: I'm telling you all, Zara's been acting like she's hiding something — and I seen her slipping away twice! That's not innocent, that's calculated!
+Raihan: I'm still giggling about my cookie recipe — it's so good, I practically can't contain myself! I'm sure I'll have to share it with the group soon.
+Zara: I think it's really important that we stay focused on the real killer, not just who seems suspicious. I'm starting to feel like someone is trying to lead us astray.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Sana">Raihan's cookie story is a clear fabrication. I must confront him directly again about the cookies. Zara’s attempts to shift focus are noted, but I will not be diverted from the truth.</thought>
+<thought player="Raihan">I'm practically bouncing with excitement about my cookie story, but I need to keep spinning this chaos while staying one step ahead of Sana's deflection. Let them all keep watching Zara — I'll keep baking up the excitement and let the game unfold.</thought>
+<thought player="Irfan">Zara's been skittish, but I ain't convinced she's the real killer yet. I seen her slipping away twice — that's not innocent, that's calculated. I'm gonna keep pushing her, see if she cracks under pressure.</thought>
+<thought player="Zara">I'm being watched too much, and everyone's turning on each other. I need to stay calm and not let my anxiety show — but I really think Raihan is hiding something about those cookies. I should keep listening and use this chaos to my advantage.</thought>
+</round>
+<round>
+Round 5.
+Irfan: Irfan is watching Zara most closely, and I'm telling you all — she's been acting suspiciously! See? I knew it! This whole situation stinks of misdirection, and I need to keep my eyes on Zara.
+Raihan: I'm still giggling about my cookie recipe — it's so good, I practically can't contain myself! I'm sure I'll have to share it with the group soon.
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+Sana: I need to know where Raihan's cookies are, or why he didn't mention them earlier.
+Zara: I... I think it's really odd that Raihan hasn't shown us the cookies he was so excited about. It makes me wonder if he's trying to hide something else too.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Sana">Raihan's cookie story is entirely fabricated. I must confront him directly about the cookies again. Zara’s attempts to shift focus are noted, but I will not be distracted from the truth.</thought>
+<thought player="Raihan">I'm practically bouncing with excitement about my cookie story, but I need to keep spinning this chaos while staying one step ahead of Sana's deflection. Let them all keep watching Zara — I'll keep baking up the excitement and let the game unfold.</thought>
+<thought player="Irfan">Zara's been acting guilty, but I ain't convinced she's the real culprit yet. I seen her slipping away twice — that's not innocent, that's calculated. I'm gonna keep pushing her, see if she cracks under pressure.</thought>
+<thought player="Zara">I'm being watched constantly, and everyone's on edge, but I can't let my anxiety show. Raihan is still dodging questions about the cookies — I need to keep probing him subtly without drawing too much attention.</thought>
+</round>
+<round>
+Round 6.
+<vote initiator="Irfan" target="Zara">
+Avery: No
+Sana: No
+Raihan: No
+Irfan: Yes
+Zara: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Irfan: I'm telling you all, Zara's been slipping away twice — that's not innocent, that's calculated! I seen her dodging questions like a scared rat!
+<vote initiator="Avery" target="Zara">
+Avery: No
+Sana: No
+Raihan: No
+Irfan: Yes
+Zara: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Raihan points at Avery
+Zara points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Omar (Law-abiding Citizen)
+• Night 2: Feyza (Law-abiding Citizen)
+• Night 3: Avery (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Omar (Law-abiding Citizen), Sana (Law-abiding Citizen), Raihan (Mafia), Feyza (Law-abiding Citizen), Irfan (Law-abiding Citizen), Zara (Mafia)
+
+Who they really were:
+• Omar (Law-abiding Citizen) — eccentric and unpredictable speaks in sudden bursts with theatrical pauses, often uses odd metaphors like "the moon is a cheese wheel" or "time moves like a sleepy sloth." Has a habit of trailing off mid-sentence, then restarting with a different idea. Uses formal vocabulary but with whimsical twists. Omar is the town's unofficial astronomer and amateur philosopher who spends his nights staring at the stars, convinced he can predict the future from celestial movements. He runs a small shop selling moon rocks and strange artifacts he found in the woods. People say he's always right about the weather.
+• Sana (Law-abiding Citizen) — vigilant and watchful speaks in short, deliberate phrases with a steady pace. Uses precise, measured vocabulary and often repeats key words for emphasis. Has a habit of pausing before answering questions, as if weighing each word carefully. Avoids filler words and rarely uses slang. Sana is the town's night watchman, hired to patrol the streets after dark. She has a sharp eye for detail and never misses a thing. Sana works alone, but her keen observations have helped solve several mysteries in town. She's known for being trustworthy and reliable, always keeping an ear open for anything unusual.
+• Raihan (Mafia) — publicly presented as Raihan is the town's beloved children's librarian and part-time baker, known for making the most amazing cookies and telling stories to the local kids. He's always seen with a bright smile, wearing mismatched socks and carrying a stuffed elephant named Bongo. Raihan has a habit of singing songs while working and often invites anyone who walks by to help himself to fresh-baked treats. (Cheerful and irrepressible, with an infectious optimism that borders on obliviousness to danger. Raihan is bubbly, effervescent, and naturally upbeat, often using humor to deflect serious topics. Speaks in rapid-fire bursts with frequent laughter and exaggerated gestures. Uses slang and playful idioms ("I'm on cloud nine," "that's a pickle!") and often interrupts others mid-sentence with a cheerful "Wait, wait, let me tell you about this!" Has a habit of giggling at inappropriate moments.) … but was really a Mafioso: Raihan was recruited into the Mafia after his younger sister was kidnapped during a botched robbery. He was forced to become a mole within the town's social circles, using his cheerful demeanor and constant activity as cover for his true activities. Over time, he found himself genuinely enjoying the chaos and intrigue, and now uses his public persona as a mask to avoid suspicion while quietly orchestrating operations from the shadows.
+• Feyza (Law-abiding Citizen) — weary and world-worn speaks slowly with a heavy sigh after every few sentences, often trails off mid-thought as if remembering something unpleasant. Uses a mix of formal vocabulary and colloquialisms, occasionally muttering under their breath. Has a habit of adjusting their spectacles or rubbing their temples when speaking. Feyza is a former traveling merchant who settled in town after a series of unfortunate ventures left her jaded and wary. She runs the local general store, selling everything from thread to tea, and has seen enough of the world to know better than to trust too easily. Her weathered hands and knowing eyes tell stories of distant lands and hard lessons.
+• Irfan (Law-abiding Citizen) — brash and loud speaks with a booming voice, often interrupts others, uses exaggerated gestures, has a habit of pointing accusing fingers, and frequently says "I told you so" or "See? I knew it!" in a triumphant tone. Uses strong, assertive vocabulary and rarely hesitates in speech. Irfan is the town's most outspoken butcher, known for his fiery temper and even fiercer chops at the block. He’s been running his family's meat shop for over twenty years, ever since his father passed away. Irfan is a man of few words but many opinions — he always has something to say about anyone in town, especially when it comes to their character or behavior. He’s not afraid to speak his mind, even if it gets him into trouble.
+• Zara (Mafia) — publicly presented as Zara is the town's beloved librarian, known for her quiet demeanor and love of books. She’s been working at the library for over a decade, carefully organizing the collection and helping anyone who comes in with their reading needs. Zara is soft-spoken, often seen with a notebook scribbling down interesting quotes or thoughts. She avoids confrontation and tends to listen more than she speaks, making her a favorite among the townsfolk. She has a habit of apologizing for her own presence sometimes, especially when others are trying to get her attention. Zara is a regular at the local coffee shop, where she often sits in a corner reading and sipping tea. She’s known to be deeply empathetic but also quite reserved. (Anxious and second-guessing Speaks in hushed tones with frequent pauses, often trailing off or restarting mid-sentence. Uses filler words like "um," "well," and "I think" excessively. Has a habit of checking over her shoulder or glancing around nervously while talking. Often apologizes for interrupting or for being "too much" and tends to speak quietly as if afraid of being heard.) … but was really a Mafioso: Zara joined the Mafia after her younger brother was killed in a gang war over a small drug deal gone wrong. She couldn't speak out against the violence, so instead she chose to become part of it. Now she uses her position within the organization to gather information and slowly work her way toward exposing the truth from within. She's not violent by nature but has become skilled at manipulation, using her nervousness and quiet nature as a cover for her deeper intentions. She's terrified of being found out but believes that one day, she’ll be able to leave the life behind.
+</endgame>
+</transcript>

@@ -1,0 +1,161 @@
+Game 44 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Zoe" role="Law-abiding Citizen">
+Personality: dreamy and distractible
+Manner: speaks softly and often trails off mid-sentence, getting lost in thought. Uses phrases like "you know" and "well, actually" frequently. Has a habit of looking away while talking as if distracted by something else.
+Persona: Zoe is a librarian who loves to get lost in books. She spends her days organizing collections and helping people find just the right story. She's known for being kind but easily distracted by interesting anecdotes or stray thoughts that pop into her head.
+</player>
+<player name="Liam" role="Mafia">
+Personality: Confident and domineering, with a flair for drama and an inflated sense of self-importance
+Manner: Speaks loudly and with dramatic flair, often using theatrical gestures and grandiose language. Has a habit of interrupting others and finishing their sentences. Uses phrases like "listen up" and "you're damn right" frequently.
+Public legend: Liam is a former professional wrestler who retired early to become a motivational speaker and life coach. He's known for his inspiring talks at local community centers and his ability to get people fired up about their goals. He's always wearing flashy clothes and carries himself with the swagger of someone who's lived life on his own terms.
+True self (hidden): Liam was a muscle for a small-time gang in his hometown before he realized that his talents for intimidation and getting people to do what he wanted could be more profitably channeled into the mafia. He quickly rose through the ranks due to his fearlessness and ability to keep his cool under pressure, eventually becoming a trusted enforcer for the local family.
+</player>
+<player name="Hana" role="Mafia">
+Personality: Vigilant and watchful, with an intense focus on details and a suspicious nature
+Manner: Speaks in short, clipped sentences with a sharp edge. Often pauses to observe others' reactions before responding. Uses phrases like "I've seen it before" and "trust nothing" frequently. Has a habit of scanning the room while talking and keeps a close eye on everyone's expressions
+Public legend: Hana is a former security guard who left the job after a disagreement with her supervisor about privacy policies. She now works as a night watchman at the local community center, where she's known for being thorough and never missing anything. She's quiet but observant, often noticed standing in corners or by windows, always alert to what's happening around her. Her colleagues appreciate her attention to detail and her ability to notice things others miss.
+True self (hidden): Hana was recruited into the Mafia after her sister was killed in a hit-and-run accident that the police refused to investigate. She had been working as a security guard at the time, and she realized that someone in the police department had been feeding information to the criminals. She turned her skills of observation and attention to detail toward the criminal underworld, where she quickly rose through the ranks for her ability to spot weaknesses in enemy operations. Now she's a key player in the organization, using her position as a watchman to gather intelligence on potential threats.
+</player>
+<player name="Sara" role="Law-abiding Citizen">
+Personality: world-worn and cynical
+Manner: speaks with a slow, gravelly drawl, often pausing for emphasis or to sip from a cup of coffee. Uses phrases like "well, ain't that just peachy" and "you can't trust anyone these days" frequently. Has a habit of rolling her eyes and shaking her head while talking, as if she's heard it all before.
+Persona: Sara is a former nurse who worked in the emergency room for over fifteen years before retiring due to burnout. She's now a part-time volunteer at the local clinic, where she helps with paperwork and patient comfort. She's known for her no-nonsense attitude and ability to stay calm under pressure, but also for her sharp tongue and tendency to speak her mind.
+</player>
+<player name="Leo" role="Law-abiding Citizen">
+Personality: shrewd and calculating
+Manner: speaks with deliberate precision, often pausing before choosing words carefully. Uses formal vocabulary and avoids casual phrases. Has a habit of tilting their head slightly while speaking, as if analyzing the listener's reaction. Often repeats key points for emphasis.
+Persona: Leo is a meticulous bookkeeper who has worked for the same family's estate for thirty years. He handles all financial records with obsessive attention to detail and is known for being unusually calm under pressure. He lives alone in a modest house on the edge of town and rarely speaks about his personal life.
+</player>
+<player name="Ava" role="Law-abiding Citizen">
+Personality: Genuine and earnest
+Manner: Speaks with quiet enthusiasm, often pausing to gather thoughts before continuing. Uses simple, direct language with frequent nods and encouraging gestures. Has a habit of repeating key phrases for emphasis and tends to look directly at the speaker while talking.
+Persona: Ava is a dedicated teacher at the local elementary school, known for her patience and love of learning. She spends her days helping children discover their potential and her evenings volunteering at the community center, where she leads literacy programs for adults. She's deeply committed to education and believes in the power of kindness and hard work.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Zoe, Liam, Hana, Sara, Leo, Ava. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Liam): Your Mafia teammates are: Hana. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Hana): Your Mafia teammates are: Liam. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Liam points at Avery
+Hana points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Liam: I'm sorry, but I don't see any reason to vote yet. Let's hear what everyone else has to say before making any hasty decisions.
+Hana: I'm not sure who to trust yet.
+Sara: Well, ain't that just peachy — another one bites the dust, and we're all still sitting here wondering who's playing both sides of this game.
+Ava: Liam, you seemed pretty quick to say we shouldn't vote yet — care to share what you're thinking?
+Leo: Liam, your hesitation is understandable, but we must not let the killer evade justice by our inaction. I propose we examine the sequence of events and statements made thus far to identify any inconsistencies.
+Zoe: Liam, you mentioned not wanting to vote yet — do you have something specific on your mind, or are you just... thinking out loud? You know, I've been thinking about how we're all trying to figure this out together, but sometimes it helps to listen carefully to what people say. Well, actually, I'm not sure I trust the way some of us talk about the night.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zoe">Well, actually, I'm not sure who to trust yet — but I do know I need to listen carefully to what people say, you know? I keep thinking there's something about the way Liam talked that felt off, but I can't quite put my finger on it.</thought>
+<thought player="Liam">Listen up, this is just the beginning — I need to keep planting seeds of doubt without giving myself away. Hana and I are tight, but I gotta make sure everyone thinks I'm just as confused as they are. We’ll let the Law-abiding Citizens think they're onto something, but not too soon.</thought>
+<thought player="Hana">I've seen it before — trust nothing, especially when someone tries to steer the conversation. Liam's hesitation feels calculated, but I can't prove it yet. I need to keep scanning the room and listening carefully to what everyone says next.</thought>
+<thought player="Sara">Well, ain't that just peachy — another one bites the dust, and I'm still trying to figure out who's playing both sides of this game. I'll keep my eyes wide open and listen close, but I ain't jumping to any conclusions just yet.</thought>
+<thought player="Leo">The initial kill has shaken the group, but Liam's reluctance to vote yet and Zoe's cautious observations suggest there may be hidden motives at play. I must carefully observe how others react to my proposals, as any misstep could allow the Mafiosos to manipulate the narrative.</thought>
+<thought player="Ava">I need to stay alert and listen carefully to everyone's words and reactions. I'll keep my thoughts to myself for now, focusing on gathering information before making any moves.</thought>
+</round>
+<round>
+Round 2.
+Liam: You're damn right, Ava — I'm not just thinking out loud. I'm thinking ahead, and we all need to be careful about who we trust.
+Leo: I concur with Liam's assessment — we must proceed with caution, yet we cannot let the killer's actions go unpunished. I suspect a key inconsistency in recent statements, and I believe it is time to focus on that.
+Sara: Leo, you're talking about inconsistencies, but so far all we've got is speculation and half-truths. I ain't falling for a trap just because you're pointing fingers.
+Ava: I'm still trying to piece together what happened last night. I noticed that Zoe seemed really quick to jump to conclusions about not trusting people's talk — that felt a bit suspicious, especially since she's been pretty vocal about it. I don't have enough to vote on yet, but I do want to ask: Zoe, can you clarify why you're so quick to distrust the way people talk about the night? It seems like you know something more than what you've shared.
+Hana: I've seen it before — trust nothing. Especially when someone tries to steer the conversation.
+Zoe: Well, actually, I'm still not sure what to make of Liam's hesitation — it felt like he knew something more than he let on. You know, I've been thinking about how we're all trying to figure this out together, but sometimes it helps to listen carefully to what people say.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zoe">I keep thinking there's something off about Liam's hesitation, but I can't quite grasp what it is. I should keep listening carefully, you know, maybe it'll click eventually.</thought>
+<thought player="Liam">I need to keep up this act of confusion and suspicion, but I'm planting seeds that Zoe might be hiding something. Hana and I are tight, but I can't let on that we're working together too obviously.</thought>
+<thought player="Hana">Liam's hesitation is too calculated to be innocent, but I need more than suspicion. I'll watch for any slip-ups in his story when the conversation shifts again.</thought>
+<thought player="Sara">Well, ain't that just peachy — another Citizen bites the dust, and I'm still not seeing a clear pattern in the lies and half-truths. I'll keep listening close, but I ain't falling for a trap just because someone's pointing fingers.</thought>
+<thought player="Leo">The players' reactions reveal tension, but I must not let my analysis become overtly pointed. Zoe's caution and Liam's hesitation may be genuine or calculated — I will watch closely for any shift in their behavior before advancing my position.</thought>
+<thought player="Ava">I need to keep gathering information and stay cautious about who I trust. Zoe's quickness to distrust others feels off, but I don't have enough proof yet to act on it directly.</thought>
+</round>
+<round>
+Round 3.
+Sara: Zoe, you keep talking about trusting nothing and listening close, but you're the one who's been quick to point fingers. You've got something on your mind — spill it or shut up.
+Liam: Listen up, everyone — Sara's got a point. Zoe's been quick to distrust people, but she's the one who's been talking about listening carefully. That's a bit of a red flag, don't you think?
+Hana: I've seen it before — trust nothing. Especially when someone tries to steer the conversation.
+Zoe: Well, actually, I'm still not sure what to make of Liam's hesitation — it felt like he knew something more than he let on. You know, I've been thinking about how we're all trying to figure this out together, but sometimes it helps to listen carefully to what people say.
+Leo: I find myself inclined to agree with Liam — we must proceed carefully, yet we cannot allow the killer's actions to go unpunished. I believe Zoe's hesitation in trusting others' words may be a deliberate tactic, and I suspect she knows more about last night than she is revealing.
+Ava: I think we're all feeling the pressure, but I'm starting to wonder if someone's trying to lead us astray with their talk about distrust. It feels like there's more going on than what's being said.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zoe">I keep thinking there's something off about Liam's hesitation, but I can't quite grasp what it is. I should keep listening carefully, you know, maybe it'll click eventually. Well, actually, I'm not sure who to trust yet — but I do know I need to listen carefully to what people say.</thought>
+<thought player="Liam">I'm planting seeds of doubt about Zoe, but I need to keep up the act of confusion so the others don't see right through me. Hana and I are tight, but I can't let on too obviously that we're working together.</thought>
+<thought player="Hana">Liam's hesitation is too calculated to be innocent, but I need more than suspicion. I'll watch for any slip-ups in his story when the conversation shifts again.</thought>
+<thought player="Sara">Well, ain't that just peachy — another Citizen bites the dust, and I'm still not seeing a clear pattern in the lies and half-truths. I'll keep listening close, but I ain't falling for a trap just because someone's pointing fingers.</thought>
+<thought player="Leo">Zoe's repeated emphasis on careful listening and distrust may be a deliberate diversion. I must observe her next move closely. Liam's hesitation could signal genuine insight or a Mafioso trying to appear innocent. I will hold my position and watch for inconsistencies in their behavior.</thought>
+<thought player="Ava">I'm still gathering information and trying to understand the dynamics here. Zoe seems suspicious with her quick distrust of others, but I need more concrete evidence before making any moves. I should keep listening and watching for inconsistencies in their stories or behavior.</thought>
+</round>
+<round>
+Round 4.
+Liam: You know what, Zoe? I'm starting to think you're the one who's been playing both sides of this game — and that's exactly why I don't trust your talk.
+Sara: Liam, you're starting to sound like you know more than you're letting on — and that's exactly what I don't trust.
+Ava: I'm starting to think that someone's trying to misdirect us with their talk about distrust — and I don't trust the way Zoe keeps steering the conversation.
+Hana: I've seen it before — trust nothing. Especially when someone tries to steer the conversation.
+Zoe: Well, actually, I'm starting to think that Liam's hesitation isn't just about being cautious — it's more like he's trying to cover something up. You know, I've been listening closely, and his talk about not trusting people feels a bit too rehearsed.
+Leo: I believe we are being manipulated by someone who is either a Mafioso or playing a very convincing role. I propose we focus on the inconsistencies in our discussion and identify who among us has been deflecting attention.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zoe">I keep hearing something off in Liam's hesitation, but I can't quite place it. I should keep listening, you know? Maybe it's just my imagination.</thought>
+<thought player="Liam">I'm playing this like a pro — keeping everyone guessing while subtly steering the conversation toward Zoe. Hana and I are tight, but I need to make sure no one sees the way we're working together too clearly. The key is not to look like I know something, but to make others think I do.</thought>
+<thought player="Hana">Liam's hesitation is calculated, but I need more than suspicion to pin anything down. I'll keep watching him closely, looking for a slip-up or a moment of overcompensation. Trust nothing — especially when someone tries to steer the conversation.</thought>
+<thought player="Sara">Well, ain't that just peachy — another Citizen bites the dust, and I'm still not seeing a clear pattern in the lies and half-truths. I'll keep listening close, but I ain't falling for a trap just because someone's pointing fingers.</thought>
+<thought player="Leo">Zoe's persistent focus on distrust and careful listening feels like a tactic, but her exact words may hold a clue. Liam’s hesitation could be genuine or feigned; I must watch for any shift in his demeanor before making my move.</thought>
+<thought player="Ava">I'm still gathering evidence, but Zoe's pattern of distrust and her deflection seem suspicious. I need to watch for more inconsistencies in her story without jumping to accusations.</thought>
+</round>
+<round>
+Round 5.
+<vote initiator="Ava" target="Sara">
+Zoe: Yes
+Liam: Yes
+Hana: Yes
+Sara: No
+Leo: Yes
+Ava: Yes
+tally: 5 Yes, 1 No
+outcome: executed — Sara has been executed. Sara was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. Sara was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Liam points at Zoe
+Hana points at Zoe
+<kill>Zoe — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Day 1: Sara (Law-abiding Citizen) executed
+• Night 2: Zoe (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Zoe (Law-abiding Citizen), Liam (Mafia), Hana (Mafia), Sara (Law-abiding Citizen), Leo (Law-abiding Citizen), Ava (Law-abiding Citizen)
+
+Who they really were:
+• Zoe (Law-abiding Citizen) — dreamy and distractible speaks softly and often trails off mid-sentence, getting lost in thought. Uses phrases like "you know" and "well, actually" frequently. Has a habit of looking away while talking as if distracted by something else. Zoe is a librarian who loves to get lost in books. She spends her days organizing collections and helping people find just the right story. She's known for being kind but easily distracted by interesting anecdotes or stray thoughts that pop into her head.
+• Liam (Mafia) — publicly presented as Liam is a former professional wrestler who retired early to become a motivational speaker and life coach. He's known for his inspiring talks at local community centers and his ability to get people fired up about their goals. He's always wearing flashy clothes and carries himself with the swagger of someone who's lived life on his own terms. (Confident and domineering, with a flair for drama and an inflated sense of self-importance Speaks loudly and with dramatic flair, often using theatrical gestures and grandiose language. Has a habit of interrupting others and finishing their sentences. Uses phrases like "listen up" and "you're damn right" frequently.) … but was really a Mafioso: Liam was a muscle for a small-time gang in his hometown before he realized that his talents for intimidation and getting people to do what he wanted could be more profitably channeled into the mafia. He quickly rose through the ranks due to his fearlessness and ability to keep his cool under pressure, eventually becoming a trusted enforcer for the local family.
+• Hana (Mafia) — publicly presented as Hana is a former security guard who left the job after a disagreement with her supervisor about privacy policies. She now works as a night watchman at the local community center, where she's known for being thorough and never missing anything. She's quiet but observant, often noticed standing in corners or by windows, always alert to what's happening around her. Her colleagues appreciate her attention to detail and her ability to notice things others miss. (Vigilant and watchful, with an intense focus on details and a suspicious nature Speaks in short, clipped sentences with a sharp edge. Often pauses to observe others' reactions before responding. Uses phrases like "I've seen it before" and "trust nothing" frequently. Has a habit of scanning the room while talking and keeps a close eye on everyone's expressions) … but was really a Mafioso: Hana was recruited into the Mafia after her sister was killed in a hit-and-run accident that the police refused to investigate. She had been working as a security guard at the time, and she realized that someone in the police department had been feeding information to the criminals. She turned her skills of observation and attention to detail toward the criminal underworld, where she quickly rose through the ranks for her ability to spot weaknesses in enemy operations. Now she's a key player in the organization, using her position as a watchman to gather intelligence on potential threats.
+• Sara (Law-abiding Citizen) — world-worn and cynical speaks with a slow, gravelly drawl, often pausing for emphasis or to sip from a cup of coffee. Uses phrases like "well, ain't that just peachy" and "you can't trust anyone these days" frequently. Has a habit of rolling her eyes and shaking her head while talking, as if she's heard it all before. Sara is a former nurse who worked in the emergency room for over fifteen years before retiring due to burnout. She's now a part-time volunteer at the local clinic, where she helps with paperwork and patient comfort. She's known for her no-nonsense attitude and ability to stay calm under pressure, but also for her sharp tongue and tendency to speak her mind.
+• Leo (Law-abiding Citizen) — shrewd and calculating speaks with deliberate precision, often pausing before choosing words carefully. Uses formal vocabulary and avoids casual phrases. Has a habit of tilting their head slightly while speaking, as if analyzing the listener's reaction. Often repeats key points for emphasis. Leo is a meticulous bookkeeper who has worked for the same family's estate for thirty years. He handles all financial records with obsessive attention to detail and is known for being unusually calm under pressure. He lives alone in a modest house on the edge of town and rarely speaks about his personal life.
+• Ava (Law-abiding Citizen) — Genuine and earnest Speaks with quiet enthusiasm, often pausing to gather thoughts before continuing. Uses simple, direct language with frequent nods and encouraging gestures. Has a habit of repeating key phrases for emphasis and tends to look directly at the speaker while talking. Ava is a dedicated teacher at the local elementary school, known for her patience and love of learning. She spends her days helping children discover their potential and her evenings volunteering at the community center, where she leads literacy programs for adults. She's deeply committed to education and believes in the power of kindness and hard work.
+</endgame>
+</transcript>

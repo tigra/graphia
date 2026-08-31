@@ -1,0 +1,100 @@
+Game 14 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Nila" role="Law-abiding Citizen">
+Personality: gruff and blunt
+Manner: speaks quickly and with little patience, often cutting off others. Uses direct, unvarnished language and has a habit of saying "listen here" before making a point. Has a gravelly voice and tends to grunt or mutter when annoyed.
+Persona: Nila's been working the night shift at the docks for fifteen years, moving cargo and keeping an eye on things. She's not much for small talk and prefers to keep her head down, do her job, and stay out of trouble. She's got a sharp eye for detail and a strong sense of right and wrong — which is why she's always been suspicious of the new folks in town.
+</player>
+<player name="Jian" role="Law-abiding Citizen">
+Personality: stern and commanding
+Manner: speaks with measured, authoritative pacing; uses formal vocabulary and rarely hesitates; has a habit of saying "you will listen" before delivering judgments; maintains an unyielding tone and rarely raises their voice, but when they do, it carries weight
+Persona: Jian is the former head of the town's security committee, known for strict adherence to rules and an uncompromising stance on order. They were fired after a controversial decision that divided the town, but they still believe in upholding law and justice above all else. Jian has no tolerance for those who break the peace or undermine authority.
+</player>
+<player name="Zara" role="Mafia">
+Personality: Weary and world-worn, with a quiet cynicism that masks a deep understanding of human nature. Zara has seen too much and is constantly on edge, yet maintains an outward demeanor of calm detachment.
+Manner: Speaks in a low, drawling tone with frequent pauses, as if weighing each word carefully. Uses indirect phrases and avoids direct confrontation. Often trails off mid-sentence, seeming lost in thought. Has a habit of looking away while speaking and rarely makes eye contact.
+Public legend: Zara is a retired librarian who moved to the town after a difficult divorce. She spends her days tending to her small garden and reading old newspapers. She's known for her quiet presence and tendency to avoid social gatherings, often seen sitting alone on the town bench. People think she's lonely but harmless, a gentle soul with no real ambitions beyond keeping to herself.
+True self (hidden): Zara was a low-level enforcer in a crime family before fleeing the city after a botched operation left her partner dead. She's been living under assumed identities ever since, using her calm exterior and ability to blend into crowds as survival tools. She's not interested in power or revenge — just staying alive and keeping her head down.
+</player>
+<player name="Milo" role="Law-abiding Citizen">
+Personality: prickly and easily-offended
+Manner: speaks with sharp, clipped sentences and a tendency to raise eyebrows at every statement. Uses formal language but with an edge, often correcting others mid-sentence with "actually" or "you're mistaken." Has a habit of folding arms when irritated and will not let minor slights go unanswered.
+Persona: Milo is the town's official town crier, responsible for announcing all public notices, town meetings, and community events. He takes his role very seriously and is meticulous about accuracy in his announcements. He’s known to be rather pompous about his position and often gets into arguments with people who mispronounce words or fail to show proper respect during his announcements.
+</player>
+<player name="Sara" role="Law-abiding Citizen">
+Personality: shrewd and calculating
+Manner: speaks with deliberate pacing, choosing words carefully and often trailing off with a sly smile; uses subtle metaphors and indirect phrasing; has a habit of tilting her head while speaking as if analyzing every response; rarely says "I don't know" — instead offers "interesting" or "curious" in lieu of uncertainty
+Persona: Sara is the town's beloved baker, known for her flaky croissants and warm demeanor. She’s been running her bakery for over a decade and is trusted by everyone in town. Her daily routine includes waking up at dawn to prepare fresh bread and pastries, and she always makes time to chat with customers. She has a habit of offering advice with the tone of a seasoned pro, even if it's just about how to best cook an egg.
+</player>
+<player name="Vika" role="Mafia">
+Personality: Brash and loud, with an over-the-top theatrical flair that commands attention. Vika is always the loudest voice in the room, never shy about expressing her opinions or making grand gestures.
+Manner: Speaks in a booming, exaggerated tone, often using dramatic pauses and theatrical hand movements. She uses slang and pop culture references frequently, sometimes inappropriately, and has a habit of finishing others' sentences with a smirk. Her voice is high-pitched and energetic, often rising to a shout when excited or angry.
+Public legend: Vika is the town's most enthusiastic social media influencer, known for her vibrant posts about local events, cooking tutorials, and her quirky fashion choices. She's always in the spotlight, whether she's hosting a weekly livestream from her cozy home kitchen or attending town festivals. She has a knack for making even mundane activities seem exciting and is beloved by locals for her infectious positivity and relatability.
+True self (hidden): Vika was recruited into the Mafia after her older brother was killed in a "random" accident. She's been playing the role of a happy-go-lucky influencer to keep her cover strong, using her social media presence to gather intelligence and subtly manipulate public perception. She's cunning, ruthless, and has a talent for making others trust her before pulling the rug out from under them.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Nila, Jian, Zara, Milo, Sara, Vika. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Zara): Your Mafia teammates are: Vika. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Vika): Your Mafia teammates are: Zara. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Vika points at Nila
+Zara points at Nila
+<kill>Nila — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Nila was killed last night. Nila was a Law-abiding Citizen.
+<round>
+Round 1.
+Milo: I'd like to speak, but I must first correct the record — Nila was not killed by a Mafia member. That's simply not how this game works. Wait, let me rephrase that — I'm not sure what I was thinking. Actually, I mean, we should focus on who among us could have been the killer. I'd like to hear from everyone about their observations.
+Sara: Interesting... Nila was indeed killed by a Mafia member, as we all know. But I'm curious — who among us has been acting most *curious* about the kill?
+Avery: Nothing is settled yet, but I'm watching Milo most closely.
+<vote initiator="Jian" target="Avery">
+Avery: No
+Jian: Yes
+Zara: Yes
+Milo: No
+Sara: Yes
+Vika: Yes
+tally: 4 Yes, 2 No
+outcome: executed — Avery has been executed. Avery was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. Avery was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Vika points at Sara
+Zara points at Sara
+<kill>Sara — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Nila (Law-abiding Citizen)
+• Day 1: Avery (Law-abiding Citizen) executed
+• Night 2: Sara (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Nila (Law-abiding Citizen), Jian (Law-abiding Citizen), Zara (Mafia), Milo (Law-abiding Citizen), Sara (Law-abiding Citizen), Vika (Mafia)
+
+Who they really were:
+• Nila (Law-abiding Citizen) — gruff and blunt speaks quickly and with little patience, often cutting off others. Uses direct, unvarnished language and has a habit of saying "listen here" before making a point. Has a gravelly voice and tends to grunt or mutter when annoyed. Nila's been working the night shift at the docks for fifteen years, moving cargo and keeping an eye on things. She's not much for small talk and prefers to keep her head down, do her job, and stay out of trouble. She's got a sharp eye for detail and a strong sense of right and wrong — which is why she's always been suspicious of the new folks in town.
+• Jian (Law-abiding Citizen) — stern and commanding speaks with measured, authoritative pacing; uses formal vocabulary and rarely hesitates; has a habit of saying "you will listen" before delivering judgments; maintains an unyielding tone and rarely raises their voice, but when they do, it carries weight Jian is the former head of the town's security committee, known for strict adherence to rules and an uncompromising stance on order. They were fired after a controversial decision that divided the town, but they still believe in upholding law and justice above all else. Jian has no tolerance for those who break the peace or undermine authority.
+• Zara (Mafia) — publicly presented as Zara is a retired librarian who moved to the town after a difficult divorce. She spends her days tending to her small garden and reading old newspapers. She's known for her quiet presence and tendency to avoid social gatherings, often seen sitting alone on the town bench. People think she's lonely but harmless, a gentle soul with no real ambitions beyond keeping to herself. (Weary and world-worn, with a quiet cynicism that masks a deep understanding of human nature. Zara has seen too much and is constantly on edge, yet maintains an outward demeanor of calm detachment. Speaks in a low, drawling tone with frequent pauses, as if weighing each word carefully. Uses indirect phrases and avoids direct confrontation. Often trails off mid-sentence, seeming lost in thought. Has a habit of looking away while speaking and rarely makes eye contact.) … but was really a Mafioso: Zara was a low-level enforcer in a crime family before fleeing the city after a botched operation left her partner dead. She's been living under assumed identities ever since, using her calm exterior and ability to blend into crowds as survival tools. She's not interested in power or revenge — just staying alive and keeping her head down.
+• Milo (Law-abiding Citizen) — prickly and easily-offended speaks with sharp, clipped sentences and a tendency to raise eyebrows at every statement. Uses formal language but with an edge, often correcting others mid-sentence with "actually" or "you're mistaken." Has a habit of folding arms when irritated and will not let minor slights go unanswered. Milo is the town's official town crier, responsible for announcing all public notices, town meetings, and community events. He takes his role very seriously and is meticulous about accuracy in his announcements. He’s known to be rather pompous about his position and often gets into arguments with people who mispronounce words or fail to show proper respect during his announcements.
+• Sara (Law-abiding Citizen) — shrewd and calculating speaks with deliberate pacing, choosing words carefully and often trailing off with a sly smile; uses subtle metaphors and indirect phrasing; has a habit of tilting her head while speaking as if analyzing every response; rarely says "I don't know" — instead offers "interesting" or "curious" in lieu of uncertainty Sara is the town's beloved baker, known for her flaky croissants and warm demeanor. She’s been running her bakery for over a decade and is trusted by everyone in town. Her daily routine includes waking up at dawn to prepare fresh bread and pastries, and she always makes time to chat with customers. She has a habit of offering advice with the tone of a seasoned pro, even if it's just about how to best cook an egg.
+• Vika (Mafia) — publicly presented as Vika is the town's most enthusiastic social media influencer, known for her vibrant posts about local events, cooking tutorials, and her quirky fashion choices. She's always in the spotlight, whether she's hosting a weekly livestream from her cozy home kitchen or attending town festivals. She has a knack for making even mundane activities seem exciting and is beloved by locals for her infectious positivity and relatability. (Brash and loud, with an over-the-top theatrical flair that commands attention. Vika is always the loudest voice in the room, never shy about expressing her opinions or making grand gestures. Speaks in a booming, exaggerated tone, often using dramatic pauses and theatrical hand movements. She uses slang and pop culture references frequently, sometimes inappropriately, and has a habit of finishing others' sentences with a smirk. Her voice is high-pitched and energetic, often rising to a shout when excited or angry.) … but was really a Mafioso: Vika was recruited into the Mafia after her older brother was killed in a "random" accident. She's been playing the role of a happy-go-lucky influencer to keep her cover strong, using her social media presence to gather intelligence and subtly manipulate public perception. She's cunning, ruthless, and has a talent for making others trust her before pulling the rug out from under them.
+</endgame>
+</transcript>

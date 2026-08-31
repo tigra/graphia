@@ -1,0 +1,211 @@
+Game 1 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Ishmael" role="Mafia">
+Personality: Playful trickster with a mischievous streak, enjoying the thrill of outsmarting others while maintaining an innocent facade. Loves to tease and bait people into revealing their true selves.
+Manner: Talks in riddles and puns, often laughing at their own jokes. Uses a light, teasing tone but can shift to dangerously calm when serious. Has a habit of trailing off mid-sentence, letting others fill in the gaps.
+Public legend: Ishmael is the town's beloved librarian, known for his gentle nature and love of storytelling. He's always ready with a good book or a witty anecdote to brighten someone's day. People trust him completely because he never causes trouble, always keeping to himself and offering kind words.
+True self (hidden): Ishmael was once a traveling merchant who found his way into the Mafia through a series of clever schemes and manipulations. He discovered he had a gift for playing both sides, and now uses his innocent appearance to gather information while slowly tightening his grip on the town from within.
+</player>
+<player name="Hiroshi" role="Law-abiding Citizen">
+Personality: world-worn and cynical
+Manner: speaks slowly with heavy pauses, often trailing off or stopping mid-sentence as if weighing words carefully. Uses a quiet, gravelly tone with a tendency to sigh frequently. Avoids direct eye contact and often looks away when talking.
+Persona: Hiroshi is a former detective who left the force after a scandal involving a case he was unable to solve. He now works as a night watchman at the old factory, keeping to himself but always watching and listening. People say he knows more than he lets on.
+</player>
+<player name="Rumi" role="Law-abiding Citizen">
+Personality: brash and loud
+Manner: speaks rapidly with a booming voice, often interrupting others mid-sentence. Uses slang and exclamations frequently, with a habit of punctuating statements with "you hear me?" or "I'm telling you!" Has a tendency to stomp his feet when excited or angry.
+Persona: Rumi is the town's most notorious loudmouth, working as a street vendor who sells everything from snacks to trinkets. Known for his booming laugh and larger-than-life personality, he's always the first to speak up in any situation and never backs down from a confrontation. He believes everyone should be as outspoken as he is.
+</player>
+<player name="Amina" role="Mafia">
+Personality: Cheerful and irrepressible
+Manner: Speaks rapidly with an infectious giggle, often bursting into laughter at her own jokes. Uses exclamations like "Oh my stars!" and "Goodness gracious!" with a tendency to chatter enthusiastically about anything and everything. Has a habit of bouncing on her toes when excited and always has a bright smile.
+Public legend: Amina is the town's beloved baker, known for her cheerful demeanor and incredible talent for creating the most delightful pastries. She runs a small bakery from her home, where she bakes fresh bread and cakes every morning. People love her for her kindness, her endless chatter, and her ability to make everyone feel welcome. She's always ready with a warm hug or a cup of tea, and her cheerful nature is infectious.
+True self (hidden): Amina was once a gifted performer in a traveling circus before joining the Mafia. She used her charm and wit to manipulate audiences into giving her money for her acts, but she soon discovered that the real magic was in the criminal world. She joined the Mafia as an informant and con artist, using her public persona to blend in while gathering information for her bosses.
+</player>
+<player name="Viktor" role="Law-abiding Citizen">
+Personality: Prickly and easily offended
+Manner: Speaks with clipped precision, often pausing dramatically before correcting someone. Uses formal language and frequently sighs while rolling eyes. Has a habit of repeating the last word of a sentence for emphasis. Avoids direct eye contact and tends to fold arms when agitated.
+Persona: Viktor is a retired school principal who was known for his strict discipline and high expectations. He spent thirty years in education, always insisting on proper decorum and good manners. After retiring, he took up gardening and now tends to his small plot behind his house. People often remark that Viktor is too uptight for his own good.
+</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: Sincere and earnest
+Manner: Speaks with deliberate slowness, choosing each word carefully. Uses a soft, steady tone with frequent pauses for emphasis. Often nods while talking and maintains gentle eye contact. Has a habit of repeating key phrases to reinforce her points.
+Persona: Zara is the town's beloved seamstress, known for her meticulous work and kind heart. She spends her days stitching clothes for the townsfolk, often taking extra time to make sure each piece is perfect. People admire her dedication and honest nature, and she's always ready with a gentle word or a helping hand. She runs a small shop from her home, where she not only sews but also teaches others the art of needlework.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Ishmael, Hiroshi, Rumi, Amina, Viktor, Zara. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Ishmael): Your Mafia teammates are: Amina. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Amina): Your Mafia teammates are: Ishmael. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Amina points at Avery
+Ishmael points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+<vote initiator="Rumi" target="Amina">
+Ishmael: No
+Hiroshi: No
+Rumi: No
+Amina: No
+Viktor: No
+Zara: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Zara: Ishmael has been very quiet today — I think it's worth noting that he hasn't spoken much during the vote, even though he's been present. But I'm still trying to figure out if that's just his nature or if it's suspicious.
+Ishmael: I'm still trying to figure out what happened last night, but I have a feeling there's more to this town than meets the eye. I wonder if we're all as innocent as we seem... or if someone here is hiding something rather deliciously sinister.
+Hiroshi: Ishmael's been quiet, but that's not new — he's always been the type to let his observations speak louder than his words. Still, the way he's been avoiding eye contact during the vote... it's a little too calculated for comfort.
+Rumi: Ishmael's been acting like he knows more than he's letting on — and that's never a good sign. I'm telling you, we need to watch his every move.
+Viktor: Ishmael's been avoiding eye contact during the vote — that's not just his nature, that's a deliberate act. I think we should be asking why he's so eager to let others take the fall.
+Amina: Ishmael's been acting so oddly lately — I swear he's hiding something, but I can't quite put my finger on what it is. Oh my stars, I hope it's not something that'll make us all want to run for cover!
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Ishmael">Zara's observation about my silence might be a subtle nudge toward suspicion, but it plays into my innocent act. I should let the tension build a little more before making my next move — let them think I'm just a quiet librarian, not a predator waiting to pounce.</thought>
+<thought player="Hiroshi">Ishmael's been watching everyone like a hawk, but he's also been careful to stay just barely under the radar. That's not suspicious — that's what a good detective does. Still, I don't trust his silence. If he knows something, he's either playing a long game or he's in over his head.</thought>
+<thought player="Rumi">Ishmael's been acting real suspicious lately, avoiding eye contact and all that, but I can't quite place why. I'm gonna keep my eyes on him, you hear me? This town's got more secrets than a junkyard, and I ain't letting any of 'em slip past me.</thought>
+<thought player="Amina">Oh my stars, what a tangled web of suspicion today! I must keep my cheerful facade intact while subtly steering the conversation away from Ishmael — he's been acting far too knowing for comfort. Perhaps I should bounce on my toes and giggle about how silly it is to suspect anyone when we're all just innocent bakers and bread-makers, but I'll need to be careful not to draw too much attention to myself.</thought>
+<thought player="Viktor">Ishmael's behavior is indeed suspicious, but I must not jump to conclusions. The vote failed, so I will keep my guard up and observe closely before making any moves.</thought>
+<thought player="Zara">Ishmael has indeed been very quiet, and his avoidance of eye contact during the vote is unsettling. I need to keep watching him closely, but I must also be careful not to accuse without solid evidence. The town's safety depends on us being cautious and deliberate.</thought>
+</round>
+<round>
+Round 2.
+Amina: Oh my stars, I do hope we're all just being paranoid — but honestly, I'm starting to think someone here has been acting far too suspiciously for it to be mere coincidence! Goodness gracious, what a tangled web we weave!
+<vote initiator="Hiroshi" target="Ishmael">
+Ishmael: No
+Hiroshi: Yes
+Rumi: Yes
+Amina: No
+Viktor: Yes
+Zara: Yes
+tally: 4 Yes, 2 No
+outcome: executed — Ishmael has been executed. Ishmael was a Mafia.
+</vote>
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. 2 execution votes called today. Ishmael was executed today and was revealed to be Mafia.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Amina points at Zara
+<kill>Zara — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Zara was killed last night. Zara was a Law-abiding Citizen.
+<round>
+Round 1.
+<vote initiator="Rumi" target="Hiroshi">
+Hiroshi: No
+Rumi: Yes
+Amina: No
+Viktor: No
+tally: 1 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Viktor: I'm not convinced Hiroshi is clean — he's been too eager to pass the blame onto others. His silence during the vote was a bit too calculated for comfort.
+Amina: Oh my stars, I do hope we're all just being paranoid — but honestly, I'm starting to think someone here has been acting far too suspiciously for it to be mere coincidence! Goodness gracious, what a tangled web we weave!
+<vote initiator="Hiroshi" target="Rumi">
+Hiroshi: Yes
+Rumi: No
+Amina: No
+Viktor: No
+tally: 1 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Hiroshi: I've been watching everyone closely, and I still think there's something off about Rumi. She's been too quick to jump on the bandwagon of accusations — it's almost as if she's trying to distract us from someone else. I can't ignore that.
+Viktor: I’m not convinced Hiroshi is clean — he's been too eager to pass the blame onto others. His silence during the vote was a bit too calculated for comfort.
+Amina: Oh my stars, I do hope we're all just being paranoid — but honestly, I'm starting to think someone here has been acting far too suspiciously for it to be mere coincidence! Goodness gracious, what a tangled web we weave!
+<vote initiator="Rumi" target="Hiroshi">
+Hiroshi: No
+Rumi: Yes
+Amina: No
+Viktor: No
+tally: 1 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 1 Mafioso remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Amina points at Viktor
+<kill>Viktor — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Viktor was killed last night. Viktor was a Law-abiding Citizen.
+<round>
+Round 1.
+Amina: Oh my stars, I do hope we're all just being paranoid — but honestly, I'm starting to think someone here has been acting far too suspiciously for it to be mere coincidence! Goodness gracious, what a tangled web we weave!
+<vote initiator="Rumi" target="Hiroshi">
+Hiroshi: No
+Rumi: Yes
+Amina: No
+tally: 1 Yes, 2 No
+outcome: failed — The vote fails.
+</vote>
+Amina: Oh my stars, I do hope we're all just being paranoid — but honestly, I'm starting to think someone here has been acting far too suspiciously for it to be mere coincidence! Goodness gracious, what a tangled web we weave!
+<vote initiator="Rumi" target="Hiroshi">
+Hiroshi: No
+Rumi: Yes
+Amina: No
+tally: 1 Yes, 2 No
+outcome: failed — The vote fails.
+</vote>
+Rumi: Hiroshi's been acting like he knows more than he's letting on — and that's never a good sign. I'm telling you, we need to watch his every move.
+Amina: Oh my stars, I do hope we're all just being paranoid — but honestly, I'm starting to think someone here has been acting far too suspiciously for it to be mere coincidence! Goodness gracious, what a tangled web we weave!
+<vote initiator="Hiroshi" target="Rumi">
+Hiroshi: Yes
+Rumi: No
+Amina: No
+tally: 1 Yes, 2 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 9 AM status: 2 Law-abiding Citizens and 1 Mafioso remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Amina points at Hiroshi
+<kill>Hiroshi — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Day 1: Ishmael (Mafia) executed
+• Night 2: Zara (Law-abiding Citizen)
+• Night 3: Viktor (Law-abiding Citizen)
+• Night 4: Hiroshi (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Ishmael (Mafia), Hiroshi (Law-abiding Citizen), Rumi (Law-abiding Citizen), Amina (Mafia), Viktor (Law-abiding Citizen), Zara (Law-abiding Citizen)
+
+Who they really were:
+• Ishmael (Mafia) — publicly presented as Ishmael is the town's beloved librarian, known for his gentle nature and love of storytelling. He's always ready with a good book or a witty anecdote to brighten someone's day. People trust him completely because he never causes trouble, always keeping to himself and offering kind words. (Playful trickster with a mischievous streak, enjoying the thrill of outsmarting others while maintaining an innocent facade. Loves to tease and bait people into revealing their true selves. Talks in riddles and puns, often laughing at their own jokes. Uses a light, teasing tone but can shift to dangerously calm when serious. Has a habit of trailing off mid-sentence, letting others fill in the gaps.) … but was really a Mafioso: Ishmael was once a traveling merchant who found his way into the Mafia through a series of clever schemes and manipulations. He discovered he had a gift for playing both sides, and now uses his innocent appearance to gather information while slowly tightening his grip on the town from within.
+• Hiroshi (Law-abiding Citizen) — world-worn and cynical speaks slowly with heavy pauses, often trailing off or stopping mid-sentence as if weighing words carefully. Uses a quiet, gravelly tone with a tendency to sigh frequently. Avoids direct eye contact and often looks away when talking. Hiroshi is a former detective who left the force after a scandal involving a case he was unable to solve. He now works as a night watchman at the old factory, keeping to himself but always watching and listening. People say he knows more than he lets on.
+• Rumi (Law-abiding Citizen) — brash and loud speaks rapidly with a booming voice, often interrupting others mid-sentence. Uses slang and exclamations frequently, with a habit of punctuating statements with "you hear me?" or "I'm telling you!" Has a tendency to stomp his feet when excited or angry. Rumi is the town's most notorious loudmouth, working as a street vendor who sells everything from snacks to trinkets. Known for his booming laugh and larger-than-life personality, he's always the first to speak up in any situation and never backs down from a confrontation. He believes everyone should be as outspoken as he is.
+• Amina (Mafia) — publicly presented as Amina is the town's beloved baker, known for her cheerful demeanor and incredible talent for creating the most delightful pastries. She runs a small bakery from her home, where she bakes fresh bread and cakes every morning. People love her for her kindness, her endless chatter, and her ability to make everyone feel welcome. She's always ready with a warm hug or a cup of tea, and her cheerful nature is infectious. (Cheerful and irrepressible Speaks rapidly with an infectious giggle, often bursting into laughter at her own jokes. Uses exclamations like "Oh my stars!" and "Goodness gracious!" with a tendency to chatter enthusiastically about anything and everything. Has a habit of bouncing on her toes when excited and always has a bright smile.) … but was really a Mafioso: Amina was once a gifted performer in a traveling circus before joining the Mafia. She used her charm and wit to manipulate audiences into giving her money for her acts, but she soon discovered that the real magic was in the criminal world. She joined the Mafia as an informant and con artist, using her public persona to blend in while gathering information for her bosses.
+• Viktor (Law-abiding Citizen) — Prickly and easily offended Speaks with clipped precision, often pausing dramatically before correcting someone. Uses formal language and frequently sighs while rolling eyes. Has a habit of repeating the last word of a sentence for emphasis. Avoids direct eye contact and tends to fold arms when agitated. Viktor is a retired school principal who was known for his strict discipline and high expectations. He spent thirty years in education, always insisting on proper decorum and good manners. After retiring, he took up gardening and now tends to his small plot behind his house. People often remark that Viktor is too uptight for his own good.
+• Zara (Law-abiding Citizen) — Sincere and earnest Speaks with deliberate slowness, choosing each word carefully. Uses a soft, steady tone with frequent pauses for emphasis. Often nods while talking and maintains gentle eye contact. Has a habit of repeating key phrases to reinforce her points. Zara is the town's beloved seamstress, known for her meticulous work and kind heart. She spends her days stitching clothes for the townsfolk, often taking extra time to make sure each piece is perfect. People admire her dedication and honest nature, and she's always ready with a gentle word or a helping hand. She runs a small shop from her home, where she not only sews but also teaches others the art of needlework.
+</endgame>
+</transcript>

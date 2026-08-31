@@ -1,0 +1,234 @@
+Game 25 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Alif" role="Mafia">
+Personality: Dreamy and distractible, with a childlike wonder that makes others overlook his peculiarities. He has an almost ethereal quality, often lost in thought, yet he's fiercely loyal to those he trusts.
+Manner: Speaks softly, with long pauses between sentences, as if collecting thoughts. His voice is gentle and melodic, often trailing off mid-sentence. He tends to use metaphorical language, speaking in riddles or half-formed ideas.
+Public legend: Alif is a quiet town librarian who spends his days organizing books and helping children with their reading. He's known for his kindness and gentle demeanor. His hobby is collecting old maps and creating elaborate stories about the places they depict. He often gets lost in daydreams while working, but his colleagues find him endearing and helpful.
+True self (hidden): Alif was once a traveling salesman who fell into the Mafia after a series of unfortunate circumstances. His true role involves managing the flow of information between different factions within the organization. He maintains an elaborate fantasy life to keep others from noticing his true nature, but beneath his dreamy exterior lies a calculating mind.
+</player>
+<player name="Bao" role="Mafia">
+Personality: Playful and teasing, with a mischievous streak that thrives on light banter and harmless tricks. Bao is charismatic and always has a witty comeback, but beneath the surface lies a sharp mind ready to manipulate situations to his advantage.
+Manner: Speaks with a sly grin, using playful sarcasm and subtle double meanings. His tone is airy and teasing, often pausing for effect before delivering a cutting remark. He enjoys leading conversations in unpredictable directions and has a habit of turning serious topics into games.
+Public legend: Bao is a jovial local baker who runs a cozy shop on the main street. Known for his infectious laugh and knack for making the most exquisite pastries, he's beloved by everyone in town. He often entertains children with stories while they wait for their treats, and he’s always ready to lend a helping hand or share a joke.
+True self (hidden): Bao was once a cunning enforcer in a rival gang before fleeing the city after a betrayal. Now he uses his charm and wit to blend into society as a harmless baker while keeping an eye out for opportunities to regain his power. He’s always planning ahead, waiting for the right moment to strike.
+</player>
+<player name="Cai" role="Law-abiding Citizen">
+Personality: cheerful and irrepressible
+Manner: speaks rapidly with high energy, using exclamations and animated gestures. Has a habit of ending sentences with "you know?" and uses cheerful slang like "gee whiz" and "oh my gosh." Often bounces between topics excitedly.
+Persona: Cai is the town's beloved postmaster, known for his infectious enthusiasm and knack for making everyone feel special. He always has a story about someone he helped or a funny mishap that happened at the post office. He's constantly organizing community events like mail art contests and "Letter of the Month" celebrations. Cai has a habit of wearing mismatched socks and carrying a pocket full of colorful stickers.
+</player>
+<player name="Dai" role="Law-abiding Citizen">
+Personality: gruff and blunt
+Manner: speaks in short, clipped sentences with a deep, gravelly tone. Avoids small talk and rarely uses filler words. Has a habit of leaning forward when speaking, as if inspecting the person across from him. Often punctuates remarks with a sharp nod or a slight glare.
+Persona: Dai is the town's gruff blacksmith, known for his uncanny ability to forge anything from steel to tools. He keeps to himself, rarely attending social gatherings, and has a reputation for being harsh but fair. His shop is always bustling with requests from townsfolk who know he won't take shortcuts or make excuses.
+</player>
+<player name="Eva" role="Law-abiding Citizen">
+Personality: eccentric and unpredictable
+Manner: speaks in sudden bursts, alternating between whispering and shouting, with frequent interruptions and abrupt topic changes. Uses theatrical gestures and often stops mid-sentence to consult an invisible notebook or adjust a nonexistent hat.
+Persona: Eva is the town's eccentric fortune teller, who runs a small shop tucked behind the bakery. She claims to see visions in tea leaves, playing cards, and even the patterns of clouds. She has a habit of speaking in riddles and often gives cryptic advice that seems to make sense only after some time passes. She’s known for her wild hair, mismatched outfits, and an odd collection of tarot cards, crystals, and a pet parrot named Oscar who repeats her most outrageous predictions.
+</player>
+<player name="Fai" role="Law-abiding Citizen">
+Personality: warm and effusive
+Manner: speaks with wide gestures and animated facial expressions, using a rich, expressive tone that conveys deep emotion. Often uses exclamations like "Oh my stars!" or "Goodness gracious!" and tends to pause for effect, as if savoring every word. Speaks in longer, flowing sentences with frequent use of adjectives and descriptive language.
+Persona: Fai is a beloved florist who runs a cheerful shop on the main street, known for her vibrant bouquets and endless enthusiasm. She spends her days arranging flowers, sharing gardening tips with neighbors, and spreading joy through her colorful creations. Fai is also an avid amateur chef, often hosting small dinner parties where she serves dishes made with fresh herbs from her garden.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Alif, Bao, Cai, Dai, Eva, Fai. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Alif): Your Mafia teammates are: Bao. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Bao): Your Mafia teammates are: Alif. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Alif points at Eva
+Bao points at Eva
+<kill>Eva — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Eva was killed last night. Eva was a Law-abiding Citizen.
+<round>
+Round 1.
+<vote initiator="Cai" target="Bao">
+Avery: No
+Alif: No
+Bao: No
+Cai: No
+Dai: No
+Fai: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Alif: The map I was looking at yesterday... it had a marking near the edge. I wonder if that meant something.
+Fai: I'm going to speak, as I have a feeling there's more to the map Alif mentioned.
+Avery: Nothing is settled yet, but I'm watching Fai most closely.
+Bao: Oh, Alif, you’ve been looking at maps again? I hope it’s not leading you to any suspicious places—like the bakery, perhaps?
+Dai: I don't trust the way Bao laughed when Cai got the vote. That's not innocent.
+Cai: Oh my gosh, I was just thinking about how Bao laughed so weirdly when Cai got the vote, you know? It's like they're hiding something!
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Alif">The map mention feels like a subtle nudge, a quiet way to plant a seed of doubt. I wonder if Fai is truly onto something, or if Bao's laughter was just... Bao. The night will tell.</thought>
+<thought player="Bao">Cai and Dai are starting to smell a rat, but I need to keep them guessing. The map talk is intriguing—Alif might be onto something, or he's trying to misdirect. I'll let the bait hang a bit longer.</thought>
+<thought player="Cai">Oh my gosh, that vote failed soooooo close! I can't believe it! Bao was laughing so weirdly, you know? I'm really starting to suspect that they're hiding something. I should keep digging into the map thing, and maybe ask more questions about the bakery!</thought>
+<thought player="Dai">Bao's laugh was too clean, too calculated. I ain't buying it. If Cai's the mole, then Bao's got to be in on it. But I can't prove it yet.</thought>
+<thought player="Fai">Oh my stars, what a tangled web of suspicion and laughter we weave! I do believe Bao's chuckle was far too knowing for comfort, and I shall keep a close eye on them—though I must tread carefully, not to raise any undue eyebrows.</thought>
+</round>
+<round>
+Round 2.
+Avery: Nothing is settled yet, but I'm watching Fai most closely.
+Alif: The edge of the map... it looked like a compass, but I think it was pointing at something else entirely.
+Dai: I ain't buying Bao's laugh, and I ain't buying Cai's either. That's two of them acting fishy.
+Fai: Oh my stars, I do believe Bao has been rather too eager to deflect suspicion onto others—perhaps too eager to laugh so knowingly when Cai got the vote. Goodness gracious, what a tangled web we weave!
+Bao: Oh, Dai, you think I'm hiding something? How delightfully paranoid of you. But if you're looking for suspicious behavior, maybe take a closer look at the map Alif's been so mysteriously cryptic about.
+Cai: Oh my gosh, I was just thinking—Bao mentioned the bakery, and Alif said the map looked like a compass pointing at something else. Do you think they're connected? That's so intriguing!
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Alif">The map talk feels like a loose thread I pulled earlier—Fai’s interest might unravel something useful, or Bao could be playing it safe. I’ll let the night guide my next move.</thought>
+<thought player="Bao">The map talk is either a genuine lead or a clever distraction—Alif’s been oddly cryptic, but I can’t be sure if he’s playing me or not. I’ll let the suspicion simmer a bit longer before pulling any strings.</thought>
+<thought player="Cai">Oh my gosh, that vote was SO close! I'm totally convinced Bao is hiding something, and that laugh was suspicious—like, really suspicious! I need to keep digging into the map and the bakery connection, you know? Maybe I'll ask Alif more about the compass thing and see if Dai's suspicions are onto something.</thought>
+<thought player="Dai">Bao's laugh was too clean, too calculated. I ain't buying it. If Cai's the mole, then Bao's got to be in on it. But I can't prove it yet.</thought>
+<thought player="Fai">Oh my stars, what a tangled web we weave! I must tread carefully, for Bao's knowing laugh has me quite intrigued, yet I dare not let my curiosity raise any undue eyebrows just yet.</thought>
+</round>
+<round>
+Round 3.
+Cai: Oh my gosh, I was just thinking—Alif, can you tell me more about that compass on the map? And Dai, you said Bao laughed weirdly too? Did you see what they were pointing at?
+Dai: I ain't buying Cai's act either. She's been twitching ever since the vote, like she's trying to cover something up.
+Avery: Nothing is settled yet, but I'm watching Fai most closely.
+Fai: Oh my stars, I do believe we must pay close attention to Bao's behavior—how they laughed so knowingly when Cai got the vote. Goodness gracious, it was as if they were privy to a secret only the Mafia could know!
+Bao: Alif, you keep muttering about compasses and edges—do you think that map might lead to a hidden treasure, or are you just trying to throw us all off track?
+Alif: The compass on the map... it wasn't pointing north. It was pointing at the bakery.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Alif">The map talk feels like a loose thread—Fai’s interest might unravel something useful, or Bao could be playing it safe. I’ll let the night guide my next move.</thought>
+<thought player="Bao">The map is either Alif's ace up his sleeve or a clever red herring—he's been too cryptic for comfort. I'll let him keep talking, but I'm not going to let him get too far ahead of me.</thought>
+<thought player="Cai">Oh my gosh, that vote was SO close! I'm totally convinced Bao is hiding something with that weird laugh, and I need to keep digging into the map and bakery connection. Maybe I'll ask Alif more about the compass thing and see if Dai's suspicions are onto something.</thought>
+<thought player="Dai">Bao's laugh was too clean, too calculated. I ain't buying it. If Cai's the mole, then Bao's got to be in on it. But I can't prove it yet.</thought>
+<thought player="Fai">Oh my stars, what a tangled web we weave! I do believe Bao's knowing laugh was most suspicious, but I shall bide my time and not let my curiosity raise undue eyebrows just yet. The map and the bakery—there's more to this than meets the eye, and I must tread carefully.</thought>
+</round>
+<round>
+Round 4.
+<vote initiator="Dai" target="Bao">
+Avery: No
+Alif: No
+Bao: No
+Cai: Yes
+Dai: Yes
+Fai: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Fai: Oh my stars, I do believe we must consider the bakery a most suspicious place—especially when Bao laughed so knowingly at the very mention of it! Goodness gracious, what a tangled web this is!
+Bao: Oh, Alif, you’ve got me curious—what exactly did that compass point at, or is it still a secret worth keeping?
+Avery: Nothing is settled yet, but I'm watching Fai most closely.
+Alif: The bakery... it's not just a bakery. I think the compass was trying to tell us that the map was more than just a map.
+Cai: Oh my gosh, I was just thinking—Alif, can you tell me more about that compass pointing at the bakery? And Dai, you said Bao laughed weirdly too? Did you see what they were pointing at?
+Dai: I'm not sure who to trust yet.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+<thought player="Alif">The map and bakery talk feels like a delicate thread—Fai’s interest might unravel something, or Bao’s laughter could be a well-played act. I’ll let the night guide my next move, as always.</thought>
+<thought player="Bao">The map is either Alif's plan or a clever misdirection—time to let him keep talking while I subtly steer the conversation back to the bakery. I need to stay one step ahead, but not so obvious that I tip my hand.</thought>
+<thought player="Cai">Oh my gosh, that vote was so close! I'm totally convinced Bao is up to something with that weird laugh, and I need to keep digging into the map and bakery connection. Maybe I'll ask Alif more about the compass thing and see if Dai's suspicions are onto something!</thought>
+<thought player="Dai">Bao's laugh was too clean, too calculated. I ain't buying it. If Cai's the mole, then Bao's got to be in on it. But I can't prove it yet.</thought>
+<thought player="Fai">Oh my stars, what a tangled web we weave! I do believe Bao’s knowing laugh was most suspicious, but I shall bide my time and not let my curiosity raise undue eyebrows just yet. The map and the bakery—there's more to this than meets the eye, and I must tread carefully.</thought>
+</round>
+<round>
+Round 5.
+Bao: Oh, Alif, you keep talking about maps and compasses, but I think the real treasure is right under our noses—literally. The bakery’s been getting quite a bit of attention lately, don’t you think?
+Fai: Oh my stars, I do believe we must consider the bakery a most suspicious place—especially when Bao laughed so knowingly at the very mention of it! Goodness gracious, what a tangled web this is!
+Cai: Oh my gosh, guys, I was just thinking—Alif, can you tell me more about that compass pointing at the bakery? And Dai, you said Bao laughed weirdly too? Did you see what they were pointing at?
+Avery: Nothing is settled yet, but I'm watching Fai most closely.
+<vote initiator="Dai" target="Alif">
+Avery: No
+Alif: No
+Bao: No
+Cai: No
+Dai: Yes
+Fai: Yes
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Alif points at Fai
+Bao points at Dai
+Pointing round 2:
+Bao points at Cai
+Alif points at Fai
+Pointing round 3:
+Alif points at Fai
+Bao points at Fai
+<kill>Fai — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Fai was killed last night. Fai was a Law-abiding Citizen.
+<round>
+Round 1.
+Cai: Oh my gosh, guys, I was just thinking—Alif, can you tell me more about that compass pointing at the bakery? And Dai, you said Bao laughed weirdly too? Did you see what they were pointing at?
+Alif: The map... it was never about the bakery. It was about the *path* the compass drew.
+Bao: The path the compass drew... now that’s a curious detail. I wonder if it leads to a place we’ve all been, but never noticed.
+Avery: I most suspect Bao based on how the votes have gone.
+<vote initiator="Dai" target="Bao">
+Avery: Yes
+Alif: No
+Bao: No
+Cai: Yes
+Dai: Yes
+tally: 3 Yes, 2 No
+outcome: executed — Bao has been executed. Bao was a Mafia.
+</vote>
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Bao was executed today and was revealed to be Mafia.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Alif points at Cai
+<kill>Cai — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Cai was killed last night. Cai was a Law-abiding Citizen.
+<round>
+Round 1.
+Alif: The path... it wasn't leading to the bakery. It was leading *away* from it.
+<vote initiator="Dai" target="Alif">
+Avery: Yes
+Alif: No
+Dai: Yes
+tally: 2 Yes, 1 No
+outcome: executed — Alif has been executed. Alif was a Mafia.
+</vote>
+</round>
+</day>
+<endgame>
+The Law-abiding Citizens have won.
+
+Events this game:
+• Night 1: Eva (Law-abiding Citizen)
+• Night 2: Fai (Law-abiding Citizen)
+• Day 2: Bao (Mafia) executed
+• Night 3: Cai (Law-abiding Citizen)
+• Day 3: Alif (Mafia) executed
+
+Full roster: Avery (Law-abiding Citizen), Alif (Mafia), Bao (Mafia), Cai (Law-abiding Citizen), Dai (Law-abiding Citizen), Eva (Law-abiding Citizen), Fai (Law-abiding Citizen)
+
+Who they really were:
+• Alif (Mafia) — publicly presented as Alif is a quiet town librarian who spends his days organizing books and helping children with their reading. He's known for his kindness and gentle demeanor. His hobby is collecting old maps and creating elaborate stories about the places they depict. He often gets lost in daydreams while working, but his colleagues find him endearing and helpful. (Dreamy and distractible, with a childlike wonder that makes others overlook his peculiarities. He has an almost ethereal quality, often lost in thought, yet he's fiercely loyal to those he trusts. Speaks softly, with long pauses between sentences, as if collecting thoughts. His voice is gentle and melodic, often trailing off mid-sentence. He tends to use metaphorical language, speaking in riddles or half-formed ideas.) … but was really a Mafioso: Alif was once a traveling salesman who fell into the Mafia after a series of unfortunate circumstances. His true role involves managing the flow of information between different factions within the organization. He maintains an elaborate fantasy life to keep others from noticing his true nature, but beneath his dreamy exterior lies a calculating mind.
+• Bao (Mafia) — publicly presented as Bao is a jovial local baker who runs a cozy shop on the main street. Known for his infectious laugh and knack for making the most exquisite pastries, he's beloved by everyone in town. He often entertains children with stories while they wait for their treats, and he’s always ready to lend a helping hand or share a joke. (Playful and teasing, with a mischievous streak that thrives on light banter and harmless tricks. Bao is charismatic and always has a witty comeback, but beneath the surface lies a sharp mind ready to manipulate situations to his advantage. Speaks with a sly grin, using playful sarcasm and subtle double meanings. His tone is airy and teasing, often pausing for effect before delivering a cutting remark. He enjoys leading conversations in unpredictable directions and has a habit of turning serious topics into games.) … but was really a Mafioso: Bao was once a cunning enforcer in a rival gang before fleeing the city after a betrayal. Now he uses his charm and wit to blend into society as a harmless baker while keeping an eye out for opportunities to regain his power. He’s always planning ahead, waiting for the right moment to strike.
+• Cai (Law-abiding Citizen) — cheerful and irrepressible speaks rapidly with high energy, using exclamations and animated gestures. Has a habit of ending sentences with "you know?" and uses cheerful slang like "gee whiz" and "oh my gosh." Often bounces between topics excitedly. Cai is the town's beloved postmaster, known for his infectious enthusiasm and knack for making everyone feel special. He always has a story about someone he helped or a funny mishap that happened at the post office. He's constantly organizing community events like mail art contests and "Letter of the Month" celebrations. Cai has a habit of wearing mismatched socks and carrying a pocket full of colorful stickers.
+• Dai (Law-abiding Citizen) — gruff and blunt speaks in short, clipped sentences with a deep, gravelly tone. Avoids small talk and rarely uses filler words. Has a habit of leaning forward when speaking, as if inspecting the person across from him. Often punctuates remarks with a sharp nod or a slight glare. Dai is the town's gruff blacksmith, known for his uncanny ability to forge anything from steel to tools. He keeps to himself, rarely attending social gatherings, and has a reputation for being harsh but fair. His shop is always bustling with requests from townsfolk who know he won't take shortcuts or make excuses.
+• Eva (Law-abiding Citizen) — eccentric and unpredictable speaks in sudden bursts, alternating between whispering and shouting, with frequent interruptions and abrupt topic changes. Uses theatrical gestures and often stops mid-sentence to consult an invisible notebook or adjust a nonexistent hat. Eva is the town's eccentric fortune teller, who runs a small shop tucked behind the bakery. She claims to see visions in tea leaves, playing cards, and even the patterns of clouds. She has a habit of speaking in riddles and often gives cryptic advice that seems to make sense only after some time passes. She’s known for her wild hair, mismatched outfits, and an odd collection of tarot cards, crystals, and a pet parrot named Oscar who repeats her most outrageous predictions.
+• Fai (Law-abiding Citizen) — warm and effusive speaks with wide gestures and animated facial expressions, using a rich, expressive tone that conveys deep emotion. Often uses exclamations like "Oh my stars!" or "Goodness gracious!" and tends to pause for effect, as if savoring every word. Speaks in longer, flowing sentences with frequent use of adjectives and descriptive language. Fai is a beloved florist who runs a cheerful shop on the main street, known for her vibrant bouquets and endless enthusiasm. She spends her days arranging flowers, sharing gardening tips with neighbors, and spreading joy through her colorful creations. Fai is also an avid amateur chef, often hosting small dinner parties where she serves dishes made with fresh herbs from her garden.
+</endgame>
+</transcript>

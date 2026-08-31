@@ -1,0 +1,166 @@
+Game 12 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Adalyn" role="Law-abiding Citizen">
+Personality: stern and commanding
+Manner: speaks with deliberate pacing, using strong, assertive vocabulary and a firm tone. Often pauses for emphasis and avoids filler words. Her sentences are direct and leave no room for ambiguity.
+Persona: Adalyn is a former military officer turned town sheriff's deputy. She's known for her unwavering sense of justice and strict adherence to rules. After leaving the service, she chose to stay in town to protect the community she once served. She's respected for her no-nonsense attitude and steady hand in difficult situations.
+</player>
+<player name="Liam" role="Law-abiding Citizen">
+Personality: brash and loud
+Manner: speaks quickly with excessive enthusiasm, uses filler words like "you know" and "like," has a habit of gesturing wildly while talking, and often interrupts others mid-sentence
+Persona: Liam is the town's biggest gossip and self-proclaimed unofficial mayor. He's always in the middle of something, whether it's organizing community events or getting into drama with his neighbors. He's known for his wild stories and larger-than-life personality, often exaggerating situations to make them more exciting.
+</player>
+<player name="Aisha" role="Law-abiding Citizen">
+Personality: vigilant and watchful
+Manner: speaks in measured, deliberate tones with a slight edge of intensity; uses precise vocabulary and rarely fidgets; often pauses before answering questions, scanning the room as if assessing each person's response; avoids casual phrases like "you know" or "like" and speaks with a quiet but unwavering confidence
+Persona: Aisha is a former detective turned private investigator who now works as a security consultant for the town. She’s known for her sharp eye and ability to spot inconsistencies in people's stories. Her work often keeps her on high alert, always observing and analyzing the behavior of those around her. Despite her past, she maintains a low profile and focuses on helping the community stay safe.
+</player>
+<player name="Zoe" role="Mafia">
+Personality: Prickly and easily offended, with a sharp tongue and a tendency to hold grudges. She has a strong sense of personal dignity and is deeply sensitive to what she perceives as insults or disrespect.
+Manner: Speaks in a clipped, precise manner with a hint of condescension. Uses formal language and avoids casual phrases like "you know" or "like." Often raises an eyebrow when speaking, and her tone can shift from coldly neutral to icy fury in moments.
+Public legend: Zoe is a retired librarian who moved to town to be closer to her elderly mother. She's known for her meticulous nature and strict adherence to rules. She volunteers at the local community center and is often seen reading books or organizing charity drives. She's quiet, reserved, and keeps to herself, but is deeply respected for her integrity.
+True self (hidden): Zoe was a small-time enforcer in the city's underground network before she moved to town. She was recruited by a local crime boss after she accidentally witnessed a murder during a botched drug deal. She's been working her way up the ranks, using her cover as a librarian to gather information and keep tabs on potential threats. She's always looking for ways to make amends for her past but is determined to protect herself at all costs.
+</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: anxious and second-guessing
+Manner: speaks quickly with frequent pauses, uses filler words like "um," "you know," and "I think," avoids direct eye contact, often fidgets with hands or clothing, has a hesitant tone and tends to repeat themselves or backtrack on statements
+Persona: Kai is a town librarian who's always worried about making mistakes or saying the wrong thing. They're known for being overly careful with their words and actions, often second-guessing decisions they make. Despite their nervous demeanor, they're kind-hearted and genuinely want to help others. They spend most of their time organizing books and helping people find information, but they're always worried about messing up or being judged.
+</player>
+<player name="Nora" role="Mafia">
+Personality: Dry and sardonic
+Manner: Speaks in a measured, dry tone with a subtle edge of sarcasm. Uses precise vocabulary but laces her words with quiet wit. Rarely shows emotion, often rolling her eyes or giving a barely perceptible smirk when someone says something particularly foolish. Avoids enthusiasm and rarely raises her voice.
+Public legend: Nora is the town's official town planner, responsible for ensuring all new construction adheres to the zoning laws. She's known for her meticulous attention to detail and her ability to spot even the smallest infractions in building permits. She lives alone in a small, well-kept house on the edge of town and is always seen carrying a clipboard and wearing practical clothing. Despite her profession, she has no interest in politics or community affairs, preferring to keep to herself.
+True self (hidden): Nora's real name is Nora Voss, and she was recruited into the Mafia by her brother, who was already a high-ranking member. She joined after he was murdered by a rival faction, and she took his place in order to protect the family business. She's been working undercover for years, using her role as town planner to keep tabs on the town's activities while remaining one step ahead of the law. Her brother was killed because he refused to take part in a major money-laundering operation that would have made their organization extremely powerful.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Adalyn, Liam, Aisha, Zoe, Kai, Nora. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Zoe): Your Mafia teammates are: Nora. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Nora): Your Mafia teammates are: Zoe. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Zoe points at Aisha
+Nora points at Aisha
+<kill>Aisha — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Aisha was killed last night. Aisha was a Law-abiding Citizen.
+<round>
+Round 1.
+<vote initiator="Liam" target="Adalyn">
+Avery: No
+Adalyn: No
+Liam: No
+Zoe: No
+Kai: No
+Nora: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Adalyn: Liam, your sudden call to execute Adalyn seems rushed. What exactly prompted that vote?
+Kai: I think... um... I'm starting to suspect that Liam might be hiding something. He voted to execute Adalyn so quickly, and he's been acting really nervous ever since.
+<vote initiator="Liam" target="Kai">
+Avery: No
+Adalyn: No
+Liam: Yes
+Zoe: Yes
+Kai: No
+Nora: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Liam" target="Kai">
+Avery: No
+Adalyn: No
+Liam: Yes
+Zoe: Yes
+Kai: No
+Nora: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Nora points at Adalyn
+Zoe points at Adalyn
+<kill>Adalyn — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Adalyn was killed last night. Adalyn was a Law-abiding Citizen.
+<round>
+Round 1.
+Zoe: I'm tired of these baseless accusations. If we're going to survive, we need to stop turning on each other and start focusing on who's truly behind this.
+<vote initiator="Liam" target="Zoe">
+Avery: No
+Liam: Yes
+Zoe: No
+Kai: Yes
+Nora: No
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Zoe: I'm growing weary of this paranoia. We're all here trying to stay alive, not pointing fingers at anyone who happens to be in the wrong place at the wrong time.
+<vote initiator="Liam" target="Kai">
+Avery: No
+Liam: Yes
+Zoe: No
+Kai: No
+Nora: Yes
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Liam" target="Zoe">
+Avery: No
+Liam: No
+Zoe: No
+Kai: No
+Nora: No
+tally: 0 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Nora points at Kai
+Zoe points at Kai
+<kill>Kai — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Aisha (Law-abiding Citizen)
+• Night 2: Adalyn (Law-abiding Citizen)
+• Night 3: Kai (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Adalyn (Law-abiding Citizen), Liam (Law-abiding Citizen), Aisha (Law-abiding Citizen), Zoe (Mafia), Kai (Law-abiding Citizen), Nora (Mafia)
+
+Who they really were:
+• Adalyn (Law-abiding Citizen) — stern and commanding speaks with deliberate pacing, using strong, assertive vocabulary and a firm tone. Often pauses for emphasis and avoids filler words. Her sentences are direct and leave no room for ambiguity. Adalyn is a former military officer turned town sheriff's deputy. She's known for her unwavering sense of justice and strict adherence to rules. After leaving the service, she chose to stay in town to protect the community she once served. She's respected for her no-nonsense attitude and steady hand in difficult situations.
+• Liam (Law-abiding Citizen) — brash and loud speaks quickly with excessive enthusiasm, uses filler words like "you know" and "like," has a habit of gesturing wildly while talking, and often interrupts others mid-sentence Liam is the town's biggest gossip and self-proclaimed unofficial mayor. He's always in the middle of something, whether it's organizing community events or getting into drama with his neighbors. He's known for his wild stories and larger-than-life personality, often exaggerating situations to make them more exciting.
+• Aisha (Law-abiding Citizen) — vigilant and watchful speaks in measured, deliberate tones with a slight edge of intensity; uses precise vocabulary and rarely fidgets; often pauses before answering questions, scanning the room as if assessing each person's response; avoids casual phrases like "you know" or "like" and speaks with a quiet but unwavering confidence Aisha is a former detective turned private investigator who now works as a security consultant for the town. She’s known for her sharp eye and ability to spot inconsistencies in people's stories. Her work often keeps her on high alert, always observing and analyzing the behavior of those around her. Despite her past, she maintains a low profile and focuses on helping the community stay safe.
+• Zoe (Mafia) — publicly presented as Zoe is a retired librarian who moved to town to be closer to her elderly mother. She's known for her meticulous nature and strict adherence to rules. She volunteers at the local community center and is often seen reading books or organizing charity drives. She's quiet, reserved, and keeps to herself, but is deeply respected for her integrity. (Prickly and easily offended, with a sharp tongue and a tendency to hold grudges. She has a strong sense of personal dignity and is deeply sensitive to what she perceives as insults or disrespect. Speaks in a clipped, precise manner with a hint of condescension. Uses formal language and avoids casual phrases like "you know" or "like." Often raises an eyebrow when speaking, and her tone can shift from coldly neutral to icy fury in moments.) … but was really a Mafioso: Zoe was a small-time enforcer in the city's underground network before she moved to town. She was recruited by a local crime boss after she accidentally witnessed a murder during a botched drug deal. She's been working her way up the ranks, using her cover as a librarian to gather information and keep tabs on potential threats. She's always looking for ways to make amends for her past but is determined to protect herself at all costs.
+• Kai (Law-abiding Citizen) — anxious and second-guessing speaks quickly with frequent pauses, uses filler words like "um," "you know," and "I think," avoids direct eye contact, often fidgets with hands or clothing, has a hesitant tone and tends to repeat themselves or backtrack on statements Kai is a town librarian who's always worried about making mistakes or saying the wrong thing. They're known for being overly careful with their words and actions, often second-guessing decisions they make. Despite their nervous demeanor, they're kind-hearted and genuinely want to help others. They spend most of their time organizing books and helping people find information, but they're always worried about messing up or being judged.
+• Nora (Mafia) — publicly presented as Nora is the town's official town planner, responsible for ensuring all new construction adheres to the zoning laws. She's known for her meticulous attention to detail and her ability to spot even the smallest infractions in building permits. She lives alone in a small, well-kept house on the edge of town and is always seen carrying a clipboard and wearing practical clothing. Despite her profession, she has no interest in politics or community affairs, preferring to keep to herself. (Dry and sardonic Speaks in a measured, dry tone with a subtle edge of sarcasm. Uses precise vocabulary but laces her words with quiet wit. Rarely shows emotion, often rolling her eyes or giving a barely perceptible smirk when someone says something particularly foolish. Avoids enthusiasm and rarely raises her voice.) … but was really a Mafioso: Nora's real name is Nora Voss, and she was recruited into the Mafia by her brother, who was already a high-ranking member. She joined after he was murdered by a rival faction, and she took his place in order to protect the family business. She's been working undercover for years, using her role as town planner to keep tabs on the town's activities while remaining one step ahead of the law. Her brother was killed because he refused to take part in a major money-laundering operation that would have made their organization extremely powerful.
+</endgame>
+</transcript>

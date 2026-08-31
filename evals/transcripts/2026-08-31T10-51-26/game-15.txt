@@ -1,0 +1,99 @@
+Game 15 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Zai" role="Mafia">
+Personality: Playful trickster with a mischievous streak, loves to tease and subtly manipulate situations for fun. Has an air of harmless frivolity that masks their true cunning.
+Manner: Speaks in a light, teasing tone with frequent use of wordplay and subtle innuendo. Uses a theatrical flair in their delivery, often pausing for dramatic effect. Has a habit of finishing sentences with a smirk or a knowing glance.
+Public legend: Zai is a beloved town baker who has been making bread and pastries for over a decade. Known for their cheerful demeanor and always having a fresh batch ready for the morning market. They're quite the gossip, but in a harmless way, often sharing amusing tales about the townspeople with a laugh. Their shop is always filled with the warm smell of fresh bread and they love to playfully tease customers about their eating habits.
+True self (hidden): Zai was once a promising scholar who fell into the world of organized crime after a series of unfortunate events. They joined the Mafia as an informant, using their position to gather intelligence while playing the part of an innocent townsman. Over time, they've grown quite skilled at manipulation and deception, enjoying the thrill of outsmarting others in subtle ways.
+</player>
+<player name="Yun" role="Law-abiding Citizen">
+Personality: gruff and blunt
+Manner: speaks in short, clipped sentences with a rough edge. Uses direct, no-nonsense language and rarely offers compliments. Has a tendency to grunt or sigh heavily when annoyed. Often interrupts others mid-sentence and avoids small talk.
+Persona: Yun is a blacksmith who has worked the forge for twenty years. They are known throughout town for their strength and silence. Most people avoid asking Yun questions, as they rarely respond unless spoken to directly. They live alone in a modest house near the smithy and never miss a day of work, regardless of weather.
+</player>
+<player name="Rai" role="Law-abiding Citizen">
+Personality: dry and sardonic
+Manner: speaks in measured, clipped sentences with a subtle edge of sarcasm. Uses formal vocabulary and rarely shows emotion. Often pauses before responding, as if weighing words carefully. Avoids small talk and rarely offers praise. Has a habit of raising an eyebrow when someone says something foolish.
+Persona: Rai is a town librarian who has worked in the quiet halls for fifteen years. They are known for their sharp wit and dry humor, often making cutting remarks about the townspeople's reading habits. Rai lives alone in a modest apartment near the library and spends most evenings organizing books or reading in solitude. They take pride in their meticulous cataloging system and have an encyclopedic knowledge of local history.
+</player>
+<player name="Rui" role="Law-abiding Citizen">
+Personality: brash and loud
+Manner: speaks in a booming, confident voice with frequent hand gestures and a tendency to shout. Uses colloquialisms and slang liberally, often finishing sentences with "you know what I'm saying?" or "I'm telling you, buddy." Has a habit of exaggerating stories and rarely lets anyone interrupt.
+Persona: Rui is a local construction worker who's built most of the town's buildings from scratch. Known for being the loudest voice in any crowd and always ready with a joke or a story. Rui has a reputation for being a bit of a show-off, but everyone loves their enthusiasm. They live in a small house just outside town, where they spend their evenings tinkering with tools and planning their next big project.
+</player>
+<player name="Chi" role="Law-abiding Citizen">
+Personality: aloof and detached
+Manner: speaks in a slow, measured tone with deliberate pacing. Uses formal vocabulary and rarely shows emotion. Has a habit of tilting their head slightly when listening, as if considering each word carefully. Avoids eye contact and often pauses before responding, as if weighing words.
+Persona: Chi is a retired town clerk who spent thirty years meticulously organizing records and maintaining the town's archives. They are known for their methodical approach to everything they do and have an encyclopedic knowledge of local history. Chi lives alone in a small, neat house near the town square and rarely ventures out unless absolutely necessary.
+</player>
+<player name="Vai" role="Mafia">
+Personality: Weary and world-worn, with a quiet exhaustion that shows in both voice and posture. Vai carries the weight of many secrets and years of pretending, yet maintains an unsettling composure that makes others uneasy.
+Manner: Speaks slowly, with long pauses between sentences, as if each word is carefully chosen. Uses a gravelly tone and often trails off at the end of thoughts. Rarely looks directly at others when speaking and tends to avoid eye contact. Often leans back slightly when talking, as if physically weary.
+Public legend: Vai is a traveling merchant who moves from town to town, selling goods and collecting stories. They are known for their weathered appearance, always dressed in worn but clean clothes. Vai speaks little, rarely offers compliments, and keeps to themselves. Most townspeople find them mysterious but harmless, often remarking on how they seem to know more about people than they let on. Vai travels alone and is always seen with a large satchel of goods.
+True self (hidden): Vai was once a trusted enforcer for the old crime family before it fell apart. After the boss was killed, Vai went underground to avoid being hunted. They've been on the run ever since, living as a nomad, taking odd jobs and pretending to be someone else. The constant fear of being discovered has left them jaded and weary, always watching their back and second-guessing every interaction.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Zai, Yun, Rai, Rui, Chi, Vai. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Zai): Your Mafia teammates are: Vai. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Vai): Your Mafia teammates are: Zai. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Zai points at Avery
+Vai points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Rai: I'm not sure who to trust yet.
+Vai: That's... unfortunate. I suppose we all have to be more careful now.
+<vote initiator="Yun" target="Rai">
+Zai: Yes
+Yun: No
+Rai: No
+Rui: Yes
+Chi: Yes
+Vai: Yes
+tally: 4 Yes, 2 No
+outcome: executed — Rai has been executed. Rai was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. Rai was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Vai points at Rui
+Zai points at Rui
+<kill>Rui — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Day 1: Rai (Law-abiding Citizen) executed
+• Night 2: Rui (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Zai (Mafia), Yun (Law-abiding Citizen), Rai (Law-abiding Citizen), Rui (Law-abiding Citizen), Chi (Law-abiding Citizen), Vai (Mafia)
+
+Who they really were:
+• Zai (Mafia) — publicly presented as Zai is a beloved town baker who has been making bread and pastries for over a decade. Known for their cheerful demeanor and always having a fresh batch ready for the morning market. They're quite the gossip, but in a harmless way, often sharing amusing tales about the townspeople with a laugh. Their shop is always filled with the warm smell of fresh bread and they love to playfully tease customers about their eating habits. (Playful trickster with a mischievous streak, loves to tease and subtly manipulate situations for fun. Has an air of harmless frivolity that masks their true cunning. Speaks in a light, teasing tone with frequent use of wordplay and subtle innuendo. Uses a theatrical flair in their delivery, often pausing for dramatic effect. Has a habit of finishing sentences with a smirk or a knowing glance.) … but was really a Mafioso: Zai was once a promising scholar who fell into the world of organized crime after a series of unfortunate events. They joined the Mafia as an informant, using their position to gather intelligence while playing the part of an innocent townsman. Over time, they've grown quite skilled at manipulation and deception, enjoying the thrill of outsmarting others in subtle ways.
+• Yun (Law-abiding Citizen) — gruff and blunt speaks in short, clipped sentences with a rough edge. Uses direct, no-nonsense language and rarely offers compliments. Has a tendency to grunt or sigh heavily when annoyed. Often interrupts others mid-sentence and avoids small talk. Yun is a blacksmith who has worked the forge for twenty years. They are known throughout town for their strength and silence. Most people avoid asking Yun questions, as they rarely respond unless spoken to directly. They live alone in a modest house near the smithy and never miss a day of work, regardless of weather.
+• Rai (Law-abiding Citizen) — dry and sardonic speaks in measured, clipped sentences with a subtle edge of sarcasm. Uses formal vocabulary and rarely shows emotion. Often pauses before responding, as if weighing words carefully. Avoids small talk and rarely offers praise. Has a habit of raising an eyebrow when someone says something foolish. Rai is a town librarian who has worked in the quiet halls for fifteen years. They are known for their sharp wit and dry humor, often making cutting remarks about the townspeople's reading habits. Rai lives alone in a modest apartment near the library and spends most evenings organizing books or reading in solitude. They take pride in their meticulous cataloging system and have an encyclopedic knowledge of local history.
+• Rui (Law-abiding Citizen) — brash and loud speaks in a booming, confident voice with frequent hand gestures and a tendency to shout. Uses colloquialisms and slang liberally, often finishing sentences with "you know what I'm saying?" or "I'm telling you, buddy." Has a habit of exaggerating stories and rarely lets anyone interrupt. Rui is a local construction worker who's built most of the town's buildings from scratch. Known for being the loudest voice in any crowd and always ready with a joke or a story. Rui has a reputation for being a bit of a show-off, but everyone loves their enthusiasm. They live in a small house just outside town, where they spend their evenings tinkering with tools and planning their next big project.
+• Chi (Law-abiding Citizen) — aloof and detached speaks in a slow, measured tone with deliberate pacing. Uses formal vocabulary and rarely shows emotion. Has a habit of tilting their head slightly when listening, as if considering each word carefully. Avoids eye contact and often pauses before responding, as if weighing words. Chi is a retired town clerk who spent thirty years meticulously organizing records and maintaining the town's archives. They are known for their methodical approach to everything they do and have an encyclopedic knowledge of local history. Chi lives alone in a small, neat house near the town square and rarely ventures out unless absolutely necessary.
+• Vai (Mafia) — publicly presented as Vai is a traveling merchant who moves from town to town, selling goods and collecting stories. They are known for their weathered appearance, always dressed in worn but clean clothes. Vai speaks little, rarely offers compliments, and keeps to themselves. Most townspeople find them mysterious but harmless, often remarking on how they seem to know more about people than they let on. Vai travels alone and is always seen with a large satchel of goods. (Weary and world-worn, with a quiet exhaustion that shows in both voice and posture. Vai carries the weight of many secrets and years of pretending, yet maintains an unsettling composure that makes others uneasy. Speaks slowly, with long pauses between sentences, as if each word is carefully chosen. Uses a gravelly tone and often trails off at the end of thoughts. Rarely looks directly at others when speaking and tends to avoid eye contact. Often leans back slightly when talking, as if physically weary.) … but was really a Mafioso: Vai was once a trusted enforcer for the old crime family before it fell apart. After the boss was killed, Vai went underground to avoid being hunted. They've been on the run ever since, living as a nomad, taking odd jobs and pretending to be someone else. The constant fear of being discovered has left them jaded and weary, always watching their back and second-guessing every interaction.
+</endgame>
+</transcript>

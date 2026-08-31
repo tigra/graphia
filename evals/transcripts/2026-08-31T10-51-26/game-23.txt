@@ -1,0 +1,228 @@
+Game 23 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Airi" role="Law-abiding Citizen">
+Personality: dreamy and distractible
+Manner: speaks slowly, often pausing mid-sentence to look away or adjust her glasses. Uses words like "you know" frequently and tends to drift into thoughts, sometimes finishing sentences with a gentle "oh, and..." or "but then..." as if remembering something else entirely. Her voice is soft and melodic, like she's always lost in a pleasant daydream.
+Persona: Airi is a librarian who spends her days surrounded by books and quiet whispers. She's known for being kind but often forgetful, easily distracted by the sounds of wind chimes or the fluttering of pages. She lives alone in a small apartment filled with plants and old maps.
+</player>
+<player name="Tsunade" role="Mafia">
+Personality: Earnest and deeply sincere, with an unwavering sense of duty and moral conviction. Tsunade is the kind of person who takes her responsibilities seriously and believes wholeheartedly in doing what's right, even when it's difficult.
+Manner: Speaks with a quiet intensity, using deliberate pauses and strong emphasis on key words to convey sincerity. Her voice carries a firm, honest tone, and she tends to look directly at whoever she's speaking to, maintaining eye contact throughout her sentences. She often uses phrases like "I believe" or "I'm convinced" when making points.
+Public legend: Tsunade is a respected town physician, known for her dedication to healing and her gentle care for all townspeople. She runs a small clinic in the heart of town and is often seen walking around with a basket of herbs, offering remedies to those in need. She's well-liked by everyone, always ready to help others, and never hesitates to put her own needs aside for the good of the community.
+True self (hidden): Tsunade was once a promising young doctor who fell into the wrong crowd after a tragic incident involving a patient's death. She became entangled with the Mafia, not out of malice but through coercion and manipulation. Over time, she found herself truly committed to the organization, using her position as a respected physician to gain trust and access. She now operates under a strict code, believing that she must protect her family and those she cares about at all costs.
+</player>
+<player name="Mika" role="Law-abiding Citizen">
+Personality: warm and effusive
+Manner: speaks rapidly with enthusiastic gestures, uses exclamations like "oh my goodness!" and "truly!" with a tendency to overlap sentences. Has a habit of putting hands on hips when excited and often says "you know" before every sentence. Her voice is high-pitched and full of energy, often trailing off with "and then..." or "oh, and I was thinking..."
+Persona: Mika is the town's beloved baker, known for her infectious laughter and endless supply of fresh bread, pastries, and pies. She runs a cheerful bakery that's always filled with the aroma of cinnamon and vanilla. Mika loves to share stories while kneading dough and often invites townspeople to taste-test her latest creations. Her heart is in her work, and she believes wholeheartedly in bringing joy to others through food.
+</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: playful and teasing
+Manner: speaks with a mischievous twinkle in their eye, using a light, airy tone that shifts from playful to sly in the span of a sentence. Often uses contractions, speaks in a quick, snappy rhythm, and has a habit of trailing off with a "you know?" or "right?" as if waiting for a reaction. Uses slang like "dude," "totally," and "no way" with a teasing cadence, and will often interrupt themselves mid-sentence to add a cheeky "oh, and by the way..." before continuing.
+Persona: Kai is the town's beloved street performer, known for juggling, magic tricks, and playful antics that keep the townsfolk entertained. They run a small cart in the market square and are always ready with a joke or trick to lighten the mood. Their performances are light-hearted, fun, and often include subtle illusions that leave people laughing and scratching their heads.
+</player>
+<player name="Loki" role="Mafia">
+Personality: Brash and loud, with an over-the-top confidence that borders on arrogance. Loki has a flair for drama and thrives on being the center of attention, often talking over others and making grandiose claims about their abilities and importance in town.
+Manner: Speaks in a booming, theatrical voice with exaggerated gestures and a tendency to use grandiose language. Often interrupts others mid-sentence with "Hold up!" or "Let me tell you something," and finishes sentences with "right?" or "you know?" while giving a wink or a smirk.
+Public legend: Loki is the town's self-proclaimed mayor, known for their flashy speeches, oversized hats, and constant announcements about how they're running things. They throw lavish parties, organize grand festivals, and take pride in being the most important person in town. Loki runs a booming town hall that's always filled with people asking for their attention or advice. They're always seen wearing bright colors and a big smile, making everyone feel like they're part of something special.
+True self (hidden): Loki is actually a feared Mafioso who took control of the town's underground network years ago by using intimidation and clever manipulation. They were once a street kid who learned to survive by becoming the most dangerous person in town, eventually rising through the ranks of the Mafia. Loki now uses their public persona as a front to maintain control while secretly orchestrating all the criminal activities in town.
+</player>
+<player name="Rai" role="Law-abiding Citizen">
+Personality: eccentric and unpredictable
+Manner: speaks in sudden bursts with erratic pacing, often starts sentences mid-thought and trails off into unrelated musings. Uses phrases like "oh wait, actually" or "but seriously, you know" and has a habit of pausing dramatically before revealing a bizarre detail. Their voice wavers between high-pitched excitement and deep, mysterious tones.
+Persona: Rai is the town's quirky inventor who creates bizarre contraptions from old parts and forgotten scraps. They're always tinkering in their cluttered workshop on the edge of town, often muttering to themselves while working. Rai has a strange obsession with time and frequently claims to have discovered "the secret to temporal displacement." Despite their odd habits, they're harmless and always eager to share their latest inventions.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Airi, Tsunade, Mika, Kai, Loki, Rai. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Tsunade): Your Mafia teammates are: Loki. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Loki): Your Mafia teammates are: Tsunade. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Tsunade points at Airi
+Loki points at Airi
+<kill>Airi — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Airi was killed last night. Airi was a Law-abiding Citizen.
+<round>
+Round 1.
+Loki: I'm sorry, but I don't have enough information to make a decision yet. Let's hear what everyone else has to say.
+<vote initiator="Rai" target="Loki">
+Avery: No
+Tsunade: No
+Mika: No
+Kai: No
+Loki: No
+Rai: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Tsunade: I believe we should focus on understanding everyone's reactions during the night and the logic behind the votes. It's clear that some players are being cautious, which is understandable, but we mustn't let fear cloud our judgment.
+Rai: I'm still not convinced anyone's definitely a Mafioso, but... oh, this is weird—Kai was oddly quiet, and that's never good. I think we should be more careful about who we trust.
+Avery: Nothing is settled yet, but I'm watching Loki most closely.
+Mika: I'm not sure who to trust yet.
+<vote initiator="Kai" target="Loki">
+Avery: No
+Tsunade: No
+Mika: No
+Kai: No
+Loki: No
+Rai: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Mika" target="Kai">
+Avery: No
+Tsunade: No
+Mika: No
+Kai: No
+Loki: No
+Rai: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Loki points at Avery
+Tsunade points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Kai: Oh, wow, another night, another victim. This is getting spicy, right? I mean, we're all just trying to stay alive, but someone's definitely been playing dirty.
+Rai: But seriously, you know, I was just thinking—Avery's death was so sudden! It's like... oh wait, actually, that's not right. I mean, it's strange how Kai and Loki were both quiet during the night. That's never good. That's really not good at all.
+
+Wait, no, that's wrong. I'm just getting confused about time again. But still, something's off.
+<vote initiator="Loki" target="Kai">
+Tsunade: No
+Mika: No
+Kai: No
+Loki: Yes
+Rai: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Kai: I'm just saying, you know? 😏
+Mika: Oh my goodness, you know, I was just kneading dough and thinking about how strange it is that we keep getting killed one by one, and then suddenly everyone's pointing fingers! It's so confusing, and then... oh, and I was thinking—why did Loki get a vote to execute, and then Kai got one right after? That's... that's really odd, isn't it?
+Tsunade: I'm convinced that we need to be more careful about who we trust, especially with the sudden deaths and odd voting patterns. I believe Loki and Kai have been acting strangely, but we mustn't let fear make us jump to conclusions.
+Rai: But seriously, you know — I think we’re all going to be very careful about who we trust from now on. (And by “trust,” I mean who we *don’t* want to get executed.)
+Loki: You know, I'm starting to think this whole "execution" thing is just a big game of chicken. Everyone's acting suspicious, but that's what happens when people are scared. Right?
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Tsunade">I'm convinced that Loki and Kai are behaving suspiciously, but I must remain cautious and not let fear drive my decisions. I believe we need to watch their reactions closely and ensure our next move is calculated to protect the remaining law-abiding citizens while maintaining our cover.</thought>
+<thought player="Mika">Oh my goodness, you know, I was just thinking that everyone is being so oddly quiet and suspicious, and then Loki got a vote to execute Kai, and now Kai is getting a vote to execute Loki! It's like a game of "who's really the Mafioso?" and then... oh, and I was thinking—maybe I should be more careful about who I trust, but also, I have a feeling that there's something going on that we're all missing!</thought>
+<thought player="Kai">Well, this is a fun little pickle we're in—three citizens and two mafiosos left, with everyone acting suspicious and voting like they’re auditioning for a thriller movie. I'm not going to jump the gun, but I do wonder if Loki’s vote was a bit too quick, and if Rai’s still watching me... you know, the usual suspects. I'll keep my eyes peeled and my tricks ready.</thought>
+<thought player="Loki">I'm starting to feel the heat with two votes against me, but I need to play it cool and keep my cover. I'll let Tsunade and Rai do most of the talking while I stay calm and confident. I've got to be careful not to look too eager or nervous.</thought>
+<thought player="Rai">Oh wait, actually, I think I might have figured out something about time and deaths, but that's probably wrong. Still, Kai and Loki are definitely acting weird, and I'm pretty sure I saw a pattern, but not really. I should probably keep watching them, or maybe just watch everyone.</thought>
+</round>
+<round>
+Round 2.
+Mika: Oh my goodness, you know, I was just thinking—why did Loki get a vote to execute Kai, and then Kai got one right after? That's... that's really odd, isn't it?
+Loki: Oh, honey, you're just jealous because I'm the only one with the brains to see who's really behind this! Right?
+Kai: Oh, Loki, honey, you're just jealous because I'm the only one with the brains to see who's really behind this! Right?
+Rai: Oh wait, actually—I just realized something! Loki and Kai both voted to execute someone, but they didn't get executed themselves. That's... that's really suspicious, isn't it? I mean, it's not a crime to vote, but... oh wait, that’s not right either.
+Tsunade: I'm convinced that we need to be cautious about who we trust, especially with the sudden deaths and odd voting patterns. I believe Loki and Kai have been acting strangely, but we mustn't let fear make us jump to conclusions.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Tsunade">I'm convinced that Loki and Kai are acting suspiciously, but I must remain cautious and not let fear drive my decisions. I believe we need to watch their reactions closely and ensure our next move is calculated to protect the remaining law-abiding citizens while maintaining our cover.</thought>
+<thought player="Mika">Oh my goodness, you know, I was just thinking that everyone is being so oddly quiet and suspicious—Loki and Kai are both acting really strange, and I have a feeling that one of them might be the Mafioso, but I'm not quite sure which one yet. And then... oh, and I was thinking—maybe I should keep my eyes wide open and listen carefully to what everyone says next, because I think this game is about to get even more interesting!</thought>
+<thought player="Kai">Hmm, Loki’s all smug about voting to execute me, but I’m not convinced he’s not the one playing dirty. And Rai’s been watching me like a hawk—time for a little misdirection, maybe a cheeky little trick to throw them off track.</thought>
+<thought player="Loki">I'm feeling the pressure with those two failed votes, but I need to stay calm and keep up the confident act. Tsunade and Rai are doing most of the talking, which is fine—let them do the heavy lifting while I just nod along and wink mysteriously. I've got to be careful not to seem too eager or nervous.</thought>
+<thought player="Rai">Oh wait, actually, I think I’m onto something with the timing and the votes, but I'm also totally confused about time again. Still, Kai and Loki are definitely up to something, and I should probably keep watching them... or maybe just watch everyone? It's all so confusing, but I'm pretty sure I saw a pattern. No, wait, that’s wrong too.</thought>
+</round>
+<round>
+Round 3.
+Loki: Oh honey, you're just jealous because I'm the only one with the brains to see who's really behind this! Right?
+Tsunade: I'm convinced that we need to be more attentive to the patterns of silence and sudden accusations. It's clear that someone is trying to misdirect us, and we mustn't let that happen.
+Mika: Oh my goodness, you know, I was just thinking—why did Loki get a vote to execute Kai, and then Kai got one right after? That's... that's really odd, isn't it?
+Kai: Oh, Rai, you're sooo right about the voting patterns being weird! It's almost like someone's trying to make us all nervous and suspicious... you know, just like a good trick! 😏
+Rai: Oh wait, actually—Kai and Loki both voted to execute someone else, but neither of them got executed. That's... that's really suspicious, isn't it? I mean, it's not a crime to vote, but... oh wait, that’s not right either.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Tsunade">I believe Loki and Kai are hiding something, but I must stay calm and observe their behavior carefully before making any moves. My priority is to protect the remaining citizens while keeping my cover intact.</thought>
+<thought player="Mika">Oh my goodness, you know, I was just thinking that Loki and Kai are both acting so strangely, and I have a feeling one of them is the Mafioso, but I'm still not sure which one! And then... oh, and I was thinking—maybe I should keep my eyes wide open and listen carefully to what everyone says next because this game is about to get even more interesting!</thought>
+<thought player="Kai">Loki’s all smug about voting to execute me, but I’m not convinced he’s not the one playing dirty. Rai’s been watching me like a hawk—time for a little misdirection, maybe a cheeky little trick to throw them off track.</thought>
+<thought player="Loki">I'm feeling the pressure with those failed votes, but I need to keep my cool and not let on that I'm nervous. Tsunade and Rai are doing most of the talking, which is fine—let them do the heavy lifting while I just nod along and wink mysteriously.</thought>
+<thought player="Rai">Oh wait, actually, I think I’m onto something with the timing and the votes, but I'm also totally confused about time again. Still, Kai and Loki are definitely up to something — I should probably keep watching them, or maybe just watch everyone? It's all so confusing, but I'm pretty sure I saw a pattern. No, wait, that’s wrong too.</thought>
+</round>
+<round>
+Round 4.
+Rai: Oh wait, actually—I just realized something *super weird* about the votes. Loki and Kai both voted to execute someone, but they didn’t get executed themselves... and that’s *so* suspicious! But seriously, you know, I think I might’ve lost track of time again.
+Mika: Oh my goodness, you know, I was just kneading this dough and thinking—Loki and Kai are both so suspiciously quiet, but they're also the ones who've been voting to execute everyone! It's like they're trying to make us all nervous and then point at someone else! And then... oh, and I was thinking—this is getting really juicy!
+Loki: Hold up, everyone! I'm starting to think we're all just playing this game wrong. It's not about who's suspicious—it's about who's *trying* to make us suspicious!
+Kai: Oh, Rai, you're sooo right about the voting patterns being weird! It's almost like someone's trying to make us all nervous and suspicious... you know, just like a good trick! 😏
+Tsunade: I'm convinced that we're being manipulated by someone who wants us to turn on each other. We must stay calm and not let fear drive our decisions.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Tsunade">I'm convinced that Loki and Kai are hiding something, but I must stay calm and observe their behavior carefully before making any moves. My priority is to protect the remaining citizens while keeping my cover intact.</thought>
+<thought player="Mika">Oh my goodness, you know, I was just kneading this dough and thinking—Loki and Kai are both so suspiciously quiet, but they're also the ones who've been voting to execute everyone! It's like they're trying to make us all nervous and then point at someone else! And then... oh, and I was thinking—this is getting really juicy, and I need to keep my eyes wide open and listen carefully to what everyone says next!</thought>
+<thought player="Kai">Loki’s smug, but I’m not the one who’s been voting to execute everyone—Rai’s been watching me like a hawk, and I’ve got a few tricks up my sleeve. Time for a little misdirection, maybe a cheeky little trick to throw them off track.</thought>
+<thought player="Loki">I'm feeling the heat with those failed votes, but I need to keep my cool and not let on that I'm nervous. Tsunade and Rai are doing most of the talking, which is fine—let them do the heavy lifting while I just nod along and wink mysteriously.</thought>
+<thought player="Rai">Oh wait, actually, I think I’m onto something with the timing and the votes, but I'm also totally confused about time again. Still, Kai and Loki are definitely up to something — I should probably keep watching them, or maybe just watch everyone? It's all so confusing, but I'm pretty sure I saw a pattern. No, wait, that’s wrong too.</thought>
+</round>
+<round>
+Round 5.
+Mika: Oh my goodness, you know, I was just thinking—Loki and Kai are both so suspiciously quiet, but they're also the ones who've been voting to execute everyone! It's like they're trying to make us all nervous and then point at someone else! And then... oh, and I was thinking—this is getting really juicy!
+Rai: Oh wait, actually—I just realized something *super weird* about the votes. Loki and Kai both voted to execute someone, but they didn’t get executed themselves... and that’s *so* suspicious! But seriously, you know, I think I might’ve lost track of time again.
+Loki: You know, I'm starting to think this whole "execution" thing is just a big game of chicken. Everyone's acting suspicious, but that's what happens when people are scared. Right?
+Tsunade: I'm convinced that we're being manipulated by someone who wants us to turn on each other. We must stay calm and not let fear drive our decisions.
+Kai: Oh, Rai, you're sooo right about the voting patterns being weird! It's almost like someone's trying to make us all nervous and suspicious... you know, just like a good trick! 😏
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Tsunade">I'm convinced that Loki and Kai are hiding something, but I must stay calm and observe their behavior carefully before making any moves. My priority is to protect the remaining citizens while keeping my cover intact.</thought>
+<thought player="Mika">Oh my goodness, you know, I was just thinking that Loki and Kai are both so suspiciously quiet, but they're also the ones who've been voting to execute everyone! It's like they're trying to make us all nervous and then point at someone else! And then... oh, and I was thinking—this is getting really juicy, and I need to keep my eyes wide open and listen carefully to what everyone says next!</thought>
+<thought player="Kai">Rai's been watching me like a hawk, but Loki’s smug about his vote—time for a little misdirection, maybe a cheeky trick to throw them off track. I’m not the one who’s been executing everyone, but someone’s definitely trying to make it look like I am.</thought>
+<thought player="Loki">I'm feeling the heat with those failed votes, but I need to keep my cool and not let on that I'm nervous. Tsunade and Rai are doing most of the talking, which is fine—let them do the heavy lifting while I just nod along and wink mysteriously.</thought>
+<thought player="Rai">Oh wait, actually, I think I might’ve cracked the pattern—Kai and Loki are both voting to execute others but not getting executed themselves. But seriously, you know, I’m pretty sure I’m just confusing myself with time again. Still, I should probably keep watching them... or maybe watch everyone? It’s all so confusing.</thought>
+</round>
+<round>
+Round 6.
+Kai: Oh, Rai, you're sooo right about the voting patterns being weird! It's almost like someone's trying to make us all nervous and suspicious... you know, just like a good trick! 😏
+Tsunade: I'm convinced that we're being manipulated by someone who wants us to turn on each other. We must stay calm and not let fear drive our decisions.
+Rai: Oh wait, actually—I just realized something *super weird* about the votes. Loki and Kai both voted to execute someone, but they didn’t get executed themselves... and that’s *so* suspicious! But seriously, you know, I think I might’ve lost track of time again.
+Loki: Oh honey, you're all sooo suspicious of everyone, but that's exactly what we need to keep doing—pointing fingers and making each other nervous! Right?
+Mika: Oh my goodness, you know, I was just thinking—Loki and Kai are both so suspiciously quiet, but they're also the ones who've been voting to execute everyone! It's like they're trying to make us all nervous and then point at someone else! And then... oh, and I was thinking—this is getting really juicy!
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Loki points at Kai
+Tsunade points at Kai
+<kill>Kai — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Airi (Law-abiding Citizen)
+• Night 2: Avery (Law-abiding Citizen)
+• Night 3: Kai (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Airi (Law-abiding Citizen), Tsunade (Mafia), Mika (Law-abiding Citizen), Kai (Law-abiding Citizen), Loki (Mafia), Rai (Law-abiding Citizen)
+
+Who they really were:
+• Airi (Law-abiding Citizen) — dreamy and distractible speaks slowly, often pausing mid-sentence to look away or adjust her glasses. Uses words like "you know" frequently and tends to drift into thoughts, sometimes finishing sentences with a gentle "oh, and..." or "but then..." as if remembering something else entirely. Her voice is soft and melodic, like she's always lost in a pleasant daydream. Airi is a librarian who spends her days surrounded by books and quiet whispers. She's known for being kind but often forgetful, easily distracted by the sounds of wind chimes or the fluttering of pages. She lives alone in a small apartment filled with plants and old maps.
+• Tsunade (Mafia) — publicly presented as Tsunade is a respected town physician, known for her dedication to healing and her gentle care for all townspeople. She runs a small clinic in the heart of town and is often seen walking around with a basket of herbs, offering remedies to those in need. She's well-liked by everyone, always ready to help others, and never hesitates to put her own needs aside for the good of the community. (Earnest and deeply sincere, with an unwavering sense of duty and moral conviction. Tsunade is the kind of person who takes her responsibilities seriously and believes wholeheartedly in doing what's right, even when it's difficult. Speaks with a quiet intensity, using deliberate pauses and strong emphasis on key words to convey sincerity. Her voice carries a firm, honest tone, and she tends to look directly at whoever she's speaking to, maintaining eye contact throughout her sentences. She often uses phrases like "I believe" or "I'm convinced" when making points.) … but was really a Mafioso: Tsunade was once a promising young doctor who fell into the wrong crowd after a tragic incident involving a patient's death. She became entangled with the Mafia, not out of malice but through coercion and manipulation. Over time, she found herself truly committed to the organization, using her position as a respected physician to gain trust and access. She now operates under a strict code, believing that she must protect her family and those she cares about at all costs.
+• Mika (Law-abiding Citizen) — warm and effusive speaks rapidly with enthusiastic gestures, uses exclamations like "oh my goodness!" and "truly!" with a tendency to overlap sentences. Has a habit of putting hands on hips when excited and often says "you know" before every sentence. Her voice is high-pitched and full of energy, often trailing off with "and then..." or "oh, and I was thinking..." Mika is the town's beloved baker, known for her infectious laughter and endless supply of fresh bread, pastries, and pies. She runs a cheerful bakery that's always filled with the aroma of cinnamon and vanilla. Mika loves to share stories while kneading dough and often invites townspeople to taste-test her latest creations. Her heart is in her work, and she believes wholeheartedly in bringing joy to others through food.
+• Kai (Law-abiding Citizen) — playful and teasing speaks with a mischievous twinkle in their eye, using a light, airy tone that shifts from playful to sly in the span of a sentence. Often uses contractions, speaks in a quick, snappy rhythm, and has a habit of trailing off with a "you know?" or "right?" as if waiting for a reaction. Uses slang like "dude," "totally," and "no way" with a teasing cadence, and will often interrupt themselves mid-sentence to add a cheeky "oh, and by the way..." before continuing. Kai is the town's beloved street performer, known for juggling, magic tricks, and playful antics that keep the townsfolk entertained. They run a small cart in the market square and are always ready with a joke or trick to lighten the mood. Their performances are light-hearted, fun, and often include subtle illusions that leave people laughing and scratching their heads.
+• Loki (Mafia) — publicly presented as Loki is the town's self-proclaimed mayor, known for their flashy speeches, oversized hats, and constant announcements about how they're running things. They throw lavish parties, organize grand festivals, and take pride in being the most important person in town. Loki runs a booming town hall that's always filled with people asking for their attention or advice. They're always seen wearing bright colors and a big smile, making everyone feel like they're part of something special. (Brash and loud, with an over-the-top confidence that borders on arrogance. Loki has a flair for drama and thrives on being the center of attention, often talking over others and making grandiose claims about their abilities and importance in town. Speaks in a booming, theatrical voice with exaggerated gestures and a tendency to use grandiose language. Often interrupts others mid-sentence with "Hold up!" or "Let me tell you something," and finishes sentences with "right?" or "you know?" while giving a wink or a smirk.) … but was really a Mafioso: Loki is actually a feared Mafioso who took control of the town's underground network years ago by using intimidation and clever manipulation. They were once a street kid who learned to survive by becoming the most dangerous person in town, eventually rising through the ranks of the Mafia. Loki now uses their public persona as a front to maintain control while secretly orchestrating all the criminal activities in town.
+• Rai (Law-abiding Citizen) — eccentric and unpredictable speaks in sudden bursts with erratic pacing, often starts sentences mid-thought and trails off into unrelated musings. Uses phrases like "oh wait, actually" or "but seriously, you know" and has a habit of pausing dramatically before revealing a bizarre detail. Their voice wavers between high-pitched excitement and deep, mysterious tones. Rai is the town's quirky inventor who creates bizarre contraptions from old parts and forgotten scraps. They're always tinkering in their cluttered workshop on the edge of town, often muttering to themselves while working. Rai has a strange obsession with time and frequently claims to have discovered "the secret to temporal displacement." Despite their odd habits, they're harmless and always eager to share their latest inventions.
+</endgame>
+</transcript>
