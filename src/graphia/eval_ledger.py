@@ -27,6 +27,7 @@ must never reach the UI.
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -49,8 +50,25 @@ __all__ = [
     "transcript_dir_for",
     "list_transcripts",
     "read_transcript",
+    # Every transcript kind constant, in the order they were introduced. Kept
+    # complete on purpose (spec 038, Slice 4): the list used to carry only
+    # ``KIND_MARKER`` / ``KIND_PLAIN`` while the UI imported the other six
+    # regardless — a half-populated export nobody chose. A slice that adds a
+    # kind adds its constant here as well as to :data:`TRANSCRIPT_KINDS`.
     "KIND_MARKER",
     "KIND_PLAIN",
+    "KIND_ATTR",
+    "KIND_FIELD_LABEL",
+    "KIND_SPEAKER",
+    "KIND_SPEECH",
+    "KIND_THOUGHT",
+    "KIND_RECAP",
+    "KIND_SPEAKER_MAFIA",
+    "KIND_SPEAKER_LAW_ABIDING",
+    "KIND_SPEECH_MAFIA",
+    "KIND_SPEECH_LAW_ABIDING",
+    "KIND_ATTR_MAFIA",
+    "KIND_ATTR_LAW_ABIDING",
     "TRANSCRIPT_KINDS",
     "tokenize_transcript",
 ]
@@ -680,7 +698,7 @@ def read_transcript(path: Path) -> str:
 
 
 # ===========================================================================
-# Transcript tokenizing (spec 038, Slice 1 — the pure, colour-free spine).
+# Transcript tokenizing (spec 038 — the pure, colour-free spine).
 #
 # A preserved game is one wall of plain text mixing content a reviewer reads in
 # completely different ways: the skeleton marking where a Night ends and a Day
@@ -732,14 +750,45 @@ KIND_SPEECH = "speech"
 KIND_THOUGHT = "thought"
 KIND_RECAP = "recap"
 
+# Slice 4 — the side-bearing kinds, the spec's headline requirement
+# (functional-spec §2: "Each side has its own colour, applied to a speaker's name
+# and to what they say"). Each is a *qualified* form of the Slice-3 kind above
+# it, and the qualifier names the **side**, never the colour: ``speaker-mafia``
+# is a kind, ``speaker-red`` never is. The UI picks the two hues.
+#
+# The neutral :data:`KIND_SPEAKER` / :data:`KIND_SPEECH` are **not** retired by
+# these — they stay as the appearance of a line whose side is *unknown*, which
+# is a pre-spec-022 game (no ``<player>`` tag to read a cast list from) or a name
+# absent from the cast list. See :func:`_cast_side_map` for why that is the
+# fallback rather than :data:`KIND_PLAIN`.
+KIND_SPEAKER_MAFIA = "speaker-mafia"
+KIND_SPEAKER_LAW_ABIDING = "speaker-law-abiding"
+KIND_SPEECH_MAFIA = "speech-mafia"
+KIND_SPEECH_LAW_ABIDING = "speech-law-abiding"
+
+# ...and the side-bearing form of :data:`KIND_ATTR`, for the two attribute values
+# whose side the transcript states rather than leaves to be guessed: the cast
+# entry's ``role="…"`` (so "the side colours used in the cast list match the ones
+# used for dialogue" — functional-spec §2) and the ``<thought player="…">``
+# owner's name (so "the owner's name carries that player's side colour" — the
+# same section, stated explicitly).
+#
+# Every OTHER ``attr`` value stays achromatic :data:`KIND_ATTR`, deliberately.
+# From Slice 4 onward **colour means side**, and a bare ``name="Avery"`` or a
+# vote's ``initiator="Avery"`` carries no side of its own — tinting it would
+# either invent one or spend a hue that then means nothing. ``attr`` lifts by
+# brightness and weight instead, which is what keeps the two side hues honest.
+KIND_ATTR_MAFIA = "attr-mafia"
+KIND_ATTR_LAW_ABIDING = "attr-law-abiding"
+
 # The canonical kind vocabulary, in the order the kinds were introduced — the
 # single source of truth for which kinds exist, following the same house pattern
 # as :data:`METRIC_ORDER` (a later spec appends its entries and nothing else has
 # to change). The UI builds its kind → style map from this, and a kind absent
 # from a style map must fall back to unstyled rather than raising.
 #
-# Later slices of spec 038 append: the side-bearing kinds read from the cast
-# list (Slice 4).
+# Later slices of spec 038 append: the human seat's bold-within-its-side
+# treatment (Slice 5).
 TRANSCRIPT_KINDS: tuple[str, ...] = (
     KIND_MARKER,
     KIND_PLAIN,
@@ -749,7 +798,60 @@ TRANSCRIPT_KINDS: tuple[str, ...] = (
     KIND_SPEECH,
     KIND_THOUGHT,
     KIND_RECAP,
+    KIND_SPEAKER_MAFIA,
+    KIND_SPEAKER_LAW_ABIDING,
+    KIND_SPEECH_MAFIA,
+    KIND_SPEECH_LAW_ABIDING,
+    KIND_ATTR_MAFIA,
+    KIND_ATTR_LAW_ABIDING,
 )
+
+# The two sides, as the internal token that selects a side-bearing kind. Private
+# on purpose: the module's *public* vocabulary is the kind list above, and a
+# second exported spelling of "mafia" would be one more thing to keep in step.
+#
+# Hyphenated to match the kinds they build, not the game engine's own
+# ``law_abiding`` role key — these tokens exist to be pasted onto a kind name.
+_SIDE_MAFIA = "mafia"
+_SIDE_LAW_ABIDING = "law-abiding"
+
+# Side → kind, one table per base kind. Written as lookups rather than an
+# f-string so the kind vocabulary stays a set of *literals* a reader can grep
+# for, and so an unknown side can never silently manufacture a kind name that
+# :data:`TRANSCRIPT_KINDS` does not contain.
+#
+# ``.get(side, <neutral>)`` with ``side=None`` is the unknown-side path in all
+# three: no side map, or a name the cast list does not carry.
+_SIDE_SPEAKER_KINDS: dict[str, str] = {
+    _SIDE_MAFIA: KIND_SPEAKER_MAFIA,
+    _SIDE_LAW_ABIDING: KIND_SPEAKER_LAW_ABIDING,
+}
+_SIDE_SPEECH_KINDS: dict[str, str] = {
+    _SIDE_MAFIA: KIND_SPEECH_MAFIA,
+    _SIDE_LAW_ABIDING: KIND_SPEECH_LAW_ABIDING,
+}
+_SIDE_ATTR_KINDS: dict[str, str] = {
+    _SIDE_MAFIA: KIND_ATTR_MAFIA,
+    _SIDE_LAW_ABIDING: KIND_ATTR_LAW_ABIDING,
+}
+
+# The role labels the writer emits, mapped to their side. Verbatim from
+# ``eval_transcript._ROLE_LABELS`` (``{"mafia": "Mafia", "law_abiding":
+# "Law-abiding Citizen"}``), which is the format's authority, and confirmed
+# exhaustive over the corpus: all 1,960 ``role="…"`` values in the 268 spec-022
+# files are one of these two (1,424 Law-abiding Citizen, 536 Mafia).
+#
+# A **whitelist**, exactly like :data:`_MARKER_TAGS`, :data:`_FIELD_LABELS` and
+# :data:`_ATTR_NAMES`, and for the sharpest version of the same reason: the
+# writer's own fallback is ``_ROLE_LABELS.get(role, role or "unknown role")``, so
+# an unmapped role reaches the transcript as a raw string. Guessing a side from
+# an unrecognised label is exactly the failure tech-spec §3 names — "a wrong map
+# is actively misleading rather than merely ugly". An unrecognised label simply
+# leaves that player out of the map, and their speech reads neutral.
+_ROLE_SIDES: dict[str, str] = {
+    "Mafia": _SIDE_MAFIA,
+    "Law-abiding Citizen": _SIDE_LAW_ABIDING,
+}
 
 # The structural tag vocabulary ``graphia.tools.eval_transcript`` emits — the
 # whitelist that decides whether a ``<…>`` line is skeleton or just text that
@@ -838,8 +940,15 @@ _ATTR_NAMES: tuple[str, ...] = ("name", "role", "player", "initiator", "target")
 # hypothetical ``nickname="…"`` from being split at its ``name="`` tail. A
 # malformed run that matches nothing simply yields the single marker span it
 # would have been before Slice 2 — degradation, never a raise.
+#
+# The ``key`` group is Slice 4's only change here: two of the five values are
+# side-bearing and the other three are not, so the splitter has to know *which*
+# attribute it is looking at (see :func:`_attr_kind`), and the cast-list scan
+# has to pair a ``name`` with its ``role`` (see :func:`_cast_side_map`).
 _ATTR_VALUE_RE = re.compile(
-    r'(?<![A-Za-z0-9_-])(?:' + "|".join(_ATTR_NAMES) + r')="(?P<value>[^"]*)"'
+    r'(?<![A-Za-z0-9_-])(?P<key>'
+    + "|".join(_ATTR_NAMES)
+    + r')="(?P<value>[^"]*)"'
 )
 
 # The single information line at the very top of a game, e.g.
@@ -944,6 +1053,151 @@ _NON_SPEAKER_PREFIXES: frozenset[str] = frozenset(
     {"Moderator", "tally", "outcome"}
 )
 
+# The tag that opens and closes the cast list. :func:`_cast_side_map` reads
+# ``<player …>`` entries **only** between these two, so a ``<player …>``-shaped
+# line anywhere else — model-generated speech, a persona's prose, a future
+# format that reuses the tag — can never poison the side map. Compared against
+# the lstripped line so the pre-spec-022 era's indented ``  <setup>`` is
+# recognised by the same two literals.
+_SETUP_OPEN = "<setup>"
+_SETUP_CLOSE = "</setup>"
+
+# The one tag the cast list is built from, and the two attributes a cast entry
+# must carry for its player to have a *known* side.
+_CAST_TAG = "player"
+_CAST_NAME_ATTR = "name"
+_CAST_ROLE_ATTR = "role"
+
+# The ``<thought player="X">`` tag and its owner attribute — the one place a
+# *name* attribute is side-bearing, because functional-spec §2 requires it in
+# those words ("the owner's name carries that player's side colour").
+_THOUGHT_TAG = "thought"
+_THOUGHT_OWNER_ATTR = "player"
+
+
+def _cast_side_map(lines: list[str]) -> dict[str, str]:
+    """Read the ``<setup>`` cast list into ``name → side`` (spec 038, Slice 4).
+
+    **The tokenizer's only state, and the one thing in it that is not per-line.**
+    Every rule before this slice was a judgement about a single line in
+    isolation; a side is not — ``Avery: I saw nothing`` says nothing at all about
+    which side Avery is on, and the answer is 300 lines above it in the cast
+    list. So :func:`tokenize_transcript` scans the whole text once for this map
+    and threads it, read-only, into the per-line chain. The chain itself stays
+    pure and stateless: :func:`_line_spans` is still a function of its arguments
+    with no memory between calls, it just takes one argument more.
+
+    **Scoped to ``<setup>``, deliberately.** ``<player …>`` occurs nowhere else
+    in any of the 298 committed transcripts, so scoping and not scoping are
+    indistinguishable on today's data — but every word of a transcript outside
+    the cast list is model-generated, and an unscoped scan would let a player who
+    typed ``<player name="Bo" role="Mafia">`` into a Day speech rewrite the
+    colour of the real Bo's every line. The scan is already walking the file, so
+    the guard costs three lines.
+
+    **The spec-022 form only** (tech-spec §2 B, the author's explicit decision).
+    The 30 pre-spec-022 transcripts write their cast list as an indented
+    ``Name — Role`` and carry no ``<player>`` tag at all, so they yield ``{}``
+    here and every speaker in them keeps the neutral :data:`KIND_SPEAKER` /
+    :data:`KIND_SPEECH`. That is best-effort degradation, not a gap to be closed:
+    a **second parser for the old form was considered and declined**, and this
+    same silence is the forward-compatibility posture for the next format change.
+
+    **Never a guess, in three places:**
+
+    - an entry whose ``role`` is not one of :data:`_ROLE_SIDES`' two labels
+      contributes no side;
+    - a name the cast list gives **two different sides** (or one side and one
+      unrecognised role) is dropped entirely rather than resolved first-wins —
+      an ambiguous name has no known side, and a coin-flip here would paint a
+      whole game's dialogue in the wrong colour;
+    - a name absent from the result is left **neutral**, never guessed and never
+      demoted to :data:`KIND_PLAIN` (see :func:`_line_spans`).
+
+    Returns a plain ``dict`` — a value, not a cache. Two calls on the same text
+    return equal maps and the function reads nothing outside its argument.
+    """
+    seen: dict[str, set[str | None]] = {}
+    in_setup = False
+    for line in lines:
+        body = line.strip()
+        if body == _SETUP_OPEN:
+            in_setup = True
+            continue
+        if body == _SETUP_CLOSE:
+            in_setup = False
+            continue
+        if not in_setup:
+            continue
+        match = _TAG_HEAD_RE.match(body)
+        if (
+            match is None
+            or match.group("slash")
+            or match.group("name") != _CAST_TAG
+        ):
+            continue
+        attrs = match.group("attrs")
+        if not attrs:
+            continue
+        values = {
+            pair.group("key"): pair.group("value")
+            for pair in _ATTR_VALUE_RE.finditer(attrs)
+        }
+        name = values.get(_CAST_NAME_ATTR)
+        if not name:
+            continue
+        seen.setdefault(name, set()).add(
+            _ROLE_SIDES.get(values.get(_CAST_ROLE_ATTR, ""))
+        )
+    # One unambiguous, recognised side or nothing: a name whose entries disagree,
+    # or whose only role label was unrecognised, is simply absent from the map.
+    return {
+        name: next(iter(sides))
+        for name, sides in seen.items()
+        if len(sides) == 1 and None not in sides
+    }
+
+
+def _attr_kind(tag: str, key: str, value: str, sides: Mapping[str, str]) -> str:
+    """The kind for one attribute value: :data:`KIND_ATTR`, or its side-bearing form.
+
+    Exactly **two** of the five detail attributes carry a side, and both are
+    named by functional-spec §2 in those words:
+
+    - a cast entry's ``role="Mafia"`` — "the side colours used in the cast list
+      match the ones used for dialogue". Its side comes from the label written
+      right there, not from the map: the tag *states* the role, so no lookup and
+      no ``<setup>`` scoping are involved. A cast list that contradicts itself
+      therefore still shows each entry as the entry itself reads, while the
+      contradicting *name* drops out of the map (:func:`_cast_side_map`).
+    - a ``<thought player="Avery">`` owner's name — "the owner's name carries
+      that player's side colour". This one *is* a map lookup, because the tag
+      names a person and only the cast list knows their side.
+
+    The other three (a cast entry's ``name``, a vote's ``initiator`` and
+    ``target``) stay achromatic :data:`KIND_ATTR`. Colour means side from this
+    slice onward; those three are names a reviewer reads as *specifics*, lifted
+    out of the punctuation by weight and brightness. Tinting them was considered
+    and rejected on two grounds: it would leave ``attr`` with no occupants at all
+    in a real transcript (the five names above are the whole whitelist), and a
+    vote marker's job is to say *who called it and against whom*, which the side
+    colours on the ballot lines below it already answer.
+
+    **The rule underneath both halves:** inside a marker, the side colour lands
+    on whichever token actually *tells the reviewer the side* — the role where a
+    role is written (the cast entry), the name where none is (the thought tag,
+    which names a person and nothing else). Everywhere a name sits next to its
+    own role, the role carries the colour and the name does not, so the two
+    treatments never compete on one line.
+    """
+    if tag == _CAST_TAG and key == _CAST_ROLE_ATTR:
+        side = _ROLE_SIDES.get(value)
+    elif tag == _THOUGHT_TAG and key == _THOUGHT_OWNER_ATTR:
+        side = sides.get(value)
+    else:
+        return KIND_ATTR
+    return KIND_ATTR if side is None else _SIDE_ATTR_KINDS[side]
+
 
 def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     """Split a transcript into ordered ``(text, kind)`` spans (spec 038, §2 A).
@@ -958,7 +1212,17 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     merely intended — and it is asserted over every committed transcript by
     ``tests/test_transcript_highlight.py``.
 
-    **Kinds recognised so far** (eight — later slices add more, see
+    **Pure, but no longer per-line.** Slice 4 is where the tokenizer acquires its
+    first and only state: a side is not a property of the line it appears on, so
+    the text is scanned **twice** — once to read the ``<setup>`` cast list into a
+    ``name → side`` map (:func:`_cast_side_map`), then once to split the lines
+    with that map threaded through as a read-only argument. Nothing is cached,
+    nothing is global, and :func:`_line_spans` is still a pure function of its
+    arguments. The property that genuinely changed: **the same line can tokenize
+    differently in two different files**, so a synthetic test that wants a side
+    kind must include the ``<setup>`` block that grants it.
+
+    **Kinds recognised so far** (fourteen — later slices add more, see
     :data:`TRANSCRIPT_KINDS`):
 
     - :data:`KIND_MARKER` — the game's skeleton: the structural tags
@@ -971,21 +1235,35 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     - :data:`KIND_ATTR` — the **value** of a detail-carrying attribute inside a
       marker: the ``name``/``role`` of a cast entry, a thought's ``player``, a
       vote's ``initiator``/``target`` (see :data:`_ATTR_NAMES`). ``Avery``, never
-      ``name="Avery"``.
+      ``name="Avery"``. Achromatic: it lifts by weight and brightness, because
+      from Slice 4 onward colour means **side** and a bare name carries none.
+    - :data:`KIND_ATTR_MAFIA` / :data:`KIND_ATTR_LAW_ABIDING` — the two
+      exceptions to that, both required by functional-spec §2 in so many words: a
+      cast entry's ``role="…"`` (so the cast list and the dialogue agree on the
+      colours) and a ``<thought player="…">`` owner's name (so a private
+      reflection shows whose it is in their own colour). See :func:`_attr_kind`.
     - :data:`KIND_FIELD_LABEL` — a cast-list field's label, **colon included**
       (see :data:`_FIELD_LABELS`); the prose after it is content, not label.
-    - :data:`KIND_SPEAKER` / :data:`KIND_SPEECH` — a spoken line, split at its
-      colon: ``Avery:`` is the speaker, ``" I saw nothing."`` (leading space
-      included, exactly as a field label's prose keeps its own) is the speech.
-      See :data:`_SPEAKER_RE` for how permissive the name is and
-      :data:`_NON_SPEAKER_PREFIXES` for the three writer-emitted prefixes that
-      are shaped like a speaker and are not one.
+    - :data:`KIND_SPEAKER` / :data:`KIND_SPEECH` — a spoken line **whose side is
+      not known**, split at its colon: ``Avery:`` is the speaker,
+      ``" I saw nothing."`` (leading space included, exactly as a field label's
+      prose keeps its own) is the speech. See :data:`_SPEAKER_RE` for how
+      permissive the name is and :data:`_NON_SPEAKER_PREFIXES` for the three
+      writer-emitted prefixes that are shaped like a speaker and are not one.
+    - :data:`KIND_SPEAKER_MAFIA` / :data:`KIND_SPEAKER_LAW_ABIDING` and
+      :data:`KIND_SPEECH_MAFIA` / :data:`KIND_SPEECH_LAW_ABIDING` — the same two
+      spans when the cast list *does* name the speaker's side. This is the
+      spec's headline requirement: a speaker's name and their words both carry
+      their side's colour, in every round and in a vote block alike.
     - :data:`KIND_THOUGHT` — the **body** of a ``<thought player="X">…</thought>``
-      private reflection; the tag around it stays :data:`KIND_MARKER` and the
-      owner's name inside that tag stays :data:`KIND_ATTR` (Slice 4 gives that
-      name its side).
+      private reflection; the tag around it stays :data:`KIND_MARKER`, and the
+      owner's name inside that tag takes the owner's **side** (above). The body
+      never does: a private reflection is not an act of allegiance, and giving it
+      the speech colour would undo the one thing that makes it unmistakably
+      private.
     - :data:`KIND_RECAP` — the **body** of a ``<recap>…</recap>`` moderator
-      status line; again the tags around it stay :data:`KIND_MARKER`.
+      status line; again the tags around it stay :data:`KIND_MARKER`. Never
+      side-tinted, for the plainest of reasons: the moderator has no side.
     - :data:`KIND_PLAIN` — **everything else**, including every line separator.
       This fallback is what makes degradation total: an unrecognised tag, a
       pre-spec-022 transcript's indented ``Name — Role`` cast list, model-generated
@@ -1051,20 +1329,65 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
       stateless (the same reason :data:`_FIELD_LABELS` are matched unscoped).
       Keying off the payload being literally ``Yes``/``No`` instead would
       misfire the day a player answers a question with "Yes".
+
+    **An unknown side falls back to the NEUTRAL speaker/speech, not to plain**
+    (spec 038, Slice 4 — the decision this docstring is required to record,
+    because the task text and tech-spec §2 A both say the words "yields
+    ``plain``" and tech-spec §2 B contradicts them in the same document).
+
+    Tech-spec §2 B fixes the degraded case as "a pre-022 file still gets
+    ``marker``, **``speaker``**, **``speech``**, ``field-label`` and ``plain``
+    spans — it simply has no side map", and Slice 4's own task text says the same
+    thing in one breath ("speech falls back to ``plain`` **while markers, speaker
+    prefixes and field labels still work**") — which is only coherent if "plain"
+    there means *plain-looking*, not the ``plain`` kind. It is loose wording
+    inherited from before ``speaker``/``speech`` existed as kinds at all: when
+    tech-spec §2 A was written, the words after a name had no kind of their own,
+    so "plain speech" was the only way to say "uncoloured".
+
+    Reading it as the literal ``plain`` kind would *undo* Slice 3 for the 30
+    pre-spec-022 games and for every unknown name — dropping the speaker prefix
+    the same sentence promises to keep. So:
+
+    - **"never guess" forbids assigning a SIDE**, not styling a line as speech.
+      Which side someone is on is a judgement only the cast list can settle;
+      *that somebody is speaking* is a shape the line proves on its own
+      (see :data:`_SPEAKER_RE`, and the measured zero false positives behind it).
+    - The neutral kinds are the body colour and nothing else — measured as a
+      visual no-op against unstyled text — so "never guess a side" and "the
+      neutral is the body colour" are the same rule, and the degraded view is
+      exactly the uncoloured one tech-spec §3 asks for.
+
+    **Pre-spec-022 games degrade by that same single rule** (tech-spec §2 B,
+    best-effort by the author's explicit decision). Those 30 files write their
+    cast list as an indented ``Name — Role`` and carry no ``<player>`` tag, so
+    :func:`_cast_side_map` returns ``{}`` for them and **no second parser exists
+    for the old form** — that was considered and declined. Everything else in
+    those files still works: markers, speaker prefixes, speech, field labels,
+    thought and recap bodies. Only the two hues are missing. A future format
+    change will degrade in exactly the same way rather than raising.
     """
+    lines = text.split("\n")
+    # PASS 1 — the cast list, read once for the whole file (Slice 4). This is the
+    # function's only state and the reason it is two passes rather than one; see
+    # :func:`_cast_side_map`.
+    sides = _cast_side_map(lines)
+
     spans: list[tuple[str, str]] = []
-    # ``split("\n")`` + a plain ``"\n"`` span between consecutive lines
+    # PASS 2 — ``split("\n")`` + a plain ``"\n"`` span between consecutive lines
     # reconstructs the input exactly for every line ending, including a file with
     # no trailing newline (all 298 committed transcripts end on ``>``) and a
     # blank line (which contributes no span of its own, only the separators).
-    for index, line in enumerate(text.split("\n")):
+    for index, line in enumerate(lines):
         if index:
             spans.append(("\n", KIND_PLAIN))
-        spans.extend(_line_spans(line, is_first_line=index == 0))
+        spans.extend(_line_spans(line, is_first_line=index == 0, sides=sides))
     return _coalesce_spans(spans)
 
 
-def _line_spans(line: str, *, is_first_line: bool) -> list[tuple[str, str]]:
+def _line_spans(
+    line: str, *, is_first_line: bool, sides: Mapping[str, str]
+) -> list[tuple[str, str]]:
     """The spans for one transcript line, excluding its separator.
 
     **The extension point for the later slices of spec 038.** The branches are an
@@ -1075,6 +1398,11 @@ def _line_spans(line: str, *, is_first_line: bool) -> list[tuple[str, str]]:
 
     ``is_first_line`` gates the ``Game N | …`` metadata line, which is a
     positional fact about the file rather than a shape a line can have anywhere.
+    ``sides`` is the file's ``name → side`` cast map (:func:`_cast_side_map`),
+    read-only and possibly empty — the **only** thing here that is not a fact
+    about this one line, and the reason the same line can tokenize differently in
+    two different files from Slice 4 onward. The function itself is still pure
+    and keeps no memory between calls.
 
     **Order is load-bearing**, not incidental: the tag branch runs before the
     ``Round N.`` label, which runs before the cast-list field label, which runs
@@ -1101,7 +1429,7 @@ def _line_spans(line: str, *, is_first_line: bool) -> list[tuple[str, str]]:
     if not body:
         return prefix
 
-    tag_spans = _tag_element_spans(body)
+    tag_spans = _tag_element_spans(body, sides)
     if tag_spans is not None:
         return prefix + tag_spans
 
@@ -1128,17 +1456,35 @@ def _line_spans(line: str, *, is_first_line: bool) -> list[tuple[str, str]]:
     # so consistency is the only thing at stake and it decides it.
     speaker = _SPEAKER_RE.match(body)
     if speaker is not None and speaker.group("name") not in _NON_SPEAKER_PREFIXES:
+        # Slice 4: the same two spans, kinded by the speaker's side when the cast
+        # list knows it. ``sides.get`` returning ``None`` — a pre-spec-022 game
+        # with no cast list to read, or a name absent from the one there is —
+        # falls back to the NEUTRAL ``speaker``/``speech``, not to ``plain``:
+        # "somebody is speaking" is a shape this line proves on its own, and only
+        # the *side* is unknown. See :func:`tokenize_transcript`'s docstring for
+        # why that is the right reading of "never a guess".
+        side = sides.get(speaker.group("name"))
+        speaker_kind = KIND_SPEAKER
+        speech_kind = KIND_SPEECH
+        if side is not None:
+            # ``.get`` rather than ``[]``: the map can only hold the two sides
+            # :data:`_ROLE_SIDES` produces, but "never raises on real input" is a
+            # hard guarantee and a lookup is not the place to spend it.
+            speaker_kind = _SIDE_SPEAKER_KINDS.get(side, KIND_SPEAKER)
+            speech_kind = _SIDE_SPEECH_KINDS.get(side, KIND_SPEECH)
         # ``_SPEAKER_RE``'s lookahead guarantees at least the separating space,
         # so the speech span is never empty.
         return prefix + [
-            (speaker.group(0), KIND_SPEAKER),
-            (body[speaker.end() :], KIND_SPEECH),
+            (speaker.group(0), speaker_kind),
+            (body[speaker.end() :], speech_kind),
         ]
 
     return prefix + [(body, KIND_PLAIN)]
 
 
-def _tag_element_spans(body: str) -> list[tuple[str, str]] | None:
+def _tag_element_spans(
+    body: str, sides: Mapping[str, str]
+) -> list[tuple[str, str]] | None:
     """Spans for a line that starts with a recognised structural tag, else ``None``.
 
     ``None`` means "not a tag line" — the caller then falls through the rest of
@@ -1160,7 +1506,7 @@ def _tag_element_spans(body: str) -> list[tuple[str, str]] | None:
     if match is None or match.group("name") not in _MARKER_TAGS:
         return None
 
-    head = _tag_head_spans(match)
+    head = _tag_head_spans(match, sides)
     rest = body[match.end() :]
     if not rest:
         return head
@@ -1183,7 +1529,9 @@ def _tag_element_spans(body: str) -> list[tuple[str, str]] | None:
     return [*head, (rest, KIND_PLAIN)]
 
 
-def _tag_head_spans(match: re.Match[str]) -> list[tuple[str, str]]:
+def _tag_head_spans(
+    match: re.Match[str], sides: Mapping[str, str]
+) -> list[tuple[str, str]]:
     """One tag's ``<…>`` head, split into marker / attr / marker / attr / marker.
 
     ``match`` is a :data:`_TAG_HEAD_RE` match anchored at position 0 of the line
@@ -1199,7 +1547,10 @@ def _tag_head_spans(match: re.Match[str]) -> list[tuple[str, str]]:
 
     becomes five spans — ``<player name="`` · ``Avery`` · ``" role="`` ·
     ``Mafia`` · ``">`` — which is functional-spec §2's "the name and the role are
-    distinguishable from the surrounding marker text" made structural.
+    distinguishable from the surrounding marker text" made structural. Since
+    Slice 4 the two values may take **different** kinds: here ``Avery`` is
+    :data:`KIND_ATTR` and ``Mafia`` is :data:`KIND_ATTR_MAFIA`, so the cast list
+    is coloured by side while the names stay achromatic (:func:`_attr_kind`).
 
     The pieces are emitted without checking for emptiness on purpose: an empty
     value (``name=""``) or a zero-length gap contributes an empty span that
@@ -1214,13 +1565,22 @@ def _tag_head_spans(match: re.Match[str]) -> list[tuple[str, str]]:
     if not attrs:
         return [(head, KIND_MARKER)]
 
+    tag = match.group("name")
     offset = match.start("attrs")
     spans: list[tuple[str, str]] = []
     cursor = 0
     for value in _ATTR_VALUE_RE.finditer(attrs):
         start, end = value.span("value")
         spans.append((head[cursor : offset + start], KIND_MARKER))
-        spans.append((value.group("value"), KIND_ATTR))
+        # Slice 4: two of the five values carry a side (see :func:`_attr_kind`);
+        # the rest stay achromatic. Only the *kind* changes here — the slicing,
+        # and therefore the round trip, is untouched.
+        spans.append(
+            (
+                value.group("value"),
+                _attr_kind(tag, value.group("key"), value.group("value"), sides),
+            )
+        )
         cursor = offset + end
     spans.append((head[cursor:], KIND_MARKER))
     return spans

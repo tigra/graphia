@@ -76,6 +76,41 @@ with the cast-list labels, with ``Moderator:``, with a ballot and with
 ``Pointing round N:``, so the **synthetic near-misses below are load-bearing**,
 not decorative — several of them (``Mary Ann: hello``, ``Avery:no space``, a
 degenerate ``<recap></recap>``) are shapes the corpus does not contain at all.
+
+**Slice 4 changed what a test input IS, which is the one thing to internalise
+before reading or adding anything below.** Until this slice the tokenizer was a
+function of a *line*; it is now a function of a **file**. ``tokenize_transcript``
+makes two passes — ``_cast_side_map(lines)`` reads ``<setup>``'s
+``<player name=… role=…>`` entries into ``name → side``, then the per-line chain
+runs with that map threaded through — so **the same line tokenizes differently in
+two different files**. ``Avery: hi`` is ``speaker``/``speech`` on its own,
+``speaker-mafia``/``speech-mafia`` under a ``<setup>`` that says so, and
+``speaker``/``speech`` again under one that contradicts itself. A synthetic test
+that wants a side kind **must carry the ``<setup>`` block that grants it**; a
+synthetic test that wants the neutral kinds gets them for free.
+
+Everything else about the layer is unchanged: pure, no I/O, no Rich/Textual, and
+the round trip still holds byte for byte.
+
+**The unknown side is the NEUTRAL ``speaker``/``speech``, never the ``plain``
+kind** (ratified in Slice 4; see
+:func:`test_a_speaker_absent_from_the_cast_list_is_neutral_speech_not_plain`,
+which is this slice's single most important assertion). Slice 4's task text and
+tech-spec §2 A both say an unknown name "yields ``plain``" — wording that
+predates ``speech`` existing as a kind and that contradicts tech-spec §2 B's
+promise that a pre-022 file keeps ``marker``, **``speaker``**, **``speech``**,
+``field-label`` and ``plain`` spans. What "never a guess" forbids is assigning a
+**side**, not styling the line as speech.
+
+**Slice 4's own near-misses are where its value is**, for the reason Slices 2-3
+each re-proved: the 298-file sweep only covers shapes the corpus happens to
+contain, and the corpus contains none of these — a speaker absent from
+``<setup>``, a role string the writer never emits, an empty / missing / unclosed
+``<setup>``, a name given two conflicting sides, a ``<player …>`` tag typed
+*outside* ``<setup>``, a cast name colliding with ``Moderator:`` or with
+``Personality:``, a ``<thought>`` owner the cast list does not know, and
+``name=""``. Each is one production line away from being wrong and no committed
+game would notice.
 """
 
 from __future__ import annotations
@@ -86,6 +121,59 @@ from pathlib import Path
 import pytest
 
 from graphia import eval_ledger
+
+# ---------------------------------------------------------------------------
+# The three kind FAMILIES (spec 038, Slice 4)
+# ---------------------------------------------------------------------------
+#
+# Three of the eight Slice-1-to-3 kinds acquired side-bearing forms in Slice 4:
+# `speaker`, `speech` and `attr` each split two ways, so a sweep or a helper that
+# says "is this span a speaker?" must ask about the FAMILY, not the one neutral
+# literal. Getting this wrong is silent rather than loud — the corpus sweep's
+# `elif` chain simply stops seeing 20,655 of its 22,508 speaker spans and goes on
+# passing — which is why the families are named once here and used everywhere
+# below.
+#
+# Written as tuples of the constants rather than as string literals because the
+# literals themselves are pinned, once, in
+# `test_the_kind_constants_hold_the_literal_names_the_tables_use`. The neutral
+# member is FIRST in each, and it is not a leftover: it is the appearance of a
+# line whose side is unknown, which is the whole of Slice 4's degradation story.
+_SPEAKER_KINDS = (
+    eval_ledger.KIND_SPEAKER,
+    eval_ledger.KIND_SPEAKER_MAFIA,
+    eval_ledger.KIND_SPEAKER_LAW_ABIDING,
+)
+_SPEECH_KINDS = (
+    eval_ledger.KIND_SPEECH,
+    eval_ledger.KIND_SPEECH_MAFIA,
+    eval_ledger.KIND_SPEECH_LAW_ABIDING,
+)
+_ATTR_KINDS = (
+    eval_ledger.KIND_ATTR,
+    eval_ledger.KIND_ATTR_MAFIA,
+    eval_ledger.KIND_ATTR_LAW_ABIDING,
+)
+
+# Every side-bearing kind, as the set a "no sides here at all" assertion tests
+# against — the pre-022 degradation case, and every synthetic near-miss whose
+# point is that a side was NOT invented.
+_SIDE_KINDS = frozenset(
+    _SPEAKER_KINDS[1:] + _SPEECH_KINDS[1:] + _ATTR_KINDS[1:]
+)
+
+# Side-bearing kind → its neutral base. The inverse of the split, used by the
+# conservation test to state "only kinds moved, no boundary did" as an equality
+# rather than as a pair of totals that the next committed eval run would move.
+_NEUTRAL_BASE_KIND = {
+    eval_ledger.KIND_SPEAKER_MAFIA: eval_ledger.KIND_SPEAKER,
+    eval_ledger.KIND_SPEAKER_LAW_ABIDING: eval_ledger.KIND_SPEAKER,
+    eval_ledger.KIND_SPEECH_MAFIA: eval_ledger.KIND_SPEECH,
+    eval_ledger.KIND_SPEECH_LAW_ABIDING: eval_ledger.KIND_SPEECH,
+    eval_ledger.KIND_ATTR_MAFIA: eval_ledger.KIND_ATTR,
+    eval_ledger.KIND_ATTR_LAW_ABIDING: eval_ledger.KIND_ATTR,
+}
+
 
 # ---------------------------------------------------------------------------
 # The tokenizer under test
@@ -388,6 +476,26 @@ def test_corpus_sweep_is_not_vacuous() -> None:
 # only, so this is exactly what the tokenizer must have left behind.
 _ATTR_OPENS_WITH = '="'
 
+# Spec 038, Slice 4 — the kind a `role="…"` value must take, by the LITERAL role
+# label written in the tag. Deliberately spelled out here rather than derived
+# from `eval_ledger._ROLE_SIDES`: a guard that reads the same table the
+# production code reads goes vacuous the moment that table is what breaks. These
+# two strings are `eval_transcript._ROLE_LABELS`' own values — the format's
+# authority — and all 1,960 role values in the corpus are one of them (1,424
+# Law-abiding Citizen, 536 Mafia). Anything else is a role the writer never
+# emits and must stay achromatic.
+_EXPECTED_ROLE_KINDS = {
+    "Mafia": eval_ledger.KIND_ATTR_MAFIA,
+    "Law-abiding Citizen": eval_ledger.KIND_ATTR_LAW_ABIDING,
+}
+
+# The three whitelisted attributes that carry NO side of their own and must stay
+# achromatic `attr` forever (the ratified narrow reading: only `<player role=…>`
+# and `<thought player=…>` go side-bearing). 3,970 corpus spans ride on this —
+# tinting every name would leave `attr` with zero occupants in any real game and
+# retire Slice 2's achromatic treatment by accident.
+_ACHROMATIC_ATTR_KEYS = frozenset({"name", "initiator", "target"})
+
 
 @_requires_corpus
 def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
@@ -425,6 +533,29 @@ def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
       Slice 3's "the surrounding tag stays ``marker``" made structural over the
       8,183 thoughts and 2,736 recaps the corpus actually holds.
 
+    **Slice 4 widened it to the three FAMILIES and added one rule of its own.**
+    ``speaker``, ``speech`` and ``attr`` each split two ways, so every branch
+    below now asks about the family (:data:`_SPEAKER_KINDS` and friends). That
+    was not optional bookkeeping: left as three ``==`` comparisons against the
+    neutral literals, the chain would have stopped seeing **20,655 of the 22,508**
+    speaker spans and **10,143 of the 14,113** attribute values and gone on
+    passing — a silent loss of most of the coverage this test exists for.
+
+    The rule Slice 4 adds is the ratified **narrow reading** of where a side may
+    land, checked on every attribute value in the corpus:
+
+    * a ``role="…"`` value's kind is decided by the label *written right there* —
+      ``Mafia`` → ``attr-mafia``, ``Law-abiding Citizen`` → ``attr-law-abiding``,
+      anything else → achromatic ``attr``, never a guess;
+    * a ``<thought player="…">`` owner may take either side or neither (its side
+      is a map lookup, and the map may not know the name);
+    * a cast entry's ``name`` and a vote's ``initiator``/``target`` are
+      **always** achromatic ``attr`` — 3,970 spans that a one-line "tint every
+      name" change would recolour, retiring Slice 2's achromatic treatment by
+      accident;
+    * and a ``speaker`` span's side must equal its ``speech`` span's side, so a
+      line can never be half red and half blue.
+
     Plus non-vacuity guards that cannot rot as the corpus grows: every one of
     the five attribute names and all five labels must actually occur, and the
     pairs the writer always emits together must be equinumerous — every
@@ -437,6 +568,17 @@ def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
     speaker name begins with a lowercase letter** — the guard on the measured
     decision that casing is not a speaker test (39 corpus cast names are
     lowercase and a casing rule would lose 426 real speaker lines).
+
+    **Two of those Slice-3 guards still pass but no longer measure what they
+    did, and saying so is the point of this paragraph.** ``kind_counts[speaker]``
+    now counts only the **neutral** spans — 1,853 of them, and measurement puts
+    every single one inside the 30 pre-spec-022 files, because every spec-022
+    speaker is in their own file's cast list. So the neutral speaker/speech
+    equality and the lowercase guard are **pre-022-era measurements** from
+    Slice 4 onward, and they are kept in that reading (the era is 10% of the
+    corpus and its degradation is a promise tech-spec §2 B makes explicitly).
+    The whole-corpus versions of both are asserted alongside them, over the
+    families, so neither property is quietly lost to the era split.
     """
     labels = set(eval_ledger._FIELD_LABELS)
     non_speakers = set(eval_ledger._NON_SPEAKER_PREFIXES)
@@ -445,6 +587,7 @@ def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
     label_texts: Counter[str] = Counter()
     kind_counts: Counter[str] = Counter()
     lowercase_speakers: set[str] = set()
+    lowercase_speakers_any_side: set[str] = set()
 
     for path in _TRANSCRIPTS:
         spans = _tokenize(path.read_text(encoding="utf-8"))
@@ -458,8 +601,13 @@ def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
                     f"{_rel(path)} span {index}: styled {kind!r} span carries a "
                     f"newline: {text!r}"
                 )
-            if kind == eval_ledger.KIND_SPEAKER:
+            if kind in _SPEAKER_KINDS:
                 after = spans[index + 1] if index + 1 < len(spans) else None
+                # The side the speaker prefix claims, as the index into the
+                # family tuples — so the speech span after it can be required to
+                # claim the SAME one. A line half red and half blue is the exact
+                # shape of a side split applied to only one of the pair.
+                side_index = _SPEAKER_KINDS.index(kind)
                 if not text.endswith(":"):
                     problems.append(
                         f"{_rel(path)} span {index}: speaker {text!r} does not "
@@ -471,19 +619,26 @@ def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
                         f"writer's own prefixes {sorted(non_speakers)}, not a "
                         "player speaking"
                     )
-                elif text[0].islower():
-                    lowercase_speakers.add(text)
-                if after is None or after[1] != eval_ledger.KIND_SPEECH:
+                else:
+                    if text[0].islower():
+                        lowercase_speakers_any_side.add(text)
+                        if kind == eval_ledger.KIND_SPEAKER:
+                            lowercase_speakers.add(text)
+                if after is None or after[1] != _SPEECH_KINDS[side_index]:
                     problems.append(
-                        f"{_rel(path)} span {index}: speaker {text!r} is followed "
-                        f"by {after!r}, expected a speech span"
+                        f"{_rel(path)} span {index}: speaker {text!r} ({kind}) is "
+                        f"followed by {after!r}, expected a "
+                        f"{_SPEECH_KINDS[side_index]} span — a speaker and their "
+                        "words must carry the SAME side"
                     )
-            elif kind == eval_ledger.KIND_SPEECH:
+            elif kind in _SPEECH_KINDS:
                 before = spans[index - 1] if index else None
-                if before is None or before[1] != eval_ledger.KIND_SPEAKER:
+                expected_speaker = _SPEAKER_KINDS[_SPEECH_KINDS.index(kind)]
+                if before is None or before[1] != expected_speaker:
                     problems.append(
-                        f"{_rel(path)} span {index}: speech {text[:40]!r} is "
-                        f"preceded by {before!r}, expected a speaker span"
+                        f"{_rel(path)} span {index}: speech {text[:40]!r} ({kind}) "
+                        f"is preceded by {before!r}, expected a "
+                        f"{expected_speaker} span"
                     )
                 if not text.startswith(" "):
                     problems.append(
@@ -518,7 +673,7 @@ def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
                         f"{_rel(path)} span {index}: {text!r} is kinded "
                         f"field-label but is not one of {sorted(labels)}"
                     )
-            elif kind == eval_ledger.KIND_ATTR:
+            elif kind in _ATTR_KINDS:
                 before = spans[index - 1] if index else None
                 after = spans[index + 1] if index + 1 < len(spans) else None
                 if '"' in text or "=" in text:
@@ -536,7 +691,27 @@ def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
                         f"{before!r}, expected a marker ending {_ATTR_OPENS_WITH!r}"
                     )
                 else:
-                    attr_names[before[0].rsplit(" ", 1)[-1][: -len(_ATTR_OPENS_WITH)]] += 1
+                    key = before[0].rsplit(" ", 1)[-1][: -len(_ATTR_OPENS_WITH)]
+                    attr_names[key] += 1
+                    # Slice 4's narrow reading, checked per attribute value on
+                    # every one of the corpus's 14,113 of them. `_EXPECTED_ROLE_KINDS`
+                    # is spelled out as LITERALS rather than read from
+                    # `_ROLE_SIDES`, so a mutation of that table is caught here
+                    # instead of being mirrored into the expectation.
+                    if key == "role":
+                        wanted = _EXPECTED_ROLE_KINDS.get(text, eval_ledger.KIND_ATTR)
+                        if kind != wanted:
+                            problems.append(
+                                f"{_rel(path)} span {index}: role {text!r} is "
+                                f"{kind}, expected {wanted} — a role's side comes "
+                                "from the label written right there"
+                            )
+                    elif key in _ACHROMATIC_ATTR_KEYS and kind != eval_ledger.KIND_ATTR:
+                        problems.append(
+                            f"{_rel(path)} span {index}: {key}={text!r} is {kind}; "
+                            f"{sorted(_ACHROMATIC_ATTR_KEYS)} carry no side of "
+                            "their own and must stay achromatic `attr`"
+                        )
                 if (
                     after is None
                     or after[1] != eval_ledger.KIND_MARKER
@@ -573,20 +748,56 @@ def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
     # speaker span and one speech span, so a tokenizer that emitted a speaker and
     # swallowed its speech (or the reverse) fails here without a count being
     # pinned that the next committed eval run would move.
+    #
+    # SINCE SLICE 4 THIS PAIR IS A PRE-022-ERA MEASUREMENT, not a whole-corpus
+    # one: `KIND_SPEAKER` is now only the NEUTRAL kind, and measurement puts all
+    # 1,853 of its spans inside the 30 pre-spec-022 files (every spec-022 speaker
+    # is in their own file's cast list, so every one of them takes a side). It is
+    # kept in that narrowed reading deliberately — the pre-022 degradation is a
+    # promise tech-spec §2 B makes in those words, and this is the only assertion
+    # in the sweep that measures it — with the whole-corpus version restated over
+    # the families immediately below.
     assert (
         kind_counts[eval_ledger.KIND_SPEAKER]
         == kind_counts[eval_ledger.KIND_SPEECH]
         > 0
-    ), f"speaker/speech counts diverged: {kind_counts}"
+    ), (
+        "the NEUTRAL speaker/speech counts diverged, or the pre-022 era stopped "
+        f"producing them at all: {kind_counts}"
+    )
+    # ...and the same property over all three side families, which is the
+    # whole-corpus statement. Also the non-vacuity guard for Slice 4 itself: both
+    # sides must actually occur, or every side assertion above is checking a kind
+    # no real game emits.
+    for family_speaker, family_speech in zip(
+        _SPEAKER_KINDS, _SPEECH_KINDS, strict=True
+    ):
+        assert kind_counts[family_speaker] == kind_counts[family_speech] > 0, (
+            f"{family_speaker}/{family_speech} diverged or never occurred: "
+            f"{kind_counts}"
+        )
+    assert kind_counts[eval_ledger.KIND_ATTR_MAFIA] > 0
+    assert kind_counts[eval_ledger.KIND_ATTR_LAW_ABIDING] > 0
     assert kind_counts[eval_ledger.KIND_THOUGHT] > 0
     assert kind_counts[eval_ledger.KIND_RECAP] > 0
     # The measured reason `_SPEAKER_RE` is not gated on an initial capital: the
     # corpus really does contain lowercase-named players, so a casing rule would
     # drop real speaker lines rather than only the three writer literals.
+    #
+    # Also narrowed by Slice 4 in exactly the same way — 11 distinct lowercase
+    # NEUTRAL names, all pre-022 — so the whole-corpus version is asserted
+    # alongside it (49 more, spread across both sides).
     assert lowercase_speakers, (
-        "no lowercase-initial speaker name found — either the corpus changed or "
-        "the speaker rule has quietly acquired a casing guard, which measurement "
-        "rejected (39 lowercase cast names, 426 speaker lines at stake)"
+        "no lowercase-initial NEUTRAL speaker name found — either the pre-022 "
+        "corpus changed or the speaker rule has quietly acquired a casing guard, "
+        "which measurement rejected (39 lowercase cast names, 426 speaker lines "
+        "at stake)"
+    )
+    assert lowercase_speakers <= lowercase_speakers_any_side
+    assert len(lowercase_speakers_any_side) > len(lowercase_speakers), (
+        "lowercase speaker names occur ONLY in the neutral family — the "
+        "side-bearing branches have lost them, which is what a casing guard "
+        "added to the side path alone would look like"
     )
 
 
@@ -624,7 +835,7 @@ def _spans(text: str) -> list[tuple[str, str]]:
 # ---------------------------------------------------------------------------
 
 def test_the_kind_constants_hold_the_literal_names_the_tables_use() -> None:
-    """The eight kind constants really are these eight strings.
+    """The fourteen kind constants really are these fourteen strings.
 
     The expectation tables below are written with literal ``"marker"`` /
     ``"attr"`` strings rather than ``eval_ledger.KIND_*`` references, because a
@@ -635,10 +846,22 @@ def test_the_kind_constants_hold_the_literal_names_the_tables_use() -> None:
     against a string the production code no longer emits.
 
     Pinned to the literals, not to ``TRANSCRIPT_KINDS`` — the tuple is allowed to
-    grow (later slices append), these eight names are not allowed to change.
-    Slice 4 appends side-bearing kinds *derived* from ``speaker`` / ``speech``
-    (``speaker-mafia`` and friends), so those two literals in particular are load
-    bearing beyond this file.
+    grow (later slices append), these fourteen names are not allowed to change.
+
+    **The six Slice-4 literals are the ones with a rule to break.** Each is the
+    neutral kind's name plus a hyphen plus the side, and the side token is
+    ``mafia`` / ``law-abiding`` — **semantic, never a colour**, which is the one
+    naming law this spec states outright (tech-spec §2 A: "``speaker-mafia`` is
+    acceptable as a kind; ``speaker-red`` is not"). The literals are also what
+    the UI's ``_TRANSCRIPT_KIND_COMPONENTS`` keys and its six CSS rules are
+    written against, so a rename that this test did not catch would leave the
+    reading view silently unstyled rather than raising — the ratified
+    forward-compatibility fallback working against us.
+
+    The literal-vs-constant split matters here too: ``_ATTR_KINDS`` and the other
+    family tuples at the top of this module are built from the CONSTANTS, so they
+    would follow a rename without complaint. This test is the one place the
+    strings themselves are nailed down.
     """
     assert eval_ledger.KIND_MARKER == "marker"
     assert eval_ledger.KIND_PLAIN == "plain"
@@ -648,6 +871,68 @@ def test_the_kind_constants_hold_the_literal_names_the_tables_use() -> None:
     assert eval_ledger.KIND_SPEECH == "speech"
     assert eval_ledger.KIND_THOUGHT == "thought"
     assert eval_ledger.KIND_RECAP == "recap"
+    # Slice 4's six.
+    assert eval_ledger.KIND_SPEAKER_MAFIA == "speaker-mafia"
+    assert eval_ledger.KIND_SPEAKER_LAW_ABIDING == "speaker-law-abiding"
+    assert eval_ledger.KIND_SPEECH_MAFIA == "speech-mafia"
+    assert eval_ledger.KIND_SPEECH_LAW_ABIDING == "speech-law-abiding"
+    assert eval_ledger.KIND_ATTR_MAFIA == "attr-mafia"
+    assert eval_ledger.KIND_ATTR_LAW_ABIDING == "attr-law-abiding"
+
+
+def test_every_kind_constant_is_exported_and_declared_exactly_once() -> None:
+    """Slice 4's housekeeping task, pinned so it cannot half-rot again.
+
+    ``eval_ledger.__all__`` used to export ``KIND_MARKER``, ``KIND_PLAIN`` and
+    ``TRANSCRIPT_KINDS`` but none of the other six kinds — while
+    ``ui/ledger_viewer.py`` imported them all regardless. That is a
+    half-populated export nobody chose: it works (Python does not enforce
+    ``__all__`` on a direct import) right up until something does a star-import
+    or a doc tool reads the public surface, and it teaches the next slice that
+    adding the constant is optional. Slice 4 completed it; this is the guard.
+
+    Three separate things, because each fails differently:
+
+    * every constant named in :data:`TRANSCRIPT_KINDS` is reachable as a module
+      attribute AND listed in ``__all__``;
+    * the vocabulary is exactly fourteen entries with no duplicate — a copy-paste
+      that declared ``speech-mafia`` twice would leave a kind silently missing
+      while the length still looked plausible;
+    * ``TRANSCRIPT_KINDS`` and the ``KIND_*`` constants describe the same set, so
+      a constant can neither be added without being declared nor declared
+      without existing.
+    """
+    kind_constants = {
+        name: value
+        for name, value in vars(eval_ledger).items()
+        if name.startswith("KIND_") and isinstance(value, str)
+    }
+
+    assert len(eval_ledger.TRANSCRIPT_KINDS) == 14, (
+        "Slice 4 brings the vocabulary to fourteen kinds; "
+        f"found {eval_ledger.TRANSCRIPT_KINDS}"
+    )
+    assert len(set(eval_ledger.TRANSCRIPT_KINDS)) == len(
+        eval_ledger.TRANSCRIPT_KINDS
+    ), f"a kind is declared twice: {eval_ledger.TRANSCRIPT_KINDS}"
+    assert set(kind_constants.values()) == set(eval_ledger.TRANSCRIPT_KINDS), (
+        f"the KIND_* constants {sorted(kind_constants.values())} and "
+        f"TRANSCRIPT_KINDS {sorted(eval_ledger.TRANSCRIPT_KINDS)} disagree"
+    )
+
+    exported = set(eval_ledger.__all__)
+    missing = sorted(name for name in kind_constants if name not in exported)
+    assert not missing, (
+        f"kind constants missing from eval_ledger.__all__: {missing} — every "
+        "kind constant is part of the module's public surface (the UI imports "
+        "them), so a new one is added to `__all__` as well as to "
+        "`TRANSCRIPT_KINDS`"
+    )
+    assert "TRANSCRIPT_KINDS" in exported
+    assert "tokenize_transcript" in exported
+    # ...and `__all__` names nothing that does not exist, which is the failure
+    # mode a bare "is it listed?" check cannot see.
+    assert not [name for name in exported if not hasattr(eval_ledger, name)]
 
 
 # The TWELVE structural tags, each with a representative opening form and the
@@ -1140,7 +1425,11 @@ def test_a_line_merely_resembling_the_round_label_is_plain(source: str) -> None:
                 ('<player name="', "marker"),
                 ("Bo", "attr"),
                 ('" role="', "marker"),
-                ("Law-abiding Citizen", "attr"),
+                # Slice 4: the ROLE takes the side, the NAME stays achromatic —
+                # and it does so with no `<setup>` in this input at all, because
+                # a role's side is read from the label written right there
+                # rather than looked up in the cast map.
+                ("Law-abiding Citizen", "attr-law-abiding"),
                 ('">', "marker"),
                 ("(no persona recorded)", "plain"),
                 ("</player>", "marker"),
@@ -1194,8 +1483,23 @@ def test_an_inline_element_keeps_its_content_a_span_of_its_own(
     ``thought``; ``<player>``'s ``(no persona recorded)`` stays ``plain``, because
     it is prose rather than a kind of its own. The tags around all three stay
     ``marker`` (tasks.md, Slice 3: "a thought's content is ``thought`` and its
-    surrounding tag stays ``marker``"), so the owner's name inside a thought's tag
-    is still an ``attr`` span waiting for Slice 4 to give it a side.
+    surrounding tag stays ``marker``").
+
+    **Slice 4 moved one kind INSIDE an opening tag and left every boundary where
+    it was** — the third time this test has survived a re-kinding untouched in
+    its structural half, which is what it was written for. The ``player`` row's
+    ``Law-abiding Citizen`` is now ``attr-law-abiding``: a role's side is read
+    from the label written *in the tag*, so it needs no ``<setup>`` and this
+    bare one-line input gets it.
+
+    The ``thought`` row's owner name stays plain ``attr``, and **the reason is no
+    longer "Slice 4 has not happened yet"** — that was true when this docstring
+    was written and is stale prose now. A ``<thought player="X">`` owner's side
+    *is* a map lookup, and this input carries no ``<setup>`` at all, so the map is
+    empty and the name has no known side. Never a guess: that is the correct
+    answer, not a missing feature. The side-bearing form of the same tag, and its
+    unknown-owner control, are pinned in
+    :func:`test_a_thought_owner_in_the_cast_list_takes_their_side` below.
 
     ``content_kind`` is a parameter rather than a constant precisely so the
     ``player`` row keeps proving that claiming a body is per-tag opt-in and not a
@@ -2122,6 +2426,27 @@ def test_line_separators_are_plain_spans_of_their_own() -> None:
 # metadata header, both cast-list eras, all twelve tags, inline elements, the
 # round label, indentation, blank lines, prose, and NO trailing newline (all 298
 # committed transcripts end on `>`).
+#
+# SLICE 4 ADDED A THIRD CAST ENTRY AND A THIRD SPEAKER, and the choice of who is
+# in the cast is the whole design of this fixture now that the tokenizer reads
+# `<setup>`. All three sides a name can have are present at once:
+#
+#   Alice — `role="Mafioso"`, a role string the WRITER NEVER EMITS. Kept exactly
+#           as Slices 1-3 wrote it, and now doing a second job: an unrecognised
+#           label leaves her out of the map, so `Alice:` is the NEUTRAL
+#           `speaker`/`speech`, her `Mafioso` is achromatic `attr`, and her
+#           `<thought player="Alice">` owner name is achromatic `attr` too. The
+#           whole never-guess posture, exercised in the full-shape game rather
+#           than only in a near-miss fixture.
+#   Bo    — `role="Law-abiding Citizen"`, so his BALLOT inside the `<vote>` block
+#           is `speaker-law-abiding`/`speech-law-abiding`. That a vote reads at a
+#           glance as "which sides voted which way" is the single most useful
+#           thing colour can say about a vote (tasks.md, Slice 3's ballot
+#           ratification).
+#   Cass  — `role="Mafia"`, the entry Slice 4 added. Without a real Mafia in the
+#           cast this fixture reached 11 of the 14 kinds and
+#           `test_every_kind_emitted_is_declared_in_the_vocabulary`'s
+#           no-dead-entries property was unprovable.
 _RICH_SYNTHETIC_TRANSCRIPT = (
     "Game 2 | provider=ollama | large_model=qwen3-coder:30b | games=3\n"
     "<transcript>\n"
@@ -2131,6 +2456,7 @@ _RICH_SYNTHETIC_TRANSCRIPT = (
     "Manner: clipped\n"
     "</player>\n"
     '<player name="Bo" role="Law-abiding Citizen">(no persona recorded)</player>\n'
+    '<player name="Cass" role="Mafia">(no persona recorded)</player>\n'
     "</setup>\n"
     "<preamble>\n"
     "Moderator: A new game begins. Welcome, Bo.\n"
@@ -2143,6 +2469,7 @@ _RICH_SYNTHETIC_TRANSCRIPT = (
     "  <round>\n"
     "  Round 1.\n"
     "Alice: I saw nothing last night.\n"
+    "Cass: Bo is lying.\n"
     '<thought player="Alice">Bo suspects me.</thought>\n'
     '<vote initiator="Alice" target="Bo">\n'
     "Bo: Yes\n"
@@ -2170,40 +2497,63 @@ def test_no_styled_span_carries_a_newline_across_a_whole_synthetic_game() -> Non
     # THE PREMISE, pinned by SHAPE and not only by total. Counted by hand off
     # `_RICH_SYNTHETIC_TRANSCRIPT`:
     #
-    #   marker 34 — the header, `Round 1.` and the coalesced `<kill>…</kill>`
-    #               line as ONE span (3), the 20 attribute-free opening/closing
-    #               tags, and the 11 marker pieces the four attributed tags split
-    #               into (3 + 3 for the two cast entries, 2 for the thought,
-    #               3 for the vote);
-    #   attr    7 — Alice/Mafioso and Bo/Law-abiding Citizen from the two cast
-    #               entries, Alice from the thought, Alice/Bo from the vote;
+    #   marker 38 — the header (1), `<transcript>` (2), `<setup>` (3), the three
+    #               cast entries' opening heads at 3 marker pieces each (4-6,
+    #               8-10, 12-14) with their three `</player>` (7, 11, 15),
+    #               `</setup>` (16), `<preamble>`/`</preamble>` (17-18),
+    #               `<night>` (19), the coalesced `<kill>…</kill>` line as ONE
+    #               span (20), `</night>` (21), `<day>` (22), `<round>` (23),
+    #               `Round 1.` (24), the thought's 2 head pieces (25-26) and
+    #               `</thought>` (27), the vote's 3 head pieces (28-30) and
+    #               `</vote>` (31), `<recap>`/`</recap>` (32-33), `</round>`
+    #               (34), `</day>` (35), `<endgame>`/`</endgame>` (36-37) and
+    #               `</transcript>` (38);
+    #   attr    7 — the three cast NAMES (Alice, Bo, Cass — achromatic by the
+    #               ratified narrow reading), Alice's unrecognised `Mafioso`
+    #               role, the thought's owner `Alice` (unrecognised role, so
+    #               absent from the map), and the vote's `Alice`/`Bo`;
+    #   attr-mafia 1 — Cass's `Mafia` role text;
+    #   attr-law-abiding 1 — Bo's `Law-abiding Citizen` role text;
     #   field-label 2 — `Personality:` and `Manner:` on Alice's entry;
-    #   speaker 2 — `Alice:` on the Day line and `Bo:` on the ballot inside the
-    #               `<vote>` block (a ballot is speech, tasks.md Slice 3);
-    #   speech  2 — the words after each of those two colons;
-    #   thought 1 — `Bo suspects me.`, the body of the `<thought>` element;
-    #   recap   1 — `Alive: Alice, Bo.`, the body of the `<recap>` element.
+    #   speaker 1 / speech 1 — `Alice:` and her words: her role label is one the
+    #               writer never emits, so she has no known side and takes the
+    #               NEUTRAL pair. This is the fixture's own copy of Slice 4's
+    #               headline degradation rule;
+    #   speaker-mafia 1 / speech-mafia 1 — `Cass:` and her words;
+    #   speaker-law-abiding 1 / speech-law-abiding 1 — `Bo:` on the ballot inside
+    #               the `<vote>` block (a ballot is speech, tasks.md Slice 3);
+    #   thought 1 — `Bo suspects me.`, the body of the `<thought>` element,
+    #               NEVER side-tinted (tasks.md: a private reflection is not an
+    #               act of allegiance);
+    #   recap   1 — `Alive: Alice, Bo.`, the body of the `<recap>` element, never
+    #               side-tinted either (the moderator has no side).
     #
     # The `Moderator: A new game begins.` preamble line is deliberately NOT among
     # them: he is in the exclusion set, so his line stays plain and coalesces with
     # the blank line after it. That absence is the count's own guard against the
     # speaker rule over-reaching.
     #
-    # Slice 1 pinned only `len(styled) == 27` and Slice 2 raised it to 43 with a
-    # three-kind breakdown. Slice 3 supersedes both — and the reason the breakdown
-    # exists is visible in this very edit: the failure named `speaker`, `speech`,
-    # `thought` and `recap` as the kinds that appeared, instead of saying only
-    # that 43 had become 49.
-    assert len(styled) == 49, (
+    # Slice 1 pinned only `len(styled) == 27`, Slice 2 raised it to 43 and
+    # Slice 3 to 49. Slice 4 supersedes all three — and the reason the breakdown
+    # exists rather than a bare total is visible in this very edit: the failure
+    # names WHICH kinds moved, so a re-kinding (49 → 57 with the two new cast
+    # spans) is instantly distinguishable from a boundary bug.
+    assert len(styled) == 57, (
         "the premise: this game really does produce styled spans "
         f"(got {len(styled)})"
     )
     assert Counter(kind for _, kind in styled) == {
-        eval_ledger.KIND_MARKER: 34,
+        eval_ledger.KIND_MARKER: 38,
         eval_ledger.KIND_ATTR: 7,
+        eval_ledger.KIND_ATTR_MAFIA: 1,
+        eval_ledger.KIND_ATTR_LAW_ABIDING: 1,
         eval_ledger.KIND_FIELD_LABEL: 2,
-        eval_ledger.KIND_SPEAKER: 2,
-        eval_ledger.KIND_SPEECH: 2,
+        eval_ledger.KIND_SPEAKER: 1,
+        eval_ledger.KIND_SPEECH: 1,
+        eval_ledger.KIND_SPEAKER_MAFIA: 1,
+        eval_ledger.KIND_SPEECH_MAFIA: 1,
+        eval_ledger.KIND_SPEAKER_LAW_ABIDING: 1,
+        eval_ledger.KIND_SPEECH_LAW_ABIDING: 1,
         eval_ledger.KIND_THOUGHT: 1,
         eval_ledger.KIND_RECAP: 1,
     }
@@ -2294,12 +2644,25 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
 
     Slice 3 is the first slice where the two assertions have the same content
     (every declared kind is emitted), so the third one below says that in its own
-    words: after this slice the vocabulary has no dead entries. Slice 4 appends
-    side-bearing kinds and will move all three together.
+    words: after this slice the vocabulary has no dead entries.
+
+    **Slice 4 moved all three together, and keeping the no-dead-entries property
+    is what shaped the fixture.** The six side-bearing kinds took the vocabulary
+    from eight to fourteen; the fixture as Slice 3 left it reached only eleven,
+    because it had a Law-abiding cast member (Bo) but no player whose role was
+    the literal ``Mafia`` — ``Mafioso`` is a role string the writer never emits.
+    Rather than change Alice's role and lose that unrecognised-label case, a
+    third cast entry was added (Cass, ``role="Mafia"``) so the fixture covers
+    **both**: a real Mafia and a role label nothing in the codebase produces.
+
+    A kind declared but never emitted by any real shape is a kind nobody will
+    ever see — that is why this is written out rather than derived from
+    ``TRANSCRIPT_KINDS``, and it is exactly the check that would have caught a
+    Slice 4 that added ``speaker-mafia`` to the vocabulary and forgot to emit it.
     """
     kinds = {kind for _, kind in _spans(_RICH_SYNTHETIC_TRANSCRIPT)}
     assert kinds <= set(eval_ledger.TRANSCRIPT_KINDS)
-    # ...and this slice really does emit all eight of them.
+    # ...and this slice really does emit all fourteen of them.
     assert kinds == {
         eval_ledger.KIND_MARKER,
         eval_ledger.KIND_PLAIN,
@@ -2309,10 +2672,1069 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
         eval_ledger.KIND_SPEECH,
         eval_ledger.KIND_THOUGHT,
         eval_ledger.KIND_RECAP,
+        eval_ledger.KIND_SPEAKER_MAFIA,
+        eval_ledger.KIND_SPEAKER_LAW_ABIDING,
+        eval_ledger.KIND_SPEECH_MAFIA,
+        eval_ledger.KIND_SPEECH_LAW_ABIDING,
+        eval_ledger.KIND_ATTR_MAFIA,
+        eval_ledger.KIND_ATTR_LAW_ABIDING,
     }
-    # As of Slice 3 the vocabulary has no declared-but-unreachable entry.
+    # As of Slice 4 the vocabulary still has no declared-but-unreachable entry.
     assert kinds == set(eval_ledger.TRANSCRIPT_KINDS)
     assert len(eval_ledger.TRANSCRIPT_KINDS) == len(set(eval_ledger.TRANSCRIPT_KINDS))
+
+
+# ===========================================================================
+# 3. Sides, read from the cast list (spec 038, Slice 4)
+# ===========================================================================
+#
+# THE ONE THING THAT CHANGED, restated where the tests that depend on it live:
+# `tokenize_transcript` is no longer a function of a line. It makes two passes —
+# `_cast_side_map(lines)` reads `<setup>`'s `<player name=… role=…>` entries into
+# `name → side`, then the per-line chain runs with that map threaded through — so
+# a synthetic input that wants a side kind MUST carry the `<setup>` block that
+# grants it, and one that carries no `<setup>` gets the neutral kinds by
+# definition rather than by accident.
+#
+# WHY ALMOST EVERYTHING BELOW IS SYNTHETIC. Slices 2 and 3 each proved the same
+# thing about the 298-file sweep: it is necessary and not sufficient, because it
+# only covers shapes the corpus happens to contain. Measured against the corpus,
+# Slice 4's rules are almost entirely unexercised by real data —
+#
+#   * every one of the 1,960 `role="…"` values is one of the two labels the
+#     writer emits, so a role it does NOT emit never occurs;
+#   * every one of the 8,183 `<thought player="…">` owners is in their own file's
+#     cast list, so the unknown-owner fallback never occurs;
+#   * every one of the 22,508 speaker names is in their own file's cast list, so
+#     an unknown SPEAKER never occurs outside the 30 pre-022 files;
+#   * `<player …>` occurs nowhere outside `<setup>` in any of the 298 files, so
+#     the scoping guard is never exercised;
+#   * no cast list names anybody twice, and none is empty, missing or unclosed.
+#
+# Each of those is one production line away from being wrong and no committed
+# game would notice. They are the whole point of this section.
+
+
+# A two-sided cast, the base fixture for most of what follows: one Mafia, one
+# Law-abiding, both written in the writer's own `_ROLE_LABELS` spelling. Short
+# enough that a test can pin the complete span list of everything after it.
+_TWO_SIDED_CAST = (
+    "<setup>\n"
+    '<player name="Vera" role="Mafia">(no persona recorded)</player>\n'
+    '<player name="Iris" role="Law-abiding Citizen">(no persona recorded)</player>\n'
+    "</setup>\n"
+)
+
+# The complete span list `_TWO_SIDED_CAST` itself produces, pinned once here so
+# the tests below can pin only the dialogue after it without any of them losing
+# sight of what the cast list is doing. This IS functional-spec §2's "the side
+# colours used in the cast list match the ones used for dialogue", stated at the
+# cast-list end: each entry's ROLE carries the side and each entry's NAME stays
+# achromatic.
+_TWO_SIDED_CAST_SPANS = [
+    ("<setup>", "marker"),
+    ("\n", "plain"),
+    ('<player name="', "marker"),
+    ("Vera", "attr"),
+    ('" role="', "marker"),
+    ("Mafia", "attr-mafia"),
+    ('">', "marker"),
+    ("(no persona recorded)", "plain"),
+    ("</player>", "marker"),
+    ("\n", "plain"),
+    ('<player name="', "marker"),
+    ("Iris", "attr"),
+    ('" role="', "marker"),
+    ("Law-abiding Citizen", "attr-law-abiding"),
+    ('">', "marker"),
+    ("(no persona recorded)", "plain"),
+    ("</player>", "marker"),
+    ("\n", "plain"),
+    ("</setup>", "marker"),
+]
+
+# Every side-bearing kind → the side it names. Used where a test's claim is
+# "these two spans agree about a side" rather than "this span has this kind" —
+# the cast-list-matches-dialogue requirement, and the per-line speaker/speech
+# agreement.
+_SIDE_OF_KIND = {
+    eval_ledger.KIND_SPEAKER_MAFIA: "mafia",
+    eval_ledger.KIND_SPEECH_MAFIA: "mafia",
+    eval_ledger.KIND_ATTR_MAFIA: "mafia",
+    eval_ledger.KIND_SPEAKER_LAW_ABIDING: "law-abiding",
+    eval_ledger.KIND_SPEECH_LAW_ABIDING: "law-abiding",
+    eval_ledger.KIND_ATTR_LAW_ABIDING: "law-abiding",
+}
+
+
+def _dialogue_spans(source: str) -> list[tuple[str, str]]:
+    """Every span after the cast list, with the whole source's round trip checked.
+
+    The tests in this section are about what a name's side does to the lines
+    BELOW the cast list, and re-pinning the cast list's own nineteen spans in
+    each of them would bury the one line that is actually under test. So this
+    returns the tail after `</setup>` and its separator — still an absolute,
+    complete span list, just of the half the test is making a claim about
+    (`_TWO_SIDED_CAST_SPANS` pins the other half, once).
+
+    The round trip is asserted over the WHOLE source, not the tail, because that
+    is the invariant's actual scope and this is a free place to check it on
+    twenty-odd synthetic games the corpus sweep will never see.
+    """
+    spans = _spans(source)
+    assert "".join(text for text, _ in spans) == source, (
+        "the round trip fails on this synthetic input"
+    )
+    for index, span in enumerate(spans):
+        if span == ("</setup>", eval_ledger.KIND_MARKER):
+            tail = spans[index + 1 :]
+            break
+    else:
+        pytest.fail(
+            f"no `</setup>` marker span in {spans!r} — this helper is for inputs "
+            "that carry a closed cast list"
+        )
+    assert tail and tail[0] == ("\n", eval_ledger.KIND_PLAIN), (
+        f"expected a separator after `</setup>`, got {tail[:1]!r}"
+    )
+    return tail[1:]
+
+
+# ---------------------------------------------------------------------------
+# The two sides, and the neutral that is NOT `plain`
+# ---------------------------------------------------------------------------
+
+
+def test_the_cast_list_itself_colours_the_role_and_not_the_name() -> None:
+    """The cast list's own spans, pinned absolutely (functional-spec §2).
+
+    "Given the reviewer looks at the opening cast list, when they read the roles
+    there, then the side colours used in the cast list match the ones used for
+    dialogue." The cast-list half of that is here; the dialogue half is the next
+    test; the two are tied together in
+    :func:`test_the_cast_lists_role_text_matches_the_dialogue_kinds`.
+
+    The ratified narrow reading is what makes this worth pinning absolutely: the
+    side lands on the ROLE, and the NAME beside it stays achromatic `attr`.
+    Colouring the name too was considered and rejected — it would leave `attr`
+    with no occupants in any real transcript and retire Slice 2's treatment by
+    accident — so "Vera is `attr`, `Mafia` is `attr-mafia`" is a decision, not an
+    implementation detail.
+    """
+    assert _spans(_TWO_SIDED_CAST.rstrip("\n")) == _TWO_SIDED_CAST_SPANS
+
+
+def test_a_mafia_speaker_and_a_law_abiding_speaker_from_one_cast_get_different_kinds() -> None:
+    """The spec's headline requirement, on the smallest input that can show it.
+
+    "Given a Day round in which both sides speak, when the reviewer looks at the
+    round, then Mafia lines and Law-abiding lines are visibly different colours"
+    (functional-spec §2). Once colour is a CSS concern that reduces to: the two
+    speakers get different KINDS, and each speaker's name and words share one.
+    """
+    source = _TWO_SIDED_CAST + "Vera: It was quiet last night.\nIris: Too quiet."
+
+    assert _dialogue_spans(source) == [
+        ("Vera:", "speaker-mafia"),
+        (" It was quiet last night.", "speech-mafia"),
+        ("\n", "plain"),
+        ("Iris:", "speaker-law-abiding"),
+        (" Too quiet.", "speech-law-abiding"),
+    ]
+
+
+def test_the_same_two_lines_are_neutral_without_the_cast_list_that_names_them() -> None:
+    """The control for the test above, and the property the whole slice turns on.
+
+    Absolute equality with a hard-coded expectation can hold on a tokenizer that
+    ignores the cast list entirely and hard-codes "the first speaker is Mafia" —
+    spec 037's mutation finding, in its sharpest local form. The same two lines
+    with the `<setup>` block removed must come back NEUTRAL, which no
+    line-shaped rule could produce.
+
+    It is also the plainest statement of what changed in Slice 4: the tokenizer
+    is a function of the FILE now, so these two inputs differ in a part of the
+    text that is nowhere near the lines being asserted about.
+    """
+    dialogue = "Vera: It was quiet last night.\nIris: Too quiet."
+
+    assert _spans(dialogue) == [
+        ("Vera:", "speaker"),
+        (" It was quiet last night.", "speech"),
+        ("\n", "plain"),
+        ("Iris:", "speaker"),
+        (" Too quiet.", "speech"),
+    ]
+
+
+def test_a_speaker_absent_from_the_cast_list_is_neutral_speech_not_plain() -> None:
+    """**The single most important assertion of Slice 4.**
+
+    A name the cast list does not carry gets the NEUTRAL `speaker` / `speech`
+    kinds — *not* the `plain` kind. Slice 4's own task text and tech-spec §2 A
+    both say "yields `plain`", and both are loose wording from before `speech`
+    existed as a kind: tech-spec §2 B promises in the same document that a
+    degraded file keeps `marker`, **`speaker`**, **`speech`**, `field-label` and
+    `plain` spans, and the task's own sentence — "its speech falls back to
+    `plain` **while speaker prefixes still work**" — is self-refuting under the
+    literal reading, since a `plain` line has no speaker prefix left to work.
+
+    What "never a guess" forbids is assigning a **SIDE**. That somebody is
+    speaking is a shape the line proves on its own (`_SPEAKER_RE`, zero false
+    positives over 22,508 real utterances); which side they are on is a
+    judgement only the cast list can settle. Reading it as the `plain` kind would
+    undo Slice 3 for every unknown name and for all 30 pre-spec-022 games.
+
+    Four statements of the same fact, because each fails differently: the exact
+    spans, no side kind anywhere, no `plain` kind on the line, and — in the same
+    file, so the map is provably non-empty — a known name still taking a side.
+    """
+    source = _TWO_SIDED_CAST + "Zed: I only just arrived.\nVera: Nobody knows him."
+    spans = _dialogue_spans(source)
+
+    # (1) Exactly this, with the same speaker/speech boundary a known name gets.
+    assert spans == [
+        ("Zed:", "speaker"),
+        (" I only just arrived.", "speech"),
+        ("\n", "plain"),
+        ("Vera:", "speaker-mafia"),
+        (" Nobody knows him.", "speech-mafia"),
+    ]
+
+    unknown = spans[:2]
+    # (2) No side was invented for him...
+    assert not {kind for _, kind in unknown} & _SIDE_KINDS, (
+        "a name absent from `<setup>` was given a side — a wrong side is "
+        "actively misleading, not merely ugly (tech-spec §3)"
+    )
+    # (3) ...and his line was NOT demoted to the `plain` kind either, which is
+    # the half of this the spec documents wrongly.
+    assert eval_ledger.KIND_PLAIN not in {kind for _, kind in unknown}, (
+        "the unknown-side fallback is the NEUTRAL speaker/speech, never `plain` "
+        "— demoting the line would drop the speaker prefix tech-spec §2 B "
+        "promises a degraded file keeps"
+    )
+    # (4) The premise: the cast map really was populated, so (2) is the guard
+    # doing its job rather than a tokenizer that never colours anything.
+    assert spans[3][1] == eval_ledger.KIND_SPEAKER_MAFIA
+
+
+def test_the_same_player_takes_the_same_kind_in_every_round_they_speak() -> None:
+    """"That player's colour is the same every time" (functional-spec §2).
+
+    The cast map is built once for the file, so a player's side cannot drift
+    between rounds — but "cannot drift" is exactly the sort of claim that is only
+    true until someone rebuilds the map per section. Two rounds, both speakers in
+    each, and the second round's kinds must equal the first's.
+
+    Pinned absolutely as well as relatively: "round 2 matches round 1" holds if
+    both rounds are neutral, which is the vacuous pass spec 037 warned about.
+    """
+    source = _TWO_SIDED_CAST + (
+        "<day>\n"
+        "<round>\n"
+        "Round 1.\n"
+        "Vera: I was asleep.\n"
+        "Iris: So you say.\n"
+        "</round>\n"
+        "<round>\n"
+        "Round 2.\n"
+        "Iris: I still say it.\n"
+        "Vera: And I still was.\n"
+        "</round>\n"
+        "</day>"
+    )
+    spans = _dialogue_spans(source)
+    by_speaker: dict[str, list[str]] = {}
+    for index, (text, kind) in enumerate(spans):
+        if kind in _SPEAKER_KINDS:
+            by_speaker.setdefault(text, []).append(kind)
+            # The speech beside it carries the same side, every time.
+            assert spans[index + 1][1] == _SPEECH_KINDS[_SPEAKER_KINDS.index(kind)]
+
+    # Relative: each name is one kind, whatever it is.
+    assert {name: set(kinds) for name, kinds in by_speaker.items()} == {
+        "Vera:": {eval_ledger.KIND_SPEAKER_MAFIA},
+        "Iris:": {eval_ledger.KIND_SPEAKER_LAW_ABIDING},
+    }
+    # ...and the premise: each really did speak twice, in different rounds.
+    assert [len(kinds) for kinds in by_speaker.values()] == [2, 2]
+
+
+def test_the_cast_lists_role_text_matches_the_dialogue_kinds() -> None:
+    """The cast list and the dialogue agree about every player's side.
+
+    functional-spec §2's fourth side criterion, asserted as the agreement it
+    actually is rather than as two independent expectations that happen to line
+    up. Two DIFFERENT code paths produce these: a role's side is read from the
+    label written in the tag (`_attr_kind`, no lookup at all), while a speaker's
+    is a lookup in the map that `_cast_side_map` built from that same tag. They
+    can disagree — a whitelist edit on one side only would do it — and if they
+    did, the reviewer would see a Mafioso's cast entry in one colour and every
+    line he speaks in the other.
+    """
+    source = _TWO_SIDED_CAST + "Vera: I was asleep.\nIris: So you say."
+    spans = _spans(source)
+
+    role_sides = {
+        text: _SIDE_OF_KIND[kind]
+        for text, kind in spans
+        if kind in (eval_ledger.KIND_ATTR_MAFIA, eval_ledger.KIND_ATTR_LAW_ABIDING)
+    }
+    speaker_sides = {
+        text.rstrip(":"): _SIDE_OF_KIND[kind]
+        for text, kind in spans
+        if kind in _SPEAKER_KINDS[1:]
+    }
+
+    # The premise: both halves were actually found.
+    assert role_sides == {"Mafia": "mafia", "Law-abiding Citizen": "law-abiding"}
+    assert speaker_sides == {"Vera": "mafia", "Iris": "law-abiding"}
+    # ...and they agree, player by player, through the cast list that names both.
+    assert speaker_sides["Vera"] == role_sides["Mafia"]
+    assert speaker_sides["Iris"] == role_sides["Law-abiding Citizen"]
+
+
+# ---------------------------------------------------------------------------
+# Near-miss: a role label the writer never emits
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "role",
+    [
+        pytest.param("Sheriff", id="sheriff"),
+        pytest.param("Mafioso", id="mafioso"),
+        pytest.param("mafia", id="lowercase-mafia"),
+        pytest.param("Law-abiding", id="truncated-law-abiding"),
+        pytest.param("", id="empty-role"),
+    ],
+)
+def test_a_role_label_the_writer_never_emits_yields_no_side_at_all(role: str) -> None:
+    """An unrecognised role leaves BOTH the role text and the player neutral.
+
+    `_ROLE_SIDES` is a whitelist mirroring `eval_transcript._ROLE_LABELS`, and
+    the reason it is a whitelist rather than a substring test is in the writer:
+    its own fallback is `_ROLE_LABELS.get(role, role or "unknown role")`, so an
+    unmapped role reaches the transcript as a raw string. Guessing a side from an
+    unrecognised label is exactly the "actively misleading" failure tech-spec §3
+    names.
+
+    The parameters are the near-misses a substring or casefold rule would get
+    wrong: `Mafioso` and `mafia` both CONTAIN the whitelisted label,
+    `Law-abiding` is its prefix, and `""` is what a `role=""` attribute carries.
+    All five must leave the player unknown.
+
+    Note `Mafioso` is not hypothetical — it is the role string
+    `_RICH_SYNTHETIC_TRANSCRIPT` and this repo's other fixtures have used since
+    Slice 1, and it is not a label any Graphia code emits.
+    """
+    source = f'<setup>\n<player name="Vera" role="{role}">\n</setup>\nVera: I was asleep.'
+    spans = _dialogue_spans(source)
+
+    assert spans == [("Vera:", "speaker"), (" I was asleep.", "speech")]
+    # ...and the role text itself stays achromatic too, in the cast entry.
+    assert not {kind for _, kind in _spans(source)} & _SIDE_KINDS
+    assert eval_ledger._cast_side_map(source.split("\n")) == {}
+
+
+# ---------------------------------------------------------------------------
+# Near-miss: a cast list that is empty, missing, or never closed
+# ---------------------------------------------------------------------------
+
+
+def test_an_empty_cast_list_yields_no_sides_and_does_not_raise() -> None:
+    """`<setup></setup>` with nothing between: an empty map, not a failure."""
+    source = "<setup>\n</setup>\nVera: I was asleep."
+
+    assert eval_ledger._cast_side_map(source.split("\n")) == {}
+    assert _dialogue_spans(source) == [
+        ("Vera:", "speaker"),
+        (" I was asleep.", "speech"),
+    ]
+
+
+def test_a_missing_cast_list_yields_no_sides_and_does_not_raise() -> None:
+    """No `<setup>` at all — the shape of a future format, and of a truncated file.
+
+    Note the `<player …>` line here is NOT inside a cast list, so it contributes
+    nothing to the map even though it is perfectly well formed. That is the
+    scoping guard, seen from the degenerate end.
+    """
+    source = '<player name="Vera" role="Mafia">\nVera: I was asleep.'
+
+    assert eval_ledger._cast_side_map(source.split("\n")) == {}
+    spans = _spans(source)
+    assert "".join(text for text, _ in spans) == source
+    assert spans[-2:] == [("Vera:", "speaker"), (" I was asleep.", "speech")]
+    # The role text still takes its side — that one is read from the label in the
+    # tag, not from the map, so it needs no `<setup>` and gets none here either.
+    assert ("Mafia", "attr-mafia") in spans
+
+
+def test_an_unclosed_cast_list_is_read_to_the_end_of_the_file() -> None:
+    """A `<setup>` with no `</setup>`: parsed to EOF, deliberately, and no raise.
+
+    This is a DECISION being pinned rather than an accident being tolerated. The
+    scan sets a flag on `<setup>` and clears it on `</setup>`; with no closing tag
+    the flag never clears, so every `<player …>` line in the rest of the file
+    joins the map — including one typed into a Day speech, the very thing the
+    scoping guard exists to prevent.
+
+    It is the right trade anyway: an unclosed `<setup>` is a file the writer
+    cannot produce (`_wrap` emits both tags or neither), so the choice is between
+    "a corrupt file colours nothing" and "a corrupt file colours what it says".
+    Both are defensible; what is NOT acceptable is raising, and that is the half
+    this test guards for real. If a later slice decides to close the scan at the
+    first section boundary instead, this test is the record of what it is
+    changing.
+    """
+    source = '<setup>\n<player name="Vera" role="Mafia">\nVera: I was asleep.'
+
+    assert eval_ledger._cast_side_map(source.split("\n")) == {"Vera": "mafia"}
+    spans = _spans(source)
+    assert "".join(text for text, _ in spans) == source
+    assert spans[-2:] == [
+        ("Vera:", "speaker-mafia"),
+        (" I was asleep.", "speech-mafia"),
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Near-miss: one name, two entries
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("first", "second", "expected_map", "expected_kinds"),
+    [
+        pytest.param(
+            "Mafia",
+            "Law-abiding Citizen",
+            {},
+            ("speaker", "speech"),
+            id="two-different-sides-dropped",
+        ),
+        pytest.param(
+            "Mafia",
+            "Mafia",
+            {"Vera": "mafia"},
+            ("speaker-mafia", "speech-mafia"),
+            id="same-side-twice-kept",
+        ),
+        pytest.param(
+            "Mafia",
+            "Sheriff",
+            {},
+            ("speaker", "speech"),
+            id="one-known-one-unrecognised-dropped",
+        ),
+    ],
+)
+def test_a_name_the_cast_list_gives_two_sides_is_dropped_entirely(
+    first: str, second: str, expected_map: dict[str, str], expected_kinds: tuple[str, str]
+) -> None:
+    """An ambiguous name has NO known side — never first-wins, never a coin flip.
+
+    A coin flip here paints a whole game's dialogue in the wrong colour, which is
+    the one failure mode functional-spec §2's author accepted the trade for
+    ("a wrong side is actively misleading"). So a name whose entries disagree, or
+    whose only recognised entry is contradicted by an unrecognised one, drops out
+    of the map and reads neutral.
+
+    **The middle parameter is the control and it is what makes the other two
+    mean anything.** "Two entries → dropped" also passes on a tokenizer that
+    drops every DUPLICATED name regardless of whether the entries agree — which
+    would be a different rule with a different failure. The same-side-twice row
+    is kept, so the assertion is about the disagreement and not about the
+    repetition.
+    """
+    source = (
+        "<setup>\n"
+        f'<player name="Vera" role="{first}">\n'
+        f'<player name="Vera" role="{second}">\n'
+        "</setup>\n"
+        "Vera: I was asleep."
+    )
+
+    assert eval_ledger._cast_side_map(source.split("\n")) == expected_map
+    assert _dialogue_spans(source) == [
+        ("Vera:", expected_kinds[0]),
+        (" I was asleep.", expected_kinds[1]),
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Near-miss: a `<player …>` tag OUTSIDE the cast list
+# ---------------------------------------------------------------------------
+
+
+def test_a_player_tag_typed_into_a_speech_cannot_poison_the_cast_map() -> None:
+    """One line of model output must not recolour a whole game.
+
+    The highest-value guard in the slice after the neutral fallback, and the one
+    the corpus provably cannot check: `<player …>` occurs **nowhere outside
+    `<setup>`** in any of the 298 committed files, so scoping and not scoping are
+    indistinguishable on today's data. But every word of a transcript outside the
+    cast list is model-generated — the players' speech, their personas, the
+    moderator's prose — and an unscoped scan would let a player who typed
+    `<player name="Iris" role="Mafia">` into a Day speech flip the real Iris to
+    the Mafia colour for the entire game.
+
+    **Both shapes an impostor can take are here, and only one of them tests the
+    guard.** A tag quoted *inside* a sentence never reaches the scan at all —
+    `_TAG_HEAD_RE.match` is anchored, so a line beginning `Vera: look at this —`
+    fails it whether the scan is scoped or not. Only a tag ALONE ON ITS LINE gets
+    that far, which is also the realistic shape (a model asked to write dialogue
+    emitting a bare structural line). A first draft of this test used the
+    quoted-inside-a-sentence form only, and a mutation that deleted the `<setup>`
+    scoping altogether passed it — so both are pinned, with the standalone lines
+    doing the actual work.
+
+    Two impostor lines, because unscoped scanning fails two different ways:
+
+    * one **re-roles a real player** (Iris, Law-abiding in the cast list, claimed
+      as Mafia). Unscoped, her two entries disagree and the never-guess rule
+      drops her from the map entirely — so the attack does not even need to be
+      believed to work: contradicting a cast entry is enough to strip the colour
+      off every line that player speaks all game;
+    * one **invents a player** (Zed). Unscoped, a name the cast list never named
+      acquires a side out of a Day speech.
+
+    Three halves, then: the map is exactly the cast list's, the two victims keep
+    the kinds their real entries earn, and the impostor lines themselves still
+    read as the text they are.
+    """
+    quoted = '<player name="Iris" role="Mafia">'
+    source = _TWO_SIDED_CAST + (
+        "<day>\n"
+        '<player name="Iris" role="Mafia">\n'
+        '<player name="Zed" role="Mafia">\n'
+        f"Vera: look at this — {quoted}\n"
+        "Iris: that proves nothing.\n"
+        "Zed: nor does he."
+    )
+
+    # The map is exactly the cast list's, with no trace of either impostor.
+    assert eval_ledger._cast_side_map(source.split("\n")) == {
+        "Vera": "mafia",
+        "Iris": "law-abiding",
+    }
+    assert _dialogue_spans(source) == [
+        ("<day>", "marker"),
+        ("\n", "plain"),
+        # The impostor lines tokenize as the tags they look like — their ROLE
+        # text is coloured, because that word says "Mafia" on the reviewer's
+        # screen. What must not happen is that word reaching the map.
+        ('<player name="', "marker"),
+        ("Iris", "attr"),
+        ('" role="', "marker"),
+        ("Mafia", "attr-mafia"),
+        ('">', "marker"),
+        ("\n", "plain"),
+        ('<player name="', "marker"),
+        ("Zed", "attr"),
+        ('" role="', "marker"),
+        ("Mafia", "attr-mafia"),
+        ('">', "marker"),
+        ("\n", "plain"),
+        # A tag quoted inside a sentence stays inside the speech span.
+        ("Vera:", "speaker-mafia"),
+        (f" look at this — {quoted}", "speech-mafia"),
+        ("\n", "plain"),
+        # THE ASSERTION: still Law-abiding, as her real cast entry says — not
+        # Mafia, and not dropped to neutral by a contradiction she never made.
+        ("Iris:", "speaker-law-abiding"),
+        (" that proves nothing.", "speech-law-abiding"),
+        ("\n", "plain"),
+        # ...and the invented player got no side at all.
+        ("Zed:", "speaker"),
+        (" nor does he.", "speech"),
+    ]
+
+
+def test_a_cast_entry_for_a_name_the_setup_does_not_carry_still_colours_its_own_role() -> None:
+    """The impostor's own role text is coloured — and that is correct, not a leak.
+
+    The complement of the test above, spelled out so the two are not confused. A
+    `role="Mafia"` attribute says "Mafia" on the screen wherever it appears; the
+    tokenizer colours the token the reviewer is reading, which is the literal
+    word in front of them. What must not happen is that word changing what the
+    PLAYER's lines look like elsewhere in the game — and it does not.
+
+    Written on a standalone tag, outside any `<setup>`, so nothing else can be
+    supplying the side.
+    """
+    spans = _spans('<player name="Iris" role="Mafia">')
+
+    assert spans == [
+        ('<player name="', "marker"),
+        ("Iris", "attr"),
+        ('" role="', "marker"),
+        ("Mafia", "attr-mafia"),
+        ('">', "marker"),
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Near-miss: a cast name colliding with the writer's own vocabulary
+# ---------------------------------------------------------------------------
+
+
+def test_a_player_named_moderator_does_not_make_the_moderators_lines_speech() -> None:
+    """The exclusion set still wins after Slice 4, even against a real cast entry.
+
+    `Moderator` is the writer's own public voice, excluded from the speaker rule
+    by `_NON_SPEAKER_PREFIXES`. Slice 4 gives names sides — so a roster that
+    generated a player literally called "Moderator" would, if the side lookup
+    were consulted BEFORE the exclusion set, turn all 2,655 of the moderator's
+    corpus lines into that player's coloured speech and hand the reviewer a
+    narrator with an allegiance.
+
+    The map may well contain the name (it is a legitimate cast entry, and this
+    test pins that it does); what must not happen is the line being read as
+    speech at all.
+    """
+    source = (
+        "<setup>\n"
+        '<player name="Moderator" role="Mafia">\n'
+        "</setup>\n"
+        "Moderator: A new game begins. Welcome, Vera."
+    )
+
+    # The cast entry is honoured as a cast entry...
+    assert eval_ledger._cast_side_map(source.split("\n")) == {"Moderator": "mafia"}
+    # ...and the moderator's line is still not somebody speaking. Pinned as the
+    # whole span list rather than through `_dialogue_spans`, because the line is
+    # so thoroughly unpainted that it COALESCES WITH ITS OWN SEPARATOR into a
+    # single plain span — the strongest form the claim can take, and one the
+    # helper's "a separator follows `</setup>`" precondition cannot express.
+    assert _spans(source) == [
+        ("<setup>", "marker"),
+        ("\n", "plain"),
+        ('<player name="', "marker"),
+        ("Moderator", "attr"),
+        ('" role="', "marker"),
+        ("Mafia", "attr-mafia"),
+        ('">', "marker"),
+        ("\n", "plain"),
+        ("</setup>", "marker"),
+        ("\nModerator: A new game begins. Welcome, Vera.", "plain"),
+    ]
+
+
+def test_a_player_named_personality_does_not_turn_a_field_label_into_speech() -> None:
+    """The field-label branch still outranks the speaker branch after Slice 4.
+
+    `Personality: brisk` is shaped exactly like a player named "Personality"
+    speaking, and the ordering that resolves it — field label above speaker — is
+    the load-bearing decision of the whole chain: inverted, it swallows all 6,200
+    cast-list labels in the corpus and renders the opening cast list as a
+    transcript of six people called Personality, Manner, Persona, Public legend
+    and True self (hidden).
+
+    Slice 4 threads a cast map through that chain, which is a new way to get the
+    ordering wrong: consulting the map first, or promoting a line because its
+    prefix is a known name, would put the speaker reading back on top for exactly
+    the names the cast list carries. So the collision is pinned with the name
+    actually in `<setup>` and given a side.
+    """
+    source = (
+        "<setup>\n"
+        '<player name="Personality" role="Mafia">\n'
+        "</setup>\n"
+        "Personality: brisk and sly"
+    )
+
+    assert eval_ledger._cast_side_map(source.split("\n")) == {"Personality": "mafia"}
+    assert _dialogue_spans(source) == [
+        ("Personality:", "field-label"),
+        (" brisk and sly", "plain"),
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Near-miss: the `<thought player="X">` owner
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("owner", "expected_kind"),
+    [
+        pytest.param("Vera", "attr-mafia", id="mafia-owner"),
+        pytest.param("Iris", "attr-law-abiding", id="law-abiding-owner"),
+        pytest.param("Zed", "attr", id="owner-absent-from-the-cast-list"),
+    ],
+)
+def test_a_thought_owner_in_the_cast_list_takes_their_side(
+    owner: str, expected_kind: str
+) -> None:
+    """"The owner's name carries that player's side colour" (functional-spec §2).
+
+    The ONE place a `name`-shaped attribute is side-bearing, and it is stated in
+    the functional spec in those words. The underlying rule: inside a marker the
+    side lands on whichever token tells the reviewer the side — the ROLE where a
+    role is written (a cast entry), the NAME where none is (a `<thought>` tag,
+    which names a person and nothing else).
+
+    Unlike a role, this one IS a map lookup, so the third parameter is the
+    fallback: an owner the cast list does not know keeps the achromatic `attr`
+    Slice 2 gave them. The corpus cannot check that — all 8,183 of its thought
+    owners are in their own file's cast list — so this row is the only thing
+    standing between a `sides[value]` and a `KeyError` on the first game whose
+    thought outlives its speaker's cast entry.
+
+    The BODY is deliberately not in the expectation's side: a private reflection
+    is never side-tinted (tasks.md, Slice 3's permanent ruling — tinting it would
+    claim the thought is an act of allegiance and would make thought and speech
+    share a colour), and the tags around it stay `marker`.
+    """
+    source = _TWO_SIDED_CAST + f'<thought player="{owner}">Nobody suspects me.</thought>'
+
+    assert _dialogue_spans(source) == [
+        ('<thought player="', "marker"),
+        (owner, expected_kind),
+        ('">', "marker"),
+        ("Nobody suspects me.", "thought"),
+        ("</thought>", "marker"),
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Near-miss: the three attributes that must stay achromatic
+# ---------------------------------------------------------------------------
+
+
+def test_a_votes_initiator_and_target_stay_achromatic_even_when_both_are_known() -> None:
+    """A vote marker names two players the map knows, and neither takes a side.
+
+    This pins the ratified narrow reading at the point it is easiest to get
+    wrong: the two names ARE in the cast map, a lookup would succeed, and
+    colouring them would look like an improvement. It is not. From Slice 4 colour
+    means side, and `attr` lifts a *specific* out of the punctuation by weight
+    and brightness — a vote marker's job is to say who called it and against
+    whom, which the coloured ballots below it already answer. Tinting every name
+    would also leave `attr` with zero occupants in any real transcript, retiring
+    Slice 2's treatment by accident.
+
+    The ballot inside the block is included precisely to show the contrast: the
+    same name, one line apart, achromatic in the marker and side-coloured as
+    speech.
+    """
+    source = _TWO_SIDED_CAST + (
+        '<vote initiator="Vera" target="Iris">\n'
+        "Iris: No\n"
+        "</vote>"
+    )
+
+    assert _dialogue_spans(source) == [
+        ('<vote initiator="', "marker"),
+        ("Vera", "attr"),
+        ('" target="', "marker"),
+        ("Iris", "attr"),
+        ('">', "marker"),
+        ("\n", "plain"),
+        # ...and one line later, the same name IS coloured, because a ballot is
+        # the player's own word (tasks.md, Slice 3).
+        ("Iris:", "speaker-law-abiding"),
+        (" No", "speech-law-abiding"),
+        ("\n", "plain"),
+        ("</vote>", "marker"),
+    ]
+
+
+def test_a_kill_line_and_a_recap_body_naming_a_side_stay_untinted() -> None:
+    """Two bodies that MENTION a side in their text and must not be coloured by it.
+
+    A `<kill>Iris — Law-abiding Citizen</kill>` line contains a whitelisted role
+    label verbatim, and a `<recap>` body counts both sides by name. Neither is an
+    attribute, so neither goes near `_attr_kind` — but a "colour any recognised
+    role label" shortcut would tint both, and the recap would then read as an
+    opinion with an allegiance rather than as the moderator's fact.
+
+    `<kill>` keeps its Slice-1 shape too: its content is `marker`, so the whole
+    element coalesces to one span.
+    """
+    source = _TWO_SIDED_CAST + (
+        "<kill>Iris — Law-abiding Citizen</kill>\n"
+        "<recap>Alive: Vera. Mafia 1, Law-abiding 0.</recap>"
+    )
+
+    assert _dialogue_spans(source) == [
+        ("<kill>Iris — Law-abiding Citizen</kill>", "marker"),
+        ("\n", "plain"),
+        ("<recap>", "marker"),
+        ("Alive: Vera. Mafia 1, Law-abiding 0.", "recap"),
+        ("</recap>", "marker"),
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Near-miss: the shapes the two eras share
+# ---------------------------------------------------------------------------
+
+
+def test_an_indented_pre_022_style_setup_still_builds_the_cast_map() -> None:
+    """`  <setup>` with a spec-022 `<player>` inside it: the literals match lstripped.
+
+    A hybrid the corpus does not contain — the pre-022 era's indentation with the
+    spec-022 era's cast tag — and it is worth pinning because the map's two
+    section literals are matched against the STRIPPED line while the tag itself
+    is matched against the stripped body. Comparing either against the raw line
+    would silently return an empty map for any indented file, and the only
+    symptom would be a game that quietly lost its colours.
+    """
+    source = (
+        "  <setup>\n"
+        '  <player name="Vera" role="Mafia">\n'
+        "  </setup>\n"
+        "Vera: I was asleep."
+    )
+
+    assert eval_ledger._cast_side_map(source.split("\n")) == {"Vera": "mafia"}
+    spans = _spans(source)
+    assert "".join(text for text, _ in spans) == source
+    assert spans[-2:] == [
+        ("Vera:", "speaker-mafia"),
+        (" I was asleep.", "speech-mafia"),
+    ]
+    # The indent is still layout, never skeleton — unchanged by Slice 4.
+    assert spans[0] == ("  ", eval_ledger.KIND_PLAIN)
+
+
+def test_an_empty_cast_name_contributes_nothing_and_leaves_no_empty_span() -> None:
+    """`name=""`: no map entry, no zero-length span, and the role still coloured.
+
+    Two guarantees meeting on one line. The map skips a falsy name (an entry for
+    `""` could only ever match a speaker prefix of `":"`, which `_SPEAKER_RE`
+    cannot produce), and `_coalesce_spans` drops the zero-length value span at
+    the single exit point, merging the markers on either side of it back into
+    one — which is why the head below is `<player name="" role="` rather than
+    three spans with an empty one in the middle.
+    """
+    source = '<setup>\n<player name="" role="Mafia">\n</setup>\nVera: I was asleep.'
+
+    assert eval_ledger._cast_side_map(source.split("\n")) == {}
+    spans = _spans(source)
+    assert "".join(text for text, _ in spans) == source
+    assert all(text for text, _ in spans), "a span has empty text"
+    assert spans[2:5] == [
+        ('<player name="" role="', "marker"),
+        ("Mafia", "attr-mafia"),
+        ('">', "marker"),
+    ]
+    assert spans[-2:] == [("Vera:", "speaker"), (" I was asleep.", "speech")]
+
+
+# ---------------------------------------------------------------------------
+# Pre-spec-022 degradation, on the real committed files
+# ---------------------------------------------------------------------------
+
+# The three run dirs written before spec 022 gave the transcript its structured
+# form. They write the cast list as an indented `Name — Role` and carry no
+# `<player>` tag at all, so `_cast_side_map` returns `{}` for every file in them
+# — which is the only place in the whole corpus where the neutral `speaker` /
+# `speech` kinds actually occur (all 1,853 of them).
+#
+# Hard-coded rather than discovered, because they are a closed historical set: no
+# future eval run can add a pre-022 transcript. Their absence is handled the same
+# way the sweep handles a missing corpus — skip, never fail.
+_PRE_022_RUN_DIRS = (
+    "2026-06-19T18-33-37",
+    "2026-06-20T14-17-09",
+    "2026-06-20T18-18-52",
+)
+
+_PRE_022_TRANSCRIPTS = [
+    path for path in _TRANSCRIPTS if path.parent.name in _PRE_022_RUN_DIRS
+]
+
+# One representative file per pre-022 run dir — the first in sorted order, so a
+# failure is reproducible and names a specific game.
+_PRE_022_FILE_PARAMS = [
+    pytest.param(
+        min(
+            (path for path in _PRE_022_TRANSCRIPTS if path.parent.name == run_dir),
+            default=None,
+        ),
+        id=run_dir,
+        marks=(
+            []
+            if any(path.parent.name == run_dir for path in _PRE_022_TRANSCRIPTS)
+            else [pytest.mark.skip(reason=f"pre-022 run dir {run_dir} not committed")]
+        ),
+    )
+    for run_dir in _PRE_022_RUN_DIRS
+]
+
+
+@pytest.mark.parametrize("path", _PRE_022_FILE_PARAMS)
+def test_a_real_pre_022_game_keeps_its_markers_and_speech_and_gains_no_sides(
+    path: Path,
+) -> None:
+    """Tech-spec §2 B's degradation promise, on a real game from each old run.
+
+    "A pre-022 file still gets `marker`, `speaker`, `speech`, `field-label` and
+    `plain` spans — it simply has no side map. **Nothing errors.**" Best-effort by
+    the author's explicit decision: the tokenizer parses the spec-022 cast list
+    only, and **a second parser for the old form was considered and declined**,
+    so this is the forward-compatibility posture for the next format change as
+    much as it is backwards compatibility with this one.
+
+    Every clause of that sentence is asserted, and the positive half matters as
+    much as the negative one. "No side kinds" alone is satisfied by a tokenizer
+    that crashed into returning one `plain` span for the file — which is why the
+    four surviving kinds are required to be present, not merely permitted.
+    """
+    text = path.read_text(encoding="utf-8")
+
+    # The premise: a real game, and one whose era really has no cast tag.
+    assert len(text) > 5000, f"{_rel(path)} is too small to be a real game"
+    assert "<player" not in text, (
+        f"{_rel(path)} carries a `<player>` tag — it is not a pre-022 file, so "
+        "this test is measuring the wrong era"
+    )
+    assert eval_ledger._cast_side_map(text.split("\n")) == {}
+
+    spans = _spans(text)
+    kinds = Counter(kind for _, kind in spans)
+
+    # Nothing errored, and nothing was lost.
+    assert "".join(span_text for span_text, _ in spans) == text
+    # NO side kind anywhere — the whole point.
+    assert not set(kinds) & _SIDE_KINDS, (
+        f"{_rel(path)} produced side kinds "
+        f"{sorted(set(kinds) & _SIDE_KINDS)} with an empty cast map"
+    )
+    # ...and the five kinds tech-spec §2 B promises survive really do.
+    for kind in (
+        eval_ledger.KIND_MARKER,
+        eval_ledger.KIND_SPEAKER,
+        eval_ledger.KIND_SPEECH,
+        eval_ledger.KIND_FIELD_LABEL,
+        eval_ledger.KIND_PLAIN,
+    ):
+        assert kinds[kind] > 0, (
+            f"{_rel(path)} lost its {kind} spans in the degraded path: {kinds}"
+        )
+    assert kinds[eval_ledger.KIND_SPEAKER] == kinds[eval_ledger.KIND_SPEECH]
+
+
+@_requires_corpus
+def test_the_pre_022_era_is_exactly_where_the_neutral_kinds_live() -> None:
+    """The era split, measured over the whole corpus rather than asserted per file.
+
+    Two directions, and together they are what makes every side assertion in this
+    module non-vacuous on real data:
+
+    * **no pre-022 file produces a side kind** — the degradation, swept over all
+      30 rather than the 3 sampled above;
+    * **no spec-022 file produces a neutral `speaker`** — every one of the 22,508
+      real utterances outside the old era is under a name its own cast list
+      carries, so a spec-022 game that suddenly went neutral means the cast
+      parser stopped finding its `<setup>`, which is a silent total loss of
+      colour that no other test in this file would notice.
+
+    The second direction is the load-bearing one and it cannot be written as a
+    count: the corpus grows with every committed eval run. Written as a partition
+    instead — which era a file belongs to decides which kinds it may emit — it
+    survives the corpus doubling.
+    """
+    pre_022_with_sides: list[str] = []
+    spec_022_with_neutral_speech: list[str] = []
+
+    for path in _TRANSCRIPTS:
+        kinds = {kind for _, kind in _spans(path.read_text(encoding="utf-8"))}
+        if path.parent.name in _PRE_022_RUN_DIRS:
+            if kinds & _SIDE_KINDS:
+                pre_022_with_sides.append(_rel(path))
+        elif eval_ledger.KIND_SPEAKER in kinds:
+            spec_022_with_neutral_speech.append(_rel(path))
+
+    assert not pre_022_with_sides, (
+        "pre-022 games have no cast list to read, so they can have no sides: "
+        f"{pre_022_with_sides[:_MAX_REPORTED_FILES]}"
+    )
+    assert not spec_022_with_neutral_speech, (
+        "a spec-022 game produced a NEUTRAL speaker span — every speaker in that "
+        "era is in their own file's cast list, so this means the cast parser "
+        "stopped finding `<setup>`: "
+        f"{spec_022_with_neutral_speech[:_MAX_REPORTED_FILES]}"
+    )
+    # The premise for both: each era really is represented.
+    assert _PRE_022_TRANSCRIPTS, "no pre-022 transcripts found to degrade"
+    assert len(_TRANSCRIPTS) > len(_PRE_022_TRANSCRIPTS), "no spec-022 transcripts"
+
+
+# ---------------------------------------------------------------------------
+# Conservation: the side map moves kinds, never a boundary
+# ---------------------------------------------------------------------------
+
+
+@_requires_corpus
+def test_the_side_map_moves_kinds_and_never_a_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Slice 4 re-kinded 12,000 spans and re-split none — asserted, not counted.
+
+    `tasks.md` records the measurement as three absolute totals ("193,740,
+    identical to Slice 3; `attr` 3,970 + `attr-mafia` 3,695 + `attr-law-abiding`
+    6,448 = 14,113"). Those are the right *finding* and the wrong *assertion*:
+    the corpus grows with every committed eval run, so a pinned total is a test
+    that fails on a green tree.
+
+    The relation behind the totals is what is pinned instead. Tokenize every
+    committed game twice — once normally, once with the cast scan stubbed to
+    return an empty map — and require the two runs to produce **the same spans of
+    text in the same order**, differing only in which kind each carries, and
+    differing only by the side split (`speaker-mafia` where the neutral run says
+    `speaker`, and never anything else). That is exactly "only kinds moved, no
+    boundary did", it holds however large the corpus grows, and it is stronger
+    than the totals were: a boundary that moved in a way that preserved the
+    counts would still fail.
+
+    It doubles as the pre-022 degradation path swept over all 298 files rather
+    than the 30 that exercise it naturally — an empty cast map is precisely what
+    those 30 produce.
+    """
+    real_cast_side_map = eval_ledger._cast_side_map
+    moved = Counter()
+    checked = 0
+
+    for path in _TRANSCRIPTS:
+        text = path.read_text(encoding="utf-8")
+        with_sides = _spans(text)
+        monkeypatch.setattr(eval_ledger, "_cast_side_map", lambda lines: {})
+        neutral = _spans(text)
+        monkeypatch.setattr(eval_ledger, "_cast_side_map", real_cast_side_map)
+        checked += 1
+
+        assert [span_text for span_text, _ in with_sides] == [
+            span_text for span_text, _ in neutral
+        ], (
+            f"{_rel(path)}: the cast map moved a span BOUNDARY, not just a kind — "
+            "Slice 4 re-kinds spans and must never re-split a line"
+        )
+        for (span_text, kind), (_, neutral_kind) in zip(
+            with_sides, neutral, strict=True
+        ):
+            if kind == neutral_kind:
+                continue
+            assert _NEUTRAL_BASE_KIND.get(kind) == neutral_kind, (
+                f"{_rel(path)}: {span_text[:40]!r} is {kind} with a cast map and "
+                f"{neutral_kind} without — the only difference a cast map may "
+                "make is the side split"
+            )
+            moved[kind] += 1
+
+    # The premise, as a relation rather than a total: every side-bearing kind
+    # really did get exercised, so a stub that returned the real map (or a
+    # tokenizer that ignored it) could not pass by moving nothing.
+    assert checked == len(_TRANSCRIPTS)
+    assert set(moved) == _SIDE_KINDS, (
+        f"kinds actually moved by the cast map: {sorted(moved)}; expected all of "
+        f"{sorted(_SIDE_KINDS)}"
+    )
 
 
 # ---------------------------------------------------------------------------

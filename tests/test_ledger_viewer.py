@@ -46,12 +46,18 @@ from textual.widgets import (
 
 from graphia.eval_ledger import (
     KIND_ATTR,
+    KIND_ATTR_LAW_ABIDING,
+    KIND_ATTR_MAFIA,
     KIND_FIELD_LABEL,
     KIND_MARKER,
     KIND_PLAIN,
     KIND_RECAP,
     KIND_SPEAKER,
+    KIND_SPEAKER_LAW_ABIDING,
+    KIND_SPEAKER_MAFIA,
     KIND_SPEECH,
+    KIND_SPEECH_LAW_ABIDING,
+    KIND_SPEECH_MAFIA,
     KIND_THOUGHT,
     METRIC_ORDER,
     SEARCH_SCOPE_ALL,
@@ -2859,6 +2865,20 @@ async def test_a_list_longer_than_the_panel_can_be_walked_to_its_last_game(
 #      exclusion set (`Moderator: …` must not paint as speech), which is what
 #      keeps `_HIGHLIGHT_UNSTYLED_SUBSTRINGS` meaningful now that the spoken line
 #      it used to name is legitimately painted.
+#
+#      SLICE 4 GREW IT ONCE MORE, and this time the fixture's CAST LIST is what
+#      the growth is for. The tokenizer is no longer per-line: it reads
+#      `<setup>` into a `name → side` map first, so the same body tokenizes
+#      differently depending on who its cast list names. As Slice 3 left it,
+#      `_HIGHLIGHT_BODY`'s only cast entry carried `role="Mafioso"` — a label
+#      Graphia never emits — so SIX of the fourteen kinds, the entire headline of
+#      spec 038, could not reach the renderable from any test in this file and
+#      the six new CSS rules were asserted only as entries in a dict. Two cast
+#      entries and two spoken lines were added; the `Mafioso` entry was KEPT, so
+#      the fixture now covers a Mafia, a Law-abiding and an unrecognised role at
+#      once, and Alice's neutral line is the widget-level statement of "never
+#      guess a side". Nothing about Slices 1-3's pins changed except their
+#      positions in the list.
 # ===========================================================================
 #
 # WHY THESE LIVE HERE AND NOT IN `tests/test_transcript_highlight.py`. That file
@@ -2899,6 +2919,26 @@ _HIGHLIGHT_RUN_ID = "run-highlight"
 # Slice 3 added three lines — the `Moderator:` preamble, the `<thought>` and the
 # `<recap>` — so that every kind the tokenizer emits is exercised at the widget
 # and not only in `tests/test_transcript_highlight.py`.
+#
+# SLICE 4 GREW IT AGAIN, for the same reason and with the same trade-off, and
+# this time the CAST LIST is the fixture's design rather than scenery: the
+# tokenizer now reads `<setup>` into a `name → side` map, so which roles appear
+# here decides which kinds the whole body can produce. All three possibilities
+# are present at once:
+#
+#   Alice — `role="Mafioso"`, a role string the writer NEVER emits. Kept exactly
+#           as Slices 1-3 wrote it, and now doing a second job: she is absent
+#           from the side map, so `Alice:` is the NEUTRAL `speaker`/`speech` and
+#           her `<thought player="Alice">` owner name stays achromatic `attr`.
+#           Every Slice-3 pin below therefore survives untouched, and the
+#           widget-level statement of "never guess a side" comes free.
+#   Bo    — `role="Mafia"`, so his line paints `speaker-mafia`/`speech-mafia` and
+#           his role text `attr-mafia`.
+#   Cleo  — `role="Law-abiding Citizen"`, the other hue.
+#
+# Without a real Mafia and a real Law-abiding in the cast, six of the fourteen
+# kinds — the entire headline of spec 038 — would reach the renderable in no test
+# in this file, and the six new CSS rules would be asserted only as map entries.
 _HIGHLIGHT_BODY = (
     "Game 1 | provider=ollama | large_model=qwen3-coder:30b | games=2\n"
     "<transcript>\n"
@@ -2906,6 +2946,8 @@ _HIGHLIGHT_BODY = (
     '<player name="Alice" role="Mafioso">\n'
     "Personality: brisk and sly\n"
     "</player>\n"
+    '<player name="Bo" role="Mafia">(no persona recorded)</player>\n'
+    '<player name="Cleo" role="Law-abiding Citizen">(no persona recorded)</player>\n'
     "</setup>\n"
     "<preamble>\n"
     "Moderator: A new game begins. Welcome, Alice.\n"
@@ -2917,6 +2959,8 @@ _HIGHLIGHT_BODY = (
     "  <round>\n"
     "  Round 1.\n"
     "Alice: I saw nothing last night.\n"
+    "Bo: Nor did I.\n"
+    "Cleo: Bo is lying.\n"
     '<thought player="Alice">Bo suspects me.</thought>\n'
     "<recap>Alive: Alice, Bo.</recap>\n"
     "  </round>\n"
@@ -2950,10 +2994,28 @@ _HIGHLIGHT_EXPECTED_STYLED_TEXTS = [
     '<player name="',  # marker
     "Alice",  # attr
     '" role="',  # marker
+    # `Mafioso` is a role label nothing in Graphia emits, so it stays ACHROMATIC
+    # `attr` while the two real labels below it take a side. That contrast, on
+    # three consecutive cast entries, is the widget-level statement of "never
+    # guess a side".
     "Mafioso",  # attr
     '">',  # marker
     # The label carries its colon; the description after it does not.
     "Personality:",  # field-label
+    "</player>",  # marker
+    # Slice 4: the ROLE carries the side colour and the NAME beside it stays
+    # achromatic — the ratified narrow reading, painted.
+    '<player name="',  # marker
+    "Bo",  # attr
+    '" role="',  # marker
+    "Mafia",  # attr-mafia
+    '">',  # marker
+    "</player>",  # marker
+    '<player name="',  # marker
+    "Cleo",  # attr
+    '" role="',  # marker
+    "Law-abiding Citizen",  # attr-law-abiding
+    '">',  # marker
     "</player>",  # marker
     "</setup>",  # marker
     "<preamble>",  # marker
@@ -2971,13 +3033,31 @@ _HIGHLIGHT_EXPECTED_STYLED_TEXTS = [
     "Round 1.",  # marker
     # Slice 3: the spoken line is painted now, in two runs. The colon closes the
     # speaker; the separating space opens the speech.
+    #
+    # Slice 4 splits these three lines by SIDE, and the three of them together
+    # are functional-spec §2's headline requirement at the widget: "Mafia lines
+    # and Law-abiding lines are visibly different colours", and "the speaker's
+    # name and the words they spoke share that speaker's side colour". Alice's
+    # pair stays NEUTRAL — her role label is one the writer never emits, so she
+    # has no known side and her line is painted as speech without a hue.
     "Alice:",  # speaker
     " I saw nothing last night.",  # speech
+    "Bo:",  # speaker-mafia
+    " Nor did I.",  # speech-mafia
+    "Cleo:",  # speaker-law-abiding
+    " Bo is lying.",  # speech-law-abiding
     # ...and the private thought: tag, owner, tag, BODY, tag. The body is its own
     # run and the tags around it are still markers.
     '<thought player="',  # marker
+    # Still achromatic `attr`, and since Slice 4 that is a RESULT rather than a
+    # gap: a thought owner's side is a map lookup, and Alice's unrecognised role
+    # keeps her out of the map. A known owner's name does take their side — see
+    # `test_a_thought_owner_in_the_cast_list_takes_their_side` in
+    # `tests/test_transcript_highlight.py`.
     "Alice",  # attr
     '">',  # marker
+    # Never side-tinted, whoever the owner is: a private reflection is not an act
+    # of allegiance, and the moderator has no side.
     "Bo suspects me.",  # thought
     "</thought>",  # marker
     # ...and the moderator's status recap, the same shape without an attribute.
@@ -3326,6 +3406,12 @@ async def test_no_rendered_span_covers_a_newline(tmp_path: Path) -> None:
     now, the thought is five and the recap three, and the two elements are the
     LAST thing on their line, which is precisely where a body whose extent was
     computed from the wrong end would take the separator with it.
+
+    Slice 4 moves it to 48: two more cast entries (six painted runs each, since
+    `(no persona recorded)` is content) and two more spoken lines. No boundary
+    moved — the slice re-kinds spans and never re-splits one — so the growth is
+    entirely the longer fixture, and a count that came out at anything other than
+    48 would mean the side split had touched a boundary after all.
     """
     ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="hl-newline.yaml")
 
@@ -3335,7 +3421,7 @@ async def test_no_rendered_span_covers_a_newline(tmp_path: Path) -> None:
         screen = await _open_the_only_game(pilot)
         runs = _rendered_runs(_transcript_body_content(screen))
 
-        assert len(runs) == len(_HIGHLIGHT_EXPECTED_STYLED_TEXTS) == 32
+        assert len(runs) == len(_HIGHLIGHT_EXPECTED_STYLED_TEXTS) == 48
         offenders = [text for _, _, text in runs if "\n" in text]
         assert not offenders, f"styled runs carrying a newline: {offenders}"
 
@@ -3406,13 +3492,23 @@ def test_every_declared_kind_but_plain_has_a_style_and_a_component_class() -> No
         "every kind the tokenizer declares needs a style entry, except `plain`, "
         "whose absence IS the unstyled fallback"
     )
-    # Spelled out for the kinds Slices 2-3 added, so the failure names them.
+    # Spelled out for the kinds Slices 2-4 added, so the failure names them.
     assert KIND_ATTR in mapping
     assert KIND_FIELD_LABEL in mapping
     assert KIND_SPEAKER in mapping
     assert KIND_SPEECH in mapping
     assert KIND_THOUGHT in mapping
     assert KIND_RECAP in mapping
+    # Slice 4's six — two hues, but `speaker`, `speech` and `attr` each split two
+    # ways, so SIX component classes and six rules rather than two. The neutral
+    # three above are untouched by that: Slice 4 adds, it never edits, and they
+    # survive as the appearance of a line whose side is unknown.
+    assert KIND_SPEAKER_MAFIA in mapping
+    assert KIND_SPEAKER_LAW_ABIDING in mapping
+    assert KIND_SPEECH_MAFIA in mapping
+    assert KIND_SPEECH_LAW_ABIDING in mapping
+    assert KIND_ATTR_MAFIA in mapping
+    assert KIND_ATTR_LAW_ABIDING in mapping
 
     assert set(mapping.values()) <= set(TranscriptScreen.COMPONENT_CLASSES)
     # ...and every class is distinct, so two kinds cannot share one CSS rule by

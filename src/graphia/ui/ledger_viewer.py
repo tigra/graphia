@@ -50,11 +50,17 @@ from textual.widgets import (
 
 from graphia.eval_ledger import (
     KIND_ATTR,
+    KIND_ATTR_LAW_ABIDING,
+    KIND_ATTR_MAFIA,
     KIND_FIELD_LABEL,
     KIND_MARKER,
     KIND_RECAP,
     KIND_SPEAKER,
+    KIND_SPEAKER_LAW_ABIDING,
+    KIND_SPEAKER_MAFIA,
     KIND_SPEECH,
+    KIND_SPEECH_LAW_ABIDING,
+    KIND_SPEECH_MAFIA,
     KIND_THOUGHT,
     LedgerParseError,
     METRIC_ORDER,
@@ -521,19 +527,29 @@ _NO_TRANSCRIPTS_MESSAGE = "No transcripts for this run."
 # degrades to plain text — which is also why ``plain`` is deliberately absent:
 # "everything else" needs no style, and its absence is the fallback working.
 #
-# THE PALETTE IS FULL, AND THAT SHAPES SLICE 3 (see the CSS below for each
-# rule's own reasoning). Measured on the installed Textual 8.2.4 against both
-# builtin themes' real backgrounds, only five theme variables clear the 4.5:1
-# WCAG AA floor on BOTH: ``$text`` (14.19 / 12.77), ``$text-primary`` (7.03 /
-# 10.69), ``$text-muted`` (7.16 / 5.31), ``$text-error`` (6.34 / 7.29) and
+# THE PALETTE IS NOW FULLY SPENT (see the CSS below for each rule's own
+# reasoning). Measured on the installed Textual 8.2.4 against both builtin
+# themes' real backgrounds, only five theme variables clear the 4.5:1 WCAG AA
+# floor on BOTH: ``$text`` (14.19 / 12.77), ``$text-primary`` (7.03 / 10.69),
+# ``$text-muted`` (7.16 / 5.31), ``$text-error`` (6.34 / 7.29) and
 # ``$text-secondary`` (4.67 / 6.39). ``$text-accent`` (3.27 light) and
 # ``$text-success`` (3.77 light) fail, which is why the obvious red/green side
-# pairing is unavailable. Three of the five are already spent here (``$text`` on
-# the body and ``attr``, ``$text-muted`` on ``marker``, ``$text-secondary`` on
-# ``field-label``) and the other two are RESERVED for Slice 4's two sides. So
-# Slice 3's four kinds are separated on axes OTHER than hue — ``text-style``,
-# which survives ``_kind_styles`` (verified) and, unlike a colour, survives the
-# ``textual-ansi`` theme too.
+# pairing is unavailable. Three went to structure in Slices 1-2 (``$text`` on the
+# body and ``attr``, ``$text-muted`` on ``marker``, ``$text-secondary`` on
+# ``field-label``); Slice 3's four kinds were therefore separated on axes OTHER
+# than hue — ``text-style``, which survives ``_kind_styles`` (verified) and,
+# unlike a colour, survives the ``textual-ansi`` theme too. **Slice 4 spends the
+# last two on the two sides**: ``$text-error`` = Mafia, ``$text-primary`` =
+# Law-abiding. Nothing is left over, so a later kind needing to be *seen* rather
+# than *coloured* must reach for ``text-style`` as Slice 3 did (Slice 5's bold
+# already does).
+#
+# SIX SIDE-BEARING KINDS, NOT TWO — two hues, but ``speaker``, ``speech`` and
+# ``attr`` each split two ways, so six entries and six rules. The neutral
+# ``speaker`` / ``speech`` / ``attr`` above are UNTOUCHED by that: Slice 4 adds,
+# it does not edit. They survive as the appearance of a line whose side is
+# *unknown* (a pre-022 game, or a name absent from ``<setup>``), which is how
+# "never guess a side" and "the neutral is the body colour" become one rule.
 _TRANSCRIPT_KIND_COMPONENTS: dict[str, str] = {
     KIND_MARKER: "transcript--marker",
     KIND_ATTR: "transcript--attr",
@@ -542,6 +558,18 @@ _TRANSCRIPT_KIND_COMPONENTS: dict[str, str] = {
     KIND_SPEECH: "transcript--speech",
     KIND_THOUGHT: "transcript--thought",
     KIND_RECAP: "transcript--recap",
+    # The side-bearing kinds (Slice 4). Each is the qualified form of the neutral
+    # kind directly above it, and it is the KIND that names the side — the
+    # component class only carries that name through to a CSS rule, where the
+    # hue is finally chosen. So the semantics-never-colours rule the tokenizer
+    # keeps (`speaker-mafia` is a kind, `speaker-red` never is) survives all the
+    # way to the last hop: `transcript--speaker-mafia`, not `transcript--red`.
+    KIND_SPEAKER_MAFIA: "transcript--speaker-mafia",
+    KIND_SPEAKER_LAW_ABIDING: "transcript--speaker-law-abiding",
+    KIND_SPEECH_MAFIA: "transcript--speech-mafia",
+    KIND_SPEECH_LAW_ABIDING: "transcript--speech-law-abiding",
+    KIND_ATTR_MAFIA: "transcript--attr-mafia",
+    KIND_ATTR_LAW_ABIDING: "transcript--attr-law-abiding",
 }
 
 
@@ -809,6 +837,101 @@ class TranscriptScreen(Screen):
     TranscriptScreen > .transcript--recap {
         color: $text;
         text-style: reverse;
+    }
+
+    /* ------------------------------------------------------------------
+       SIDES (spec 038, Slice 4) — the headline of the whole spec:
+       "Each side has its own colour, applied to a speaker's name and to what
+       they say" (functional-spec §2). Six rules, two hues: `speaker`, `speech`
+       and `attr` each split Mafia / Law-abiding.
+
+       THE PAIRING IS FORCED, NOT PREFERRED. Only five theme variables clear
+       4.5:1 WCAG AA on BOTH builtin themes (see the map above); three are spent
+       on structure, leaving exactly `$text-error` and `$text-primary`. The
+       obvious Mafia-red / Law-abiding-green is unavailable because
+       `$text-success` measures 3.77:1 on `textual-light` and functional-spec §2
+       requires legibility on both terminals. The forced pair is the better one
+       anyway: red/green is the classic deuteranopia failure, and red/blue
+       separates on the one axis every common colour-vision deficiency keeps.
+
+         Mafia        `$text-error`    6.34 dark / 7.29 light
+         Law-abiding  `$text-primary`  7.03 dark / 10.69 light
+
+       `color:` ONLY, NO `text-style`, on the four dialogue rules, and that
+       restraint is load-bearing rather than minimal. functional-spec §2 states
+       the Slice 5 contrast literally — the reviewer's own seat is bold while
+       "other Law-abiding players' lines are the same colour but not bold" — so
+       any weight here would make that criterion unsatisfiable. Bold is spent
+       elsewhere in this stylesheet but nowhere on *a player's line*, so inside
+       dialogue it stays unambiguously "this seat was the reviewer's".
+
+       DEGRADATION, stated once for all six and measured, not assumed: under
+       `textual-ansi` both variables resolve to CONCRETE colours (`#ab5656` and
+       `#5656ab`) rather than collapsing to the terminal default the way
+       `marker`'s and `thought`'s `$text-muted` does — the same behaviour Slice 2
+       found for `field-label`'s `$text-secondary`. So the sides stay
+       distinguishable from each other and from the body under all three builtin
+       themes. No AA figure is quoted for `textual-ansi` because the background
+       there is the terminal's own and unknowable from inside the app. And where
+       colour cannot be shown at all the spans still concatenate to the file, so
+       the view falls back to exactly the plain text it showed before Slice 1. */
+
+    /* A spoken line: the `Name:` prefix and the words after it, in the
+       speaker's side colour. The pair of rules per side is deliberately
+       identical — functional-spec §2 asks for the name and the words to *share*
+       the colour ("the speaker's name and the words they spoke share that
+       speaker's side colour"), so the two kinds exist to be coloured together,
+       not differently. They are separate kinds because the tokenizer draws the
+       boundary (the colon belongs to `speaker`, the separating space to
+       `speech`) and because Slice 5 may want the prefix and the line to diverge;
+       today they must not. */
+    TranscriptScreen > .transcript--speaker-mafia {
+        color: $text-error;
+    }
+
+    TranscriptScreen > .transcript--speech-mafia {
+        color: $text-error;
+    }
+
+    TranscriptScreen > .transcript--speaker-law-abiding {
+        color: $text-primary;
+    }
+
+    TranscriptScreen > .transcript--speech-law-abiding {
+        color: $text-primary;
+    }
+
+    /* The side-bearing `attr` values — a cast entry's `role="…"` and a
+       `<thought player="…">` owner's name. The tokenizer gives a side to exactly
+       these two of the five whitelisted attributes, because they are the two
+       that *tell the reviewer a side*: a role states one outright, and a thought
+       tag names a person and nothing else. A cast entry's `name=` and a vote's
+       `initiator`/`target` stay achromatic `attr` above.
+
+       BOLD IS KEPT, and this is the one open choice in the slice, so here is the
+       reasoning. The "no `text-style` on a side rule" ratification was argued
+       for dialogue specifically — to leave bold unspent on *a player's line* for
+       Slice 5. An `attr` span is not a player's line: it lives inside `<…>`
+       punctuation, never on a line of speech, so the two never share a context
+       and Slice 5's bold stays unambiguous. Dropping the weight would also
+       invert Slice 2's own requirement on the line where it matters most: in
+       `<player name="Avery" role="Mafioso">` the name is bold `attr` and the
+       role sits right beside it, so an unweighted role would read *lighter* than
+       the name it qualifies — the specific carrying the most information
+       receding behind the one carrying least. Keeping bold means the two
+       treatments differ on hue alone, which is exactly the claim being made:
+       same job, now with a side.
+
+       So this rule is `attr`'s rule with the colour swapped — same weight, side
+       hue instead of `$text`. */
+    TranscriptScreen > .transcript--attr-mafia {
+        color: $text-error;
+        text-style: bold;
+    }
+
+    TranscriptScreen > .transcript--attr-law-abiding {
+        color: $text-primary;
+        text-style: bold;
     }
     """
 

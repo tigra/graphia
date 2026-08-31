@@ -48,7 +48,7 @@ A function taking the transcript text and returning an ordered list of spans. Su
 | `plain` | everything else | the fallback that makes degradation total |
 
 - **Round-trip invariant:** `"".join(text for text, _ in spans) == original`. This is the single most valuable property to test — it makes "the stored game is never altered" (functional-spec §2) structurally true rather than merely intended, and it catches any tokenizer that drops or duplicates a character.
-- **Sides come from a parsed cast list.** The tokenizer first reads `<setup>` for `name → role`, classifies each role as Mafia or Law-abiding, then colours later `speaker`/`speech` spans by that map. A name absent from the map yields `plain` speech — never a guess.
+- **Sides come from a parsed cast list.** The tokenizer first reads `<setup>` for `name → role`, classifies each role as Mafia or Law-abiding, then colours later `speaker`/`speech` spans by that map. A name absent from the map yields the **neutral `speaker`/`speech`** — never a guess. *(Corrected in Slice 4: this bullet and §4 originally said "yields `plain` speech", written before `speech` was a kind. `plain` there meant plain-**looking**. §2 B below promises pre-022 files keep `speaker` and `speech` spans, and demoting them to `plain` would strip exactly that. What "never a guess" forbids is assigning a **side**, not styling the line as speech.)*
 - **Kinds are semantic, never colours.** `speaker-mafia` is acceptable as a kind; `speaker-red` is not.
 
 ### Component B — the two transcript formats
@@ -115,7 +115,7 @@ Any transcript file on disk; the ledger; `read_transcript` / `list_transcripts` 
 
 - **Round-trip over the whole corpus (write this first):** for every file under `evals/transcripts/`, the tokenizer's spans concatenate to the file's exact text. Read-only; no fixture authoring; covers both formats and every element-presence combination the corpus actually contains.
 - **Tokenizer unit tests** on small synthetic inputs, one per kind: markers and their attributes, a speaker line split into `speaker`/`speech`, a thought, a recap, each persona field label, the metadata header, `Round N.`, and `plain` for unrecognised text.
-- **Side colouring:** a Mafia speaker and a Law-abiding speaker from the same cast get different kinds; a speaker absent from `<setup>` gets `plain`; the cast list's own role text is classified consistently with the dialogue.
+- **Side colouring:** a Mafia speaker and a Law-abiding speaker from the same cast get different kinds; a speaker absent from `<setup>` gets the **neutral `speaker`/`speech`**, not `plain`; the cast list's own role text is classified consistently with the dialogue.
 - **Pre-022 degradation:** a real pre-022 file yields markers and speech but **no** side kinds, and does not raise.
 - **Human seat:** bolded via the writer's marker; bolded via `Welcome, <name>` inference when the marker is absent; the marker wins when both are present; not bolded when neither is available. Cover a Law-abiding human and a Mafia human.
 - **Writer:** the human's `<player>` tag carries the attribute and no other emitted text changes (pin against the existing `tests/test_eval_transcript.py` expectations).
