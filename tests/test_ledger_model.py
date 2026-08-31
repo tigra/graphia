@@ -322,6 +322,12 @@ def test_columns_are_fixed_columns_then_metric_labels() -> None:
     assert model.columns[:_FIXED_COLUMN_COUNT] == [
         "⚠",
         "Date",
+        # Spec 036: the record-kind column, grouped with the identity columns
+        # (right after ``Date``, mirroring the record's ``run.kind``-after-
+        # ``run.date`` key order) and NOT in the metric tail, so the assertion
+        # below -- metric labels are exactly the tail -- still holds and the UI's
+        # right-justify split keeps this column left-justified.
+        "Kind",
         "Provider",
         "Large model",
         "Small model",
@@ -738,6 +744,210 @@ def test_spec029_columns_heterogeneous_mix_stays_index_parallel(
 
 
 # ===========================================================================
+# A3c. Spec-036 ``Kind`` column — which KIND of measurement a record is
+# ===========================================================================
+#
+# ``run.kind`` labels a record so a persona-generation measurement is readable
+# beside a played game instead of being mistaken for one that broke part-way.
+# Two shapes must both flatten:
+#
+#   - a BENCH record (``run.kind: 'persona-bench'``, no ``outcomes`` /
+#     ``vote_activity`` blocks at all, only value-type persona facets) → the
+#     ``Kind`` cell shows the recorded value VERBATIM, and every game column
+#     renders blank rather than raising;
+#   - a record with NO ``run.kind`` — which is *every* record committed before
+#     spec 036 — → the cell shows the stable ``game`` label, because absence
+#     MEANS "a played game" (the ``Stand-in`` column's default-not-blank
+#     precedent), not "nobody filled this in".
+#
+# The header placement is asserted by ``test_columns_are_fixed_columns_then_
+# metric_labels`` above: ``Kind`` joins the identity columns right after ``Date``
+# and stays out of the metric tail, so the UI's right-justify split
+# (``len(columns) - len(METRIC_ORDER)``) keeps it left-justified.
+
+# A BENCH record as ``blunder_eval.render_record`` writes one (spec 036): the
+# ``run.kind`` label, roster counts under the ``quality`` game keys (the
+# unit-follows-kind rule), the value-type persona facets — and deliberately NO
+# ``outcomes`` / ``vote_activity`` / ``transcript_dir``, because no game was
+# played. The heterogeneity stress case for every game-shaped cell.
+_BENCH_RECORD_DOC = textwrap.dedent(
+    """\
+    run:
+      date: '2026-08-31'
+      kind: 'persona-bench'
+      duration_seconds: 31.5
+      metrics_version: 1
+    code:
+      commit: 'aaaa1111aaaa1111aaaa1111aaaa1111aaaa1111'
+      branch: 'main'
+      dirty: false
+    provider:
+      name: 'ollama'
+      large_model: 'qwen3-coder:30b'
+      small_model: 'qwen2.5:3b'
+    settings:
+      large_model: 'qwen3-coder:30b'
+      small_model: 'qwen2.5:3b'
+      base_url: null
+      games: 5
+      seed: null
+      max_days: null
+    quality:
+      games_attempted: 5
+      games_completed: 5
+      games_failed_early: 0
+      duration_seconds: 31.5
+    metrics:
+      persona_lex_mean:
+        mean: 0.1234
+        denominator: 75
+      persona_lex_peak:
+        peak: 0.5
+        denominator: 75
+    notes: 'spec 036 first recorded bench'
+    """
+)
+
+
+def test_kind_cell_shows_the_recorded_kind_for_a_bench_record(tmp_path: Path) -> None:
+    """A bench record's ``Kind`` cell reads ``persona-bench`` — the on-disk value.
+
+    Rendered verbatim rather than through a label map, so the cell text, the
+    scoped ``kind`` search field and the recorded value can never drift apart —
+    and a kind a future spec introduces renders as itself instead of being
+    silently mislabelled by a map that has not heard of it.
+    """
+    model = build_table_model(load_ledger(_write_ledger(tmp_path, _BENCH_RECORD_DOC)))
+    (row,) = model.rows
+
+    assert row[_col(model, "Kind")] == "persona-bench"
+
+
+@pytest.mark.parametrize(
+    ("doc", "shape"),
+    [
+        pytest.param(
+            _PRE_PROVENANCE_DOC, "no settings/code block", id="pre-provenance"
+        ),
+        pytest.param(_FULL_NO_CI_DOC, "full settings, no run.kind", id="full-no-ci"),
+        pytest.param(_FULL_SPEC029_DOC, "every spec-029 field", id="full-spec029"),
+    ],
+)
+def test_kind_cell_absent_field_reads_the_game_label_not_blank(
+    tmp_path: Path,
+    doc: str,
+    shape: str,
+) -> None:
+    """A record with no ``run.kind`` reads ``game``, never blank and never raising.
+
+    Every one of the 26 already-committed records predates the field, so the
+    column would otherwise be a wall of blanks that looks like a value nobody
+    recorded. Absence is *meaningful* here — a played game was the only kind of
+    measurement that existed — which makes this the second cell that DEFAULTS
+    rather than blanks (``Stand-in`` → ``passive`` is the first). Swept across
+    three pre-036 record shapes so no block-presence accident is what makes it
+    pass.
+    """
+    model = build_table_model(load_ledger(_write_ledger(tmp_path, doc)))
+    (row,) = model.rows
+
+    assert row[_col(model, "Kind")] == "game", shape
+
+
+def test_bench_and_game_records_mix_index_parallel_with_blank_game_columns(
+    tmp_path: Path,
+) -> None:
+    """A bench + game mix flattens aligned: bench game columns blank, metrics present.
+
+    The headline back-compat risk of a record kind whose game-related blocks are
+    simply absent (functional-spec §2: "both kinds are readable in the same list,
+    the character-generation ones show blanks where game figures would be, and
+    nothing errors or misaligns"). Every row keeps ``len(row) == len(columns)``,
+    the bench row's win / vote / resolution cells are blank, and its persona
+    facets still render through the existing value-type branch.
+    """
+    model = build_table_model(
+        load_ledger(
+            _write_ledger(
+                tmp_path,
+                _FULL_SPEC029_DOC,  # a played game, every game block present
+                _BENCH_RECORD_DOC,  # a bench measurement, no game blocks at all
+            )
+        )
+    )
+
+    assert len(model.rows) == 2
+    assert all(len(row) == len(model.columns) for row in model.rows)
+    game_row, bench_row = model.rows
+
+    # The two kinds are distinguishable at a glance.
+    kind = _col(model, "Kind")
+    assert (game_row[kind], bench_row[kind]) == ("game", "persona-bench")
+
+    # The bench row's game-derived cells are blank — absent, not zeroed.
+    for header in ("Wins (LA/M)", "Votes (LA/M)", "Unres (R/N)", "Scripted (side)"):
+        assert bench_row[_col(model, header)] == "", header
+
+    # ...while its persona facets render through the value-type branch.
+    assert bench_row[_col(model, "persona lex mean")] == "~0.12 (n=75)"
+    assert bench_row[_col(model, "persona lex peak")] == "~0.50 (n=75)"
+    # And the semantic pair it never measured stays blank (absent, not 0.00).
+    assert bench_row[_col(model, "persona sem mean")] == ""
+
+
+def test_kind_scope_filters_the_history_to_one_record_kind(tmp_path: Path) -> None:
+    """A ``kind``-scoped value selects one kind of measurement and drops the other.
+
+    The point of labelling the kind: a reviewer can narrow a mixed history to the
+    bench measurements or to the played games. The scoped field carries exactly
+    what the visible ``Kind`` cell shows — including the ``game`` default — so a
+    scoped filter can never disagree with the row the reviewer is looking at.
+    """
+    model = build_table_model(
+        load_ledger(_write_ledger(tmp_path, _FULL_SPEC029_DOC, _BENCH_RECORD_DOC))
+    )
+    assert "kind" in SEARCH_FIELDS
+    game_blob, bench_blob = model.search_blobs
+    game_fields, bench_fields = model.search_fields
+
+    assert row_matches_field("kind", "persona-bench", bench_blob, bench_fields) is True
+    assert row_matches_field("kind", "persona-bench", game_blob, game_fields) is False
+    # And the inverse selects the played games.
+    assert row_matches_field("kind", "game", game_blob, game_fields) is True
+    assert row_matches_field("kind", "game", bench_blob, bench_fields) is False
+
+
+def test_free_text_blob_carries_a_recorded_kind_but_not_the_game_default(
+    tmp_path: Path,
+) -> None:
+    """Under "All", ``persona-bench`` finds the bench record; ``game`` matches neither.
+
+    The deliberate asymmetry between the scoped field and the free-text blob (the
+    ``_winner_keyword`` posture): the blob contributes ``run.kind`` only when the
+    record actually carries it. Seeding every pre-036 record with the ``game``
+    default would make a free-text ``game`` query match the entire ledger, which
+    is a useless filter — narrowing to the played games is the *scoped* field's
+    job, tested above.
+    """
+    model = build_table_model(
+        load_ledger(_write_ledger(tmp_path, _FULL_SPEC029_DOC, _BENCH_RECORD_DOC))
+    )
+    game_blob, bench_blob = model.search_blobs
+    game_fields, bench_fields = model.search_fields
+
+    # A recorded kind is findable as free text.
+    assert (
+        row_matches_field(SEARCH_SCOPE_ALL, "persona-bench", bench_blob, bench_fields)
+        is True
+    )
+    # The default is NOT seeded into any blob.
+    assert "game" not in game_blob
+    assert (
+        row_matches_field(SEARCH_SCOPE_ALL, "game", game_blob, game_fields) is False
+    )
+
+
+# ===========================================================================
 # A4. render_detail — full-precision metric counts, verbatim multi-line notes,
 #     and graceful degradation on a pre-provenance record (spec 012, Slice 3)
 # ===========================================================================
@@ -842,6 +1052,423 @@ def test_render_detail_degrades_gracefully_on_pre_provenance_record(
     assert "games: 3" in text
     # No note on this record → the notes section shows the em-dash placeholder.
     assert text.endswith("notes\n—")
+
+
+# ===========================================================================
+# A4b. Spec-036 drill-down — the ``run.kind`` line and the ``generation`` block
+# ===========================================================================
+#
+# ``render_detail`` does NOT iterate the blocks a record happens to carry: the
+# run section renders a FIXED field list and every top-level block needs its own
+# section renderer. So the ``Kind`` table column landing (Slice 1) taught the
+# drill-down nothing — a bench record's detail view showed no ``kind`` anywhere
+# and no ``generation`` block at all. Slice 2 adds both, and these are the tests
+# that prove it:
+#
+#   - the ``run`` section gains a CONDITIONAL ``kind`` line (the existing
+#     conditional ``games`` line's pattern), so a bench record names its kind and
+#     every pre-036 record's detail view is unchanged — absence still means "a
+#     played game";
+#   - a ``generation`` section renders ``collisions`` / ``regenerations`` for a
+#     bench record and collapses to one ``—`` line for a played game, exactly as
+#     ``outcomes`` / ``vote_activity`` collapse for a bench record. The mirror
+#     image is the point: a reader sees blanks where the *other* kind's figures
+#     would be, which is what tells them nothing failed part-way.
+#
+# Zeroes matter here too: a present ``collisions: 0`` must render its zero, not
+# the ``—`` placeholder that means "not recorded".
+
+# A recorded bench record in the FULL Slice-2 shape ``render_record`` now writes:
+# the ``run.kind`` label, the ``generation`` block between ``quality`` and
+# ``metrics``, and the ``settings.persona`` conditions sub-map. Kept separate
+# from :data:`_BENCH_RECORD_DOC` (the Slice-1 minimum) so that fixture keeps
+# proving the viewer tolerates a bench record *without* the newer blocks.
+_BENCH_RECORD_FULL_DOC = textwrap.dedent(
+    """\
+    run:
+      date: '2026-08-31'
+      kind: 'persona-bench'
+      duration_seconds: 31.5
+      metrics_version: 1
+    code:
+      commit: 'aaaa1111aaaa1111aaaa1111aaaa1111aaaa1111'
+      branch: 'main'
+      dirty: false
+    provider:
+      name: 'ollama'
+      large_model: 'qwen3-coder:30b'
+      small_model: 'qwen2.5:3b'
+      models:
+        qwen3-coder:30b:
+          name: 'qwen3-coder:30b'
+          digest: 'sha256:1111111111111111'
+      server_version: '0.12.3'
+    settings:
+      large_model: 'qwen3-coder:30b'
+      small_model: 'qwen2.5:3b'
+      base_url: null
+      games: 10
+      seed: null
+      max_days: null
+      persona:
+        diversity_enabled: true
+        collision_threshold: 0.6
+        regen_attempts: 2
+        temperature: 1.0
+    quality:
+      games_attempted: 10
+      games_completed: 10
+      games_failed_early: 0
+      duration_seconds: 31.5
+    generation:
+      collisions: 3
+      regenerations: 7
+    metrics:
+      persona_lex_mean:
+        mean: 0.1234
+        denominator: 150
+      persona_lex_peak:
+        peak: 0.5
+        denominator: 150
+    notes: 'spec 036 first recorded bench'
+    """
+)
+
+# The canonical top-level section order ``render_detail`` emits, matching the
+# record key order ``blunder_eval.render_record`` writes. Every section is always
+# rendered (an absent block collapses to one ``—`` line), so this is the full list
+# for EVERY record, whatever its kind.
+_DETAIL_SECTIONS: tuple[str, ...] = (
+    "run",
+    "code",
+    "provider",
+    "settings",
+    "quality",
+    "outcomes",
+    "vote_activity",
+    "generation",
+    "metrics",
+    "notes",
+)
+
+
+def _detail_lines(doc: str) -> list[str]:
+    """``render_detail`` output for the single record in a one-document ledger."""
+    return doc.splitlines()
+
+
+def _detail_section(doc: str, name: str) -> list[str]:
+    """The lines of ONE ``render_detail`` section — its header plus its fields.
+
+    Sections are blank-line separated and headers are the only unindented lines,
+    so this reads from the ``name`` header up to (not including) the next blank
+    line. Pinning a WHOLE section (rather than spot-checking substrings) is how
+    the "a game record gains no new line" guarantee is asserted: an accidentally
+    unconditional sub-block shows up as an extra element, not as a passing test.
+    """
+    lines = _detail_lines(doc)
+    start = lines.index(name)
+    end = start + 1
+    while end < len(lines) and lines[end].strip():
+        end += 1
+    return lines[start:end]
+
+
+# The ``settings`` section's fixed field labels, in render order — every record
+# with a ``settings`` block gets exactly these, and a *game* record must get
+# NOTHING MORE (the spec-036 ``persona`` sub-block is conditional).
+_SETTINGS_FIXED_LABELS: tuple[str, ...] = (
+    "large_model",
+    "small_model",
+    "base_url",
+    "games",
+    "seed",
+    "max_days",
+    "citizens",
+    "mafia",
+)
+
+
+def test_render_detail_shows_the_run_kind_for_a_bench_record(tmp_path: Path) -> None:
+    """A bench record's ``run`` section names its kind, right after the date.
+
+    Without this line the drill-down was silent about the kind even though the
+    table already had its ``Kind`` column — so a reviewer who opened a record to
+    understand why its game figures were blank found no answer there. Placement
+    after ``date`` mirrors the record's own key order.
+    """
+    records = load_ledger(_write_ledger(tmp_path, _BENCH_RECORD_FULL_DOC))
+    (record,) = records
+
+    lines = _detail_lines(render_detail(record))
+
+    assert "  kind: persona-bench" in lines
+    assert lines.index("  kind: persona-bench") == lines.index("  date: 2026-08-31") + 1
+
+
+@pytest.mark.parametrize(
+    ("doc", "shape"),
+    [
+        pytest.param(
+            _PRE_PROVENANCE_DOC, "no settings/code block", id="pre-provenance"
+        ),
+        pytest.param(_FULL_NO_CI_DOC, "full settings, no run.kind", id="full-no-ci"),
+        pytest.param(_FULL_SPEC029_DOC, "every spec-029 field", id="full-spec029"),
+    ],
+)
+def test_render_detail_omits_the_kind_line_for_a_record_without_one(
+    tmp_path: Path,
+    doc: str,
+    shape: str,
+) -> None:
+    """A record with no ``run.kind`` gains NO line — its detail view is unchanged.
+
+    The conditional half of the addition: absence means "a played game", so the
+    line is omitted rather than rendered as ``kind: —``, which would read as a
+    field nobody filled in. Swept over three pre-036 shapes so no block-presence
+    accident is what makes it pass.
+    """
+    records = load_ledger(_write_ledger(tmp_path, doc))
+    (record,) = records
+
+    text = render_detail(record)  # must not raise
+
+    assert "  kind:" not in text, shape
+    # The rest of the run section still renders in its fixed order.
+    assert "run\n  date:" in text, shape
+
+
+def test_render_detail_shows_the_generation_counts_for_a_bench_record(
+    tmp_path: Path,
+) -> None:
+    """The ``generation`` section renders both process counts for a bench record.
+
+    Read beside the persona facets in ``metrics``, never instead of them: the
+    collision COUNT is what carried the spec-034 comparison (2-in-10 rosters
+    shipping a near-duplicate → 0-in-10), a figure a similarity mean alone would
+    have lost.
+    """
+    records = load_ledger(_write_ledger(tmp_path, _BENCH_RECORD_FULL_DOC))
+    (record,) = records
+
+    text = render_detail(record)
+
+    assert "generation\n  collisions: 3\n  regenerations: 7" in text
+
+
+def test_render_detail_generation_zeroes_render_as_zeroes_not_placeholders() -> None:
+    """A measured ``0`` shows as ``0`` — never the ``—`` that means "not recorded".
+
+    The distinction the whole block exists for: "every cast was varied enough"
+    and "nobody looked" must not render identically. Built as a hand-made record
+    so the zero is unambiguous.
+    """
+    record = {
+        "run": {"date": "2026-08-31", "kind": "persona-bench", "metrics_version": 1},
+        "generation": {"collisions": 0, "regenerations": 0},
+    }
+
+    text = render_detail(record)
+
+    assert "generation\n  collisions: 0\n  regenerations: 0" in text
+    assert "collisions: —" not in text
+
+
+@pytest.mark.parametrize(
+    ("doc", "shape"),
+    [
+        pytest.param(_PRE_PROVENANCE_DOC, "pre-provenance game", id="pre-provenance"),
+        pytest.param(_FULL_SPEC029_DOC, "full game with every block", id="full-game"),
+    ],
+)
+def test_render_detail_generation_section_collapses_for_a_game_record(
+    tmp_path: Path,
+    doc: str,
+    shape: str,
+) -> None:
+    """A played game's ``generation`` section collapses to one ``—`` line.
+
+    A game run generates no roster in isolation, so there is nothing to show —
+    the same absent-block treatment ``code`` / ``outcomes`` already get, which is
+    what keeps every pre-036 record readable without a migration.
+    """
+    records = load_ledger(_write_ledger(tmp_path, doc))
+    (record,) = records
+
+    text = render_detail(record)  # must not raise
+
+    assert "generation\n  —" in text, shape
+
+
+def test_render_detail_bench_record_shows_the_game_blocks_as_absent(
+    tmp_path: Path,
+) -> None:
+    """A bench record's game blocks collapse to ``—`` — the mirror image.
+
+    Functional-spec §2: a reader must see that the blank game figures are absent
+    *because no game was played*, not because a game failed part-way. Together
+    with the ``kind`` line above, the drill-down now says both halves of that: the
+    kind names what the record is, and the game sections show nothing rather than
+    a hollow 0-of-0.
+    """
+    records = load_ledger(_write_ledger(tmp_path, _BENCH_RECORD_FULL_DOC))
+    (record,) = records
+
+    text = render_detail(record)
+
+    assert "outcomes\n  —" in text
+    assert "vote_activity\n  —" in text
+    # ...while the measurement it DID take is fully rendered.
+    assert "persona lex mean: ~0.1234 (n=150)" in text
+
+
+# ---------------------------------------------------------------------------
+# The ``settings.persona`` knobs in the drill-down (spec 036, Slice 2).
+#
+# The third instance of the same non-iterating-renderer gap: the knobs were
+# WRITTEN to the record by ``render_record`` and then invisible in the detail
+# view, because ``_render_settings_section`` renders a FIXED field list with no
+# ``persona`` branch. That bit a functional-spec criterion head-on —
+# ``diversity_enabled`` is the field a side-by-side flag-on/flag-off pair is read
+# *by*, so without it the pair is two indistinguishable columns of numbers.
+#
+# The fix has to be CONDITIONAL, and that is what the second test below defends:
+# ``_field`` always emits a line (``—`` when the value is missing), so appending
+# four unconditional ``_field`` calls would add four em-dash lines to the
+# drill-down of every one of the 26 already-committed game records — a visible
+# regression dressed up as a faithful render. Present ⇒ four indented lines;
+# absent ⇒ no line at all.
+# ---------------------------------------------------------------------------
+
+
+def test_render_detail_shows_the_persona_knobs_for_a_bench_record(
+    tmp_path: Path,
+) -> None:
+    """A bench record's ``settings`` section names all four persona conditions.
+
+    Functional-spec §2: an entry says which conditions it ran under, because a
+    comparison between two measurements only means something when they match.
+    Rendered as a nested sub-block after the lineup fields, mirroring the record's
+    own key order (``render_record`` emits ``settings.persona`` right after
+    ``settings.lineup``).
+    """
+    records = load_ledger(_write_ledger(tmp_path, _BENCH_RECORD_FULL_DOC))
+    (record,) = records
+
+    section = _detail_section(render_detail(record), "settings")
+
+    assert section[-5:] == [
+        "  persona:",
+        "    diversity_enabled: True",
+        "    collision_threshold: 0.6",
+        "    regen_attempts: 2",
+        "    temperature: 1.0",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("doc", "shape"),
+    [
+        pytest.param(_FULL_NO_CI_DOC, "full settings, no persona", id="full-no-ci"),
+        pytest.param(_FULL_SPEC029_DOC, "every spec-029 field", id="full-spec029"),
+        pytest.param(_FULL_WITH_CI_DOC, "full + CI band", id="full-with-ci"),
+    ],
+)
+def test_render_detail_omits_the_persona_block_for_a_game_record(
+    tmp_path: Path,
+    doc: str,
+    shape: str,
+) -> None:
+    """A game record's ``settings`` section gains NO line — not even an em-dash.
+
+    The conditional half, pinned on the WHOLE section rather than a substring: a
+    record without ``settings.persona`` renders exactly the eight fixed labels it
+    always did. Four unconditional ``—`` lines on every committed game record is
+    the regression this test exists to fail on.
+    """
+    records = load_ledger(_write_ledger(tmp_path, doc))
+    (record,) = records
+
+    section = _detail_section(render_detail(record), "settings")
+
+    labels = [line.split(":", 1)[0].strip() for line in section[1:]]
+    assert labels == list(_SETTINGS_FIXED_LABELS), shape
+    assert "persona:" not in "\n".join(section), shape
+
+
+def test_render_detail_persona_absent_settings_block_still_collapses(
+    tmp_path: Path,
+) -> None:
+    """A pre-provenance record (no ``settings`` block at all) still shows one ``—``.
+
+    The outer guard is unchanged by the new branch: absence of the whole block
+    short-circuits before the ``persona`` lookup, so nothing new can raise on the
+    oldest records in the ledger.
+    """
+    records = load_ledger(_write_ledger(tmp_path, _PRE_PROVENANCE_DOC))
+    (record,) = records
+
+    assert _detail_section(render_detail(record), "settings") == ["settings", "  —"]
+
+
+def test_render_detail_persona_flag_off_arm_renders_false_and_zero() -> None:
+    """The flag-OFF arm reads ``False``/``0`` — never the ``—`` that means unrecorded.
+
+    The trap a falsy check would walk into: ``diversity_enabled: false`` and
+    ``regen_attempts: 0`` are the *defining* values of the control arm, and
+    rendering either as ``—`` would make the arm look unrecorded — collapsing the
+    exact distinction the pair is compared on. Built as a hand-made record so the
+    falsy values are unambiguous.
+    """
+    record = {
+        "run": {"date": "2026-08-31", "kind": "persona-bench", "metrics_version": 1},
+        "settings": {
+            "games": 10,
+            "persona": {
+                "diversity_enabled": False,
+                "collision_threshold": 0.6,
+                "regen_attempts": 0,
+                "temperature": 1.0,
+            },
+        },
+    }
+
+    section = _detail_section(render_detail(record), "settings")
+
+    assert "    diversity_enabled: False" in section
+    assert "    regen_attempts: 0" in section
+    assert "    diversity_enabled: —" not in section
+    assert "    regen_attempts: —" not in section
+
+
+@pytest.mark.parametrize(
+    ("doc", "shape"),
+    [
+        pytest.param(_BENCH_RECORD_FULL_DOC, "bench record", id="bench"),
+        pytest.param(_FULL_SPEC029_DOC, "played game", id="game"),
+        pytest.param(_PRE_PROVENANCE_DOC, "pre-provenance record", id="pre-provenance"),
+    ],
+)
+def test_render_detail_sections_keep_the_canonical_order(
+    tmp_path: Path,
+    doc: str,
+    shape: str,
+) -> None:
+    """``generation`` sits after ``vote_activity`` and before ``metrics``, always.
+
+    The detail view's section order mirrors the record's own key order, so a
+    reviewer reads the file and the drill-down the same way round. Asserted for
+    every kind, because ``render_detail`` renders all ten sections regardless of
+    which blocks a record carries — the new one must slot into the band rather
+    than being appended at the end where nobody would look for it.
+    """
+    records = load_ledger(_write_ledger(tmp_path, doc))
+    (record,) = records
+
+    lines = _detail_lines(render_detail(record))
+    positions = [lines.index(section) for section in _DETAIL_SECTIONS]
+
+    assert positions == sorted(positions), shape
 
 
 # ===========================================================================
