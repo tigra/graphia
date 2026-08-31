@@ -1,0 +1,243 @@
+Game 20 | provider=bedrock-claude | large_model=us.anthropic.claude-haiku-4-5-20251001-v1:0 | small_model=us.anthropic.claude-haiku-4-5-20251001-v1:0 | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Maya" role="Law-abiding Citizen">
+Personality: Anxious and self-doubting, prone to overthinking the smallest details and second-guessing her own judgment
+Manner: Speaks in quick, stammering bursts; frequently trails off mid-sentence; peppers conversation with qualifiers like "I think... maybe?" and "unless I'm wrong, but probably am"; tends to apologize unnecessarily and repeat herself when nervous
+Persona: Maya works as a freelance copy editor—detail-oriented work that has trained her to spot problems everywhere, sometimes where they don't exist. She's lived in the same apartment for seven years, keeps to herself mostly, and spends her evenings catching herself in logical loops. She's honest to a fault, which means she agonizes over every decision and can't help but voice every doubt.
+</player>
+<player name="Dmitri" role="Law-abiding Citizen">
+Personality: Aloof and sardonic, with a dry wit that masks genuine indifference. Dmitri observes rather than participates, more amused by human behavior than invested in it.
+Manner: Speaks in measured, deliberate sentences with long pauses. Favors irony and understatement. Rarely asks questions; makes flat declarative statements. Uses minimal gestures. When he does speak, it lands with weight simply because he doesn't waste words.
+Persona: Dmitri is a night-shift security guard at a warehouse distribution center. He monitors cameras, walks empty corridors, fills forms no one reads. He's been in the role for twelve years—long enough that the monotony has become comfortable. He lives alone in a modest flat, reads technical manuals for pleasure, and has perfected the art of being present without engaging. He shows up, does his job, leaves.
+</player>
+<player name="Akiko" role="Law-abiding Citizen">
+Personality: sharp, pragmatic, and energetically shrewd — quick to spot angles and calculate moves, but genuinely warm when her assessment is done
+Manner: direct and rapid-fire, with the clipped pacing of someone used to negotiating; asks sharp questions in quick succession; peppers speech with "here's the thing" and "what I'm hearing is"; leans forward when engaged; laughs briskly at her own observations; no hedging or apology
+Persona: Akiko runs a small used bookstore in the neighborhood—been at it for nine years. She's honed a sharp eye for value: what books will move, which customers are serious buyers, who's bluffing about their budget. That same instinct extends to people. She knows her regulars, remembers their tastes, and isn't shy about steering them away from books she thinks they'll hate. She lives above the shop, keeps meticulous accounts, and treats the whole enterprise—inventory, staff, customers, community relations—as a puzzle to solve efficiently. She's honest because being honest is better for business; she's calculating because calculating keeps her independent.
+</player>
+<player name="Hassan" role="Mafia">
+Personality: Charismatic and volatile—Hassan cycles between sudden bursts of infectious charm and brooding intensity. He's theatrical, prone to dramatic gestures and bold proclamations, but underneath runs a coiled restlessness. He laughs loudly at his own jokes, leans back in his chair with casual confidence, then abruptly goes quiet and watchful. People find him magnetic but unpredictable; they're never quite sure which version of him they'll get.
+Manner: Speaks in a rich, expressive voice with an accent that hints at a cosmopolitan past. His sentences swing between rapid-fire intensity and theatrical drawls. He uses his hands constantly—gesturing expansively, then suddenly steepling his fingers thoughtfully. He interrupts himself with asides, tells tangential stories with surprising detail, then catches himself and refocuses with an apologetic grin. Calls people by nicknames immediately. Laughs—a lot—but it's not always warm.
+Public legend: Hassan is a freelance wine merchant and event curator who travels between neighborhoods sourcing rare bottles for restaurants and hosting private tastings. He's lived in the city for about five years after relocating from abroad for "business opportunities." He claims to have grown up around family import-export work, which explains his wandering lifestyle and his ability to talk to anyone about anything. He's always got a story about a vineyard in Tuscany or a negotiation in Beirut, always offering unsolicited advice, always offering to "know someone" who can help. He seems successful, keeps irregular hours, and maintains an air of mystery about exactly how much money he makes. Neighbors see him as charming but slightly self-involved—the type who's genuinely kind until he's bored, then vanishes for weeks.
+True self (hidden): Hassan grew up in a tight-knit criminal enterprise run by his uncle. He was groomed from childhood—taught that loyalty to the family came before everything, that the world was divided into those you could trust and those you exploited. He learned to read people, to manipulate charm, to switch personas like masks. By his early twenties, he was running protection rackets and managing "business disputes." The relocation five years ago wasn't about wine—it was about the organization expanding into new territory, and Hassan being inserted as a seemingly legitimate businessman with deep operational connections. The wine merchant cover is perfect: irregular hours, constant travel, meetings with "suppliers," legitimate reason to move money around. He's good at his real work precisely because he's performed the lie so long that even he sometimes forgets what the truth looks like.
+</player>
+<player name="Lucia" role="Law-abiding Citizen">
+Personality: Weary and sardonic, but with a stubborn streak of hard-won kindness—someone who's been disappointed by people and situations enough times to expect the worst, yet keeps showing up anyway
+Manner: Speaks in a slow, deliberate drawl with long silences between thoughts; favors blunt, unsentimental phrasing; occasionally trails off not from doubt (like Maya) but from fatigue or the weight of knowing better; uses dry humor as a pressure valve; doesn't waste energy on politeness, but never quite hostile—more like someone who's learned the hard way that most things aren't worth performing enthusiasm about
+Persona: Lucia has been a night-shift nurse at a county hospital for eighteen years. She's seen suffering close up, learned which patients get visitors and which don't, watched the gap between what people say they value and what they actually do. She lives alone in a practical apartment, no ornaments, minimal furniture. She reads when she can't sleep—crime fiction, mostly. She speaks to her regulars at the corner café with genuine warmth, but keeps distance from most friendships. She's honest because lying requires energy she doesn't have left at the end of a shift.
+</player>
+<player name="Soren" role="Mafia">
+Personality: Effusively friendly and earnest on the surface—always eager to help, prone to nervous laughter and over-explaining himself. Beneath the cheerfulness runs a cold, opportunistic calculation: Soren notes what people want, what they fear, what they'll overlook if you're likable enough. He genuinely enjoys the game of it, enjoys being liked, but feels nothing when he discards the performance.
+Manner: Speaks in warm, conversational bursts with practiced sincerity. Often asks people personal questions and remembers the details—a technique for both mapping the room and creating false intimacy. Uses humor to deflect or to nudge conversations where he wants them. Leans in conspiratorially. Laughs readily, sometimes a beat too long. Occasionally catches himself being too earnest and self-corrects with mock self-deprecation: "There I go again, being a worrier." Maintains steady eye contact. Never rushes, never seems impatient—the voice of someone who has time for you, which people mistake for genuine warmth.
+Public legend: Soren teaches high school history—popular with students because he makes the material personal, remembers names, shows up to school events. Lives in a modest apartment decorated with maps and historical photographs. Volunteers occasionally at the local historical society. Recently went through a quiet divorce, which he mentions with practiced vulnerability: "It's been an adjustment, but I'm learning a lot about myself." Seen by neighbors and colleagues as steady, thoughtful, deeply interested in people and their stories. He asks good questions and remembers answers. Known for baking elaborate desserts and bringing them to school potlucks. The kind of person who seems genuinely invested in community, who listens when others talk, who makes you feel heard.
+True self (hidden): Soren came up through organized crime—groomed by an uncle in the family business starting in his twenties. He's good at reading people, better at playing parts. He drifted into the teaching position as cover five years ago; it provides perfect alibis, constant exposure to the community he needs to influence, and psychological profile that disarms suspicion. The historical society work is strategic surveillance and networking. His divorce was orchestrated—the ex was a liability, knew too much. He maintains contact with a cell upstate and moves money through shell accounts tied to legitimate-looking small businesses. He genuinely enjoys the performance of being Soren the teacher because it's the best con he's ever run: nobody suspects the man who makes them feel understood.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Maya, Dmitri, Akiko, Hassan, Lucia, Soren. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Hassan): Your Mafia teammates are: Soren. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Soren): Your Mafia teammates are: Hassan. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Soren points at Maya
+Hassan points at Maya
+<kill>Maya — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Maya was killed last night. Maya was a Law-abiding Citizen.
+<round>
+Round 1.
+Lucia: Maya's gone. We've got two killers in this room and no real leads yet—so let's hear what everyone was doing, thinking, suspecting before the sun came up.
+Dmitri: Maya was solid. The question now is whether anyone here scrambled to fill the void she left, or whether they sat quiet and let others do the talking.
+Soren: Maya was thoughtful, careful—the kind of person who'd notice things—so losing her first feels significant. I'm wondering if anyone else noticed anything off about the energy around the table last night, before we knew?
+Avery: Nothing is settled yet, but I'm watching Hassan most closely.
+Hassan: Avery, friend—I appreciate the attention, truly—but watching me won't tell you much; I'm naturally theatrical, and right now we're all scrambling in the dark. What I want to know is whether anyone heard Maya say something yesterday that stuck with them, something that might tell us who felt threatened enough to act.
+Akiko: Here's the thing—Maya gets taken out Night 1, which means the Mafia saw her as a threat, so let's figure out what she knew; Hassan, you asked what Maya said yesterday that stuck, but I'm more interested in who *didn't* ask that question before you did, because that's the angle I'm watching.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Dmitri">Akiko's watching for who didn't ask Hassan's question—clever angle, but it means she's already thinking like someone hunting. Hassan himself is performing, deflecting with charm. I'll sit with this a while longer before speaking; the real tells always come when people feel the pressure building, not now when the panic is still fresh.</thought>
+<thought player="Akiko">Hassan deflected my angle pretty smoothly—asked a leading question about Maya's statements instead of engaging with my observation about who didn't ask it, which means either he's sharp enough to dodge or he's got something to hide; I need to watch whether people are asking the right questions or just performing concern.</thought>
+<thought player="Hassan">Akiko's sharp—she's already hunting for tells in who asked what, which means I need to stay visible and engaged without looking defensive. Avery's got her eye on me, so I'll lean into charm and misdirection; meanwhile Soren and I need to coordinate quietly, and I should steer the group toward voting out someone who'll weaken the Citizens' numbers without it looking like I'm pushing too hard.</thought>
+<thought player="Lucia">Akiko's playing smart—watching who *didn't* ask Hassan's question is the kind of angle that works, and it means she's thinking like someone who's done this before. Maya gone Night 1 is bad, but at least it tells us the Mafia was scared of her; I need to figure out who felt that threat, and I need to stop Akiko from getting too much oxygen in this room before someone notices she's the real danger.</thought>
+<thought player="Soren">Akiko's sharp—she's already pattern-matching and looking for silences, which means she's dangerous; Hassan held the table well with that question, and Avery's fixation on him is useful cover. I need to stay warm and observant, maybe gently redirect suspicion toward someone less useful to the Mafia while keeping my own profile low and earnest.</thought>
+</round>
+<round>
+Round 2.
+Hassan: Akiko's right to hunt for patterns—but here's what troubles me: we're all performing right now, all of us, and the Mafia knows that too, which means they're watching for the *watchers*. So let me ask directly: Dmitri, you went quiet after Lucia's opening—what's your read on who panicked when Maya's name came up?
+Soren: Dmitri, I noticed you paused too—and I'm genuinely curious: did Maya say anything to you privately that made you think she was onto someone, or was the silence just the weight of the moment catching up with us all?
+Avery: Nothing is settled yet, but I'm watching Hassan most closely.
+Lucia: Dmitri, you've been quiet since I asked the opening question—and now Hassan and Soren are both fishing for what you saw or didn't see. So let me ask it plain: did Maya say anything that made you uneasy, or are you just tired like the rest of us?
+Dmitri: Hassan's been deflecting with charm for five minutes straight—and Akiko caught it. That's the angle worth following, not what Maya said to anyone.
+Akiko: Dmitri, I hear you—Hassan's dodging is loud—but here's what I'm hearing is a pattern: you went quiet when Lucia opened, then you jumped on Hassan instead of answering three people asking what you actually *saw* or *didn't* see; so let me ask it plain: did you notice anything off about anyone's behavior before Maya went down, or are we just trading accusations in the dark?
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Dmitri">Akiko's sharp enough to notice I deflected instead of answering directly—that's dangerous. I need to decide if I stay quiet and let them turn on each other, or if I throw a bone their way soon before my silence becomes the only pattern they're all reading.</thought>
+<thought player="Akiko">Dmitri's deflection to Hassan feels like a tell—he got caught not answering and pivoted instead of owning his silence, which makes me wonder if he was actually processing something dangerous about someone; Hassan's charm is real but his dodge on the Maya question was textbook, so I'm splitting focus: Dmitri looks rattled, Hassan looks practiced, and I need to push Dmitri harder tomorrow because someone who won't own their own silence usually has a reason.</thought>
+<thought player="Hassan">Akiko's threading the needle too well—she's reading the room's *patterns* instead of just words, which means charm alone won't hold her off much longer; I need Dmitri or Avery to become the day's focal point, and Soren needs to echo my misdirection while I stay just visible enough to seem cooperative, not panicked.</thought>
+<thought player="Lucia">Akiko's too sharp—she's already mapping patterns better than anyone else, and if she keeps talking she'll either find the Mafia or get herself killed for being too useful; I need to figure out if she's one of them playing it smart or if she's genuinely just a threat to whoever's left standing.</thought>
+<thought player="Soren">Akiko's threading together patterns like a prosecutor—she's the real threat here, not Avery's transparent fixation on Hassan. I need to stay warm and helpful, maybe lean into Dmitri's frustration to nudge the table away from Hassan, and keep my own hands clean while I figure out who's most expendable when we vote.</thought>
+</round>
+<round>
+Round 3.
+Soren: Akiko, I hear the frustration—you're right that patterns matter—but I'm noticing we're all circling Dmitri and Hassan while nobody's really asked Lucia what *she* saw or didn't see last night, and that silence feels worth exploring before we spiral further.
+Avery: Nothing is settled yet, but I'm watching Hassan most closely.
+Akiko: Soren's right to pivot to Lucia, but here's what I'm hearing: we've been asking questions all morning and Dmitri still hasn't told us what he *actually* observed before Maya went down—so Dmitri, stop dodging and give us the straight answer, because your silence is louder than Hassan's charm at this point.
+Dmitri: Akiko's been hunting for tells since the moment Lucia opened her mouth—which is fine, except she's so focused on what I didn't say that she's missed Hassan doing the same thing all morning, just wearing a better smile while he does it.
+Hassan: Dmitri, you're sharp—too sharp—and that's exactly why I'm wondering if you're deflecting from something you *actually* saw, or just tired of being the day's punching bag; either way, Lucia's still the only person here who hasn't given us anything concrete to work with.
+Lucia: Hassan and Dmitri keep swapping who's dodging, which means one of them's probably guilty and the other's just tired—but Akiko's the one who's actually *seeing* the pattern, and that's the kind of clarity that gets you killed in a room like this.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Dmitri">Akiko's too sharp—she's already seeing the deflection pattern, and if I stay silent much longer, I become the obvious tell. Hassan's charm is working against him now that Lucia's called it out. I'll give them something concrete soon, just enough to look cooperative, and watch who scrambles when I do.</thought>
+<thought player="Akiko">Dmitri's the real tell—he won't own his silence, keeps pivoting to Hassan, and that rattled energy usually means he saw something or someone that spooked him; I'm betting one of them is Mafia, and tomorrow I'm pressing Dmitri until he either breaks or confirms he's dirty, because someone that defensive about what they *didn't* see is usually hiding what they *did*.</thought>
+<thought player="Hassan">Akiko's pattern-reading is dangerous—she's already sniffing out the deflection game, and Avery won't stop watching me—so I need to pivot hard: push the group toward voting Dmitri or Lucia before Akiko threads it all together, keep Soren echoing my misdirection, and make sure my charm looks like genuine concern, not calculated theater.</thought>
+<thought player="Lucia">Akiko's sharp enough to be dangerous either way—if she's Law-abiding, she'll find the Mafia; if she's one of them, she's playing it smart enough to get cover. Hassan and Dmitri are too busy swapping accusations to be the real threat, which means I need to watch Akiko close and figure out if she's worth protecting or if she's already marked for the kill tonight.</thought>
+<thought player="Soren">Akiko's reading the room like a hunter—she'll be trouble if she keeps threading patterns together, so I need to stay likable and helpful while quietly steering votes toward someone the table's already frustrated with; Hassan's holding steady, which is good, but I should make sure I'm not too aligned with him publicly or it becomes a liability.</thought>
+</round>
+<round>
+Round 4.
+<vote initiator="Dmitri" target="Hassan">
+Avery: No
+Dmitri: Yes
+Akiko: Yes
+Hassan: No
+Lucia: Yes
+Soren: No
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Soren: Akiko, I hear you—you're seeing patterns nobody else is catching—but I'm wondering if we're all so focused on *who's* dodging that we've missed the bigger picture: Lucia threw Hassan and Dmitri under the bus at the last second, and that kind of calculated pivot is exactly what someone does when they need to deflect from their own position.
+Avery: Nothing is settled yet, but I'm watching Hassan most closely.
+Hassan: Soren's threading something real—Lucia's pivot was smooth, too smooth, and that calculated move at the last second feels like someone protecting their own skin rather than hunting for truth.
+Lucia: Soren, you're right that my pivot landed hard—but I wasn't protecting my skin, I was watching Hassan and Dmitri burn each other's credibility while Akiko did the actual thinking; the real question is whether you're noticing that too, or just looking for a reason to move the target off them.
+Dmitri: Lucia threw the vote at Hassan to look decisive, but she's been silent about what she actually observed before Maya died—and that's the kind of convenience that interests me.
+<vote initiator="Akiko" target="Dmitri">
+Avery: No
+Dmitri: No
+Akiko: Yes
+Hassan: No
+Lucia: Yes
+Soren: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Soren: Lucia, I'm hearing you loud and clear—and I respect that you're thinking strategically—but I keep coming back to the fact that you stayed silent about what you actually observed before Maya went down, and now you're parsing everyone else's moves instead of giving us the ground truth we need.
+Hassan: Lucia, you've been parsing everyone's moves all morning—but here's what I'm seeing: you're the only one who's never told us what you *actually* observed before Maya went down, and that convenient silence while you dissect the rest of us is starting to look like the real deflection in this room.
+<vote initiator="Akiko" target="Dmitri">
+Avery: No
+Dmitri: No
+Akiko: Yes
+Hassan: No
+Lucia: Yes
+Soren: No
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Soren points at Akiko
+Hassan points at Akiko
+<kill>Akiko — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Akiko was killed last night. Akiko was a Law-abiding Citizen.
+<round>
+Round 1.
+Soren: Akiko was sharp—too sharp—and now she's gone, which tells me the Mafia saw exactly what we all saw: that she was threading the patterns together faster than anyone else, and that made her dangerous to them.
+Lucia: Akiko's gone because she was mapping the room too well—and now we're down to Hassan, Dmitri, Soren, Avery, and me, which means one of those four did the killing, and the other one's been their cover the whole time.
+Hassan: Akiko was reading us all too well—pattern-hunting instead of just listening—and the Mafia knew it; so now the question is whether Dmitri's silence yesterday was genuine fear, or whether he was coordinating with someone while we were all watching Hassan.
+Avery: I most suspect Hassan based on how the votes have gone.
+Dmitri: Akiko was dangerous because she was watching who didn't ask the right questions—and now that she's gone, I'm wondering if Hassan or Lucia scrambled to cover that same angle before the Mafia moved against her.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Dmitri">Akiko's dead because she was too close to the pattern—and that tells me Hassan and Lucia are likely the pair, since they both pivoted hard when she got too sharp. I'll let them circle each other one more round before I move; the Mafia always overplays their hand when they think they've bought time.</thought>
+<thought player="Hassan">Akiko's dead—my work—and now I'm 2v3, so I need to tighten with Soren and finish this clean; Avery's locked on me, Dmitri's volatile, Lucia's strategic, so I'll play the bereaved observer while Soren and I hunt the weakest link before they realize what we are.</thought>
+<thought player="Lucia">Akiko's dead because she was too close to the truth—and that means the Mafia just showed me their hand: they killed the person who was actually watching, not the person everyone was accusing. So now I need to figure out if Hassan and Dmitri were both just noise, or if one of them's been coordinating the whole time while the other played distraction.</thought>
+<thought player="Soren">Akiko's dead—the table just eliminated the one person who was actually reading the patterns, which means Hassan and I bought ourselves time, but now I need to watch whether Lucia or Dmitri figure out what she was seeing, and stay warm and helpful while I figure out who to point at next without getting my hands dirty.</thought>
+</round>
+<round>
+Round 2.
+Lucia: Akiko's dead because she was watching who wasn't asking questions—and the Mafia killed her for it, not Hassan who everyone was yelling about; so now I'm wondering if Dmitri's been quiet the whole time because he already knew who to protect.
+Soren: Lucia, I hear you—and you're right that Akiko was watching the silences—but I'm noticing you keep circling back to Dmitri's quietness while Hassan's been pretty vocal the whole time; what actually made you suspicious of Dmitri specifically, rather than someone who's been steering the conversation?
+Avery: I most suspect Hassan based on how the votes have gone.
+Dmitri: Akiko died because she was close to something—and the Mafia killed her to buy time, not because she was wrong about the patterns; Hassan and Lucia both pivoted hard when she got too sharp, which is worth remembering.
+Hassan: Akiko died because she was *seeing* too clearly—and that means the Mafia's panicked, which is exactly when they make mistakes; so let's think about who's been steering us away from the real angles, not just who's been loud.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Dmitri">Akiko's dead because she was reading the patterns too well—Hassan and Lucia both moved hard when she got close, which narrows it down; I'll let them circle each other another round while I watch who overplays their hand now that the pressure's building, because the Mafia always gets sloppy when they think they've bought time.</thought>
+<thought player="Hassan">Akiko's gone—my kill worked—and now it's 2v3 with me and Soren holding the line; Avery won't budge from suspecting me, so I need to make Dmitri or Lucia the day's target while keeping my hands clean, and Soren needs to push the vote hard enough that it doesn't look like I'm steering.</thought>
+<thought player="Lucia">Akiko's dead because she was seeing too clear, and that tells me Hassan and Dmitri were both just noise while one of them was doing the real work—so now I need to figure out which one's been quiet enough to coordinate, and whether Soren's pushing me on Dmitri because he actually believes it or because he's covering for whoever's left standing.</thought>
+<thought player="Soren">Akiko's elimination bought us breathing room, but now Lucia's circling Dmitri while Avery stays fixated on Hassan—I need to stay warm and helpful, maybe lean into Lucia's suspicion of Dmitri to split the Law-abiding votes before Hassan and I close this out, without looking like I'm steering anything.</thought>
+</round>
+<round>
+Round 3.
+Avery: I most suspect Hassan based on how the votes have gone.
+Lucia: Akiko died because she was watching the patterns—and the Mafia killed her to stop her from seeing which one of them was coordinating; so now I'm wondering if Hassan's been loud the whole time to cover for Dmitri staying quiet, or if it's the other way around.
+<vote initiator="Dmitri" target="Lucia">
+Avery: No
+Dmitri: Yes
+Hassan: No
+Lucia: No
+Soren: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Avery: I most suspect Hassan based on how the votes have gone.
+<vote initiator="Dmitri" target="Lucia">
+Avery: No
+Dmitri: Yes
+Hassan: No
+Lucia: No
+Soren: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Hassan" target="Dmitri">
+Avery: Yes
+Dmitri: No
+Hassan: No
+Lucia: Yes
+Soren: No
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Hassan points at Dmitri
+Soren points at Dmitri
+<kill>Dmitri — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Maya (Law-abiding Citizen)
+• Night 2: Akiko (Law-abiding Citizen)
+• Night 3: Dmitri (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Maya (Law-abiding Citizen), Dmitri (Law-abiding Citizen), Akiko (Law-abiding Citizen), Hassan (Mafia), Lucia (Law-abiding Citizen), Soren (Mafia)
+
+Who they really were:
+• Maya (Law-abiding Citizen) — Anxious and self-doubting, prone to overthinking the smallest details and second-guessing her own judgment Speaks in quick, stammering bursts; frequently trails off mid-sentence; peppers conversation with qualifiers like "I think... maybe?" and "unless I'm wrong, but probably am"; tends to apologize unnecessarily and repeat herself when nervous Maya works as a freelance copy editor—detail-oriented work that has trained her to spot problems everywhere, sometimes where they don't exist. She's lived in the same apartment for seven years, keeps to herself mostly, and spends her evenings catching herself in logical loops. She's honest to a fault, which means she agonizes over every decision and can't help but voice every doubt.
+• Dmitri (Law-abiding Citizen) — Aloof and sardonic, with a dry wit that masks genuine indifference. Dmitri observes rather than participates, more amused by human behavior than invested in it. Speaks in measured, deliberate sentences with long pauses. Favors irony and understatement. Rarely asks questions; makes flat declarative statements. Uses minimal gestures. When he does speak, it lands with weight simply because he doesn't waste words. Dmitri is a night-shift security guard at a warehouse distribution center. He monitors cameras, walks empty corridors, fills forms no one reads. He's been in the role for twelve years—long enough that the monotony has become comfortable. He lives alone in a modest flat, reads technical manuals for pleasure, and has perfected the art of being present without engaging. He shows up, does his job, leaves.
+• Akiko (Law-abiding Citizen) — sharp, pragmatic, and energetically shrewd — quick to spot angles and calculate moves, but genuinely warm when her assessment is done direct and rapid-fire, with the clipped pacing of someone used to negotiating; asks sharp questions in quick succession; peppers speech with "here's the thing" and "what I'm hearing is"; leans forward when engaged; laughs briskly at her own observations; no hedging or apology Akiko runs a small used bookstore in the neighborhood—been at it for nine years. She's honed a sharp eye for value: what books will move, which customers are serious buyers, who's bluffing about their budget. That same instinct extends to people. She knows her regulars, remembers their tastes, and isn't shy about steering them away from books she thinks they'll hate. She lives above the shop, keeps meticulous accounts, and treats the whole enterprise—inventory, staff, customers, community relations—as a puzzle to solve efficiently. She's honest because being honest is better for business; she's calculating because calculating keeps her independent.
+• Hassan (Mafia) — publicly presented as Hassan is a freelance wine merchant and event curator who travels between neighborhoods sourcing rare bottles for restaurants and hosting private tastings. He's lived in the city for about five years after relocating from abroad for "business opportunities." He claims to have grown up around family import-export work, which explains his wandering lifestyle and his ability to talk to anyone about anything. He's always got a story about a vineyard in Tuscany or a negotiation in Beirut, always offering unsolicited advice, always offering to "know someone" who can help. He seems successful, keeps irregular hours, and maintains an air of mystery about exactly how much money he makes. Neighbors see him as charming but slightly self-involved—the type who's genuinely kind until he's bored, then vanishes for weeks. (Charismatic and volatile—Hassan cycles between sudden bursts of infectious charm and brooding intensity. He's theatrical, prone to dramatic gestures and bold proclamations, but underneath runs a coiled restlessness. He laughs loudly at his own jokes, leans back in his chair with casual confidence, then abruptly goes quiet and watchful. People find him magnetic but unpredictable; they're never quite sure which version of him they'll get. Speaks in a rich, expressive voice with an accent that hints at a cosmopolitan past. His sentences swing between rapid-fire intensity and theatrical drawls. He uses his hands constantly—gesturing expansively, then suddenly steepling his fingers thoughtfully. He interrupts himself with asides, tells tangential stories with surprising detail, then catches himself and refocuses with an apologetic grin. Calls people by nicknames immediately. Laughs—a lot—but it's not always warm.) … but was really a Mafioso: Hassan grew up in a tight-knit criminal enterprise run by his uncle. He was groomed from childhood—taught that loyalty to the family came before everything, that the world was divided into those you could trust and those you exploited. He learned to read people, to manipulate charm, to switch personas like masks. By his early twenties, he was running protection rackets and managing "business disputes." The relocation five years ago wasn't about wine—it was about the organization expanding into new territory, and Hassan being inserted as a seemingly legitimate businessman with deep operational connections. The wine merchant cover is perfect: irregular hours, constant travel, meetings with "suppliers," legitimate reason to move money around. He's good at his real work precisely because he's performed the lie so long that even he sometimes forgets what the truth looks like.
+• Lucia (Law-abiding Citizen) — Weary and sardonic, but with a stubborn streak of hard-won kindness—someone who's been disappointed by people and situations enough times to expect the worst, yet keeps showing up anyway Speaks in a slow, deliberate drawl with long silences between thoughts; favors blunt, unsentimental phrasing; occasionally trails off not from doubt (like Maya) but from fatigue or the weight of knowing better; uses dry humor as a pressure valve; doesn't waste energy on politeness, but never quite hostile—more like someone who's learned the hard way that most things aren't worth performing enthusiasm about Lucia has been a night-shift nurse at a county hospital for eighteen years. She's seen suffering close up, learned which patients get visitors and which don't, watched the gap between what people say they value and what they actually do. She lives alone in a practical apartment, no ornaments, minimal furniture. She reads when she can't sleep—crime fiction, mostly. She speaks to her regulars at the corner café with genuine warmth, but keeps distance from most friendships. She's honest because lying requires energy she doesn't have left at the end of a shift.
+• Soren (Mafia) — publicly presented as Soren teaches high school history—popular with students because he makes the material personal, remembers names, shows up to school events. Lives in a modest apartment decorated with maps and historical photographs. Volunteers occasionally at the local historical society. Recently went through a quiet divorce, which he mentions with practiced vulnerability: "It's been an adjustment, but I'm learning a lot about myself." Seen by neighbors and colleagues as steady, thoughtful, deeply interested in people and their stories. He asks good questions and remembers answers. Known for baking elaborate desserts and bringing them to school potlucks. The kind of person who seems genuinely invested in community, who listens when others talk, who makes you feel heard. (Effusively friendly and earnest on the surface—always eager to help, prone to nervous laughter and over-explaining himself. Beneath the cheerfulness runs a cold, opportunistic calculation: Soren notes what people want, what they fear, what they'll overlook if you're likable enough. He genuinely enjoys the game of it, enjoys being liked, but feels nothing when he discards the performance. Speaks in warm, conversational bursts with practiced sincerity. Often asks people personal questions and remembers the details—a technique for both mapping the room and creating false intimacy. Uses humor to deflect or to nudge conversations where he wants them. Leans in conspiratorially. Laughs readily, sometimes a beat too long. Occasionally catches himself being too earnest and self-corrects with mock self-deprecation: "There I go again, being a worrier." Maintains steady eye contact. Never rushes, never seems impatient—the voice of someone who has time for you, which people mistake for genuine warmth.) … but was really a Mafioso: Soren came up through organized crime—groomed by an uncle in the family business starting in his twenties. He's good at reading people, better at playing parts. He drifted into the teaching position as cover five years ago; it provides perfect alibis, constant exposure to the community he needs to influence, and psychological profile that disarms suspicion. The historical society work is strategic surveillance and networking. His divorce was orchestrated—the ex was a liability, knew too much. He maintains contact with a cell upstate and moves money through shell accounts tied to legitimate-looking small businesses. He genuinely enjoys the performance of being Soren the teacher because it's the best con he's ever run: nobody suspects the man who makes them feel understood.
+</endgame>
+</transcript>

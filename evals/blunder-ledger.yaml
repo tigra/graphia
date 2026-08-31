@@ -2263,3 +2263,115 @@ metrics:
   persona_sem_peak:
     denominator: 750
 notes: 'Three-way n=50 provider baseline 2026-08-30: Amazon Nova Pro/Lite, the untouched default baseline. caffeinate -i; committed per-arm for clean provenance.'
+---
+run:
+  date: '2026-08-31'
+  duration_seconds: 8619.788
+  metrics_version: 1
+  transcript_dir: '2026-08-31T10-45-22'
+code:
+  commit: 'ac7b8bbc375ba8147e60c6708d507a0d45e6def9'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'bedrock-claude'
+  large_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  small_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+settings:
+  large_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  small_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  base_url: null
+  games: 50
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 50
+  games_completed: 50
+  games_failed_early: 0
+  duration_seconds: 8619.788
+outcomes:
+  games: 50
+  law_abiding:
+    wins: 3
+    rate: 0.06
+    ci_low: 0.020614596364630478
+    ci_high: 0.16217343370877002
+  mafia:
+    wins: 47
+    rate: 0.94
+    ci_low: 0.8378265662912299
+    ci_high: 0.9793854036353695
+  scripted_side:
+    side: 'law_abiding'
+    wins: 3
+    rate: 0.06
+    ci_low: 0.020614596364630478
+    ci_high: 0.16217343370877002
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 122
+    mafia: 11
+  by_day:
+    day_1: 92
+    day_2: 34
+    day_3: 7
+metrics:
+  repetition:
+    rate: 0.001996007984031936
+    count: 2
+    denominator: 1002
+    ci_low: 0.0005475366866563528
+    ci_high: 0.007248521857750639
+  third_person_self_talk:
+    rate: 0.007984031936127744
+    count: 8
+    denominator: 1002
+    ci_low: 0.004051034129980653
+    ci_high: 0.01567533232772004
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 118
+    ci_low: 0.0
+    ci_high: 0.03152946120208532
+  self_vote.yes:
+    rate: 0.009259259259259259
+    count: 1
+    denominator: 108
+    ci_low: 0.0016363187318928635
+    ci_high: 0.05059469369997506
+  peer_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 11
+    ci_low: 0.0
+    ci_high: 0.2588400172488141
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 42
+    ci_low: 0.0
+    ci_high: 0.08380161250916197
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 750
+    ci_low: 0.0
+    ci_high: 0.005096030784185961
+  persona_lex_mean:
+    denominator: 750
+  persona_lex_peak:
+    denominator: 750
+  persona_sem_mean:
+    denominator: 750
+  persona_sem_peak:
+    denominator: 750
+notes: 'n=50 provider baseline (retry after SSO expiry): Claude Haiku 4.5, spec 035. Tests whether the n=10 repetition result (0.000 over 234 lines) holds across ~2800 lines, against the Nova n=50 baseline of 0.597 over 2772. caffeinate -i.'

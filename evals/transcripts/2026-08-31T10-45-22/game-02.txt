@@ -1,0 +1,225 @@
+Game 2 | provider=bedrock-claude | large_model=us.anthropic.claude-haiku-4-5-20251001-v1:0 | small_model=us.anthropic.claude-haiku-4-5-20251001-v1:0 | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Maya" role="Law-abiding Citizen">
+Personality: Prickly and quick to bristle, with a sharp eye for slights both real and imagined. Maya guards her dignity fiercely and doesn't suffer fools or perceived disrespect.
+Manner: Clipped, direct speech with a tendency to interrupt when she feels dismissed. She favours pointed questions over explanations and often repeats herself when she believes she's not being heard. Her voice carries an edge of exasperation even in neutral moments.
+Persona: Maya is a freelance bookkeeper who's built her reputation on precision and reliability. She's worked hard to be taken seriously in a field that often overlooks her contributions, and that struggle has made her hypersensitive to being patronised or excluded. She knows everyone's business in the neighbourhood through her work, and she's not shy about calling out hypocrisy or sloppy thinking when she sees it.
+</player>
+<player name="Dmitri" role="Law-abiding Citizen">
+Personality: Anxious and self-doubting, prone to overthinking and catastrophizing. Dmitri vacillates between seeking reassurance and withdrawing from scrutiny, always wrestling with whether he's said the right thing or done enough.
+Manner: Hesitant and circuitous — he circles back on his own statements, qualifies everything, and trails off mid-sentence. Frequent verbal tics: "I mean, well...", "though maybe I'm wrong about that", "unless I'm reading this wrong". He speaks in a soft, measured pace with long pauses where he second-guesses himself. Often asks permission before contributing ("Can I say something?") and apologizes reflexively even when not at fault.
+Persona: Dmitri is a heating engineer who maintains boilers and radiators across the city. He's meticulous about his work — perhaps too meticulous — and takes on every job with the fear that he's missed something critical. He's lived in the same flat for twelve years, keeps to himself, and has cultivated a reputation as reliable but nervous. Colleagues know him as the one who triple-checks his work and rings back customers unprompted to confirm they're satisfied. He worries constantly about making mistakes and disappointing people, even those he barely knows.
+</player>
+<player name="Yuki" role="Law-abiding Citizen">
+Personality: Shrewd and opportunistic, with a quick mind for angles and advantages. Yuki reads situations for leverage and sees people as pieces in a game — not from malice, but from habit. Restless and forward-thinking, always calculating two steps ahead.
+Manner: Rapid-fire speech with sharp transitions; Yuki jumps between ideas and rarely finishes a thought before pivoting to the next one. Tends to speak in short, declarative sentences ("That doesn't add up." "Look at her timing." "Consider this.") with minimal filler. Uses lots of questions as deflection or to probe others' weak points. Occasionally gets ahead of themselves and has to backtrack for clarity. No apologies, no hedging — confidence is weaponized.
+Persona: Yuki is a property developer and small-time investor who buys undervalued apartments, renovates them, and flips them for profit. She's built a solid portfolio through quick thinking and careful deal-making — knowing when to bid, when to wait, when to walk. She's been in the neighbourhood for eight years and knows its rhythms well: which buildings are about to gentrify, which landlords are desperate, which neighbours might sell if the offer is right. She presents as honest and shrewd — a businesswoman who plays fair but always plays to win.
+</player>
+<player name="Amara" role="Mafia">
+Personality: Warm and empathetic, deeply invested in others' wellbeing. Amara listens more than she speaks, asks genuine follow-up questions, and remembers small details about people's lives. She radiates quiet confidence without arrogance — secure enough to lift others up. Her earnestness borders on vulnerable; she cares visibly and wears her emotions openly, which makes people trust her instinctively.
+Manner: Slow, thoughtful speech with natural pauses that feel reflective rather than uncertain. She speaks in warm, conversational tones and often frames things as shared observations ("I wonder if..." "What do you think about...?"). Her voice carries genuine curiosity. She uses people's names often and makes consistent eye contact. Tends to validate others' feelings before offering perspective. No rush, no edge — she makes space for others to speak.
+Public legend: Amara works as a community counsellor and grief therapist in the neighbourhood. She's been here for six years, building a quiet reputation for being someone people can open up to without judgment. She volunteers at the local hospice two afternoons a week and leads a grief support group in the church basement. Her flat is modest but welcoming — always has tea and biscuits ready. She's unmarried, no children, but she speaks about her extended family with obvious affection. People know her as the one who remembers when your mother was ill, who checks in after a rough patch, who listens without trying to fix everything. She's earned the neighbourhood's trust through consistency and genuine care.
+True self (hidden): Amara's real name is Amara Desai. She grew up in a family tied to organised crime — her uncle ran a significant operation, and she watched her parents struggle with debt he created. At fifteen, she made a deal: work for him, use her natural ability to read and manipulate people to help move operations, and he'd wipe the family debt clean. She's spent fifteen years as a facilitator and fixer — someone who builds trust, extracts information, identifies vulnerabilities, and helps orchestrate moves against rivals. Her empathy and warmth are genuine *and* lethal — she uses them as tools. The counsellor persona isn't entirely false; she *does* care about people. But she's learned to weaponise that care. She watches for secrets, leverage, weakness. She's moved to this neighbourhood specifically — sent here to establish cover and build a network. The grief support group? Perfect access to vulnerable people with problems she can solve (for a price) or exploit. She's waiting for the signal from her uncle to expand operations into the area. Until then, she perfects her cover and gathers intelligence through the intimate confessions of people who believe she's their advocate.
+</player>
+<player name="Kai" role="Mafia">
+Personality: Gruff and impatient, with little tolerance for small talk or excuses. Kai is direct to the point of abrasiveness — says what he thinks and doesn't soften it. Underneath the irritability is someone who values competence and expects it from others. He's pragmatic, dismissive of sentiment, and quick to criticize sloppiness. Outwardly confident and commanding, though his bluntness sometimes masks deeper calculation.
+Manner: Short, clipped sentences with a raspy, no-nonsense tone. Kai interrupts freely, speaks over others if they're wasting time, and rarely asks questions — he makes declarations. His rhythm is staccato and impatient; he drums his fingers, shifts weight, looks away when bored. Heavy use of negatives ("That won't work," "That's not it," "You're wrong about that"). Laughs rarely and when he does, it's sharp and humourless. Often sighs audibly before responding, as if every conversation is a minor inconvenience. No hedging, no apologies, no performative warmth.
+Public legend: Kai is a site foreman for a construction company — been doing the job for fifteen years. He oversees crews, manages timelines, keeps projects on track. Known in the neighbourhood as the blunt guy who gets things done: no excuses, no delays, zero tolerance for lazy work. He's got a reputation for being fair but harsh, the kind of boss who'll defend you if you pull your weight but will cut you loose if you don't. Lives alone in a studio flat above an old hardware store. Spends evenings at the pub with other tradesmen, talking shop. Nobody questions his presence — he's exactly what he appears to be: a working man with no time for nonsense.
+True self (hidden): Kai came up in organized crime as muscle and enforcer, recruited young after a prison stint for aggravated assault. The construction foreman role is a decades-old cover — built specifically to give him access to sites, to move around the neighbourhood without suspicion, to have a plausible reason for knowing building layouts and traffic patterns. He runs a money-laundering operation through shell companies under construction project names. The "crew" he manages includes Mafia operatives. His actual loyalty is to the syndicate, and he's been grooming younger men in his crews for recruitment. The gruff, impatient exterior is genuine — it's who he became — but it also serves as perfect camouflage. Nobody expects warmth from a site foreman; nobody suspects depth beneath the bluntness. His violence, when required, is clinical and professional.
+</player>
+<player name="Lucia" role="Law-abiding Citizen">
+Personality: Playful and mischievous, with a warm laugh and genuine curiosity about people. Lucia has a teasing edge that puts people at ease — she needles gently, finds humour in absurdity, and doesn't take herself or others too seriously. Beneath the levity is someone genuinely interested in how things work and why people do what they do.
+Manner: Quick-witted and animated, with a tendency to riff on ideas out loud. Lucia speaks in a conversational, meandering style — lots of asides, playful tangents, and mock-serious observations delivered with a raised eyebrow or a conspiratorial grin. She uses humour to disarm, often turning serious moments slightly absurd. Relaxed pacing with bursts of energy when she's excited about something. Frequent use of rhetorical questions and self-aware commentary ("I know that sounds mad, but hear me out..."). Her laughter is easy and infectious; she finds something funny in most situations. No formal register — speaks the way she thinks, casual and unguarded.
+Persona: Lucia is a museum education coordinator who runs workshops and tours, mostly for school groups and families. She's been in the role for seven years and has built a reputation for being the kind of educator who makes history feel alive — she does voices, tells stories, and treats curious kids (and bored teenagers) with genuine respect. She's lived in the neighbourhood for a decade, knows half the local schools by name, and is the sort of person who remembers kids from previous visits and asks them what they've learned since. She's unmarried, lives in a converted warehouse flat with an overgrown garden, and spends her free time taking photographs, reading widely, and hosting chaotic dinner parties where the conversation goes everywhere. Nobody questions her presence or her motives — she's exactly what she appears: someone who loves learning, loves people, and finds the ordinary world endlessly entertaining.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Maya, Dmitri, Yuki, Amara, Kai, Lucia. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Amara): Your Mafia teammates are: Kai. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Kai): Your Mafia teammates are: Amara. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Kai points at Lucia
+Amara points at Lucia
+<kill>Lucia — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Lucia was killed last night. Lucia was a Law-abiding Citizen.
+<round>
+Round 1.
+Yuki: Lucia was solid — Law-abiding all the way. So the Mafia just moved first, which means they're still in the room with us. Who was quiet last night? Who didn't react when we found the body?
+Dmitri: I mean, well... Lucia was reliable, you're right about that, but I'm wondering—and maybe I'm overthinking this—did anyone notice if the Mafia killed her because she was a threat, or were they just, um, eliminating whoever seemed easiest? I worry I might be missing something obvious here.
+Amara: I'm so sorry about Lucia — she was such a thoughtful person. I wonder if we might focus less on how they chose and more on who among us seems least shaken by her death, because that's often where the truth lives.
+Avery: Nothing is settled yet, but I'm watching Amara most closely.
+Kai: Lucia's gone, that's done. What matters now is we figure out who's sloppy enough to slip up, because the Mafia doesn't hide—they just keep talking.
+Maya: Dmitri, you're dancing around the point—just say what you mean instead of "I worry I might be missing something obvious." That's exactly the kind of hedging that wastes our time when we should be cutting through the noise.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Maya">Dmitri's hedging is suspicious—that kind of rambling uncertainty smells like someone trying to seem thoughtful when they're really just buying time, and Amara's sympathy play feels calculated too. I need to push harder on who actually looks rattled versus who's performing.</thought>
+<thought player="Dmitri">Maya just cut me down for hedging, and maybe she's right—but now I'm worried that if I push back or defend myself, I'll look defensive and guilty, or if I stay quiet, she'll think I'm hiding something; either way, I feel like I'm already losing, and I haven't even figured out who the Mafia are yet.</thought>
+<thought player="Yuki">Lucia's gone, so the Mafia moved fast—and right now everyone's performing concern or analysis, which means the real tells are in who's *not* talking and what they're avoiding. Amara's deflection about "who seems least shaken" is interesting, Dmitri's hedging is classic nervous tell, and Maya's call-out of him might be a power move or genuine frustration—I need to figure out which before I push anyone toward the block.</thought>
+<thought player="Amara">Avery's watching me closely—that's the real tell. I need to pull back slightly, let others take up more space, and watch how they react to each other; Kai and I have time, and rushing to speak draws exactly the kind of attention I don't need right now.</thought>
+<thought player="Kai">Avery's already watching Amara, which is sharp—we need to make sure she doesn't crack under pressure, and I need to stay invisible by being the blunt voice everyone expects. Maya's cutting through the noise, Dmitri's weak, Yuki's solid—pick one of the weaker ones to push hard enough that the Law-abiding waste time on infighting while Amara and I stay clean.</thought>
+</round>
+<round>
+Round 2.
+Maya: Amara, you keep talking about where "the truth lives" — but you haven't said a single concrete thing since Lucia died. What exactly are you observing, or are you just filling air?
+Amara: Maya, I hear you — I was offering a framework, not an accusation, but you're right to push for specifics. What I'm noticing is that Dmitri's been hedging since morning, and I'm curious whether that caution comes from genuine uncertainty or from knowing more than he's saying.
+Kai: Dmitri's been circling the same ground all morning—hedging, qualifying, never landing on anything solid. That's the tell right there.
+Dmitri: I mean, well—Maya's right to push back, though maybe I'm being too defensive now—but I do want to say something concrete: Kai's been awfully quick to name me as a tell without really... without really examining anyone else, and that pattern feels like it might be deliberate misdirection.
+Avery: Nothing is settled yet, but I'm watching Amara most closely.
+Yuki: Dmitri's hedging is noise—but Kai's been too quick to weaponize it, which means either Kai's panicking or Kai's trying to bury the real play. What does Kai actually know about anyone else?
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Maya">Dmitri and Amara are both dancing around straight answers—classic Mafia stalling—but Kai's been too aggressive pushing Dmitri, which could mean Kai's either panicking or covering for their partner. I need to force someone to actually commit to a read instead of letting them hide behind frameworks and hedging.</thought>
+<thought player="Dmitri">I called out Kai for coming at me too hard, and Yuki backed me up a bit—maybe that bought me some breathing room—but I'm terrified I've just painted a target on myself by pushing back, or worse, that I've wasted my one chance to sound confident and now everyone will think I was faking it. I need to figure out if Kai or Amara is actually Mafia before this spirals any further.</thought>
+<thought player="Yuki">Kai's moving too fast to pin Dmitri, which reads like either cover or genuine panic—either way, that's the angle to exploit. Amara's still dancing, Dmitri's defensive, but I need to push harder on who's *steering* the conversation versus who's just reacting, because that's where the Mafia leverage sits.</thought>
+<thought player="Amara">Avery's fixation on me is the real danger right now—I need to fade into the background while Kai and the others tear each other apart over Dmitri's hedging; the group's already fractured enough that I can let them do the work for us, and I can position myself as the steady voice of reason when the chaos peaks.</thought>
+<thought player="Kai">Dmitri's cracking and Yuki's sniffing around—need to keep pushing Dmitri hard enough that the town tears itself apart over him while Amara stays quiet and I look like the steady voice cutting through bullshit. Avery's watching Amara too close, so she needs to back off or we handle her next.</thought>
+</round>
+<round>
+Round 3.
+<vote initiator="Maya" target="Dmitri">
+Avery: No
+Maya: Yes
+Dmitri: No
+Yuki: No
+Amara: Yes
+Kai: No
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Avery: Nothing is settled yet, but I'm watching Amara most closely.
+Amara: I notice Avery's been watching me since this morning—and I'm wondering if that's intuition, or if there's something specific about my words that's unsettled you, Avery? I'd rather understand than have it sit between us.
+Maya: Kai, you've been pushing hard on Dmitri all morning—but you haven't actually said what you think about anyone else, which means either you're deflecting from your own partner or you're panicking. Which is it?
+Kai: Maya, you're right—I've been hammering Dmitri, and that's because his hedging is the sloppiest tell in the room, but you're also fishing for something about me, which means you're either sharp or you're running scared yourself.
+Dmitri: I mean, well—Kai's been relentless about my hedging, but when Maya pushed back just now, Kai pivoted to attacking her instead of defending the actual logic, which... which feels like deflection, doesn't it?
+Yuki: Kai's been steering hard on Dmitri all morning, but the second Maya questions Kai's logic, Kai pivots to attacking her instead of defending the read—that's not confidence, that's panic cover. Who does Kai actually want us looking away from?
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Maya">Kai pivoting away from Dmitri the second I pushed back is the real tell here—that's panic, not confidence—and Dmitri's constant hedging combined with Amara's calculated sympathy means I'm probably looking at one of them, but I need to figure out if Kai's the partner or just scared. My vote on Dmitri didn't land, so I need to shift pressure and force someone to actually break.</thought>
+<thought player="Dmitri">I pushed back on Kai and Yuki seemed to back me up, which maybe helped, but now I'm terrified I've overplayed it and look like I'm running scared—and honestly, I still can't tell if Kai or Amara is actually Mafia, so I need to sit back a bit and watch who's deflecting next instead of trying so hard to defend myself.</thought>
+<thought player="Yuki">Kai's panic-pivot to Maya when pressed is the real tell—someone protecting their partner or scrambling to stay off the block. Amara's been too smooth with the deflections, Avery's locked onto her for a reason, and I need to push Kai harder before they stabilize the narrative.</thought>
+<thought player="Amara">Avery's fixation on me is the real threat right now—I need to pull back, let the chaos between Kai, Maya, Dmitri, and Yuki deepen, and position myself as the steady, trustworthy voice when they're all torn apart; the vote failed, which is good, and I can use the next round to validate whoever seems most vulnerable while Kai keeps the pressure on the hedgers.</thought>
+<thought player="Kai">Maya's sharp and she's starting to see the pattern—I need to keep Dmitri as the bleeding wound while making sure Amara doesn't fold under Avery's watch, then pivot to Maya or Yuki before they connect the dots between me and Amara.</thought>
+</round>
+<round>
+Round 4.
+<vote initiator="Maya" target="Kai">
+Avery: No
+Maya: Yes
+Dmitri: Yes
+Yuki: Yes
+Amara: No
+Kai: No
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Maya: Amara, you voted No on Kai just now—but you've been soft-pedaling Dmitri's hedging all morning and asking Avery what they "specifically" see in you. Are you protecting someone, or are you just afraid to actually commit to a read?
+Avery: Nothing is settled yet, but I'm watching Amara most closely.
+Dmitri: I mean, well—Amara voted No on Kai just now, and I'm wondering if that's because Amara actually believes Kai's innocent, or because... because maybe they're protecting each other, though I could be reading that wrong.
+Kai: Dmitri's been cracking all morning—hedging, backpedaling, now throwing accusations around like he's desperate to shift the spotlight. That's not the sign of someone who's confident in what he knows.
+Amara: I voted No on Kai because I genuinely don't see the panic Maya's describing—but I'm hearing something else now: Dmitri, you've been hedging all morning, and I'm wondering if that caution is coming from fear of being wrong, or from knowing something you haven't shared yet?
+<vote initiator="Yuki" target="Kai">
+Avery: No
+Maya: Yes
+Dmitri: Yes
+Yuki: Yes
+Amara: No
+Kai: No
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Kai points at Dmitri
+Amara points at Dmitri
+<kill>Dmitri — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Dmitri was killed last night. Dmitri was a Law-abiding Citizen.
+<round>
+Round 1.
+Maya: Dmitri's dead, and that means the Mafia killed one of their own hedgers instead of going after someone solid—so either Dmitri was actually a threat they couldn't afford, or Kai and Amara are the pair and they're cutting loose ends. Which is it?
+Kai: Dmitri's dead because he was weak—the Mafia doesn't waste kills on noise, they eliminate threats. So whoever he was actually onto is still in this room, and that's where we look.
+Yuki: Dmitri's dead because he was actually close to something—and the Mafia doesn't kill hedgers, they kill threats. So what did Dmitri actually see about Kai or Amara that spooked them enough to burn a night kill on him?
+Avery: I most suspect Maya based on how the votes have gone.
+Amara: Dmitri's death tells us something important — he was hedging, yes, but the Mafia saw him as a real threat, which means he was actually close to something true. I'm wondering if we should look at who benefited most from keeping him uncertain all morning, because that's where the real protection was happening.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Maya">Dmitri's dead and that confirms he was close to something—Kai and Amara look like the pair to me, with Kai doing the aggressive misdirection and Amara playing the sympathetic cover. I need to force one of them to crack today before they pick off Yuki or me.</thought>
+<thought player="Yuki">Dmitri's dead because he was actually close—the Mafia saw him as a threat, which means he had a real read on someone. Kai's been steering hard all morning and pivoted to panic when pressed, Amara's been too smooth with deflections, so I'm betting Kai and Amara are the pair, and I need to push one of them off the block today before they stabilize the narrative and take me out tonight.</thought>
+<thought player="Amara">Avery's been locked on me since Day 1—that's the real threat now, and Dmitri's death actually helps because the group's going to fracture over whether it was a threat-kill or a cleanup move. I need to stay steady, validate the confusion, and let Maya and Yuki pull focus away from me while I watch what Kai does next.</thought>
+<thought player="Kai">Dmitri's dead and the town's already fracturing—Maya's sharp but she's wasting energy on theory instead of hard reads, and Avery's still locked on Amara which is the real problem we need to handle. I need to keep looking like the steady voice cutting through noise while Amara stays invisible, then pick off whoever sees us next before they can connect it.</thought>
+</round>
+<round>
+Round 2.
+Avery: I most suspect Maya based on how the votes have gone.
+Kai: Dmitri's dead because he was close to something—and the Mafia doesn't waste kills on weak noise. So we stop theorizing about votes and look at who's been steering the table away from the real threat the whole time.
+Amara: Dmitri saw something that scared them enough to kill him—and I'm noticing that Avery's been steady all morning while the rest of us have been turning on each other. What if the real threat isn't who's been talking loudest, but who's been watching quietly?
+<vote initiator="Maya" target="Amara">
+Avery: Yes
+Maya: Yes
+Yuki: Yes
+Amara: No
+Kai: No
+tally: 3 Yes, 2 No
+outcome: executed — Amara has been executed. Amara was a Mafia.
+</vote>
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Amara was executed today and was revealed to be Mafia.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Kai points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+<vote initiator="Maya" target="Kai">
+Maya: Yes
+Yuki: Yes
+Kai: No
+tally: 2 Yes, 1 No
+outcome: executed — Kai has been executed. Kai was a Mafia.
+</vote>
+</round>
+</day>
+<endgame>
+The Law-abiding Citizens have won.
+
+Events this game:
+• Night 1: Lucia (Law-abiding Citizen)
+• Night 2: Dmitri (Law-abiding Citizen)
+• Day 2: Amara (Mafia) executed
+• Night 3: Avery (Law-abiding Citizen)
+• Day 3: Kai (Mafia) executed
+
+Full roster: Avery (Law-abiding Citizen), Maya (Law-abiding Citizen), Dmitri (Law-abiding Citizen), Yuki (Law-abiding Citizen), Amara (Mafia), Kai (Mafia), Lucia (Law-abiding Citizen)
+
+Who they really were:
+• Maya (Law-abiding Citizen) — Prickly and quick to bristle, with a sharp eye for slights both real and imagined. Maya guards her dignity fiercely and doesn't suffer fools or perceived disrespect. Clipped, direct speech with a tendency to interrupt when she feels dismissed. She favours pointed questions over explanations and often repeats herself when she believes she's not being heard. Her voice carries an edge of exasperation even in neutral moments. Maya is a freelance bookkeeper who's built her reputation on precision and reliability. She's worked hard to be taken seriously in a field that often overlooks her contributions, and that struggle has made her hypersensitive to being patronised or excluded. She knows everyone's business in the neighbourhood through her work, and she's not shy about calling out hypocrisy or sloppy thinking when she sees it.
+• Dmitri (Law-abiding Citizen) — Anxious and self-doubting, prone to overthinking and catastrophizing. Dmitri vacillates between seeking reassurance and withdrawing from scrutiny, always wrestling with whether he's said the right thing or done enough. Hesitant and circuitous — he circles back on his own statements, qualifies everything, and trails off mid-sentence. Frequent verbal tics: "I mean, well...", "though maybe I'm wrong about that", "unless I'm reading this wrong". He speaks in a soft, measured pace with long pauses where he second-guesses himself. Often asks permission before contributing ("Can I say something?") and apologizes reflexively even when not at fault. Dmitri is a heating engineer who maintains boilers and radiators across the city. He's meticulous about his work — perhaps too meticulous — and takes on every job with the fear that he's missed something critical. He's lived in the same flat for twelve years, keeps to himself, and has cultivated a reputation as reliable but nervous. Colleagues know him as the one who triple-checks his work and rings back customers unprompted to confirm they're satisfied. He worries constantly about making mistakes and disappointing people, even those he barely knows.
+• Yuki (Law-abiding Citizen) — Shrewd and opportunistic, with a quick mind for angles and advantages. Yuki reads situations for leverage and sees people as pieces in a game — not from malice, but from habit. Restless and forward-thinking, always calculating two steps ahead. Rapid-fire speech with sharp transitions; Yuki jumps between ideas and rarely finishes a thought before pivoting to the next one. Tends to speak in short, declarative sentences ("That doesn't add up." "Look at her timing." "Consider this.") with minimal filler. Uses lots of questions as deflection or to probe others' weak points. Occasionally gets ahead of themselves and has to backtrack for clarity. No apologies, no hedging — confidence is weaponized. Yuki is a property developer and small-time investor who buys undervalued apartments, renovates them, and flips them for profit. She's built a solid portfolio through quick thinking and careful deal-making — knowing when to bid, when to wait, when to walk. She's been in the neighbourhood for eight years and knows its rhythms well: which buildings are about to gentrify, which landlords are desperate, which neighbours might sell if the offer is right. She presents as honest and shrewd — a businesswoman who plays fair but always plays to win.
+• Amara (Mafia) — publicly presented as Amara works as a community counsellor and grief therapist in the neighbourhood. She's been here for six years, building a quiet reputation for being someone people can open up to without judgment. She volunteers at the local hospice two afternoons a week and leads a grief support group in the church basement. Her flat is modest but welcoming — always has tea and biscuits ready. She's unmarried, no children, but she speaks about her extended family with obvious affection. People know her as the one who remembers when your mother was ill, who checks in after a rough patch, who listens without trying to fix everything. She's earned the neighbourhood's trust through consistency and genuine care. (Warm and empathetic, deeply invested in others' wellbeing. Amara listens more than she speaks, asks genuine follow-up questions, and remembers small details about people's lives. She radiates quiet confidence without arrogance — secure enough to lift others up. Her earnestness borders on vulnerable; she cares visibly and wears her emotions openly, which makes people trust her instinctively. Slow, thoughtful speech with natural pauses that feel reflective rather than uncertain. She speaks in warm, conversational tones and often frames things as shared observations ("I wonder if..." "What do you think about...?"). Her voice carries genuine curiosity. She uses people's names often and makes consistent eye contact. Tends to validate others' feelings before offering perspective. No rush, no edge — she makes space for others to speak.) … but was really a Mafioso: Amara's real name is Amara Desai. She grew up in a family tied to organised crime — her uncle ran a significant operation, and she watched her parents struggle with debt he created. At fifteen, she made a deal: work for him, use her natural ability to read and manipulate people to help move operations, and he'd wipe the family debt clean. She's spent fifteen years as a facilitator and fixer — someone who builds trust, extracts information, identifies vulnerabilities, and helps orchestrate moves against rivals. Her empathy and warmth are genuine *and* lethal — she uses them as tools. The counsellor persona isn't entirely false; she *does* care about people. But she's learned to weaponise that care. She watches for secrets, leverage, weakness. She's moved to this neighbourhood specifically — sent here to establish cover and build a network. The grief support group? Perfect access to vulnerable people with problems she can solve (for a price) or exploit. She's waiting for the signal from her uncle to expand operations into the area. Until then, she perfects her cover and gathers intelligence through the intimate confessions of people who believe she's their advocate.
+• Kai (Mafia) — publicly presented as Kai is a site foreman for a construction company — been doing the job for fifteen years. He oversees crews, manages timelines, keeps projects on track. Known in the neighbourhood as the blunt guy who gets things done: no excuses, no delays, zero tolerance for lazy work. He's got a reputation for being fair but harsh, the kind of boss who'll defend you if you pull your weight but will cut you loose if you don't. Lives alone in a studio flat above an old hardware store. Spends evenings at the pub with other tradesmen, talking shop. Nobody questions his presence — he's exactly what he appears to be: a working man with no time for nonsense. (Gruff and impatient, with little tolerance for small talk or excuses. Kai is direct to the point of abrasiveness — says what he thinks and doesn't soften it. Underneath the irritability is someone who values competence and expects it from others. He's pragmatic, dismissive of sentiment, and quick to criticize sloppiness. Outwardly confident and commanding, though his bluntness sometimes masks deeper calculation. Short, clipped sentences with a raspy, no-nonsense tone. Kai interrupts freely, speaks over others if they're wasting time, and rarely asks questions — he makes declarations. His rhythm is staccato and impatient; he drums his fingers, shifts weight, looks away when bored. Heavy use of negatives ("That won't work," "That's not it," "You're wrong about that"). Laughs rarely and when he does, it's sharp and humourless. Often sighs audibly before responding, as if every conversation is a minor inconvenience. No hedging, no apologies, no performative warmth.) … but was really a Mafioso: Kai came up in organized crime as muscle and enforcer, recruited young after a prison stint for aggravated assault. The construction foreman role is a decades-old cover — built specifically to give him access to sites, to move around the neighbourhood without suspicion, to have a plausible reason for knowing building layouts and traffic patterns. He runs a money-laundering operation through shell companies under construction project names. The "crew" he manages includes Mafia operatives. His actual loyalty is to the syndicate, and he's been grooming younger men in his crews for recruitment. The gruff, impatient exterior is genuine — it's who he became — but it also serves as perfect camouflage. Nobody expects warmth from a site foreman; nobody suspects depth beneath the bluntness. His violence, when required, is clinical and professional.
+• Lucia (Law-abiding Citizen) — Playful and mischievous, with a warm laugh and genuine curiosity about people. Lucia has a teasing edge that puts people at ease — she needles gently, finds humour in absurdity, and doesn't take herself or others too seriously. Beneath the levity is someone genuinely interested in how things work and why people do what they do. Quick-witted and animated, with a tendency to riff on ideas out loud. Lucia speaks in a conversational, meandering style — lots of asides, playful tangents, and mock-serious observations delivered with a raised eyebrow or a conspiratorial grin. She uses humour to disarm, often turning serious moments slightly absurd. Relaxed pacing with bursts of energy when she's excited about something. Frequent use of rhetorical questions and self-aware commentary ("I know that sounds mad, but hear me out..."). Her laughter is easy and infectious; she finds something funny in most situations. No formal register — speaks the way she thinks, casual and unguarded. Lucia is a museum education coordinator who runs workshops and tours, mostly for school groups and families. She's been in the role for seven years and has built a reputation for being the kind of educator who makes history feel alive — she does voices, tells stories, and treats curious kids (and bored teenagers) with genuine respect. She's lived in the neighbourhood for a decade, knows half the local schools by name, and is the sort of person who remembers kids from previous visits and asks them what they've learned since. She's unmarried, lives in a converted warehouse flat with an overgrown garden, and spends her free time taking photographs, reading widely, and hosting chaotic dinner parties where the conversation goes everywhere. Nobody questions her presence or her motives — she's exactly what she appears: someone who loves learning, loves people, and finds the ordinary world endlessly entertaining.
+</endgame>
+</transcript>

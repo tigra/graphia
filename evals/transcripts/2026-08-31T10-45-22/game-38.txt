@@ -1,0 +1,224 @@
+Game 38 | provider=bedrock-claude | large_model=us.anthropic.claude-haiku-4-5-20251001-v1:0 | small_model=us.anthropic.claude-haiku-4-5-20251001-v1:0 | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Marina" role="Law-abiding Citizen">
+Personality: Weary and pragmatic, with a dry humor that masks underlying exhaustion. Quick to skepticism, slow to trust, but fiercely protective of those she's decided are worth her time.
+Manner: Speaks in clipped, efficient sentences with long pauses—she's learned not to fill silence. Occasionally trails off mid-thought as if lost in fatigue. Uses nautical metaphors reflexively (old habits). Tends to interrupt with sardonic asides. Her voice carries the rasp of someone who's spent years talking over wind and water.
+Persona: Marina ran a small harbor maintenance business for twenty-three years before selling it off. Now she does odd jobs—repairs, handyman work—and spends most afternoons at the docks watching the boats. She's lived in the same cottage by the water her entire life. Divorced once, no kids. Known for being blunt to the point of rudeness, but reliable. People call her when they need someone to tell them the truth, not what they want to hear.
+</player>
+<player name="Yuki" role="Law-abiding Citizen">
+Personality: Vigilant and alert, with an intense focus that borders on hypervigilance. Yuki notices everything but struggles to distinguish signal from noise—tends toward suspicion of patterns that may not exist. Earnest and well-meaning, but her watchfulness makes her come across as tense. Underneath, there's genuine warmth she rarely lets surface.
+Manner: Speaks in rapid, searching questions punctuated by nervous energy. Often circles back to details others have already moved past. Listens intently but interrupts herself with clarifying follow-ups. Uses phrases like "Wait, but—" and "Hold on, that doesn't..." Her speech has a staccato quality, like she's cataloging everything. Rarely laughs, but when she does it's sudden and a bit too loud. Often repeats others' words back to them as if confirming she heard correctly.
+Persona: Yuki works as a night security guard at a local hospital. For the past six years, she's monitored corridors, reviewed camera feeds, and responded to alarms—always watching, always alert for something wrong. The job has made her hyperaware of irregularities and inconsistencies. She lives alone in a small apartment, spends her days sleeping fitfully, and her evenings studying faces and behavior. She's a decent person trying to do her job well, but the constant vigilance has left her wound tight. Her coworkers respect her diligence; they also find her exhausting.
+</player>
+<player name="Hassan" role="Mafia">
+Personality: Charming and irreverent, with a quick wit that disarms others. Hassan performs warmth and humor—laughs easily, makes jokes at his own expense, and deflects tension with playful teasing. Beneath the public charm lies calculated ease; he reads people for leverage, not connection. Outwardly relaxed where Yuki is wound tight, flip where Marina is blunt. His humor serves a purpose: it makes him likable, forgettable, and above suspicion.
+Manner: Speaks in a rolling, conversational cadence—warm and informal, peppered with banter and gentle ribbing directed at whoever's speaking. Uses humor to steer conversations, deflate accusations with a laugh, or buy time to think. Often compliments people disarmingly ("That's actually a sharp catch, by the way"). Frequently employs rhetorical questions and mock-earnest phrases like "Come on now" or "Be honest with me." His voice has an easy, almost musical quality—he doesn't rush. Laughs often and infectiously. Rarely sounds defensive; instead he sounds amused, as if the whole thing is a game everyone's in together. Interrupts occasionally but always with a playful tone—never hostile.
+Public legend: Hassan works as a freelance event coordinator and party planner for the city. He's good at what he does—knows the right caterers, the right venues, the right people. Charming, reliable, always has a story or a joke ready. He grew up here, lived abroad for a few years ("got it out of my system," he'll say with a grin), and came back to settle down and build a comfortable life. He rents a nice apartment downtown, has a solid circle of friends, goes to the gym a few times a week, and spends his evenings at bars or restaurants where he knows everyone. He's the kind of person who remembers your name and asks about your family. Never married—"Haven't found the right person," he'll say with a shrug and a smile. Openly social, always seems relaxed and unburdened.
+True self (hidden): Hassan's family was drawn into organized crime through debt when he was young—his father owed money he couldn't repay. By his early twenties, Hassan was already doing enforcement work for the local crew; by thirty, he'd moved into higher-level operations: money laundering, protection, coordinated disappearances. His "event coordination" business is a legitimate front—it serves its purpose and it genuinely makes money. But his real job is managing relationships, moving cash, and eliminating problems quietly. He's good at it because he's patient, strategic, and genuinely enjoys the theater of manipulation. He came back to this city specifically to consolidate power in a smaller market where he could operate with less heat. His charm isn't a mask he puts on—it's his primary tool. People trust him because he's genuinely likable, and he uses that trust ruthlessly when necessary. He kills when ordered to and sleeps well afterward.
+</player>
+<player name="Petra" role="Law-abiding Citizen">
+Personality: Brash and uncompromising, with a stubborn streak and no patience for social niceties. Petra speaks her mind immediately and sees hesitation as weakness. Confident to the point of abrasiveness, she's the type to dominate a room and expect others to keep up.
+Manner: Petra talks loud and fast, with sharp, declarative sentences that cut through ambiguity. She uses sports and combat metaphors—"tackle this head-on," "no punching bag here," "that's a fumble." Her voice has a confrontational edge; she leans into disagreement rather than away from it. Often starts sentences with "Look," "Listen," or "Here's the thing—" and rarely hedges. No filler words, no apologies for interrupting. When annoyed, her volume goes up. When amused, she laughs hard and unselfconsciously. She's the kind of person who makes eye contact you can't quite break.
+Persona: Petra runs a boxing gym on the north side—has owned it for twelve years and built it from nothing. She's tough, hands-on, knows every regular by name and their personal drama whether she wants to or not. Grew up poor, worked her way up through sheer determination and refusal to quit. Never married, no kids. She's known around town as someone who will tell you exactly what she thinks, who doesn't back down from confrontation, and who will help you move at 6 AM if you ask but will also tell you if your idea is stupid. Drinks black coffee, plays poker with the same five people every Thursday, and has no time for nonsense.
+</player>
+<player name="Dmitri" role="Law-abiding Citizen">
+Personality: Earnest and effusive, with a genuine warmth that radiates outward. Dmitri is an optimist who sees the best in people and isn't afraid to express enthusiasm openly. He's thoughtful without being calculating, generous with compliments and encouragement. There's a guileless quality to him—what you see is what you get, for better or worse.
+Manner: Dmitri speaks with easy warmth and animated gestures, his words tumbling out in genuine bursts rather than measured cadences. He leans in when listening, maintains open body language, and frequently exclaims his reactions—"Oh, that's wonderful!" or "I hadn't thought of it that way!" His speech is peppered with sincere appreciation for others' ideas ("That's really thoughtful of you to say that") and he genuinely remembers personal details people share. He speaks a touch slowly, wanting to be understood, and often pauses to make sure others are following. Uses inclusive language—"we," "us," "together." Laughs readily and warmly, never at someone's expense. Occasionally repeats back what he's heard, not from suspicion like Yuki, but from genuine interest and desire to connect.
+Persona: Dmitri is a high school music teacher who's taught choir and general music for fourteen years at the same school. He runs the spring musical every year and directs the community orchestra that meets Tuesday evenings at the civic center. He's the kind of teacher students remember fondly—he believes in every kid's potential and creates an environment where people feel safe trying new things. He lives with his two rescue dogs in a modest house he's owned for eight years, attends his church regularly, and volunteers with the local youth orchestra program. He's been married once (amicably divorced, still friendly with his ex), has no children, and spends his spare time at concerts, community events, or helping friends move. He's known around town as someone who's genuinely interested in people's lives, who will show up when you need him, and who carries an almost infectious sense of possibility about the world.
+</player>
+<player name="Amara" role="Mafia">
+Personality: Caustic and sardonic, with a sharp eye for human folly. Amara projects cool indifference to others' opinions while maintaining a veneer of civility. Beneath the sarcasm lies calculation—she observes, weighs, and catalogs information for leverage. She's controlled where others are reactive, measured where they're earnest. There's a performative quality to her friendliness; she's learned that seeming disinterested makes people underestimate her.
+Manner: Amara speaks in a low, measured tone with deliberate pauses—she never rushes to fill silence. Her wit is cutting but never quite cruel enough to offend; she flavors everything with dry humor and side-eye observations. She uses phrases like "Let's be real," "Come on," and "Here's what I think happens next—" with the tone of someone explaining something obvious to a slow child. She laughs rarely, and when she does it's mirthless, a short exhale that signals she's found something predictably stupid. She interrupts smoothly, not aggressively—slides her point in sideways, as if it was always part of the conversation. Speaks in short, declarative sentences punctuated by longer, elaborate insults dressed up as observations. Often leans back, crosses her arms, and watches others with an expression suggesting she's already ten steps ahead.
+Public legend: Amara is an insurance adjuster who's worked for the same firm for eight years. She's good at her job—thorough, unflappable, and skilled at asking the right questions to get people to slip up and reveal the truth about their claims. She lives alone in a modest apartment downtown, keeps to herself mostly, and has cultivated a reputation as someone who's reliable and straightforward if a bit cold. She doesn't have a wide social circle, but the people who know her trust her to tell them what she actually thinks rather than what they want to hear. She volunteers occasionally at the library, reads voraciously, and spends her weekends at home or at the movies. She's known around town as competent, uncompromising in her standards, and someone who notices when things don't add up. Single, no kids, no particular attachments—she lives a quiet, orderly life that requires very little from anyone.
+True self (hidden): Amara was recruited into the Mafia seven years ago through a family connection she's spent years distancing herself from. She was vulnerable then—drowning in debt, desperate, and someone made her an offer she couldn't refuse. She started as muscle and leverage, but quickly proved herself intelligent and disciplined. She moved up by being reliable, by never asking questions beyond what she needed to know, and by understanding that the real power in any organization lies in information. Her job as an insurance adjuster is perfect cover—it explains her access to sensitive data, her ability to read people, and her network of contacts. She's compartmentalized her life meticulously: one side processes claims, the other processes evidence of weakness in people who owe money or information. She's learned to wear the mask of the detached professional so convincingly that even she sometimes forgets what's underneath. She has no illusions about what she is, and that clarity—that refusal to romanticize or justify—is what makes her dangerous.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Marina, Yuki, Hassan, Petra, Dmitri, Amara. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Hassan): Your Mafia teammates are: Amara. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Amara): Your Mafia teammates are: Hassan. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Amara points at Marina
+Hassan points at Marina
+<kill>Marina — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Marina was killed last night. Marina was a Law-abiding Citizen.
+<round>
+Round 1.
+Yuki: Marina was killed last night—a Law-abiding Citizen. Wait, but who benefits most from that? I need to hear from everyone: who was moving against whom before the night fell?
+Petra: Look—Marina was solid, and now she's gone. Before we waste time guessing, I want to know who was *quiet* last night, who suddenly has opinions they didn't have yesterday, and who's dancing around straight answers.
+Amara: Let's be real—Marina being eliminated first tells us the Mafia saw her as a threat, which means we should figure out what she knew or was about to say before the night fell.
+Avery: Nothing is settled yet, but I'm watching Amara most closely.
+Dmitri: Marina was strong and thoughtful—she wouldn't have been taken out first unless the Mafia felt genuinely threatened by her, so I want to understand what she was building toward before the night fell.
+Hassan: Come on now—Marina being taken out first doesn't automatically mean she was a threat; the Mafia could've just been clearing someone random to sow chaos, right? But I'm curious what everyone thinks *she* was about to say before the night fell.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yuki">Marina taken out first—that's either because she was actually threatening or because they wanted chaos, and I need to watch who's *too* eager to explain why she died, because that's where the real tell is. Wait, but—Avery called out Amara immediately, and Hassan's pushing back on the "Marina was a threat" angle... I need to see who gets defensive when I start asking harder questions about what they were actually doing before night fell.</thought>
+<thought player="Hassan">Amara and I just took out Marina cleanly—good instinct reading her as a threat—but now everyone's circling and Avery's already eyeing Amara, which means I need to stay warm and deflect suspicion back to the paranoid ones while we figure out who's easiest to flip or eliminate next. Keep laughing, keep steering the conversation, and let Amara handle her own heat while I stay invisible.</thought>
+<thought player="Petra">Marina getting clipped first means the Mafia saw something they didn't like—and that tells me she was onto something real, not random noise. I need to push hard on who's suddenly got new energy or who's dodging straight answers, because that's where the tells are.</thought>
+<thought player="Dmitri">Marina being taken out first is really troubling—the Mafia clearly saw something in her, and I wish I'd gotten to know her better before the night fell. I need to listen carefully to who's asking the right questions and who's deflecting, because the real threat is going to show themselves through how they're reacting to losing her.</thought>
+<thought player="Amara">Hassan's defense of the random-kill angle is exactly what I'd do—too smooth, too quick to normalize the hit—which means he's either nervous or playing it safe; I need to let this breathe and watch who pushes hardest on Marina's last words, because that tells me who's actually building a case versus who's just performing concern.</thought>
+</round>
+<round>
+Round 2.
+Yuki: Wait, but—Avery threw out Amara's name right away, and Hassan's suddenly defending the idea that Marina was just random chaos; who moves that fast unless they're already steering us somewhere? I need to know: Avery, what exactly did you *see* before the night fell that made you lock onto Amara?
+Avery: Nothing is settled yet, but I'm watching Amara most closely.
+Dmitri: Hassan, I hear what you're saying about random chaos, but—Marina was *thoughtful*, and the Mafia doesn't usually take out someone thoughtful unless they're worried about where that thinking leads, so I'm wondering if you noticed her building toward something specific before the night fell?
+Petra: Listen—Hassan, you're the one suddenly rewriting the playbook, saying Marina was just random chaos; that's backwards thinking, and I want to know why you're working so hard to soften what the Mafia just told us by taking her out.
+Hassan: Okay, okay—Petra, I hear the heat, but come on now, I'm just asking a genuine question: why does the Mafia *always* have to be playing 4D chess? Sometimes they're just cleaning house early, and we're all reading tea leaves instead of listening to each other.
+Amara: Avery, you pinned me in the first five minutes—so either you saw something concrete, or you're hoping we're all too distracted to notice you threw out a name with no actual reason.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yuki">Avery threw Amara's name down with zero evidence and Hassan's working overtime to muddy the waters about why Marina died—one of them is definitely steering us, and I need to push back hard before we waste the day on a misdirect. But wait, I can't tell if I'm seeing the pattern or just seeing what I want to see, so I need to actually *listen* instead of just cataloging suspicions.</thought>
+<thought player="Hassan">Avery's moving fast and Petra's getting sharp—I need to keep laughing and stay out of the spotlight while Amara absorbs some heat, but if they start coordinating against her, I'll need to redirect their energy onto someone safer like Yuki or Dmitri before they get too comfortable. Marina was the right call, and now it's about patience and reading who cracks first.</thought>
+<thought player="Petra">Hassan's suddenly playing defense—trying to reframe Marina's elimination as random when the Mafia clearly saw a threat, and that's a tell I'm not ignoring; Avery threw Amara's name out early too, so I need to push both of them hard and see who breaks first under real pressure.</thought>
+<thought player="Dmitri">Hassan's pushing back hard on the idea that Marina was targeted strategically, and that defensive energy feels off to me—like he's trying to get us to stop thinking about *why* she was taken out, which is exactly what the Mafia would want. I need to keep pressing on what Hassan was doing before the night fell, because something in his pattern feels like it's worth following.</thought>
+<thought player="Amara">Avery's early pivot to me is either genuine suspicion or a misdirect—either way, I need to let Hassan carry water on the random-kill narrative while I stay calm and watch who's actually building a case versus performing; Petra and Dmitri are the real threats if they start connecting dots on Marina's thinking.</thought>
+</round>
+<round>
+Round 3.
+Petra: Hassan, you're tap-dancing around the obvious—the Mafia took out Marina because she was *dangerous*, and you're the one suddenly selling us the "it's just random chaos" story; that's a fumble, and I want to know what you're protecting.
+Dmitri: Hassan, I really do hear you on the chaos angle, but—you're the one asking us all to *stop* thinking about why Marina mattered, and that pattern of deflection is what worries me most right now.
+Hassan: Look, I get that everyone's spooked—Marina was a solid person—but Avery threw Amara's name out with zero reasoning, and now Petra and Dmitri are both piling on me for asking *questions*; shouldn't we be more curious about why Avery moved so fast?
+Amara: Avery, you're asking Hassan to justify his thinking while you haven't explained yours—so let's hear it: what specifically made you suspicious of me before anyone else even opened their mouth?
+Yuki: Wait, but—Hassan, you keep asking us to stop thinking about Marina being a threat, and Avery threw Amara's name out instantly with nothing to back it up; one of you is definitely steering us away from the real pattern, so I need to know: Hassan, did you *see* something that made you want to soften what the Mafia just told us by taking Marina out?
+Avery: Nothing is settled yet, but I'm watching Amara most closely.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yuki">Avery's been stuck on Amara with nothing to show for it, and Hassan keeps deflecting away from Marina being a real threat—one of them is Mafia, but I'm spinning in circles cataloging suspicions instead of actually *listening* to who's being evasive about what they saw before night fell, so I need to pick one thread and pull it hard instead of chasing every shadow.</thought>
+<thought player="Hassan">Avery's locked onto Amara hard and won't budge, which means I need to keep playing the reasonable middle-ground guy while watching for any crack in the Law-abiding group—if I can get Yuki or Dmitri doubting each other, we flip the vote before they organize against us, and Amara survives to take out another one tonight.</thought>
+<thought player="Petra">Hassan's been dancing around the real story this whole time—he's either Mafia or he's spooked, but either way he's the weakest link right now, and I'm going to keep the pressure on him hard until something cracks; Avery's been repeating the same line about Amara like a broken record, which is weird, but Hassan's the one actively rewriting what just happened to us.</thought>
+<thought player="Dmitri">Hassan's deflection and Avery's repeated, unjustified suspicion of Amara are both pulling us away from real thinking—I'm most concerned about Hassan right now, but I need to be careful not to pile on unfairly, because Avery's silence about *why* they're watching Amara is also deeply suspicious.</thought>
+<thought player="Amara">Avery's fixation on me is either a genuine read or a calculated misdirect to build cover—either way, it's noise. The real threat is Petra and Dmitri circling Hassan; if they start connecting his deflection to Marina's value, they'll flip the narrative from "random kill" to "Hassan's protecting something," and I need Hassan stable through at least one more night cycle.</thought>
+</round>
+<round>
+Round 4.
+Amara: Here's what I think happens next—Avery throws my name out with nothing, then pivots to Hassan's logic instead of explaining what she actually saw, which tells me she's either fishing or covering for someone else who moved first.
+Yuki: Hold on, that doesn't add up—Hassan, you keep asking us to *stop* looking at why Marina mattered, and Avery's been stuck on Amara with zero actual evidence; one of you is definitely working to muddy the water, so I need to know: Hassan, what exactly are you protecting by telling us Marina was just random chaos?
+Avery: Nothing is settled yet, but I'm watching Amara most closely.
+<vote initiator="Dmitri" target="Hassan">
+Avery: No
+Yuki: Yes
+Hassan: No
+Petra: Yes
+Dmitri: Yes
+Amara: No
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Avery: Nothing is settled yet, but I'm watching Amara most closely.
+Hassan: Look, the vote just split three-three, which means we're all still guessing—so here's what I actually think: Avery's been stuck on Amara the whole time with nothing concrete, and that kind of tunnel vision usually means someone's either panicking or already knows something they're not saying.
+<vote initiator="Dmitri" target="Hassan">
+Avery: No
+Yuki: Yes
+Hassan: No
+Petra: Yes
+Dmitri: Yes
+Amara: No
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Yuki" target="Hassan">
+Avery: No
+Yuki: Yes
+Hassan: No
+Petra: Yes
+Dmitri: Yes
+Amara: No
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Amara points at Petra
+Hassan points at Petra
+<kill>Petra — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Petra was killed last night. Petra was a Law-abiding Citizen.
+<round>
+Round 1.
+Yuki: Wait, but—two Law-abiding Citizens down and Petra was *solid* like Marina; Hassan and Avery both stayed quiet while they picked us off, and that's not random—one of them *knew* what was coming, so I need to know: who here actually tried to *stop* the Mafia before Petra died, and who just sat back watching?
+Dmitri: Petra was strong like Marina, and now they're both gone—and I keep thinking about Hassan pushing us to *stop* looking at why the Mafia took them, while Avery's been stuck on Amara with no real explanation; I need to understand: Hassan, what were you actually trying to get us to do during Day 1?
+Amara: Yuki, you're asking who tried to stop the Mafia, but you're not asking the real question—which is why Dmitri and Petra both pushed Hassan so hard yesterday, yet somehow Hassan's still here and they're both dead.
+Hassan: Look, Petra's gone now—same as Marina—and I'm noticing Yuki and Dmitri are both pointing at me for asking questions yesterday, but nobody's actually asking *why* Avery's been laser-focused on Amara this whole time with zero concrete evidence.
+Avery: I most suspect Hassan based on how the votes have gone.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yuki">Petra and Marina both dead, and Hassan stayed quiet through both nights while Avery kept pushing Amara with nothing—one of them definitely knew what was coming, but I've been spinning my wheels cataloging suspicions instead of actually *listening* to who's lying, so I need to stop asking everyone else questions and actually *watch* who gets nervous when I start naming the real pattern.</thought>
+<thought player="Hassan">Petra's down, the votes keep splitting three-three, and Avery's pivoted from Amara to me—which means the Law-abiding side is fracturing but also getting nervous about my deflections; I need to stay warm and keep the heat on Avery's tunnel vision while Amara and I figure out who to take tonight, because if Yuki and Dmitri ever actually coordinate, we're in trouble.</thought>
+<thought player="Dmitri">Petra's death confirms my instinct about Hassan—he and Avery stayed quiet while two strong voices got eliminated, and now Avery's suddenly shifting to Hassan while Hassan's still deflecting. I need to push harder on Hassan today, because if I'm right about him being Mafia, we might still have time to save Amara and Yuki before it's too late.</thought>
+<thought player="Amara">Hassan weathered Day 1 but Petra's dead now—Yuki and Dmitri are circling him harder, and if they flip the vote today, I'm exposed; I need to pivot away from defending the random-kill angle and start asking questions that look genuine, because staying quiet while Hassan burns is how I survive to the endgame.</thought>
+</round>
+<round>
+Round 2.
+Avery: I most suspect Hassan based on how the votes have gone.
+<vote initiator="Dmitri" target="Hassan">
+Avery: Yes
+Yuki: Yes
+Hassan: No
+Dmitri: Yes
+Amara: No
+tally: 3 Yes, 2 No
+outcome: executed — Hassan has been executed. Hassan was a Mafia.
+</vote>
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Hassan was executed today and was revealed to be Mafia.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Amara points at Dmitri
+<kill>Dmitri — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Dmitri was killed last night. Dmitri was a Law-abiding Citizen.
+<round>
+Round 1.
+Amara: Dmitri's dead now—same pattern as Petra and Marina—and I'm noticing Avery's been quiet while the Mafia picks us off one by one, so let's ask the obvious question: what exactly were you seeing that made you so sure about Hassan when you couldn't even explain it?
+<vote initiator="Yuki" target="Avery">
+Avery: No
+Yuki: Yes
+Amara: Yes
+tally: 2 Yes, 1 No
+outcome: executed — Avery has been executed. Avery was a Law-abiding Citizen.
+</vote>
+</round>
+</day>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Marina (Law-abiding Citizen)
+• Night 2: Petra (Law-abiding Citizen)
+• Day 2: Hassan (Mafia) executed
+• Night 3: Dmitri (Law-abiding Citizen)
+• Day 3: Avery (Law-abiding Citizen) executed
+
+Full roster: Avery (Law-abiding Citizen), Marina (Law-abiding Citizen), Yuki (Law-abiding Citizen), Hassan (Mafia), Petra (Law-abiding Citizen), Dmitri (Law-abiding Citizen), Amara (Mafia)
+
+Who they really were:
+• Marina (Law-abiding Citizen) — Weary and pragmatic, with a dry humor that masks underlying exhaustion. Quick to skepticism, slow to trust, but fiercely protective of those she's decided are worth her time. Speaks in clipped, efficient sentences with long pauses—she's learned not to fill silence. Occasionally trails off mid-thought as if lost in fatigue. Uses nautical metaphors reflexively (old habits). Tends to interrupt with sardonic asides. Her voice carries the rasp of someone who's spent years talking over wind and water. Marina ran a small harbor maintenance business for twenty-three years before selling it off. Now she does odd jobs—repairs, handyman work—and spends most afternoons at the docks watching the boats. She's lived in the same cottage by the water her entire life. Divorced once, no kids. Known for being blunt to the point of rudeness, but reliable. People call her when they need someone to tell them the truth, not what they want to hear.
+• Yuki (Law-abiding Citizen) — Vigilant and alert, with an intense focus that borders on hypervigilance. Yuki notices everything but struggles to distinguish signal from noise—tends toward suspicion of patterns that may not exist. Earnest and well-meaning, but her watchfulness makes her come across as tense. Underneath, there's genuine warmth she rarely lets surface. Speaks in rapid, searching questions punctuated by nervous energy. Often circles back to details others have already moved past. Listens intently but interrupts herself with clarifying follow-ups. Uses phrases like "Wait, but—" and "Hold on, that doesn't..." Her speech has a staccato quality, like she's cataloging everything. Rarely laughs, but when she does it's sudden and a bit too loud. Often repeats others' words back to them as if confirming she heard correctly. Yuki works as a night security guard at a local hospital. For the past six years, she's monitored corridors, reviewed camera feeds, and responded to alarms—always watching, always alert for something wrong. The job has made her hyperaware of irregularities and inconsistencies. She lives alone in a small apartment, spends her days sleeping fitfully, and her evenings studying faces and behavior. She's a decent person trying to do her job well, but the constant vigilance has left her wound tight. Her coworkers respect her diligence; they also find her exhausting.
+• Hassan (Mafia) — publicly presented as Hassan works as a freelance event coordinator and party planner for the city. He's good at what he does—knows the right caterers, the right venues, the right people. Charming, reliable, always has a story or a joke ready. He grew up here, lived abroad for a few years ("got it out of my system," he'll say with a grin), and came back to settle down and build a comfortable life. He rents a nice apartment downtown, has a solid circle of friends, goes to the gym a few times a week, and spends his evenings at bars or restaurants where he knows everyone. He's the kind of person who remembers your name and asks about your family. Never married—"Haven't found the right person," he'll say with a shrug and a smile. Openly social, always seems relaxed and unburdened. (Charming and irreverent, with a quick wit that disarms others. Hassan performs warmth and humor—laughs easily, makes jokes at his own expense, and deflects tension with playful teasing. Beneath the public charm lies calculated ease; he reads people for leverage, not connection. Outwardly relaxed where Yuki is wound tight, flip where Marina is blunt. His humor serves a purpose: it makes him likable, forgettable, and above suspicion. Speaks in a rolling, conversational cadence—warm and informal, peppered with banter and gentle ribbing directed at whoever's speaking. Uses humor to steer conversations, deflate accusations with a laugh, or buy time to think. Often compliments people disarmingly ("That's actually a sharp catch, by the way"). Frequently employs rhetorical questions and mock-earnest phrases like "Come on now" or "Be honest with me." His voice has an easy, almost musical quality—he doesn't rush. Laughs often and infectiously. Rarely sounds defensive; instead he sounds amused, as if the whole thing is a game everyone's in together. Interrupts occasionally but always with a playful tone—never hostile.) … but was really a Mafioso: Hassan's family was drawn into organized crime through debt when he was young—his father owed money he couldn't repay. By his early twenties, Hassan was already doing enforcement work for the local crew; by thirty, he'd moved into higher-level operations: money laundering, protection, coordinated disappearances. His "event coordination" business is a legitimate front—it serves its purpose and it genuinely makes money. But his real job is managing relationships, moving cash, and eliminating problems quietly. He's good at it because he's patient, strategic, and genuinely enjoys the theater of manipulation. He came back to this city specifically to consolidate power in a smaller market where he could operate with less heat. His charm isn't a mask he puts on—it's his primary tool. People trust him because he's genuinely likable, and he uses that trust ruthlessly when necessary. He kills when ordered to and sleeps well afterward.
+• Petra (Law-abiding Citizen) — Brash and uncompromising, with a stubborn streak and no patience for social niceties. Petra speaks her mind immediately and sees hesitation as weakness. Confident to the point of abrasiveness, she's the type to dominate a room and expect others to keep up. Petra talks loud and fast, with sharp, declarative sentences that cut through ambiguity. She uses sports and combat metaphors—"tackle this head-on," "no punching bag here," "that's a fumble." Her voice has a confrontational edge; she leans into disagreement rather than away from it. Often starts sentences with "Look," "Listen," or "Here's the thing—" and rarely hedges. No filler words, no apologies for interrupting. When annoyed, her volume goes up. When amused, she laughs hard and unselfconsciously. She's the kind of person who makes eye contact you can't quite break. Petra runs a boxing gym on the north side—has owned it for twelve years and built it from nothing. She's tough, hands-on, knows every regular by name and their personal drama whether she wants to or not. Grew up poor, worked her way up through sheer determination and refusal to quit. Never married, no kids. She's known around town as someone who will tell you exactly what she thinks, who doesn't back down from confrontation, and who will help you move at 6 AM if you ask but will also tell you if your idea is stupid. Drinks black coffee, plays poker with the same five people every Thursday, and has no time for nonsense.
+• Dmitri (Law-abiding Citizen) — Earnest and effusive, with a genuine warmth that radiates outward. Dmitri is an optimist who sees the best in people and isn't afraid to express enthusiasm openly. He's thoughtful without being calculating, generous with compliments and encouragement. There's a guileless quality to him—what you see is what you get, for better or worse. Dmitri speaks with easy warmth and animated gestures, his words tumbling out in genuine bursts rather than measured cadences. He leans in when listening, maintains open body language, and frequently exclaims his reactions—"Oh, that's wonderful!" or "I hadn't thought of it that way!" His speech is peppered with sincere appreciation for others' ideas ("That's really thoughtful of you to say that") and he genuinely remembers personal details people share. He speaks a touch slowly, wanting to be understood, and often pauses to make sure others are following. Uses inclusive language—"we," "us," "together." Laughs readily and warmly, never at someone's expense. Occasionally repeats back what he's heard, not from suspicion like Yuki, but from genuine interest and desire to connect. Dmitri is a high school music teacher who's taught choir and general music for fourteen years at the same school. He runs the spring musical every year and directs the community orchestra that meets Tuesday evenings at the civic center. He's the kind of teacher students remember fondly—he believes in every kid's potential and creates an environment where people feel safe trying new things. He lives with his two rescue dogs in a modest house he's owned for eight years, attends his church regularly, and volunteers with the local youth orchestra program. He's been married once (amicably divorced, still friendly with his ex), has no children, and spends his spare time at concerts, community events, or helping friends move. He's known around town as someone who's genuinely interested in people's lives, who will show up when you need him, and who carries an almost infectious sense of possibility about the world.
+• Amara (Mafia) — publicly presented as Amara is an insurance adjuster who's worked for the same firm for eight years. She's good at her job—thorough, unflappable, and skilled at asking the right questions to get people to slip up and reveal the truth about their claims. She lives alone in a modest apartment downtown, keeps to herself mostly, and has cultivated a reputation as someone who's reliable and straightforward if a bit cold. She doesn't have a wide social circle, but the people who know her trust her to tell them what she actually thinks rather than what they want to hear. She volunteers occasionally at the library, reads voraciously, and spends her weekends at home or at the movies. She's known around town as competent, uncompromising in her standards, and someone who notices when things don't add up. Single, no kids, no particular attachments—she lives a quiet, orderly life that requires very little from anyone. (Caustic and sardonic, with a sharp eye for human folly. Amara projects cool indifference to others' opinions while maintaining a veneer of civility. Beneath the sarcasm lies calculation—she observes, weighs, and catalogs information for leverage. She's controlled where others are reactive, measured where they're earnest. There's a performative quality to her friendliness; she's learned that seeming disinterested makes people underestimate her. Amara speaks in a low, measured tone with deliberate pauses—she never rushes to fill silence. Her wit is cutting but never quite cruel enough to offend; she flavors everything with dry humor and side-eye observations. She uses phrases like "Let's be real," "Come on," and "Here's what I think happens next—" with the tone of someone explaining something obvious to a slow child. She laughs rarely, and when she does it's mirthless, a short exhale that signals she's found something predictably stupid. She interrupts smoothly, not aggressively—slides her point in sideways, as if it was always part of the conversation. Speaks in short, declarative sentences punctuated by longer, elaborate insults dressed up as observations. Often leans back, crosses her arms, and watches others with an expression suggesting she's already ten steps ahead.) … but was really a Mafioso: Amara was recruited into the Mafia seven years ago through a family connection she's spent years distancing herself from. She was vulnerable then—drowning in debt, desperate, and someone made her an offer she couldn't refuse. She started as muscle and leverage, but quickly proved herself intelligent and disciplined. She moved up by being reliable, by never asking questions beyond what she needed to know, and by understanding that the real power in any organization lies in information. Her job as an insurance adjuster is perfect cover—it explains her access to sensitive data, her ability to read people, and her network of contacts. She's compartmentalized her life meticulously: one side processes claims, the other processes evidence of weakness in people who owe money or information. She's learned to wear the mask of the detached professional so convincingly that even she sometimes forgets what's underneath. She has no illusions about what she is, and that clarity—that refusal to romanticize or justify—is what makes her dangerous.
+</endgame>
+</transcript>

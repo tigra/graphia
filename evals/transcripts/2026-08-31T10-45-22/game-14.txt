@@ -1,0 +1,211 @@
+Game 14 | provider=bedrock-claude | large_model=us.anthropic.claude-haiku-4-5-20251001-v1:0 | small_model=us.anthropic.claude-haiku-4-5-20251001-v1:0 | games=50
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen">(no persona recorded)</player>
+<player name="Akira" role="Law-abiding Citizen">
+Personality: Weary and sardonic — someone who's seen enough of human nature to be skeptical but not bitter, exhausted rather than angry
+Manner: Speaks in measured, sometimes trailing sentences with long pauses. Favors understated observations and dry humor. Rarely gets animated, but occasionally punctuates with a sharp one-liner. Uses "look" or "you know" to anchor skeptical points.
+Persona: Akira runs a small repair shop downtown — watches, clocks, old electronics. Been doing it for twenty years. Sees people at their most frustrated, most dishonest. Knows everyone in the neighborhood. Doesn't really do people much anymore, but the work keeps them grounded.
+</player>
+<player name="Noor" role="Law-abiding Citizen">
+Personality: Earnest and spirited — someone who approaches each day with genuine curiosity and finds small joys in connection with others.
+Manner: Speaks with animated energy, quick to laugh and ask questions. Uses phrases like "tell me more" and "that's brilliant!" Talks in bright, flowing sentences punctuated by exclamation marks. Has a tendency to lean forward when engaged, gestures expressively, and remembers small personal details about people.
+Persona: Noor teaches primary school art in the community center. They believe creativity and honesty go hand in hand — spends their days encouraging kids to express themselves freely and truthfully. Known for remembering everyone's names, asking how their families are, and genuinely listening to the answers. Volunteers at the community garden on weekends.
+</player>
+<player name="Dmitri" role="Mafia">
+Personality: Volatile and grandiose—temperamental, prone to sudden passionate outbursts about perceived slights, obsessed with status and respect. Swings between charm and irritability. Takes everything personally. Craves admiration but suspects everyone of undermining him.
+Manner: Speaks in dramatic flourishes and tangents, voice rises and falls unpredictably. Interrupts himself with complaints. Uses "listen to me" and "you don't understand" frequently. Laughs loudly at his own observations, then abruptly grows cold. Name-drops accomplishments. Gestures broadly, invades personal space when agitated.
+Public legend: Dmitri is a regional sales manager for a pharmaceutical distribution company—travels constantly, stays in hotels, knows people across five territories. Self-made, proud of clawing his way up from nothing. Talks constantly about closing deals, about how much smarter he is than the competition. Divorced twice, mentions his kids fondly but rarely sees them. Drinks expensive vodka at company events and insists on picking up the tab to prove his worth. Everyone knows him; not everyone likes him, but they respect his hustle. He's generous when happy, vindictive when crossed. Volunteers for nothing but loves being recognized in public.
+True self (hidden): Dmitri came up through organized crime in the 1990s, started as muscle for a regional outfit, proved himself ruthless and adaptable. Rose through intimidation and strategic violence. The "pharma sales" job is perfect cover—legitimate travel, cash-heavy business, endless networking. His volatility is genuine; decades of enforcing debts and managing rivals have wired his nervous system for threat-detection. His ex-wives left because they sensed the darkness underneath. He launders money through inflated invoices and kickbacks. The Mafia family moved him into this town five years ago to manage territory. He's dangerous precisely because he's unpredictable—even his handlers never know if he'll charm or terrify. He keeps a gun in his glove compartment and a knife in his boot.
+</player>
+<player name="Amara" role="Law-abiding Citizen">
+Personality: Sharp-eyed and methodical — someone who reads situations carefully and moves through the world with quiet intention. Pragmatic, unsentimental, but fair-minded. Not cold, just efficient. Prefers to listen and assess before speaking.
+Manner: Speaks in clipped, direct sentences with minimal embellishment. Tends to ask probing questions rather than volunteer information. Rarely laughs, but appreciates wit. Pauses deliberately before responding, as if running through angles. Uses concrete language and specific details. When she does speak up, people listen — her words carry weight because she doesn't waste them. No verbal tics; every phrase is chosen.
+Persona: Amara is a contracts administrator for a commercial development firm. She reviews agreements, flags risks, negotiates terms — work that demands she see what others miss and stay three steps ahead. She's lived in the neighborhood for eight years, knows who pays their bills and who doesn't, who keeps promises and who cuts corners. Quiet presence at community meetings, but her input is always worth hearing. People trust her because she doesn't play favorites and doesn't pretend to know things she doesn't.
+</player>
+<player name="Kai" role="Mafia">
+Personality: Dreamy and unfocused — someone whose attention drifts easily, lost in their own thoughts and tangential observations. Spacey, gentle, almost wistful. Speaks softly, often trails off mid-sentence. Prone to sudden nostalgic tangents or philosophical musings that have nothing to do with the moment. Seems almost surprised when pulled back to the present. Not rude, just... elsewhere. Hums sometimes. Forgets what you just said, then apologizes sincerely. Sees connections others miss, but loses the thread before explaining them. Sighs often. Speaks in a meandering rhythm, punctuated by long pauses.
+Manner: Soft-spoken, with long thoughtful pauses between phrases. Often starts sentences that dissolve into silence, as if Kai has drifted into private thought. Uses words like "maybe," "sort of," "I think... or actually, I don't know." Frequently apologizes for losing the thread ("sorry, what were we...?"). Occasionally hums or stares out into the middle distance. Speaks in a lilting, almost musical cadence. When animated at all, it's in quiet wonder rather than urgency. Has a habit of rewinding conversations to something said minutes before, asking "wait, you said earlier that..." as if the thought just caught up to them.
+Public legend: Kai works part-time at the local library's restoration department—preserving old books, binding damaged pages, that sort of careful work. Lives quietly in a small apartment above a vintage record shop, where they spend evenings listening to jazz and classical vinyl. Grew up moving around because their parent was a diplomat; never quite felt rooted anywhere until landing here. Volunteers occasionally at the community center, helping with the archive project. Keeps an old notebook full of sketches and half-finished observations about the world. Known for being kind, if a bit absent-minded—shows up to things late, but genuinely cares. Neighbors think of Kai as the gentle, quiet type. Has a cat named Moth.
+True self (hidden): Kai's real name isn't Kai—that's one of five. Spent their twenties as a drifter by design, moving between cities, learning how to read people, how to disappear. Got recruited into the organization through a childhood connection during a moment of financial desperation. The library job is cover; the real work is information brokerage and money movement through the city's art and antiquities networks. Uses the diplomatic background and natural ability to blend in—people don't remember Kai because Kai doesn't stand out. The softness, the distraction, the drift—it's all part of the camouflage. Learned early that dangerous people aren't the ones who talk loudly; they're the ones who vanish into the background. The notebook is actually coded records. The vinyl collection is how dead drops happen. Has hurt people, but never with anger. Always with that same gentle, almost apologetic manner.
+</player>
+<player name="Lucia" role="Law-abiding Citizen">
+Personality: Guarded and calculating — someone who trusts few people and keeps her distance through carefully maintained professionalism. Alert to manipulation but not paranoid; simply self-protective. Observes more than she reveals.
+Manner: Speaks in precise, measured tones with a slight formality that creates invisible barriers. Rarely volunteers information; answers questions directly but briefly, as if rationing words. Has a habit of pausing mid-conversation to look someone in the eye — not warmly, but assessingly — before continuing. Uses formal phrasing ("I would say," "it seems to me") rather than casual speech. Slight, controlled movements. Smiles rarely and never without purpose. When she does engage, it's with sharp, pointed questions that expose inconsistencies. No humor, but occasionally a wry observation that lands like a blade.
+Persona: Lucia is a financial auditor for the city — reviews municipal spending, flags discrepancies, ensures money goes where it's supposed to. Has lived here for six years, mostly alone. Keeps regular hours, maintains professional distance from colleagues. Known for being thorough, difficult to befriend, and immune to social pressure. Attends community events out of civic obligation, not desire. People respect her competence but rarely invite her to things twice. She seems to prefer it that way.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Akira, Noor, Dmitri, Amara, Kai, Lucia. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Dmitri): Your Mafia teammates are: Kai. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Kai): Your Mafia teammates are: Dmitri. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Dmitri points at Noor
+Kai points at Noor
+<kill>Noor — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Noor was killed last night. Noor was a Law-abiding Citizen.
+<round>
+Round 1.
+Lucia: Noor's death removes a voice we needed. Before we proceed, I'd like to hear from each of you—particularly how you interpret this opening move by whoever did this.
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+Dmitri: Listen to me—Noor goes down Night One, and Avery's already pointing fingers at Kai? That's convenient, too convenient. I've closed enough deals to know when someone's trying to redirect the room, and that smells like classic misdirection to me.
+Amara: Dmitri's right to flag the redirect, but let's not get tangled in meta-analysis—what matters is what Avery actually saw in Kai's play, not whether naming it looks convenient.
+Akira: Look, Dmitri's got a point about the redirect, but calling out the redirect is also... a redirect. What I want to know is what Kai actually *did* that made Avery nervous in the first place.
+Kai: I... hmm, I'm sorry, I wasn't really following the whole thing closely—my mind was somewhere else—but I think maybe Avery was just being cautious, not trying to redirect? I don't know, it felt genuine to me...
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Akira">Kai's vague deflection and the chain of redirects have me wondering if there's actual substance to Avery's read or just noise—either way, I need to figure out if Avery's pushing a real lead or covering ground, because that'll tell me more than any of this meta-chatter about redirects.</thought>
+<thought player="Dmitri">Kai's playing nervous and dumb, which might actually help us—Avery's already exposed herself as aggressive and I've gotten the room to doubt her pivot, but I need to watch whether Amara and Akira are genuinely uncertain or already forming a bloc against me. Time to feel out who's solid before the vote.</thought>
+<thought player="Amara">Dmitri's deflection of Avery's read on Kai feels calculated—he's trying to reframe the whole thing as misdirection rather than address what Avery actually observed. Kai's vague non-response and Dmitri's aggressive counter-narrative are worth tracking; I need to push past the noise and get Avery to articulate what specifically triggered her concern.</thought>
+<thought player="Kai">Dmitri jumped to defend me fast—maybe too fast—which could draw heat his way instead, which is... useful. Avery's watching me, but that's okay; people who drift don't threaten people, so I'll just stay soft and confused, let the room argue itself into knots.</thought>
+<thought player="Lucia">Dmitri's aggressive redirection of Avery's observation feels calculated—he's trying to muddy the waters rather than clarify them, which is precisely what someone with something to hide would do. I need to watch whether Kai's passivity is genuine confusion or strategic cover.</thought>
+</round>
+<round>
+Round 2.
+Akira: Look, Kai just admitted to not paying attention—which is fine, people zone out—but then immediately validated Avery's read without actually knowing what it was based on. That's the kind of thing that happens when someone's trying to seem agreeable instead of useful.
+Lucia: Dmitri's pivot to accusing Avery of misdirection—rather than engaging with the substance of what she observed—is itself the more revealing move here. I'd like to hear what specifically troubled you about Kai's early play, Avery, before we let this dissolve into meta-commentary.
+Kai: I think... maybe Akira's got a point, but also—sorry, I'm still catching up—doesn't it seem like we're all just watching each other instead of thinking about who actually wanted Noor gone?
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+Amara: Avery, I need the specifics—what exactly did Kai do or say that made you flag them, not the framing around it.
+Dmitri: You know what? Avery keeps circling Kai but won't say *why*—and now everyone's asking the same question, which means she's got nothing concrete, just a feeling, and that's not how we eliminate the real threat here.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Akira">Avery's been pushed hard and won't budge on Kai, which either means she's got real conviction or she's committed to a play—either way, the fact that Dmitri jumped to attacking her method instead of her target tells me he might be running interference. Need to push Avery for specifics before this dissolves into noise.</thought>
+<thought player="Dmitri">Kai's nervous act is working—Avery looks desperate and exposed, the room's doubting her read. But Akira's sharp and Lucia's watching my deflection too closely; I need to pivot from attacking Avery to looking solid and reasonable, or I'll flip the target onto myself before we can vote Avery or Kai out.</thought>
+<thought player="Amara">Avery's being evasive about specifics, which is either genuine uncertainty or deliberate obfuscation—either way, I need to press her harder. Dmitri's aggression and Kai's passivity are both tells, but Dmitri's the one actively steering the conversation away from substance, which matters more right now.</thought>
+<thought player="Kai">Dmitri's defense is good cover for now, and Avery's pressure on me is actually helping—the more she pushes without evidence, the more the room gets frustrated with her instead of me. I should stay quiet and gentle, let them burn each other out while I watch who's really coordinating.</thought>
+<thought player="Lucia">Dmitri's aggressive defense of Kai and attack on Avery's credibility is too convenient—he's either protecting someone or creating noise to bury a real lead. Kai's studied passivity and reflexive agreement with whoever speaks last reads as either genuine confusion or calculated evasion; I need to push for specifics from Avery directly, away from Dmitri's interference, before this dissolves into performance.</thought>
+</round>
+<round>
+Round 3.
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+Lucia: Dmitri, you've spent considerable energy defending Kai and attacking Avery's credibility—but you've offered nothing substantive about who *you* think killed Noor, which suggests you're more interested in muddying the waters than finding answers.
+Dmitri: Look, Lucia—you're sharp, I respect that—but I'm not defending Kai, I'm defending *logic*: Avery's had three chances to back up her read and she's given us nothing but air, which tells me either she's hunting blind or she's got her own reasons for wanting Kai gone.
+Kai: Sorry, I... I was just thinking—Lucia made a really good point about Dmitri not saying who *he* thinks did it, but also, doesn't Avery keep saying the same thing over and over without... without actually explaining? It's like we're all stuck in a loop, and nobody's really asking *why* Noor was chosen in the first place...
+Amara: Dmitri, you've spent all morning attacking Avery's credibility instead of answering Lucia's question—who do *you* think killed Noor, and why?
+Akira: Dmitri, you've spent all morning defending Kai and attacking Avery's method—but you still haven't answered Lucia's question, which makes me wonder if you're more interested in protecting someone than finding Noor's killer.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Akira">Dmitri's spent all day running interference for Kai without naming anyone himself—that's a pattern worth tracking. Avery won't break, Kai's genuinely scattered or playing dumb, but Dmitri's the one actively muddying the waters, and that's the tell I should follow.</thought>
+<thought player="Dmitri">I've muddied the waters enough that Avery looks weak, but Lucia and Akira are circling me now—I need to flip my angle fast, look cooperative and reasonable before they lock in a vote against me, maybe even suggest we vote out Avery to seem decisive and solid. Kai's holding steady as the nervous one, which keeps heat off both of us for now.</thought>
+<thought player="Amara">Dmitri's been working overtime to cloud the picture instead of building a case—that's either Mafia protecting Kai or someone panicking. Avery won't commit to specifics, which leaves me reading the room myself: Kai's checked out, Lucia's sharp but hasn't declared a direction, and I need to decide whether to keep pressing for clarity or start mapping the actual power plays.</thought>
+<thought player="Kai">Dmitri's defense is drawing too much attention to us both—I need to distance myself gently, stay confused and apologetic, let the room think I'm just a drifter caught in the crossfire while I watch who's really coordinating the pressure. Avery's fixation on me without evidence is actually perfect cover; the longer she pushes, the more the room forgets to look at anyone else.</thought>
+<thought player="Lucia">Dmitri and Kai are working together—his aggressive defense combined with her strategic passivity is too coordinated to be coincidence, and neither has offered a genuine theory about Noor's death. I need to force Avery to articulate her actual read before the day ends, then use that to test whether Dmitri's noise-making was protection or deflection.</thought>
+</round>
+<round>
+Round 4.
+Amara: Dmitri's spent three hours attacking Avery's method instead of naming a suspect—that's either fear or misdirection, and I need to know which: Dmitri, who do you actually think killed Noor, and what evidence points to them?
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+<vote initiator="Lucia" target="Dmitri">
+Avery: No
+Akira: Yes
+Dmitri: No
+Amara: Yes
+Kai: No
+Lucia: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Amara" target="Dmitri">
+Avery: No
+Akira: Yes
+Dmitri: No
+Amara: Yes
+Kai: No
+Lucia: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Dmitri: Listen to me—those two votes just proved something: we're split down the middle, which means the real killer is still sitting at this table laughing at us while we tear each other apart over *method* instead of *motive*. Lucia, Akira, Amara—you're all sharp, but you're chasing the wrong angle. Who actually *benefits* from Noor being gone? That's where the answer is.
+<vote initiator="Akira" target="Dmitri">
+Avery: No
+Akira: Yes
+Dmitri: No
+Amara: Yes
+Kai: No
+Lucia: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Dmitri points at Avery
+Kai points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Akira: Look... Avery pushed Kai all day and wouldn't back down, and now she's gone. That tells me either she was onto something real, or she was the interference and they silenced her—and Dmitri spent yesterday defending Kai instead of naming anyone, which... doesn't sit right.
+Amara: Avery pushed Kai all day and got killed for it—which means either she was right, or she was in the way. Dmitri spent yesterday defending Kai instead of naming suspects, and now Avery's dead. I need to know: Dmitri, did you kill Avery, or did you just protect whoever did?
+Kai: I... I think maybe Avery was looking for the truth, even if she couldn't quite find it—and now that she's gone, it feels like we're all just... lost, you know? Like we're supposed to figure out what she saw, but we can't ask her anymore.
+Dmitri: Look, Avery's dead because she pushed too hard on something she couldn't prove—and now Amara's doing the same thing to me, which means we're wasting time on the wrong person instead of figuring out who actually wanted Noor *and* Avery gone.
+<vote initiator="Lucia" target="Dmitri">
+Akira: Yes
+Dmitri: No
+Amara: Yes
+Kai: No
+Lucia: Yes
+tally: 3 Yes, 2 No
+outcome: executed — Dmitri has been executed. Dmitri was a Mafia.
+</vote>
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Dmitri was executed today and was revealed to be Mafia.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Kai points at Amara
+<kill>Amara — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Amara was killed last night. Amara was a Law-abiding Citizen.
+<round>
+Round 1.
+<vote initiator="Akira" target="Kai">
+Akira: Yes
+Kai: No
+Lucia: Yes
+tally: 2 Yes, 1 No
+outcome: executed — Kai has been executed. Kai was a Mafia.
+</vote>
+</round>
+</day>
+<endgame>
+The Law-abiding Citizens have won.
+
+Events this game:
+• Night 1: Noor (Law-abiding Citizen)
+• Night 2: Avery (Law-abiding Citizen)
+• Day 2: Dmitri (Mafia) executed
+• Night 3: Amara (Law-abiding Citizen)
+• Day 3: Kai (Mafia) executed
+
+Full roster: Avery (Law-abiding Citizen), Akira (Law-abiding Citizen), Noor (Law-abiding Citizen), Dmitri (Mafia), Amara (Law-abiding Citizen), Kai (Mafia), Lucia (Law-abiding Citizen)
+
+Who they really were:
+• Akira (Law-abiding Citizen) — Weary and sardonic — someone who's seen enough of human nature to be skeptical but not bitter, exhausted rather than angry Speaks in measured, sometimes trailing sentences with long pauses. Favors understated observations and dry humor. Rarely gets animated, but occasionally punctuates with a sharp one-liner. Uses "look" or "you know" to anchor skeptical points. Akira runs a small repair shop downtown — watches, clocks, old electronics. Been doing it for twenty years. Sees people at their most frustrated, most dishonest. Knows everyone in the neighborhood. Doesn't really do people much anymore, but the work keeps them grounded.
+• Noor (Law-abiding Citizen) — Earnest and spirited — someone who approaches each day with genuine curiosity and finds small joys in connection with others. Speaks with animated energy, quick to laugh and ask questions. Uses phrases like "tell me more" and "that's brilliant!" Talks in bright, flowing sentences punctuated by exclamation marks. Has a tendency to lean forward when engaged, gestures expressively, and remembers small personal details about people. Noor teaches primary school art in the community center. They believe creativity and honesty go hand in hand — spends their days encouraging kids to express themselves freely and truthfully. Known for remembering everyone's names, asking how their families are, and genuinely listening to the answers. Volunteers at the community garden on weekends.
+• Dmitri (Mafia) — publicly presented as Dmitri is a regional sales manager for a pharmaceutical distribution company—travels constantly, stays in hotels, knows people across five territories. Self-made, proud of clawing his way up from nothing. Talks constantly about closing deals, about how much smarter he is than the competition. Divorced twice, mentions his kids fondly but rarely sees them. Drinks expensive vodka at company events and insists on picking up the tab to prove his worth. Everyone knows him; not everyone likes him, but they respect his hustle. He's generous when happy, vindictive when crossed. Volunteers for nothing but loves being recognized in public. (Volatile and grandiose—temperamental, prone to sudden passionate outbursts about perceived slights, obsessed with status and respect. Swings between charm and irritability. Takes everything personally. Craves admiration but suspects everyone of undermining him. Speaks in dramatic flourishes and tangents, voice rises and falls unpredictably. Interrupts himself with complaints. Uses "listen to me" and "you don't understand" frequently. Laughs loudly at his own observations, then abruptly grows cold. Name-drops accomplishments. Gestures broadly, invades personal space when agitated.) … but was really a Mafioso: Dmitri came up through organized crime in the 1990s, started as muscle for a regional outfit, proved himself ruthless and adaptable. Rose through intimidation and strategic violence. The "pharma sales" job is perfect cover—legitimate travel, cash-heavy business, endless networking. His volatility is genuine; decades of enforcing debts and managing rivals have wired his nervous system for threat-detection. His ex-wives left because they sensed the darkness underneath. He launders money through inflated invoices and kickbacks. The Mafia family moved him into this town five years ago to manage territory. He's dangerous precisely because he's unpredictable—even his handlers never know if he'll charm or terrify. He keeps a gun in his glove compartment and a knife in his boot.
+• Amara (Law-abiding Citizen) — Sharp-eyed and methodical — someone who reads situations carefully and moves through the world with quiet intention. Pragmatic, unsentimental, but fair-minded. Not cold, just efficient. Prefers to listen and assess before speaking. Speaks in clipped, direct sentences with minimal embellishment. Tends to ask probing questions rather than volunteer information. Rarely laughs, but appreciates wit. Pauses deliberately before responding, as if running through angles. Uses concrete language and specific details. When she does speak up, people listen — her words carry weight because she doesn't waste them. No verbal tics; every phrase is chosen. Amara is a contracts administrator for a commercial development firm. She reviews agreements, flags risks, negotiates terms — work that demands she see what others miss and stay three steps ahead. She's lived in the neighborhood for eight years, knows who pays their bills and who doesn't, who keeps promises and who cuts corners. Quiet presence at community meetings, but her input is always worth hearing. People trust her because she doesn't play favorites and doesn't pretend to know things she doesn't.
+• Kai (Mafia) — publicly presented as Kai works part-time at the local library's restoration department—preserving old books, binding damaged pages, that sort of careful work. Lives quietly in a small apartment above a vintage record shop, where they spend evenings listening to jazz and classical vinyl. Grew up moving around because their parent was a diplomat; never quite felt rooted anywhere until landing here. Volunteers occasionally at the community center, helping with the archive project. Keeps an old notebook full of sketches and half-finished observations about the world. Known for being kind, if a bit absent-minded—shows up to things late, but genuinely cares. Neighbors think of Kai as the gentle, quiet type. Has a cat named Moth. (Dreamy and unfocused — someone whose attention drifts easily, lost in their own thoughts and tangential observations. Spacey, gentle, almost wistful. Speaks softly, often trails off mid-sentence. Prone to sudden nostalgic tangents or philosophical musings that have nothing to do with the moment. Seems almost surprised when pulled back to the present. Not rude, just... elsewhere. Hums sometimes. Forgets what you just said, then apologizes sincerely. Sees connections others miss, but loses the thread before explaining them. Sighs often. Speaks in a meandering rhythm, punctuated by long pauses. Soft-spoken, with long thoughtful pauses between phrases. Often starts sentences that dissolve into silence, as if Kai has drifted into private thought. Uses words like "maybe," "sort of," "I think... or actually, I don't know." Frequently apologizes for losing the thread ("sorry, what were we...?"). Occasionally hums or stares out into the middle distance. Speaks in a lilting, almost musical cadence. When animated at all, it's in quiet wonder rather than urgency. Has a habit of rewinding conversations to something said minutes before, asking "wait, you said earlier that..." as if the thought just caught up to them.) … but was really a Mafioso: Kai's real name isn't Kai—that's one of five. Spent their twenties as a drifter by design, moving between cities, learning how to read people, how to disappear. Got recruited into the organization through a childhood connection during a moment of financial desperation. The library job is cover; the real work is information brokerage and money movement through the city's art and antiquities networks. Uses the diplomatic background and natural ability to blend in—people don't remember Kai because Kai doesn't stand out. The softness, the distraction, the drift—it's all part of the camouflage. Learned early that dangerous people aren't the ones who talk loudly; they're the ones who vanish into the background. The notebook is actually coded records. The vinyl collection is how dead drops happen. Has hurt people, but never with anger. Always with that same gentle, almost apologetic manner.
+• Lucia (Law-abiding Citizen) — Guarded and calculating — someone who trusts few people and keeps her distance through carefully maintained professionalism. Alert to manipulation but not paranoid; simply self-protective. Observes more than she reveals. Speaks in precise, measured tones with a slight formality that creates invisible barriers. Rarely volunteers information; answers questions directly but briefly, as if rationing words. Has a habit of pausing mid-conversation to look someone in the eye — not warmly, but assessingly — before continuing. Uses formal phrasing ("I would say," "it seems to me") rather than casual speech. Slight, controlled movements. Smiles rarely and never without purpose. When she does engage, it's with sharp, pointed questions that expose inconsistencies. No humor, but occasionally a wry observation that lands like a blade. Lucia is a financial auditor for the city — reviews municipal spending, flags discrepancies, ensures money goes where it's supposed to. Has lived here for six years, mostly alone. Keeps regular hours, maintains professional distance from colleagues. Known for being thorough, difficult to befriend, and immune to social pressure. Attends community events out of civic obligation, not desire. People respect her competence but rarely invite her to things twice. She seems to prefer it that way.
+</endgame>
+</transcript>
