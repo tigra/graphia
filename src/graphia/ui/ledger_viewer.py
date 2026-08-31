@@ -49,6 +49,8 @@ from textual.widgets import (
 )
 
 from graphia.eval_ledger import (
+    KIND_ATTR,
+    KIND_FIELD_LABEL,
     KIND_MARKER,
     LedgerParseError,
     METRIC_ORDER,
@@ -488,7 +490,7 @@ _NO_TRANSCRIPTS_MESSAGE = "No transcripts for this run."
 #
 # :func:`~graphia.eval_ledger.tokenize_transcript` splits a game into
 # ``(text, kind)`` spans where each ``kind`` names a *semantic* role and never a
-# colour (``marker`` now; ``attr`` / ``field-label`` / ``speaker`` / ``speech`` /
+# colour (``marker`` / ``attr`` / ``field-label`` now; ``speaker`` / ``speech`` /
 # ``thought`` / ``recap`` and the side-bearing kinds in the later slices — see
 # :data:`~graphia.eval_ledger.TRANSCRIPT_KINDS` for the canonical vocabulary).
 # **This dict is where those semantics become an appearance**, and it is the one
@@ -516,6 +518,8 @@ _NO_TRANSCRIPTS_MESSAGE = "No transcripts for this run."
 # "everything else" needs no style, and its absence is the fallback working.
 _TRANSCRIPT_KIND_COMPONENTS: dict[str, str] = {
     KIND_MARKER: "transcript--marker",
+    KIND_ATTR: "transcript--attr",
+    KIND_FIELD_LABEL: "transcript--field-label",
 }
 
 
@@ -598,6 +602,62 @@ class TranscriptScreen(Screen):
     TranscriptScreen > .transcript--marker {
         color: $text-muted;
     }
+
+    /* `attr` — the SPECIFIC a marker carries: which player a cast entry
+       describes and their role, whose private thought follows, who called a vote
+       and against whom. The marker around it is deliberately quiet, so this rule
+       is the inverse of the one above: the value has to be MORE legible than the
+       punctuation holding it, or the reviewer is back to reading
+       `<vote initiator="…" target="…">` character by character to find two names
+       (functional-spec §2, "Markers that carry details show those details
+       distinguishably").
+
+       ACHROMATIC ON PURPOSE, and this is the palette decision the later slices
+       depend on: from Slice 4 onward **colour means side**. A `name=` value
+       carries no side of its own — Slice 4 re-kinds the ones that do (a `role=`
+       value, a thought's owner) to their side kinds and leaves plain names here
+       — so tinting it would let a Mafioso's name read in the Law-abiding hue.
+       Structure is therefore marked with brightness and weight, colour is left
+       to mean allegiance, and the two axes never contradict each other.
+
+       Full body brightness (`$text`, i.e. `auto 87%`) against the marker's
+       `auto 60%`, PLUS `text-style: bold`, lifts the value out on two axes at
+       once. The `color:` is written even though the span would inherit the same
+       colour unstyled: it says out loud that the neutral is a choice, not an
+       omission, and it is the weight that makes this rule more than a no-op. */
+    TranscriptScreen > .transcript--attr {
+        color: $text;
+        text-style: bold;
+    }
+
+    /* `field-label` — the cast list's five labels (`Personality:`, `Manner:`,
+       `Public legend:`, `True self (hidden):`, `Persona:`), colon included. The
+       job is skimming: an entry should be readable by jumping label to label
+       instead of as a paragraph (functional-spec §2). Its neighbour is the
+       OPPOSITE of `attr`'s — persona prose at full brightness, not quiet
+       punctuation — so lifting it further would be shouting, and weight alone
+       would be a weak separator inside a wall of equally bright text. A
+       restrained hue plus weight is what makes the left margin scannable.
+
+       `$text-secondary` is the dimmest of the three theme hues that clear the
+       4.5:1 AA floor on BOTH builtin themes (measured: 4.67:1 on textual-dark,
+       6.39:1 on textual-light; `$text-accent` and `$text-success` fail the light
+       theme at 3.27 and 3.77 and are unusable here). Spending the dim one on
+       6,200 short bolded labels leaves `$text-primary` and `$text-error` — the
+       two brightest — for Slice 4's two sides, which colour the bulk of a game's
+       text. A label is never a person, so it cannot be misread as an allegiance
+       even if a side later shares its hue.
+
+       `text-style` here is also the mechanism proof for Slice 5: `_kind_styles`
+       keeps a rule's text style through `without_color`, so weight composes with
+       colour inside one component class and the bold-within-the-side-colour
+       human seat stays a one-rule change. No collision with it either — the
+       human's cast entry is the one that reads `(no persona recorded)`, so it
+       carries no field label at all. */
+    TranscriptScreen > .transcript--field-label {
+        color: $text-secondary;
+        text-style: bold;
+    }
     """
 
     # Identical back-out idiom as DetailScreen: pop back to the transcript list.
@@ -651,14 +711,27 @@ class TranscriptScreen(Screen):
         ``Content.from_rich_text``, preserving the spans, and it is the shape
         verified working on the installed Textual (8.2).
 
-        **The one reason a later refactor might prefer ``Content`` directly:**
-        ``Text.append`` runs Rich's ``strip_control_codes``, which silently drops
-        BEL, BS, VT, FF and CR (7, 8, 11, 12, 13) — so a transcript containing
-        one of those five would render one character short of its file, which is
-        precisely the guarantee this screen exists to keep. All 298 committed
-        transcripts are clean of them (checked), and ``\n`` and ``\t`` are not
-        stripped, so the round trip holds today; ``Content`` does no such
-        rewriting and would close the hole for good.
+        **Neither renderable is lossless by default, and the choice between them
+        is stylistic.** ``Text.append`` runs Rich's ``strip_control_codes``,
+        which silently drops BEL, BS, VT, FF and CR (7, 8, 11, 12, 13) — so a
+        transcript containing one of those five would render one character short
+        of its file, which is precisely the guarantee this screen exists to
+        keep. An earlier version of this docstring said switching to ``Content``
+        would close that hole; **it would not.** Measured on the installed
+        Textual 8.2.4: ``textual/content.py`` carries its own
+        ``_STRIP_CONTROL_CODES = [7, 8, 11, 12, 13]`` — the identical five — and
+        strips them by default, so ``Content("a\\x07b").plain == "ab"`` exactly
+        as the Rich ``Text`` path does. Only an explicit
+        ``strip_control_codes=False`` closes the hole, whichever renderable is
+        used; ``Content`` on its own buys nothing here.
+
+        Line feed and tab are **not** among the five, and no committed
+        transcript contains any of the five (checked over all 298), so the round
+        trip holds today. It is pinned rather than merely believed:
+        ``tests/test_ledger_viewer.py``'s
+        ``test_the_rich_text_path_drops_the_five_control_codes`` asserts this
+        boundary, so the day a transcript carries one of them is a test failure
+        rather than a silently short render.
         """
         styles = self._kind_styles()
         body = Text()

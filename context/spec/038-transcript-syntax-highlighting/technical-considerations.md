@@ -39,7 +39,7 @@ A function taking the transcript text and returning an ordered list of spans. Su
 | kind | matches | notes |
 | --- | --- | --- |
 | `marker` | `<transcript>`, `<setup>`, `<preamble>`, `<night>`, `<day>`, `<round>`, `<endgame>`, `<kill>`, closing forms, the top metadata line, `Round N.` | the skeleton; must read *quieter* than content |
-| `attr` | the `name=` / `role=` / `player=` / `initiator=` / `target=` values inside a marker | so specifics are picked out of punctuation |
+| `attr` | the **values** of `name=` / `role=` / `player=` / `initiator=` / `target=` inside a marker — the value ONLY, never the `name=` key or the quotes | so specifics are picked out of punctuation |
 | `speaker` | the `Name:` prefix of a spoken line | side-coloured (below) |
 | `speech` | the words after `Name:` | side-coloured |
 | `thought` | `<thought player="X">…</thought>` content | must be unmistakably private |
@@ -59,6 +59,8 @@ The committed corpus has **two** formats. Verified by scanning all 298 files:
 | --- | --- | --- | --- | --- |
 | spec-022+ | 268 | 12 | `<player name="…" role="…">` | `<vote>` in 261, `<thought>` in 216 — **absence is normal**, not corruption |
 | pre-022 | 30 | 3 (2026-06-19, 2026-06-20 ×2) | indented `Name — Role` | `<recap>`/`<kill>`/`<endgame>` in only 10, `<vote>` in 3 |
+
+> **Read this table per-era, not as totals — two implementation agents have now misread it the same way.** The rows sum: 12 spec-022 run dirs **+** 3 pre-022 = the **15** that exist, and `<vote>` in 261 **+** 3 = the **264** files that have one. Re-verified against the corpus: 268 spec-022 files in 12 run dirs with `<vote >` in 261; 30 pre-022 files in 3 run dirs with `<vote >` in 3.
 
 - **Best-effort, per the author's decision.** The tokenizer parses the spec-022 cast list only. A pre-022 file still gets `marker`, `speaker`, `speech`, `field-label` and `plain` spans — it simply has no side map, so its speech is `plain` rather than side-coloured. **Nothing errors.**
 - This is also the forward-compatibility posture: a future format change degrades the same way instead of raising.

@@ -700,12 +700,21 @@ def read_transcript(path: Path) -> str:
 # over every committed transcript.
 # ===========================================================================
 
-# The two kinds Slice 1 recognises. Names are **semantic, never colours**
+# The kinds recognised so far. Names are **semantic, never colours**
 # (``speaker-mafia`` would be an acceptable later kind; ``speaker-red`` never is)
 # and lowercase-hyphenated, so the UI and the tests can name them instead of
 # repeating string literals.
 KIND_MARKER = "marker"
 KIND_PLAIN = "plain"
+
+# Slice 2. ``attr`` is the **value** of a detail-carrying attribute inside a
+# marker — ``Avery``, not ``name="Avery"`` and not the tag around it — so a
+# reviewer's eye lands on *who* rather than on the punctuation holding the name
+# (functional-spec §2: "the specifics are readable at a glance rather than buried
+# in punctuation"). ``field-label`` is a cast-list field's ``Label:``, colon
+# included, so an entry can be skimmed by field instead of read as a paragraph.
+KIND_ATTR = "attr"
+KIND_FIELD_LABEL = "field-label"
 
 # The canonical kind vocabulary, in the order the kinds were introduced — the
 # single source of truth for which kinds exist, following the same house pattern
@@ -713,10 +722,14 @@ KIND_PLAIN = "plain"
 # to change). The UI builds its kind → style map from this, and a kind absent
 # from a style map must fall back to unstyled rather than raising.
 #
-# Later slices of spec 038 append: ``attr`` and ``field-label`` (Slice 2);
-# ``speaker`` / ``speech`` / ``thought`` / ``recap`` (Slice 3); the side-bearing
-# kinds read from the cast list (Slice 4).
-TRANSCRIPT_KINDS: tuple[str, ...] = (KIND_MARKER, KIND_PLAIN)
+# Later slices of spec 038 append: ``speaker`` / ``speech`` / ``thought`` /
+# ``recap`` (Slice 3); the side-bearing kinds read from the cast list (Slice 4).
+TRANSCRIPT_KINDS: tuple[str, ...] = (
+    KIND_MARKER,
+    KIND_PLAIN,
+    KIND_ATTR,
+    KIND_FIELD_LABEL,
+)
 
 # The structural tag vocabulary ``graphia.tools.eval_transcript`` emits — the
 # whitelist that decides whether a ``<…>`` line is skeleton or just text that
@@ -772,6 +785,33 @@ _TAG_HEAD_RE = re.compile(
     r"^<(?P<slash>/?)(?P<name>[A-Za-z][A-Za-z0-9_-]*)(?P<attrs>\s[^>]*)?>"
 )
 
+# The detail-carrying attributes whose **values** become :data:`KIND_ATTR` spans
+# (tech-spec §2 A). Exactly the five the writer emits, verified across all 298
+# committed transcripts — ``name``/``role`` on ``<player>`` (1960 each),
+# ``player`` on ``<thought>`` (8183) and ``initiator``/``target`` on ``<vote>``
+# (1005 each); the corpus contains no sixth attribute name.
+#
+# A whitelist, not "every ``x="…"`` pair", for the same *never guess* reason the
+# tag vocabulary is one: an attribute is lifted out of the punctuation because a
+# reviewer reads it as a **specific** — a person's name, a role. Spec 038's own
+# Slice 5 adds ``human="true"`` to the human seat's ``<player>`` tag, and that is
+# a machine flag rather than a detail worth picking out, so it will stay part of
+# the surrounding marker precisely because it is absent from this tuple.
+_ATTR_NAMES: tuple[str, ...] = ("name", "role", "player", "initiator", "target")
+
+# One ``name="value"`` pair inside a tag's attribute run. Only the ``value``
+# group becomes an :data:`KIND_ATTR` span — the attribute name, the ``="`` and
+# the closing quote stay :data:`KIND_MARKER`, which is the whole point of the
+# split (the marker keeps the punctuation, the reviewer gets the specifics).
+#
+# ``[^"]*`` cannot run past the closing quote, and the lookbehind stops a
+# hypothetical ``nickname="…"`` from being split at its ``name="`` tail. A
+# malformed run that matches nothing simply yields the single marker span it
+# would have been before Slice 2 — degradation, never a raise.
+_ATTR_VALUE_RE = re.compile(
+    r'(?<![A-Za-z0-9_-])(?:' + "|".join(_ATTR_NAMES) + r')="(?P<value>[^"]*)"'
+)
+
 # The single information line at the very top of a game, e.g.
 # ``Game 1 | provider=ollama | large_model=qwen3-coder:30b | … | games=50``.
 # Built by ``eval_transcript._header`` as ``" | ".join(parts)`` with
@@ -789,6 +829,38 @@ _METADATA_LINE_RE = re.compile(r"^Game \d+(?: \| .+)?$")
 # ordinary sentence merely *beginning* "Round 3. ..." is left as plain text.
 _ROUND_LABEL_RE = re.compile(r"^Round \d+\.$")
 
+# The cast list's field labels, verbatim from the writer's ``_persona_lines``
+# (``graphia.tools.eval_transcript``) — that function is the format's authority,
+# and these five ``f"Field: {value}"`` prefixes are every label it emits.
+# ``Public legend:`` / ``True self (hidden):`` are the Mafioso's two layers;
+# ``Persona:`` is the single honest one a Citizen gets.
+#
+# Not labels, deliberately: ``(no persona recorded)`` and ``(persona has no
+# recorded detail)`` are parenthesised notes rather than fields, and
+# ``Pointing round N:`` belongs to a Night's pick list rather than the cast list.
+_FIELD_LABELS: tuple[str, ...] = (
+    "Personality:",
+    "Manner:",
+    "Public legend:",
+    "True self (hidden):",
+    "Persona:",
+)
+
+# A line **beginning** with one of the labels. Longest-first so ``Persona:``
+# cannot shadow ``Personality:`` whatever order :data:`_FIELD_LABELS` is written
+# in, and matched against the *lstripped* body so the pre-spec-022 era's
+# four-space-indented persona lines are recognised by the same single rule as
+# spec-022's flush-left ones (the indent is already its own plain span).
+#
+# The match covers the label **including its colon**; the prose after it is
+# content and stays plain.
+_FIELD_LABEL_RE = re.compile(
+    "|".join(
+        re.escape(label)
+        for label in sorted(_FIELD_LABELS, key=len, reverse=True)
+    )
+)
+
 
 def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     """Split a transcript into ordered ``(text, kind)`` spans (spec 038, §2 A).
@@ -803,14 +875,22 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     merely intended — and it is asserted over every committed transcript by
     ``tests/test_transcript_highlight.py``.
 
-    **Kinds recognised by this slice** (two — later slices add more, see
+    **Kinds recognised so far** (four — later slices add more, see
     :data:`TRANSCRIPT_KINDS`):
 
     - :data:`KIND_MARKER` — the game's skeleton: the structural tags
       (``<transcript>``, ``<setup>``, ``<preamble>``, ``<night>``, ``<day>``,
       ``<round>``, ``<endgame>``, ``<kill>``, ``<player …>``, ``<vote …>``,
       ``<recap>``, ``<thought …>``) and each one's closing form, the top
-      ``Game N | provider=…`` metadata line, and the bare ``Round N.`` label.
+      ``Game N | provider=…`` metadata line, and the bare ``Round N.`` label —
+      **including the punctuation of a tag's attributes**, which stays marker so
+      that only the values below are lifted out of it.
+    - :data:`KIND_ATTR` — the **value** of a detail-carrying attribute inside a
+      marker: the ``name``/``role`` of a cast entry, a thought's ``player``, a
+      vote's ``initiator``/``target`` (see :data:`_ATTR_NAMES`). ``Avery``, never
+      ``name="Avery"``.
+    - :data:`KIND_FIELD_LABEL` — a cast-list field's label, **colon included**
+      (see :data:`_FIELD_LABELS`); the prose after it is content, not label.
     - :data:`KIND_PLAIN` — **everything else**, including every line separator.
       This fallback is what makes degradation total: an unrecognised tag, a
       pre-spec-022 transcript's indented ``Name — Role`` cast list, model-generated
@@ -829,13 +909,19 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
 
     How a line is split (the extension point is :func:`_line_spans`):
 
-    - a tag on a line of its own becomes one marker span;
+    - a tag on a line of its own becomes one marker span — or, when it carries
+      one of the five detail attributes, an alternating marker/attr/marker run
+      whose pieces still concatenate to the tag exactly (:func:`_tag_head_spans`);
     - an inline ``<tag …>content</tag>`` becomes *three* spans — opening tag,
       content, closing tag — so Slices 2–3 need only change the content span's
       kind (or split attribute values out of the tag) instead of breaking one
       span into several. ``<kill>`` is the exception whose content is already
       marker (see :data:`_INLINE_CONTENT_KINDS`), so it coalesces back to a
       single span;
+    - a cast-list ``Personality: …`` line splits into its label and the prose
+      after it, in **both** transcript eras — spec-022 writes the label
+      flush-left and the pre-022 runs indent it four spaces, and because the
+      indent is already its own span one rule serves both;
     - a line's **leading indentation** is plain, never part of the marker span,
       so the three pre-spec-022 run dirs (which indent their ``  <round>`` tags
       and ``  Round N.`` labels) tokenize identically to the flush-left form;
@@ -866,6 +952,12 @@ def _line_spans(line: str, *, is_first_line: bool) -> list[tuple[str, str]]:
 
     ``is_first_line`` gates the ``Game N | …`` metadata line, which is a
     positional fact about the file rather than a shape a line can have anywhere.
+
+    **Order is load-bearing**, not incidental: the tag branch runs before the
+    ``Round N.`` label, which runs before the cast-list field label, which runs
+    before the plain fallback. Slice 3's ``Name:`` speaker rule belongs *after*
+    the field-label branch, since ``Personality: brisk`` is shaped exactly like a
+    player named "Personality" speaking.
     """
     if is_first_line and _METADATA_LINE_RE.match(line):
         return [(line, KIND_MARKER)]
@@ -886,6 +978,17 @@ def _line_spans(line: str, *, is_first_line: bool) -> list[tuple[str, str]]:
 
     if _ROUND_LABEL_RE.match(body):
         return prefix + [(body, KIND_MARKER)]
+
+    # A cast-list field: the label (colon included) is set apart, the prose after
+    # it is not. This branch must stay **above** Slice 3's coming ``Name:``
+    # speaker rule — ``Personality: brisk`` is shaped exactly like a player named
+    # "Personality" speaking, and the label reading is the right one.
+    label = _FIELD_LABEL_RE.match(body)
+    if label is not None:
+        return prefix + [
+            (label.group(0), KIND_FIELD_LABEL),
+            (body[label.end() :], KIND_PLAIN),
+        ]
 
     return prefix + [(body, KIND_PLAIN)]
 
@@ -912,15 +1015,15 @@ def _tag_element_spans(body: str) -> list[tuple[str, str]] | None:
     if match is None or match.group("name") not in _MARKER_TAGS:
         return None
 
-    tag_text = match.group(0)
+    head = _tag_head_spans(match)
     rest = body[match.end() :]
     if not rest:
-        return [(tag_text, KIND_MARKER)]
+        return head
 
     closing = f"</{match.group('name')}>"
     if not match.group("slash") and rest.endswith(closing):
         inner = rest[: -len(closing)]
-        spans = [(tag_text, KIND_MARKER)]
+        spans = [*head]
         if inner:
             # An empty body (``<night></night>``, which ``_wrap`` emits for a
             # section that captured nothing) contributes no span at all — the
@@ -932,7 +1035,50 @@ def _tag_element_spans(body: str) -> list[tuple[str, str]] | None:
         spans.append((closing, KIND_MARKER))
         return spans
 
-    return [(tag_text, KIND_MARKER), (rest, KIND_PLAIN)]
+    return [*head, (rest, KIND_PLAIN)]
+
+
+def _tag_head_spans(match: re.Match[str]) -> list[tuple[str, str]]:
+    """One tag's ``<…>`` head, split into marker / attr / marker / attr / marker.
+
+    ``match`` is a :data:`_TAG_HEAD_RE` match anchored at position 0 of the line
+    body, so every offset it reports indexes the head text directly.
+
+    An attribute-free tag (``<day>``, ``</player>``, ``<kill>``) yields the
+    single :data:`KIND_MARKER` span it always did. A tag carrying one of
+    :data:`_ATTR_NAMES` alternates: the punctuation up to and including
+    ``name="`` is marker, the value is :data:`KIND_ATTR`, and so on, with the
+    trailing ``">`` closing it out. So ::
+
+        <player name="Avery" role="Mafia">
+
+    becomes five spans — ``<player name="`` · ``Avery`` · ``" role="`` ·
+    ``Mafia`` · ``">`` — which is functional-spec §2's "the name and the role are
+    distinguishable from the surrounding marker text" made structural.
+
+    The pieces are emitted without checking for emptiness on purpose: an empty
+    value (``name=""``) or a zero-length gap contributes an empty span that
+    :func:`_coalesce_spans` drops at the single exit point, merging the markers
+    on either side back into one. That keeps the no-empty-span guarantee in the
+    one place that owns it, and keeps this function a pure re-slicing of
+    ``match.group(0)`` — concatenation order never changes, so the round trip
+    holds by construction.
+    """
+    attrs = match.group("attrs")
+    head = match.group(0)
+    if not attrs:
+        return [(head, KIND_MARKER)]
+
+    offset = match.start("attrs")
+    spans: list[tuple[str, str]] = []
+    cursor = 0
+    for value in _ATTR_VALUE_RE.finditer(attrs):
+        start, end = value.span("value")
+        spans.append((head[cursor : offset + start], KIND_MARKER))
+        spans.append((value.group("value"), KIND_ATTR))
+        cursor = offset + end
+    spans.append((head[cursor:], KIND_MARKER))
+    return spans
 
 
 def _coalesce_spans(spans: list[tuple[str, str]]) -> list[tuple[str, str]]:

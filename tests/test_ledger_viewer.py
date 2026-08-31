@@ -45,10 +45,13 @@ from textual.widgets import (
 )
 
 from graphia.eval_ledger import (
+    KIND_ATTR,
+    KIND_FIELD_LABEL,
     KIND_MARKER,
     KIND_PLAIN,
     METRIC_ORDER,
     SEARCH_SCOPE_ALL,
+    TRANSCRIPT_KINDS,
     build_table_model,
     list_transcripts,
     load_ledger,
@@ -2819,8 +2822,8 @@ async def test_a_list_longer_than_the_panel_can_be_walked_to_its_last_game(
 
 
 # ===========================================================================
-# B14. Colour-coded transcript reading view (spec 038, Slice 1) — the WIDGET
-#      half of the slice's test task. `TranscriptScreen.compose` now builds a
+# B14. Colour-coded transcript reading view (spec 038, Slices 1-2) — the WIDGET
+#      half of each slice's test task. `TranscriptScreen.compose` now builds a
 #      styled `rich.text.Text` from the pure tokenizer's spans instead of
 #      passing the file's string straight through, so four things have to be
 #      pinned at the widget: the spans really do survive into the rendered
@@ -2829,6 +2832,14 @@ async def test_a_list_longer_than_the_panel_can_be_walked_to_its_last_game(
 #      characters), text containing `[bold]` still renders literally, and
 #      scrolling plus the escape/backspace/q back-out keys behave exactly as they
 #      did before.
+#
+#      SLICE 2 CHANGED THE EXPECTED RUNS, not the properties. The tokenizer now
+#      splits a detail-carrying tag into marker / attr / marker and lifts the
+#      cast list's `Label:` off its prose, so a single `<player …>` line arrives
+#      as FIVE painted runs and a `Personality: …` line as one. Everything the
+#      Slice 1 tests proved still has to hold — it just holds over a longer list
+#      of shorter runs, which is why the pins below are stated as the complete
+#      ordered run list rather than as a count.
 # ===========================================================================
 #
 # WHY THESE LIVE HERE AND NOT IN `tests/test_transcript_highlight.py`. That file
@@ -2891,32 +2902,53 @@ _HIGHLIGHT_BODY = (
 # It is an OFFSET assertion as well as a text one, because `_rendered_runs` reads
 # each entry by SLICING the rendered plain text at the span's own start/end — a
 # span whose boundaries drifted by one character would produce a different
-# string here. Note what is absent: the persona line, the speech line, and the
+# string here. Note what is absent: the persona PROSE, the speech line, and the
 # two-space indents, all of which must carry no style at all.
-_HIGHLIGHT_EXPECTED_MARKER_TEXTS = [
-    "Game 1 | provider=ollama | large_model=qwen3-coder:30b | games=2",
-    "<transcript>",
-    "<setup>",
-    '<player name="Alice" role="Mafioso">',
-    "</player>",
-    "</setup>",
-    "<night>",
+#
+# Renamed from `_HIGHLIGHT_EXPECTED_MARKER_TEXTS` in Slice 2: since the tokenizer
+# learned `attr` and `field-label`, not every painted run is a marker. The `#`
+# comments name each run's kind, which `_rendered_runs` cannot see — it reports
+# offsets, deliberately, because rendered COLOUR is theme-dependent and is
+# asserted nowhere in this file. Which kind produced which run is pinned in
+# `tests/test_transcript_highlight.py`; what is pinned here is that the widget
+# paints exactly these character ranges and no others.
+_HIGHLIGHT_EXPECTED_STYLED_TEXTS = [
+    "Game 1 | provider=ollama | large_model=qwen3-coder:30b | games=2",  # marker
+    "<transcript>",  # marker
+    "<setup>",  # marker
+    # The cast entry splits five ways: the value is lifted out of the
+    # punctuation, and the `name=` key, the quotes and the brackets stay marker.
+    '<player name="',  # marker
+    "Alice",  # attr
+    '" role="',  # marker
+    "Mafioso",  # attr
+    '">',  # marker
+    # The label carries its colon; the description after it does not.
+    "Personality:",  # field-label
+    "</player>",  # marker
+    "</setup>",  # marker
+    "<night>",  # marker
     # `<kill>`'s content is marker too, so the whole element is ONE run.
-    "<kill>Avery — Law-abiding Citizen</kill>",
-    "</night>",
-    "<day>",
+    "<kill>Avery — Law-abiding Citizen</kill>",  # marker
+    "</night>",  # marker
+    "<day>",  # marker
     # The indent is NOT part of the marker.
-    "<round>",
-    "Round 1.",
-    "</round>",
-    "</day>",
-    "</transcript>",
+    "<round>",  # marker
+    "Round 1.",  # marker
+    "</round>",  # marker
+    "</day>",  # marker
+    "</transcript>",  # marker
 ]
 
 # Substrings of `_HIGHLIGHT_BODY` that must carry NO style at all: they are the
 # game's content, which the skeleton has to recede behind rather than join.
+#
+# Slice 2 narrowed the first entry from the whole `Personality: brisk and sly`
+# line to its description. The label IS painted now — that is the requirement —
+# so the assertion moved to the half that must still not be: the prose, and the
+# space in front of it, which belongs to the description rather than the label.
 _HIGHLIGHT_UNSTYLED_SUBSTRINGS = (
-    "Personality: brisk and sly",
+    " brisk and sly",
     "Alice: I saw nothing last night.",
 )
 
@@ -3053,11 +3085,15 @@ def _rendered_runs(content: Content) -> list[tuple[int, int, str]]:
     ]
 
 
-def _tokenizer_marker_runs(text: str) -> list[tuple[int, int, str]]:
+def _tokenizer_styled_runs(text: str) -> list[tuple[int, int, str]]:
     """The styled runs the PURE tokenizer says ``text`` has, as offsets.
 
     The independent cross-check for `_rendered_runs`: the widget must paint
     exactly the runs the pure layer marked, no more and no fewer.
+
+    Every kind except `plain` counts as styled, so this tracks the tokenizer's
+    vocabulary automatically — Slice 2's `attr` and `field-label` runs are
+    included without an edit here, and Slice 3's will be too.
     """
     runs: list[tuple[int, int, str]] = []
     offset = 0
@@ -3105,23 +3141,31 @@ async def test_the_transcript_body_keeps_markup_parsing_off(tmp_path: Path) -> N
 # ---------------------------------------------------------------------------
 
 
-async def test_the_rendered_body_carries_a_span_per_marker_at_exact_offsets(
+async def test_the_rendered_body_carries_a_span_per_styled_run_at_exact_offsets(
     tmp_path: Path,
 ) -> None:
-    """The markers arrive as styled spans over exactly their own characters.
+    """Each styled run arrives as a span over exactly its own characters.
 
-    THE central structural assertion of Slice 1: "the skeleton is visually
-    distinct from its content" (functional-spec §2) reduces, once colour is a CSS
-    concern, to *which character ranges carry a style at all*.
+    THE central structural assertion of the reading view: "the skeleton is
+    visually distinct from its content", and "markers that carry details show
+    those details distinguishably" (functional-spec §2), both reduce — once
+    colour is a CSS concern — to *which character ranges carry a style at all*.
 
-    Asserted three ways, because each catches something the others do not:
+    Asserted five ways, because each catches something the others do not:
 
-    * against `_HIGHLIGHT_EXPECTED_MARKER_TEXTS`, a hand-written absolute list —
+    * against `_HIGHLIGHT_EXPECTED_STYLED_TEXTS`, a hand-written absolute list —
       so both the widget and the tokenizer breaking together is still a failure;
-    * against the pure tokenizer's own marker offsets — so the widget cannot
+    * against the pure tokenizer's own styled offsets — so the widget cannot
       paint a run the pure layer never marked, nor drop one it did;
     * against the content that must stay unstyled — so "everything is a marker"
-      cannot pass.
+      cannot pass;
+    * against the indentation, which is layout and never skeleton;
+    * and, new in Slice 2, against a run **boundary** inside a single line: the
+      cast tag's `Alice` and `Mafioso` must be their own runs, not merged into
+      the tag around them and not extended over the quotes that hold them.
+
+    Renamed from `…a_span_per_marker…`: since Slice 2 not every painted run is a
+    marker.
     """
     ledger, game_file = _ledger_with_body(
         tmp_path, _HIGHLIGHT_BODY, name="hl-spans.yaml"
@@ -3135,10 +3179,10 @@ async def test_the_rendered_body_carries_a_span_per_marker_at_exact_offsets(
         runs = _rendered_runs(content)
 
         # (a) The absolute pin: exactly these runs, in this order.
-        assert [text for _, _, text in runs] == _HIGHLIGHT_EXPECTED_MARKER_TEXTS
+        assert [text for _, _, text in runs] == _HIGHLIGHT_EXPECTED_STYLED_TEXTS
 
         # (b) ...and they are the pure layer's runs, offsets included.
-        assert runs == _tokenizer_marker_runs(
+        assert runs == _tokenizer_styled_runs(
             game_file.read_text(encoding="utf-8")
         )
 
@@ -3169,6 +3213,20 @@ async def test_the_rendered_body_carries_a_span_per_marker_at_exact_offsets(
                 f"{line.strip()!r} itself is not styled"
             )
 
+        # (e) ...and the two attribute values really are painted as runs of their
+        # own, ending where the value ends. Read out of the rendered offsets, so
+        # a widget that merged the tag back into one run — or stretched a value
+        # over its closing quote — fails here with the offending run named.
+        tag_start = content.plain.index('<player name="Alice"')
+        by_start = {start: (end, text) for start, end, text in runs}
+        for value in ("Alice", "Mafioso"):
+            start = content.plain.index(f'"{value}"', tag_start) + 1
+            assert start in by_start, (
+                f"{value!r} at offset {start} is not the start of a painted run; "
+                f"runs near it: {[r for r in runs if abs(r[0] - start) < 40]}"
+            )
+            assert by_start[start] == (start + len(value), value)
+
 
 async def test_no_rendered_span_covers_a_newline(tmp_path: Path) -> None:
     """A marker's style can never bleed to the end of a terminal row.
@@ -3177,6 +3235,11 @@ async def test_no_rendered_span_covers_a_newline(tmp_path: Path) -> None:
     guarantee re-checked where it actually matters — on the renderable the
     terminal paints. The premise (the count) is pinned absolutely, so a body that
     rendered with no spans at all could not pass by having no newline to carry.
+
+    Slice 2 made this matter more, not less: the count moved from 15 runs to 20
+    because a line is now split *within* itself, and a splitter that mis-set one
+    boundary is exactly the bug that would let a run swallow the newline at the
+    end of its line.
     """
     ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="hl-newline.yaml")
 
@@ -3186,7 +3249,7 @@ async def test_no_rendered_span_covers_a_newline(tmp_path: Path) -> None:
         screen = await _open_the_only_game(pilot)
         runs = _rendered_runs(_transcript_body_content(screen))
 
-        assert len(runs) == len(_HIGHLIGHT_EXPECTED_MARKER_TEXTS)
+        assert len(runs) == len(_HIGHLIGHT_EXPECTED_STYLED_TEXTS) == 20
         offenders = [text for _, _, text in runs if "\n" in text]
         assert not offenders, f"styled runs carrying a newline: {offenders}"
 
@@ -3228,6 +3291,43 @@ async def test_a_kind_the_style_map_has_never_heard_of_renders_unstyled(
         assert content.plain == "hello <day>"
         # ...and only the kind the map knows is painted.
         assert _rendered_runs(content) == [(6, 11, "<day>")]
+
+
+def test_every_declared_kind_but_plain_has_a_style_and_a_component_class() -> None:
+    """The style map covers the tokenizer's vocabulary, and `plain` alone is out.
+
+    The test above pins the *fallback* — a kind the map has never heard of
+    degrades to unstyled rather than raising. That fallback is a safety net, not
+    a plan: a kind the tokenizer emits and the map forgets is invisible in the
+    viewer and silent in the suite, which is precisely how a slice ships half
+    done. This is the other half, and it is why it belongs beside it.
+
+    Slice 2 is the first slice with two kinds to forget, so the guard is written
+    now rather than after the first miss. It fails deliberately in the middle of
+    a later slice — between that slice's tokenizer task and its styling task —
+    which is the documented shape of a slice, not a defect (`tasks.md`, "A slice
+    goes red in the middle, and that is correct").
+
+    `COMPONENT_CLASSES` is checked too because a class named in the map but not
+    declared on the screen resolves to nothing: `get_component_rich_style` would
+    hand back a default style and the run would render undecorated while every
+    map-level assertion still passed.
+    """
+    module = importlib.import_module("graphia.ui.ledger_viewer")
+    mapping = module._TRANSCRIPT_KIND_COMPONENTS
+
+    assert set(mapping) == set(TRANSCRIPT_KINDS) - {KIND_PLAIN}, (
+        "every kind the tokenizer declares needs a style entry, except `plain`, "
+        "whose absence IS the unstyled fallback"
+    )
+    # Spelled out for the two kinds this slice added, so the failure names them.
+    assert KIND_ATTR in mapping
+    assert KIND_FIELD_LABEL in mapping
+
+    assert set(mapping.values()) <= set(TranscriptScreen.COMPONENT_CLASSES)
+    # ...and every class is distinct, so two kinds cannot share one CSS rule by
+    # accident and become indistinguishable on screen.
+    assert len(set(mapping.values())) == len(mapping)
 
 
 # ---------------------------------------------------------------------------
@@ -3322,7 +3422,7 @@ async def test_a_real_committed_game_renders_as_its_exact_text(
         # The premise again: a real game has plenty of skeleton, so "no spans at
         # all" cannot pass the comparison below by both sides being empty.
         assert len(runs) > 20, f"only {len(runs)} styled runs in a real game"
-        assert runs == _tokenizer_marker_runs(game_file.read_text(encoding="utf-8"))
+        assert runs == _tokenizer_styled_runs(game_file.read_text(encoding="utf-8"))
 
 
 async def test_text_containing_square_brackets_renders_literally(
@@ -3339,6 +3439,12 @@ async def test_text_containing_square_brackets_renders_literally(
     Both halves are asserted: the brackets survive in the text, AND no styled run
     covers them (markup parsing that consumed them would leave a span where the
     tag used to be).
+
+    The bracketed prose sits behind a `Personality:` / `Manner:` field label on
+    purpose since Slice 2: the label is now lifted off the line, so the run list
+    below says in one place that the label IS painted and that the bracketed
+    description after it is NOT. A markup parser that ate `[bold]` would shift
+    every offset after it and change this list.
     """
     body = (
         "<setup>\n"
@@ -3362,11 +3468,26 @@ async def test_text_containing_square_brackets_renders_literally(
 
         runs = _rendered_runs(content)
         assert [text for _, _, text in runs] == [
-            "<setup>",
-            '<player name="Alice" role="Mafioso">',
-            "</player>",
-            "</setup>",
+            "<setup>",  # marker
+            '<player name="',  # marker
+            "Alice",  # attr
+            '" role="',  # marker
+            "Mafioso",  # attr
+            '">',  # marker
+            "Personality:",  # field-label
+            "Manner:",  # field-label
+            "</player>",  # marker
+            "</setup>",  # marker
         ]
+        # ...and not one of the four bracket literals is inside a painted run.
+        covered = {
+            offset for start, end, _ in runs for offset in range(start, end)
+        }
+        for literal in ("[bold]", "[/bold]", "[not a real tag]", "[unclosed"):
+            start = content.plain.index(literal)
+            assert not covered & set(range(start, start + len(literal))), (
+                f"{literal!r} is painted — bracketed prose is content, not a label"
+            )
 
 
 async def test_the_rich_text_path_drops_the_five_control_codes(
