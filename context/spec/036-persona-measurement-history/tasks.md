@@ -1,0 +1,42 @@
+<!--
+Task list for spec 036 — Persona-Generation Measurements Join the Tracked Quality History.
+Vertical slices: each leaves `uv run python -m graphia`, `make persona-bench` and
+`make view-ledger` runnable, and each adds one testable increment.
+-->
+
+# Tasks: Persona-Generation Measurements Join the Tracked Quality History
+
+- **Functional Specification:** `./functional-spec.md`
+- **Technical Considerations:** `./technical-considerations.md`
+
+> **Verification is shell + pytest only.** No browser or external MCP is needed: every slice is checked with `uv run pytest -q` plus a `make` invocation. The one real-model check (Slice 3) uses the **local ollama** provider, which is free and currently running. Nothing needs installing.
+
+> **The committed-data rule applies to every slice.** `evals/blunder-ledger.yaml` is repo-committed and append-only. Every test that exercises the recording path **must** redirect `blunder_eval.LEDGER_PATH` at `tmp_path` — this project has already had ~25 synthetic records leak into the committed ledger from exactly this bug class, and the bench previously could not touch the ledger at all.
+
+---
+
+- [ ] **Slice 1: An opt-in bench run appends a labelled record, visible in the viewer**
+  - [ ] Record kind (tech-spec §2 A): add `kind: str = ""` to `EvalResult` in `src/graphia/tools/blunder_eval.py`, and emit `run.kind` from `render_record` **conditionally** (empty ⇒ key omitted entirely), placed immediately after `run.date`, following the existing `transcript_dir` / `settings.lineup` conditional-emission pattern. Do **not** bump `METRICS_VERSION` — no scoring rule changes; record the reasoning in the module comment alongside the `ci_low` / `lineup` precedent. **[Agent: ai-quality-eval]**
+  - [ ] Opt-in flag + minimal mapping (tech-spec §2 B): add `--record` to `persona_bench` (**default off**, so today's behaviour and its no-write test remain exactly valid). When on, build an `EvalResult` from the existing `BenchSummary` carrying `kind="persona-bench"`, the resolved provider and tier model ids (reuse `_resolved_model_names`), `quality` = rosters attempted/completed + duration, and the four persona facets in their **existing value-type shape**, omitting the semantic pair entirely when it was not measured. Leave `outcomes` / `vote_activity` unpopulated — both are **already** conditional in the renderer, so they omit themselves. Append via the existing `append_record`. **[Agent: ai-quality-eval]**
+  - [ ] Viewer `Kind` column (tech-spec §2 C): add one short entry to `_FIXED_COLUMNS` in `src/graphia/eval_ledger.py`, positioned with the identity columns (`Date` / `Provider`) and **not** in the metric tail, so the UI's right-justify split (`len(columns) - len(METRIC_ORDER)`) keeps it left-justified — the spec-029 precedent. Read it in `_row_cells` through the existing `_dig(record, "run.kind", default=…)` so pre-036 records render a stable label rather than raising, and add `run.kind` to the searchable fields. No new render branch. **[Agent: ai-quality-eval]**
+  - [ ] Tests (tech-spec §4), all offline/mocked: **additive-only rendering** — a synthetic game-shaped `EvalResult` renders **byte-identically** to the current expected text (no `run.kind`, `outcomes`/`vote_activity` present) while a bench-shaped one renders `run.kind: 'persona-bench'` and **omits** `outcomes` / `vote_activity` / `transcript_dir`, with key order asserted for both; **flag gating** — `--record` absent leaves the ledger untouched (extend the existing no-write test), present appends exactly one document and leaves every prior document unchanged; the four metric facets keep their value-type shape and the semantic pair is **absent** when unmeasured; `build_table_model` renders the `Kind` cell for a bench record and a stable label for a record lacking the field, raising on neither. **Every recording test redirects `LEDGER_PATH` to `tmp_path`.** Full `uv run pytest -q` green. **[Agent: testing]**
+  - [ ] Verification: `uv run pytest -q` green, and `make persona-bench ARGS="--provider ollama --rosters 2 --diversity on"` (no `--record`) still prints its summary and leaves `git status` clean — proving the default path is untouched. **[Agent: ai-quality-eval]**
+
+- [ ] **Slice 2: The record carries the generation counts, the A/B conditions, and provenance**
+  - [ ] Generation block (tech-spec §2 A/B): render a conditional top-level `generation` block carrying `collisions` = `total_collisions` and `regenerations` = `total_regenerations` from the `BenchSummary`. Omitted entirely for game runs, so existing records are untouched. This is the count that carried the spec-034 result (2-in-10 rosters shipping a near-duplicate → 0-in-10), which a similarity mean alone would have lost. **[Agent: ai-quality-eval]**
+  - [ ] Conditions + provenance (tech-spec §2 B): populate `settings` with the resolved persona knobs — diversity flag, collision threshold, regeneration attempts, temperature — so a flag-on/flag-off pair is readable **as a pair**; and reuse the **same provenance collector the eval already uses** for the `code` (commit/branch/dirty) and `provider` (model ids + ollama digests + server version) blocks rather than hand-rolling either. Add a `--note` argument if `persona_bench` lacks one, passed through to the existing last-key `notes` rendering. **[Agent: ai-quality-eval]**
+  - [ ] Tests (tech-spec §4), all offline/mocked: the `generation` block appears with the right counts on a bench record and is **absent** on a game-shaped one; the persona knobs land in `settings`; a recorded bench run carries the same `code` and `provider` block **shape** a game run does; a `--note` is rendered last and its absence renders cleanly; `render_detail` shows the `generation` block without new render code. Ledger redirected to `tmp_path` throughout. Full `uv run pytest -q` green. **[Agent: testing]**
+  - [ ] Verification: `uv run pytest -q` green, and `make view-ledger` opens without error on a ledger containing a synthetic bench record, showing its `Kind` cell, its persona metrics, and blanks in the game columns. **[Agent: ai-quality-eval]**
+
+- [ ] **Slice 3: The contract is documented and the path is proven on a real model**
+  - [ ] Contract + docs (tech-spec §2 D): document in `evals/README.md` the `run.kind` field (**absent ⇒ game run**), the `generation` block, the rule that `run.kind` defines the **unit** of `quality.attempted`/`completed`, and — importantly — that records compare only **within a kind** as well as within a provider. Document the recording invocation on the `persona-bench` Makefile target. **[Agent: ai-quality-eval]**
+  - [ ] Verification (developer-run, free): `make persona-bench ARGS="--provider ollama --rosters 5 --diversity on --record --note 'spec 036 first recorded bench'"` writes exactly one record; `make view-ledger` shows it with its `Kind`, metrics and blank game columns; `git diff` on the ledger is **additions-only** with the record count up by exactly one. Local ollama is free — this costs time only. _(Optionally re-run with `--semantic` to confirm the semantic pair records too; that arm reaches Bedrock and costs tokens.)_ **[Agent: ai-quality-eval]**
+
+---
+
+## Notes for the implementer
+
+- **`METRIC_ORDER` already carries all four persona keys** (`persona_lex_mean`, `persona_lex_peak`, `persona_sem_mean`, `persona_sem_peak`) from specs 032/033, and they already render through the value-type branch. Do not add metric columns — they exist.
+- **`outcomes` and `vote_activity` are already conditional** in `render_record`. Verified against the source; leaving them unpopulated is sufficient, and a test pins that so a future refactor cannot make them unconditional.
+- **Opt-in is deliberate**, not a technical limitation: the bench's value is dev-loop speed (~30 s per roster), so most runs are throwaway and auto-recording would bury the rare real measurement.
+- **The `dirty` flag will read `true`** on any bench record written while other eval output is uncommitted — a known artifact logged in the backlog (*"Run provenance `dirty` flag is wrong for back-to-back runs"*), not a fault of this spec. Commit before the Slice 3 verification run if a clean flag matters.
