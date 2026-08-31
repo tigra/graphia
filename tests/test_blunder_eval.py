@@ -2165,3 +2165,30 @@ def test_clean_transcripts_all_untracked_are_removed(tmp_path: Path) -> None:
     assert not run_a.exists()
     assert not run_b.exists()
     assert sorted(removed) == sorted([run_a, run_b])
+
+
+# ===========================================================================
+# Spec 035 follow-up — `bedrock-claude` carries the invisible-updates note.
+#
+# The provider match previously handled "ollama" and "bedrock" only, so the
+# Claude arm fell through with no note at all. Observable in the committed
+# 2026-08-31 Claude n=50 record, which has no `note` line where the Nova
+# records have one.
+# ===========================================================================
+
+
+@pytest.mark.parametrize("provider", ["bedrock", "bedrock-claude"])
+def test_both_bedrock_arms_carry_the_invisible_updates_note(provider: str) -> None:
+    """Claude on Bedrock is as server-side-opaque as Nova, so it gets the caveat."""
+    block = blunder_eval.collect_provider_provenance(
+        provider, large_model="x", small_model="y", base_url=None
+    )
+    assert block["note"] == blunder_eval._BEDROCK_UPDATE_NOTE
+
+
+def test_ollama_provenance_carries_no_invisible_updates_note() -> None:
+    """The local path is not server-side-opaque — pinned digests identify it."""
+    block = blunder_eval.collect_provider_provenance(
+        "ollama", large_model="x", small_model="y", base_url="http://localhost:11434"
+    )
+    assert "note" not in block

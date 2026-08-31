@@ -146,7 +146,7 @@ settings:                       # the EFFECTIVE resolved values, so a run can be
   base_url: 'http://...'        # Ollama base URL (null for bedrock)
   games: 5                      # number of games requested
   seed: 20260613                # base structural seed (null = unseeded; game i used seed+i)
-  max_rounds: 10                # per-game Day-round cap (null = uncapped)
+  max_days: 12                  # runaway Day cap (spec 023; null = not applicable, e.g. a bench run)
   scripted_player: 'active'     # spec 026 — human-seat stand-in: 'active' or 'passive' (omitted on pre-026 records → read as 'passive')
   persona:                      # spec 036 — persona-bench runs ONLY: the knobs the generation ran under (whole sub-map omitted for a game run)
     diversity_enabled: true     # the --diversity ARM actually invoked, NOT the ambient config default
@@ -234,7 +234,7 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   env-override), so a run can be repeated like-for-like: `large_model`,
   `small_model`, `base_url` (Ollama only; `null` for bedrock), `games`, `seed`
   (base structural seed; `null` when unseeded — game *i* used `seed + i`),
-  `max_rounds` (`null` when uncapped), and **`scripted_player`** (spec 026 — the
+  `max_days` (the spec-023 runaway Day cap; `null` where it does not apply), and **`scripted_player`** (spec 026 — the
   human-seat stand-in used in the run: `'active'` for the deterministic
   rule-based policy or `'passive'` for the prior baseline that never proposes
   and always votes No). **`scripted_player` is a new, additive field:** it is
@@ -506,6 +506,18 @@ Only `notes` is hand-editable; every **machine-measured** field (`run`, `code`,
 rewritten**.
 
 ## Versioning and older records
+
+- **Persona facets written before spec 036 carry no value.** `render_record`
+  filtered metric sub-keys through a tuple containing neither `mean` nor `peak`,
+  so every value-type facet from specs 031/032/033 reached the ledger as a bare
+  `denominator:` with the measured figure **silently dropped**. Four records are
+  affected (the three 2026-08-30 n=10 arms and the Nova n=50). Those numbers were
+  computed and then discarded at write time — they exist nowhere and **cannot be
+  backfilled**. Read a bare `denominator:` on a persona facet as *this writer
+  defect*, not as an unmeasured run. Fixed in spec 036; records written from
+  2026-08-31 onward carry the value. (The records near the top of the file that
+  *do* have `mean:` were hand-written by the specs-032/033 backfill script, which
+  is why they escaped.)
 
 - **`metrics_version` bumps invalidate cross-version comparison.** It is the
   single source of truth for the rule set behind every metric; any change to a

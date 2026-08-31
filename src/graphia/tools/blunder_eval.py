@@ -717,7 +717,12 @@ def collect_provider_provenance(
             )
             block["models"] = ollama["models"]
             block["server_version"] = ollama["server_version"]
-        case "bedrock":
+        case "bedrock" | "bedrock-claude":
+            # Spec 035 follow-up: the Claude profile is as server-side-opaque as
+            # Nova — Anthropic/AWS can update the served weights behind a model
+            # id with no signal to the caller — so it carries the same caveat.
+            # Before this, `bedrock-claude` fell through the match with no note
+            # at all, which is why the 2026-08-31 Claude n=50 record has none.
             block["note"] = _BEDROCK_UPDATE_NOTE
     return block
 

@@ -582,6 +582,7 @@ def test_main_with_record_appends_exactly_one_document(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
+    stub_provenance: _ProvenanceCalls,
 ) -> None:
     """``--record`` present ⇒ ONE labelled document is appended to the ledger.
 
@@ -619,6 +620,7 @@ def test_main_with_record_leaves_every_prior_document_unchanged(
     fake_large,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    stub_provenance: _ProvenanceCalls,
 ) -> None:
     """The ledger is append-only: a prior document survives byte-for-byte.
 
@@ -647,6 +649,7 @@ def test_main_with_record_twice_accumulates_two_documents(
     fake_large,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    stub_provenance: _ProvenanceCalls,
 ) -> None:
     """Several kept runs each add their OWN entry; none replaces an earlier one.
 
@@ -679,6 +682,7 @@ def test_main_with_record_does_not_touch_the_real_committed_ledger(
     fake_large,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    stub_provenance: _ProvenanceCalls,
 ) -> None:
     """Belt-and-braces over the redirect: the repo's committed ledger is untouched.
 

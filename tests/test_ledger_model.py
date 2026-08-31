@@ -38,6 +38,7 @@ from graphia.eval_ledger import (
     TableModel,
     TranscriptEntry,
     _NOTES_CELL_MAXLEN,
+    _stand_in_cell,
     build_table_model,
     list_transcripts,
     load_ledger,
@@ -1877,3 +1878,34 @@ def test_read_transcript_missing_file_is_empty_string(tmp_path: Path) -> None:
     assert not missing.exists()
 
     assert read_transcript(missing) == ""
+
+
+# ===========================================================================
+# Spec 036 follow-up — `Stand-in` is kind-aware.
+#
+# `_stand_in_cell` defaults to `passive` for an absent field, which is right on
+# a game record (absence = the pre-026 default) and wrong on a bench record
+# (absence = no human seat exists). Two meanings, distinguished by kind.
+# ===========================================================================
+
+
+def test_stand_in_blanks_for_a_persona_bench_record() -> None:
+    """A bench run has no human seat, so a defaulted `passive` would be untrue."""
+    assert _stand_in_cell({"run": {"kind": "persona-bench"}}) == ""
+
+
+def test_stand_in_blanks_for_a_bench_record_even_if_the_field_is_present() -> None:
+    """Kind wins: the concept does not apply, whatever the field happens to say."""
+    record = {"run": {"kind": "persona-bench"}, "settings": {"scripted_player": "active"}}
+    assert _stand_in_cell(record) == ""
+
+
+def test_stand_in_still_defaults_to_passive_for_a_game_record() -> None:
+    """The spec-026 default is preserved where absence really means the default."""
+    assert _stand_in_cell({"run": {"date": "2026-01-01"}}) == "passive"
+
+
+def test_stand_in_reads_the_recorded_value_for_a_game_record() -> None:
+    """A game record that states its stand-in still renders it."""
+    record = {"run": {"date": "2026-01-01"}, "settings": {"scripted_player": "active"}}
+    assert _stand_in_cell(record) == "active"

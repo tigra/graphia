@@ -330,7 +330,16 @@ def _stand_in_cell(record: RawRecord) -> str:
     records and read as the prior default :data:`_STAND_IN_DEFAULT` (``passive`` —
     the only stand-in that existed then), so an older record reads ``passive``, not
     a blank cell.
+
+    **Kind-aware (spec 036 follow-up).** That defaulting is only correct where
+    absence means "the prior default". On a record whose ``run.kind`` is set —
+    a persona-bench measurement — there is no human seat at all, so absence
+    means *not applicable* and a defaulted ``passive`` would assert something
+    untrue. Such a record therefore blanks. The two meanings of an absent field
+    are distinguished by kind, not collapsed into one default.
     """
+    if _text(_dig(record, "run.kind", default="")):
+        return ""
     return _text(_dig(record, "settings.scripted_player", default=_STAND_IN_DEFAULT))
 
 
