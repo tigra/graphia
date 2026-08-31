@@ -26,6 +26,7 @@ must never reach the UI.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -48,6 +49,10 @@ __all__ = [
     "transcript_dir_for",
     "list_transcripts",
     "read_transcript",
+    "KIND_MARKER",
+    "KIND_PLAIN",
+    "TRANSCRIPT_KINDS",
+    "tokenize_transcript",
 ]
 
 # One parsed ledger record: the YAML document as a plain nested mapping. Keyed by
@@ -672,6 +677,291 @@ def read_transcript(path: Path) -> str:
         return path.read_text(encoding="utf-8")
     except OSError:
         return ""
+
+
+# ===========================================================================
+# Transcript tokenizing (spec 038, Slice 1 — the pure, colour-free spine).
+#
+# A preserved game is one wall of plain text mixing content a reviewer reads in
+# completely different ways: the skeleton marking where a Night ends and a Day
+# begins, seven people talking in turn, each player's private thoughts, the
+# Moderator's factual recaps, and an opening cast list. :func:`tokenize_transcript`
+# splits that text into an ordered run of ``(text, kind)`` spans where ``kind``
+# names a **semantic** role — never a colour. The UI (``TranscriptScreen``) owns
+# the kind → style mapping; **this layer stays free of Rich and Textual**, which
+# is precisely what lets the parsing — the part most worth testing — be tested as
+# a pure function with no terminal (the same property that lets
+# ``tests/test_ledger_model.py`` run headless).
+#
+# The invariant that makes it safe: ``"".join(text for text, _ in spans)`` is the
+# input, byte for byte. Colour is applied to the **display** only, so a dropped or
+# duplicated character would change what a reviewer reads while being invisible
+# against a 30 KB wall of text. ``tests/test_transcript_highlight.py`` asserts it
+# over every committed transcript.
+# ===========================================================================
+
+# The two kinds Slice 1 recognises. Names are **semantic, never colours**
+# (``speaker-mafia`` would be an acceptable later kind; ``speaker-red`` never is)
+# and lowercase-hyphenated, so the UI and the tests can name them instead of
+# repeating string literals.
+KIND_MARKER = "marker"
+KIND_PLAIN = "plain"
+
+# The canonical kind vocabulary, in the order the kinds were introduced — the
+# single source of truth for which kinds exist, following the same house pattern
+# as :data:`METRIC_ORDER` (a later spec appends its entries and nothing else has
+# to change). The UI builds its kind → style map from this, and a kind absent
+# from a style map must fall back to unstyled rather than raising.
+#
+# Later slices of spec 038 append: ``attr`` and ``field-label`` (Slice 2);
+# ``speaker`` / ``speech`` / ``thought`` / ``recap`` (Slice 3); the side-bearing
+# kinds read from the cast list (Slice 4).
+TRANSCRIPT_KINDS: tuple[str, ...] = (KIND_MARKER, KIND_PLAIN)
+
+# The structural tag vocabulary ``graphia.tools.eval_transcript`` emits — the
+# whitelist that decides whether a ``<…>`` line is skeleton or just text that
+# happens to start with an angle bracket. A whitelist rather than "anything
+# tag-shaped" is the *never guess* posture this module applies everywhere else:
+# persona prose and player speech are model-generated, so an unrecognised
+# ``<foo>`` line degrades to :data:`KIND_PLAIN` instead of being styled as
+# scaffolding it is not.
+#
+# ``transcript`` / ``setup`` / ``preamble`` / ``night`` / ``day`` / ``round`` /
+# ``endgame`` are the section delimiters (attribute-free, content-free — the
+# whole line is one marker). ``kill`` is inline-with-content. ``player``,
+# ``vote``, ``recap`` and ``thought`` are the four tags whose **innards** later
+# slices reclassify — their opening tags are markers *now* so those slices only
+# have to change an inner span's kind (Slice 3's "the surrounding tag stays
+# ``marker``") or split attribute values out of a tag that is already a marker
+# (Slice 2), rather than promote a whole line from ``plain``.
+_MARKER_TAGS: frozenset[str] = frozenset(
+    {
+        "transcript",
+        "setup",
+        "preamble",
+        "night",
+        "day",
+        "round",
+        "endgame",
+        "kill",
+        "player",
+        "vote",
+        "recap",
+        "thought",
+    }
+)
+
+# The kind given to the CONTENT of an inline ``<tag …>content</tag>`` element,
+# by tag name — the extension point Slices 2–3 edit rather than rewrite.
+#
+# ``kill`` maps to :data:`KIND_MARKER` because no later slice reclassifies a
+# night kill's ``Name — Side`` payload: the tech-spec §2 A table lists ``<kill>``
+# plainly among the markers, and with the adjacent-span coalescing below the
+# whole ``<kill>Avery — Law-abiding Citizen</kill>`` line therefore reads as one
+# marker span. Every other inline tag defaults to :data:`KIND_PLAIN` for now and
+# is claimed later: ``recap`` and ``thought`` content by Slice 3, the
+# ``(no persona recorded)`` body of an inline ``<player>`` staying plain prose.
+_INLINE_CONTENT_KINDS: dict[str, str] = {"kill": KIND_MARKER}
+
+# One transcript line's tag head: ``<name>``, ``</name>`` or ``<name attrs…>``.
+# ``[^>]*`` for the attribute run is deliberate — the writer emits
+# ``name="…" role="…"`` / ``initiator="…" target="…"`` / ``player="…"`` values
+# that never contain ``>``; one that did would simply fail to match and the line
+# would degrade to plain rather than being mis-split.
+_TAG_HEAD_RE = re.compile(
+    r"^<(?P<slash>/?)(?P<name>[A-Za-z][A-Za-z0-9_-]*)(?P<attrs>\s[^>]*)?>"
+)
+
+# The single information line at the very top of a game, e.g.
+# ``Game 1 | provider=ollama | large_model=qwen3-coder:30b | … | games=50``.
+# Built by ``eval_transcript._header`` as ``" | ".join(parts)`` with
+# ``f"Game {game_index}"`` always first and every other part omitted when the
+# run metadata lacks it — hence the optional tail, which keeps a thin
+# ``Game 1`` header recognised. Matched **only against the file's first line**
+# (functional-spec §2 calls it "the single information line at the very top"), so
+# a player who somehow says "Game 4 | ..." mid-transcript is never mistaken for a
+# header.
+_METADATA_LINE_RE = re.compile(r"^Game \d+(?: \| .+)?$")
+
+# The bare speaking-round label written inside a ``<round>`` block, e.g.
+# ``Round 3.`` — skeleton, not content, per functional-spec §2 ("the plain round
+# markers inside a Day are treated as skeleton too"). Anchored end-to-end so an
+# ordinary sentence merely *beginning* "Round 3. ..." is left as plain text.
+_ROUND_LABEL_RE = re.compile(r"^Round \d+\.$")
+
+
+def tokenize_transcript(text: str) -> list[tuple[str, str]]:
+    """Split a transcript into ordered ``(text, kind)`` spans (spec 038, §2 A).
+
+    Pure: no I/O, no global state, no Rich/Textual import. ``text`` in, spans
+    out, and **the spans always concatenate back to ``text`` exactly** ::
+
+        "".join(text for text, _ in spans) == text
+
+    That round-trip is the spine of spec 038 — it is what makes functional-spec
+    §2's *"the stored game is never altered"* structurally true rather than
+    merely intended — and it is asserted over every committed transcript by
+    ``tests/test_transcript_highlight.py``.
+
+    **Kinds recognised by this slice** (two — later slices add more, see
+    :data:`TRANSCRIPT_KINDS`):
+
+    - :data:`KIND_MARKER` — the game's skeleton: the structural tags
+      (``<transcript>``, ``<setup>``, ``<preamble>``, ``<night>``, ``<day>``,
+      ``<round>``, ``<endgame>``, ``<kill>``, ``<player …>``, ``<vote …>``,
+      ``<recap>``, ``<thought …>``) and each one's closing form, the top
+      ``Game N | provider=…`` metadata line, and the bare ``Round N.`` label.
+    - :data:`KIND_PLAIN` — **everything else**, including every line separator.
+      This fallback is what makes degradation total: an unrecognised tag, a
+      pre-spec-022 transcript's indented ``Name — Role`` cast list, model-generated
+      prose containing an angle bracket, or a future format change all come back
+      as plain text instead of raising. **This function never raises on any
+      input.**
+
+    Guarantees beyond the round trip, all asserted by the corpus sweep:
+
+    - **no span has empty text** — an empty span concatenates to nothing, so it
+      would round-trip perfectly while handing the UI junk to style;
+    - **every kind is a non-empty ``str``** drawn from :data:`TRANSCRIPT_KINDS`;
+    - **no two adjacent spans share a kind** — adjacent same-kind runs are
+      coalesced (see :func:`_coalesce_spans`), so a wall of unremarkable text
+      arrives as one span rather than one per line.
+
+    How a line is split (the extension point is :func:`_line_spans`):
+
+    - a tag on a line of its own becomes one marker span;
+    - an inline ``<tag …>content</tag>`` becomes *three* spans — opening tag,
+      content, closing tag — so Slices 2–3 need only change the content span's
+      kind (or split attribute values out of the tag) instead of breaking one
+      span into several. ``<kill>`` is the exception whose content is already
+      marker (see :data:`_INLINE_CONTENT_KINDS`), so it coalesces back to a
+      single span;
+    - a line's **leading indentation** is plain, never part of the marker span,
+      so the three pre-spec-022 run dirs (which indent their ``  <round>`` tags
+      and ``  Round N.`` labels) tokenize identically to the flush-left form;
+    - line separators are plain spans of their own, so no styled span ever
+      carries a ``\\n`` — a marker style can therefore never bleed to the end of
+      a terminal row.
+    """
+    spans: list[tuple[str, str]] = []
+    # ``split("\n")`` + a plain ``"\n"`` span between consecutive lines
+    # reconstructs the input exactly for every line ending, including a file with
+    # no trailing newline (all 298 committed transcripts end on ``>``) and a
+    # blank line (which contributes no span of its own, only the separators).
+    for index, line in enumerate(text.split("\n")):
+        if index:
+            spans.append(("\n", KIND_PLAIN))
+        spans.extend(_line_spans(line, is_first_line=index == 0))
+    return _coalesce_spans(spans)
+
+
+def _line_spans(line: str, *, is_first_line: bool) -> list[tuple[str, str]]:
+    """The spans for one transcript line, excluding its separator.
+
+    **The extension point for the later slices of spec 038.** The branches are an
+    ordered priority chain — first match wins — so a new kind is added as one new
+    branch (or, for content nested inside a tag, as one entry in
+    :data:`_INLINE_CONTENT_KINDS`), and the final ``plain`` fallback keeps every
+    line the chain does not recognise fully readable.
+
+    ``is_first_line`` gates the ``Game N | …`` metadata line, which is a
+    positional fact about the file rather than a shape a line can have anywhere.
+    """
+    if is_first_line and _METADATA_LINE_RE.match(line):
+        return [(line, KIND_MARKER)]
+
+    # Leading indentation is always plain — it is layout, not content, and
+    # keeping it out of the marker span is what lets the pre-spec-022 era's
+    # indented ``  <round>`` / ``  Round N.`` lines tokenize exactly like the
+    # flush-left spec-022 form.
+    body = line.lstrip()
+    indent = line[: len(line) - len(body)]
+    prefix: list[tuple[str, str]] = [(indent, KIND_PLAIN)] if indent else []
+    if not body:
+        return prefix
+
+    tag_spans = _tag_element_spans(body)
+    if tag_spans is not None:
+        return prefix + tag_spans
+
+    if _ROUND_LABEL_RE.match(body):
+        return prefix + [(body, KIND_MARKER)]
+
+    return prefix + [(body, KIND_PLAIN)]
+
+
+def _tag_element_spans(body: str) -> list[tuple[str, str]] | None:
+    """Spans for a line that starts with a recognised structural tag, else ``None``.
+
+    ``None`` means "not a tag line" — the caller then falls through the rest of
+    its chain, so an unrecognised tag name (a future ``<diary>``, or speech that
+    happens to open with an angle bracket) is left to the plain fallback rather
+    than styled as skeleton it is not.
+
+    The three shapes the writer emits (verified across all 298 committed
+    transcripts — every ``<`` and ``>`` in the corpus belongs to one of them):
+
+    - ``<tag …>`` / ``</tag>`` alone on the line → one marker span;
+    - ``<tag …>content</tag>`` inline → opening tag, content, closing tag, the
+      content's kind taken from :data:`_INLINE_CONTENT_KINDS` (default plain);
+    - defensively, an opening tag whose content is *not* closed on the same line
+      (a shape the corpus does not contain, but a multi-line model-generated
+      thought could produce) → marker for the tag, plain for the remainder.
+    """
+    match = _TAG_HEAD_RE.match(body)
+    if match is None or match.group("name") not in _MARKER_TAGS:
+        return None
+
+    tag_text = match.group(0)
+    rest = body[match.end() :]
+    if not rest:
+        return [(tag_text, KIND_MARKER)]
+
+    closing = f"</{match.group('name')}>"
+    if not match.group("slash") and rest.endswith(closing):
+        inner = rest[: -len(closing)]
+        spans = [(tag_text, KIND_MARKER)]
+        if inner:
+            # An empty body (``<night></night>``, which ``_wrap`` emits for a
+            # section that captured nothing) contributes no span at all — the
+            # no-empty-span guarantee.
+            inner_kind = _INLINE_CONTENT_KINDS.get(
+                match.group("name"), KIND_PLAIN
+            )
+            spans.append((inner, inner_kind))
+        spans.append((closing, KIND_MARKER))
+        return spans
+
+    return [(tag_text, KIND_MARKER), (rest, KIND_PLAIN)]
+
+
+def _coalesce_spans(spans: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    """Drop empty spans and merge adjacent same-kind runs into one span.
+
+    Two jobs, both contract-level rather than cosmetic:
+
+    - **empty spans are dropped**, so the no-empty-text guarantee holds by
+      construction at the one place spans leave this module (an empty span is
+      invisible to the round-trip check but is still junk for the UI to style);
+    - **adjacent spans of the same kind are merged**, which guarantees no two
+      neighbouring spans share a kind. That is what turns a Day's wall of speech
+      into a single plain span instead of one per line — and it is what lets a
+      ``<kill>Name — Side</kill>`` line, whose three parts are all
+      :data:`KIND_MARKER`, come back as the single marker span the spec's table
+      describes.
+
+    Merging is always round-trip safe: concatenation order is unchanged and only
+    the span boundaries move.
+    """
+    out: list[tuple[str, str]] = []
+    for text, kind in spans:
+        if not text:
+            continue
+        if out and out[-1][1] == kind:
+            out[-1] = (out[-1][0] + text, kind)
+        else:
+            out.append((text, kind))
+    return out
 
 
 def build_table_model(records: list[RawRecord]) -> TableModel:

@@ -30,6 +30,7 @@ from pathlib import Path
 import pytest
 from textual.app import ComposeResult
 from textual.containers import Vertical, VerticalScroll
+from textual.content import Content
 from textual.screen import Screen
 from textual.widgets import (
     DataTable,
@@ -44,11 +45,14 @@ from textual.widgets import (
 )
 
 from graphia.eval_ledger import (
+    KIND_MARKER,
+    KIND_PLAIN,
     METRIC_ORDER,
     SEARCH_SCOPE_ALL,
     build_table_model,
     list_transcripts,
     load_ledger,
+    tokenize_transcript,
 )
 from graphia.ui.ledger_viewer import (
     DetailScreen,
@@ -2812,3 +2816,726 @@ async def test_a_list_longer_than_the_panel_can_be_walked_to_its_last_game(
         await pilot.pause()
         assert isinstance(app.screen, TranscriptScreen)
         assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+
+
+# ===========================================================================
+# B14. Colour-coded transcript reading view (spec 038, Slice 1) — the WIDGET
+#      half of the slice's test task. `TranscriptScreen.compose` now builds a
+#      styled `rich.text.Text` from the pure tokenizer's spans instead of
+#      passing the file's string straight through, so four things have to be
+#      pinned at the widget: the spans really do survive into the rendered
+#      renderable, the rendered PLAIN TEXT is still the file's text exactly (the
+#      colour-unavailable fallback of functional-spec §2 — no stray formatting
+#      characters), text containing `[bold]` still renders literally, and
+#      scrolling plus the escape/backspace/q back-out keys behave exactly as they
+#      did before.
+# ===========================================================================
+#
+# WHY THESE LIVE HERE AND NOT IN `tests/test_transcript_highlight.py`. That file
+# is the spec's tokenizer file and stays terminal-free — a pure-function suite
+# with no Textual import, mirroring `eval_ledger`'s own no-Rich/no-Textual
+# property. The `App.run_test()` harness, and every helper a TranscriptScreen
+# test needs (`_write_ledger`, `_doc_with_transcript_dir`,
+# `_write_run_transcripts`, `_open_detail_for_first_row`, `_highlight_game`,
+# `_transcript_body_text`, `_PANEL_TERMINAL_SIZE`, `_TRANSCRIPT_STACK_DEPTH`),
+# already live in THIS file — `tasks.md` names it as the project's established
+# convention for exactly this. Putting the widget tests here reuses all of it and
+# sets the "behaves exactly as before" assertions next to B10's back-out tests
+# they regress against, instead of standing up a second parallel harness.
+#
+# WHAT IS DELIBERATELY NOT ASSERTED: rendered colour. It is theme-dependent
+# (`$text-muted` resolves differently on `textual-dark`, `textual-light` and
+# `textual-ansi`), spec 037 established that it is a poor test subject, and
+# appearance is reviewed by eye. What is asserted is span STRUCTURE — which
+# character ranges carry a style at all — because that is what "the markers are
+# distinguishable from the content" reduces to once the palette is a CSS concern.
+#
+# Every fixture is synthetic and written under `tmp_path`, except B14's two
+# real-corpus cases, which COPY a committed transcript into `tmp_path` and read
+# it there. The committed `evals/transcripts/` is only ever read.
+
+# The run id these tests' ledgers name, and therefore the sibling
+# `transcripts/<run-id>/` dir written under `tmp_path`. Distinct from
+# `_GAMES_RUN_ID` so a B14 fixture can never be confused with B11/B12's.
+_HIGHLIGHT_RUN_ID = "run-highlight"
+
+# A small full-shape game: the metadata header, a cast entry with a persona
+# field, an inline `<kill>`, the pre-022 era's indented `  <round>` /
+# `  Round 1.`, one line of speech, and NO trailing newline (all 298 committed
+# transcripts end on `>`). Small enough that the complete expected span list
+# below can be checked by eye.
+_HIGHLIGHT_BODY = (
+    "Game 1 | provider=ollama | large_model=qwen3-coder:30b | games=2\n"
+    "<transcript>\n"
+    "<setup>\n"
+    '<player name="Alice" role="Mafioso">\n'
+    "Personality: brisk and sly\n"
+    "</player>\n"
+    "</setup>\n"
+    "<night>\n"
+    "<kill>Avery — Law-abiding Citizen</kill>\n"
+    "</night>\n"
+    "<day>\n"
+    "  <round>\n"
+    "  Round 1.\n"
+    "Alice: I saw nothing last night.\n"
+    "  </round>\n"
+    "</day>\n"
+    "</transcript>"
+)
+
+# THE ABSOLUTE PIN for `_HIGHLIGHT_BODY`: the text of every styled run in the
+# rendered body, in order. Hand-written, not derived from the tokenizer, so this
+# list is an independent statement of what a reviewer's eye should be drawn to.
+#
+# It is an OFFSET assertion as well as a text one, because `_rendered_runs` reads
+# each entry by SLICING the rendered plain text at the span's own start/end — a
+# span whose boundaries drifted by one character would produce a different
+# string here. Note what is absent: the persona line, the speech line, and the
+# two-space indents, all of which must carry no style at all.
+_HIGHLIGHT_EXPECTED_MARKER_TEXTS = [
+    "Game 1 | provider=ollama | large_model=qwen3-coder:30b | games=2",
+    "<transcript>",
+    "<setup>",
+    '<player name="Alice" role="Mafioso">',
+    "</player>",
+    "</setup>",
+    "<night>",
+    # `<kill>`'s content is marker too, so the whole element is ONE run.
+    "<kill>Avery — Law-abiding Citizen</kill>",
+    "</night>",
+    "<day>",
+    # The indent is NOT part of the marker.
+    "<round>",
+    "Round 1.",
+    "</round>",
+    "</day>",
+    "</transcript>",
+]
+
+# Substrings of `_HIGHLIGHT_BODY` that must carry NO style at all: they are the
+# game's content, which the skeleton has to recede behind rather than join.
+_HIGHLIGHT_UNSTYLED_SUBSTRINGS = (
+    "Personality: brisk and sly",
+    "Alice: I saw nothing last night.",
+)
+
+# The pre-022 era's indented lines. The two-space indent is LAYOUT, not skeleton,
+# so each marker span must start exactly two characters into the line — the
+# property that lets the old indented form tokenize identically to the flush-left
+# spec-022 one with no era branch.
+_HIGHLIGHT_INDENTED_LINES = ("  <round>", "  Round 1.", "  </round>")
+
+# The keys `TranscriptScreen` binds to back out. Named here so the parametrized
+# test below can be rot-guarded against `TranscriptScreen.BINDINGS`.
+_TRANSCRIPT_BACK_KEYS = ("escape", "backspace", "q")
+
+# The long-game scroll fixture, pinned as absolute geometry rather than as a
+# before/after comparison (spec 037's mutation finding: "X equals Y between two
+# states" can hold with both sides broken).
+_LONG_GAME_PROSE_LINES = 80
+_LONG_GAME_LINES = _LONG_GAME_PROSE_LINES + 2  # the two `<transcript>` tags
+_LONG_GAME_TERMINAL_SIZE = (100, 24)
+# 24 terminal rows minus the Header and the Footer.
+_LONG_GAME_VIEWPORT_ROWS = 22
+_LONG_GAME_MAX_SCROLL_Y = _LONG_GAME_LINES - _LONG_GAME_VIEWPORT_ROWS
+
+_LONG_GAME_BODY = (
+    "<transcript>\n"
+    + "\n".join(f"Alice: line {i}" for i in range(_LONG_GAME_PROSE_LINES))
+    + "\n</transcript>"
+)
+
+# The three pre-spec-022 run dirs (tech-spec §2 Component B). Named so B14's
+# real-corpus cases cover BOTH transcript formats: the old indented
+# `Name — Role` cast list and the spec-022 `<player name=… role=…>` one.
+_PRE_022_RUN_DIRS = frozenset(
+    {"2026-06-19T18-33-37", "2026-06-20T14-17-09", "2026-06-20T18-18-52"}
+)
+
+# Resolved from THIS FILE, never the CWD (the idiom
+# `tests/test_transcript_highlight.py` and `tests/test_lambda_zip_contents.py`
+# both use). READ-ONLY: the corpus is a curated, committed artifact.
+_CORPUS_ROOT = Path(__file__).resolve().parents[1] / "evals" / "transcripts"
+
+
+def _one_real_transcript_per_era() -> dict[str, Path]:
+    """One committed transcript from each of the two formats, or ``{}``.
+
+    Deterministic (the first file of the first run dir of each era, in sorted
+    order) so a failure is reproducible, and discovered rather than hard-coded so
+    it survives the corpus growing with every measured eval run.
+    """
+    if not _CORPUS_ROOT.is_dir():
+        return {}
+    chosen: dict[str, Path] = {}
+    for path in sorted(p for p in _CORPUS_ROOT.rglob("*.txt") if p.is_file()):
+        era = "pre-022" if path.parent.name in _PRE_022_RUN_DIRS else "spec-022"
+        chosen.setdefault(era, path)
+    return chosen
+
+
+_REAL_TRANSCRIPT_PARAMS = [
+    pytest.param(path, id=era)
+    for era, path in sorted(_one_real_transcript_per_era().items())
+] or [
+    pytest.param(
+        None,
+        marks=pytest.mark.skip(
+            reason=f"no committed transcripts under {_CORPUS_ROOT}"
+        ),
+        id="no-corpus",
+    )
+]
+
+
+def _ledger_with_body(tmp_path: Path, body: str, *, name: str) -> tuple[Path, Path]:
+    """A one-run, one-game ledger whose only transcript is exactly ``body``.
+
+    Returns ``(ledger path, game file path)`` — the second so a test can compare
+    the rendered body against the bytes on disk rather than against the literal
+    it passed in. Entirely under ``tmp_path``.
+    """
+    ledger = _write_ledger(
+        tmp_path,
+        _doc_with_transcript_dir("2026-06-22", _HIGHLIGHT_RUN_ID),
+        name=name,
+    )
+    run_dir = _write_run_transcripts(ledger, _HIGHLIGHT_RUN_ID, {"game-01.txt": body})
+    return ledger, run_dir / "game-01.txt"
+
+
+async def _open_the_only_game(pilot) -> TranscriptScreen:
+    """Table → the run's DetailScreen → its single game, by real keystrokes only.
+
+    Reuses B10/B11's helpers so the route is the reviewer's actual one, and pins
+    the absolute stack depth so a test cannot pass against a screen that was
+    never pushed.
+    """
+    await _open_detail_for_first_row(pilot)
+    await _highlight_game(pilot, 0)
+    await pilot.press("enter")
+    await pilot.pause()
+    assert isinstance(pilot.app.screen, TranscriptScreen)
+    assert len(pilot.app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+    return pilot.app.screen
+
+
+def _transcript_body_content(screen: TranscriptScreen) -> Content:
+    """The body's rendered renderable — the SPANS, not just the text.
+
+    ``_transcript_body_text`` (B10) returns only ``.plain``, which is what the
+    pre-038 tests needed. Spec 038 needs the span structure too.
+
+    Asserts the renderable's type, which pins a measured fact about the installed
+    Textual (8.2.4): a Rich ``Text`` handed to ``Static`` comes back out of
+    ``render()`` as Textual's own ``Content``, via ``Content.from_rich_text``,
+    with the spans preserved. If a future Textual stopped converting, the
+    ``.spans`` reads below would be measuring something else.
+    """
+    rendered = screen.query_one("#transcript-body", Static).render()
+    assert isinstance(rendered, Content), (
+        f"body rendered a {type(rendered).__name__}, expected textual Content"
+    )
+    return rendered
+
+
+def _rendered_runs(content: Content) -> list[tuple[int, int, str]]:
+    """Every styled run as ``(start, end, the text those offsets cover)``.
+
+    The text is read by slicing ``content.plain`` at the span's own boundaries,
+    which is what makes an assertion on the returned strings an assertion about
+    the offsets.
+    """
+    return [
+        (span.start, span.end, content.plain[span.start : span.end])
+        for span in content.spans
+    ]
+
+
+def _tokenizer_marker_runs(text: str) -> list[tuple[int, int, str]]:
+    """The styled runs the PURE tokenizer says ``text`` has, as offsets.
+
+    The independent cross-check for `_rendered_runs`: the widget must paint
+    exactly the runs the pure layer marked, no more and no fewer.
+    """
+    runs: list[tuple[int, int, str]] = []
+    offset = 0
+    for span_text, kind in tokenize_transcript(text):
+        if kind != KIND_PLAIN:
+            runs.append((offset, offset + len(span_text), span_text))
+        offset += len(span_text)
+    return runs
+
+
+# ---------------------------------------------------------------------------
+# B14.1 Markup parsing stays off
+# ---------------------------------------------------------------------------
+
+
+async def test_the_transcript_body_keeps_markup_parsing_off(tmp_path: Path) -> None:
+    """`markup=False` survives the change to a styled renderable.
+
+    Not made redundant by passing a renderable: the flag is the guarantee for the
+    `str` path a future refactor might take, and console markup is `[…]` — one `[`
+    in model-generated persona prose would, with markup on, either swallow the
+    text as a style tag or raise on an unclosed one.
+
+    On the installed Textual (8.2.4) `Static` exposes no public `markup`
+    attribute — the constructor kwarg lands on `Widget` as `_render_markup` — so
+    that is what is read, and the absence of the public name is pinned too so a
+    future Textual that adds one is noticed rather than silently making this
+    assertion read a stale field.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="hl-markup.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        widget = screen.query_one("#transcript-body", Static)
+
+        assert widget._render_markup is False
+        with pytest.raises(AttributeError):
+            getattr(widget, "markup")
+
+
+# ---------------------------------------------------------------------------
+# B14.2 The spans survive into the rendered body
+# ---------------------------------------------------------------------------
+
+
+async def test_the_rendered_body_carries_a_span_per_marker_at_exact_offsets(
+    tmp_path: Path,
+) -> None:
+    """The markers arrive as styled spans over exactly their own characters.
+
+    THE central structural assertion of Slice 1: "the skeleton is visually
+    distinct from its content" (functional-spec §2) reduces, once colour is a CSS
+    concern, to *which character ranges carry a style at all*.
+
+    Asserted three ways, because each catches something the others do not:
+
+    * against `_HIGHLIGHT_EXPECTED_MARKER_TEXTS`, a hand-written absolute list —
+      so both the widget and the tokenizer breaking together is still a failure;
+    * against the pure tokenizer's own marker offsets — so the widget cannot
+      paint a run the pure layer never marked, nor drop one it did;
+    * against the content that must stay unstyled — so "everything is a marker"
+      cannot pass.
+    """
+    ledger, game_file = _ledger_with_body(
+        tmp_path, _HIGHLIGHT_BODY, name="hl-spans.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        content = _transcript_body_content(screen)
+        runs = _rendered_runs(content)
+
+        # (a) The absolute pin: exactly these runs, in this order.
+        assert [text for _, _, text in runs] == _HIGHLIGHT_EXPECTED_MARKER_TEXTS
+
+        # (b) ...and they are the pure layer's runs, offsets included.
+        assert runs == _tokenizer_marker_runs(
+            game_file.read_text(encoding="utf-8")
+        )
+
+        # (c) ...and the content between them carries no style whatsoever. A
+        # single "everything is one marker span" run would satisfy (a)-style
+        # membership checks but not this.
+        covered = {
+            offset for start, end, _ in runs for offset in range(start, end)
+        }
+        for substring in _HIGHLIGHT_UNSTYLED_SUBSTRINGS:
+            start = content.plain.index(substring)
+            overlap = covered & set(range(start, start + len(substring)))
+            assert not overlap, (
+                f"{substring!r} is styled at offsets {sorted(overlap)} — content "
+                "must not be painted as skeleton"
+            )
+
+        # (d) ...and a marker's span starts AFTER the line's indentation, never
+        # at it. Both halves are asserted: the two indent columns are unstyled
+        # and the character right after them is styled — "nothing is styled"
+        # would otherwise satisfy the first half alone.
+        for line in _HIGHLIGHT_INDENTED_LINES:
+            start = content.plain.index(line)
+            assert not covered & {start, start + 1}, (
+                f"the indent before {line.strip()!r} is styled"
+            )
+            assert start + 2 in covered, (
+                f"{line.strip()!r} itself is not styled"
+            )
+
+
+async def test_no_rendered_span_covers_a_newline(tmp_path: Path) -> None:
+    """A marker's style can never bleed to the end of a terminal row.
+
+    The tokenizer emits line separators as spans of their own; this is that
+    guarantee re-checked where it actually matters — on the renderable the
+    terminal paints. The premise (the count) is pinned absolutely, so a body that
+    rendered with no spans at all could not pass by having no newline to carry.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="hl-newline.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        runs = _rendered_runs(_transcript_body_content(screen))
+
+        assert len(runs) == len(_HIGHLIGHT_EXPECTED_MARKER_TEXTS)
+        offenders = [text for _, _, text in runs if "\n" in text]
+        assert not offenders, f"styled runs carrying a newline: {offenders}"
+
+
+async def test_a_kind_the_style_map_has_never_heard_of_renders_unstyled(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A kind absent from the style map renders as plain text and never raises.
+
+    This is the forward-compatibility contract the ratified Slice 1 note names,
+    and it is why `plain` deliberately has NO entry in
+    `_TRANSCRIPT_KIND_COMPONENTS`: its absence *is* the fallback working. Without
+    it, a later slice that taught the tokenizer a kind before teaching the map
+    would take the whole reading view down rather than render one run undecorated.
+
+    Driven by patching the tokenizer at the UI's own call site (the module-level
+    name `TranscriptScreen.compose` resolves), because no real transcript can
+    produce a kind this slice does not know.
+    """
+    module = importlib.import_module("graphia.ui.ledger_viewer")
+
+    # `plain` must not be in the map — the fallback is the mechanism, not a gap.
+    assert KIND_PLAIN not in module._TRANSCRIPT_KIND_COMPONENTS
+    assert KIND_MARKER in module._TRANSCRIPT_KIND_COMPONENTS
+
+    def _future_kinds(text: str) -> list[tuple[str, str]]:
+        return [("hello ", "a-kind-from-a-later-slice"), ("<day>", KIND_MARKER)]
+
+    monkeypatch.setattr(module, "tokenize_transcript", _future_kinds)
+
+    ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="hl-future.yaml")
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        content = _transcript_body_content(screen)
+
+        # Every character is still there...
+        assert content.plain == "hello <day>"
+        # ...and only the kind the map knows is painted.
+        assert _rendered_runs(content) == [(6, 11, "<day>")]
+
+
+# ---------------------------------------------------------------------------
+# B14.3 The rendered plain text is the file's text, exactly
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("case", "body"),
+    [
+        pytest.param("full-shape", _HIGHLIGHT_BODY, id="full-shape"),
+        pytest.param("one-line", "<transcript></transcript>", id="one-line"),
+        pytest.param(
+            "unicode-and-em-dashes",
+            "<night>\n<kill>Avery — Law-abiding Citizen</kill>\n"
+            "Alice: café, naïve, «quoted»\n</night>",
+            id="unicode",
+        ),
+        pytest.param(
+            "blank-lines-and-trailing-newline",
+            "<preamble>\n\nModerator: A new game begins. Welcome, Bo.\n\n</preamble>\n",
+            id="blank-lines",
+        ),
+        pytest.param("empty-file", "", id="empty-file"),
+    ],
+)
+async def test_the_rendered_body_plain_text_equals_the_files_text_exactly(
+    tmp_path: Path, case: str, body: str
+) -> None:
+    """The colour-unavailable fallback of functional-spec §2, asserted at the widget.
+
+    "Where colour cannot be shown the full text is readable as plain text with no
+    leftover formatting characters" — so the renderable's plain text must be the
+    file's text, character for character. The tokenizer's own round-trip test
+    cannot see this: it compares its output to its input, and everything the UI
+    does afterwards (building a `rich.text.Text`, `Static`'s conversion to
+    `Content`) happens downstream of it.
+
+    Compared against BOTH the bytes on disk and the literal this test wrote, so a
+    fixture-writing bug cannot make the comparison agree while being wrong, and
+    the length is pinned separately so a difference is reported as a count rather
+    than as two walls of text.
+    """
+    ledger, game_file = _ledger_with_body(tmp_path, body, name=f"hl-plain-{case}.yaml")
+    on_disk = game_file.read_text(encoding="utf-8")
+    assert on_disk == body, "fixture sanity: the file holds what the test wrote"
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        content = _transcript_body_content(screen)
+
+        assert len(content.plain) == len(on_disk)
+        assert content.plain == on_disk
+        # And through B10's own reader, so the two paths agree.
+        assert _transcript_body_text(screen) == on_disk
+
+
+@pytest.mark.parametrize("source", _REAL_TRANSCRIPT_PARAMS)
+async def test_a_real_committed_game_renders_as_its_exact_text(
+    tmp_path: Path, source: Path
+) -> None:
+    """One real game per transcript format, rendered character for character.
+
+    The synthetic cases above are written by the same hand that writes the
+    expectations. This one takes a **committed** game — thousands of characters
+    of model-generated prose, em-dashes, quotation marks and whatever else 15 eval
+    runs produced — copies it into `tmp_path`, and asserts the widget shows all of
+    it and marks exactly the runs the pure tokenizer marked.
+
+    Both eras are covered: the pre-022 indented `Name — Role` cast list and the
+    spec-022 `<player name=… role=…>` form. The committed corpus is only READ.
+    """
+    text = source.read_text(encoding="utf-8")
+    # The premise: a game big enough for this to mean something.
+    assert len(text) > 5000, f"{source} is too small to be a real game"
+    assert text.count("\n") > 50
+
+    ledger, game_file = _ledger_with_body(tmp_path, text, name="hl-real.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        content = _transcript_body_content(screen)
+
+        assert len(content.plain) == len(text)
+        assert content.plain == text
+
+        runs = _rendered_runs(content)
+        # The premise again: a real game has plenty of skeleton, so "no spans at
+        # all" cannot pass the comparison below by both sides being empty.
+        assert len(runs) > 20, f"only {len(runs)} styled runs in a real game"
+        assert runs == _tokenizer_marker_runs(game_file.read_text(encoding="utf-8"))
+
+
+async def test_text_containing_square_brackets_renders_literally(
+    tmp_path: Path,
+) -> None:
+    """`[bold]` in a game's prose is shown, not parsed as console markup.
+
+    The corpus contains no `[` today, but every word in a transcript is
+    model-generated and persona prose is one eval run away from carrying one. With
+    markup parsing on, `[bold]` would vanish into a style tag and `[unclosed`
+    would raise — either way the reviewer would be reading something other than
+    the preserved game.
+
+    Both halves are asserted: the brackets survive in the text, AND no styled run
+    covers them (markup parsing that consumed them would leave a span where the
+    tag used to be).
+    """
+    body = (
+        "<setup>\n"
+        '<player name="Alice" role="Mafioso">\n'
+        "Personality: says [bold] a lot, and [/bold], and [not a real tag]\n"
+        "Manner: writes [unclosed brackets\n"
+        "</player>\n"
+        "</setup>"
+    )
+    ledger, game_file = _ledger_with_body(tmp_path, body, name="hl-brackets.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        content = _transcript_body_content(screen)
+
+        assert content.plain == game_file.read_text(encoding="utf-8")
+        for literal in ("[bold]", "[/bold]", "[not a real tag]", "[unclosed"):
+            assert literal in content.plain
+
+        runs = _rendered_runs(content)
+        assert [text for _, _, text in runs] == [
+            "<setup>",
+            '<player name="Alice" role="Mafioso">',
+            "</player>",
+            "</setup>",
+        ]
+
+
+async def test_the_rich_text_path_drops_the_five_control_codes(
+    tmp_path: Path,
+) -> None:
+    """TRIPWIRE, not an endorsement: BEL/BS/VT/FF/CR are lost on the way to screen.
+
+    `TranscriptScreen._styled_body` builds a `rich.text.Text`, and `Text.append`
+    runs Rich's `strip_control_codes`, which silently removes 0x07, 0x08, 0x0b,
+    0x0c and 0x0d. A transcript containing one would therefore render one
+    character short of its file — precisely the guarantee the view exists to keep
+    — and the tokenizer's own round-trip test cannot see it, because the loss
+    happens downstream of the tokenizer.
+
+    This test pins the CURRENT, MEASURED behaviour so the boundary is visible:
+
+    * it does not fire on any real game — `tests/test_transcript_highlight.py`'s
+      `test_no_committed_transcript_contains_a_rich_stripped_control_code` is the
+      guard that says so, over all 298 committed files;
+    * **when this test fails, read why before touching it.** A change that made
+      the body lossless closes the hole, and this test should then be inverted to
+      assert equality. A change that made MORE characters disappear means the
+      renderable got worse.
+
+    MEASURED CORRECTION to tech-spec §2 Component C (and to the docstring on
+    `TranscriptScreen._styled_body`, which repeats it): switching from Rich's
+    `Text` to Textual's native `Content` does **not**, on its own, close this
+    hole. `textual.content` carries its own `_STRIP_CONTROL_CODES = [7, 8, 11,
+    12, 13]` — the identical five — and `Content.__init__` applies it by default.
+    Verified on Textual 8.2.4: `Content("a\x07b").plain == "ab"`. Closing the
+    hole takes an explicit `strip_control_codes=False`, whichever renderable is
+    used; a `Content` refactor that omits it changes nothing here. (Confirmed by
+    mutation: a `Content(..., strip_control_codes=False)` body is the one change
+    that makes this test fail.)
+
+    Note the second, separate mechanism this makes visible: `read_transcript` uses
+    `Path.read_text`, whose universal-newline translation turns a lone CR into a
+    LF before the tokenizer ever sees it. So CR is not "dropped" here — it is
+    already an LF — and the comparison below is against the text the reader
+    returns, not the file's raw bytes.
+    """
+    raw = "<transcript>\nAlice: bell\x07 back\x08 vt\x0b ff\x0c end\n</transcript>"
+    ledger, game_file = _ledger_with_body(tmp_path, raw, name="hl-control.yaml")
+    as_read = game_file.read_text(encoding="utf-8")
+
+    # The pure layer keeps every one of them — which is exactly why only a
+    # widget-level assertion can see the loss.
+    assert "".join(t for t, _ in tokenize_transcript(as_read)) == as_read
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        plain = _transcript_body_content(screen).plain
+
+        stripped = "\x07\x08\x0b\x0c"
+        assert plain != as_read, (
+            "the control codes now survive to the widget — if the `Content` "
+            "refactor landed, invert this test to assert equality"
+        )
+        assert len(plain) == len(as_read) - len(stripped)
+        for char in stripped:
+            assert char in as_read
+            assert char not in plain
+        # Everything else is intact: only those characters went missing.
+        assert plain == as_read.translate({ord(char): None for char in stripped})
+        # `\n` and `\t` are NOT in Rich's strip list, so the game's line
+        # structure is untouched.
+        assert plain.count("\n") == as_read.count("\n")
+
+
+# ---------------------------------------------------------------------------
+# B14.4 Scrolling and the back-out keys behave exactly as before
+# ---------------------------------------------------------------------------
+
+
+async def test_scrolling_a_long_game_behaves_as_before(tmp_path: Path) -> None:
+    """A styled renderable scrolls exactly like the plain string it replaced.
+
+    The risk spec 038 introduces here is geometric, not visual: `compose` now
+    yields a `rich.text.Text` where it used to yield a `str`, and a renderable
+    that wrapped differently, or reported a different height, would change how far
+    a game scrolls and how much of it is reachable.
+
+    Pinned as ABSOLUTE geometry — a 202-line game in a 22-row viewport is 180 rows
+    of scroll — plus the offset each key produces. `virtual_size.height` equalling
+    the game's line count is the "no unexpected wrapping" claim: one wrapped line
+    would make it 203.
+
+    Then the interaction that matters most: the scroll container holds focus here,
+    so `escape` has to reach the screen's binding past it.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _LONG_GAME_BODY, name="hl-scroll.yaml")
+    assert _LONG_GAME_BODY.count("\n") + 1 == _LONG_GAME_LINES
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        # The premise: the game really does overflow, and the keys will land on
+        # the scroll container.
+        assert screen.focused is scroller
+        assert scroller.size.height == _LONG_GAME_VIEWPORT_ROWS
+        assert scroller.virtual_size.height == _LONG_GAME_LINES
+        assert scroller.max_scroll_y == _LONG_GAME_MAX_SCROLL_Y
+        assert scroller.scroll_offset.y == 0
+
+        await pilot.press("down")
+        await pilot.pause()
+        assert scroller.scroll_offset.y == 1
+
+        await pilot.press("pagedown")
+        await pilot.pause()
+        assert scroller.scroll_offset.y == 1 + _LONG_GAME_VIEWPORT_ROWS
+
+        await pilot.press("end")
+        await pilot.pause()
+        assert scroller.scroll_offset.y == _LONG_GAME_MAX_SCROLL_Y
+
+        await pilot.press("home")
+        await pilot.pause()
+        assert scroller.scroll_offset.y == 0
+
+        # The last line of the game really is reachable, and it is the game's.
+        await pilot.press("end")
+        await pilot.pause()
+        assert _transcript_body_text(screen).endswith("</transcript>")
+
+        # ...and backing out still works from a scrolled position, with the
+        # scroll container focused.
+        await pilot.press("escape")
+        await pilot.pause()
+        assert isinstance(app.screen, DetailScreen)
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+
+
+@pytest.mark.parametrize("key", _TRANSCRIPT_BACK_KEYS)
+async def test_each_back_out_key_pops_the_transcript_screen(
+    tmp_path: Path, key: str
+) -> None:
+    """`escape`, `backspace` and `q` all step back out to the run's figures.
+
+    B10 covers `escape` as part of the full back-out path; this sweeps all three
+    keys the screen binds, from the transcript itself, at an absolute stack depth.
+    Rot-guarded against `TranscriptScreen.BINDINGS`, so a key added to the screen
+    without being swept here fails rather than going untested.
+    """
+    assert {binding.key for binding in TranscriptScreen.BINDINGS} == set(
+        _TRANSCRIPT_BACK_KEYS
+    )
+
+    ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name=f"hl-back-{key}.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        detail = await _open_detail_for_first_row(pilot)
+        await _highlight_game(pilot, 0)
+        await pilot.press("enter")
+        await pilot.pause()
+        assert isinstance(app.screen, TranscriptScreen)
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+
+        await pilot.press(key)
+        await pilot.pause()
+
+        assert isinstance(app.screen, DetailScreen)
+        assert app.screen is detail
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+        assert app.is_running

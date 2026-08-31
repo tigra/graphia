@@ -25,7 +25,9 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import ClassVar
 
+from rich.style import Style as RichStyle
 from rich.text import Text
 from textual import events
 from textual.app import App, ComposeResult
@@ -47,6 +49,7 @@ from textual.widgets import (
 )
 
 from graphia.eval_ledger import (
+    KIND_MARKER,
     LedgerParseError,
     METRIC_ORDER,
     RawRecord,
@@ -60,6 +63,7 @@ from graphia.eval_ledger import (
     read_transcript,
     render_detail,
     row_matches_field,
+    tokenize_transcript,
 )
 from graphia.tools.blunder_eval import LEDGER_PATH
 
@@ -479,6 +483,41 @@ class DetailScreen(Screen):
 # screen's #empty-state posture.
 _NO_TRANSCRIPTS_MESSAGE = "No transcripts for this run."
 
+# ===========================================================================
+# Transcript syntax highlighting (spec 038) — THE kind → style map.
+#
+# :func:`~graphia.eval_ledger.tokenize_transcript` splits a game into
+# ``(text, kind)`` spans where each ``kind`` names a *semantic* role and never a
+# colour (``marker`` now; ``attr`` / ``field-label`` / ``speaker`` / ``speech`` /
+# ``thought`` / ``recap`` and the side-bearing kinds in the later slices — see
+# :data:`~graphia.eval_ledger.TRANSCRIPT_KINDS` for the canonical vocabulary).
+# **This dict is where those semantics become an appearance**, and it is the one
+# place a later slice (or a reviewer adjusting the palette) has to look: one
+# entry per styled kind, one CSS rule per entry.
+#
+# The value is a Textual **component-class** name rather than a Rich style
+# literal, because the appearance has to come from the *theme*:
+#
+# - functional-spec §2 requires legibility on both dark and light terminals, and
+#   a hard-coded colour cannot satisfy that. A component class is styled in
+#   ``TranscriptScreen.DEFAULT_CSS`` with the same ``$…`` theme variables the
+#   rest of this module uses, and Textual resolves it against the *live* theme.
+# - it is the only route that can resolve ``$text-muted`` at all. That variable
+#   is ``auto 60%`` — "compute a contrasting colour against the background, at
+#   60% alpha" — which only Textual's CSS engine can turn into a real colour
+#   (``#a0a0a0`` on ``textual-dark``, ``#595959`` on ``textual-light``).
+#   ``rich.style.Style.parse("auto 60%")`` cannot. This is the *other* half of
+#   spec 037's lesson: ``$text-muted`` is rejected for ``border:`` and correct
+#   for ``color:``, which is all we set here.
+#
+# A kind with **no entry here renders unstyled** (see ``_kind_styles``) rather
+# than raising, so a tokenizer that learns a new kind before this map does
+# degrades to plain text — which is also why ``plain`` is deliberately absent:
+# "everything else" needs no style, and its absence is the fallback working.
+_TRANSCRIPT_KIND_COMPONENTS: dict[str, str] = {
+    KIND_MARKER: "transcript--marker",
+}
+
 
 class TranscriptScreen(Screen):
     """One game's full transcript in a scrollable, read-only view (spec 017).
@@ -494,6 +533,15 @@ class TranscriptScreen(Screen):
     an :class:`~textual.widgets.Input`) — there is nothing to edit; the viewer is
     read-only throughout.
 
+    **Colour-coded since spec 038.** The text is still the file's text, character
+    for character — the screen only paints it. The split into semantic kinds is
+    the pure :func:`~graphia.eval_ledger.tokenize_transcript`'s job; this screen
+    owns only the kind → appearance mapping (:data:`_TRANSCRIPT_KIND_COMPONENTS`
+    plus one CSS rule per entry) and the assembly of the styled renderable. The
+    spans concatenate back to the file exactly, so where colour is unavailable
+    the view degrades to precisely the plain text it showed before, with no stray
+    formatting characters (functional-spec §2).
+
     ``escape``/``backspace``/``q`` pop back to the :class:`DetailScreen` that pushed this screen
     — the identical back-out idiom as :class:`DetailScreen` / the list screen,
     reusing spec 012's push/pop pattern, so the maintainer steps back out
@@ -504,6 +552,13 @@ class TranscriptScreen(Screen):
 
     TITLE = "Graphia eval ledger"
     SUB_TITLE = "game transcript · Esc / Backspace to go back"
+
+    # Derived from THE map, so adding a highlighted kind stays a one-line change
+    # there: a new entry brings its component class along, and only the matching
+    # CSS rule below has to be written.
+    COMPONENT_CLASSES: ClassVar[frozenset[str]] = frozenset(
+        _TRANSCRIPT_KIND_COMPONENTS.values()
+    )
 
     DEFAULT_CSS = """
     TranscriptScreen {
@@ -518,6 +573,30 @@ class TranscriptScreen(Screen):
     #transcript-body {
         padding: 0 1;
         width: 1fr;
+    }
+
+    /* SYNTAX HIGHLIGHTING (spec 038) — one rule per entry in
+       `_TRANSCRIPT_KIND_COMPONENTS`. Component classes are Textual's own way to
+       style *parts* of a widget's content from CSS: the rule cannot be a
+       `#transcript-body` rule because the whole point is that different runs of
+       text inside that one Static look different, and CSS selects widgets, not
+       substrings. `Widget.get_component_rich_style` resolves each rule to a
+       concrete Rich style, which is then attached to the matching spans.
+
+       Colours come from theme variables, never literals, so the view tracks the
+       reviewer's light/dark theme — functional-spec §2 requires every kind to be
+       legible on both.
+
+       `marker` — the game's skeleton (section tags, the top metadata line, the
+       bare `Round N.` label). `$text-muted` is exactly the "recedes behind the
+       content" requirement of functional-spec §2, and is this module's own
+       precedent for `color:` (`#match-count`, `#empty-state`,
+       `#transcript-panel-empty`). Note that `color:` is the ONLY property this
+       block sets: `$text-muted` resolves to `auto 60%`, which the parser rejects
+       for `border:` — the spec-037 mistake that made a whole screen fail to
+       mount. Setting only text colour is what keeps it safe here. */
+    TranscriptScreen > .transcript--marker {
+        color: $text-muted;
     }
     """
 
@@ -535,16 +614,90 @@ class TranscriptScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
         with VerticalScroll(id="transcript-scroll"):
-            # Plain text, verbatim from the pure reader — no Rich markup parsing
-            # (markup=False), so the transcript's literal ``<transcript>`` /
-            # ``<day>`` / ``<round>`` tags render as written rather than being
-            # mistaken for console markup.
+            # The transcript's own text, verbatim from the pure reader, with
+            # per-span styles attached (spec 038) — and **markup parsing still
+            # off**.
+            #
+            # `markup=False` is not negotiable and is not made redundant by
+            # passing a renderable. The hazard is square brackets, not the
+            # transcript's `<day>` / `<round>` tags: Textual/Rich console markup
+            # is `[…]`, so a persona description or a line of speech containing
+            # `[` would, with markup on, either swallow the text as a style tag
+            # or raise on an unclosed one. Every word here is model-generated, so
+            # that is one eval run away even though no committed transcript
+            # contains a `[` today. Spans sidestep markup entirely — they are
+            # attached to character ranges, never parsed out of the text — and the
+            # flag keeps the guarantee in place for the string path a future
+            # refactor might take.
             yield Static(
-                read_transcript(self._entry.path),
+                self._styled_body(),
                 id="transcript-body",
                 markup=False,
             )
         yield Footer()
+
+    def _styled_body(self) -> Text:
+        """The transcript as a styled renderable whose text is the file's text.
+
+        Tokenizes with the pure :func:`~graphia.eval_ledger.tokenize_transcript`
+        and paints each span with its kind's style, appending **every** span —
+        styled or not — in order. So the renderable's plain text is
+        ``"".join(text for text, _ in spans)``, which the tokenizer guarantees is
+        the file byte for byte: the highlighting can change how the game looks
+        but not what it says.
+
+        A Rich :class:`~rich.text.Text` rather than Textual's native
+        :class:`~textual.content.Content`: ``Static`` converts it through
+        ``Content.from_rich_text``, preserving the spans, and it is the shape
+        verified working on the installed Textual (8.2).
+
+        **The one reason a later refactor might prefer ``Content`` directly:**
+        ``Text.append`` runs Rich's ``strip_control_codes``, which silently drops
+        BEL, BS, VT, FF and CR (7, 8, 11, 12, 13) — so a transcript containing
+        one of those five would render one character short of its file, which is
+        precisely the guarantee this screen exists to keep. All 298 committed
+        transcripts are clean of them (checked), and ``\n`` and ``\t`` are not
+        stripped, so the round trip holds today; ``Content`` does no such
+        rewriting and would close the hole for good.
+        """
+        styles = self._kind_styles()
+        body = Text()
+        for text, kind in tokenize_transcript(read_transcript(self._entry.path)):
+            # `style=None` appends the text with no span at all, which is both the
+            # `plain` case and the forward-compatible fallback for a kind this
+            # screen has not learned yet.
+            body.append(text, style=styles.get(kind))
+        return body
+
+    def _kind_styles(self) -> dict[str, RichStyle]:
+        """Resolve :data:`_TRANSCRIPT_KIND_COMPONENTS` to concrete Rich styles.
+
+        Resolved once per :meth:`compose` (not once per span) against the live
+        theme, via the component classes declared in
+        :attr:`COMPONENT_CLASSES` — so the CSS above, and the theme variables in
+        it, are the only place the palette is written down.
+
+        Two details that are easy to get wrong, both checked against the
+        installed Textual rather than assumed:
+
+        - **the full style, not ``partial=True``.** A partial style reports only
+          the properties the rule sets, which sounds like exactly what a per-span
+          style wants — but it reports them *unresolved*, and ``$text-muted``'s
+          ``auto 60%`` comes back as ``#ffffff`` (the un-blended auto colour)
+          instead of the ``#a0a0a0`` the same rule renders. Only the full style
+          runs the blend against the background.
+        - **so the background is stripped afterwards.** The full style carries the
+          background it blended against, and baking that into a span would paint
+          a block behind every marker — wrong the moment anything else (a future
+          rule on ``#transcript-body``, a selection highlight) sits underneath.
+          ``without_color`` drops both colours; adding the foreground back keeps
+          the colour and any ``text-style`` the rule sets.
+        """
+        styles: dict[str, RichStyle] = {}
+        for kind, component in _TRANSCRIPT_KIND_COMPONENTS.items():
+            resolved = self.get_component_rich_style(component)
+            styles[kind] = resolved.without_color + RichStyle.from_color(resolved.color)
+        return styles
 
     def action_close(self) -> None:
         """Pop back to the :class:`DetailScreen` that pushed this screen."""
