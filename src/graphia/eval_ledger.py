@@ -716,19 +716,39 @@ KIND_PLAIN = "plain"
 KIND_ATTR = "attr"
 KIND_FIELD_LABEL = "field-label"
 
+# Slice 3 — the three *kinds of content* a reviewer reads differently, now that
+# the skeleton has receded (functional-spec §2). ``speaker`` is the ``Name:``
+# prefix of a spoken line and ``speech`` the words after it; ``thought`` is the
+# body of a ``<thought player="X">…</thought>`` private reflection, which must
+# never be mistakable for something said aloud; ``recap`` is the body of a
+# ``<recap>…</recap>`` moderator status line, which reads as fact rather than
+# opinion and doubles as a scroll landmark.
+#
+# **Sides are not involved yet.** Slice 4 splits ``speaker``/``speech`` into
+# side-bearing kinds read from the ``<setup>`` cast list; this slice only makes
+# the three kinds of content distinguishable *from each other*.
+KIND_SPEAKER = "speaker"
+KIND_SPEECH = "speech"
+KIND_THOUGHT = "thought"
+KIND_RECAP = "recap"
+
 # The canonical kind vocabulary, in the order the kinds were introduced — the
 # single source of truth for which kinds exist, following the same house pattern
 # as :data:`METRIC_ORDER` (a later spec appends its entries and nothing else has
 # to change). The UI builds its kind → style map from this, and a kind absent
 # from a style map must fall back to unstyled rather than raising.
 #
-# Later slices of spec 038 append: ``speaker`` / ``speech`` / ``thought`` /
-# ``recap`` (Slice 3); the side-bearing kinds read from the cast list (Slice 4).
+# Later slices of spec 038 append: the side-bearing kinds read from the cast
+# list (Slice 4).
 TRANSCRIPT_KINDS: tuple[str, ...] = (
     KIND_MARKER,
     KIND_PLAIN,
     KIND_ATTR,
     KIND_FIELD_LABEL,
+    KIND_SPEAKER,
+    KIND_SPEECH,
+    KIND_THOUGHT,
+    KIND_RECAP,
 )
 
 # The structural tag vocabulary ``graphia.tools.eval_transcript`` emits — the
@@ -765,16 +785,26 @@ _MARKER_TAGS: frozenset[str] = frozenset(
 )
 
 # The kind given to the CONTENT of an inline ``<tag …>content</tag>`` element,
-# by tag name — the extension point Slices 2–3 edit rather than rewrite.
+# by tag name — the extension point Slices 2–3 edit rather than rewrite. Slice 1
+# split "the tag" from "what is inside it" precisely so that claiming a body is
+# one entry here rather than a new branch: Slice 3 is a two-line change.
 #
 # ``kill`` maps to :data:`KIND_MARKER` because no later slice reclassifies a
 # night kill's ``Name — Side`` payload: the tech-spec §2 A table lists ``<kill>``
 # plainly among the markers, and with the adjacent-span coalescing below the
 # whole ``<kill>Avery — Law-abiding Citizen</kill>`` line therefore reads as one
-# marker span. Every other inline tag defaults to :data:`KIND_PLAIN` for now and
-# is claimed later: ``recap`` and ``thought`` content by Slice 3, the
-# ``(no persona recorded)`` body of an inline ``<player>`` staying plain prose.
-_INLINE_CONTENT_KINDS: dict[str, str] = {"kill": KIND_MARKER}
+# marker span.
+#
+# ``thought`` and ``recap`` are Slice 3's two entries — the surrounding tag stays
+# :data:`KIND_MARKER` on both, so only the body changes kind. Every other inline
+# tag still defaults to :data:`KIND_PLAIN`, which is the right answer for the
+# ``(no persona recorded)`` body of an inline ``<player>``: that is prose, not a
+# kind of its own.
+_INLINE_CONTENT_KINDS: dict[str, str] = {
+    "kill": KIND_MARKER,
+    "thought": KIND_THOUGHT,
+    "recap": KIND_RECAP,
+}
 
 # One transcript line's tag head: ``<name>``, ``</name>`` or ``<name attrs…>``.
 # ``[^>]*`` for the attribute run is deliberate — the writer emits
@@ -861,6 +891,59 @@ _FIELD_LABEL_RE = re.compile(
     )
 )
 
+# A spoken line's ``Name:`` prefix (spec 038, Slice 3). The writer emits player
+# speech as ``f"{speaker}: {text}"`` (``eval_transcript._append_messages``) —
+# a bare display name, a colon, a space — and that is the whole shape available,
+# because a Day round carries no other structure a reader could key off.
+#
+# **How permissive, and why exactly this permissive.** The name is one
+# whitespace-free token that begins with a *letter* (``[^\W\d_]`` — Unicode, so
+# ``Sofía`` and ``Inés`` match; a digit, a bullet, an opening parenthesis or a
+# ``<`` does not) and contains no colon of its own. The colon must be followed by
+# a space, so ``http://x`` and a bare ``Name:`` with nothing after it are not
+# speech. Measured across all 298 committed transcripts this captures **22,508**
+# lines under **498** distinct names and **not one** name that is absent from its
+# own file's cast list — zero false positives on real data.
+#
+# Deliberately *not* driven by the parsed cast list, even though Slice 4 builds
+# one: the 30 pre-spec-022 transcripts have no ``<player>`` tag at all, and
+# tech-spec §2 B fixes their degradation as "markers, **speaker prefixes** and
+# field labels still work, only the side colour is missing". A cast-list-gated
+# rule would silently drop every speaker prefix in those 30 files. Sides are a
+# *judgement* about a name and must never be guessed; "this line is somebody
+# speaking" is a *shape*, and the shape is unambiguous.
+#
+# The deliberate misses are all in the same direction — an unrecognised line
+# falls back to ``plain``, which the spec's degradation posture prefers to a
+# wrong capture: a name carrying an internal space (``Mary Ann: hi``), a
+# continuation line of a multi-line utterance, and a lowercase-*written*
+# structural label are all left as plain text.
+_SPEAKER_RE = re.compile(r"^(?P<name>[^\W\d_][^\s:]*):(?= )")
+
+# Line prefixes that are shaped exactly like a speaker but are the **writer's own
+# vocabulary**, not a player — the same whitelist-the-writer's-shapes posture as
+# :data:`_FIELD_LABELS` and :data:`_MARKER_TAGS`, rather than a heuristic.
+#
+# - ``Moderator`` is the moderator's public voice (``_append_messages`` emits
+#   ``Moderator: <text>``); 2,655 lines in the corpus. Its private form,
+#   ``Moderator (private to Avery): …``, needs no entry — the space before the
+#   colon already fails :data:`_SPEAKER_RE`. Both stay :data:`KIND_PLAIN`, which
+#   is this slice's deliberate answer for the moderator: he is neither a player
+#   speaking nor a status recap, and inventing a kind for him is Slice 3 scope
+#   this task does not have.
+# - ``tally`` and ``outcome`` are the two field lines a ``<vote>`` block ends
+#   with (``_VoteAssembler._render`` writes ``tally: 3 Yes, 3 No`` and
+#   ``outcome: failed — …``); 1,005 of each.
+#
+# An earlier draft excluded these by requiring an initial capital instead. That
+# was rejected on measurement: 39 of the corpus's cast names are lowercase
+# (``mina``, ``arthur``, ``kai``, ``zara``, …) and a casing rule loses 426 real
+# speaker lines to save three literals. A player genuinely named "tally" would be
+# missed; that is a plain-text fallback on a name no roster has produced.
+_NON_SPEAKER_PREFIXES: frozenset[str] = frozenset(
+    {"Moderator", "tally", "outcome"}
+)
+
 
 def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     """Split a transcript into ordered ``(text, kind)`` spans (spec 038, §2 A).
@@ -875,7 +958,7 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     merely intended — and it is asserted over every committed transcript by
     ``tests/test_transcript_highlight.py``.
 
-    **Kinds recognised so far** (four — later slices add more, see
+    **Kinds recognised so far** (eight — later slices add more, see
     :data:`TRANSCRIPT_KINDS`):
 
     - :data:`KIND_MARKER` — the game's skeleton: the structural tags
@@ -891,6 +974,18 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
       ``name="Avery"``.
     - :data:`KIND_FIELD_LABEL` — a cast-list field's label, **colon included**
       (see :data:`_FIELD_LABELS`); the prose after it is content, not label.
+    - :data:`KIND_SPEAKER` / :data:`KIND_SPEECH` — a spoken line, split at its
+      colon: ``Avery:`` is the speaker, ``" I saw nothing."`` (leading space
+      included, exactly as a field label's prose keeps its own) is the speech.
+      See :data:`_SPEAKER_RE` for how permissive the name is and
+      :data:`_NON_SPEAKER_PREFIXES` for the three writer-emitted prefixes that
+      are shaped like a speaker and are not one.
+    - :data:`KIND_THOUGHT` — the **body** of a ``<thought player="X">…</thought>``
+      private reflection; the tag around it stays :data:`KIND_MARKER` and the
+      owner's name inside that tag stays :data:`KIND_ATTR` (Slice 4 gives that
+      name its side).
+    - :data:`KIND_RECAP` — the **body** of a ``<recap>…</recap>`` moderator
+      status line; again the tags around it stay :data:`KIND_MARKER`.
     - :data:`KIND_PLAIN` — **everything else**, including every line separator.
       This fallback is what makes degradation total: an unrecognised tag, a
       pre-spec-022 transcript's indented ``Name — Role`` cast list, model-generated
@@ -913,21 +1008,49 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
       one of the five detail attributes, an alternating marker/attr/marker run
       whose pieces still concatenate to the tag exactly (:func:`_tag_head_spans`);
     - an inline ``<tag …>content</tag>`` becomes *three* spans — opening tag,
-      content, closing tag — so Slices 2–3 need only change the content span's
-      kind (or split attribute values out of the tag) instead of breaking one
-      span into several. ``<kill>`` is the exception whose content is already
-      marker (see :data:`_INLINE_CONTENT_KINDS`), so it coalesces back to a
-      single span;
+      content, closing tag — so a slice claiming a body need only change the
+      content span's kind (or split attribute values out of the tag) instead of
+      breaking one span into several. ``<thought>`` and ``<recap>`` bodies are
+      claimed that way (:data:`_INLINE_CONTENT_KINDS`); ``<kill>`` is the
+      exception whose content is *already* marker, so it coalesces back to a
+      single span. An element whose content does **not** close on the same line
+      keeps that remainder :data:`KIND_PLAIN` rather than inheriting the tag's
+      content kind — the extent is unknown, and styling an unknown extent as a
+      private thought is exactly the kind of guess this module declines;
     - a cast-list ``Personality: …`` line splits into its label and the prose
       after it, in **both** transcript eras — spec-022 writes the label
       flush-left and the pre-022 runs indent it four spaces, and because the
       indent is already its own span one rule serves both;
+    - a spoken ``Avery: I saw nothing.`` line splits into speaker and speech at
+      the same boundary, **below** the field-label branch so that
+      ``Personality: brisk`` is read as a label and not as a player named
+      "Personality" (see :func:`_line_spans`);
     - a line's **leading indentation** is plain, never part of the marker span,
       so the three pre-spec-022 run dirs (which indent their ``  <round>`` tags
       and ``  Round N.`` labels) tokenize identically to the flush-left form;
     - line separators are plain spans of their own, so no styled span ever
       carries a ``\\n`` — a marker style can therefore never bleed to the end of
       a terminal row.
+
+    **A ballot is speech** (spec 038, Slice 3 — the decision this docstring is
+    required to record). Spec 022 strips the ``Moderator:`` voice off each vote,
+    so a ``<vote>`` block's ``Avery: Yes`` line is shaped exactly like a spoken
+    line and 5,656 of them sit in the corpus. They are kinded
+    :data:`KIND_SPEAKER` + :data:`KIND_SPEECH` like any other utterance, **not**
+    given a kind of their own, for three reasons:
+
+    - it *is* the player's own word, in their own voice — the writer removed the
+      moderator precisely so it would read that way;
+    - functional-spec §2 asks that a speaker's name and words carry their side's
+      colour "wherever they appear", and Slice 4 therefore makes a vote block
+      show at a glance that the two Mafiosos both voted No. A separate
+      achromatic ``ballot`` kind would throw that away — the single most useful
+      thing colour can say about a vote;
+    - telling a ballot from ordinary speech needs to know the line sits inside a
+      ``<vote>`` block, and this tokenizer is deliberately per-line and
+      stateless (the same reason :data:`_FIELD_LABELS` are matched unscoped).
+      Keying off the payload being literally ``Yes``/``No`` instead would
+      misfire the day a player answers a question with "Yes".
     """
     spans: list[tuple[str, str]] = []
     # ``split("\n")`` + a plain ``"\n"`` span between consecutive lines
@@ -955,9 +1078,15 @@ def _line_spans(line: str, *, is_first_line: bool) -> list[tuple[str, str]]:
 
     **Order is load-bearing**, not incidental: the tag branch runs before the
     ``Round N.`` label, which runs before the cast-list field label, which runs
-    before the plain fallback. Slice 3's ``Name:`` speaker rule belongs *after*
-    the field-label branch, since ``Personality: brisk`` is shaped exactly like a
-    player named "Personality" speaking.
+    before the ``Name:`` speaker rule, which runs before the plain fallback.
+
+    The speaker rule's position is the one the whole chain exists to get right.
+    ``Personality: brisk`` is shaped *exactly* like a player named "Personality"
+    speaking, and so are the other four labels — put the speaker branch above
+    the field-label branch and it swallows all **6,200** cast-list labels in the
+    corpus, turning the opening cast list into a transcript of six people called
+    Personality, Manner, Persona, Public legend and True self (hidden). The
+    label reading is the right one, so the label branch keeps its place.
     """
     if is_first_line and _METADATA_LINE_RE.match(line):
         return [(line, KIND_MARKER)]
@@ -988,6 +1117,22 @@ def _line_spans(line: str, *, is_first_line: bool) -> list[tuple[str, str]]:
         return prefix + [
             (label.group(0), KIND_FIELD_LABEL),
             (body[label.end() :], KIND_PLAIN),
+        ]
+
+    # Somebody speaking: the ``Name:`` prefix and the words after it. Split on
+    # the same boundary the field-label branch above uses — the prefix span ends
+    # at its colon and everything after it, the separating space included, is
+    # the next span — so the file holds one convention for "a label-ish span
+    # ends at its colon" rather than two. The space is styling-invisible either
+    # way (the UI sets ``color:`` / ``text-style:`` only, never a background),
+    # so consistency is the only thing at stake and it decides it.
+    speaker = _SPEAKER_RE.match(body)
+    if speaker is not None and speaker.group("name") not in _NON_SPEAKER_PREFIXES:
+        # ``_SPEAKER_RE``'s lookahead guarantees at least the separating space,
+        # so the speech span is never empty.
+        return prefix + [
+            (speaker.group(0), KIND_SPEAKER),
+            (body[speaker.end() :], KIND_SPEECH),
         ]
 
     return prefix + [(body, KIND_PLAIN)]

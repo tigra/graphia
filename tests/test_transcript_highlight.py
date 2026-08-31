@@ -1,12 +1,12 @@
-"""Tests for the pure transcript tokenizer (spec 038, Slices 1-2).
+"""Tests for the pure transcript tokenizer (spec 038, Slices 1-3).
 
 Two halves, in the order the slice was built:
 
 1. **The corpus round-trip property test** (Slice 1, task 1 — written before the
    tokenizer existed), which sweeps every committed game;
 2. **The tokenizer's synthetic unit tests** (Slice 1, task 4; extended by
-   Slice 2, task 3), which pin the kind each recognised shape gets, on inputs
-   small enough to read.
+   Slice 2, task 3 and Slice 3, task 3), which pin the kind each recognised
+   shape gets, on inputs small enough to read.
 
 The matching **widget-level** half of task 4 — that the painted body's spans
 survive, that its plain text is the file's text exactly, that ``[bold]`` renders
@@ -63,6 +63,19 @@ whole one, so their boundaries — the value without its quotes, the label with 
 colon, neither ever straddling a newline — are the first thing 9.4 MB of real
 model-generated prose can contradict that a hand-written fixture never would.
 See :func:`test_the_line_splitting_kinds_hold_their_shape_across_the_corpus`.
+
+**Slice 3 widened that one assertion to its four new kinds** — ``speaker`` /
+``speech`` split a line the same way ``field-label`` does, and ``thought`` /
+``recap`` claim an inline body between two tags — and added nothing else to the
+sweep. The reason is the finding recorded in ``tasks.md``: *the corpus sweep is
+necessary but not sufficient, proven rather than theorised.* Slice 2's mutation
+pass broke the round-trip invariant in principle (``.match`` → ``.search`` on the
+field-label branch) and all 298 files passed anyway, because no committed
+transcript contains a mid-line field label. Slice 3's ``Name:`` rule collides
+with the cast-list labels, with ``Moderator:``, with a ballot and with
+``Pointing round N:``, so the **synthetic near-misses below are load-bearing**,
+not decorative — several of them (``Mary Ann: hello``, ``Avery:no space``, a
+degenerate ``<recap></recap>``) are shapes the corpus does not contain at all.
 """
 
 from __future__ import annotations
@@ -378,7 +391,7 @@ _ATTR_OPENS_WITH = '="'
 
 @_requires_corpus
 def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
-    """``attr`` and ``field-label`` keep their boundaries on 9.4 MB of real prose.
+    """The six sub-line kinds keep their boundaries on 9.4 MB of real prose.
 
     The one kind-shaped assertion the corpus sweep makes, and it is narrow on
     purpose (see this module's header). ``attr`` and ``field-label`` are the first
@@ -397,18 +410,41 @@ def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
       mid-line is what makes that newly possible, so it is checked here rather
       than only on the synthetic game.
 
-    Plus two non-vacuity guards that cannot rot as the corpus grows: every one of
+    **Slice 3 widened this to its own four kinds**, on the same
+    boundaries-real-data-can-contradict reasoning:
+
+    * a ``speaker`` span must end at its colon, must be immediately followed by a
+      ``speech`` span, and that speech must begin with the separating space —
+      the ratified "the colon belongs to ``speaker``, the space to ``speech``"
+      convention, checked against 22,508 real utterances under 498 distinct
+      model-generated names rather than the handful a fixture can invent;
+    * a ``speaker`` name must never be one of the writer's own
+      ``_NON_SPEAKER_PREFIXES`` — the exclusion set doing its job on real data;
+    * a ``thought`` or ``recap`` body must sit **between two markers**, the
+      opening tag ending ``>`` and the closing one starting ``</``. That is
+      Slice 3's "the surrounding tag stays ``marker``" made structural over the
+      8,183 thoughts and 2,736 recaps the corpus actually holds.
+
+    Plus non-vacuity guards that cannot rot as the corpus grows: every one of
     the five attribute names and all five labels must actually occur, and the
     pairs the writer always emits together must be equinumerous — every
     ``<player>`` carries both a ``name`` and a ``role``, every ``<vote>`` both an
     ``initiator`` and a ``target``. Absolute equalities rather than today's
     counts, so a new eval run cannot break them and a tokenizer that dropped one
-    attribute of a pair cannot pass them.
+    attribute of a pair cannot pass them. Slice 3 adds three more of the same
+    shape: every utterance is one ``speaker`` and one ``speech`` so the two
+    counts are equal and non-zero, both inline bodies occur, and **at least one
+    speaker name begins with a lowercase letter** — the guard on the measured
+    decision that casing is not a speaker test (39 corpus cast names are
+    lowercase and a casing rule would lose 426 real speaker lines).
     """
     labels = set(eval_ledger._FIELD_LABELS)
+    non_speakers = set(eval_ledger._NON_SPEAKER_PREFIXES)
     problems: list[str] = []
     attr_names: Counter[str] = Counter()
     label_texts: Counter[str] = Counter()
+    kind_counts: Counter[str] = Counter()
+    lowercase_speakers: set[str] = set()
 
     for path in _TRANSCRIPTS:
         spans = _tokenize(path.read_text(encoding="utf-8"))
@@ -416,12 +452,66 @@ def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
         for index, (text, kind) in enumerate(spans):
             if kind == eval_ledger.KIND_PLAIN:
                 continue
+            kind_counts[kind] += 1
             if "\n" in text:
                 problems.append(
                     f"{_rel(path)} span {index}: styled {kind!r} span carries a "
                     f"newline: {text!r}"
                 )
-            if kind == eval_ledger.KIND_FIELD_LABEL:
+            if kind == eval_ledger.KIND_SPEAKER:
+                after = spans[index + 1] if index + 1 < len(spans) else None
+                if not text.endswith(":"):
+                    problems.append(
+                        f"{_rel(path)} span {index}: speaker {text!r} does not "
+                        "end at its colon"
+                    )
+                elif text[:-1] in non_speakers:
+                    problems.append(
+                        f"{_rel(path)} span {index}: {text!r} is one of the "
+                        f"writer's own prefixes {sorted(non_speakers)}, not a "
+                        "player speaking"
+                    )
+                elif text[0].islower():
+                    lowercase_speakers.add(text)
+                if after is None or after[1] != eval_ledger.KIND_SPEECH:
+                    problems.append(
+                        f"{_rel(path)} span {index}: speaker {text!r} is followed "
+                        f"by {after!r}, expected a speech span"
+                    )
+            elif kind == eval_ledger.KIND_SPEECH:
+                before = spans[index - 1] if index else None
+                if before is None or before[1] != eval_ledger.KIND_SPEAKER:
+                    problems.append(
+                        f"{_rel(path)} span {index}: speech {text[:40]!r} is "
+                        f"preceded by {before!r}, expected a speaker span"
+                    )
+                if not text.startswith(" "):
+                    problems.append(
+                        f"{_rel(path)} span {index}: speech {text[:40]!r} does "
+                        "not begin with the separating space"
+                    )
+            elif kind in (eval_ledger.KIND_THOUGHT, eval_ledger.KIND_RECAP):
+                before = spans[index - 1] if index else None
+                after = spans[index + 1] if index + 1 < len(spans) else None
+                if (
+                    before is None
+                    or before[1] != eval_ledger.KIND_MARKER
+                    or not before[0].endswith(">")
+                ):
+                    problems.append(
+                        f"{_rel(path)} span {index}: {kind} body {text[:40]!r} is "
+                        f"preceded by {before!r}, expected its opening marker"
+                    )
+                if (
+                    after is None
+                    or after[1] != eval_ledger.KIND_MARKER
+                    or not after[0].startswith("</")
+                ):
+                    problems.append(
+                        f"{_rel(path)} span {index}: {kind} body {text[:40]!r} is "
+                        f"followed by {after!r}, expected its closing marker"
+                    )
+            elif kind == eval_ledger.KIND_FIELD_LABEL:
                 label_texts[text] += 1
                 if text not in labels:
                     problems.append(
@@ -479,6 +569,26 @@ def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
     assert attr_names["initiator"] == attr_names["target"] > 0
     assert attr_names["player"] > 0
 
+    # Slice 3's three, in the same rot-proof form. Every utterance is exactly one
+    # speaker span and one speech span, so a tokenizer that emitted a speaker and
+    # swallowed its speech (or the reverse) fails here without a count being
+    # pinned that the next committed eval run would move.
+    assert (
+        kind_counts[eval_ledger.KIND_SPEAKER]
+        == kind_counts[eval_ledger.KIND_SPEECH]
+        > 0
+    ), f"speaker/speech counts diverged: {kind_counts}"
+    assert kind_counts[eval_ledger.KIND_THOUGHT] > 0
+    assert kind_counts[eval_ledger.KIND_RECAP] > 0
+    # The measured reason `_SPEAKER_RE` is not gated on an initial capital: the
+    # corpus really does contain lowercase-named players, so a casing rule would
+    # drop real speaker lines rather than only the three writer literals.
+    assert lowercase_speakers, (
+        "no lowercase-initial speaker name found — either the corpus changed or "
+        "the speaker rule has quietly acquired a casing guard, which measurement "
+        "rejected (39 lowercase cast names, 426 speaker lines at stake)"
+    )
+
 
 # ===========================================================================
 # 2. The tokenizer's synthetic unit tests (spec 038, Slice 1, task 4)
@@ -514,7 +624,7 @@ def _spans(text: str) -> list[tuple[str, str]]:
 # ---------------------------------------------------------------------------
 
 def test_the_kind_constants_hold_the_literal_names_the_tables_use() -> None:
-    """The four kind constants really are these four strings.
+    """The eight kind constants really are these eight strings.
 
     The expectation tables below are written with literal ``"marker"`` /
     ``"attr"`` strings rather than ``eval_ledger.KIND_*`` references, because a
@@ -525,12 +635,19 @@ def test_the_kind_constants_hold_the_literal_names_the_tables_use() -> None:
     against a string the production code no longer emits.
 
     Pinned to the literals, not to ``TRANSCRIPT_KINDS`` — the tuple is allowed to
-    grow (later slices append), the four names are not allowed to change.
+    grow (later slices append), these eight names are not allowed to change.
+    Slice 4 appends side-bearing kinds *derived* from ``speaker`` / ``speech``
+    (``speaker-mafia`` and friends), so those two literals in particular are load
+    bearing beyond this file.
     """
     assert eval_ledger.KIND_MARKER == "marker"
     assert eval_ledger.KIND_PLAIN == "plain"
     assert eval_ledger.KIND_ATTR == "attr"
     assert eval_ledger.KIND_FIELD_LABEL == "field-label"
+    assert eval_ledger.KIND_SPEAKER == "speaker"
+    assert eval_ledger.KIND_SPEECH == "speech"
+    assert eval_ledger.KIND_THOUGHT == "thought"
+    assert eval_ledger.KIND_RECAP == "recap"
 
 
 # The TWELVE structural tags, each with a representative opening form and the
@@ -1012,12 +1129,13 @@ def test_a_line_merely_resembling_the_round_label_is_plain(source: str) -> None:
 
 
 @pytest.mark.parametrize(
-    ("source", "content", "expected"),
+    ("source", "content", "content_kind", "expected"),
     [
         pytest.param(
             '<player name="Bo" role="Law-abiding Citizen">'
             "(no persona recorded)</player>",
             "(no persona recorded)",
+            "plain",
             [
                 ('<player name="', "marker"),
                 ("Bo", "attr"),
@@ -1032,9 +1150,10 @@ def test_a_line_merely_resembling_the_round_label_is_plain(source: str) -> None:
         pytest.param(
             "<recap>Alive: Alice, Bo. Mafia 1, Law-abiding 1.</recap>",
             "Alive: Alice, Bo. Mafia 1, Law-abiding 1.",
+            "recap",
             [
                 ("<recap>", "marker"),
-                ("Alive: Alice, Bo. Mafia 1, Law-abiding 1.", "plain"),
+                ("Alive: Alice, Bo. Mafia 1, Law-abiding 1.", "recap"),
                 ("</recap>", "marker"),
             ],
             id="recap",
@@ -1042,11 +1161,12 @@ def test_a_line_merely_resembling_the_round_label_is_plain(source: str) -> None:
         pytest.param(
             '<thought player="Alice">Bo suspects me.</thought>',
             "Bo suspects me.",
+            "thought",
             [
                 ('<thought player="', "marker"),
                 ("Alice", "attr"),
                 ('">', "marker"),
-                ("Bo suspects me.", "plain"),
+                ("Bo suspects me.", "thought"),
                 ("</thought>", "marker"),
             ],
             id="thought",
@@ -1054,7 +1174,10 @@ def test_a_line_merely_resembling_the_round_label_is_plain(source: str) -> None:
     ],
 )
 def test_an_inline_element_keeps_its_content_a_span_of_its_own(
-    source: str, content: str, expected: list[tuple[str, str]]
+    source: str,
+    content: str,
+    content_kind: str,
+    expected: list[tuple[str, str]],
 ) -> None:
     """``<tag …>content</tag>`` splits the content off from both of its tags.
 
@@ -1062,23 +1185,32 @@ def test_an_inline_element_keeps_its_content_a_span_of_its_own(
     superseded the count — a detail-carrying opening tag is now marker / attr /
     marker, so ``<player …>…</player>`` is seven spans and ``<thought …>…`` five
     — but not the property the count stood for, which is restated below in a form
-    the next slice's split cannot invalidate: **the content is exactly one span,
-    the second from last, with the closing tag behind it.**
+    no later slice's split can invalidate: **the content is exactly one span, the
+    second from last, with the closing tag behind it.**
 
-    That property is what lets Slice 3 change one span's kind (``recap`` content
-    becomes ``recap``, a thought's becomes ``thought``) instead of breaking a span
-    into three — the rewrite the slicing exists to avoid. The content is ``plain``
-    for now; that is this slice's answer, and the slice that claims each one will
-    move it.
+    **Slice 3 moved the content KIND on two of the three cases and left the
+    structure untouched** — which is the whole point of having written the
+    property this way. ``<recap>``'s body is now ``recap`` and a thought's is now
+    ``thought``; ``<player>``'s ``(no persona recorded)`` stays ``plain``, because
+    it is prose rather than a kind of its own. The tags around all three stay
+    ``marker`` (tasks.md, Slice 3: "a thought's content is ``thought`` and its
+    surrounding tag stays ``marker``"), so the owner's name inside a thought's tag
+    is still an ``attr`` span waiting for Slice 4 to give it a side.
+
+    ``content_kind`` is a parameter rather than a constant precisely so the
+    ``player`` row keeps proving that claiming a body is per-tag opt-in and not a
+    blanket "every inline body gets its tag's kind".
     """
     spans = _spans(source)
 
     assert spans == expected
-    # Restated structurally, so this survives the next slice's re-split of the
+    # Restated structurally, so this survives a later slice's re-split of the
     # opening tag and fails loudly on the one thing that must not change.
-    assert spans[-2] == (content, eval_ledger.KIND_PLAIN)
+    assert spans[-2] == (content, content_kind)
     assert spans[-1][1] == eval_ledger.KIND_MARKER
     assert spans[-1][0].startswith("</")
+    assert spans[0][1] == eval_ledger.KIND_MARKER
+    assert spans[0][0].startswith("<") and not spans[0][0].startswith("</")
     assert [text for text, _ in spans].count(content) == 1, (
         "the content must be ONE span, not several"
     )
@@ -1102,25 +1234,88 @@ def test_the_kill_coalescing_is_specific_to_kill_not_general_to_inline_tags() ->
     Without this, "kill is one span" would also pass on a tokenizer that had
     silently stopped splitting inline elements at all — and Slices 2-3 depend on
     that split existing.
+
+    Slice 3 moved the control's middle span from ``plain`` to ``recap`` (the
+    control tag is a ``<recap>``); the property it controls for is unchanged and
+    is if anything sharper now, because ``kill`` and ``recap`` differ by kind as
+    well as by span count.
     """
     source = "<recap>Avery — Law-abiding Citizen</recap>"
     assert _spans(source) == [
         ("<recap>", eval_ledger.KIND_MARKER),
-        ("Avery — Law-abiding Citizen", eval_ledger.KIND_PLAIN),
+        ("Avery — Law-abiding Citizen", eval_ledger.KIND_RECAP),
         ("</recap>", eval_ledger.KIND_MARKER),
     ]
 
 
-def test_an_empty_element_contributes_no_inner_span() -> None:
-    """``<night></night>`` — what the writer emits for a section that captured
-    nothing — is two adjacent markers and therefore one span, with no empty span
-    wedged between them."""
+@pytest.mark.parametrize(
+    "source",
+    [
+        pytest.param("<night></night>", id="section"),
+        # Slice 3's two content-claiming tags, degenerate. `<recap></recap>` and
+        # an empty `<thought>` are the shapes where a body-claiming branch is
+        # most likely to emit a zero-length `recap` / `thought` span: the corpus
+        # contains neither, so nothing but this test can see it.
+        pytest.param("<recap></recap>", id="empty-recap"),
+        pytest.param('<thought player="X"></thought>', id="empty-thought"),
+    ],
+)
+def test_an_empty_element_contributes_no_inner_span(source: str) -> None:
+    """An element with nothing between its tags leaves no empty span behind.
+
+    ``<night></night>`` is what the writer emits for a section that captured
+    nothing: two adjacent markers, and therefore ONE span after coalescing, with
+    no empty span wedged between them.
+
+    Asserted as "no span has empty text" plus the round trip rather than as a
+    literal expectation, because the three cases coalesce differently — the
+    attribute-free two merge into a single marker, while the thought's attr span
+    keeps its tags apart. What must hold for all three is the guarantee.
+    """
+    spans = _spans(source)
+
+    assert "".join(text for text, _ in spans) == source
+    assert all(text for text, _ in spans), f"an empty span survived: {spans}"
+    assert eval_ledger.KIND_THOUGHT not in {kind for _, kind in spans}
+    assert eval_ledger.KIND_RECAP not in {kind for _, kind in spans}
+
+
+def test_an_empty_section_element_is_one_coalesced_marker_span() -> None:
+    """...and the attribute-free case really does coalesce to a single span.
+
+    The absolute half of the guarantee above: without it, "no empty span" would
+    also pass on a tokenizer that emitted ``<night>`` and ``</night>`` as two
+    separate marker spans, which would violate the no-adjacent-same-kind rule.
+    """
     assert _spans("<night></night>") == [
         ("<night></night>", eval_ledger.KIND_MARKER)
     ]
 
 
-def test_an_unclosed_inline_element_degrades_to_its_tag_plus_plain() -> None:
+@pytest.mark.parametrize(
+    ("source", "tag", "remainder"),
+    [
+        pytest.param(
+            '<thought player="Alice">it runs on',
+            [
+                ('<thought player="', "marker"),
+                ("Alice", "attr"),
+                ('">', "marker"),
+            ],
+            "it runs on",
+            id="thought",
+        ),
+        pytest.param(
+            "<recap>it runs on",
+            [("<recap>", "marker")],
+            "it runs on",
+            id="recap",
+        ),
+    ],
+)
+def test_an_unclosed_inline_element_degrades_to_its_tag_plus_plain(
+    source: str, tag: list[tuple[str, str]], remainder: str
+) -> None:
     """A tag whose content does not close on the same line still never raises.
 
     The corpus contains no such line today, but a multi-line model-generated
@@ -1131,13 +1326,20 @@ def test_an_unclosed_inline_element_degrades_to_its_tag_plus_plain() -> None:
     closed-element branch — the owner's name is picked out whether or not the
     thought closes on its line, so the fallback is a *degradation of the
     content*, never of the marker.
+
+    **Slice 3's stake in this is the remainder's kind.** Now that ``<thought>``
+    and ``<recap>`` bodies are claimed, the tempting implementation is to give
+    the unclosed remainder the tag's content kind too. It must not: the extent is
+    unknown, so styling it as a private thought would run an italic (and, from
+    Slice 4, a side) over however much of the game follows. ``plain`` is the
+    documented answer, and the second assertion says so by name rather than only
+    by span equality, so a regression reports *which* rule broke.
     """
-    assert _spans('<thought player="Alice">it runs on') == [
-        ('<thought player="', eval_ledger.KIND_MARKER),
-        ("Alice", eval_ledger.KIND_ATTR),
-        ('">', eval_ledger.KIND_MARKER),
-        ("it runs on", eval_ledger.KIND_PLAIN),
-    ]
+    spans = _spans(source)
+
+    assert spans == [*tag, (remainder, eval_ledger.KIND_PLAIN)]
+    assert eval_ledger.KIND_THOUGHT not in {kind for _, kind in spans}
+    assert eval_ledger.KIND_RECAP not in {kind for _, kind in spans}
 
 
 # ---------------------------------------------------------------------------
@@ -1148,10 +1350,6 @@ def test_an_unclosed_inline_element_degrades_to_its_tag_plus_plain() -> None:
 @pytest.mark.parametrize(
     "source",
     [
-        pytest.param("Alice: I saw nothing last night.", id="speech"),
-        pytest.param(
-            "Moderator: A new game begins. Welcome, Alice.", id="moderator"
-        ),
         # `Personality: …` moved OUT of this table in Slice 2 — it is now a
         # `field-label` line and has its own section below. What stays here is
         # the near-miss: the same words with anything at all in front of them.
@@ -1159,20 +1357,23 @@ def test_an_unclosed_inline_element_degrades_to_its_tag_plus_plain() -> None:
         pytest.param("(no persona recorded)", id="no-persona"),
         pytest.param("(persona has no recorded detail)", id="no-detail"),
         # A Night's pick list, deliberately NOT one of the five cast-list field
-        # labels even though it is shaped like one.
+        # labels even though it is shaped like one — and, since Slice 3, not a
+        # speaker either: `Pointing round 1` carries spaces, so `_SPEAKER_RE`'s
+        # whitespace-free name never matches it.
         pytest.param("Pointing round 1: Alice → Bo", id="pointing-round"),
         # A tag the writer does not emit: styled as skeleton it is not would be
         # a guess, so the whitelist declines and the line stays readable.
         pytest.param("<diary>secret</diary>", id="unrecognised-tag"),
         pytest.param("<Day>", id="wrong-case-tag"),
         pytest.param("<night/>", id="self-closing"),
-        # Speech that merely contains angle brackets.
-        pytest.param("Alice: 3 < 4 and 5 > 2", id="angle-brackets-in-speech"),
-        # Console-markup-shaped prose. The tokenizer has no opinion on `[`; the
-        # widget-level guarantee that it renders literally is B14's job in
-        # tests/test_ledger_viewer.py. (The field-label flavour of this case
-        # moved to `test_a_field_labels_prose_may_contain_square_brackets`.)
-        pytest.param("Alice: says [bold] a lot, and [/bold]", id="square-brackets"),
+        # SLICE 3 REMOVED three rows from this table — `Alice: I saw nothing
+        # last night.`, `Alice: 3 < 4 and 5 > 2` and `Alice: says [bold] a lot`
+        # were all spoken lines pinned as `plain` before the speaker rule
+        # existed. They are not deleted: each is now a case in the
+        # speaker/speech section below, where the same prose is asserted to
+        # split into exactly two spans with the angle brackets and the square
+        # brackets still inside the speech. `Moderator: …` left too, for the
+        # exclusion-set section that owns it.
     ],
 )
 def test_unrecognised_text_falls_back_to_a_single_plain_span(source: str) -> None:
@@ -1294,8 +1495,6 @@ def test_an_indented_field_label_is_recognised_the_same_way() -> None:
     "source",
     [
         pytest.param("He said Personality: brisk", id="prefixed"),
-        pytest.param("Alice: my Manner: is clipped", id="mid-speech"),
-        pytest.param("personality: brisk", id="lowercase"),
         pytest.param("Personality brisk", id="no-colon"),
         pytest.param("Personality : brisk", id="space-before-colon"),
     ],
@@ -1303,12 +1502,72 @@ def test_an_indented_field_label_is_recognised_the_same_way() -> None:
 def test_a_line_merely_containing_a_label_is_not_a_field_label(source: str) -> None:
     """The label is anchored to the start of the (unindented) line.
 
-    The dangerous case is ``mid-speech``: a player who says the word "Manner:"
-    would otherwise have part of their sentence painted as cast-list scaffolding,
-    in the middle of a Day round where no cast list exists. The label branch
-    matches at position 0 of the lstripped body and nowhere else.
+    The label branch matches at position 0 of the lstripped body and nowhere
+    else, so a word that merely *contains* a label is prose.
+
+    **Slice 3 moved two rows out of this table without dropping what either
+    proved.** ``Alice: my Manner: is clipped`` and ``personality: brisk`` are no
+    longer whole-line ``plain`` — the first is somebody speaking, the second is
+    the accepted casing trade — so each got its own test below, and both still
+    assert the thing this table exists for: **no ``field-label`` span is
+    produced.** The outer classification moved; the label rule did not.
     """
-    assert _spans(source) == [(source, eval_ledger.KIND_PLAIN)]
+    spans = _spans(source)
+    assert spans == [(source, eval_ledger.KIND_PLAIN)]
+    assert eval_ledger.KIND_FIELD_LABEL not in {kind for _, kind in spans}
+
+
+def test_a_label_said_mid_sentence_is_not_lifted_out_of_the_speech() -> None:
+    """``Alice: my Manner: is clipped`` — the dangerous case, re-expressed.
+
+    Ported from ``test_a_line_merely_containing_a_label_is_not_a_field_label``'s
+    ``mid-speech`` row, which Slice 3's speaker rule superseded on the OUTER
+    classification only: the line is now an utterance rather than anonymous
+    prose. **The assertion's own point is untouched and is restated below** —
+    a player who says the word "Manner:" mid-sentence must not have half their
+    line painted as cast-list scaffolding in the middle of a Day round where no
+    cast list exists.
+
+    Two ways, deliberately: the exact spans (so the boundary is pinned at the
+    FIRST colon and not the second), and the negative (so the failure names the
+    field-label rule if that is what regressed).
+    """
+    spans = _spans("Alice: my Manner: is clipped")
+
+    assert spans == [
+        ("Alice:", eval_ledger.KIND_SPEAKER),
+        (" my Manner: is clipped", eval_ledger.KIND_SPEECH),
+    ]
+    assert eval_ledger.KIND_FIELD_LABEL not in {kind for _, kind in spans}
+
+
+def test_a_lowercase_field_label_reads_as_speech_and_the_real_one_still_does_not(
+) -> None:
+    """``personality: brisk`` is speech; ``Personality: brisk`` is still a label.
+
+    Ported from the ``lowercase`` row of the table above, which pinned
+    ``personality: brisk`` as one ``plain`` span. Slice 3's speaker rule
+    supersedes that, and the change is **deliberate and measured**, not
+    collateral: an initial-capital guard on ``_SPEAKER_RE`` was drafted and
+    rejected because 39 of the corpus's cast names are lowercase (``mina``,
+    ``arthur``, ``kai``, ``zara``, …) and casing would lose **426 real speaker
+    lines** to exclude three writer literals. The accepted price is exactly this
+    line.
+
+    The second half is what keeps the trade a trade rather than a regression:
+    the writer's real cast-list labels are **always capitalised**, so the 6,200
+    ``field-label`` spans in the corpus are untouched (verified: the count is
+    identical across Slices 2 and 3). Both halves live in one test so neither can
+    be edited without seeing the other.
+    """
+    assert _spans("personality: brisk") == [
+        ("personality:", eval_ledger.KIND_SPEAKER),
+        (" brisk", eval_ledger.KIND_SPEECH),
+    ]
+    assert _spans("Personality: brisk") == [
+        ("Personality:", eval_ledger.KIND_FIELD_LABEL),
+        (" brisk", eval_ledger.KIND_PLAIN),
+    ]
 
 
 def test_the_longest_matching_label_wins() -> None:
@@ -1334,6 +1593,418 @@ def test_a_field_labels_prose_may_contain_square_brackets() -> None:
         ("Personality:", "field-label"),
         (" brisk [bold] and sly", "plain"),
     ]
+
+
+# ---------------------------------------------------------------------------
+# `speaker` / `speech` — a spoken line, split at its colon (spec 038, Slice 3)
+# ---------------------------------------------------------------------------
+#
+# functional-spec §2: "a speaker's name and the words they speak both carry
+# their side's colour". Slice 3 makes the two halves their own kinds; Slice 4
+# gives them a side. The split point is ratified in `tasks.md`: **the colon
+# belongs to `speaker`, the separating space to `speech`** — the same convention
+# `field-label` already uses, so the file holds one rule rather than two.
+#
+# THE RULE IS SHAPE-DRIVEN, NOT CAST-LIST-DRIVEN (tech-spec §2 B): the 30 pre-022
+# transcripts have no `<player>` tag at all, and their speaker prefixes must
+# still be lifted. "Somebody is speaking" is a shape; *which side* they are on is
+# a judgement, and that is Slice 4's problem, gated on the cast list, never
+# guessed.
+#
+# WHAT THE CORPUS SWEEP CANNOT SEE. Nearly every case below is a shape 298 real
+# games cannot fail on: some (`tally:`, `outcome:`, `Moderator (private to X):`)
+# occur thousands of times but are indistinguishable from a pass unless the kind
+# is asserted, and others (`Mary Ann: hello`, `Avery:no space`, a bare `Avery:`)
+# do not occur at all. Slice 2 proved that gap is real rather than theoretical —
+# a mutation that broke the round-trip invariant in principle swept 298 files
+# clean. These are the near-misses that close it.
+
+# A spoken line and the two spans it must become. Written as (name-with-colon,
+# rest-of-line) so the expectation below is assembled from the same two pieces
+# the tokenizer has to separate — a test that spelled the answer out twice could
+# agree with itself while both halves were wrong.
+_SPOKEN_LINE_CASES: tuple[tuple[str, str, str], ...] = (
+    # The ordinary case: what `_append_messages` writes for every Day utterance.
+    ("plain-speech", "Alice:", " I saw nothing last night."),
+    # THE BALLOT. Spec 022 strips the `Moderator:` voice off a vote precisely so
+    # this reads as the player's own word; 5,656 of them in the corpus.
+    ("ballot-yes", "Bo:", " Yes"),
+    ("ballot-no", "Bo:", " No"),
+    # A lowercase-named player: 39 real cast names look like this, which is the
+    # measured reason `_SPEAKER_RE` carries no initial-capital guard.
+    ("lowercase-name", "zara:", " I saw nothing."),
+    # A non-ASCII initial. `[^\W\d_]` is Unicode-aware, so `Sofía` and `Inés`
+    # match where a bare `[A-Za-z]` would have dropped them.
+    ("non-ascii-name", "Sofía:", " bonjour"),
+    ("non-ascii-initial", "Émile:", " bonsoir"),
+    # A hyphen is not a word break — the deliberate miss is the SPACE in
+    # `Mary Ann`, not the two-part name (see `_NOT_A_SPEAKER_CASES`).
+    ("hyphenated-name", "Mary-Ann:", " hello"),
+    # Speech that merely contains angle brackets: ported from the plain-fallback
+    # table, where Slice 1 pinned the whole line as one `plain` span. The point
+    # it made — a `<` in model-generated prose is content, never skeleton — is
+    # restated here, now inside the speech span.
+    ("angle-brackets-in-speech", "Alice:", " 3 < 4 and 5 > 2"),
+    # Console-markup-shaped speech, ported from the same table. The tokenizer has
+    # no opinion on `[`; the widget-level guarantee that it RENDERS literally is
+    # B14's job in tests/test_ledger_viewer.py.
+    ("square-brackets", "Alice:", " says [bold] a lot, and [/bold]"),
+    # The boundary of the never-empty guarantee: `_SPEAKER_RE`'s lookahead
+    # requires the separating space, so a line that ends immediately after it is
+    # still two spans and the second one is that single character. A bare
+    # `Avery:` with nothing at all after the colon is the miss (see
+    # `_NOT_A_SPEAKER_CASES`) — the space is exactly what separates the two.
+    ("nothing-but-the-space", "Avery:", " "),
+)
+
+
+@pytest.mark.parametrize(
+    ("speaker", "speech"),
+    [
+        pytest.param(speaker, speech, id=case_id)
+        for case_id, speaker, speech in _SPOKEN_LINE_CASES
+    ],
+)
+def test_a_spoken_line_splits_into_speaker_and_speech(
+    speaker: str, speech: str
+) -> None:
+    """``Avery: hi`` → ``('Avery:', speaker)``, ``(' hi', speech)``.
+
+    The complete span list, so the **colon and the space are both accounted
+    for**: the colon is the last character of the speaker span and the separating
+    space is the first character of the speech span. A tokenizer that dropped
+    either, or that put the space on the speaker's side, fails here rather than
+    losing a character invisibly.
+    """
+    spans = _spans(speaker + speech)
+
+    assert spans == [
+        (speaker, eval_ledger.KIND_SPEAKER),
+        (speech, eval_ledger.KIND_SPEECH),
+    ]
+    # Spelled out, so a failure names WHICH end of the boundary moved.
+    assert spans[0][0].endswith(":")
+    assert spans[1][0].startswith(" ")
+    assert "".join(text for text, _ in spans) == speaker + speech
+
+
+def test_a_ballot_is_speaker_and_speech_not_a_kind_of_its_own() -> None:
+    """THE BALLOT DECISION, pinned (tasks.md, Slice 3; and the tokenizer docstring).
+
+    Spec 022 strips the ``Moderator:`` voice off each vote, so a ``<vote>``
+    block's ``Bo: Yes`` is shaped exactly like ordinary speech. It is kinded
+    exactly like ordinary speech too — deliberately, and the reason is Slice 4:
+    colour means side from there on, so a vote block will show at a glance that
+    both Mafiosos voted No. A separate achromatic ``ballot`` kind would throw
+    that away, and telling one apart would need to know the line sits inside a
+    ``<vote>`` element, which this per-line stateless tokenizer does not.
+
+    Asserted three ways, because the decision is what is being pinned and not
+    just today's output: the ballot's spans, the identity of those spans with an
+    ordinary utterance's (so a future ``ballot`` kind fails here rather than
+    quietly appearing), and the absence of any such kind from the vocabulary.
+    """
+    ballot = _spans("Bo: Yes")
+    speech = _spans("Bo: I agree")
+
+    assert ballot == [
+        ("Bo:", eval_ledger.KIND_SPEAKER),
+        (" Yes", eval_ledger.KIND_SPEECH),
+    ]
+    assert [kind for _, kind in ballot] == [kind for _, kind in speech]
+    assert "ballot" not in eval_ledger.TRANSCRIPT_KINDS
+
+
+# The writer's own line prefixes that are shaped exactly like a speaker, each
+# with a realistic line. `Moderator:` is the public moderator voice (2,655 lines);
+# `tally:` and `outcome:` are the two fields every `<vote>` block ends with
+# (1,005 of each). All three are frequent in the corpus AND invisible to the
+# round-trip sweep, which never looks at a kind.
+_NON_SPEAKER_PREFIX_LINES: tuple[tuple[str, str, str], ...] = (
+    ("moderator", "Moderator", "Moderator: A new game begins. Welcome, Avery."),
+    ("tally", "tally", "tally: 3 Yes, 3 No"),
+    ("outcome", "outcome", "outcome: failed — The vote fails."),
+)
+
+
+def test_the_swept_non_speaker_prefixes_match_the_tokenizers_exclusion_set() -> None:
+    """The three prefixes swept below are exactly the ones the tokenizer excludes.
+
+    The fourth rot guard in this file, for the fourth whitelist (after
+    ``_MARKER_TAGS``, ``_ATTR_NAMES`` and ``_FIELD_LABELS``). A fourth exclusion
+    added to the tokenizer and not here would be untested; one REMOVED from the
+    tokenizer would turn thousands of writer lines into player speech and this
+    guard names which one went.
+
+    The exclusion set exists instead of a casing rule, and the choice was
+    measured: see
+    :func:`test_a_lowercase_field_label_reads_as_speech_and_the_real_one_still_does_not`.
+    """
+    excluded = getattr(eval_ledger, "_NON_SPEAKER_PREFIXES", None)
+    assert excluded is not None, (
+        "graphia.eval_ledger._NON_SPEAKER_PREFIXES is gone — the speaker "
+        "exclusion set moved or was renamed; update _NON_SPEAKER_PREFIX_LINES "
+        "and this guard together"
+    )
+    assert {prefix for _, prefix, _ in _NON_SPEAKER_PREFIX_LINES} == set(excluded)
+    assert len(_NON_SPEAKER_PREFIX_LINES) == 3
+    # Each swept line really does begin with the prefix it claims to test.
+    assert all(
+        line.startswith(prefix + ":")
+        for _, prefix, line in _NON_SPEAKER_PREFIX_LINES
+    )
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        pytest.param(line, id=case_id)
+        for case_id, _, line in _NON_SPEAKER_PREFIX_LINES
+    ],
+)
+def test_a_writer_vocabulary_prefix_is_not_a_player_speaking(line: str) -> None:
+    """``Moderator:``, ``tally:`` and ``outcome:`` stay one ``plain`` span.
+
+    **This is the whole justification for an exclusion set rather than a casing
+    rule, and nothing pinned ``tally:`` or ``outcome:`` before Slice 3.** They
+    are lowercase, so a capitalisation guard would have excluded them for free —
+    and would have cost 426 real speaker lines under lowercase player names.
+    With the set instead, these three are the only lines the writer emits that
+    are shaped like speech and are not, so each one gets an assertion.
+
+    ``Moderator:`` is deliberately neither speech nor a recap. He is the writer's
+    narration; ``<recap>`` is the moderator content that DOES get a kind, and it
+    is marked by its tag rather than by his name.
+    """
+    spans = _spans(line)
+
+    assert spans == [(line, eval_ledger.KIND_PLAIN)]
+    assert eval_ledger.KIND_SPEAKER not in {kind for _, kind in spans}
+
+
+def test_the_moderators_private_form_is_not_a_speaker_either() -> None:
+    """``Moderator (private to Avery): You are Avery.`` — one ``plain`` span.
+
+    **Covered nowhere before Slice 3**, and it is the case most likely to be got
+    wrong by accident, because it passes for a reason that is *not* the exclusion
+    set: ``_SPEAKER_RE``'s name is one whitespace-free token, and this prefix has
+    two spaces in it, so the regex never matches and the literal
+    ``"Moderator (private to Avery)"`` never reaches the exclusion lookup.
+
+    That is asserted explicitly below — the string is NOT in the exclusion set —
+    so this test cannot be "fixed" later by adding an entry there without the
+    reader noticing that a per-player prefix can never be enumerated anyway
+    (``private to <name>`` varies with the cast).
+    """
+    line = "Moderator (private to Avery): You are Avery."
+    spans = _spans(line)
+
+    assert spans == [(line, eval_ledger.KIND_PLAIN)]
+    assert "Moderator (private to Avery)" not in eval_ledger._NON_SPEAKER_PREFIXES
+    # ...and it is the SPACE that disqualifies it, not the parentheses: the same
+    # words without the space would be caught by the `Moderator` entry instead.
+    assert _spans("Moderator: hi")[0][1] == eval_ledger.KIND_PLAIN
+
+
+# Lines that look enough like a speaker to be worth a test and are deliberately
+# NOT one. The misses are all in the same direction — an unrecognised line falls
+# back to `plain`, which the spec's degradation posture prefers to a wrong
+# capture.
+_NOT_A_SPEAKER_CASES: tuple[tuple[str, str], ...] = (
+    # A name carrying an internal space: the documented deliberate miss. Absent
+    # from the corpus entirely, so only this test can see it.
+    ("internal-space", "Mary Ann: hello"),
+    # A colon with nothing after it — `_SPEAKER_RE`'s lookahead requires the
+    # separating space, which is also what guarantees the speech span is never
+    # empty.
+    ("bare-colon", "Avery:"),
+    # A colon with no space after it: `http://x` is the shape this protects.
+    ("no-space-after-colon", "Avery:no space"),
+    ("url-in-prose", "See http://example.com/x for details"),
+    # The endgame's own summary headings, which end in a colon and open a line.
+    ("full-roster", "Full roster: Alice, Bo, Cy"),
+    ("events-heading", "Events this game:"),
+    ("who-they-were", "Who they really were:"),
+    # A bullet: `•` is not a letter, so the name never starts.
+    ("bulleted-event", "• Night 1: Zoe was killed"),
+    # A digit initial is excluded by `[^\W\d_]`.
+    ("digit-initial", "1984: a year"),
+)
+
+
+@pytest.mark.parametrize(
+    "line",
+    [pytest.param(line, id=case_id) for case_id, line in _NOT_A_SPEAKER_CASES],
+)
+def test_a_line_that_only_resembles_a_speaker_stays_plain(line: str) -> None:
+    """Each deliberate miss comes back as exactly one ``plain`` span.
+
+    Every one of these is a shape the 298-file sweep cannot fail on: the endgame
+    headings and the bulleted events occur in real games but are indistinguishable
+    from a pass unless the kind is asserted, and ``Mary Ann: hello``,
+    ``Avery:no space`` and a bare ``Avery:`` do not occur at all.
+
+    The negative assertion is spelled out beside the span equality so a
+    regression reports *the speaker rule* by name rather than only "spans
+    differ".
+    """
+    spans = _spans(line)
+
+    assert spans == [(line, eval_ledger.KIND_PLAIN)]
+    assert not {kind for _, kind in spans} & {
+        eval_ledger.KIND_SPEAKER,
+        eval_ledger.KIND_SPEECH,
+    }
+
+
+def test_the_speaker_rule_sits_below_the_field_label_rule() -> None:
+    """Priority ordering in ``_line_spans``, pinned as behaviour.
+
+    ``Personality: brisk`` is shaped *exactly* like a player named "Personality"
+    speaking. Put the speaker branch above the field-label branch and it swallows
+    all **6,200** cast-list labels in the corpus, turning the opening cast list
+    into a transcript of six people called Personality, Manner, Persona, Public
+    legend and True self (hidden).
+
+    ``tasks.md`` records this as load-bearing for Slice 3 and the tokenizer notes
+    it in the code; this is the executable form. All five labels are swept, since
+    a reordering breaks every one of them and a test that checked only
+    ``Personality:`` would leave the other four to a comment.
+    """
+    for label in eval_ledger._FIELD_LABELS:
+        spans = _spans(f"{label} some prose")
+        assert spans[0] == (label, eval_ledger.KIND_FIELD_LABEL), (
+            f"{label!r} was not read as a cast-list label — the speaker rule has "
+            "moved above the field-label rule in _line_spans"
+        )
+    # The non-vacuity half: the speaker rule really is there to be stolen from.
+    assert _spans("Personalityx: some prose")[0][1] == eval_ledger.KIND_SPEAKER
+
+
+# ---------------------------------------------------------------------------
+# `thought` / `recap` — the two inline content kinds (spec 038, Slice 3)
+# ---------------------------------------------------------------------------
+#
+# functional-spec §2: a private thought "can never be mistaken for something said
+# aloud", and a recap "reads as fact rather than opinion" and doubles as a scroll
+# landmark. Both are claimed by their TAG, not by their prose — which is what
+# makes them safe: the tokenizer never has to guess whether a sentence is private.
+#
+# The surrounding tags stay `marker` on both, and the owner's name inside a
+# `<thought player="X">` stays `attr` (Slice 4 gives that name its side).
+
+
+def test_a_private_thoughts_body_is_thought_and_its_tag_stays_marker() -> None:
+    """The complete span list for a real ``<thought>`` line.
+
+    Three properties in one expectation, each of which a later slice could break
+    independently: the body is ``thought``; both tags are still ``marker``; and
+    the owner's name is still the ``attr`` span Slice 2 made it, sitting inside
+    the opening tag rather than being pulled out of it.
+    """
+    spans = _spans('<thought player="Alice">Bo suspects me tonight.</thought>')
+
+    assert spans == [
+        ('<thought player="', eval_ledger.KIND_MARKER),
+        ("Alice", eval_ledger.KIND_ATTR),
+        ('">', eval_ledger.KIND_MARKER),
+        ("Bo suspects me tonight.", eval_ledger.KIND_THOUGHT),
+        ("</thought>", eval_ledger.KIND_MARKER),
+    ]
+
+
+def test_a_thoughts_body_is_not_re_split_as_speech() -> None:
+    """A thought whose body is shaped like a spoken line stays one ``thought``.
+
+    Private reflections are model-generated first person, so ``I keep thinking:
+    Bo is lying`` is a shape one will eventually take. The inline-content branch
+    runs before the per-line chain, so the body is claimed whole — which is what
+    "can never be mistaken for something said aloud" requires. Without this, a
+    thought would render half italic and half speech-coloured.
+    """
+    spans = _spans('<thought player="Alice">Bo: he is lying</thought>')
+
+    assert spans[-2] == ("Bo: he is lying", eval_ledger.KIND_THOUGHT)
+    assert not {kind for _, kind in spans} & {
+        eval_ledger.KIND_SPEAKER,
+        eval_ledger.KIND_SPEECH,
+    }
+
+
+def test_a_moderator_recaps_body_is_recap_and_its_tags_stay_marker() -> None:
+    """The complete span list for a real ``<recap>`` line."""
+    assert _spans("<recap>Alive: Alice, Bo. Mafia 1, Law-abiding 1.</recap>") == [
+        ("<recap>", eval_ledger.KIND_MARKER),
+        ("Alive: Alice, Bo. Mafia 1, Law-abiding 1.", eval_ledger.KIND_RECAP),
+        ("</recap>", eval_ledger.KIND_MARKER),
+    ]
+
+
+def test_a_recaps_inner_colons_are_not_lifted_out_of_it() -> None:
+    """A recap's body is ONE span, whatever colons it contains.
+
+    The real shape: a status line carries a clock time and an ``Alive:`` list, so
+    it holds three colons and opens with a word that is shaped like a speaker.
+    The recap wins because the tag claims the body before the per-line chain runs
+    — and it must, or a landmark a reviewer scrolls to would arrive in three
+    pieces of three different kinds.
+    """
+    source = "<recap>Day 3, 4:15 PM status: Alive: Alice, Bo.</recap>"
+    spans = _spans(source)
+
+    assert spans == [
+        ("<recap>", eval_ledger.KIND_MARKER),
+        ("Day 3, 4:15 PM status: Alive: Alice, Bo.", eval_ledger.KIND_RECAP),
+        ("</recap>", eval_ledger.KIND_MARKER),
+    ]
+    assert [kind for _, kind in spans].count(eval_ledger.KIND_RECAP) == 1
+    assert not {kind for _, kind in spans} & {
+        eval_ledger.KIND_SPEAKER,
+        eval_ledger.KIND_FIELD_LABEL,
+    }
+
+
+@_requires_corpus
+@pytest.mark.parametrize(
+    ("missing", "token"),
+    [
+        pytest.param("thought", "<thought", id="no-thought"),
+        pytest.param("vote", "<vote", id="no-vote"),
+    ],
+)
+def test_a_real_game_missing_an_element_tokenizes_without_raising(
+    missing: str, token: str
+) -> None:
+    """**Absence is normal**: 82 committed games have no ``<thought>`` and 34 no
+    ``<vote>``, and both tokenize cleanly.
+
+    Named explicitly by Slice 3's test task because Slice 3 is the first slice
+    whose kinds depend on those two elements — ``thought`` comes only from a
+    ``<thought>`` tag and a ballot only from inside a ``<vote>`` block — so a
+    reader implementing them can easily write code that assumes presence. A
+    tokenizer that does passes every synthetic fixture in this file and breaks on
+    a quarter of the corpus.
+
+    The file is discovered rather than hard-coded (the corpus grows with every
+    committed eval run) and the count is asserted as a lower bound for the same
+    reason. Read-only.
+    """
+    games = [
+        path
+        for path in _TRANSCRIPTS
+        if token not in path.read_text(encoding="utf-8")
+    ]
+    assert games, f"the corpus has no game without a {missing!r} element to test"
+
+    for path in games:
+        text = path.read_text(encoding="utf-8")
+        spans = _spans(text)
+        assert "".join(span_text for span_text, _ in spans) == text, _rel(path)
+        assert all(span_text for span_text, _ in spans), _rel(path)
+        kinds = {kind for _, kind in spans}
+        assert kinds <= set(eval_ledger.TRANSCRIPT_KINDS), _rel(path)
+        if missing == "thought":
+            assert eval_ledger.KIND_THOUGHT not in kinds, _rel(path)
 
 
 # ---------------------------------------------------------------------------
@@ -1365,6 +2036,14 @@ def test_a_field_labels_prose_may_contain_square_brackets() -> None:
             "Personality: brisk",
             [("Personality:", "field-label"), (" brisk", "plain")],
             id="field-label",
+        ),
+        # Slice 3. A pre-022 game indents its Day lines, so an indented spoken
+        # line is a REAL shape and not a hypothetical — and the non-ASCII name
+        # keeps the Unicode half of `_SPEAKER_RE` covered here too.
+        pytest.param(
+            "Sofía: bonjour",
+            [("Sofía:", "speaker"), (" bonjour", "speech")],
+            id="spoken-line",
         ),
     ],
 )
@@ -1406,16 +2085,36 @@ def test_line_separators_are_plain_spans_of_their_own() -> None:
 
     Pinned as the complete span list of a five-line document: the separators are
     visible in the expectation, folded into the plain runs around them.
+
+    **Slice 3 lengthened the expectation without changing the property.** The
+    document's middle line is ``Alice: hi``, which Slice 1 folded into the plain
+    run ``"\\nAlice: hi\\n"`` between two markers; the speaker rule now splits it
+    into ``speaker`` + ``speech``, so the two newlines around it become plain
+    spans of their own. That is the rule working harder, not differently — and it
+    is the shape that makes the rule matter, because a speech style running to
+    the end of a terminal row is exactly what the separator split prevents.
     """
     source = "<day>\n<round>\nAlice: hi\n</round>\n</day>"
-    assert _spans(source) == [
+    spans = _spans(source)
+
+    assert spans == [
         ("<day>", eval_ledger.KIND_MARKER),
         ("\n", eval_ledger.KIND_PLAIN),
         ("<round>", eval_ledger.KIND_MARKER),
-        ("\nAlice: hi\n", eval_ledger.KIND_PLAIN),
+        ("\n", eval_ledger.KIND_PLAIN),
+        ("Alice:", eval_ledger.KIND_SPEAKER),
+        (" hi", eval_ledger.KIND_SPEECH),
+        ("\n", eval_ledger.KIND_PLAIN),
         ("</round>", eval_ledger.KIND_MARKER),
         ("\n", eval_ledger.KIND_PLAIN),
         ("</day>", eval_ledger.KIND_MARKER),
+    ]
+    # The property the expectation encodes, restated so a future re-split fails
+    # with the rule's own name rather than only with a longer diff.
+    assert not [
+        span
+        for span in spans
+        if "\n" in span[0] and span[1] != eval_ledger.KIND_PLAIN
     ]
 
 
@@ -1478,13 +2177,24 @@ def test_no_styled_span_carries_a_newline_across_a_whole_synthetic_game() -> Non
     #               3 for the vote);
     #   attr    7 — Alice/Mafioso and Bo/Law-abiding Citizen from the two cast
     #               entries, Alice from the thought, Alice/Bo from the vote;
-    #   field-label 2 — `Personality:` and `Manner:` on Alice's entry.
+    #   field-label 2 — `Personality:` and `Manner:` on Alice's entry;
+    #   speaker 2 — `Alice:` on the Day line and `Bo:` on the ballot inside the
+    #               `<vote>` block (a ballot is speech, tasks.md Slice 3);
+    #   speech  2 — the words after each of those two colons;
+    #   thought 1 — `Bo suspects me.`, the body of the `<thought>` element;
+    #   recap   1 — `Alive: Alice, Bo.`, the body of the `<recap>` element.
     #
-    # Slice 1 pinned only `len(styled) == 27`. The per-kind breakdown supersedes
-    # that number for a reason the later slices will feel: when Slice 3 moves
-    # recap and thought content out of `plain`, this assertion's failure names
-    # WHICH kind's count moved instead of saying only that a total changed.
-    assert len(styled) == 43, (
+    # The `Moderator: A new game begins.` preamble line is deliberately NOT among
+    # them: he is in the exclusion set, so his line stays plain and coalesces with
+    # the blank line after it. That absence is the count's own guard against the
+    # speaker rule over-reaching.
+    #
+    # Slice 1 pinned only `len(styled) == 27` and Slice 2 raised it to 43 with a
+    # three-kind breakdown. Slice 3 supersedes both — and the reason the breakdown
+    # exists is visible in this very edit: the failure named `speaker`, `speech`,
+    # `thought` and `recap` as the kinds that appeared, instead of saying only
+    # that 43 had become 49.
+    assert len(styled) == 49, (
         "the premise: this game really does produce styled spans "
         f"(got {len(styled)})"
     )
@@ -1492,6 +2202,10 @@ def test_no_styled_span_carries_a_newline_across_a_whole_synthetic_game() -> Non
         eval_ledger.KIND_MARKER: 34,
         eval_ledger.KIND_ATTR: 7,
         eval_ledger.KIND_FIELD_LABEL: 2,
+        eval_ledger.KIND_SPEAKER: 2,
+        eval_ledger.KIND_SPEECH: 2,
+        eval_ledger.KIND_THOUGHT: 1,
+        eval_ledger.KIND_RECAP: 1,
     }
     offenders = [(text, kind) for text, kind in styled if "\n" in text]
     assert not offenders, f"styled spans carrying a newline: {offenders}"
@@ -1517,9 +2231,48 @@ def test_the_synthetic_game_round_trips_and_has_no_empty_or_adjacent_spans() -> 
 
 
 def test_a_wall_of_prose_arrives_as_one_plain_span() -> None:
-    """Coalescing, pinned absolutely: five prose lines are one span, not five."""
-    source = "\n".join(f"Alice: line {i}" for i in range(5))
+    """Coalescing, pinned absolutely: five prose lines are one span, not five.
+
+    **Slice 3 replaced the fixture, not the point.** The five lines used to be
+    ``Alice: line 0`` … — which the speaker rule now splits into fifteen spans,
+    so that input no longer exercises coalescing at all. Five ``Moderator:``
+    lines are the same wall of unremarkable text that still tokenizes to a single
+    ``plain`` span (he is in the exclusion set), so the assertion goes on proving
+    what it was written to prove: adjacent same-kind runs merge, and the
+    separators between them merge with them.
+
+    The premise line is what keeps that non-vacuous — five lines really did go in,
+    so "one span" is coalescing and not an empty result.
+    """
+    source = "\n".join(f"Moderator: line {index}" for index in range(5))
+
+    assert source.count("\n") == 4
     assert _spans(source) == [(source, eval_ledger.KIND_PLAIN)]
+
+
+def test_the_coalescing_stops_at_a_kind_boundary() -> None:
+    """The control for the wall above: a run of SPEECH does not merge into one.
+
+    Without it, "five lines are one span" would also pass on a tokenizer that had
+    stopped splitting anything at all. Five spoken lines are fifteen spans —
+    speaker, speech, separator, five times over, less the trailing separator —
+    and no two neighbours share a kind, which is the guarantee coalescing owes.
+    """
+    source = "\n".join(f"Alice: line {index}" for index in range(5))
+    spans = _spans(source)
+
+    assert len(spans) == 14
+    assert [kind for _, kind in spans[:3]] == [
+        eval_ledger.KIND_SPEAKER,
+        eval_ledger.KIND_SPEECH,
+        eval_ledger.KIND_PLAIN,
+    ]
+    assert not [
+        pair
+        for pair in zip(spans, spans[1:], strict=False)
+        if pair[0][1] == pair[1][1]
+    ]
+    assert "".join(text for text, _ in spans) == source
 
 
 def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
@@ -1534,20 +2287,32 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
     The second assertion is the non-vacuity half and it *is* slice-scoped: this
     full-shape game exercises every shape the tokenizer recognises, so the set of
     kinds it emits is the set of kinds that exist. Slice 1 pinned two; Slice 2
-    superseded it with four, and each later slice moves it again — which is
-    exactly the point of writing it out rather than deriving it from
-    ``TRANSCRIPT_KINDS``, since a kind declared but never emitted by any real
-    shape is a kind nobody will ever see.
+    superseded it with four and Slice 3 with all eight, and each later slice
+    moves it again — which is exactly the point of writing it out rather than
+    deriving it from ``TRANSCRIPT_KINDS``, since a kind declared but never
+    emitted by any real shape is a kind nobody will ever see.
+
+    Slice 3 is the first slice where the two assertions have the same content
+    (every declared kind is emitted), so the third one below says that in its own
+    words: after this slice the vocabulary has no dead entries. Slice 4 appends
+    side-bearing kinds and will move all three together.
     """
     kinds = {kind for _, kind in _spans(_RICH_SYNTHETIC_TRANSCRIPT)}
     assert kinds <= set(eval_ledger.TRANSCRIPT_KINDS)
-    # ...and this slice really does emit all four of them.
+    # ...and this slice really does emit all eight of them.
     assert kinds == {
         eval_ledger.KIND_MARKER,
         eval_ledger.KIND_PLAIN,
         eval_ledger.KIND_ATTR,
         eval_ledger.KIND_FIELD_LABEL,
+        eval_ledger.KIND_SPEAKER,
+        eval_ledger.KIND_SPEECH,
+        eval_ledger.KIND_THOUGHT,
+        eval_ledger.KIND_RECAP,
     }
+    # As of Slice 3 the vocabulary has no declared-but-unreachable entry.
+    assert kinds == set(eval_ledger.TRANSCRIPT_KINDS)
+    assert len(eval_ledger.TRANSCRIPT_KINDS) == len(set(eval_ledger.TRANSCRIPT_KINDS))
 
 
 # ---------------------------------------------------------------------------

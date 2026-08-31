@@ -49,6 +49,10 @@ from graphia.eval_ledger import (
     KIND_FIELD_LABEL,
     KIND_MARKER,
     KIND_PLAIN,
+    KIND_RECAP,
+    KIND_SPEAKER,
+    KIND_SPEECH,
+    KIND_THOUGHT,
     METRIC_ORDER,
     SEARCH_SCOPE_ALL,
     TRANSCRIPT_KINDS,
@@ -2840,6 +2844,21 @@ async def test_a_list_longer_than_the_panel_can_be_walked_to_its_last_game(
 #      Slice 1 tests proved still has to hold — it just holds over a longer list
 #      of shorter runs, which is why the pins below are stated as the complete
 #      ordered run list rather than as a count.
+#
+#      SLICE 3 GREW THE FIXTURE, and that was a deliberate choice over adding a
+#      second one. As written for Slices 1-2, `_HIGHLIGHT_BODY` contained no
+#      `<thought>` line and no `<recap>` line, so BOTH of the slice's new inline
+#      kinds were unexercised at the widget level entirely — the pure tokenizer
+#      pinned them and nothing checked that they survived into the renderable.
+#      A separate fixture would have needed its own ledger, its own
+#      `_open_the_only_game` round trip and its own absolute run list to prove
+#      the same properties this one already proves, so the two lines were added
+#      here instead and every absolute pin below was recomputed against them.
+#      A `Moderator:` preamble line came with them: it is content the skeleton
+#      must recede behind AND the widget-level guard on the speaker rule's
+#      exclusion set (`Moderator: …` must not paint as speech), which is what
+#      keeps `_HIGHLIGHT_UNSTYLED_SUBSTRINGS` meaningful now that the spoken line
+#      it used to name is legitimately painted.
 # ===========================================================================
 #
 # WHY THESE LIVE HERE AND NOT IN `tests/test_transcript_highlight.py`. That file
@@ -2871,10 +2890,15 @@ async def test_a_list_longer_than_the_panel_can_be_walked_to_its_last_game(
 _HIGHLIGHT_RUN_ID = "run-highlight"
 
 # A small full-shape game: the metadata header, a cast entry with a persona
-# field, an inline `<kill>`, the pre-022 era's indented `  <round>` /
-# `  Round 1.`, one line of speech, and NO trailing newline (all 298 committed
-# transcripts end on `>`). Small enough that the complete expected span list
-# below can be checked by eye.
+# field, the moderator's opening line, an inline `<kill>`, the pre-022 era's
+# indented `  <round>` / `  Round 1.`, one line of speech, one private thought,
+# one moderator recap, and NO trailing newline (all 298 committed transcripts end
+# on `>`). Small enough that the complete expected span list below can be checked
+# by eye.
+#
+# Slice 3 added three lines — the `Moderator:` preamble, the `<thought>` and the
+# `<recap>` — so that every kind the tokenizer emits is exercised at the widget
+# and not only in `tests/test_transcript_highlight.py`.
 _HIGHLIGHT_BODY = (
     "Game 1 | provider=ollama | large_model=qwen3-coder:30b | games=2\n"
     "<transcript>\n"
@@ -2883,6 +2907,9 @@ _HIGHLIGHT_BODY = (
     "Personality: brisk and sly\n"
     "</player>\n"
     "</setup>\n"
+    "<preamble>\n"
+    "Moderator: A new game begins. Welcome, Alice.\n"
+    "</preamble>\n"
     "<night>\n"
     "<kill>Avery — Law-abiding Citizen</kill>\n"
     "</night>\n"
@@ -2890,6 +2917,8 @@ _HIGHLIGHT_BODY = (
     "  <round>\n"
     "  Round 1.\n"
     "Alice: I saw nothing last night.\n"
+    '<thought player="Alice">Bo suspects me.</thought>\n'
+    "<recap>Alive: Alice, Bo.</recap>\n"
     "  </round>\n"
     "</day>\n"
     "</transcript>"
@@ -2927,6 +2956,11 @@ _HIGHLIGHT_EXPECTED_STYLED_TEXTS = [
     "Personality:",  # field-label
     "</player>",  # marker
     "</setup>",  # marker
+    "<preamble>",  # marker
+    # NOTHING between the two preamble tags: `Moderator: …` is the writer's own
+    # voice, excluded from the speaker rule, so the whole line stays unpainted.
+    # Its absence from this list is a Slice 3 assertion in its own right.
+    "</preamble>",  # marker
     "<night>",  # marker
     # `<kill>`'s content is marker too, so the whole element is ONE run.
     "<kill>Avery — Law-abiding Citizen</kill>",  # marker
@@ -2935,6 +2969,21 @@ _HIGHLIGHT_EXPECTED_STYLED_TEXTS = [
     # The indent is NOT part of the marker.
     "<round>",  # marker
     "Round 1.",  # marker
+    # Slice 3: the spoken line is painted now, in two runs. The colon closes the
+    # speaker; the separating space opens the speech.
+    "Alice:",  # speaker
+    " I saw nothing last night.",  # speech
+    # ...and the private thought: tag, owner, tag, BODY, tag. The body is its own
+    # run and the tags around it are still markers.
+    '<thought player="',  # marker
+    "Alice",  # attr
+    '">',  # marker
+    "Bo suspects me.",  # thought
+    "</thought>",  # marker
+    # ...and the moderator's status recap, the same shape without an attribute.
+    "<recap>",  # marker
+    "Alive: Alice, Bo.",  # recap
+    "</recap>",  # marker
     "</round>",  # marker
     "</day>",  # marker
     "</transcript>",  # marker
@@ -2947,9 +2996,16 @@ _HIGHLIGHT_EXPECTED_STYLED_TEXTS = [
 # line to its description. The label IS painted now — that is the requirement —
 # so the assertion moved to the half that must still not be: the prose, and the
 # space in front of it, which belongs to the description rather than the label.
+#
+# Slice 3 REPLACED the second entry. `Alice: I saw nothing last night.` was the
+# unpainted spoken line; the whole point of the slice is that it is painted now,
+# and it has no unstyled remainder left at all. The moderator's line takes its
+# place and is the stronger case: it is shaped EXACTLY like the spoken line above
+# and must still carry no style, so a speaker rule that dropped its exclusion set
+# fails here at the widget as well as in the tokenizer's own suite.
 _HIGHLIGHT_UNSTYLED_SUBSTRINGS = (
     " brisk and sly",
-    "Alice: I saw nothing last night.",
+    "Moderator: A new game begins. Welcome, Alice.",
 )
 
 # The pre-022 era's indented lines. The two-space indent is LAYOUT, not skeleton,
@@ -3162,7 +3218,13 @@ async def test_the_rendered_body_carries_a_span_per_styled_run_at_exact_offsets(
     * against the indentation, which is layout and never skeleton;
     * and, new in Slice 2, against a run **boundary** inside a single line: the
       cast tag's `Alice` and `Mafioso` must be their own runs, not merged into
-      the tag around them and not extended over the quotes that hold them.
+      the tag around them and not extended over the quotes that hold them;
+    * and, new in Slice 3, against the two INLINE BODIES — a thought's and a
+      recap's — each of which must be a run of exactly its own characters with a
+      marker run on either side of it. That is the widget-level statement of
+      "a thought's content is `thought` and its surrounding tag stays `marker`",
+      and until this slice extended `_HIGHLIGHT_BODY` neither kind reached the
+      widget at all.
 
     Renamed from `…a_span_per_marker…`: since Slice 2 not every painted run is a
     marker.
@@ -3227,6 +3289,27 @@ async def test_the_rendered_body_carries_a_span_per_styled_run_at_exact_offsets(
             )
             assert by_start[start] == (start + len(value), value)
 
+        # (f) ...and each inline BODY is a run of exactly its own characters,
+        # with a painted marker run ending immediately before it and another
+        # beginning immediately after. Read out of the rendered offsets, so a
+        # renderable that let a body's style run over its closing tag — or that
+        # never painted the body at all — fails here naming the element.
+        by_end = {end: (start, text) for start, end, text in runs}
+        for opening, body, closing in (
+            ('<thought player="Alice">', "Bo suspects me.", "</thought>"),
+            ("<recap>", "Alive: Alice, Bo.", "</recap>"),
+        ):
+            element = content.plain.index(opening + body + closing)
+            start = element + len(opening)
+            end = start + len(body)
+            assert by_start.get(start) == (end, body), (
+                f"the body of {opening} is not a run of its own; runs near it: "
+                f"{[r for r in runs if abs(r[0] - start) < 40]}"
+            )
+            # The tags on both sides are painted too, and stop at the body.
+            assert start in by_end, f"{opening} does not end where its body starts"
+            assert by_start.get(end) == (end + len(closing), closing)
+
 
 async def test_no_rendered_span_covers_a_newline(tmp_path: Path) -> None:
     """A marker's style can never bleed to the end of a terminal row.
@@ -3239,7 +3322,10 @@ async def test_no_rendered_span_covers_a_newline(tmp_path: Path) -> None:
     Slice 2 made this matter more, not less: the count moved from 15 runs to 20
     because a line is now split *within* itself, and a splitter that mis-set one
     boundary is exactly the bug that would let a run swallow the newline at the
-    end of its line.
+    end of its line. Slice 3 moved it again, to 32 — the spoken line is two runs
+    now, the thought is five and the recap three, and the two elements are the
+    LAST thing on their line, which is precisely where a body whose extent was
+    computed from the wrong end would take the separator with it.
     """
     ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="hl-newline.yaml")
 
@@ -3249,7 +3335,7 @@ async def test_no_rendered_span_covers_a_newline(tmp_path: Path) -> None:
         screen = await _open_the_only_game(pilot)
         runs = _rendered_runs(_transcript_body_content(screen))
 
-        assert len(runs) == len(_HIGHLIGHT_EXPECTED_STYLED_TEXTS) == 20
+        assert len(runs) == len(_HIGHLIGHT_EXPECTED_STYLED_TEXTS) == 32
         offenders = [text for _, _, text in runs if "\n" in text]
         assert not offenders, f"styled runs carrying a newline: {offenders}"
 
@@ -3320,9 +3406,13 @@ def test_every_declared_kind_but_plain_has_a_style_and_a_component_class() -> No
         "every kind the tokenizer declares needs a style entry, except `plain`, "
         "whose absence IS the unstyled fallback"
     )
-    # Spelled out for the two kinds this slice added, so the failure names them.
+    # Spelled out for the kinds Slices 2-3 added, so the failure names them.
     assert KIND_ATTR in mapping
     assert KIND_FIELD_LABEL in mapping
+    assert KIND_SPEAKER in mapping
+    assert KIND_SPEECH in mapping
+    assert KIND_THOUGHT in mapping
+    assert KIND_RECAP in mapping
 
     assert set(mapping.values()) <= set(TranscriptScreen.COMPONENT_CLASSES)
     # ...and every class is distinct, so two kinds cannot share one CSS rule by

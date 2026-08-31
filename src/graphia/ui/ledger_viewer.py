@@ -52,6 +52,10 @@ from graphia.eval_ledger import (
     KIND_ATTR,
     KIND_FIELD_LABEL,
     KIND_MARKER,
+    KIND_RECAP,
+    KIND_SPEAKER,
+    KIND_SPEECH,
+    KIND_THOUGHT,
     LedgerParseError,
     METRIC_ORDER,
     RawRecord,
@@ -490,8 +494,8 @@ _NO_TRANSCRIPTS_MESSAGE = "No transcripts for this run."
 #
 # :func:`~graphia.eval_ledger.tokenize_transcript` splits a game into
 # ``(text, kind)`` spans where each ``kind`` names a *semantic* role and never a
-# colour (``marker`` / ``attr`` / ``field-label`` now; ``speaker`` / ``speech`` /
-# ``thought`` / ``recap`` and the side-bearing kinds in the later slices — see
+# colour (``marker`` / ``attr`` / ``field-label`` / ``speaker`` / ``speech`` /
+# ``thought`` / ``recap`` now; the side-bearing kinds in Slice 4 — see
 # :data:`~graphia.eval_ledger.TRANSCRIPT_KINDS` for the canonical vocabulary).
 # **This dict is where those semantics become an appearance**, and it is the one
 # place a later slice (or a reviewer adjusting the palette) has to look: one
@@ -516,10 +520,28 @@ _NO_TRANSCRIPTS_MESSAGE = "No transcripts for this run."
 # than raising, so a tokenizer that learns a new kind before this map does
 # degrades to plain text — which is also why ``plain`` is deliberately absent:
 # "everything else" needs no style, and its absence is the fallback working.
+#
+# THE PALETTE IS FULL, AND THAT SHAPES SLICE 3 (see the CSS below for each
+# rule's own reasoning). Measured on the installed Textual 8.2.4 against both
+# builtin themes' real backgrounds, only five theme variables clear the 4.5:1
+# WCAG AA floor on BOTH: ``$text`` (14.19 / 12.77), ``$text-primary`` (7.03 /
+# 10.69), ``$text-muted`` (7.16 / 5.31), ``$text-error`` (6.34 / 7.29) and
+# ``$text-secondary`` (4.67 / 6.39). ``$text-accent`` (3.27 light) and
+# ``$text-success`` (3.77 light) fail, which is why the obvious red/green side
+# pairing is unavailable. Three of the five are already spent here (``$text`` on
+# the body and ``attr``, ``$text-muted`` on ``marker``, ``$text-secondary`` on
+# ``field-label``) and the other two are RESERVED for Slice 4's two sides. So
+# Slice 3's four kinds are separated on axes OTHER than hue — ``text-style``,
+# which survives ``_kind_styles`` (verified) and, unlike a colour, survives the
+# ``textual-ansi`` theme too.
 _TRANSCRIPT_KIND_COMPONENTS: dict[str, str] = {
     KIND_MARKER: "transcript--marker",
     KIND_ATTR: "transcript--attr",
     KIND_FIELD_LABEL: "transcript--field-label",
+    KIND_SPEAKER: "transcript--speaker",
+    KIND_SPEECH: "transcript--speech",
+    KIND_THOUGHT: "transcript--thought",
+    KIND_RECAP: "transcript--recap",
 }
 
 
@@ -657,6 +679,136 @@ class TranscriptScreen(Screen):
     TranscriptScreen > .transcript--field-label {
         color: $text-secondary;
         text-style: bold;
+    }
+
+    /* `speaker` / `speech` — the `Name:` prefix of a spoken line and the words
+       after it. DELIBERATE NEUTRAL PLACEHOLDERS, and the two rules are identical
+       on purpose: speech is the NORM a reading view is calibrated against, and
+       functional-spec §2 asks for it to be coloured *by side* — which is Slice
+       4's job, off the `<setup>` cast list this slice's tokenizer does not read
+       yet. Painting speech some interim colour now would spend one of the two
+       AA-on-both variables Slice 4 needs (see the note on the map above) and
+       would have to be un-picked a slice later.
+
+       So this is the honest minimum: `color: $text` is the body's own colour, so
+       a spoken line looks exactly as it did before this slice and the three
+       kinds of *content* the slice does own read as "speech (the baseline),
+       thought (a departure), recap (a departure)". Measured, so the "no-op"
+       claim is not a guess: the resolved span colour is byte-identical to the
+       unstyled body on `textual-dark` (#e0e0e0) and on `textual-ansi` (the
+       terminal default), and differs by 2/255 on `textual-light` (#1d1d1d vs
+       #1f1f1f) — `$text` is `auto 87%` where the widget default is `$foreground`.
+       Writing the `color:` rather than leaving the rule empty says out loud that
+       the neutral is chosen, and gives Slice 4 a rule to look at.
+
+       NO `text-style` HERE, and that is the load-bearing half. Two later slices
+       depend on dialogue carrying no weight of its own:
+
+       - Slice 5 marks the reviewer's own seat **bold within its side colour**,
+         and functional-spec §2 states the contrast explicitly — "other
+         Law-abiding players' lines are the same colour but not bold". A bold
+         `speaker` here would make every seat's name bold and leave that
+         criterion unsatisfiable. Bold is spent elsewhere in this stylesheet
+         (`attr`, `field-label`) but nowhere on *a player's line*, so inside
+         dialogue bold stays unambiguously "this seat was the reviewer's".
+       - Slice 4 then overrides by ADDING, never editing: it appends its
+         side-bearing kinds (`speaker-mafia` / `speech-mafia` / … ) to the map
+         with their own component classes and their own rules, and these two
+         rules survive untouched as the correct appearance for a line whose side
+         is unknown — a pre-022 game with no `<player>` tag, or a name absent
+         from the cast list. "Never guess a side" and "the neutral is the body
+         colour" are then the same rule. */
+    TranscriptScreen > .transcript--speaker {
+        color: $text;
+    }
+
+    TranscriptScreen > .transcript--speech {
+        color: $text;
+    }
+
+    /* `thought` — the BODY of a `<thought player="X">…</thought>`, something
+       nobody at the table could see. functional-spec §2 is absolutist about it:
+       set apart from spoken dialogue "at a glance, so it can never be mistaken
+       for something said aloud", and distinguishable "without reading either".
+
+       Italic is the reason this needs no hue. Slanted type is the printed
+       convention for interior monologue, so it reads as unspoken before a word
+       of it is parsed, and a 120-200 character thought (the corpus range) is a
+       long enough run for the slant to register as texture rather than as a
+       typo. It also composes: from Slice 4 the owner's name inside the
+       surrounding tag takes its side colour as an `attr` span, and this rule
+       touches only the body, so "whose thought" and "a thought" are read off two
+       different spans without either fighting the other.
+
+       TWO AXES, NOT ONE — the same belt-and-braces `attr` uses a few rules up,
+       and here it is what makes "never" credible rather than aspirational.
+       Neither axis is available everywhere: `text-style` is dropped by a
+       terminal without italic support, and colour collapses under the
+       `textual-ansi` theme (measured: `$text` and `$text-muted` both resolve to
+       the terminal default there). Each axis therefore covers the other's
+       failure — a no-italic terminal still separates a thought by brightness, and
+       `textual-ansi` still separates it by slant. On one axis alone the
+       requirement would quietly fail on real setups.
+
+       `$text-muted` for the brightness axis, and it is the right *semantics* and
+       not merely the variable that was left over: a thought is an aside, quieter
+       than what the table actually heard. No risk of reading as skeleton despite
+       sharing `marker`'s variable — a marker is a short bracketed token and a
+       thought is a sentence in italics, and the two meet on the same line
+       (`<thought player="…">` upright, the body slanted), so the boundary
+       between them is visible rather than inferred. It clears AA on both themes
+       (7.16 dark / 5.31 light) as a paragraph of read-in-full prose must.
+
+       Unlike `speaker`/`speech`, this rule is PERMANENT: Slice 4 gives the
+       thought's owner a side, not the thought's body — a body tinted by side
+       would say the private reflection is itself an act of allegiance, and would
+       make thought and speech share a colour, undoing exactly this rule. */
+    TranscriptScreen > .transcript--thought {
+        color: $text-muted;
+        text-style: italic;
+    }
+
+    /* `recap` — the BODY of a `<recap>…</recap>`, the moderator's end-of-round
+       status line ("Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos
+       remain…"). Two requirements from functional-spec §2, and the second is the
+       one that picks the treatment: it must read as fact rather than opinion,
+       and the recaps must be findable "when the reviewer scrolls the game" — a
+       LANDMARK, not merely a distinguishable kind.
+
+       `reverse` is the only achromatic treatment that satisfies a landmark.
+       Scanning a scrolling wall of text, what the eye catches is mass and shape,
+       not texture: bold prose still reads as prose at speed, an underline under
+       wrapped prose is a thin rule easily lost, but inverted video turns the
+       recap into a filled block two or three wrapped rows tall. A corpus recap
+       is 130-195 characters and a game carries up to 18 of them, so those blocks
+       land at round boundaries and give the reviewer a ruler down the game.
+       Inverted video is also what a terminal has always used for a status line,
+       which is precisely the register the moderator is speaking in — posted fact,
+       not a player's argument.
+
+       It spends NO hue, which is the whole reason it is available: `$text-error`
+       and `$text-primary` are held for Slice 4's two sides, and a recap must not
+       carry a side at all — the moderator has none, and tinting it would make the
+       one impartial voice in the game read as a player's.
+
+       Legibility is preserved by construction rather than by luck: `reverse`
+       swaps foreground and background, so the recap's contrast is the same
+       14.19 / 12.77 `$text` already measures on the two builtin themes, only
+       inverted. And like `thought`'s italic it is an SGR attribute, so it is the
+       one part of this stylesheet that survives `textual-ansi` intact — where
+       `marker`'s `$text-muted` degrades to the terminal default, a recap is
+       still unmistakable.
+
+       Verified rather than assumed, because it is the first rule here to rely on
+       something other than colour + weight: `text-style: reverse` parses (it is
+       in Textual's `VALID_STYLE_FLAGS`), survives `_kind_styles`'
+       `without_color + Style.from_color(...)`, and survives the Rich `Text` →
+       `Content` conversion (`textual.style.Style.from_rich_style` carries
+       `reverse` through). Permanent, like `thought`: no later slice re-kinds a
+       recap. */
+    TranscriptScreen > .transcript--recap {
+        color: $text;
+        text-style: reverse;
     }
     """
 
