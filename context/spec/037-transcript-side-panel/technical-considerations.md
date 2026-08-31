@@ -7,7 +7,7 @@ focus moves between the two panes.
 # Technical Specification: Transcript List as a Side Panel in the Eval-Results Viewer
 
 - **Functional Specification:** `./functional-spec.md`
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 > **Sibling in-flight spec.** **038 (Colour-Coded Transcript Reading View)** changes how a transcript *reads* once opened (`TranscriptScreen`'s body rendering). This spec changes how one is *reached* (`DetailScreen`'s layout and `TranscriptListScreen`'s removal). The two touch the same module, `src/graphia/ui/ledger_viewer.py`, but different classes — expect a merge on that file only, with no overlapping hunks.
@@ -59,14 +59,14 @@ Affected files: `src/graphia/ui/ledger_viewer.py` (the only production file), `t
 | `t` | `focus_panel` | the kept shortcut — same destination, no screen pushed |
 | `up` / `down` | *(none)* | delivered by Textual to the focused widget |
 
-- **Non-wrapping is the default, not extra work.** Each action focuses a specific widget, so pressing `right` twice simply focuses the panel twice. No cycle logic exists to accidentally introduce. The functional spec's "nothing happens, the screen does not change" is satisfied by construction — and should be asserted, since a later refactor to a `focus_next()`-style cycle would silently break it.
+- **Non-wrapping is the default, not extra work.** Each action focuses a specific widget, so pressing `right` twice simply focuses the panel twice. No cycle logic exists to accidentally introduce. **Corrected during implementation:** `left`/`right` are **not** free keys — `ScrollableContainer.BINDINGS` binds them to horizontal scrolling and both panes inherit it, and Textual checks the focused widget before the screen. A plain screen binding works only by accident (`action_scroll_right` raises `SkipAction` while `allow_horizontal_scroll` is `False`), and focus silently stops moving the moment a pane can scroll sideways. Both bindings therefore carry **`priority=True`**, pinned by a test that forces a scrollbar. The functional spec's "nothing happens, the screen does not change" is satisfied by construction — and should be asserted, since a later refactor to a `focus_next()`-style cycle would silently break it.
 - **Focus starts on the details.** `on_mount` focuses `#detail-scroll`, matching the functional spec. Note the deleted screen's `on_mount` focused its list; that behaviour must **not** be carried over.
-- **A run with no transcripts still accepts focus** on the panel, where `up`/`down` do nothing because the `ListView` is hidden and empty. No guard needed; assert it does not raise.
+- **A run with no transcripts still accepts focus** on the panel, where `up`/`down` do nothing because the `ListView` is hidden and empty. No guard needed; assert it does not raise. (Verified: `Widget.focusable` gates on `visible`, which reads `styles.visibility` and is untouched by `display = False`, so focus lands and the pane's accent border still lights. Its `focus_chain` **excludes** the hidden list, which is a second reason to focus a named widget rather than use `focus_next()`.)
 
 ### Component D — focus indication (CSS)
 
 - Both panes carry a border at all times; only its **colour** changes with focus. Nothing reflows when focus moves, because no border is added or removed — which is what keeps the layout still.
-- Use Textual's `:focus` pseudo-class on `#detail-scroll` and `#transcript-panel`, with an accent border colour focused and a muted one unfocused, drawn from the theme variables the module already uses (`$text-muted` is precedent in the existing CSS).
+- Use Textual's **`:focus-within`** pseudo-class on `#detail-scroll` and `#transcript-panel` — **corrected during implementation**: `#transcript-panel` is a `Vertical` whose `can_focus` is `False`, so `:focus` would match nothing and the panel would look permanently unfocused; focus lands on the `ListView` inside it, and `has_focus_within` walks up to the container. Colours are **`$accent` focused / `$panel` unfocused** — also corrected: `$text-muted` is precedent for `color:` only, and resolves to `auto 60%`, which the parser **rejects** for `border:`; a screen whose CSS fails to parse never mounts. `$panel` is this repo's actual border precedent (`ui/app.py` uses the same pair).
 - The 22-column panel width is inclusive of its border, so the usable label area is ~20 columns.
 
 ### Component E — deleting `TranscriptListScreen`

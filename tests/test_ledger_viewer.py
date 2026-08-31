@@ -2758,3 +2758,57 @@ async def test_an_out_of_range_selection_pushes_nothing(tmp_path: Path) -> None:
         assert app.screen is screen
         assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
         assert app.is_running
+
+
+# ===========================================================================
+# B14. Spec 037 §2.1 — a list longer than the panel is tall stays reachable.
+#
+# Added at verification: the criterion "given a run with many games, when the
+# list is longer than the panel is tall, then the list can be moved through to
+# reach every game" had no test. Slice 1's 30-game case asserted only WIDTH.
+#
+# It is not hypothetical. The committed ledger holds runs of 49 and 50 games,
+# and at the standard 100x30 terminal the panel shows 26 rows — so reaching the
+# last game already requires the list to scroll. `ListView` inherits that from
+# `VerticalScroll`, which is why it works; this pins it, so a future change to
+# row rendering (e.g. the backlog's matchup-titled labels, which could make rows
+# taller) cannot break reachability silently.
+# ===========================================================================
+
+
+async def test_a_list_longer_than_the_panel_can_be_walked_to_its_last_game(
+    tmp_path: Path,
+) -> None:
+    """Every game is reachable by `down`, and the last one opens."""
+    games = 50
+    ledger = _ledger_with_games(tmp_path, games, name="long-run")
+    app = LedgerViewerApp(path=ledger)
+
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        screen = await _open_detail_for_row(pilot, 0)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+        panel_height = screen.query_one("#transcript-panel", Vertical).size.height
+
+        # The premise: the list really is taller than the panel. Without this the
+        # walk below would pass on a list that fits, proving nothing.
+        assert len(listing.children) == games
+        assert panel_height < games, (
+            f"panel is {panel_height} rows for {games} entries — the list must "
+            "overflow for this test to mean anything"
+        )
+        assert listing.max_scroll_y > 0, "the list must actually need to scroll"
+
+        await pilot.press("right")
+        for _ in range(games):
+            await pilot.press("down")
+        await pilot.pause()
+
+        last = games - 1
+        assert listing.index == last, f"stopped at {listing.index}, wanted {last}"
+        assert listing.scroll_y > 0, "the list did not scroll to follow the highlight"
+
+        # And the last entry actually opens — reachable means openable.
+        await pilot.press("enter")
+        await pilot.pause()
+        assert isinstance(app.screen, TranscriptScreen)
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
