@@ -574,7 +574,7 @@ def load_ledger(path: Path) -> list[RawRecord]:
 # "transcripts"``), and a record names its run's dir with the run-id directory
 # NAME under ``run.transcript_dir`` (never an absolute path). These three pure
 # functions — locate, list, read — are the whole data layer the
-# ``TranscriptListScreen`` / ``TranscriptScreen`` consume; **no Textual import**,
+# ``DetailScreen``'s transcript panel / ``TranscriptScreen`` consume; **no Textual import**,
 # **read-only** (they never create/write/delete), and **defensive throughout**
 # (mirroring :func:`_dig`): a missing ``transcript_dir`` field, a dir absent
 # locally (a run not shared/pulled), an empty dir, or an unreadable file all
@@ -601,7 +601,7 @@ class TranscriptEntry:
 
     The unit :func:`list_transcripts` returns (one per ``game-NN.txt`` in a run's
     dir, sorted). ``label`` is the file's stem (``game-01``) — the human-readable
-    game name the ``TranscriptListScreen`` shows; ``path`` is the resolved file,
+    game name the transcript panel shows; ``path`` is the resolved file,
     so the viewer hands it straight to :func:`read_transcript` with **no path
     arithmetic of its own**. A frozen, slotted value object, matching
     :class:`TableModel`'s house style.

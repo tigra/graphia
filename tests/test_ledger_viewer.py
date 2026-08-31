@@ -23,11 +23,14 @@ setup is needed (the autouse ``safe_llm`` net is irrelevant here).
 
 from __future__ import annotations
 
+import importlib
 import textwrap
 from pathlib import Path
 
 import pytest
+from textual.app import ComposeResult
 from textual.containers import Vertical, VerticalScroll
+from textual.screen import Screen
 from textual.widgets import (
     DataTable,
     Footer,
@@ -51,7 +54,6 @@ from graphia.ui.ledger_viewer import (
     DetailScreen,
     LedgerTableScreen,
     LedgerViewerApp,
-    TranscriptListScreen,
     TranscriptScreen,
 )
 
@@ -1090,12 +1092,37 @@ async def test_cell_cursor_scrolls_the_highlighted_cell_fully_into_view(
 
 
 # ===========================================================================
-# B10. Transcript browse (spec 017, Slice 2) — from a run's DetailScreen, ``t``
-#      opens the TranscriptListScreen; selecting a game pushes a read-only
-#      TranscriptScreen showing the file's text; Esc/Backspace/q step back out
-#      transcript → list → record. A run with NO transcripts shows the plain
-#      "No transcripts for this run." message. The viewer never writes.
+# B10. Transcript browse (spec 017, Slice 2 — PORTED onto the panel by spec 037,
+#      Slice 3) — from a run's DetailScreen, ``t`` moves focus into the
+#      always-present transcript PANEL (it no longer opens a screen of its own);
+#      selecting a game pushes a read-only TranscriptScreen showing that file's
+#      text; Esc/Backspace/q step back out transcript → record → table, with
+#      nothing in between. A run with NO preserved games shows the plain
+#      "No transcripts for this run." message in the panel. The viewer never
+#      writes.
 # ===========================================================================
+#
+# WHAT MOVED, AND WHY THESE TESTS DID NOT SIMPLY GO AWAY. Spec 037 deleted the
+# intermediate ``TranscriptListScreen``, so every assertion below that read
+# ``isinstance(app.screen, TranscriptListScreen)`` lost the thing it was written
+# against. What those tests *proved*, though — the run's games are listed in
+# sorted order, picking one opens the RIGHT game's text verbatim, the empty state
+# shows a plain message, the back-out keys step back out, and a browse session
+# never writes to a file — are all still requirements (tech-spec §3). Each is
+# re-expressed here against the panel: the ids are the panel's
+# (``#transcript-panel-list`` / ``#transcript-panel-empty``, deliberately not the
+# deleted screen's), every "a screen opened" assertion became a "NO screen
+# opened" one, and the back-out path is one step shorter.
+#
+# Two guarantees the new surface needs are NOT ports and live in B13 at the end
+# of this file (after the helpers they share with B11/B12): the highlighted game
+# surviving the round trip into a transcript and back, and no key path reaching a
+# screen whose only content is a list of games.
+#
+# THE HELPERS B11/B12 INTRODUCED ARE REUSED, NOT DUPLICATED — ``_open_detail_for_row``,
+# ``_panel_labels``, ``_ledger_with_games``, ``_PANEL_TERMINAL_SIZE``,
+# ``_EXPECTED_PANE_GEOMETRY``, ``_DETAIL_STACK_DEPTH``. They are *defined below*
+# this section but called from it, which Python resolves at call time.
 #
 # The transcript store lives in the ledger's SIBLING ``transcripts/<run-id>/``
 # dir (the layout ``blunder_eval`` writes), so each record below names its run
@@ -1104,9 +1131,9 @@ async def test_cell_cursor_scrolls_the_highlighted_cell_fully_into_view(
 # carries a recognizable ``<transcript>`` tag plus a unique marker string, so
 # the rendered TranscriptScreen body can be matched back to the exact file.
 
-# The plain "no transcripts" copy the list screen shows when a run has none.
-# Asserted by value (echoing the module's ``_NO_TRANSCRIPTS_MESSAGE``) so the
-# test pins the user-visible string, not a private name.
+# The plain "no transcripts" copy the panel shows when a run has none. Asserted
+# by value (echoing the module's ``_NO_TRANSCRIPTS_MESSAGE``) so the test pins
+# the user-visible string, not a private name.
 _NO_TRANSCRIPTS_MESSAGE = "No transcripts for this run."
 
 # A unique marker woven into the synthetic transcript body, so the rendered
@@ -1124,6 +1151,32 @@ _TRANSCRIPT_BODY = (
     "  </night>\n"
     "</transcript>\n"
 )
+
+
+def _numbered_transcript_marker(game: int) -> str:
+    """A marker unique to game ``N``, so an opened transcript identifies itself.
+
+    ``_TRANSCRIPT_MARKER`` proves *a* file's text reached the screen; this proves
+    **which** file did. Needed because the panel now resolves a selection through
+    an index-parallel entries list (tech-spec §2 C), so "selecting a game opens
+    the right game" is a claim about index arithmetic that identical bodies
+    cannot test — every game would pass.
+    """
+    return f"UNIQUE-GAME-{game:02d}-MARKER"
+
+
+def _numbered_transcript_body(game: int) -> str:
+    """The synthetic transcript body for game ``N``, carrying its own marker."""
+    return f"{_numbered_transcript_marker(game)}\n{_TRANSCRIPT_BODY}"
+
+
+# The app's boot Screen + LedgerTableScreen + DetailScreen + TranscriptScreen.
+# That is ``_DETAIL_STACK_DEPTH`` (3, B12 below) plus exactly ONE, and the "plus
+# one" is the whole point of spec 037: the route to a game is
+# table → detail → transcript, with NO screen in between. A depth of 5 here would
+# mean the intermediate list screen was back. Pinned as an ABSOLUTE depth, like
+# B12's, rather than as a before/after comparison.
+_TRANSCRIPT_STACK_DEPTH = 4
 
 
 def _doc_with_transcript_dir(date: str, run_id: str | None) -> str:
@@ -1202,13 +1255,39 @@ async def _open_detail_for_first_row(pilot) -> DetailScreen:
     return pilot.app.screen
 
 
-async def test_t_on_detail_opens_transcript_list_of_the_runs_games(
+async def _highlight_game(pilot, index: int) -> ListView:
+    """Move the panel's highlight to row ``index`` using only real keystrokes.
+
+    Enters the panel with ``t`` (the reviewer's shortcut) and walks down with
+    ``down`` — never by assigning ``ListView.index``, so the walk goes through
+    the same key routing the feature relies on. Asserts it arrived, so a caller's
+    later "the right game opened" assertion cannot be satisfied by a highlight
+    that never moved.
+    """
+    await pilot.press("t")
+    await pilot.pause()
+    listing = pilot.app.screen.query_one("#transcript-panel-list", ListView)
+    assert pilot.app.screen.focused is listing
+    assert listing.index == 0
+    for _ in range(index):
+        await pilot.press("down")
+    await pilot.pause()
+    assert listing.index == index
+    return listing
+
+
+async def test_t_on_detail_focuses_the_panel_listing_the_runs_games(
     tmp_path: Path,
 ) -> None:
-    """From a run's DetailScreen, ``t`` opens a TranscriptListScreen of its games.
+    """``t`` moves focus into the panel listing the run's games — and opens no screen.
 
-    The run has two transcripts; pressing ``t`` lists exactly them (game-01,
-    game-02), in sorted order, and the "no transcripts" message stays hidden.
+    Ported from ``test_t_on_detail_opens_transcript_list_of_the_runs_games``,
+    which asserted ``t`` pushed a ``TranscriptListScreen``. Under spec 037 the
+    same key is a shortcut *into* the always-present panel (functional-spec §2.4):
+    the run has two transcripts, ``t`` puts focus on the list of exactly them
+    (game-01, game-02, in sorted order) with the "no transcripts" message still
+    hidden, **no new screen is pushed**, and the run's figures stay visible beside
+    the list rather than being covered up.
     """
     ledger = _write_ledger(
         tmp_path, _doc_with_transcript_dir("2026-06-18", "run-A"), name="tlist.yaml"
@@ -1220,65 +1299,100 @@ async def test_t_on_detail_opens_transcript_list_of_the_runs_games(
     )
 
     app = LedgerViewerApp(path=ledger)
-    async with app.run_test() as pilot:
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
         await pilot.pause()
-        await _open_detail_for_first_row(pilot)
+        screen = await _open_detail_for_first_row(pilot)
+        listing = screen.query_one("#transcript-panel-list", ListView)
 
-        # Press ``t`` to open the run's transcripts.
+        # Premise: focus starts on the figures, so the press below is provably a
+        # MOVE rather than a lucky match with where focus already was.
+        assert screen.focused is screen.query_one("#detail-scroll", VerticalScroll)
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+
+        # Press ``t`` to reach the run's transcripts.
         await pilot.press("t")
         await pilot.pause()
-        assert isinstance(app.screen, TranscriptListScreen)
+
+        # It moved focus into the panel and pushed NOTHING: the same DetailScreen
+        # object is still on top, at the same absolute stack depth.
+        assert screen.focused is listing
+        assert listing.has_focus is True
+        assert app.screen is screen
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
 
         # The list carries one ListItem per game, sorted game-01 before game-02.
-        listing = app.screen.query_one("#transcript-list", ListView)
-        labels = [
-            plain_text(item.query_one(Label)) for item in listing.query(ListItem)
-        ]
-        assert labels == ["game-01", "game-02"]
+        assert _panel_labels(screen) == ["game-01", "game-02"]
         # The list is shown; the "no transcripts" message is hidden.
         assert listing.display is True
-        assert app.screen.query_one("#transcript-empty", Static).display is False
+        assert screen.query_one("#transcript-panel-empty", Static).display is False
+
+        # Nothing was covered up (functional-spec §2.4): the figures are still
+        # displayed beside the list, with the record's own text in them, and both
+        # panes still measure the pinned layout — an absolute check, because two
+        # panes that had both collapsed would satisfy "still displayed".
+        scroll = screen.query_one("#detail-scroll", VerticalScroll)
+        assert scroll.display is True
+        assert "run with browsable transcripts" in plain_text(
+            screen.query_one("#detail-body", Static)
+        )
+        assert _pane_geometry(screen) == _EXPECTED_PANE_GEOMETRY
 
 
-async def test_selecting_a_game_shows_its_transcript_text(tmp_path: Path) -> None:
-    """Selecting a game pushes a TranscriptScreen showing that file's text.
+@pytest.mark.parametrize("picked", [0, 1, 2])
+async def test_selecting_a_game_shows_its_transcript_text(
+    tmp_path: Path, picked: int
+) -> None:
+    """Selecting a game pushes a TranscriptScreen showing THAT file's text.
 
-    The unique marker woven into the synthetic body must appear in the rendered
-    read-only Static, proving the file's text reached the screen verbatim.
+    Ported from the same-named test, which selected the only game of a one-game
+    run from the deleted list screen. Two things changed and both are now pinned:
+    the selection is made in the panel (so the push comes from
+    ``DetailScreen.on_list_view_selected``), and the run has **three** games with
+    per-game markers, so "the right game" is a real claim — the original could
+    not distinguish a correct index from any other.
+
+    Each case highlights its game with real keystrokes, opens it, and asserts the
+    marker of that game is on screen while the other two games' markers are not.
+    The literal ``<transcript>`` tags must survive too (the body is
+    ``markup=False``).
     """
-    ledger = _write_ledger(
-        tmp_path, _doc_with_transcript_dir("2026-06-18", "run-B"), name="tshow.yaml"
-    )
-    _write_run_transcripts(ledger, "run-B", {"game-01.txt": _TRANSCRIPT_BODY})
+    ledger = _ledger_with_games(tmp_path, 3, name="tshow.yaml")
 
     app = LedgerViewerApp(path=ledger)
-    async with app.run_test() as pilot:
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
         await pilot.pause()
-        await _open_detail_for_first_row(pilot)
-        await pilot.press("t")
-        await pilot.pause()
-        assert isinstance(app.screen, TranscriptListScreen)
+        screen = await _open_detail_for_first_row(pilot)
+        assert _panel_labels(screen) == ["game-01", "game-02", "game-03"]
 
-        # Select the first (only) game via the real ListView.Selected key path.
-        listing = app.screen.query_one("#transcript-list", ListView)
-        listing.focus()
-        await pilot.pause()
+        # Highlight the game under test via the real key path, then select it.
+        await _highlight_game(pilot, picked)
         await pilot.press("enter")
         await pilot.pause()
 
-        # A TranscriptScreen is now on top, showing the file's verbatim text.
+        # A TranscriptScreen is now on top — pushed straight from the
+        # DetailScreen, at the absolute depth that leaves no room for a menu.
         assert isinstance(app.screen, TranscriptScreen)
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+
+        # ...showing the picked file's verbatim text, and no other game's.
         body_text = _transcript_body_text(app.screen)
-        assert _TRANSCRIPT_MARKER in body_text
+        assert _numbered_transcript_marker(picked + 1) in body_text
+        for other in (1, 2, 3):
+            if other != picked + 1:
+                assert _numbered_transcript_marker(other) not in body_text
         # The literal tags survive (the body is markup=False).
         assert "<transcript>" in body_text
 
 
-async def test_back_out_transcript_to_list_to_record(tmp_path: Path) -> None:
-    """Stepping back out: transcript → list → the run's DetailScreen.
+async def test_back_out_transcript_to_record_to_table(tmp_path: Path) -> None:
+    """Stepping back out: transcript → the run's DetailScreen → the table.
 
-    ``escape`` on the TranscriptScreen returns to the list; ``backspace`` on the
-    list returns to the run's DetailScreen — the exact reverse of the way in.
+    Ported from ``test_back_out_transcript_to_list_to_record``, which stepped
+    transcript → list → record. The middle screen is gone, so the same two keys
+    now cover one step each of a shorter path: ``escape`` on the TranscriptScreen
+    returns **directly** to the run's figures, and ``backspace`` there returns to
+    the table. Each step is pinned by absolute stack depth as well as screen type,
+    so a screen that was pushed and stayed could not pass.
     """
     ledger = _write_ledger(
         tmp_path, _doc_with_transcript_dir("2026-06-18", "run-C"), name="tback.yaml"
@@ -1286,38 +1400,52 @@ async def test_back_out_transcript_to_list_to_record(tmp_path: Path) -> None:
     _write_run_transcripts(ledger, "run-C", {"game-01.txt": _TRANSCRIPT_BODY})
 
     app = LedgerViewerApp(path=ledger)
-    async with app.run_test() as pilot:
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
         await pilot.pause()
-        await _open_detail_for_first_row(pilot)
-        await pilot.press("t")
-        await pilot.pause()
-        assert isinstance(app.screen, TranscriptListScreen)
+        screen = await _open_detail_for_first_row(pilot)
 
-        listing = app.screen.query_one("#transcript-list", ListView)
-        listing.focus()
-        await pilot.pause()
+        await _highlight_game(pilot, 0)
         await pilot.press("enter")
         await pilot.pause()
         assert isinstance(app.screen, TranscriptScreen)
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+        # The game really is on screen before we back out of it (the ported
+        # "the file's text reached the screen verbatim" assertion, kept here for
+        # the plain `_TRANSCRIPT_BODY` fixture), so the escape below is a step
+        # back out of something rather than off an empty screen.
+        assert _TRANSCRIPT_MARKER in _transcript_body_text(app.screen)
 
-        # escape: transcript → list.
+        # escape: transcript → the run's figures, in ONE step. The screen behind
+        # is the very DetailScreen we came from, with its figures on screen.
         await pilot.press("escape")
         await pilot.pause()
-        assert isinstance(app.screen, TranscriptListScreen)
+        assert isinstance(app.screen, DetailScreen)
+        assert app.screen is screen
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+        assert "run with browsable transcripts" in plain_text(
+            screen.query_one("#detail-body", Static)
+        )
 
-        # backspace: list → the run's DetailScreen.
+        # backspace: the run's DetailScreen → the table.
         await pilot.press("backspace")
         await pilot.pause()
-        assert isinstance(app.screen, DetailScreen)
+        assert isinstance(app.screen, LedgerTableScreen)
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH - 1
+        assert app.is_running
 
 
 async def test_back_out_to_record_then_table_restores_cursor(tmp_path: Path) -> None:
     """Popping the whole transcript stack lands back on the run's row in the table.
 
-    Drill into row 1 (a non-first row), open transcripts, read a game, then step
-    all the way out: transcript → list → DetailScreen → table, with the table
-    cursor restored to row 1 (spec 012's return-on-resume pattern, unperturbed
-    by the transcript detour).
+    Drill into row 1 (a non-first row), step into the panel, read a game, then
+    step all the way out — which now takes **two** escapes rather than three:
+    transcript → DetailScreen → table, with the table cursor restored to row 1
+    (spec 012's return-on-resume pattern, unperturbed by the transcript detour).
+
+    Ported from the same-named test; the assertion that the middle escape landed
+    on a ``TranscriptListScreen`` became the assertion that it lands on the run's
+    figures instead, and the escape that used to be needed to leave that screen
+    is gone.
     """
     ledger = _write_ledger(
         tmp_path,
@@ -1328,104 +1456,100 @@ async def test_back_out_to_record_then_table_restores_cursor(tmp_path: Path) -> 
     _write_run_transcripts(ledger, "run-D", {"game-01.txt": _TRANSCRIPT_BODY})
 
     app = LedgerViewerApp(path=ledger)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        table = app.screen.query_one("#ledger-table", DataTable)
-        table.focus()
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
         await pilot.pause()
 
         # Drill into row 1 (the run WITH transcripts).
-        await pilot.press("down")
-        assert table.cursor_row == 1
-        await pilot.press("enter")
-        await pilot.pause()
-        assert isinstance(app.screen, DetailScreen)
+        screen = await _open_detail_for_row(pilot, 1)
 
-        # Into transcripts, read a game.
-        await pilot.press("t")
-        await pilot.pause()
-        listing = app.screen.query_one("#transcript-list", ListView)
-        listing.focus()
-        await pilot.pause()
+        # Into the panel, read a game.
+        await _highlight_game(pilot, 0)
         await pilot.press("enter")
         await pilot.pause()
         assert isinstance(app.screen, TranscriptScreen)
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
 
-        # Step all the way out: transcript → list → detail → table.
-        await pilot.press("escape")
-        await pilot.pause()
-        assert isinstance(app.screen, TranscriptListScreen)
+        # Step all the way out: transcript → detail → table. TWO escapes, not
+        # three (functional-spec §2.6: back from a game lands on the figures, not
+        # on a list screen that then has to be left as well).
         await pilot.press("escape")
         await pilot.pause()
         assert isinstance(app.screen, DetailScreen)
+        assert app.screen is screen
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
         await pilot.press("escape")
         await pilot.pause()
         assert isinstance(app.screen, LedgerTableScreen)
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH - 1
 
         # The table cursor is restored to the row that was drilled into.
         restored = app.screen.query_one("#ledger-table", DataTable)
         assert restored.cursor_row == 1
-
-
-async def test_run_with_no_transcripts_shows_plain_message(tmp_path: Path) -> None:
-    """A record with NO ``transcript_dir`` opens to the plain "no transcripts" copy.
-
-    Drilling into a transcript-less run and pressing ``t`` shows the
-    TranscriptListScreen with the list hidden and the plain
-    "No transcripts for this run." message displayed — no error, no crash.
-    """
-    ledger = _write_ledger(
-        tmp_path, _doc_with_transcript_dir("2026-06-18", None), name="tnone.yaml"
-    )
-
-    app = LedgerViewerApp(path=ledger)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        await _open_detail_for_first_row(pilot)
-
-        await pilot.press("t")
-        await pilot.pause()
-        assert isinstance(app.screen, TranscriptListScreen)
-
-        # The list is hidden; the plain "no transcripts" message is shown.
-        listing = app.screen.query_one("#transcript-list", ListView)
-        empty = app.screen.query_one("#transcript-empty", Static)
-        assert listing.display is False
-        assert empty.display is True
-        assert plain_text(empty) == _NO_TRANSCRIPTS_MESSAGE
-        # No crash — the viewer is still running.
         assert app.is_running
 
 
-async def test_run_with_missing_transcript_dir_shows_plain_message(
-    tmp_path: Path,
+@pytest.mark.parametrize(
+    ("case", "run_id", "make_dir"),
+    [
+        pytest.param("no transcript_dir field", None, False, id="pre-017-record"),
+        pytest.param("named dir absent locally", "run-not-pulled", False, id="not-pulled"),
+        pytest.param("named dir present but empty", "run-empty-dir", True, id="empty-dir"),
+    ],
+)
+async def test_run_with_no_games_shows_the_plain_message_in_the_panel(
+    tmp_path: Path, case: str, run_id: str | None, make_dir: bool
 ) -> None:
-    """A record naming a dir that doesn't exist locally also shows the plain message.
+    """Every "this run has no games" cause shows the plain message in the panel.
 
-    The record names a run-id, but the sibling ``transcripts/<run-id>/`` dir was
-    never created (a run not shared/pulled) — ``list_transcripts`` returns ``[]``
-    and the list screen shows the plain "no transcripts" message, not an error.
+    Ports **two** tests at once — ``test_run_with_no_transcripts_shows_plain_message``
+    (a pre-017 record with no ``transcript_dir`` at all) and
+    ``test_run_with_missing_transcript_dir_shows_plain_message`` (a record naming
+    a dir that was never pulled) — which asserted the identical state on the
+    deleted list screen, and adds the third cause the panel's docstring claims
+    (a dir that exists but is empty). All three land on ``list_transcripts``
+    returning ``[]``, and all three must show the plain message rather than an
+    error.
+
+    Pressing ``t`` on such a run must still move focus into the panel and push
+    nothing, and selecting in the hidden, row-less list must do nothing at all —
+    the ported "no crash, the viewer is still running" assertion, now with the
+    keystroke that could crash it actually pressed.
     """
     ledger = _write_ledger(
-        tmp_path,
-        _doc_with_transcript_dir("2026-06-18", "run-not-pulled"),
-        name="tmissing.yaml",
+        tmp_path, _doc_with_transcript_dir("2026-06-18", run_id), name="tnone.yaml"
     )
-    # Deliberately do NOT create transcripts/run-not-pulled/.
+    if make_dir:
+        assert run_id is not None
+        _write_run_transcripts(ledger, run_id, {})
 
     app = LedgerViewerApp(path=ledger)
-    async with app.run_test() as pilot:
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
         await pilot.pause()
-        await _open_detail_for_first_row(pilot)
+        screen = await _open_detail_for_first_row(pilot)
 
         await pilot.press("t")
         await pilot.pause()
-        assert isinstance(app.screen, TranscriptListScreen)
 
-        empty = app.screen.query_one("#transcript-empty", Static)
-        assert app.screen.query_one("#transcript-list", ListView).display is False
+        # No screen was opened by the key that used to open one.
+        assert app.screen is screen
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+
+        # The list is hidden; the plain "no transcripts" message is shown.
+        listing = screen.query_one("#transcript-panel-list", ListView)
+        empty = screen.query_one("#transcript-panel-empty", Static)
+        assert listing.display is False
         assert empty.display is True
         assert plain_text(empty) == _NO_TRANSCRIPTS_MESSAGE
+        assert _panel_labels(screen) == [], case
+        # The panel still took focus even though its list is hidden, so the
+        # "select" below is pressed somewhere it could actually land.
+        assert screen.focused is listing
+
+        # Selecting nothing does nothing: no screen, no error, no crash.
+        await pilot.press("enter")
+        await pilot.pause()
+        assert app.screen is screen
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
         assert app.is_running
 
 
@@ -1438,45 +1562,54 @@ async def test_browsing_transcripts_leaves_files_byte_unchanged(
     game file's bytes before, drive the full open → read → back-out flow across
     two games, and assert every file is byte-identical afterwards. The viewer
     never writes.
+
+    Ported from the same-named test — the loop now backs out to the run's
+    DetailScreen instead of the deleted list screen, and moves the highlight with
+    ``down`` instead of assigning ``ListView.index``. Two premises were added,
+    because the original's ``after == before`` would have held just as well over
+    an empty dict or files that were never opened: the fixture really has two
+    non-empty files, and each iteration really rendered *that* game's text.
     """
-    ledger = _write_ledger(
-        tmp_path, _doc_with_transcript_dir("2026-06-18", "run-E"), name="treadonly.yaml"
-    )
-    run_dir = _write_run_transcripts(
-        ledger,
-        "run-E",
-        {
-            "game-01.txt": _TRANSCRIPT_BODY,
-            "game-02.txt": "second game " + _TRANSCRIPT_BODY,
-        },
-    )
+    ledger = _ledger_with_games(tmp_path, 2, name="treadonly.yaml")
+    run_dir = ledger.parent / "transcripts" / _GAMES_RUN_ID
     before = {p.name: p.read_bytes() for p in sorted(run_dir.glob("game-*.txt"))}
+    # PREMISE: there is something to leave unchanged (an empty mapping, or files
+    # nothing ever read, would satisfy the final equality vacuously).
+    assert sorted(before) == ["game-01.txt", "game-02.txt"]
+    assert all(body for body in before.values())
 
     app = LedgerViewerApp(path=ledger)
-    async with app.run_test() as pilot:
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
         await pilot.pause()
-        await _open_detail_for_first_row(pilot)
-        await pilot.press("t")
-        await pilot.pause()
-        listing = app.screen.query_one("#transcript-list", ListView)
+        screen = await _open_detail_for_first_row(pilot)
+        listing = await _highlight_game(pilot, 0)
+        assert len(listing.children) == 2
 
-        # Open each game in turn, reading it, then backing out to the list.
-        for index in range(len(listing.query(ListItem))):
-            listing = app.screen.query_one("#transcript-list", ListView)
-            listing.focus()
-            listing.index = index
-            await pilot.pause()
+        # Open each game in turn, reading it, then backing out to the figures.
+        for index in range(len(before)):
+            if index:
+                await pilot.press("down")
+                await pilot.pause()
+            assert listing.index == index
             await pilot.press("enter")
             await pilot.pause()
             assert isinstance(app.screen, TranscriptScreen)
-            # Read the body (a pure read; must not mutate the file).
-            _transcript_body_text(app.screen)
+            # Read the body (a pure read; must not mutate the file) — and prove
+            # the read reached THIS game, so the loop cannot pass by opening
+            # nothing.
+            assert _numbered_transcript_marker(index + 1) in _transcript_body_text(
+                app.screen
+            )
             await pilot.press("escape")
             await pilot.pause()
-            assert isinstance(app.screen, TranscriptListScreen)
+            assert isinstance(app.screen, DetailScreen)
+            assert app.screen is screen
 
     after = {p.name: p.read_bytes() for p in sorted(run_dir.glob("game-*.txt"))}
     assert after == before
+    # Nor did browsing add or remove a file (a new sibling would leave every
+    # captured file byte-identical and still break the read-only guarantee).
+    assert sorted(p.name for p in run_dir.iterdir()) == sorted(before)
 
 
 # ===========================================================================
@@ -1501,9 +1634,10 @@ async def test_browsing_transcripts_leaves_files_byte_unchanged(
 # calculation) fails loudly instead of quietly reintroducing the layout jump.
 #
 # NOTE the panel-prefixed ids — `#transcript-panel-list` / `#transcript-panel-empty`
-# — deliberately NOT the (still-live, until Slice 3) `TranscriptListScreen`'s
-# `#transcript-list` / `#transcript-empty`. Two live screens with identical ids
-# would make the B10 tests above ambiguous.
+# — deliberately NOT the `#transcript-list` / `#transcript-empty` of the
+# intermediate screen Slice 3 has since deleted. The two surfaces coexisted while
+# this slice landed, and identical ids on two live screens would have made B10's
+# assertions ambiguous; the panel-prefixed ids are what B10 targets now.
 
 # The terminal the panel measurements below were taken at. Fixed explicitly (not
 # the harness default) because every width assertion in this section is a
@@ -1912,24 +2046,38 @@ async def test_initial_focus_is_explicit_not_composition_order(
 _DETAIL_STACK_DEPTH = 3
 
 
+# The run-id `_ledger_with_games` names, and therefore the sibling
+# `transcripts/<run-id>/` dir it writes under `tmp_path`. Named here rather than
+# inline so a test can find the files it wrote (B10's read-only test reads their
+# bytes back).
+_GAMES_RUN_ID = "run-pane-nav"
+
+
 def _ledger_with_games(tmp_path: Path, count: int, *, name: str) -> Path:
     """Write a one-run ledger whose single run has ``count`` preserved games.
 
     ``count == 0`` writes the run with **no** ``transcript_dir`` at all (the
     empty-panel case); otherwise the sibling ``transcripts/<run-id>/`` dir gets
     ``game-01 … game-NN``, entirely inside ``tmp_path``.
+
+    Each game's body carries its own :func:`_numbered_transcript_marker`, so a
+    test that opens one can prove **which** game it got — B10's ported
+    selection tests and B13's round trip both depend on that; the focus tests
+    here only count labels and never read a body.
     """
-    run_id = "run-pane-nav"
     ledger = _write_ledger(
         tmp_path,
-        _doc_with_transcript_dir("2026-06-22", run_id if count else None),
+        _doc_with_transcript_dir("2026-06-22", _GAMES_RUN_ID if count else None),
         name=name,
     )
     if count:
         _write_run_transcripts(
             ledger,
-            run_id,
-            {f"game-{i:02d}.txt": _TRANSCRIPT_BODY for i in range(1, count + 1)},
+            _GAMES_RUN_ID,
+            {
+                f"game-{i:02d}.txt": _numbered_transcript_body(i)
+                for i in range(1, count + 1)
+            },
         )
     return ledger
 
@@ -2285,3 +2433,328 @@ async def test_pane_navigation_survives_a_horizontal_scrollbar_on_the_panes(
 
         assert app.screen is screen
         assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+
+
+# ===========================================================================
+# B13. The round trip, and the vanished screen (spec 037, Slice 3) — the two
+#      guarantees the panel needs that are NOT ports of the deleted screen's
+#      tests: returning from a game leaves the SAME game highlighted, and no key
+#      path anywhere in the viewer reaches a screen whose only content is a list
+#      of a run's games.
+# ===========================================================================
+#
+# Both are here because they are claims about the *new* surface. The ported
+# browse tests (B10) cover what the deleted screen used to prove; these two cover
+# what only a panel can get wrong.
+#
+# 1. "The same game is still highlighted" is the spec's one **framework
+#    assumption** (tech-spec §3): Textual keeps the panel's `ListView` alive
+#    across the push/pop of a `TranscriptScreen`, so its index *should* survive
+#    with no state-saving code at all. That is exactly the kind of assumption
+#    that fails quietly — a later `on_screen_resume` that repopulates the list,
+#    or a switch from `push_screen` to `switch_screen`, resets the highlight and
+#    nothing else in the suite would notice. So it is asserted, not reasoned
+#    about, and asserted on a game that is NOT the first: an index of 0 is what a
+#    freshly built list would also report, so game-01 would pass while broken.
+#
+# 2. "No key path reaches a bare list screen" is asserted two ways, because
+#    neither alone is enough. STRUCTURALLY — the module defines exactly three
+#    screen classes, so there is no such screen for any key to reach, and
+#    importing the deleted name fails. BEHAVIOURALLY — every key `DetailScreen`
+#    binds (plus the ones a reviewer would try) is pressed and the resulting
+#    screen checked. And because "no screen matched the bad shape" is worthless
+#    if the detector cannot match anything, the detector itself is tested against
+#    a deliberately reintroduced list screen first.
+
+# The only screens the viewer may ever present. A fourth would be either a
+# regression (the intermediate list screen returning) or a feature that owes this
+# list an update.
+_ALLOWED_SCREEN_TYPES = (LedgerTableScreen, DetailScreen, TranscriptScreen)
+
+# The keys swept by the no-key-path walk below: every key `DetailScreen` binds
+# (rot-guarded at the assertion site against `DetailScreen.BINDINGS`, so a new
+# binding cannot be added without being swept) plus the movement/activation keys
+# a reviewer would try on a two-pane screen.
+_DETAIL_KEYS_SWEPT = (
+    "t",
+    "down",
+    "enter",
+    "escape",
+    "right",
+    "left",
+    "up",
+    "space",
+    "tab",
+    "home",
+    "end",
+    "pageup",
+    "pagedown",
+    "backspace",
+    "q",
+)
+
+
+def _is_bare_transcript_list_screen(screen: Screen) -> bool:
+    """Is this screen one whose ONLY content is a list of a run's games?
+
+    The shape functional-spec §2.6 forbids the reviewer from ever arriving at.
+    Identified by content rather than by class name, so a *renamed*
+    reintroduction is caught too: a `ListView` present, with none of the three
+    things the legitimate screens carry — the run's figures (`#detail-body`), the
+    table of runs (`#ledger-table`), or a game's text (`#transcript-body`).
+
+    Verified to actually fire by
+    :func:`test_the_bare_list_screen_detector_catches_a_reintroduced_list_screen`
+    below — a predicate that can never return True would make every use of it
+    vacuous.
+    """
+    return bool(screen.query(ListView)) and not (
+        screen.query("#detail-body")
+        or screen.query("#ledger-table")
+        or screen.query("#transcript-body")
+    )
+
+
+class _BareTranscriptListScreen(Screen):
+    """Test-only stand-in for the screen spec 037 deleted — the positive control.
+
+    Reproduces the shape (and the ids) of the removed `TranscriptListScreen`:
+    a full screen whose only content is a run's games. Never pushed by production
+    code; mounted by one test purely to prove
+    :func:`_is_bare_transcript_list_screen` recognises it.
+    """
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="transcript-list-wrapper"):
+            yield ListView(ListItem(Label("game-01")), id="transcript-list")
+            yield Static(_NO_TRANSCRIPTS_MESSAGE, id="transcript-empty")
+
+
+async def test_the_bare_list_screen_detector_catches_a_reintroduced_list_screen(
+    tmp_path: Path,
+) -> None:
+    """The forbidden-shape detector fires on a list screen and not on the real ones.
+
+    The non-vacuity guard for the walk below. A predicate that returned False for
+    everything would make "no key path reaches a bare list screen" pass on an
+    empty universe, so it is exercised against a deliberately reintroduced list
+    screen (which it must flag) and against the run's figures-plus-panel screen —
+    which also holds a `ListView`, and must **not** be flagged, because the
+    figures are right there beside it.
+    """
+    ledger = _ledger_with_games(tmp_path, 2, name="detector.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_row(pilot, 0)
+
+        # The real screens are not the forbidden shape...
+        assert _is_bare_transcript_list_screen(screen) is False
+        assert bool(screen.query(ListView)) is True  # ...and not by lacking a list
+        assert _is_bare_transcript_list_screen(app.screen_stack[1]) is False
+
+        # ...but a screen whose only content is a run's games is.
+        app.push_screen(_BareTranscriptListScreen())
+        await pilot.pause()
+        reintroduced = app.screen
+        assert isinstance(reintroduced, _BareTranscriptListScreen)
+        assert _is_bare_transcript_list_screen(reintroduced) is True
+
+        app.pop_screen()
+        await pilot.pause()
+        assert app.screen is screen
+
+
+async def test_returning_from_a_game_leaves_the_same_entry_highlighted(
+    tmp_path: Path,
+) -> None:
+    """Back from a game: the same game is still highlighted, in the same live list.
+
+    Functional-spec §2.5. The run has four games and the test opens **game-03** —
+    deliberately not the first, because a rebuilt list would report index 0 and a
+    game-01 case would pass while the highlight had been reset. Then it does what
+    the spec's last criterion describes: moves down one and opens the next game,
+    proving the two-keypress hop between games with nothing in between (the
+    absolute stack depth is what pins "nothing in between").
+
+    The mechanism this defends is a framework assumption, so the assertions are
+    deliberately concrete: the DetailScreen we come back to is the *same object*,
+    its `ListView` is the *same widget*, its rows are unchanged, and its index is
+    still 2.
+    """
+    ledger = _ledger_with_games(tmp_path, 4, name="highlight.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_row(pilot, 0)
+        assert _panel_labels(screen) == ["game-01", "game-02", "game-03", "game-04"]
+
+        # Highlight game-03 (index 2) with real keystrokes — `_highlight_game`
+        # asserts the highlight started at 0 and arrived at 2, so the index below
+        # is provably a moved highlight and not the mount default.
+        listing = await _highlight_game(pilot, 2)
+        await pilot.press("enter")
+        await pilot.pause()
+        assert isinstance(app.screen, TranscriptScreen)
+        assert _numbered_transcript_marker(3) in _transcript_body_text(app.screen)
+
+        # Back out of the game.
+        await pilot.press("escape")
+        await pilot.pause()
+
+        # The very same screen and the very same list widget came back...
+        assert app.screen is screen
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+        assert screen.query_one("#transcript-panel-list", ListView) is listing
+        # ...with its rows untouched...
+        assert _panel_labels(screen) == ["game-01", "game-02", "game-03", "game-04"]
+        # ...and game-03 STILL highlighted (2, not the 0 or None a rebuilt list
+        # would report).
+        assert listing.index == 2
+        # The reviewer is still standing in the panel, so the `down` below is the
+        # next keystroke they would actually make.
+        assert screen.focused is listing
+
+        # Functional-spec §2.5, last criterion: down + enter reaches the NEXT
+        # game, with no menu in between (the stack depth is the "no menu" proof).
+        await pilot.press("down")
+        await pilot.pause()
+        assert listing.index == 3
+        await pilot.press("enter")
+        await pilot.pause()
+        assert isinstance(app.screen, TranscriptScreen)
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+        next_body = _transcript_body_text(app.screen)
+        assert _numbered_transcript_marker(4) in next_body
+        assert _numbered_transcript_marker(3) not in next_body
+
+
+def test_the_intermediate_transcript_list_screen_is_gone_from_the_module() -> None:
+    """`TranscriptListScreen` no longer exists, and no fourth screen replaced it.
+
+    Functional-spec §2.6, asserted structurally: importing the deleted name must
+    fail, the module must not carry it under any other guise, and the set of
+    screen classes the module defines must be exactly the three legitimate ones.
+    That last assertion is what generalises the behavioural walk below to *every*
+    key path, including ones no test drives — a screen that does not exist cannot
+    be reached from anywhere.
+    """
+    module = importlib.import_module("graphia.ui.ledger_viewer")
+
+    with pytest.raises(ImportError):
+        from graphia.ui.ledger_viewer import TranscriptListScreen  # noqa: F401
+
+    assert not hasattr(module, "TranscriptListScreen")
+
+    defined_screens = {
+        name
+        for name, obj in vars(module).items()
+        if isinstance(obj, type)
+        and issubclass(obj, Screen)
+        and obj.__module__ == module.__name__
+    }
+    assert defined_screens == {"LedgerTableScreen", "DetailScreen", "TranscriptScreen"}
+
+
+async def test_no_key_path_reaches_a_bare_transcript_list_screen(
+    tmp_path: Path,
+) -> None:
+    """Pressing every key on the run's screens never lands on a bare games list.
+
+    The behavioural half of functional-spec §2.6 (the structural half is the test
+    above, restated as this walk's premise). Every key `DetailScreen` binds is
+    pressed — rot-guarded below against `DetailScreen.BINDINGS`, so a future
+    binding cannot be added without being swept here — along with the
+    movement/activation keys a reviewer would try, in one continuous session so
+    the presses compose (the panel focused from an earlier `t` is what makes a
+    later `enter` open a game).
+
+    After each press: the screen must be one of the three legitimate ones and must
+    not be the forbidden shape. Whenever a press opens a game, backing out of it
+    must land on the run's **figures** — the second §2.6 criterion — and whenever
+    a press returns to the table, the walk drills back in and carries on.
+
+    The counters at the end keep the sweep honest: a walk that never opened a game
+    and never came back out would satisfy every assertion above while testing
+    nothing.
+    """
+    module = importlib.import_module("graphia.ui.ledger_viewer")
+    assert not hasattr(module, "TranscriptListScreen")
+
+    # ROT GUARD: every key the screen binds is in the swept set.
+    assert {binding.key for binding in DetailScreen.BINDINGS} <= set(
+        _DETAIL_KEYS_SWEPT
+    )
+    assert {binding.key for binding in TranscriptScreen.BINDINGS} <= set(
+        _DETAIL_KEYS_SWEPT
+    )
+
+    ledger = _ledger_with_games(tmp_path, 3, name="no-list-screen.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        await _open_detail_for_row(pilot, 0)
+
+        games_opened = 0
+        returns_to_table = 0
+
+        for key in _DETAIL_KEYS_SWEPT:
+            await pilot.press(key)
+            await pilot.pause()
+
+            assert app.is_running, key
+            # The criterion itself first (so a failure names the shape that was
+            # reached), then the broader belt-and-braces: it is one of the three
+            # screens the viewer is allowed to present at all.
+            assert _is_bare_transcript_list_screen(app.screen) is False, key
+            assert isinstance(app.screen, _ALLOWED_SCREEN_TYPES), key
+
+            if isinstance(app.screen, TranscriptScreen):
+                games_opened += 1
+                # Going back from a game lands on the run's FIGURES, not on a
+                # list screen that then has to be left as well.
+                await pilot.press("escape")
+                await pilot.pause()
+                assert isinstance(app.screen, DetailScreen), key
+                assert _is_bare_transcript_list_screen(app.screen) is False, key
+                assert len(app.screen_stack) == _DETAIL_STACK_DEPTH, key
+
+            if isinstance(app.screen, LedgerTableScreen):
+                returns_to_table += 1
+                await _open_detail_for_row(pilot, 0)
+
+        # The sweep really did traverse the interesting routes.
+        assert games_opened > 0
+        assert returns_to_table > 0
+
+
+async def test_an_out_of_range_selection_pushes_nothing(tmp_path: Path) -> None:
+    """A selection whose index has no entry is a no-op, not a crash.
+
+    The defensive guard `DetailScreen.on_list_view_selected` documents: the panel
+    of a run with no games keeps a hidden, empty `ListView` that can still take
+    focus, so a `Selected` arriving with an index outside the entries list must do
+    nothing. Driven by posting the real `ListView.Selected` message to the screen
+    (the handler is reached through Textual's normal dispatch), because no
+    keystroke can produce this state — which is precisely why the guard needs a
+    test of its own.
+    """
+    ledger = _ledger_with_games(tmp_path, 0, name="out-of-range.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_row(pilot, 0)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+        # PREMISE: there really are no entries to resolve against.
+        assert _panel_labels(screen) == []
+
+        screen.post_message(ListView.Selected(listing, ListItem(), 7))
+        await pilot.pause()
+
+        assert app.screen is screen
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+        assert app.is_running
