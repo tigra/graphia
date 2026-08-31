@@ -2495,3 +2495,53 @@ metrics:
   persona_sem_peak:
     denominator: 735
 notes: 'n=50 provider baseline (retry after external kill): local qwen3-coder:30b / qwen2.5:3b, free offline arm. Run in PARALLEL with the Claude n=50 arm, with ledger + transcripts redirected to scratch to avoid concurrent-append interleave, then merged in.'
+---
+run:
+  date: '2026-08-31'
+  kind: 'persona-bench'
+  duration_seconds: 365.47
+  metrics_version: 1
+code:
+  commit: '4d92d41864dcdb05e147e2b895091ef52348508a'
+  branch: 'main'
+  dirty: true
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.32.14'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 5
+  seed: null
+  max_days: null
+  persona:
+    diversity_enabled: true
+    collision_threshold: 0.6
+    regen_attempts: 2
+    temperature: 1.0
+quality:
+  games_attempted: 5
+  games_completed: 5
+  games_failed_early: 0
+  duration_seconds: 365.47
+generation:
+  collisions: 0
+  regenerations: 0
+metrics:
+  persona_lex_mean:
+    mean: 0.03363505893302962
+    denominator: 75
+  persona_lex_peak:
+    peak: 0.08522727272727272
+    denominator: 75
+notes: 'spec 036 first recorded bench'
