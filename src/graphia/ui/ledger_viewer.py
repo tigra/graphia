@@ -139,6 +139,17 @@ class DetailScreen(Screen):
     same ledger viewer and how to return — a full-window record can otherwise
     read like a different program with no visible way out.
 
+    **The body is a horizontal split** (spec 037): the ``#detail-split``
+    :class:`~textual.containers.Horizontal` holds the record scroller at ``1fr``
+    beside a fixed-width ``#transcript-panel`` listing this run's preserved
+    games, so the numbers and the games that produced them are on screen
+    together. ``Header``/``Footer`` stay *outside* the split, so the framing
+    above is unchanged. The panel's width is a fixed column count rather than
+    ``auto`` precisely so the details pane keeps the same width whether a run has
+    transcripts or not; a run with none keeps the panel in place and shows the
+    plain :data:`_NO_TRANSCRIPTS_MESSAGE` with its list hidden — the same
+    hide-list/show-message posture as :class:`TranscriptListScreen`.
+
     The ``t`` binding (spec 017) opens this run's per-game transcripts in a
     :class:`TranscriptListScreen`: it lists the run via the pure
     :func:`~graphia.eval_ledger.list_transcripts` (passing the app's ledger
@@ -158,14 +169,87 @@ class DetailScreen(Screen):
         layout: vertical;
     }
 
+    /* The horizontal split holding both panes. Sits between the Header and the
+       Footer, which remain direct children of the screen. */
+    #detail-split {
+        height: 1fr;
+        width: 1fr;
+    }
+
+    /* 1fr in a horizontal layout = "whatever the fixed-width panel leaves", so
+       the details pane absorbs every terminal width change on its own. */
     #detail-scroll {
         height: 1fr;
         width: 1fr;
+        border: round $panel;
+    }
+
+    /* FOCUS INDICATION (spec 037, tech-spec §2 D) — both panes carry a border
+       in EVERY state and only its *colour* changes with focus. That is the whole
+       point: adding a border on focus would consume two columns and two rows of
+       the pane, reflowing its contents the instant focus moved, and the
+       functional spec requires the layout not to jump. So the geometry is fixed
+       once and only the paint changes.
+
+       `:focus-within`, not `:focus`, and deliberately so: `#transcript-panel` is
+       a `Vertical`, whose `can_focus` is False — it can never itself be the
+       focused widget, so `#transcript-panel:focus` would match nothing and the
+       panel would look permanently unfocused. Focus lands on the `ListView`
+       *inside* it. Textual's `has_focus_within` walks up from the focused node
+       and returns True when it reaches the widget itself, so `:focus-within`
+       also covers `#detail-scroll` (a focusable `VerticalScroll` that holds
+       focus directly) — one pseudo-class serves both panes.
+
+       Colours come from theme variables, never literals, so the indication
+       tracks the terminal's light/dark theme: `$panel` unfocused, `$accent`
+       focused — exactly the pair `ui/app.py` already uses to distinguish its
+       active pane's border from its inactive one, so the two Textual apps in
+       this repo read the same way.
+
+       NOT `$text-muted`, despite it being this module's precedent elsewhere:
+       that precedent is for `color:`, and the two properties do not accept the
+       same values. `$text-muted` resolves to `auto 60%` — an *auto* colour,
+       which means "compute black or white for contrast against the background"
+       and is only meaningful for text. Textual's parser rejects it as a border
+       colour outright (`StylesheetParseError: Invalid value for border
+       property`), and because a screen whose CSS fails to parse never mounts,
+       the symptom is not a mis-drawn border but the whole DetailScreen going
+       missing. `$panel` and `$accent` are concrete colours, so both parse. */
+    #detail-scroll:focus-within,
+    #transcript-panel:focus-within {
+        border: round $accent;
     }
 
     #detail-body {
         padding: 0 1;
         width: 1fr;
+    }
+
+    /* THE panel width — the one place the column count lives (spec 037). A
+       FIXED count, deliberately, not `auto`: the details pane must keep an
+       identical width across runs that have transcripts and runs that do not,
+       and a width never derived from content guarantees that by construction.
+       22 columns fits the `game-01` … `game-50` label shape with room for a
+       border. (A future matchup-titled label shape would own this number.)
+
+       The 22 is INCLUSIVE of the border below (Textual sizes border-box), so the
+       usable label area inside is ~20 columns. */
+    #transcript-panel {
+        width: 22;
+        height: 1fr;
+        border: round $panel;
+    }
+
+    #transcript-panel-list {
+        height: 1fr;
+        width: 1fr;
+    }
+
+    #transcript-panel-empty {
+        height: 1fr;
+        width: 1fr;
+        padding: 0 1;
+        color: $text-muted;
     }
     """
 
@@ -182,15 +266,73 @@ class DetailScreen(Screen):
         Binding("t", "open_transcripts", "Transcripts", show=True),
     ]
 
-    def __init__(self, record: RawRecord) -> None:
+    def __init__(self, record: RawRecord, entries: list[TranscriptEntry]) -> None:
+        """Build the screen from a record plus its **pre-resolved** transcripts.
+
+        ``entries`` arrives already listed by the caller — the single
+        ``push_screen(DetailScreen(...))`` site in :class:`LedgerTableScreen`,
+        which runs the pure :func:`~graphia.eval_ledger.list_transcripts` against
+        the app's ledger ``Path``. Taking them pre-resolved (the same contract
+        :class:`TranscriptListScreen` uses) is what keeps this screen's
+        documented "no path arithmetic of its own" invariant: it never reaches
+        for ``self.app._path``.
+
+        The list is held **index-parallel** to the panel's ``ListView`` rows, so
+        a later selection resolves straight back to the right entry. An empty
+        list is a normal state, not an error (an older pre-017 record, a
+        missing/un-pulled dir): the panel then hides its list and shows
+        :data:`_NO_TRANSCRIPTS_MESSAGE`.
+        """
         super().__init__()
         self._record = record
+        self._entries = entries
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with VerticalScroll(id="detail-scroll"):
-            yield Static(render_detail(self._record), id="detail-body")
+        # The two panes side by side. Header/Footer stay outside the split.
+        with Horizontal(id="detail-split"):
+            with VerticalScroll(id="detail-scroll"):
+                yield Static(render_detail(self._record), id="detail-body")
+            with Vertical(id="transcript-panel"):
+                # One row per transcript, in the order the pure layer sorted
+                # them (game-01 … game-NN). Empty when the run has none —
+                # on_mount then hides this and shows the message instead.
+                yield ListView(
+                    *(ListItem(Label(entry.label)) for entry in self._entries),
+                    id="transcript-panel-list",
+                )
+                yield Static(_NO_TRANSCRIPTS_MESSAGE, id="transcript-panel-empty")
         yield Footer()
+
+    def on_mount(self) -> None:
+        """Show the panel's list (or the "no transcripts" note), then focus details.
+
+        Two jobs. First the hide-list/show-message posture reused verbatim from
+        :class:`TranscriptListScreen` — with the one deliberate difference that
+        this does **not** focus the list. The deleted screen's ``on_mount`` ended
+        in ``listing.focus()``; that must **not** be carried over, because here
+        the list is a *pane*, not the whole screen.
+
+        Second, **focus starts on the details pane** (functional-spec §2.2), so
+        the reviewer's first ``up``/``down`` scrolls the figures they came to
+        read. Textual's auto-focus happens to land there already — ``#detail-scroll``
+        is the first focusable widget in ``compose`` order — but that is
+        *incidental*: inserting any focusable widget ahead of it, or reordering
+        the split, would silently move initial focus to the panel with no test
+        failing at the point of the change. Naming the target makes the guarantee
+        explicit and independent of composition order.
+        """
+        listing = self.query_one("#transcript-panel-list", ListView)
+        empty = self.query_one("#transcript-panel-empty", Static)
+        if not self._entries:
+            listing.display = False
+            empty.display = True
+        else:
+            empty.display = False
+        # Explicit, and after the display switching so it is unconditional: the
+        # details pane holds focus for a run with transcripts and one without
+        # alike.
+        self.query_one("#detail-scroll", VerticalScroll).focus()
 
     def action_close(self) -> None:
         """Pop this screen, returning to the table (which restores its cursor)."""
@@ -684,6 +826,14 @@ class LedgerTableScreen(Screen):
         ``_visible_indices`` map — so a filtered subset still points at the right
         record — and pushes the :class:`DetailScreen`. A no-op when there is no
         model or the row is out of range (the empty/error states have no rows).
+
+        **This is where the run's transcripts are resolved** (spec 037): the pure
+        :func:`~graphia.eval_ledger.list_transcripts` needs the ledger ``Path``,
+        and doing the lookup on *this* side of the push — where ``self.app`` is
+        already in hand — lets :class:`DetailScreen` take its entries
+        pre-resolved and keep its "no path arithmetic of its own" invariant. An
+        empty list is normal (older record, missing/un-pulled dir) and drives the
+        panel's "no transcripts" state.
         """
         if self._model is None or not self._model.records:
             return
@@ -692,7 +842,8 @@ class LedgerTableScreen(Screen):
             return
         self._stashed_cursor = event.coordinate
         record = self._model.records[self._visible_indices[row]]
-        self.app.push_screen(DetailScreen(record))
+        entries = list_transcripts(record, self.app._path)
+        self.app.push_screen(DetailScreen(record, entries))
 
     def on_screen_resume(self) -> None:
         """Restore the cursor when the DetailScreen pops back to this screen.

@@ -26,6 +26,8 @@ from __future__ import annotations
 import textwrap
 from pathlib import Path
 
+import pytest
+from textual.containers import Vertical, VerticalScroll
 from textual.widgets import (
     DataTable,
     Footer,
@@ -42,6 +44,7 @@ from graphia.eval_ledger import (
     METRIC_ORDER,
     SEARCH_SCOPE_ALL,
     build_table_model,
+    list_transcripts,
     load_ledger,
 )
 from graphia.ui.ledger_viewer import (
@@ -1474,3 +1477,392 @@ async def test_browsing_transcripts_leaves_files_byte_unchanged(
 
     after = {p.name: p.read_bytes() for p in sorted(run_dir.glob("game-*.txt"))}
     assert after == before
+
+
+# ===========================================================================
+# B11. Transcript side panel (spec 037, Slice 1) — a run's games are listed in
+#      a narrow panel BESIDE its figures, for every run. Both panes are on
+#      screen with nothing pressed, focus starts on the figures, and the
+#      details pane keeps an IDENTICAL measured width whether the run has
+#      preserved games or not (the no-layout-shift requirement).
+# ===========================================================================
+#
+# Everything here is asserted on widget identity + GEOMETRY read through the
+# pilot API — never on rendered colour. The focus indication is a border colour
+# drawn from theme variables (tech-spec §3): theme-dependent, reviewed by eye,
+# and a poor test subject. What a test *can* pin is which widget holds focus and
+# how many columns each pane occupies.
+#
+# The panel's width is the load-bearing number of the design: a FIXED 22
+# columns rather than `width: auto`, precisely so the details pane cannot change
+# width between a run with games and a run without. The measurements below were
+# taken by hand at a 100x30 terminal and are pinned here so that a later switch
+# to a content-derived width (`width: auto`, `width: 1fr`, a label-length
+# calculation) fails loudly instead of quietly reintroducing the layout jump.
+#
+# NOTE the panel-prefixed ids — `#transcript-panel-list` / `#transcript-panel-empty`
+# — deliberately NOT the (still-live, until Slice 3) `TranscriptListScreen`'s
+# `#transcript-list` / `#transcript-empty`. Two live screens with identical ids
+# would make the B10 tests above ambiguous.
+
+# The terminal the panel measurements below were taken at. Fixed explicitly (not
+# the harness default) because every width assertion in this section is a
+# concrete column count derived from it: 100 - 22 = 78 for the details pane.
+_PANEL_TERMINAL_SIZE = (100, 30)
+
+# The panel's fixed column count (the single place it lives in production CSS is
+# `#transcript-panel { width: 22; }`).
+_PANEL_OUTER_WIDTH = 22
+# ...of which the round border eats two columns: Textual sizes border-box, so
+# `outer 22 / inner 20` is the proof of that (a content-box implementation would
+# report 24/22 outer).
+_PANEL_INNER_WIDTH = 20
+
+# The details pane takes "whatever the fixed panel leaves" (`width: 1fr` in a
+# horizontal layout), so at a 100-column terminal it is exactly 100 - 22.
+_DETAILS_OUTER_WIDTH = 78
+_DETAILS_INNER_WIDTH = 76
+
+
+def _pane_geometry(screen: DetailScreen) -> dict[str, int]:
+    """Measure both panes of a :class:`DetailScreen` as plain column counts.
+
+    Returned as a dict so two runs' layouts can be compared in **one** equality
+    assertion (and so a failure names the measurement that moved). ``outer_size``
+    is the border-box width Textual laid the pane out at; ``size`` is the inner
+    content width; ``region.x`` is where the pane starts, which is what proves
+    the two panes sit side by side rather than stacked.
+    """
+    scroll = screen.query_one("#detail-scroll", VerticalScroll)
+    panel = screen.query_one("#transcript-panel", Vertical)
+    return {
+        "details_x": scroll.region.x,
+        "details_outer": scroll.outer_size.width,
+        "details_inner": scroll.size.width,
+        "panel_x": panel.region.x,
+        "panel_outer": panel.outer_size.width,
+        "panel_inner": panel.size.width,
+    }
+
+
+# The geometry every run must produce, whatever its transcripts. Written out in
+# full (rather than derived) so the numbers are readable at the assertion site.
+_EXPECTED_PANE_GEOMETRY = {
+    "details_x": 0,
+    "details_outer": _DETAILS_OUTER_WIDTH,
+    "details_inner": _DETAILS_INNER_WIDTH,
+    "panel_x": _DETAILS_OUTER_WIDTH,  # the panel starts where the details end
+    "panel_outer": _PANEL_OUTER_WIDTH,
+    "panel_inner": _PANEL_INNER_WIDTH,
+}
+
+
+def _panel_labels(screen: DetailScreen) -> list[str]:
+    """The panel list's row labels, read through the widget API."""
+    listing = screen.query_one("#transcript-panel-list", ListView)
+    return [plain_text(item.query_one(Label)) for item in listing.query(ListItem)]
+
+
+async def _open_detail_for_row(pilot, row: int) -> DetailScreen:
+    """Focus the table, move to ``row``, and drill in via the real key path.
+
+    The row-general form of :func:`_open_detail_for_first_row` — needed here
+    because the no-layout-shift test compares a run WITH transcripts against one
+    WITHOUT **in the same ledger and the same session**, so it must reach the
+    second row.
+    """
+    table = pilot.app.screen.query_one("#ledger-table", DataTable)
+    table.focus()
+    await pilot.pause()
+    for _ in range(row):
+        await pilot.press("down")
+    await pilot.pause()
+    assert table.cursor_row == row
+    await pilot.press("enter")
+    await pilot.pause()
+    assert isinstance(pilot.app.screen, DetailScreen)
+    return pilot.app.screen
+
+
+async def test_opening_a_run_shows_both_panes_with_nothing_pressed(
+    tmp_path: Path,
+) -> None:
+    """Opening a run puts the figures and the games list on screen together.
+
+    Nothing is pressed after the drill-down: no ``t``, no ``right``. Both panes
+    must already be displayed, side by side (the panel starting exactly where
+    the details pane ends), with the run's figures in the left pane and the run's
+    games listed in the right one.
+    """
+    ledger = _write_ledger(
+        tmp_path,
+        _doc_with_transcript_dir("2026-06-20", "run-panel"),
+        name="panel-both.yaml",
+    )
+    _write_run_transcripts(
+        ledger,
+        "run-panel",
+        {"game-02.txt": "second " + _TRANSCRIPT_BODY, "game-01.txt": _TRANSCRIPT_BODY},
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_row(pilot, 0)
+
+        # The horizontal split holds both panes, and both are displayed.
+        assert screen.query_one("#detail-split")
+        scroll = screen.query_one("#detail-scroll", VerticalScroll)
+        panel = screen.query_one("#transcript-panel", Vertical)
+        assert scroll.display is True
+        assert panel.display is True
+
+        # Side by side, not stacked: same row, and the panel starts exactly
+        # where the details pane ends (so neither covers the other).
+        assert panel.region.y == scroll.region.y
+        assert panel.region.x == scroll.region.x + scroll.region.width
+
+        # The figures are in the left pane...
+        assert "run with browsable transcripts" in plain_text(
+            screen.query_one("#detail-body", Static)
+        )
+        # ...and this run's games in the right one, in the pure layer's order.
+        assert _panel_labels(screen) == ["game-01", "game-02"]
+        assert screen.query_one("#transcript-panel-list", ListView).display is True
+        assert screen.query_one("#transcript-panel-empty", Static).display is False
+
+        # No extra screen was summoned to reveal the list — the DetailScreen is
+        # still the top of the stack.
+        assert app.screen is screen
+
+
+async def test_panel_is_present_for_a_run_with_no_transcripts(tmp_path: Path) -> None:
+    """A run with no preserved games keeps the panel, showing the short note.
+
+    The list is hidden, the plain "No transcripts for this run." message is
+    displayed, and the panel itself is still laid out in the same place with its
+    border intact — asserted as a two-column border gutter, not as a colour.
+    """
+    ledger = _write_ledger(
+        tmp_path,
+        _doc_with_transcript_dir("2026-06-20", None),
+        name="panel-empty.yaml",
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_row(pilot, 0)
+
+        panel = screen.query_one("#transcript-panel", Vertical)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+        empty = screen.query_one("#transcript-panel-empty", Static)
+
+        # The panel is present and in place...
+        assert panel.display is True
+        assert panel.region.x == _DETAILS_OUTER_WIDTH
+        assert panel.outer_size.width == _PANEL_OUTER_WIDTH
+        # ...with its border still drawn: a round edge consuming exactly the two
+        # columns that keep `outer 22 / inner 20`. (Only the border's COLOUR
+        # changes with focus, so nothing reflows when focus moves — the border
+        # itself is unconditional, which is what this pins.)
+        assert panel.styles.border.top[0] == "round"
+        assert panel.outer_size.width - panel.size.width == 2
+
+        # The list is hidden and the short note is shown instead.
+        assert listing.display is False
+        assert empty.display is True
+        assert plain_text(empty) == _NO_TRANSCRIPTS_MESSAGE
+        assert _panel_labels(screen) == []
+        # No error, no crash.
+        assert app.is_running
+
+
+async def test_details_pane_width_is_identical_with_and_without_transcripts(
+    tmp_path: Path,
+) -> None:
+    """THE no-layout-shift test: the details pane measures the same for both runs.
+
+    One ledger, two runs — row 0 has two preserved games, row 1 has none — opened
+    in turn in the **same** session at the **same** terminal size. Every measured
+    column count must match, so the reviewer moving between such runs sees no
+    jump. This is the criterion the fixed 22-column panel exists to satisfy: a
+    content-derived width (`width: auto`) would give the empty run's 28-character
+    message a different width from the 7-character ``game-01`` labels and this
+    equality would break.
+    """
+    ledger = _write_ledger(
+        tmp_path,
+        _doc_with_transcript_dir("2026-06-20", "run-has-games"),
+        _doc_with_transcript_dir("2026-06-21", None),
+        name="panel-noshift.yaml",
+    )
+    _write_run_transcripts(
+        ledger,
+        "run-has-games",
+        {"game-01.txt": _TRANSCRIPT_BODY, "game-02.txt": "second " + _TRANSCRIPT_BODY},
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+
+        # The run WITH games.
+        screen = await _open_detail_for_row(pilot, 0)
+        assert _panel_labels(screen) == ["game-01", "game-02"]
+        with_transcripts = _pane_geometry(screen)
+
+        # Back out to the table, then open the run WITHOUT games.
+        await pilot.press("escape")
+        await pilot.pause()
+        assert isinstance(app.screen, LedgerTableScreen)
+        screen = await _open_detail_for_row(pilot, 1)
+        assert _panel_labels(screen) == []
+        assert screen.query_one("#transcript-panel-empty", Static).display is True
+        without_transcripts = _pane_geometry(screen)
+
+    # The layout did not move — every measurement is identical...
+    assert with_transcripts == without_transcripts
+    # ...and it is the pinned fixed-width layout, not merely two equal accidents
+    # (a details pane that had collapsed to 0 in both cases would satisfy the
+    # equality above but not this).
+    assert with_transcripts == _EXPECTED_PANE_GEOMETRY
+
+
+@pytest.mark.parametrize(
+    ("case", "transcript_files"),
+    [
+        ("no games", []),
+        ("one game", ["game-01.txt"]),
+        ("thirty games", [f"game-{i:02d}.txt" for i in range(1, 31)]),
+        (
+            "a label far wider than the panel",
+            ["game-01-an-extremely-long-label-far-wider-than-the-panel.txt"],
+        ),
+    ],
+)
+async def test_panel_width_is_fixed_not_derived_from_its_content(
+    tmp_path: Path, case: str, transcript_files: list[str]
+) -> None:
+    """The panel measures 22 columns whatever it contains — width is never content.
+
+    Sweeps the content shapes a content-derived width would size differently:
+    nothing (the 28-character empty-state note), one short ``game-01`` label,
+    thirty labels (vertical overflow), and one label 56 characters wide. All four
+    must produce the identical pinned geometry. This is the assertion that fails
+    if `#transcript-panel`'s ``width: 22`` is ever relaxed to ``auto`` — the
+    guarantee is by construction, and this is what defends it.
+    """
+    run_id = "run-widths"
+    ledger = _write_ledger(
+        tmp_path,
+        _doc_with_transcript_dir("2026-06-20", run_id if transcript_files else None),
+        name="panel-widths.yaml",
+    )
+    if transcript_files:
+        _write_run_transcripts(
+            ledger, run_id, {name: _TRANSCRIPT_BODY for name in transcript_files}
+        )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_row(pilot, 0)
+
+        # The content really is the shape this case intends (so a fixture that
+        # silently listed nothing could not pass the geometry check by accident).
+        assert len(_panel_labels(screen)) == len(transcript_files)
+        assert _pane_geometry(screen) == _EXPECTED_PANE_GEOMETRY, case
+
+
+@pytest.mark.parametrize("has_transcripts", [True, False])
+async def test_focus_starts_on_the_details_pane(
+    tmp_path: Path, has_transcripts: bool
+) -> None:
+    """Focus starts on the figures, for a run with games and one without alike.
+
+    So the reviewer's first ``up``/``down`` scrolls the figures they came to read
+    rather than moving a highlight in the panel. Asserted as the focused
+    **widget's identity** (never a rendered colour): ``#detail-scroll`` holds
+    focus and the panel's list does not.
+    """
+    run_id = "run-focus"
+    ledger = _write_ledger(
+        tmp_path,
+        _doc_with_transcript_dir("2026-06-20", run_id if has_transcripts else None),
+        name="panel-focus.yaml",
+    )
+    if has_transcripts:
+        _write_run_transcripts(ledger, run_id, {"game-01.txt": _TRANSCRIPT_BODY})
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_row(pilot, 0)
+
+        scroll = screen.query_one("#detail-scroll", VerticalScroll)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+
+        assert scroll.has_focus is True
+        assert screen.focused is scroll
+        assert listing.has_focus is False
+
+
+class _DetailScreenWithLeadingFocusable(DetailScreen):
+    """Test-only :class:`DetailScreen` with a focusable widget composed FIRST.
+
+    A harness for one regression guard, not a production shape. Textual's
+    auto-focus takes the first focusable widget in composition order, and in the
+    real screen that happens to be ``#detail-scroll`` — so a "focus starts on the
+    details" assertion would pass even if the explicit ``on_mount`` focus were
+    deleted. Putting a focusable :class:`~textual.widgets.Input` ahead of the
+    split moves that accident: auto-focus now lands on the probe, and only an
+    explicit focus-by-name can still put focus on the details pane.
+
+    Textual dispatches ``on_mount`` to every class in the MRO that defines it, so
+    the inherited :meth:`DetailScreen.on_mount` still runs — this subclass adds a
+    widget and overrides nothing.
+    """
+
+    def compose(self):
+        yield Input(id="probe-focusable")
+        yield from super().compose()
+
+
+async def test_initial_focus_is_explicit_not_composition_order(
+    tmp_path: Path,
+) -> None:
+    """Initial focus is set BY NAME, so reordering compose cannot move it.
+
+    The guard behind the previous test. With a focusable probe composed ahead of
+    the split, Textual's auto-focus picks the probe (asserted below via the focus
+    chain, so the premise cannot rot) — yet focus still ends on
+    ``#detail-scroll``, which is only possible because ``on_mount`` names it.
+    Delete that line and this test fails while the plain focus test would not.
+    """
+    ledger = _write_ledger(
+        tmp_path,
+        _doc_with_transcript_dir("2026-06-20", "run-probe"),
+        name="panel-probe.yaml",
+    )
+    _write_run_transcripts(ledger, "run-probe", {"game-01.txt": _TRANSCRIPT_BODY})
+    record = load_ledger(ledger)[0]
+    entries = list_transcripts(record, ledger)
+    assert [entry.label for entry in entries] == ["game-01"]
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        app.push_screen(_DetailScreenWithLeadingFocusable(record, entries))
+        await pilot.pause()
+        screen = app.screen
+        assert isinstance(screen, _DetailScreenWithLeadingFocusable)
+
+        # The premise: the probe really is what auto-focus would reach first.
+        chain = [widget.id for widget in screen.focus_chain]
+        assert chain[0] == "probe-focusable"
+        assert "detail-scroll" in chain
+
+        # The guarantee: focus is on the details pane regardless.
+        assert screen.query_one("#detail-scroll", VerticalScroll).has_focus is True
+        assert screen.query_one("#probe-focusable", Input).has_focus is False
