@@ -99,6 +99,12 @@ class RosterResult:
     # any empty-result retries (rare on a healthy model).
     regenerations: int = 0
     error: str | None = None
+    # Spec 036 §2: the semantic instrument was ASKED FOR but could not be
+    # reached (expired credentials, unavailable embeddings model). Distinct from
+    # ``sem_mean is None`` because that is also how "not requested" reads — and
+    # the two must not be confused: one is a degraded run worth flagging, the
+    # other is the normal free path.
+    sem_unavailable: bool = False
 
 
 @dataclass(slots=True)
@@ -235,11 +241,26 @@ def _generate_one_roster(
         regenerations=max(0, call_count - ai_count),
     )
     if semantic:
-        sem = score_persona_semantic_sim(
-            players, _embed_documents
-        )
-        roster.sem_mean = sem["mean"]  # type: ignore[assignment]
-        roster.sem_peak = sem["peak"]  # type: ignore[assignment]
+        # Graceful degradation (spec 036 §2, mirroring ``run_eval``'s treatment
+        # of the same instrument): the embeddings client is a CLOUD dependency
+        # on an otherwise-local run, so expired credentials or an unavailable
+        # model must not take down a bench whose lexical measurement already
+        # succeeded. ``sem_mean``/``sem_peak`` stay ``None``, so the facets are
+        # simply ABSENT from the record rather than a misleading zero, and the
+        # run still reports and can still be recorded.
+        try:
+            sem = score_persona_semantic_sim(
+                players, _embed_documents
+            )
+            roster.sem_mean = sem["mean"]  # type: ignore[assignment]
+            roster.sem_peak = sem["peak"]  # type: ignore[assignment]
+        except Exception as exc:  # noqa: BLE001 — optional metric, never fatal
+            roster.sem_unavailable = True
+            print(
+                f"  roster {index}: semantic persona scoring UNAVAILABLE "
+                f"({type(exc).__name__}: {exc}) — continuing without it",
+                file=sys.stderr,
+            )
     return roster
 
 
@@ -299,6 +320,12 @@ def run_bench(
             semantic=semantic,
         )
         summary.per_roster.append(roster)
+        if roster.sem_unavailable:
+            # Mirrors ``run_eval`` disabling its ``embed_fn`` after a failure: a
+            # missing credential fails the SAME way every roster, and each retry
+            # can cost a full client timeout. Stop asking; the remaining rosters
+            # still get their free lexical measurement.
+            semantic = False
         if roster.error is not None:
             continue
         summary.rosters_completed += 1

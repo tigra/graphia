@@ -1,7 +1,7 @@
 # Functional Specification: Persona-Generation Measurements Join the Tracked Quality History
 
 - **Roadmap Item:** Eval-measurement — closing the gap opened by **spec 034** (Diversified Persona Generation), whose isolated character-generation check deliberately records nothing. Relates to the **persona-realism** thread and to the tracked-quality-history discipline established by **spec 011** and browsed by **spec 012**. Not a distinct roadmap phase item.
-- **Status:** Draft
+- **Status:** Completed *(verified 2026-08-31 — all 19 acceptance criteria met; suite green at 1263 passed / 1 skipped (+4 degradation tests); one criterion initially FAILED — the paid semantic path had no graceful degradation — and was fixed before verification, not waived)*
 - **Author:** Alexey Tigarev
 
 > **Sibling in-flight spec:** **035 (Bedrock Claude Provider)** is also open. It changes which model the game talks to; this spec changes what gets written into the quality history. They do not overlap, but a measurement recorded after 035 lands should be able to say which model produced it — which the existing record already covers.
@@ -31,49 +31,49 @@ Three deliberate choices shape it. Recording is **something the developer asks f
 - **A character-generation measurement can be added to the tracked quality history on request.**
   - The developer can ask for a particular character-generation run to be kept. When they do, it adds one dated entry to the same quality history that played games write to. When they do not ask, the run behaves exactly as it does today — it reports its findings on screen and leaves the history untouched.
   - **Acceptance Criteria:**
-    - [ ] Given a character-generation run the developer has asked to keep, when it finishes, then one new entry for it appears in the quality history, and every entry that was already there is unchanged.
-    - [ ] Given a character-generation run the developer has not asked to keep, when it finishes, then it reports its findings on screen and the quality history is completely untouched.
-    - [ ] Given several kept runs one after another, when the history is read, then each has added its own entry and none has replaced or rewritten an earlier one.
+    - [x] Given a character-generation run the developer has asked to keep, when it finishes, then one new entry for it appears in the quality history, and every entry that was already there is unchanged.
+    - [x] Given a character-generation run the developer has not asked to keep, when it finishes, then it reports its findings on screen and the quality history is completely untouched.
+    - [x] Given several kept runs one after another, when the history is read, then each has added its own entry and none has replaced or rewritten an earlier one.
 
 - **A recorded measurement is clearly marked as a character-generation measurement, not a game.**
   - Because no game was played, the game-related figures — who won, how decisively players behaved, how the voting went — do not exist for this kind of entry. The entry says plainly what kind of measurement it is, so a reader understands the blanks are expected rather than missing.
   - **Acceptance Criteria:**
-    - [ ] Given a recorded character-generation measurement, when it is read in the quality viewer, then it is identifiable as a character-generation measurement rather than a played game.
-    - [ ] Given a mix of played-game entries and character-generation entries, when the reviewer scrolls the history, then both kinds are readable in the same list, the character-generation ones show blanks where game figures would be, and nothing errors or misaligns.
-    - [ ] Given a character-generation entry, when a reader looks at its blank game figures, then it is clear these are absent because no game was played — not because a game failed part-way.
+    - [x] Given a recorded character-generation measurement, when it is read in the quality viewer, then it is identifiable as a character-generation measurement rather than a played game.
+    - [x] Given a mix of played-game entries and character-generation entries, when the reviewer scrolls the history, then both kinds are readable in the same list, the character-generation ones show blanks where game figures would be, and nothing errors or misaligns.
+    - [x] Given a character-generation entry, when a reader looks at its blank game figures, then it is clear these are absent because no game was played — not because a game failed part-way.
 
 - **The entry records the variety figures that were actually taken, and shows nothing for those that were not.**
   - A measurement always takes the free word-level variety figures. It takes the paid meaning-based ones only when the developer chose to. The entry carries whichever were taken and simply shows nothing for the others.
   - **Acceptance Criteria:**
-    - [ ] Given a measurement that took only the free word-level figures, when its entry is read, then those figures are present and the meaning-based ones show nothing — not a zero, and not an error.
-    - [ ] Given a measurement that took both the free and the paid figures, when its entry is read, then all of them are present.
-    - [ ] Given a measurement where the paid figures could not be taken because cloud access was unavailable, when the run finishes, then it still completes, still reports its findings, and can still be recorded — the missing figures are simply absent.
+    - [x] Given a measurement that took only the free word-level figures, when its entry is read, then those figures are present and the meaning-based ones show nothing — not a zero, and not an error.
+    - [x] Given a measurement that took both the free and the paid figures, when its entry is read, then all of them are present.
+    - [x] Given a measurement where the paid figures could not be taken because cloud access was unavailable, when the run finishes, then it still completes, still reports its findings, and can still be recorded — the missing figures are simply absent.
 
 - **The entry records how many casts were measured, and how many contained an over-similar pair.**
   - A variety figure is meaningless without knowing how much was measured. The entry says how many casts the measurement covered and how many of them ended up containing a pair of characters judged too alike — the count that carried the decisive result in the spec-034 comparison.
   - **Acceptance Criteria:**
-    - [ ] Given a recorded measurement, when its entry is read, then it states how many casts were measured.
-    - [ ] Given a recorded measurement, when its entry is read, then it states how many of those casts contained an over-similar pair.
+    - [x] Given a recorded measurement, when its entry is read, then it states how many casts were measured.
+    - [x] Given a recorded measurement, when its entry is read, then it states how many of those casts contained an over-similar pair.
 
 - **The entry records the conditions the measurement ran under, so two measurements can be compared honestly.**
   - An entry says which model generated the characters, whether the variety feature was on or off, and the sensitivity setting used to judge two characters too alike — because a comparison between two measurements only means something when these match, and a side-by-side comparison is only readable as a pair when each side says which side it was.
   - **Acceptance Criteria:**
-    - [ ] Given two entries from a side-by-side comparison, when they are read, then each states whether the variety feature was on or off for that run.
-    - [ ] Given a recorded measurement, when its entry is read, then it states which model generated the characters and the sensitivity setting used to judge characters too alike.
-    - [ ] Given a recorded measurement, when its entry is read, then it carries the date and the version of the game that produced it, matching what a played-game entry carries.
+    - [x] Given two entries from a side-by-side comparison, when they are read, then each states whether the variety feature was on or off for that run.
+    - [x] Given a recorded measurement, when its entry is read, then it states which model generated the characters and the sensitivity setting used to judge characters too alike.
+    - [x] Given a recorded measurement, when its entry is read, then it carries the date and the version of the game that produced it, matching what a played-game entry carries.
 
 - **The developer can attach a note explaining what a measurement was for.**
   - Numbers alone do not say why a measurement was taken. The developer can attach a short note — the same way they can for a played game — so a reader months later knows what question it was answering.
   - **Acceptance Criteria:**
-    - [ ] Given a measurement recorded with a note, when its entry is read, then the note is shown with it.
-    - [ ] Given a measurement recorded without a note, when its entry is read, then it reads normally with no note and nothing missing.
+    - [x] Given a measurement recorded with a note, when its entry is read, then the note is shown with it.
+    - [x] Given a measurement recorded without a note, when its entry is read, then it reads normally with no note and nothing missing.
 
 - **Recording never disturbs what is already in the history, and never happens by accident.**
   - The quality history is kept with the project and is only ever added to. A character-generation measurement must not rewrite, reorder, or damage anything already recorded — and a routine test run of the project must never add anything to it.
   - **Acceptance Criteria:**
-    - [ ] Given an existing history, when a character-generation measurement is recorded, then every earlier entry is byte-for-byte unchanged and only the new entry has been added.
-    - [ ] Given the project's routine tests are run, when they finish, then the real quality history is completely untouched.
-    - [ ] Given a recorded measurement, when the history is opened in the quality viewer afterwards, then it loads without error and displays every entry, old and new.
+    - [x] Given an existing history, when a character-generation measurement is recorded, then every earlier entry is byte-for-byte unchanged and only the new entry has been added.
+    - [x] Given the project's routine tests are run, when they finish, then the real quality history is completely untouched.
+    - [x] Given a recorded measurement, when the history is opened in the quality viewer afterwards, then it loads without error and displays every entry, old and new.
 
 ---
 

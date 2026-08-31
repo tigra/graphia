@@ -59,6 +59,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+
+
 import pytest
 
 from graphia.llm import Persona, Roster
@@ -70,6 +72,29 @@ from graphia.tools.persona_bench import (
     main,
     run_bench,
 )
+
+
+@pytest.fixture(autouse=True)
+def _isolate_bench_process_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Restore the process env every bench test mutates (spec 036 follow-up).
+
+    ``run_bench`` sets ``GRAPHIA_LLM_PROVIDER`` and ``_isolate_cloud_stores``
+    pops ``GRAPHIA_REMOTE`` plus the cloud-store vars — directly on
+    ``os.environ``, so nothing undoes them when the test ends. Registering the
+    keys with ``monkeypatch`` here makes teardown restore them.
+
+    Why this is load-bearing rather than tidy: a leaked
+    ``GRAPHIA_LLM_PROVIDER=ollama`` makes ``load_config`` reject ANY later
+    remote-mode test with the documented ollama-is-local-only contradiction. The
+    suite passed before only because the last ``run_bench`` call in this file
+    happened to use ``bedrock``, overwriting the leak before the remote badge and
+    failure-modal tests ran — an ordering accident, not isolation. Appending an
+    ollama test at the end broke it.
+    """
+    from graphia.tools.blunder_eval import _CLOUD_STORE_ENV_VARS
+
+    for var in ("GRAPHIA_LLM_PROVIDER", "GRAPHIA_REMOTE", *_CLOUD_STORE_ENV_VARS):
+        monkeypatch.delenv(var, raising=False)
 
 # Default 5+2 table → 6 AI names. ``fake_small`` requires exactly that count.
 AI_NAMES = ["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"]
@@ -1354,3 +1379,90 @@ def test_main_with_record_writes_the_generation_block_and_the_persona_knobs(
         "regen_attempts",
         "temperature",
     ]
+
+
+# ===========================================================================
+# Spec 036 §2 — the paid semantic instrument degrades gracefully.
+#
+# The embeddings client is a CLOUD dependency on an otherwise-local run, so
+# expired credentials must not destroy a bench whose lexical measurement already
+# succeeded. `run_eval` has had this treatment since spec 033; the bench never
+# inherited it, and the gap was invisible because the paid arm is rarely run.
+# ===========================================================================
+
+
+def _raise_no_creds(_texts: list[str]) -> list[list[float]]:
+    raise RuntimeError("no AWS credentials — embeddings unavailable")
+
+
+def test_semantic_unavailable_still_completes_and_reports(
+    env: Path, fake_small, fake_large, monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The run finishes, prints its summary, and keeps the free lexical figures."""
+    fake_small(outputs=_rosters(2))
+    fake_large(personas=_DISTINCT_PERSONAS)
+    monkeypatch.setattr(persona_bench, "_embed_documents", _raise_no_creds)
+
+    summary = persona_bench.run_bench(
+        provider="ollama", rosters=2, diversity_enabled=True, semantic=True
+    )
+
+    assert summary.rosters_completed == 2, "a cloud failure must not fail the rosters"
+    assert summary.persona_lex_mean is not None, "the free measurement still stands"
+    assert summary.persona_sem_mean is None, "absent, not a misleading zero"
+    assert summary.persona_sem_peak is None
+    assert "UNAVAILABLE" in capsys.readouterr().err, "the degradation is announced"
+
+
+def test_semantic_unavailable_is_not_retried_on_every_roster(
+    env: Path, fake_small, fake_large, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """One failure disables the instrument — a credential timeout per roster is slow."""
+    fake_small(outputs=_rosters(4))
+    fake_large(personas=_DISTINCT_PERSONAS)
+    calls: list[int] = []
+
+    def _counting_raise(texts: list[str]) -> list[list[float]]:
+        calls.append(1)
+        raise RuntimeError("no AWS credentials")
+
+    monkeypatch.setattr(persona_bench, "_embed_documents", _counting_raise)
+    persona_bench.run_bench(
+        provider="ollama", rosters=4, diversity_enabled=True, semantic=True
+    )
+    assert len(calls) == 1, f"asked {len(calls)} times; must stop after the first failure"
+
+
+def test_semantic_unavailable_record_omits_the_pair_entirely(
+    env: Path, fake_small, fake_large, monkeypatch: pytest.MonkeyPatch, tmp_ledger: Path,
+) -> None:
+    """A degraded run is still recordable, with the semantic facets simply absent."""
+    fake_small(outputs=_rosters(2))
+    fake_large(personas=_DISTINCT_PERSONAS)
+    monkeypatch.setattr(persona_bench, "_embed_documents", _raise_no_creds)
+
+    summary = persona_bench.run_bench(
+        provider="ollama", rosters=2, diversity_enabled=True, semantic=True
+    )
+    result = persona_bench.build_bench_record(summary, _BenchConfigStub())
+
+    assert "persona_lex_mean" in result.metrics
+    assert "persona_sem_mean" not in result.metrics
+    assert "persona_sem_peak" not in result.metrics
+
+
+def test_not_requesting_semantic_is_not_reported_as_unavailable(
+    env: Path, fake_small, fake_large, capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The normal free path must not look like a degraded one."""
+    fake_small(outputs=_rosters(2))
+    fake_large(personas=_DISTINCT_PERSONAS)
+
+    summary = persona_bench.run_bench(
+        provider="ollama", rosters=2, diversity_enabled=True, semantic=False
+    )
+
+    assert summary.persona_sem_mean is None
+    assert not any(r.sem_unavailable for r in summary.per_roster)
+    assert "UNAVAILABLE" not in capsys.readouterr().err

@@ -7,7 +7,7 @@ through the EXISTING renderer, and how the viewer learns to show its kind.
 # Technical Specification: Persona-Generation Measurements Join the Tracked Quality History
 
 - **Functional Specification:** `./functional-spec.md`
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 > **Deliberately additive to a committed data contract.** `evals/blunder-ledger.yaml` is repo-committed and append-only, and `evals/README.md` is its written contract. Every field this spec introduces is **conditional** — omitted when absent — so existing records stay byte-identical and remain readable. Nothing is backfilled.
