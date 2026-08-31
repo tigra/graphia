@@ -150,6 +150,14 @@ class DetailScreen(Screen):
     plain :data:`_NO_TRANSCRIPTS_MESSAGE` with its list hidden — the same
     hide-list/show-message posture as :class:`TranscriptListScreen`.
 
+    **The two panes are one keypress apart** (spec 037): ``right`` focuses the
+    panel's list, ``left`` focuses the record scroller, and each focuses one
+    *named* widget rather than cycling — so pressing a direction while already
+    there is a no-op and focus never wraps or leaves the screen. ``up``/``down``
+    are deliberately **unbound** here: Textual delivers them to whichever pane
+    holds focus, so the same two keys move the highlighted game or scroll the
+    figures according to where the reviewer is.
+
     The ``t`` binding (spec 017) opens this run's per-game transcripts in a
     :class:`TranscriptListScreen`: it lists the run via the pure
     :func:`~graphia.eval_ledger.list_transcripts` (passing the app's ledger
@@ -264,6 +272,46 @@ class DetailScreen(Screen):
         Binding("backspace", "close", "Back", show=True),
         Binding("q", "close", "Back", show=False),
         Binding("t", "open_transcripts", "Transcripts", show=True),
+        # PANE NAVIGATION (spec 037, tech-spec §2 C). Each key focuses ONE named
+        # widget, so non-wrapping is free: `right` with the panel already focused
+        # simply focuses it again, and no cycle logic exists to accidentally
+        # introduce. `up`/`down` are deliberately absent — Textual routes them to
+        # whichever pane holds focus, which IS the "same two keys serve both"
+        # requirement; a handler here would be the bug, not the feature.
+        #
+        # `priority=True`, and NOT decoration — MEASURED as load-bearing. Both
+        # panes are scrollable containers, and `ScrollableContainer.BINDINGS`
+        # (inherited by `VerticalScroll`, and by `ListView` through it) ALREADY
+        # binds `left`→`scroll_left` and `right`→`scroll_right`. Textual checks
+        # the focused widget's bindings before the screen's
+        # (`App._check_bindings` walks `screen._modal_binding_chain`, which is
+        # `focused.ancestors_with_self`), so a plain screen binding is second in
+        # line behind the pane's own.
+        #
+        # It appears to work anyway, because `Widget.action_scroll_right` raises
+        # `SkipAction` when `allow_horizontal_scroll` is False — and that property
+        # is `is_scrollable and show_horizontal_scrollbar`, i.e. it is False
+        # exactly while no pane has a horizontal scrollbar, which is the case for
+        # today's content. `SkipAction` makes `run_action` return False, so
+        # `_check_bindings` continues down the chain and reaches us.
+        #
+        # That fall-through is content-dependent, and it does break. Measured with
+        # the plain (non-priority) form and a horizontal scrollbar present on both
+        # panes: `right` with the details focused left focus on `#detail-scroll`,
+        # and `left` with the panel focused left focus on
+        # `#transcript-panel-list` — the pane swallowed the key as a scroll that
+        # had nothing to scroll, and focus simply stopped moving. A `priority`
+        # binding is checked App-down BEFORE the focused widget, so left/right are
+        # unconditionally pane navigation on this screen whatever a record's text
+        # or a transcript label does to the panes' overflow. `up`/`down` carry no
+        # priority and therefore stay with the focused pane, as required.
+        #
+        # show=False, following the `q` precedent above: the functional spec does
+        # not ask for the arrows to be advertised, the Footer already carries
+        # Back / Back / Transcripts / Quit, and the focused pane's accent border
+        # already shows where focus is.
+        Binding("right", "focus_panel", "Games", show=False, priority=True),
+        Binding("left", "focus_details", "Figures", show=False, priority=True),
     ]
 
     def __init__(self, record: RawRecord, entries: list[TranscriptEntry]) -> None:
@@ -337,6 +385,46 @@ class DetailScreen(Screen):
     def action_close(self) -> None:
         """Pop this screen, returning to the table (which restores its cursor)."""
         self.app.pop_screen()
+
+    def action_focus_panel(self) -> None:
+        """Move focus into the transcript panel (the ``right`` binding, spec 037).
+
+        Focuses the panel's ``ListView`` **by id**, not via ``focus_next()``, for
+        two independent reasons:
+
+        1. It is the only focusable widget in the panel — ``#transcript-panel`` is
+           a :class:`~textual.containers.Vertical`, whose ``can_focus`` is False,
+           so the container itself can never hold focus.
+        2. On a run with **no** transcripts the list is ``display = False``, and a
+           hidden widget is excluded from the screen's ``focus_chain`` (measured:
+           the chain is ``[VerticalScroll(id='detail-scroll')]`` alone). A
+           ``focus_next()``-style implementation would therefore skip the panel
+           entirely on exactly the runs the functional spec says must still
+           accept focus. Focusing by name works regardless, because
+           :meth:`~textual.screen.Screen.set_focus` gates on ``Widget.focusable``
+           — ``can_focus and visible`` — and ``display = False`` leaves
+           ``visibility`` untouched.
+
+        Focusing the hidden list on an empty run is the deliberate choice: the
+        panel's ``:focus-within`` border still lights up (Textual walks up from
+        the focused node), so the pane reads as active, and the ``ListView``'s own
+        ``up``/``down`` are no-ops over zero children — "nothing happens and no
+        error appears", exactly as specified.
+
+        A no-op when the list already has focus (``set_focus`` returns early on
+        the already-focused widget), which is what makes ``right`` non-wrapping
+        without any guard here.
+        """
+        self.query_one("#transcript-panel-list", ListView).focus()
+
+    def action_focus_details(self) -> None:
+        """Move focus back to the record scroller (the ``left`` binding, spec 037).
+
+        The mirror of :meth:`action_focus_panel`: one named widget, so pressing
+        ``left`` while the details pane already holds focus focuses it again — no
+        wrap, no screen change.
+        """
+        self.query_one("#detail-scroll", VerticalScroll).focus()
 
     def action_open_transcripts(self) -> None:
         """Open this run's per-game transcripts (the ``t`` binding, spec 017).

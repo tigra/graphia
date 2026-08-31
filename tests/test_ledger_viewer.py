@@ -1866,3 +1866,422 @@ async def test_initial_focus_is_explicit_not_composition_order(
         # The guarantee: focus is on the details pane regardless.
         assert screen.query_one("#detail-scroll", VerticalScroll).has_focus is True
         assert screen.query_one("#probe-focusable", Input).has_focus is False
+
+
+# ===========================================================================
+# B12. Pane focus movement (spec 037, Slice 2) — `right` moves focus into the
+#      games panel and `left` moves it back to the figures, non-wrapping and
+#      pushing no screen; `up`/`down` are deliberately UNBOUND on the screen,
+#      so Textual delivers them to whichever pane holds focus.
+# ===========================================================================
+#
+# Continues B11's posture: every assertion here is on the **focused widget's
+# identity** (or a plain integer read through the widget API), never on a
+# rendered colour. The focus indication is a theme-variable border colour
+# (tech-spec §3) — reviewed by eye, useless as a test subject; which widget
+# Textual considers focused is exact and observable.
+#
+# Every keystroke goes through `pilot.press(...)`, never a direct `.focus()`
+# call: the *bindings* are what this slice added, so bypassing them would test
+# the two one-line actions and none of the wiring that reaches them.
+#
+# TWO TRAPS these tests are shaped around:
+#
+# 1. **"Focus is unchanged" is satisfied by a keystroke that went nowhere.**
+#    If the bindings were deleted entirely, `right` on the already-focused panel
+#    would still leave focus exactly where it was — the no-op assertion passes
+#    while the feature is gone. So the no-op test *spies on the action* to prove
+#    the binding fired, and every no-op test also asserts a *move* worked in the
+#    same session.
+# 2. **"X did not change" is satisfied when X could not have changed.**
+#    (B11 learned this the hard way: an equality between two runs held while the
+#    layout was wrecked.) "The details did not scroll" means nothing if the
+#    record fitted on screen, and "the highlight did not move" means nothing
+#    with one row in the list. Each such test therefore pins the *premise*
+#    (`max_scroll_y > 0` AND `allow_vertical_scroll is True`, a 3-row list)
+#    alongside an *absolute* post-state (`scroll_y == 0`, `index == 0`) rather
+#    than a before/after comparison. Both halves of the scroll premise are
+#    load-bearing: `overflow-y: hidden` on the figures pane leaves
+#    `max_scroll_y` at 20 while `allow_vertical_scroll` goes False — measured,
+#    and it turned four of these tests vacuous until the second half was added.
+
+# The DetailScreen sits on the app's boot Screen + the LedgerTableScreen, so a
+# stack of exactly 3 means "the DetailScreen is on top and nothing was pushed
+# over it". Pinned as an ABSOLUTE depth rather than a before/after comparison —
+# a pushed-and-still-there screen would satisfy "unchanged" at both ends.
+_DETAIL_STACK_DEPTH = 3
+
+
+def _ledger_with_games(tmp_path: Path, count: int, *, name: str) -> Path:
+    """Write a one-run ledger whose single run has ``count`` preserved games.
+
+    ``count == 0`` writes the run with **no** ``transcript_dir`` at all (the
+    empty-panel case); otherwise the sibling ``transcripts/<run-id>/`` dir gets
+    ``game-01 … game-NN``, entirely inside ``tmp_path``.
+    """
+    run_id = "run-pane-nav"
+    ledger = _write_ledger(
+        tmp_path,
+        _doc_with_transcript_dir("2026-06-22", run_id if count else None),
+        name=name,
+    )
+    if count:
+        _write_run_transcripts(
+            ledger,
+            run_id,
+            {f"game-{i:02d}.txt": _TRANSCRIPT_BODY for i in range(1, count + 1)},
+        )
+    return ledger
+
+
+async def test_right_focuses_the_panel_and_left_returns_to_the_details(
+    tmp_path: Path,
+) -> None:
+    """One keypress each way: ``right`` into the games list, ``left`` back out.
+
+    The core of Slice 2. Asserted as widget identity at each step — and the
+    starting state (focus on the figures) is asserted first, so the two presses
+    below are provably *moves* rather than a lucky match with wherever focus
+    already was.
+    """
+    ledger = _ledger_with_games(tmp_path, 3, name="nav-both-ways.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_row(pilot, 0)
+        scroll = screen.query_one("#detail-scroll", VerticalScroll)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+
+        # Premise: focus starts on the figures (Slice 1's guarantee).
+        assert screen.focused is scroll
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+
+        # right → the games list is the focused widget.
+        await pilot.press("right")
+        await pilot.pause()
+        assert screen.focused is listing
+        assert listing.has_focus is True
+        assert scroll.has_focus is False
+
+        # left → focus is back on the figures.
+        await pilot.press("left")
+        await pilot.pause()
+        assert screen.focused is scroll
+        assert scroll.has_focus is True
+        assert listing.has_focus is False
+
+        # Neither direction ever left the screen: same DetailScreen object, same
+        # absolute stack depth as before the presses.
+        assert app.screen is screen
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+
+
+@pytest.mark.parametrize(
+    ("pre_presses", "key", "action_name", "expected_focus_id"),
+    [
+        pytest.param(
+            ("right",),
+            "right",
+            "action_focus_panel",
+            "transcript-panel-list",
+            id="right-while-already-on-the-panel",
+        ),
+        pytest.param(
+            (),
+            "left",
+            "action_focus_details",
+            "detail-scroll",
+            id="left-while-already-on-the-details",
+        ),
+    ],
+)
+async def test_pressing_a_direction_already_there_changes_nothing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    pre_presses: tuple[str, ...],
+    key: str,
+    action_name: str,
+    expected_focus_id: str,
+) -> None:
+    """``right`` on the panel / ``left`` on the details: no move, no new screen.
+
+    Non-wrapping is currently *free* (each action focuses one named widget, so
+    there is no cycle to wrap) rather than defended, which is exactly why it
+    needs pinning: a later refactor to ``focus_next()``/``focus_previous()``
+    would wrap to the other pane and this would fail.
+
+    The trap: "focus is unchanged" would ALSO hold if the binding did not exist
+    at all — the keystroke would fall through the pane's inherited scroll action
+    and off the end of the chain, changing nothing. So the action is **spied**:
+    the binding must provably fire, *and* leave everything as it was. Neither
+    half alone is worth much.
+    """
+    ledger = _ledger_with_games(tmp_path, 3, name="nav-no-op.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_row(pilot, 0)
+        scroll = screen.query_one("#detail-scroll", VerticalScroll)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+
+        # Get to the pane under test (the details pane already has focus, so the
+        # `left` case presses nothing) and confirm we are really there.
+        for press in pre_presses:
+            await pilot.press(press)
+        await pilot.pause()
+        already_focused = screen.focused
+        assert already_focused is not None
+        assert already_focused.id == expected_focus_id
+
+        # Spy on the action so a passing test cannot mean "the keystroke went
+        # nowhere". Patching the METHOD works because Textual resolves an
+        # action by ``getattr`` at dispatch time; patching ``BINDINGS`` would
+        # not — those are merged once, at class creation.
+        calls: list[str] = []
+        original = getattr(DetailScreen, action_name)
+
+        def _spy(self: DetailScreen, *, _original=original) -> None:
+            calls.append(action_name)
+            _original(self)
+
+        monkeypatch.setattr(DetailScreen, action_name, _spy)
+
+        await pilot.press(key)
+        await pilot.pause()
+
+        # The binding fired...
+        assert calls == [action_name]
+        # ...and nothing moved: same focused widget, and no wrap to the other
+        # pane (spelled out, since a wrap is the specific failure feared).
+        assert screen.focused is already_focused
+        assert screen.focused.id == expected_focus_id
+        # No screen was pushed — absolute depth, not "the same as before".
+        assert app.screen is screen
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+        # And the direction key was not quietly re-routed into the panes' own
+        # state either: absolute post-values, both still at their mount state —
+        # non-vacuous, because the list has rows to highlight and the figures
+        # pane both overruns its viewport and accepts a scroll.
+        assert len(listing.children) == 3
+        assert scroll.allow_vertical_scroll is True
+        assert listing.index == 0
+        assert scroll.scroll_y == 0
+
+
+async def test_down_up_with_the_panel_focused_move_the_highlight_only(
+    tmp_path: Path,
+) -> None:
+    """With the games list focused, ``down``/``up`` move the highlight, not the figures.
+
+    ``up``/``down`` are unbound on the screen on purpose, so this is really a
+    test that Textual routes them to the focused pane. The "figures did not
+    scroll" half is only meaningful because the premise below pins that the
+    figures pane genuinely *has* somewhere to scroll to.
+    """
+    ledger = _ledger_with_games(tmp_path, 3, name="nav-panel-keys.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_row(pilot, 0)
+        scroll = screen.query_one("#detail-scroll", VerticalScroll)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+
+        await pilot.press("right")
+        await pilot.pause()
+        assert screen.focused is listing
+
+        # PREMISES, all absolute: the record overruns its pane AND that pane
+        # accepts a vertical scroll — so "the figures did not scroll" below is an
+        # observation, not an inevitability. (Both halves are needed. Measured:
+        # `overflow-y: hidden` on the pane leaves `max_scroll_y` at 20 while
+        # `allow_vertical_scroll` goes False, i.e. the pane silently cannot
+        # scroll at all and every "it did not scroll" assertion turns vacuous.)
+        assert scroll.max_scroll_y > 0
+        assert scroll.allow_vertical_scroll is True
+        assert scroll.scroll_y == 0
+        assert len(listing.children) == 3
+        assert listing.index == 0
+
+        # down, down, up: the highlight walks 0 → 1 → 2 → 1 and the figures
+        # stay pinned at the top throughout.
+        for expected_index in (1, 2):
+            await pilot.press("down")
+            await pilot.pause()
+            assert listing.index == expected_index
+            assert scroll.scroll_y == 0
+
+        await pilot.press("up")
+        await pilot.pause()
+        assert listing.index == 1
+        assert scroll.scroll_y == 0
+
+
+async def test_down_up_with_the_details_focused_scroll_it_only(
+    tmp_path: Path,
+) -> None:
+    """With the figures focused, ``down``/``up`` scroll them and leave the highlight.
+
+    The mirror of the previous test, and the reason focus starts here: the
+    reviewer's first ``down`` moves the record they came to read. The "highlight
+    did not move" half is meaningful because the premise pins a three-row list —
+    with one row an unchanged index would prove nothing.
+    """
+    ledger = _ledger_with_games(tmp_path, 3, name="nav-details-keys.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_row(pilot, 0)
+        scroll = screen.query_one("#detail-scroll", VerticalScroll)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+
+        # Nothing pressed: focus is on the figures already.
+        assert screen.focused is scroll
+        assert scroll.max_scroll_y > 0
+        assert scroll.allow_vertical_scroll is True
+        assert scroll.scroll_y == 0
+        assert len(listing.children) == 3
+        assert listing.index == 0
+
+        # down, down, up: the figures scroll 0 → 1 → 2 → 1 and the highlighted
+        # game never moves off the first row.
+        for expected_offset in (1, 2):
+            await pilot.press("down")
+            await pilot.pause()
+            assert scroll.scroll_y == expected_offset
+            assert listing.index == 0
+
+        await pilot.press("up")
+        await pilot.pause()
+        assert scroll.scroll_y == 1
+        assert listing.index == 0
+
+
+async def test_empty_run_accepts_focus_in_the_panel_and_up_down_do_nothing(
+    tmp_path: Path,
+) -> None:
+    """A run with no games still lets focus into the panel; ``up``/``down`` raise nothing.
+
+    **This is the ``focus_next()`` guard.** On an empty run the list is
+    ``display = False``, and a hidden widget is excluded from the screen's
+    focus chain — asserted below, so the premise cannot rot. The chain therefore
+    holds the details pane ALONE, and any cycle-based implementation
+    (``focus_next()``/``focus_previous()``) has nowhere to go and would leave
+    focus exactly where it started. Only focusing the list **by name** can put
+    focus where this test says it must go, which is what makes this the test
+    that fails if the actions are ever refactored into a cycle.
+    """
+    ledger = _ledger_with_games(tmp_path, 0, name="nav-empty.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_row(pilot, 0)
+        scroll = screen.query_one("#detail-scroll", VerticalScroll)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+
+        # The empty state really is in force (else this would just be the
+        # populated case under a different fixture name).
+        assert listing.display is False
+        assert screen.query_one("#transcript-panel-empty", Static).display is True
+        assert _panel_labels(screen) == []
+
+        # THE guard: the hidden list is not in the focus chain, so a cycle has
+        # no second stop to reach.
+        assert [widget.id for widget in screen.focus_chain] == ["detail-scroll"]
+
+        # ...and yet `right` puts focus on it — only focus-by-name does that.
+        await pilot.press("right")
+        await pilot.pause()
+        assert screen.focused is listing
+        assert scroll.has_focus is False
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+
+        # up/down over a hidden, row-less list: nothing happens, nothing raises,
+        # and the figures behind it do not scroll either — they genuinely could
+        # have, which is what these two premises pin (the pane overruns its
+        # viewport AND accepts a vertical scroll).
+        assert scroll.max_scroll_y > 0
+        assert scroll.allow_vertical_scroll is True
+        assert listing.index is None
+        await pilot.press("down")
+        await pilot.press("up")
+        await pilot.pause()
+        assert listing.index is None
+        assert scroll.scroll_y == 0
+        assert screen.focused is listing
+        assert app.is_running is True
+
+        # `left` still gets back out of the empty panel.
+        await pilot.press("left")
+        await pilot.pause()
+        assert screen.focused is scroll
+
+
+async def test_pane_navigation_survives_a_horizontal_scrollbar_on_the_panes(
+    tmp_path: Path,
+) -> None:
+    """left/right stay pane navigation even when a pane CAN scroll sideways.
+
+    **This is the ``priority=True`` guard**, and without it the bindings only
+    work by accident. Both panes are scrollable containers, and
+    ``ScrollableContainer.BINDINGS`` already binds ``left``→``scroll_left`` /
+    ``right``→``scroll_right``; Textual checks the *focused widget's* bindings
+    before the screen's. A plain screen binding is reached only because
+    ``action_scroll_right`` raises ``SkipAction`` while
+    ``allow_horizontal_scroll`` is False — i.e. only while no pane has a
+    horizontal scrollbar, which is a fact about today's *content*.
+
+    So: force a real horizontal scrollbar onto each pane, removing the
+    fall-through, and assert focus still moves. Drop ``priority=True`` from the
+    bindings and this is the test that fails; every other test in B12 keeps
+    passing, because with no horizontal scrollbar the accident still holds.
+
+    (``monkeypatch.setattr(DetailScreen, "BINDINGS", …)`` cannot express this —
+    Textual merges ``BINDINGS`` at class-creation time, so a later swap is a
+    no-op. The condition has to be created on the widgets instead.)
+    """
+    ledger = _ledger_with_games(tmp_path, 3, name="nav-priority.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_row(pilot, 0)
+        scroll = screen.query_one("#detail-scroll", VerticalScroll)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+
+        # The accident, stated: with this content neither pane can scroll
+        # sideways, so each pane's own left/right raises SkipAction and the
+        # screen gets a turn even without priority.
+        assert scroll.allow_horizontal_scroll is False
+        assert listing.allow_horizontal_scroll is False
+
+        # Now remove the accident: a real horizontal scrollbar on each pane, so
+        # each pane's inherited left/right becomes a live action that would
+        # consume the key.
+        scroll.styles.overflow_x = "scroll"
+        listing.styles.overflow_x = "scroll"
+        await pilot.pause()
+        await pilot.pause()
+        assert scroll.allow_horizontal_scroll is True
+        assert scroll.show_horizontal_scrollbar is True
+        assert listing.allow_horizontal_scroll is True
+        assert listing.show_horizontal_scrollbar is True
+
+        # Focus still moves both ways — because the screen's bindings carry
+        # `priority=True` and are therefore checked App-down, ahead of the
+        # focused pane's own.
+        assert screen.focused is scroll
+        await pilot.press("right")
+        await pilot.pause()
+        assert screen.focused is listing
+
+        await pilot.press("left")
+        await pilot.pause()
+        assert screen.focused is scroll
+
+        assert app.screen is screen
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
