@@ -1,0 +1,46 @@
+<!--
+Task list for spec 037 — Transcript List as a Side Panel.
+Vertical slices: each leaves `make view-ledger` runnable and adds one testable
+increment. Entirely local UI work — no cloud access, no model calls, no cost.
+-->
+
+# Tasks: Transcript List as a Side Panel in the Eval-Results Viewer
+
+- **Functional Specification:** `./functional-spec.md`
+- **Technical Considerations:** `./technical-considerations.md`
+
+> **Verification is headless `pytest` only.** `make view-ledger` is a Textual TUI needing a real terminal, so every slice is verified through Textual's `App.run_test()` harness — the project's established convention in `tests/test_ledger_viewer.py`. **No browser or external MCP is needed and none is missing.** Nothing here reaches a model, the network, or the ledger.
+
+> **Two facts already verified against the source** — do not re-derive, but do not contradict either: `VerticalScroll.can_focus` and `ListView.can_focus` are both `True`, so `up`/`down` need **no** handling at all (Textual routes them to the focused widget); and `Horizontal` is **already imported** in `ledger_viewer.py` and used at the search row, so no new import is required.
+
+> **The intermediate screen's tests are the biggest piece of work.** `TranscriptListScreen` has **12 references** in `tests/test_ledger_viewer.py`. Everything they prove — labels listed, the right game opened, the empty state, backing out — remains a requirement; only the surface moves. Slice 3 ports them rather than deleting them.
+
+---
+
+- [ ] **Slice 1: A run's games are listed in a panel beside its details, for every run**
+  - [ ] Split the detail screen (tech-spec §2 A): in `src/graphia/ui/ledger_viewer.py`, wrap `DetailScreen`'s body in a `Horizontal` (`#detail-split`) holding the existing `VerticalScroll(#detail-scroll)` at `1fr` and a new `#transcript-panel` at a **fixed 22 columns**. `Header`/`Footer` stay outside it. The panel contains a `ListView` of one `ListItem(Label(entry.label))` per entry plus the empty-state `Static` — **reuse the existing `_NO_TRANSCRIPTS_MESSAGE` constant and the hide-list/show-message posture from `TranscriptListScreen`** rather than reimplementing either. Fixed width is deliberate: it is not derived from content, so the no-layout-shift requirement holds by construction. **[Agent: textual-tui]**
+  - [ ] Pass the entries in (tech-spec §2 B): give `DetailScreen.__init__` an `entries: list[TranscriptEntry]` parameter, and resolve them at the **single** `push_screen(DetailScreen(record))` site in `LedgerTableScreen` via the pure `list_transcripts(record, self.app._path)` — the same call `action_open_transcripts` makes today, moved one level out. This preserves `DetailScreen`'s own documented invariant that *"the screen does no path arithmetic of its own"*; do **not** resolve inside the screen. **[Agent: textual-tui]**
+  - [ ] Focus indication + initial focus (tech-spec §2 D): give both panes a border at all times and change only its **colour** on `:focus`, using the theme variables the module already uses (`$text-muted` is precedent) — never adding or removing a border, so nothing reflows when focus moves. `on_mount` focuses `#detail-scroll`, per the functional spec. **Do not** carry over the deleted screen's `on_mount`, which focused its list. **[Agent: textual-tui]**
+  - [ ] Tests (tech-spec §4), headless via `App.run_test()`: opening a run shows both panes with nothing pressed; the panel is present for a run **with** transcripts and for one **without**; the details pane's width is **identical in both cases** — assert a measured width, not appearance; the empty run shows the message with its list hidden; focus starts on the details pane. **[Agent: testing]**
+  - [ ] Verification: `uv run pytest -q` green, and the existing `t`-opens-a-list-screen route still works untouched (this slice adds the panel without removing the old path, so the app stays runnable). **[Agent: textual-tui]**
+
+- [ ] **Slice 2: Focus moves between the panes, and up/down follow it**
+  - [ ] Focus bindings (tech-spec §2 C): add `Binding("right", "focus_panel")` and `Binding("left", "focus_details")` to `DetailScreen`, each focusing one **named** widget. Non-wrapping is therefore free — `right` while already on the panel simply focuses it again. Add **no** `up`/`down` handling: Textual delivers them to the focused widget, which is exactly the functional spec's "the same two keys serve both". **[Agent: textual-tui]**
+  - [ ] Tests (tech-spec §4): `right` focuses the panel and `left` returns; `right` while already on the panel and `left` while already on the details each leave focus unchanged **and push no screen**; with the panel focused, `down`/`up` move the highlight and do **not** scroll the details; with the details focused, they scroll it and do **not** move the highlight; on a run with **no** transcripts focus can still enter the panel and `up`/`down` raise nothing. **Assert the focused widget's identity, not its rendered colour** — appearance is reviewed by eye, focus is asserted programmatically. Include a guard that a future refactor to a `focus_next()`-style cycle would fail, since non-wrapping is currently free rather than defended. **[Agent: testing]**
+  - [ ] Verification: `uv run pytest -q` green; both panes reachable and the keys resolve by focus. **[Agent: textual-tui]**
+
+- [ ] **Slice 3: Opening a game from the panel, and the intermediate screen is gone**
+  - [ ] Wire selection + retarget `t` (tech-spec §2 C/E): move `on_list_view_selected` onto `DetailScreen` so picking an entry pushes `TranscriptScreen(entry)` — resolving through the index-parallel entries list, as the screen being deleted already proved. Replace `action_open_transcripts` with `action_focus_panel` so `t` moves focus and pushes nothing, and update `DetailScreen.SUB_TITLE`, which currently reads *"…t for transcripts"* and would now be false. **[Agent: textual-tui]**
+  - [ ] Delete the intermediate screen (tech-spec §2 E): remove the `TranscriptListScreen` class, its CSS and its bindings. **Keep** `_NO_TRANSCRIPTS_MESSAGE` (now serving the panel) and **keep `TranscriptScreen` untouched** — its `action_close` pops to whatever pushed it, which is now `DetailScreen`, correct with no change. **[Agent: textual-tui]**
+  - [ ] Port the removed screen's tests (tech-spec §3, the largest single piece): rewrite the **12** `TranscriptListScreen` references in `tests/test_ledger_viewer.py` against the panel. Port each assertion rather than dropping it — labels listed, selection opens the **right** game, the empty state, backing out. Add the two the new surface needs: **returning from a transcript leaves the same entry highlighted** (assert it; Textual keeping the `ListView` alive across push/pop is a framework assumption that fails quietly, so it must not be reasoned about), and **no key path reaches a screen whose only content is a transcript list** — including that importing `TranscriptListScreen` now fails. **[Agent: testing]**
+  - [ ] Verification: `uv run pytest -q` green; opening a run, stepping into the panel, reading game 3, going back and opening game 4 works with no intermediate screen, and the reading view is unchanged. **[Agent: textual-tui]**
+
+---
+
+## Notes for the implementer
+
+- **`up`/`down` are not yours to implement.** Both panes are focusable, so Textual routes those keys already. Adding a handler would be the bug, not the feature.
+- **The panel's width number lives in one place.** A backlog item (*Titled, stats-labelled transcripts*) wants entries labelled by matchup rather than `game-NN`, which will not fit in 22 columns. That item owns the width question when it lands; keep the constant findable so it is a one-line change.
+- **Do not touch `src/graphia/eval_ledger.py`.** The whole pure layer — `list_transcripts`, `read_transcript`, `transcript_dir_for`, `render_detail` — is consumed unchanged, which is why `tests/test_ledger_model.py` needs no edits.
+- **Spec 038 is in flight on the same module** but a different class (`TranscriptScreen`'s body rendering). Expect a merge on `ledger_viewer.py` with no overlapping hunks.
+- The current suite baseline is **1263 passed, 1 skipped**. The 1 skip is the opt-in live-observability test.
