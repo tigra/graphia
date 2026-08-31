@@ -137,6 +137,15 @@ METRIC_ORDER: tuple[tuple[str, str], ...] = (
 _FIXED_COLUMNS: tuple[str, ...] = (
     "⚠",
     "Date",
+    # Spec 036: which KIND of measurement this record is (``run.kind`` —
+    # :func:`_kind_cell`). Grouped with the identity columns, immediately after
+    # ``Date``, mirroring the record's own key order (``render_record`` emits
+    # ``run.kind`` directly after ``run.date``) and deliberately **not** in the
+    # metric tail, so the UI's right-justify split
+    # (``len(columns) - len(METRIC_ORDER)``) keys off the metric count and this
+    # column stays left-justified like every other identity column — the same
+    # spec-029 precedent recorded below.
+    "Kind",
     "Provider",
     "Large model",
     "Small model",
@@ -325,6 +334,37 @@ def _stand_in_cell(record: RawRecord) -> str:
     return _text(_dig(record, "settings.scripted_player", default=_STAND_IN_DEFAULT))
 
 
+# The record kind read for a pre-036 record. ``run.kind`` was added in spec 036
+# and its ABSENCE is *meaningful*, not unknown: per the ``evals/README.md``
+# contract, absent ⇒ a played game (the only kind of measurement that existed
+# before). So this column DEFAULTS rather than blanks for older records — the
+# same default-not-blank posture as :data:`_STAND_IN_DEFAULT`, and the reason
+# every one of the already-committed records reads ``game`` instead of showing a
+# column of blanks that would look like a field nobody filled in.
+_KIND_DEFAULT = "game"
+
+
+def _kind_cell(record: RawRecord) -> str:
+    """The ``Kind`` table cell — which kind of measurement this record is (spec 036).
+
+    Reads ``run.kind`` through the defensive :func:`_dig` with
+    :data:`_KIND_DEFAULT`, so a pre-036 record — and every game run, which omits
+    the key entirely — reads ``game`` rather than blank. Absence means "a played
+    game", not "not recorded", so this is one of the two cells that *default*
+    instead of blanking (:func:`_stand_in_cell` is the other).
+
+    The recorded value is rendered **verbatim**: a bench record reads
+    ``persona-bench``, the literal contract value. No label lookup table, for two
+    reasons — the cell text, the scoped ``kind`` search field and the on-disk
+    value then cannot drift apart, and a kind introduced by a future spec renders
+    as itself instead of being silently mislabelled by a map that has not heard
+    of it. There is deliberately **no render branch**: one total :func:`_dig`
+    plus :func:`_text` is the whole cell, which is what lets the records already
+    committed (none of which carry the field) flatten without raising.
+    """
+    return _text(_dig(record, "run.kind", default=_KIND_DEFAULT))
+
+
 def _resolution_cell(record: RawRecord) -> str:
     """The ``Unres (R/N)`` table cell — the non-side game-resolution counts.
 
@@ -424,6 +464,11 @@ def _dig(record: Any, dotted_key: str, default: Any = None) -> Any:
 SEARCH_FIELDS: tuple[str, ...] = (
     "provider",
     "date",
+    # Spec 036: scope the search to the record KIND, so a reviewer can filter the
+    # history down to one kind of measurement (``persona-bench``) or to the
+    # played games (``game``) — the whole point of labelling the kind. Carries the
+    # same resolved text the ``Kind`` cell shows, defaults included.
+    "kind",
     "model",
     "commit",
     "branch",
@@ -664,6 +709,10 @@ def _row_cells(record: RawRecord) -> list[str]:
     cells: list[str] = [
         "⚠" if dirty else "",
         _text(_dig(record, "run.date", "")),
+        # Spec 036: the record kind, positioned to match ``_FIXED_COLUMNS``
+        # (immediately after ``Date``) — defaults to ``game`` for the pre-036
+        # records rather than blanking, since absence *means* a played game.
+        _kind_cell(record),
         _text(_dig(record, "provider.name", "")),
         _text(large_model),
         _text(small_model),
@@ -783,9 +832,12 @@ def _search_blob(record: RawRecord) -> str:
     """Build one lowercased searchable string for a record (tech-spec 012 §2.4).
 
     Concatenates the run's date, provider name, both resolved model ids, the
-    code commit and branch, a ``dirty``/``clean`` keyword, the derived ``winner``
-    keyword (the side that won the run's majority — :func:`_winner_keyword` —
-    empty on a pre-013 record), and the **full notes** text — the facets the
+    code commit and branch, a ``dirty``/``clean`` keyword, the recorded
+    ``run.kind`` (spec 036 — **only when present**, so a bench record is findable
+    by typing ``persona-bench`` without seeding every older record with a
+    ``game`` token), the derived ``winner`` keyword (the side that won the run's
+    majority — :func:`_winner_keyword` — empty on a pre-013 record), and the
+    **full notes** text — the facets the
     viewer's substring filter searches across. Model ids
     prefer the effective ``settings`` values with the ``provider`` fallback (same
     rule as the row cells), so a pre-provenance record still contributes its
@@ -801,6 +853,16 @@ def _search_blob(record: RawRecord) -> str:
         _text(_dig(record, "code.commit", "")),
         _text(_dig(record, "code.branch", "")),
         "dirty" if dirty else "clean",
+        # Spec 036: the record kind, contributed to the free-text blob ONLY when
+        # the record actually carries ``run.kind`` — the ``_winner_keyword``
+        # posture ("empty on an older record, so the keyword neither matches nor
+        # pollutes the blob"). Deliberately NOT the ``game`` default the ``Kind``
+        # cell shows: seeding every one of the pre-036 records with the token
+        # ``game`` would make a free-text ``game`` query match the entire ledger.
+        # Filtering to the played games is what the *scoped* ``kind`` field is
+        # for; the blob's job here is to make a bench record findable by typing
+        # ``persona-bench`` under "All".
+        _text(_dig(record, "run.kind", "")),
         _winner_keyword(record),
         _lineup_keyword(record),
         _text(_dig(record, "notes", "")),
@@ -821,7 +883,13 @@ def _search_fields(record: RawRecord) -> dict[str, str]:
 
     ``model`` deliberately joins **both** resolved model ids (large + small) so a
     single ``model`` search matches either tier. ``state`` carries the
-    ``dirty``/``clean`` keyword derived from ``code.dirty``. ``winner`` carries the
+    ``dirty``/``clean`` keyword derived from ``code.dirty``. ``kind`` (spec 036)
+    carries exactly what the ``Kind`` cell shows (:func:`_kind_cell`) — the
+    recorded ``run.kind``, or the ``game`` default for a record that has none —
+    so scoping to ``kind`` and typing ``game`` selects the played games while
+    ``persona-bench`` selects the bench measurements. This is the one field whose
+    text is deliberately *richer* than the blob's contribution, which stays
+    present-only (see :func:`_search_blob`). ``winner`` carries the
     derived majority-side keyword (:func:`_winner_keyword` — ``law_abiding`` /
     ``mafia`` / ``draw`` / ``mixed``, empty on a pre-013 record); there is
     deliberately **no** vote-activity field (a count, not a searchable keyword).
@@ -838,6 +906,10 @@ def _search_fields(record: RawRecord) -> dict[str, str]:
     fields = {
         "provider": _text(_dig(record, "provider.name", "")),
         "date": _text(_dig(record, "run.date", "")),
+        # Spec 036: the same resolved text :func:`_kind_cell` puts in the row, so
+        # a scoped ``kind`` search can never disagree with the visible cell —
+        # including the ``game`` default a pre-036 record reads.
+        "kind": _kind_cell(record),
         "model": models,
         "commit": _text(_dig(record, "code.commit", "")),
         "branch": _text(_dig(record, "code.branch", "")),
@@ -892,9 +964,11 @@ def render_detail(record: RawRecord) -> str:
     A plain ``str`` (newline-joined) — **not** a YAML re-dump — laying every
     provenance and quality field out under section headers in the canonical
     top-level order ``run`` → ``code`` → ``provider`` → ``settings`` →
-    ``quality`` → ``outcomes`` → ``vote_activity`` → ``metrics`` → ``notes``
-    (tech-spec 012 §2.5, extended by 013 §2.3 — the two game-dynamics blocks sit
-    after ``quality`` and before ``metrics``, matching the record key order). The
+    ``quality`` → ``outcomes`` → ``vote_activity`` → ``generation`` →
+    ``metrics`` → ``notes`` (tech-spec 012 §2.5, extended by 013 §2.3 and by
+    036 §2 C — the two game-dynamics blocks and the bench-only ``generation``
+    block all sit after ``quality`` and before ``metrics``, matching the record
+    key order ``render_record`` writes). The
     thin Textual ``DetailScreen`` (a later task) wraps this string in a scroller;
     **no Rich/Textual concern lives here**, mirroring the table model's
     plain-string contract.
@@ -907,15 +981,20 @@ def render_detail(record: RawRecord) -> str:
 
     What each section shows:
 
-    - **run** — date, ``duration_seconds``, ``metrics_version``, and the
-      ``run.games`` fallback count when present.
+    - **run** — date, the spec-036 ``kind`` when present (absent ⇒ a played
+      game, and no line is shown), ``duration_seconds``, ``metrics_version``, and
+      the ``run.games`` fallback count when present.
     - **code** — ``commit``, ``branch``, and the working-copy state spelled out
       as ``dirty`` / ``clean`` (the table only flags it with ``⚠``).
     - **provider** — ``name`` and the resolved model ids, then the
       shape-specific extras: ollama ``models`` digests + ``server_version``, or
       the bedrock ``note``.
     - **settings** — the effective resolved values incl. ``games``, plus
-      ``metrics_version`` mirrored here for a like-for-like repeat.
+      ``metrics_version`` mirrored here for a like-for-like repeat, plus — spec
+      036, only when present — a ``persona`` sub-block naming the conditions a
+      persona-generation measurement ran under (``diversity_enabled``,
+      ``collision_threshold``, ``regen_attempts``, ``temperature``). A record
+      without the sub-map gains no line, so every played game reads as before.
     - **quality** — the run-quality counts.
     - **outcomes** — the win-rate by side (013 §2.1): ``games``, then
       ``law_abiding``/``mafia`` each with ``wins`` + **full-precision** ``rate`` +
@@ -929,6 +1008,11 @@ def render_detail(record: RawRecord) -> str:
       sub-block (``day_N: n`` sorted by integer suffix, or a ``(none)`` line when
       empty so "present but no per-day activity" stays distinct from an absent
       block, which collapses to one ``—`` line).
+    - **generation** — the persona-generation process counts (036 §2 A):
+      ``collisions`` (casts that ended with an over-similar pair) and
+      ``regenerations``. Present only on a persona-bench record; a played game
+      (and any pre-036 record) collapses to one ``—`` line, the mirror image of
+      ``outcomes``/``vote_activity`` on a bench record.
     - **metrics** — one line per :data:`METRIC_ORDER` entry (so order and
       vocabulary match the table's columns). Each **present** metric shows its
       **full-precision** ``rate`` + ``[ci_low–ci_high]`` band (band omitted when
@@ -945,6 +1029,7 @@ def render_detail(record: RawRecord) -> str:
         _render_quality_section(record),
         _render_outcomes_section(record),
         _render_vote_activity_section(record),
+        _render_generation_section(record),
         _render_metrics_section(record),
         _render_notes_section(record),
     ]
@@ -956,15 +1041,34 @@ def _section(title: str, lines: list[str]) -> str:
     return "\n".join([title, *lines])
 
 
-def _field(label: str, value: Any) -> str:
-    """One ``label: value`` line; an absent (``None``/blank) value shows ``—``."""
+def _field(label: str, value: Any, *, indent: int = 1) -> str:
+    """One ``label: value`` line; an absent (``None``/blank) value shows ``—``.
+
+    ``indent`` is the nesting depth in two-space units: ``1`` (the default, and
+    what every top-level section field uses) renders ``"  label: value"``, and
+    ``2`` renders a field *inside* a sub-block at four spaces — the same depth the
+    hand-rolled ``outcomes.scripted_side`` / ``vote_activity.by_side`` sub-block
+    lines already emit. The default is deliberately behaviour-preserving, so
+    adding the parameter changes not one byte of any existing section.
+    """
     text = _text(value)
-    return f"  {label}: {text if text else _ABSENT}"
+    return f"{'  ' * indent}{label}: {text if text else _ABSENT}"
 
 
 def _render_run_section(record: RawRecord) -> str:
-    lines = [
-        _field("date", _dig(record, "run.date")),
+    lines = [_field("date", _dig(record, "run.date"))]
+    # Spec 036: ``run.kind`` names the KIND of measurement (e.g.
+    # ``persona-bench``) and, per the unit-follows-kind rule, tells the reader
+    # that ``quality.attempted``/``completed`` count rosters rather than games.
+    # Rendered right after ``date``, matching the record's own key order, and
+    # CONDITIONAL like the ``games`` line below — a record without the key is a
+    # played game and gains no line at all, so every pre-036 record's detail view
+    # is unchanged. Without this the drill-down showed no ``kind`` anywhere, even
+    # though the table already had its ``Kind`` column.
+    kind = _dig(record, "run.kind")
+    if kind is not None:
+        lines.append(_field("kind", kind))
+    lines += [
         _field("duration_seconds", _dig(record, "run.duration_seconds")),
         _field("metrics_version", _dig(record, "run.metrics_version")),
     ]
@@ -1023,37 +1127,81 @@ def _render_provider_section(record: RawRecord) -> str:
     return _section("provider", lines)
 
 
+# The persona knobs a bench record carries under ``settings.persona`` (spec 036
+# §2 Component B), in the order ``blunder_eval.render_record`` writes them — so
+# the drill-down reads the same way round as the file on disk. Kept as one tuple
+# rather than four call sites: the writer's key list and the reader's field list
+# are the same contract, and a knob added by a future spec surfaces as one
+# appended name here.
+_PERSONA_SETTING_FIELDS: tuple[str, ...] = (
+    # The ARM the run was actually invoked with (the bench's ``--diversity``
+    # flag), not the ambient config default. This is the load-bearing one: it is
+    # what makes a flag-on / flag-off pair readable AS A PAIR (functional-spec
+    # §2), and it was the field a reader could not see before this branch existed.
+    "diversity_enabled",
+    "collision_threshold",
+    "regen_attempts",
+    "temperature",
+)
+
+
 def _render_settings_section(record: RawRecord) -> str:
+    """The ``settings`` block — the effective run conditions, or one ``—`` line.
+
+    A whole **absent** ``settings`` block (any pre-provenance record) collapses to
+    a single ``—`` line. The flat fields are rendered unconditionally (an absent
+    one shows ``—``); the spec-036 ``persona`` sub-map is rendered **only when
+    present**, for the same reason ``outcomes.scripted_side`` is: four
+    unconditional em-dash lines would be added to the drill-down of every one of
+    the already-committed game records, which is a visible regression, not a
+    faithful render. Present ⇒ four indented lines; absent ⇒ **no line at all**,
+    so a game record's detail view is byte-identical to before.
+    """
     settings = _dig(record, "settings")
     if not isinstance(settings, dict):
         return _section("settings", [f"  {_ABSENT}"])
-    return _section(
-        "settings",
-        [
-            _field("large_model", _dig(record, "settings.large_model")),
-            _field("small_model", _dig(record, "settings.small_model")),
-            _field("base_url", _dig(record, "settings.base_url")),
-            _field("games", _dig(record, "settings.games")),
-            _field("seed", _dig(record, "settings.seed")),
-            # Spec 023: the game-length control was renamed ``max_rounds`` →
-            # ``max_days`` (the runaway Day cap). New records carry
-            # ``settings.max_days``; already-committed pre-023 records carry the
-            # old ``settings.max_rounds``. Render the new field, falling back to
-            # the legacy one, so heterogeneous records all stay readable.
-            _field(
-                "max_days",
-                _dig(
-                    record,
-                    "settings.max_days",
-                    default=_dig(record, "settings.max_rounds"),
-                ),
+    lines = [
+        _field("large_model", _dig(record, "settings.large_model")),
+        _field("small_model", _dig(record, "settings.small_model")),
+        _field("base_url", _dig(record, "settings.base_url")),
+        _field("games", _dig(record, "settings.games")),
+        _field("seed", _dig(record, "settings.seed")),
+        # Spec 023: the game-length control was renamed ``max_rounds`` →
+        # ``max_days`` (the runaway Day cap). New records carry
+        # ``settings.max_days``; already-committed pre-023 records carry the
+        # old ``settings.max_rounds``. Render the new field, falling back to
+        # the legacy one, so heterogeneous records all stay readable.
+        _field(
+            "max_days",
+            _dig(
+                record,
+                "settings.max_days",
+                default=_dig(record, "settings.max_rounds"),
             ),
-            # Spec-014 lineup, defensively dug — a pre-014 record (no
-            # ``settings.lineup``) shows the ``—`` em-dash, no migration.
-            _field("citizens", _dig(record, "settings.lineup.num_citizens")),
-            _field("mafia", _dig(record, "settings.lineup.num_mafia")),
-        ],
-    )
+        ),
+        # Spec-014 lineup, defensively dug — a pre-014 record (no
+        # ``settings.lineup``) shows the ``—`` em-dash, no migration.
+        _field("citizens", _dig(record, "settings.lineup.num_citizens")),
+        _field("mafia", _dig(record, "settings.lineup.num_mafia")),
+    ]
+    # Spec 036: the persona knobs the measurement ran under, as a nested sub-block
+    # after the lineup — mirroring the record's own key order (``render_record``
+    # emits ``settings.persona`` directly after ``settings.lineup``). CONDITIONAL,
+    # like ``outcomes.scripted_side``: the sub-block writes itself only when the
+    # record carries it, so no game record gains a line and no migration is
+    # needed. Without this branch the four knobs were written to the record and
+    # invisible in the drill-down — the same non-iterating-renderer gap that hid
+    # ``run.kind`` and the whole ``generation`` block, and one that bit a
+    # functional-spec criterion directly (``diversity_enabled`` is what a
+    # side-by-side flag-on/flag-off pair is read *by*).
+    persona = _dig(record, "settings.persona")
+    if isinstance(persona, dict):
+        lines.append("  persona:")
+        lines += [
+            _field(name, _dig(record, f"settings.persona.{name}"), indent=2)
+            for name in _PERSONA_SETTING_FIELDS
+        ]
+    return _section("settings", lines)
 
 
 def _render_quality_section(record: RawRecord) -> str:
@@ -1205,6 +1353,34 @@ def _day_sort_key(day_key: str) -> tuple[int, str]:
         return (int(suffix), day_key)
     except ValueError:
         return (1 << 30, day_key)
+
+
+def _render_generation_section(record: RawRecord) -> str:
+    """The ``generation`` block — persona-generation process counts (spec 036), or ``—``.
+
+    A whole **absent** block — every played game, and every record written before
+    spec 036 — collapses to a single ``—`` line, exactly as
+    :func:`_render_outcomes_section` does for a pre-013 record (and as it now
+    does for a bench record, which plays no game). When present it shows
+    ``collisions`` (how many casts ended with an over-similar persona pair) and
+    ``regenerations`` (how many regeneration attempts fired).
+
+    Read this beside the persona similarity facets in ``metrics``, never instead
+    of them: the collision **count** is the figure that carried the spec-034
+    comparison — 2-in-10 rosters shipping a near-duplicate versus 0-in-10 — which
+    a similarity mean alone would have lost. A present ``collisions: 0`` is a
+    measured finding, so the block renders its zeroes rather than omitting them.
+    """
+    generation = _dig(record, "generation")
+    if not isinstance(generation, dict):
+        return _section("generation", [f"  {_ABSENT}"])
+    return _section(
+        "generation",
+        [
+            _field("collisions", _dig(record, "generation.collisions")),
+            _field("regenerations", _dig(record, "generation.regenerations")),
+        ],
+    )
 
 
 def _render_metrics_section(record: RawRecord) -> str:

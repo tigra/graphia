@@ -144,6 +144,14 @@ _NEAR_DUP_THRESHOLD = 0.85
 # measured under different rules are visibly incomparable in the ledger itself.
 # ``render_record`` reads this constant directly (no local default lives
 # anywhere else). Slice 2 owns this constant and the rule set it stamps.
+#
+# NOT a bump: purely ADDITIVE record-shape fields that change no detection rule
+# and no denominator. The derived ``ci_low``/``ci_high`` band, the spec-013
+# ``outcomes`` / ``vote_activity`` blocks, the conditional ``settings.lineup`` /
+# ``settings.scripted_player`` keys — and, spec 036, the conditional
+# ``run.kind`` record-kind label — all leave every scorer untouched, so rates
+# measured before and after stay directly comparable. Bumping for any of them
+# would falsely flag every prior rate as incomparable.
 METRICS_VERSION = 1
 
 # Wilson score confidence-interval constants for the per-metric reliability band
@@ -299,6 +307,20 @@ class EvalResult:
     # inverse of ``metrics``: ``by_side`` always carries both keys with a visible
     # integer (zero included), ``by_day`` is sparse / ``{}`` when no initiations.
     vote_activity: dict[str, dict[str, int]] = field(default_factory=dict)
+    # --- Spec-036 generation-process block (functional-spec §2, tech §2 A/B) ---
+    # ``generation`` — the persona-generation PROCESS counts of a bench run:
+    # ``{"collisions": <int>, "regenerations": <int>}``. It is deliberately its
+    # own small block rather than being folded into ``quality`` (which is run
+    # HEALTH — how many units were attempted/completed) or into ``metrics``
+    # (which is the versioned scored family): a collision count is neither. It
+    # is the count that carried the spec-034 result — 2-in-10 rosters shipping a
+    # near-duplicate → 0-in-10 — which a similarity MEAN alone would have lost,
+    # so it belongs beside the persona facets and not inside them.
+    # CONDITIONAL: empty ⇒ ``render_record`` omits the whole block, so a game
+    # run (which generates no roster in isolation) renders byte-identically to a
+    # pre-036 record. Additive/orthogonal, so NO ``METRICS_VERSION`` bump — the
+    # ``outcomes``/``vote_activity``/``ci_low`` precedent.
+    generation: dict[str, int] = field(default_factory=dict)
     # --- Slice 4 run-provenance blocks (functional-spec 011 §2.3, tech §2.4) ---
     # The code provenance: ``{"commit": <sha|None>, "branch": <str|None>,
     # "dirty": <bool>}`` from :func:`collect_code_provenance`. A clean record is
@@ -332,6 +354,17 @@ class EvalResult:
     # run wrote no transcripts, in which case ``render_record`` omits the key —
     # so OLDER records (and bare synthetic ones) simply don't carry it.
     transcript_dir: str = ""
+    # --- Spec-036 record kind (functional-spec §2, tech-spec §2 Component A) ---
+    # WHICH KIND of measurement this record describes, written into the record as
+    # ``run.kind``. Empty ⇒ a played game — the only kind that existed before
+    # spec 036 — and ``render_record`` then omits the key ENTIRELY, so every
+    # committed record and every synthetic ``EvalResult`` in the tests renders
+    # byte-identically and nothing is backfilled. ``run_eval`` leaves it empty;
+    # only the persona-bench recording path sets it (``'persona-bench'``).
+    # ``run.kind`` also defines the UNIT of the ``quality`` counts — games for a
+    # game run, rosters for a bench run. Additive/conditional, so NO
+    # ``METRICS_VERSION`` bump (the ``transcript_dir``/``lineup`` precedent).
+    kind: str = ""
 
 
 def _isolate_cloud_stores() -> None:
@@ -1900,13 +1933,19 @@ def render_record(result: EvalResult, run_date: str) -> str:
     stability are unit-testable with no live run. The ``append_record`` thin
     wrapper is what writes it (with the ``---`` separator) to the ledger file.
 
-    Fixed key order (spec-013 §2.3 shape) — ``run`` → ``code`` → ``provider`` →
-    ``settings`` → ``quality`` → ``outcomes`` → ``vote_activity`` → ``metrics``
-    → ``notes`` (the two game-dynamics blocks sit after ``quality``, before
-    ``metrics``; ``notes`` always LAST):
+    Fixed key order (spec-013 §2.3 shape, extended by spec 036) — ``run`` →
+    ``code`` → ``provider`` → ``settings`` → ``quality`` → ``outcomes`` →
+    ``vote_activity`` → ``generation`` → ``metrics`` → ``notes``. The
+    run-dynamics blocks all sit in the same band after ``quality`` and before
+    ``metrics`` — the two game-dynamics ones (``outcomes`` / ``vote_activity``)
+    first, then the bench-only ``generation`` last in that band, immediately
+    before the metric family whose denominators it contextualises. Each is
+    conditional and they are mutually exclusive in practice, so a record carries
+    the pair OR ``generation``, never both. ``notes`` is always LAST:
 
         run:
           date: '<iso date>'
+          kind: '<record kind>'  # spec 036 — e.g. 'persona-bench'; OMITTED ⇒ a played game
           duration_seconds: <float|null>
           metrics_version: <int>
           transcript_dir: '<run-id>'   # spec 017 — the run's dir under evals/transcripts/; omitted on older runs
@@ -1937,6 +1976,11 @@ def render_record(result: EvalResult, run_date: str) -> str:
           lineup:                  # spec 014 — the configured whole-table counts
             num_citizens: <int>
             num_mafia: <int>
+          persona:                 # spec 036 — persona-bench only: the conditions the measurement ran under
+            diversity_enabled: <bool>       # the ARM actually run (--diversity on/off), not the ambient default
+            collision_threshold: <float>    # the bar two personas are judged too alike at
+            regen_attempts: <int>
+            temperature: <float>
         quality:
           games_attempted: <int>
           games_completed: <int>
@@ -1959,18 +2003,31 @@ def render_record(result: EvalResult, run_date: str) -> str:
         vote_activity:
           by_side: {law_abiding: <int>, mafia: <int>}   # ALWAYS both keys, zero included
           by_day:  {day_1: <int>, day_2: <int>, ...}     # sparse; {} when none
+        generation:            # spec 036 — persona-bench only; WHOLE BLOCK omitted for a game run
+          collisions: <int>    # casts that ended with an over-similar persona pair
+          regenerations: <int> # regeneration attempts that fired
         metrics:
           repetition:
             rate: <float>
             count: <int>
             denominator: <int>
-            ci_low: <float>   # Wilson 95% lower bound (every present metric)
+            ci_low: <float>   # Wilson 95% lower bound (every present RATE metric)
             ci_high: <float>  # Wilson 95% upper bound
+          persona_lex_mean:   # VALUE-type facet (specs 031-033): mean|peak + denominator, no rate/CI
+            mean: <float>
+            denominator: <int>
         notes: '<free text, or empty>'
 
     Absent provenance fields render as YAML ``null`` (an unreached git commit, a
     missing ollama digest, a bedrock run's empty server version) so they read as
-    genuinely absent rather than as the empty string. ``notes`` is always
+    genuinely absent rather than as the empty string. ``run.kind`` (spec 036) is
+    the opposite treatment — a CONDITIONAL key, omitted outright when the run
+    recorded no kind, so a game run's record is byte-identical to a pre-036 one
+    and *absent* is what means "a played game". The ``generation`` block (spec
+    036) is conditional the same way, but as a WHOLE BLOCK: a game run populates
+    none, so nothing is emitted; a bench run emits both of its counts with a
+    visible integer, because a measured ``collisions: 0`` is the finding.
+    ``notes`` is always
     emitted LAST — present even when empty (``notes: ''``) so the record visibly
     invites hand-editing. A note with no newline renders as a single
     safely-quoted scalar; a multi-line note renders as a YAML literal block
@@ -1980,11 +2037,21 @@ def render_record(result: EvalResult, run_date: str) -> str:
     lines: list[str] = []
 
     lines.append("run:")
-    run_block: dict[str, object] = {
-        "date": run_date,
-        "duration_seconds": result.duration_seconds,
-        "metrics_version": METRICS_VERSION,
-    }
+    # Built key-by-key rather than as one literal because ``kind`` is
+    # CONDITIONAL yet must land immediately after ``date``: ``_yaml_block``
+    # renders in insertion order, so the insertion sequence *is* the key order.
+    run_block: dict[str, object] = {"date": run_date}
+    # ``kind`` (spec 036 §2 Component A) — which kind of measurement this record
+    # is, emitted ONLY when the run recorded one (the ``transcript_dir`` /
+    # ``settings.lineup`` conditional-emission pattern: *only emitted when the
+    # run recorded it*). An empty ``kind`` — every game run, and every bare
+    # synthetic ``EvalResult`` — omits the key entirely, so existing records stay
+    # byte-identical and absent keeps meaning "a played game". No
+    # ``METRICS_VERSION`` bump: no scoring rule changed.
+    if result.kind:
+        run_block["kind"] = result.kind
+    run_block["duration_seconds"] = result.duration_seconds
+    run_block["metrics_version"] = METRICS_VERSION
     # ``transcript_dir`` (spec 017 §2.3) — the run-id directory NAME under
     # ``evals/transcripts/``, emitted ONLY when this run wrote transcripts. A new
     # additive field: an empty ``transcript_dir`` (a run that wrote none, or a
@@ -2086,6 +2153,32 @@ def render_record(result: EvalResult, run_date: str) -> str:
             },
             indent=2,
         )
+    # ``settings.persona`` (spec 036 §2 Component B) — the resolved persona knobs
+    # the measurement actually ran under, as a one-level nested sub-map (the
+    # ``settings.lineup`` precedent, rendered after it). CONDITIONAL and
+    # ADDITIVE: only emitted when the run recorded them, so a game run — and
+    # every already-committed record — renders byte-identically, and no
+    # ``METRICS_VERSION`` bump is warranted (no scoring rule changed).
+    #
+    # This block is what makes a diversity-ON / diversity-OFF pair readable AS A
+    # PAIR: the two records are otherwise indistinguishable columns of numbers,
+    # and a similarity mean compared across a changed collision bar or a changed
+    # temperature is not a comparison at all. ``diversity_enabled`` is the arm
+    # the run was actually invoked with (the bench's ``--diversity`` flag), NOT
+    # the ambient config default — recording the default would silently mislabel
+    # every flag-off arm.
+    persona = settings.get("persona")
+    if isinstance(persona, dict):
+        lines.append("  persona:")
+        lines += _yaml_block(
+            {
+                "diversity_enabled": persona.get("diversity_enabled"),
+                "collision_threshold": persona.get("collision_threshold"),
+                "regen_attempts": persona.get("regen_attempts"),
+                "temperature": persona.get("temperature"),
+            },
+            indent=2,
+        )
 
     lines.append("quality:")
     lines += _yaml_block(
@@ -2168,6 +2261,28 @@ def render_record(result: EvalResult, run_date: str) -> str:
         by_day = result.vote_activity.get("by_day", {})
         lines += _yaml_int_map("by_day", dict(by_day), indent=1)
 
+    # ``generation`` (spec-036 §2 A/B) — the persona-generation PROCESS counts,
+    # rendered LAST in the after-``quality``/before-``metrics`` run-dynamics band
+    # so it sits immediately beside the persona facets whose denominators it
+    # contextualises (a similarity mean alone loses "how many casts shipped a
+    # near-duplicate" — the count that carried the spec-034 2-in-10 → 0-in-10
+    # result). CONDITIONAL as a WHOLE BLOCK: a game run populates no
+    # ``generation``, so the section omits itself entirely and every existing
+    # record renders byte-identically — the ``outcomes``/``vote_activity``
+    # pattern. Within a PRESENT block both keys are always emitted with a visible
+    # integer, the ``vote_activity`` explicit-zero treatment rather than
+    # ``metrics``' absent-≠-0 one: here ``collisions: 0`` is the measured
+    # headline finding, not a no-opportunity absence.
+    if result.generation:
+        lines.append("generation:")
+        lines += _yaml_block(
+            {
+                "collisions": int(result.generation.get("collisions", 0)),
+                "regenerations": int(result.generation.get("regenerations", 0)),
+            },
+            indent=1,
+        )
+
     # ``metrics`` is a map of metric-name → {rate, count, denominator}. Slice 1
     # carries only ``repetition``; Slice 2's detectors add sibling entries here
     # under the same nested shape, each rendered in this same fixed sub-key
@@ -2176,13 +2291,35 @@ def render_record(result: EvalResult, run_date: str) -> str:
     lines.append("metrics:")
     for metric_name, facets in result.metrics.items():
         lines.append(f"  {metric_name}:")
-        # Fixed sub-key order for clean diffs across runs and metrics. ``ci_low``
-        # / ``ci_high`` are the Wilson 95% reliability band, rendered as floats
-        # right after ``denominator`` whenever they were attached (every present
-        # metric); a synthetic record without them simply omits the two lines.
+        # Fixed sub-key order for clean diffs across runs and metrics. A
+        # RATE-type metric carries ``rate``/``count``; a VALUE-type one (the
+        # persona similarity facets of specs 031-033) carries ``mean`` OR
+        # ``peak`` instead — never both families — and both land before the
+        # shared ``denominator``, which is the shape the committed records
+        # already use (``mean:`` then ``denominator:``). ``ci_low`` / ``ci_high``
+        # are the Wilson 95% reliability band, rendered as floats right after
+        # ``denominator`` whenever they were attached (every present RATE
+        # metric; a mean/peak is not a binomial proportion, so it has none); a
+        # synthetic record without them simply omits the two lines.
+        #
+        # ``mean`` / ``peak`` were MISSING from this tuple until spec 036: specs
+        # 032/033 recorded the value-type facets on ``EvalResult`` and taught the
+        # viewer to render them, but the ledger writer silently dropped them, so
+        # the affected records carry a bare ``denominator`` with no measured
+        # value. Fixing it here is purely additive — a metric that carries
+        # neither key renders byte-identically — and it is a precondition for
+        # spec 036's bench record, whose whole payload is these four facets.
         ordered = {
             key: facets[key]
-            for key in ("rate", "count", "denominator", "ci_low", "ci_high")
+            for key in (
+                "rate",
+                "count",
+                "mean",
+                "peak",
+                "denominator",
+                "ci_low",
+                "ci_high",
+            )
             if key in facets
         }
         lines += _yaml_block(ordered, indent=2)

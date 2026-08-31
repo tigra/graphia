@@ -528,11 +528,27 @@ blunder-eval:
 # the real generation path (generate_roster -> assign_roles -> generate_personas)
 # with the spec-034 diversity on/off, scores the free lexical persona_lex_mean/
 # peak and (with --semantic) the Bedrock-embedding persona_sem_mean/peak, and
-# prints a per-run summary + collision/regen counts. Does NOT write the ledger.
+# prints a per-run summary + collision/regen counts.
 # NOT a mocked unit test: reaches a real model. Ollama is local/free; Bedrock
 # costs tokens. Use it for the flag-on-vs-off A/B (Slice 4).
 #   make persona-bench ARGS="--provider ollama --rosters 5 --diversity on"
 #   make persona-bench ARGS="--provider ollama --rosters 10 --diversity off --semantic"
+#
+# Recording is OPT-IN (spec 036). WITHOUT --record the ledger is untouched, which
+# is the default on purpose: the bench's value is dev-loop speed (~30 s/roster),
+# so most runs are throwaway and auto-recording would bury the rare real
+# measurement. WITH --record the run appends ONE record to
+# evals/blunder-ledger.yaml labelled run.kind: 'persona-bench' (a game run omits
+# the key, so absent ⇒ a played game), carrying the ROSTER counts in quality, the
+# collision/regen counts in generation, the four persona knobs in
+# settings.persona (diversity_enabled = the arm actually invoked, which is what
+# makes an on/off pair readable AS A PAIR), and the same commit/dirty + model
+# provenance a blunder-eval record carries. Records compare only WITHIN a kind as
+# well as within a provider — never diff a bench record against a game record.
+# Recording is metadata only: no extra model calls, so it adds no cost. Full
+# contract: evals/README.md.
+#   make persona-bench ARGS="--provider ollama --rosters 10 --diversity on  --record --note 'spec 034 A/B: diversity ON arm'"
+#   make persona-bench ARGS="--provider ollama --rosters 10 --diversity off --record --note 'spec 034 A/B: diversity OFF arm'"
 persona-bench:
 	uv run python -m graphia.tools.persona_bench $(ARGS)
 

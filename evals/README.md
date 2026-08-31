@@ -1,11 +1,14 @@
 # `evals/` — the AI quality ledger
 
 This directory holds **`blunder-ledger.yaml`**, the repo-committed quality
-ledger written by `make blunder-eval` (spec 011, _AI Blunder Tracking_). It
-turns AI behaviour from an anecdote into a tracked, comparable, history-backed
-property of the repo: each measurement run appends one dated record, and a
-maintainer answers "Nova vs Ollama on behaviour X?" or "before vs after prompt
-change Y?" by reading the ledger alone.
+ledger written by `make blunder-eval` (spec 011, _AI Blunder Tracking_) and — on
+request, since spec 036 — by `make persona-bench --record`. It turns AI behaviour
+from an anecdote into a tracked, comparable, history-backed property of the repo:
+each measurement run appends one dated record, and a maintainer answers "Nova vs
+Ollama on behaviour X?" or "before vs after prompt change Y?" by reading the
+ledger alone. Which **kind** of measurement a record is comes from
+[`run.kind`](#runkind), and records compare only **within a kind** as well as
+within a provider.
 
 ## The ledger contract
 
@@ -104,13 +107,20 @@ findings) and commit the full keepers.
 
 Each record is one YAML document with a **fixed top-level key order** —
 `run` → `code` → `provider` → `settings` → `quality` → `outcomes` →
-`vote_activity` → `metrics` → `notes` (the two game-dynamics blocks sit after
-`quality`, before `metrics`; `notes` always last). A full record looks like:
+`vote_activity` → `generation` → `metrics` → `notes`. The run-dynamics blocks
+all sit in the same band after `quality` and before `metrics`: the two
+**game**-dynamics ones (`outcomes`, `vote_activity`) first, then the
+**persona-bench**-only `generation` block last in that band, immediately before
+the metric family whose denominators it contextualises. All three are
+conditional and in practice mutually exclusive — a record carries the game pair
+**or** `generation`, never both. `notes` is always last. A full record looks
+like:
 
 ```yaml
 ---
 run:
   date: '2026-06-13'            # run date — for Bedrock, the only proxy for provider-side model drift
+  kind: 'persona-bench'         # spec 036 — WHICH KIND of measurement this is; the key is OMITTED ⇒ a played game
   duration_seconds: 412.3       # wall-clock duration of the whole run (null until finished)
   metrics_version: 1            # rule-set version; bumps when any detection rule or denominator changes
   transcript_dir: '2026-06-13T14-32-05'  # spec 017 — this run's dir under evals/transcripts/ (omitted if no transcripts / older record)
@@ -138,8 +148,13 @@ settings:                       # the EFFECTIVE resolved values, so a run can be
   seed: 20260613                # base structural seed (null = unseeded; game i used seed+i)
   max_rounds: 10                # per-game Day-round cap (null = uncapped)
   scripted_player: 'active'     # spec 026 — human-seat stand-in: 'active' or 'passive' (omitted on pre-026 records → read as 'passive')
+  persona:                      # spec 036 — persona-bench runs ONLY: the knobs the generation ran under (whole sub-map omitted for a game run)
+    diversity_enabled: true     # the --diversity ARM actually invoked, NOT the ambient config default
+    collision_threshold: 0.6    # the similarity bar at which two personas count as too alike
+    regen_attempts: 2           # regeneration attempts allowed per collision
+    temperature: 1.0            # persona-generation temperature
 quality:                        # so a degenerate run cannot masquerade as a clean baseline
-  games_attempted: 5
+  games_attempted: 5            # UNIT FOLLOWS run.kind — games for a game run, ROSTERS for a persona-bench run
   games_completed: 5
   games_failed_early: 0         # games that raised mid-run and were skipped
   duration_seconds: 412.3       # same wall-clock duration, mirrored beside the run-quality counts
@@ -172,6 +187,9 @@ vote_activity:                  # AI vote-INITIATION counts by side and by game-
     day_1: 2
     day_2: 1
     day_3: 1
+generation:                     # persona-bench runs ONLY — the whole block is omitted for a played game
+  collisions: 0                 # casts that ended with an over-similar persona pair (an explicit, measured zero)
+  regenerations: 3              # regeneration attempts that fired
 metrics:                        # each metric is a rate WITH its denominator visible (never a bare count)
   repetition:
     rate: 0.4                   # count / denominator
@@ -192,7 +210,11 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   `'2026-06-18T14-32-05'`; see [Transcripts](#transcripts) below). **`transcript_dir`
   is a new, additive field:** it is **omitted** on runs that wrote no
   transcripts and on **older records written before spec 017** — read it as
-  absent there, exactly like any other pre-feature field.
+  absent there, exactly like any other pre-feature field. It also carries
+  **`kind`** (spec 036 — *which kind of measurement* this record is; **absent ⇒
+  a played game**), the field that decides how the rest of the record reads: see
+  [`run.kind`](#runkind) below, which is also where the unit of the `quality`
+  counts and the compare-only-within-a-kind rule are defined.
 - **`code`** — `commit` and `branch` from git at run time (each `null` if git was
   unavailable or the cwd is not a repo), and `dirty`. **`dirty` is the
   load-bearing flag:** `true` means the working copy had uncommitted changes, so
@@ -218,17 +240,45 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   and always votes No). **`scripted_player` is a new, additive field:** it is
   **omitted** on records written **before spec 026** — read those as implicitly
   `'passive'`, the only stand-in that existed then — exactly like any other
-  pre-feature field.
+  pre-feature field. A **persona-bench** record additionally carries the nested
+  **`persona`** sub-map (spec 036 — following the `settings.lineup` precedent of
+  a one-level nested sub-map): `diversity_enabled`, `collision_threshold`,
+  `regen_attempts` and `temperature` — the four knobs the generation actually ran
+  under. **`diversity_enabled` is the arm the run was invoked with**
+  (`--diversity on|off`), *not* the ambient config default, and that is precisely
+  what makes a flag-on / flag-off pair readable **as a pair**: recording the
+  default would silently mislabel every flag-off arm. Conditional and additive
+  like every other new field — a game run omits the whole sub-map, so existing
+  records are untouched.
 - **`quality`** — run-quality counts so a degenerate run can't pass as a clean
   baseline: `games_attempted`, `games_completed`, `games_failed_early` (games
   that raised mid-run and were skipped), and `duration_seconds` (mirrored from
-  `run`).
+  `run`). **The unit these count is defined by `run.kind`** — games for a game
+  run, **rosters** for a `persona-bench` one. The key *names* are deliberately
+  reused rather than forked into a parallel set, so one renderer and one viewer
+  keep serving both kinds; `run.kind` is the single field that says what is being
+  counted. See [`run.kind`](#runkind).
 - **`outcomes`** — win-rate by side over the run's **completed** games (so a
   reader can ask "did this fix help one side win more?"); see
   [`outcomes`](#outcomes) below.
 - **`vote_activity`** — AI vote-**initiation** counts by side and by game-day
   (so a silent-Day provider reads as a visible `0`, not an absence); see
   [`vote_activity`](#vote_activity) below.
+- **`generation`** — the persona-**generation process** counts of a
+  persona-bench run: `collisions` (how many casts ended up containing a pair of
+  personas judged too alike) and `regenerations` (how many regeneration attempts
+  fired). It is deliberately **its own block** rather than part of `quality`
+  (which is run *health* — how many units were attempted and completed) or of
+  `metrics` (the versioned scored family): a collision count is neither. Read it
+  **beside** the persona similarity facets in `metrics`, never instead of them —
+  the collision *count* is what carried the spec-034 comparison (two casts in
+  ten shipping a near-duplicate versus none in ten), a result a similarity
+  *mean* alone would have lost. Like `vote_activity`, a present block emits its
+  **explicit zeroes**: `collisions: 0` is a measured finding, not a
+  no-opportunity absence. **Persona-bench runs only** — a played game populates
+  nothing here, so the **whole block is omitted**, exactly as `outcomes` /
+  `vote_activity` are omitted from a bench record; records written before this
+  block landed simply lack it, like any other pre-feature field.
 - **`metrics`** — a map of metric-name → `{rate, count, denominator, ci_low,
   ci_high}` (`rate` = `count / denominator`). The six watched behaviours, each
   AI-only (the human player is never counted):
@@ -278,7 +328,70 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   interval that works at any `n`. **Records written before this field landed do
   not carry `ci_low` / `ci_high`** (read those rates without a band, as with any
   pre-provenance field below).
+
+  **Value-type facets carry no `rate` and no CI.** Beside the six rate metrics
+  above, the persona-similarity facets (specs 031–033) are not binomial
+  proportions but *similarities*, so they render as `{mean | peak, denominator}`
+  — a `mean` or a `peak` plus the number of persona pairs it was taken over — and
+  deliberately carry **no** `rate`, `count`, `ci_low` or `ci_high`: a Wilson
+  interval on a similarity would be meaningless. There are four:
+  **`persona_lex_mean` / `persona_lex_peak`** (the free, fully local `difflib`
+  word-level measure) and **`persona_sem_mean` / `persona_sem_peak`** (the
+  meaning-based measure, from Bedrock Titan Text Embeddings v2 — the paid
+  instrument, and deliberately **always Bedrock** regardless of which provider is
+  under test, so the measuring stick does not change with the model being
+  measured). The semantic pair is **omitted entirely** when it was not measured —
+  `--semantic` not passed, or embeddings unavailable — never reported as `0.0`:
+  the same **Absent ≠ 0** rule as above. A **`persona-bench`** record's `metrics`
+  block is these facets and nothing else, because it plays no game and so offers
+  no opportunity for any of the six rate metrics.
 - **`notes`** — the one human-mutable field; always last. See below.
+
+### run.kind
+
+`run.kind` (spec 036, _Persona-Generation Measurements Join the Tracked Quality
+History_) names **which kind of measurement** a record describes. Read it first:
+it decides what everything below it means.
+
+- **Absent ⇒ a played game.** A game run omits the key entirely, so every record
+  written before spec 036 keeps its exact original meaning and **nothing was
+  backfilled**. Absence here is *meaningful*, not unknown — which is why the
+  viewer's `Kind` column shows `game` for such a record rather than a blank.
+- **`'persona-bench'`** — an isolated persona-generation measurement written by
+  `make persona-bench` with `--record`: characters generated and scored, **no
+  game played**. Recording is **opt-in**; without `--record` the bench prints its
+  summary and leaves the ledger completely untouched (the bench's value is
+  dev-loop speed, so auto-recording would bury the rare real measurement under
+  throwaway runs).
+- **It defines the unit of the `quality` counts** — games for a game run,
+  **rosters** for a persona-bench run — and `settings.games` likewise carries the
+  **roster** count on a bench record.
+- **The game-only parts are omitted, not zeroed.** A bench record carries no
+  `outcomes`, no `vote_activity` and no `run.transcript_dir`: no game was played,
+  so there is no winner, no ballot and no transcript to link. Blank game figures
+  on a bench record therefore mean *no game was played* — **not** that a game
+  failed part-way (that case is `quality.games_failed_early` on a record whose
+  kind *is* a game). For the same reason a bench run's `seed` and Day cap render
+  as `null` — "did not apply" — rather than borrowing an ambient config value
+  that never ran. Conversely `settings.persona` and the `generation` block appear
+  on a bench record only.
+
+**Records compare only within a kind — as well as within a provider.** The
+ledger already carries a within-provider rule (an Ollama record and a Bedrock
+record are different measurements, which is why runs are made **per provider**)
+and a within-`metrics_version` rule (see [Versioning and older
+records](#versioning-and-older-records)). **Kind is a third axis of the same
+discipline, and the strictest of the three**, because it is the one that can look
+comparable when it is not: a persona-bench record and a game record can share
+metric *keys* — the persona facets are written by both paths — yet they are not
+the same measurement. The bench pools its pairs across N generated casts with no
+game ever played, while a game record's facets come out of full games that also
+drive Days, votes and deaths; and the two records' `quality` counts are not even
+in the same unit. Comparing across kinds reads a difference in *what was
+measured* as a difference in *quality*. So a comparison means something only when
+**kind, provider and `metrics_version` all match**: diff two bench records
+against each other, or two game records — never one of each. Filtering the viewer
+by `Kind` before reading down a column is the practical form of the rule.
 
 ### outcomes
 
@@ -416,3 +529,13 @@ rewritten**.
   measurement is not a rule change. So a blunder `rate` stays cross-comparable
   across the spec-013 boundary; only the new blocks are missing from earlier
   records.
+- **Records written before spec 036 lack `run.kind`, `settings.persona` and
+  `generation`.** The missing `run.kind` is **not** a gap to be filled: per the
+  contract above, its absence *means* "a played game", which is what every
+  pre-036 record is. The other two belong to a kind of run that did not exist
+  yet. Their arrival **did not bump `metrics_version`** either — a record kind
+  plus two new provenance/process blocks change no detection rule and no
+  denominator definition, so every blunder `rate` stays cross-comparable across
+  the spec-036 boundary, on the same precedent as `ci_low` / `ci_high` and the
+  spec-013 blocks above. Comparability *across kinds* is a separate and stricter
+  matter — see [`run.kind`](#runkind).

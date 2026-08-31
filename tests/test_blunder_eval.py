@@ -759,6 +759,745 @@ def test_append_record_first_document_starts_with_the_separator(
 
 
 # ===========================================================================
+# 3b. Spec 036 — the record KIND is purely additive to the renderer
+#     (functional-spec 036 §2, tech-spec 036 §4 "Renderer, additive-only")
+# ===========================================================================
+#
+# ``run.kind`` names which KIND of measurement a record describes, so a
+# persona-generation measurement can join the same append-only ledger a played
+# game writes to without being mistaken for an interrupted game. The committed
+# ledger is a DATA CONTRACT, so the acceptance bar for the addition is
+# *byte-identity*: a game-shaped record must render exactly the text it rendered
+# before spec 036 existed.
+#
+# These tests pin three things:
+#
+# 1. **Byte-identity.** A fully-populated game-shaped ``EvalResult`` renders
+#    character-for-character equal to :data:`_PRE_036_GAME_RECORD` — a frozen
+#    golden captured from the pre-036 renderer (verified by rendering the same
+#    synthetic result under the ``HEAD`` copy of the module during authoring).
+#    No ``run.kind`` line, ``outcomes`` / ``vote_activity`` present.
+# 2. **The bench shape.** A ``kind='persona-bench'`` result emits
+#    ``run.kind`` — immediately after ``run.date`` — and OMITS ``outcomes`` /
+#    ``vote_activity`` / ``run.transcript_dir``. Those three were already
+#    conditional; the assertions exist so a future refactor cannot quietly make
+#    them unconditional and start writing hollow game blocks into a bench record.
+# 3. **The value-type write-back regression.** ``render_record`` filtered metric
+#    sub-keys through a fixed tuple that contained neither ``mean`` nor ``peak``,
+#    so every value-type facet specs 031-033 measured reached the ledger as a
+#    bare ``denominator:`` with the measured value DROPPED. Committed data was
+#    silently corrupted for three specs and cannot be backfilled. The
+#    round-trip is pinned per facet family below.
+
+
+def _game_shaped_result() -> EvalResult:
+    """A fully-populated GAME-shaped ``EvalResult`` — every conditional block present.
+
+    Deliberately maximal, because the golden it renders is the byte-identity
+    guard: ``code`` / ``provider_block`` (with the bedrock ``note``) /
+    ``settings`` (with ``scripted_player`` and the nested ``lineup``) /
+    ``outcomes`` / ``vote_activity`` / ``transcript_dir`` are all populated, so
+    the golden exercises every conditional emission the renderer owns. ``kind``
+    is left at its default empty string — a played game — which is what makes the
+    ``run.kind`` key absent.
+    """
+    result = EvalResult(
+        provider="bedrock",
+        large_model="us.amazon.nova-pro-v1:0",
+        small_model="qwen2.5:3b",
+        games_attempted=5,
+        games_completed=4,
+        games_failed_early=1,
+        ai_speeches=["line one", "line two"],
+        metrics={
+            "repetition": {"rate": 0.4, "count": 2, "denominator": 5},
+            "self_vote.initiation": {"rate": 0.0, "count": 0, "denominator": 3},
+        },
+        outcomes={
+            "games": 4,
+            "law_abiding": {"wins": 3, "rate": 0.75},
+            "mafia": {"wins": 1, "rate": 0.25},
+            "runaway": 0,
+            "draw": 0,
+            "no_winner": 0,
+        },
+        vote_activity={
+            "by_side": {"law_abiding": 2, "mafia": 1},
+            "by_day": {"day_1": 3},
+        },
+        code={"commit": "abc123", "branch": "main", "dirty": False},
+        provider_block={
+            "name": "bedrock",
+            "large_model": "us.amazon.nova-pro-v1:0",
+            "small_model": "qwen2.5:3b",
+            "note": "bedrock ids are stable; model weights may change invisibly",
+        },
+        settings={
+            "large_model": "us.amazon.nova-pro-v1:0",
+            "small_model": "qwen2.5:3b",
+            "base_url": None,
+            "games": 5,
+            "seed": None,
+            "max_days": 12,
+            "scripted_player": "active",
+            "lineup": {"num_citizens": 5, "num_mafia": 2},
+        },
+        duration_seconds=343.364,
+        transcript_dir="2026-06-13T10-00-00",
+    )
+    _attach_ci(result.metrics)
+    return result
+
+
+def _bench_shaped_result() -> EvalResult:
+    """A BENCH-shaped ``EvalResult`` — ``kind`` set, every game block left empty.
+
+    The shape ``persona_bench.build_bench_record`` produces: a record kind, the
+    roster counts under the ``quality`` keys, and only value-type persona
+    facets — no ``outcomes``, no ``vote_activity``, no ``transcript_dir``,
+    because a bench run plays no game, casts no vote and writes no transcript.
+    Built here (rather than imported from the bench) so this file tests the
+    RENDERER against the shape, independent of the mapping that produces it.
+    """
+    return EvalResult(
+        provider="ollama",
+        large_model="qwen3-coder:30b",
+        small_model="qwen2.5:3b",
+        games_attempted=5,
+        games_completed=5,
+        games_failed_early=0,
+        metrics={
+            "persona_lex_mean": {"mean": 0.1234, "denominator": 75},
+            "persona_lex_peak": {"peak": 0.5, "denominator": 75},
+        },
+        duration_seconds=31.5,
+        kind="persona-bench",
+    )
+
+
+# The frozen PRE-036 rendering of :func:`_game_shaped_result`, captured from the
+# ``HEAD`` copy of ``blunder_eval`` (the last commit before ``run.kind`` existed)
+# and asserted byte-for-byte below. Its whole purpose is to fail loudly if a
+# future additive field ever changes what a GAME record's text looks like — the
+# committed ledger is a data contract, and every existing record must keep
+# rendering exactly this way. Note the absent ``kind:`` line between ``date`` and
+# ``duration_seconds``: that absence IS the "this was a played game" signal.
+_PRE_036_GAME_RECORD = """\
+run:
+  date: '2026-06-13'
+  duration_seconds: 343.364
+  metrics_version: 1
+  transcript_dir: '2026-06-13T10-00-00'
+code:
+  commit: 'abc123'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'bedrock'
+  large_model: 'us.amazon.nova-pro-v1:0'
+  small_model: 'qwen2.5:3b'
+  note: 'bedrock ids are stable; model weights may change invisibly'
+settings:
+  large_model: 'us.amazon.nova-pro-v1:0'
+  small_model: 'qwen2.5:3b'
+  base_url: null
+  games: 5
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 5
+  games_completed: 4
+  games_failed_early: 1
+  duration_seconds: 343.364
+outcomes:
+  games: 4
+  law_abiding:
+    wins: 3
+    rate: 0.75
+  mafia:
+    wins: 1
+    rate: 0.25
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) \
+— a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 2
+    mafia: 1
+  by_day:
+    day_1: 3
+metrics:
+  repetition:
+    rate: 0.4
+    count: 2
+    denominator: 5
+    ci_low: 0.1176182311592533
+    ci_high: 0.769280067791163
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 3
+    ci_low: 0.0
+    ci_high: 0.5615060804490177
+notes: ''
+"""
+
+
+def test_render_record_game_shape_is_byte_identical_to_pre_036_text() -> None:
+    """A game-shaped record renders EXACTLY its pre-036 text — the data contract.
+
+    The headline acceptance bar of spec 036 (tech-spec §3, "Risk: silently
+    corrupting a committed data file"): ``run.kind`` is conditional, so adding it
+    must leave every already-committed record's rendering untouched. Asserted as
+    full-document equality rather than substring anchors, because a *missing* or
+    *reordered* line is exactly the failure mode a substring assertion would miss.
+    """
+    doc = render_record(_game_shaped_result(), "2026-06-13")
+
+    assert doc == _PRE_036_GAME_RECORD
+
+
+def test_render_record_game_shaped_record_omits_the_run_kind_key() -> None:
+    """A played game carries NO ``kind`` key — absence is what means "a game".
+
+    Called out separately from the golden so the intent survives any future edit
+    to that fixture: nothing is backfilled, and ``run.kind`` must never appear on
+    a record whose ``EvalResult.kind`` is empty (the ``transcript_dir`` /
+    ``settings.lineup`` conditional-emission precedent).
+    """
+    doc = render_record(_game_shaped_result(), "2026-06-13")
+
+    assert "kind:" not in doc
+    assert "persona-bench" not in doc
+
+
+@pytest.mark.parametrize(
+    ("factory", "expected_keys"),
+    [
+        pytest.param(
+            _game_shaped_result,
+            [
+                "run",
+                "code",
+                "provider",
+                "settings",
+                "quality",
+                "outcomes",
+                "vote_activity",
+                "metrics",
+                "notes",
+            ],
+            id="game-shaped-keeps-the-game-blocks",
+        ),
+        pytest.param(
+            _bench_shaped_result,
+            [
+                "run",
+                "code",
+                "provider",
+                "settings",
+                "quality",
+                "metrics",
+                "notes",
+            ],
+            id="bench-shaped-omits-the-game-blocks",
+        ),
+    ],
+)
+def test_render_record_top_level_key_order_per_record_kind(
+    factory: Callable[[], EvalResult],
+    expected_keys: list[str],
+) -> None:
+    """The top-level key order is fixed per shape; the game blocks omit themselves.
+
+    ``outcomes`` and ``vote_activity`` were ALREADY conditional before spec 036,
+    so a bench record needs no renderer change to drop them — but that is exactly
+    why it needs pinning: a refactor that made either unconditional would start
+    writing a hollow ``0-of-0`` win block into every bench record, which is the
+    "a bench record read as a game run" hazard the ``Kind`` column exists to
+    prevent. ``notes`` stays last in both shapes.
+    """
+    doc = render_record(factory(), "2026-06-13")
+
+    assert _top_level_keys(doc) == expected_keys
+
+
+def test_render_record_bench_shape_emits_kind_right_after_the_date() -> None:
+    """A bench ``run`` block reads date → kind → duration → metrics_version.
+
+    Placement matters because ``_yaml_block`` renders in insertion order, so the
+    build sequence IS the key order: ``kind`` is inserted between ``date`` and
+    ``duration_seconds`` rather than appended, which keeps the record's identity
+    facts together and mirrors the viewer's ``Kind``-after-``Date`` column.
+    """
+    doc = render_record(_bench_shaped_result(), "2026-06-13")
+    lines = doc.splitlines()
+
+    assert "  kind: 'persona-bench'" in lines
+    date_i = lines.index("  date: '2026-06-13'")
+    kind_i = lines.index("  kind: 'persona-bench'")
+    duration_i = lines.index("  duration_seconds: 31.5")
+    version_i = lines.index(f"  metrics_version: {METRICS_VERSION}")
+    assert date_i < kind_i < duration_i < version_i
+    # Immediately after the date — no key slipped in between.
+    assert kind_i == date_i + 1
+
+
+def test_render_record_bench_shaped_record_omits_the_game_only_keys() -> None:
+    """A bench record carries no ``outcomes`` / ``vote_activity`` / ``transcript_dir``.
+
+    A bench run plays no game, casts no vote and writes no transcript, so all
+    three must be ABSENT rather than zeroed — the "absent, not zero" rule that
+    lets a reader see the blanks are expected instead of reading a 0-of-0 win rate
+    as a failed game.
+    """
+    doc = render_record(_bench_shaped_result(), "2026-06-13")
+
+    assert "outcomes:" not in doc
+    assert "vote_activity:" not in doc
+    assert "transcript_dir" not in doc
+    # No ledger record is ever complete without the trailing human-mutable note.
+    assert doc.rstrip("\n").splitlines()[-1] == "notes: ''"
+
+
+def test_render_record_bench_shaped_record_still_carries_a_metrics_version() -> None:
+    """A bench record stamps the SAME ``metrics_version`` — no bump for a new kind.
+
+    Spec 036 adds a record kind and reuses every existing scorer unchanged, so
+    rates measured before and after stay directly comparable and the version must
+    not move (the ``ci_low`` / ``lineup`` / ``scripted_player`` precedent).
+    """
+    doc = render_record(_bench_shaped_result(), "2026-06-13")
+
+    assert f"  metrics_version: {METRICS_VERSION}" in doc
+
+
+@pytest.mark.parametrize(
+    ("facet_key", "value", "rendered"),
+    [
+        pytest.param("mean", 0.1234, "    mean: 0.1234", id="mean"),
+        pytest.param("peak", 0.5, "    peak: 0.5", id="peak"),
+    ],
+)
+def test_render_record_value_type_facet_round_trips_its_measured_value(
+    facet_key: str,
+    value: float,
+    rendered: str,
+) -> None:
+    """REGRESSION: a value-type facet's ``mean``/``peak`` reaches the ledger text.
+
+    The writer's fixed metric sub-key filter contained neither ``mean`` nor
+    ``peak``, so every value-type facet specs 031-033 measured was written as a
+    bare ``denominator:`` with the measured value silently DROPPED — the viewer
+    had been taught to read a number the writer never emitted, and the affected
+    committed records cannot be backfilled because those values exist nowhere
+    else. This is the round-trip that was missing: the value is emitted, it
+    precedes its ``denominator``, and the facet is not reduced to its own n.
+    """
+    result = EvalResult(
+        provider="ollama",
+        metrics={"persona_lex_mean": {facet_key: value, "denominator": 30}},
+    )
+
+    doc = render_record(result, "2026-06-13")
+    lines = doc.splitlines()
+
+    assert rendered in lines
+    value_i = lines.index(rendered)
+    denom_i = lines.index("    denominator: 30")
+    # The value comes FIRST, then the n behind it (the on-disk shape spec 032
+    # already committed: ``mean:`` then ``denominator:``).
+    assert lines.index("  persona_lex_mean:") < value_i < denom_i
+
+
+def test_render_record_value_type_facet_carries_no_rate_count_or_ci_band() -> None:
+    """A similarity value gets no ``rate``/``count`` and no Wilson band.
+
+    A mean/peak cosine is not a binomial proportion, so the Wilson CI does not
+    apply — and the sub-key filter must not invent one. Pinned alongside the
+    round-trip above so the fix that ADDED ``mean``/``peak`` cannot drift into
+    also emitting rate-family keys for a value-type facet.
+    """
+    result = EvalResult(
+        provider="ollama",
+        metrics={
+            "persona_sem_peak": {"peak": 0.87, "denominator": 30},
+        },
+    )
+
+    doc = render_record(result, "2026-06-13")
+
+    assert "    peak: 0.87" in doc
+    assert "rate:" not in doc
+    assert "count:" not in doc
+    assert "ci_low:" not in doc
+    assert "ci_high:" not in doc
+
+
+def test_render_record_metric_carrying_neither_mean_nor_peak_is_unchanged() -> None:
+    """Adding ``mean``/``peak`` to the sub-key filter is additive for rate metrics.
+
+    The other half of the regression fix: a RATE-type metric (which carries
+    neither new key) must render exactly as before — which the byte-identity
+    golden above already covers for the whole document, and this pins at the
+    single-metric level so the failure localises.
+    """
+    result = EvalResult(
+        provider="ollama",
+        metrics={"repetition": {"rate": 0.4, "count": 2, "denominator": 5}},
+    )
+
+    doc = render_record(result, "2026-06-13")
+    lines = doc.splitlines()
+
+    metric_i = lines.index("  repetition:")
+    assert lines[metric_i + 1 : metric_i + 4] == [
+        "    rate: 0.4",
+        "    count: 2",
+        "    denominator: 5",
+    ]
+    assert "    mean:" not in doc
+    assert "    peak:" not in doc
+
+
+# ===========================================================================
+# 3c. Spec 036, Slice 2 — the ``generation`` block + the persona CONDITIONS
+#     (functional-spec 036 §2, tech-spec 036 §4)
+# ===========================================================================
+#
+# Slice 2 adds the two things that make a bench record *comparable* rather than
+# merely present:
+#
+# * a top-level ``generation`` block carrying ``collisions`` / ``regenerations``
+#   — the generation-PROCESS counts that carried the spec-034 result (2-in-10
+#   rosters shipping a near-duplicate → 0-in-10), which a similarity MEAN alone
+#   would have lost; and
+# * a ``settings.persona`` sub-map naming the conditions the measurement ran
+#   under, so a diversity-ON record and a diversity-OFF record are readable as a
+#   PAIR instead of two indistinguishable columns of numbers.
+#
+# Both are conditional and additive, so the pinning is symmetric: present with
+# the right values and in the right place on a bench record, and wholly ABSENT
+# on a game-shaped one (the byte-identity golden in 3b above is the other half
+# of that guarantee).
+#
+# The one non-obvious contract, pinned hard below: inside a PRESENT
+# ``generation`` block both counts ALWAYS render a visible integer — the
+# ``vote_activity`` explicit-zero treatment, NOT ``metrics``' absent-≠-zero one.
+# A measured ``collisions: 0`` is the headline finding of a diversity-on run, so
+# no future "the dict is falsy anyway" refactor may turn it into an omitted key.
+
+
+def _recorded_bench_result(
+    *,
+    collisions: int = 3,
+    regenerations: int = 7,
+    diversity_enabled: bool = True,
+) -> EvalResult:
+    """The FULL Slice-2 bench shape: kind + ``generation`` + ``settings.persona``.
+
+    Deliberately a *separate* factory from :func:`_bench_shaped_result` (the
+    Slice-1 minimum) so that one keeps pinning the narrower shape it was written
+    for — a bench record whose ``generation`` block is empty must still render —
+    while this one varies the two fields Slice 2 introduced.
+    """
+    result = _bench_shaped_result()
+    result.generation = {"collisions": collisions, "regenerations": regenerations}
+    result.settings = {
+        "large_model": "qwen3-coder:30b",
+        "small_model": "qwen2.5:3b",
+        # Recorded TEXT only — the renderer never dereferences it, and no test in
+        # this suite may reach a local ollama server.
+        "base_url": "http://localhost:11434",
+        # The unit is ROSTERS here; ``run.kind`` is what says so.
+        "games": 5,
+        # Genuinely inapplicable to a run that plays no game — recorded null
+        # rather than borrowing an ambient config value that never applied.
+        "seed": None,
+        "max_days": None,
+        "persona": {
+            "diversity_enabled": diversity_enabled,
+            "collision_threshold": 0.6,
+            "regen_attempts": 2,
+            "temperature": 1.0,
+        },
+    }
+    return result
+
+
+def _hybrid_result() -> EvalResult:
+    """A DEFENSIVE shape: every game block present *and* a ``generation`` block.
+
+    No live path produces this — a game run generates no roster in isolation and
+    a bench run plays no game — so it exists purely to pin the ``generation``
+    block's POSITION in the fixed key order against the two blocks it must
+    follow. Without it, "generation comes after vote_activity" is untested,
+    because on a real bench record there is no ``vote_activity`` to come after.
+    """
+    result = _game_shaped_result()
+    result.generation = {"collisions": 1, "regenerations": 2}
+    return result
+
+
+@pytest.mark.parametrize(
+    ("factory", "expected_keys"),
+    [
+        pytest.param(
+            _game_shaped_result,
+            [
+                "run",
+                "code",
+                "provider",
+                "settings",
+                "quality",
+                "outcomes",
+                "vote_activity",
+                "metrics",
+                "notes",
+            ],
+            id="game-shaped-has-no-generation-block",
+        ),
+        pytest.param(
+            _recorded_bench_result,
+            [
+                "run",
+                "code",
+                "provider",
+                "settings",
+                "quality",
+                "generation",
+                "metrics",
+                "notes",
+            ],
+            id="bench-shaped-has-generation-and-no-game-blocks",
+        ),
+        pytest.param(
+            _hybrid_result,
+            [
+                "run",
+                "code",
+                "provider",
+                "settings",
+                "quality",
+                "outcomes",
+                "vote_activity",
+                "generation",
+                "metrics",
+                "notes",
+            ],
+            id="generation-follows-vote-activity-precedes-metrics",
+        ),
+    ],
+)
+def test_render_record_generation_block_sits_last_in_the_run_dynamics_band(
+    factory: Callable[[], EvalResult],
+    expected_keys: list[str],
+) -> None:
+    """``generation`` renders after ``vote_activity`` and before ``metrics``.
+
+    The documented band is ``quality`` → ``outcomes`` → ``vote_activity`` →
+    ``generation`` → ``metrics``: the block sits immediately beside the persona
+    facets whose denominators it contextualises. Asserted over the whole
+    top-level key list rather than a substring, so a block that moved (or one
+    that stopped omitting itself) fails here rather than being silently written
+    into a committed data file.
+    """
+    doc = render_record(factory(), "2026-06-13")
+
+    assert _top_level_keys(doc) == expected_keys
+
+
+def test_render_record_game_shaped_record_omits_the_generation_block() -> None:
+    """A played game carries no ``generation`` block, and none of its keys.
+
+    Stated separately from the byte-identity golden so the *intent* survives any
+    later edit to that fixture: a game run generates no roster in isolation, so
+    the whole block omits itself — nothing is backfilled and every committed
+    record keeps rendering exactly as it does today.
+    """
+    doc = render_record(_game_shaped_result(), "2026-06-13")
+
+    assert "generation:" not in doc
+    assert "collisions" not in doc
+    assert "regenerations" not in doc
+
+
+@pytest.mark.parametrize(
+    ("collisions", "regenerations"),
+    [
+        pytest.param(3, 7, id="both-non-zero"),
+        pytest.param(0, 0, id="both-zero-the-diversity-on-headline"),
+        pytest.param(0, 12, id="zero-collisions-after-twelve-regenerations"),
+        pytest.param(5, 0, id="five-collisions-no-regeneration-fired"),
+    ],
+)
+def test_render_record_generation_block_renders_both_counts_in_fixed_order(
+    collisions: int,
+    regenerations: int,
+) -> None:
+    """Both counts render as visible integers, ``collisions`` then ``regenerations``.
+
+    The explicit-zero guarantee (the ``vote_activity.by_side`` treatment, not
+    ``metrics``' absent-≠-zero one). ``0`` here is a *measured* figure — "no cast
+    shipped an over-similar pair" is precisely the finding a diversity-on run
+    exists to produce — so it must be written, never omitted as a falsy value.
+    Sub-key order is pinned too: the two counts read the same way in every record.
+    """
+    doc = render_record(
+        _recorded_bench_result(collisions=collisions, regenerations=regenerations),
+        "2026-06-13",
+    )
+    lines = doc.splitlines()
+
+    block_i = lines.index("generation:")
+    assert lines[block_i + 1 : block_i + 3] == [
+        f"  collisions: {collisions}",
+        f"  regenerations: {regenerations}",
+    ]
+
+
+def test_render_record_zero_collisions_are_written_not_omitted() -> None:
+    """REGRESSION GUARD: a 0/0 ``generation`` block is still a rendered block.
+
+    Called out on its own because it is the single assertion a well-meaning
+    refactor is most likely to break — "both counts are zero, so there is nothing
+    to write" inverts the meaning of the record. A diversity-on run whose casts
+    contained no over-similar pair MUST read ``collisions: 0``; an omitted key
+    would read as "this run did not measure collisions", which is the opposite of
+    the truth and would make the spec-034 comparison unrecoverable.
+    """
+    doc = render_record(
+        _recorded_bench_result(collisions=0, regenerations=0), "2026-06-13"
+    )
+
+    assert "generation:" in doc.splitlines()
+    assert "  collisions: 0" in doc
+    assert "  regenerations: 0" in doc
+
+
+def test_render_record_partial_generation_dict_fills_the_missing_count() -> None:
+    """A half-populated block still renders both keys — the absent one as ``0``.
+
+    ``render_record`` reads each count with a ``0`` default, so a caller that
+    recorded only one of them cannot produce a block with a missing key: the
+    on-disk shape stays fixed for every reader (the viewer's
+    ``_render_generation_section`` reads both by name).
+    """
+    result = _bench_shaped_result()
+    result.generation = {"collisions": 4}
+
+    doc = render_record(result, "2026-06-13")
+    lines = doc.splitlines()
+
+    block_i = lines.index("generation:")
+    assert lines[block_i + 1 : block_i + 3] == [
+        "  collisions: 4",
+        "  regenerations: 0",
+    ]
+
+
+def test_render_record_settings_persona_renders_after_the_flat_settings_keys() -> None:
+    """``settings.persona`` is a nested sub-map following the flat settings keys.
+
+    The ``settings.lineup`` precedent (spec 014): a one-level sub-map rendered
+    after the flat keys, with its own fixed sub-key order so an A/B pair diffs
+    cleanly line-for-line.
+    """
+    doc = render_record(_recorded_bench_result(), "2026-06-13")
+    lines = doc.splitlines()
+
+    persona_i = lines.index("  persona:")
+    assert lines.index("settings:") < lines.index("  max_days: null") < persona_i
+    assert lines[persona_i + 1 : persona_i + 5] == [
+        "    diversity_enabled: true",
+        "    collision_threshold: 0.6",
+        "    regen_attempts: 2",
+        "    temperature: 1.0",
+    ]
+    # The sub-map belongs to ``settings`` — it must precede the next top-level
+    # block, not trail off after it.
+    assert persona_i < lines.index("quality:")
+
+
+@pytest.mark.parametrize(
+    ("diversity_enabled", "rendered"),
+    [
+        pytest.param(True, "    diversity_enabled: true", id="arm-on"),
+        pytest.param(False, "    diversity_enabled: false", id="arm-off"),
+    ],
+)
+def test_render_record_settings_persona_records_either_diversity_arm(
+    diversity_enabled: bool,
+    rendered: str,
+) -> None:
+    """Both arms render as a YAML bool, so a flag-off record says so on its face.
+
+    Whichever arm ran must be legible in the record: a comparison between a
+    diversity-on and a diversity-off measurement only means anything when each
+    side states which side it was (functional-spec §2, "the conditions the
+    measurement ran under"). ``false`` is the arm most at risk — it is the one a
+    config-default read would silently mislabel as ``true``.
+    """
+    doc = render_record(
+        _recorded_bench_result(diversity_enabled=diversity_enabled), "2026-06-13"
+    )
+
+    assert rendered in doc.splitlines()
+
+
+def test_render_record_settings_without_persona_omits_the_sub_map() -> None:
+    """A game run's ``settings`` grows no ``persona`` sub-map.
+
+    The conditional half of the additive contract: the block is emitted only when
+    the run recorded the knobs, so every already-committed record's ``settings``
+    renders byte-identically (the golden in 3b covers the full document; this
+    localises the failure to the sub-map).
+    """
+    doc = render_record(_game_shaped_result(), "2026-06-13")
+
+    assert "  persona:" not in doc
+    assert "diversity_enabled" not in doc
+
+
+def test_render_record_unrecorded_persona_knobs_render_as_nulls() -> None:
+    """A knob the mapping could not resolve renders ``null``, not a borrowed value.
+
+    ``build_bench_record`` reads the three config knobs with a ``None`` default
+    (the ``max_days`` / ``lineup`` precedent), so a provenance gap costs the
+    measurement nothing — but it must read as *genuinely absent* rather than as a
+    plausible default nobody measured under, which would make the record's
+    conditions a fiction.
+    """
+    result = _bench_shaped_result()
+    result.settings = {
+        "large_model": "qwen3-coder:30b",
+        "small_model": "qwen2.5:3b",
+        "base_url": None,
+        "games": 5,
+        "seed": None,
+        "max_days": None,
+        "persona": {"diversity_enabled": False},
+    }
+
+    doc = render_record(result, "2026-06-13")
+    lines = doc.splitlines()
+
+    persona_i = lines.index("  persona:")
+    assert lines[persona_i + 1 : persona_i + 5] == [
+        "    diversity_enabled: false",
+        "    collision_threshold: null",
+        "    regen_attempts: null",
+        "    temperature: null",
+    ]
+
+
+# ===========================================================================
 # 4. Spec 017 — streaming capture preserves MULTIPLE Nights' picks.
 #
 # This is the central regression of the slice: ``night_open`` resets the
