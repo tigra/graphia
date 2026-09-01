@@ -69,6 +69,12 @@ __all__ = [
     "KIND_SPEECH_LAW_ABIDING",
     "KIND_ATTR_MAFIA",
     "KIND_ATTR_LAW_ABIDING",
+    "KIND_SPEAKER_HUMAN",
+    "KIND_SPEECH_HUMAN",
+    "KIND_SPEAKER_MAFIA_HUMAN",
+    "KIND_SPEAKER_LAW_ABIDING_HUMAN",
+    "KIND_SPEECH_MAFIA_HUMAN",
+    "KIND_SPEECH_LAW_ABIDING_HUMAN",
     "TRANSCRIPT_KINDS",
     "tokenize_transcript",
 ]
@@ -781,14 +787,45 @@ KIND_SPEECH_LAW_ABIDING = "speech-law-abiding"
 KIND_ATTR_MAFIA = "attr-mafia"
 KIND_ATTR_LAW_ABIDING = "attr-law-abiding"
 
+# Slice 5 — the reviewer's OWN SEAT, "marked more strongly than the rest of its
+# side" (functional-spec §2). The seat is bold **within** its side colour, so it
+# stands out from its side-mates rather than reading as a third side; each kind
+# below is therefore its Slice-4 kind plus a weight, and the UI rule for it is
+# the corresponding side rule's ``color:`` plus ``text-style: bold``. Semantic,
+# not presentational: ``speaker-mafia-human`` names *whose seat it is*, exactly
+# as ``speaker-mafia`` names which side they are on. ``speaker-bold`` never is.
+#
+# **Six kinds, because the two axes are independent.** A side comes from the
+# cast list; a seat comes from the ``human="true"`` marker or, failing that,
+# from the preamble's welcome line (:func:`_human_seat`) — and a game can know
+# either one without the other. All 30 pre-spec-022 transcripts are exactly that
+# case: they name the seat in their preamble and yield no cast map at all, so
+# :data:`KIND_SPEAKER_HUMAN` / :data:`KIND_SPEECH_HUMAN` are "the seat whose side
+# is unknown", the same way the neutral pair above is "a line whose side is
+# unknown". Folding the two axes into one kind would have to discard one of two
+# facts the file actually states.
+#
+# **``attr`` deliberately gains no human form.** The seat's own cast entry and
+# its ``<thought player="…">`` owner name are already :data:`KIND_ATTR_MAFIA` /
+# :data:`KIND_ATTR_LAW_ABIDING`, and Slice 4's styling task kept ``attr``'s bold
+# on both — so bold-within-the-side would be invisible there. Functional-spec §2
+# scopes the requirement to "that seat's **lines**" in any case, and bold on a
+# player's *line* is unspent precisely so it can mean this one thing (Slice 3).
+KIND_SPEAKER_HUMAN = "speaker-human"
+KIND_SPEECH_HUMAN = "speech-human"
+KIND_SPEAKER_MAFIA_HUMAN = "speaker-mafia-human"
+KIND_SPEAKER_LAW_ABIDING_HUMAN = "speaker-law-abiding-human"
+KIND_SPEECH_MAFIA_HUMAN = "speech-mafia-human"
+KIND_SPEECH_LAW_ABIDING_HUMAN = "speech-law-abiding-human"
+
 # The canonical kind vocabulary, in the order the kinds were introduced — the
 # single source of truth for which kinds exist, following the same house pattern
 # as :data:`METRIC_ORDER` (a later spec appends its entries and nothing else has
 # to change). The UI builds its kind → style map from this, and a kind absent
 # from a style map must fall back to unstyled rather than raising.
 #
-# Later slices of spec 038 append: the human seat's bold-within-its-side
-# treatment (Slice 5).
+# Slice 5 closed the vocabulary at twenty: the human seat's
+# bold-within-its-side treatment is the last of spec 038's kinds.
 TRANSCRIPT_KINDS: tuple[str, ...] = (
     KIND_MARKER,
     KIND_PLAIN,
@@ -804,6 +841,12 @@ TRANSCRIPT_KINDS: tuple[str, ...] = (
     KIND_SPEECH_LAW_ABIDING,
     KIND_ATTR_MAFIA,
     KIND_ATTR_LAW_ABIDING,
+    KIND_SPEAKER_HUMAN,
+    KIND_SPEECH_HUMAN,
+    KIND_SPEAKER_MAFIA_HUMAN,
+    KIND_SPEAKER_LAW_ABIDING_HUMAN,
+    KIND_SPEECH_MAFIA_HUMAN,
+    KIND_SPEECH_LAW_ABIDING_HUMAN,
 )
 
 # The two sides, as the internal token that selects a side-bearing kind. Private
@@ -833,6 +876,27 @@ _SIDE_SPEECH_KINDS: dict[str, str] = {
 _SIDE_ATTR_KINDS: dict[str, str] = {
     _SIDE_MAFIA: KIND_ATTR_MAFIA,
     _SIDE_LAW_ABIDING: KIND_ATTR_LAW_ABIDING,
+}
+
+# Dialogue kind → the same kind for the **reviewer's own seat** (Slice 5). Keyed
+# by the kind rather than by the side, so the human axis composes with whatever
+# the side axis already decided — including the neutral case, which is not a
+# leftover but the whole of the pre-spec-022 story (a seat named in the preamble
+# of a game with no cast list to read a side from).
+#
+# A lookup rather than ``kind + "-human"`` for the same reason
+# :data:`_SIDE_SPEAKER_KINDS` is one: the vocabulary stays a set of **literals a
+# reader can grep for**, and a kind with no entry here (``marker``, ``attr``,
+# ``thought``, ``recap``, an unrecognised string) can never have a name
+# manufactured for it that :data:`TRANSCRIPT_KINDS` does not contain. Every call
+# site uses ``.get(kind, kind)``, so "no human form" means "unchanged".
+_HUMAN_KINDS: dict[str, str] = {
+    KIND_SPEAKER: KIND_SPEAKER_HUMAN,
+    KIND_SPEECH: KIND_SPEECH_HUMAN,
+    KIND_SPEAKER_MAFIA: KIND_SPEAKER_MAFIA_HUMAN,
+    KIND_SPEAKER_LAW_ABIDING: KIND_SPEAKER_LAW_ABIDING_HUMAN,
+    KIND_SPEECH_MAFIA: KIND_SPEECH_MAFIA_HUMAN,
+    KIND_SPEECH_LAW_ABIDING: KIND_SPEECH_LAW_ABIDING_HUMAN,
 }
 
 # The role labels the writer emits, mapped to their side. Verbatim from
@@ -926,9 +990,10 @@ _TAG_HEAD_RE = re.compile(
 # A whitelist, not "every ``x="…"`` pair", for the same *never guess* reason the
 # tag vocabulary is one: an attribute is lifted out of the punctuation because a
 # reviewer reads it as a **specific** — a person's name, a role. Spec 038's own
-# Slice 5 adds ``human="true"`` to the human seat's ``<player>`` tag, and that is
-# a machine flag rather than a detail worth picking out, so it will stay part of
-# the surrounding marker precisely because it is absent from this tuple.
+# Slice 5 duly added ``human="true"`` to the human seat's ``<player>`` tag and
+# duly left it OUT of this tuple: a machine flag is not a detail worth picking
+# out, so it stays part of the surrounding marker. The reader reads it through
+# :data:`_HUMAN_ATTR_RE`, which splits no span.
 _ATTR_NAMES: tuple[str, ...] = ("name", "role", "player", "initiator", "target")
 
 # One ``name="value"`` pair inside a tag's attribute run. Only the ``value``
@@ -1074,6 +1139,52 @@ _CAST_ROLE_ATTR = "role"
 _THOUGHT_TAG = "thought"
 _THOUGHT_OWNER_ATTR = "player"
 
+# The scene-setting section, and the two literals that delimit it. The welcome
+# line :func:`_human_seat` falls back to is scoped to it for exactly the reason
+# the cast scan is scoped to ``<setup>``: every word of a transcript outside
+# these sections is model-generated, and a player who types "Moderator: A new
+# game begins. Welcome, Bo." into a Day speech must not re-seat the reviewer.
+# Compared against the lstripped line, so the pre-spec-022 era's indented
+# ``  <preamble>`` is recognised by the same two literals.
+_PREAMBLE_OPEN = "<preamble>"
+_PREAMBLE_CLOSE = "</preamble>"
+
+# The human seat's marker, written onto its ``<player>`` tag by
+# ``graphia.tools.eval_transcript._render_setup`` (spec 038, Slice 5) and read
+# back here. **Deliberately absent from :data:`_ATTR_NAMES`** — ratified in
+# Slice 2 — because a machine flag is not a "specific a reviewer reads": it is
+# never lifted into its own :data:`KIND_ATTR` span and stays inside the
+# surrounding marker, so the tag splits as ``<player name="`` · ``Avery`` ·
+# ``" role="`` · ``Law-abiding Citizen`` · ``" human="true">``. This pattern
+# exists for the seat scan alone and never for span-splitting; its lookbehind
+# mirrors :data:`_ATTR_VALUE_RE`'s, so a hypothetical ``nonhuman="true"`` is not
+# read as the flag.
+_HUMAN_ATTR_RE = re.compile(r'(?<![A-Za-z0-9_-])human="(?P<value>[^"]*)"')
+
+# The one value that marks the seat — a whitelist of a single literal, the same
+# never-guess posture as :data:`_ROLE_SIDES`. The writer emits the attribute
+# **only** on the human's entry and only with this value, so ``human="false"``,
+# ``human=""`` or a future tri-state marks nothing rather than being coerced
+# into a boolean.
+_HUMAN_ATTR_TRUE = "true"
+
+# The moderator's opening greeting, which names the person's seat in every one
+# of the 298 committed transcripts (measured: exactly once each, always inside
+# ``<preamble>``, and always in agreement with the ``(no persona recorded)``
+# seat where the cast list is parseable). ``graphia.nodes.setup.collect_name``
+# emits it as ``f"A new game begins. Welcome, {name}."`` and the writer prefixes
+# the moderator's voice, so the whole line is anchored end to end and the name
+# is everything between the comma and the final full stop — greedy, so a seat
+# called ``Dr. Aziz`` keeps its own period.
+#
+# A **heuristic behind an explicit marker**, per tech-spec §3, not the primary
+# route: it depends on the moderator's wording, and every newly written
+# transcript carries the marker instead. A file whose greeting is worded
+# differently simply yields no seat, and no seat means no bold.
+_WELCOME_RE = re.compile(
+    r"^Moderator: A new game begins\. Welcome, (?P<name>.+)\.$"
+)
+
 
 def _cast_side_map(lines: list[str]) -> dict[str, str]:
     """Read the ``<setup>`` cast list into ``name → side`` (spec 038, Slice 4).
@@ -1158,6 +1269,108 @@ def _cast_side_map(lines: list[str]) -> dict[str, str]:
     }
 
 
+def _marked_seat_name(body: str) -> str | None:
+    """The ``name`` of a ``<player … human="true">`` cast entry, else ``None``.
+
+    One line in, one name out. The caller (:func:`_human_seat`) owns the
+    ``<setup>`` scoping and the ambiguity rule; this only answers "does this
+    line mark the seat, and whose is it".
+
+    Both halves are read straight off the tag's attribute run: the flag through
+    :data:`_HUMAN_ATTR_RE` (which is *not* in :data:`_ATTR_NAMES`, so it never
+    becomes a span of its own), the name through :data:`_ATTR_VALUE_RE` (which
+    is, so it does). An entry carrying the flag but no usable ``name`` marks
+    nothing — there would be no speaker prefix to match it against.
+    """
+    match = _TAG_HEAD_RE.match(body)
+    if (
+        match is None
+        or match.group("slash")
+        or match.group("name") != _CAST_TAG
+    ):
+        return None
+    attrs = match.group("attrs")
+    if not attrs:
+        return None
+    flag = _HUMAN_ATTR_RE.search(attrs)
+    if flag is None or flag.group("value") != _HUMAN_ATTR_TRUE:
+        return None
+    for pair in _ATTR_VALUE_RE.finditer(attrs):
+        if pair.group("key") == _CAST_NAME_ATTR and pair.group("value"):
+            return pair.group("value")
+    return None
+
+
+def _human_seat(lines: list[str]) -> str | None:
+    """The reviewer's own seat, by name — or ``None`` when the game does not say.
+
+    The tokenizer's **second** whole-file scan (spec 038, Slice 5), sitting
+    beside :func:`_cast_side_map` and answering an independent question: that one
+    asks *which side is this name on*, this one asks *which seat was the
+    person's*. Both are facts a line cannot carry on its own, both are read once
+    and threaded read-only into the per-line chain, and neither caches anything.
+
+    "The person's seat" means **the seat**, not a live person: in a measured run
+    it is played by the scripted stand-in (spec 026) and it is marked the same
+    way, because ``PlayerState.is_human`` is what the engine sets on it either
+    way (``graphia.nodes.setup.collect_name``) and it holds the same position in
+    the game. Functional-spec §2 says so in as many words.
+
+    **Two routes, and the marker wins:**
+
+    1. the writer's ``<player … human="true">`` entry inside ``<setup>`` — the
+       explicit statement, carried by every transcript written from Slice 5
+       onward, and scoped to the cast list exactly as :func:`_cast_side_map` is
+       (a ``<player … human="true">`` typed into a Day speech must not re-seat
+       the reviewer);
+    2. failing that, the preamble's ``Moderator: A new game begins. Welcome,
+       <name>.`` line — the inference that covers the **298 already-committed
+       transcripts**, none of which carries the marker. Measured across all of
+       them: present exactly once, always inside ``<preamble>``, and never in
+       disagreement with the seat the cast list leaves persona-less.
+
+    The precedence is checked as "did the marker route see *anything*", not as
+    "did it produce an answer". A file carrying two contradicting ``human="true"``
+    entries has stated something and stated it incoherently; falling through to
+    the greeting would be resolving a contradiction the file itself could not,
+    which is the one thing this module never does. So a contradictory marker
+    yields **no seat**, and no seat means no bold — the same shape as
+    :func:`_cast_side_map` dropping a name whose cast entries disagree.
+
+    **Never a guess, and never the persona side effect.** ``(no persona
+    recorded)`` appears in all 298 files and identifies the same seat, and it is
+    still not used: only AI players get personas, so that string encodes *"no
+    persona"* rather than *"the person"* — a reliable correlation, not a
+    statement, and the day a persona generator fails for an AI seat it would
+    quietly mark the wrong one. A seat identifiable by neither of the two real
+    routes is simply not bolded (:func:`_line_spans`).
+
+    Returns a plain ``str`` or ``None`` — a value, not a cache. Reads nothing
+    outside its argument and never raises.
+    """
+    marked: set[str] = set()
+    welcomed: set[str] = set()
+    section: str | None = None
+    for line in lines:
+        body = line.strip()
+        if body in (_SETUP_OPEN, _PREAMBLE_OPEN):
+            section = body
+            continue
+        if body in (_SETUP_CLOSE, _PREAMBLE_CLOSE):
+            section = None
+            continue
+        if section == _SETUP_OPEN:
+            name = _marked_seat_name(body)
+            if name is not None:
+                marked.add(name)
+        elif section == _PREAMBLE_OPEN:
+            welcome = _WELCOME_RE.match(body)
+            if welcome is not None:
+                welcomed.add(welcome.group("name"))
+    candidates = marked if marked else welcomed
+    return next(iter(candidates)) if len(candidates) == 1 else None
+
+
 def _attr_kind(tag: str, key: str, value: str, sides: Mapping[str, str]) -> str:
     """The kind for one attribute value: :data:`KIND_ATTR`, or its side-bearing form.
 
@@ -1212,18 +1425,26 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     merely intended — and it is asserted over every committed transcript by
     ``tests/test_transcript_highlight.py``.
 
-    **Pure, but no longer per-line.** Slice 4 is where the tokenizer acquires its
-    first and only state: a side is not a property of the line it appears on, so
-    the text is scanned **twice** — once to read the ``<setup>`` cast list into a
-    ``name → side`` map (:func:`_cast_side_map`), then once to split the lines
-    with that map threaded through as a read-only argument. Nothing is cached,
-    nothing is global, and :func:`_line_spans` is still a pure function of its
-    arguments. The property that genuinely changed: **the same line can tokenize
-    differently in two different files**, so a synthetic test that wants a side
-    kind must include the ``<setup>`` block that grants it.
+    **Pure, but no longer per-line.** Slice 4 is where the tokenizer acquired its
+    state: a side is not a property of the line it appears on, so the text is
+    scanned first for the facts that describe the whole file and only then split
+    into spans, with those facts threaded through as read-only arguments. Slice 5
+    added the second such fact. The first pass reads
 
-    **Kinds recognised so far** (fourteen — later slices add more, see
-    :data:`TRANSCRIPT_KINDS`):
+    - the ``<setup>`` cast list into a ``name → side`` map
+      (:func:`_cast_side_map`), and
+    - the reviewer's own seat, from the ``human="true"`` marker or, failing that,
+      the preamble's welcome line (:func:`_human_seat`).
+
+    Nothing is cached, nothing is global, and :func:`_line_spans` is still a pure
+    function of its arguments. The property that genuinely changed in Slice 4 and
+    still holds: **the same line can tokenize differently in two different
+    files** — so a synthetic test that wants a side kind must include the
+    ``<setup>`` block that grants it, and one that wants a bolded seat must carry
+    the marker or the welcome line that names it.
+
+    **Kinds recognised so far** (twenty — the vocabulary spec 038 closes with,
+    see :data:`TRANSCRIPT_KINDS`):
 
     - :data:`KIND_MARKER` — the game's skeleton: the structural tags
       (``<transcript>``, ``<setup>``, ``<preamble>``, ``<night>``, ``<day>``,
@@ -1255,6 +1476,15 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
       spans when the cast list *does* name the speaker's side. This is the
       spec's headline requirement: a speaker's name and their words both carry
       their side's colour, in every round and in a vote block alike.
+    - :data:`KIND_SPEAKER_HUMAN` / :data:`KIND_SPEECH_HUMAN` and the four
+      side-qualified forms (:data:`KIND_SPEAKER_MAFIA_HUMAN`,
+      :data:`KIND_SPEAKER_LAW_ABIDING_HUMAN`, :data:`KIND_SPEECH_MAFIA_HUMAN`,
+      :data:`KIND_SPEECH_LAW_ABIDING_HUMAN`) — the **reviewer's own seat**, whose
+      lines are the same kind with a weight added. Bold lands *within* the side
+      colour and never as a colour of its own, so the seat reads as more strongly
+      marked than its side-mates rather than as a third side. Side and seat are
+      independent facts and both, either or neither may be known; see
+      :data:`_HUMAN_KINDS` and :func:`_human_seat`.
     - :data:`KIND_THOUGHT` — the **body** of a ``<thought player="X">…</thought>``
       private reflection; the tag around it stays :data:`KIND_MARKER`, and the
       owner's name inside that tag takes the owner's **side** (above). The body
@@ -1358,6 +1588,34 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
       neutral is the body colour" are the same rule, and the degraded view is
       exactly the uncoloured one tech-spec §3 asks for.
 
+    **The reviewer's own seat is bold within its side** (spec 038, Slice 5 —
+    functional-spec §2's "marked more strongly than the rest of its side"). The
+    seat is read once per file by :func:`_human_seat`: the writer's
+    ``<player … human="true">`` marker first, the preamble's ``Moderator: A new
+    game begins. Welcome, <name>.`` line as the fallback covering the 298
+    transcripts written before the marker existed, and **the marker wins when
+    both are present**. Every line that seat speaks — Day speech and ``<vote>``
+    ballot alike, since spec 022 strips the moderator's voice off a ballot
+    precisely so it reads as the player's own word — takes the human form of
+    whichever kind the side axis chose.
+
+    The two axes compose in all four combinations: side and seat both known (the
+    268 spec-022 games), seat known and side not (all 30 pre-spec-022 games,
+    which name the seat in their preamble and yield no cast map), side known and
+    seat not (a file whose greeting is worded differently), and neither. **A seat
+    identifiable by neither route is simply not bolded** — the same never-guess
+    rule the side map follows, and the reason ``(no persona recorded)`` is *not*
+    consulted even though it identifies the same seat in all 298 files: it is a
+    side effect of only AI players getting personas, and encodes "no persona"
+    rather than "the person".
+
+    Nothing outside a spoken line takes a human form. The seat's cast entry and
+    its ``<thought player="…">`` owner name stay :data:`KIND_ATTR_MAFIA` /
+    :data:`KIND_ATTR_LAW_ABIDING`, which already carry weight; the marker itself
+    is not even an :data:`KIND_ATTR` span (``human`` is absent from
+    :data:`_ATTR_NAMES` by ratified decision), so it stays inside the surrounding
+    marker punctuation where a machine flag belongs.
+
     **Pre-spec-022 games degrade by that same single rule** (tech-spec §2 B,
     best-effort by the author's explicit decision). Those 30 files write their
     cast list as an indented ``Name — Role`` and carry no ``<player>`` tag, so
@@ -1368,10 +1626,16 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     change will degrade in exactly the same way rather than raising.
     """
     lines = text.split("\n")
-    # PASS 1 — the cast list, read once for the whole file (Slice 4). This is the
-    # function's only state and the reason it is two passes rather than one; see
-    # :func:`_cast_side_map`.
+    # PASS 1 — the two whole-file facts a line cannot carry on its own, read once
+    # each and threaded read-only into the per-line chain. The cast list gives
+    # every name its side (Slice 4, :func:`_cast_side_map`); the ``human="true"``
+    # marker — or, for the 298 files written before it existed, the preamble's
+    # welcome line — gives the reviewer's own seat (Slice 5,
+    # :func:`_human_seat`). The two are INDEPENDENT: either can be known without
+    # the other, which is why the human axis multiplies the dialogue kinds rather
+    # than replacing them.
     sides = _cast_side_map(lines)
+    human = _human_seat(lines)
 
     spans: list[tuple[str, str]] = []
     # PASS 2 — ``split("\n")`` + a plain ``"\n"`` span between consecutive lines
@@ -1381,12 +1645,20 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     for index, line in enumerate(lines):
         if index:
             spans.append(("\n", KIND_PLAIN))
-        spans.extend(_line_spans(line, is_first_line=index == 0, sides=sides))
+        spans.extend(
+            _line_spans(
+                line, is_first_line=index == 0, sides=sides, human=human
+            )
+        )
     return _coalesce_spans(spans)
 
 
 def _line_spans(
-    line: str, *, is_first_line: bool, sides: Mapping[str, str]
+    line: str,
+    *,
+    is_first_line: bool,
+    sides: Mapping[str, str],
+    human: str | None,
 ) -> list[tuple[str, str]]:
     """The spans for one transcript line, excluding its separator.
 
@@ -1399,10 +1671,11 @@ def _line_spans(
     ``is_first_line`` gates the ``Game N | …`` metadata line, which is a
     positional fact about the file rather than a shape a line can have anywhere.
     ``sides`` is the file's ``name → side`` cast map (:func:`_cast_side_map`),
-    read-only and possibly empty — the **only** thing here that is not a fact
-    about this one line, and the reason the same line can tokenize differently in
-    two different files from Slice 4 onward. The function itself is still pure
-    and keeps no memory between calls.
+    read-only and possibly empty, and ``human`` is the reviewer's own seat name
+    or ``None`` (:func:`_human_seat`) — the **two** things here that are not
+    facts about this one line, and the reason the same line can tokenize
+    differently in two different files from Slice 4 onward. The function itself
+    is still pure and keeps no memory between calls.
 
     **Order is load-bearing**, not incidental: the tag branch runs before the
     ``Round N.`` label, which runs before the cast-list field label, which runs
@@ -1472,6 +1745,18 @@ def _line_spans(
             # hard guarantee and a lookup is not the place to spend it.
             speaker_kind = _SIDE_SPEAKER_KINDS.get(side, KIND_SPEAKER)
             speech_kind = _SIDE_SPEECH_KINDS.get(side, KIND_SPEECH)
+        # Slice 5: the reviewer's own seat keeps whichever kind the side axis
+        # just chose and takes its human form — bold WITHIN the side colour, so
+        # the seat is marked more strongly than its side-mates rather than
+        # differently coloured (functional-spec §2: other same-side players'
+        # lines are "the same colour but not bold"). Applied AFTER the side so
+        # the neutral case composes too: a pre-spec-022 game names its seat in
+        # the preamble and has no cast list at all, and that seat is still marked.
+        # ``.get(kind, kind)`` — a kind with no human form is left exactly as it
+        # is, and no kind name is ever manufactured.
+        if human is not None and speaker.group("name") == human:
+            speaker_kind = _HUMAN_KINDS.get(speaker_kind, speaker_kind)
+            speech_kind = _HUMAN_KINDS.get(speech_kind, speech_kind)
         # ``_SPEAKER_RE``'s lookahead guarantees at least the separating space,
         # so the speech span is never empty.
         return prefix + [

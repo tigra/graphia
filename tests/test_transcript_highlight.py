@@ -1,4 +1,4 @@
-"""Tests for the pure transcript tokenizer (spec 038, Slices 1-3).
+"""Tests for the pure transcript tokenizer (spec 038, Slices 1-5).
 
 Two halves, in the order the slice was built:
 
@@ -111,6 +111,28 @@ contain, and the corpus contains none of these — a speaker absent from
 ``Personality:``, a ``<thought>`` owner the cast list does not know, and
 ``name=""``. Each is one production line away from being wrong and no committed
 game would notice.
+
+**Slice 5 adds a SECOND whole-file fact beside the cast map: the reviewer's own
+seat.** ``tokenize_transcript`` now reads ``_cast_side_map`` *and* ``_human_seat``
+before the per-line chain runs. The two answer independent questions — *which
+side is this name on* and *which seat was the person's* — and the tokenizer keeps
+them independent, which is why ``speaker``/``speech`` go to **six** members each
+(side unknown / Mafia / Law-abiding, each with and without the seat) while
+``attr`` stays at three. Everything a Slice-4 test knew is still true; there is
+simply one more argument threaded through, and one more reason the same line
+tokenizes differently in two different files.
+
+**The corpus's coverage of Slice 5 is the exact inverse of Slice 4's, measured.**
+The *inference* route has total coverage — the moderator's ``Welcome, <name>.``
+greeting appears exactly once in all 298 files, always inside ``<preamble>``, and
+resolves a seat in every one of them. The *marker* route has **none**: ``human=``
+appears in **0 of the 298**, so the writer's explicit ``human="true"``, the
+both-routes-present precedence, and the no-seat fallback exist **only** in the
+synthetic tests of section 4. Two further real-data facts shape what may be
+asserted there: only **224** of the 298 files emit a seat kind at all (in the
+other 74 the welcomed seat was killed on Night 1 and never spoke, so *"every file
+bolds something"* is a FALSE assertion), and the seat kinds whose side is unknown
+occur only in the 30 pre-spec-022 games.
 """
 
 from __future__ import annotations
@@ -123,7 +145,7 @@ import pytest
 from graphia import eval_ledger
 
 # ---------------------------------------------------------------------------
-# The three kind FAMILIES (spec 038, Slice 4)
+# The three kind FAMILIES (spec 038, Slices 4-5)
 # ---------------------------------------------------------------------------
 #
 # Three of the eight Slice-1-to-3 kinds acquired side-bearing forms in Slice 4:
@@ -134,20 +156,40 @@ from graphia import eval_ledger
 # passing — which is why the families are named once here and used everywhere
 # below.
 #
+# **SLICE 5 SPLITS TWO OF THEM AGAIN, and this block is where that is absorbed.**
+# `speaker` and `speech` each gain a *seat* axis on top of their side axis — the
+# reviewer's own seat, bold within its side colour — so both families go from
+# three members to SIX. `attr` deliberately gains nothing: the seat's cast entry
+# and its `<thought player=…>` owner name are already `attr-mafia` /
+# `attr-law-abiding`, which carry bold of their own, and functional-spec §2
+# scopes the seat requirement to that seat's *lines*.
+#
 # Written as tuples of the constants rather than as string literals because the
 # literals themselves are pinned, once, in
 # `test_the_kind_constants_hold_the_literal_names_the_tables_use`. The neutral
 # member is FIRST in each, and it is not a leftover: it is the appearance of a
 # line whose side is unknown, which is the whole of Slice 4's degradation story.
+#
+# **`_SPEAKER_KINDS` and `_SPEECH_KINDS` are INDEX-ALIGNED**, and four call sites
+# below pair them positionally via `.index(kind)` — "this speaker's speech must
+# claim the same side and the same seat". Reordering one without the other turns
+# every one of those into a silent lie, so the alignment is pinned as its own
+# assertion in `test_the_kind_family_tuples_are_index_aligned_and_complete`.
 _SPEAKER_KINDS = (
     eval_ledger.KIND_SPEAKER,
     eval_ledger.KIND_SPEAKER_MAFIA,
     eval_ledger.KIND_SPEAKER_LAW_ABIDING,
+    eval_ledger.KIND_SPEAKER_HUMAN,
+    eval_ledger.KIND_SPEAKER_MAFIA_HUMAN,
+    eval_ledger.KIND_SPEAKER_LAW_ABIDING_HUMAN,
 )
 _SPEECH_KINDS = (
     eval_ledger.KIND_SPEECH,
     eval_ledger.KIND_SPEECH_MAFIA,
     eval_ledger.KIND_SPEECH_LAW_ABIDING,
+    eval_ledger.KIND_SPEECH_HUMAN,
+    eval_ledger.KIND_SPEECH_MAFIA_HUMAN,
+    eval_ledger.KIND_SPEECH_LAW_ABIDING_HUMAN,
 )
 _ATTR_KINDS = (
     eval_ledger.KIND_ATTR,
@@ -158,13 +200,50 @@ _ATTR_KINDS = (
 # Every side-bearing kind, as the set a "no sides here at all" assertion tests
 # against — the pre-022 degradation case, and every synthetic near-miss whose
 # point is that a side was NOT invented.
+#
+# **ENUMERATED, NEVER SLICED — and that is a correction, not a style choice.**
+# Until Slice 5 this read `_SPEAKER_KINDS[1:] + _SPEECH_KINDS[1:] + _ATTR_KINDS[1:]`,
+# which was exactly right while every non-neutral member named a side. It stopped
+# being right the moment `speaker-human` / `speech-human` joined those tuples:
+# those two name a SEAT and no side at all (a pre-spec-022 game names its seat in
+# the preamble and has no cast list to read a side from — 183 + 183 real spans).
+# Left as a slice, this set would have quietly absorbed them, and two assertions
+# would then have been wrong in opposite directions at once: "a pre-022 file
+# gains no side kind" would FAIL on 20 real files that legitimately emit
+# `speaker-human`, and the conservation test's `set(moved) == _SIDE_KINDS` would
+# demand a kind the cast map cannot move. TEN kinds name a side — four dialogue,
+# four dialogue-for-the-seat, two attr — and they are written out.
 _SIDE_KINDS = frozenset(
-    _SPEAKER_KINDS[1:] + _SPEECH_KINDS[1:] + _ATTR_KINDS[1:]
+    {
+        eval_ledger.KIND_SPEAKER_MAFIA,
+        eval_ledger.KIND_SPEAKER_LAW_ABIDING,
+        eval_ledger.KIND_SPEECH_MAFIA,
+        eval_ledger.KIND_SPEECH_LAW_ABIDING,
+        eval_ledger.KIND_SPEAKER_MAFIA_HUMAN,
+        eval_ledger.KIND_SPEAKER_LAW_ABIDING_HUMAN,
+        eval_ledger.KIND_SPEECH_MAFIA_HUMAN,
+        eval_ledger.KIND_SPEECH_LAW_ABIDING_HUMAN,
+        eval_ledger.KIND_ATTR_MAFIA,
+        eval_ledger.KIND_ATTR_LAW_ABIDING,
+    }
 )
 
-# Side-bearing kind → its neutral base. The inverse of the split, used by the
-# conservation test to state "only kinds moved, no boundary did" as an equality
-# rather than as a pair of totals that the next committed eval run would move.
+# The six kinds that name the reviewer's own SEAT, whatever their side. The seat
+# axis's counterpart to `_SIDE_KINDS`, and the set a "nobody is bolded here"
+# assertion tests against — which is most of Slice 5's near-misses, since every
+# one of them is a route to the seat that must NOT fire.
+_HUMAN_KINDS = frozenset(_SPEAKER_KINDS[3:] + _SPEECH_KINDS[3:])
+
+# Side-bearing kind → its neutral base. The inverse of the SIDE split, used by
+# the side-axis conservation test to state "only kinds moved, no boundary did" as
+# an equality rather than as a pair of totals that the next committed eval run
+# would move.
+#
+# Slice 5 adds the four side-qualified seat kinds. Note where each lands: with an
+# empty cast map a Mafia seat is still a SEAT, so `speaker-mafia-human` degrades
+# to `speaker-human` and not to `speaker` — the two axes are independent, and a
+# table that collapsed both at once would let a tokenizer lose the seat entirely
+# while this test went on passing.
 _NEUTRAL_BASE_KIND = {
     eval_ledger.KIND_SPEAKER_MAFIA: eval_ledger.KIND_SPEAKER,
     eval_ledger.KIND_SPEAKER_LAW_ABIDING: eval_ledger.KIND_SPEAKER,
@@ -172,7 +251,37 @@ _NEUTRAL_BASE_KIND = {
     eval_ledger.KIND_SPEECH_LAW_ABIDING: eval_ledger.KIND_SPEECH,
     eval_ledger.KIND_ATTR_MAFIA: eval_ledger.KIND_ATTR,
     eval_ledger.KIND_ATTR_LAW_ABIDING: eval_ledger.KIND_ATTR,
+    eval_ledger.KIND_SPEAKER_MAFIA_HUMAN: eval_ledger.KIND_SPEAKER_HUMAN,
+    eval_ledger.KIND_SPEAKER_LAW_ABIDING_HUMAN: eval_ledger.KIND_SPEAKER_HUMAN,
+    eval_ledger.KIND_SPEECH_MAFIA_HUMAN: eval_ledger.KIND_SPEECH_HUMAN,
+    eval_ledger.KIND_SPEECH_LAW_ABIDING_HUMAN: eval_ledger.KIND_SPEECH_HUMAN,
 }
+
+# Dialogue kind → the same kind for the reviewer's own SEAT: `_NEUTRAL_BASE_KIND`'s
+# opposite number on the other axis, and the table the seat-axis conservation test
+# is written against. Six entries, because the seat multiplies every dialogue kind
+# rather than replacing any of them — including the neutral pair, which is where
+# all 30 pre-spec-022 games put their seat.
+#
+# Deliberately a table rather than `kind + "-human"`, mirroring the production
+# module's own reason for spelling `_HUMAN_KINDS` out: a kind with no seated form
+# (`marker`, `attr`, `thought`, `recap`) must be absent, not manufactured.
+_SEATED_KIND = {
+    eval_ledger.KIND_SPEAKER: eval_ledger.KIND_SPEAKER_HUMAN,
+    eval_ledger.KIND_SPEECH: eval_ledger.KIND_SPEECH_HUMAN,
+    eval_ledger.KIND_SPEAKER_MAFIA: eval_ledger.KIND_SPEAKER_MAFIA_HUMAN,
+    eval_ledger.KIND_SPEAKER_LAW_ABIDING: eval_ledger.KIND_SPEAKER_LAW_ABIDING_HUMAN,
+    eval_ledger.KIND_SPEECH_MAFIA: eval_ledger.KIND_SPEECH_MAFIA_HUMAN,
+    eval_ledger.KIND_SPEECH_LAW_ABIDING: eval_ledger.KIND_SPEECH_LAW_ABIDING_HUMAN,
+}
+
+# `_SEATED_KIND` read backwards: a seat kind → the kind that seat's SIDE-MATES
+# take. Named separately from `_NEUTRAL_BASE_KIND` because the two undo different
+# axes and confusing them is easy — de-seating `speaker-mafia-human` gives
+# `speaker-mafia` (the side-mate), de-siding it gives `speaker-human` (the same
+# seat in a game with no cast list). Both tables are needed and neither
+# substitutes for the other.
+_UNSEATED_KIND = {seated: base for base, seated in _SEATED_KIND.items()}
 
 
 # ---------------------------------------------------------------------------
@@ -835,7 +944,7 @@ def _spans(text: str) -> list[tuple[str, str]]:
 # ---------------------------------------------------------------------------
 
 def test_the_kind_constants_hold_the_literal_names_the_tables_use() -> None:
-    """The fourteen kind constants really are these fourteen strings.
+    """The twenty kind constants really are these twenty strings.
 
     The expectation tables below are written with literal ``"marker"`` /
     ``"attr"`` strings rather than ``eval_ledger.KIND_*`` references, because a
@@ -846,7 +955,7 @@ def test_the_kind_constants_hold_the_literal_names_the_tables_use() -> None:
     against a string the production code no longer emits.
 
     Pinned to the literals, not to ``TRANSCRIPT_KINDS`` — the tuple is allowed to
-    grow (later slices append), these fourteen names are not allowed to change.
+    grow (later slices append), these twenty names are not allowed to change.
 
     **The six Slice-4 literals are the ones with a rule to break.** Each is the
     neutral kind's name plus a hyphen plus the side, and the side token is
@@ -878,6 +987,105 @@ def test_the_kind_constants_hold_the_literal_names_the_tables_use() -> None:
     assert eval_ledger.KIND_SPEECH_LAW_ABIDING == "speech-law-abiding"
     assert eval_ledger.KIND_ATTR_MAFIA == "attr-mafia"
     assert eval_ledger.KIND_ATTR_LAW_ABIDING == "attr-law-abiding"
+    # Slice 5's six — the reviewer's own seat, on both axes. Each is its Slice-4
+    # (or Slice-3) kind plus the `-human` qualifier, and the qualifier names WHOSE
+    # SEAT IT IS, never the weight it is drawn in: `speaker-mafia-human` is a
+    # kind, `speaker-mafia-bold` never is. The UI's six extra CSS rules key off
+    # exactly these strings, and the ratified fallback (a kind the style map has
+    # never heard of renders unstyled and never raises) means a rename this test
+    # did not catch would leave the reviewer's seat silently unbolded rather than
+    # failing anywhere.
+    assert eval_ledger.KIND_SPEAKER_HUMAN == "speaker-human"
+    assert eval_ledger.KIND_SPEECH_HUMAN == "speech-human"
+    assert eval_ledger.KIND_SPEAKER_MAFIA_HUMAN == "speaker-mafia-human"
+    assert eval_ledger.KIND_SPEAKER_LAW_ABIDING_HUMAN == "speaker-law-abiding-human"
+    assert eval_ledger.KIND_SPEECH_MAFIA_HUMAN == "speech-mafia-human"
+    assert eval_ledger.KIND_SPEECH_LAW_ABIDING_HUMAN == "speech-law-abiding-human"
+
+
+def test_the_kind_family_tuples_are_index_aligned_and_complete() -> None:
+    """This module's own family tables, guarded against the two ways they rot.
+
+    They are test-local data, not production data, which is exactly why they need
+    a test: nothing else in the suite fails when they go stale, and `tasks.md`
+    records what that costs. When Slice 4 split `speaker`/`speech`/`attr`, the
+    corpus sweep's `elif` chain kept comparing against the neutral literals and
+    **silently stopped seeing 20,655 of 22,508 speaker spans** while only three
+    assertions went red. Slice 5 splits two of the same families again.
+
+    Four claims, each covering a distinct failure:
+
+    * **`_SPEAKER_KINDS` and `_SPEECH_KINDS` are index-aligned.** Four call sites
+      pair them positionally (`_SPEECH_KINDS[_SPEAKER_KINDS.index(kind)]`) to say
+      "a speaker and their words carry the same side AND the same seat". Reorder
+      one tuple and every one of those becomes a silent lie — it still runs, it
+      just asserts the wrong pairing. Checked by rebuilding each speech kind from
+      its speaker kind's own name.
+    * **The families are complete**, i.e. every declared kind belongs to exactly
+      one family or to the handful that have none (`marker`, `plain`,
+      `field-label`, `thought`, `recap`). A kind added to the vocabulary and left
+      out of a family is invisible to every sweep that classifies by family —
+      which is the Slice-4 failure restated as a guard.
+    * **`_SIDE_KINDS` is exactly the ten kinds that name a side**, and contains
+      neither of the two seat kinds that name none. This is the trap this slice
+      set: written as `_SPEAKER_KINDS[1:] + …` it would absorb `speaker-human`
+      and `speech-human`, breaking "a pre-022 file gains no side" on 20 real
+      files and the conservation test's `set(moved)` in both directions.
+    * **`_SEATED_KIND` and `_NEUTRAL_BASE_KIND` are the two axes' inverses**, and
+      they compose: seating a kind then de-siding it is the same as de-siding it
+      then seating it. That is "side and seat are independent facts" written as
+      an equation, and it is what makes the two conservation sweeps below
+      separable at all.
+    """
+    # (1) Index alignment, derived rather than restated — a second hand-written
+    # list would rot in the same commit as the first.
+    assert len(_SPEAKER_KINDS) == len(_SPEECH_KINDS) == 6
+    for speaker_kind, speech_kind in zip(_SPEAKER_KINDS, _SPEECH_KINDS, strict=True):
+        assert speaker_kind.replace("speaker", "speech", 1) == speech_kind, (
+            f"{speaker_kind} is paired with {speech_kind}; the two families must "
+            "be index-aligned because four call sites pair them by position"
+        )
+    assert len(set(_SPEAKER_KINDS)) == len(_SPEAKER_KINDS)
+    assert len(set(_SPEECH_KINDS)) == len(_SPEECH_KINDS)
+
+    # (2) Completeness: every declared kind is accounted for.
+    familied = set(_SPEAKER_KINDS) | set(_SPEECH_KINDS) | set(_ATTR_KINDS)
+    unfamilied = {
+        eval_ledger.KIND_MARKER,
+        eval_ledger.KIND_PLAIN,
+        eval_ledger.KIND_FIELD_LABEL,
+        eval_ledger.KIND_THOUGHT,
+        eval_ledger.KIND_RECAP,
+    }
+    assert familied | unfamilied == set(eval_ledger.TRANSCRIPT_KINDS), (
+        "a declared kind belongs to no family and to no named exception, so every "
+        "sweep that classifies by family is now blind to it: "
+        f"{sorted(set(eval_ledger.TRANSCRIPT_KINDS) - familied - unfamilied)}"
+    )
+    assert not familied & unfamilied
+
+    # (3) `_SIDE_KINDS` names sides and only sides.
+    assert len(_SIDE_KINDS) == 10
+    assert _SIDE_KINDS == set(_SIDE_OF_KIND)
+    assert eval_ledger.KIND_SPEAKER_HUMAN not in _SIDE_KINDS, (
+        "`speaker-human` is a SEAT whose side is unknown — the pre-022 case, 183 "
+        "real spans — and it names no side. Absorbing it into `_SIDE_KINDS` is "
+        "the exact slicing bug this test exists to stop."
+    )
+    assert eval_ledger.KIND_SPEECH_HUMAN not in _SIDE_KINDS
+    assert _SIDE_KINDS < familied
+    assert _HUMAN_KINDS == set(_SEATED_KIND.values())
+    assert len(_HUMAN_KINDS) == 6
+
+    # (4) The two axes are inverses of each other and they commute.
+    assert set(_SEATED_KIND) == set(_SPEAKER_KINDS[:3]) | set(_SPEECH_KINDS[:3])
+    assert set(_NEUTRAL_BASE_KIND) == _SIDE_KINDS
+    for base, seated in _SEATED_KIND.items():
+        # De-siding a seated kind lands on the seated form of the base's own
+        # neutral — never on the base itself, which would lose the seat.
+        assert _NEUTRAL_BASE_KIND.get(seated, seated) == _SEATED_KIND.get(
+            _NEUTRAL_BASE_KIND.get(base, base)
+        ), f"the seat and side axes do not commute at {base}/{seated}"
 
 
 def test_every_kind_constant_is_exported_and_declared_exactly_once() -> None:
@@ -895,12 +1103,19 @@ def test_every_kind_constant_is_exported_and_declared_exactly_once() -> None:
 
     * every constant named in :data:`TRANSCRIPT_KINDS` is reachable as a module
       attribute AND listed in ``__all__``;
-    * the vocabulary is exactly fourteen entries with no duplicate — a copy-paste
+    * the vocabulary is exactly twenty entries with no duplicate — a copy-paste
       that declared ``speech-mafia`` twice would leave a kind silently missing
       while the length still looked plausible;
     * ``TRANSCRIPT_KINDS`` and the ``KIND_*`` constants describe the same set, so
       a constant can neither be added without being declared nor declared
       without existing.
+
+    **Slice 5 closes the vocabulary at twenty**, and the count is written out
+    rather than derived deliberately: this is the one assertion in the file whose
+    job is to make a slice that adds a kind come and look here, which is where
+    the ``__all__`` obligation is stated. Slice 4 raised it from eight to
+    fourteen; the six that take it to twenty are the reviewer's own seat on both
+    axes (side unknown / Mafia / Law-abiding, times speaker and speech).
     """
     kind_constants = {
         name: value
@@ -908,8 +1123,8 @@ def test_every_kind_constant_is_exported_and_declared_exactly_once() -> None:
         if name.startswith("KIND_") and isinstance(value, str)
     }
 
-    assert len(eval_ledger.TRANSCRIPT_KINDS) == 14, (
-        "Slice 4 brings the vocabulary to fourteen kinds; "
+    assert len(eval_ledger.TRANSCRIPT_KINDS) == 20, (
+        "Slice 5 closes the vocabulary at twenty kinds; "
         f"found {eval_ledger.TRANSCRIPT_KINDS}"
     )
     assert len(set(eval_ledger.TRANSCRIPT_KINDS)) == len(
@@ -2447,6 +2662,27 @@ def test_line_separators_are_plain_spans_of_their_own() -> None:
 #           cast this fixture reached 11 of the 14 kinds and
 #           `test_every_kind_emitted_is_declared_in_the_vocabulary`'s
 #           no-dead-entries property was unprovable.
+#
+# SLICE 5 ADDED A FOURTH CAST ENTRY AND MOVED THE WELCOME LINE, for one reason:
+# a transcript has exactly ONE seat, so one file can emit at most TWO of the six
+# seat kinds and no single fixture can reach the whole twenty-kind vocabulary any
+# more (see `test_every_kind_emitted_is_declared_in_the_vocabulary`, which is now
+# the union of three games). This one owns the case where the seat's SIDE IS
+# UNKNOWN — the pre-spec-022 story, and the half most easily lost, since it is
+# the one that proves side and seat are independent facts rather than one fact
+# with two names:
+#
+#   Dex   — `role="Mafioso"`, the same role string the writer never emits, AND
+#           the welcomed seat. So `Dex:` is `speaker-human`/`speech-human`: bold
+#           because the game says the seat was his, uncoloured because nothing in
+#           the file says which side he was on. Alice keeps the identical
+#           unrecognised role and is NOT the seat, so the NEUTRAL `speaker` /
+#           `speech` survive beside him — which is the contrast that makes the
+#           seat axis visible here rather than merely present.
+#
+# The welcome moved from Bo to Dex for the same reason: with Bo welcomed, his
+# ballot was the seat and the plain `speaker-law-abiding` pair vanished from the
+# fixture entirely.
 _RICH_SYNTHETIC_TRANSCRIPT = (
     "Game 2 | provider=ollama | large_model=qwen3-coder:30b | games=3\n"
     "<transcript>\n"
@@ -2457,9 +2693,10 @@ _RICH_SYNTHETIC_TRANSCRIPT = (
     "</player>\n"
     '<player name="Bo" role="Law-abiding Citizen">(no persona recorded)</player>\n'
     '<player name="Cass" role="Mafia">(no persona recorded)</player>\n'
+    '<player name="Dex" role="Mafioso">(no persona recorded)</player>\n'
     "</setup>\n"
     "<preamble>\n"
-    "Moderator: A new game begins. Welcome, Bo.\n"
+    "Moderator: A new game begins. Welcome, Dex.\n"
     "\n"
     "</preamble>\n"
     "<night>\n"
@@ -2470,6 +2707,7 @@ _RICH_SYNTHETIC_TRANSCRIPT = (
     "  Round 1.\n"
     "Alice: I saw nothing last night.\n"
     "Cass: Bo is lying.\n"
+    "Dex: I was asleep.\n"
     '<thought player="Alice">Bo suspects me.</thought>\n'
     '<vote initiator="Alice" target="Bo">\n'
     "Bo: Yes\n"
@@ -2480,6 +2718,59 @@ _RICH_SYNTHETIC_TRANSCRIPT = (
     "<endgame>\n"
     "Mafia win.\n"
     "</endgame>\n"
+    "</transcript>"
+)
+
+# The other TWO of the three games the twenty-kind vocabulary now takes to cover
+# (see `test_every_kind_emitted_is_declared_in_the_vocabulary`). A transcript has
+# exactly one seat, so no single file can emit more than two of the six seat
+# kinds, and the fixture above owns the pair whose side is unknown. These own the
+# four side-qualified ones.
+#
+# Each carries a NON-SEAT player on the SEAT'S OWN SIDE, which is the whole design
+# of both and not padding: it is what keeps the plain side kinds alive in the same
+# file, so "bold" is provably the seat rather than the side, and it is
+# functional-spec §2's contrast written into the fixture — "that seat's lines are
+# in the side colour and bold, while other players on the same side are the same
+# colour but not bold".
+#
+# They also split the two ROUTES to a seat between them, so the union exercises
+# both without a third game: the Mafia seat is named by the writer's
+# `human="true"` marker and carries no welcome line at all (the shape every
+# transcript written from Slice 5 onward has, and which **0 of the 298 committed
+# files** contain), while the Law-abiding seat is named only by the moderator's
+# greeting (the shape all 298 committed files have). Both are reused by the
+# Slice-5 section below.
+_MAFIA_SEAT_GAME = (
+    "<transcript>\n"
+    "<setup>\n"
+    '<player name="Vera" role="Mafia" human="true">(no persona recorded)</player>\n'
+    '<player name="Dot" role="Mafia">(no persona recorded)</player>\n'
+    '<player name="Iris" role="Law-abiding Citizen">(no persona recorded)</player>\n'
+    "</setup>\n"
+    "<day>\n"
+    "Vera: I was asleep.\n"
+    "Dot: So was I.\n"
+    "Iris: Neither of you was.\n"
+    "</day>\n"
+    "</transcript>"
+)
+
+_LAW_ABIDING_SEAT_GAME = (
+    "<transcript>\n"
+    "<setup>\n"
+    '<player name="Iris" role="Law-abiding Citizen">(no persona recorded)</player>\n'
+    '<player name="Wren" role="Law-abiding Citizen">(no persona recorded)</player>\n'
+    '<player name="Vera" role="Mafia">(no persona recorded)</player>\n'
+    "</setup>\n"
+    "<preamble>\n"
+    "Moderator: A new game begins. Welcome, Iris.\n"
+    "</preamble>\n"
+    "<day>\n"
+    "Iris: I was asleep.\n"
+    "Wren: So was I.\n"
+    "Vera: Neither of you was.\n"
+    "</day>\n"
     "</transcript>"
 )
 
@@ -2497,31 +2788,39 @@ def test_no_styled_span_carries_a_newline_across_a_whole_synthetic_game() -> Non
     # THE PREMISE, pinned by SHAPE and not only by total. Counted by hand off
     # `_RICH_SYNTHETIC_TRANSCRIPT`:
     #
-    #   marker 38 — the header (1), `<transcript>` (2), `<setup>` (3), the three
+    #   marker 42 — the header (1), `<transcript>` (2), `<setup>` (3), the FOUR
     #               cast entries' opening heads at 3 marker pieces each (4-6,
-    #               8-10, 12-14) with their three `</player>` (7, 11, 15),
-    #               `</setup>` (16), `<preamble>`/`</preamble>` (17-18),
-    #               `<night>` (19), the coalesced `<kill>…</kill>` line as ONE
-    #               span (20), `</night>` (21), `<day>` (22), `<round>` (23),
-    #               `Round 1.` (24), the thought's 2 head pieces (25-26) and
-    #               `</thought>` (27), the vote's 3 head pieces (28-30) and
-    #               `</vote>` (31), `<recap>`/`</recap>` (32-33), `</round>`
-    #               (34), `</day>` (35), `<endgame>`/`</endgame>` (36-37) and
-    #               `</transcript>` (38);
-    #   attr    7 — the three cast NAMES (Alice, Bo, Cass — achromatic by the
-    #               ratified narrow reading), Alice's unrecognised `Mafioso`
-    #               role, the thought's owner `Alice` (unrecognised role, so
-    #               absent from the map), and the vote's `Alice`/`Bo`;
+    #               8-10, 12-14, 16-18) with their four `</player>` (7, 11, 15,
+    #               19), `</setup>` (20), `<preamble>`/`</preamble>` (21-22),
+    #               `<night>` (23), the coalesced `<kill>…</kill>` line as ONE
+    #               span (24), `</night>` (25), `<day>` (26), `<round>` (27),
+    #               `Round 1.` (28), the thought's 2 head pieces (29-30) and
+    #               `</thought>` (31), the vote's 3 head pieces (32-34) and
+    #               `</vote>` (35), `<recap>`/`</recap>` (36-37), `</round>`
+    #               (38), `</day>` (39), `<endgame>`/`</endgame>` (40-41) and
+    #               `</transcript>` (42);
+    #   attr    9 — the four cast NAMES (Alice, Bo, Cass, Dex — achromatic by the
+    #               ratified narrow reading, and NOTE that Dex's stays achromatic
+    #               too: `attr` gains no seated form, because the seat's own cast
+    #               entry already carries `attr`'s bold), Alice's and Dex's
+    #               unrecognised `Mafioso` roles, the thought's owner `Alice`
+    #               (unrecognised role, so absent from the map), and the vote's
+    #               `Alice`/`Bo`;
     #   attr-mafia 1 — Cass's `Mafia` role text;
     #   attr-law-abiding 1 — Bo's `Law-abiding Citizen` role text;
     #   field-label 2 — `Personality:` and `Manner:` on Alice's entry;
     #   speaker 1 / speech 1 — `Alice:` and her words: her role label is one the
-    #               writer never emits, so she has no known side and takes the
-    #               NEUTRAL pair. This is the fixture's own copy of Slice 4's
-    #               headline degradation rule;
+    #               writer never emits, so she has no known side, and she is not
+    #               the welcomed seat, so she takes the NEUTRAL pair. This is the
+    #               fixture's own copy of Slice 4's headline degradation rule —
+    #               and, beside Dex, the proof that Slice 5's bold is the SEAT
+    #               and not merely "an unknown side drawn differently";
     #   speaker-mafia 1 / speech-mafia 1 — `Cass:` and her words;
     #   speaker-law-abiding 1 / speech-law-abiding 1 — `Bo:` on the ballot inside
     #               the `<vote>` block (a ballot is speech, tasks.md Slice 3);
+    #   speaker-human 1 / speech-human 1 — `Dex:` and his words. Same
+    #               unrecognised role as Alice, so no side; welcomed by the
+    #               moderator, so the seat. Side and seat, independent.
     #   thought 1 — `Bo suspects me.`, the body of the `<thought>` element,
     #               NEVER side-tinted (tasks.md: a private reflection is not an
     #               act of allegiance);
@@ -2531,20 +2830,23 @@ def test_no_styled_span_carries_a_newline_across_a_whole_synthetic_game() -> Non
     # The `Moderator: A new game begins.` preamble line is deliberately NOT among
     # them: he is in the exclusion set, so his line stays plain and coalesces with
     # the blank line after it. That absence is the count's own guard against the
-    # speaker rule over-reaching.
+    # speaker rule over-reaching — and since Slice 5 it guards one thing more, as
+    # that same line is the one the seat is read from: the tokenizer reads the
+    # name out of it without ever styling it.
     #
-    # Slice 1 pinned only `len(styled) == 27`, Slice 2 raised it to 43 and
-    # Slice 3 to 49. Slice 4 supersedes all three — and the reason the breakdown
-    # exists rather than a bare total is visible in this very edit: the failure
-    # names WHICH kinds moved, so a re-kinding (49 → 57 with the two new cast
-    # spans) is instantly distinguishable from a boundary bug.
-    assert len(styled) == 57, (
+    # Slice 1 pinned only `len(styled) == 27`, Slice 2 raised it to 43, Slice 3 to
+    # 49 and Slice 4 to 57. Slice 5 supersedes all four — and the reason the
+    # breakdown exists rather than a bare total is visible in this very edit: the
+    # failure names WHICH kinds moved, so the growth (57 → 65: six spans for Dex's
+    # cast entry, two for his line) is instantly distinguishable from a boundary
+    # bug.
+    assert len(styled) == 65, (
         "the premise: this game really does produce styled spans "
         f"(got {len(styled)})"
     )
     assert Counter(kind for _, kind in styled) == {
-        eval_ledger.KIND_MARKER: 38,
-        eval_ledger.KIND_ATTR: 7,
+        eval_ledger.KIND_MARKER: 42,
+        eval_ledger.KIND_ATTR: 9,
         eval_ledger.KIND_ATTR_MAFIA: 1,
         eval_ledger.KIND_ATTR_LAW_ABIDING: 1,
         eval_ledger.KIND_FIELD_LABEL: 2,
@@ -2554,6 +2856,8 @@ def test_no_styled_span_carries_a_newline_across_a_whole_synthetic_game() -> Non
         eval_ledger.KIND_SPEECH_MAFIA: 1,
         eval_ledger.KIND_SPEAKER_LAW_ABIDING: 1,
         eval_ledger.KIND_SPEECH_LAW_ABIDING: 1,
+        eval_ledger.KIND_SPEAKER_HUMAN: 1,
+        eval_ledger.KIND_SPEECH_HUMAN: 1,
         eval_ledger.KIND_THOUGHT: 1,
         eval_ledger.KIND_RECAP: 1,
     }
@@ -2659,11 +2963,36 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
     ever see — that is why this is written out rather than derived from
     ``TRANSCRIPT_KINDS``, and it is exactly the check that would have caught a
     Slice 4 that added ``speaker-mafia`` to the vocabulary and forgot to emit it.
+
+    **Slice 5 made the no-dead-entries half unsatisfiable by any single fixture,
+    and that is a structural fact about transcripts rather than a limitation of
+    this one.** A game has exactly ONE seat, so a file can emit at most two of the
+    six seat kinds — the pair belonging to whichever side that seat turned out to
+    be on. Three games are therefore needed and three are used: a seat whose side
+    is unknown (``_RICH_SYNTHETIC_TRANSCRIPT``), a Mafia seat, and a Law-abiding
+    seat. Each of the two extra games keeps a NON-SEAT player on the seat's own
+    side, so the plain side kinds survive in the same file and the union does not
+    quietly trade a Slice-4 kind for a Slice-5 one.
+
+    The union is asserted per game as well as in total, because a union is the one
+    shape where a fixture can go dead without anything failing: if the Mafia-seat
+    game stopped emitting its two kinds and the rich game started emitting them,
+    the total would be unchanged and this test would go on passing.
     """
-    kinds = {kind for _, kind in _spans(_RICH_SYNTHETIC_TRANSCRIPT)}
-    assert kinds <= set(eval_ledger.TRANSCRIPT_KINDS)
-    # ...and this slice really does emit all fourteen of them.
-    assert kinds == {
+    per_game = {
+        "rich": {kind for _, kind in _spans(_RICH_SYNTHETIC_TRANSCRIPT)},
+        "mafia-seat": {kind for _, kind in _spans(_MAFIA_SEAT_GAME)},
+        "law-abiding-seat": {kind for _, kind in _spans(_LAW_ABIDING_SEAT_GAME)},
+    }
+    for name, kinds in per_game.items():
+        assert kinds <= set(eval_ledger.TRANSCRIPT_KINDS), (
+            f"the {name} game emits kinds the vocabulary does not declare: "
+            f"{sorted(kinds - set(eval_ledger.TRANSCRIPT_KINDS))}"
+        )
+
+    # The rich game, pinned absolutely: every Slice-1-to-4 kind plus the seat
+    # pair whose SIDE IS UNKNOWN.
+    assert per_game["rich"] == {
         eval_ledger.KIND_MARKER,
         eval_ledger.KIND_PLAIN,
         eval_ledger.KIND_ATTR,
@@ -2678,9 +3007,26 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
         eval_ledger.KIND_SPEECH_LAW_ABIDING,
         eval_ledger.KIND_ATTR_MAFIA,
         eval_ledger.KIND_ATTR_LAW_ABIDING,
+        eval_ledger.KIND_SPEAKER_HUMAN,
+        eval_ledger.KIND_SPEECH_HUMAN,
     }
-    # As of Slice 4 the vocabulary still has no declared-but-unreachable entry.
-    assert kinds == set(eval_ledger.TRANSCRIPT_KINDS)
+    # ...and each seated game contributes exactly its own two, pinned per game so
+    # a fixture cannot go dead behind the union.
+    assert per_game["mafia-seat"] & _HUMAN_KINDS == {
+        eval_ledger.KIND_SPEAKER_MAFIA_HUMAN,
+        eval_ledger.KIND_SPEECH_MAFIA_HUMAN,
+    }
+    assert per_game["law-abiding-seat"] & _HUMAN_KINDS == {
+        eval_ledger.KIND_SPEAKER_LAW_ABIDING_HUMAN,
+        eval_ledger.KIND_SPEECH_LAW_ABIDING_HUMAN,
+    }
+    # ...and each keeps a non-seat player on the seat's own side, so the plain
+    # side kinds are still reachable in the very file that bolds one of them.
+    assert eval_ledger.KIND_SPEAKER_MAFIA in per_game["mafia-seat"]
+    assert eval_ledger.KIND_SPEAKER_LAW_ABIDING in per_game["law-abiding-seat"]
+
+    # As of Slice 5 the vocabulary still has no declared-but-unreachable entry.
+    assert set().union(*per_game.values()) == set(eval_ledger.TRANSCRIPT_KINDS)
     assert len(eval_ledger.TRANSCRIPT_KINDS) == len(set(eval_ledger.TRANSCRIPT_KINDS))
 
 
@@ -2757,6 +3103,13 @@ _TWO_SIDED_CAST_SPANS = [
 # "these two spans agree about a side" rather than "this span has this kind" —
 # the cast-list-matches-dialogue requirement, and the per-line speaker/speech
 # agreement.
+#
+# Slice 5 adds the four side-qualified SEAT kinds, and adding them is the point:
+# the seat's side is still a side, so "the cast list and the dialogue agree"
+# must go on holding for the one player the reviewer cares most about. The two
+# seat kinds that name no side (`speaker-human`, `speech-human`) are deliberately
+# absent — this table's keys are exactly `_SIDE_KINDS`, which
+# `test_the_kind_family_tuples_are_index_aligned_and_complete` pins.
 _SIDE_OF_KIND = {
     eval_ledger.KIND_SPEAKER_MAFIA: "mafia",
     eval_ledger.KIND_SPEECH_MAFIA: "mafia",
@@ -2764,6 +3117,10 @@ _SIDE_OF_KIND = {
     eval_ledger.KIND_SPEAKER_LAW_ABIDING: "law-abiding",
     eval_ledger.KIND_SPEECH_LAW_ABIDING: "law-abiding",
     eval_ledger.KIND_ATTR_LAW_ABIDING: "law-abiding",
+    eval_ledger.KIND_SPEAKER_MAFIA_HUMAN: "mafia",
+    eval_ledger.KIND_SPEECH_MAFIA_HUMAN: "mafia",
+    eval_ledger.KIND_SPEAKER_LAW_ABIDING_HUMAN: "law-abiding",
+    eval_ledger.KIND_SPEECH_LAW_ABIDING_HUMAN: "law-abiding",
 }
 
 
@@ -2982,9 +3339,15 @@ def test_the_cast_lists_role_text_matches_the_dialogue_kinds() -> None:
         if kind in (eval_ledger.KIND_ATTR_MAFIA, eval_ledger.KIND_ATTR_LAW_ABIDING)
     }
     speaker_sides = {
+        # `kind in _SIDE_KINDS`, not `_SPEAKER_KINDS[1:]`, which is what this read
+        # until Slice 5. The slice was "every speaker kind that names a side" and
+        # it stopped meaning that when `speaker-human` — a seat with NO side —
+        # joined the family: the comprehension would then have looked
+        # `_SIDE_OF_KIND` up on a kind that has no entry and died with a KeyError
+        # the day a fixture here grew a seat.
         text.rstrip(":"): _SIDE_OF_KIND[kind]
         for text, kind in spans
-        if kind in _SPEAKER_KINDS[1:]
+        if kind in _SPEAKER_KINDS and kind in _SIDE_KINDS
     }
 
     # The premise: both halves were actually found.
@@ -3639,16 +4002,29 @@ def test_the_pre_022_era_is_exactly_where_the_neutral_kinds_live() -> None:
     count: the corpus grows with every committed eval run. Written as a partition
     instead — which era a file belongs to decides which kinds it may emit — it
     survives the corpus doubling.
+
+    **Slice 5 widened the second direction to the SEAT kind whose side is
+    unknown.** `speaker-human` is "the seat, in a game with no cast list to read a
+    side from", and measurement puts every one of its 183 spans inside the same 30
+    pre-022 files for exactly the reason the neutral `speaker` is: those are the
+    only games whose cast map is empty. So a spec-022 game emitting either of them
+    means the same single failure — the cast parser stopped finding `<setup>` —
+    and leaving `speaker-human` out of this check would let that failure hide in
+    whichever files happen to be the seat's.
     """
+    era_only_kinds = (eval_ledger.KIND_SPEAKER, eval_ledger.KIND_SPEAKER_HUMAN)
     pre_022_with_sides: list[str] = []
     spec_022_with_neutral_speech: list[str] = []
+    pre_022_seated = 0
 
     for path in _TRANSCRIPTS:
         kinds = {kind for _, kind in _spans(path.read_text(encoding="utf-8"))}
         if path.parent.name in _PRE_022_RUN_DIRS:
             if kinds & _SIDE_KINDS:
                 pre_022_with_sides.append(_rel(path))
-        elif eval_ledger.KIND_SPEAKER in kinds:
+            if eval_ledger.KIND_SPEAKER_HUMAN in kinds:
+                pre_022_seated += 1
+        elif kinds & set(era_only_kinds):
             spec_022_with_neutral_speech.append(_rel(path))
 
     assert not pre_022_with_sides, (
@@ -3656,14 +4032,21 @@ def test_the_pre_022_era_is_exactly_where_the_neutral_kinds_live() -> None:
         f"{pre_022_with_sides[:_MAX_REPORTED_FILES]}"
     )
     assert not spec_022_with_neutral_speech, (
-        "a spec-022 game produced a NEUTRAL speaker span — every speaker in that "
-        "era is in their own file's cast list, so this means the cast parser "
-        "stopped finding `<setup>`: "
+        "a spec-022 game produced a NEUTRAL speaker span (seated or not) — every "
+        "speaker in that era is in their own file's cast list, so this means the "
+        "cast parser stopped finding `<setup>`: "
         f"{spec_022_with_neutral_speech[:_MAX_REPORTED_FILES]}"
     )
-    # The premise for both: each era really is represented.
+    # The premise for both: each era really is represented...
     assert _PRE_022_TRANSCRIPTS, "no pre-022 transcripts found to degrade"
     assert len(_TRANSCRIPTS) > len(_PRE_022_TRANSCRIPTS), "no spec-022 transcripts"
+    # ...and the old era really is where the sideless SEAT lives, so the widened
+    # half of the partition is checking a kind real data actually produces rather
+    # than an empty set on both sides.
+    assert pre_022_seated > 0, (
+        "no pre-022 game bolds a seat — `speaker-human` (seat known, side "
+        "unknown) has no real-data occupant left and this partition is vacuous"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -3734,6 +4117,1222 @@ def test_the_side_map_moves_kinds_and_never_a_boundary(
     assert set(moved) == _SIDE_KINDS, (
         f"kinds actually moved by the cast map: {sorted(moved)}; expected all of "
         f"{sorted(_SIDE_KINDS)}"
+    )
+
+
+# ===========================================================================
+# 4. The reviewer's own seat (spec 038, Slice 5)
+# ===========================================================================
+#
+# `tokenize_transcript` now makes TWO whole-file passes, not one. `_cast_side_map`
+# answers "which side is this name on"; `_human_seat` answers "which seat was the
+# person's" — and the two are INDEPENDENT, which is the fact every test in this
+# section is built to hold onto. A game can state either without the other, and
+# all 30 pre-spec-022 games are exactly that case: they name their seat in the
+# preamble greeting and yield no cast map at all.
+#
+# TWO ROUTES TO A SEAT, AND THE MARKER WINS:
+#
+#   1. the writer's `<player … human="true">` entry inside `<setup>` — explicit,
+#      carried by every transcript written from Slice 5 onward;
+#   2. failing that, the preamble's `Moderator: A new game begins. Welcome, <name>.`
+#      line — the inference that covers the 298 already-committed transcripts.
+#
+# WHY ALMOST EVERYTHING BELOW IS SYNTHETIC, MEASURED RATHER THAN ASSUMED. The
+# corpus's coverage of this slice is lopsided in a way that is the exact inverse
+# of what the earlier slices met:
+#
+#   * the INFERENCE has total coverage — the greeting appears exactly once in all
+#     298 files, always inside `<preamble>`, and the seat it names is `Avery` in
+#     every one of them;
+#   * the MARKER path, the BOTH-PRESENT path and the NO-SEAT path have **ZERO**
+#     coverage: `human=` appears in **0 of the 298** committed files. Every
+#     assertion about them is synthetic or it does not exist.
+#
+# So the near-misses here are not decoration, they are the whole of the marker
+# route's test suite: a marker with no greeting, a marker and a greeting that
+# disagree, a marker whose value is not the one literal, a marker outside
+# `<setup>`, two contradicting markers, a marker with no usable name, a greeting
+# outside `<preamble>`, and a game that states nothing at all.
+#
+# ONE MORE STRUCTURAL FACT, because it shapes several tests below: a transcript
+# has exactly ONE seat, so a file can emit at most TWO of the six seat kinds.
+# Anything wanting all six needs more than one game.
+
+
+# The writer's own marker text (`eval_transcript._HUMAN_ATTR`), spelled out here
+# as a literal rather than imported, for the reason `_EXPECTED_ROLE_KINDS` is:
+# a fixture built from the production constant cannot notice the production
+# constant changing. The two are tied together, once, in
+# `test_the_writer_and_the_reader_agree_on_the_marker_literal`.
+_HUMAN_MARKER = 'human="true"'
+
+# The moderator's greeting, verbatim from `graphia.nodes.setup.collect_name`'s
+# `f"A new game begins. Welcome, {name}."` with the writer's `Moderator: ` voice
+# in front of it. Same reasoning: a literal, tied to the production regex once.
+_WELCOME_TEMPLATE = "Moderator: A new game begins. Welcome, {name}."
+
+
+def _cast_entry(name: str, role: str, *, marker: str | None = None) -> str:
+    """One `<setup>` cast entry line, optionally carrying a `human=` attribute.
+
+    `marker` is the raw attribute VALUE (`"true"`, `"false"`, `"TRUE"`, `""`) so a
+    near-miss can put something other than the one blessed literal in the file;
+    `None` emits the entry exactly as the writer emitted it before Slice 5.
+
+    The attribute order — `name`, then `role`, then `human` — is the writer's own
+    (`eval_transcript._render_setup` appends the marker after `role=`), and it
+    matters: it is what makes the marker land in the tag's TRAILING punctuation
+    span rather than between two `attr` values.
+    """
+    flag = "" if marker is None else f' human="{marker}"'
+    return f'<player name="{name}" role="{role}"{flag}>(no persona recorded)</player>\n'
+
+
+def _cast(*entries: str) -> str:
+    """A `<setup>` block wrapping the given cast entry lines."""
+    return "<setup>\n" + "".join(entries) + "</setup>\n"
+
+
+def _preamble(*names: str) -> str:
+    """A `<preamble>` block whose moderator greeting welcomes each of ``names``.
+
+    More than one greeting is a contradiction the file cannot resolve, and there
+    is a test for exactly that; one is the shape all 298 committed games have.
+    """
+    lines = "".join(_WELCOME_TEMPLATE.format(name=name) + "\n" for name in names)
+    return "<preamble>\n" + lines + "</preamble>\n"
+
+
+# The two section closers a synthetic game's dialogue can begin after. `<setup>`
+# alone was enough for Slice 4; from Slice 5 a fixture usually carries a
+# `<preamble>` too, because that is where the greeting the seat is read from
+# lives.
+_HEADER_CLOSERS = ("</setup>", "</preamble>")
+
+
+def _spoken_spans(source: str) -> list[tuple[str, str]]:
+    """Every span after the last `</setup>` / `</preamble>`, separator dropped.
+
+    `_dialogue_spans` (Slice 4) cuts after `</setup>`, which was the whole header
+    then. A Slice-5 fixture usually has a `<preamble>` after it, so cutting there
+    would leave the greeting block in every expected span list and bury the one
+    line under test — and the greeting is deliberately unremarkable text, which
+    is the point of it.
+
+    The leading separator is stripped rather than asserted away, because it does
+    not always survive as a span of its own: `_coalesce_spans` merges it into the
+    next line whenever that line is also `plain`, which is exactly what happens
+    when the dialogue opens on a moderator line. Handling it here keeps every
+    expectation below a clean list of the spans a reader actually cares about.
+
+    The round trip is asserted over the WHOLE source, as `_dialogue_spans` does,
+    since these fixtures are games the corpus sweep will never see.
+    """
+    spans = _spans(source)
+    assert "".join(text for text, _ in spans) == source, (
+        "the round trip fails on this synthetic input"
+    )
+    closers = [
+        index
+        for index, (text, kind) in enumerate(spans)
+        if kind == eval_ledger.KIND_MARKER and text in _HEADER_CLOSERS
+    ]
+    assert closers, (
+        f"no closed `<setup>`/`<preamble>` in {spans!r} — this helper is for "
+        "inputs that carry one"
+    )
+    tail = spans[closers[-1] + 1 :]
+    assert tail, "nothing follows the header blocks"
+    first_text, first_kind = tail[0]
+    assert first_kind == eval_ledger.KIND_PLAIN and first_text.startswith("\n"), (
+        f"expected a separator after the header blocks, got {tail[:1]!r}"
+    )
+    remainder = first_text[1:]
+    return ([(remainder, first_kind)] if remainder else []) + tail[1:]
+
+
+def _seat_kinds(spans: list[tuple[str, str]]) -> set[str]:
+    """Every seat-bearing kind in ``spans`` — the "who is bolded" summary."""
+    return {kind for _, kind in spans} & _HUMAN_KINDS
+
+
+def _bolded_names(spans: list[tuple[str, str]]) -> set[str]:
+    """The speaker names carrying a seat kind, without their colons.
+
+    "Which seats are bolded" as a set of *people*, so a test's failure names the
+    player who was wrongly marked rather than a kind string.
+    """
+    return {
+        text.rstrip(":")
+        for text, kind in spans
+        if kind in _HUMAN_KINDS and kind in _SPEAKER_KINDS
+    }
+
+
+# ---------------------------------------------------------------------------
+# The two routes, both sides
+# ---------------------------------------------------------------------------
+
+
+def test_the_writers_marker_bolds_a_mafia_seat_within_its_side() -> None:
+    """Near-miss 1: the marker route, with **no greeting in the file at all**.
+
+    The shape every transcript written from Slice 5 onward has, and a shape **no
+    committed transcript has** — `human=` appears in 0 of the 298 — so this test
+    is the entirety of that route's coverage together with its siblings below.
+
+    Pinned absolutely, and the fixture's third player is what makes the pin worth
+    reading: Dot is a Mafia who is NOT the seat. functional-spec §2 states the
+    requirement as a contrast — the seat's lines are "in its side's colour, but
+    **bold**", while other players on the same side are "the same colour but
+    **not bold**" — so a test that only looked at Vera would pass on a tokenizer
+    that bolded the whole Mafia side. Iris is here for the other half: the seat
+    does not leak across sides either.
+    """
+    spans = _spoken_spans(_MAFIA_SEAT_GAME)
+
+    assert spans == [
+        ("<day>", "marker"),
+        ("\n", "plain"),
+        # The seat: its side's kind, in its seated form.
+        ("Vera:", "speaker-mafia-human"),
+        (" I was asleep.", "speech-mafia-human"),
+        ("\n", "plain"),
+        # A side-mate: the SAME side, NOT seated. This pair is the requirement.
+        ("Dot:", "speaker-mafia"),
+        (" So was I.", "speech-mafia"),
+        ("\n", "plain"),
+        ("Iris:", "speaker-law-abiding"),
+        (" Neither of you was.", "speech-law-abiding"),
+        ("\n", "plain"),
+        ("</day>", "marker"),
+        ("\n", "plain"),
+        ("</transcript>", "marker"),
+    ]
+    # Restated as the two properties the span list encodes, so a future re-kind
+    # fails with the rule's own name and not only with a longer diff.
+    assert _bolded_names(spans) == {"Vera"}
+    assert _MAFIA_SEAT_GAME.count("Welcome,") == 0, (
+        "the premise: this game names its seat by MARKER only — a greeting here "
+        "would make the marker route untested"
+    )
+
+
+def test_the_greeting_bolds_a_law_abiding_seat_within_its_side() -> None:
+    """The inference route, with no marker — the shape all 298 committed games have.
+
+    The mirror of the test above on every axis: the other route, the other side,
+    and a seat read from the preamble's `Moderator: A new game begins. Welcome,
+    <name>.` line rather than from an attribute. Wren is the non-seat side-mate
+    that makes "bold means the seat, not the side" the thing being asserted.
+
+    The greeting line itself must stay unstyled while being read, which the span
+    list pins on its way past: the moderator is in the writer-vocabulary exclusion
+    set, so his line is `plain` and coalesces with the separators around it.
+    """
+    spans = _spans(_LAW_ABIDING_SEAT_GAME)
+
+    assert _bolded_names(spans) == {"Iris"}
+    assert _seat_kinds(spans) == {
+        eval_ledger.KIND_SPEAKER_LAW_ABIDING_HUMAN,
+        eval_ledger.KIND_SPEECH_LAW_ABIDING_HUMAN,
+    }
+    # The dialogue, pinned absolutely.
+    assert _spoken_spans(_LAW_ABIDING_SEAT_GAME) == [
+        ("<day>", "marker"),
+        ("\n", "plain"),
+        ("Iris:", "speaker-law-abiding-human"),
+        (" I was asleep.", "speech-law-abiding-human"),
+        ("\n", "plain"),
+        ("Wren:", "speaker-law-abiding"),
+        (" So was I.", "speech-law-abiding"),
+        ("\n", "plain"),
+        ("Vera:", "speaker-mafia"),
+        (" Neither of you was.", "speech-mafia"),
+        ("\n", "plain"),
+        ("</day>", "marker"),
+        ("\n", "plain"),
+        ("</transcript>", "marker"),
+    ]
+    # ...and the line the seat was READ from is not itself painted.
+    greeting = _WELCOME_TEMPLATE.format(name="Iris")
+    assert greeting in _LAW_ABIDING_SEAT_GAME
+    assert not [
+        span
+        for span in spans
+        if greeting in span[0] and span[1] != eval_ledger.KIND_PLAIN
+    ], "the moderator's greeting was styled — he is not a player speaking"
+
+
+@pytest.mark.parametrize(
+    ("route", "seat", "role", "speaker_kind", "speech_kind"),
+    [
+        pytest.param(
+            "marker",
+            "Iris",
+            "Law-abiding Citizen",
+            eval_ledger.KIND_SPEAKER_LAW_ABIDING_HUMAN,
+            eval_ledger.KIND_SPEECH_LAW_ABIDING_HUMAN,
+            id="marker-law-abiding",
+        ),
+        pytest.param(
+            "greeting",
+            "Vera",
+            "Mafia",
+            eval_ledger.KIND_SPEAKER_MAFIA_HUMAN,
+            eval_ledger.KIND_SPEECH_MAFIA_HUMAN,
+            id="greeting-mafia",
+        ),
+        pytest.param(
+            "marker",
+            "Vera",
+            "Mafioso",
+            eval_ledger.KIND_SPEAKER_HUMAN,
+            eval_ledger.KIND_SPEECH_HUMAN,
+            id="marker-side-unknown",
+        ),
+        pytest.param(
+            "greeting",
+            "Vera",
+            "Mafioso",
+            eval_ledger.KIND_SPEAKER_HUMAN,
+            eval_ledger.KIND_SPEECH_HUMAN,
+            id="greeting-side-unknown",
+        ),
+    ],
+)
+def test_both_routes_reach_every_side_a_seat_can_have(
+    route: str, seat: str, role: str, speaker_kind: str, speech_kind: str
+) -> None:
+    """The full 2x3 grid: each route x each side a seat can be on.
+
+    The two tests above pin one cell of this grid each, absolutely and with their
+    non-seat side-mates. This sweeps the remaining four so no cell is reachable
+    only through the other route — which is precisely how a precedence bug hides,
+    since the marker route and the greeting route land on the *same* six kinds and
+    a tokenizer that only ever consulted the greeting would still colour four of
+    the six correctly.
+
+    Near-miss 9 lives in the last two rows: `role="Mafioso"` is a label the writer
+    never emits, so the seat is **marked but sideless**. Side and seat are
+    independent facts and this is the shape that proves it — a tokenizer that
+    folded the two axes together would have to invent a side here or drop the
+    seat.
+    """
+    entry = _cast_entry(seat, role, marker="true" if route == "marker" else None)
+    source = (
+        _cast(entry, _cast_entry("Dot", "Mafia"))
+        + (_preamble(seat) if route == "greeting" else "")
+        + f"{seat}: I was asleep."
+    )
+    spans = _spoken_spans(source)
+
+    assert spans[-2:] == [(f"{seat}:", speaker_kind), (" I was asleep.", speech_kind)]
+    assert _bolded_names(spans) == {seat}
+
+
+# ---------------------------------------------------------------------------
+# Precedence: the marker wins
+# ---------------------------------------------------------------------------
+
+
+def test_the_marker_wins_when_both_routes_are_present_and_disagree() -> None:
+    """Near-miss 2b, and the assertion tech-spec §3 asks for by name.
+
+    "Assert both paths, and assert that the marker wins when both are present."
+    The greeting is a **heuristic behind an explicit marker** — it depends on the
+    moderator's wording and it is the fallback for files written before the
+    marker existed — so a file that states its seat outright and also carries the
+    old greeting must be read as it states, not as it implies.
+
+    This is the shape with **zero real-data coverage of any kind**: no committed
+    transcript carries a marker, so no committed transcript can carry both. It is
+    also the one a mutation test can flip invisibly — swapping the precedence
+    leaves every one of the 298 files tokenizing identically, because their
+    marker route sees nothing at all.
+
+    Pinned in both directions: Vera IS bolded and Iris is NOT, because "the
+    marker wins" and "both are bolded" produce the same answer for Vera alone.
+    """
+    source = (
+        _cast(
+            _cast_entry("Vera", "Mafia", marker="true"),
+            _cast_entry("Iris", "Law-abiding Citizen"),
+        )
+        + _preamble("Iris")
+        + "Vera: I was asleep.\nIris: So you say."
+    )
+    spans = _spoken_spans(source)
+
+    assert spans == [
+        ("Vera:", "speaker-mafia-human"),
+        (" I was asleep.", "speech-mafia-human"),
+        ("\n", "plain"),
+        # The GREETING's candidate, left in her side's plain colour.
+        ("Iris:", "speaker-law-abiding"),
+        (" So you say.", "speech-law-abiding"),
+    ]
+    assert _bolded_names(spans) == {"Vera"}
+    # The premise: the greeting really is in the file and really does name the
+    # other player, so this is precedence and not an absent fallback.
+    assert _WELCOME_TEMPLATE.format(name="Iris") in source
+
+
+def test_the_marker_and_the_greeting_agreeing_seat_the_same_player() -> None:
+    """Near-miss 2a: both routes present and in agreement — one seat, not two.
+
+    The complement of the disagreement case, and not redundant with it: a
+    tokenizer that ran both routes and UNIONED their answers would pass the
+    disagreement test's "Vera is bolded" half and fail only its "Iris is not"
+    half. Here the union and the precedence give the same seat, so what is being
+    checked is that agreement does not double-count — the file names one seat and
+    the reader finds one.
+    """
+    source = (
+        _cast(
+            _cast_entry("Vera", "Mafia", marker="true"),
+            _cast_entry("Iris", "Law-abiding Citizen"),
+        )
+        + _preamble("Vera")
+        + "Vera: I was asleep.\nIris: So you say."
+    )
+    spans = _spoken_spans(source)
+
+    assert spans == [
+        ("Vera:", "speaker-mafia-human"),
+        (" I was asleep.", "speech-mafia-human"),
+        ("\n", "plain"),
+        ("Iris:", "speaker-law-abiding"),
+        (" So you say.", "speech-law-abiding"),
+    ]
+    assert _bolded_names(spans) == {"Vera"}
+
+
+# ---------------------------------------------------------------------------
+# Near-misses: every way a seat must NOT be found
+# ---------------------------------------------------------------------------
+
+
+def test_a_game_that_names_no_seat_bolds_nobody() -> None:
+    """Near-miss 3: neither route available — not bolded, never guessed.
+
+    functional-spec §2 and tech-spec §2 D both end on this: "a seat that cannot
+    be identified (neither marker nor inferable name) simply is not bolded —
+    never guessed." The positive tests above cannot see a tokenizer that bolds
+    the first speaker, or the first cast entry, or everyone; this one can.
+
+    Deliberately NOT keyed off `(no persona recorded)`, which is present in this
+    fixture on both entries exactly as it is in all 298 committed files. That
+    string identifies the same seat reliably and is still not used, because it is
+    a **side effect** — only AI players get personas — and it encodes "no persona"
+    rather than "the person". A tokenizer that reached for it would bold two
+    players here.
+    """
+    source = _TWO_SIDED_CAST + "Vera: I was asleep.\nIris: So you say."
+    spans = _spoken_spans(source)
+
+    assert spans == [
+        ("Vera:", "speaker-mafia"),
+        (" I was asleep.", "speech-mafia"),
+        ("\n", "plain"),
+        ("Iris:", "speaker-law-abiding"),
+        (" So you say.", "speech-law-abiding"),
+    ]
+    assert _seat_kinds(spans) == set()
+    # The premise, and the trap: the persona side effect IS present and IS
+    # ignored.
+    assert source.count("(no persona recorded)") == 2
+    assert eval_ledger._human_seat(source.split("\n")) is None
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        pytest.param("false", id="false"),
+        pytest.param("", id="empty"),
+        pytest.param("TRUE", id="uppercase"),
+        pytest.param("True", id="capitalised"),
+        pytest.param("1", id="one"),
+        pytest.param("yes", id="yes"),
+    ],
+)
+def test_only_the_literal_true_marks_the_seat(value: str) -> None:
+    """Near-miss 4: a whitelist of ONE literal, never a boolean coercion.
+
+    The same never-guess posture as `_ROLE_SIDES` and `_MARKER_TAGS`, applied to
+    the one attribute whose whole job is to be read as a flag. The writer emits
+    the marker only on the human's entry and only as `human="true"`, so anything
+    else in that slot is a shape the writer did not produce — a hand edit, a
+    future tri-state, a different tool's output — and the honest reading of it is
+    "this file has not told me". `human="false"` is the case that would bite
+    hardest under coercion: a truthiness test on a non-empty string bolds the
+    seat the file has just denied.
+
+    Both halves of the behaviour are pinned, because they differ. With nothing
+    else in the file the seat is simply unknown; with a greeting also present the
+    greeting decides — an unrecognised value is not a contradictory *statement*,
+    it is silence, so it does not block the documented fallback the way two
+    contradicting real markers do (see the test below).
+    """
+    entry = _cast_entry("Vera", "Mafia", marker=value)
+    dialogue = "Vera: I was asleep.\nIris: So you say."
+
+    alone = _cast(entry, _cast_entry("Iris", "Law-abiding Citizen")) + dialogue
+    assert _seat_kinds(_spoken_spans(alone)) == set(), (
+        f'human="{value}" marked a seat — only the literal "true" may'
+    )
+
+    with_greeting = (
+        _cast(entry, _cast_entry("Iris", "Law-abiding Citizen"))
+        + _preamble("Iris")
+        + dialogue
+    )
+    assert _bolded_names(_spoken_spans(with_greeting)) == {"Iris"}, (
+        f'human="{value}" is not a statement, so the greeting still decides'
+    )
+
+
+@pytest.mark.parametrize(
+    "placement",
+    [
+        pytest.param("day", id="inside-a-day-round"),
+        pytest.param("endgame", id="inside-the-endgame-reveal"),
+        pytest.param("top-level", id="between-the-sections"),
+    ],
+)
+def test_a_marked_cast_entry_outside_the_setup_cannot_seat_anybody(
+    placement: str,
+) -> None:
+    """Near-miss 5: the marker scan is scoped to `<setup>`, exactly as the cast scan is.
+
+    Every word of a transcript outside the cast list and the preamble is
+    model-generated. A player who types a `<player … human="true">` tag into a Day
+    speech, or a persona reveal that echoes one back inside `<endgame>`, must not
+    be able to move the reviewer's seat — the same guard `_cast_side_map` carries
+    for the same reason, and one with **zero real-data coverage** (no committed
+    file contains a `<player>` tag outside `<setup>` at all).
+
+    Dot is the intruder in every placement and the real seat is Vera, named by the
+    greeting, so the failure is legible in both directions: an unscoped scan would
+    see two markers, resolve to no seat at all, and silently un-bold Vera.
+    """
+    intruder = _cast_entry("Dot", "Mafia", marker="true").rstrip("\n")
+    blocks = {
+        "day": f"<day>\n{intruder}\nVera: I was asleep.\n</day>",
+        "endgame": f"<endgame>\nVera: I was asleep.\n{intruder}\n</endgame>",
+        "top-level": f"{intruder}\nVera: I was asleep.",
+    }
+    source = (
+        _cast(_cast_entry("Vera", "Mafia"), _cast_entry("Dot", "Mafia"))
+        + _preamble("Vera")
+        + blocks[placement]
+    )
+    spans = _spans(source)
+
+    assert _bolded_names(spans) == {"Vera"}, (
+        "a `<player … human=\"true\">` tag outside `<setup>` reached the seat scan"
+    )
+    assert eval_ledger._human_seat(source.split("\n")) == "Vera"
+
+
+@pytest.mark.parametrize(
+    "placement",
+    [
+        pytest.param("day", id="inside-a-day-round"),
+        pytest.param("top-level", id="between-the-sections"),
+    ],
+)
+def test_a_greeting_outside_the_preamble_does_not_seat_anybody(
+    placement: str,
+) -> None:
+    """Near-miss 6: the greeting is read inside `<preamble>` and nowhere else.
+
+    The inference's counterpart to the scoping test above, and the more exposed of
+    the two: the greeting is a *sentence*, so a player who repeats the moderator's
+    opening words back at the table produces the exact line the reader keys on.
+    Scoping is what stops a Day speech from re-seating the reviewer, and there is
+    no real-data coverage of it either — all 298 greetings are inside
+    `<preamble>`, which is precisely why an unscoped rule and a scoped one look
+    identical on the corpus.
+    """
+    echo = _WELCOME_TEMPLATE.format(name="Dot")
+    blocks = {
+        "day": f"<day>\n{echo}\nVera: I was asleep.\n</day>",
+        "top-level": f"{echo}\nVera: I was asleep.",
+    }
+    source = (
+        _cast(_cast_entry("Vera", "Mafia"), _cast_entry("Dot", "Mafia"))
+        + blocks[placement]
+    )
+    spans = _spans(source)
+
+    assert eval_ledger._human_seat(source.split("\n")) is None
+    assert _seat_kinds(spans) == set(), (
+        "a greeting typed outside `<preamble>` seated somebody"
+    )
+    # ...and the echoed line is still ordinary unstyled text, not skeleton. The
+    # span it lands in may be larger than the line itself (coalescing merges it
+    # with the separators around it), so this asks which span CONTAINS it.
+    assert [kind for text, kind in spans if echo in text] == [
+        eval_ledger.KIND_PLAIN
+    ], f"the echoed greeting is not a single plain span: {spans!r}"
+
+
+def test_two_contradicting_markers_yield_no_seat_and_no_fall_back_to_the_greeting() -> None:
+    """Near-miss 7: a file that states its seat incoherently has still STATED it.
+
+    The precedence rule is "did the marker route see anything", not "did it
+    produce an answer", and the difference is only visible here. Two
+    `human="true"` entries are a contradiction the file cannot resolve; falling
+    through to the greeting would be **this module resolving a contradiction the
+    file could not**, which is the one thing it never does anywhere else — a name
+    the cast list gives two sides is dropped rather than resolved first-wins, and
+    this is the same rule on the other axis.
+
+    Two assertions, and the second is the whole point: no seat AND the greeting's
+    candidate is not bolded either. A tokenizer that fell through would satisfy
+    "Vera and Dot are not bolded" perfectly.
+    """
+    source = (
+        _cast(
+            _cast_entry("Vera", "Mafia", marker="true"),
+            _cast_entry("Dot", "Mafia", marker="true"),
+            _cast_entry("Iris", "Law-abiding Citizen"),
+        )
+        + _preamble("Iris")
+        + "Vera: I was asleep.\nDot: So was I.\nIris: Neither of you was."
+    )
+    spans = _spoken_spans(source)
+
+    assert eval_ledger._human_seat(source.split("\n")) is None
+    assert _seat_kinds(spans) == set()
+    assert spans == [
+        ("Vera:", "speaker-mafia"),
+        (" I was asleep.", "speech-mafia"),
+        ("\n", "plain"),
+        ("Dot:", "speaker-mafia"),
+        (" So was I.", "speech-mafia"),
+        ("\n", "plain"),
+        # The greeting named her, and the contradiction upstream silences it.
+        ("Iris:", "speaker-law-abiding"),
+        (" Neither of you was.", "speech-law-abiding"),
+    ]
+
+
+def test_two_contradicting_greetings_yield_no_seat_either() -> None:
+    """The same rule on the inference route: two greetings name nobody.
+
+    Not reachable in any committed game — the moderator greets once, in all 298 —
+    but the rule is one `len(candidates) == 1` shared by both routes, and a
+    first-wins mutation of it would be invisible on the corpus while quietly
+    seating whoever a future format happened to greet first.
+    """
+    source = (
+        _cast(
+            _cast_entry("Vera", "Mafia"),
+            _cast_entry("Iris", "Law-abiding Citizen"),
+        )
+        + _preamble("Vera", "Iris")
+        + "Vera: I was asleep.\nIris: So you say."
+    )
+
+    assert eval_ledger._human_seat(source.split("\n")) is None
+    assert _seat_kinds(_spoken_spans(source)) == set()
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        pytest.param(
+            '<player name="" role="Mafia" human="true">(no persona recorded)</player>\n',
+            id="empty-name",
+        ),
+        pytest.param(
+            '<player role="Mafia" human="true">(no persona recorded)</player>\n',
+            id="no-name-attribute",
+        ),
+        pytest.param(
+            '<vote initiator="Vera" target="Iris" human="true">\n</vote>\n',
+            id="marker-on-another-tag",
+        ),
+    ],
+)
+def test_a_marked_entry_with_no_usable_name_marks_nothing(entry: str) -> None:
+    """Near-miss 8: a flag with nobody attached is not a seat.
+
+    A seat is a NAME — the reader matches it against the `Name:` prefix of every
+    spoken line — so an entry carrying the flag and no usable name has marked
+    nothing there is anything to do with. The third case is the same hole from
+    the other side: the flag is meaningful on a cast entry and meaningless
+    anywhere else, so a `<vote>` that happens to carry it is not a cast entry
+    growing a seat.
+
+    Distinguished from the contradiction case above deliberately, and the two
+    tests are the pair that pins the distinction: an unusable entry is **silence**
+    (the greeting still decides), two usable-but-conflicting entries are an
+    incoherent **statement** (nothing decides). Both readings are documented in
+    `_human_seat`; only asserting them keeps them apart.
+    """
+    dialogue = "Vera: I was asleep.\nIris: So you say."
+    body = _cast(entry, _cast_entry("Iris", "Law-abiding Citizen"))
+
+    assert eval_ledger._human_seat((body + dialogue).split("\n")) is None
+    assert _seat_kinds(_spoken_spans(body + dialogue)) == set()
+
+    # Silence, not a statement: the greeting is still consulted.
+    with_greeting = body + _preamble("Iris") + dialogue
+    assert _bolded_names(_spoken_spans(with_greeting)) == {"Iris"}
+
+
+def test_a_welcomed_seat_that_never_speaks_bolds_nothing_and_does_not_raise() -> None:
+    """The commonest real shape this section covers: a seat killed on Night 1.
+
+    Measured over the corpus, **74 of the 298** committed games are exactly this —
+    the greeting names a seat that then has no `Name: ` line anywhere, because it
+    died before it ever spoke. So "every transcript emits a seat kind" is a FALSE
+    statement about the corpus and a tempting one to write; the true form is
+    "every transcript whose welcomed seat speaks emits one", which the corpus
+    sweep below asserts over all 298.
+
+    Here it is on an input small enough to read: the seat is identified, nothing
+    is bolded, and nothing raises.
+    """
+    source = (
+        _cast(
+            _cast_entry("Vera", "Mafia"),
+            _cast_entry("Iris", "Law-abiding Citizen"),
+        )
+        + _preamble("Dot")
+        + "<night>\n<kill>Dot — Law-abiding Citizen</kill>\n</night>\n"
+        + "Vera: I was asleep.\nIris: So you say."
+    )
+    spans = _spoken_spans(source)
+
+    assert eval_ledger._human_seat(source.split("\n")) == "Dot"
+    assert _seat_kinds(spans) == set()
+    assert spans[-2:] == [("Iris:", "speaker-law-abiding"), (" So you say.", "speech-law-abiding")]
+
+
+def test_the_writers_vocabulary_still_outranks_the_seat() -> None:
+    """A seat named `Moderator` does not turn the moderator's lines into speech.
+
+    Slice 3's exclusion set sits in the speaker branch, ABOVE everything the seat
+    axis does — the seat can only re-kind a line the tokenizer already decided is
+    somebody speaking. A file whose greeting welcomes a player called `Moderator`
+    is a pathological input rather than a realistic one, and the point is exactly
+    that: two whitelists that both key on a line's leading name must compose in a
+    fixed order, and only a test says which.
+
+    The mirror of `test_a_player_named_moderator_does_not_make_the_moderators_lines_speech`,
+    which pins the same precedence for the side axis.
+    """
+    source = (
+        _cast(_cast_entry("Moderator", "Mafia"), _cast_entry("Iris", "Law-abiding Citizen"))
+        + _preamble("Moderator")
+        + "Moderator: Night falls.\nIris: So you say."
+    )
+    spans = _spoken_spans(source)
+
+    assert eval_ledger._human_seat(source.split("\n")) == "Moderator"
+    assert spans == [
+        # His line stays `plain` and takes the trailing separator with it, since
+        # coalescing merges adjacent runs of one kind.
+        ("Moderator: Night falls.\n", "plain"),
+        ("Iris:", "speaker-law-abiding"),
+        (" So you say.", "speech-law-abiding"),
+    ]
+    assert _seat_kinds(spans) == set()
+
+
+# ---------------------------------------------------------------------------
+# The marker is punctuation, not a detail
+# ---------------------------------------------------------------------------
+
+
+def test_the_seat_marker_is_not_an_attr_span_of_its_own() -> None:
+    """Near-miss 10: ratified in Slice 2, and pinned here so a later slice cannot "fix" it.
+
+    `human` is deliberately absent from `_ATTR_NAMES`. The five whitelisted
+    attributes are lifted out of the punctuation because a reviewer reads them as
+    **specifics** — a person's name, a role — and a machine flag is not one: it
+    says nothing a reviewer wants picked out, and the thing it does say is
+    already visible as the bold on that seat's every line.
+
+    So the cast entry splits five ways with the marker riding along inside the
+    tag's TRAILING marker span, exactly as the closing `">` did before it. That is
+    a boundary a future slice could plausibly "correct" by adding `human` to the
+    whitelist, at which point the achromatic `attr` treatment would start
+    painting `true` as though it were a name.
+    """
+    source = _cast(_cast_entry("Vera", "Mafia", marker="true")) + "Vera: I was asleep."
+    spans = _spans(source)
+
+    assert spans[2:7] == [
+        ('<player name="', "marker"),
+        ("Vera", "attr"),
+        ('" role="', "marker"),
+        ("Mafia", "attr-mafia"),
+        # The marker rides inside the tag's punctuation, not beside it.
+        (f'" {_HUMAN_MARKER}>', "marker"),
+    ]
+    assert "human" not in eval_ledger._ATTR_NAMES
+    # ...and no span anywhere is the flag's value on its own.
+    assert "true" not in [text for text, kind in spans if kind in _ATTR_KINDS]
+    # The premise: the seat really was read out of that tag.
+    assert _bolded_names(spans) == {"Vera"}
+
+
+def test_the_seats_own_attributes_take_a_side_but_never_a_seat() -> None:
+    """Ratified in Slice 5: `attr` gains **no** seated form, and here is why.
+
+    The seat's cast entry and its `<thought player="…">` owner name are already
+    `attr-mafia` / `attr-law-abiding`, and Slice 4's styling task kept `attr`'s
+    bold on both — so a "bold within the side" treatment there would be
+    invisible, adding a kind that renders identically to the one it replaced.
+    functional-spec §2 scopes the requirement to that seat's **lines** in any
+    case, and bold on a player's line is unspent precisely so it can mean this
+    one thing.
+
+    Four spans, four different rules meeting on one player:
+
+    * the seat's `name=` is achromatic `attr` — a name carries no side;
+    * the seat's `role=` is `attr-mafia` — the side is written right there;
+    * the seat's thought OWNER is `attr-mafia` — a map lookup, side only;
+    * the seat's thought BODY is `thought` — never side-tinted and never seated,
+      because a private reflection is not an act of allegiance.
+    """
+    source = (
+        _cast(_cast_entry("Vera", "Mafia", marker="true"))
+        + '<thought player="Vera">They suspect me.</thought>\n'
+        + "Vera: I was asleep."
+    )
+    spans = _spans(source)
+    by_text = dict(spans)
+
+    assert by_text["Vera"] == eval_ledger.KIND_ATTR_MAFIA, (
+        "the `<thought player=…>` owner name takes the side and only the side"
+    )
+    assert by_text["Mafia"] == eval_ledger.KIND_ATTR_MAFIA
+    assert by_text["They suspect me."] == eval_ledger.KIND_THOUGHT
+    # The cast entry's own `name=` value, which coalescing keeps separate from
+    # the thought owner only by their differing kinds — so read it positionally.
+    assert spans[3] == ("Vera", eval_ledger.KIND_ATTR)
+    # No attr span anywhere carries a seat kind — there is no such kind.
+    assert not _HUMAN_KINDS & set(_ATTR_KINDS)
+    assert _seat_kinds(spans) == {
+        eval_ledger.KIND_SPEAKER_MAFIA_HUMAN,
+        eval_ledger.KIND_SPEECH_MAFIA_HUMAN,
+    }
+
+
+# ---------------------------------------------------------------------------
+# The seat inside the rest of the format
+# ---------------------------------------------------------------------------
+
+
+def test_a_ballot_cast_by_the_seat_takes_the_seats_kind() -> None:
+    """Near-miss 11: inside `<vote>`, a ballot is speech — and the seat's is bold.
+
+    Spec 022 strips the `Moderator:` voice off ballots precisely so `Vera: Yes`
+    reads as the player's own word, and Slice 3 ratified that a ballot is
+    `speaker` + `speech` rather than a kind of its own. The seat axis composes
+    with that decision rather than being scoped around it: the vote block then
+    shows at a glance both which sides voted which way AND which of those votes
+    was the reviewer's own, which is the most useful thing this view can say
+    about a vote.
+
+    The stateless per-line tokenizer cannot tell it is inside `<vote>` at all,
+    which is why this holds — but "it holds because the tokenizer cannot see the
+    difference" is an implementation accident until a test makes it a promise.
+    """
+    source = (
+        _cast(
+            _cast_entry("Vera", "Mafia", marker="true"),
+            _cast_entry("Iris", "Law-abiding Citizen"),
+        )
+        + '<vote initiator="Iris" target="Vera">\n'
+        + "Vera: No\n"
+        + "Iris: Yes\n"
+        + "tally: 1 Yes, 1 No\n"
+        + "</vote>"
+    )
+    spans = _spoken_spans(source)
+
+    assert spans == [
+        # The vote marker's own names stay achromatic: a vote says who called it
+        # and against whom, and the ballots below it already answer the side
+        # question — including, now, whose ballot was the reviewer's own.
+        ('<vote initiator="', "marker"),
+        ("Iris", "attr"),
+        ('" target="', "marker"),
+        ("Vera", "attr"),
+        ('">', "marker"),
+        ("\n", "plain"),
+        ("Vera:", "speaker-mafia-human"),
+        (" No", "speech-mafia-human"),
+        ("\n", "plain"),
+        ("Iris:", "speaker-law-abiding"),
+        (" Yes", "speech-law-abiding"),
+        # `tally:` is writer vocabulary, not a player — the exclusion set holds
+        # inside a vote block as much as outside it.
+        ("\ntally: 1 Yes, 1 No\n", "plain"),
+        ("</vote>", "marker"),
+    ]
+
+
+def test_the_seat_takes_the_same_kind_in_every_round_they_speak() -> None:
+    """"That player's colour is the same every time" (functional-spec §2), for the seat.
+
+    The seat is read once per file, so it cannot drift between rounds — but so was
+    the cast map, and that claim is only true until somebody rebuilds one of them
+    per section. The side axis has this test already; the seat axis needs its own,
+    because a rebuild would break them independently.
+
+    Pinned absolutely as well as relatively, for spec 037's mutation finding: "the
+    second round matches the first" holds when both are wrong in the same way.
+    """
+    source = _cast(
+        _cast_entry("Vera", "Mafia", marker="true"),
+        _cast_entry("Iris", "Law-abiding Citizen"),
+    ) + (
+        "<day>\n"
+        "<round>\n"
+        "Round 1.\n"
+        "Vera: I was asleep.\n"
+        "Iris: So you say.\n"
+        "</round>\n"
+        "<round>\n"
+        "Round 2.\n"
+        "Iris: I still say it.\n"
+        "Vera: And I still was.\n"
+        "</round>\n"
+        "</day>"
+    )
+    spans = _spoken_spans(source)
+    by_speaker: dict[str, list[str]] = {}
+    for index, (text, kind) in enumerate(spans):
+        if kind in _SPEAKER_KINDS:
+            by_speaker.setdefault(text, []).append(kind)
+            assert spans[index + 1][1] == _SPEECH_KINDS[_SPEAKER_KINDS.index(kind)]
+
+    assert {name: set(kinds) for name, kinds in by_speaker.items()} == {
+        "Vera:": {eval_ledger.KIND_SPEAKER_MAFIA_HUMAN},
+        "Iris:": {eval_ledger.KIND_SPEAKER_LAW_ABIDING},
+    }
+    assert [len(kinds) for kinds in by_speaker.values()] == [2, 2]
+
+
+def test_an_indented_pre_022_style_preamble_still_names_the_seat() -> None:
+    """The 30 pre-spec-022 games indent their preamble's content, and 20 seat a player.
+
+    Their `<preamble>` tag is flush-left but every line inside it carries two
+    spaces, exactly as their cast list does — which is why `_human_seat` compares
+    the *stripped* line and why that is not an incidental `.strip()`. Those same
+    30 files yield an empty cast map, so they are also the corpus's only source of
+    the `speaker-human` / `speech-human` pair: seat known, side unknown, both read
+    from the same file.
+
+    Written synthetically as well as swept, because the sweep would report a
+    dropped indent as "20 files lost their seat" rather than as this rule.
+    """
+    source = (
+        "<setup>\n"
+        "  Vera — Mafia\n"
+        "    (no persona recorded)\n"
+        "</setup>\n"
+        "<preamble>\n"
+        f"  {_WELCOME_TEMPLATE.format(name='Vera')}\n"
+        "</preamble>\n"
+        "Vera: I was asleep."
+    )
+    spans = _spans(source)
+
+    assert eval_ledger._human_seat(source.split("\n")) == "Vera"
+    # No cast map — the old form is not parsed, by the author's explicit decision
+    # — so the seat is known and the side is not. Both facts, from one file.
+    assert eval_ledger._cast_side_map(source.split("\n")) == {}
+    assert spans[-2:] == [
+        ("Vera:", eval_ledger.KIND_SPEAKER_HUMAN),
+        (" I was asleep.", eval_ledger.KIND_SPEECH_HUMAN),
+    ]
+    assert not set(spans) & _SIDE_KINDS
+
+
+def test_a_seat_name_carrying_its_own_full_stop_survives_the_greeting() -> None:
+    """`Welcome, Dr. Aziz.` seats `Dr. Aziz`, not `Dr`.
+
+    The greeting's name group is greedy up to the line's final full stop, which is
+    the only reading that survives a name containing one. Names are
+    model-generated, so this is a shape the next eval run could produce and no
+    committed one has — and a non-greedy `.+?` would look identical on all 298
+    files while seating a person who never speaks.
+    """
+    greedy = _cast(_cast_entry("Dr. Aziz", "Mafia")) + _preamble("Dr. Aziz")
+    assert eval_ledger._human_seat(greedy.split("\n")) == "Dr. Aziz", (
+        "the greeting's name group must be greedy to the line's FINAL full stop; "
+        "a non-greedy one seats `Dr` and looks identical on all 298 committed files"
+    )
+
+    # ...and the bold that follows from it, on a name a `Name:` prefix can carry.
+    # `Dr. Aziz` cannot be one — `_SPEAKER_RE` allows no internal whitespace, a
+    # deliberate Slice-3 miss — so the seat that speaks here is spelled without
+    # the space while keeping the internal full stop that makes the point.
+    source = (
+        _cast(_cast_entry("St.Clair", "Mafia"))
+        + _preamble("St.Clair")
+        + "St.Clair: I was asleep."
+    )
+    assert eval_ledger._human_seat(source.split("\n")) == "St.Clair"
+    assert _spoken_spans(source) == [
+        ("St.Clair:", eval_ledger.KIND_SPEAKER_MAFIA_HUMAN),
+        (" I was asleep.", eval_ledger.KIND_SPEECH_MAFIA_HUMAN),
+    ]
+
+
+# ---------------------------------------------------------------------------
+# The writer and the reader agree
+# ---------------------------------------------------------------------------
+
+
+def test_the_writer_and_the_reader_agree_on_the_marker_literal() -> None:
+    """Two modules, two independent literals, one attribute — tied together here.
+
+    `eval_transcript._HUMAN_ATTR` writes the marker; `eval_ledger._HUMAN_ATTR_RE`
+    and `_HUMAN_ATTR_TRUE` read it back. Nothing in either module refers to the
+    other, which is correct (the pure reader must not import the writer) and is
+    exactly why a drift between them would be silent: transcripts would carry a
+    marker nothing looks for, every existing test would pass, and the seat would
+    quietly fall back to the greeting forever.
+
+    The same shape as `test_the_cast_lists_role_text_matches_the_dialogue_kinds`,
+    which ties the two independent side paths together for the same reason.
+    """
+    from graphia.tools import eval_transcript
+
+    assert eval_transcript._HUMAN_ATTR == _HUMAN_MARKER
+    match = eval_ledger._HUMAN_ATTR_RE.search(f" {eval_transcript._HUMAN_ATTR}")
+    assert match is not None, (
+        f"the reader's pattern does not match the writer's "
+        f"{eval_transcript._HUMAN_ATTR!r}"
+    )
+    assert match.group("value") == eval_ledger._HUMAN_ATTR_TRUE
+    # The lookbehind really does its job: a longer attribute ending in `human`
+    # is not the flag.
+    assert eval_ledger._HUMAN_ATTR_RE.search(' nonhuman="true"') is None
+
+
+def test_a_transcript_the_writer_produced_bolds_the_seat_it_marked() -> None:
+    """End to end, writer to reader, with no literal shared between the halves.
+
+    Everything else in this section feeds the tokenizer a hand-written tag. This
+    feeds it a document `render_transcript` actually produced from a roster whose
+    seat carries `PlayerState.is_human=True` — the only test in the suite where
+    the marker's whole round trip runs, and the closest thing to real data the
+    marker route can have, since `human=` appears in **0 of the 298** committed
+    files and will not appear until the next measured eval run is committed.
+
+    Both sides are covered, because the seat's kind depends on its role and the
+    two roles take different paths through `_ROLE_SIDES`.
+    """
+    from graphia.state import PlayerState
+    from graphia.tools.eval_transcript import render_transcript
+
+    for role, speaker_kind in (
+        ("mafia", eval_ledger.KIND_SPEAKER_MAFIA_HUMAN),
+        ("law_abiding", eval_ledger.KIND_SPEAKER_LAW_ABIDING_HUMAN),
+    ):
+        players = {
+            "p-seat": PlayerState(
+                id="p-seat",
+                name="Avery",
+                role=role,
+                is_human=True,
+                is_alive=True,
+                persona=None,
+            ),
+            "p-other": PlayerState(
+                id="p-other",
+                name="Bo",
+                role=role,
+                is_human=False,
+                is_alive=True,
+                persona=None,
+            ),
+        }
+        doc = render_transcript([], players, game_index=1, run_meta=None)
+        # The writer really emitted the marker, on one entry only.
+        assert doc.count(_HUMAN_MARKER) == 1, doc
+
+        spans = _spans(doc + "\n<day>\nAvery: I was asleep.\nBo: So was I.\n</day>")
+        assert _bolded_names(spans) == {"Avery"}, (
+            f"the writer's own {role} transcript did not bold the seat it marked"
+        )
+        by_text = dict(spans)
+        assert by_text["Avery:"] == speaker_kind
+        # ...and the side-mate the writer did NOT mark is not bolded.
+        assert by_text["Bo:"] == _UNSEATED_KIND[speaker_kind]
+
+
+# ---------------------------------------------------------------------------
+# The seat across the whole committed corpus
+# ---------------------------------------------------------------------------
+
+
+@_requires_corpus
+def test_every_committed_game_names_a_seat_and_bolds_it_only_where_it_speaks() -> None:
+    """The seat's real-data story, stated as the two relations that are actually true.
+
+    Measured over all 298 committed games, and written as relations rather than
+    counts because the corpus grows with every eval run:
+
+    * **every committed game names its seat.** All 298 carry the moderator's
+      greeting exactly once inside `<preamble>`, so the inference resolves a seat
+      for every one of them — which is what lets tech-spec §2 D call the reader's
+      heuristic "a documented fallback" rather than a partial one. A file that
+      stopped resolving would mean the greeting's wording had drifted.
+    * **a game emits seat kinds exactly when its seat speaks.** The tempting
+      assertion, "every game bolds something", is FALSE: in **74** of the 298 the
+      welcomed seat has no `Name: ` line anywhere, because it was killed on
+      Night 1 and never spoke. Asserted as an ``iff`` per file, so neither
+      direction can rot — a tokenizer that bolded nothing and one that bolded a
+      seat with nothing to bold both fail.
+    * **and the bold never lands on anybody else.** Every seat-kinded speaker span
+      in the corpus is the seat's own name, checked span by span across all
+      22,508 utterances. This is the assertion that fails if the seat is matched
+      loosely — by prefix, case-insensitively, or against the wrong name.
+
+    The premise counts are lower bounds and non-emptiness, never today's figures.
+    """
+    seatless: list[str] = []
+    mismatched: list[str] = []
+    misattributed: list[str] = []
+    emitting = 0
+    silent = 0
+    seat_kinds_seen: Counter[str] = Counter()
+
+    for path in _TRANSCRIPTS:
+        text = path.read_text(encoding="utf-8")
+        lines = text.split("\n")
+        seat = eval_ledger._human_seat(lines)
+        if seat is None:
+            seatless.append(_rel(path))
+            continue
+        spans = _spans(text)
+        kinds = _seat_kinds(spans)
+        speaks = any(line.lstrip().startswith(f"{seat}: ") for line in lines)
+        if bool(kinds) is not speaks:
+            mismatched.append(
+                f"{_rel(path)}: seat {seat!r} speaks={speaks} but seat kinds={sorted(kinds)}"
+            )
+        if kinds:
+            emitting += 1
+            seat_kinds_seen.update(kinds)
+        else:
+            silent += 1
+        misattributed.extend(
+            f"{_rel(path)}: {text_!r} is {kind} but the seat is {seat!r}"
+            for text_, kind in spans
+            if kind in _HUMAN_KINDS
+            and kind in _SPEAKER_KINDS
+            and text_ != f"{seat}:"
+        )
+
+    assert not seatless, (
+        "every committed transcript carries the moderator's greeting exactly once "
+        f"inside `<preamble>`, so every one resolves a seat: {seatless[:_MAX_REPORTED_FILES]}"
+    )
+    assert not mismatched, (
+        "a game emits seat kinds exactly when its welcomed seat has a `Name: ` "
+        f"line: {mismatched[:_MAX_REPORTED_FILES]}"
+    )
+    assert not misattributed, (
+        "a seat kind landed on somebody other than the seat — the bold means "
+        f"'this was yours' and it is now saying it to the wrong player: "
+        f"{misattributed[:_MAX_REPORTED_FILES]}"
+    )
+    # The premises: both populations really exist, so neither direction of the
+    # `iff` is vacuous, and all six seat kinds are reachable on real data.
+    assert emitting > 0, "no committed game bolds a seat — the iff is vacuous"
+    assert silent > 0, (
+        "no committed game has a seat that never spoke — the 74 Night-1 deaths "
+        "are what makes 'every game bolds something' the wrong assertion"
+    )
+    assert emitting + silent == len(_TRANSCRIPTS)
+    assert set(seat_kinds_seen) == _HUMAN_KINDS, (
+        f"seat kinds reached on real data: {sorted(seat_kinds_seen)}; expected all "
+        f"of {sorted(_HUMAN_KINDS)}"
+    )
+
+
+@_requires_corpus
+def test_the_seat_axis_moves_kinds_and_never_a_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The side-axis conservation sweep's twin, on the axis Slice 5 added.
+
+    `tasks.md` records this slice's measurement as absolute totals again — "193,740,
+    identical to Slices 3 and 4; `speaker` 1,670 + `speaker-human` 183 = 1,853" —
+    and they are again the right finding and the wrong assertion: the corpus grows
+    with every committed eval run, so a pinned total is a test that fails on a
+    green tree. The relation behind them is pinned instead.
+
+    Tokenize every committed game twice — once normally, once with `_human_seat`
+    stubbed to find nothing — and require **the same spans of text in the same
+    order**, differing only in which kind each carries and only by the seat split.
+    That is "only kinds moved, no boundary did" stated so it survives the corpus
+    doubling, and it is stronger than the totals were: a boundary that moved while
+    preserving the counts still fails.
+
+    It doubles as the no-seat degradation path swept over all 298 files rather
+    than the zero that exercise it naturally — every committed game names a seat,
+    so *nothing* in the corpus produces the unseated reading on its own. Stubbing
+    is the only way to sweep it, exactly as it is for the empty cast map.
+
+    Deliberately a SECOND sweep rather than a widening of the side-axis one: run
+    together, a tokenizer that had collapsed the two axes into one would pass both
+    at once. Run separately, each pins its own axis with the other held fixed,
+    which is what "side and seat are independent facts" actually claims.
+    """
+    real_human_seat = eval_ledger._human_seat
+    moved: Counter[str] = Counter()
+    checked = 0
+
+    for path in _TRANSCRIPTS:
+        text = path.read_text(encoding="utf-8")
+        seated = _spans(text)
+        monkeypatch.setattr(eval_ledger, "_human_seat", lambda lines: None)
+        unseated = _spans(text)
+        monkeypatch.setattr(eval_ledger, "_human_seat", real_human_seat)
+        checked += 1
+
+        assert [span_text for span_text, _ in seated] == [
+            span_text for span_text, _ in unseated
+        ], (
+            f"{_rel(path)}: the seat moved a span BOUNDARY, not just a kind — "
+            "Slice 5 re-kinds spans and must never re-split a line"
+        )
+        for (span_text, kind), (_, unseated_kind) in zip(
+            seated, unseated, strict=True
+        ):
+            if kind == unseated_kind:
+                continue
+            assert _SEATED_KIND.get(unseated_kind) == kind, (
+                f"{_rel(path)}: {span_text[:40]!r} is {kind} with a seat and "
+                f"{unseated_kind} without — the only difference a seat may make "
+                "is the seat split"
+            )
+            moved[kind] += 1
+
+    assert checked == len(_TRANSCRIPTS)
+    # Every kind the seat moves, and no other. "The seat never touches a kind
+    # with no seated form" needs no separate assertion: the loop above already
+    # rejects any difference that is not a `_SEATED_KIND` step, so a moved
+    # `attr`, `marker`, `thought` or `recap` span fails there, and a seated form
+    # invented for one of them fails this equality.
+    assert set(moved) == _HUMAN_KINDS, (
+        f"kinds actually moved by the seat: {sorted(moved)}; expected all of "
+        f"{sorted(_HUMAN_KINDS)}"
     )
 
 

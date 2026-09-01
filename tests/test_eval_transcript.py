@@ -1435,3 +1435,278 @@ def test_no_information_lost_across_the_restructure() -> None:
     # The endgame persona reveal.
     assert "Who they really were:" in doc
     assert "Dario (Mafia) — publicly the harbour fishmonger" in doc
+
+
+# ===========================================================================
+# 7. The human seat's marker on its `<player>` tag (spec 038, Slice 5).
+#
+# `render_transcript` has always received `players: dict[str, PlayerState]` and
+# `PlayerState.is_human` has always existed — and until this slice the writer
+# read neither. A preserved game could only ever *imply* which seat was the
+# person's: from the opening welcome, from a private "you are…" line, or from
+# that seat being the one with no character description. The reading view marks
+# that seat in bold (spec 038), so the file now says it outright, as one
+# additional attribute on one tag.
+#
+# What these tests are guarding is therefore mostly a NEGATIVE: the change is
+# purely additive to the human seat's opening `<player>` tag, and **nothing else
+# about the emitted text moves**. This file is 1400 lines of format contract and
+# every one of those assertions is the other half of that guarantee — none of
+# them needed editing for this slice, which is itself the strongest statement
+# available that nothing moved. The diff pin below says it directly rather than
+# by absence.
+#
+# Note "the seat", not "a live person": in a measured `blunder-eval` run the seat
+# is played by the scripted stand-in (spec 026) and `is_human` is still `True` on
+# it, which is exactly right — it holds the same position in the game, and
+# functional-spec §2 asks for it to be marked the same way. Every roster in this
+# module's other tests is all-AI (`is_human=False` on all four players), which is
+# why none of them carries the marker and why the seat cases live here.
+# ===========================================================================
+
+# The attribute the writer appends, spelled out as a literal rather than imported
+# from `eval_transcript._HUMAN_ATTR` — a test built from the constant under test
+# cannot notice that constant changing. The reader's side of the same literal is
+# tied to the writer's in
+# `tests/test_transcript_highlight.py::test_the_writer_and_the_reader_agree_on_the_marker_literal`.
+_HUMAN_ATTR_TEXT = 'human="true"'
+
+
+def _human_seat_players(role: str) -> dict[str, PlayerState]:
+    """A two-player roster whose FIRST seat is the person's, both on ``role``.
+
+    Both players share a side deliberately: the marker's job is to pick one seat
+    out of its own side-mates, so a roster where the seat is the only player of
+    its role could not tell "marked the human" from "marked the Mafioso".
+    """
+    return {
+        "p-seat": PlayerState(
+            id="p-seat",
+            name="Avery",
+            role=role,
+            is_human=True,
+            is_alive=True,
+            persona=None,
+        ),
+        "p-other": PlayerState(
+            id="p-other",
+            name="Bo",
+            role=role,
+            is_human=False,
+            is_alive=True,
+            persona=_CITIZEN2_PERSONA,
+        ),
+    }
+
+
+def test_render_marks_a_law_abiding_human_seats_player_tag() -> None:
+    """The human seat's cast entry carries ``human="true"``; nobody else's does.
+
+    Appended after ``role=``, so the tag reads
+    ``<player name="Avery" role="Law-abiding Citizen" human="true">``. The
+    position matters to the reader as well as to the eye: the reading view lifts
+    the five detail attributes out of the tag's punctuation and deliberately does
+    NOT lift this one, so the marker has to sit in the tag's trailing punctuation
+    rather than between two lifted values.
+    """
+    doc = render_transcript(
+        [], _human_seat_players("law_abiding"), game_index=1, run_meta=None
+    )
+
+    assert (
+        '<player name="Avery" role="Law-abiding Citizen" human="true">' in doc
+    ), doc
+    # The side-mate the writer did NOT mark is emitted exactly as before.
+    assert '<player name="Bo" role="Law-abiding Citizen">' in doc
+    assert doc.count(_HUMAN_ATTR_TEXT) == 1
+
+
+def test_render_marks_a_mafia_human_seats_player_tag() -> None:
+    """The same for a person dealt the Mafia side — the marker is role-blind.
+
+    Worth its own case rather than a parametrize note: the seat marker and the
+    role label are written by the same expression, and a change that derived one
+    from the other would pass on a single side. Both sides are also what the
+    reading view needs — the seat is bold *within its side's colour*, and there
+    are two colours.
+    """
+    doc = render_transcript(
+        [], _human_seat_players("mafia"), game_index=1, run_meta=None
+    )
+
+    assert '<player name="Avery" role="Mafia" human="true">' in doc, doc
+    assert '<player name="Bo" role="Mafia">' in doc
+    assert doc.count(_HUMAN_ATTR_TEXT) == 1
+
+
+def test_render_changes_nothing_but_the_human_seats_own_tag() -> None:
+    """The diff pin: one line differs, it is the seat's opening tag, and that is all.
+
+    tech-spec §3 names this risk in as many words — "the writer change looks like
+    a format change" — and answers it with "it is purely additive to one tag; the
+    existing writer tests should pin that nothing else about the emitted text
+    moves". This is that pin stated directly instead of inferred from the other
+    tests' silence.
+
+    Rendered twice off the SAME synthetic game, with the only difference being
+    ``is_human`` on one player, and compared line by line. Line-level rather than
+    a substring check because the failure it is written for is a *stray* change —
+    a re-ordered attribute, a lost persona line, a moved block — and a substring
+    assertion cannot see any of those. The whole two-Night/two-Day game is used
+    rather than a bare roster so the comparison spans every section the renderer
+    emits, not only ``<setup>``.
+    """
+    events = _two_night_two_day_events()
+    ai_only = _final_players()
+    with_seat = _final_players()
+    with_seat["p-mira"] = _player(
+        "p-mira", "Mira", "law_abiding", persona=_CITIZEN_PERSONA
+    )
+    with_seat["p-mira"].is_human = True
+
+    before = render_transcript(events, ai_only, game_index=1, run_meta=None)
+    after = render_transcript(events, with_seat, game_index=1, run_meta=None)
+
+    before_lines = before.splitlines()
+    after_lines = after.splitlines()
+    assert len(before_lines) == len(after_lines), (
+        "the marker changed the LINE COUNT of the transcript — it must be purely "
+        "additive to one existing tag"
+    )
+    differing = [
+        (old, new)
+        for old, new in zip(before_lines, after_lines, strict=True)
+        if old != new
+    ]
+    assert differing == [
+        (
+            '<player name="Mira" role="Law-abiding Citizen">',
+            '<player name="Mira" role="Law-abiding Citizen" human="true">',
+        )
+    ], f"more than the seat's own tag moved: {differing}"
+    # ...and the change really is an insertion into that one line, not a rewrite:
+    # deleting the marker text restores the previous document byte for byte.
+    assert after.replace(f" {_HUMAN_ATTR_TEXT}", "") == before
+
+
+def test_render_marks_the_human_seat_even_with_no_persona_recorded() -> None:
+    """The marker is sourced from ``is_human``, never from the persona side effect.
+
+    ``(no persona recorded)`` identifies the same seat in every one of the 298
+    committed transcripts, and it is a **side effect** rather than a marker: only
+    AI players get personas, so the string encodes "no persona", not "the person".
+    The two are decoupled here in both directions — a marked seat that HAS a
+    persona is still marked, and an unmarked player with no persona is still
+    unmarked — so a writer that reached for the correlation instead of the flag
+    fails on one of the two.
+    """
+    players = {
+        "p-seat": PlayerState(
+            id="p-seat",
+            name="Avery",
+            role="mafia",
+            is_human=True,
+            is_alive=True,
+            persona=_MAFIA_PERSONA,
+        ),
+        "p-other": PlayerState(
+            id="p-other",
+            name="Nil",
+            role="mafia",
+            is_human=False,
+            is_alive=True,
+            persona=None,
+        ),
+    }
+
+    doc = render_transcript([], players, game_index=1, run_meta=None)
+
+    # A human seat WITH a persona is still marked...
+    assert '<player name="Avery" role="Mafia" human="true">' in doc
+    assert _MAFIA_PERSONA.true_self in doc
+    # ...and an AI player WITHOUT one is still not.
+    assert (
+        '<player name="Nil" role="Mafia">(no persona recorded)</player>' in doc
+    )
+    assert doc.count(_HUMAN_ATTR_TEXT) == 1
+
+
+def test_render_roster_object_lacking_is_human_gets_no_marker() -> None:
+    """The defensive ``getattr``: a sparse roster object simply has no seat.
+
+    Every field in ``_render_setup`` is read defensively — ``name``, ``role`` and
+    ``persona`` all go through ``getattr`` with a fallback — because the eval
+    harness's roster can be reconstructed from a thin ``players`` delta in the
+    stream log rather than from a full ``PlayerState``. ``is_human`` is read the
+    same way, so an object that predates the field, or a stand-in built for a
+    test, renders its cast entry unmarked instead of raising ``AttributeError``
+    and losing the whole transcript.
+
+    Deliberately a plain object rather than a ``PlayerState`` with the field set
+    to ``False``: the two are different failures, and only this one exercises the
+    fallback. ``False`` is covered by every other test in this module.
+    """
+
+    class _SparsePlayer:
+        """A roster entry from before ``is_human`` existed — no such attribute."""
+
+        def __init__(self, name: str, role: str) -> None:
+            self.id = f"p-{name.lower()}"
+            self.name = name
+            self.role = role
+            self.persona = None
+
+    players: Any = {
+        "p-nil": _SparsePlayer("Nil", "law_abiding"),
+        "p-don": _SparsePlayer("Don", "mafia"),
+    }
+
+    assert not hasattr(players["p-nil"], "is_human"), "the premise: no such field"
+
+    doc = render_transcript([], players, game_index=1, run_meta=None)
+
+    assert "<transcript>" in doc
+    assert _HUMAN_ATTR_TEXT not in doc
+    assert (
+        '<player name="Nil" role="Law-abiding Citizen">(no persona recorded)</player>'
+        in doc
+    )
+    assert '<player name="Don" role="Mafia">(no persona recorded)</player>' in doc
+
+
+def test_render_marks_only_one_seat_even_if_the_roster_claims_two() -> None:
+    """A roster with two human seats emits two markers — the writer does not arbitrate.
+
+    Deliberate, and worth pinning because it looks like an omission. The writer's
+    job is to record what the engine's ``players`` map says; a game with two
+    ``is_human`` seats is an engine bug, and silently emitting one marker would
+    hide it inside a file that then read as coherent. The READER is where the
+    never-guess rule lives: two contradicting markers resolve to no seat at all,
+    so a corrupt roster degrades to "this game does not say" rather than to a
+    confidently wrong bold. (See
+    ``tests/test_transcript_highlight.py::test_two_contradicting_markers_yield_no_seat_and_no_fall_back_to_the_greeting``.)
+    """
+    players = {
+        "p-one": PlayerState(
+            id="p-one",
+            name="Avery",
+            role="mafia",
+            is_human=True,
+            is_alive=True,
+            persona=None,
+        ),
+        "p-two": PlayerState(
+            id="p-two",
+            name="Bo",
+            role="law_abiding",
+            is_human=True,
+            is_alive=True,
+            persona=None,
+        ),
+    }
+
+    doc = render_transcript([], players, game_index=1, run_meta=None)
+
+    assert doc.count(_HUMAN_ATTR_TEXT) == 2
+    assert '<player name="Avery" role="Mafia" human="true">' in doc
+    assert '<player name="Bo" role="Law-abiding Citizen" human="true">' in doc

@@ -56,11 +56,17 @@ from graphia.eval_ledger import (
     KIND_MARKER,
     KIND_RECAP,
     KIND_SPEAKER,
+    KIND_SPEAKER_HUMAN,
     KIND_SPEAKER_LAW_ABIDING,
+    KIND_SPEAKER_LAW_ABIDING_HUMAN,
     KIND_SPEAKER_MAFIA,
+    KIND_SPEAKER_MAFIA_HUMAN,
     KIND_SPEECH,
+    KIND_SPEECH_HUMAN,
     KIND_SPEECH_LAW_ABIDING,
+    KIND_SPEECH_LAW_ABIDING_HUMAN,
     KIND_SPEECH_MAFIA,
+    KIND_SPEECH_MAFIA_HUMAN,
     KIND_THOUGHT,
     LedgerParseError,
     METRIC_ORDER,
@@ -570,6 +576,32 @@ _TRANSCRIPT_KIND_COMPONENTS: dict[str, str] = {
     KIND_SPEECH_LAW_ABIDING: "transcript--speech-law-abiding",
     KIND_ATTR_MAFIA: "transcript--attr-mafia",
     KIND_ATTR_LAW_ABIDING: "transcript--attr-law-abiding",
+    # The reviewer's OWN SEAT (Slice 5) — the last kinds spec 038 adds. Each is
+    # the qualified form of the dialogue kind it sits under, and each rule below
+    # is that kind's rule plus `text-style: bold` and nothing else: the seat is
+    # marked *within* its side's colour, never with a hue of its own.
+    #
+    # SIX, NOT TWO, and the neutral pair is not padding. Side and seat are
+    # INDEPENDENT facts a file can state separately — a side comes from the
+    # `<setup>` cast list, a seat from the `human="true"` marker or the
+    # preamble's welcome line — so `speaker-human` / `speech-human` is "the seat
+    # whose side is unknown", exactly as `speaker` / `speech` is "a line whose
+    # side is unknown". That is the whole of the pre-spec-022 story: all 30 of
+    # those files name their seat in the preamble AND yield an empty cast map,
+    # and 183 + 183 real corpus spans live in the neutral pair as a result.
+    # Folding the axes together would have to discard a fact the file states.
+    #
+    # `attr` gains no human form, deliberately: the seat's cast entry and its
+    # `<thought player="…">` owner name are already `attr-mafia` /
+    # `attr-law-abiding`, both of which KEEP `attr`'s bold, so a
+    # bold-within-the-side would be invisible there. Functional-spec §2 scopes
+    # the requirement to that seat's *lines* in any case.
+    KIND_SPEAKER_HUMAN: "transcript--speaker-human",
+    KIND_SPEECH_HUMAN: "transcript--speech-human",
+    KIND_SPEAKER_MAFIA_HUMAN: "transcript--speaker-mafia-human",
+    KIND_SPEECH_MAFIA_HUMAN: "transcript--speech-mafia-human",
+    KIND_SPEAKER_LAW_ABIDING_HUMAN: "transcript--speaker-law-abiding-human",
+    KIND_SPEECH_LAW_ABIDING_HUMAN: "transcript--speech-law-abiding-human",
 }
 
 
@@ -930,6 +962,81 @@ class TranscriptScreen(Screen):
     }
 
     TranscriptScreen > .transcript--attr-law-abiding {
+        color: $text-primary;
+        text-style: bold;
+    }
+
+    /* ------------------------------------------------------------------
+       THE REVIEWER'S OWN SEAT (spec 038, Slice 5) — the last appearance the
+       spec adds. functional-spec §2: the seat the person plays "is shown in its
+       side's colour, but **bold**, so it stands out from the other players on
+       the same side", while other same-side players' lines are "the same colour
+       but not bold". Six rules, mirroring the six kinds: `speaker` and `speech`
+       each split three ways (side unknown / Mafia / Law-abiding).
+
+       EACH RULE IS ITS NON-HUMAN TWIN'S `color:` PLUS `text-style: bold`, AND
+       NOTHING ELSE. That is the requirement read literally: the seat must stay
+       inside its side, so reaching for a new hue would say "a third side" where
+       the spec says "this one of them is yours", and a second `text-style`
+       would separate the seat from its side-mates on an axis the spec did not
+       ask for. There is no new hue to reach for in any case — the palette is
+       fully spent (see the map above), which is why Slice 3 and Slice 4 both
+       declined `text-style` on a player's line and left this one weight free.
+
+       BOLD IS UNAMBIGUOUS HERE BECAUSE IT IS UNSPENT *ON A LINE*. The
+       stylesheet uses bold three other places — `attr`, `field-label`, and the
+       two `attr` side rules — and not one of them can appear on a player's
+       line: an `attr` span lives inside `<…>` marker punctuation (a cast
+       entry's `role=`, a `<thought player=…>` owner) and a field label occurs
+       only inside `<setup>`. So within dialogue, bold means exactly one thing.
+
+       WHY THE NEUTRAL PAIR EXISTS, since it looks like padding and is not: side
+       and seat are independent facts. A pre-spec-022 game names its seat in the
+       preamble and has no cast list at all, so its seat is known while its side
+       is not — 183 speaker and 183 speech spans across those 30 files. Bolding
+       the body colour is the honest rendering of that: "this seat was yours" is
+       said, "and they were Mafia" is not.
+
+       Contrast is inherited unchanged from the twin, since only the weight
+       differs (measured against both builtin themes' real backgrounds):
+
+         seat, side unknown  `$text`          14.19 dark / 12.77 light
+         seat, Mafia         `$text-error`     6.34 dark /  7.29 light
+         seat, Law-abiding   `$text-primary`   7.03 dark / 10.69 light
+
+       And bold, being an SGR attribute rather than a colour, is the half that
+       survives `textual-ansi` — where `$text` collapses to the terminal default
+       the seat is still marked, exactly as `thought`'s italic and `recap`'s
+       reverse survive there. Verified, not assumed: `text-style: bold` composes
+       with `color:` through `_kind_styles`' `without_color + from_color(...)`
+       (the same mechanism `field-label` has proved since Slice 2), so the
+       resolved span style carries both the hue and the weight. */
+    TranscriptScreen > .transcript--speaker-human {
+        color: $text;
+        text-style: bold;
+    }
+
+    TranscriptScreen > .transcript--speech-human {
+        color: $text;
+        text-style: bold;
+    }
+
+    TranscriptScreen > .transcript--speaker-mafia-human {
+        color: $text-error;
+        text-style: bold;
+    }
+
+    TranscriptScreen > .transcript--speech-mafia-human {
+        color: $text-error;
+        text-style: bold;
+    }
+
+    TranscriptScreen > .transcript--speaker-law-abiding-human {
+        color: $text-primary;
+        text-style: bold;
+    }
+
+    TranscriptScreen > .transcript--speech-law-abiding-human {
         color: $text-primary;
         text-style: bold;
     }

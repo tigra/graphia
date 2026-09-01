@@ -53,11 +53,17 @@ from graphia.eval_ledger import (
     KIND_PLAIN,
     KIND_RECAP,
     KIND_SPEAKER,
+    KIND_SPEAKER_HUMAN,
     KIND_SPEAKER_LAW_ABIDING,
+    KIND_SPEAKER_LAW_ABIDING_HUMAN,
     KIND_SPEAKER_MAFIA,
+    KIND_SPEAKER_MAFIA_HUMAN,
     KIND_SPEECH,
+    KIND_SPEECH_HUMAN,
     KIND_SPEECH_LAW_ABIDING,
+    KIND_SPEECH_LAW_ABIDING_HUMAN,
     KIND_SPEECH_MAFIA,
+    KIND_SPEECH_MAFIA_HUMAN,
     KIND_THOUGHT,
     METRIC_ORDER,
     SEARCH_SCOPE_ALL,
@@ -3514,6 +3520,94 @@ def test_every_declared_kind_but_plain_has_a_style_and_a_component_class() -> No
     # ...and every class is distinct, so two kinds cannot share one CSS rule by
     # accident and become indistinguishable on screen.
     assert len(set(mapping.values())) == len(mapping)
+    # Slice 5's six — the reviewer's own seat, one per dialogue kind. `attr`
+    # gains none, deliberately: its two side forms already carry bold, so bold
+    # within the side would be invisible there.
+    assert KIND_SPEAKER_HUMAN in mapping
+    assert KIND_SPEECH_HUMAN in mapping
+    assert KIND_SPEAKER_MAFIA_HUMAN in mapping
+    assert KIND_SPEECH_MAFIA_HUMAN in mapping
+    assert KIND_SPEAKER_LAW_ABIDING_HUMAN in mapping
+    assert KIND_SPEECH_LAW_ABIDING_HUMAN in mapping
+
+
+# The six (side-mate kind, seat kind) pairs Slice 5 added, as the RELATION each
+# pair's two CSS rules must hold: same colour, and bold on exactly one of them.
+# Written as pairs rather than as six expected hues because colour is
+# theme-dependent and a poor test subject (spec 037's finding, restated in
+# `tasks.md`) — the relation is not.
+_SEAT_STYLE_TWINS = (
+    (KIND_SPEAKER, KIND_SPEAKER_HUMAN),
+    (KIND_SPEECH, KIND_SPEECH_HUMAN),
+    (KIND_SPEAKER_MAFIA, KIND_SPEAKER_MAFIA_HUMAN),
+    (KIND_SPEECH_MAFIA, KIND_SPEECH_MAFIA_HUMAN),
+    (KIND_SPEAKER_LAW_ABIDING, KIND_SPEAKER_LAW_ABIDING_HUMAN),
+    (KIND_SPEECH_LAW_ABIDING, KIND_SPEECH_LAW_ABIDING_HUMAN),
+)
+
+
+async def test_each_seat_style_is_its_side_mates_colour_plus_bold(
+    tmp_path: Path,
+) -> None:
+    """functional-spec §2's headline contrast, asserted as a relation between rules.
+
+    "The seat the person plays is shown in its side's colour, but **bold**, so it
+    stands out from the other players on the same side" — and, in the acceptance
+    criteria, "other Law-abiding players' lines are the same colour but **not
+    bold**". Both halves are one claim about a PAIR of styles, and neither half
+    means anything alone: bold-on-the-seat is satisfied by a stylesheet that
+    bolds every player's line, and same-colour is satisfied by a stylesheet that
+    bolds nothing.
+
+    Asserted through `_kind_styles`, which is where the CSS actually becomes the
+    style a span carries, and asserted as an EQUALITY between two resolved
+    colours rather than against a literal hue: the palette is theme-dependent (a
+    figure pinned here would be wrong under `textual-light` and meaningless under
+    `textual-ansi`), while "these two rules resolve to the same colour" holds
+    under every theme. That is the shape `tasks.md` ratifies for this test in as
+    many words.
+
+    The last assertion is the non-vacuity guard the pairs cannot supply: the
+    three side groups must resolve to three DIFFERENT colours, or "the seat is in
+    its side's colour" would hold trivially on a stylesheet where every kind is
+    the body colour.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="hl-seat-style.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        styles = screen._kind_styles()
+
+        for side_mate, seat in _SEAT_STYLE_TWINS:
+            assert styles[seat].color == styles[side_mate].color, (
+                f"{seat} is not its side-mate {side_mate}'s colour — the seat must "
+                "be marked WITHIN its side, not as a third side"
+            )
+            assert styles[seat].color is not None, (
+                f"{seat} resolved to no colour at all, so the equality above is "
+                "vacuous"
+            )
+            assert styles[seat].bold is True, f"{seat} is not bold"
+            assert styles[side_mate].bold is not True, (
+                f"{side_mate} is bold too, so bold no longer distinguishes the "
+                "reviewer's seat from the rest of its side — functional-spec §2 "
+                "requires same colour, NOT bold, for a side-mate"
+            )
+
+        # ...and the three side groups really are three different colours, so
+        # "the seat's own side colour" is saying something.
+        assert (
+            len(
+                {
+                    styles[KIND_SPEAKER].color,
+                    styles[KIND_SPEAKER_MAFIA].color,
+                    styles[KIND_SPEAKER_LAW_ABIDING].color,
+                }
+            )
+            == 3
+        )
 
 
 # ---------------------------------------------------------------------------

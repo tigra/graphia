@@ -79,6 +79,25 @@ _ROLE_LABELS: dict[str, str] = {
     "law_abiding": "Law-abiding Citizen",
 }
 
+# The human seat's marker on its ``<setup>`` cast entry (spec 038, Slice 5),
+# sourced from ``PlayerState.is_human``. A transcript could only ever *imply*
+# which seat was the person's — from the opening welcome, from a private
+# "you are…" line, or from that seat being the one with no character
+# description — and the reading view marks that seat in bold, so the file now
+# says it outright. Emitted for the human seat ONLY, appended after ``role=``,
+# so every other entry is byte-identical to what the writer emitted before.
+#
+# Note "the seat", not "a live person": in a measured run the seat is played by
+# the scripted stand-in (spec 026) and ``is_human`` is still ``True`` on it
+# (``graphia.nodes.setup.collect_name``), which is exactly right — it holds the
+# same position in the game, and functional-spec §2 asks for it to be marked the
+# same way.
+#
+# Deliberately NOT one of the five attributes the reading view lifts into its
+# own span: a machine flag is not a detail a reviewer reads, so it stays part of
+# the tag's punctuation (``graphia.eval_ledger._ATTR_NAMES``).
+_HUMAN_ATTR = 'human="true"'
+
 # --- Moderator-line shapes the renderer must recognise to restructure them ---
 # These mirror the engine templates in ``graphia.prompts`` (kept as anchored
 # regexes so an ordinary speech/announcement that merely *mentions* a vote or a
@@ -274,6 +293,14 @@ def _render_setup(
     true self are shown; for a Citizen, the single honest persona. A player with
     ``persona=None`` collapses to an inline ``<player …>(no persona recorded)</player>``
     rather than raising.
+
+    The human seat's entry — and only that one — additionally carries
+    :data:`_HUMAN_ATTR` (spec 038, Slice 5), so a preserved game states which
+    seat was the person's instead of leaving a reader to infer it from the
+    opening welcome or from that seat being the one with no persona. Every other
+    entry is emitted exactly as before. ``is_human`` is read defensively, like
+    every other field here, so a sparse synthetic roster object that lacks it
+    simply gets no marker.
     """
     lines = ["<setup>"]
     if not players:
@@ -288,6 +315,8 @@ def _render_setup(
         role = getattr(player, "role", "") or ""
         role_label = _ROLE_LABELS.get(role, role or "unknown role")
         attrs = f'name="{name}" role="{role_label}"'
+        if getattr(player, "is_human", False):
+            attrs = f"{attrs} {_HUMAN_ATTR}"
         body = _persona_lines(getattr(player, "persona", None), role)
         lines.append(_wrap_attr("player", attrs, body))
     lines.append("</setup>")
