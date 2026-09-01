@@ -290,5 +290,8 @@ The diaries' *effect* is LLM-driven (effort-not-results, CR 005); the *structure
 ## 5. Open decisions for the author
 
 1. **Keep `night_close`'s read-back loop** as a liveness probe of the Gateway-fronted read path (recommended), or remove it with the placeholder write it was paired with.
+-- use your judgement
 2. **`--ledger-path` / `--transcripts-root` CLI arguments** — two arguments that remove the parallel-run worktree dance permanently. In this spec, or a separate tooling change?
+-- here
 3. **A `Diaries` column in the ledger table** beside `Stand-in`. Recommended, and safe (the right-justify split keys off `len(columns) - len(METRIC_ORDER)`, and `METRIC_ORDER` is untouched) — but the fixed-column list is the viewer's surface.
+--here
