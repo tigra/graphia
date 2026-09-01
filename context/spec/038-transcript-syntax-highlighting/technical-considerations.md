@@ -7,7 +7,7 @@ them, and how the person's own seat becomes identifiable.
 # Technical Specification: Colour-Coded Transcript Reading View
 
 - **Functional Specification:** `./functional-spec.md`
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 > **Sibling spec.** **037 (Transcript List as a Side Panel)** is Completed and changed how a transcript is *reached*; this changes how one *reads*. 037 left `TranscriptScreen`'s rendering untouched precisely so this spec could own it. Both live in `src/graphia/ui/ledger_viewer.py` but in different classes.
