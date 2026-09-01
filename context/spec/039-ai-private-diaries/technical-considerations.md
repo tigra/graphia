@@ -156,7 +156,7 @@ Each site gains `diaries: list[DiaryRecord] | None = None` and `diaries_enabled:
 
 ### 2.5 The window — in the builder, once
 
-`DIARY_WINDOW = 3` as a module constant in `nodes/day.py`, applied in `_private_record_block`. Not at write (destroys "every entry is still kept"), not at the four call sites (four copies of one constant, one drifts and one decision silently sees a different window).
+`DIARY_WINDOW = 3` as a module constant in `nodes/day.py`, applied in `_private_record_block`. **Call sites pass each player's FULL list; the builder is the sole point of truncation** (clarified during Slice 2 — the original wording ruled the window *out of* the call sites, which reads as merely undesirable rather than wrong, and a verification pass tripped on seeing 78 calls handed >3 records while every rendered prompt showed ≤3). Not at write (destroys "every entry is still kept"), not at the four call sites (four copies of one constant, one drifts and one decision silently sees a different window).
 
 **Window before merging, not after.** Slice to the last three diaries, then merge. Correct because thoughts are indexed independently: dropping the oldest diary removes only its own line, and the survivors' cursors still partition the thought list.
 
@@ -216,7 +216,7 @@ Because `_append_diaries` is handed `day_trailer` rather than `current_day_body(
 
 - **Flag:** `GRAPHIA_PRIVATE_DIARIES`, `_env_flag(..., default=True)` — the default-on shape of `GRAPHIA_PRIVATE_THOUGHTS` and six siblings.
 - **`config.py`:** `GraphiaConfig.private_diaries_enabled: bool = True`, defaulted so direct constructions in tests stay valid.
-- **`graph.py:_assemble_graph`:** new keyword-only param, bound at five sites — but **split across slices, and binding them all at once is a hard `TypeError`** (corrected during implementation: `day_turn` / `collect_votes` / `mafia_point` do not accept the kwarg until Slice 2 adds their merged-block params). **Slice 1** binds the `day_diary` partial (`max_days`, `context_window`, `context_token_budget`, `recap_aware_reasoning_enabled`, `private_thoughts_enabled`) plus the edge rewire; **Slice 2** binds the three decision nodes; **Slice 3** adds `diary_store` and `game_id` to the `day_diary` partial.
+- **`graph.py:_assemble_graph`:** new keyword-only param, bound at **four** sites (corrected during Slice 2 — `day_diary`, `day_turn`, `collect_votes`, `mafia_point`; Slice 3's addition to the `day_diary` partial is `diary_store` / `game_id`, **not** this flag, so Slice 3 should not hunt a fifth) — but **split across slices, and binding them all at once is a hard `TypeError`** (corrected during implementation: `day_turn` / `collect_votes` / `mafia_point` do not accept the kwarg until Slice 2 adds their merged-block params). **Slice 1** binds the `day_diary` partial (`max_days`, `context_window`, `context_token_budget`, `recap_aware_reasoning_enabled`, `private_thoughts_enabled`) plus the edge rewire; **Slice 2** binds the three decision nodes; **Slice 3** adds `diary_store` and `game_id` to the `day_diary` partial.
 - **Both builders:** `build_graph` passes `config.private_diaries_enabled`; `runtime/graph_builder.py:build_runtime_graph` gains the same keyword-only param with the anti-drift docstring paragraph the other eight flags carry.
 - **`runtime/__main__.py`:** add it to the `build_runtime_graph(...)` call — **verified: that call site enumerates all thirteen threaded values explicitly, so omitting it silently drops the flag in remote mode**, the exact drift the module docstring's prior-incident note describes.
 
@@ -254,6 +254,12 @@ Three hazards, in order of how likely they are to ruin a record:
 **Transcripts: all six are keepers**, ≈2 MB / 60 files against 9.6 MB already tracked. These are not smoke runs — they *are* the recorded comparison, and the off-arm transcripts are the evidence the flag-off path wrote nothing. **Do not run `make clean-transcripts` during the campaign.** Sequencing matters more than volume: writing outside the repo and committing once at the end gives all six records one `code.commit` and `dirty: false`. Every `run.transcript_dir` link survives the move — the record stores only the directory name and `eval_ledger:transcript_dir_for` resolves it against the ledger's sibling directory.
 
 **Validate the label cheaply first:** a 1-game ollama smoke run into a redirected `LEDGER_PATH`, confirming `settings.private_diaries_enabled` reads `false` on the off arm, **before** committing any Bedrock tokens. The ledger is append-only and repo-committed; a mislabelled record cannot be rewritten.
+
+### 2.11 Helper-signature notes (recorded during Slice 2)
+
+- **The helper defaults exist only for direct test calls.** `_private_record_block`'s `thoughts_enabled` / `diaries_enabled` are keyword-only with **no** defaults, deliberately, so a merged block never silently guesses a flag. The four *helpers* keep `diaries_enabled: bool = True` for the 019/024/025/028 direct-call convention — re-introducing that hazard one level up. Harmless because every live caller is bound by `_assemble_graph`, but **the node's `private_diaries_enabled` is the real guard**; the helper default is a test convenience, not a seam.
+- **`_ai_diary`'s `diaries_enabled` is structurally dead** — `day_diary` returns `{}` on flag-off before the fan-out, so it can only ever be `True`. Threaded anyway rather than hard-coded, because hard-coding would reproduce spec 028's `_ai_reflect` defect one axis over. Belt-and-braces, not a live seam.
+- **Naming inconsistency accepted knowingly:** §2.4 mandates `diaries` / `diaries_enabled` on the helpers while their siblings in the same signature are `private_thoughts` / `private_thoughts_enabled`, against §1's single-spelling rule. The short names are right *inside* `_private_record_block`; on the helpers `private_diaries` would have been consistent. Not worth churning.
 
 ---
 
