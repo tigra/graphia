@@ -128,7 +128,7 @@ Your private notes so far (yours alone):
 - [Diary — end of Day 2] <entry>
 ```
 
-Thought lines stay bare, so the diaries-on delta is *purely* the inserted lines. Export `DIARY_LINE_MARKER` as a module constant — the structural marker tests assert on, analogous to `PRIVATE_THOUGHTS_LABEL`.
+Thought lines stay bare, so the diaries-on delta is *purely* the inserted lines. Export `DIARY_LINE_MARKER` as a module constant — the structural marker tests assert on. **It must be the invariant tag PREFIX, never a `"…{day}]"` template:** the analogy with `PRIVATE_THOUGHTS_LABEL` breaks because the tag embeds a varying day number, and a template constant makes every flag-off `DIARY_LINE_MARKER not in prompt` assertion **vacuously true**, since a literal `{day}` never appears in a rendered prompt. Same vacuity family as the f-string bound test.
 
 **The cross-product is new contract surface:**
 
@@ -138,11 +138,21 @@ Thought lines stay bare, so the diaries-on delta is *purely* the inserted lines.
 | OFF | OFF | `""` — byte-identical to pre-028 |
 | ON | ON, no entries yet (all of Day 1, every game) | Exactly today's block — **the change is invisible until the first diary exists** |
 | ON | ON, entries exist | Merged, interleaved, tagged, windowed |
-| OFF | ON | Heading + tagged diary lines only; `k` always 0, merge trivially exact |
+| OFF | ON | Heading + tagged diary lines only. **Corrected: `k == 0` here is a coincidence of a whole-run flag, not an invariant** — entries written while thoughts were ON carry `k > 0`, and flipping the flag mid-campaign or resuming a checkpoint written under the other setting yields cursors pointing at notes that are not there. The invariant the code actually needs is that **the cursor is clamped to the notes in hand**. |
 
 **028's flag-off parity tests pass unchanged and must not be weakened** — verified: they assert `PRIVATE_THOUGHTS_LABEL not in prompt` and the note text absent, *not* byte-equality against a pre-028 rendering, and they call the helpers directly where `diaries` defaults to `[]`. But state the composed contract explicitly: **from 039 on, reproducing pre-028 prompt bytes requires both flags off**, because the two features share one slot. Add one test per cell above.
 
-The three call sites gain `diaries: list[DiaryRecord] | None = None` and `diaries_enabled: bool = True`, defaulted so existing direct test calls stay valid — the convention 019/024/025/028 used. Each passes **only the acting player's own** entries, keyed at the call site.
+**FOUR call sites, not three — corrected during implementation.** `_private_thoughts_block` has five callers, and they do not all want the same thing:
+
+| call site | gets the merged block? |
+| --- | --- |
+| `_ai_day_action` (Day speech) | **yes** — functional-spec §2 requires it |
+| `_ai_ballot` (vote) | **yes** — required |
+| `night.py:_ai_pick_target` (Mafioso Night pointing) | **yes** — required |
+| `_ai_diary` (the diary prompt itself) | **yes** — §2.6 says the diary prompt sees "the player's own running private record", which after this slice means diaries too. Without it a player writing Day 3's entry has never read Day 1's or Day 2's, which undercuts the settled-read-carried-forward the feature rests on. **This also needs a state read added: `day_diary` does not currently pass `state["private_diaries"]` into `_ai_diary`.** No new `_assemble_graph` bind — `day_diary` already receives the flag. |
+| `_ai_reflect` (spec 028's Day-round reflection) | **no, deliberately.** §3 Out-of-Scope keeps 028's reflections at "their own place in the player's reasoning"; feeding them diaries would change what a completed spec's prompt sees. |
+
+Each site gains `diaries: list[DiaryRecord] | None = None` and `diaries_enabled: bool = True`, defaulted so existing direct test calls stay valid — the convention 019/024/025/028 used. Each passes **only the acting player's own** entries, keyed at the call site.
 
 ### 2.5 The window — in the builder, once
 
@@ -196,7 +206,7 @@ Add a `day_trailer: list[str]` accumulator, reset alongside `day_round_bodies`, 
 
 Because `_append_diaries` is handed `day_trailer` rather than `current_day_body()`, it does not interact with `pending_round_break` — **note the property comes from the call site, not merely from the list being separate**, so a future editor who "simplifies" the call to `current_day_body()` would keep the separate list and lose it.
 
-**An entry must be single-line, and the clamp is where that is enforced** (found in Slice 1): `_inline_attr` promises a single-line element, and `DIARY_SENTENCE_BOUND = 6` invites six sentences where spec 028 invited one or two — so a model emitting a blank line between thoughts would produce the format's **first** multi-line inline element (verified: zero exist across the 298 committed transcripts). Normalise internal whitespace in `_clamp_diary_entry`, **not** in the renderer: the clamp is the single point where an entry is accepted, so it covers the state channel, §2.7's store write and the transcript at once, whereas a renderer fix would leave state and store disagreeing with the transcript. The degradation is graceful either way — the tokenizer splits on `\n`, so an unmatched open tag reads as plain text and the round-trip invariant holds — which is why this is robustness rather than a defect.
+**An entry must be single-line, and the clamp is where that is enforced** (found in Slice 1): `_inline_attr` promises a single-line element, and `DIARY_SENTENCE_BOUND = 6` invites six sentences where spec 028 invited one or two — so a model emitting a blank line between thoughts would produce the format's **first** multi-line inline element (verified: zero exist across the 298 committed transcripts). Normalise internal whitespace in `_clamp_diary_entry` — **the broad reading: fold every whitespace run to a single space**, not merely replace newlines, which would leave `"a\n\nb"` as `"a  b"`. Fold before the cap, so the cap measures what is actually stored, **not** in the renderer: the clamp is the single point where an entry is accepted, so it covers the state channel, §2.7's store write and the transcript at once, whereas a renderer fix would leave state and store disagreeing with the transcript. The degradation is graceful either way — the tokenizer splits on `\n`, so an unmatched open tag reads as plain text and the round-trip invariant holds — which is why this is robustness rather than a defect.
 
 **`day` is the one case where "defensive" carries a design choice** (settled in Slice 1): every other bad input resolves to "skip the entry", but a missing or nonsensical `day` still leaves an entry worth showing — so the **attribute is omitted and the element still rendered**, on the same reasoning §2.10 gives for rendering an absent ledger arm blank rather than `false`. Slice 4's attribute rule must accept a `<diary>` carrying only `player`. Defensive house style throughout: missing channel, non-dict, non-list, non-string, unknown id — never raise.
 
