@@ -26,8 +26,11 @@ game records the SCRIPTED entry rather than ``_DIARY_FALLBACK`` (measured with
 world too). That file is not duplicated here; the driven games below script
 ``diaries=`` and assert on the scripted sentinel for the same reason.
 
-Slice 2 supersedes exactly one test here — see
-:func:`test_clamp_preserves_internal_newlines_today`.
+Slice 2 superseded exactly one test here: ``_clamp_diary_entry`` now folds
+internal whitespace so an accepted entry is always single-line, and
+``test_clamp_preserves_internal_newlines_today`` — which pinned the previous
+non-normalising behaviour on purpose — was rewritten in place as
+:func:`test_clamp_folds_internal_whitespace_into_a_single_line`.
 
 Anti-vacuity notes are attached to the assertions that need them. The two
 recurring hazards in this repo are (a) a test that reads the same constant the
@@ -348,19 +351,36 @@ def test_clamp_right_strips_a_cut_that_lands_on_whitespace() -> None:
     assert not clamped.endswith(" ")
 
 
-def test_clamp_preserves_internal_newlines_today() -> None:
-    """The clamp does NOT normalise internal whitespace — pinning TODAY.
+def test_clamp_folds_internal_whitespace_into_a_single_line() -> None:
+    """The clamp normalises internal whitespace: an accepted entry is single-line.
 
-    SUPERSEDED BY SLICE 2. The first task of Slice 2 folds newline
-    normalisation into ``_clamp_diary_entry`` so an entry is always single-line
-    (``_inline_attr`` promises a single-line element and ``DIARY_SENTENCE_BOUND
-    = 6`` invites six sentences). When that lands, THIS test is the one to
-    update — rewrite it to assert the single-line output, do not delete the
-    coverage. It is here so the fold-in is a visible, deliberate behaviour
-    change rather than a silent one.
+    THE REWRITE of ``test_clamp_preserves_internal_newlines_today``, which
+    pinned the pre-fold-in behaviour deliberately so this change would be a
+    visible one. Slice 2's first task folded the normalisation in, so the
+    assertion flips from "preserved" to "folded" and the coverage stays.
+
+    Why the clamp normalises at all: ``eval_transcript._inline_attr`` promises a
+    SINGLE-LINE element, and ``DIARY_SENTENCE_BOUND`` (6) invites six sentences
+    where spec 028 invited one or two — so a model putting a blank line between
+    two thoughts would produce the transcript format's first multi-line inline
+    element. The fold lives at the clamp rather than in the renderer because the
+    clamp is the one point where an entry is accepted, so it covers the state
+    channel, the store write and the transcript at once.
+
+    The exact-text assertion is what makes this non-vacuous: ``"\\n" not in``
+    alone would pass for a clamp that simply DELETED the newlines and ran the
+    surrounding words together.
     """
-    multiline = "Two things today.\n\nFirst, the miller lied."
-    assert _clamp_diary_entry(multiline) == multiline
+    multiline = "Two things today.\n\nFirst, the miller lied.\nSecond, I said nothing."
+    clamped = _clamp_diary_entry(multiline)
+
+    assert "\n" not in clamped
+    assert clamped == (
+        "Two things today. First, the miller lied. Second, I said nothing."
+    )
+    # Tabs, carriage returns and runs of spaces fold to one space as well — the
+    # normalisation is over whitespace generally, not newlines specifically.
+    assert _clamp_diary_entry("a\tb\r\nc   d") == "a b c d"
 
 
 def test_clamp_is_pure_and_repeatable() -> None:

@@ -1554,18 +1554,37 @@ _DIARY_FALLBACK = (
 
 
 def _clamp_diary_entry(text: str) -> str:
-    """Clamp ONE diary entry to ``DIARY_MAX_CHARS``.
+    """Normalise ONE diary entry to a single line and clamp it to ``DIARY_MAX_CHARS``.
 
     The enforcement half of the functional spec's third length criterion (the
-    stated sentence bound in ``DIARY_SYSTEM`` is the request half). Strips
-    surrounding whitespace, truncates to the cap, then right-strips so a cut
-    mid-space cannot leave a trailing blank — the result is never longer than
-    the cap.
+    stated sentence bound in ``DIARY_SYSTEM`` is the request half). In order:
+    every run of whitespace — newlines, blank lines, tabs — is folded to ONE
+    space (which also strips the ends), then the result is truncated to the cap
+    and right-stripped so a cut landing mid-space cannot leave a trailing
+    blank. The accepted entry is therefore always single-line and never longer
+    than the cap.
+
+    WHY SINGLE-LINE, AND WHY HERE (spec 039 §2.8, folded in at the top of Slice
+    2). ``eval_transcript._inline_attr`` promises a single-line element, and
+    ``DIARY_SENTENCE_BOUND`` (6) invites six sentences where spec 028 invited
+    one or two — so a model putting a blank line between two thoughts would
+    produce the transcript format's FIRST multi-line inline element (verified:
+    zero exist across the 298 committed transcripts). The fold belongs at the
+    CLAMP, not in the renderer, because the clamp is the single point where an
+    entry is accepted: one call covers the ``private_diaries`` state channel,
+    the diary-store write and the transcript together, whereas a renderer-side
+    fix would leave state and store disagreeing with the transcript. It is also
+    what lets ``_private_record_block`` render an entry as one ``- `` bullet
+    without re-normalising.
+
+    Folding BEFORE the cap, not after, so the cap measures the text as it will
+    actually be stored and rendered — and because folding can only shorten,
+    never lengthen, the two steps cannot fight.
 
     PURE: no state, no RNG, no clock, so replay and the dual-mode byte-equal
     smoke are unaffected.
     """
-    return text.strip()[:DIARY_MAX_CHARS].rstrip()
+    return " ".join(text.split())[:DIARY_MAX_CHARS].rstrip()
 
 
 def _ai_diary(
