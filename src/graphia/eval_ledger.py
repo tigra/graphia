@@ -75,6 +75,7 @@ __all__ = [
     "KIND_SPEAKER_LAW_ABIDING_HUMAN",
     "KIND_SPEECH_MAFIA_HUMAN",
     "KIND_SPEECH_LAW_ABIDING_HUMAN",
+    "KIND_DIARY",
     "TRANSCRIPT_KINDS",
     "tokenize_transcript",
 ]
@@ -818,6 +819,30 @@ KIND_SPEAKER_LAW_ABIDING_HUMAN = "speaker-law-abiding-human"
 KIND_SPEECH_MAFIA_HUMAN = "speech-mafia-human"
 KIND_SPEECH_LAW_ABIDING_HUMAN = "speech-law-abiding-human"
 
+# Spec 039 — the twenty-first kind, and the first one added by a spec other than
+# 038. ``diary`` is the **body** of a ``<diary player="X" day="N">…</diary>``
+# element: the private note an AI writes at the Day->Night hinge, summing up the
+# Day it has just lived through. The writer files it in the Day's *trailer*, so
+# it renders between the last ``</round>`` and ``</day>`` — "between the day it
+# was written about and the Night that followed" (functional spec 039 §2).
+#
+# **A kind of its own rather than reusing :data:`KIND_THOUGHT`.** The two are
+# neighbours — both private, both never said aloud, both muted — but they answer
+# different questions and a reviewer reads them differently: a thought is one
+# player's reaction inside a single speaking round, a diary is that player's
+# settled read of a whole Day, carried forward into the next one. Collapsing
+# them would make the day trailer indistinguishable from the round bodies above
+# it, which is the one thing its placement exists to say.
+#
+# **Never side-tinted**, exactly as :data:`KIND_THOUGHT` is not (tech-spec 039
+# §2.8, which puts the diary body under ``thought``'s precedent in those words):
+# a private reflection is not an act of allegiance, and the two hues mean *side*
+# from spec 038's Slice 4 onward. The owner's name inside the tag carries the
+# side instead (:func:`_attr_kind`), so whose diary it is still reads at a glance
+# while the prose itself stays out of the side palette — which is also why this
+# kind needs no new hue in a palette tech-spec 039 §2.8 records as fully spent.
+KIND_DIARY = "diary"
+
 # The canonical kind vocabulary, in the order the kinds were introduced — the
 # single source of truth for which kinds exist, following the same house pattern
 # as :data:`METRIC_ORDER` (a later spec appends its entries and nothing else has
@@ -825,7 +850,11 @@ KIND_SPEECH_LAW_ABIDING_HUMAN = "speech-law-abiding-human"
 # from a style map must fall back to unstyled rather than raising.
 #
 # Slice 5 closed the vocabulary at twenty: the human seat's
-# bold-within-its-side treatment is the last of spec 038's kinds.
+# bold-within-its-side treatment is the last of spec 038's kinds. Spec 039
+# appended the twenty-first, :data:`KIND_DIARY`, by exactly the route that house
+# pattern promises — one constant, one entry here, one ``__all__`` line, one tag
+# name in :data:`_MARKER_TAGS`, one entry in :data:`_INLINE_CONTENT_KINDS` and
+# one branch in :func:`_attr_kind`. No existing kind, rule or span moved.
 TRANSCRIPT_KINDS: tuple[str, ...] = (
     KIND_MARKER,
     KIND_PLAIN,
@@ -847,6 +876,7 @@ TRANSCRIPT_KINDS: tuple[str, ...] = (
     KIND_SPEAKER_LAW_ABIDING_HUMAN,
     KIND_SPEECH_MAFIA_HUMAN,
     KIND_SPEECH_LAW_ABIDING_HUMAN,
+    KIND_DIARY,
 )
 
 # The two sides, as the internal token that selects a side-bearing kind. Private
@@ -933,6 +963,15 @@ _ROLE_SIDES: dict[str, str] = {
 # have to change an inner span's kind (Slice 3's "the surrounding tag stays
 # ``marker``") or split attribute values out of a tag that is already a marker
 # (Slice 2), rather than promote a whole line from ``plain``.
+#
+# ``diary`` is spec 039's addition and the only entry here not written by spec
+# 038. It is inline-with-content and attribute-carrying, structurally identical
+# to ``thought``, so it joins on two lines — this one and
+# :data:`_INLINE_CONTENT_KINDS` — which is precisely the extension point Slice 1
+# of spec 038 built the split for. Because the vocabulary is a **whitelist**,
+# adding a name can only affect lines that carry it, and ``<diary`` occurs zero
+# times across the 298 committed transcripts (measured): no committed line can
+# tokenize differently for this entry existing.
 _MARKER_TAGS: frozenset[str] = frozenset(
     {
         "transcript",
@@ -947,6 +986,7 @@ _MARKER_TAGS: frozenset[str] = frozenset(
         "vote",
         "recap",
         "thought",
+        "diary",
     }
 )
 
@@ -962,14 +1002,17 @@ _MARKER_TAGS: frozenset[str] = frozenset(
 # marker span.
 #
 # ``thought`` and ``recap`` are Slice 3's two entries — the surrounding tag stays
-# :data:`KIND_MARKER` on both, so only the body changes kind. Every other inline
-# tag still defaults to :data:`KIND_PLAIN`, which is the right answer for the
-# ``(no persona recorded)`` body of an inline ``<player>``: that is prose, not a
-# kind of its own.
+# :data:`KIND_MARKER` on both, so only the body changes kind. ``diary`` is spec
+# 039's, and it collected on that promise exactly: the tag name above and this
+# line, with no new branch anywhere in the chain. Every other inline tag still
+# defaults to :data:`KIND_PLAIN`, which is the right answer for the ``(no persona
+# recorded)`` body of an inline ``<player>``: that is prose, not a kind of its
+# own.
 _INLINE_CONTENT_KINDS: dict[str, str] = {
     "kill": KIND_MARKER,
     "thought": KIND_THOUGHT,
     "recap": KIND_RECAP,
+    "diary": KIND_DIARY,
 }
 
 # One transcript line's tag head: ``<name>``, ``</name>`` or ``<name attrs…>``.
@@ -982,19 +1025,38 @@ _TAG_HEAD_RE = re.compile(
 )
 
 # The detail-carrying attributes whose **values** become :data:`KIND_ATTR` spans
-# (tech-spec §2 A). Exactly the five the writer emits, verified across all 298
+# (tech-spec §2 A). Five of them are spec 038's, verified across all 298
 # committed transcripts — ``name``/``role`` on ``<player>`` (1960 each),
 # ``player`` on ``<thought>`` (8183) and ``initiator``/``target`` on ``<vote>``
-# (1005 each); the corpus contains no sixth attribute name.
+# (1005 each); that corpus contains no sixth attribute name.
+#
+# ``day`` is spec 039's sixth, carried by ``<diary player="…" day="…">``, and it
+# earns its place by the same test the other five pass: it is *the* thing that
+# tells one of a player's diaries from the next, so a reviewer asking "what did
+# Ava conclude on Day 2" reads it rather than the punctuation holding it
+# (tech-spec 039 §2.8 asks for it in those words — "the ``day`` attribute is an
+# ``attr`` span"). **It cannot move a committed transcript**: ``day="`` occurs
+# zero times across the 298 files (measured), and :data:`_ATTR_VALUE_RE`'s
+# lookbehind stops it matching the tail of a hypothetical ``birthday="…"``.
 #
 # A whitelist, not "every ``x="…"`` pair", for the same *never guess* reason the
 # tag vocabulary is one: an attribute is lifted out of the punctuation because a
-# reviewer reads it as a **specific** — a person's name, a role. Spec 038's own
-# Slice 5 duly added ``human="true"`` to the human seat's ``<player>`` tag and
-# duly left it OUT of this tuple: a machine flag is not a detail worth picking
-# out, so it stays part of the surrounding marker. The reader reads it through
-# :data:`_HUMAN_ATTR_RE`, which splits no span.
-_ATTR_NAMES: tuple[str, ...] = ("name", "role", "player", "initiator", "target")
+# reviewer reads it as a **specific** — a person's name, a role, the Day an entry
+# sums up. Spec 038's own Slice 5 duly added ``human="true"`` to the human seat's
+# ``<player>`` tag and duly left it OUT of this tuple: a machine flag is not a
+# detail worth picking out, so it stays part of the surrounding marker. The
+# reader reads it through :data:`_HUMAN_ATTR_RE`, which splits no span. ``day``
+# is the other side of that line — a value a person reads, not a flag a program
+# does — which is why the two attributes spec 038 and 039 added land opposite
+# ways round.
+_ATTR_NAMES: tuple[str, ...] = (
+    "name",
+    "role",
+    "player",
+    "initiator",
+    "target",
+    "day",
+)
 
 # One ``name="value"`` pair inside a tag's attribute run. Only the ``value``
 # group becomes an :data:`KIND_ATTR` span — the attribute name, the ``="`` and
@@ -1133,11 +1195,28 @@ _CAST_TAG = "player"
 _CAST_NAME_ATTR = "name"
 _CAST_ROLE_ATTR = "role"
 
-# The ``<thought player="X">`` tag and its owner attribute — the one place a
+# The ``<thought player="X">`` tag and its owner attribute — the FIRST place a
 # *name* attribute is side-bearing, because functional-spec §2 requires it in
-# those words ("the owner's name carries that player's side colour").
+# those words ("the owner's name carries that player's side colour"). Spec 039
+# added the second, below.
 _THOUGHT_TAG = "thought"
 _THOUGHT_OWNER_ATTR = "player"
+
+# The ``<diary player="X" day="N">`` tag and its owner attribute (spec 039). The
+# attribute is spelled the same as ``<thought>``'s and is side-bearing for the
+# same reason, but the pair is written out separately rather than reusing the
+# thought constants: :func:`_attr_kind` keys on the ``(tag, key)`` PAIR, and
+# folding the two together would hide the fact that this is a second,
+# independent decision about a second tag — the thing the tag-scoped rule exists
+# to keep explicit. A future ``<foo player="…">`` gets no side by default, which
+# is the posture the whole module is built on.
+#
+# ``day`` needs no constant here: it is not side-bearing and never will be. It
+# names a Day, not a person, and colour has meant *side* since spec 038's Slice
+# 4 — so it lifts out of the punctuation as a plain :data:`KIND_ATTR` through
+# :data:`_ATTR_NAMES` and :func:`_attr_kind`'s default, with no rule of its own.
+_DIARY_TAG = "diary"
+_DIARY_OWNER_ATTR = "player"
 
 # The scene-setting section, and the two literals that delimit it. The welcome
 # line :func:`_human_seat` falls back to is scoped to it for exactly the reason
@@ -1374,8 +1453,10 @@ def _human_seat(lines: list[str]) -> str | None:
 def _attr_kind(tag: str, key: str, value: str, sides: Mapping[str, str]) -> str:
     """The kind for one attribute value: :data:`KIND_ATTR`, or its side-bearing form.
 
-    Exactly **two** of the five detail attributes carry a side, and both are
-    named by functional-spec §2 in those words:
+    **The decision is per ``(tag, key)`` PAIR, never per attribute name** — which
+    is why spec 039's ``<diary player="…">`` needed a branch of its own even
+    though ``<thought player="…">`` already had one. Three pairs carry a side;
+    every other pair does not, and a tag nobody has ruled on gets no side at all:
 
     - a cast entry's ``role="Mafia"`` — "the side colours used in the cast list
       match the ones used for dialogue". Its side comes from the label written
@@ -1386,26 +1467,48 @@ def _attr_kind(tag: str, key: str, value: str, sides: Mapping[str, str]) -> str:
     - a ``<thought player="Avery">`` owner's name — "the owner's name carries
       that player's side colour". This one *is* a map lookup, because the tag
       names a person and only the cast list knows their side.
+    - a ``<diary player="Avery" day="2">`` owner's name (spec 039) — the same
+      map lookup, for the same reason and by the same rule stated below: a diary
+      tag names a person and a Day and no role, so the *name* is the only token
+      on it that can tell a reviewer the side. Tech-spec 039 §2.8 puts the diary
+      **body** under ``<thought>``'s precedent (muted, never side-tinted); its
+      owner follows the other half of that same precedent, so ``Avery`` reads in
+      Avery's colour whether the private note is one round's reaction or a whole
+      Day's settled read. Leaving it achromatic was the alternative and was
+      rejected: it would show one player's name in two different treatments a
+      few lines apart in the same file, inviting a reviewer to read a
+      distinction that is not there.
 
-    The other three (a cast entry's ``name``, a vote's ``initiator`` and
-    ``target``) stay achromatic :data:`KIND_ATTR`. Colour means side from this
-    slice onward; those three are names a reviewer reads as *specifics*, lifted
-    out of the punctuation by weight and brightness. Tinting them was considered
-    and rejected on two grounds: it would leave ``attr`` with no occupants at all
-    in a real transcript (the five names above are the whole whitelist), and a
-    vote marker's job is to say *who called it and against whom*, which the side
-    colours on the ballot lines below it already answer.
+    The other four (a cast entry's ``name``, a vote's ``initiator`` and
+    ``target``, and a diary's ``day``) stay achromatic :data:`KIND_ATTR`. Colour
+    has meant side since Slice 4; those four are *specifics* a reviewer reads —
+    three names and a Day number — lifted out of the punctuation by weight and
+    brightness instead. Tinting the three names was considered and rejected on
+    two grounds: it would leave ``attr`` with almost no occupants in a real
+    transcript (before spec 039 it would have left it with none at all — those
+    three were the whole achromatic half of the whitelist), and a vote marker's
+    job is to say *who called it and against whom*, which the side colours on
+    the ballot lines below it already answer. ``day`` is not even a candidate:
+    it names no person, so there is no side it could carry.
 
-    **The rule underneath both halves:** inside a marker, the side colour lands
-    on whichever token actually *tells the reviewer the side* — the role where a
-    role is written (the cast entry), the name where none is (the thought tag,
-    which names a person and nothing else). Everywhere a name sits next to its
-    own role, the role carries the colour and the name does not, so the two
-    treatments never compete on one line.
+    **The rule underneath all three halves:** inside a marker, the side colour
+    lands on whichever token actually *tells the reviewer the side* — the role
+    where a role is written (the cast entry), the name where none is (the
+    thought and diary tags, which name a person and, for a diary, a Day).
+    Everywhere a name sits next to its own role, the role carries the colour and
+    the name does not, so the two treatments never compete on one line.
     """
     if tag == _CAST_TAG and key == _CAST_ROLE_ATTR:
         side = _ROLE_SIDES.get(value)
     elif tag == _THOUGHT_TAG and key == _THOUGHT_OWNER_ATTR:
+        side = sides.get(value)
+    elif tag == _DIARY_TAG and key == _DIARY_OWNER_ATTR:
+        # Spec 039, the same rule one tag over. An unknown name — ``sides.get``
+        # returning ``None`` because the cast list does not carry it, or because
+        # this is one of the 30 pre-spec-022 games that yield no cast map at all
+        # — falls back to the achromatic :data:`KIND_ATTR` exactly as a thought's
+        # owner does. Never a guessed side; the degradation is the same one the
+        # whole module is built around.
         side = sides.get(value)
     else:
         return KIND_ATTR
@@ -1443,26 +1546,31 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     ``<setup>`` block that grants it, and one that wants a bolded seat must carry
     the marker or the welcome line that names it.
 
-    **Kinds recognised so far** (twenty — the vocabulary spec 038 closes with,
-    see :data:`TRANSCRIPT_KINDS`):
+    **Kinds recognised so far** (twenty-one — spec 038's twenty plus spec 039's
+    :data:`KIND_DIARY`; see :data:`TRANSCRIPT_KINDS`):
 
     - :data:`KIND_MARKER` — the game's skeleton: the structural tags
       (``<transcript>``, ``<setup>``, ``<preamble>``, ``<night>``, ``<day>``,
       ``<round>``, ``<endgame>``, ``<kill>``, ``<player …>``, ``<vote …>``,
-      ``<recap>``, ``<thought …>``) and each one's closing form, the top
-      ``Game N | provider=…`` metadata line, and the bare ``Round N.`` label —
+      ``<recap>``, ``<thought …>``, ``<diary …>``) and each one's closing form,
+      the top ``Game N | provider=…`` metadata line, and the bare ``Round N.``
+      label —
       **including the punctuation of a tag's attributes**, which stays marker so
       that only the values below are lifted out of it.
     - :data:`KIND_ATTR` — the **value** of a detail-carrying attribute inside a
       marker: the ``name``/``role`` of a cast entry, a thought's ``player``, a
-      vote's ``initiator``/``target`` (see :data:`_ATTR_NAMES`). ``Avery``, never
-      ``name="Avery"``. Achromatic: it lifts by weight and brightness, because
-      from Slice 4 onward colour means **side** and a bare name carries none.
-    - :data:`KIND_ATTR_MAFIA` / :data:`KIND_ATTR_LAW_ABIDING` — the two
-      exceptions to that, both required by functional-spec §2 in so many words: a
-      cast entry's ``role="…"`` (so the cast list and the dialogue agree on the
-      colours) and a ``<thought player="…">`` owner's name (so a private
-      reflection shows whose it is in their own colour). See :func:`_attr_kind`.
+      vote's ``initiator``/``target``, a diary's ``day`` (see
+      :data:`_ATTR_NAMES`). ``Avery``, never ``name="Avery"``. Achromatic: it
+      lifts by weight and brightness, because from Slice 4 onward colour means
+      **side** and neither a bare name nor a Day number carries one.
+    - :data:`KIND_ATTR_MAFIA` / :data:`KIND_ATTR_LAW_ABIDING` — the exceptions to
+      that, the first two required by functional-spec §2 in so many words: a cast
+      entry's ``role="…"`` (so the cast list and the dialogue agree on the
+      colours), a ``<thought player="…">`` owner's name (so a private reflection
+      shows whose it is in their own colour) and, from spec 039, a ``<diary
+      player="…">`` owner's name on the same reasoning. See :func:`_attr_kind`,
+      which decides per ``(tag, attribute)`` pair rather than per attribute
+      name.
     - :data:`KIND_FIELD_LABEL` — a cast-list field's label, **colon included**
       (see :data:`_FIELD_LABELS`); the prose after it is content, not label.
     - :data:`KIND_SPEAKER` / :data:`KIND_SPEECH` — a spoken line **whose side is
@@ -1494,6 +1602,13 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     - :data:`KIND_RECAP` — the **body** of a ``<recap>…</recap>`` moderator
       status line; again the tags around it stay :data:`KIND_MARKER`. Never
       side-tinted, for the plainest of reasons: the moderator has no side.
+    - :data:`KIND_DIARY` — the **body** of a ``<diary player="X" day="N">…
+      </diary>`` before-Night entry (spec 039), which the writer files in the
+      Day's trailer so it renders between the last ``</round>`` and ``</day>``.
+      Same shape as a thought — tags stay :data:`KIND_MARKER`, the owner's name
+      takes the owner's side, the body never does — and a kind of its own
+      because a Day's settled read is not a round's reaction, and the trailer
+      would otherwise be indistinguishable from the round bodies above it.
     - :data:`KIND_PLAIN` — **everything else**, including every line separator.
       This fallback is what makes degradation total: an unrecognised tag, a
       pre-spec-022 transcript's indented ``Name — Role`` cast list, model-generated
@@ -1518,8 +1633,9 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     - an inline ``<tag …>content</tag>`` becomes *three* spans — opening tag,
       content, closing tag — so a slice claiming a body need only change the
       content span's kind (or split attribute values out of the tag) instead of
-      breaking one span into several. ``<thought>`` and ``<recap>`` bodies are
-      claimed that way (:data:`_INLINE_CONTENT_KINDS`); ``<kill>`` is the
+      breaking one span into several. ``<thought>``, ``<recap>`` and spec 039's
+      ``<diary>`` bodies are claimed that way
+      (:data:`_INLINE_CONTENT_KINDS`); ``<kill>`` is the
       exception whose content is *already* marker, so it coalesces back to a
       single span. An element whose content does **not** close on the same line
       keeps that remainder :data:`KIND_PLAIN` rather than inheriting the tag's
@@ -1773,12 +1889,17 @@ def _tag_element_spans(
     """Spans for a line that starts with a recognised structural tag, else ``None``.
 
     ``None`` means "not a tag line" — the caller then falls through the rest of
-    its chain, so an unrecognised tag name (a future ``<diary>``, or speech that
-    happens to open with an angle bracket) is left to the plain fallback rather
-    than styled as skeleton it is not.
+    its chain, so an unrecognised tag name (a tag some later format adds, or
+    speech that happens to open with an angle bracket) is left to the plain
+    fallback rather than styled as skeleton it is not. This docstring used to
+    name ``<diary>`` as its example of exactly that; spec 039 recognises the tag
+    now, which is the whitelist working as designed — a transcript written
+    before the entry existed still tokenizes byte-for-byte as it did.
 
     The three shapes the writer emits (verified across all 298 committed
-    transcripts — every ``<`` and ``>`` in the corpus belongs to one of them):
+    transcripts — every ``<`` and ``>`` in the corpus belongs to one of them;
+    spec 039's ``<diary player="…" day="…">…</diary>`` is the second shape, the
+    same one ``<thought>`` has always taken):
 
     - ``<tag …>`` / ``</tag>`` alone on the line → one marker span;
     - ``<tag …>content</tag>`` inline → opening tag, content, closing tag, the
