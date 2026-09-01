@@ -177,8 +177,11 @@ def _assemble_graph(
         ),
     )
     builder.add_node("resolve_night_kill", emit(resolve_night_kill))
-    # ``night_close`` closes over the diary store + game id so the per-Night
-    # placeholder writes don't need to reach into module-level singletons.
+    # ``night_close`` closes over the diary store + game id so its per-Night
+    # diary read-back doesn't need to reach into module-level singletons. Since
+    # spec 039 Slice 3 the read-back is all it does with them — the placeholder
+    # WRITE that used to sit beside it is gone, replaced by ``day_diary``'s real
+    # entry (bound with the same two services below).
     builder.add_node(
         "night_close",
         partial(night_close, diary_store=diary_store, game_id=game_id),
@@ -262,6 +265,16 @@ def _assemble_graph(
     # thoughts values are the same ones the three AI-decision nodes get, so the
     # diary prompt is grounded exactly as they are; flag-off makes the node a
     # no-op. Both builders thread ``private_diaries_enabled``.
+    # Spec 039 Slice 3 — THE DUAL WRITE: ``day_diary`` also closes over the
+    # diary store + game id, the SAME two services and the SAME service-
+    # injection pattern ``night_close`` uses above, so each accepted entry
+    # reaches the ``DiaryStore`` (in-process locally, Gateway-fronted AgentCore
+    # Memory remotely) as well as the ``private_diaries`` state channel. These
+    # two binds REPLACE the placeholder write ``night_close`` used to make; that
+    # node keeps only its read-back, as a liveness probe of the read path. Both
+    # builders already resolve ``diary_store`` / ``game_id`` for ``night_close``
+    # and pass them into ``_assemble_graph``, so there is nothing further to
+    # thread in ``build_runtime_graph`` — no anti-drift gap here.
     builder.add_node(
         "day_diary",
         partial(
@@ -272,6 +285,8 @@ def _assemble_graph(
             context_window=context_window,
             context_token_budget=context_token_budget,
             max_days=max_days,
+            diary_store=diary_store,
+            game_id=game_id,
         ),
     )
     # Slice 8: win-condition detection + end screen. The same pure-read

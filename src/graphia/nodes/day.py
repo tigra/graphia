@@ -25,6 +25,7 @@ Topology contract (Slice 7):
 from __future__ import annotations
 
 import dataclasses
+import logging
 import random
 from typing import cast
 
@@ -38,6 +39,7 @@ from graphia.career_events import (
     CareerEvent,
     CareerEventEmitter,
 )
+from graphia.diary_store import DiaryStore
 from graphia.llm import Ballot, DayAction, Diary, Reflection, get_large
 from graphia.prompts import (
     AI_VOTE_SYSTEM,
@@ -67,6 +69,8 @@ from graphia.state import (
     KillRecord,
     PlayerState,
 )
+
+logger = logging.getLogger(__name__)
 
 # The Day ends automatically after this many rounds with no vote called.
 DAY_MAX_ROUNDS = 6
@@ -1869,6 +1873,87 @@ def _ai_diary(
     return _DIARY_FALLBACK
 
 
+def _persist_diary(
+    record: DiaryRecord,
+    *,
+    player_id: str,
+    diary_store: DiaryStore | None,
+    game_id: str | None,
+) -> None:
+    """Best-effort write of ONE accepted diary entry to the ``DiaryStore``.
+
+    The second half of spec 039's DUAL WRITE (tech-spec §2.7). The first half
+    is the ``private_diaries`` state channel, which is what reaches the prompts
+    and the eval transcript; this is the persistence side-channel — the
+    AgentCore Memory demonstration the roadmap item exists to exercise, and the
+    replacement for the trivial synthetic write that stood at ``night_close``
+    from spec 002 until this slice.
+
+    CALLED PER PLAYER, INSIDE ``day_diary``'s FAN-OUT, BEFORE THE STATE DELTA IS
+    RETURNED — and it can never stop that delta being returned. Every failure
+    mode is swallowed here: ``diary_store.write`` reaches AgentCore Memory
+    through the Gateway in remote mode, so it can raise for reasons that have
+    nothing to do with the game (Gateway unreachable, credentials expired, the
+    Memory resource throttling). State is the gameplay and transcript source of
+    truth; the store is a side-channel. The broad ``except`` + ``logger.exception``
+    is therefore deliberate and is exactly the posture ``night_close`` already
+    documents for its read-back: catch broadly, log, continue, so one player's
+    persistence failure neither crashes the hinge nor skips the players after it.
+
+    ``night_index = record["day"] + 1`` — THE NIGHT THE ENTRY PRECEDES, not the
+    Day it sums up. ``night_close`` wrote ``night_index=cycle`` where ``cycle``
+    was the ALREADY-BUMPED Night; ``day_diary`` runs at Day cycle N, one
+    super-step before ``night_open`` bumps. Adding one preserves the field's
+    existing meaning, so ``DiaryStore.read``'s ``sorted(key=night_index)`` keeps
+    ordering entries the way it always did and ``graphia.tools.inspect_diary``
+    keeps printing the number it always printed. Entries therefore occupy
+    nights 2..N: the Day→Night hinge is only reached from Day 1 onwards, so the
+    lowest ``day`` is 1 and the lowest ``night_index`` is 2 — which is also the
+    first Night ``night_close``'s read-back looks at (its ``cycle >= 2`` gate).
+    Numbering by the Day summarised would silently redefine the field and shift
+    what every reader of the store shows.
+
+    ``record["text"]`` is written AS IS. ``_clamp_diary_entry`` has already
+    folded every whitespace run to a single space and applied
+    ``DIARY_MAX_CHARS``; the clamp is the single point where an entry is
+    accepted precisely so the state channel, this write and the transcript can
+    never disagree. Do NOT re-normalise here.
+
+    AN HONEST ASYMMETRY, so a reviewer does not have to ask (tech-spec §2.7).
+    With ``GRAPHIA_PRIVATE_DIARIES=0`` NO DIARY REACHES THE STORE AT ALL — the
+    retired spec-002 synthetic entry does not come back in its place, because
+    that write was deleted rather than made conditional. Flag-off is identical
+    in everything ADR 011 is about — prompts, public messages, the eval
+    transcript — but it is NOT byte-identical in the store: the off arm's store
+    is simply empty. That is the intended reading of the ablation (the retired
+    entry was never gameplay, only a persistence smoke) but it is the one
+    respect in which flag-off does not reproduce prior behaviour.
+
+    ``diary_store`` / ``game_id`` are ``None`` only for direct test calls and
+    for a graph assembled without the service injection; a live game always has
+    both, bound by ``graph._assemble_graph``.
+    """
+    if diary_store is None or game_id is None:
+        return
+    # The Night this entry precedes — see the docstring; do NOT use
+    # ``record["day"]`` directly.
+    night_index = record["day"] + 1
+    try:
+        diary_store.write(
+            game_id=game_id,
+            player_id=player_id,
+            night_index=night_index,
+            content=record["text"],
+        )
+    except Exception:
+        logger.exception(
+            "Diary write failed for player %s before night %s; continuing — "
+            "the entry is still in the private_diaries state channel.",
+            player_id,
+            night_index,
+        )
+
+
 def day_diary(
     state: GameState,
     *,
@@ -1878,6 +1963,8 @@ def day_diary(
     context_window: int = _CONTEXT_WINDOW,
     context_token_budget: int | None = None,
     max_days: int = 12,
+    diary_store: DiaryStore | None = None,
+    game_id: str | None = None,
 ) -> dict:
     """At the Day→Night hinge, every surviving AI player writes one diary entry.
 
@@ -1935,9 +2022,36 @@ def day_diary(
     filtered: an entry never enters the message stream at all, so it can never
     carry ``private_to`` and can never reach the UI or another player's context.
 
-    Per-player failure is isolated inside ``_ai_diary`` (broad ``try/except`` +
-    ``_DIARY_FALLBACK``), so one player's model failure can neither crash the
-    fan-out nor skip the players after it.
+    THE DUAL WRITE (spec 039 Slice 3, tech-spec §2.7). Each accepted entry goes
+    to two places: the ``private_diaries`` delta below, and — via
+    ``_persist_diary`` — the ``DiaryStore``, which is ``InProcessDiaryStore`` in
+    local mode and the Gateway-fronted AgentCore Memory surface in remote mode.
+    That store write REPLACES the trivial synthetic entry ``night_close`` wrote
+    from spec 002 until this slice; ``night_close``'s read-back survives as the
+    liveness probe of the Gateway-fronted read path.
+    ``diary_store`` and ``game_id`` are injected by ``partial`` in
+    ``graph._assemble_graph`` — the project's own service-injection pattern,
+    the same one that bound them into ``night_close`` — so this node keeps no
+    module-level singletons and a test can drive it with neither.
+
+    ORDER PER PLAYER, and it matters: build the prompt → call the model
+    (guarded) → clamp → write to the store (guarded) → accumulate into the
+    delta. The delta is returned ONCE, after the loop. A store failure can
+    therefore never prevent the state write and never skip the remaining
+    players — state is the gameplay and transcript source of truth, the store
+    is the persistence side-channel.
+
+    Per-player failure is isolated on BOTH axes and neither can crash the
+    fan-out or skip the players after it: a model failure inside ``_ai_diary``
+    (broad ``try/except`` + ``_DIARY_FALLBACK``), and a persistence failure
+    inside ``_persist_diary`` (broad ``try/except`` + ``logger.exception``).
+
+    FLAG-OFF IS NOT BYTE-IDENTICAL IN THE STORE, and that is deliberate: the
+    early ``return {}`` above the fan-out means an off run writes NO diary to
+    the store at all, and the retired placeholder does not come back in its
+    place. See ``_persist_diary``'s docstring for the full statement of that
+    asymmetry — flag-off is identical in everything ADR 011 is about (prompts,
+    public messages, transcript) but the off arm's store is simply empty.
     """
     if not private_diaries_enabled:
         return {}
@@ -1988,12 +2102,21 @@ def day_diary(
         )
         record: DiaryRecord = {
             # The Day being summed up: ``cycle`` BEFORE ``night_open`` bumps it.
-            # Slice 3 derives the store's ``night_index`` from this as
-            # ``day + 1`` — the Night the entry precedes.
+            # ``_persist_diary`` derives the store's ``night_index`` from this
+            # as ``day + 1`` — the Night the entry precedes.
             "day": cycle,
             "thoughts_before": len(own_thoughts),
             "text": entry,
         }
+        # The store write comes BEFORE the accumulate, and is fully guarded, so
+        # a persistence failure can neither drop this player's state entry nor
+        # skip the players after it.
+        _persist_diary(
+            record,
+            player_id=player.id,
+            diary_store=diary_store,
+            game_id=game_id,
+        )
         new_diaries[player.id] = [record]
 
     return {"private_diaries": new_diaries}

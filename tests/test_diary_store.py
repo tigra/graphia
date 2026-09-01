@@ -587,27 +587,38 @@ def test_implementations_equivalent_per_scenario(
 #
 # Slices 11 sub-tasks 1 + 2 added two pieces of behaviour to ``night_close``:
 #
-# 1. A per-player ``try/except``-guarded diary ``write`` — a raised
-#    ``diary_store.write(...)`` is ``logger.exception(...)``-logged and the
-#    loop continues to the next player (Functional §2.4.5).
-# 2. A gameplay-time read-back block before the write block, gated on
-#    ``cycle >= 2``: for each surviving non-human player,
-#    ``diary_store.read(game_id, player.id)`` is called inside a
-#    ``try/except``; on success the entry count is recorded via
-#    ``logger.info("Read %s prior diary entries ...")`` (placeholder use —
-#    Phase 6 will consume the content); on failure ``logger.exception(...)``
-#    runs and the loop continues (§2.4.2).
+# 1. A per-player ``try/except``-guarded diary ``write`` of a trivial synthetic
+#    entry. **RETIRED by spec 039 Slice 3** — see the supersession note below.
+# 2. A gameplay-time read-back block, gated on ``cycle >= 2``: for each
+#    surviving non-human player, ``diary_store.read(game_id, player.id)`` is
+#    called inside a ``try/except``; on success the entry count is recorded via
+#    ``logger.info("Read %s prior diary entries ...")``; on failure
+#    ``logger.exception(...)`` runs and the loop continues (§2.4.2). This one
+#    SURVIVES spec 039 Slice 3, retargeted as the liveness probe of the
+#    Gateway-fronted read path — it is the only thing exercising
+#    ``DiaryStore.read`` in a live game.
 #
-# The tests below assert all three contract points: the read-back fires and
+# SUPERSESSION (spec 039 Slice 3, the dual write). ``nodes/day.py:day_diary``
+# now writes the AI's REAL diary entry to the store at the Day→Night hinge, at
+# ``night_index = day + 1``, and ``night_close``'s synthetic write loop was
+# deleted — removing it is the point of that slice, not a side effect, because
+# leaving it would interleave synthetic entries with real ones in the same
+# ``(game_id, player_id)`` namespace. So the old
+# ``test_night_close_swallows_failing_store_write`` no longer describes
+# anything: it asserted that loop's per-player guard. It is rewritten in place
+# rather than deleted, as ``test_night_close_no_longer_writes_to_the_store``,
+# which pins the retirement. The equivalent guard now lives on
+# ``day_diary``/``_persist_diary`` and is Slice 3's test task to cover — do not
+# assume it is covered from here.
+#
+# The tests below assert three contract points: the read-back fires and
 # round-trips correctly against both ``DiaryStore`` impls; the read is
-# skipped on Night 1; and a write whose store raises is swallowed so
-# ``night_close`` returns normally.
+# skipped on Night 1; and ``night_close`` attempts no write at all.
 #
 # Evidence capture: pytest's ``caplog`` is the natural seam — the
-# production code emits exactly one ``INFO`` per successful read and one
-# ``ERROR`` per swallowed write. Asserting on the formatted log message
-# pins the entry-count + ``(player_id, night)`` triple without coupling
-# the test to internal call counts on the store.
+# production code emits exactly one ``INFO`` per successful read. Asserting on
+# the formatted log message pins the entry-count + ``(player_id, night)``
+# triple without coupling the test to internal call counts on the store.
 # --------------------------------------------------------------------------
 
 
@@ -777,14 +788,17 @@ def test_night_close_skips_readback_on_night_one(
 class _RaisingWriteDiaryStore:
     """``DiaryStore`` whose ``write`` always raises; ``read`` returns ``[]``.
 
-    Used to exercise the per-player ``try/except`` around the write loop
-    inside ``night_close``. A raised write must be ``logger.exception``-logged
-    and the loop must continue to the next player — gameplay never crashes
-    because persistence failed.
+    Since spec 039 Slice 3 this fake pins the ABSENCE of a write in
+    ``night_close``: a store that both records every call and raises on
+    ``write`` makes an accidental re-introduction of the retired synthetic
+    write impossible to miss — it would show up in ``write_calls`` and, if the
+    guard came back too, in the logs.
 
-    ``read`` is a benign empty-list return so this same fake can be reused
-    on Night 2+ paths without also derailing the read-back block. The
-    failing-write contract is the one being pinned here.
+    ``read`` is a benign empty-list return so the fake can be driven on Night
+    2+ where the surviving read-back block runs; ``read_calls`` is what proves
+    the store really was wired into the node, which is what keeps
+    "``write_calls`` is empty" from being vacuously true of a store the node
+    never received.
     """
 
     class WriteFailure(RuntimeError):
@@ -807,73 +821,64 @@ class _RaisingWriteDiaryStore:
         return []
 
 
-def test_night_close_swallows_failing_store_write(
+def test_night_close_no_longer_writes_to_the_store(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """A ``DiaryStore`` whose ``write`` raises must not crash ``night_close``.
+    """``night_close`` attempts NO diary write — the synthetic entry is retired.
 
-    Functional §2.4.5: persistence failures are best-effort — a raised
-    ``write`` is ``logger.exception``-logged and the loop continues. The
-    node still returns its normal ``{"phase": "day", "messages": [...]}``
-    delta and the game can proceed to Day.
+    Supersedes ``test_night_close_swallows_failing_store_write``, which pinned
+    the per-player ``try/except`` around ``night_close``'s own write loop. Spec
+    039 Slice 3 deleted that loop: ``nodes/day.py:day_diary`` writes the AI's
+    real entry at the Day→Night hinge instead, at ``night_index = day + 1``, so
+    a second synthetic write here would interleave junk with real prose in the
+    same ``(game_id, player_id)`` namespace. The behaviour this test used to
+    assert is therefore GONE ON PURPOSE, and this is the test that says so.
 
-    Asserts:
+    The equivalent per-player persistence guard now lives on ``_persist_diary``
+    and is Slice 3's test task to cover. Nothing here covers it.
 
-    * ``night_close`` returns normally (no exception propagates out).
-    * The return value still carries the normal ``phase`` transition.
-    * Both surviving AI players were attempted — a swallowed failure on
-      ``ai-1`` does not skip ``ai-2``.
-    * One ``ERROR`` log per failed write, with stack info attached
-      (``logger.exception`` rather than ``logger.error``).
+    Driven at ``cycle=3`` so the SURVIVING read-back block runs. That matters
+    for a reason worth stating: ``write_calls == []`` on its own is vacuously
+    true of a node that never received a store at all, so ``read_calls`` is
+    asserted non-empty in the same breath — the store demonstrably reached the
+    node, and it still saw no write.
+
+    The fake's ``write`` raises, so a re-introduced write cannot pass quietly
+    even if someone also re-introduced the guard: the call is recorded either
+    way.
     """
-    game_id = "game-failing-write"
+    game_id = "game-no-write"
     players = _three_player_setup()
     failing_store = _RaisingWriteDiaryStore()
 
-    caplog.set_level(logging.ERROR, logger="graphia.nodes.night")
+    caplog.set_level(logging.INFO, logger="graphia.nodes.night")
 
-    # Cycle 1 isolates this test to the write loop only — the cycle-gated
-    # read-back block is skipped, so the only ``try/except`` exercised is
-    # the one around ``write``. A future test could parameterise this
-    # over cycle to also cover Night 2+, but the write-guard contract is
-    # independent of the read-back gate and is cleanest pinned in
-    # isolation.
     result = night_close(
-        _state_with_players(cycle=1, players=players),
+        _state_with_players(cycle=3, players=players),
         diary_store=failing_store,
         game_id=game_id,
     )
 
-    # The node returned normally — no exception escaped the write loop.
-    # If this assertion ever fires, ``night.py`` lost its per-player
-    # ``try/except`` and the test should stay red until that is restored
-    # (do not soften this to ``pytest.raises``).
+    # The node returns its normal delta.
     assert result["phase"] == "day"
     assert any(
-        isinstance(m, SystemMessage) and "Night 1 ends" in m.content
+        isinstance(m, SystemMessage) and "Night 3 ends" in m.content
         for m in result["messages"]
     )
 
-    # Both AI players were attempted, in order. The human is skipped by
-    # the ``not is_human`` guard, so only two ``write`` calls fire.
-    assert [c[1] for c in failing_store.write_calls] == ["ai-1", "ai-2"]
-    assert all(c[0] == game_id for c in failing_store.write_calls)
-    assert all(c[2] == 1 for c in failing_store.write_calls)
+    # THE RETIREMENT: not one write was attempted, for any player.
+    assert failing_store.write_calls == []
 
-    # One ERROR record per swallowed failure, with stack info attached
-    # — that's the ``logger.exception`` signature, distinct from a plain
-    # ``logger.error``.
+    # Non-vacuity: the store was genuinely wired into the node and reached, via
+    # the read-back that survives as the liveness probe of the read path.
+    assert [c[1] for c in failing_store.read_calls] == ["ai-1", "ai-2"]
+    assert all(c[0] == game_id for c in failing_store.read_calls)
+
+    # And no swallowed-write ERROR was logged, because there was nothing to
+    # swallow — the read-back's own guard did not fire either.
     error_records = [
         r
         for r in caplog.records
         if r.levelno == logging.ERROR and r.name == "graphia.nodes.night"
     ]
-    assert len(error_records) == 2
-    assert all(r.exc_info is not None for r in error_records), (
-        "expected logger.exception (carries exc_info), not logger.error"
-    )
-    # The failure context names the player and night so an operator
-    # tailing logs can identify the affected player + cycle.
-    messages = [r.getMessage() for r in error_records]
-    assert any("player ai-1" in m and "night 1" in m for m in messages)
-    assert any("player ai-2" in m and "night 1" in m for m in messages)
+    assert error_records == []
