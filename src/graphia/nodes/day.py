@@ -404,6 +404,144 @@ def _private_thoughts_block(thoughts: list[str], *, enabled: bool) -> str:
     return f"\n{PRIVATE_THOUGHTS_LABEL}\n{bullets}\n"
 
 
+# The tag that marks a DIARY line inside the merged private-record block (spec
+# 039 §2.4) — the analogue of ``PRIVATE_THOUGHTS_LABEL``: the structural marker
+# the ``GRAPHIA_PRIVATE_DIARIES`` ablation flag (ADR 011) toggles and the tests
+# assert on. Only the diary lines carry it; thought lines stay bare ``- `` items
+# exactly as spec 028 renders them, so turning diaries ON is PURELY an insertion
+# of new lines into an otherwise unchanged block.
+#
+# Deliberately the INVARIANT PREFIX of the tag rather than a ``"…{day}]"``
+# template. The rendered tag closes with the Day number and a ``]`` —
+# ``- [Diary — end of Day 2] …`` — so a template constant would make the
+# flag-off assertion ``DIARY_LINE_MARKER not in prompt`` VACUOUSLY true (a
+# literal ``{day}`` never appears in a rendered prompt), which is exactly the
+# vacuity shape this spec's implementer notes warn about. As a prefix it is
+# present in every diary line and absent whenever no diary is shown.
+DIARY_LINE_MARKER = "[Diary — end of Day"
+
+# How many of a player's own most recent diary entries reach its decisions —
+# the functional spec's "Only the three most recent entries are carried
+# forward". Applied ONCE, in ``_private_record_block`` (spec 039 §2.5):
+#
+# - NOT at write time, which would destroy "every entry ever written is still
+#   kept in the record of the game": the ``private_diaries`` channel and the
+#   eval transcript keep the full history, and only what a player REASONS from
+#   is windowed.
+# - NOT at the four call sites (``_ai_day_action``, ``_ai_ballot``,
+#   ``_ai_pick_target``, ``_ai_diary``), which would be four copies of one
+#   constant — one drifts and one decision silently reasons from a different
+#   window than the other three.
+#
+# A CONSTANT, not a config knob: the functional spec fixes it at three, and
+# ADR 011 asks for an ablation flag, not a tunable.
+DIARY_WINDOW = 3
+
+
+def _private_record_block(
+    thoughts: list[str],
+    diaries: list[DiaryRecord] | None = None,
+    *,
+    thoughts_enabled: bool,
+    diaries_enabled: bool,
+) -> str:
+    """Render ONE player's merged private record for the ``{private_thoughts}`` slot.
+
+    Spec 039 §2.4. Spec 028's Day-round thoughts and spec 039's before-Night
+    diaries are two channels that must read as ONE train of thought in event
+    order, so they share the EXISTING slot rather than taking a second one — a
+    fourth ``{diaries}`` slot would ``KeyError`` at 16 ``.format()`` call sites
+    and, decisively, two slots are two positions and cannot express event order
+    across each other at all.
+
+    BYTE-IDENTITY BY CONSTRUCTION, NOT BY ASSERTION. When there is no diary to
+    show — the flag is off, or none has been written yet, which is all of Day 1
+    in every game — this returns ``_private_thoughts_block(thoughts,
+    enabled=thoughts_enabled)`` VERBATIM. The spec-028 rendering is therefore
+    not reproduced here, it is *called*, so no test can be true of this function
+    and false of that one, and the change is invisible until the first diary
+    exists. ``_private_thoughts_block`` keeps its signature, its docstring, its
+    unit tests and its remaining caller ``_ai_reflect``.
+
+    The cross-product of the two ADR-011 flags (new contract surface):
+
+    ==================  =================  ==================================
+    ``thoughts_enabled``  ``diaries_enabled``  Block
+    ==================  =================  ==================================
+    ON                  OFF                Exactly 028's block, by delegation
+    OFF                 OFF                ``""`` — byte-identical to pre-028
+    ON                  ON, none written   Exactly 028's block, by delegation
+    ON                  ON, entries exist  Merged, interleaved, tagged, windowed
+    OFF                 ON                 Heading + tagged diary lines only
+    ==================  =================  ==================================
+
+    From spec 039 on, reproducing PRE-028 prompt bytes needs BOTH flags off,
+    because the two features share one slot.
+
+    THE MERGE RULE (the ``thoughts_before`` cursor — see :class:`DiaryRecord`).
+    028's channel holds bare strings with no ordering metadata and spec 039 must
+    not touch it, so all the ordering information lives on the diary side: each
+    entry records how many thoughts that player had written when it was set
+    down. Walk the diaries in order; before diary *i*, emit every
+    not-yet-emitted thought at index ``< thoughts_before`` of that entry; after
+    the last diary, emit the remainder. A stable two-way merge, not a sort — the
+    cursors are non-decreasing because thoughts only ever accumulate and the two
+    writing nodes never share a super-step.
+
+    THE WINDOW IS APPLIED BEFORE THE MERGE, and that ordering is correct rather
+    than incidental: thoughts are indexed independently of diaries, so dropping
+    the oldest diary removes only its own line and the surviving cursors still
+    partition the thought list exactly as before. Merging first and then trying
+    to drop a diary line would have to decide what to do with the thoughts that
+    entry's cursor was gating. Note the asymmetry this leaves, inherited from
+    028 and deliberately NOT fixed here: thoughts are unwindowed, so the merged
+    block stays unbounded in that dimension (spec 025's ``context_window`` /
+    ``context_token_budget`` govern only ``_render_context``).
+
+    Only ever passed ONE player's own thoughts and own diaries, keyed at the
+    call site on the acting player's id — a player never receives another
+    player's private record. PURE: no state read beyond the two passed lists, no
+    RNG, no LLM, no ``set`` iteration, so the dual-mode byte-equal smoke is
+    unaffected. Defensive over the channel's shape the way
+    ``eval_transcript._append_diaries`` is: ``DiaryRecord`` is
+    ``total=False``, so every field is read through ``.get`` with a default and
+    a nonsensical cursor degrades to 0 rather than raising inside a prompt
+    build.
+    """
+    # The window, before the merge. ``diaries_enabled`` off collapses to the
+    # empty window, which is the same "nothing to show" case as no entries yet
+    # — one branch, so the two byte-identity cells cannot diverge.
+    window = diaries[-DIARY_WINDOW:] if diaries_enabled and diaries else []
+    if not window:
+        return _private_thoughts_block(thoughts, enabled=thoughts_enabled)
+
+    notes = list(thoughts) if thoughts_enabled else []
+    lines: list[str] = []
+    emitted = 0
+    for record in window:
+        cursor = record.get("thoughts_before", 0)
+        if isinstance(cursor, bool) or not isinstance(cursor, int):
+            cursor = 0
+        # ``max(emitted, …)`` keeps the walk monotone even if a cursor went
+        # backwards; ``min(…, len(notes))`` covers a cursor pointing past the
+        # notes actually in hand (a diary written with thoughts ON, read back
+        # with thoughts OFF).
+        stop = max(emitted, min(cursor, len(notes)))
+        lines.extend(f"- {note}" for note in notes[emitted:stop])
+        emitted = stop
+        # A record with no usable ``day`` still carries an entry worth showing,
+        # so the tag renders with a placeholder rather than the line being
+        # dropped — the same reasoning ``_diary_day_attr`` uses to omit the
+        # transcript attribute and still render the element.
+        day = record.get("day", "?")
+        text = record.get("text", "")
+        lines.append(f"- {DIARY_LINE_MARKER} {day}] {text}".rstrip())
+    lines.extend(f"- {note}" for note in notes[emitted:])
+
+    bullets = "\n".join(lines)
+    return f"\n{PRIVATE_THOUGHTS_LABEL}\n{bullets}\n"
+
+
 # In-world clock for the Day's rounds (spec 020): round 1 is morning, advancing
 # one step per round toward midnight at round 6, so the recap reads like the Day
 # burning down toward Night. Indexed by ``round - 1`` after clamping.
