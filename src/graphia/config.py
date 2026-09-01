@@ -252,6 +252,19 @@ class GraphiaConfig:
     # creative model explores rather than reaching for the same modal townsperson.
     # ``GRAPHIA_PERSONA_TEMPERATURE``.
     persona_temperature: float = 1.0
+    # Per-AI before-Night private diaries (spec 039, ADR 011). The ablation
+    # off-switch: on by default; an explicit falsy ``GRAPHIA_PRIVATE_DIARIES``
+    # makes the ``day_diary`` node a no-op, so no entry is written, nothing
+    # reaches a player's reasoning and nothing lands in the preserved
+    # transcript. One spelling end to end: ``GRAPHIA_PRIVATE_DIARIES`` →
+    # ``private_diaries_enabled`` → the ``private_diaries`` state channel → the
+    # ledger's ``settings.private_diaries_enabled``. Distinct from spec 028's
+    # ``private_thoughts_enabled``: that one gates the per-Day-ROUND reflection,
+    # this one the once-per-Day, longer, before-Night entry; they are
+    # independent channels and independently ablatable. Mirrors the other
+    # ADR-011 default-on flags' ``_env_flag`` shape. Defaulted so tests
+    # constructing the config directly stay valid.
+    private_diaries_enabled: bool = True
 
 
 def resolved_tier_models(config: GraphiaConfig) -> tuple[str, str]:
@@ -345,6 +358,9 @@ def load_config() -> GraphiaConfig:
     )
     night_roster_shuffle_enabled = _env_flag(
         "GRAPHIA_NIGHT_ROSTER_SHUFFLE", default=True
+    )
+    private_diaries_enabled = _env_flag(
+        "GRAPHIA_PRIVATE_DIARIES", default=True
     )
     # Diversified persona generation (spec 034). The master default-on flag plus
     # its three tunables. Parsed here at the single config choke point so both
@@ -564,6 +580,7 @@ def load_config() -> GraphiaConfig:
         scripted_player_active=scripted_player_active,
         private_thoughts_enabled=private_thoughts_enabled,
         night_roster_shuffle_enabled=night_roster_shuffle_enabled,
+        private_diaries_enabled=private_diaries_enabled,
         persona_diversity_enabled=persona_diversity_enabled,
         persona_collision_threshold=persona_collision_threshold,
         persona_regen_attempts=persona_regen_attempts,

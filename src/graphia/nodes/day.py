@@ -38,7 +38,7 @@ from graphia.career_events import (
     CareerEvent,
     CareerEventEmitter,
 )
-from graphia.llm import Ballot, DayAction, Reflection, get_large
+from graphia.llm import Ballot, DayAction, Diary, Reflection, get_large
 from graphia.prompts import (
     AI_VOTE_SYSTEM,
     AI_VOTE_USER_TEMPLATE,
@@ -47,6 +47,8 @@ from graphia.prompts import (
     DAY_ROUND_RECAP_TEMPLATE,
     DAY_SPEAK_SYSTEM,
     DAY_SPEAK_USER_TEMPLATE,
+    DIARY_SYSTEM,
+    DIARY_USER_TEMPLATE,
     REFLECTION_SYSTEM,
     REFLECTION_USER_TEMPLATE,
     ROLE_GUIDANCE_LABEL,
@@ -58,7 +60,13 @@ from graphia.prompts import (
     VOTE_PER_BALLOT_TEMPLATE,
     VOTE_TALLY_TEMPLATE,
 )
-from graphia.state import ActiveVote, GameState, KillRecord, PlayerState
+from graphia.state import (
+    ActiveVote,
+    DiaryRecord,
+    GameState,
+    KillRecord,
+    PlayerState,
+)
 
 # The Day ends automatically after this many rounds with no vote called.
 DAY_MAX_ROUNDS = 6
@@ -1515,6 +1523,244 @@ def day_close(state: GameState, *, recap_enabled: bool = True) -> dict:
     if not messages:
         return {}
     return {"messages": messages}
+
+
+# ---------------------------------------------------------------------------
+# Per-AI before-Night private diaries (spec 039)
+# ---------------------------------------------------------------------------
+
+# HARD character cap on ONE accepted diary entry. ``DIARY_SENTENCE_BOUND``
+# (prompts.py, interpolated into ``DIARY_SYSTEM``) is a REQUEST the model may
+# ignore; the functional spec requires the bound to hold for every entry
+# actually written, so the enforcement lives here — ``_clamp_diary_entry``,
+# applied to the model text before it is recorded. ~900 chars is roughly
+# ``DIARY_SENTENCE_BOUND`` (6) sentences of ordinary English prose at ~150
+# chars each: generous enough that a compliant entry is never truncated, tight
+# enough that a runaway one cannot grow the prompt without limit. A CONSTANT,
+# not a config knob: ADR 011 asks for an ablation flag, not a tunable.
+DIARY_MAX_CHARS = 900
+
+# Deterministic entry recorded when a player's diary model call fails or yields
+# an empty entry — so one model hiccup never blanks that player's channel and
+# the tests stay non-flaky (the posture ``_REFLECTION_FALLBACK`` /
+# ``_ai_day_action``'s speak fallback already take). Deliberately role-neutral
+# and strategy-free: it must not steer the player that reads it back later, and
+# it must name no other player. Kept comfortably under ``DIARY_MAX_CHARS``, so
+# the clamp applies only to model text.
+_DIARY_FALLBACK = (
+    "Nothing much more to set down tonight. I will sleep on what I heard "
+    "today and see how it reads in the morning."
+)
+
+
+def _clamp_diary_entry(text: str) -> str:
+    """Clamp ONE diary entry to ``DIARY_MAX_CHARS``.
+
+    The enforcement half of the functional spec's third length criterion (the
+    stated sentence bound in ``DIARY_SYSTEM`` is the request half). Strips
+    surrounding whitespace, truncates to the cap, then right-strips so a cut
+    mid-space cannot leave a trailing blank — the result is never longer than
+    the cap.
+
+    PURE: no state, no RNG, no clock, so replay and the dual-mode byte-equal
+    smoke are unaffected.
+    """
+    return text.strip()[:DIARY_MAX_CHARS].rstrip()
+
+
+def _ai_diary(
+    speaker: PlayerState,
+    state: GameState,
+    *,
+    recap_aware_reasoning_enabled: bool = True,
+    context_window: int = _CONTEXT_WINDOW,
+    context_token_budget: int | None = None,
+    private_thoughts: list[str] | None = None,
+    private_thoughts_enabled: bool = True,
+) -> str:
+    """Produce ONE surviving AI player's before-Night diary entry (spec 039).
+
+    The structural twin of :func:`_ai_reflect`, and deliberately built from the
+    SAME grounding helpers — role facts (``_role_label`` /
+    ``_win_condition_line`` / ``_team_line``), persona (``_persona_block``),
+    standings (``_standings_prompt_block``), the recent discussion
+    (``_render_context`` honouring the configured window / token budget) and
+    this player's OWN running private record (``_private_thoughts_block``) — so
+    ``DIARY_USER_TEMPLATE`` needs no plumbing of its own. What differs from a
+    Day-round reflection is grain (a whole day, not one speaking round), length
+    (``DIARY_SENTENCE_BOUND`` and the ``DIARY_MAX_CHARS`` clamp) and the open
+    invitation in ``DIARY_SYSTEM``.
+
+    ``recap_aware_reasoning_enabled`` (spec 019, ADR 011) is threaded through to
+    ``_standings_prompt_block`` PROPERLY rather than hard-coded ``True``. That
+    hard-coding is a latent defect on ``_ai_reflect``'s path — spec 019's
+    ablation is incomplete there — and fixing 028 is out of scope for spec 039,
+    so this call site simply does not inherit it. Logged as a 028 follow-up.
+
+    ``private_thoughts`` is passed IN (rather than re-read from ``state`` here)
+    because ``day_diary`` reads the same list to compute the entry's
+    ``thoughts_before`` cursor: one read, so the number recorded and the notes
+    shown can never disagree. Only ever this player's own notes.
+
+    Calls ``get_large().with_structured_output(Diary)`` once. On any failure or
+    an empty entry it returns ``_DIARY_FALLBACK``; on success it returns the
+    CLAMPED entry.
+    """
+    players = state.get("players", {})
+    context = _render_context(
+        list(state.get("messages", [])),
+        speaker.id,
+        window=context_window,
+        token_budget=context_token_budget,
+    )
+    llm = get_large().with_structured_output(Diary)
+    messages: list = [
+        SystemMessage(content=DIARY_SYSTEM),
+        HumanMessage(
+            content=DIARY_USER_TEMPLATE.format(
+                speaker=speaker.name,
+                role_label=_role_label(speaker.role),
+                win_condition=_win_condition_line(speaker.role),
+                team_line=_team_line(speaker, players),
+                persona=_persona_block(speaker),
+                standings=_standings_prompt_block(
+                    state, enabled=recap_aware_reasoning_enabled
+                ),
+                context=context,
+                private_thoughts=_private_thoughts_block(
+                    list(private_thoughts or []),
+                    enabled=private_thoughts_enabled,
+                ),
+            )
+        ),
+    ]
+    try:
+        result = llm.invoke(messages)
+        if isinstance(result, Diary) and result.entry.strip():
+            return _clamp_diary_entry(result.entry)
+    except Exception:
+        pass
+    return _DIARY_FALLBACK
+
+
+def day_diary(
+    state: GameState,
+    *,
+    private_diaries_enabled: bool = True,
+    private_thoughts_enabled: bool = True,
+    recap_aware_reasoning_enabled: bool = True,
+    context_window: int = _CONTEXT_WINDOW,
+    context_token_budget: int | None = None,
+    max_days: int = 12,
+) -> dict:
+    """At the Day→Night hinge, every surviving AI player writes one diary entry.
+
+    Wired ``day_close -> day_diary -> night_open``: two unconditional edges
+    replacing the single ``day_close -> night_open`` one.
+
+    A DEDICATED node rather than a fold into ``day_close`` (tech-spec 039 §2.1 —
+    and NOT for spec 028's replay-safety reason, which does not transfer: there
+    is no ``interrupt()`` at this hinge until ``mafia_point``, several committed
+    super-steps later). The reasons that do hold: the eval transcript renderer
+    dispatches on the ``{node: delta}`` key, so its own delta is what lets a
+    diary be placed as day-level content; a fan-out that raised past its
+    per-player guard would otherwise take ``day_close``'s already-computed
+    closing recap with it; and ``day_close`` is pure and deterministic today,
+    which is worth keeping.
+
+    NOT at ``night_open``'s head either — three blockers: it bumps ``cycle`` on
+    re-entry, so ``state["cycle"]`` there is already the NEW Night's; Night 1
+    arrives at it from ``first_night_mafia_intros`` and would need a special
+    case; and it carries the spec-023 runaway short-circuit.
+
+    Self-guards, each returning ``{}`` BEFORE any model call:
+
+    - ``private_diaries_enabled`` off (ADR 011) — the whole feature ablated.
+    - ``winner`` already set — the game is over; nothing to sum up.
+    - The spec-023 RUNAWAY CAP, ``cycle + 1 >= max_days``. This one is not
+      optional and is easy to miss: this node runs BEFORE ``night_open`` detects
+      the cap, so without it the final Day of a capped game would fire a full
+      fan-out of model calls for a Night that never happens. The predicate is
+      exactly ``night_open``'s, evaluated one super-step earlier: ``night_open``
+      bumps the cycle iff the prior phase is ``"day"``, which it always is here
+      (``day_close`` leaves ``phase`` alone), so the Night it is about to test is
+      ``cycle + 1``. ``max_days`` is bound from the SAME ``_assemble_graph``
+      value that binds ``night_open`` — one value bound twice, so there is no
+      second constant to drift.
+    - No surviving non-human player.
+
+    Writers are ``is_alive and not is_human`` — the predicate
+    ``day_round_reflect`` and ``night_close`` already use. The spec-026 scripted
+    eval stand-in occupies the HUMAN seat, so it is excluded with no special
+    case; dead players and the person playing write nothing.
+
+    Two boundary conditions need no code here, only confirming (they are what a
+    count of entries in a preserved game looks wrong against):
+
+    - **Night 1 has no entry.** The graph enters ``night_open`` from
+      ``first_night_mafia_intros``, never through this node, so a game of N
+      Nights holds at most N-1 entries.
+    - **The winning Day has no entries.** ``check_win_day`` routes a winning
+      move to ``end_screen``, bypassing ``day_close`` — so this node never runs
+      on the Day the game is won.
+
+    Returns ONE ``private_diaries`` delta keyed per player, and NO public
+    ``messages`` — the privacy invariant, which is structural here rather than
+    filtered: an entry never enters the message stream at all, so it can never
+    carry ``private_to`` and can never reach the UI or another player's context.
+
+    Per-player failure is isolated inside ``_ai_diary`` (broad ``try/except`` +
+    ``_DIARY_FALLBACK``), so one player's model failure can neither crash the
+    fan-out nor skip the players after it.
+    """
+    if not private_diaries_enabled:
+        return {}
+    if state.get("winner") is not None:
+        return {}
+    cycle = state.get("cycle", 1)
+    if cycle + 1 >= max_days:
+        return {}
+
+    players = state.get("players", {})
+    # Insertion order over ``dict.values()`` — never a ``set`` — so the fan-out
+    # order is stable and the dual-mode byte-equal smoke is unaffected.
+    writers = [p for p in players.values() if p.is_alive and not p.is_human]
+    if not writers:
+        return {}
+
+    # THE CROSS-CHANNEL CURSOR (tech-spec §2.3, and the ``DiaryRecord``
+    # docstring). ``state`` as handed to a node is the COMMITTED post-reducer
+    # view of the previous super-step, so ``len(thoughts)`` here is a function
+    # of committed state alone — no clock, no RNG — and a replay recomputes the
+    # same number. ``day_round_reflect`` (the only writer of the other channel)
+    # is a different node and never shares a super-step with this one, and
+    # thoughts only ever accumulate, so the cursors are non-decreasing and
+    # Slice 2's merge is a stable two-way merge rather than a sort.
+    all_thoughts = state.get("private_thoughts", {}) or {}
+
+    new_diaries: dict[str, list[DiaryRecord]] = {}
+    for player in writers:
+        own_thoughts = list(all_thoughts.get(player.id) or [])
+        entry = _ai_diary(
+            player,
+            state,
+            recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
+            context_window=context_window,
+            context_token_budget=context_token_budget,
+            private_thoughts=own_thoughts,
+            private_thoughts_enabled=private_thoughts_enabled,
+        )
+        record: DiaryRecord = {
+            # The Day being summed up: ``cycle`` BEFORE ``night_open`` bumps it.
+            # Slice 3 derives the store's ``night_index`` from this as
+            # ``day + 1`` — the Night the entry precedes.
+            "day": cycle,
+            "thoughts_before": len(own_thoughts),
+            "text": entry,
+        }
+        new_diaries[player.id] = [record]
+
+    return {"private_diaries": new_diaries}
 
 
 def route_day_turn(state: GameState) -> str:

@@ -23,6 +23,7 @@ from graphia.nodes import (
     collect_name,
     collect_votes,
     day_close,
+    day_diary,
     day_open,
     day_round_reflect,
     day_turn,
@@ -92,6 +93,7 @@ def _assemble_graph(
     context_token_budget: int = 20000,
     private_thoughts_enabled: bool = True,
     night_roster_shuffle_enabled: bool = True,
+    private_diaries_enabled: bool = True,
     persona_diversity_enabled: bool = True,
     persona_collision_threshold: float = 0.6,
     persona_regen_attempts: int = 2,
@@ -230,6 +232,30 @@ def _assemble_graph(
     )
     builder.add_node("resolve_vote", emit(resolve_vote))
     builder.add_node("day_close", partial(day_close, recap_enabled=recap_enabled))
+    # Spec 039 (ADR 011): the before-Night diary node, on the Day->Night hinge
+    # between ``day_close`` and ``night_open``. Its own super-step, so its
+    # ``{node: delta}`` key is what places a diary as day-level content in the
+    # eval transcript and so a per-player failure cannot take ``day_close``'s
+    # already-computed closing recap with it. ``max_days`` is bound here from
+    # the SAME value that binds ``night_open`` above — one value bound twice —
+    # so the node's runaway self-guard (``cycle + 1 >= max_days``, evaluated one
+    # super-step before ``night_open`` tests the cap) can never drift from the
+    # cap it is guarding. The recap-aware / window / token-budget / private-
+    # thoughts values are the same ones the three AI-decision nodes get, so the
+    # diary prompt is grounded exactly as they are; flag-off makes the node a
+    # no-op. Both builders thread ``private_diaries_enabled``.
+    builder.add_node(
+        "day_diary",
+        partial(
+            day_diary,
+            private_diaries_enabled=private_diaries_enabled,
+            private_thoughts_enabled=private_thoughts_enabled,
+            recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
+            context_window=context_window,
+            context_token_budget=context_token_budget,
+            max_days=max_days,
+        ),
+    )
     # Slice 8: win-condition detection + end screen. The same pure-read
     # function is registered under two node names so each check site can
     # own a dedicated conditional fan-out (night → night_close fallthrough,
@@ -329,7 +355,13 @@ def _assemble_graph(
     builder.add_edge("end_screen", END)
 
     # Day → Night cycle. night_open bumps cycle on re-entry.
-    builder.add_edge("day_close", "night_open")
+    # Spec 039: the hinge gains one super-step — ``day_close -> day_diary ->
+    # night_open`` — so every surviving AI writes its before-Night diary entry
+    # after the Day's public close is committed and before the Night opens.
+    # Night 1 is unaffected: it is entered from ``first_night_mafia_intros``,
+    # which edges straight to ``night_open``, so no entry precedes Night 1.
+    builder.add_edge("day_close", "day_diary")
+    builder.add_edge("day_diary", "night_open")
 
     return builder.compile(checkpointer=saver)
 
@@ -375,6 +407,7 @@ def build_graph(
         context_token_budget=config.context_token_budget,
         private_thoughts_enabled=config.private_thoughts_enabled,
         night_roster_shuffle_enabled=config.night_roster_shuffle_enabled,
+        private_diaries_enabled=config.private_diaries_enabled,
         persona_diversity_enabled=config.persona_diversity_enabled,
         persona_collision_threshold=config.persona_collision_threshold,
         persona_regen_attempts=config.persona_regen_attempts,

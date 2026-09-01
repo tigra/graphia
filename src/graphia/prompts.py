@@ -342,3 +342,110 @@ Write a short private note to yourself — one or two sentences, in your own voi
 taking stock and thinking about your own next move. Return only the `thought`
 field.
 """
+
+# ---------------------------------------------------------------------------
+# Per-AI private diaries (spec 039)
+# ---------------------------------------------------------------------------
+# ONE entry per surviving AI player per day cycle, written at the Day→Night
+# hinge. Distinct from spec 028's ``REFLECTION_*`` above along the two axes the
+# functional spec names explicitly: GRAIN (a whole day's summing-up, not a
+# reaction to one speaking round) and LENGTH (``DIARY_SENTENCE_BOUND`` below,
+# deliberately larger than 028's "one or two sentences"). The two coexist and
+# feed the same player; neither is ever shown to another player or to the human.
+#
+# THE DESIGN PROBLEM THIS WORDING SOLVES — do not "tidy" it into a checklist.
+# The functional spec requires that different characters' entries differ in what
+# they dwell on rather than all following one shape. That is precisely the
+# MODE-SEEKING failure spec 034 diagnosed for persona generation: handed a list
+# of things to cover, the model produces the SAME shape regardless of who is
+# writing, and every persona collapses onto one voice. So ``DIARY_SYSTEM`` makes
+# four moves, and each one is load-bearing:
+#
+#   1. NAME BOTH DIRECTIONS AND GRANT EITHER. Looking back over the day and
+#      looking ahead to the night are BOTH named, and either — or both — is
+#      explicitly permitted. Naming only one direction steers every character
+#      the same way; naming both and granting the choice is what makes the
+#      variation legitimate rather than disobedience.
+#   2. ANCHOR ON VOICE, NOT CONTENT. The invitation leans on the ``{persona}``
+#      block ALREADY present in the user template rather than adding new
+#      character instruction — "a diary sounds like the person keeping it".
+#      Content latitude plus a voice anchor is what produces per-character
+#      difference; content instruction plus a voice anchor does not.
+#   3. FORBID A FIXED FORM. No headings, no bullet points, no numbering, and no
+#      summing-up-then-planning — that last is the specific mould the model
+#      falls into unprompted, and it flattens the entries hardest.
+#   4. KEEP 028's ANTI-STEER CLAUSE (carried over in substance, verbatim but for
+#      "think"→"write"). The prompt must not push toward a particular move,
+#      suspicion or target — the functional spec's SECOND acceptance criterion —
+#      so a "be strategic" phrasing would break it. Directive play-menus are
+#      spec 024's ``ROLE_GUIDANCE_*`` job on the DECISION prompts; the diary is
+#      a private place to think, not a plan to file.
+#
+# DELIBERATELY ABSENT: any enumeration of topics to cover ("where things stand,
+# who you suspect, what you mean to do"). An enumeration IS the checklist, and
+# the checklist is the collapse — it would fail the third acceptance criterion
+# while looking, in isolation, like a helpfully specific prompt. If a future
+# reader is tempted to add one, that is the temptation this comment exists for.
+#
+# The bound is written down ONCE, as this constant interpolated into
+# ``DIARY_SYSTEM``, so the prose and the number cannot drift. Note the STATED
+# bound is only a request: the functional spec requires the length to hold for
+# every entry actually written, which is the node's hard clamp
+# (``DIARY_MAX_CHARS`` in ``nodes/day.py``), not this wording. Spec 028's
+# ``REFLECTION_SYSTEM`` bytes are left untouched on purpose — 039 is additive,
+# and "the diary's bound is the larger of the two" is checked by reading this
+# constant against 028's unchanged prose.
+DIARY_SENTENCE_BOUND = 6
+
+DIARY_SYSTEM = f"""You are a player in Graphia, a Mafia-style social-deduction
+party game. The Day is over and Night is about to fall. Before it does, you open
+your diary and write today's entry. No one else will ever see it: not the other
+players, not anyone. It is yours alone.
+
+Write it as yourself, in your own voice — a diary sounds like the person keeping
+it, not like a report. This is the whole day's entry, not a passing note about
+one exchange in it.
+
+Some people use a diary to look back over the day that has just ended; some use
+it to look ahead to the night that is coming; some do both. Do whichever is more
+like you — none of them is asked of you.
+
+There is no set form. No headings, no bullet points, no numbering, no fixed
+order, and no summing-up-followed-by-a-plan unless that simply happens to be how
+you write.
+
+Do not decide for anyone but yourself, and do not feel you must commit to any
+particular move; just write.
+
+Return the entry in the `entry` field, at most {DIARY_SENTENCE_BOUND} sentences.
+"""
+
+# The diary user template. A NEW template, so unlike the three shared decision
+# templates (``DAY_SPEAK_USER_TEMPLATE`` / ``AI_VOTE_USER_TEMPLATE`` /
+# ``MAFIA_POINT_USER_TEMPLATE``, ``.format()``-ed at 16 call sites where a
+# missing kwarg is a ``KeyError``) it carries no blast radius and could take any
+# slots it liked. It deliberately takes exactly ``REFLECTION_USER_TEMPLATE``'s
+# vocabulary instead, so the SAME ``nodes/day.py`` helpers populate it with no
+# new plumbing: ``_role_label`` / ``_win_condition_line`` / ``_team_line`` /
+# ``_persona_block`` / ``_standings_prompt_block`` / ``_render_context``, plus
+# ``{private_thoughts}`` — this player's OWN running private record (spec 028's
+# thoughts, and from this spec's second slice its own earlier diaries merged into
+# the same slot), the same self-grounding ``_ai_reflect`` does. Never another
+# player's: the block is keyed on the acting player's id at the call site.
+#
+# The invitation's openness lives in ``DIARY_SYSTEM`` (the four moves above), not
+# here — this template supplies the grounding and the closing call to write, and
+# names no topic and no direction of its own. Its tail does NOT restate the
+# sentence bound: ``DIARY_SENTENCE_BOUND`` is interpolated into the system prompt
+# only, so there is exactly one place the number is written down.
+DIARY_USER_TEMPLATE = """You are {speaker} — your secret role is {role_label}. {win_condition}
+{team_line}
+{persona}
+{standings}The Day has ended, and Night is about to fall.
+
+Recent public discussion:
+{context}
+{private_thoughts}
+Write today's diary entry, in your own voice. Return only the `entry` field,
+keeping within the sentence limit you were given.
+"""

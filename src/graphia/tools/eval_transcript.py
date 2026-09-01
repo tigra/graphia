@@ -406,6 +406,22 @@ def _render_phases(
     ``resolve_vote``) are buffered by a small per-Day :class:`_VoteAssembler` and
     flushed as one ``<vote>`` block into whichever round body is current, so a
     vote reads as a single delimited block rather than a run of Moderator lines.
+
+    Alongside the round bodies each ``<day>`` also carries a **day-level
+    trailer** (spec 039): a separate ``day_trailer`` list, reset with
+    ``day_round_bodies`` and appended AFTER the rounds loop, so its content lands
+    between the last ``</round>`` and ``</day>``. It exists because a ``<day>``
+    otherwise has nowhere to put content belonging to the whole Day: everything
+    between the header and the close is a round body, so a Day-level delta would
+    be filed inside whichever round happened to be filling. Its only occupant
+    today is the before-Night diary (:func:`_append_diaries`), which sums up a
+    Day rather than a round and which the functional spec requires to sit
+    "between the day it was written about and the Night that followed". Because
+    it is its own list it takes no part in the round bookkeeping above — nothing
+    in it reaches ``current_day_body()``, and ``pending_round_break`` is touched
+    only by ``day_turn`` deltas. The trailer is empty for every pre-039 capture
+    and for any game played with the diaries flag off, in which case a ``<day>``
+    renders exactly as it did before.
     """
     out: list[str] = []
     # The currently-open section accumulator. ``kind`` ∈ {None, "preamble",
@@ -429,8 +445,18 @@ def _render_phases(
     # ``day_turn`` wrap (a delta carrying ``day_rounds``) ends a round; the next
     # ``day_turn`` event then opens a fresh body (lazy open — see docstring).
     # ``vote`` buffers a vote's super-steps into one ``<vote>`` block.
+    #
+    # ``day_trailer`` (spec 039) is the Day's DAY-LEVEL tail: content that
+    # belongs to the whole Day rather than to any one speaking round, emitted
+    # after the last ``</round>`` and before ``</day>``. Its only occupant today
+    # is the before-Night diary (see :func:`_append_diaries`). It is a list of
+    # its own, NOT a round body — which is exactly why it cannot disturb the
+    # round bookkeeping: nothing appended here is ever seen by
+    # ``current_day_body()``, and ``pending_round_break`` is set/consumed only
+    # by ``day_turn`` deltas, while ``day_diary`` is a different node.
     day_round_bodies: list[list[str]] = []
     day_header: list[str] = []
+    day_trailer: list[str] = []
     pending_round_break = False
     vote = _VoteAssembler(names, roles_by_name)
 
@@ -443,7 +469,8 @@ def _render_phases(
     def flush() -> None:
         """Close the open section, folding any pending sub-structure into it."""
         nonlocal section_kind, buf, night_rounds, current_round
-        nonlocal day_round_bodies, day_header, pending_round_break, vote
+        nonlocal day_round_bodies, day_header, day_trailer
+        nonlocal pending_round_break, vote
         if section_kind is None:
             return
         if section_kind == "night":
@@ -467,6 +494,13 @@ def _render_phases(
                 body.append(
                     _wrap("round", [f"Round {number}.", *round_body])
                 )
+            # Spec 039: the day-level trailer goes AFTER the rounds loop, so a
+            # diary lands between the last ``</round>`` and ``</day>`` — "between
+            # the day it was written about and the Night that followed"
+            # (functional spec §2). Empty for every pre-039 capture and for any
+            # game played with the diaries flag off, in which case ``body`` is
+            # exactly what it was before and the rendering is byte-identical.
+            body.extend(day_trailer)
             out.append(_wrap("day", body))
         else:  # preamble
             out.append(_wrap("preamble", buf))
@@ -476,6 +510,7 @@ def _render_phases(
         current_round = {}
         day_round_bodies = []
         day_header = []
+        day_trailer = []
         pending_round_break = False
         vote = _VoteAssembler(names, roles_by_name)
 
@@ -508,6 +543,7 @@ def _render_phases(
                 day_header = [f"Day {day_index} begins."]
                 _append_messages(day_header, delta, names, roles_by_name)
                 day_round_bodies = [[]]  # open the first speaking round
+                day_trailer = []  # spec 039: this Day's day-level tail
                 pending_round_break = False
                 vote = _VoteAssembler(names, roles_by_name)
                 continue
@@ -549,6 +585,14 @@ def _render_phases(
                 # summarizes and BEFORE the next ``day_turn`` consumes the round
                 # break, so the thoughts land inside the round they belong to.
                 _append_thoughts(current_day_body(), delta, names)
+                # Spec 039: a ``private_diaries`` delta (the ``day_diary``
+                # super-step's per-player before-Night entries) is DAY-level, not
+                # round-level — a diary sums up a whole Day, so it goes into the
+                # trailer rather than ``current_day_body()``. ``day_diary`` fires
+                # after ``day_close`` and before ``night_open``, i.e. while this
+                # Day section is still open, so the trailer is flushed into the
+                # right ``<day>``.
+                _append_diaries(day_trailer, delta, names)
                 # A genuine round-robin wrap ends the round: ``day_turn`` returns
                 # ``day_rounds`` only on a completed pass. Set the break AFTER
                 # appending this delta — the wrap delta's speech + attached recap
@@ -940,11 +984,94 @@ def _append_thoughts(
             buf.append(_inline_attr("thought", f'player="{author}"', text))
 
 
+def _append_diaries(
+    buf: list[str],
+    delta: dict[str, Any],
+    names: dict[str, str],
+) -> None:
+    """Append each before-Night diary entry in a ``private_diaries`` delta (039).
+
+    The ``day_diary`` super-step (wired ``day_close -> day_diary ->
+    night_open``) returns ``{"private_diaries": {player id: [DiaryRecord, …]}}``
+    — one record per surviving AI player, each summing up the Day just ended.
+    ``stream_mode="updates"`` carries the node's RAW return, i.e. THIS Day's new
+    entries and not the post-reducer accumulated map, so the delta's per-player
+    lists are rendered directly with no diffing against a prior map. Same
+    posture as :func:`_append_thoughts` and :func:`_accumulate_night_picks`.
+
+    ``buf`` is the Day's **trailer**, NOT a round body (see
+    :func:`_render_phases`). That is the whole point of the trailer: a diary sums
+    up a *Day*, not a *round*, so appending it to ``current_day_body()`` would
+    file it inside the last ``<round>`` — defensible but wrong in kind. From the
+    trailer it renders between the last ``</round>`` and ``</day>``, "between the
+    day it was written about and the Night that followed" (functional spec 039
+    §2). Being a separate list, it cannot perturb the round bookkeeping:
+    ``pending_round_break`` is set only by a ``day_turn`` delta carrying
+    ``day_rounds`` and consumed only by the next ``day_turn`` event, and
+    ``day_diary`` is neither.
+
+    Each entry becomes its own author-attributed inline element carrying the Day
+    it sums up — ``<diary player="Name" day="2">…</diary>`` — a new tag beside
+    the spec-022 ``<recap>`` / ``<kill>`` / ``<vote>`` and spec-028
+    ``<thought>`` inline shapes. The transcript is a maintainer-facing artifact
+    only; exactly as with a thought, this is the ONLY place a diary ever
+    surfaces — never to another player, never to the live human UI.
+
+    Defensive (the renderer's house style): a missing ``private_diaries``
+    channel, a non-dict channel value, a non-list per-player value, a non-dict
+    record, a missing or non-``str`` ``text``, a blank ``text``, a missing or
+    unusable ``day``, or an unknown player id must never raise — surface what is
+    present and omit the rest. An unknown id resolves to itself via
+    :func:`_name_of`; a record with no usable ``day`` omits that attribute
+    rather than guessing a number.
+    """
+    diaries = delta.get("private_diaries")
+    if not isinstance(diaries, dict):
+        return
+    for player_id, records in diaries.items():
+        if not isinstance(records, (list, tuple)):
+            continue
+        author = _name_of(player_id, names)
+        for record in records:
+            # ``DiaryRecord`` is a ``TypedDict`` — a plain ``dict`` at runtime.
+            if not isinstance(record, dict):
+                continue
+            entry = record.get("text")
+            if not isinstance(entry, str):
+                continue
+            text = entry.strip()
+            if not text:
+                continue
+            attrs = f'player="{author}"'
+            day = _diary_day_attr(record.get("day"))
+            if day:
+                attrs = f"{attrs} {day}"
+            buf.append(_inline_attr("diary", attrs, text))
+
+
+def _diary_day_attr(day: Any) -> str:
+    """``day="N"`` for a usable ``DiaryRecord["day"]``, else ``""`` (spec 039).
+
+    ``day`` is written by ``nodes.day.day_diary`` as ``state["cycle"]`` (an
+    ``int``), but this renderer also serves thin synthetic captures, so an
+    ``int`` or a non-blank ``str`` is accepted and anything else — absent,
+    ``None``, a ``bool`` (``day="True"`` would be nonsense), a float, a
+    container — yields ``""`` and the attribute is simply omitted. Omission is
+    the honest rendering: the Day is unknown, and inventing one would mislead a
+    reviewer about which Day an entry sums up.
+    """
+    if isinstance(day, bool) or not isinstance(day, (int, str)):
+        return ""
+    text = str(day).strip()
+    return f'day="{text}"' if text else ""
+
+
 def _inline_attr(tag: str, attrs: str, content: str) -> str:
     """A single-line element with attributes: ``<tag attrs>content</tag>``.
 
     The attributed analogue of :func:`_inline`, used for the spec-028
-    ``<thought player="…">…</thought>`` private notes.
+    ``<thought player="…">…</thought>`` private notes and the spec-039
+    ``<diary player="…" day="…">…</diary>`` before-Night entries.
     """
     return f"<{tag} {attrs}>{content}</{tag}>"
 

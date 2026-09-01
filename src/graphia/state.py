@@ -38,6 +38,42 @@ def _merge_private_thoughts(
     return merged
 
 
+def _merge_private_diaries(
+    prior: dict[str, list[DiaryRecord]] | None,
+    incoming: dict[str, list[DiaryRecord]] | None,
+) -> dict[str, list[DiaryRecord]]:
+    """Accumulate per-player private diaries (spec 039) — the channel reducer.
+
+    The exact structural twin of :func:`_merge_private_thoughts` above, over
+    :class:`DiaryRecord` values (defined below with the other state
+    ``TypedDict``s) instead of bare strings: given the prior map and an
+    incoming delta map, return a NEW map where each player's list is
+    ``prior + incoming`` (concatenation, preserving the order the entries were
+    written). A plain ``dict`` merge would let a later Day's delta CLOBBER the
+    earlier Days' entries — the bug both reducers exist to prevent.
+
+    DELIBERATELY DUPLICATED, NOT GENERALIZED (spec 039 tech-spec §2.2). Spec
+    028's ``private_thoughts`` is a separate channel that spec 039 leaves
+    untouched, and its reducer is part of that channel: folding the two into
+    one generic helper would give a future diary change the power to alter
+    028's behaviour. Six duplicated lines is the cheaper side of that trade.
+    Keep the pair in step by hand — a fix to one is almost certainly a fix to
+    both.
+
+    PURE (copy-not-mutate): neither input is mutated — the prior map is shallow-
+    copied and each touched player's list is rebuilt as a fresh ``list`` — so
+    checkpoint replay is stable. It iterates only ``dict`` insertion order
+    (never a ``set``), so the order is deterministic and the dual-mode
+    byte-equal smoke is unaffected.
+    """
+    merged: dict[str, list[DiaryRecord]] = {
+        player_id: list(entries) for player_id, entries in (prior or {}).items()
+    }
+    for player_id, entries in (incoming or {}).items():
+        merged[player_id] = [*merged.get(player_id, []), *entries]
+    return merged
+
+
 @dataclass(frozen=True)
 class PlayerPersona:
     """A player's persona: a personality, a manner of speaking, and a backstory.
@@ -77,6 +113,80 @@ class ActiveVote(TypedDict, total=False):
     target: str
     ballots: dict[str, Literal["yes", "no"]]
     pending: list[str]
+
+
+class DiaryRecord(TypedDict, total=False):
+    """One before-Night diary entry for one player (spec 039).
+
+    A ``TypedDict`` — A HARD CONSTRAINT, NOT A STYLE PREFERENCE. Do not
+    "improve" this into a dataclass. :class:`KillRecord` and
+    :class:`ActiveVote` above are ``TypedDict``s for the same reason.
+
+    ``graph.py:make_checkpoint_serde`` builds the ``JsonPlusSerializer`` with
+    ``allowed_msgpack_modules=[PlayerState, PlayerPersona]``, and passing an
+    explicit allowlist switches OFF langgraph's permissive warn-and-allow
+    default for custom classes — verified against the installed
+    ``langgraph/checkpoint/serde/jsonplus.py``, whose ext hook takes the
+    warn-and-allow branch only when the allowlist is the literal ``True`` that
+    the no-argument default resolves to. Any custom class not on that list is
+    refused on the way back in.
+
+    The refusal is WORSE THAN AN EXCEPTION, which is why it is written down
+    here: the ext hook logs "Blocked deserialization of ..." and then returns
+    the raw kwargs ``dict``. A dataclass ``DiaryRecord`` would therefore come
+    back from a checkpoint as a bare ``dict``, and ``record.text`` would raise
+    ``AttributeError`` only AFTER an interrupt/resume — invisible to any test
+    that never resumes. A ``TypedDict`` *is* a ``dict`` at runtime, so it never
+    reaches the ext hook and round-trips exactly.
+
+    Fields
+    ------
+
+    ``day``
+        The Day cycle this entry sums up — ``state["cycle"]`` at write time,
+        before ``night_open`` bumps it. Labels the entry in the prompt block
+        and in the transcript, and the diary store's ``night_index`` derives
+        from it as ``day + 1``: the Night the entry precedes.
+
+    ``thoughts_before``
+        THE CROSS-CHANNEL CURSOR — load-bearing, not redundant bookkeeping.
+        See below before removing it.
+
+    ``text``
+        The entry itself.
+
+    The cursor, and why nothing simpler works
+    -----------------------------------------
+
+    Diaries and spec 028's ``private_thoughts`` have to render as ONE private
+    record in event order, but 028's channel holds bare strings carrying no
+    ordering metadata, and spec 039 must not touch that channel. So all the
+    ordering information lives on this side: each entry records
+    ``len(state["private_thoughts"].get(player_id, []))`` as observed at write
+    time. The merge then walks the diary list in order, emitting every
+    not-yet-emitted thought at index ``< thoughts_before`` ahead of its entry,
+    and the remainder after the last one.
+
+    This is exact rather than approximate because the writing node reads
+    committed post-reducer state — no wall clock, no RNG, so a replay
+    recomputes the same number — because thoughts only ever accumulate (their
+    reducer concatenates and never truncates) so the cursors are
+    non-decreasing, and because the two writing nodes are never in the same
+    super-step.
+
+    Every simpler-looking alternative was checked and fails (tech-spec §2.3):
+    a shared sequence number stamped on both channels edits 028's channel;
+    wall-clock timestamps are non-deterministic and break both replay
+    stability and ``tests/test_dual_mode_smoke.py``'s byte-equality; a
+    ``(cycle, round)`` coordinate on diaries alone cannot be ordered against an
+    untagged list of strings; and deriving the position at render time fails
+    for the same reason, since the number of thoughts in a Day varies whenever
+    an execution or the vote cap closes that Day early.
+    """
+
+    day: int
+    thoughts_before: int
+    text: str
 
 
 class GameState(TypedDict, total=False):
@@ -158,3 +268,18 @@ class GameState(TypedDict, total=False):
     # per-player prompt builders (each player sees only its own
     # ``private_thoughts.get(player.id, [])``) and the eval-transcript renderer.
     private_thoughts: Annotated[dict[str, list[str]], _merge_private_thoughts]
+    # Per-AI before-Night diary entries (spec 039). One entry per surviving
+    # AI player per Day, written at the Day→Night hinge and accumulated here
+    # keyed by player id, in the order written, via the
+    # ``_merge_private_diaries`` accumulating reducer. The same privacy
+    # invariant as ``private_thoughts`` above: NEVER a public ``messages``
+    # entry, NEVER carrying ``private_to`` (which would route one player's
+    # diary into another reader's context — the opposite of the invariant).
+    # Read ONLY by the per-player prompt builders (each keyed on the acting
+    # player's own id) and the eval-transcript renderer. A channel parallel to
+    # ``private_thoughts`` rather than folded into it: the two stay independent
+    # and are merged for display only, on each entry's ``thoughts_before``
+    # cursor (see :class:`DiaryRecord`).
+    private_diaries: Annotated[
+        dict[str, list[DiaryRecord]], _merge_private_diaries
+    ]
