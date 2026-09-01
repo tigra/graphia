@@ -162,9 +162,19 @@ def _assemble_graph(
     # so an AI Mafioso's Night pick is grounded in its own accumulated Day
     # reflections (the third AI-decision prompt this family of flags reaches).
     # ``mafia_point`` also only READS the frozen spec-030 ``night_law_order``.
+    # Spec 039 (ADR 011): the private-DIARIES flag rides the same node, because
+    # the two features share ONE ``{private_thoughts}`` prompt slot (only a
+    # shared slot can express event order across the two channels). Bound only
+    # now, in Slice 2: ``mafia_point`` had no such parameter until the merged
+    # block landed, and binding a kwarg a node does not accept is a hard
+    # ``TypeError`` on its first call, not a silent no-op.
     builder.add_node(
         "mafia_point",
-        partial(mafia_point, private_thoughts_enabled=private_thoughts_enabled),
+        partial(
+            mafia_point,
+            private_thoughts_enabled=private_thoughts_enabled,
+            private_diaries_enabled=private_diaries_enabled,
+        ),
     )
     builder.add_node("resolve_night_kill", emit(resolve_night_kill))
     # ``night_close`` closes over the diary store + game id so the per-Night
@@ -192,6 +202,12 @@ def _assemble_graph(
     # Spec 028 (ADR 011): the private-thoughts flag is bound into the same two
     # AI-decision Day nodes (``day_turn`` / ``collect_votes``) alongside the
     # other flags, so it gates the ``{private_thoughts}`` block in both modes.
+    # Spec 039 (ADR 011): the private-DIARIES flag is bound into those SAME two
+    # nodes, because the two features share that ONE ``{private_thoughts}`` slot
+    # — ``_private_record_block`` merges thoughts and diaries into it in event
+    # order, which two separate slots could not express at all. Bound only now,
+    # in Slice 2: neither node accepted the kwarg until the merged block landed,
+    # and binding one a node does not accept is a hard ``TypeError``.
     builder.add_node(
         "day_turn",
         partial(
@@ -202,6 +218,7 @@ def _assemble_graph(
             context_window=context_window,
             context_token_budget=context_token_budget,
             private_thoughts_enabled=private_thoughts_enabled,
+            private_diaries_enabled=private_diaries_enabled,
         ),
     )
     # Spec 028: the end-of-round reflection node. Its own super-step (so the
@@ -228,6 +245,7 @@ def _assemble_graph(
             context_window=context_window,
             context_token_budget=context_token_budget,
             private_thoughts_enabled=private_thoughts_enabled,
+            private_diaries_enabled=private_diaries_enabled,
         ),
     )
     builder.add_node("resolve_vote", emit(resolve_vote))

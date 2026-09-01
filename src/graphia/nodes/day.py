@@ -817,6 +817,8 @@ def _ai_day_action(
     context_token_budget: int | None = None,
     private_thoughts: list[str] | None = None,
     private_thoughts_enabled: bool = True,
+    diaries: list[DiaryRecord] | None = None,
+    diaries_enabled: bool = True,
 ) -> DayAction:
     """Call the gameplay model for the AI's speaking turn. Returns a DayAction.
 
@@ -844,6 +846,18 @@ def _ai_day_action(
     its pre-028 form. ``private_thoughts`` defaults to no notes so direct test
     calls stay byte-identical; the caller passes only the acting player's own
     notes (``state["private_thoughts"].get(speaker.id, [])``).
+
+    ``diaries`` / ``diaries_enabled`` (spec 039 ablation flag, ADR 011) extend
+    that SAME slot rather than taking a fourth one: the block is built by
+    ``_private_record_block``, which merges this speaker's own before-Night
+    diary entries into its own Day-round thoughts in event order (each entry's
+    ``thoughts_before`` cursor) and windows the diaries to ``DIARY_WINDOW``.
+    With no diary to show — flag off, or none written yet, which is all of Day 1
+    in every game — it delegates to ``_private_thoughts_block`` verbatim, so
+    spec 028's rendering is preserved BY CONSTRUCTION. Defaulted to no entries /
+    ON so existing direct test calls stay byte-identical; the caller passes only
+    the acting player's own entries
+    (``state["private_diaries"].get(speaker.id, [])``).
     """
     players = state.get("players", {})
     roster = _render_alive_roster(players)
@@ -882,8 +896,11 @@ def _ai_day_action(
                 ),
                 roster=roster,
                 context=context,
-                private_thoughts=_private_thoughts_block(
-                    private_thoughts or [], enabled=private_thoughts_enabled
+                private_thoughts=_private_record_block(
+                    private_thoughts or [],
+                    diaries or [],
+                    thoughts_enabled=private_thoughts_enabled,
+                    diaries_enabled=diaries_enabled,
                 ),
                 role_guidance=_role_guidance_block(
                     speaker.role, enabled=role_guidance_enabled
@@ -1091,6 +1108,7 @@ def day_turn(
     context_window: int = _CONTEXT_WINDOW,
     context_token_budget: int | None = None,
     private_thoughts_enabled: bool = True,
+    private_diaries_enabled: bool = True,
 ) -> dict:
     """Run exactly one player's Day turn, then advance bookkeeping.
 
@@ -1104,6 +1122,14 @@ def day_turn(
     next ``day_turn`` invocation starts the next round cleanly. The
     conditional edge then decides between looping, voting, or transitioning
     to ``day_close``.
+
+    ``private_diaries_enabled`` (spec 039 ablation flag, ADR 011) is bound by
+    ``_assemble_graph`` and threaded into the AI speaker's prompt alongside the
+    spec-028 ``private_thoughts_enabled``: the two share ONE
+    ``{private_thoughts}`` slot, rendered by ``_private_record_block``, so an AI
+    player speaks from its own thoughts and its own diaries as one train of
+    thought in event order. Defaulted ON so direct test calls / both builders
+    stay valid.
     """
     players = state.get("players", {})
     order: list[str] = list(state.get("day_order", []))
@@ -1218,6 +1244,10 @@ def day_turn(
             context_token_budget=context_token_budget,
             private_thoughts=state.get("private_thoughts", {}).get(player.id, []),
             private_thoughts_enabled=private_thoughts_enabled,
+            # ONLY this speaker's own entries, keyed on its own id — the
+            # highest-stakes invariant in spec 039. Never the whole channel.
+            diaries=state.get("private_diaries", {}).get(player.id, []),
+            diaries_enabled=private_diaries_enabled,
         )
         if action.kind == "vote":
             assert action.target_id is not None  # validated in _ai_day_action
@@ -1292,6 +1322,8 @@ def _ai_ballot(
     context_token_budget: int | None = None,
     private_thoughts: list[str] | None = None,
     private_thoughts_enabled: bool = True,
+    diaries: list[DiaryRecord] | None = None,
+    diaries_enabled: bool = True,
 ) -> Ballot:
     """Ask the gameplay model for a Yes/No ballot. Conservative fallback.
 
@@ -1313,6 +1345,15 @@ def _ai_ballot(
     voter's own accumulated reflections; OFF (or empty) reverts the prompt to its
     pre-028 form. The caller passes only the voter's own notes
     (``state["private_thoughts"].get(voter.id, [])``).
+
+    ``diaries`` / ``diaries_enabled`` (spec 039 ablation flag, ADR 011) extend
+    that SAME slot: ``_private_record_block`` merges this voter's own
+    before-Night diary entries into its own Day-round thoughts in event order
+    and windows the diaries to ``DIARY_WINDOW``, delegating to
+    ``_private_thoughts_block`` verbatim when there is no diary to show.
+    Defaulted so existing direct test calls stay byte-identical; the caller
+    passes only the voter's own entries
+    (``state["private_diaries"].get(voter.id, [])``).
     """
     players = state.get("players", {})
     context = _render_context(
@@ -1346,8 +1387,11 @@ def _ai_ballot(
                 target=target.name,
                 relationship=relationship,
                 context=context,
-                private_thoughts=_private_thoughts_block(
-                    private_thoughts or [], enabled=private_thoughts_enabled
+                private_thoughts=_private_record_block(
+                    private_thoughts or [],
+                    diaries or [],
+                    thoughts_enabled=private_thoughts_enabled,
+                    diaries_enabled=diaries_enabled,
                 ),
                 role_guidance=_role_guidance_block(
                     voter.role, enabled=role_guidance_enabled
@@ -1382,6 +1426,7 @@ def collect_votes(
     context_window: int = _CONTEXT_WINDOW,
     context_token_budget: int | None = None,
     private_thoughts_enabled: bool = True,
+    private_diaries_enabled: bool = True,
 ) -> dict:
     """Poll ONE voter per super-step. Replay-safe like ``day_turn``.
 
@@ -1389,6 +1434,13 @@ def collect_votes(
     (interrupting for a human, Bedrock-calling for an AI), records it, and
     pops from ``pending``. When ``pending`` empties, the conditional edge
     routes to ``resolve_vote``.
+
+    ``private_diaries_enabled`` (spec 039 ablation flag, ADR 011) is bound by
+    ``_assemble_graph`` and threaded into the AI voter's prompt alongside the
+    spec-028 ``private_thoughts_enabled``: the two share ONE
+    ``{private_thoughts}`` slot, rendered by ``_private_record_block``, so an AI
+    voter weighs its own thoughts and its own diaries as one train of thought in
+    event order. Defaulted ON so direct test calls / both builders stay valid.
     """
     active = state.get("active_vote")
     if not active:
@@ -1463,6 +1515,9 @@ def collect_votes(
                 context_token_budget=context_token_budget,
                 private_thoughts=state.get("private_thoughts", {}).get(voter.id, []),
                 private_thoughts_enabled=private_thoughts_enabled,
+                # ONLY this voter's own entries, keyed on its own id.
+                diaries=state.get("private_diaries", {}).get(voter.id, []),
+                diaries_enabled=private_diaries_enabled,
             )
             yes = ballot.yes
         if career_emitter is not None and game_id is not None:
@@ -1734,6 +1789,8 @@ def _ai_diary(
     context_token_budget: int | None = None,
     private_thoughts: list[str] | None = None,
     private_thoughts_enabled: bool = True,
+    diaries: list[DiaryRecord] | None = None,
+    diaries_enabled: bool = True,
 ) -> str:
     """Produce ONE surviving AI player's before-Night diary entry (spec 039).
 
@@ -1742,7 +1799,7 @@ def _ai_diary(
     ``_win_condition_line`` / ``_team_line``), persona (``_persona_block``),
     standings (``_standings_prompt_block``), the recent discussion
     (``_render_context`` honouring the configured window / token budget) and
-    this player's OWN running private record (``_private_thoughts_block``) — so
+    this player's OWN running private record (``_private_record_block``) — so
     ``DIARY_USER_TEMPLATE`` needs no plumbing of its own. What differs from a
     Day-round reflection is grain (a whole day, not one speaking round), length
     (``DIARY_SENTENCE_BOUND`` and the ``DIARY_MAX_CHARS`` clamp) and the open
@@ -1758,6 +1815,16 @@ def _ai_diary(
     because ``day_diary`` reads the same list to compute the entry's
     ``thoughts_before`` cursor: one read, so the number recorded and the notes
     shown can never disagree. Only ever this player's own notes.
+
+    ``diaries`` / ``diaries_enabled`` (spec 039 Slice 2 — the FOURTH call site
+    of ``_private_record_block``, and the one most easily missed) put this
+    player's OWN PRIOR entries in front of it as it writes the next one.
+    Without them a player writing Day 3's entry has never read Day 1's or Day
+    2's, which undercuts the settled-read-carried-forward the whole feature
+    rests on. Passed in, like ``private_thoughts``, from ``day_diary``'s single
+    per-player read; the current Day's entries do not exist yet (the fan-out
+    returns ONE delta after the loop), so a writer never sees its own
+    not-yet-committed entry, and never another player's.
 
     Calls ``get_large().with_structured_output(Diary)`` once. On any failure or
     an empty entry it returns ``_DIARY_FALLBACK``; on success it returns the
@@ -1784,9 +1851,11 @@ def _ai_diary(
                     state, enabled=recap_aware_reasoning_enabled
                 ),
                 context=context,
-                private_thoughts=_private_thoughts_block(
+                private_thoughts=_private_record_block(
                     list(private_thoughts or []),
-                    enabled=private_thoughts_enabled,
+                    list(diaries or []),
+                    thoughts_enabled=private_thoughts_enabled,
+                    diaries_enabled=diaries_enabled,
                 ),
             )
         ),
@@ -1894,6 +1963,13 @@ def day_diary(
     # thoughts only ever accumulate, so the cursors are non-decreasing and
     # Slice 2's merge is a stable two-way merge rather than a sort.
     all_thoughts = state.get("private_thoughts", {}) or {}
+    # The players' OWN PRIOR diaries (spec 039 Slice 2, tech-spec §2.4's fourth
+    # call site). Read here, keyed per writer below, so the diary prompt sees
+    # the same merged private record the three decision prompts do — a player
+    # writing Day 3's entry has read Day 1's and Day 2's. The entries written
+    # THIS super-step are accumulated in ``new_diaries`` and returned once after
+    # the loop, so no writer can see its own not-yet-committed entry.
+    all_diaries = state.get("private_diaries", {}) or {}
 
     new_diaries: dict[str, list[DiaryRecord]] = {}
     for player in writers:
@@ -1906,6 +1982,9 @@ def day_diary(
             context_token_budget=context_token_budget,
             private_thoughts=own_thoughts,
             private_thoughts_enabled=private_thoughts_enabled,
+            # ONLY this player's own entries, keyed on its own id.
+            diaries=list(all_diaries.get(player.id) or []),
+            diaries_enabled=private_diaries_enabled,
         )
         record: DiaryRecord = {
             # The Day being summed up: ``cycle`` BEFORE ``night_open`` bumps it.
