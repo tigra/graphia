@@ -52,6 +52,7 @@ from graphia.eval_ledger import (
     KIND_ATTR,
     KIND_ATTR_LAW_ABIDING,
     KIND_ATTR_MAFIA,
+    KIND_DIARY,
     KIND_FIELD_LABEL,
     KIND_MARKER,
     KIND_RECAP,
@@ -548,7 +549,9 @@ _NO_TRANSCRIPTS_MESSAGE = "No transcripts for this run."
 # last two on the two sides**: ``$text-error`` = Mafia, ``$text-primary`` =
 # Law-abiding. Nothing is left over, so a later kind needing to be *seen* rather
 # than *coloured* must reach for ``text-style`` as Slice 3 did (Slice 5's bold
-# already does).
+# already does). **Spec 039 is the first kind added from outside spec 038, and
+# it took exactly that route:** its ``diary`` body reuses ``thought``'s
+# ``$text-muted`` unchanged and separates itself on ``underline``.
 #
 # SIX SIDE-BEARING KINDS, NOT TWO — two hues, but ``speaker``, ``speech`` and
 # ``attr`` each split two ways, so six entries and six rules. The neutral
@@ -602,6 +605,12 @@ _TRANSCRIPT_KIND_COMPONENTS: dict[str, str] = {
     KIND_SPEECH_MAFIA_HUMAN: "transcript--speech-mafia-human",
     KIND_SPEAKER_LAW_ABIDING_HUMAN: "transcript--speaker-law-abiding-human",
     KIND_SPEECH_LAW_ABIDING_HUMAN: "transcript--speech-law-abiding-human",
+    # The day's diary (spec 039) — the twenty-first kind, and the first added by
+    # a spec other than 038. APPENDED, exactly as `TRANSCRIPT_KINDS` appends it:
+    # one constant there, one entry here, one rule below, and not a single
+    # existing kind, class or rule moved. That the house pattern held for a kind
+    # arriving from another spec is the pattern's first real test.
+    KIND_DIARY: "transcript--diary",
 }
 
 
@@ -1039,6 +1048,100 @@ class TranscriptScreen(Screen):
     TranscriptScreen > .transcript--speech-law-abiding-human {
         color: $text-primary;
         text-style: bold;
+    }
+
+    /* ------------------------------------------------------------------
+       THE DAY'S DIARY (spec 039) — the body of a
+       `<diary player="X" day="N">…</diary>`: the private note an AI files at the
+       Day->Night hinge, summing up the Day it has just lived through. It renders
+       in the day trailer, between the last `</round>` and `</day>` (tech-spec 039
+       §2.8).
+
+       THIS RULE IS `thought`'S RULE PLUS `underline`, AND NOTHING ELSE — the same
+       shape Slice 5 used for the reviewer's seat ("its side's colour plus bold,
+       and nothing else"). A diary is a SIBLING of a thought, not a stranger: both
+       are private, both are the same player's own writing, and neither is an act
+       of allegiance. So the family trait is *rendered* rather than merely
+       asserted — `color: $text-muted` and `italic` are inherited from the
+       `thought` rule verbatim — and exactly one axis carries the difference.
+
+       NO HUE, AND THAT IS A DECISION AND NOT A SHORTAGE. It is also a shortage:
+       the palette is fully spent (see the map above), and the two survivors are
+       `$text-error` and `$text-primary`, which mean *side*. But even with a hue
+       going spare this rule would decline it, for the reason the `thought` rule
+       gives and tech-spec 039 §2.8 restates in those words: a private reflection
+       is not an act of allegiance, and tinting the prose would say it was. Whose
+       diary it is still reads at a glance, off the owner's name in the
+       surrounding tag, which the tokenizer kinds `attr-mafia` /
+       `attr-law-abiding` and the rules above already colour. The `day` value
+       beside it stays achromatic `attr`.
+
+       WHY `underline` IS THE AXIS — by meaning first, and then by elimination.
+       A thought is a passing reaction inside one speaking round; a diary is
+       written down and filed. An underline is the ruled line of the page it is
+       written on, which is the one SGR attribute that reads as "on the record"
+       rather than as emphasis, alarm or deletion. Every other flag in Textual's
+       `VALID_STYLE_FLAGS` is unavailable, and one of them only looks available:
+
+       - `bold` is Slice 5's, and its whole argument is that bold is unspent *on
+         a player's line*. A diary body is a line of a player's prose, so bolding
+         it would put a diary and the reviewer's own seat in the same register.
+       - `reverse` is `recap`'s, where it buys a scroll landmark. A second
+         inverted block would file the moderator's posted fact and a player's
+         private note under one appearance.
+       - `dim` stacks a second intensity reduction on a variable that is
+         ALREADY `auto 60%`, and how far is the terminal's own business — it is
+         SGR 2, not a colour, so the resulting contrast cannot be measured from
+         inside the app at all. The wrong thing to bet a 4.5:1 floor on for a
+         paragraph meant to be read in full.
+       - `strike` reads as retracted, `blink` is unusable.
+       - `overline` IS MEASURED DEAD, and this is the one worth recording. It
+         parses (`o` is in `VALID_STYLE_FLAGS`) and it reaches the resolved Rich
+         style intact — but `textual.style.Style.from_rich_style` on the installed
+         Textual 8.2.4 has **no `overline` parameter**, so `Content.from_rich_text`
+         drops it and the span renders undecorated. A rule that looks right in the
+         stylesheet and paints nothing on screen. (`uu`, double underline, does
+         survive both hops — but SGR 4:2 support is far thinner than SGR 4's, and
+         the plain underline is the better-supported half of the same idea.)
+       - a filled `background:` — the obvious "make it a block" move — cannot
+         work here at all: `_kind_styles` strips the resolved background with
+         `without_color` and adds back only the foreground, so a `background:`
+         would be silently discarded. Recorded so nobody re-derives it.
+
+       WHAT THE REVIEWER ACTUALLY SEES, which is the real design problem, and the
+       measured reason the RULE rather than the LENGTH is load-bearing. The
+       tempting argument is mass: a diary is bounded by
+       `prompts.DIARY_SENTENCE_BOUND` (6 sentences) and clamped at
+       `nodes.day.DIARY_MAX_CHARS` (900), and the same clamp folds it to a SINGLE
+       line, so it wraps into a block of rows. But measured over the 298
+       committed transcripts a `<thought>` body runs 46-626 characters (n=8183,
+       median 188, p90 316) — so at ~100 columns a thought is usually two rows
+       and occasionally six, and the two distributions OVERLAP. (The `thought`
+       rule above says "120-200 characters (the corpus range)"; that is the
+       middle of the distribution, not its range.) Mass alone would therefore be
+       a coin-flip on the tail. What does not overlap is the rule under every
+       wrapped row: at ANY length a diary is a block of ruled rows and a thought
+       is unruled. Position is the second, independent cue — a thought sits
+       inside a `<round>`, a diary only ever after the last `</round>`.
+
+       DEGRADATION, measured on the installed Textual 8.2.4 against both builtin
+       themes' real backgrounds, and identical to `thought`'s because it is the
+       same variable: `$text-muted` clears AA on both (7.16:1 on `textual-dark`,
+       5.31:1 on `textual-light`). Under `textual-ansi` it collapses to the
+       terminal default, exactly as `marker`'s and `thought`'s do — so there the
+       italic and the underline together are the whole of what separates a diary
+       from body text, and the UNDERLINE ALONE is what separates it from a
+       thought. That is the case the differentia had to survive, and the reason
+       it had to be an SGR attribute rather than a hue. Verified rather than
+       assumed, the same way `recap`'s `reverse` was: `text-style: italic
+       underline` survives `_kind_styles`' `without_color + Style.from_color(...)`
+       and the Rich `Text` -> `Content` conversion, arriving at the span as
+       `italic=True, underline=True`.
+
+       Permanent, like `thought` and `recap`: no later slice re-kinds a diary. */
+    TranscriptScreen > .transcript--diary {
+        color: $text-muted;
+        text-style: italic underline;
     }
     """
 
