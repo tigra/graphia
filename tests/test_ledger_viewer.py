@@ -2975,7 +2975,7 @@ _HIGHLIGHT_BODY = (
     # diary is the DAY'S TRAILER, so `_render_phases` puts it between the last
     # `</round>` and `</day>` — "between the day it was written about and the
     # Night that followed". Bo is the owner because he is the fixture's
-    # `role="Mafia"` seat-mate, so the tag also carries the side-bearing owner
+    # `role="Mafia"` cast entry, so the tag also carries the side-bearing owner
     # (`attr-mafia`) beside an achromatic Day value, which is spec 039's own
     # split in a single tag.
     '<diary player="Bo" day="1">Cleo folded under pressure.</diary>\n'
@@ -3695,6 +3695,16 @@ async def test_the_diary_style_is_the_thoughts_rule_plus_underline(
     colour" would hold trivially on a stylesheet where every kind is the body
     colour.
     """
+    module = importlib.import_module("graphia.ui.ledger_viewer")
+    # The class name as a WRITTEN-OUT LITERAL, because the mapping's own guard
+    # (`set(mapping.values()) <= set(TranscriptScreen.COMPONENT_CLASSES)`) reads
+    # two production tables against each other and would agree with itself
+    # through a rename of both. The resolved-style assertions below are the real
+    # protection — a class the stylesheet does not name resolves to a default
+    # style and fails them — and this line is what makes the failure say *which*
+    # of the three spellings drifted.
+    assert module._TRANSCRIPT_KIND_COMPONENTS[KIND_DIARY] == "transcript--diary"
+
     ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="hl-diary-style.yaml")
 
     app = LedgerViewerApp(path=ledger)

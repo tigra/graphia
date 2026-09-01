@@ -693,7 +693,12 @@ def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
     * a ``thought`` or ``recap`` body must sit **between two markers**, the
       opening tag ending ``>`` and the closing one starting ``</``. That is
       Slice 3's "the surrounding tag stays ``marker``" made structural over the
-      8,183 thoughts and 2,736 recaps the corpus actually holds.
+      8,183 thoughts and 2,736 recaps the corpus actually holds. **Spec 039's
+      ``diary`` joins that arm dormant** — no committed transcript has one, so it
+      matches nothing today and everything the moment this spec's own measured
+      runs are committed. It is written now rather than then because "the
+      ``elif`` chain quietly stopped seeing a kind" is the exact failure Slice 4
+      recorded, and a dormant arm cannot cause it.
 
     **Slice 4 widened it to the three FAMILIES and added one rule of its own.**
     ``speaker``, ``speech`` and ``attr`` each split two ways, so every branch
@@ -807,7 +812,20 @@ def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
                         f"{_rel(path)} span {index}: speech {text[:40]!r} does "
                         "not begin with the separating space"
                     )
-            elif kind in (eval_ledger.KIND_THOUGHT, eval_ledger.KIND_RECAP):
+            elif kind in (
+                eval_ledger.KIND_THOUGHT,
+                eval_ledger.KIND_RECAP,
+                # Spec 039. DORMANT TODAY AND DELIBERATELY WRITTEN ANYWAY: no
+                # committed transcript contains a `<diary>`, so this arm matches
+                # nothing yet. It matches thousands of bodies the moment spec
+                # 039's own measured runs are committed, and adding it then would
+                # mean noticing that it was missing — which is precisely the
+                # failure mode Slice 4 of spec 038 recorded when the family split
+                # left the `elif` chain quietly blind to 20,655 speaker spans.
+                # No `kind_counts[KIND_DIARY] > 0` non-vacuity guard goes with it,
+                # for the same reason: today that would be a false assertion.
+                eval_ledger.KIND_DIARY,
+            ):
                 before = spans[index - 1] if index else None
                 after = spans[index + 1] if index + 1 < len(spans) else None
                 if (
