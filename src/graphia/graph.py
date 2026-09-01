@@ -405,9 +405,16 @@ def build_graph(
     diary_store: DiaryStore | None = None,
     career_emitter: CareerEventEmitter | None = None,
 ) -> tuple[CompiledStateGraph, str]:
-    # Slice 6 sub-task 3: bind a ``DiaryStore`` into the Night-close write
-    # site. Tests that don't care can leave ``diary_store=None`` and the
-    # factory picks the right impl per :attr:`GraphiaConfig.remote_mode`.
+    # Spec 002 Slice 6 sub-task 3, retargeted by spec 039 Slice 3: resolve a
+    # ``DiaryStore`` once here and hand it to ``_assemble_graph``, which binds
+    # it into TWO nodes for two different reasons — ``day_diary`` WRITES the
+    # real per-Night entries through it, and ``night_close`` READS them back
+    # as a liveness probe of the read path (remotely, the whole Gateway ->
+    # AgentCore Memory round-trip). The Night-close write this binding
+    # originally served no longer exists; that slice deleted it. ``game_id``
+    # — the thread id computed below — is threaded alongside for those same
+    # two consumers. Tests that don't care can leave ``diary_store=None`` and
+    # the factory picks the right impl per :attr:`GraphiaConfig.remote_mode`.
     if diary_store is None:
         diary_store = make_diary_store(config)
     # Slice 8.4: per-action career-stats emitter. Mirrors the diary store —
