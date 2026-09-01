@@ -133,6 +133,36 @@ asserted there: only **224** of the 298 files emit a seat kind at all (in the
 other 74 the welcomed seat was killed on Night 1 and never spoke, so *"every file
 bolds something"* is a FALSE assertion), and the seat kinds whose side is unknown
 occur only in the 30 pre-spec-022 games.
+
+**Spec 039 appends the twenty-first kind, and it is the first one this file has
+absorbed from a spec other than 038.** ``diary`` is the body of a
+``<diary player="X" day="N">…</diary>`` — the private note an AI files at the
+Day->Night hinge, which the writer puts in the Day's TRAILER so it renders
+between the last ``</round>`` and ``</day>``. Structurally the tag is
+``<thought>``'s shape with a second attribute, so remarkably little moved: one
+row in ``_STRUCTURAL_TAGS``, one in ``_ATTR_NAME_CASES``, ``diary`` in the family
+test's ``unfamilied`` set, ``day`` in ``_ACHROMATIC_ATTR_KEYS``, and the
+vocabulary count from twenty to twenty-one. That the port is that small **is**
+spec 038's extension point collecting on its promise.
+
+**Three of its consequences are worth knowing before reading anything below.**
+
+* ``day`` joins ``_ATTR_NAMES``, which is a **global** whitelist — any tag
+  carrying ``day="…"`` splits now, not only a ``<diary>`` — and the only thing
+  stopping a ``birthday="…"`` splitting at its tail is ``_ATTR_VALUE_RE``'s
+  lookbehind. Both are pinned.
+* ``day`` has **zero** occurrences across the 298 committed transcripts, because
+  no committed game was played by a build that had diaries. So the corpus
+  sweep's "every whitelisted attribute really occurs" guard could not survive as
+  an equality and is now three containments (see
+  ``_CORPUS_REQUIRED_ATTR_NAMES``) — which also survives the opposite state, when
+  spec 039's own measured runs are committed and ``day`` appears thousands of
+  times.
+* the ``plain`` fallback's "an unrecognised tag" case was literally
+  ``<diary>secret</diary>``. Spec 038 picked that tag to stand for the next
+  format change; the next format change arrived. The name now lives in
+  ``_UNRECOGNISED_TAG`` with a rot guard against ``_MARKER_TAGS``, so the next
+  collision is a sentence rather than a puzzle.
 """
 
 from __future__ import annotations
@@ -598,12 +628,35 @@ _EXPECTED_ROLE_KINDS = {
     "Law-abiding Citizen": eval_ledger.KIND_ATTR_LAW_ABIDING,
 }
 
-# The three whitelisted attributes that carry NO side of their own and must stay
-# achromatic `attr` forever (the ratified narrow reading: only `<player role=…>`
-# and `<thought player=…>` go side-bearing). 3,970 corpus spans ride on this —
-# tinting every name would leave `attr` with zero occupants in any real game and
-# retire Slice 2's achromatic treatment by accident.
-_ACHROMATIC_ATTR_KEYS = frozenset({"name", "initiator", "target"})
+# The whitelisted attributes that carry NO side of their own and must stay
+# achromatic `attr` forever (the ratified narrow reading: only `<player role=…>`,
+# `<thought player=…>` and — from spec 039 — `<diary player=…>` go side-bearing).
+# 3,970 corpus spans ride on this — tinting every name would leave `attr` with
+# zero occupants in any real game and retire Slice 2's achromatic treatment by
+# accident.
+#
+# SPEC 039 ADDS `day`, and it is the first member that is not a name at all. A
+# `<diary player="Ava" day="2">` names a person and a Day, and only the person
+# can carry a side; `_attr_kind`'s default is what keeps the Day achromatic, so
+# the plausible "colour the whole diary tag" edit fails here as well as in the
+# synthetic diary tests below. It has **zero** occurrences across the 298
+# committed transcripts (measured: `day="` appears nowhere), so today this row is
+# carried entirely by those synthetic tests and it starts biting on real data the
+# first time a diaries-on eval run is committed.
+_ACHROMATIC_ATTR_KEYS = frozenset({"name", "initiator", "target", "day"})
+
+# The attribute names the corpus must ALWAYS carry — spec 038's five, written out
+# as literals rather than read from `_ATTR_NAMES`, because this is the sweep's
+# non-vacuity guard and a guard derived from the table it guards is no guard.
+#
+# Spec 039's `day` is deliberately absent: it is whitelisted and has zero
+# occurrences today, and it will have thousands the first time a diaries-on eval
+# run is committed. Neither state may fail, so the sweep asserts a containment in
+# each direction rather than the equality it used to (see the end of
+# :func:`test_the_line_splitting_kinds_hold_their_shape_across_the_corpus`).
+_CORPUS_REQUIRED_ATTR_NAMES = frozenset(
+    {"name", "role", "player", "initiator", "target"}
+)
 
 
 @_requires_corpus
@@ -836,11 +889,39 @@ def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
 
     assert not problems, "\n".join(problems)
 
-    # Non-vacuity: the corpus really exercises both kinds, all five attributes
-    # and all five labels.
-    assert set(attr_names) == set(eval_ledger._ATTR_NAMES), (
-        f"attribute values found for {sorted(attr_names)}, expected all of "
-        f"{sorted(eval_ledger._ATTR_NAMES)}"
+    # Non-vacuity: the corpus really exercises both kinds, spec 038's five
+    # attributes and all five labels.
+    #
+    # SPEC 039 SPLIT THE ATTRIBUTE HALF INTO THREE CLAIMS, and the reason is worth
+    # reading before "simplifying" it back. `day` is whitelisted and occurs zero
+    # times in the corpus today; it will occur thousands of times the first time a
+    # diaries-on eval run is committed. A bare `set(attr_names) == set(_ATTR_NAMES)`
+    # is therefore wrong now in one direction and would be wrong later in the
+    # other. What holds in both states, and keeps every ounce of the guard:
+    #
+    #   * the five spec-038 names ALWAYS occur — the non-vacuity claim itself,
+    #     undiminished, and the thing that fails if the tokenizer stops lifting
+    #     one of a pair;
+    #   * nothing OUTSIDE the whitelist is ever lifted — the whitelist really is
+    #     a whitelist, on 9.4 MB of model-generated prose;
+    #   * and `day` is the ONLY whitelisted name the corpus is allowed to be
+    #     missing. That last one is the rot guard the equality used to be: a
+    #     seventh attribute added to `_ATTR_NAMES` fails here until somebody comes
+    #     and says which of the three claims it belongs to.
+    assert _CORPUS_REQUIRED_ATTR_NAMES <= set(attr_names), (
+        f"attribute values found for {sorted(attr_names)}, expected at least "
+        f"{sorted(_CORPUS_REQUIRED_ATTR_NAMES)}"
+    )
+    assert set(attr_names) <= set(eval_ledger._ATTR_NAMES), (
+        "the corpus lifted "
+        f"{sorted(set(attr_names) - set(eval_ledger._ATTR_NAMES))}, which is not "
+        "on the tokenizer's whitelist at all"
+    )
+    assert set(eval_ledger._ATTR_NAMES) - _CORPUS_REQUIRED_ATTR_NAMES == {"day"}, (
+        "the whitelist grew a name the corpus is not required to carry: "
+        f"{sorted(set(eval_ledger._ATTR_NAMES) - _CORPUS_REQUIRED_ATTR_NAMES)} — "
+        "`day` is the one spec-039 exception, and a second one needs its own "
+        "reason here"
     )
     assert set(label_texts) == labels, (
         f"field labels found: {sorted(label_texts)}, expected all of "
@@ -944,7 +1025,7 @@ def _spans(text: str) -> list[tuple[str, str]]:
 # ---------------------------------------------------------------------------
 
 def test_the_kind_constants_hold_the_literal_names_the_tables_use() -> None:
-    """The twenty kind constants really are these twenty strings.
+    """The twenty-one kind constants really are these twenty-one strings.
 
     The expectation tables below are written with literal ``"marker"`` /
     ``"attr"`` strings rather than ``eval_ledger.KIND_*`` references, because a
@@ -955,7 +1036,8 @@ def test_the_kind_constants_hold_the_literal_names_the_tables_use() -> None:
     against a string the production code no longer emits.
 
     Pinned to the literals, not to ``TRANSCRIPT_KINDS`` — the tuple is allowed to
-    grow (later slices append), these twenty names are not allowed to change.
+    grow (later slices, and now later SPECS, append), these twenty-one names are
+    not allowed to change.
 
     **The six Slice-4 literals are the ones with a rule to break.** Each is the
     neutral kind's name plus a hyphen plus the side, and the side token is
@@ -1001,6 +1083,14 @@ def test_the_kind_constants_hold_the_literal_names_the_tables_use() -> None:
     assert eval_ledger.KIND_SPEAKER_LAW_ABIDING_HUMAN == "speaker-law-abiding-human"
     assert eval_ledger.KIND_SPEECH_MAFIA_HUMAN == "speech-mafia-human"
     assert eval_ledger.KIND_SPEECH_LAW_ABIDING_HUMAN == "speech-law-abiding-human"
+    # Spec 039's one — the Day's diary, and the twenty-first. A BARE LITERAL for
+    # the same reason as the twenty above and then some: the string `"diary"` is
+    # ALSO a key of `_INLINE_CONTENT_KINDS` and a member of `_MARKER_TAGS` (where
+    # it is the TAG name, not the kind), and the UI's `transcript--diary`
+    # component class spells it out a third time. A rename that only checked
+    # `KIND_DIARY in TRANSCRIPT_KINDS` would leave those three agreeing with each
+    # other and disagreeing with the constant.
+    assert eval_ledger.KIND_DIARY == "diary"
 
 
 def test_the_kind_family_tuples_are_index_aligned_and_complete() -> None:
@@ -1023,9 +1113,11 @@ def test_the_kind_family_tuples_are_index_aligned_and_complete() -> None:
       its speaker kind's own name.
     * **The families are complete**, i.e. every declared kind belongs to exactly
       one family or to the handful that have none (`marker`, `plain`,
-      `field-label`, `thought`, `recap`). A kind added to the vocabulary and left
-      out of a family is invisible to every sweep that classifies by family —
-      which is the Slice-4 failure restated as a guard.
+      `field-label`, `thought`, `recap` and, from spec 039, `diary`). A kind added
+      to the vocabulary and left out of a family is invisible to every sweep that
+      classifies by family — which is the Slice-4 failure restated as a guard, and
+      which is exactly the assertion that went red when the tokenizer learned
+      `<diary>`.
     * **`_SIDE_KINDS` is exactly the ten kinds that name a side**, and contains
       neither of the two seat kinds that name none. This is the trap this slice
       set: written as `_SPEAKER_KINDS[1:] + …` it would absorb `speaker-human`
@@ -1056,6 +1148,11 @@ def test_the_kind_family_tuples_are_index_aligned_and_complete() -> None:
         eval_ledger.KIND_FIELD_LABEL,
         eval_ledger.KIND_THOUGHT,
         eval_ledger.KIND_RECAP,
+        # Spec 039. `diary` joins `thought` and `recap` as a BODY kind: it names
+        # neither a side nor a seat, so it belongs to no family and has to be
+        # named here or the completeness assertion below reports it as a kind
+        # every family-classifying sweep is blind to. Which is what it did.
+        eval_ledger.KIND_DIARY,
     }
     assert familied | unfamilied == set(eval_ledger.TRANSCRIPT_KINDS), (
         "a declared kind belongs to no family and to no named exception, so every "
@@ -1103,19 +1200,26 @@ def test_every_kind_constant_is_exported_and_declared_exactly_once() -> None:
 
     * every constant named in :data:`TRANSCRIPT_KINDS` is reachable as a module
       attribute AND listed in ``__all__``;
-    * the vocabulary is exactly twenty entries with no duplicate — a copy-paste
-      that declared ``speech-mafia`` twice would leave a kind silently missing
-      while the length still looked plausible;
+    * the vocabulary is exactly twenty-one entries with no duplicate — a
+      copy-paste that declared ``speech-mafia`` twice would leave a kind silently
+      missing while the length still looked plausible;
     * ``TRANSCRIPT_KINDS`` and the ``KIND_*`` constants describe the same set, so
       a constant can neither be added without being declared nor declared
       without existing.
 
-    **Slice 5 closes the vocabulary at twenty**, and the count is written out
-    rather than derived deliberately: this is the one assertion in the file whose
-    job is to make a slice that adds a kind come and look here, which is where
-    the ``__all__`` obligation is stated. Slice 4 raised it from eight to
-    fourteen; the six that take it to twenty are the reviewer's own seat on both
+    **Slice 5 closed spec 038's vocabulary at twenty**, and the count is written
+    out rather than derived deliberately: this is the one assertion in the file
+    whose job is to make a slice that adds a kind come and look here, which is
+    where the ``__all__`` obligation is stated. Slice 4 raised it from eight to
+    fourteen; the six that took it to twenty are the reviewer's own seat on both
     axes (side unknown / Mafia / Law-abiding, times speaker and speech).
+
+    **And it did its job.** Spec 039's ``diary`` — the first kind added by a spec
+    other than 038 — takes it to twenty-one, and this assertion is where that
+    slice's author was sent to read the ``__all__`` obligation and the one-route
+    house pattern: one constant, one ``TRANSCRIPT_KINDS`` entry, one ``__all__``
+    line. Nothing else about this test changed, which is the route working — a
+    kind is added by appending, never by moving anything.
     """
     kind_constants = {
         name: value
@@ -1123,8 +1227,9 @@ def test_every_kind_constant_is_exported_and_declared_exactly_once() -> None:
         if name.startswith("KIND_") and isinstance(value, str)
     }
 
-    assert len(eval_ledger.TRANSCRIPT_KINDS) == 20, (
-        "Slice 5 closes the vocabulary at twenty kinds; "
+    assert len(eval_ledger.TRANSCRIPT_KINDS) == 21, (
+        "spec 038 closed the vocabulary at twenty kinds and spec 039 appended "
+        "the twenty-first, `diary`; "
         f"found {eval_ledger.TRANSCRIPT_KINDS}"
     )
     assert len(set(eval_ledger.TRANSCRIPT_KINDS)) == len(
@@ -1150,7 +1255,8 @@ def test_every_kind_constant_is_exported_and_declared_exactly_once() -> None:
     assert not [name for name in exported if not hasattr(eval_ledger, name)]
 
 
-# The TWELVE structural tags, each with a representative opening form and the
+# The THIRTEEN structural tags — spec 038's twelve plus spec 039's ``<diary>`` —
+# each with a representative opening form and the
 # COMPLETE span list that form must produce. Ratified during Slice 1 (see the
 # header note in ``tasks.md``): the eight attribute-free, content-free section
 # delimiters are only a *subset* — ``<player …>``, ``<vote …>``, ``<recap>`` and
@@ -1159,10 +1265,11 @@ def test_every_kind_constant_is_exported_and_declared_exactly_once() -> None:
 # of ``plain``. A game whose ``<setup>`` dimmed while each ``<player …>`` inside
 # it read as content would be the visible symptom.
 #
-# **Changed in Slice 2**: the three tags that carry one of the five detail
-# attributes no longer produce a single span. ``attr`` is the VALUE only, so the
-# tag alternates marker / attr / marker — the key, the quotes and the angle
-# brackets all stay marker. The other nine are unchanged and must STAY one span:
+# **Changed in Slice 2, widened by spec 039**: the FOUR tags that carry one of the
+# six detail attributes no longer produce a single span. ``attr`` is the VALUE
+# only, so the tag alternates marker / attr / marker — the key, the quotes and the
+# angle brackets all stay marker. The other nine are unchanged and must STAY one
+# span:
 # that is the "the attribute split must not leave stray empty spans" half of
 # Slice 2's test task, and it has its own test below as well.
 _STRUCTURAL_TAGS: tuple[tuple[str, str, list[tuple[str, str]]], ...] = (
@@ -1206,7 +1313,38 @@ _STRUCTURAL_TAGS: tuple[tuple[str, str, list[tuple[str, str]]], ...] = (
             ('">', "marker"),
         ],
     ),
+    # Spec 039's thirteenth, and the only row here not written by spec 038.
+    # Structurally ``<thought>``'s shape with a second attribute: the ``player``
+    # is side-bearing (achromatic in THIS input, which carries no ``<setup>`` to
+    # look Alice up in) and the ``day`` never is.
+    (
+        "diary",
+        '<diary player="Alice" day="2">',
+        [
+            ('<diary player="', "marker"),
+            ("Alice", "attr"),
+            ('" day="', "marker"),
+            ("2", "attr"),
+            ('">', "marker"),
+        ],
+    ),
 )
+
+# The tag name the ``plain`` fallback's "an unrecognised tag" case is written
+# against (see :func:`test_unrecognised_text_falls_back_to_a_single_plain_span`),
+# named up here rather than inline down there for one reason: the rot guard in
+# :func:`test_the_swept_tag_vocabulary_matches_the_tokenizers_whitelist` can then
+# check that it is STILL unrecognised.
+#
+# **It was ``diary`` until spec 039, which is the whole point of naming it.**
+# Spec 038 chose ``<diary>`` for that case precisely because it stood for "the
+# next format change"; the next format change then arrived and recognised the
+# tag, turning the case from a test of the fallback into a test of its opposite.
+# It failed loudly only because the expectation was absolute. ``whisper`` is the
+# replacement — a plausible next element that ``graphia.tools.eval_transcript``
+# does not emit — and the guard is what makes the NEXT such collision a message
+# instead of a puzzle.
+_UNRECOGNISED_TAG = "whisper"
 
 _TAG_CASES = [
     pytest.param(opening, expected, id=name)
@@ -1228,23 +1366,27 @@ _ATTRIBUTE_FREE_TAG_CASES = [
 
 
 def test_the_swept_tag_vocabulary_matches_the_tokenizers_whitelist() -> None:
-    """The twelve tags below are exactly the ones the tokenizer recognises.
+    """The thirteen tags below are exactly the ones the tokenizer recognises.
 
     A ROT GUARD, in the same spirit as ``test_ledger_viewer``'s
     ``_DETAIL_KEYS_SWEPT`` check against ``DetailScreen.BINDINGS``: without it a
-    thirteenth tag could be added to the tokenizer and never swept by the case
+    fourteenth tag could be added to the tokenizer and never swept by the case
     tables below, and the "each recognised marker" coverage this task owes would
-    quietly become "each marker somebody remembered".
+    quietly become "each marker somebody remembered". It has fired once for real
+    now — spec 039's ``<diary>`` is the thirteenth, and this is where that slice's
+    author was sent.
 
     Reaches for the module-private ``_MARKER_TAGS`` deliberately — it is the
     whitelist itself, and there is no public projection of it. The count is
     pinned absolutely as well, because a set comparison against a table derived
     from the same source could not catch both sides shrinking together.
 
-    The 9 / 3 split is pinned too (Slice 2): the derived
+    The 9 / 4 split is pinned too (Slice 2, widened by spec 039): the derived
     ``_ATTRIBUTE_FREE_TAG_CASES`` is what the "still a single marker span" test
     sweeps, so a table edit that quietly emptied it would make that test vacuous
-    rather than failing.
+    rather than failing. Note which half ``<diary>`` joined — the attribute
+    carriers — so the attribute-free count is unmoved and a table edit that put
+    it in the wrong half fails on the count rather than on the spans.
     """
     whitelist = getattr(eval_ledger, "_MARKER_TAGS", None)
     assert whitelist is not None, (
@@ -1253,12 +1395,23 @@ def test_the_swept_tag_vocabulary_matches_the_tokenizers_whitelist() -> None:
     )
     swept = {name for name, _, _ in _STRUCTURAL_TAGS}
     assert swept == set(whitelist)
-    assert len(_STRUCTURAL_TAGS) == 12, (
-        "the ratified vocabulary is twelve tags (tasks.md, Slice 1 header note)"
+    assert len(_STRUCTURAL_TAGS) == 13, (
+        "spec 038 ratified twelve tags (tasks.md, Slice 1 header note) and spec "
+        "039 added `diary`, the thirteenth"
     )
     assert len(_ATTRIBUTE_FREE_TAG_CASES) == 9, (
-        "nine of the twelve tags carry no attribute; three do "
-        "(<player>, <vote>, <thought>)"
+        "nine of the thirteen tags carry no attribute; four do "
+        "(<player>, <vote>, <thought>, <diary>)"
+    )
+    # ...and the tag the `plain` fallback's unrecognised-tag case is written
+    # against is still unrecognised. See `_UNRECOGNISED_TAG`: spec 038 wrote that
+    # case as `<diary>secret</diary>`, spec 039 recognised the tag, and the case
+    # silently became a test of the opposite of what it claims. This is the guard
+    # that turns the next such collision into a sentence.
+    assert _UNRECOGNISED_TAG not in whitelist, (
+        f"`{_UNRECOGNISED_TAG}` is a recognised tag now, so the `plain` "
+        "fallback's unrecognised-tag case no longer tests the fallback — pick a "
+        "tag name the writer does not emit and update `_UNRECOGNISED_TAG`"
     )
 
 
@@ -1393,25 +1546,199 @@ def test_a_thought_tag_picks_out_the_owners_name() -> None:
     assert [text for text, kind in spans if kind == "attr"] == ["Alice"]
 
 
-# Every one of the five whitelisted attributes, in a tag the writer really emits
+# ---------------------------------------------------------------------------
+# `<diary player="X" day="N">` — spec 039's element
+# ---------------------------------------------------------------------------
+#
+# The thirteenth tag, the sixth attribute and the twenty-first kind, all landing
+# together. Structurally the tag is `<thought>`'s shape with a second attribute,
+# which is what let the production change be four lines; these tests are the
+# per-shape pins that a four-line change still owes.
+#
+# THE TWO SHAPES ARE BOTH REAL, and only one of them looks like the format.
+# `eval_transcript._diary_day_attr` returns `""` for a record whose `day` is
+# absent, `None`, a `bool`, a float or a container, and `_append_diaries` then
+# OMITS the attribute and renders the entry anyway — "a missing or nonsensical
+# `day` still leaves an entry worth showing" (tech-spec 039 §2.8, on the same
+# reasoning §2.10 gives for rendering an absent ledger arm blank rather than
+# `false`). So `<diary player="Ava" day="2">` and `<diary player="Ava">` both
+# reach the reading view and both are pinned below.
+
+
+def test_a_diary_tag_picks_out_the_owner_and_the_day() -> None:
+    """``<diary player="X" day="N">`` → two ``attr`` spans, the owner and the Day.
+
+    Spec 039's tag, and the first two-attribute shape whose values are different
+    KINDS of thing: a ``<player>`` pairs a name with a role and a ``<vote>`` pairs
+    two names, but a ``<diary>`` names a person and a Day. Both are lifted — the
+    Day is what tells one of a player's diaries from the next — and everything
+    between and around them stays ``marker``, exactly as for the other two.
+
+    Bare input with no ``<setup>``, so ``Alice`` has no known side and keeps the
+    achromatic ``attr``. The side-bearing form is
+    :func:`test_a_diary_owner_in_the_cast_list_takes_their_side` in section 3.
+    """
+    spans = _spans('<diary player="Alice" day="2">')
+
+    assert spans == [
+        ('<diary player="', "marker"),
+        ("Alice", "attr"),
+        ('" day="', "marker"),
+        ("2", "attr"),
+        ('">', "marker"),
+    ]
+    # Two values, in the tag's own order, and nothing but the values — the same
+    # from-the-other-side statement the cast-entry test makes, and what stops a
+    # tokenizer that lifted `day="2"` whole from looking correct on the count.
+    assert [text for text, kind in spans if kind == "attr"] == ["Alice", "2"]
+
+
+def test_a_diary_element_claims_its_body_and_keeps_both_tags_marker() -> None:
+    """The whole element, pinned span for span (spec 039, tech-spec §2.8).
+
+    Three structural claims in one expectation: the body is exactly one span of
+    its own, both tags stay ``marker``, and the two attribute values are lifted
+    out of the punctuation holding them.
+
+    **The body's kind is the point — ``diary`` and not ``thought``.** The two are
+    neighbours (both private, both muted, both never side-tinted) and reusing
+    ``thought`` would have been one character less work. It is refused because a
+    thought is one player's reaction inside a single speaking round and a diary
+    is that player's settled read of a whole Day: collapsing them would make the
+    Day's trailer indistinguishable from the round bodies above it, which is the
+    one thing the trailer's placement exists to say.
+    """
+    source = '<diary player="Alice" day="2">Bo folded under pressure.</diary>'
+    spans = _spans(source)
+
+    assert spans == [
+        ('<diary player="', "marker"),
+        ("Alice", "attr"),
+        ('" day="', "marker"),
+        ("2", "attr"),
+        ('">', "marker"),
+        ("Bo folded under pressure.", "diary"),
+        ("</diary>", "marker"),
+    ]
+    # Restated structurally, so a later re-split of the opening tag cannot
+    # quietly take the body with it, and named by constant so a regression
+    # reports WHICH rule broke rather than only that a list differs.
+    assert spans[-2] == ("Bo folded under pressure.", eval_ledger.KIND_DIARY)
+    assert spans[-1] == ("</diary>", eval_ledger.KIND_MARKER)
+    assert eval_ledger.KIND_THOUGHT not in {kind for _, kind in spans}
+    assert "".join(text for text, _ in spans) == source
+
+
+def test_a_diary_carrying_only_its_owner_still_tokenizes_cleanly() -> None:
+    """The ``player``-only shape, which the writer really does emit.
+
+    Its own test rather than a second parameter on the case above, because the
+    failure it guards against is a splitter that ASSUMES the pair: a ``day``-less
+    tag must come back as five spans, not six with an empty one wedged in where
+    the missing value would have gone. The no-empty-span assertion is what says
+    so, and it is the half a span-list equality alone would not report clearly.
+
+    Both halves of the element are still claimed — the owner is lifted and the
+    body is still ``diary`` — so a reviewer reading a Day whose record lost its
+    number sees an entry with an unknown Day, not an unstyled paragraph.
+    """
+    source = '<diary player="Alice">Bo folded under pressure.</diary>'
+    spans = _spans(source)
+
+    assert spans == [
+        ('<diary player="', "marker"),
+        ("Alice", "attr"),
+        ('">', "marker"),
+        ("Bo folded under pressure.", "diary"),
+        ("</diary>", "marker"),
+    ]
+    assert all(text for text, _ in spans), f"a span has empty text: {spans}"
+    assert "".join(text for text, _ in spans) == source
+
+
+def test_a_diarys_body_is_not_re_split_as_speech() -> None:
+    """A diary quoting a name and a colon stays ONE ``diary`` span.
+
+    The control ``test_a_thoughts_body_is_not_re_split_as_speech`` is for spec
+    028's thoughts, restated here because a diary is far likelier to trip it: it
+    is invited to run to ``prompts.DIARY_SENTENCE_BOUND`` (six) sentences of a
+    player's own prose about what other players said, where a thought is one or
+    two. ``Bo: I saw nothing.`` is shaped exactly like a spoken line and would
+    split into ``speaker`` + ``speech`` if the body were ever re-tokenized.
+
+    It is not, and the reason is the branch order rather than anything about
+    diaries: :func:`_tag_element_spans` claims the whole line before the speaker
+    rule is reached, and an inline body is emitted as one span without a second
+    pass. Pinned so a "helpful" recursive tokenizer fails here.
+    """
+    spans = _spans('<diary player="Alice" day="2">Bo: I saw nothing.</diary>')
+
+    assert spans[-2] == ("Bo: I saw nothing.", eval_ledger.KIND_DIARY)
+    assert not {kind for _, kind in spans} & (
+        set(_SPEAKER_KINDS) | set(_SPEECH_KINDS)
+    ), f"the diary body was re-split as speech: {spans}"
+
+
+def test_the_day_attribute_is_lifted_on_any_tag_that_carries_it() -> None:
+    """``_ATTR_NAMES`` is a GLOBAL whitelist, not a diary-scoped rule.
+
+    Tech-spec 039 §2.8 says so in as many words — "``day`` joins ``_ATTR_NAMES``,
+    which is a **GLOBAL** whitelist, not a diary-scoped rule … any tag carrying
+    ``day="…"`` will now split" — and records that the blast radius is nil today
+    (``day="`` occurs zero times across the 298 committed transcripts). It is
+    still a global change rather than a local one, and pinning it is what keeps a
+    later "let us scope this to ``<diary>``" edit a decision somebody takes
+    rather than one that happens quietly to a whitelist.
+
+    The value stays **achromatic** on the foreign tag too, which is the second
+    half: :func:`eval_ledger._attr_kind` decides per ``(tag, key)`` PAIR and only
+    three pairs carry a side, so a ``day`` on a ``<vote>`` gets exactly as much
+    colour as a ``day`` on a ``<diary>`` — none.
+    """
+    spans = _spans('<vote initiator="Vera" target="Iris" day="2">')
+
+    assert spans == [
+        ('<vote initiator="', "marker"),
+        ("Vera", "attr"),
+        ('" target="', "marker"),
+        ("Iris", "attr"),
+        ('" day="', "marker"),
+        ("2", "attr"),
+        ('">', "marker"),
+    ]
+
+
+# Every one of the six whitelisted attributes, in a tag the writer really emits
 # it on, with the value it must lift out. Swept so no attribute is covered only
 # by accident of appearing beside another.
+#
+# `day` is spec 039's, and it is the only value in the table that is not a name:
+# a `<diary>` says whose the entry is and which Day it sums up, and the Day is
+# the thing that tells one of a player's diaries from the next. It is also the
+# only one with zero occurrences in the committed corpus, so this row is the
+# whole of its "the value really is lifted" coverage.
 _ATTR_NAME_CASES: tuple[tuple[str, str, str], ...] = (
     ("name", '<player name="Avery" role="Mafioso">', "Avery"),
     ("role", '<player name="Avery" role="Mafioso">', "Mafioso"),
     ("player", '<thought player="Avery">', "Avery"),
     ("initiator", '<vote initiator="Avery" target="Bo">', "Avery"),
     ("target", '<vote initiator="Avery" target="Bo">', "Bo"),
+    ("day", '<diary player="Avery" day="2">', "2"),
 )
 
 
 def test_the_swept_attribute_names_match_the_tokenizers_whitelist() -> None:
-    """The five attributes swept below are exactly the ones the tokenizer lifts.
+    """The six attributes swept below are exactly the ones the tokenizer lifts.
 
-    The same rot guard the tag vocabulary gets, for the same reason: a sixth
+    The same rot guard the tag vocabulary gets, for the same reason: a seventh
     attribute added to ``_ATTR_NAMES`` and never swept would ship untested, and
     the "distinct ``attr`` spans for both values" coverage this task owes would
     become "the two values somebody remembered".
+
+    It fired for real on spec 039's ``day``, which is the sixth — and the one the
+    corpus cannot cover at all, since ``day="`` occurs nowhere in the 298
+    committed transcripts. For that attribute this sweep and its row in
+    ``_ATTR_NAME_CASES`` are the only coverage there is.
     """
     whitelist = getattr(eval_ledger, "_ATTR_NAMES", None)
     assert whitelist is not None, (
@@ -1419,7 +1746,7 @@ def test_the_swept_attribute_names_match_the_tokenizers_whitelist() -> None:
         "or was renamed; update _ATTR_NAME_CASES and this guard together"
     )
     assert {name for name, _, _ in _ATTR_NAME_CASES} == set(whitelist)
-    assert len(_ATTR_NAME_CASES) == 5
+    assert len(_ATTR_NAME_CASES) == 6
 
 
 @pytest.mark.parametrize(
@@ -1489,6 +1816,15 @@ def test_each_whitelisted_attributes_value_becomes_an_attr_span(
             [('<player nickname="Ace">', "marker")],
             id="lookbehind-nickname",
         ),
+        pytest.param(
+            '<diary player="Ava" birthday="2">',
+            [
+                ('<diary player="', "marker"),
+                ("Ava", "attr"),
+                ('" birthday="2">', "marker"),
+            ],
+            id="lookbehind-birthday",
+        ),
     ],
 )
 def test_an_attribute_outside_the_whitelist_stays_inside_the_marker(
@@ -1504,6 +1840,15 @@ def test_an_attribute_outside_the_whitelist_stays_inside_the_marker(
       Slice 5 finds the decision already asserted instead of rediscovering it.
     * ``nickname="Ace"`` is the lookbehind: a naive ``name="`` search would split
       this tag at the tail of ``nickname``, marking ``Ace`` as a player's name.
+    * ``birthday="2"`` is spec 039's stake in that same lookbehind, and the
+      reason it is pinned here rather than left implied. ``day`` is a **global**
+      whitelist entry from spec 039 on — any tag carrying ``day="…"`` splits —
+      and ``birthday`` is the shortest real word that ends in it. Nothing but
+      :data:`eval_ledger._ATTR_VALUE_RE`'s ``(?<![A-Za-z0-9_-])`` stops that
+      ``"2"`` becoming an ``attr`` span, and 49 lines of the committed corpus say
+      "birthday" in prose already. The owner beside it still splits, so this is
+      also the control: the tag is being parsed, and only the wrong half of it is
+      being left alone.
     """
     assert _spans(source) == expected
 
@@ -1777,6 +2122,11 @@ def test_the_kill_coalescing_is_specific_to_kill_not_general_to_inline_tags() ->
         # contains neither, so nothing but this test can see it.
         pytest.param("<recap></recap>", id="empty-recap"),
         pytest.param('<thought player="X"></thought>', id="empty-thought"),
+        # Spec 039's third content-claiming tag, degenerate the same way.
+        # `_append_diaries` skips a record whose `text` is blank, so the writer
+        # never emits this and the corpus can never contain it — which is exactly
+        # why nothing but this row can see a zero-length `diary` span.
+        pytest.param('<diary player="X" day="1"></diary>', id="empty-diary"),
     ],
 )
 def test_an_empty_element_contributes_no_inner_span(source: str) -> None:
@@ -1797,6 +2147,7 @@ def test_an_empty_element_contributes_no_inner_span(source: str) -> None:
     assert all(text for text, _ in spans), f"an empty span survived: {spans}"
     assert eval_ledger.KIND_THOUGHT not in {kind for _, kind in spans}
     assert eval_ledger.KIND_RECAP not in {kind for _, kind in spans}
+    assert eval_ledger.KIND_DIARY not in {kind for _, kind in spans}
 
 
 def test_an_empty_section_element_is_one_coalesced_marker_span() -> None:
@@ -1830,6 +2181,26 @@ def test_an_empty_section_element_is_one_coalesced_marker_span() -> None:
             "it runs on",
             id="recap",
         ),
+        # Spec 039's, and the one shape here that is not merely hypothetical.
+        # Tech-spec 039 §2.8 names this degradation by name: a diary is invited
+        # to run to `DIARY_SENTENCE_BOUND` sentences, so if the clamp's
+        # whitespace fold ever stopped folding, a model's blank line would
+        # produce the format's first multi-line inline element. What that must
+        # cost is the BODY's kind, never the round trip — "an unmatched open tag
+        # reads as plain text and the round-trip invariant holds", which is why
+        # the fold is robustness rather than a fix for a defect.
+        pytest.param(
+            '<diary player="Alice" day="2">it runs on',
+            [
+                ('<diary player="', "marker"),
+                ("Alice", "attr"),
+                ('" day="', "marker"),
+                ("2", "attr"),
+                ('">', "marker"),
+            ],
+            "it runs on",
+            id="diary",
+        ),
     ],
 )
 def test_an_unclosed_inline_element_degrades_to_its_tag_plus_plain(
@@ -1859,6 +2230,7 @@ def test_an_unclosed_inline_element_degrades_to_its_tag_plus_plain(
     assert spans == [*tag, (remainder, eval_ledger.KIND_PLAIN)]
     assert eval_ledger.KIND_THOUGHT not in {kind for _, kind in spans}
     assert eval_ledger.KIND_RECAP not in {kind for _, kind in spans}
+    assert eval_ledger.KIND_DIARY not in {kind for _, kind in spans}
 
 
 # ---------------------------------------------------------------------------
@@ -1882,7 +2254,20 @@ def test_an_unclosed_inline_element_degrades_to_its_tag_plus_plain(
         pytest.param("Pointing round 1: Alice → Bo", id="pointing-round"),
         # A tag the writer does not emit: styled as skeleton it is not would be
         # a guess, so the whitelist declines and the line stays readable.
-        pytest.param("<diary>secret</diary>", id="unrecognised-tag"),
+        #
+        # THE TAG NAME IS `_UNRECOGNISED_TAG`, NOT A LITERAL, and the reason is
+        # this very case's history. Spec 038 wrote it as `<diary>secret</diary>`
+        # — a tag picked to stand for "the next format change" — and spec 039
+        # arrived, taught the tokenizer `<diary>`, and turned the case into an
+        # assertion that a RECOGNISED tag degrades to plain. It failed loudly
+        # only because the expectation is absolute. The name now lives beside the
+        # tag table with a guard that checks it is still absent from
+        # `_MARKER_TAGS`, so the spec that finally emits a `<whisper>` is told to
+        # pick a new placeholder rather than discovering it from a span list.
+        pytest.param(
+            f"<{_UNRECOGNISED_TAG}>secret</{_UNRECOGNISED_TAG}>",
+            id="unrecognised-tag",
+        ),
         pytest.param("<Day>", id="wrong-case-tag"),
         pytest.param("<night/>", id="self-closing"),
         # SLICE 3 REMOVED three rows from this table — `Alice: I saw nothing
@@ -2714,6 +3099,14 @@ _RICH_SYNTHETIC_TRANSCRIPT = (
     "</vote>\n"
     "<recap>Alive: Alice, Bo.</recap>\n"
     "  </round>\n"
+    # SPEC 039 ADDED THIS LINE, and where it sits is half of what it says. A
+    # diary is the Day's TRAILER — `_render_phases` appends `day_trailer` after
+    # the rounds loop — so it renders between the last `</round>` and `</day>`,
+    # "between the day it was written about and the Night that followed". Cass
+    # is the owner because she is the fixture's only real `role="Mafia"`, so her
+    # name in the tag is `attr-mafia` and the fixture states the side-bearing
+    # owner rule as well as the body kind.
+    '<diary player="Cass" day="1">Bo folded under pressure.</diary>\n'
     "</day>\n"
     "<endgame>\n"
     "Mafia win.\n"
@@ -2788,7 +3181,13 @@ def test_no_styled_span_carries_a_newline_across_a_whole_synthetic_game() -> Non
     # THE PREMISE, pinned by SHAPE and not only by total. Counted by hand off
     # `_RICH_SYNTHETIC_TRANSCRIPT`:
     #
-    #   marker 42 — the header (1), `<transcript>` (2), `<setup>` (3), the FOUR
+    # SPEC 039 ADDS SEVEN SPANS, all from the one `<diary>` line: four marker
+    # pieces (`<diary player="`, `" day="`, `">`, `</diary>`), Cass's owner name
+    # as `attr-mafia`, the `1` day value as achromatic `attr`, and the body as
+    # the new `diary` kind. 65 -> 72, and the three kinds that move are the three
+    # the line touches — which is what the breakdown is for.
+    #
+    #   marker 46 — the header (1), `<transcript>` (2), `<setup>` (3), the FOUR
     #               cast entries' opening heads at 3 marker pieces each (4-6,
     #               8-10, 12-14, 16-18) with their four `</player>` (7, 11, 15,
     #               19), `</setup>` (20), `<preamble>`/`</preamble>` (21-22),
@@ -2797,16 +3196,20 @@ def test_no_styled_span_carries_a_newline_across_a_whole_synthetic_game() -> Non
     #               `Round 1.` (28), the thought's 2 head pieces (29-30) and
     #               `</thought>` (31), the vote's 3 head pieces (32-34) and
     #               `</vote>` (35), `<recap>`/`</recap>` (36-37), `</round>`
-    #               (38), `</day>` (39), `<endgame>`/`</endgame>` (40-41) and
-    #               `</transcript>` (42);
-    #   attr    9 — the four cast NAMES (Alice, Bo, Cass, Dex — achromatic by the
+    #               (38), the diary's 3 head pieces (39-41) and `</diary>` (42),
+    #               `</day>` (43), `<endgame>`/`</endgame>` (44-45) and
+    #               `</transcript>` (46);
+    #   attr   10 — the four cast NAMES (Alice, Bo, Cass, Dex — achromatic by the
     #               ratified narrow reading, and NOTE that Dex's stays achromatic
     #               too: `attr` gains no seated form, because the seat's own cast
     #               entry already carries `attr`'s bold), Alice's and Dex's
     #               unrecognised `Mafioso` roles, the thought's owner `Alice`
-    #               (unrecognised role, so absent from the map), and the vote's
-    #               `Alice`/`Bo`;
-    #   attr-mafia 1 — Cass's `Mafia` role text;
+    #               (unrecognised role, so absent from the map), the vote's
+    #               `Alice`/`Bo`, and the diary's `day="1"` value — spec 039's,
+    #               and achromatic because it names a Day and not a person;
+    #   attr-mafia 2 — Cass's `Mafia` role text, and (spec 039) her name as the
+    #               diary's OWNER, which is the second place a name-shaped
+    #               attribute is side-bearing;
     #   attr-law-abiding 1 — Bo's `Law-abiding Citizen` role text;
     #   field-label 2 — `Personality:` and `Manner:` on Alice's entry;
     #   speaker 1 / speech 1 — `Alice:` and her words: her role label is one the
@@ -2825,7 +3228,12 @@ def test_no_styled_span_carries_a_newline_across_a_whole_synthetic_game() -> Non
     #               NEVER side-tinted (tasks.md: a private reflection is not an
     #               act of allegiance);
     #   recap   1 — `Alive: Alice, Bo.`, the body of the `<recap>` element, never
-    #               side-tinted either (the moderator has no side).
+    #               side-tinted either (the moderator has no side);
+    #   diary   1 — `Bo folded under pressure.`, the body of the `<diary>`
+    #               element in the Day's trailer (spec 039). Never side-tinted
+    #               although its owner IS — the owner's name carries the side and
+    #               the prose does not, which is `thought`'s precedent one tag
+    #               over.
     #
     # The `Moderator: A new game begins.` preamble line is deliberately NOT among
     # them: he is in the exclusion set, so his line stays plain and coalesces with
@@ -2835,19 +3243,18 @@ def test_no_styled_span_carries_a_newline_across_a_whole_synthetic_game() -> Non
     # name out of it without ever styling it.
     #
     # Slice 1 pinned only `len(styled) == 27`, Slice 2 raised it to 43, Slice 3 to
-    # 49 and Slice 4 to 57. Slice 5 supersedes all four — and the reason the
-    # breakdown exists rather than a bare total is visible in this very edit: the
-    # failure names WHICH kinds moved, so the growth (57 → 65: six spans for Dex's
-    # cast entry, two for his line) is instantly distinguishable from a boundary
-    # bug.
-    assert len(styled) == 65, (
+    # 49, Slice 4 to 57 and Slice 5 to 65. Spec 039 supersedes all five — and the
+    # reason the breakdown exists rather than a bare total is visible in this very
+    # edit: the failure names WHICH kinds moved, so the growth (65 → 72, entirely
+    # from one `<diary>` line) is instantly distinguishable from a boundary bug.
+    assert len(styled) == 72, (
         "the premise: this game really does produce styled spans "
         f"(got {len(styled)})"
     )
     assert Counter(kind for _, kind in styled) == {
-        eval_ledger.KIND_MARKER: 42,
-        eval_ledger.KIND_ATTR: 9,
-        eval_ledger.KIND_ATTR_MAFIA: 1,
+        eval_ledger.KIND_MARKER: 46,
+        eval_ledger.KIND_ATTR: 10,
+        eval_ledger.KIND_ATTR_MAFIA: 2,
         eval_ledger.KIND_ATTR_LAW_ABIDING: 1,
         eval_ledger.KIND_FIELD_LABEL: 2,
         eval_ledger.KIND_SPEAKER: 1,
@@ -2860,6 +3267,7 @@ def test_no_styled_span_carries_a_newline_across_a_whole_synthetic_game() -> Non
         eval_ledger.KIND_SPEECH_HUMAN: 1,
         eval_ledger.KIND_THOUGHT: 1,
         eval_ledger.KIND_RECAP: 1,
+        eval_ledger.KIND_DIARY: 1,
     }
     offenders = [(text, kind) for text, kind in styled if "\n" in text]
     assert not offenders, f"styled spans carrying a newline: {offenders}"
@@ -3009,6 +3417,11 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
         eval_ledger.KIND_ATTR_LAW_ABIDING,
         eval_ledger.KIND_SPEAKER_HUMAN,
         eval_ledger.KIND_SPEECH_HUMAN,
+        # Spec 039's, from the `<diary>` in the Day's trailer. The rich game is
+        # where it goes because it is the full-shape game and a diary is part of
+        # a full-shape game now — and because the two seated games below own one
+        # narrow claim each and adding a second to either would blur it.
+        eval_ledger.KIND_DIARY,
     }
     # ...and each seated game contributes exactly its own two, pinned per game so
     # a fixture cannot go dead behind the union.
@@ -3760,6 +4173,69 @@ def test_a_thought_owner_in_the_cast_list_takes_their_side(
         ('">', "marker"),
         ("Nobody suspects me.", "thought"),
         ("</thought>", "marker"),
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Near-miss: the `<diary player="X" day="N">` owner (spec 039)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("owner", "expected_kind"),
+    [
+        pytest.param("Vera", "attr-mafia", id="mafia-owner"),
+        pytest.param("Iris", "attr-law-abiding", id="law-abiding-owner"),
+        pytest.param("Zed", "attr", id="owner-absent-from-the-cast-list"),
+    ],
+)
+def test_a_diary_owner_in_the_cast_list_takes_their_side(
+    owner: str, expected_kind: str
+) -> None:
+    """The SECOND place a name-shaped attribute is side-bearing (spec 039).
+
+    Ratified during spec 039's Slice 4, and it follows :func:`_attr_kind`'s own
+    rule rather than being a new one: inside a marker the side lands on whichever
+    token actually TELLS the reviewer the side — the role where a role is
+    written, the name where none is. A ``<diary>`` names a person and a Day and
+    no role, exactly as a ``<thought>`` names a person and nothing else, so the
+    owner carries it. Leaving it achromatic was the alternative and was rejected
+    because it would show one player's name in two different treatments a few
+    lines apart in the same file, inviting a reviewer to read a distinction that
+    is not there.
+
+    **A copy of the thought's test rather than a parametrization of it, on
+    purpose.** The decision is per ``(tag, key)`` PAIR: ``<thought player=…>``
+    having a branch is not what gives ``<diary player=…>`` one, the production
+    code needed a second ``elif``, and a tag nobody has ruled on still gets no
+    side. Folding the two tests together would assert exactly the thing the
+    tag-scoped rule exists to deny.
+
+    Three claims ride on every row, and only the first is the headline:
+
+    * **the owner takes their side**, or the achromatic ``attr`` when the cast
+      list does not know them (the third row). Never a guessed side — and the
+      corpus cannot check that row either, since ``<diary`` occurs nowhere in it;
+    * **the ``day`` value beside it stays achromatic in all three**, including
+      the two rows where a side was sitting right there to spend. It names a Day,
+      not a person, so there is no side it could carry;
+    * **the BODY stays ``diary`` and is never side-tinted in any row** — a
+      private reflection is not an act of allegiance (tech-spec 039 §2.8, which
+      puts the diary body under ``<thought>``'s precedent in those words). The
+      owner coloured and the prose not, on one line, is the whole rule.
+    """
+    source = _TWO_SIDED_CAST + (
+        f'<diary player="{owner}" day="2">Nobody suspects me.</diary>'
+    )
+
+    assert _dialogue_spans(source) == [
+        ('<diary player="', "marker"),
+        (owner, expected_kind),
+        ('" day="', "marker"),
+        ("2", "attr"),
+        ('">', "marker"),
+        ("Nobody suspects me.", "diary"),
+        ("</diary>", "marker"),
     ]
 
 
