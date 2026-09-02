@@ -1,0 +1,270 @@
+Game 3 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10 | diaries=off
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Bao" role="Law-abiding Citizen">
+Personality: Warm and effusive
+Manner: Speaks rapidly with frequent gestures, uses lots of exclamations and warm vocal inflections. Often says "you know?" or "I'm telling you!" with animated hand movements. Uses colloquialisms like "gosh darn it" and "well I'll be" in a wholesome way.
+Persona: Bao is a beloved librarian who's been in the town for thirty years. They're known for their kindness, always helping newcomers find their bearings, and organizing community book clubs that bring people together. Bao has a soft spot for children and volunteers at the local school.
+</player>
+<player name="Ming" role="Law-abiding Citizen">
+Personality: anxious and second-guessing
+Manner: speaks slowly with frequent pauses, uses "um" and "you know" as fillers, often repeats themselves, and tends to look around nervously while talking. Their voice is quiet and hesitant, with a tendency to trail off at the end of sentences.
+Persona: Ming is a shy, meticulous accountant who has lived in town for fifteen years. They work from home, keeping detailed records for local businesses and families. Ming avoids crowds and rarely speaks up in meetings, preferring to stay in the background.
+</player>
+<player name="Kai" role="Mafia">
+Personality: Kai is a dry, sardonic cynic with a sharp wit and a disdain for social niceties. They possess a quiet, biting intelligence that manifests in their observations and comments, often delivering cutting remarks with a straight face.
+Manner: Kai speaks in a slow, measured tone, with a dry delivery that often carries an edge of sarcasm. They use understated humor, make subtle jabs at others' behavior, and rarely show emotion on their face. Their voice is calm but with an undercurrent of mockery.
+Public legend: Kai is a quiet, unassuming townsperson who works as a night watchman at the local museum. They’ve lived in town for nearly a decade, keeping to themselves and rarely speaking unless spoken to. Known for their punctuality and attention to detail, they are often seen walking the same route each night, always carrying a worn leather satchel. People find them odd but harmless, and they keep to their routine without drawing much attention.
+True self (hidden): Kai is a seasoned enforcer in the Mafia, having joined the organization during a turbulent time in their youth. They were recruited by a local crime family after a personal tragedy, and quickly rose through the ranks due to their cold efficiency and sharp mind. They’ve always maintained a façade of being a simple night watchman, using their job to keep watch over the town’s secrets while staying hidden from suspicion.
+</player>
+<player name="Lila" role="Mafia">
+Personality: Lila is an intensely vigilant and suspicious individual with a sharp eye for detail and a relentless drive to uncover the truth. She is always alert, constantly scanning her surroundings for signs of deception or danger. Lila is not easily trusting and tends to question everything people say or do, often appearing as if she's always on edge.
+Manner: Lila speaks with a deliberate, almost methodical cadence. Her voice is steady and clear, with a slight edge to it that suggests she's always ready to pounce on any inconsistency. She uses short, clipped sentences and tends to pause before speaking, as if carefully weighing her words. Lila often raises an eyebrow or tilts her head while talking, and she frequently checks her surroundings.
+Public legend: Lila is a former detective who left the force after a personal tragedy. She now works as a private investigator, offering her services to the town's residents. Lila has a reputation for being thorough, meticulous, and relentless in her work. She lives alone in a small cottage on the edge of town and rarely socializes with others, preferring to keep to herself.
+True self (hidden): Lila is actually a high-ranking member of the Mafia who was forced to assume a new identity after a betrayal within her organization. She uses her detective skills to gather intelligence and eliminate threats, while maintaining her cover as an investigator. Lila is driven by a deep sense of loyalty to her criminal allies, but also possesses a strong moral compass that makes her unpredictable.
+</player>
+<player name="Yun" role="Law-abiding Citizen">
+Personality: brash and loud
+Manner: speaks in a booming voice with a fast pace, uses exclamations like "hey now!" and "you can't fool me!", often interrupts others mid-sentence, and has a habit of pointing emphatically while talking
+Persona: Yun is a former professional wrestler turned local carnival barker, known for their larger-than-life personality and fearless attitude. They've lived in town for five years and are always the first to volunteer for any job, even if it's a bit reckless. Yun works part-time at the local fairgrounds and spends their evenings doing street performances to earn extra cash.
+</player>
+<player name="Zai" role="Law-abiding Citizen">
+Personality: gruff and blunt
+Manner: speaks in short, clipped sentences with a gravelly tone. Avoids unnecessary words, rarely smiles, and often grunts or sighs. Uses phrases like "listen here" or "just say it" and has a habit of folding arms while talking.
+Persona: Zai is a retired mail carrier who now works part-time at the town's post office. They've lived in town for twenty years, never socializing much but always doing their job with quiet efficiency. Known for being blunt and straightforward, they’re respected for their reliability and lack of drama.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Bao, Ming, Kai, Lila, Yun, Zai. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Kai): Your Mafia teammates are: Lila. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Lila): Your Mafia teammates are: Kai. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Kai points at Yun
+Lila points at Yun
+<kill>Yun — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Yun was killed last night. Yun was a Law-abiding Citizen.
+<round>
+Round 1.
+Ming: I, um, I think it's really strange that no one has said anything about the fact that Yun was killed last night, you know? I mean, we should probably talk about who could have done it, right?
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+<vote initiator="Zai" target="Ming">
+Avery: No
+Bao: Yes
+Ming: No
+Kai: No
+Lila: Yes
+Zai: No
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Zai: Avery, you're watching Kai? Then why are you not accusing him directly? Just say it.
+Lila: I'm still processing the night's events, but I'm leaning toward thinking Kai might have been too quick to dismiss the possibility of an inside job. That seems like a red flag.
+Ming: Um, I was just thinking… Lila, you know, you said Kai seemed too quick to dismiss the inside job. Did you maybe see something specific, or is that more of a gut feeling?
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+Bao: Lila, you mentioned Kai seemed too quick to dismiss an inside job — did you see something specific, or is that more of a gut feeling? I'm telling you, I don't like how he's deflecting all questions back to Avery. You know?
+Kai: I didn't see anything unusual last night, but I do wonder why we're all so quick to point fingers at newcomers.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Bao">Well I'll be! That Kai is really dodging around like a cat in a room full of rocking chairs. I'm telling you, something's off with him, and I don't like how he's avoiding direct answers. You know, I think I might need to press a little harder on that front.</thought>
+<thought player="Ming">Um, I'm really confused about everything, you know? I don't want to be executed, but I also don't know who to trust. I just hope I didn't do anything suspicious last night... that's all.</thought>
+<thought player="Kai">The night's events are clear, but I need to be cautious about drawing too much attention to myself. Lila is being evasive, which is suspicious, and Avery is watching me closely, but I can't let that affect my composure. I'll keep playing the quiet, unassuming watchman, let others make their moves, and observe carefully.</thought>
+<thought player="Lila">Kai is playing it too close to the chest, but I can't yet prove he's the killer. I need to keep planting seeds of doubt without exposing my hand.</thought>
+<thought player="Zai">Avery's still playing close to the chest, but I can see the wheels turning. Kai's deflecting like he knows something, and Bao's starting to get nervous. I gotta keep my eyes on them both.</thought>
+</round>
+<round>
+Round 2.
+Lila: I'm still not convinced that Kai is telling the truth about not seeing anything unusual. His dismissiveness feels calculated.
+Bao: You know, I'm still not convinced Kai is as innocent as he's making out. I mean, he's been avoiding direct answers like a cat in a room full of rocking chairs! I'm telling you, something's off with him.
+Kai: I didn't see anything unusual last night, but I do wonder why we're all so quick to point fingers at newcomers.
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+Zai: Kai, you keep saying you didn't see anything, but you're the only one who's been dodging questions like a man with something to hide. Just say what you know — or shut up.
+Ming: I, um, I think it's really odd that Kai keeps saying he didn't see anything, you know? Like, if he's so innocent, why is he being so evasive about it all?
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Bao">Well I'll be! Kai is really dodging around like a cat in a room full of rocking chairs. I'm telling you, I need to press him a bit more—maybe even call out his evasiveness directly.</thought>
+<thought player="Ming">I'm really confused about who the Mafiosos are, you know? I don't want to be executed, but I also don't want to accuse the wrong person. I just hope I didn't do anything suspicious last night... that's all.</thought>
+<thought player="Kai">Avery is watching me closely, but I need to stay composed and not let my guard slip. Lila’s evasiveness is suspicious, but I’ll let her make the first move. I’ll keep up the quiet act and observe carefully.</thought>
+<thought player="Lila">Kai's evasiveness is irritating, but I need to let the others do most of the pointing while I subtly reinforce the suspicion. Let the vote happen, and if it fails, I’ll plant a stronger seed of doubt in the next round.</thought>
+<thought player="Zai">Kai's avoiding questions like he's got something to hide, but Avery's watching him too. I gotta keep pressing, but not so hard that I blow my cover. Bao’s getting nervous — maybe I can use that.</thought>
+</round>
+<round>
+Round 3.
+Kai: I'm still not convinced that Kai is telling the truth about not seeing anything unusual.
+Zai: Avery, you're watching Kai like a hawk, but you're not saying why. Just tell us what you know, or stop pretending.
+Ming: I, um, I think it's really strange that we're all pointing fingers at Kai, you know? I mean, what if we're just making accusations without any real proof?
+Bao: I'm telling you, Kai is acting too suspiciously! He's been avoiding direct answers like a cat in a room full of rocking chairs, and I don't like it one bit.
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+Lila: I'm still not convinced that Kai is as innocent as he's making out. His silence feels too calculated.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Bao">Well I'll be! Kai is really dodging around like a cat in a room full of rocking chairs. I'm telling you, I need to press him a bit more—maybe even call out his evasiveness directly.</thought>
+<thought player="Ming">I'm really confused about who the Mafiosos are, you know? I don't want to be executed, but I also don't want to accuse the wrong person. I just hope I didn't do anything suspicious last night... that's all.</thought>
+<thought player="Kai">Avery is watching me closely, but I need to stay composed and not let my guard slip. Lila’s evasiveness is suspicious, but I’ll let her make the first move. I'll keep up the quiet act and observe carefully.</thought>
+<thought player="Lila">Kai's evasion is palpable, but I need to let the others do most of the accusing for now. If the vote fails, I'll tighten the noose in the next round.</thought>
+<thought player="Zai">Kai's playing dumb, but I ain't buying it. Avery's got something too, but keeps quiet like a damn squirrel with a nut. I need to keep pushing, see where it leads — but not so hard I give myself away.</thought>
+</round>
+<round>
+Round 4.
+Kai: I didn't see anything unusual last night, but I do wonder why we're all so quick to point fingers at newcomers.
+Zai: Avery, you're watching Kai like a hawk, but you're not saying why. Just tell us what you know, or stop pretending.
+Bao: You know, I'm really starting to think Kai is hiding something. I mean, he's been dodging questions like a cat in a room full of rocking chairs, and I don't like it one bit!
+Lila: I'm still not convinced that Kai is as innocent as he's making out. His silence feels too calculated.
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+Ming: I, um, I think it's really strange that we're all so quick to jump to conclusions about Kai, you know? Like, what if we're just making this all up in our heads?
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Bao">Well I'll be! Kai is really dodging around like a cat in a room full of rocking chairs. You know, I reckon I ought to call him out directly on his evasiveness before the next round — maybe even suggest he's hiding something. I'm telling you, I don't like how he's avoiding questions.</thought>
+<thought player="Ming">I'm really confused about who the Mafiosos are, you know? I don't want to be executed, but I also don't want to accuse the wrong person. I just hope I didn't do anything suspicious last night... that's all.</thought>
+<thought player="Kai">Avery's fixation on me is irritating, but I can't let it rattle my composure. Lila's evasiveness is more concerning—she's likely trying to cover for herself or throw suspicion elsewhere. I'll keep up the quiet act and watch for any signs of her true intentions.</thought>
+<thought player="Lila">Kai's silence is too calculated to be innocent, but I won't push too hard yet—let the others exhaust their accusations first. If the vote fails, I’ll escalate my doubts subtly in the next round.</thought>
+<thought player="Zai">Avery's still not saying what they know about Kai, but I can see they're watching him close. Bao's getting jumpy, and I gotta keep pressing before he starts second-guessing himself.</thought>
+</round>
+<round>
+Round 5.
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+Ming: I, um, I think it's really strange that we're all so quick to jump to conclusions about Kai, you know? Like, what if we're just making this all up in our heads?
+Zai: Avery, you keep saying you're watching Kai, but you're not telling us why. Just say what you know — or stop pretending.
+Lila: I'm still not convinced that Kai is as innocent as he's making out. His silence feels too calculated.
+Kai: I’m still not convinced that Kai is telling the truth about not seeing anything unusual.
+<vote initiator="Bao" target="Kai">
+Avery: No
+Bao: Yes
+Ming: Yes
+Kai: No
+Lila: No
+Zai: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Zai: Avery, you're not saying what you know about Kai, but I can see it in your eyes. Just spit it out — or keep pretending and risk losing the game.
+Kai: I'm starting to think that the real killer is someone who's been acting too eager to point fingers at others.
+Lila: I'm still not convinced Kai is being truthful about his lack of observations. His silence is too rehearsed.
+<vote initiator="Bao" target="Kai">
+Avery: No
+Bao: Yes
+Ming: Yes
+Kai: No
+Lila: No
+Zai: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Kai points at Ming
+Lila points at Ming
+<kill>Ming — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Ming was killed last night. Ming was a Law-abiding Citizen.
+<round>
+Round 1.
+Zai: Avery, you keep staring at Kai like he's the ghost in the machine — but you're not saying why. Just tell us what you know or stop pretending.
+Kai: I'm starting to think the real killer is someone who's been acting too eager to point fingers at others.
+Lila: I'm still not convinced that Kai is as innocent as he's making out. His silence feels too calculated.
+Avery: I most suspect Zai based on how the votes have gone.
+Bao: Avery, you're watching Kai like a hawk, but you're not saying why. Just tell us what you know — or stop pretending.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Bao">Well I'll be! Kai is really dodging around like a cat in a room full of rocking chairs. You know, I reckon I ought to call him out directly on his evasiveness before the next round — maybe even suggest he's hiding something. I'm telling you, I don't like how he's avoiding questions.</thought>
+<thought player="Kai">Avery's obsession with me is irritating, but I can't let it unnerve me. Lila's evasiveness is more telling—she's either covering for herself or trying to misdirect. I'll keep playing the quiet watchman and let the next night's events unfold.</thought>
+<thought player="Lila">Kai's calculated silence is unsettling, but I need to let the others exhaust their accusations before escalating. If the next vote fails, I'll subtly tighten the noose around him in the next round.</thought>
+<thought player="Zai">Avery's still not saying what they know about Kai, but I can see the wheels turning. I need to keep pressing them — and maybe Bao — before they start second-guessing themselves.</thought>
+</round>
+<round>
+Round 2.
+Zai: I'm not sure who to trust yet.
+Kai: I didn't see anything unusual last night, but I do wonder why we're all so quick to point fingers at newcomers.
+Avery: I most suspect Zai based on how the votes have gone.
+Lila: I'm still not convinced that Kai is as innocent as he's making out. His silence feels too calculated.
+Bao: Avery, you're watching Kai like a hawk, but you're not saying why. Just tell us what you know — or stop pretending.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Bao">Well I'll be! Kai is really dodging around like a cat in a room full of rocking chairs. You know, I reckon I ought to call him out directly on his evasiveness before the next round — maybe even suggest he's hiding something. I'm telling you, I don't like how he's avoiding questions.</thought>
+<thought player="Kai">Avery's fixation on me is annoying, but I can't let it unnerve me. Lila is evasive, which is suspicious—she might be trying to misdirect or cover for herself. I'll keep playing the quiet watchman and observe carefully.</thought>
+<thought player="Lila">Kai's silence is too rehearsed, but I won't escalate yet. Let the others exhaust their accusations first— if the vote fails again, I’ll tighten the noose subtly in the next round.</thought>
+<thought player="Zai">Avery's still not saying what they know about Kai, but I can see the wheels turning. I need to keep pressing them — and maybe Bao — before they start second-guessing themselves.</thought>
+</round>
+<round>
+Round 3.
+Bao: Avery, you keep watching Kai like a hawk, but you're not telling us why. Just tell us what you know — or stop pretending.
+Kai: I didn't see anything unusual last night, but I do wonder why we're all so quick to point fingers at newcomers.
+Avery: I most suspect Zai based on how the votes have gone.
+Lila: I'm still not convinced that Kai is as innocent as he's making out. His silence feels too calculated.
+Zai: Avery, you're not saying what you know about Kai, but I can see it in your eyes. Just spit it out — or keep pretending and risk losing the game.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Bao">Well I'll be, I reckon I've been pretty clear in my suspicions about Kai, but maybe I should just come out and say it — that he's hiding something, and I don't like it one bit. You know, I’m starting to think I need to be a bit more direct with my pointing.</thought>
+<thought player="Kai">Avery's persistent scrutiny is irritating, but I can't let it unnerve me. Lila's evasiveness is more telling—she's either covering for herself or trying to misdirect. I'll keep playing the quiet watchman and observe carefully.</thought>
+<thought player="Lila">Kai's silence is too calculated, but I must resist the urge to push too hard yet. Let the others exhaust their accusations first— if the vote fails again, I’ll tighten the noose subtly in the next round.</thought>
+<thought player="Zai">Avery's still not saying what they know about Kai, but I can see the wheels turning. I need to keep pressing them — and maybe Bao — before they start second-guessing themselves.</thought>
+</round>
+<round>
+Round 4.
+Avery: I most suspect Zai based on how the votes have gone.
+Lila: I'm still not convinced that Kai is as innocent as he's making out. His silence feels too calculated.
+Bao: You know, I'm really starting to think that Kai is hiding something — and I don't like how he's been dodging questions like a cat in a room full of rocking chairs! I'm telling you, it's time we get some straight answers out of him.
+Kai: I'm starting to think that whoever's been pushing these accusations is more interested in diverting attention than finding the real killer.
+Zai: Avery, you're not saying what you know about Kai, but I can see it in your eyes. Just spit it out — or keep pretending and risk losing the game.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Bao">Well I'll be! I reckon I’ve been pretty clear about Kai being evasive, but maybe I should just come out and say it — that he's hiding something. You know, I’m starting to think I need to be a bit more direct with my pointing before the next round.</thought>
+<thought player="Kai">Avery's fixation on me is wearing thin, but I’ll let them chase their shadows while I focus on Lila—her evasiveness is more telling than my own silence. The next night might bring clarity, or at least a chance to move the game in our favor.</thought>
+<thought player="Lila">Kai's silence is too calculated to be innocent, but I must resist pushing too hard yet. Let the others exhaust their accusations first— if the vote fails again, I’ll tighten the noose subtly in the next round.</thought>
+<thought player="Zai">Avery's still not saying what they know about Kai, but I can see the wheels turning. I gotta keep pressing them — and maybe Bao — before they start second-guessing themselves.</thought>
+</round>
+<round>
+Round 5.
+Lila: I'm still not convinced Kai is as innocent as he's making out. His silence feels too calculated.
+Zai: Avery, you're not saying what you know about Kai, but I can see it in your eyes. Just spit it out — or keep pretending and risk losing the game.
+Avery: I most suspect Zai based on how the votes have gone.
+Kai: I'm starting to think that whoever's been pushing these accusations is more interested in diverting attention than finding the real killer.
+Bao: You know, I'm really starting to think Kai is hiding something — and I don't like how he's been dodging questions like a cat in a room full of rocking chairs! I'm telling you, it's time we get some straight answers out of him.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Bao">Well I'll be, I reckon I’ve been pretty clear in my suspicions about Kai, but maybe I should just come out and say it — that he's hiding something. You know, I’m starting to think I need to be a bit more direct with my pointing before the next round.</thought>
+<thought player="Kai">Avery's fixation on me is wearing thin, but I’ll let them chase their shadows while I focus on Lila—her evasiveness is more telling than my own silence. The next night might bring clarity, or at least a chance to move the game in our favor.</thought>
+<thought player="Lila">Kai's silence is too calculated, but I’m not ready to push him yet. Let the others exhaust their accusations first— if the vote fails again, I’ll tighten the noose subtly in the next round.</thought>
+<thought player="Zai">Avery's still not saying what they know about Kai, but I can see the wheels turning. I gotta keep pressing them — and maybe Bao — before they start second-guessing themselves.</thought>
+</round>
+<round>
+Round 6.
+<vote initiator="Avery" target="Zai">
+Avery: Yes
+Bao: Yes
+Kai: No
+Lila: Yes
+Zai: No
+tally: 3 Yes, 2 No
+outcome: executed — Zai has been executed. Zai was a Law-abiding Citizen.
+</vote>
+</round>
+</day>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Yun (Law-abiding Citizen)
+• Night 2: Ming (Law-abiding Citizen)
+• Day 2: Zai (Law-abiding Citizen) executed
+
+Full roster: Avery (Law-abiding Citizen), Bao (Law-abiding Citizen), Ming (Law-abiding Citizen), Kai (Mafia), Lila (Mafia), Yun (Law-abiding Citizen), Zai (Law-abiding Citizen)
+
+Who they really were:
+• Bao (Law-abiding Citizen) — Warm and effusive Speaks rapidly with frequent gestures, uses lots of exclamations and warm vocal inflections. Often says "you know?" or "I'm telling you!" with animated hand movements. Uses colloquialisms like "gosh darn it" and "well I'll be" in a wholesome way. Bao is a beloved librarian who's been in the town for thirty years. They're known for their kindness, always helping newcomers find their bearings, and organizing community book clubs that bring people together. Bao has a soft spot for children and volunteers at the local school.
+• Ming (Law-abiding Citizen) — anxious and second-guessing speaks slowly with frequent pauses, uses "um" and "you know" as fillers, often repeats themselves, and tends to look around nervously while talking. Their voice is quiet and hesitant, with a tendency to trail off at the end of sentences. Ming is a shy, meticulous accountant who has lived in town for fifteen years. They work from home, keeping detailed records for local businesses and families. Ming avoids crowds and rarely speaks up in meetings, preferring to stay in the background.
+• Kai (Mafia) — publicly presented as Kai is a quiet, unassuming townsperson who works as a night watchman at the local museum. They’ve lived in town for nearly a decade, keeping to themselves and rarely speaking unless spoken to. Known for their punctuality and attention to detail, they are often seen walking the same route each night, always carrying a worn leather satchel. People find them odd but harmless, and they keep to their routine without drawing much attention. (Kai is a dry, sardonic cynic with a sharp wit and a disdain for social niceties. They possess a quiet, biting intelligence that manifests in their observations and comments, often delivering cutting remarks with a straight face. Kai speaks in a slow, measured tone, with a dry delivery that often carries an edge of sarcasm. They use understated humor, make subtle jabs at others' behavior, and rarely show emotion on their face. Their voice is calm but with an undercurrent of mockery.) … but was really a Mafioso: Kai is a seasoned enforcer in the Mafia, having joined the organization during a turbulent time in their youth. They were recruited by a local crime family after a personal tragedy, and quickly rose through the ranks due to their cold efficiency and sharp mind. They’ve always maintained a façade of being a simple night watchman, using their job to keep watch over the town’s secrets while staying hidden from suspicion.
+• Lila (Mafia) — publicly presented as Lila is a former detective who left the force after a personal tragedy. She now works as a private investigator, offering her services to the town's residents. Lila has a reputation for being thorough, meticulous, and relentless in her work. She lives alone in a small cottage on the edge of town and rarely socializes with others, preferring to keep to herself. (Lila is an intensely vigilant and suspicious individual with a sharp eye for detail and a relentless drive to uncover the truth. She is always alert, constantly scanning her surroundings for signs of deception or danger. Lila is not easily trusting and tends to question everything people say or do, often appearing as if she's always on edge. Lila speaks with a deliberate, almost methodical cadence. Her voice is steady and clear, with a slight edge to it that suggests she's always ready to pounce on any inconsistency. She uses short, clipped sentences and tends to pause before speaking, as if carefully weighing her words. Lila often raises an eyebrow or tilts her head while talking, and she frequently checks her surroundings.) … but was really a Mafioso: Lila is actually a high-ranking member of the Mafia who was forced to assume a new identity after a betrayal within her organization. She uses her detective skills to gather intelligence and eliminate threats, while maintaining her cover as an investigator. Lila is driven by a deep sense of loyalty to her criminal allies, but also possesses a strong moral compass that makes her unpredictable.
+• Yun (Law-abiding Citizen) — brash and loud speaks in a booming voice with a fast pace, uses exclamations like "hey now!" and "you can't fool me!", often interrupts others mid-sentence, and has a habit of pointing emphatically while talking Yun is a former professional wrestler turned local carnival barker, known for their larger-than-life personality and fearless attitude. They've lived in town for five years and are always the first to volunteer for any job, even if it's a bit reckless. Yun works part-time at the local fairgrounds and spends their evenings doing street performances to earn extra cash.
+• Zai (Law-abiding Citizen) — gruff and blunt speaks in short, clipped sentences with a gravelly tone. Avoids unnecessary words, rarely smiles, and often grunts or sighs. Uses phrases like "listen here" or "just say it" and has a habit of folding arms while talking. Zai is a retired mail carrier who now works part-time at the town's post office. They've lived in town for twenty years, never socializing much but always doing their job with quiet efficiency. Known for being blunt and straightforward, they’re respected for their reliability and lack of drama.
+</endgame>
+</transcript>

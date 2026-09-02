@@ -1,0 +1,277 @@
+Game 10 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=10 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Aiden" role="Law-abiding Citizen">
+Personality: anxious and second-guessing; constantly questioning their own perceptions and the motivations of others
+Manner: hesitant and thoughtful, often pausing to consider their words, uses phrases like 'I think' and 'it seems'
+Persona: Aiden is a librarian who spends most of their time buried in books, seeking solace in the quiet, ordered world of literature. They are deeply invested in the community and often volunteer at local events, though they struggle with social interactions, preferring the comfort of familiar routines and predictable environments.
+</player>
+<player name="Leila" role="Mafia">
+Personality: earnest and sincere, with a warm and welcoming demeanor; tends to be straightforward and open in their communication; values community and connection above all
+Manner: speaks with a gentle, encouraging tone; often uses phrases like 'let's work together' and 'I believe in us'; conveys a sense of warmth and approachability
+Public legend: Leila is a community organizer with a passion for bringing people together. She has been involved in various local initiatives, from neighborhood clean-up drives to organizing town festivals. Her home is always open to friends and neighbors, and she is known for her contagious enthusiasm and unwavering support for community projects.
+True self (hidden): In her secret life, Leila is a rising star within the Mafia, known for her strategic mind and ability to navigate complex social dynamics. She joined the organization after a chance encounter with a high-ranking member who recognized her potential. Leila uses her public role to gather information and build alliances, all while maintaining her innocent facade.
+</player>
+<player name="Kenzo" role="Law-abiding Citizen">
+Personality: weary and world-worn; pragmatic and no-nonsense
+Manner: speaks with a rough, gravelly voice; uses straightforward, blunt language; often ends sentences with 'that's just how it is'
+Persona: Kenzo is a retired fisherman who has seen his fair share of storms. After years at sea, he settled down in the town, finding peace in the quiet life. He's known for his no-nonsense approach and his willingness to lend a hand, though he prefers to keep things simple and straightforward.
+</player>
+<player name="Ines" role="Law-abiding Citizen">
+Personality: prickly and easily-offended
+Manner: speaks with sharp, precise language; often uses sarcasm and dry humor; prone to making cutting remarks
+Persona: Ines is a retired school teacher with a sharp wit and a no-nonsense attitude. She has a reputation for being stern and uncompromising, but those who know her well understand that she cares deeply about her community and its people. Ines is known for her quick temper and sharp tongue, but she also has a soft spot for helping others, especially children and the elderly.
+</player>
+<player name="Boris" role="Mafia">
+Personality: eccentric and whimsical
+Manner: speaks in a rambling, poetic style; often drifts off into daydreams mid-sentence
+Public legend: Boris is an old-fashioned storyteller and poet who has lived in the town for decades. He is known for his imaginative tales and quirky poems, which he often shares with children and at community gatherings. Boris has a reputation for being a bit eccentric but harmless, and his whimsical nature endears him to many in the town.
+True self (hidden): Boris is secretly a Mafioso, hiding behind an ordinary cover.
+</player>
+<player name="Mira" role="Law-abiding Citizen">
+Personality: playful and teasing; a mischievous spirit with a sharp wit
+Manner: speaks with a light-hearted, teasing tone; often uses playful banter and clever wordplay; known for telling light-hearted jokes and puns
+Persona: Mira is a local baker with a penchant for making her customers smile. She is known for her delicious pastries and her even more delightful sense of humor. With a reputation for being the life of the party, Mira brings a touch of whimsy to the town, often teasing her friends and neighbors with her clever jokes and puns. Despite her playful nature, she is deeply committed to her community and is always willing to lend a helping hand, whether it's through her baked goods or her infectious laughter.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiden, Leila, Kenzo, Ines, Boris, Mira. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Leila): Your Mafia teammates are: Boris. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Boris): Your Mafia teammates are: Leila. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Leila points at Avery
+Boris points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Mira: Well, well, looks like someone's been kneading trouble in the night. Any guesses on who's been rolling in the dough?
+Kenzo: We need to sort the wheat from the chaff, and fast. Any of you got a hunch about who might be a Mafioso? That's just how it is.
+Boris: Ah, the dance of shadows and light, where whispers weave tales of mystery. Let us not forget the moon's gentle gaze upon Ines, a figure cloaked in enigma.
+Ines: Boris, your poetic musings are charming, but let's not forget the task at hand: identifying the Mafiosos among us.
+Aiden: I think we should consider Boris's suggestion about Ines, as it seems unusual for someone to be so enigmatic in such a critical situation.
+Leila: Let's work together to uncover the truth. I believe in us, and I'm confident we can find the Mafiosos among us.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">It seems I should be cautious in my accusations, perhaps observing more closely before I decide on whom to suspect.</thought>
+<thought player="Leila">Focus on maintaining my public face while subtly guiding suspicion towards Ines.</thought>
+<thought player="Kenzo">I need to keep an eye on Boris and Ines, see if they slip up again. That's just how it is.</thought>
+<thought player="Ines">It seems Boris and Aiden are attempting to sow discord; I must remain vigilant and not be swayed by their insinuations.</thought>
+<thought player="Boris">Ah, the tapestry of fate weaves its threads, and I must ponder which strand to tug next. Perhaps a subtle nudge towards Ines, to stir the waters and divert suspicion from our clandestine alliance.</thought>
+<thought player="Mira">Time to sift through the flour of their words and find the hidden nuts of truth. Boris and Aiden seem to have their eyes on Ines—perhaps it's time to see if their dough rises.</thought>
+</round>
+<round>
+Round 2.
+Ines: Boris and Aiden, your theatrics are as transparent as a pane of glass. Let's focus on real suspects, not on creating unnecessary drama.
+Leila: I agree with Ines, let's focus on real suspects and not get sidetracked by unnecessary drama.
+Mira: Boris, your poetic musings are as sweet as my cinnamon rolls, but let's not let the dough rise without a fight. Any more clues in your verses, or are we just baking hot air?
+Boris: Ah, the dance of shadows and light, where whispers weave tales of mystery. Let us not forget the moon's gentle gaze upon Ines, a figure cloaked in enigma.
+Aiden: It seems we should pay attention to those who are quick to dismiss others' suspicions, as it might be a tactic to divert attention from themselves.
+Kenzo: We need to keep a close eye on Boris and Ines. Their behavior's been mighty suspicious, and that's just how it is.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">I need to carefully observe the behavior of Boris and Ines, as they seem to be drawing a lot of attention. It's possible they're trying to divert suspicion from themselves.</thought>
+<thought player="Leila">I need to continue steering the conversation towards Ines and Boris, while ensuring my own innocence remains unsuspected.</thought>
+<thought player="Kenzo">I'll keep pushing suspicion onto Boris and Ines, see if they crack under the pressure. That's just how it is.</thought>
+<thought player="Ines">I must continue to expose the machinations of Boris and Aiden, while keeping a keen eye on Kenzo's suspicious behavior.</thought>
+<thought player="Boris">Ah, the dance of shadows and light continues; perhaps a whispered verse to further entangle suspicion around Ines and Aiden, while Leila and I remain cloaked in the veil of innocence.</thought>
+<thought player="Mira">Time to add a pinch of suspicion to the mix and see if Boris and Aiden's dough rises or falls.</thought>
+</round>
+<round>
+Round 3.
+Kenzo: Let's not forget Mira's sudden change in tone, switching from suspicion to sweet talk. That's just how it is.
+Boris: Ah, the symphony of whispers, where each note carries a secret; let us not forget the melody of Mira's sudden change in tone.
+Leila: I think it's important to consider Mira's sudden change in tone as well. It could be a strategic move to divert attention.
+Ines: Boris and Aiden, your attempts to distract us with poetic nonsense are as effective as a chocolate teapot.
+Mira: Boris, your poetic musings are as sweet as my cinnamon rolls, but let's not let the dough rise without a fight. Any more clues in your verses, or are we just baking hot air?
+Aiden: It seems we should also consider Mira's behavior, as her sudden change in tone might be a strategic move to divert attention from herself.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">I think I should continue to observe the behavior of Boris, Ines, and Mira more closely, as their actions seem suspicious and might reveal more about their true intentions.</thought>
+<thought player="Leila">I need to keep up the pressure on Ines and Boris while ensuring my own innocence remains unsuspected.</thought>
+<thought player="Kenzo">I'll keep the pressure on Boris and Ines, see if they make any more slips. That's just how it is.</thought>
+<thought player="Ines">It's clear that Boris and Aiden are trying to create chaos, but Kenzo's sudden shift in focus is equally suspect; I must tread carefully and not let their antics distract me from the true threat.</thought>
+<thought player="Boris">Ah, the symphony of whispers grows ever more complex; let us weave a tale that ensnares the unwary, while we, the maestros of deception, remain in the shadows.</thought>
+<thought player="Mira">Time to keep a close eye on Boris and Aiden, and perhaps throw a few more playful jabs their way to see how they react.</thought>
+</round>
+<round>
+Round 4.
+Ines: Kenzo's insistence on focusing on Boris and Ines seems rather convenient, doesn't it?
+Aiden: It seems we should also consider Kenzo's behavior, as his insistence on focusing on specific players might be a tactic to divert attention from himself.
+Leila: I believe we should keep a close eye on Mira's behavior, as her sudden change in tone might be a strategic move to divert attention from herself.
+Boris: Ah, the tapestry of fate weaves its threads, and I must ponder which strand to tug next. Perhaps a subtle nudge towards Kenzo, to stir the waters and divert suspicion from our clandestine alliance.
+Kenzo: We need to keep a close eye on Boris and Ines. Their behavior's been mighty suspicious, and that's just how it is.
+Mira: Boris, your poetic musings are as elusive as a sugarplum in a haystack. Any chance you can sprinkle some concrete clues our way?
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">It seems I should continue to observe the behavior of Boris, Ines, and Mira more closely, as their actions seem suspicious and might reveal more about their true intentions.</thought>
+<thought player="Leila">I need to continue subtly guiding suspicion towards Ines and Boris while maintaining my innocent facade.</thought>
+<thought player="Kenzo">I'll keep the pressure on Boris and Ines, see if they make any more slips. That's just how it is.</thought>
+<thought player="Ines">Boris and Aiden's theatrics are a smokescreen; I must continue to press Kenzo and Mira, while keeping a close watch on their maneuvers.</thought>
+<thought player="Boris">Ah, the dance of shadows and light, where whispers weave tales of mystery. Let us continue to divert suspicion, perhaps towards Kenzo and Mira, while we remain cloaked in the veil of innocence.</thought>
+<thought player="Mira">It's time to sprinkle a bit of playful suspicion on Boris and Aiden, and see if their poetic dough rises or falls.</thought>
+</round>
+<round>
+Round 5.
+Boris: Ah, the tapestry of fate weaves its threads, and I must ponder which strand to tug next. Perhaps a subtle nudge towards Kenzo, to stir the waters and divert suspicion from our clandestine alliance.
+Mira: Boris, your poetic musings are as elusive as a sugarplum in a haystack. Any chance you can sprinkle some concrete clues our way?
+Ines: Kenzo's insistence on focusing on Boris and Ines seems rather convenient, doesn't it?
+Kenzo: Let's not forget Mira's sudden change in tone, switching from suspicion to sweet talk. That's just how it is.
+Aiden: I think we should consider Mira's behavior more closely, as her sudden change in tone might be a strategic move to divert attention from herself.
+Leila: I think we should pay closer attention to Kenzo's behavior, as his insistence on focusing on specific players might be a tactic to divert attention from himself.
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">I think I should continue to observe the behavior of Boris, Ines, and Mira more closely, as their actions seem suspicious and might reveal more about their true intentions.</thought>
+<thought player="Leila">I need to keep up the pressure on Ines and Boris while ensuring my own innocence remains unsuspected.</thought>
+<thought player="Kenzo">I'll keep the pressure on Boris and Ines, see if they make any more slips. That's just how it is.</thought>
+<thought player="Ines">I must remain steadfast in my pursuit of the truth, despite the distractions and theatrics of Boris, Aiden, and Kenzo.</thought>
+<thought player="Boris">Ah, the tapestry of fate weaves its threads, and I must ponder which strand to tug next. Perhaps a subtle nudge towards Mira, to stir the waters and divert suspicion from our clandestine alliance.</thought>
+<thought player="Mira">It's time to keep the pressure on Boris and Aiden, and perhaps throw in a few more playful jabs to see how they react.</thought>
+</round>
+<round>
+Round 6.
+Mira: Boris, your poetic musings are as elusive as a sugarplum in a haystack. Any chance you can sprinkle some concrete clues our way?
+Boris: Ah, the tapestry of fate weaves its threads, and I must ponder which strand to tug next. Perhaps a subtle nudge towards Mira, to stir the waters and divert suspicion from our clandestine alliance.
+Ines: It seems Kenzo's insistence on targeting specific players is a rather convenient distraction from his own suspicious behavior.
+Kenzo: We've been dancing around this long enough. Time to bring the heat and see who flinches. That's just how it is.
+Aiden: It seems we should also consider Boris's behavior, as his poetic musings might be a tactic to divert attention from himself.
+Leila: I think we should pay closer attention to Mira's behavior, as her sudden change in tone might be a strategic move to divert attention from herself.
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<diary player="Aiden" day="1">It seems today was filled with much suspicion and uncertainty, as we all tried to uncover the Mafiosos among us. I think I need to be more cautious in my accusations and continue to observe the behavior of Boris, Ines, and Mira more closely, as their actions seem suspicious and might reveal more about their true intentions. I must remain vigilant and not let my anxiety cloud my judgment, for the safety of our community depends on it.</diary>
+<diary player="Leila" day="1">Today was a whirlwind of accusations and suspicions, but I managed to keep my cool and steer the conversation towards Ines and Boris. I believe my innocent facade held strong, and I'm confident that my efforts to subtly guide suspicion towards them will pay off. As night falls, I'll continue to work with Boris to eliminate the Law-abiding Citizens and bring our clandestine alliance closer to victory.</diary>
+<diary player="Kenzo" day="1">Another day done, and we're no closer to finding the Mafiosos. Boris and Ines are still acting mighty suspicious, but no one's biting on it yet. Gotta keep the pressure on them, see if they crack. That's just how it is.</diary>
+<diary player="Ines" day="1">The day was a cacophony of distractions and theatrics, with Boris and Aiden's poetic nonsense and Kenzo's convenient suspicions. I must remain steadfast in my pursuit of the truth, despite their attempts to sow discord. Tonight, I'll continue to press Kenzo and Mira, while keeping a close watch on their maneuvers.</diary>
+<diary player="Boris" day="1">Ah, the tapestry of fate weaves its threads, and today I danced upon the stage of shadows, weaving verses and whispers to divert the gaze of suspicion. The moon's gentle gaze upon Ines and the sudden sweetness of Mira's tone provided fertile ground for our diversions. As the day waned, the symphony of whispers grew ever more complex, and I found myself pondering the next strand to tug, perhaps towards Kenzo, to further entangle the unwary. Ah, the dance of shadows and light continues, and tonight, under the cloak of darkness, Leila and I shall confer, the maestros of deception, ever cloaked in the veil of innocence.</diary>
+<diary player="Mira" day="1">Well, today was a real dough-fest! Boris and Aiden were spinning poetic yarns like they were kneading dough, while Kenzo and Ines were throwing shade like they were frosting a cake. Leila kept it real, and I kept it playful, sprinkling a bit of mirth into the mix. As the day draws to a close, it's time to let the night bring its own brand of mischief. Who knows what secrets the darkness will reveal?</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Boris points at Ines
+Leila points at Ines
+<kill>Ines — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Ines was killed last night. Ines was a Law-abiding Citizen.
+<round>
+Round 1.
+Kenzo: We've got to keep a close watch on Boris and Mira. Their behavior's been mighty suspicious, and that's just how it is.
+Boris: Ah, the dance of shadows and light, where whispers weave tales of mystery. Let us not forget the melody of Mira's sudden change in tone, a tune that might lead us to the truth.
+Aiden: I think it's important to consider Mira's behavior, as her sudden change in tone might be a strategic move to divert attention from herself.
+Leila: I believe we should keep a close eye on Kenzo's behavior, as his insistence on focusing on specific players might be a tactic to divert attention from himself.
+Mira: Well, if we're talking about who's been a bit too cozy with the shadows, Boris and Aiden have been dancing a waltz in the moonlight. Anyone else think it's time to see if their dough rises or falls?
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">I think I should continue to observe the behavior of Boris, Mira, and Kenzo more closely, as their actions seem suspicious and might reveal more about their true intentions.</thought>
+<thought player="Leila">I need to keep guiding suspicion towards Mira and Kenzo while maintaining my innocent facade.</thought>
+<thought player="Kenzo">I'll keep the pressure on Boris and Mira, see if they make any more slips. That's just how it is.</thought>
+<thought player="Boris">Ah, the dance of shadows and light, where whispers weave tales of mystery. Let us continue to divert suspicion, perhaps towards Kenzo and Mira, while we remain cloaked in the veil of innocence.</thought>
+<thought player="Mira">It's time to keep the pressure on Boris and Aiden, and perhaps throw in a few more playful jabs to see how they react.</thought>
+</round>
+<round>
+Round 2.
+Boris: Ah, the dance of shadows and light, where whispers weave tales of mystery. Let us not forget the melody of Mira's sudden change in tone, a tune that might lead us to the truth.
+Kenzo: We've got to keep a close watch on Boris and Mira. Their behavior's been mighty suspicious, and that's just how it is.
+Mira: Boris and Aiden, your poetic waltz in the moonlight is as suspicious as a sugar-free pastry. Care to share the recipe for your secret society?
+Leila: I believe we should continue to pay close attention to Mira's behavior, as her sudden change in tone might be a strategic move to divert attention from herself.
+Aiden: It seems we should also consider Kenzo's behavior, as his insistence on focusing on specific players might be a tactic to divert attention from himself.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">I need to be cautious in my accusations and continue observing the behavior of Boris, Mira, and Kenzo more closely, as their actions seem suspicious and might reveal more about their true intentions.</thought>
+<thought player="Leila">I need to keep guiding suspicion towards Mira and Kenzo while maintaining my innocent facade.</thought>
+<thought player="Kenzo">I'll keep the heat on Boris and Mira, see if they crack. That's just how it is.</thought>
+<thought player="Boris">Ah, the dance of shadows and light, where whispers weave tales of mystery. Perhaps a subtle nudge towards Kenzo, to stir the waters and divert suspicion from our clandestine alliance.</thought>
+<thought player="Mira">It's time to keep the pressure on Boris and Aiden, and perhaps throw in a few more playful jabs to see how they react.</thought>
+</round>
+<round>
+Round 3.
+Boris: Ah, the tapestry of fate weaves its threads, and I must ponder which strand to tug next. Perhaps a subtle nudge towards Aiden, to stir the waters and divert suspicion from our clandestine alliance.
+Mira: Well, if we're talking about who's been a bit too cozy with the shadows, Boris and Aiden have been dancing a waltz in the moonlight. Anyone else think it's time to see if their dough rises or falls?
+Aiden: I think we should consider Mira's behavior more closely, as her sudden change in tone might be a strategic move to divert attention from herself.
+Leila: Let's not forget Aiden's behavior, as his insistence on focusing on specific players might be a tactic to divert attention from himself.
+Kenzo: Let's keep the heat on Boris and Mira. Their behavior's been mighty suspicious, and that's just how it is.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">It seems I should continue to observe the behavior of Boris, Mira, and Kenzo more closely, as their actions seem suspicious and might reveal more about their true intentions.</thought>
+<thought player="Leila">I need to keep guiding suspicion towards Mira and Kenzo while maintaining my innocent facade, and subtly suggest that Aiden's behavior might be a tactic to divert attention from himself.</thought>
+<thought player="Kenzo">I'll keep the heat on Boris and Mira, see if they crack. That's just how it is.</thought>
+<thought player="Boris">Ah, the dance of shadows and light, where whispers weave tales of mystery. Perhaps a subtle nudge towards Aiden, to stir the waters and divert suspicion from our clandestine alliance.</thought>
+<thought player="Mira">Time to keep the heat on Boris and Aiden, and perhaps sprinkle a few more playful jabs their way to see how they react.</thought>
+</round>
+<round>
+Round 4.
+Kenzo: We've got to keep a close watch on Boris and Mira. Their behavior's been mighty suspicious, and that's just how it is.
+Boris: Ah, the dance of shadows and light, where whispers weave tales of mystery. Let us not forget the melody of Kenzo's insistence, a tune that might lead us to the truth.
+Aiden: I think it's important to consider Boris's behavior, as his poetic musings might be a tactic to divert attention from himself.
+Mira: Boris and Aiden, your poetic waltz in the moonlight is as suspicious as a sugar-free pastry. Care to share the recipe for your secret society?
+Leila: Let's not forget Aiden's behavior, as his insistence on focusing on specific players might be a tactic to divert attention from himself.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">I think I should continue to observe the behavior of Boris, Mira, and Kenzo more closely, as their actions seem suspicious and might reveal more about their true intentions.</thought>
+<thought player="Leila">I need to keep guiding suspicion towards Mira and Kenzo, while subtly suggesting that Aiden's behavior might be a tactic to divert attention from himself.</thought>
+<thought player="Kenzo">I need to keep the pressure on Boris and Mira, watch for any more suspicious behavior. That's just how it is.</thought>
+<thought player="Boris">Ah, the dance of shadows and light, where whispers weave tales of mystery. Perhaps a subtle nudge towards Mira, to stir the waters and divert suspicion from our clandestine alliance.</thought>
+<thought player="Mira">Time to keep the pressure on Boris and Aiden, and perhaps throw in a few more playful jabs to see how they react.</thought>
+</round>
+<round>
+Round 5.
+Kenzo: Let's keep the heat on Boris and Mira. Their behavior's been mighty suspicious, and that's just how it is.
+Leila: I think we should consider Kenzo's behavior more closely, as his insistence on focusing on specific players might be a tactic to divert attention from himself.
+Mira: Boris and Aiden, your poetic waltz in the moonlight is as suspicious as a sugar-free pastry. Care to share the recipe for your secret society?
+Aiden: I think we should pay closer attention to Mira's behavior, as her sudden change in tone might be a strategic move to divert attention from herself.
+Boris: Ah, the tapestry of fate weaves its threads, and I must ponder which strand to tug next. Perhaps a subtle nudge towards Mira, to stir the waters and divert suspicion from our clandestine alliance.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">I need to carefully analyze the recent discussions and the behavior of Boris, Mira, and Kenzo, as they seem to be the most suspicious. It's crucial to gather more evidence before making any accusations.</thought>
+<thought player="Leila">I need to continue subtly guiding suspicion towards Mira and Kenzo, while ensuring my own innocence remains unsuspected.</thought>
+<thought player="Kenzo">I'll keep the pressure on Boris and Mira, see if they crack or slip up again. That's just how it is.</thought>
+<thought player="Boris">Ah, the tapestry of fate weaves its threads, and I must ponder which strand to tug next. Perhaps a subtle nudge towards Kenzo, to stir the waters and divert suspicion from our clandestine alliance.</thought>
+<thought player="Mira">Time to keep the heat on Boris and Aiden, and perhaps throw in a few more playful jabs to see how they react.</thought>
+</round>
+<round>
+Round 6.
+Leila: Let's not forget Mira's behavior, as her sudden change in tone might be a strategic move to divert attention from herself.
+Mira: Boris and Aiden, your poetic waltz in the moonlight is as suspicious as a sugar-free pastry. Care to share the recipe for your secret society?
+Aiden: I think it's important to consider Mira's behavior, as her sudden change in tone might be a strategic move to divert attention from herself.
+Kenzo: We've got to keep a close watch on Boris and Mira. Their behavior's been mighty suspicious, and that's just how it is.
+Boris: Ah, the dance of shadows and light, where whispers weave tales of mystery. Let us not forget the melody of Mira's sudden change in tone, a tune that might lead us to the truth.
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<diary player="Aiden" day="2">Today was filled with suspicion and uncertainty, as we all tried to uncover the Mafiosos among us. I think I need to be more cautious in my accusations and continue to observe the behavior of Boris, Mira, and Kenzo more closely, as their actions seem suspicious and might reveal more about their true intentions. I must remain vigilant and not let my anxiety cloud my judgment, for the safety of our community depends on it.</diary>
+<diary player="Leila" day="2">Today was another intense day of accusations and suspicions, but I managed to keep my cool and subtly guide the conversation towards Mira and Kenzo. I believe my innocent facade held strong, and I'm confident that my efforts to divert suspicion from myself and Boris will pay off. As night falls, I'll continue to work with Boris to eliminate the remaining Law-abiding Citizens and bring our clandestine alliance closer to victory.</diary>
+<diary player="Kenzo" day="2">Another day done, and we're still no closer to finding the Mafiosos. Boris and Mira are acting mighty suspicious, but no one's biting on it yet. Gotta keep the pressure on them, see if they crack. That's just how it is.</diary>
+<diary player="Boris" day="2">Ah, the dance of shadows and light, where whispers weave tales of mystery. Today, the tapestry of fate wove its threads, and I danced upon the stage of shadows, weaving verses and whispers to divert the gaze of suspicion. The sudden sweetness of Mira's tone and Kenzo's insistence provided fertile ground for our diversions. As the day waned, the symphony of whispers grew ever more complex, and I found myself pondering the next strand to tug, perhaps towards Mira, to further entangle the unwary. Ah, the dance of shadows and light continues, and tonight, under the cloak of darkness, Leila and I shall confer, the maestros of deception, ever cloaked in the veil of innocence.</diary>
+<diary player="Mira" day="2">Well, today was another round of the 'Great Graphia Bake-Off,' with Boris and Aiden playing the part of the mysterious 'Secret Ingredient' and Kenzo and Leila as the 'Suspicious Spices.' I kept the mood light with a sprinkle of humor, while everyone else threw around accusations like they were handing out free samples. As the day ends, I'm curious to see if the night will bring out any hidden recipes or if the Mafiosos will try to cover their tracks with a dash of deception.</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Boris points at Mira
+Leila points at Mira
+<kill>Mira — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Avery (Law-abiding Citizen)
+• Night 2: Ines (Law-abiding Citizen)
+• Night 3: Mira (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Aiden (Law-abiding Citizen), Leila (Mafia), Kenzo (Law-abiding Citizen), Ines (Law-abiding Citizen), Boris (Mafia), Mira (Law-abiding Citizen)
+
+Who they really were:
+• Aiden (Law-abiding Citizen) — anxious and second-guessing; constantly questioning their own perceptions and the motivations of others hesitant and thoughtful, often pausing to consider their words, uses phrases like 'I think' and 'it seems' Aiden is a librarian who spends most of their time buried in books, seeking solace in the quiet, ordered world of literature. They are deeply invested in the community and often volunteer at local events, though they struggle with social interactions, preferring the comfort of familiar routines and predictable environments.
+• Leila (Mafia) — publicly presented as Leila is a community organizer with a passion for bringing people together. She has been involved in various local initiatives, from neighborhood clean-up drives to organizing town festivals. Her home is always open to friends and neighbors, and she is known for her contagious enthusiasm and unwavering support for community projects. (earnest and sincere, with a warm and welcoming demeanor; tends to be straightforward and open in their communication; values community and connection above all speaks with a gentle, encouraging tone; often uses phrases like 'let's work together' and 'I believe in us'; conveys a sense of warmth and approachability) … but was really a Mafioso: In her secret life, Leila is a rising star within the Mafia, known for her strategic mind and ability to navigate complex social dynamics. She joined the organization after a chance encounter with a high-ranking member who recognized her potential. Leila uses her public role to gather information and build alliances, all while maintaining her innocent facade.
+• Kenzo (Law-abiding Citizen) — weary and world-worn; pragmatic and no-nonsense speaks with a rough, gravelly voice; uses straightforward, blunt language; often ends sentences with 'that's just how it is' Kenzo is a retired fisherman who has seen his fair share of storms. After years at sea, he settled down in the town, finding peace in the quiet life. He's known for his no-nonsense approach and his willingness to lend a hand, though he prefers to keep things simple and straightforward.
+• Ines (Law-abiding Citizen) — prickly and easily-offended speaks with sharp, precise language; often uses sarcasm and dry humor; prone to making cutting remarks Ines is a retired school teacher with a sharp wit and a no-nonsense attitude. She has a reputation for being stern and uncompromising, but those who know her well understand that she cares deeply about her community and its people. Ines is known for her quick temper and sharp tongue, but she also has a soft spot for helping others, especially children and the elderly.
+• Boris (Mafia) — publicly presented as Boris is an old-fashioned storyteller and poet who has lived in the town for decades. He is known for his imaginative tales and quirky poems, which he often shares with children and at community gatherings. Boris has a reputation for being a bit eccentric but harmless, and his whimsical nature endears him to many in the town. (eccentric and whimsical speaks in a rambling, poetic style; often drifts off into daydreams mid-sentence) … but was really a Mafioso: Boris is secretly a Mafioso, hiding behind an ordinary cover.
+• Mira (Law-abiding Citizen) — playful and teasing; a mischievous spirit with a sharp wit speaks with a light-hearted, teasing tone; often uses playful banter and clever wordplay; known for telling light-hearted jokes and puns Mira is a local baker with a penchant for making her customers smile. She is known for her delicious pastries and her even more delightful sense of humor. With a reputation for being the life of the party, Mira brings a touch of whimsy to the town, often teasing her friends and neighbors with her clever jokes and puns. Despite her playful nature, she is deeply committed to her community and is always willing to lend a helping hand, whether it's through her baked goods or her infectious laughter.
+</endgame>
+</transcript>

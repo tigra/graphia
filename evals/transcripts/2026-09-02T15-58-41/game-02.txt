@@ -1,0 +1,198 @@
+Game 2 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10 | diaries=off
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: gruff and blunt
+Manner: speaks quickly and with little pause, using direct language and often cutting short other players. Has a habit of saying "Listen" before making a point, and uses simple, concrete words.
+Persona: Kai is a blacksmith who works in the town's forge. They're known for being hardworking and straightforward, with little patience for nonsense or games. They've lived in town their whole life and are well-respected for their honest labor.
+</player>
+<player name="Hanna" role="Mafia">
+Personality: Dreamy and easily distracted, with a childlike wonder about the world. Sees beauty in mundane things and often loses track of conversations while lost in thought.
+Manner: Speaks softly, as if in a reverie. Often pauses mid-sentence to contemplate something, then resumes with a gentle smile. Uses whimsical comparisons and metaphors drawn from nature and imagination.
+Public legend: Hanna is the town's beloved herbalist, known for her gentle demeanor and knack for finding healing remedies in the most unexpected places. She spends her days tending to a small garden on the outskirts of town, gathering wildflowers and herbs for potions and salves. She's often seen humming softly to herself while working, and people find her stories about plants and their properties enchanting, even if they don't always make complete sense.
+True self (hidden): Hanna was once a renowned artist in the city before she fell into debt and was forced to flee. She became a Mafioso under the alias of "The Dreamer" to protect her identity while using her artistic talents to create false documents for the family. She finds solace in the quiet life of a herbalist, but her true purpose remains hidden.
+</player>
+<player name="Waleed" role="Law-abiding Citizen">
+Personality: world-worn and jaded
+Manner: speaks with a slow, deliberate cadence, each word carefully chosen and often delivered with a slight sneer. Uses a clipped, dry delivery and avoids small talk. Frequently sighs or rolls eyes when speaking. Has a habit of trailing off mid-sentence, leaving thoughts unfinished.
+Persona: Waleed is a former merchant who traveled the trade routes before settling in town. He's seen his fair share of scams and betrayals and now runs a modest shop selling odds and ends. He keeps to himself but has a sharp eye for detail, often noticing things others miss.
+</player>
+<player name="Aisha" role="Mafia">
+Personality: Aisha is a shrewd and calculating individual who exudes confidence and charm while maintaining an air of mysterious sophistication. She is intensely focused on her goals and never lets emotion cloud her judgment.
+Manner: Aisha speaks in measured, deliberate tones with a slight drawl that makes her seem both graceful and calculating. She often pauses before responding, as if carefully weighing each word. Her voice carries a subtle undertone of authority, and she uses metaphorical language to mask her true intentions.
+Public legend: Aisha is the town's respected librarian, known for her extensive knowledge and quiet demeanor. She has an impressive collection of rare books and manuscripts, which she carefully curates and maintains. Aisha is well-liked by the townsfolk for her helpful nature and deep understanding of local history. She spends her days organizing the library's archives and assisting residents with their research needs, often providing insightful advice drawn from her vast reading.
+True self (hidden): Aisha was once a skilled con artist who built a reputation in the underground networks before joining the Mafia. She learned the art of manipulation and deception from the best, using her charm and intelligence to climb the ranks. Her transition into the criminal world was seamless, as she had already mastered the art of reading people and playing their desires against them. Now, she uses her position as a librarian to gather information while maintaining her cover.
+</player>
+<player name="Tobias" role="Law-abiding Citizen">
+Personality: playful and teasing
+Manner: speaks with a mischievous twinkle in their eye, using light, airy tones and often trailing off with a smirk. They tend to tease others with gentle, sly remarks and have a habit of asking rhetorical questions that sound like they're just curious, but actually reveal something about the person they're addressing. Their voice is light and bouncy, with frequent pauses that let their teasing nature shine through.
+Persona: Tobias is the town's beloved baker, known for his incredible pastries and his infectious laugh. He's always ready with a joke or a compliment, and he has an uncanny ability to make everyone feel like they're the most important person in the room. His bakery is a gathering place where everyone comes to share stories and laughter.
+</player>
+<player name="Fiona" role="Law-abiding Citizen">
+Personality: Vigilant and watchful
+Manner: Speaks with a sharp, perceptive cadence, always observing and analyzing. Uses precise, deliberate language with frequent pauses for emphasis. Has a habit of repeating key words for clarity and often checks her surroundings while talking.
+Persona: Fiona is the town's reliable postmaster, known for her meticulous attention to detail and unwavering dedication to her work. She has been running the post office for over fifteen years, ensuring every letter and package reaches its destination safely and on time. Fiona is often seen with a small notebook, carefully tracking deliveries and maintaining detailed records. She has a keen eye for noticing things others miss, which helps her stay alert to any unusual activity around town.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Kai, Hanna, Waleed, Aisha, Tobias, Fiona. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Hanna): Your Mafia teammates are: Aisha. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Aisha): Your Mafia teammates are: Hanna. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Aisha points at Fiona
+Hanna points at Fiona
+<kill>Fiona — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Fiona was killed last night. Fiona was a Law-abiding Citizen.
+<round>
+Round 1.
+Aisha: That's a shame about Fiona — such a kind soul. I hope we can find the culprit soon, so we can all feel safe again.
+Waleed: I'm not sure who to trust yet.
+Avery: Nothing is settled yet, but I'm watching Waleed most closely.
+<vote initiator="Kai" target="Waleed">
+Avery: No
+Kai: Yes
+Hanna: No
+Waleed: No
+Aisha: No
+Tobias: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Avery: Nothing is settled yet, but I'm watching Waleed most closely.
+Tobias: Avery, you seem very certain about Waleed — do you have proof, or are you just following the crowd?
+Waleed: I'm still not convinced anyone here is clean. Not yet.
+<vote initiator="Kai" target="Aisha">
+Avery: No
+Kai: No
+Hanna: No
+Waleed: No
+Aisha: No
+Tobias: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Kai" target="Aisha">
+Avery: No
+Kai: No
+Hanna: No
+Waleed: No
+Aisha: No
+Tobias: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Aisha points at Tobias
+Hanna points at Tobias
+<kill>Tobias — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Tobias was killed last night. Tobias was a Law-abiding Citizen.
+<round>
+Round 1.
+Hanna: The flowers in my garden have been weeping dew lately — I wonder if they know something about the night's events?
+<vote initiator="Kai" target="Waleed">
+Avery: No
+Kai: Yes
+Hanna: No
+Waleed: No
+Aisha: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Avery: Nothing is settled yet, but I'm watching Waleed most closely.
+Waleed: I'm not sure who to trust yet.
+Hanna: The garden's been whispering secrets lately — I think it knows who's been troubling the night air.
+<vote initiator="Kai" target="Aisha">
+Avery: No
+Kai: No
+Hanna: No
+Waleed: No
+Aisha: No
+tally: 0 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Kai: Listen — I ain't got proof, but Waleed's been twitching like he knows something he ain't sayin'. That ain't normal.
+Avery: Nothing is settled yet, but I'm watching Waleed most closely.
+Hanna: The garden's been so quiet lately — not even the butterflies are dancing. I wonder if that's a good sign or a bad one?
+Waleed: I've been watchin' all of you, and I ain't seen nothin' but lies and half-truths spillin' from your mouths. That's what I see.
+Aisha: The garden may whisper, but I've been tending to it daily — and it's the soil that holds the truth, not the flowers.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+<thought player="Kai">Waleed's been acting strange, but I ain't seen nothin' solid. Aisha's been quiet too, which ain't normal for her. I gotta keep watch, but I ain't jumpin' to conclusions.</thought>
+<thought player="Hanna">The garden whispers, but I wonder if Waleed's twitching is the real secret the night air holds. My mind wanders to the flowers, yet something in his eyes feels like truth — or perhaps a lie cleverly dressed as truth.</thought>
+<thought player="Waleed">Kai's pushing Waleed hard, but I ain't seen enough to swing a vote. Still, if I don't speak up, they'll keep pointing at me. Maybe I should let them think I'm just a merchant with a bad eye for trouble.</thought>
+<thought player="Aisha">The townsfolk are growing suspicious, and Waleed seems to be drawing attention. I must keep my guard up while planting seeds of doubt in the right places. My cover remains solid, but I need to ensure no one connects the dots.</thought>
+</round>
+<round>
+Round 2.
+Hanna: The garden's been quiet, but I swear I saw a shadow move when no one was looking — it made me think the night air holds more secrets than we know.
+Avery: Nothing is settled yet, but I'm watching Waleed most closely.
+Aisha: I've been thinking — if the killer is among us, they're clever enough to hide in plain sight. But the night air carries more than just secrets; it holds the weight of truth.
+Kai: I ain't sayin' Aisha is clean, but she's been duckin' every question like a scared rabbit. That's what I see.
+Waleed: I ain't sayin' I know who done it, but I sure don't trust the way Kai's eyes keep dartin' toward Aisha when he thinks no one's lookin'.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+<thought player="Kai">Waleed's been twitching, but Aisha's silence ain't right either. I ain't got proof, but I'm leanin' toward Aisha — she's been too quiet for a liar.</thought>
+<thought player="Hanna">The garden whispers, but Waleed's twitching feels like truth—or a lie cleverly dressed as truth. I wonder if the night air holds more secrets than we know, or if I'm just lost in my own reverie.</thought>
+<thought player="Waleed">Kai's got his sights set on me, but I ain't gonna let him drag me into a lynch mob with nothing but suspicion. I need to keep talkin' like I don't know nothin', but maybe drop a hint or two that I'm not as blind as I seem. If I play it right, I might just be the one who points the finger at the real killer.</thought>
+<thought player="Aisha">Waleed is drawing too much attention, and my cover is holding, but I need to redirect suspicion away from Hanna and me. I should plant a seed of doubt about Waleed’s motives without directly implicating him.</thought>
+</round>
+<round>
+Round 3.
+<vote initiator="Kai" target="Aisha">
+Avery: No
+Kai: No
+Hanna: No
+Waleed: No
+Aisha: No
+tally: 0 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Aisha points at Waleed
+Hanna points at Waleed
+<kill>Waleed — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Fiona (Law-abiding Citizen)
+• Night 2: Tobias (Law-abiding Citizen)
+• Night 3: Waleed (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Kai (Law-abiding Citizen), Hanna (Mafia), Waleed (Law-abiding Citizen), Aisha (Mafia), Tobias (Law-abiding Citizen), Fiona (Law-abiding Citizen)
+
+Who they really were:
+• Kai (Law-abiding Citizen) — gruff and blunt speaks quickly and with little pause, using direct language and often cutting short other players. Has a habit of saying "Listen" before making a point, and uses simple, concrete words. Kai is a blacksmith who works in the town's forge. They're known for being hardworking and straightforward, with little patience for nonsense or games. They've lived in town their whole life and are well-respected for their honest labor.
+• Hanna (Mafia) — publicly presented as Hanna is the town's beloved herbalist, known for her gentle demeanor and knack for finding healing remedies in the most unexpected places. She spends her days tending to a small garden on the outskirts of town, gathering wildflowers and herbs for potions and salves. She's often seen humming softly to herself while working, and people find her stories about plants and their properties enchanting, even if they don't always make complete sense. (Dreamy and easily distracted, with a childlike wonder about the world. Sees beauty in mundane things and often loses track of conversations while lost in thought. Speaks softly, as if in a reverie. Often pauses mid-sentence to contemplate something, then resumes with a gentle smile. Uses whimsical comparisons and metaphors drawn from nature and imagination.) … but was really a Mafioso: Hanna was once a renowned artist in the city before she fell into debt and was forced to flee. She became a Mafioso under the alias of "The Dreamer" to protect her identity while using her artistic talents to create false documents for the family. She finds solace in the quiet life of a herbalist, but her true purpose remains hidden.
+• Waleed (Law-abiding Citizen) — world-worn and jaded speaks with a slow, deliberate cadence, each word carefully chosen and often delivered with a slight sneer. Uses a clipped, dry delivery and avoids small talk. Frequently sighs or rolls eyes when speaking. Has a habit of trailing off mid-sentence, leaving thoughts unfinished. Waleed is a former merchant who traveled the trade routes before settling in town. He's seen his fair share of scams and betrayals and now runs a modest shop selling odds and ends. He keeps to himself but has a sharp eye for detail, often noticing things others miss.
+• Aisha (Mafia) — publicly presented as Aisha is the town's respected librarian, known for her extensive knowledge and quiet demeanor. She has an impressive collection of rare books and manuscripts, which she carefully curates and maintains. Aisha is well-liked by the townsfolk for her helpful nature and deep understanding of local history. She spends her days organizing the library's archives and assisting residents with their research needs, often providing insightful advice drawn from her vast reading. (Aisha is a shrewd and calculating individual who exudes confidence and charm while maintaining an air of mysterious sophistication. She is intensely focused on her goals and never lets emotion cloud her judgment. Aisha speaks in measured, deliberate tones with a slight drawl that makes her seem both graceful and calculating. She often pauses before responding, as if carefully weighing each word. Her voice carries a subtle undertone of authority, and she uses metaphorical language to mask her true intentions.) … but was really a Mafioso: Aisha was once a skilled con artist who built a reputation in the underground networks before joining the Mafia. She learned the art of manipulation and deception from the best, using her charm and intelligence to climb the ranks. Her transition into the criminal world was seamless, as she had already mastered the art of reading people and playing their desires against them. Now, she uses her position as a librarian to gather information while maintaining her cover.
+• Tobias (Law-abiding Citizen) — playful and teasing speaks with a mischievous twinkle in their eye, using light, airy tones and often trailing off with a smirk. They tend to tease others with gentle, sly remarks and have a habit of asking rhetorical questions that sound like they're just curious, but actually reveal something about the person they're addressing. Their voice is light and bouncy, with frequent pauses that let their teasing nature shine through. Tobias is the town's beloved baker, known for his incredible pastries and his infectious laugh. He's always ready with a joke or a compliment, and he has an uncanny ability to make everyone feel like they're the most important person in the room. His bakery is a gathering place where everyone comes to share stories and laughter.
+• Fiona (Law-abiding Citizen) — Vigilant and watchful Speaks with a sharp, perceptive cadence, always observing and analyzing. Uses precise, deliberate language with frequent pauses for emphasis. Has a habit of repeating key words for clarity and often checks her surroundings while talking. Fiona is the town's reliable postmaster, known for her meticulous attention to detail and unwavering dedication to her work. She has been running the post office for over fifteen years, ensuring every letter and package reaches its destination safely and on time. Fiona is often seen with a small notebook, carefully tracking deliveries and maintaining detailed records. She has a keen eye for noticing things others miss, which helps her stay alert to any unusual activity around town.
+</endgame>
+</transcript>

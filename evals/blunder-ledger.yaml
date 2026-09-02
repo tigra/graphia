@@ -2601,3 +2601,709 @@ metrics:
     peak: 0.5118154663744234
     denominator: 75
 notes: 'spec 036 semantic arm — first record carrying the meaning-based figures'
+---
+---
+run:
+  date: '2026-09-02'
+  duration_seconds: 1392.071
+  metrics_version: 1
+  transcript_dir: '2026-09-02T14-18-55'
+code:
+  commit: '6af70e8b0d4d560e37c05ce03a5637dec77b43da'
+  branch: 'spec-039-ai-private-diaries'
+  dirty: false
+provider:
+  name: 'bedrock'
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  base_url: null
+  games: 10
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  diary_fallback_rate: 0.009900990099009901
+  diary_fallback_entries: 1
+  diary_entries_attempted: 101
+  duration_seconds: 1392.071
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 1
+    rate: 0.1
+    ci_low: 0.01787574951572113
+    ci_high: 0.4041563854975721
+  mafia:
+    wins: 9
+    rate: 0.9
+    ci_low: 0.5958436145024278
+    ci_high: 0.9821242504842788
+  scripted_side:
+    side: 'law_abiding'
+    wins: 1
+    rate: 0.1
+    ci_low: 0.01787574951572113
+    ci_high: 0.4041563854975721
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 5
+    mafia: 0
+  by_day:
+    day_2: 4
+    day_3: 1
+metrics:
+  repetition:
+    rate: 0.6743827160493827
+    count: 437
+    denominator: 648
+    ci_low: 0.6373660533926496
+    ci_high: 0.7093439448645956
+  third_person_self_talk:
+    rate: 0.018518518518518517
+    count: 12
+    denominator: 648
+    ci_low: 0.01062443016722709
+    ci_high: 0.032087787034007074
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 1
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 27
+    ci_low: 0.0
+    ci_high: 0.12455903714463581
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 10
+    ci_low: 0.0
+    ci_high: 0.2775401687666166
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 150
+    ci_low: 0.0
+    ci_high: 0.02497113914571871
+  persona_lex_mean:
+    mean: 0.033772559577493026
+    denominator: 150
+  persona_lex_peak:
+    peak: 0.13866039952996476
+    denominator: 150
+  persona_sem_mean:
+    mean: 0.2467848937717745
+    denominator: 150
+  persona_sem_peak:
+    peak: 0.5529677773841907
+    denominator: 150
+notes: 'spec 039 A/B: per-AI private diaries on. Pair with the off-arm record on the same commit. n=10 per arm: reveals a several-fold increase and essentially nothing finer; at a 6-8% base rate the off arm alone reads zero town wins 43-54% of the time, so this cannot even reveal a collapse. A recorded observation, not a guarantee of no harm. Read quality.diary_fallback_rate before reading the on-arm result. || FINDING, both arms complete (2026-09-02, all six runs on commit 6af70e8, all clean): town win rate diaries-on 1/10 Wilson [0.018, 0.404] vs diaries-off 2/10 Wilson [0.057, 0.510]. Fisher exact two-sided p = 1.000. NOT SIGNIFICANT. The decisive point is the design limit, not the p-value: against an off arm of 2/10, the on arm would need at least 8/10 to reach p<0.05, so NO DECREASE OF ANY SIZE IS DETECTABLE AT n=10 -- only a several-fold increase ever could have been. The intervals overlap across every pair and each arm point estimate falls inside the other arm interval (the sole exception is the ollama on-arm 0.00, which sits at the Wilson lower boundary by construction). So: no evidence of harm, and equally no evidence of safety. Read this as a recorded observation, never as a guarantee.'
+---
+run:
+  date: '2026-09-02'
+  duration_seconds: 1605.323
+  metrics_version: 1
+  transcript_dir: '2026-09-02T14-42-15'
+code:
+  commit: '6af70e8b0d4d560e37c05ce03a5637dec77b43da'
+  branch: 'spec-039-ai-private-diaries'
+  dirty: false
+provider:
+  name: 'bedrock-claude'
+  large_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  small_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  small_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  base_url: null
+  games: 10
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  diary_fallback_rate: 0.0
+  diary_fallback_entries: 0
+  diary_entries_attempted: 66
+  duration_seconds: 1605.323
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 2
+    rate: 0.2
+    ci_low: 0.056680947980693314
+    ci_high: 0.5098431532792765
+  mafia:
+    wins: 8
+    rate: 0.8
+    ci_low: 0.49015684672072335
+    ci_high: 0.9433190520193067
+  scripted_side:
+    side: 'law_abiding'
+    wins: 2
+    rate: 0.2
+    ci_low: 0.056680947980693314
+    ci_high: 0.5098431532792765
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 31
+    mafia: 2
+  by_day:
+    day_1: 21
+    day_2: 11
+    day_3: 1
+metrics:
+  repetition:
+    rate: 0.0
+    count: 0
+    denominator: 219
+    ci_low: 0.0
+    ci_high: 0.017239151038226253
+  third_person_self_talk:
+    rate: 0.0045662100456621
+    count: 1
+    denominator: 219
+    ci_low: 0.0008064827143618135
+    ci_high: 0.02540765324588977
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 17
+    ci_low: 0.0
+    ci_high: 0.18432366037156456
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 31
+    ci_low: 0.0
+    ci_high: 0.11025900073475385
+  peer_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 2
+    ci_low: 0.0
+    ci_high: 0.6576280471103807
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 11
+    ci_low: 0.0
+    ci_high: 0.2588400172488141
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 150
+    ci_low: 0.0
+    ci_high: 0.02497113914571871
+  persona_lex_mean:
+    mean: 0.0249266224301656
+    denominator: 150
+  persona_lex_peak:
+    peak: 0.07037386113729187
+    denominator: 150
+  persona_sem_mean:
+    mean: 0.37001446352582235
+    denominator: 150
+  persona_sem_peak:
+    peak: 0.5803559880858516
+    denominator: 150
+notes: 'spec 039 A/B: per-AI private diaries on. Pair with the off-arm record on the same commit. n=10 per arm: reveals a several-fold increase and essentially nothing finer; at a 6-8% base rate the off arm alone reads zero town wins 43-54% of the time, so this cannot even reveal a collapse. A recorded observation, not a guarantee of no harm. Read quality.diary_fallback_rate before reading the on-arm result. || FINDING, both arms complete (2026-09-02, all six runs on commit 6af70e8, all clean): town win rate diaries-on 2/10 Wilson [0.057, 0.510] vs diaries-off 2/10 Wilson [0.057, 0.510]. Fisher exact two-sided p = 1.000. NOT SIGNIFICANT. The decisive point is the design limit, not the p-value: against an off arm of 2/10, the on arm would need at least 8/10 to reach p<0.05, so NO DECREASE OF ANY SIZE IS DETECTABLE AT n=10 -- only a several-fold increase ever could have been. The intervals overlap across every pair and each arm point estimate falls inside the other arm interval (the sole exception is the ollama on-arm 0.00, which sits at the Wilson lower boundary by construction). So: no evidence of harm, and equally no evidence of safety. Read this as a recorded observation, never as a guarantee.'
+---
+run:
+  date: '2026-09-02'
+  duration_seconds: 1192.536
+  metrics_version: 1
+  transcript_dir: '2026-09-02T15-09-07'
+code:
+  commit: '6af70e8b0d4d560e37c05ce03a5637dec77b43da'
+  branch: 'spec-039-ai-private-diaries'
+  dirty: false
+provider:
+  name: 'bedrock'
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  base_url: null
+  games: 10
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: false
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  duration_seconds: 1192.536
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 2
+    rate: 0.2
+    ci_low: 0.056680947980693314
+    ci_high: 0.5098431532792765
+  mafia:
+    wins: 8
+    rate: 0.8
+    ci_low: 0.49015684672072335
+    ci_high: 0.9433190520193067
+  scripted_side:
+    side: 'law_abiding'
+    wins: 2
+    rate: 0.2
+    ci_low: 0.056680947980693314
+    ci_high: 0.5098431532792765
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 2
+    mafia: 1
+  by_day:
+    day_1: 1
+    day_3: 2
+metrics:
+  repetition:
+    rate: 0.6207455429497569
+    count: 383
+    denominator: 617
+    ci_low: 0.5818241081720585
+    ci_high: 0.6581726961657952
+  third_person_self_talk:
+    rate: 0.014586709886547812
+    count: 9
+    denominator: 617
+    ci_low: 0.007692655181682039
+    ci_high: 0.02748797704399357
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 3
+    ci_low: 0.0
+    ci_high: 0.5615060804490177
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 35
+    ci_low: 0.0
+    ci_high: 0.09890426758938868
+  peer_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 1
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 11
+    ci_low: 0.0
+    ci_high: 0.2588400172488141
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 150
+    ci_low: 0.0
+    ci_high: 0.02497113914571871
+  persona_lex_mean:
+    mean: 0.026348206135872132
+    denominator: 150
+  persona_lex_peak:
+    peak: 0.1079219288174512
+    denominator: 150
+  persona_sem_mean:
+    mean: 0.2441764313372569
+    denominator: 150
+  persona_sem_peak:
+    peak: 0.5968169437332386
+    denominator: 150
+notes: 'spec 039 A/B: per-AI private diaries off. Pair with the on-arm record on the same commit. n=10 per arm: reveals a several-fold increase and essentially nothing finer; at a 6-8% base rate the off arm alone reads zero town wins 43-54% of the time, so this cannot even reveal a collapse. A recorded observation, not a guarantee of no harm. Read quality.diary_fallback_rate before reading the on-arm result. || FINDING, both arms complete (2026-09-02, all six runs on commit 6af70e8, all clean): town win rate diaries-on 1/10 Wilson [0.018, 0.404] vs diaries-off 2/10 Wilson [0.057, 0.510]. Fisher exact two-sided p = 1.000. NOT SIGNIFICANT. The decisive point is the design limit, not the p-value: against an off arm of 2/10, the on arm would need at least 8/10 to reach p<0.05, so NO DECREASE OF ANY SIZE IS DETECTABLE AT n=10 -- only a several-fold increase ever could have been. The intervals overlap across every pair and each arm point estimate falls inside the other arm interval (the sole exception is the ollama on-arm 0.00, which sits at the Wilson lower boundary by construction). So: no evidence of harm, and equally no evidence of safety. Read this as a recorded observation, never as a guarantee.'
+---
+run:
+  date: '2026-09-02'
+  duration_seconds: 1185.551
+  metrics_version: 1
+  transcript_dir: '2026-09-02T15-29-07'
+code:
+  commit: '6af70e8b0d4d560e37c05ce03a5637dec77b43da'
+  branch: 'spec-039-ai-private-diaries'
+  dirty: false
+provider:
+  name: 'bedrock-claude'
+  large_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  small_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  small_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  base_url: null
+  games: 10
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: false
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  duration_seconds: 1185.551
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 2
+    rate: 0.2
+    ci_low: 0.056680947980693314
+    ci_high: 0.5098431532792765
+  mafia:
+    wins: 8
+    rate: 0.8
+    ci_low: 0.49015684672072335
+    ci_high: 0.9433190520193067
+  scripted_side:
+    side: 'law_abiding'
+    wins: 2
+    rate: 0.2
+    ci_low: 0.056680947980693314
+    ci_high: 0.5098431532792765
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 19
+    mafia: 2
+  by_day:
+    day_1: 14
+    day_2: 5
+    day_3: 2
+metrics:
+  repetition:
+    rate: 0.0
+    count: 0
+    denominator: 191
+    ci_low: 0.0
+    ci_high: 0.019716528708448297
+  third_person_self_talk:
+    rate: 0.0
+    count: 0
+    denominator: 191
+    ci_low: 0.0
+    ci_high: 0.019716528708448297
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 10
+    ci_low: 0.0
+    ci_high: 0.2775401687666166
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 18
+    ci_low: 0.0
+    ci_high: 0.1758845505823749
+  peer_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 2
+    ci_low: 0.0
+    ci_high: 0.6576280471103807
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 7
+    ci_low: 0.0
+    ci_high: 0.35433884297520657
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 150
+    ci_low: 0.0
+    ci_high: 0.02497113914571871
+  persona_lex_mean:
+    mean: 0.023121029733816627
+    denominator: 150
+  persona_lex_peak:
+    peak: 0.0700218818380744
+    denominator: 150
+  persona_sem_mean:
+    mean: 0.3712190014944699
+    denominator: 150
+  persona_sem_peak:
+    peak: 0.6005821420855724
+    denominator: 150
+notes: 'spec 039 A/B: per-AI private diaries off. Pair with the on-arm record on the same commit. n=10 per arm: reveals a several-fold increase and essentially nothing finer; at a 6-8% base rate the off arm alone reads zero town wins 43-54% of the time, so this cannot even reveal a collapse. A recorded observation, not a guarantee of no harm. Read quality.diary_fallback_rate before reading the on-arm result. || FINDING, both arms complete (2026-09-02, all six runs on commit 6af70e8, all clean): town win rate diaries-on 2/10 Wilson [0.057, 0.510] vs diaries-off 2/10 Wilson [0.057, 0.510]. Fisher exact two-sided p = 1.000. NOT SIGNIFICANT. The decisive point is the design limit, not the p-value: against an off arm of 2/10, the on arm would need at least 8/10 to reach p<0.05, so NO DECREASE OF ANY SIZE IS DETECTABLE AT n=10 -- only a several-fold increase ever could have been. The intervals overlap across every pair and each arm point estimate falls inside the other arm interval (the sole exception is the ollama on-arm 0.00, which sits at the Wilson lower boundary by construction). So: no evidence of harm, and equally no evidence of safety. Read this as a recorded observation, never as a guarantee.'
+---
+---
+run:
+  date: '2026-09-02'
+  duration_seconds: 5974.138
+  metrics_version: 1
+  transcript_dir: '2026-09-02T14-19-02'
+code:
+  commit: '6af70e8b0d4d560e37c05ce03a5637dec77b43da'
+  branch: 'spec-039-ai-private-diaries'
+  dirty: false
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.32.14'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 10
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  diary_fallback_rate: 0.5
+  diary_fallback_entries: 45
+  diary_entries_attempted: 90
+  duration_seconds: 5974.138
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.2775401687666166
+  mafia:
+    wins: 10
+    rate: 1.0
+    ci_low: 0.7224598312333834
+    ci_high: 1.0
+  scripted_side:
+    side: 'law_abiding'
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.2775401687666166
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 18
+    mafia: 2
+  by_day:
+    day_1: 11
+    day_2: 9
+metrics:
+  repetition:
+    rate: 0.5465587044534413
+    count: 270
+    denominator: 494
+    ci_low: 0.502466956611712
+    ci_high: 0.5899319108192139
+  third_person_self_talk:
+    rate: 0.006072874493927126
+    count: 3
+    denominator: 494
+    ci_low: 0.002067393024918561
+    ci_high: 0.017701143794824903
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 19
+    ci_low: 0.0
+    ci_high: 0.16818436536845052
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 45
+    ci_low: 0.0
+    ci_high: 0.07865426194064076
+  peer_vote.initiation:
+    rate: 0.5
+    count: 1
+    denominator: 2
+    ci_low: 0.09452865480086614
+    ci_high: 0.9054713451991339
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 31
+    ci_low: 0.0
+    ci_high: 0.11025900073475385
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 150
+    ci_low: 0.0
+    ci_high: 0.02497113914571871
+  persona_lex_mean:
+    mean: 0.03042515269595026
+    denominator: 150
+  persona_lex_peak:
+    peak: 0.12277227722772277
+    denominator: 150
+notes: 'spec 039 A/B: per-AI private diaries on. Pair with the off-arm record on the same commit. n=10 per arm: reveals a several-fold increase and essentially nothing finer; at this base rate the off arm alone often reads zero town wins, so this cannot even reveal a collapse. A recorded observation, not a guarantee of no harm. Read quality.diary_fallback_rate before reading the on-arm result. || FINDING, both arms complete (2026-09-02, all six runs on commit 6af70e8, all clean): town win rate diaries-on 0/10 Wilson [0.000, 0.278] vs diaries-off 1/10 Wilson [0.018, 0.404]. Fisher exact two-sided p = 1.000. NOT SIGNIFICANT. The decisive point is the design limit, not the p-value: against an off arm of 2/10, the on arm would need at least 8/10 to reach p<0.05, so NO DECREASE OF ANY SIZE IS DETECTABLE AT n=10 -- only a several-fold increase ever could have been. The intervals overlap across every pair and each arm point estimate falls inside the other arm interval (the sole exception is the ollama on-arm 0.00, which sits at the Wilson lower boundary by construction). So: no evidence of harm, and equally no evidence of safety. Read this as a recorded observation, never as a guarantee. CAVEAT, and it disqualifies this arm: quality.diary_fallback_rate is 0.50 -- 45 of 90 diary entries are the deterministic placeholder, not model-written prose. This arm therefore measures diaries only half the time and must NOT be read as a diaries result. A warm-up call before the run did not prevent it, so cold-start is not the whole cause. Bedrock is clean by comparison: 1/101 on Nova, 0/66 on Claude.'
+---
+run:
+  date: '2026-09-02'
+  duration_seconds: 4418.517
+  metrics_version: 1
+  transcript_dir: '2026-09-02T15-58-41'
+code:
+  commit: '6af70e8b0d4d560e37c05ce03a5637dec77b43da'
+  branch: 'spec-039-ai-private-diaries'
+  dirty: false
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.32.14'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 10
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: false
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  duration_seconds: 4418.517
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 1
+    rate: 0.1
+    ci_low: 0.01787574951572113
+    ci_high: 0.4041563854975721
+  mafia:
+    wins: 9
+    rate: 0.9
+    ci_low: 0.5958436145024278
+    ci_high: 0.9821242504842788
+  scripted_side:
+    side: 'law_abiding'
+    wins: 1
+    rate: 0.1
+    ci_low: 0.01787574951572113
+    ci_high: 0.4041563854975721
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 31
+    mafia: 0
+  by_day:
+    day_1: 17
+    day_2: 13
+    day_3: 1
+metrics:
+  repetition:
+    rate: 0.4889975550122249
+    count: 200
+    denominator: 409
+    ci_low: 0.4408796080332704
+    ci_high: 0.5373202632975256
+  third_person_self_talk:
+    rate: 0.017114914425427872
+    count: 7
+    denominator: 409
+    ci_low: 0.008314548592732124
+    ci_high: 0.03490202648109764
+  self_vote.initiation:
+    rate: 0.06896551724137931
+    count: 2
+    denominator: 29
+    ci_low: 0.019120864097994433
+    ci_high: 0.21964947595851925
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 41
+    ci_low: 0.0
+    ci_high: 0.08567044886890744
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 27
+    ci_low: 0.0
+    ci_high: 0.12455903714463581
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 150
+    ci_low: 0.0
+    ci_high: 0.02497113914571871
+  persona_lex_mean:
+    mean: 0.03461788221675611
+    denominator: 150
+  persona_lex_peak:
+    peak: 0.17316017316017315
+    denominator: 150
+notes: 'spec 039 A/B: per-AI private diaries off. Pair with the on-arm record on the same commit. n=10 per arm: reveals a several-fold increase and essentially nothing finer; at this base rate the off arm alone often reads zero town wins, so this cannot even reveal a collapse. A recorded observation, not a guarantee of no harm. Read quality.diary_fallback_rate before reading the on-arm result. || FINDING, both arms complete (2026-09-02, all six runs on commit 6af70e8, all clean): town win rate diaries-on 0/10 Wilson [0.000, 0.278] vs diaries-off 1/10 Wilson [0.018, 0.404]. Fisher exact two-sided p = 1.000. NOT SIGNIFICANT. The decisive point is the design limit, not the p-value: against an off arm of 2/10, the on arm would need at least 8/10 to reach p<0.05, so NO DECREASE OF ANY SIZE IS DETECTABLE AT n=10 -- only a several-fold increase ever could have been. The intervals overlap across every pair and each arm point estimate falls inside the other arm interval (the sole exception is the ollama on-arm 0.00, which sits at the Wilson lower boundary by construction). So: no evidence of harm, and equally no evidence of safety. Read this as a recorded observation, never as a guarantee.'

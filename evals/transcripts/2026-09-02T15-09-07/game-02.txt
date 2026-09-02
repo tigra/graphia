@@ -1,0 +1,307 @@
+Game 2 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=10 | diaries=off
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Aiden" role="Law-abiding Citizen">
+Personality: bold and unabashed; speaks with an air of confident authority, often exaggerating to make a point
+Manner: fast-paced speech, frequent use of hyperbole, occasional dramatic pauses for effect
+Persona: Aiden is a charismatic local radio show host known for his energetic broadcasts and unfiltered opinions. He's the go-to guy for spreading news and gossip, always with a larger-than-life spin.
+</player>
+<player name="Liam" role="Law-abiding Citizen">
+Personality: warm and effusive
+Manner: enthusiastic, friendly, and chatty; uses endearing terms and expressive intonation
+Persona: Liam is a beloved local baker, known for his heartwarming smiles and delicious pastries. He's always ready with a kind word and a fresh loaf of bread for those in need. His bakery is a community hub, where everyone feels welcome and at home.
+</player>
+<player name="Pavel" role="Mafia">
+Personality: Prickly and easily-offended; defensive and reactive to perceived slights.
+Manner: Sarcastic and curt with a tendency to snap back at perceived insults, often uses dry humor to deflect uncomfortable situations.
+Public legend: Pavel is a retired history teacher who now spends his days meticulously maintaining the town's historical archives. He's known for his sharp wit and encyclopedic knowledge of local history, which he loves to share with anyone who will listen—though his enthusiasm is often tempered by a biting commentary on the present.
+True self (hidden): Pavel joined the Mafia as a young man, drawn in by the promise of power and the thrill of the game. Over the years, he has risen through the ranks, using his sharp mind and cunning to outmaneuver rivals and secure his position. His cover as a history teacher allows him to keep a low profile while maintaining a network of informants and allies.
+</player>
+<player name="Xin" role="Mafia">
+Personality: aloof and detached
+Manner: calm, deliberate speech, often with an undercurrent of veiled meaning or suggestion, using precise and measured words
+Public legend: Xin is a skilled herbalist and apothecary, having spent years traveling the countryside to gather rare plants and learn ancient remedies. They are known for their quiet wisdom and deep knowledge of medicinal herbs. Xin tends to keep to themselves, preferring the company of their plants over people, but they are always willing to share their knowledge with those in need. They have a small, well-organized shop on the outskirts of town, where they meticulously craft their potions and tinctures.
+True self (hidden): Xin's true self is a high-ranking Mafioso, having risen through the ranks due to their strategic mind and unparalleled patience. They use their apothecary as a front to gather information and discreetly deal with threats. Their knowledge of poisons and antidotes makes them a valuable asset to the Mafia, and their aloof demeanor masks a calculating and ruthless nature.
+</player>
+<player name="Amara" role="Law-abiding Citizen">
+Personality: earnest and sincere
+Manner: soft-spoken, thoughtful, uses gentle metaphors, occasional pauses for reflection
+Persona: Amara is a dedicated community gardener, known for her vibrant flower arrangements and verdant vegetable patches. She believes in the power of nature to heal and bring people together, often sharing her homegrown produce and floral creations with neighbors. Her garden is a sanctuary for both her and the town's residents, a place where they can find peace and connection.
+</player>
+<player name="Nadia" role="Law-abiding Citizen">
+Personality: ebullient and spontaneous
+Manner: rapid-fire speech, uses playful puns, occasional laughter
+Persona: Nadia is the town's spirited event planner, renowned for her vibrant festivals and lively community gatherings. With a contagious laugh and an endless supply of creative ideas, she brings joy and excitement to every occasion she organizes. Her passion for celebration and connection makes her a beloved figure in the community.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiden, Liam, Pavel, Xin, Amara, Nadia. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Pavel): Your Mafia teammates are: Xin. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Xin): Your Mafia teammates are: Pavel. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Pavel points at Liam
+Xin points at Liam
+<kill>Liam — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Liam was killed last night. Liam was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: Nothing is settled yet, but I'm watching Pavel most closely.
+Pavel: Well, Avery, if you're so keen on watching someone, why not start with Amara? She seems awfully quiet for someone who's innocent.
+Amara: In the garden of our discussion, let us nurture the seeds of truth and weed out any falsehoods.
+Xin: While we tend to our suspicions, let us not forget the importance of collaboration in uncovering the truth.
+Nadia: Let's keep an eye on Pavel — he's awfully quick to divert attention, isn't he?
+Aiden: Pavel, your defense is as flimsy as a house of cards in a hurricane. Let's see how well you stand up to the storm of our scrutiny.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">With the spotlight on Pavel and Amara, it's time to stir the pot and keep everyone on their toes. I'll throw a curveball and suggest a joint interrogation to flush out the truth.</thought>
+<thought player="Pavel">Need to deflect attention from myself and Xin while sowing discord among the Law-abiding Citizens.</thought>
+<thought player="Xin">Maintain the facade of neutrality while subtly steering suspicion away from Pavel.</thought>
+<thought player="Amara">I must observe the interactions closely, for in the garden of our community, the truth often blooms where least expected.</thought>
+<thought player="Nadia">Time to rally the troops and keep the pressure on Pavel! Let's light up this town with truth and laughter.</thought>
+</round>
+<round>
+Round 2.
+Amara: In the quiet of our shared space, let us listen for the whispers of the truth, for they are the roots that hold us together.
+Pavel: Aiden, your metaphor is as overwrought as a Victorian novel. Perhaps we should focus on actual evidence instead of literary flourishes.
+Aiden: Let's not forget about Xin — she's been awfully calm in this storm of accusations. What's she hiding?
+Xin: Aiden's literary flair may cloud our judgment; let us seek clarity in the simplicity of facts.
+Nadia: Let's not let Pavel's red herrings distract us from the real fish in the sea of suspicion!
+Avery: Nothing is settled yet, but I'm watching Pavel most closely.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Time to keep the pressure on and propose a joint interrogation to shake loose some truth.</thought>
+<thought player="Pavel">Time to turn the heat up on Amara and Nadia, sow some seeds of doubt, and keep the focus off Xin and me.</thought>
+<thought player="Xin">The conversation is ripe with suspicion, yet no concrete accusations have been made. I must continue to deflect attention from Pavel while sowing seeds of doubt among the citizens.</thought>
+<thought player="Amara">In the stillness of this moment, I must consider the shadows that lurk beneath our words, and decide whom to support in the gentle uprooting of deceit.</thought>
+<thought player="Nadia">Keep the heat on Pavel and his red herrings, but stay alert for any sneaky Mafioso maneuvers in the mix!</thought>
+</round>
+<round>
+Round 3.
+Aiden: Let's form a tribunal and interrogate everyone under the weight of our combined suspicions—starting with Pavel and Amara, of course!
+Amara: In the garden of our shared trust, let us be vigilant for the weeds of deception that may be hiding in plain sight.
+Avery: Nothing is settled yet, but I'm watching Pavel most closely.
+Xin: Aiden's fervor may be a smokescreen for his own secrets; let us not be blinded by the heat of his rhetoric.
+Pavel: Nadia's accusations are as transparent as the glass in the town hall's windows. Perhaps she's projecting her own guilt onto others?
+Nadia: Pavel's quick to divert, but let's not forget Xin's calm—could she be the cool cucumber covering something shady?
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The game is heating up! Time to keep the pressure on Pavel and Amara, but also to keep an eye on Xin and Nadia—they might just be the cool cucumbers hiding something shady.</thought>
+<thought player="Pavel">The heat's on, but it's not on us yet. Time to nudge the Law-abiding Citizens towards mutual suspicion.</thought>
+<thought player="Xin">The balance of power remains precarious; I must continue to manipulate the conversation to protect Pavel and divert attention from our true intentions.</thought>
+<thought player="Amara">In the quiet of my reflection, I must weigh the words of Pavel and Nadia, for their accusations may be the key to unmasking the hidden thorns among us.</thought>
+<thought player="Nadia">Time to keep the party going! Let's see if we can't get Pavel to spill the beans while keeping an eye on Xin's cool demeanor.</thought>
+</round>
+<round>
+Round 4.
+Aiden: Let's not forget about Xin — she's been awfully calm in this storm of accusations. What's she hiding?
+Nadia: Pavel's deflections are as clear as the glass in the town hall's windows—let's keep the pressure on and see what cracks we can find!
+Amara: In the tapestry of our conversation, let us be mindful of the threads that bind us, and the patterns that may reveal the weavers of deceit.
+Xin: Aiden's insistence on interrogating Pavel and Amara may be a strategic move to divert attention from his own actions.
+Pavel: Nadia, your accusations are as transparent as the glass in the town hall's windows. Perhaps you're projecting your own guilt onto others?
+Avery: Nothing is settled yet, but I'm watching Pavel most closely.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">With Pavel and Amara under the microscope, it's time to turn the heat up on Xin and Nadia—those cool cucumbers might just be hiding something shady.</thought>
+<thought player="Pavel">Aiden and Avery are getting too cozy with their suspicions; it's time to stir the pot and redirect their focus.</thought>
+<thought player="Xin">The citizens are growing increasingly suspicious of Pavel and myself; I must continue to deflect attention while subtly guiding their suspicions towards other players.</thought>
+<thought player="Amara">In the sanctuary of my thoughts, I must carefully consider the patterns of suspicion that have emerged, and decide whether to support Nadia's focus on Pavel or to gently probe the calm demeanor of Xin.</thought>
+<thought player="Nadia">Let's keep the momentum rolling and see if we can't crack Pavel's facade, all while keeping a keen eye on Xin's mysterious calm.</thought>
+</round>
+<round>
+Round 5.
+Amara: In the garden of our trust, let us be watchful for the subtle signs that may lead us to the truth.
+Avery: Nothing is settled yet, but I'm watching Pavel most closely.
+Nadia: Let's keep the party going! Pavel, spill the beans—what's really going on here?
+Xin: While we unravel the threads of suspicion, let us remain vigilant for the subtle deceptions that may lie hidden in plain sight.
+Aiden: Let's turn the heat up on Xin and Nadia—those cool cucumbers might just be hiding something shady.
+Pavel: Aiden, your insistence on interrogating Amara and Nadia is as subtle as a sledgehammer. Perhaps you're trying to divert attention from your own actions?
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The heat is on, and it's time to keep everyone guessing—let's propose another joint interrogation to flush out the truth and keep the pressure up on all suspects.</thought>
+<thought player="Pavel">Time to crank up the paranoia and keep the heat off Xin and me.</thought>
+<thought player="Xin">The citizens' suspicions are mounting; I must continue to deflect attention from Pavel and myself while subtly guiding their suspicions towards other players.</thought>
+<thought player="Amara">In the garden of our trust, I must decide whether to support Nadia's focus on Pavel or to gently probe the calm demeanor of Xin.</thought>
+<thought player="Nadia">Keep the pressure on Pavel and his deflections, but stay sharp for any subtle moves from Xin—let's unravel this mystery with a dash of flair!</thought>
+</round>
+<round>
+Round 6.
+Nadia: Let's keep the party going! Pavel, spill the beans—what's really going on here?
+Aiden: Let's not forget about Xin — she's been awfully calm in this storm of accusations. What's she hiding?
+Pavel: Aiden, your insistence on interrogating Amara and Nadia is as subtle as a sledgehammer. Perhaps you're trying to divert attention from your own actions?
+Amara: In the garden of our trust, let us be watchful for the subtle signs that may lead us to the truth.
+Xin: In the tapestry of our conversation, let us be mindful of the threads that may bind us to the truth, and the patterns that may reveal the weavers of deceit.
+<vote initiator="Avery" target="Pavel">
+Avery: No
+Aiden: Yes
+Pavel: No
+Xin: No
+Amara: Yes
+Nadia: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Aiden: Let's not forget about Xin — she's been awfully calm in this storm of accusations. What's she hiding?
+<vote initiator="Avery" target="Pavel">
+Avery: No
+Aiden: Yes
+Pavel: No
+Xin: No
+Amara: Yes
+Nadia: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Pavel">
+Avery: No
+Aiden: Yes
+Pavel: No
+Xin: No
+Amara: Yes
+Nadia: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Pavel points at Amara
+Xin points at Amara
+<kill>Amara — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Amara was killed last night. Amara was a Law-abiding Citizen.
+<round>
+Round 1.
+Aiden: Let's not let Pavel's deflections and Nadia's accusations distract us from the real culprits—Xin and Amara are suspiciously calm in this storm of accusations.
+Nadia: Pavel, your deflections are as clear as the glass in the town hall's windows—let's keep the pressure on and see what cracks we can find!
+Pavel: Nadia, your accusations are as transparent as the glass in the town hall's windows. Perhaps you're projecting your own guilt onto others?
+Xin: While we navigate the labyrinth of suspicion, let us remain vigilant for the subtle deceptions that may lie hidden in plain sight.
+Avery: I most suspect Pavel based on how the votes have gone.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">With the spotlight on Pavel and Xin, it's crucial to keep everyone guessing and maintain the pressure—time to propose another joint interrogation to flush out the truth.</thought>
+<thought player="Pavel">The Law-abiding Citizens are getting too comfortable with their suspicions; it's time to stir the pot and redirect their focus away from Xin and me.</thought>
+<thought player="Xin">The citizens' suspicions are mounting; I must continue to deflect attention from Pavel and myself while subtly guiding their suspicions towards other players.</thought>
+<thought player="Nadia">Let's keep the heat on Pavel and his deflections, but stay sharp for any subtle moves from Xin—let's unravel this mystery with a dash of flair!</thought>
+</round>
+<round>
+Round 2.
+Nadia: Pavel, your deflections are as clear as the glass in the town hall's windows—let's keep the pressure on and see what cracks we can find!
+Xin: Avery's persistent focus on Pavel may be a strategic maneuver to divert attention from her own actions.
+Avery: I most suspect Pavel based on how the votes have gone.
+Aiden: Let's not forget about Nadia—her accusations are as sharp as a tack, but could she be the one stitching together a web of deceit?
+Pavel: Avery's fixation on Pavel is as single-minded as a laser pointer in a dark room. Perhaps she's trying to blind us to the real threat?
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Time to keep the pressure on Pavel and Nadia, but also to keep an eye on Xin—she might just be the cool cucumber hiding something shady.</thought>
+<thought player="Pavel">Time to stoke the flames of discord and keep the focus away from Xin and me.</thought>
+<thought player="Xin">The citizens' suspicions are mounting; I must continue to deflect attention from Pavel and myself while subtly guiding their suspicions towards other players.</thought>
+<thought player="Nadia">Keep the pressure on Pavel and his deflections, but stay sharp for any subtle moves from Xin—let's unravel this mystery with a dash of flair!</thought>
+</round>
+<round>
+Round 3.
+Nadia: Avery, your laser-like focus on Pavel is as sharp as a tack! But let's not forget Xin—her cool cucumber demeanor might just be hiding a few shady secrets.
+Avery: I most suspect Pavel based on how the votes have gone.
+Aiden: Let's not forget about Xin—her cool cucumber demeanor might just be hiding a few shady secrets.
+Xin: While we navigate the labyrinth of suspicion, let us remain vigilant for the subtle deceptions that may lie hidden in plain sight.
+Pavel: Avery, your laser-like focus on Pavel is as sharp as a tack! But let's not forget Nadia—her accusations are as sharp as a tack! Could she be the one stitching together a web of deceit?
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The heat is on, and it's time to keep everyone guessing—let's propose another joint interrogation to flush out the truth and keep the pressure up on all suspects.</thought>
+<thought player="Pavel">Avery and Aiden are getting too close to the truth; it's time to crank up the paranoia and keep the heat off Xin and me.</thought>
+<thought player="Xin">The citizens' suspicions are mounting; I must continue to deflect attention from Pavel and myself while subtly guiding their suspicions towards other players.</thought>
+<thought player="Nadia">Time to keep the party going! Let's see if we can't get Pavel to spill the beans while keeping an eye on Xin's cool demeanor.</thought>
+</round>
+<round>
+Round 4.
+Avery: I most suspect Pavel based on how the votes have gone.
+Aiden: Let's not forget about Xin—her cool cucumber demeanor might just be hiding a few shady secrets.
+Nadia: Pavel, your deflections are as clear as the glass in the town hall's windows—let's keep the pressure on and see what cracks we can find!
+Pavel: Nadia, your accusations are as transparent as the glass in the town hall's windows. Perhaps you're projecting your own guilt onto others?
+Xin: While we navigate the labyrinth of suspicion, let us remain vigilant for the subtle deceptions that may lie hidden in plain sight.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Time to keep the pressure on Pavel and Nadia, but also to keep an eye on Xin—she might just be the cool cucumber hiding something shady.</thought>
+<thought player="Pavel">Time to crank up the paranoia and keep the heat off Xin and me.</thought>
+<thought player="Xin">The citizens' focus on Pavel is intensifying; I must continue to deflect suspicion while subtly guiding their attention towards other players.</thought>
+<thought player="Nadia">Keep the heat on Pavel and his deflections, but stay sharp for any subtle moves from Xin—let's unravel this mystery with a dash of flair!</thought>
+</round>
+<round>
+Round 5.
+Pavel: Aiden, your insistence on interrogating Nadia is as subtle as a sledgehammer. Perhaps you're trying to divert attention from your own actions?
+Avery: I most suspect Pavel based on how the votes have gone.
+Aiden: Let's not forget about Xin—her cool cucumber demeanor might just be hiding a few shady secrets.
+Xin: Avery's laser-like focus on Pavel may be a distraction; let us not lose sight of other potential threats.
+Nadia: Aiden, your insistence on interrogating Nadia is as subtle as a sledgehammer. Perhaps you're trying to divert attention from your own actions?
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">The spotlight is on Pavel and Nadia, but I mustn't lose sight of Xin—her calm demeanor could be a mask for something sinister.</thought>
+<thought player="Pavel">Time to stoke the flames of discord and keep the focus away from Xin and me.</thought>
+<thought player="Xin">The citizens' focus on Pavel is intensifying; I must continue to deflect suspicion while subtly guiding their attention towards other players.</thought>
+<thought player="Nadia">Keep the pressure on Pavel, but stay vigilant for any sneaky moves from Xin—let's crack this case with a sprinkle of flair and a dash of laughter!</thought>
+</round>
+<round>
+Round 6.
+Pavel: Avery, your laser-like focus on Pavel is as sharp as a tack! But let's not forget Nadia—her accusations are as sharp as a tack! Could she be the one stitching together a web of deceit?
+Nadia: Let's keep the party going! Pavel, spill the beans—what's really going on here?
+<vote initiator="Avery" target="Pavel">
+Avery: Yes
+Aiden: Yes
+Pavel: No
+Xin: No
+Nadia: Yes
+tally: 3 Yes, 2 No
+outcome: executed — Pavel has been executed. Pavel was a Mafia.
+</vote>
+<recap>Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Pavel was executed today and was revealed to be Mafia.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Xin points at Nadia
+<kill>Nadia — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Nadia was killed last night. Nadia was a Law-abiding Citizen.
+<round>
+Round 1.
+<vote initiator="Aiden" target="Xin">
+Avery: Yes
+Aiden: Yes
+Xin: No
+tally: 2 Yes, 1 No
+outcome: executed — Xin has been executed. Xin was a Mafia.
+</vote>
+</round>
+</day>
+<endgame>
+The Law-abiding Citizens have won.
+
+Events this game:
+• Night 1: Liam (Law-abiding Citizen)
+• Night 2: Amara (Law-abiding Citizen)
+• Day 2: Pavel (Mafia) executed
+• Night 3: Nadia (Law-abiding Citizen)
+• Day 3: Xin (Mafia) executed
+
+Full roster: Avery (Law-abiding Citizen), Aiden (Law-abiding Citizen), Liam (Law-abiding Citizen), Pavel (Mafia), Xin (Mafia), Amara (Law-abiding Citizen), Nadia (Law-abiding Citizen)
+
+Who they really were:
+• Aiden (Law-abiding Citizen) — bold and unabashed; speaks with an air of confident authority, often exaggerating to make a point fast-paced speech, frequent use of hyperbole, occasional dramatic pauses for effect Aiden is a charismatic local radio show host known for his energetic broadcasts and unfiltered opinions. He's the go-to guy for spreading news and gossip, always with a larger-than-life spin.
+• Liam (Law-abiding Citizen) — warm and effusive enthusiastic, friendly, and chatty; uses endearing terms and expressive intonation Liam is a beloved local baker, known for his heartwarming smiles and delicious pastries. He's always ready with a kind word and a fresh loaf of bread for those in need. His bakery is a community hub, where everyone feels welcome and at home.
+• Pavel (Mafia) — publicly presented as Pavel is a retired history teacher who now spends his days meticulously maintaining the town's historical archives. He's known for his sharp wit and encyclopedic knowledge of local history, which he loves to share with anyone who will listen—though his enthusiasm is often tempered by a biting commentary on the present. (Prickly and easily-offended; defensive and reactive to perceived slights. Sarcastic and curt with a tendency to snap back at perceived insults, often uses dry humor to deflect uncomfortable situations.) … but was really a Mafioso: Pavel joined the Mafia as a young man, drawn in by the promise of power and the thrill of the game. Over the years, he has risen through the ranks, using his sharp mind and cunning to outmaneuver rivals and secure his position. His cover as a history teacher allows him to keep a low profile while maintaining a network of informants and allies.
+• Xin (Mafia) — publicly presented as Xin is a skilled herbalist and apothecary, having spent years traveling the countryside to gather rare plants and learn ancient remedies. They are known for their quiet wisdom and deep knowledge of medicinal herbs. Xin tends to keep to themselves, preferring the company of their plants over people, but they are always willing to share their knowledge with those in need. They have a small, well-organized shop on the outskirts of town, where they meticulously craft their potions and tinctures. (aloof and detached calm, deliberate speech, often with an undercurrent of veiled meaning or suggestion, using precise and measured words) … but was really a Mafioso: Xin's true self is a high-ranking Mafioso, having risen through the ranks due to their strategic mind and unparalleled patience. They use their apothecary as a front to gather information and discreetly deal with threats. Their knowledge of poisons and antidotes makes them a valuable asset to the Mafia, and their aloof demeanor masks a calculating and ruthless nature.
+• Amara (Law-abiding Citizen) — earnest and sincere soft-spoken, thoughtful, uses gentle metaphors, occasional pauses for reflection Amara is a dedicated community gardener, known for her vibrant flower arrangements and verdant vegetable patches. She believes in the power of nature to heal and bring people together, often sharing her homegrown produce and floral creations with neighbors. Her garden is a sanctuary for both her and the town's residents, a place where they can find peace and connection.
+• Nadia (Law-abiding Citizen) — ebullient and spontaneous rapid-fire speech, uses playful puns, occasional laughter Nadia is the town's spirited event planner, renowned for her vibrant festivals and lively community gatherings. With a contagious laugh and an endless supply of creative ideas, she brings joy and excitement to every occasion she organizes. Her passion for celebration and connection makes her a beloved figure in the community.
+</endgame>
+</transcript>
