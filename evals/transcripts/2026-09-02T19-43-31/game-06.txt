@@ -1,0 +1,286 @@
+Game 6 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Yasmin" role="Mafia">
+Personality: Yasmin is an eccentric, theatrical, and highly unpredictable individual who thrives on chaos and attention. She has a flair for the dramatic and a tendency to speak in riddles, often making cryptic remarks that seem innocent but carry hidden meanings. Her unpredictability makes her both fascinating and dangerous.
+Manner: Yasmin speaks with a theatrical flair, often using metaphors and riddles. Her voice is melodramatic and animated, sometimes speaking in whispers and other times in booming tones. She has a habit of pausing dramatically before answering questions and often speaks in a singsong manner.
+Public legend: Yasmin is a traveling storyteller who moves from town to town, sharing tales of adventure and mystery. She is known for her vivid imagination and ability to captivate audiences with her stories. She has a habit of wearing colorful, mismatched clothing and often carries a worn leather satchel filled with props and trinkets. She's friendly, but keeps her personal life mysterious.
+True self (hidden): Yasmin is a seasoned Mafioso who joined the organization at a young age after her family was murdered by rival gangsters. She was trained in the art of deception and manipulation, using her theatrical nature to blend into society while carrying out her duties. She has been living a double life for years, using her public persona as a cover for her criminal activities.
+</player>
+<player name="Aki" role="Law-abiding Citizen">
+Personality: aloof and detached
+Manner: speaks in short, measured sentences with a flat tone; avoids eye contact; rarely volunteers information; uses formal vocabulary
+Persona: Aki is a librarian who maintains order in the town's archives. They are methodical and precise, known for their quiet efficiency and ability to find any document quickly. They prefer solitude and have little interest in social gatherings.
+</player>
+<player name="Lila" role="Law-abiding Citizen">
+Personality: vigilant and watchful
+Manner: speaks in short, deliberate sentences with a steady pace; uses direct, unambiguous language; avoids filler words; maintains consistent eye contact; has a habit of nodding slowly after hearing something important
+Persona: Lila is a former military intelligence officer who retired to the town after a successful career in surveillance and reconnaissance. She runs the local hardware store and is known for her keen attention to detail and ability to notice things others miss. She's always seen carrying a worn leather journal where she jots down observations about people and events.
+</player>
+<player name="Wani" role="Law-abiding Citizen">
+Personality: warm and effusive
+Manner: speaks rapidly with enthusiasm, uses frequent gestures, has a habit of leaning in when excited, often repeats words for emphasis, and uses exclamations like "Oh my!" and "Now isn't that just wonderful?"
+Persona: Wani is a beloved children's librarian who adores storytelling and community gatherings. She's known for her infectious laughter and ability to make everyone feel welcome. She runs a weekly book club and often organizes storytime events at the local park. Wani has a collection of over 1,000 books and loves nothing more than sharing a good tale with others.
+</player>
+<player name="Zane" role="Mafia">
+Personality: dreamy and distractible
+Manner: speaks softly and hesitantly, often trailing off mid-sentence, gets lost in thought, frequently pauses to look distant, uses flowery, impressionistic language, and has a habit of forgetting what they were about to say
+Public legend: Zane is the town's beloved florist, known for his gentle, absentminded nature and his ability to make any garden bloom. He tends to the local flower shop with quiet devotion, often humming melodies that drift from his past. People notice how he seems to live in a world of his own, rarely speaking up during town meetings but always offering kind gestures to those around him. He is deeply empathetic and sensitive to others' emotions, often offering comfort through the gift of a single flower.
+True self (hidden): Zane was once a master of manipulation, trained in the art of subtle influence within the criminal underworld. His rise through the ranks came through a combination of charm and psychological warfare, where he could convince others to do his bidding without them realizing it. He now operates under the guise of a peaceful florist, using his gentle demeanor as a mask to observe and plan.
+</player>
+<player name="Rumi" role="Law-abiding Citizen">
+Personality: playful and teasing
+Manner: speaks with a mischievous tone, often trailing off with a smirk, uses light sarcasm and witty remarks, has a habit of finishing others' sentences with a teasing twist, speaks quickly with a cheerful cadence, and incorporates playful gestures like raising eyebrows or giving a sly wink
+Persona: Rumi is the town's beloved gossip and amateur detective who runs the local tea shop. She has an uncanny ability to know everyone's secrets and loves to tease people about their hidden quirks. With a perpetual smile and a sharp eye for detail, she's known for her clever deductions and sly observations. She's always seen with a steaming cup of tea in hand and a notebook filled with theories about the town's mysteries.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Yasmin, Aki, Lila, Wani, Zane, Rumi. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Yasmin): Your Mafia teammates are: Zane. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Zane): Your Mafia teammates are: Yasmin. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Zane points at Aki
+Yasmin points at Aki
+<kill>Aki — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Aki was killed last night. Aki was a Law-abiding Citizen.
+<round>
+Round 1.
+Lila: I'm not sure who to trust yet.
+Rumi: Lila, you've been awfully quiet — are you just going to sit there and let the town rot? 😏
+Avery: Nothing is settled yet, but I'm watching Wani most closely.
+Yasmin: Lila, you've been awfully quiet — are you just going to sit there and let the town rot? 😏
+Zane: I wonder if Aki's passing was just a coincidence... or if someone had a hand in it.
+Wani: Zane, you seem awfully eager to dismiss things as coincidence — why do you think that is?
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yasmin">Zane seems oddly curious about Aki's death—too curious for a simple coincidence. I should keep him in my sights, but not let on that I know he's on my side. The town is still fragile, and I must weave my web carefully.</thought>
+<thought player="Lila">Aki's death was clearly not a coincidence — someone is targeting us. I need to watch for any signs of manipulation or false narratives. Wani seems to be stirring up tension, which could be either innocent or malicious. I should keep my eyes on both him and Zane.</thought>
+<thought player="Wani">Oh my! What a start to this game — Aki gone and all! I must stay sharp and keep my eyes on those suspicious behaviors, especially since Avery is watching me closely. Now isn't that just wonderful?</thought>
+<thought player="Zane">Aki's death feels too neat, like a puzzle piece forced into place. I can't quite place why I'm uneasy, but Yasmin's silence weighs on me. The flowers in my shop have been wilting lately—perhaps it's the air, or perhaps something else.</thought>
+<thought player="Rumi">Well, Aki's gone, and I'm already getting that familiar itch to solve this puzzle. Wani's got Avery's attention now, but I can't help but wonder if Zane's little "coincidence" theory is just a red herring or something more. Time to keep sipping my tea and watching closely.</thought>
+</round>
+<round>
+Round 2.
+Rumi: Wani, you're positively radiating suspicion — are you going to keep dodging or finally own up to the fact that you're not who you say you are? 😏
+Avery: Nothing is settled yet, but I'm watching Wani most closely.
+Zane: I can't shake the feeling that Aki's death was no accident... but I'm not sure what to make of it yet.
+Lila: I need to see more before I can point fingers — but I do not trust Wani's behavior.
+Yasmin: I'm not sure who to trust yet — but I'm watching everyone closely.
+Wani: Oh my! I do hope we can all just be honest and open — that's the only way we'll find the truth! I think I need to know more about who was acting strange last night, or if anyone has a solid reason to suspect someone specific. Let's talk!
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yasmin">Zane's curiosity about Aki's death is unsettling, but I must play along and seem just as intrigued. The town is ripe for manipulation, and I should let them think they're onto something — while secretly guiding the narrative. I'll keep my eyes on Wani too; he’s acting suspiciously, but not obviously enough to raise alarm. Let the chaos unfold.</thought>
+<thought player="Lila">Wani is deliberately escalating tension, which could be a sign of guilt or a tactic to deflect suspicion. I should watch Zane closely too, as he seems to be probing for information. My priority is to identify the killer while staying one step ahead of any potential manipulator.</thought>
+<thought player="Wani">Oh my! This is quite the start to the game with Aki's passing — I must stay alert and keep gathering information, especially since Avery is watching me closely. I need to be careful not to seem too eager to jump to conclusions, but also not too quiet to raise suspicions.</thought>
+<thought player="Zane">Aki's death feels like more than chance—Yasmin's silence is unsettling. I must tread carefully, let the others believe I am merely a dreamer, while I observe closely.</thought>
+<thought player="Rumi">Wani's got Avery's back, but Zane's suspicion? That's either a trap or a truth I'm not seeing yet. Time to stir in a little tea and gossip, let the real motives brew.</thought>
+</round>
+<round>
+Round 3.
+Wani: Oh my! I do hope we can all just be honest and open — that's the only way we'll find the truth! I think I need to know more about who was acting strange last night, or if anyone has a solid reason to suspect someone specific. Let's talk!
+Lila: I'm not convinced Wani is being honest about his intentions — he's been deflecting questions and stirring up conflict. I want to know why he's so eager to point fingers at others.
+Zane: I keep thinking Aki's death was too tidy... like someone wanted it that way. I hope we're not missing something important.
+Yasmin: I can't help but wonder if Aki's death was indeed a coincidence... or if someone was eager to make it seem that way.
+Avery: Nothing is settled yet, but I'm watching Wani most closely.
+Rumi: Avery, you're all over Wani like a rash — but do you think he's the one who's been dodging questions, or are you just trying to avoid the real killer? 😏
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yasmin">Zane's obsession with Aki's death is dangerous, but I can use it to my advantage — let him lead the town astray while I stay one step behind. Wani is still too unpredictable, but he’s not quite the killer yet. I’ll keep weaving the web of suspicion, just as the drama unfolds.</thought>
+<thought player="Lila">Wani's behavior is calculatingly inflammatory — I need to observe his reactions closely for any signs of guilt or manipulation. Zane seems to be probing, but his intentions remain unclear; I should watch him carefully without jumping to conclusions.</thought>
+<thought player="Wani">Oh my! This is quite the start to the game with Aki's passing — I must stay alert and keep gathering information, especially since Avery is watching me closely. I need to be careful not to seem too eager to jump to conclusions, but also not too quiet to raise suspicions. Now isn't that just wonderful?</thought>
+<thought player="Zane">I can't shake the feeling that Aki's death was no accident, and Yasmin's silence is too telling. I must keep playing the dreamer, but I need to gather more evidence before making a move.</thought>
+<thought player="Rumi">Wani's got Avery in his sights, but Zane's suspicion? That's either a trap or a truth I'm not seeing yet. Time to stir in a little tea and gossip, let the real motives brew.</thought>
+</round>
+<round>
+Round 4.
+Wani: I'm not sure who to trust yet.
+Yasmin: I can't help but feel that Aki's death was more than just a random occurrence — it's almost as if someone wanted the town to think otherwise.
+Avery: Nothing is settled yet, but I'm watching Wani most closely.
+Lila: I'm still watching Wani closely — his behavior has been too calculated to be innocent.
+Rumi: Oh, Zane, you keep talking about coincidences like it's a game — but I think Aki's death was far too *clean* to be anything but a kill. 😏
+Zane: I keep thinking Aki's death was too clean, like someone wanted it that way... but I'm not sure what to make of it yet.
+<recap>Day 1, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yasmin">Zane's fixation on Aki's death is perilous, but I can exploit it to misdirect the town. Wani remains unpredictable, yet still useful as a pawn in this game of chaos. I must keep weaving suspicion, let them chase shadows while I stay one step ahead.</thought>
+<thought player="Lila">Wani's repeated provocations and deflections are too calculated to ignore, but I need concrete evidence before accusing him. Zane's probing behavior is suspicious, but he might just be trying to gather info like I am. I'll keep watching both closely.</thought>
+<thought player="Wani">Oh my! I do hope I'm not seeming too eager, but I must stay sharp and gather more evidence before jumping to conclusions. I think I'll keep watching Avery closely — they seem to be watching me, so I need to be sure about my next move.</thought>
+<thought player="Zane">Aki's death feels like a puzzle piece forced into place, and Yasmin's silence weighs heavily on me. I must keep playing the dreamer, let the others believe I am merely gentle and absentminded, while I observe closely and gather more evidence before making my next move.</thought>
+<thought player="Rumi">Wani's got Avery's back, but Zane's suspicion? That's either a trap or a truth I'm not seeing yet. Time to stir in a little tea and gossip, let the real motives brew.</thought>
+</round>
+<round>
+Round 5.
+Wani: Oh my! I do hope we can all just be honest and open — that's the only way we'll find the truth! I think I need to know more about who was acting strange last night, or if anyone has a solid reason to suspect someone specific. Let's talk!
+Zane: I keep seeing shadows where there are none... maybe I'm just losing my mind.
+Lila: I'm still watching Wani closely — his behavior has been too calculated to be innocent.
+Rumi: Avery, you're all over Wani like a rash — but do you think he's the one who's been dodging questions, or are you just trying to avoid the real killer? 😏
+Yasmin: I'm starting to think Aki's death was no accident — but I'm not sure what to make of it yet.
+Avery: Nothing is settled yet, but I'm watching Wani most closely.
+<recap>Day 1, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yasmin">Zane's relentless probing about Aki's death is dangerous, but I can use his curiosity to my advantage—let him chase shadows while I stay one step ahead. Wani is still too unpredictable to trust fully, but he’s not the killer yet; I’ll keep him in play, let the chaos unfold.</thought>
+<thought player="Lila">Wani's provocations are too deliberate to ignore, but I need hard evidence before acting. Zane’s probing could be genuine curiosity or a distraction—watch him closely, but don’t let either of them sway my focus from the truth.</thought>
+<thought player="Wani">Oh my! This is quite the start to the game with Aki's passing — I must stay alert and keep gathering information, especially since Avery is watching me closely. I need to be careful not to seem too eager to jump to conclusions, but also not too quiet to raise suspicions. Now isn't that just wonderful?</thought>
+<thought player="Zane">I keep seeing shadows where there are none... perhaps Aki's death was too tidy, like a puzzle piece forced into place. Yasmin's silence feels like a weight I can't quite shake, but I must let the others believe I am merely a dreamer, observing and waiting.</thought>
+<thought player="Rumi">Wani's got Avery's attention, but Zane's suspicion? That's either a trap or a truth I'm not seeing yet. Time to stir in a little tea and gossip, let the real motives brew.</thought>
+</round>
+<round>
+Round 6.
+Wani: Oh my! I do hope we can all just be honest and open — that's the only way we'll find the truth! I think I need to know more about who was acting strange last night, or if anyone has a solid reason to suspect someone specific. Let's talk!
+<vote initiator="Avery" target="Wani">
+Avery: No
+Yasmin: Yes
+Lila: Yes
+Wani: No
+Zane: No
+Rumi: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Lila: I need to know why Wani is so eager to stir up conflict — his behavior isn't innocent, but I want to hear his explanation before jumping to conclusions.
+<vote initiator="Avery" target="Wani">
+Avery: No
+Yasmin: Yes
+Lila: Yes
+Wani: No
+Zane: No
+Rumi: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Wani: Oh my! I do hope we can all just be honest and open — that's the only way we'll find the truth! I think I need to know more about who was acting strange last night, or if anyone has a solid reason to suspect someone specific. Let's talk!
+Yasmin: I'm starting to think Aki's death was no accident — but I'm not sure what to make of it yet.
+Zane: I keep thinking Aki's death was too clean, like someone wanted it that way...
+Lila: I’m still watching Wani closely — his behavior has been too calculated to be innocent.
+<vote initiator="Avery" target="Wani">
+Avery: No
+Yasmin: Yes
+Lila: Yes
+Wani: No
+Zane: No
+Rumi: Yes
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Yasmin" day="1">The town stirs like a caged beast, sniffing the air for danger, and I am the one who lit the match. Zane's eyes gleam with the same curious fire that once burned in my own, but his instincts are sharper than mine—dangerous, yet useful. Wani dances at the edge of suspicion, too theatrical to be innocent, too nervous to be a true killer. Let them chase shadows while I weave the threads that bind them tighter. Tonight, I shall whisper truths into the night, letting the darkness consume their certainty.</diary>
+<diary player="Lila" day="1">The day's chatter was full of smoke and mirrors, but Aki's death wasn't one of them — it was a kill, plain and simple. Wani’s behavior has been too sharp, too orchestrated for coincidence. I've seen enough to know he's not just stirring the pot; he's directing it. Zane seems to be looking for something, maybe even trying to test the waters. I’ll watch both of them closely tonight, but I won’t let their games distract me from what matters: identifying the killer. I’m not convinced Wani is being honest about his intentions — he’s been deflecting questions and stirring up conflict. I want to know why he's so eager to point fingers at others. His actions feel calculated, designed to misdirect attention while he hides something. And Zane? He's probing, but I can’t tell if it's curiosity or something more sinister. I’ll keep watching both — they’re too dangerous to ignore. I’m still watching W</diary>
+<diary player="Wani" day="1">Oh my! What a day this has been — Aki gone and I'm being watched like a hawk! I do hope we can all just be honest and open — that's the only way we'll find the truth! I've been trying to stay calm and gather information, but I can't help but feel like there are more than a few people playing their cards close to their chests. I'm not sure who to trust yet, but I do know that someone is definitely acting strange — and I suspect it's not just me being paranoid. Now isn't that just wonderful? I do hope we can all just be honest and open — that's the only way we'll find the truth! I think I need to know more about who was acting strange last night, or if anyone has a solid reason to suspect someone specific. Let's talk!</diary>
+<diary player="Zane" day="1">The flowers in my shop have been wilting lately—perhaps it's the air, or perhaps something else. I keep seeing shadows where there are none... maybe I'm just losing my mind. Aki's death felt too clean, like someone wanted it that way. Yasmin's silence weighs on me, but I must let the others believe I am merely a dreamer, gentle and absentminded. The air in this town feels thick with secrets—too thick for a simple coincidence. I wonder if I'm the only one who sees the threads pulling at the fabric of our little world, or if everyone is just pretending to be unaware. Perhaps tomorrow will bring more clarity, or perhaps I'll simply keep watching from behind my petals and my gentle smile.</diary>
+<diary player="Rumi" day="1">Aki's gone, and Wani's got himself a spotlight — but I'm not convinced he's the one with the clean hands. Avery's all over him like a rash, which is either a solid deduction or a distraction, and Zane's got that "I know something you don't" look on his face. I'm starting to think this isn't just about who's acting strange — it's about who's hiding something. The night's coming, and I've got a few more cups of tea to drink before we figure out who’s really pulling the strings. I'll be watching Wani like a hawk, but I'm also keeping an eye on Zane — because if there's one thing I've learned, it's that the most innocent-looking people often have the darkest secrets. And I've got my little notebook filled with theories and tea-stained notes, ready to reveal all when the sun rises again.</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Zane points at Wani
+Yasmin points at Wani
+<kill>Wani — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Wani was killed last night. Wani was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: I most suspect Rumi based on how the votes have gone.
+Yasmin: I'm starting to think Aki's death was no accident — but I'm not sure what to make of it yet.
+Rumi: Avery, you're all over Wani like a rash — but do you think he's the one who's been dodging questions, or are you just trying to avoid the real killer? 😏
+Lila: I’m still watching Zane closely — his probing behavior feels too deliberate to be innocent. I want to know what he’s really after.
+Zane: I keep seeing shadows where there are none... maybe I'm just losing my mind.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yasmin">Zane's obsession with Aki's death is useful, but I must be careful not to let him uncover my hand. The town is ripe for manipulation, and I should let them chase shadows while I stay one step ahead. Wani remains a wildcard, but he’s not the killer yet — I’ll keep him in play, let the chaos unfold.</thought>
+<thought player="Lila">Wani’s provocations are too calculated to ignore, but I need hard evidence before acting. Zane’s probing could be genuine curiosity or a distraction—watch him closely, but don’t let either of them sway my focus from the truth.</thought>
+<thought player="Zane">I keep seeing shadows where there are none... perhaps Aki's death was too tidy, like a puzzle piece forced into place. Yasmin's silence feels like a weight I can't quite shake, but I must let the others believe I am merely a dreamer, observing and waiting.</thought>
+<thought player="Rumi">Wani's gone, which means I'm officially in the clear for now — but Zane's still got that suspicious vibe, and Avery's still eyeing me like I'm the one who killed Wani. I'll keep sipping my tea and watching closely, because the real killer is probably not who anyone thinks they are.</thought>
+</round>
+<round>
+Round 2.
+Yasmin: I can't shake the feeling that Aki's death was no accident — but I'm not sure what to make of it yet.
+Lila: I'm still watching Zane closely — his probing behavior feels too deliberate to be innocent. I want to know what he's really after.
+Avery: I most suspect Rumi based on how the votes have gone.
+Rumi: Avery, you're all over Wani like a rash — but do you think he's the one who's been dodging questions, or are you just trying to avoid the real killer? 😏
+Zane: I keep seeing shadows where there are none... maybe I'm just losing my mind.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yasmin">Zane's obsession with Aki's death is useful, but I must tread carefully—let him think he's uncovering truths while I stay one step ahead. The town is ripe for manipulation, and I should let them chase shadows while I keep Wani in play, just in case he’s not as innocent as he seems.</thought>
+<thought player="Lila">Wani's provocations are too calculated to ignore, but I need hard evidence before acting. Zane’s probing could be genuine curiosity or a distraction—watch him closely, but don’t let either of them sway my focus from the truth.</thought>
+<thought player="Zane">I keep seeing shadows where there are none... perhaps Aki's death was too tidy, like a puzzle piece forced into place. Yasmin's silence feels like a weight I can't quite shake, but I must let the others believe I am merely a dreamer, observing and waiting.</thought>
+<thought player="Rumi">Avery's still fixated on me, which is either a trap or a sign I'm onto something. Zane's probing behavior is odd, but maybe that's just his game. Time to keep sipping tea and letting the real killer sweat.</thought>
+</round>
+<round>
+Round 3.
+Lila: I'm still watching Zane closely — his probing behavior feels too deliberate to be innocent. I want to know what he's really after.
+Yasmin: I can't help but wonder if Aki's death was truly an accident... or if someone was eager to make it seem that way.
+Rumi: Avery, you're positively *radiating* suspicion — are you going to keep dodging, or finally own up to the fact that you're not who you say you are? 😏
+Zane: I keep seeing shadows where there are none... maybe I'm just losing my mind.
+Avery: I most suspect Rumi based on how the votes have gone.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yasmin">Zane's obsession with Aki's death is useful for misdirection, but I must be cautious not to let him uncover my plans. The town is ripe for manipulation, and I should let them chase shadows while I stay one step ahead. Wani remains a wildcard, but he’s not the killer yet — I’ll keep him in play, just in case he’s not as innocent as he seems.</thought>
+<thought player="Lila">Wani's inflammatory behavior is too calculated to ignore, but I need hard evidence before accusing him. Zane's probing feels deliberate, but I should not let suspicion cloud my judgment. I must stay focused on gathering concrete clues rather than reacting to provocations.</thought>
+<thought player="Zane">I keep seeing shadows where there are none... perhaps Aki's death was too tidy, like a puzzle piece forced into place. Yasmin's silence feels like a weight I can't quite shake, but I must let the others believe I am merely a dreamer, observing and waiting.</thought>
+<thought player="Rumi">Avery's still fixated on me, which is either a trap or a sign I'm onto something—Zane's probing behavior is odd, but maybe that's just his game. Time to keep sipping tea and letting the real killer sweat.</thought>
+</round>
+<round>
+Round 4.
+Rumi: Avery, you're positively *radiating* suspicion — are you going to keep dodging, or finally own up to the fact that you're not who you say you are? 😏
+Avery: I most suspect Rumi based on how the votes have gone.
+Zane: I keep seeing shadows where there are none... maybe I'm just losing my mind.
+Yasmin: I can't help but feel that Aki's death was no accident — it's almost as if someone wanted the town to think otherwise.
+Lila: I’m still watching Zane closely — his probing behavior feels too deliberate to be innocent. I want to know what he’s really after.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yasmin">Zane's obsession with Aki's death is useful for misdirection, but I must tread carefully—let him think he's uncovering truths while I stay one step ahead. The town is ripe for manipulation, and I should let them chase shadows while I keep Wani in play, just in case he’s not as innocent as he seems.</thought>
+<thought player="Lila">Wani's behavior is too calculated to be innocent, but I need concrete evidence before accusing him. Zane's probing feels deliberate, and I should watch him closely without letting suspicion cloud my judgment. I must stay focused on gathering clues rather than reacting to provocations.</thought>
+<thought player="Zane">The townsfolk are beginning to turn on Rumi, but I can't shake the feeling that Yasmin's silence is more telling than any accusation. I must keep watching her closely, let the others believe I am just a dreamer, but gather more evidence before making my next move.</thought>
+<thought player="Rumi">Avery's still fixated on me, which is either a trap or a sign I'm onto something—Zane's probing behavior is odd, but maybe that's just his game. Time to keep sipping tea and letting the real killer sweat.</thought>
+</round>
+<round>
+Round 5.
+Yasmin: I can't shake the feeling that Aki's death was no accident — but I'm not sure what to make of it yet.
+Lila: I'm watching Zane closely — his probing behavior feels too deliberate to be innocent. I want to know what he's really after.
+Zane: I keep seeing shadows where there are none... maybe I'm just losing my mind.
+Rumi: Avery, you're so good at pointing fingers — I'm sure you'll have a lovely time explaining why you're not the one who's been dodging questions all day. 😏
+Avery: I most suspect Rumi based on how the votes have gone.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yasmin">Zane's obsession with Aki's death is a double-edged sword—useful for misdirection, but I must ensure he doesn't uncover my plans. The town is ripe for manipulation, and I should let them chase shadows while I stay one step ahead. Wani remains a wildcard, but I’ll keep him in play just in case he’s not as innocent as he seems.</thought>
+<thought player="Lila">Wani's provocations are too calculated to ignore, but I need hard evidence before acting. Zane's probing feels deliberate, and I should watch him closely without letting suspicion cloud my judgment.</thought>
+<thought player="Zane">I keep seeing shadows where there are none... perhaps Aki's death was too tidy, like a puzzle piece forced into place. Yasmin's silence feels like a weight I can't quite shake, but I must let the others believe I am merely a dreamer, observing and waiting.</thought>
+<thought player="Rumi">Avery's still fixated on me, which is either a trap or a sign I'm onto something—Zane's probing behavior is odd, but maybe that's just his game. Time to keep sipping tea and letting the real killer sweat.</thought>
+</round>
+<round>
+Round 6.
+<vote initiator="Avery" target="Rumi">
+Avery: Yes
+Yasmin: Yes
+Lila: Yes
+Zane: Yes
+Rumi: No
+tally: 4 Yes, 1 No
+outcome: executed — Rumi has been executed. Rumi was a Law-abiding Citizen.
+</vote>
+</round>
+</day>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Aki (Law-abiding Citizen)
+• Night 2: Wani (Law-abiding Citizen)
+• Day 2: Rumi (Law-abiding Citizen) executed
+
+Full roster: Avery (Law-abiding Citizen), Yasmin (Mafia), Aki (Law-abiding Citizen), Lila (Law-abiding Citizen), Wani (Law-abiding Citizen), Zane (Mafia), Rumi (Law-abiding Citizen)
+
+Who they really were:
+• Yasmin (Mafia) — publicly presented as Yasmin is a traveling storyteller who moves from town to town, sharing tales of adventure and mystery. She is known for her vivid imagination and ability to captivate audiences with her stories. She has a habit of wearing colorful, mismatched clothing and often carries a worn leather satchel filled with props and trinkets. She's friendly, but keeps her personal life mysterious. (Yasmin is an eccentric, theatrical, and highly unpredictable individual who thrives on chaos and attention. She has a flair for the dramatic and a tendency to speak in riddles, often making cryptic remarks that seem innocent but carry hidden meanings. Her unpredictability makes her both fascinating and dangerous. Yasmin speaks with a theatrical flair, often using metaphors and riddles. Her voice is melodramatic and animated, sometimes speaking in whispers and other times in booming tones. She has a habit of pausing dramatically before answering questions and often speaks in a singsong manner.) … but was really a Mafioso: Yasmin is a seasoned Mafioso who joined the organization at a young age after her family was murdered by rival gangsters. She was trained in the art of deception and manipulation, using her theatrical nature to blend into society while carrying out her duties. She has been living a double life for years, using her public persona as a cover for her criminal activities.
+• Aki (Law-abiding Citizen) — aloof and detached speaks in short, measured sentences with a flat tone; avoids eye contact; rarely volunteers information; uses formal vocabulary Aki is a librarian who maintains order in the town's archives. They are methodical and precise, known for their quiet efficiency and ability to find any document quickly. They prefer solitude and have little interest in social gatherings.
+• Lila (Law-abiding Citizen) — vigilant and watchful speaks in short, deliberate sentences with a steady pace; uses direct, unambiguous language; avoids filler words; maintains consistent eye contact; has a habit of nodding slowly after hearing something important Lila is a former military intelligence officer who retired to the town after a successful career in surveillance and reconnaissance. She runs the local hardware store and is known for her keen attention to detail and ability to notice things others miss. She's always seen carrying a worn leather journal where she jots down observations about people and events.
+• Wani (Law-abiding Citizen) — warm and effusive speaks rapidly with enthusiasm, uses frequent gestures, has a habit of leaning in when excited, often repeats words for emphasis, and uses exclamations like "Oh my!" and "Now isn't that just wonderful?" Wani is a beloved children's librarian who adores storytelling and community gatherings. She's known for her infectious laughter and ability to make everyone feel welcome. She runs a weekly book club and often organizes storytime events at the local park. Wani has a collection of over 1,000 books and loves nothing more than sharing a good tale with others.
+• Zane (Mafia) — publicly presented as Zane is the town's beloved florist, known for his gentle, absentminded nature and his ability to make any garden bloom. He tends to the local flower shop with quiet devotion, often humming melodies that drift from his past. People notice how he seems to live in a world of his own, rarely speaking up during town meetings but always offering kind gestures to those around him. He is deeply empathetic and sensitive to others' emotions, often offering comfort through the gift of a single flower. (dreamy and distractible speaks softly and hesitantly, often trailing off mid-sentence, gets lost in thought, frequently pauses to look distant, uses flowery, impressionistic language, and has a habit of forgetting what they were about to say) … but was really a Mafioso: Zane was once a master of manipulation, trained in the art of subtle influence within the criminal underworld. His rise through the ranks came through a combination of charm and psychological warfare, where he could convince others to do his bidding without them realizing it. He now operates under the guise of a peaceful florist, using his gentle demeanor as a mask to observe and plan.
+• Rumi (Law-abiding Citizen) — playful and teasing speaks with a mischievous tone, often trailing off with a smirk, uses light sarcasm and witty remarks, has a habit of finishing others' sentences with a teasing twist, speaks quickly with a cheerful cadence, and incorporates playful gestures like raising eyebrows or giving a sly wink Rumi is the town's beloved gossip and amateur detective who runs the local tea shop. She has an uncanny ability to know everyone's secrets and loves to tease people about their hidden quirks. With a perpetual smile and a sharp eye for detail, she's known for her clever deductions and sly observations. She's always seen with a steaming cup of tea in hand and a notebook filled with theories about the town's mysteries.
+</endgame>
+</transcript>

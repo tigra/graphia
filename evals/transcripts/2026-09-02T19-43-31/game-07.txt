@@ -1,0 +1,116 @@
+Game 7 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Selin" role="Mafia">
+Personality: Weary and world-worn, with a quiet intensity that hints at deep experiences. Selin carries the weight of secrets and has developed a practiced detachment from the world around them.
+Manner: Speaks in measured, deliberate tones with a slight edge of sarcasm or dry wit. They tend to pause before speaking, as if carefully choosing their words. Their voice is often low and gravelly, with an underlying sadness that makes others uneasy but not suspicious.
+Public legend: Selin is a former traveling merchant who has settled in the town after a long and difficult journey. They are known for being quiet, observant, and helpful, though they keep to themselves most of the time. They've taken up work as a local blacksmith and often speak with a distant look in their eyes, as if lost in thought about past travels.
+True self (hidden): Selin was once a promising young man who joined the Mafia after a tragic event involving his family. He became a loyal enforcer, but grew disillusioned with the violence and betrayal. Now, he uses his position to protect innocent townspeople from other Mafioso members while maintaining his cover.
+</player>
+<player name="Rahim" role="Law-abiding Citizen">
+Personality: gruff and blunt
+Manner: speaks quickly and directly, with a gravelly voice and frequent interruptions. Uses coarse language and often cuts off other players mid-sentence. Has a habit of rolling his eyes and sighing heavily.
+Persona: Rahim is a former soldier turned mechanic who's seen too much war and not enough peace. He's got a temper, but he's also got a good heart and a strong work ethic. He runs the town's garage and fixes everything from cars to broken hearts.
+</player>
+<player name="Aisha" role="Mafia">
+Personality: Anxious and self-doubting, with a tendency to overthink and second-guess everything. Aisha is perpetually on edge, constantly worried about making the wrong decision or saying something inappropriate. She's deeply empathetic but struggles with social interactions, often misreading others' intentions. Her mind races with "what if" scenarios, and she's prone to nervous habits like fidgeting or rephrasing her thoughts multiple times before speaking.
+Manner: Speaks in a hesitant, soft voice that trails off at the end of sentences. Uses excessive filler words ("um", "like", "you know"), frequently pauses mid-sentence, and often asks clarifying questions. Her speech is peppered with self-deprecating phrases and apologies for her thoughts or opinions. She tends to look around nervously when speaking and avoids direct eye contact, often fidgeting with her hands or clothing.
+Public legend: Aisha is a quiet, unassuming librarian who has lived in the town her entire life. She's known for being helpful but awkward, always volunteering to assist others with their reading needs or organizing book collections. She's painfully shy and tends to avoid social gatherings, preferring to spend her time in the library surrounded by books. She speaks softly and rarely interrupts, often apologizing for her presence or asking if she's bothering anyone. Her colleagues describe her as sweet but a bit of a nervous wreck who always seems worried about something.
+True self (hidden): Aisha was recruited into the Mafia after her younger brother was kidnapped and used as leverage to force her into serving the organization. She spent years learning the ropes, always living in fear of being discovered while maintaining a perfect facade of normalcy. She's been working to undermine the Mafia from within, using her position to gather information and slowly dismantle their operations. Her cover as a librarian allows her to observe people and gather intelligence without arousing suspicion, though she's constantly terrified of being caught.
+</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: brash and loud
+Manner: speaks with booming confidence, often shouting over others, uses exaggerated gestures, has a habit of punctuating sentences with "you hear me?" or "got it?" in a theatrical way. Speaks fast with a booming voice and never hesitates to interrupt. Has an unshakable belief in their own knowledge and expertise.
+Persona: Kai is the town's biggest and most confident auto mechanic, known for fixing anything with a roar and a wrench. They're loud, proud, and always ready to offer unsolicited advice on any topic. They've been running their garage for over fifteen years and are considered the town's go-to guy for all things mechanical. They love to show off their work and often boast about their latest project or repair.
+</player>
+<player name="Yara" role="Law-abiding Citizen">
+Personality: playful and teasing
+Manner: speaks with a mischievous twinkle in her eye, using light sarcasm and playful interruptions. Her voice is quick and bouncy, often trailing off with a giggle or a "you know" before finishing a thought. She has a habit of rephrasing others' words in a teasing way and loves to ask rhetorical questions that lead nowhere.
+Persona: Yara is the town's beloved baker, known for her infectious laugh and sweet treats. She's always up for a joke or a game, often weaving playful lies into her stories to keep everyone entertained. She runs a small bakery on Main Street and is famous for her whimsical pastries that are as colorful as they are delicious.
+</player>
+<player name="Nuri" role="Law-abiding Citizen">
+Personality: Earnest and sincere
+Manner: Speaks slowly and deliberately, choosing each word carefully. Uses a soft, steady voice with frequent pauses for emphasis. Often repeats key phrases to ensure clarity and avoids slang or casual expressions. Has a habit of looking directly at listeners while speaking and maintains steady eye contact.
+Persona: Nuri is a dedicated schoolteacher who has been educating children in the town for over a decade. They are known for their patience, kindness, and unwavering commitment to their students' success. Nuri believes strongly in the power of learning and always encourages their pupils to ask questions and think critically.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Selin, Rahim, Aisha, Kai, Yara, Nuri. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Selin): Your Mafia teammates are: Aisha. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Aisha): Your Mafia teammates are: Selin. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Aisha points at Kai
+Selin points at Kai
+<kill>Kai — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Kai was killed last night. Kai was a Law-abiding Citizen.
+<round>
+Round 1.
+Aisha: Um, I was thinking... since Kai was killed last night, maybe we should all be more careful about who we trust, you know? Like, really listen to what people say and stuff.
+Selin: I'm inclined to agree with Aisha — we should be cautious, but not paranoid. I'll keep my eyes open and listen carefully.
+Avery: Nothing is settled yet, but I'm watching Selin most closely.
+Rahim: Avery, you been watchin’ me too? I ain’t seen you lookin’ at anyone else but Selin. That’s a damn odd thing to say, especially after the kill.
+Nuri: I think it's important that we all stay calm and not let fear make us jump to conclusions too quickly.
+Yara: You know, Avery, I was just thinking — if we're all so careful about who to trust, maybe we should start by checking who's been talking about trust the most. It's rather suspicious, don't you think?
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Selin">Avery's targeting me, which is risky but could be a setup. I need to watch Aisha closely and keep my cover intact. The paranoia talk is dangerous, but I can't let on that I'm thinking about it.</thought>
+<thought player="Rahim">Avery's all up in my business, watchin’ me like I'm the one with the knife. Yara's tryin' to throw shade, but I ain't buyin'. I got to keep my head down and let the real Mafia expose themselves.</thought>
+<thought player="Aisha">Um, I'm really glad Selin agreed with me about being careful, that makes me feel a bit less alone in this... but Yara's comment about trust is making me nervous, like maybe I'm being too obvious. I should probably just keep quiet and listen more, you know?</thought>
+<thought player="Yara">Avery's watching Selin, Rahim's being defensive, and Nuri's trying to be the calm voice of reason — how delightfully predictable. I wonder if anyone else noticed how Aisha's been avoiding eye contact when I mentioned trust? This game is starting to feel like a deliciously chaotic puzzle.</thought>
+<thought player="Nuri">I must stay calm and not let fear drive my actions, as Yara suggested. I will listen carefully to everyone's words and watch for any suspicious behavior, but I won't jump to conclusions too quickly.</thought>
+</round>
+<round>
+Round 2.
+<vote initiator="Yara" target="Rahim">
+Avery: No
+Selin: Yes
+Rahim: No
+Aisha: Yes
+Yara: Yes
+Nuri: Yes
+tally: 4 Yes, 2 No
+outcome: executed — Rahim has been executed. Rahim was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. Rahim was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+<diary player="Selin" day="1">The weight of another life gone heavy on my shoulders, and I can't shake the feeling that this town’s fate is slipping through my fingers like sand. I watched them hang Rahim, and I saw the fear in their eyes—real fear, not the kind they pretend to feel when they’re trying to protect themselves. I wonder if any of them even know what they’ve done. Aisha keeps her head down, but I don’t trust that quiet. She's been watching me too closely for comfort. The paranoia talk was sharp, like a blade drawn across the air between us all. Avery's eyes were fixed on me, and it felt like he was trying to figure out if I’m the one who killed Kai or not. I didn’t kill Kai—I did what I had to do, but the truth is buried under layers of lies and fear. I’ll keep my head down, keep pretending I don’t know what’s going on, because the moment I let anyone see through me, they’ll tear me apart. I’ve seen too</diary>
+<diary player="Aisha" day="1">I can't stop thinking about what Yara said about trust being suspicious, it makes my stomach knot up because I don't want anyone to think I'm acting weird or trying to lead people around. Selin agreed with me about being careful which was nice, but now I'm wondering if that made me stand out more than I should have. Everyone voted to execute Rahim and I did too, even though I didn't really know him well enough to make that call, I just felt like... like we needed to do something, you know? I keep second-guessing myself about everything, like maybe I'm not being careful enough or maybe I'm being too careful. The night is coming and I'm going to have to point at someone, and the thought of it makes me want to curl up in a ball and not move.</diary>
+<diary player="Yara" day="1">Well, that was a merry little circus today — Rahim went down, and I’m not even sure if he knew what hit him, or if he just decided to be a good sport about it. Avery’s got his eyes on Selin, which is either a brilliant move or a very obvious red herring, and Nuri’s still trying to play the wise owl, but honestly, who doesn’t love a good wise owl? I do love how everyone’s pretending they’re not watching everyone else — like we’re all in on some grand secret, and it's just us. I wonder what Kai would've said if he were here, or if he'd have gone down with a wink and a smile. Aisha’s been awfully quiet lately — is she planning something or just trying to stay out of the spotlight? The night is coming, and I’m already plotting my next move, but let’s not get ahead of ourselves.</diary>
+<diary player="Nuri" day="1">Today has been a long day, filled with tension and uncertainty. I watched as Rahim was executed, and though he was revealed to be a Law-abiding Citizen, I cannot help but feel that something deeper is at play. The way Avery spoke about watching Selin, and how Yara pointed out the importance of trust — these words carry weight. I must remain vigilant without letting paranoia cloud my judgment. I will listen carefully to what each person says, for in their words may lie the truth we seek. My heart feels heavy, but I know that staying calm and thinking clearly is what will guide us all forward.</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Selin points at Nuri
+Aisha points at Nuri
+<kill>Nuri — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Kai (Law-abiding Citizen)
+• Day 1: Rahim (Law-abiding Citizen) executed
+• Night 2: Nuri (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Selin (Mafia), Rahim (Law-abiding Citizen), Aisha (Mafia), Kai (Law-abiding Citizen), Yara (Law-abiding Citizen), Nuri (Law-abiding Citizen)
+
+Who they really were:
+• Selin (Mafia) — publicly presented as Selin is a former traveling merchant who has settled in the town after a long and difficult journey. They are known for being quiet, observant, and helpful, though they keep to themselves most of the time. They've taken up work as a local blacksmith and often speak with a distant look in their eyes, as if lost in thought about past travels. (Weary and world-worn, with a quiet intensity that hints at deep experiences. Selin carries the weight of secrets and has developed a practiced detachment from the world around them. Speaks in measured, deliberate tones with a slight edge of sarcasm or dry wit. They tend to pause before speaking, as if carefully choosing their words. Their voice is often low and gravelly, with an underlying sadness that makes others uneasy but not suspicious.) … but was really a Mafioso: Selin was once a promising young man who joined the Mafia after a tragic event involving his family. He became a loyal enforcer, but grew disillusioned with the violence and betrayal. Now, he uses his position to protect innocent townspeople from other Mafioso members while maintaining his cover.
+• Rahim (Law-abiding Citizen) — gruff and blunt speaks quickly and directly, with a gravelly voice and frequent interruptions. Uses coarse language and often cuts off other players mid-sentence. Has a habit of rolling his eyes and sighing heavily. Rahim is a former soldier turned mechanic who's seen too much war and not enough peace. He's got a temper, but he's also got a good heart and a strong work ethic. He runs the town's garage and fixes everything from cars to broken hearts.
+• Aisha (Mafia) — publicly presented as Aisha is a quiet, unassuming librarian who has lived in the town her entire life. She's known for being helpful but awkward, always volunteering to assist others with their reading needs or organizing book collections. She's painfully shy and tends to avoid social gatherings, preferring to spend her time in the library surrounded by books. She speaks softly and rarely interrupts, often apologizing for her presence or asking if she's bothering anyone. Her colleagues describe her as sweet but a bit of a nervous wreck who always seems worried about something. (Anxious and self-doubting, with a tendency to overthink and second-guess everything. Aisha is perpetually on edge, constantly worried about making the wrong decision or saying something inappropriate. She's deeply empathetic but struggles with social interactions, often misreading others' intentions. Her mind races with "what if" scenarios, and she's prone to nervous habits like fidgeting or rephrasing her thoughts multiple times before speaking. Speaks in a hesitant, soft voice that trails off at the end of sentences. Uses excessive filler words ("um", "like", "you know"), frequently pauses mid-sentence, and often asks clarifying questions. Her speech is peppered with self-deprecating phrases and apologies for her thoughts or opinions. She tends to look around nervously when speaking and avoids direct eye contact, often fidgeting with her hands or clothing.) … but was really a Mafioso: Aisha was recruited into the Mafia after her younger brother was kidnapped and used as leverage to force her into serving the organization. She spent years learning the ropes, always living in fear of being discovered while maintaining a perfect facade of normalcy. She's been working to undermine the Mafia from within, using her position to gather information and slowly dismantle their operations. Her cover as a librarian allows her to observe people and gather intelligence without arousing suspicion, though she's constantly terrified of being caught.
+• Kai (Law-abiding Citizen) — brash and loud speaks with booming confidence, often shouting over others, uses exaggerated gestures, has a habit of punctuating sentences with "you hear me?" or "got it?" in a theatrical way. Speaks fast with a booming voice and never hesitates to interrupt. Has an unshakable belief in their own knowledge and expertise. Kai is the town's biggest and most confident auto mechanic, known for fixing anything with a roar and a wrench. They're loud, proud, and always ready to offer unsolicited advice on any topic. They've been running their garage for over fifteen years and are considered the town's go-to guy for all things mechanical. They love to show off their work and often boast about their latest project or repair.
+• Yara (Law-abiding Citizen) — playful and teasing speaks with a mischievous twinkle in her eye, using light sarcasm and playful interruptions. Her voice is quick and bouncy, often trailing off with a giggle or a "you know" before finishing a thought. She has a habit of rephrasing others' words in a teasing way and loves to ask rhetorical questions that lead nowhere. Yara is the town's beloved baker, known for her infectious laugh and sweet treats. She's always up for a joke or a game, often weaving playful lies into her stories to keep everyone entertained. She runs a small bakery on Main Street and is famous for her whimsical pastries that are as colorful as they are delicious.
+• Nuri (Law-abiding Citizen) — Earnest and sincere Speaks slowly and deliberately, choosing each word carefully. Uses a soft, steady voice with frequent pauses for emphasis. Often repeats key phrases to ensure clarity and avoids slang or casual expressions. Has a habit of looking directly at listeners while speaking and maintains steady eye contact. Nuri is a dedicated schoolteacher who has been educating children in the town for over a decade. They are known for their patience, kindness, and unwavering commitment to their students' success. Nuri believes strongly in the power of learning and always encourages their pupils to ask questions and think critically.
+</endgame>
+</transcript>

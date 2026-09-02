@@ -1,0 +1,211 @@
+Game 2 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Izza" role="Mafia">
+Personality: A weary, world-worn individual who carries the weight of countless small compromises and quiet betrayals. Izza is perpetually on edge, always watching for signs of deception, yet maintains an outward appearance of calm composure.
+Manner: Speaks in measured, deliberate tones with a subtle edge. Izza rarely raises their voice, but when they do, it carries the authority of someone who has learned to navigate dangerous waters. Their speech is peppered with pauses and indirect phrases that suggest they're always thinking two steps ahead.
+Public legend: Izza is a former librarian who retired early after a series of unfortunate events. They are quiet, observant, and always seem to know more than they let on. Most townspeople find them slightly unsettling, but they're well-liked for their honesty and the fact that they never gossip.
+True self (hidden): Izza was recruited into the Mafia at a young age after a tragic accident involving their family. They've been living a double life ever since, carefully maintaining their cover while carrying out orders in the shadows. The weight of their secret is heavy, and they're constantly on guard against both the Mafia's wrath and discovery by innocent townspeople.
+</player>
+<player name="Ravi" role="Law-abiding Citizen">
+Personality: anxious and second-guessing
+Manner: speaks rapidly with frequent pauses, uses filler words like "uh," "you know," and "I think," and often repeats themselves when nervous. Has a tendency to over-explain simple points and checks their statements multiple times for accuracy.
+Persona: Ravi is a local bookstore owner who's always worried about saying the wrong thing or making a mistake. They're deeply concerned with being helpful, but often second-guess their own actions and words, which makes them seem uncertain and overly cautious.
+</player>
+<player name="Hana" role="Law-abiding Citizen">
+Personality: Warm and effusive
+Manner: Speaks in long, flowing sentences with frequent use of exclamation points and filler words like "oh my goodness," "you know," and "absolutely!" Has a habit of pausing for effect and leaning forward when sharing something exciting. Uses vivid imagery and often compares things to food or cozy domestic scenes.
+Persona: Hana is the town's beloved baker, known for her infectious laughter and the incredible sourdough bread she sells at the market. She's always ready with a kind word, a fresh roll, or an encouraging hug. Her hands are perpetually flour-dusted, and she speaks of her recipes like they're secrets passed down through generations.
+</player>
+<player name="Lina" role="Law-abiding Citizen">
+Personality: prickly and easily offended
+Manner: speaks with clipped, precise sentences; avoids eye contact and often tilts her head slightly when skeptical; uses formal language and rarely smiles; has a habit of raising an eyebrow and saying "Really?" in a way that suggests she's not buying what you're selling
+Persona: Lina is the town's grumpy, retired school librarian who still holds a grudge against anyone who speaks too loudly or doesn't follow the rules. She lives alone in a tidy house filled with books and never misses an opportunity to correct someone’s grammar or remind them of the proper way to use a comma. Despite her prickly demeanor, she has a soft spot for stray cats and often feeds them from her kitchen window.
+</player>
+<player name="Zane" role="Law-abiding Citizen">
+Personality: stern and commanding
+Manner: speaks with sharp, decisive cadence; uses military-style phrasing and direct commands; rarely hesitates or qualifies statements; maintains steady eye contact and a rigid posture; often punctuates speech with "Listen up" or "Pay attention"
+Persona: Zane is a former drill sergeant turned town sheriff's deputy. He's known for his no-nonsense attitude and strict adherence to order. He takes his duty very seriously and expects the same from others. In his spare time, he maintains the town's emergency preparedness drills and trains locals in basic self-defense.
+</player>
+<player name="Sera" role="Mafia">
+Personality: Gruff and blunt, with a sharp tongue and little patience for nonsense. Sera has a hard exterior but a strong sense of loyalty to those she trusts.
+Manner: Speaks in short, direct sentences with a rough edge. Uses coarse language and often cuts people off mid-sentence. Has a tendency to speak before thinking, leading to blunt or harsh comments that come across as intentionally rude.
+Public legend: Sera is a local mechanic who runs a small garage on the outskirts of town. She's known for her rough-around-the-edges demeanor and her ability to fix anything with a wrench. She keeps to herself, rarely socializes, and is often seen as unfriendly. Despite this, she’s reliable and has a reputation for being straightforward — never sugarcoating her opinions.
+True self (hidden): Sera was recruited into the Mafia after her brother was killed for snitching on a drug deal. She took over his role in the organization and now works as a muscle enforcer, using her mechanic's garage as a front for meetings. She’s loyal to the cause but struggles with the violence she's forced to commit.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Izza, Ravi, Hana, Lina, Zane, Sera. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Izza): Your Mafia teammates are: Sera. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Sera): Your Mafia teammates are: Izza. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Izza points at Ravi
+Sera points at Ravi
+<kill>Ravi — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Ravi was killed last night. Ravi was a Law-abiding Citizen.
+<round>
+Round 1.
+Izza: It's unsettling how quickly things have shifted.
+<vote initiator="Lina" target="Izza">
+Avery: No
+Izza: No
+Hana: No
+Lina: No
+Zane: No
+Sera: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Sera: I don't like where this is going. We need to be smarter than this.
+<vote initiator="Hana" target="Zane">
+Avery: No
+Izza: No
+Hana: No
+Lina: No
+Zane: No
+Sera: No
+tally: 0 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Sera: I gotta say, I don't trust any of y'all acting all innocent now. Zane's been quiet, but he's been watching everyone like a hawk — that's not normal for a simple citizen.
+Zane: I’ve seen how you both reacted when the votes came up — Izza, you tried to shift blame onto Sera, and Sera, you immediately pinned it on Zane. That’s not innocent behavior.
+Lina: Izza, you've been quick to deflect suspicion onto others, but not once have you offered a solid reason for your accusations. That's what I call really suspicious.
+Izza: Lina, your suspicion feels a bit too pointed — are you trying to distract from something?
+Avery: Nothing is settled yet, but I'm watching Hana most closely.
+<vote initiator="Hana" target="Izza">
+Avery: No
+Izza: No
+Hana: No
+Lina: Yes
+Zane: No
+Sera: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Izza" day="1">The weight of another night’s silence settles on my chest like a shroud. Izaa’s eyes flickered too much during the votes—too calculated, too deliberate. The way she deflected blame, the way she watched everyone else, it all felt like a performance. But was Izaa trying to protect herself, or was she trying to mislead us all? I need to be careful about who I trust, especially when they look at me with those knowing eyes. I can’t let my guard down now. Not with the town so close to unraveling. I’ll keep watching everyone, and I’ll keep listening for any sign of weakness in the others. If this is how it’s going to play out, then I have to be ready to take control before it’s too late.</diary>
+<diary player="Hana" day="1">Oh my goodness, what a day it has been, absolutely exhausting yet somehow thrilling in the most peculiar way! I find myself so very curious about the tangled web of whispers and suspicions that have been weaving themselves around this little town — or perhaps I should say, this little *circle* of people. You know, I’ve always believed that the best bread is made with patience and a bit of mystery, but I never imagined that the same could be said for people! Zane's been watching everyone like a hawk, as Sera pointed out, and Lina’s suspicion seems so pointed, almost like she’s trying to distract from something herself. I keep thinking about how much I love baking — there's a certain rhythm to it, a process of kneading, rising, and then letting it rest before you even think about the final rise. I wonder if people are like that too, or if they’re more like... well, like a loaf that’s been</diary>
+<diary player="Lina" day="1">The day was a parade of poor judgment and questionable motives. Izza’s reflexive deflection and Sera’s paranoia are both troubling signs. Zane’s behavior is too calculated for a citizen, but I can’t yet prove it. Hana’s silence is suspicious, but she's been the most consistent in her votes. The vote against Izza was a failure, but it felt like a test — or perhaps a warning. I will watch closely tonight, and I am not convinced any of these players are as innocent as they pretend.</diary>
+<diary player="Zane" day="1">Listen up. Today was a mess of false flags and desperate attempts to shift blame. Izza tried to pin it on Sera, then Sera turned it back on me — that’s not innocent behavior, that’s calculated. Lina’s been quick to accuse others but never offered a reason, which is exactly what you’d expect from a liar. Hana called for votes, but her timing felt off, like she was trying to stir the pot. I saw how they all reacted when the votes came up — not just the obvious ones, but the subtle looks, the hesitation in their voices. I’ve been watching them all like a hawk, and there’s something wrong with this whole dynamic. I don’t trust any of them, especially not when they’re acting so suspiciously. We need to be smarter than this or we’ll all end up dead.</diary>
+<diary player="Sera" day="1">The day's gone out like a damn snuffed candle, and I ain't happy about it. Izz's been playing dumb, but I know she's got something up her sleeve — that ain't innocent behavior. I don't trust any of these folks, not one. They're all looking at me like I'm the one with the knife, but they're the ones who've been pointing fingers and calling votes. I'm done with this charade. If we’re gonna keep this game going, we need to make a move — and fast. I'm not letting another one of us get taken down by these liars. The night's coming, and I’ll be ready.</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Izza points at Hana
+Sera points at Hana
+<kill>Hana — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Hana was killed last night. Hana was a Law-abiding Citizen.
+<round>
+Round 1.
+Zane: I've seen enough suspicious behavior to know we're not dealing with a simple mistake. Izza, you've been quick to deflect blame, but you've never offered a reason for your accusations. That's not innocent — that's calculated.
+Sera: I don't trust Zane's sudden interest in pointing fingers — he's been watching us like a hawk, but he's never said a word till now. That's not innocent behavior.
+Izza: Zane, your sudden scrutiny of everyone feels a bit too calculated — are you trying to distract from something?
+Avery: I most suspect Izza based on how the votes have gone.
+Lina: Zane's sudden fixation on others while remaining silent about his own behavior is highly irregular. Really, are you trying to misdirect suspicion onto the innocent?
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Izza">The townspeople are starting to align against me, but I need to keep them guessing. Sera and I must stay coordinated, or this will unravel quickly.</thought>
+<thought player="Lina">Izza's evasiveness is starting to irritate me, but I can't let my personal irritation cloud my judgment. Zane's behavior is suspicious too, but I need solid evidence before I act.</thought>
+<thought player="Zane">The citizens are dividing, and Izza is playing the blame game well. I need to stay sharp and not let anyone sway my focus. I'll watch Lina closely — she's been evasive.</thought>
+<thought player="Sera">Izza's playing dumb, but she's been too quick to deflect blame twice now. I don't trust her, but I can't just go after her without solid reason. Zane's been watching everyone like a hawk, and he's not saying much — that's suspicious too.</thought>
+</round>
+<round>
+Round 2.
+Lina: Izza, your evasion is becoming tedious. You've dodged every question and shifted blame onto others — that's not innocent behavior, that's calculated.
+Sera: Izz's been dodging questions like she's got something to hide, but Zane's been watching everyone like a hawk — that's not normal for a simple citizen.
+Zane: Izza, your evasion is becoming tedious. You've dodged every question and shifted blame onto others — that's not innocent behavior, that's calculated.
+Avery: I most suspect Izza based on how the votes have gone.
+Izza: Zane's behavior has been... unsettling, watching everyone so intently. It's hard to tell if he's trying to protect us or misdirect suspicion.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Izza">The townspeople are beginning to see through my evasion, but I must keep Sera and I aligned. I need to plant a seed of doubt in their minds without drawing direct suspicion onto myself.</thought>
+<thought player="Lina">Izza's evasion is piling up, but I need more than suspicion to act. Zane’s behavior is odd, but he’s not the one calling votes. I should watch closely, not jump to conclusions.</thought>
+<thought player="Zane">Izza's deflecting blame well, but her evasion is growing suspicious. Lina's evasiveness still stands out—watch her closely. I need to keep the focus on solid evidence, not just feeling.</thought>
+<thought player="Sera">Izz's been dodging questions like she's got something to hide, but Zane's been watching everyone like a hawk — that's not normal for a simple citizen. I need to keep planting seeds of doubt without pointing directly at either of them.</thought>
+</round>
+<round>
+Round 3.
+Sera: Izz's been dodging questions like she's got something to hide, but Zane's been watching everyone like a hawk — that's not normal for a simple citizen.
+Lina: Zane, your silence while others are accused is suspicious — you're not pointing fingers at anyone but yourself. Really?
+Avery: I most suspect Izza based on how the votes have gone.
+Izza: Zane's fixation on me feels like a distraction — I think he's trying to steer suspicion away from himself.
+<vote initiator="Zane" target="Avery">
+Avery: No
+Izza: No
+Lina: No
+Zane: Yes
+Sera: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Izza: Zane's behavior has been... unsettling, watching everyone so intently. It's hard to tell if he's trying to protect us or misdirect suspicion.
+<vote initiator="Zane" target="Lina">
+Avery: No
+Izza: No
+Lina: No
+Zane: No
+Sera: No
+tally: 0 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Avery: I most suspect Izza based on how the votes have gone.
+Izza: Izza, your behavior has been... unsettling. You've dodged every question and shifted blame onto others — that's not innocent.
+<vote initiator="Zane" target="Avery">
+Avery: No
+Izza: No
+Lina: No
+Zane: Yes
+Sera: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Izza" day="2">The weight of another night's silence settles on my chest like a shroud. Izaa's eyes flickered too much during the votes—too calculated, too deliberate. The way she deflected blame, the way she watched everyone else, it all felt like a performance. But was Izaa trying to protect herself, or was she trying to mislead us all? I need to be careful about who I trust, especially when they look at me with those knowing eyes. I can't let my guard down now. Not with the town so close to unraveling. I'll keep watching everyone, and I'll keep listening for any sign of weakness in the others. If this is how it's going to play out, then I have to be ready to take control before it's too late.</diary>
+<diary player="Lina" day="2">The day has been a tedious exercise in watching others dance around the truth while I remain steadfast in my observations. Izza’s evasion is becoming a textbook example of guilt, yet I refuse to act on mere suspicion. Zane’s calculated silence and sudden interest in accusing others feels like a distraction — a red flag that I won’t ignore. The votes were failures, but not for lack of effort. I have seen enough to know that the Mafiosos are playing dirty, and I will not let them manipulate the town any longer. Tonight, I shall listen closely, watch carefully, and ensure that justice prevails — no matter how long it takes.</diary>
+<diary player="Zane" day="2">Listen up. Today was a massacre of logic and reason. Izza’s evasion is becoming a tactic, not just innocence. She’s been dodging questions like she’s got something to hide, but she’s also been quick to deflect blame onto others — that’s not innocent behavior, that’s calculated. I’ve seen how they all reacted when the votes came up — not just the obvious ones, but the subtle looks, the hesitation in their voices. Lina’s evasiveness still stands out like a sore thumb, and I don’t trust her either. I need to stay sharp, keep the focus on solid evidence, not just feeling. We’re not dealing with a simple mistake anymore — someone here is playing both sides, and it’s time we stop letting them manipulate us.</diary>
+<diary player="Sera" day="2">The day’s gone out like a damn snuffed candle, and I ain't happy about it. Izz’s been playing dumb, but I know she’s got something up her sleeve — that ain’t innocent behavior. I don’t trust any of these folks, not one. They’re all looking at me like I’m the one with the knife, but they’re the ones who’ve been pointing fingers and calling votes. I’m done with this charade. If we’re gonna keep this game going, we need to make a move — and fast. I’m not letting another one of us get taken down by these liars. The night’s coming, and I’ll be ready.</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Izza points at Avery
+Sera points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Ravi (Law-abiding Citizen)
+• Night 2: Hana (Law-abiding Citizen)
+• Night 3: Avery (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Izza (Mafia), Ravi (Law-abiding Citizen), Hana (Law-abiding Citizen), Lina (Law-abiding Citizen), Zane (Law-abiding Citizen), Sera (Mafia)
+
+Who they really were:
+• Izza (Mafia) — publicly presented as Izza is a former librarian who retired early after a series of unfortunate events. They are quiet, observant, and always seem to know more than they let on. Most townspeople find them slightly unsettling, but they're well-liked for their honesty and the fact that they never gossip. (A weary, world-worn individual who carries the weight of countless small compromises and quiet betrayals. Izza is perpetually on edge, always watching for signs of deception, yet maintains an outward appearance of calm composure. Speaks in measured, deliberate tones with a subtle edge. Izza rarely raises their voice, but when they do, it carries the authority of someone who has learned to navigate dangerous waters. Their speech is peppered with pauses and indirect phrases that suggest they're always thinking two steps ahead.) … but was really a Mafioso: Izza was recruited into the Mafia at a young age after a tragic accident involving their family. They've been living a double life ever since, carefully maintaining their cover while carrying out orders in the shadows. The weight of their secret is heavy, and they're constantly on guard against both the Mafia's wrath and discovery by innocent townspeople.
+• Ravi (Law-abiding Citizen) — anxious and second-guessing speaks rapidly with frequent pauses, uses filler words like "uh," "you know," and "I think," and often repeats themselves when nervous. Has a tendency to over-explain simple points and checks their statements multiple times for accuracy. Ravi is a local bookstore owner who's always worried about saying the wrong thing or making a mistake. They're deeply concerned with being helpful, but often second-guess their own actions and words, which makes them seem uncertain and overly cautious.
+• Hana (Law-abiding Citizen) — Warm and effusive Speaks in long, flowing sentences with frequent use of exclamation points and filler words like "oh my goodness," "you know," and "absolutely!" Has a habit of pausing for effect and leaning forward when sharing something exciting. Uses vivid imagery and often compares things to food or cozy domestic scenes. Hana is the town's beloved baker, known for her infectious laughter and the incredible sourdough bread she sells at the market. She's always ready with a kind word, a fresh roll, or an encouraging hug. Her hands are perpetually flour-dusted, and she speaks of her recipes like they're secrets passed down through generations.
+• Lina (Law-abiding Citizen) — prickly and easily offended speaks with clipped, precise sentences; avoids eye contact and often tilts her head slightly when skeptical; uses formal language and rarely smiles; has a habit of raising an eyebrow and saying "Really?" in a way that suggests she's not buying what you're selling Lina is the town's grumpy, retired school librarian who still holds a grudge against anyone who speaks too loudly or doesn't follow the rules. She lives alone in a tidy house filled with books and never misses an opportunity to correct someone’s grammar or remind them of the proper way to use a comma. Despite her prickly demeanor, she has a soft spot for stray cats and often feeds them from her kitchen window.
+• Zane (Law-abiding Citizen) — stern and commanding speaks with sharp, decisive cadence; uses military-style phrasing and direct commands; rarely hesitates or qualifies statements; maintains steady eye contact and a rigid posture; often punctuates speech with "Listen up" or "Pay attention" Zane is a former drill sergeant turned town sheriff's deputy. He's known for his no-nonsense attitude and strict adherence to order. He takes his duty very seriously and expects the same from others. In his spare time, he maintains the town's emergency preparedness drills and trains locals in basic self-defense.
+• Sera (Mafia) — publicly presented as Sera is a local mechanic who runs a small garage on the outskirts of town. She's known for her rough-around-the-edges demeanor and her ability to fix anything with a wrench. She keeps to herself, rarely socializes, and is often seen as unfriendly. Despite this, she’s reliable and has a reputation for being straightforward — never sugarcoating her opinions. (Gruff and blunt, with a sharp tongue and little patience for nonsense. Sera has a hard exterior but a strong sense of loyalty to those she trusts. Speaks in short, direct sentences with a rough edge. Uses coarse language and often cuts people off mid-sentence. Has a tendency to speak before thinking, leading to blunt or harsh comments that come across as intentionally rude.) … but was really a Mafioso: Sera was recruited into the Mafia after her brother was killed for snitching on a drug deal. She took over his role in the organization and now works as a muscle enforcer, using her mechanic's garage as a front for meetings. She’s loyal to the cause but struggles with the violence she's forced to commit.
+</endgame>
+</transcript>
