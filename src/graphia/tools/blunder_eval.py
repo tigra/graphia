@@ -3082,7 +3082,10 @@ def run_eval(
     provider_block = collect_provider_provenance(
         args.provider, large_model, small_model, base_url
     )
-    settings = {
+    # Annotated ``dict[str, object]`` (like ``render_record``'s ``flat_settings``)
+    # because the conditional spec-039 arm key below adds a ``bool`` to a literal
+    # of strings / ints / ``None`` / a nested map.
+    settings: dict[str, object] = {
         "large_model": large_model,
         "small_model": small_model,
         # base_url is only meaningful for ollama; recorded null for bedrock.
