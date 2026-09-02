@@ -7,7 +7,7 @@ persisted twice, preserved in the transcript, and measured.
 # Technical Specification: Per-AI Private Diaries
 
 - **Functional Specification:** [039 — Per-AI Private Diaries](./functional-spec.md)
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 > **Spec 028 is the template, and its §2.1 argument does not transfer.** Diaries are structurally parallel to Day-round thoughts, so [028's technical document](../028-ai-private-thoughts/technical-considerations.md) is the shape to follow. But 028 justified its dedicated node by **replay safety** — `day_turn` is the interrupting node, so folding N model calls into it would expose them to re-execution after a human `interrupt()`. **At the Day→Night hinge there is no interrupt until `mafia_point`, several committed super-steps later, and LangGraph replays only the interrupted node's own task.** Folding into `day_close` would *not* be replay-unsafe. The case for a dedicated node here is different and is argued on its own terms in §2.1. Do not borrow 028's wording — a reviewer who checks will find it false.
