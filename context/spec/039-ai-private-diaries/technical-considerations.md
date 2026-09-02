@@ -287,6 +287,11 @@ The fix is three flat keys under `quality` (`diary_fallback_rate`, `diary_fallba
 - **The liveness gate must be read off the DENOMINATOR, never the rate's truthiness.** §2.13 said "gated on the denominator" from the writing side but not the reading side, and truthiness is the trap: `diary_fallback_rate: 0.0` is the genuinely **clean** measurement and must stay distinct from absence. The viewer gates on `quality.diary_entries_attempted` via a `_MISSING` sentinel, and reads the rate from the record rather than recomputing it — a second derivation would render a record whose stored rate disagreed with its own operands as though it agreed.
 - **The table cell defaults where the drill-down omits, and that asymmetry is correct.** `_stand_in_cell` reads an absent field as `passive`; the drill-down line omits it. A column of blanks reads as an unfilled field; an `—` line added to records that never carried the field is the visible regression `_render_settings_section`'s own docstring rules out.
 
+### 2.16 Two symmetry notes from Slice 5's test task
+
+- **`--max-days` has the same CLI-layer/writer-layer split as the diaries sentinel, and §2.14 only stated half of it.** Moving the env assignment into `main()` means a **direct** `run_eval(config, args)` call no longer applies `args.max_days` to the games at all. That is the correct direction — the record cannot disagree with the run, because both read the one resolved config — but it is the exact mirror of §2.12's split for the arm label, which is spelled out. Nothing in the suite calls `run_eval` with a `max_days` it expects honoured, so the half is documented here rather than pinned.
+- **The sentinel fires after the env mutations, not before them.** `_require_diaries_arm` runs after `_isolate_cloud_stores`, the model/lineup/role/max-days/diaries assignments and `load_config()`. A refused run has therefore already mutated the process environment — harmless for a one-shot CLI, and still before the preflight and before game 1 as §2.10 requires, but "fail fast before game 1" could be read as "before touching anything" and does not mean that.
+
 ---
 
 ## 3. Impact and Risk Analysis
