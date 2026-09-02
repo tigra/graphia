@@ -78,7 +78,7 @@ from graphia.prompts import (
     VOTE_INITIATE_ANNOUNCE_TEMPLATE,
     VOTE_PER_BALLOT_TEMPLATE,
 )
-from graphia.state import PlayerState
+from graphia.state import DiaryRecord, PlayerState
 
 # The shared structured-output proxy (tech-spec 011 §2.2): Slice 3 Task 2 uses
 # it in CAPTURE mode — a ``captures`` list + a prompt-parse ``speaker_resolver``
@@ -327,6 +327,16 @@ class EvalResult:
     # pre-036 record. Additive/orthogonal, so NO ``METRICS_VERSION`` bump — the
     # ``outcomes``/``vote_activity``/``ci_low`` precedent.
     generation: dict[str, int] = field(default_factory=dict)
+    # --- Spec-039 diary-fallback run health (§2.10 fold-in) ---
+    # ``{"count": <placeholder entries>, "denominator": <entries attempted>}``
+    # summed over the run's completed games, or EMPTY when no diary entry was
+    # attempted (a diaries-off run; an on-arm run where no Day ever closed) — in
+    # which case ``render_record`` omits the ``quality.diary_*`` keys entirely.
+    # ABSENT, never a misleading zero. A run-HEALTH pair, not an AI-quality
+    # metric, which is why it lives here and not in ``metrics``; see
+    # :func:`score_diary_fallback`'s section banner for that argument and for
+    # why it carries no Wilson band. Additive ⇒ NO ``METRICS_VERSION`` bump.
+    diary_fallback: dict[str, int] = field(default_factory=dict)
     # --- Slice 4 run-provenance blocks (functional-spec 011 §2.3, tech §2.4) ---
     # The code provenance: ``{"commit": <sha|None>, "branch": <str|None>,
     # "dirty": <bool>}`` from :func:`collect_code_provenance`. A clean record is
@@ -1649,6 +1659,145 @@ def _tally_scripted_side(
     }
 
 
+# ===========================================================================
+# Spec 039 §2.10 (author-approved fold-in) — the DIARY FALLBACK RATE.
+#
+# WHY IT EXISTS, and it is not hypothetical. A 1-game ollama diaries-ON smoke
+# produced 9 of 11 byte-identical ``_DIARY_FALLBACK`` entries and NOTHING said
+# so: the ledger record read like any other on-arm run, the transcript showed
+# eleven diary elements without distinguishing them, and the harness installs no
+# logging handler, so ``day_diary``'s per-player ``logger.exception`` left no
+# trace either. A run that measured the PLACEHOLDER four times out of five was
+# indistinguishable from a clean measurement of the feature.
+#
+# This makes the on arm SELF-VALIDATING: the record states, per run, how many of
+# the diary entries it played are the deterministic placeholder, out of how many
+# were attempted. (The cause of that smoke is established and is NOT model
+# incapability — probed directly, diary structured output succeeds 5/5 on
+# ollama; most likely a cold-start timeout on the first fan-out, since Day 1 was
+# all fallback and Day 2 partly real, the opposite of what context growth would
+# predict. This is the SIGNAL, not the fix.)
+#
+# WHERE IT SITS, AND WHY NOT IN ``metrics``. Under ``quality.``, beside
+# ``games_failed_early``: it is RUN HEALTH — "did this run measure the thing it
+# claims to?" — exactly like "3 of 10 games failed early". No model is judged
+# well or badly by it, so it must never enter ``eval_ledger.METRIC_ORDER`` or the
+# record's metric tail. Purely additive record shape, no changed detection rule
+# and no changed denominator ⇒ ``METRICS_VERSION`` is NOT bumped (the
+# ``outcomes`` / ``vote_activity`` / ``ci_low`` precedent).
+#
+# NO WILSON BAND, deliberately — the one place this departs from the ledger's
+# rate convention, and the reason is the block it lives in. ``quality`` is a
+# CENSUS of one run, not a sample of a population: ``games_attempted`` /
+# ``games_completed`` / ``games_failed_early`` are exact counts of what happened,
+# and none of them carries a rate, let alone an interval. 9-of-11 placeholder
+# entries is not an ESTIMATE of an underlying placeholder rate — it is the
+# complete, exact composition of this run's diary content, so there is no
+# sampling uncertainty for an interval to express. Two supporting reasons: the
+# observed failures CLUSTER (a whole Day's fan-out at once), so the independent-
+# Bernoulli assumption a Wilson band rests on is violated in exactly the
+# direction that would make the band a lie; and ``_attach_ci`` operates over
+# ``result.metrics`` and keys off ``count``, so banding a ``quality`` field would
+# mean either leaking it into the metric map or restating that contract in a
+# second place. What the ledger's rule actually protects against is honoured:
+# the rate is never written without its denominator beside it.
+#
+# ABSENT, NEVER A MISLEADING ZERO. The keys are emitted only when at least one
+# entry was attempted. A diaries-OFF run attempts none (``day_diary`` returns
+# ``{}`` above its fan-out), so it records nothing here — a
+# ``diary_fallback_rate: 0.0`` would assert a clean measurement of a feature
+# that never ran. The gate is on the DATA (denominator > 0), not on the arm
+# label: an on-arm run whose games all ended before any Day closed therefore
+# records nothing too, and an off-arm run that somehow DID write entries (an
+# ADR-011 parity break) is counted rather than hidden.
+# ===========================================================================
+
+
+def _diary_fallback_text() -> str | None:
+    """The node's deterministic diary placeholder text, or ``None`` (spec 039).
+
+    THE COUPLING, STATED PLAINLY. ``_DIARY_FALLBACK`` is a module-PRIVATE
+    constant of ``graphia.nodes.day`` and this harness reaches in for it. The
+    alternative on one side — a COPY of the sentence in this module — is
+    silently wrong the day someone rewords the fallback: the counter would read
+    a clean ``0.0`` for a run that was all placeholder, which is precisely the
+    failure this signal exists to prevent. Importing the one definition is the
+    discipline this module already applies to the vote templates and the
+    spec-009 near-duplicate scorer: IMPORT the thing, never copy it, so a reword
+    breaks loudly in the offline suite instead of drifting a measurement.
+
+    The alternative on the other side — having the NODE surface the fact (a flag
+    on ``DiaryRecord``, or a second return value) — was rejected as out of
+    proportion: it would change gameplay state shape, the checkpoint payload,
+    the transcript renderer's input and the other read sites, all to avoid one
+    private import in a measurement tool. The measurement must not reshape the
+    thing measured.
+
+    Imported LAZILY, not at module scope: ``graphia.ui.ledger_viewer`` imports
+    ``LEDGER_PATH`` from this module, and ``graphia.nodes.day`` drags in the
+    whole gameplay stack (``diary_store``, ``career_events``, the prompts) —
+    which a no-model ledger viewer has no business loading. The same reason
+    ``_make_scripted_seat`` imports that module lazily.
+
+    GRACEFUL DEGRADATION: a rename or removal yields ``None``, the caller logs
+    once, and the run omits the diary-fallback keys and completes. A measurement
+    must never take down the thing it measures — a 30-minute Bedrock batch does
+    not die because a constant moved. The LOUD half of the contract lives in the
+    offline suite, which imports the constant directly and fails on a rename.
+    """
+    try:
+        from graphia.nodes.day import _DIARY_FALLBACK
+    except Exception:  # noqa: BLE001 - the instrument is optional, the run is not
+        return None
+    return _DIARY_FALLBACK if isinstance(_DIARY_FALLBACK, str) else None
+
+
+def score_diary_fallback(
+    private_diaries: dict[str, list[DiaryRecord]] | None,
+    fallback_text: str,
+) -> dict[str, int]:
+    """Pure scorer for the diary-fallback run health — ``{count, denominator}``.
+
+    Over ONE game's ``private_diaries`` channel (the per-player entry lists as
+    accumulated by ``state._merge_private_diaries``): ``denominator`` is every
+    entry the fan-out produced — the entries ATTEMPTED, because ``day_diary``
+    accumulates exactly one record per surviving AI writer whether the model
+    answered or not — and ``count`` is the entries whose text is EXACTLY
+    ``fallback_text``.
+
+    EXACT EQUALITY is the right rule, not a fuzzy match. ``_DIARY_FALLBACK`` is
+    stored verbatim (``_clamp_diary_entry`` runs on model text only, and would
+    leave the constant unchanged anyway), so an entry either IS the placeholder
+    or is a real one. A model that independently produced the identical sentence
+    would be miscounted; that is not a real risk, whereas a looser rule would
+    manufacture false positives out of short honest entries — and this figure is
+    read as a tripwire, so a false positive is the expensive direction.
+
+    Defensive over the channel's shape — a non-list value, a non-dict entry, or a
+    missing/non-string ``text`` is skipped rather than raising, because this runs
+    inside a measured batch that must finish.
+
+    DRIVER-INDEPENDENT BY DESIGN: takes a plain channel map plus the placeholder
+    text as an ARGUMENT (it never reaches for the constant itself), so the
+    offline tests score synthetic entries with no live model.
+    """
+    count = 0
+    denominator = 0
+    for entries in (private_diaries or {}).values():
+        if not isinstance(entries, list):
+            continue
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            text = entry.get("text")
+            if not isinstance(text, str):
+                continue
+            denominator += 1
+            if text == fallback_text:
+                count += 1
+    return {"count": count, "denominator": denominator}
+
+
 # The two day-open markers, full-anchored ``^...$`` regexes derived from the
 # imported templates (the same template-coupling discipline the announce/ballot
 # anchors use — a reword breaks the offline tests loudly). Both placeholders are
@@ -2055,6 +2204,11 @@ def render_record(result: EvalResult, run_date: str) -> str:
           games_attempted: <int>
           games_completed: <int>
           games_failed_early: <int>
+          # spec 039 — RUN HEALTH, not a metric. All three OMITTED together when the
+          # run attempted no diary entry (a diaries-off arm) — absent, never a 0.0.
+          diary_fallback_rate: <float>      # placeholder entries / entries attempted
+          diary_fallback_entries: <int>     # entries that are graphia.nodes.day._DIARY_FALLBACK
+          diary_entries_attempted: <int>    # the denominator — the rate is never written alone
           duration_seconds: <float|null>
         outcomes:
           games: <int>
@@ -2264,15 +2418,37 @@ def render_record(result: EvalResult, run_date: str) -> str:
         )
 
     lines.append("quality:")
-    lines += _yaml_block(
-        {
-            "games_attempted": result.games_attempted,
-            "games_completed": result.games_completed,
-            "games_failed_early": result.games_failed_early,
-            "duration_seconds": result.duration_seconds,
-        },
-        indent=1,
-    )
+    # Built key-by-key (the ``run_block`` pattern) rather than as one literal,
+    # because spec 039's diary-fallback keys are CONDITIONAL yet must land beside
+    # ``games_failed_early`` — the other "did this run measure anything?" count —
+    # rather than trailing after ``duration_seconds``. ``_yaml_block`` renders in
+    # insertion order, so the insertion sequence IS the key order.
+    quality_block: dict[str, object] = {
+        "games_attempted": result.games_attempted,
+        "games_completed": result.games_completed,
+        "games_failed_early": result.games_failed_early,
+    }
+    # Spec 039 §2.10 fold-in — the DIARY FALLBACK share, so a diaries-on run that
+    # actually measured the deterministic placeholder says so in its own record
+    # instead of reading like a clean measurement (the 9-of-11 smoke). Emitted as
+    # THREE FLAT KEYS, matching ``quality``'s existing flat-scalar shape rather
+    # than importing ``metrics``' nested ``{rate, count, denominator}`` facet:
+    # this is a run-health census, not a scored metric, and it must not read as
+    # one. The rate is derived HERE (the result carries only the count/
+    # denominator pair) so there is one definition of it, and it is never emitted
+    # without its denominator beside it. NO Wilson band — see
+    # :func:`score_diary_fallback`'s banner. Additive ⇒ no ``METRICS_VERSION``
+    # bump; and because the whole trio is conditional on a denominator the
+    # feature only produces, every one of the committed records renders
+    # byte-identically.
+    diary_attempted = int(result.diary_fallback.get("denominator", 0))
+    if diary_attempted > 0:
+        diary_placeholders = int(result.diary_fallback.get("count", 0))
+        quality_block["diary_fallback_rate"] = diary_placeholders / diary_attempted
+        quality_block["diary_fallback_entries"] = diary_placeholders
+        quality_block["diary_entries_attempted"] = diary_attempted
+    quality_block["duration_seconds"] = result.duration_seconds
+    lines += _yaml_block(quality_block, indent=1)
 
     # ``outcomes`` (spec-013 §2.1) — win-rate by side, after ``quality`` and
     # before ``metrics``. ``games`` then the two sides (each ``{wins, rate?,
@@ -2638,6 +2814,17 @@ class _GameCapture:
     # hand-built capture needs no extra wiring; an empty/unresolvable id yields no
     # side for that game (excluded from the scripted-side numerator).
     human_id: str = ""
+    # Spec-039: this game's ``private_diaries`` channel — every player's
+    # before-Night entries in write order, as accumulated by
+    # ``state._merge_private_diaries``. Read from the SAME final state as
+    # ``players``/``messages``, which is safe here — unlike the per-Night
+    # pointing channels ``night_open`` resets — precisely because that reducer
+    # CONCATENATES: the final snapshot holds every Day's entries, not just the
+    # last one's. Feeds the run-health :func:`score_diary_fallback` count and
+    # nothing else; no metric reads it, and an entry never enters ``messages``
+    # (spec 039's privacy invariant). Defaults to ``{}`` so a hand-built
+    # ``_GameCapture`` in an offline test needs no diary wiring.
+    private_diaries: dict[str, list[DiaryRecord]] = field(default_factory=dict)
 
 
 def _install_capture_provider(
@@ -2841,11 +3028,30 @@ def _play_one_game(args: argparse.Namespace, game_index: int) -> _GameCapture:
     # Spec 023: a measured game now runs to its NATURAL conclusion — a real
     # win/loss, or (only for a stuck/looping game) the in-game runaway Day cap
     # routing to ``end_screen``. The old fixed Day-speaking-turn cut that ended
-    # games mid-Day as "no winner" is gone. ``--max-days`` overrides the cap for
-    # this run (set via ``GRAPHIA_MAX_DAYS`` so ``load_config`` picks it up);
-    # the loop below only watches ``snapshot.next``.
-    if args.max_days is not None:
-        os.environ["GRAPHIA_MAX_DAYS"] = str(args.max_days)
+    # games mid-Day as "no winner" is gone; the loop below only watches
+    # ``snapshot.next``.
+    #
+    # ``--max-days`` USED TO BE ASSIGNED HERE, and that was the live
+    # ``settings.max_days`` MISLABEL (fixed in spec 039 Slice 5). Setting
+    # ``GRAPHIA_MAX_DAYS`` at this point is *after* ``main()`` resolved the one
+    # config ``run_eval`` builds the recorded ``settings`` block from — so a
+    # ``--max-days 4`` run was HONOURED in game (each game's own
+    # ``load_config()`` below saw the env var) yet RECORDED as the default 12.
+    # Two Slice-5 smoke records carry exactly that contradiction: ``max_days:
+    # 12`` beside ``runaway: 1`` — a record that is self-consistent and wrong.
+    #
+    # The assignment now lives in ``main()``, beside ``--scripted-player``'s and
+    # ``--diaries``', before the single ``load_config()`` the record is built
+    # from. IN-GAME BEHAVIOUR IS UNCHANGED: the env var persists for the whole
+    # process, so the ``load_config()`` below still resolves the override into
+    # ``config.max_days`` — which is what binds the runaway cap into the graph
+    # and sizes the anti-hang backstop. Only the RECORDED value moved.
+    #
+    # The consequence to record (the same CLI-layer/writer-layer split spec 039
+    # §2.12 documents for the diaries sentinel): a DIRECT ``run_eval(...)`` call
+    # that bypasses ``main()`` no longer applies ``args.max_days`` to the games.
+    # That is the correct direction — a caller resolving its own config must set
+    # the env before doing so, or the record would disagree with the run.
 
     with tempfile.TemporaryDirectory(prefix=f"graphia-blunder-{game_index}-") as ckpt:
         os.environ["GRAPHIA_CHECKPOINT_DIR"] = ckpt
@@ -2955,6 +3161,11 @@ def _play_one_game(args: argparse.Namespace, game_index: int) -> _GameCapture:
             captures=captures,
             winner=state.get("winner"),
             events=events,
+            # Spec-039 run health: the accumulated diary channel (see
+            # ``_GameCapture.private_diaries``), so ``run_eval`` can count how
+            # many of this game's entries the fan-out filled with the
+            # deterministic placeholder instead of a model answer.
+            private_diaries=state.get("private_diaries", {}) or {},
             # Spec-027: the scripted seat's id, read from the same final state, so
             # ``run_eval`` can resolve this game's dealt seat side and tally the
             # scripted-side win rate.
@@ -3242,6 +3453,28 @@ def run_eval(
     # SAME gate as the semantic mean (embeddings resolved AND ≥1 pair scored).
     persona_sem_max_run: float = 0.0
 
+    # Spec-039 (§2.10 fold-in) DIARY FALLBACK RUN HEALTH: how much of this run's
+    # diary content is the node's deterministic placeholder rather than a model
+    # answer. The placeholder text is resolved ONCE, up front — a lazy, guarded
+    # reach into ``graphia.nodes.day``'s private constant (see
+    # :func:`_diary_fallback_text` for the coupling argument, and
+    # :func:`score_diary_fallback`'s banner for why this is ``quality`` and not a
+    # metric). GRACEFUL DEGRADATION: unavailable ⇒ log once here and omit the
+    # keys; the measured run completes regardless. Deliberately NOT gated on the
+    # diaries arm, so an off-arm run that unexpectedly wrote entries is counted
+    # rather than hidden.
+    diary_fallback_text = _diary_fallback_text()
+    if diary_fallback_text is None:
+        print(
+            "  quality.diary_fallback_rate: graphia.nodes.day._DIARY_FALLBACK "
+            "is unavailable — omitting the diary-fallback run-health counts",
+            file=sys.stderr,
+        )
+    # Σ placeholder entries and Σ entries attempted across the completed games —
+    # the same per-game-then-sum pattern as the action metrics, so the recorded
+    # rate is Σplaceholder / Σattempted and never a mean-of-rates.
+    diary_fallback_total: dict[str, int] = {"count": 0, "denominator": 0}
+
     for game_index in range(args.games):
         result.games_attempted += 1
         try:
@@ -3369,6 +3602,17 @@ def run_eval(
                 # disable further attempts so the run stays quiet and fast.
                 embed_fn = None
 
+        # Spec-039 run health: fold this game's placeholder-vs-attempted diary
+        # entry counts into the batch totals. Skipped entirely when the
+        # placeholder text could not be resolved (the counts then stay at zero
+        # and the record omits the keys).
+        if diary_fallback_text is not None:
+            diary_facets = score_diary_fallback(
+                cap.private_diaries, diary_fallback_text
+            )
+            diary_fallback_total["count"] += diary_facets["count"]
+            diary_fallback_total["denominator"] += diary_facets["denominator"]
+
     # Spec-013 game-dynamics blocks, folded over the completed games. ``outcomes``
     # partitions the winners (``games`` = completed games denominator); the side
     # win-rates carry a Wilson CI, ``draw``/``no_winner`` are bare counts.
@@ -3379,6 +3623,14 @@ def run_eval(
     # resolved a side — the absent-metric posture).
     result.outcomes = tally_outcomes(winners, scripted_sides)
     result.vote_activity = {"by_side": vote_by_side, "by_day": vote_by_day}
+
+    # Spec-039 (§2.10 fold-in): the diary-fallback run-health pair, recorded ONLY
+    # when at least one entry was attempted — ABSENT, never a misleading zero, so
+    # a diaries-off run (which attempts none) records nothing here rather than a
+    # ``0.0`` asserting a clean measurement of a feature that never ran.
+    # ``render_record`` derives the rate from this pair.
+    if diary_fallback_total["denominator"] > 0:
+        result.diary_fallback = dict(diary_fallback_total)
 
     result.ai_speeches = pooled_lines
     # Both speech metrics share the AI-spoken-line denominator; they are computed
@@ -3679,6 +3931,16 @@ def main(argv: list[str] | None = None) -> int:
     # Route --citizens/--mafia onto the lineup env vars before load_config, so
     # the Slice-1 fail-fast guard validates them (a bad lineup exits there).
     _apply_lineup_overrides(args.citizens, args.mafia)
+    # Spec 023's runaway Day cap, spec 039 Slice 5's placement. This assignment
+    # was made inside ``_play_one_game`` — AFTER the ``load_config()`` just
+    # below, the one whose values ``run_eval`` records as ``settings`` — so the
+    # override was honoured in game and recorded as the default 12. Assigning it
+    # HERE, with the other pre-``load_config`` env knobs, makes the recorded
+    # ``settings.max_days`` the value actually played. The games' own
+    # ``load_config()`` calls still see it (the env var persists for the
+    # process), so the cap fires exactly as before.
+    if args.max_days is not None:
+        os.environ["GRAPHIA_MAX_DAYS"] = str(args.max_days)
     # Spec 026: the human-seat stand-in mode. ``--scripted-player`` maps to the
     # default-on ``GRAPHIA_ACTIVE_SCRIPTED_PLAYER`` env flag (active ⇒ truthy,
     # passive ⇒ falsy) and overrides any inherited value for this run; omitted,
@@ -3768,6 +4030,20 @@ def main(argv: list[str] | None = None) -> int:
         + (f" ({result.games_failed_early} failed early)" if result.games_failed_early else "")
         + f"; AI spoken lines: {len(result.ai_speeches)}"
     )
+    # Spec 039 §2.10 fold-in: the diary-fallback share, printed as soon as the
+    # batch ends. The ledger record carries the same figure, but a run worth
+    # discarding should be visible at the console rather than having to be read
+    # back out of a file. Absent (no entry attempted) ⇒ nothing printed, the same
+    # absent-not-zero rule the record follows.
+    diary_health = result.diary_fallback
+    diary_attempted = int(diary_health.get("denominator", 0))
+    if diary_attempted:
+        diary_placeholders = int(diary_health.get("count", 0))
+        print(
+            f"diary entries: {diary_placeholders}/{diary_attempted} are the "
+            "deterministic fallback "
+            f"(rate={diary_placeholders / diary_attempted:.2f})"
+        )
     if rep:
         print(
             f"repetition: rate={rep['rate']:.2f} "
