@@ -140,7 +140,7 @@ class _CapturingFake:
         self._output = output
         self.messages_log: list[Any] = []
 
-    def with_structured_output(self, schema: type) -> "_CapturingFake":
+    def with_structured_output(self, schema: type, **kwargs: object) -> "_CapturingFake":
         return self
 
     def invoke(self, messages: Any) -> Any:
@@ -266,7 +266,7 @@ def test_reflect_falls_back_when_model_fails(
     """A model error never blanks the channel — a deterministic note is written."""
 
     class _Boom:
-        def with_structured_output(self, schema: type) -> "_Boom":
+        def with_structured_output(self, schema: type, **kwargs: object) -> "_Boom":
             return self
 
         def invoke(self, messages: Any) -> Any:

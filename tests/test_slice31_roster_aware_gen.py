@@ -120,7 +120,7 @@ class _CapturingPersonaFake:
         self.messages_log: list[Any] = []
         self.call_count = 0
 
-    def with_structured_output(self, schema: type) -> "_CapturingPersonaFake":
+    def with_structured_output(self, schema: type, **kwargs: object) -> "_CapturingPersonaFake":
         return self
 
     def invoke(self, messages: Any) -> Persona:

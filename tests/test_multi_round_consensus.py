@@ -841,7 +841,7 @@ class _CountingRoundPointing:
         self._state_provider = state_provider
         self.call_count = 0
 
-    def with_structured_output(self, schema: type) -> "_CountingRoundPointing":
+    def with_structured_output(self, schema: type, **kwargs: object) -> "_CountingRoundPointing":
         return self
 
     def invoke(self, messages) -> Pointing:

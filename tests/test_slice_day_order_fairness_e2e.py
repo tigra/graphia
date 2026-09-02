@@ -114,7 +114,7 @@ class _AlwaysSpeakLarge:
         self._bound_schema: type | None = None
         self.call_count = 0
 
-    def with_structured_output(self, schema: type) -> "_AlwaysSpeakLarge":
+    def with_structured_output(self, schema: type, **kwargs: object) -> "_AlwaysSpeakLarge":
         self._bound_schema = schema
         return self
 
