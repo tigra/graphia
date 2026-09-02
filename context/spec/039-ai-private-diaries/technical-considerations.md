@@ -267,6 +267,19 @@ Three hazards, in order of how likely they are to ruin a record:
 - **The run-id collision is now easier to hit, and it happened.** Three back-to-back no-model runs produced only **two** transcript dirs: two shared `2026-09-02T11-41-26`, the second overwrote `game-01.txt`, and two records now link one directory. `--ledger-path` / `--transcripts-root` make scripted back-to-back runs trivial, so `make_run_id`'s one-second resolution deserves a uniqueness suffix. Out of scope here; a real follow-up.
 - **`transcript_dir_for` resolves `<ledger dir>/transcripts/<run-id>`, not the `--transcripts-root` that was passed.** For the campaign, name the pair consistently (`--ledger-path /tmp/campaign/ledger.yaml --transcripts-root /tmp/campaign/transcripts`) so links resolve both outside the repo *and* after moving both into `evals/`.
 
+### 2.13 The instrument must measure its own liveness (added in Slice 5)
+
+**This section's worst omission, and §3 already contained the clue.** §3 names the silently-measuring-the-fallback trap **twice** — *"a test would silently measure `_DIARY_FALLBACK` instead of failing"* and *"it exercises the fallback, not a real entry"* — but only ever about the **test** harness. It never carried the same failure mode across to the **measurement** harness, and then planned a six-arm campaign whose entire subject is diary content with no check that the content is real. A 1-game ollama smoke duly produced **9 of 11** byte-identical placeholder entries, invisible three ways over: nothing in the ledger, nothing in the transcript, and nothing in the log, because **`blunder_eval` installs no logging handler at all** — so `logger.exception` is not an observability channel for a measured run, and this section should stop implying it is.
+
+The fix is three flat keys under `quality` (`diary_fallback_rate`, `diary_fallback_entries`, `diary_entries_attempted`), **gated on the denominator rather than on the arm label** — so an on-arm run that had no opportunity records nothing rather than a misleading `0.0`, while an off-arm run that somehow *did* write entries (an ADR-011 parity break) is counted rather than hidden. **Flat and band-less on purpose:** `quality` is a **census of one run**, not a sample of a population — `games_failed_early: 3` is an exact count, which is why nothing in that block carries an interval — and the observed failures **cluster by fan-out**, violating the independent-Bernoulli assumption a Wilson band rests on, in the direction that would make the band a lie.
+
+**"The instrument must measure its own liveness" belongs beside the arm label as a first-class requirement, not as a fold-in.**
+
+### 2.14 Two corrections to §2.10 recorded in Slice 5
+
+- **"`settings.max_days` is not this spec's to fix" was wrong twice over.** It reasoned "harmless so far — all 30 committed records are at the default", and then this spec's own Slice-5 smoke procedure prescribed `--max-days 4` to keep the smoke short, producing two mislabelled records immediately. **When a section identifies a live defect and then prescribes the practice that trips it, it fixes it or says why not.** Fixed: the env assignment moved into `main()` before `load_config()`, verified to record the invoked value *and* still cap behaviourally.
+- **`--max-days` silently shrinks the diary denominator, which §2.10's pacing numbers do not mention.** `day_diary`'s guard is `cycle + 1 >= max_days`, so a short-capped run loses the final Days' entries and at `--max-days 2` writes **none** (verified live). Anyone shortening a campaign arm with `--max-days` would quietly reduce what that arm measures.
+
 ---
 
 ## 3. Impact and Risk Analysis
