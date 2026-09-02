@@ -193,6 +193,23 @@ _FIXED_COLUMNS: tuple[str, ...] = (
     "Unres (R/N)",
     "Votes (LA/M)",
     "Stand-in",
+    # Spec 039: which ARM of the private-diaries A/B a run measured
+    # (:func:`_diaries_cell`, reading ``settings.private_diaries_enabled``).
+    # Placed between ``Stand-in`` and ``Lineup`` so the three settings facts stay
+    # contiguous **in the record's own key order** (``render_record`` emits
+    # ``scripted_player`` → ``private_diaries_enabled`` → the nested ``lineup``) —
+    # the same mirror-the-record rule that positioned ``Kind`` after ``Date``. It
+    # is a *fixed* (head) column, ahead of the metric tail, because diaries is a
+    # **setting, not a metric**: ``METRIC_ORDER`` is untouched, and the UI's
+    # right-justify split (``len(columns) - len(METRIC_ORDER)``) keys off the
+    # metric count, so this column is left-justified like every other identity
+    # column and no metric cell moves.
+    #
+    # It exists so an on/off pair is legible **in the table** — the whole point of
+    # the arm label is reading the two arms side by side, and a drill-down-only
+    # field makes that a two-screen job. Absence renders **blank**, never ``off``:
+    # see :func:`_diaries_cell`.
+    "Diaries",
     "Lineup",
     "Notes",
 )
@@ -371,6 +388,42 @@ def _stand_in_cell(record: RawRecord) -> str:
     if _text(_dig(record, "run.kind", default="")):
         return ""
     return _text(_dig(record, "settings.scripted_player", default=_STAND_IN_DEFAULT))
+
+
+# The two labels the ``Diaries`` cell renders a recorded arm as. Deliberately the
+# **CLI vocabulary** the arm is invoked with (``--diaries on|off``) rather than
+# the YAML boolean's ``True``/``False``: the column exists to make a pair legible
+# at a glance, ``on``/``off`` is what the operator typed, and a table cell reading
+# ``False`` looks like a Python repr rather than an arm of an experiment. The
+# mapping is **total** — a recorded arm is one bool and lands on exactly one of
+# these two — so cell text and on-disk value cannot drift the way a partial label
+# lookup (:func:`_kind_cell`'s reason for rendering verbatim) could. The
+# drill-down still shows the recorded boolean itself.
+_DIARIES_ON = "on"
+_DIARIES_OFF = "off"
+
+
+def _diaries_cell(record: RawRecord) -> str:
+    """The ``Diaries`` table cell — which arm of the private-diaries A/B ran (spec 039).
+
+    Reads ``settings.private_diaries_enabled`` via :func:`_dig` and renders
+    :data:`_DIARIES_ON` / :data:`_DIARIES_OFF`, so a diaries-on and a diaries-off
+    record are readable **as a pair** straight from the table.
+
+    **Absence renders blank — never ``off``**, and this is the one thing the cell
+    exists to get right. It is deliberately NOT the defaulting posture of
+    :func:`_stand_in_cell` (absent ⇒ the prior default) or :func:`_kind_cell`
+    (absent ⇒ "a played game"): a pre-039 record was played by a build with **no
+    diary feature at all**, so it is neither arm of the comparison. Rendering it
+    ``off`` would assert a measurement nobody made and would silently offer every
+    one of the 30 committed records as the control half of an A/B pair. A valid
+    pair is two spec-039-era records — same commit, provider, ``run.kind`` and
+    ``metrics_version`` — differing only in this field (``evals/README.md``).
+    """
+    arm = _dig(record, "settings.private_diaries_enabled")
+    if arm is None:
+        return ""
+    return _DIARIES_ON if bool(arm) else _DIARIES_OFF
 
 
 # The record kind read for a pre-036 record. ``run.kind`` was added in spec 036
@@ -2081,6 +2134,10 @@ def _row_cells(record: RawRecord) -> list[str]:
         _resolution_cell(record),
         _vote_activity_cell(record),
         _stand_in_cell(record),
+        # Spec 039: the diaries ARM, between ``Stand-in`` and ``Lineup`` — the
+        # position ``_FIXED_COLUMNS`` declares (the record's own settings key
+        # order). Blank for every record that does not state an arm.
+        _diaries_cell(record),
         _lineup_cell(record),
         _note_cell(record),
     ]
@@ -2346,12 +2403,21 @@ def render_detail(record: RawRecord) -> str:
       shape-specific extras: ollama ``models`` digests + ``server_version``, or
       the bedrock ``note``.
     - **settings** — the effective resolved values incl. ``games``, plus
-      ``metrics_version`` mirrored here for a like-for-like repeat, plus — spec
-      036, only when present — a ``persona`` sub-block naming the conditions a
-      persona-generation measurement ran under (``diversity_enabled``,
-      ``collision_threshold``, ``regen_attempts``, ``temperature``). A record
-      without the sub-map gains no line, so every played game reads as before.
-    - **quality** — the run-quality counts.
+      ``metrics_version`` mirrored here for a like-for-like repeat, plus two
+      conditional one-line fields between ``max_days`` and the lineup —
+      ``scripted_player`` (spec 026) and ``private_diaries_enabled`` (spec 039,
+      the arm of the private-diaries A/B; **absent ⇒ no line, never ``False``**)
+      — plus — spec 036, only when present — a ``persona`` sub-block naming the
+      conditions a persona-generation measurement ran under
+      (``diversity_enabled``, ``collision_threshold``, ``regen_attempts``,
+      ``temperature``). A record without a field gains no line, so every already-
+      committed record reads as before.
+    - **quality** — the run-quality counts, plus — spec 039, only when the run
+      attempted a diary entry — the three flat ``diary_*`` run-health keys
+      (``diary_fallback_rate``, ``diary_fallback_entries``,
+      ``diary_entries_attempted``) between ``games_failed_early`` and
+      ``duration_seconds``. Omitted together when no entry was attempted, so
+      absence reads as "no opportunity", never as a clean ``0.0``.
     - **outcomes** — the win-rate by side (013 §2.1): ``games``, then
       ``law_abiding``/``mafia`` each with ``wins`` + **full-precision** ``rate`` +
       a ``[ci_low–ci_high]`` band (rate/band omitted on the ``games == 0`` path),
@@ -2512,6 +2578,27 @@ def _render_settings_section(record: RawRecord) -> str:
     the already-committed game records, which is a visible regression, not a
     faithful render. Present ⇒ four indented lines; absent ⇒ **no line at all**,
     so a game record's detail view is byte-identical to before.
+
+    **Two more conditional one-line fields sit between ``max_days`` and the
+    lineup**, in the record's own key order (``render_record`` emits
+    ``scripted_player`` → ``private_diaries_enabled`` → the nested ``lineup``):
+
+    - ``scripted_player`` (spec 026) — written to every record since spec 026 and,
+      until now, **never rendered here**: it existed only as the table's
+      ``Stand-in`` column. Exactly the "written to the record and invisible in the
+      drill-down" gap the spec-036 follow-up closed for ``run.kind``,
+      ``generation`` and ``settings.persona``, left open for this one field.
+    - ``private_diaries_enabled`` (spec 039) — the arm of the private-diaries A/B
+      the run measured. **Absence renders as no line at all, never ``False``**: a
+      pre-039 record was played by a build with no diary feature, so a ``False``
+      would assert a measurement nobody made (see :func:`_diaries_cell`).
+
+    Both are conditional for the same reason as ``persona``: unconditional lines
+    would print ``—`` on records that never carried the field — ``scripted_player``
+    on the pre-026 ones, ``private_diaries_enabled`` on all 30 committed records.
+    A present ``False`` still renders (``_text(False)`` is ``"False"``, not blank),
+    so the diaries-**off** arm reads as the measurement it is — the same trap
+    ``persona.diversity_enabled`` documents.
     """
     settings = _dig(record, "settings")
     if not isinstance(settings, dict):
@@ -2535,6 +2622,30 @@ def _render_settings_section(record: RawRecord) -> str:
                 default=_dig(record, "settings.max_rounds"),
             ),
         ),
+    ]
+    # Spec 026, rendered here for the first time by spec 039's Slice 5: the
+    # human-seat stand-in mode. CONDITIONAL, because a pre-026 record does not
+    # carry the field and would otherwise gain an ``—`` line — but note the
+    # asymmetry with the ``Stand-in`` table cell, which *defaults* an absent
+    # field to ``passive``. The cell can do that because a column of blanks
+    # would read as an unfilled field; a drill-down line cannot, because adding
+    # one to records that never carried the field is the visible regression this
+    # function's own docstring rules out. Absent ⇒ no line; the ``evals/README.md``
+    # contract (absent ⇒ read as ``passive``) is where that reading lives.
+    scripted_player = _dig(record, "settings.scripted_player")
+    if scripted_player is not None:
+        lines.append(_field("scripted_player", scripted_player))
+    # Spec 039 §2.10: the diaries ARM the run measured, straight after
+    # ``scripted_player`` and before the lineup — the record's own key order.
+    # CONDITIONAL, and for this field absence is a THIRD case rather than a falsy
+    # one: not ``_STAND_IN_DEFAULT``'s "the prior default" and not
+    # ``_KIND_DEFAULT``'s "a played game", but "the build that played this run had
+    # no diary feature at all". So it gains no line and no ``False`` — which would
+    # claim the control arm of an experiment that did not exist yet.
+    private_diaries_enabled = _dig(record, "settings.private_diaries_enabled")
+    if private_diaries_enabled is not None:
+        lines.append(_field("private_diaries_enabled", private_diaries_enabled))
+    lines += [
         # Spec-014 lineup, defensively dug — a pre-014 record (no
         # ``settings.lineup``) shows the ``—`` em-dash, no migration.
         _field("citizens", _dig(record, "settings.lineup.num_citizens")),
@@ -2560,19 +2671,81 @@ def _render_settings_section(record: RawRecord) -> str:
     return _section("settings", lines)
 
 
+# The three flat ``quality.diary_*`` keys (spec 039 §2.13), in the order
+# ``render_record`` inserts them — rate, then the count, then the denominator it
+# was taken over. One tuple rather than three call sites, following
+# :data:`_PERSONA_SETTING_FIELDS`: the writer's key list and the reader's field
+# list are the same contract.
+#
+# The **rate is read, never recomputed.** ``render_record`` derives it once from
+# the count/denominator pair precisely so there is one definition of it; deriving
+# it a second time here would create a second, and a record whose stored rate
+# disagreed with its own operands would then render as though it agreed.
+_DIARY_QUALITY_FIELDS: tuple[str, ...] = (
+    "diary_fallback_rate",
+    "diary_fallback_entries",
+    "diary_entries_attempted",
+)
+
+# The key the whole ``diary_*`` trio is gated on — the DENOMINATOR, mirroring the
+# writer's own gate (``render_record`` emits all three only when entries were
+# attempted). Gating on the denominator rather than on the rate is the
+# absent-not-zero rule stated from the reading side: a ``diary_fallback_rate`` of
+# ``0.0`` is a real, clean measurement, so presence can never be inferred from
+# truthiness, and a rate is by contract never written without its denominator
+# beside it.
+_DIARY_QUALITY_GATE = "quality.diary_entries_attempted"
+
+
 def _render_quality_section(record: RawRecord) -> str:
+    """The ``quality`` block — run-health counts, or one ``—`` line.
+
+    A whole **absent** ``quality`` block collapses to a single ``—`` line. The
+    four original counts render unconditionally; spec 039's three flat
+    ``diary_*`` keys render **only when the run attempted a diary entry**,
+    positioned between ``games_failed_early`` — the other "did this run measure
+    anything?" count — and ``duration_seconds``, matching the record's own key
+    order.
+
+    **They are run health, not an AI-quality metric**, which is why they live here
+    and not in ``metrics``: ``quality`` is a *census of one run* rather than a
+    sample of a population — ``games_failed_early`` is an exact count — so nothing
+    in this block carries a Wilson band, and ``METRIC_ORDER`` and the metric tail
+    are untouched. The observed fallbacks also cluster by fan-out (a whole Day's
+    entries fail together), violating the independent-Bernoulli assumption a
+    Wilson band rests on, in the direction that would make the band a lie.
+
+    **What they are for.** The diary node falls back to a deterministic
+    placeholder when structured output fails, and a run that measured mostly
+    placeholder text is *not a measurement of diary content* — a 1-game smoke
+    produced 9 of 11 placeholder entries with nothing in the ledger, the
+    transcript or the log saying so. Reading ``diary_fallback_rate`` beside its
+    ``diary_entries_attempted`` denominator is what makes a diaries-on arm
+    self-validating: a high rate is visibly not a measurement of diaries, where
+    before it was indistinguishable from a clean one.
+
+    **Absent, never a misleading zero.** All three are omitted together when no
+    entry was attempted — a diaries-off arm, or any pre-039 record — so absence
+    means "no opportunity", exactly as it does for a denominator-0 metric. The
+    trio is therefore gated on the **denominator** (:data:`_DIARY_QUALITY_GATE`),
+    never on the rate: a genuine ``0.0`` is the *clean* reading and must stay
+    distinct from absence.
+    """
     quality = _dig(record, "quality")
     if not isinstance(quality, dict):
         return _section("quality", [f"  {_ABSENT}"])
-    return _section(
-        "quality",
-        [
-            _field("games_attempted", _dig(record, "quality.games_attempted")),
-            _field("games_completed", _dig(record, "quality.games_completed")),
-            _field("games_failed_early", _dig(record, "quality.games_failed_early")),
-            _field("duration_seconds", _dig(record, "quality.duration_seconds")),
-        ],
-    )
+    lines = [
+        _field("games_attempted", _dig(record, "quality.games_attempted")),
+        _field("games_completed", _dig(record, "quality.games_completed")),
+        _field("games_failed_early", _dig(record, "quality.games_failed_early")),
+    ]
+    if _dig(record, _DIARY_QUALITY_GATE, _MISSING) is not _MISSING:
+        lines += [
+            _field(name, _dig(record, f"quality.{name}"))
+            for name in _DIARY_QUALITY_FIELDS
+        ]
+    lines.append(_field("duration_seconds", _dig(record, "quality.duration_seconds")))
+    return _section("quality", lines)
 
 
 def _render_outcomes_section(record: RawRecord) -> str:
