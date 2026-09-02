@@ -747,7 +747,9 @@ class _CapturingDayFake:
         self._action = action
         self.messages_log: list[Any] = []
 
-    def with_structured_output(self, schema: type) -> "_CapturingDayFake":
+    def with_structured_output(
+        self, schema: type, **kwargs: object
+    ) -> "_CapturingDayFake":
         return self
 
     def invoke(self, messages: Any) -> DayAction:

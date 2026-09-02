@@ -250,7 +250,9 @@ class _ScriptedDiaryFake:
         self._entry = entry
         self.messages_log: list[Any] = []
 
-    def with_structured_output(self, schema: type) -> "_ScriptedDiaryFake":
+    def with_structured_output(
+        self, schema: type, **kwargs: object
+    ) -> "_ScriptedDiaryFake":
         assert schema is Diary, f"unexpected schema bound: {schema!r}"
         return self
 
@@ -690,7 +692,9 @@ def test_a_store_failure_is_not_confused_with_a_model_failure(
     """
 
     class _ModelFailsForBen:
-        def with_structured_output(self, schema: type) -> "_ModelFailsForBen":
+        def with_structured_output(
+            self, schema: type, **kwargs: object
+        ) -> "_ModelFailsForBen":
             return self
 
         def invoke(self, messages: Any) -> Any:
@@ -715,8 +719,16 @@ def test_a_store_failure_is_not_confused_with_a_model_failure(
     assert store.stored("g", "p-ben") == [(4, _DIARY_FALLBACK)]
     assert store.stored("g", "p-ava") == []
     assert store.stored("g", "p-mara") == [(4, SCRIPTED_ENTRY)]
-    # Only the persistence failure is reported on the day logger's ERROR channel.
-    assert [record.args for record in _day_errors(caplog)] == [("p-ava", 4)]
+    # BOTH axes are reported on the day logger's ERROR channel, and stay
+    # attributable: the persistence failure carries (player, day), the model
+    # failure carries the player alone. The model line is new with the
+    # prose-recovery fix — ``_ai_diary`` used to swallow its exception with a
+    # bare ``pass``, which is precisely why the spec-039 campaign's 50% ollama
+    # fallback rate could not be diagnosed after the fact.
+    assert sorted(record.args for record in _day_errors(caplog)) == [
+        ("p-ava", 4),
+        ("p-ben",),
+    ]
 
 
 # ==========================================================================

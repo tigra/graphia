@@ -291,7 +291,9 @@ class _FakeLargeDayAction:
         self._action = action
         self.invoke_count = 0
 
-    def with_structured_output(self, schema: type) -> "_FakeLargeDayAction":
+    def with_structured_output(
+        self, schema: type, **kwargs: object
+    ) -> "_FakeLargeDayAction":
         return self
 
     def invoke(self, messages: object) -> DayAction:
@@ -306,7 +308,9 @@ class _FakeLargeBallot:
         self._ballot = ballot
         self.invoke_count = 0
 
-    def with_structured_output(self, schema: type) -> "_FakeLargeBallot":
+    def with_structured_output(
+        self, schema: type, **kwargs: object
+    ) -> "_FakeLargeBallot":
         return self
 
     def invoke(self, messages: object) -> Ballot:
@@ -354,7 +358,9 @@ def test_ai_day_action_retry_block_also_formats_cleanly(
         def __init__(self) -> None:
             self.invoke_count = 0
 
-        def with_structured_output(self, schema: type) -> "_RejectThenAccept":
+        def with_structured_output(
+            self, schema: type, **kwargs: object
+        ) -> "_RejectThenAccept":
             return self
 
         def invoke(self, messages: object) -> DayAction:
@@ -454,7 +460,9 @@ def test_ai_day_action_rejects_self_targeted_vote_initiation(
         def __init__(self) -> None:
             self.invoke_count = 0
 
-        def with_structured_output(self, schema: type) -> "_AlwaysSelfVote":
+        def with_structured_output(
+            self, schema: type, **kwargs: object
+        ) -> "_AlwaysSelfVote":
             return self
 
         def invoke(self, messages: object) -> DayAction:

@@ -409,7 +409,7 @@ def test_six_rounds_without_vote_ends_day(
     class _InfLargeDay:
         call_count = 0
 
-        def with_structured_output(self, schema):
+        def with_structured_output(self, schema, **kwargs: object):
             return self
 
         def invoke(self, messages):
@@ -431,7 +431,7 @@ def test_six_rounds_without_vote_ends_day(
             self._pick = pick
             self.call_count = 0
 
-        def with_structured_output(self, schema):
+        def with_structured_output(self, schema, **kwargs: object):
             return self
 
         def invoke(self, messages):

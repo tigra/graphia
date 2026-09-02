@@ -166,7 +166,9 @@ class _ScriptedPersonaFake:
         self._last: Persona | None = None
         self.call_count = 0
 
-    def with_structured_output(self, schema: type) -> "_ScriptedPersonaFake":
+    def with_structured_output(
+        self, schema: type, **kwargs: object
+    ) -> "_ScriptedPersonaFake":
         return self
 
     def invoke(self, messages) -> Persona:

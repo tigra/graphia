@@ -164,7 +164,9 @@ class _CapturingDiaryFake:
         self.bindings = 0
         self.schemas: list[type] = []
 
-    def with_structured_output(self, schema: type) -> "_CapturingDiaryFake":
+    def with_structured_output(
+        self, schema: type, **kwargs: object
+    ) -> "_CapturingDiaryFake":
         self.bindings += 1
         self.schemas.append(schema)
         return self
@@ -186,7 +188,9 @@ class _PerPlayerFailingFake:
         self._fail_for = fail_for
         self.messages_log: list[Any] = []
 
-    def with_structured_output(self, schema: type) -> "_PerPlayerFailingFake":
+    def with_structured_output(
+        self, schema: type, **kwargs: object
+    ) -> "_PerPlayerFailingFake":
         return self
 
     def invoke(self, messages: Any) -> Any:

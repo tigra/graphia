@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterator, Sequence
 
 import pytest
+from langchain_core.messages import AIMessage, BaseMessage
 from rich.text import Text
 from textual.widget import Widget
 
@@ -73,7 +74,9 @@ class _LoudFailureLLM:
     def __init__(self, which: str) -> None:
         self._which = which
 
-    def with_structured_output(self, schema: type) -> "_LoudFailureLLM":
+    def with_structured_output(
+        self, schema: type, **kwargs: Any
+    ) -> "_LoudFailureLLM":
         return self
 
     def invoke(self, messages: Any) -> Any:
@@ -297,7 +300,7 @@ class FakeSmall:
         self.call_count = 0
         self._bound_schema: type | None = None
 
-    def with_structured_output(self, schema: type) -> "FakeSmall":
+    def with_structured_output(self, schema: type, **kwargs: Any) -> "FakeSmall":
         # Real LangChain returns a new runnable bound to the schema; for the
         # test we just record the schema and return self so subsequent
         # ``.invoke`` calls go through the scripted queue.
@@ -407,7 +410,7 @@ class FakeLarge:
         self.last_messages: Any = None
         self.messages_log: list[Any] = []
 
-    def with_structured_output(self, schema: type) -> "FakeLarge":
+    def with_structured_output(self, schema: type, **kwargs: Any) -> "FakeLarge":
         self._bound_schema = schema
         return self
 
@@ -484,7 +487,9 @@ class FakeLargeDay:
         self._bound_schema: type | None = None
         self._last: DayAction | None = None
 
-    def with_structured_output(self, schema: type) -> "FakeLargeDay":
+    def with_structured_output(
+        self, schema: type, **kwargs: Any
+    ) -> "FakeLargeDay":
         self._bound_schema = schema
         return self
 
@@ -575,12 +580,29 @@ class _LargeQueue:
     of invocations.
     """
 
-    def __init__(self, owner: "FakeLargeUnified", schema: type) -> None:
+    def __init__(
+        self, owner: "FakeLargeUnified", schema: type, *, include_raw: bool = False
+    ) -> None:
         self._owner = owner
         self._schema = schema
+        self._include_raw = include_raw
 
     def invoke(self, messages: Any) -> Any:
-        return self._owner._invoke(self._schema, messages)
+        out = self._owner._invoke(self._schema, messages)
+        if not self._include_raw:
+            return out
+        # ``include_raw=True`` (spec 039 defect fix; ``_ai_diary``'s call shape)
+        # hands back a MAPPING, not the parsed object. A scripted
+        # ``BaseMessage`` expresses the real ollama failure this fix exists
+        # for: the model answered in prose and emitted no tool call, so
+        # ``parsed`` is None and the entry survives only in ``raw``.
+        if isinstance(out, BaseMessage):
+            return {"raw": out, "parsed": None, "parsing_error": None}
+        return {
+            "raw": AIMessage(content="", response_metadata={"stop_reason": "tool_use"}),
+            "parsed": out,
+            "parsing_error": None,
+        }
 
 
 class FakeLargeUnified:
@@ -622,7 +644,7 @@ class FakeLargeUnified:
         pointings: Sequence[Pointing | Exception] | None = None,
         personas: Sequence[Persona | Exception] | None = None,
         reflections: Sequence[Reflection | Exception] | None = None,
-        diaries: Sequence[Diary | Exception] | None = None,
+        diaries: Sequence[Diary | BaseMessage | Exception] | None = None,
     ) -> None:
         self._queues: dict[type, list[Any]] = {
             DayAction: list(day_actions) if day_actions else [],
@@ -665,14 +687,16 @@ class FakeLargeUnified:
             Diary: 0,
         }
 
-    def with_structured_output(self, schema: type) -> _LargeQueue:
+    def with_structured_output(
+        self, schema: type, *, include_raw: bool = False
+    ) -> _LargeQueue:
         if schema not in self._queues:
             raise AssertionError(
                 f"FakeLarge has no scripted queue for schema {schema!r}. "
                 "Supported: DayAction, Ballot, Pointing, Persona, Reflection, "
                 "Diary."
             )
-        return _LargeQueue(self, schema)
+        return _LargeQueue(self, schema, include_raw=include_raw)
 
     def _invoke(self, schema: type, messages: Any) -> Any:
         self.call_count += 1
@@ -716,7 +740,9 @@ class _DynamicNightPointing:
         self._state_provider = state_provider
         self.call_count = 0
 
-    def with_structured_output(self, schema: type) -> "_DynamicNightPointing":
+    def with_structured_output(
+        self, schema: type, **kwargs: Any
+    ) -> "_DynamicNightPointing":
         return self
 
     def invoke(self, messages: Any) -> Pointing:
@@ -774,7 +800,9 @@ class _TargetHumanPointing:
         self._state_provider = state_provider
         self.call_count = 0
 
-    def with_structured_output(self, schema: type) -> "_TargetHumanPointing":
+    def with_structured_output(
+        self, schema: type, **kwargs: Any
+    ) -> "_TargetHumanPointing":
         return self
 
     def invoke(self, messages: Any) -> Pointing:
@@ -864,7 +892,7 @@ def fake_large(
         pointings: Sequence[Pointing | Exception] | None = None,
         personas: Sequence[Persona | Exception] | None = None,
         reflections: Sequence[Reflection | Exception] | None = None,
-        diaries: Sequence[Diary | Exception] | None = None,
+        diaries: Sequence[Diary | BaseMessage | Exception] | None = None,
     ) -> FakeLargeUnified:
         fake = FakeLargeUnified(
             day_actions=day_actions,

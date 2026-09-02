@@ -684,7 +684,7 @@ def test_six_rounds_boundary_posts_exactly_one_recap(
     class _InfLargeDay:
         call_count = 0
 
-        def with_structured_output(self, schema):
+        def with_structured_output(self, schema, **kwargs: object):
             return self
 
         def invoke(self, messages):
@@ -695,7 +695,7 @@ def test_six_rounds_boundary_posts_exactly_one_recap(
         def __init__(self, pick: Callable[[], str]) -> None:
             self._pick = pick
 
-        def with_structured_output(self, schema):
+        def with_structured_output(self, schema, **kwargs: object):
             return self
 
         def invoke(self, messages):
@@ -1101,7 +1101,7 @@ class _InfLargeDay:
     def __init__(self) -> None:
         self.call_count = 0
 
-    def with_structured_output(self, schema):  # noqa: ANN001, ANN201
+    def with_structured_output(self, schema, **kwargs: object):  # noqa: ANN001, ANN201
         return self
 
     def invoke(self, messages):  # noqa: ANN001, ANN201
@@ -1115,7 +1115,7 @@ class _InfLargePointing:
     def __init__(self, pick: Callable[[], str]) -> None:
         self._pick = pick
 
-    def with_structured_output(self, schema):  # noqa: ANN001, ANN201
+    def with_structured_output(self, schema, **kwargs: object):  # noqa: ANN001, ANN201
         return self
 
     def invoke(self, messages):  # noqa: ANN001, ANN201
