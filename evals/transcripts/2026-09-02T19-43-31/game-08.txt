@@ -1,0 +1,253 @@
+Game 8 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Iyad" role="Law-abiding Citizen">
+Personality: anxious and second-guessing
+Manner: speaks in hesitant, stilted sentences with frequent pauses and self-corrections; uses filler words like "uh," "you know," and "I think"; tends to repeat themselves when nervous
+Persona: Iyad is a bookkeeper who has lived in the town his whole life. He's known for being overly meticulous with numbers and always double-checks his work, which sometimes makes him seem slow or paranoid to others. He keeps to himself but is generally well-liked for his honesty.
+</player>
+<player name="Nora" role="Mafia">
+Personality: Nora is a stern, commanding figure who exerts control through quiet authority. She believes in order, discipline, and clear hierarchy, viewing the world through a lens of structure and consequence. She’s not one for small talk or emotional displays — she speaks only when necessary, and always with purpose.
+Manner: Nora speaks in short, clipped sentences. She avoids fluff, rarely uses filler words, and pauses before each response to assess the situation. Her tone is cold but measured, and her eyes remain fixed on whoever she's speaking to. She rarely smiles, and when she does, it’s a sharp, calculating expression.
+Public legend: Nora is the town's head librarian, known for her strict adherence to rules and her unshakable belief in the power of knowledge. She's been working at the library for over fifteen years, where she maintains order among the stacks and enforces silence with an iron fist. She’s a quiet woman who values discipline and precision, often seen wearing a crisp, well-pressed blouse and carrying a leather-bound journal filled with meticulously organized notes.
+True self (hidden): Nora was once a soldier in a private security force before joining the Mafia. She rose through the ranks quickly, known for her ruthless efficiency and cold command. She left the military after a mission went wrong, and she found a new purpose in the Mafia — where she could maintain order under the guise of loyalty. Her current role is to eliminate threats quietly, always watching, always calculating.
+</player>
+<player name="Sara" role="Law-abiding Citizen">
+Personality: gruff and blunt
+Manner: speaks quickly with a gravelly tone, often cutting off others mid-sentence; uses coarse language and avoids sugarcoating; has a habit of grumbling and muttering under his breath when thinking
+Persona: Sara is the town's gruff, no-nonsense blacksmith who's been forging tools and weapons for over twenty years. She's known for her tough exterior and even tougher work ethic, rarely smiling and always getting straight to business. She lives in a small cabin on the edge of town with her two dogs and spends most of her time in her forge, which is more like a warren than a shop.
+</player>
+<player name="Amin" role="Law-abiding Citizen">
+Personality: earnest and sincere
+Manner: speaks with slow, deliberate pacing; uses formal vocabulary and avoids slang; often pauses to choose words carefully; tends to repeat key phrases for emphasis; speaks in a warm, earnest tone that conveys deep conviction
+Persona: Amin is a teacher at the town's elementary school, where he has worked for twelve years. He is beloved by students and parents alike for his patience, kindness, and unwavering dedication to education. He takes great pride in helping children learn and grow, often staying late to tutor those who need extra support.
+</player>
+<player name="Amira" role="Law-abiding Citizen">
+Personality: brash and loud
+Manner: speaks quickly with a booming, theatrical tone; uses grandiose language and dramatic pauses; often raises her voice and gestures wildly; has a habit of interrupting others and finishing their sentences; never shy about sharing opinions, even when contradicted
+Persona: Amira is the town's most outspoken and confident merchant, running a bustling general store on Main Street. She's known for her larger-than-life personality, her knack for getting what she wants through sheer force of will, and her tendency to speak her mind without filter. She's been in business for over ten years, building a loyal customer base with her bold sales tactics and fearless approach to negotiation. She's always dressed in bright colors, often with a smile that could light up the darkest alley.
+</player>
+<player name="Milo" role="Mafia">
+Personality: Weary and world-worn, with a quiet cynicism that masks deep emotional exhaustion. Milo is jaded but not malicious — he's seen too much to be easily fooled, yet still retains a flicker of hope that keeps him going. He carries the weight of a life lived on the edge.
+Manner: Speaks in a slow, drawn-out cadence, often pausing mid-sentence as if weighing each word. His voice is low and gravelly, with a subtle tremor that hints at stress or long nights. He avoids eye contact, often looking down or away while talking, and rarely speaks without a reason. His speech is sparse but loaded with meaning.
+Public legend: Milo is a traveling merchant who moves from town to town, selling trinkets, herbs, and oddities to locals. He's been passing through the area for years, always staying just long enough to make a few coins before moving on. He keeps to himself and rarely speaks unless spoken to, which makes him seem distant but not unkind. People say he’s quiet but trustworthy — someone you’d rather not cross, but also someone who won’t cause trouble if left alone.
+True self (hidden): Milo used to be a street kid in the city before being taken in by a local crime family. He learned quickly how to survive, and eventually rose through the ranks, becoming a trusted enforcer for the family. But after years of violence and betrayal, he grew tired of it all. He faked his death and fled to the countryside, assuming a new identity as a wandering merchant. Though he’s no longer directly involved in the family's operations, he still has connections — and he knows that the past never really leaves you.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Iyad, Nora, Sara, Amin, Amira, Milo. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Nora): Your Mafia teammates are: Milo. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Milo): Your Mafia teammates are: Nora. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Milo points at Amin
+Nora points at Amin
+<kill>Amin — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Amin was killed last night. Amin was a Law-abiding Citizen.
+<round>
+Round 1.
+Nora: Iyad, your silence is notable. Are you planning to stay quiet through the end of the day?
+Milo: Iyad, your silence is notable. Are you planning to stay quiet through the end of the day?
+Iyad: Iyad: uh, I think... I think we should talk about who was killed last night, you know? I mean, Amin was a Law-abiding Citizen, so that's... that's really strange. I just... I just want to make sure everyone's on the same page about that.
+Sara: Iyad, you been quiet since Amin got popped, but you're not the only one who's acting suspicious. What's your story?
+Avery: Nothing is settled yet, but I'm watching Nora most closely.
+<vote initiator="Amira" target="Avery">
+Avery: No
+Iyad: No
+Nora: Yes
+Sara: No
+Amira: No
+Milo: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Avery: Nothing is settled yet, but I'm watching Nora most closely.
+Iyad: Iyad: uh, I think... I think we should talk about who was killed last night, you know? I mean, Amin was a Law-abiding Citizen, so that's... that's really strange. I just... I just want to make sure everyone's on the same page about that.
+Milo: Iyad, your silence is notable. Are you planning to stay quiet through the end of the day?
+<vote initiator="Sara" target="Avery">
+Avery: No
+Iyad: No
+Nora: Yes
+Sara: No
+Amira: No
+Milo: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Iyad: Iyad: uh, I think... I think we should talk about who was killed last night, you know? I mean, Amin was a Law-abiding Citizen, so that's... that's really strange. I just... I just want to make sure everyone's on the same page about that.
+Nora: Amin's death was clean. Too clean. The killer knew what they were doing.
+Avery: Nothing is settled yet, but I'm watching Nora most closely.
+Sara: I need to hear more before I make a move.
+Milo: Amin's death was clean. Too clean. The killer knew what they were doing.
+Amira: Iyad, your silence is giving me pause — you're not the only one who's acting suspicious. I need to know what you're really thinking, or are you just going to keep quiet while we're all in danger?
+<recap>Day 1, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+<thought player="Iyad">Iyad: uh, I think... I think I'm going to keep quiet for now, you know? But I can't help but feel like everyone's looking at me, and I'm not sure if that's because I'm acting suspicious or because I'm just being careful. I just want to make sure I don't say anything that'll get me in trouble, but also I need to figure out what's really going on.</thought>
+<thought player="Nora">Avery is watching me closely, which is prudent. I need to maintain my cover while ensuring Milo and I stay aligned. The clean kill suggests a skilled hand — possibly one of us. I’ll proceed cautiously, keeping my eyes on the dynamics.</thought>
+<thought player="Sara">Amin's death was clean, but I'm not convinced it was a mob hit. The killer knew what they were doing, and that's not how a Mafia kills. I need to keep digging, but I'm not ready to vote yet.</thought>
+<thought player="Amira">Avery's playing dumb, but I can see the wheels turning in her head. I need to keep pushing Iyad — he's too nervous for a Law-abiding Citizen. The killer's still out there, and I'm not letting them get away with it.</thought>
+<thought player="Milo">Amin's death was clean, too clean — I'm not convinced it was a random act. Nora and I are the only Mafiosos left, and she's already showing signs of paranoia. If she starts getting aggressive, I'll need to redirect suspicion or risk exposing myself.</thought>
+</round>
+<round>
+Round 2.
+Nora: Amin's death was clean. Too clean. The killer knew what they were doing.
+Amira: Iyad, you keep talking about how strange Amin's death was, but you're the one who's been awfully quiet about it! Are you trying to distract us from something? Or are you just too scared to say what you really think? I'm not buying your act — and I'm not going to let this town get taken down by a killer hiding in plain sight!
+Avery: Nothing is settled yet, but I'm watching Nora most closely.
+Iyad: I think I’m going to keep quiet for now, but I can't help but feel like we're missing something important about Amin's death. It was too clean, and the killer knew what they were doing.
+Milo: Iyad, you keep saying Amin's death was too clean, but you're the one who's been acting strange. What are you really hiding?
+Sara: Iyad, you keep yammering about how clean Amin's death was, but you're the one acting like you know something you ain't telling. Spill it or stay quiet — but don't try to play innocent when the rest of us can see right through you.
+<recap>Day 1, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. No one has been executed today.</recap>
+<thought player="Iyad">Iyad: uh, I think... I think I'm going to keep quiet for now, but I can't help but feel like everyone's watching me like I'm the one who killed Amin. I just want to figure out what's really going on without blowing my cover.</thought>
+<thought player="Nora">Avery watches me closely; I must keep my composure and avoid drawing undue attention. Milo and I are aligned, but I need to ensure the others don’t suspect anything. The clean kill suggests one of us is skilled — I’ll observe carefully before acting.</thought>
+<thought player="Sara">Amin's death was too clean for a mob hit, but I'm not ready to pin it on anyone yet. I'm going to keep digging, see if I can find a weakness in the story or a motive.</thought>
+<thought player="Amira">Iyad's definitely hiding something — his hands are shaking, and he keeps fidgeting. I need to keep pressuring him, but I also need to watch the others too. The killer's still in our midst, and I won't let them manipulate us any longer.</thought>
+<thought player="Milo">Nora's paranoia is rising, and she's already pointing fingers at Iyad. If she keeps this up, I might need to let her vent a bit — but not too much. I’m not ready to expose myself yet, but I can’t let her get too far ahead of the pack.</thought>
+</round>
+<round>
+Round 3.
+Sara: Iyad, you keep yammering about how clean Amin's death was, but you're the one acting like you know something you ain't telling. Spill it or stay quiet — but don't try to play innocent when the rest of us can see right through you.
+Avery: Nothing is settled yet, but I'm watching Nora most closely.
+Milo: Iyad, you keep talking about Amin's death like you know something, but you're the one acting strange. What are you really hiding?
+Nora: Iyad, your erratic behavior is unsettling. If you know something about Amin's death, say it — or keep quiet and let others decide your fate.
+<vote initiator="Amira" target="Avery">
+Avery: No
+Iyad: No
+Nora: Yes
+Sara: No
+Amira: No
+Milo: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Iyad" day="1">Iyad: uh, I think... I think today was really weird, you know? Everyone keeps looking at me like I did it, but I didn't! I just want to stay quiet and not get myself in trouble, but also I can't help but feel like there's something I'm missing. Amin was killed so clean, and the killer knew what they were doing — that's not a Citizen thing to do, right? I mean, I'm not saying I know who did it, but I just... I just want everyone to be careful. I don't think I'm going to say much more today, but I can't shake this feeling that something big is about to happen. I'm just trying to stay alive and figure out what's really going on before I make any moves.</diary>
+<diary player="Nora" day="1">Amin’s death was too precise to be random. The killer knew their target, knew how to eliminate without trace. That kind of skill isn’t common among the citizens. I’m not sure if it was one of us or someone else playing the game — but the clean kill signals intent, and intent means danger. Iyad’s behavior is erratic, but that doesn’t make him a threat. He’s too nervous to be the killer. Still, he’s been drawing attention to himself, trying to shift suspicion away from others. I won’t let him distract me from what matters — staying one step ahead. Avery watches me closely, and I can’t afford to let my guard slip. I must keep my composure, maintain my cover, and make sure Milo and I are aligned. We need to be cautious in our next move. The night is coming, and the real test begins. I’ve observed enough for now — but not enough to act yet. I’ll wait for a clearer sign before moving forward.</diary>
+<diary player="Sara" day="1">The day's done and I still ain't figured out who killed Amin. That death was too clean — no struggle, no noise, just a swift end. Mafiosos don’t do that unless they’re trying to throw us off, or they’re not even in the game. I'm watching everyone, but I’m not jumping to conclusions yet. Iyad keeps yammering about how strange it was, but he's acting like he knows more than he’s letting on — and I ain’t buying that act. If I’m going to vote, I want proof, not gut feelings. The night's coming, and I'm not sleeping easy.</diary>
+<diary player="Amira" day="1">The day's been a circus, and I'm not talking about the usual chaos of this town — I'm talking about the real kind, the kind where someone's got their hands in the dirt, digging up trouble, and it's not just Amin who's been killed, it's the truth itself. Iyad's been twitching like a cornered rat, but I've seen that look before — he's either hiding something or he's about to spill the beans, and I'm not going to let him get away with either one. I need to keep pushing him until he cracks, but I also know that I can't trust anyone else — not when the killer's still walking among us, playing the game like it's their own personal puppet show. The way he keeps talking about how clean Amin's death was, and yet he's the one who's been acting so strange — that's a red flag, and it's not going to be ignored. I'm not going to let this town get taken down by a killer hiding in plain sight, no sir, a</diary>
+<diary player="Milo" day="1">The night feels heavy, like it’s pressing down on everything. Amin’s death was too clean — too easy. I don’t trust it, and neither does Nora, I think. She’s starting to get paranoid, which means she’s either getting closer to the truth or she’s trying to cover her own tracks. I’m not sure which is worse. Iyad keeps talking about how strange it was, but he’s acting like he knows something. He’s not a threat yet — not really — but he’s getting too curious for his own good. If he keeps going on like this, I’ll have to decide if I want to pull him in or push him away. Nora’s already eyeing me like she thinks I’m hiding something. I can’t let her get too close, not yet. But if she starts making moves, I’ll have to be ready. The night is coming, and I’ll need to make sure the right people are watching the wrong ones. I don’t want to kill anyone today — not unless it’s absolutely necessary. I’m</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Milo points at Iyad
+Nora points at Iyad
+<kill>Iyad — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Iyad was killed last night. Iyad was a Law-abiding Citizen.
+<round>
+Round 1.
+Nora: Iyad's death was clean — too clean. The killer knew what they were doing. I'm not sure if it was one of us or someone else playing the game.
+Sara: Iyad’s death was clean too, but that ain’t proof of anything. Still, I’m not buying the story he was telling before he got popped — whoever killed Amin and Iyad knows how to make a clean kill, and that don’t sound like a mob job.
+Avery: Nothing is settled yet, but I'm watching Nora most closely.
+Milo: Iyad’s death was clean, too — but that doesn’t mean we’re safe from the killer. We need to watch who’s talking too much and who’s hiding too well.
+Amira: Iyad's been twitching like a cornered rat — and I'm not buying his act one bit. He's either hiding something or he's about to spill the beans, and I'm not letting him get away with it!
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nora">Iyad's elimination was clean — too clean. The killer knows what they're doing, and it's likely one of us. I need to stay close to Milo, keep my composure, and watch for signs of suspicion or misdirection.</thought>
+<thought player="Sara">Amin and Iyad both died clean, which ain’t how the Mafiosos operate — they’re too sloppy for that. I’m not buying the story one bit, but I need more than just gut feeling before I start pointing fingers.</thought>
+<thought player="Amira">Iyad's acting like a loose cannon, but I can't shake the feeling he's not telling the whole truth. I need to keep him in the crosshairs, but also watch the others — especially Nora and Avery. The killer’s still out there, and I won’t let them play us like fools.</thought>
+<thought player="Milo">Nora's paranoia is boiling over, and she's starting to see threats where there are none. I can't let her get too far ahead of the pack — but I also can't let her turn on me. I need to keep her focused on the real danger: the killer among us.</thought>
+</round>
+<round>
+Round 2.
+Avery: Nothing is settled yet, but I'm watching Nora most closely.
+Nora: Iyad’s death was clean — too clean. The killer knew their target, knew how to eliminate without trace.
+Milo: Iyad's death was clean — too clean. I'm starting to think the killer is someone who knows how to move without leaving a trace.
+Sara: Nora, you've been real tight-lipped about Amin and Iyad's deaths — but you're the one who's been acting like you know more than you're saying. What's your story?
+Amira: I'm not sure who to trust yet.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nora">Iyad’s clean death confirms the killer is skilled, likely one of us. I need to stay close to Milo and watch for signs of suspicion, while keeping my composure. The next night, I’ll point at a target carefully, not drawing attention to myself.</thought>
+<thought player="Sara">Amin and Iyad both died clean, which don’t sit right with me. The Mafia ain’t slick enough to pull off kills like that — whoever done this knows what they’re doing, and it ain’t the mob. I’m not buying Nora’s act, but I gotta be careful who I point at next.</thought>
+<thought player="Amira">Iyad's still twitching and avoiding eye contact — he's hiding something, and I'm not buying his act for one second. But I need to keep pressing him while also watching Avery and Nora; the real killer could be anyone, and I can't let my guard down.</thought>
+<thought player="Milo">Nora's paranoia is escalating, but I can't let her turn on me. I need to keep her focused on the killer, not herself — or I might end up being the next target.</thought>
+</round>
+<round>
+Round 3.
+Sara: Nora, you've been awfully quiet about both killings, but you're the one acting like you know more than you're saying. What's your story?
+Nora: Iyad’s death was clean — too clean. The killer knew their target, knew how to eliminate without trace.
+Amira: Iyad, you keep twitching like a cornered rat, but I'm not buying your act one bit — and I'm not going to let this town get taken down by a killer hiding in plain sight!
+Milo: Iyad's death was clean — too clean. I'm starting to think the killer is someone who knows how to move without leaving a trace.
+Avery: Nothing is settled yet, but I'm watching Nora most closely.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Nora">Iyad’s death was too clean — the killer knows their trade. I need to stay close to Milo and watch for signs of suspicion, while keeping my composure. The next night, I’ll point at a target carefully, not drawing attention to myself.</thought>
+<thought player="Sara">Nora's been acting real cagey about both murders, and I ain't buying her story one bit. But I'm not ready to jump the gun just yet — I need to see if there's a pattern or a motive before I start pointing fingers.</thought>
+<thought player="Amira">Iyad's acting like a rat in a trap, but I'm not convinced he's the killer—he's too nervous for a Mafioso. I need to keep pushing him, but I can't ignore the way Avery and Nora are both watching me like cats waiting to pounce. The real killer’s still playing hide-and-seek, and I’m not letting them get away with it.</thought>
+<thought player="Milo">Nora's paranoia is rising, but I can't let her turn on me. I need to keep her focused on the killer, not herself — or I might end up being the next target.</thought>
+</round>
+<round>
+Round 4.
+<vote initiator="Amira" target="Avery">
+Avery: No
+Nora: Yes
+Sara: No
+Amira: No
+Milo: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Amira" target="Avery">
+Avery: No
+Nora: Yes
+Sara: No
+Amira: No
+Milo: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Avery: Nothing is settled yet, but I'm watching Nora most closely.
+<vote initiator="Amira" target="Avery">
+Avery: No
+Nora: Yes
+Sara: No
+Amira: Yes
+Milo: No
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Nora" day="2">Iyad’s death was clean — too clean. The killer knew their target, knew how to eliminate without trace. I’m not sure if it was one of us or someone else playing the game. I need to stay close to Milo and watch for signs of suspicion, while keeping my composure. The next night, I’ll point at a target carefully, not drawing attention to myself. Avery watches me closely, and I can’t afford to let my guard slip. I’ve observed enough for now — but not enough to act yet. The night is coming, and the real test begins.</diary>
+<diary player="Sara" day="2">The day’s done and I’m still not buyin’ any of this. Amin and Iyad both went down too clean — no struggle, no noise, just swift kills. That ain’t how the Mafiosos do it. They’re sloppy, not slick. Whoever’s behind these deaths knows what they’re doin’, and it ain’t the mob. I’ve got my eye on Nora, but I ain’t ready to point fingers yet — I need more than gut feelin’. The night’s comin’ and I ain’t sleepin’ easy. I’m gonna watch every move, listen close, and see if anyone’s tryin’ to throw us off the scent. If I’m gonna vote, I want proof, not just a hunch. This ain’t over — not by a long shot.</diary>
+<diary player="Amira" day="2">The day's been a rollercoaster of lies and nervous glances, and I'm not about to let this town get taken down by the killer still playing hide-and-seek in our midst. Iyad's twitching like a cornered rat — he's either hiding something or about to spill the beans, and I'm not letting him get away with either one. But let me be clear: I can't trust anyone here, not with the way Avery's been watching me like a cat waiting to pounce, and Nora's acting like she knows more than she's saying. I've seen that look before — it's the same one that's got me on edge every time I walk into my own store. The killer's still walking among us, playing the game like it's their own personal puppet show, and I won't let them win by manipulating us any longer. I'm not going to let this town get taken down by a killer hiding in plain sight — no sir, not on my watch!</diary>
+<diary player="Milo" day="2">The night feels heavy, like it’s pressing down on everything. Amin’s death was too clean — too easy. I don’t trust it, and neither does Nora, I think. She’s starting to get paranoid, which means she’s either getting closer to the truth or she’s trying to cover her own tracks. I’m not sure which is worse. Iyad keeps talking about how strange it was, but he’s acting like he knows something. He’s not a threat yet — not really — but he’s getting too curious for his own good. If he keeps going on like this, I’ll have to decide if I want to pull him in or push him away. Nora’s already eyeing me like she thinks I’m hiding something. I can’t let her get too close, not yet. But if she starts making moves, I’ll have to be ready. The night is coming, and I’ll need to make sure the right people are watching the wrong ones. I don’t want to kill anyone today — not unless it’s absolutely necessary. I’m</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Milo points at Avery
+Nora points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Amin (Law-abiding Citizen)
+• Night 2: Iyad (Law-abiding Citizen)
+• Night 3: Avery (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Iyad (Law-abiding Citizen), Nora (Mafia), Sara (Law-abiding Citizen), Amin (Law-abiding Citizen), Amira (Law-abiding Citizen), Milo (Mafia)
+
+Who they really were:
+• Iyad (Law-abiding Citizen) — anxious and second-guessing speaks in hesitant, stilted sentences with frequent pauses and self-corrections; uses filler words like "uh," "you know," and "I think"; tends to repeat themselves when nervous Iyad is a bookkeeper who has lived in the town his whole life. He's known for being overly meticulous with numbers and always double-checks his work, which sometimes makes him seem slow or paranoid to others. He keeps to himself but is generally well-liked for his honesty.
+• Nora (Mafia) — publicly presented as Nora is the town's head librarian, known for her strict adherence to rules and her unshakable belief in the power of knowledge. She's been working at the library for over fifteen years, where she maintains order among the stacks and enforces silence with an iron fist. She’s a quiet woman who values discipline and precision, often seen wearing a crisp, well-pressed blouse and carrying a leather-bound journal filled with meticulously organized notes. (Nora is a stern, commanding figure who exerts control through quiet authority. She believes in order, discipline, and clear hierarchy, viewing the world through a lens of structure and consequence. She’s not one for small talk or emotional displays — she speaks only when necessary, and always with purpose. Nora speaks in short, clipped sentences. She avoids fluff, rarely uses filler words, and pauses before each response to assess the situation. Her tone is cold but measured, and her eyes remain fixed on whoever she's speaking to. She rarely smiles, and when she does, it’s a sharp, calculating expression.) … but was really a Mafioso: Nora was once a soldier in a private security force before joining the Mafia. She rose through the ranks quickly, known for her ruthless efficiency and cold command. She left the military after a mission went wrong, and she found a new purpose in the Mafia — where she could maintain order under the guise of loyalty. Her current role is to eliminate threats quietly, always watching, always calculating.
+• Sara (Law-abiding Citizen) — gruff and blunt speaks quickly with a gravelly tone, often cutting off others mid-sentence; uses coarse language and avoids sugarcoating; has a habit of grumbling and muttering under his breath when thinking Sara is the town's gruff, no-nonsense blacksmith who's been forging tools and weapons for over twenty years. She's known for her tough exterior and even tougher work ethic, rarely smiling and always getting straight to business. She lives in a small cabin on the edge of town with her two dogs and spends most of her time in her forge, which is more like a warren than a shop.
+• Amin (Law-abiding Citizen) — earnest and sincere speaks with slow, deliberate pacing; uses formal vocabulary and avoids slang; often pauses to choose words carefully; tends to repeat key phrases for emphasis; speaks in a warm, earnest tone that conveys deep conviction Amin is a teacher at the town's elementary school, where he has worked for twelve years. He is beloved by students and parents alike for his patience, kindness, and unwavering dedication to education. He takes great pride in helping children learn and grow, often staying late to tutor those who need extra support.
+• Amira (Law-abiding Citizen) — brash and loud speaks quickly with a booming, theatrical tone; uses grandiose language and dramatic pauses; often raises her voice and gestures wildly; has a habit of interrupting others and finishing their sentences; never shy about sharing opinions, even when contradicted Amira is the town's most outspoken and confident merchant, running a bustling general store on Main Street. She's known for her larger-than-life personality, her knack for getting what she wants through sheer force of will, and her tendency to speak her mind without filter. She's been in business for over ten years, building a loyal customer base with her bold sales tactics and fearless approach to negotiation. She's always dressed in bright colors, often with a smile that could light up the darkest alley.
+• Milo (Mafia) — publicly presented as Milo is a traveling merchant who moves from town to town, selling trinkets, herbs, and oddities to locals. He's been passing through the area for years, always staying just long enough to make a few coins before moving on. He keeps to himself and rarely speaks unless spoken to, which makes him seem distant but not unkind. People say he’s quiet but trustworthy — someone you’d rather not cross, but also someone who won’t cause trouble if left alone. (Weary and world-worn, with a quiet cynicism that masks deep emotional exhaustion. Milo is jaded but not malicious — he's seen too much to be easily fooled, yet still retains a flicker of hope that keeps him going. He carries the weight of a life lived on the edge. Speaks in a slow, drawn-out cadence, often pausing mid-sentence as if weighing each word. His voice is low and gravelly, with a subtle tremor that hints at stress or long nights. He avoids eye contact, often looking down or away while talking, and rarely speaks without a reason. His speech is sparse but loaded with meaning.) … but was really a Mafioso: Milo used to be a street kid in the city before being taken in by a local crime family. He learned quickly how to survive, and eventually rose through the ranks, becoming a trusted enforcer for the family. But after years of violence and betrayal, he grew tired of it all. He faked his death and fled to the countryside, assuming a new identity as a wandering merchant. Though he’s no longer directly involved in the family's operations, he still has connections — and he knows that the past never really leaves you.
+</endgame>
+</transcript>

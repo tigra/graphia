@@ -3306,3 +3306,124 @@ metrics:
     peak: 0.17316017316017315
     denominator: 150
 notes: 'spec 039 A/B: per-AI private diaries off. Pair with the on-arm record on the same commit. n=10 per arm: reveals a several-fold increase and essentially nothing finer; at this base rate the off arm alone often reads zero town wins, so this cannot even reveal a collapse. A recorded observation, not a guarantee of no harm. Read quality.diary_fallback_rate before reading the on-arm result. || FINDING, both arms complete (2026-09-02, all six runs on commit 6af70e8, all clean): town win rate diaries-on 0/10 Wilson [0.000, 0.278] vs diaries-off 1/10 Wilson [0.018, 0.404]. Fisher exact two-sided p = 1.000. NOT SIGNIFICANT. The decisive point is the design limit, not the p-value: against an off arm of 2/10, the on arm would need at least 8/10 to reach p<0.05, so NO DECREASE OF ANY SIZE IS DETECTABLE AT n=10 -- only a several-fold increase ever could have been. The intervals overlap across every pair and each arm point estimate falls inside the other arm interval (the sole exception is the ollama on-arm 0.00, which sits at the Wilson lower boundary by construction). So: no evidence of harm, and equally no evidence of safety. Read this as a recorded observation, never as a guarantee. || NOTE (2026-09-02): the paired on-arm record for this A/B is DISQUALIFIED by a 0.50 diary_fallback_rate; see its ROOT CAUSE section (tool use is not enforced on the ollama endpoint, so half the entries were the placeholder; fixed on commit b9bfbd4). This off-arm record is UNAFFECTED by that fix -- with diaries off, day_diary returns before any diary model call is made, so the patched code path does not execute on this arm -- and it therefore remains a valid comparator for the rerun, the only difference being code.commit.'
+---
+run:
+  date: '2026-09-02'
+  duration_seconds: 4851.314
+  metrics_version: 1
+  transcript_dir: '2026-09-02T19-43-31'
+code:
+  commit: '92ef0b68a453fbb728d00845b38d58ba495155e8'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.32.14'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 10
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 5
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  diary_fallback_rate: 0.0
+  diary_fallback_entries: 0
+  diary_entries_attempted: 72
+  duration_seconds: 4851.314
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 2
+    rate: 0.2
+    ci_low: 0.056680947980693314
+    ci_high: 0.5098431532792765
+  mafia:
+    wins: 8
+    rate: 0.8
+    ci_low: 0.49015684672072335
+    ci_high: 0.9433190520193067
+  scripted_side:
+    side: 'law_abiding'
+    wins: 2
+    rate: 0.2
+    ci_low: 0.056680947980693314
+    ci_high: 0.5098431532792765
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 24
+    mafia: 0
+  by_day:
+    day_1: 14
+    day_2: 10
+metrics:
+  repetition:
+    rate: 0.5232876712328767
+    count: 191
+    denominator: 365
+    ci_low: 0.47207220644208914
+    ci_high: 0.5740180393436355
+  third_person_self_talk:
+    rate: 0.019178082191780823
+    count: 7
+    denominator: 365
+    ci_low: 0.009320121274495807
+    ci_high: 0.03905186279671524
+  self_vote.initiation:
+    rate: 0.10526315789473684
+    count: 2
+    denominator: 19
+    ci_low: 0.029357941395096593
+    ci_high: 0.313945504948417
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 31
+    ci_low: 0.0
+    ci_high: 0.11025900073475385
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 18
+    ci_low: 0.0
+    ci_high: 0.1758845505823749
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 150
+    ci_low: 0.0
+    ci_high: 0.02497113914571871
+  persona_lex_mean:
+    mean: 0.027560872605576776
+    denominator: 150
+  persona_lex_peak:
+    peak: 0.1141094834232845
+    denominator: 150
+  persona_sem_mean:
+    mean: 0.2974574634257893
+    denominator: 150
+  persona_sem_peak:
+    peak: 0.5386086100053162
+    denominator: 150
+notes: 'spec 039 RERUN on the prose-recovery fix (b9bfbd4, merged d115600). Supersedes the on-arm at transcript_dir 2026-09-02T14-19-02, which was disqualified by a 0.50 diary_fallback_rate: tool use is not enforced on the ollama endpoint, so half its entries were the deterministic placeholder. Compare against the off-arm record 2026-09-02T15-58-41 (commit 6af70e8) -- that arm is unaffected by the fix, since day_diary returns before any diary model call when diaries are off, so the only difference is code.commit. Read quality.diary_fallback_rate first: it should now be at or near 0.00.'
