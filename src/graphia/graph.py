@@ -23,6 +23,7 @@ from graphia.nodes import (
     collect_name,
     collect_votes,
     day_close,
+    day_diary,
     day_open,
     day_round_reflect,
     day_turn,
@@ -92,6 +93,7 @@ def _assemble_graph(
     context_token_budget: int = 20000,
     private_thoughts_enabled: bool = True,
     night_roster_shuffle_enabled: bool = True,
+    private_diaries_enabled: bool = True,
     persona_diversity_enabled: bool = True,
     persona_collision_threshold: float = 0.6,
     persona_regen_attempts: int = 2,
@@ -160,13 +162,26 @@ def _assemble_graph(
     # so an AI Mafioso's Night pick is grounded in its own accumulated Day
     # reflections (the third AI-decision prompt this family of flags reaches).
     # ``mafia_point`` also only READS the frozen spec-030 ``night_law_order``.
+    # Spec 039 (ADR 011): the private-DIARIES flag rides the same node, because
+    # the two features share ONE ``{private_thoughts}`` prompt slot (only a
+    # shared slot can express event order across the two channels). Bound only
+    # now, in Slice 2: ``mafia_point`` had no such parameter until the merged
+    # block landed, and binding a kwarg a node does not accept is a hard
+    # ``TypeError`` on its first call, not a silent no-op.
     builder.add_node(
         "mafia_point",
-        partial(mafia_point, private_thoughts_enabled=private_thoughts_enabled),
+        partial(
+            mafia_point,
+            private_thoughts_enabled=private_thoughts_enabled,
+            private_diaries_enabled=private_diaries_enabled,
+        ),
     )
     builder.add_node("resolve_night_kill", emit(resolve_night_kill))
-    # ``night_close`` closes over the diary store + game id so the per-Night
-    # placeholder writes don't need to reach into module-level singletons.
+    # ``night_close`` closes over the diary store + game id so its per-Night
+    # diary read-back doesn't need to reach into module-level singletons. Since
+    # spec 039 Slice 3 the read-back is all it does with them — the placeholder
+    # WRITE that used to sit beside it is gone, replaced by ``day_diary``'s real
+    # entry (bound with the same two services below).
     builder.add_node(
         "night_close",
         partial(night_close, diary_store=diary_store, game_id=game_id),
@@ -190,6 +205,12 @@ def _assemble_graph(
     # Spec 028 (ADR 011): the private-thoughts flag is bound into the same two
     # AI-decision Day nodes (``day_turn`` / ``collect_votes``) alongside the
     # other flags, so it gates the ``{private_thoughts}`` block in both modes.
+    # Spec 039 (ADR 011): the private-DIARIES flag is bound into those SAME two
+    # nodes, because the two features share that ONE ``{private_thoughts}`` slot
+    # — ``_private_record_block`` merges thoughts and diaries into it in event
+    # order, which two separate slots could not express at all. Bound only now,
+    # in Slice 2: neither node accepted the kwarg until the merged block landed,
+    # and binding one a node does not accept is a hard ``TypeError``.
     builder.add_node(
         "day_turn",
         partial(
@@ -200,6 +221,7 @@ def _assemble_graph(
             context_window=context_window,
             context_token_budget=context_token_budget,
             private_thoughts_enabled=private_thoughts_enabled,
+            private_diaries_enabled=private_diaries_enabled,
         ),
     )
     # Spec 028: the end-of-round reflection node. Its own super-step (so the
@@ -226,10 +248,47 @@ def _assemble_graph(
             context_window=context_window,
             context_token_budget=context_token_budget,
             private_thoughts_enabled=private_thoughts_enabled,
+            private_diaries_enabled=private_diaries_enabled,
         ),
     )
     builder.add_node("resolve_vote", emit(resolve_vote))
     builder.add_node("day_close", partial(day_close, recap_enabled=recap_enabled))
+    # Spec 039 (ADR 011): the before-Night diary node, on the Day->Night hinge
+    # between ``day_close`` and ``night_open``. Its own super-step, so its
+    # ``{node: delta}`` key is what places a diary as day-level content in the
+    # eval transcript and so a per-player failure cannot take ``day_close``'s
+    # already-computed closing recap with it. ``max_days`` is bound here from
+    # the SAME value that binds ``night_open`` above — one value bound twice —
+    # so the node's runaway self-guard (``cycle + 1 >= max_days``, evaluated one
+    # super-step before ``night_open`` tests the cap) can never drift from the
+    # cap it is guarding. The recap-aware / window / token-budget / private-
+    # thoughts values are the same ones the three AI-decision nodes get, so the
+    # diary prompt is grounded exactly as they are; flag-off makes the node a
+    # no-op. Both builders thread ``private_diaries_enabled``.
+    # Spec 039 Slice 3 — THE DUAL WRITE: ``day_diary`` also closes over the
+    # diary store + game id, the SAME two services and the SAME service-
+    # injection pattern ``night_close`` uses above, so each accepted entry
+    # reaches the ``DiaryStore`` (in-process locally, Gateway-fronted AgentCore
+    # Memory remotely) as well as the ``private_diaries`` state channel. These
+    # two binds REPLACE the placeholder write ``night_close`` used to make; that
+    # node keeps only its read-back, as a liveness probe of the read path. Both
+    # builders already resolve ``diary_store`` / ``game_id`` for ``night_close``
+    # and pass them into ``_assemble_graph``, so there is nothing further to
+    # thread in ``build_runtime_graph`` — no anti-drift gap here.
+    builder.add_node(
+        "day_diary",
+        partial(
+            day_diary,
+            private_diaries_enabled=private_diaries_enabled,
+            private_thoughts_enabled=private_thoughts_enabled,
+            recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
+            context_window=context_window,
+            context_token_budget=context_token_budget,
+            max_days=max_days,
+            diary_store=diary_store,
+            game_id=game_id,
+        ),
+    )
     # Slice 8: win-condition detection + end screen. The same pure-read
     # function is registered under two node names so each check site can
     # own a dedicated conditional fan-out (night → night_close fallthrough,
@@ -329,7 +388,13 @@ def _assemble_graph(
     builder.add_edge("end_screen", END)
 
     # Day → Night cycle. night_open bumps cycle on re-entry.
-    builder.add_edge("day_close", "night_open")
+    # Spec 039: the hinge gains one super-step — ``day_close -> day_diary ->
+    # night_open`` — so every surviving AI writes its before-Night diary entry
+    # after the Day's public close is committed and before the Night opens.
+    # Night 1 is unaffected: it is entered from ``first_night_mafia_intros``,
+    # which edges straight to ``night_open``, so no entry precedes Night 1.
+    builder.add_edge("day_close", "day_diary")
+    builder.add_edge("day_diary", "night_open")
 
     return builder.compile(checkpointer=saver)
 
@@ -340,9 +405,16 @@ def build_graph(
     diary_store: DiaryStore | None = None,
     career_emitter: CareerEventEmitter | None = None,
 ) -> tuple[CompiledStateGraph, str]:
-    # Slice 6 sub-task 3: bind a ``DiaryStore`` into the Night-close write
-    # site. Tests that don't care can leave ``diary_store=None`` and the
-    # factory picks the right impl per :attr:`GraphiaConfig.remote_mode`.
+    # Spec 002 Slice 6 sub-task 3, retargeted by spec 039 Slice 3: resolve a
+    # ``DiaryStore`` once here and hand it to ``_assemble_graph``, which binds
+    # it into TWO nodes for two different reasons — ``day_diary`` WRITES the
+    # real per-Night entries through it, and ``night_close`` READS them back
+    # as a liveness probe of the read path (remotely, the whole Gateway ->
+    # AgentCore Memory round-trip). The Night-close write this binding
+    # originally served no longer exists; that slice deleted it. ``game_id``
+    # — the thread id computed below — is threaded alongside for those same
+    # two consumers. Tests that don't care can leave ``diary_store=None`` and
+    # the factory picks the right impl per :attr:`GraphiaConfig.remote_mode`.
     if diary_store is None:
         diary_store = make_diary_store(config)
     # Slice 8.4: per-action career-stats emitter. Mirrors the diary store —
@@ -375,6 +447,7 @@ def build_graph(
         context_token_budget=config.context_token_budget,
         private_thoughts_enabled=config.private_thoughts_enabled,
         night_roster_shuffle_enabled=config.night_roster_shuffle_enabled,
+        private_diaries_enabled=config.private_diaries_enabled,
         persona_diversity_enabled=config.persona_diversity_enabled,
         persona_collision_threshold=config.persona_collision_threshold,
         persona_regen_attempts=config.persona_regen_attempts,

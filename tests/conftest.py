@@ -9,7 +9,15 @@ import pytest
 from rich.text import Text
 from textual.widget import Widget
 
-from graphia.llm import Ballot, DayAction, Persona, Pointing, Reflection, Roster
+from graphia.llm import (
+    Ballot,
+    DayAction,
+    Diary,
+    Persona,
+    Pointing,
+    Reflection,
+    Roster,
+)
 
 
 def _fake_embed_documents(texts: list[str]) -> list[list[float]]:
@@ -584,13 +592,26 @@ class FakeLargeUnified:
 
     This fake keeps a separate scripted queue per schema class so one fixture
     can satisfy ``DayAction`` (speak/vote), ``Ballot`` (yes/no), ``Pointing``
-    (night target), ``Persona`` (setup-time character generation), and
-    ``Reflection`` (spec 028 — the per-AI end-of-Day-round private thought)
+    (night target), ``Persona`` (setup-time character generation),
+    ``Reflection`` (spec 028 — the per-AI end-of-Day-round private thought),
+    and ``Diary`` (spec 039 — the per-AI before-Night private diary entry)
     bindings without interference.
+
+    **A missing queue is a SILENT failure, not a loud one.** Both
+    ``day_round_reflect`` (028) and ``day_diary`` (039) wrap their model call
+    in ``try/except Exception`` and substitute a deterministic fallback note.
+    The ``AssertionError`` this class raises for an unknown schema is therefore
+    *swallowed by the node under test*, and the test goes on to measure the
+    fallback while passing — proving nothing about the real path. Every new
+    structured-output call site must get its queue here in the same change that
+    introduces it (tech-spec 039 §3).
 
     Attributes:
         call_count: Total invocations across all schemas.
         calls_by_schema: Per-schema invocation counts, keyed by schema class.
+            The counter is what distinguishes "the scripted queue served this
+            call" from "the queue was never reached": a swallowed
+            unknown-schema ``AssertionError`` leaves the schema's count at 0.
     """
 
     def __init__(
@@ -601,6 +622,7 @@ class FakeLargeUnified:
         pointings: Sequence[Pointing | Exception] | None = None,
         personas: Sequence[Persona | Exception] | None = None,
         reflections: Sequence[Reflection | Exception] | None = None,
+        diaries: Sequence[Diary | Exception] | None = None,
     ) -> None:
         self._queues: dict[type, list[Any]] = {
             DayAction: list(day_actions) if day_actions else [],
@@ -620,6 +642,17 @@ class FakeLargeUnified:
             # that into a fallback note, but the explicit queue keeps the
             # captured-prompt tests deterministic).
             Reflection: list(reflections) if reflections else [],
+            # Spec 039: ``day_diary`` binds ``Diary`` on this same
+            # ``get_large()`` reference, once per surviving AI per Day, at the
+            # Day→Night hinge. Replays its last value once drained, like the
+            # others — so a test can supply one entry and have it serve every
+            # player on every Day. REQUIRED, and for a sharper reason than the
+            # others: the node's ``try/except`` swallows the unknown-schema
+            # ``AssertionError`` into ``_DIARY_FALLBACK``, so WITHOUT this queue
+            # a flag-on run measures the fallback and passes green while
+            # proving nothing (tech-spec 039 §3; regression test in
+            # ``tests/test_slice39_diary_fake_coverage.py``).
+            Diary: list(diaries) if diaries else [],
         }
         self._last: dict[type, Any] = {}
         self.call_count = 0
@@ -629,13 +662,15 @@ class FakeLargeUnified:
             Pointing: 0,
             Persona: 0,
             Reflection: 0,
+            Diary: 0,
         }
 
     def with_structured_output(self, schema: type) -> _LargeQueue:
         if schema not in self._queues:
             raise AssertionError(
                 f"FakeLarge has no scripted queue for schema {schema!r}. "
-                "Supported: DayAction, Ballot, Pointing, Persona, Reflection."
+                "Supported: DayAction, Ballot, Pointing, Persona, Reflection, "
+                "Diary."
             )
         return _LargeQueue(self, schema)
 
@@ -803,6 +838,7 @@ def fake_large(
             personas=[Persona(personality="bold", manner="terse",
                               public_backstory="the baker")],
             reflections=[Reflection(thought="I should watch the baker.")],
+            diaries=[Diary(entry="Day one is done. The baker talks too much.")],
         )
 
     Patches ``graphia.nodes.day.get_large``, ``graphia.nodes.night.get_large``
@@ -810,8 +846,15 @@ def fake_large(
     routed through any call site go through one queue-set. This is required
     for Slice 7/8 tests where a single run touches ``DayAction`` (speaking),
     ``Ballot`` (voting), ``Pointing`` (next night), (Spec 016) ``Persona``
-    (setup-time generation), and (Spec 028) ``Reflection`` (per-AI end-of-round
-    private thought) on the same large-model binding.
+    (setup-time generation), (Spec 028) ``Reflection`` (per-AI end-of-round
+    private thought), and (Spec 039) ``Diary`` (per-AI before-Night private
+    diary entry) on the same large-model binding.
+
+    Script ``diaries=`` whenever the assertion depends on WHAT the diary node
+    wrote. Leaving it unscripted is not an error — the queue exists, so the
+    node's own empty-queue path decides the outcome — but a test that wants the
+    real path exercised must pass an entry AND check
+    ``calls_by_schema[Diary]``; see ``tests/test_slice39_diary_fake_coverage.py``.
     """
 
     def _install(
@@ -821,6 +864,7 @@ def fake_large(
         pointings: Sequence[Pointing | Exception] | None = None,
         personas: Sequence[Persona | Exception] | None = None,
         reflections: Sequence[Reflection | Exception] | None = None,
+        diaries: Sequence[Diary | Exception] | None = None,
     ) -> FakeLargeUnified:
         fake = FakeLargeUnified(
             day_actions=day_actions,
@@ -828,6 +872,7 @@ def fake_large(
             pointings=pointings,
             personas=personas,
             reflections=reflections,
+            diaries=diaries,
         )
         monkeypatch.setattr("graphia.nodes.day.get_large", lambda: fake)
         monkeypatch.setattr("graphia.nodes.night.get_large", lambda: fake)

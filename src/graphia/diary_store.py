@@ -1,18 +1,49 @@
 """Per-game diary store abstraction with parallel local + remote impls.
 
-Spec 002 §2.4. The diary store is the per-game, per-player private journal
-surface — each AI player writes one entry per Night with hidden reasoning,
-and only the owning player (plus the Moderator, conceptually) ever reads
-it back. In Slice 6 the entries are placeholder text; Phase 6 will replace
-them with the AI's real diary content.
+Spec 002 §2.4, filled in by spec 039. The diary store is the per-game,
+per-player private journal surface — each AI player writes one entry per
+Night with hidden reasoning, and only the owning player (plus the Moderator,
+conceptually) ever reads it back.
+
+The entries are the AI's real diary prose. ``graphia.nodes.day:day_diary``
+writes one per surviving AI player at the Day->Night hinge, through
+``graphia.nodes.day:_persist_diary``. ``night_index`` is the Night the entry
+PRECEDES (``record["day"] + 1``), so entries occupy nights 2..N — there is no
+night-1 entry, Night 1 having no preceding Day to sum up. (From spec 002 until
+spec 039 this store instead held one trivial synthetic entry per Night, written
+at ``night_close``; that write is gone, and nothing writes placeholder text
+here any more.)
+
+The store is the persistence side-channel, not the source of truth. Each write
+is guarded: a failure is logged and swallowed inside ``_persist_diary``, and
+can never prevent the state write or skip the remaining players. The
+``private_diaries`` state channel is what reaches the prompts and the eval
+transcript; this store is what demonstrates AgentCore Memory. ``night_close``
+still reads back from it on Night 2+, deliberately — it is the only thing that
+exercises ``DiaryStore.read`` in a live game, which remotely is the whole
+Gateway -> Lambda -> Memory round-trip.
+
+One honest asymmetry: with ``GRAPHIA_PRIVATE_DIARIES=0`` (ADR 011) no diary
+reaches the store at all — the retired synthetic entry does not come back in
+its place. Flag-off is identical in everything ADR 011 covers (prompts, public
+messages, transcript) but not byte-identical in the store.
+
+Entry text arrives already whitespace-folded and length-capped by
+``day_diary``'s clamp, so nothing re-normalises it at this boundary — do not
+add such normalisation. Real prose carrying double quotes, an apostrophe, an
+em-dash and embedded newlines was verified in spec 039 to round-trip through
+``AgentCoreMemoryDiaryStore`` and decode correctly in
+``graphia.tools.inspect_diary``.
 
 Two implementations live behind one Protocol so the rest of the engine
 stays mode-agnostic:
 
-- ``InProcessDiaryStore`` — dict-backed, thread-safe. Used in local mode
-  and inside the Runtime container as the Slice 4 placeholder. Lifted
-  here from ``graphia.runtime.diary_store`` (which is now removed) so the
-  schema and the local impl live in one place.
+- ``InProcessDiaryStore`` — dict-backed, thread-safe. Used in local mode, and
+  as ``graphia.runtime.graph_builder.build_runtime_graph``'s default when no
+  store is injected (tests and direct callers); the deployed Runtime
+  entry-point instead resolves one via ``make_diary_store``. Lifted here from
+  ``graphia.runtime.diary_store`` (which is now removed) so the schema and the
+  local impl live in one place.
 
 - ``AgentCoreMemoryDiaryStore`` — wraps :class:`bedrock_agentcore.memory.MemoryClient`
   (verified against bedrock-agentcore==1.9.0; the skill's reference names
@@ -28,11 +59,12 @@ stays mode-agnostic:
 
 Note on design deviation from spec 002 §2.4's hint that
 ``InProcessDiaryStore`` is "backed by ``PlayerState.diary_entries`` in
-``GameState``": for Slice 6 we keep ``InProcessDiaryStore`` self-contained
-(dict-backed, same as the Slice 4 placeholder). Coupling the diary
-surface to the LangGraph reducer is out of scope here and lands later
-if/when Phase 6's AI diary writes actually need to participate in the
-graph's checkpoint.
+``GameState``": ``InProcessDiaryStore`` is self-contained (dict-backed), and
+spec 039 kept it that way. The AI's diary content does participate in the
+graph's checkpoint, but through its own ``private_diaries`` channel of
+:class:`graphia.state.DiaryRecord` values, written by the same node in the
+same super-step — not by coupling this store to a reducer. Two channels, one
+write site, deliberately.
 """
 
 from __future__ import annotations
@@ -77,11 +109,11 @@ class DiaryStore(Protocol):
 
 
 class InProcessDiaryStore:
-    """Dict-backed, thread-safe diary store. Local mode + Runtime placeholder.
+    """Dict-backed, thread-safe diary store. Local mode + Runtime default.
 
     Keyed by ``(game_id, player_id)``. Sessions are ephemeral — the store
-    has the lifetime of the host process (local: the Textual app; remote
-    Slice 4-style placeholder: the Runtime microVM session).
+    has the lifetime of the host process (local: the Textual app; in the
+    Runtime, the microVM session, when no remote store is injected).
     """
 
     def __init__(self) -> None:
@@ -243,8 +275,9 @@ def _entry_from_event(event: dict) -> DiaryEntry | None:
 # endpoint with SigV4 inbound auth — Lambda-vs-Runtime-loopback is invisible
 # here.
 #
-# The MCP client is async; the engine's ``night_close`` call site is sync
-# (the Runtime's ``graph.stream`` worker is synchronous). We bridge with
+# The MCP client is async; the engine's call sites are sync — ``day_diary``
+# writes, ``night_close`` reads back — because the Runtime's ``graph.stream``
+# worker is synchronous. We bridge with
 # ``asyncio.run`` per call — diary writes happen once per surviving AI per
 # Night, so the per-call event-loop spin-up cost is dominated by network
 # latency. A long-lived background loop is out of scope for v1.
@@ -392,7 +425,7 @@ class GatewayMCPDiaryStore:
     def _run_sync(coro):
         """Run an async coroutine from a sync caller, even inside an event loop.
 
-        ``night_close`` calls ``write`` synchronously from inside
+        ``day_diary`` calls ``write`` synchronously from inside
         ``graph.stream``, which itself runs inside the Runtime's
         ``@app.entrypoint`` async coroutine. ``asyncio.run`` raises
         ``RuntimeError: asyncio.run() cannot be called from a running event

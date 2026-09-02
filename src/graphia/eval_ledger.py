@@ -75,6 +75,7 @@ __all__ = [
     "KIND_SPEAKER_LAW_ABIDING_HUMAN",
     "KIND_SPEECH_MAFIA_HUMAN",
     "KIND_SPEECH_LAW_ABIDING_HUMAN",
+    "KIND_DIARY",
     "TRANSCRIPT_KINDS",
     "tokenize_transcript",
 ]
@@ -192,6 +193,23 @@ _FIXED_COLUMNS: tuple[str, ...] = (
     "Unres (R/N)",
     "Votes (LA/M)",
     "Stand-in",
+    # Spec 039: which ARM of the private-diaries A/B a run measured
+    # (:func:`_diaries_cell`, reading ``settings.private_diaries_enabled``).
+    # Placed between ``Stand-in`` and ``Lineup`` so the three settings facts stay
+    # contiguous **in the record's own key order** (``render_record`` emits
+    # ``scripted_player`` → ``private_diaries_enabled`` → the nested ``lineup``) —
+    # the same mirror-the-record rule that positioned ``Kind`` after ``Date``. It
+    # is a *fixed* (head) column, ahead of the metric tail, because diaries is a
+    # **setting, not a metric**: ``METRIC_ORDER`` is untouched, and the UI's
+    # right-justify split (``len(columns) - len(METRIC_ORDER)``) keys off the
+    # metric count, so this column is left-justified like every other identity
+    # column and no metric cell moves.
+    #
+    # It exists so an on/off pair is legible **in the table** — the whole point of
+    # the arm label is reading the two arms side by side, and a drill-down-only
+    # field makes that a two-screen job. Absence renders **blank**, never ``off``:
+    # see :func:`_diaries_cell`.
+    "Diaries",
     "Lineup",
     "Notes",
 )
@@ -370,6 +388,42 @@ def _stand_in_cell(record: RawRecord) -> str:
     if _text(_dig(record, "run.kind", default="")):
         return ""
     return _text(_dig(record, "settings.scripted_player", default=_STAND_IN_DEFAULT))
+
+
+# The two labels the ``Diaries`` cell renders a recorded arm as. Deliberately the
+# **CLI vocabulary** the arm is invoked with (``--diaries on|off``) rather than
+# the YAML boolean's ``True``/``False``: the column exists to make a pair legible
+# at a glance, ``on``/``off`` is what the operator typed, and a table cell reading
+# ``False`` looks like a Python repr rather than an arm of an experiment. The
+# mapping is **total** — a recorded arm is one bool and lands on exactly one of
+# these two — so cell text and on-disk value cannot drift the way a partial label
+# lookup (:func:`_kind_cell`'s reason for rendering verbatim) could. The
+# drill-down still shows the recorded boolean itself.
+_DIARIES_ON = "on"
+_DIARIES_OFF = "off"
+
+
+def _diaries_cell(record: RawRecord) -> str:
+    """The ``Diaries`` table cell — which arm of the private-diaries A/B ran (spec 039).
+
+    Reads ``settings.private_diaries_enabled`` via :func:`_dig` and renders
+    :data:`_DIARIES_ON` / :data:`_DIARIES_OFF`, so a diaries-on and a diaries-off
+    record are readable **as a pair** straight from the table.
+
+    **Absence renders blank — never ``off``**, and this is the one thing the cell
+    exists to get right. It is deliberately NOT the defaulting posture of
+    :func:`_stand_in_cell` (absent ⇒ the prior default) or :func:`_kind_cell`
+    (absent ⇒ "a played game"): a pre-039 record was played by a build with **no
+    diary feature at all**, so it is neither arm of the comparison. Rendering it
+    ``off`` would assert a measurement nobody made and would silently offer every
+    one of the 30 committed records as the control half of an A/B pair. A valid
+    pair is two spec-039-era records — same commit, provider, ``run.kind`` and
+    ``metrics_version`` — differing only in this field (``evals/README.md``).
+    """
+    arm = _dig(record, "settings.private_diaries_enabled")
+    if arm is None:
+        return ""
+    return _DIARIES_ON if bool(arm) else _DIARIES_OFF
 
 
 # The record kind read for a pre-036 record. ``run.kind`` was added in spec 036
@@ -818,6 +872,30 @@ KIND_SPEAKER_LAW_ABIDING_HUMAN = "speaker-law-abiding-human"
 KIND_SPEECH_MAFIA_HUMAN = "speech-mafia-human"
 KIND_SPEECH_LAW_ABIDING_HUMAN = "speech-law-abiding-human"
 
+# Spec 039 — the twenty-first kind, and the first one added by a spec other than
+# 038. ``diary`` is the **body** of a ``<diary player="X" day="N">…</diary>``
+# element: the private note an AI writes at the Day->Night hinge, summing up the
+# Day it has just lived through. The writer files it in the Day's *trailer*, so
+# it renders between the last ``</round>`` and ``</day>`` — "between the day it
+# was written about and the Night that followed" (functional spec 039 §2).
+#
+# **A kind of its own rather than reusing :data:`KIND_THOUGHT`.** The two are
+# neighbours — both private, both never said aloud, both muted — but they answer
+# different questions and a reviewer reads them differently: a thought is one
+# player's reaction inside a single speaking round, a diary is that player's
+# settled read of a whole Day, carried forward into the next one. Collapsing
+# them would make the day trailer indistinguishable from the round bodies above
+# it, which is the one thing its placement exists to say.
+#
+# **Never side-tinted**, exactly as :data:`KIND_THOUGHT` is not (tech-spec 039
+# §2.8, which puts the diary body under ``thought``'s precedent in those words):
+# a private reflection is not an act of allegiance, and the two hues mean *side*
+# from spec 038's Slice 4 onward. The owner's name inside the tag carries the
+# side instead (:func:`_attr_kind`), so whose diary it is still reads at a glance
+# while the prose itself stays out of the side palette — which is also why this
+# kind needs no new hue in a palette tech-spec 039 §2.8 records as fully spent.
+KIND_DIARY = "diary"
+
 # The canonical kind vocabulary, in the order the kinds were introduced — the
 # single source of truth for which kinds exist, following the same house pattern
 # as :data:`METRIC_ORDER` (a later spec appends its entries and nothing else has
@@ -825,7 +903,11 @@ KIND_SPEECH_LAW_ABIDING_HUMAN = "speech-law-abiding-human"
 # from a style map must fall back to unstyled rather than raising.
 #
 # Slice 5 closed the vocabulary at twenty: the human seat's
-# bold-within-its-side treatment is the last of spec 038's kinds.
+# bold-within-its-side treatment is the last of spec 038's kinds. Spec 039
+# appended the twenty-first, :data:`KIND_DIARY`, by exactly the route that house
+# pattern promises — one constant, one entry here, one ``__all__`` line, one tag
+# name in :data:`_MARKER_TAGS`, one entry in :data:`_INLINE_CONTENT_KINDS` and
+# one branch in :func:`_attr_kind`. No existing kind, rule or span moved.
 TRANSCRIPT_KINDS: tuple[str, ...] = (
     KIND_MARKER,
     KIND_PLAIN,
@@ -847,6 +929,7 @@ TRANSCRIPT_KINDS: tuple[str, ...] = (
     KIND_SPEAKER_LAW_ABIDING_HUMAN,
     KIND_SPEECH_MAFIA_HUMAN,
     KIND_SPEECH_LAW_ABIDING_HUMAN,
+    KIND_DIARY,
 )
 
 # The two sides, as the internal token that selects a side-bearing kind. Private
@@ -933,6 +1016,15 @@ _ROLE_SIDES: dict[str, str] = {
 # have to change an inner span's kind (Slice 3's "the surrounding tag stays
 # ``marker``") or split attribute values out of a tag that is already a marker
 # (Slice 2), rather than promote a whole line from ``plain``.
+#
+# ``diary`` is spec 039's addition and the only entry here not written by spec
+# 038. It is inline-with-content and attribute-carrying, structurally identical
+# to ``thought``, so it joins on two lines — this one and
+# :data:`_INLINE_CONTENT_KINDS` — which is precisely the extension point Slice 1
+# of spec 038 built the split for. Because the vocabulary is a **whitelist**,
+# adding a name can only affect lines that carry it, and ``<diary`` occurs zero
+# times across the 298 committed transcripts (measured): no committed line can
+# tokenize differently for this entry existing.
 _MARKER_TAGS: frozenset[str] = frozenset(
     {
         "transcript",
@@ -947,6 +1039,7 @@ _MARKER_TAGS: frozenset[str] = frozenset(
         "vote",
         "recap",
         "thought",
+        "diary",
     }
 )
 
@@ -962,14 +1055,17 @@ _MARKER_TAGS: frozenset[str] = frozenset(
 # marker span.
 #
 # ``thought`` and ``recap`` are Slice 3's two entries — the surrounding tag stays
-# :data:`KIND_MARKER` on both, so only the body changes kind. Every other inline
-# tag still defaults to :data:`KIND_PLAIN`, which is the right answer for the
-# ``(no persona recorded)`` body of an inline ``<player>``: that is prose, not a
-# kind of its own.
+# :data:`KIND_MARKER` on both, so only the body changes kind. ``diary`` is spec
+# 039's, and it collected on that promise exactly: the tag name above and this
+# line, with no new branch anywhere in the chain. Every other inline tag still
+# defaults to :data:`KIND_PLAIN`, which is the right answer for the ``(no persona
+# recorded)`` body of an inline ``<player>``: that is prose, not a kind of its
+# own.
 _INLINE_CONTENT_KINDS: dict[str, str] = {
     "kill": KIND_MARKER,
     "thought": KIND_THOUGHT,
     "recap": KIND_RECAP,
+    "diary": KIND_DIARY,
 }
 
 # One transcript line's tag head: ``<name>``, ``</name>`` or ``<name attrs…>``.
@@ -982,19 +1078,38 @@ _TAG_HEAD_RE = re.compile(
 )
 
 # The detail-carrying attributes whose **values** become :data:`KIND_ATTR` spans
-# (tech-spec §2 A). Exactly the five the writer emits, verified across all 298
+# (tech-spec §2 A). Five of them are spec 038's, verified across all 298
 # committed transcripts — ``name``/``role`` on ``<player>`` (1960 each),
 # ``player`` on ``<thought>`` (8183) and ``initiator``/``target`` on ``<vote>``
-# (1005 each); the corpus contains no sixth attribute name.
+# (1005 each); that corpus contains no sixth attribute name.
+#
+# ``day`` is spec 039's sixth, carried by ``<diary player="…" day="…">``, and it
+# earns its place by the same test the other five pass: it is *the* thing that
+# tells one of a player's diaries from the next, so a reviewer asking "what did
+# Ava conclude on Day 2" reads it rather than the punctuation holding it
+# (tech-spec 039 §2.8 asks for it in those words — "the ``day`` attribute is an
+# ``attr`` span"). **It cannot move a committed transcript**: ``day="`` occurs
+# zero times across the 298 files (measured), and :data:`_ATTR_VALUE_RE`'s
+# lookbehind stops it matching the tail of a hypothetical ``birthday="…"``.
 #
 # A whitelist, not "every ``x="…"`` pair", for the same *never guess* reason the
 # tag vocabulary is one: an attribute is lifted out of the punctuation because a
-# reviewer reads it as a **specific** — a person's name, a role. Spec 038's own
-# Slice 5 duly added ``human="true"`` to the human seat's ``<player>`` tag and
-# duly left it OUT of this tuple: a machine flag is not a detail worth picking
-# out, so it stays part of the surrounding marker. The reader reads it through
-# :data:`_HUMAN_ATTR_RE`, which splits no span.
-_ATTR_NAMES: tuple[str, ...] = ("name", "role", "player", "initiator", "target")
+# reviewer reads it as a **specific** — a person's name, a role, the Day an entry
+# sums up. Spec 038's own Slice 5 duly added ``human="true"`` to the human seat's
+# ``<player>`` tag and duly left it OUT of this tuple: a machine flag is not a
+# detail worth picking out, so it stays part of the surrounding marker. The
+# reader reads it through :data:`_HUMAN_ATTR_RE`, which splits no span. ``day``
+# is the other side of that line — a value a person reads, not a flag a program
+# does — which is why the two attributes spec 038 and 039 added land opposite
+# ways round.
+_ATTR_NAMES: tuple[str, ...] = (
+    "name",
+    "role",
+    "player",
+    "initiator",
+    "target",
+    "day",
+)
 
 # One ``name="value"`` pair inside a tag's attribute run. Only the ``value``
 # group becomes an :data:`KIND_ATTR` span — the attribute name, the ``="`` and
@@ -1133,11 +1248,28 @@ _CAST_TAG = "player"
 _CAST_NAME_ATTR = "name"
 _CAST_ROLE_ATTR = "role"
 
-# The ``<thought player="X">`` tag and its owner attribute — the one place a
+# The ``<thought player="X">`` tag and its owner attribute — the FIRST place a
 # *name* attribute is side-bearing, because functional-spec §2 requires it in
-# those words ("the owner's name carries that player's side colour").
+# those words ("the owner's name carries that player's side colour"). Spec 039
+# added the second, below.
 _THOUGHT_TAG = "thought"
 _THOUGHT_OWNER_ATTR = "player"
+
+# The ``<diary player="X" day="N">`` tag and its owner attribute (spec 039). The
+# attribute is spelled the same as ``<thought>``'s and is side-bearing for the
+# same reason, but the pair is written out separately rather than reusing the
+# thought constants: :func:`_attr_kind` keys on the ``(tag, key)`` PAIR, and
+# folding the two together would hide the fact that this is a second,
+# independent decision about a second tag — the thing the tag-scoped rule exists
+# to keep explicit. A future ``<foo player="…">`` gets no side by default, which
+# is the posture the whole module is built on.
+#
+# ``day`` needs no constant here: it is not side-bearing and never will be. It
+# names a Day, not a person, and colour has meant *side* since spec 038's Slice
+# 4 — so it lifts out of the punctuation as a plain :data:`KIND_ATTR` through
+# :data:`_ATTR_NAMES` and :func:`_attr_kind`'s default, with no rule of its own.
+_DIARY_TAG = "diary"
+_DIARY_OWNER_ATTR = "player"
 
 # The scene-setting section, and the two literals that delimit it. The welcome
 # line :func:`_human_seat` falls back to is scoped to it for exactly the reason
@@ -1374,8 +1506,10 @@ def _human_seat(lines: list[str]) -> str | None:
 def _attr_kind(tag: str, key: str, value: str, sides: Mapping[str, str]) -> str:
     """The kind for one attribute value: :data:`KIND_ATTR`, or its side-bearing form.
 
-    Exactly **two** of the five detail attributes carry a side, and both are
-    named by functional-spec §2 in those words:
+    **The decision is per ``(tag, key)`` PAIR, never per attribute name** — which
+    is why spec 039's ``<diary player="…">`` needed a branch of its own even
+    though ``<thought player="…">`` already had one. Three pairs carry a side;
+    every other pair does not, and a tag nobody has ruled on gets no side at all:
 
     - a cast entry's ``role="Mafia"`` — "the side colours used in the cast list
       match the ones used for dialogue". Its side comes from the label written
@@ -1386,26 +1520,48 @@ def _attr_kind(tag: str, key: str, value: str, sides: Mapping[str, str]) -> str:
     - a ``<thought player="Avery">`` owner's name — "the owner's name carries
       that player's side colour". This one *is* a map lookup, because the tag
       names a person and only the cast list knows their side.
+    - a ``<diary player="Avery" day="2">`` owner's name (spec 039) — the same
+      map lookup, for the same reason and by the same rule stated below: a diary
+      tag names a person and a Day and no role, so the *name* is the only token
+      on it that can tell a reviewer the side. Tech-spec 039 §2.8 puts the diary
+      **body** under ``<thought>``'s precedent (muted, never side-tinted); its
+      owner follows the other half of that same precedent, so ``Avery`` reads in
+      Avery's colour whether the private note is one round's reaction or a whole
+      Day's settled read. Leaving it achromatic was the alternative and was
+      rejected: it would show one player's name in two different treatments a
+      few lines apart in the same file, inviting a reviewer to read a
+      distinction that is not there.
 
-    The other three (a cast entry's ``name``, a vote's ``initiator`` and
-    ``target``) stay achromatic :data:`KIND_ATTR`. Colour means side from this
-    slice onward; those three are names a reviewer reads as *specifics*, lifted
-    out of the punctuation by weight and brightness. Tinting them was considered
-    and rejected on two grounds: it would leave ``attr`` with no occupants at all
-    in a real transcript (the five names above are the whole whitelist), and a
-    vote marker's job is to say *who called it and against whom*, which the side
-    colours on the ballot lines below it already answer.
+    The other four (a cast entry's ``name``, a vote's ``initiator`` and
+    ``target``, and a diary's ``day``) stay achromatic :data:`KIND_ATTR`. Colour
+    has meant side since Slice 4; those four are *specifics* a reviewer reads —
+    three names and a Day number — lifted out of the punctuation by weight and
+    brightness instead. Tinting the three names was considered and rejected on
+    two grounds: it would leave ``attr`` with almost no occupants in a real
+    transcript (before spec 039 it would have left it with none at all — those
+    three were the whole achromatic half of the whitelist), and a vote marker's
+    job is to say *who called it and against whom*, which the side colours on
+    the ballot lines below it already answer. ``day`` is not even a candidate:
+    it names no person, so there is no side it could carry.
 
-    **The rule underneath both halves:** inside a marker, the side colour lands
-    on whichever token actually *tells the reviewer the side* — the role where a
-    role is written (the cast entry), the name where none is (the thought tag,
-    which names a person and nothing else). Everywhere a name sits next to its
-    own role, the role carries the colour and the name does not, so the two
-    treatments never compete on one line.
+    **The rule underneath all three halves:** inside a marker, the side colour
+    lands on whichever token actually *tells the reviewer the side* — the role
+    where a role is written (the cast entry), the name where none is (the
+    thought and diary tags, which name a person and, for a diary, a Day).
+    Everywhere a name sits next to its own role, the role carries the colour and
+    the name does not, so the two treatments never compete on one line.
     """
     if tag == _CAST_TAG and key == _CAST_ROLE_ATTR:
         side = _ROLE_SIDES.get(value)
     elif tag == _THOUGHT_TAG and key == _THOUGHT_OWNER_ATTR:
+        side = sides.get(value)
+    elif tag == _DIARY_TAG and key == _DIARY_OWNER_ATTR:
+        # Spec 039, the same rule one tag over. An unknown name — ``sides.get``
+        # returning ``None`` because the cast list does not carry it, or because
+        # this is one of the 30 pre-spec-022 games that yield no cast map at all
+        # — falls back to the achromatic :data:`KIND_ATTR` exactly as a thought's
+        # owner does. Never a guessed side; the degradation is the same one the
+        # whole module is built around.
         side = sides.get(value)
     else:
         return KIND_ATTR
@@ -1443,26 +1599,31 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     ``<setup>`` block that grants it, and one that wants a bolded seat must carry
     the marker or the welcome line that names it.
 
-    **Kinds recognised so far** (twenty — the vocabulary spec 038 closes with,
-    see :data:`TRANSCRIPT_KINDS`):
+    **Kinds recognised so far** (twenty-one — spec 038's twenty plus spec 039's
+    :data:`KIND_DIARY`; see :data:`TRANSCRIPT_KINDS`):
 
     - :data:`KIND_MARKER` — the game's skeleton: the structural tags
       (``<transcript>``, ``<setup>``, ``<preamble>``, ``<night>``, ``<day>``,
       ``<round>``, ``<endgame>``, ``<kill>``, ``<player …>``, ``<vote …>``,
-      ``<recap>``, ``<thought …>``) and each one's closing form, the top
-      ``Game N | provider=…`` metadata line, and the bare ``Round N.`` label —
+      ``<recap>``, ``<thought …>``, ``<diary …>``) and each one's closing form,
+      the top ``Game N | provider=…`` metadata line, and the bare ``Round N.``
+      label —
       **including the punctuation of a tag's attributes**, which stays marker so
       that only the values below are lifted out of it.
     - :data:`KIND_ATTR` — the **value** of a detail-carrying attribute inside a
       marker: the ``name``/``role`` of a cast entry, a thought's ``player``, a
-      vote's ``initiator``/``target`` (see :data:`_ATTR_NAMES`). ``Avery``, never
-      ``name="Avery"``. Achromatic: it lifts by weight and brightness, because
-      from Slice 4 onward colour means **side** and a bare name carries none.
-    - :data:`KIND_ATTR_MAFIA` / :data:`KIND_ATTR_LAW_ABIDING` — the two
-      exceptions to that, both required by functional-spec §2 in so many words: a
-      cast entry's ``role="…"`` (so the cast list and the dialogue agree on the
-      colours) and a ``<thought player="…">`` owner's name (so a private
-      reflection shows whose it is in their own colour). See :func:`_attr_kind`.
+      vote's ``initiator``/``target``, a diary's ``day`` (see
+      :data:`_ATTR_NAMES`). ``Avery``, never ``name="Avery"``. Achromatic: it
+      lifts by weight and brightness, because from Slice 4 onward colour means
+      **side** and neither a bare name nor a Day number carries one.
+    - :data:`KIND_ATTR_MAFIA` / :data:`KIND_ATTR_LAW_ABIDING` — the exceptions to
+      that, the first two required by functional-spec §2 in so many words: a cast
+      entry's ``role="…"`` (so the cast list and the dialogue agree on the
+      colours), a ``<thought player="…">`` owner's name (so a private reflection
+      shows whose it is in their own colour) and, from spec 039, a ``<diary
+      player="…">`` owner's name on the same reasoning. See :func:`_attr_kind`,
+      which decides per ``(tag, attribute)`` pair rather than per attribute
+      name.
     - :data:`KIND_FIELD_LABEL` — a cast-list field's label, **colon included**
       (see :data:`_FIELD_LABELS`); the prose after it is content, not label.
     - :data:`KIND_SPEAKER` / :data:`KIND_SPEECH` — a spoken line **whose side is
@@ -1494,6 +1655,13 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     - :data:`KIND_RECAP` — the **body** of a ``<recap>…</recap>`` moderator
       status line; again the tags around it stay :data:`KIND_MARKER`. Never
       side-tinted, for the plainest of reasons: the moderator has no side.
+    - :data:`KIND_DIARY` — the **body** of a ``<diary player="X" day="N">…
+      </diary>`` before-Night entry (spec 039), which the writer files in the
+      Day's trailer so it renders between the last ``</round>`` and ``</day>``.
+      Same shape as a thought — tags stay :data:`KIND_MARKER`, the owner's name
+      takes the owner's side, the body never does — and a kind of its own
+      because a Day's settled read is not a round's reaction, and the trailer
+      would otherwise be indistinguishable from the round bodies above it.
     - :data:`KIND_PLAIN` — **everything else**, including every line separator.
       This fallback is what makes degradation total: an unrecognised tag, a
       pre-spec-022 transcript's indented ``Name — Role`` cast list, model-generated
@@ -1518,8 +1686,9 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     - an inline ``<tag …>content</tag>`` becomes *three* spans — opening tag,
       content, closing tag — so a slice claiming a body need only change the
       content span's kind (or split attribute values out of the tag) instead of
-      breaking one span into several. ``<thought>`` and ``<recap>`` bodies are
-      claimed that way (:data:`_INLINE_CONTENT_KINDS`); ``<kill>`` is the
+      breaking one span into several. ``<thought>``, ``<recap>`` and spec 039's
+      ``<diary>`` bodies are claimed that way
+      (:data:`_INLINE_CONTENT_KINDS`); ``<kill>`` is the
       exception whose content is *already* marker, so it coalesces back to a
       single span. An element whose content does **not** close on the same line
       keeps that remainder :data:`KIND_PLAIN` rather than inheriting the tag's
@@ -1773,12 +1942,17 @@ def _tag_element_spans(
     """Spans for a line that starts with a recognised structural tag, else ``None``.
 
     ``None`` means "not a tag line" — the caller then falls through the rest of
-    its chain, so an unrecognised tag name (a future ``<diary>``, or speech that
-    happens to open with an angle bracket) is left to the plain fallback rather
-    than styled as skeleton it is not.
+    its chain, so an unrecognised tag name (a tag some later format adds, or
+    speech that happens to open with an angle bracket) is left to the plain
+    fallback rather than styled as skeleton it is not. This docstring used to
+    name ``<diary>`` as its example of exactly that; spec 039 recognises the tag
+    now, which is the whitelist working as designed — a transcript written
+    before the entry existed still tokenizes byte-for-byte as it did.
 
     The three shapes the writer emits (verified across all 298 committed
-    transcripts — every ``<`` and ``>`` in the corpus belongs to one of them):
+    transcripts — every ``<`` and ``>`` in the corpus belongs to one of them;
+    spec 039's ``<diary player="…" day="…">…</diary>`` is the second shape, the
+    same one ``<thought>`` has always taken):
 
     - ``<tag …>`` / ``</tag>`` alone on the line → one marker span;
     - ``<tag …>content</tag>`` inline → opening tag, content, closing tag, the
@@ -1960,6 +2134,10 @@ def _row_cells(record: RawRecord) -> list[str]:
         _resolution_cell(record),
         _vote_activity_cell(record),
         _stand_in_cell(record),
+        # Spec 039: the diaries ARM, between ``Stand-in`` and ``Lineup`` — the
+        # position ``_FIXED_COLUMNS`` declares (the record's own settings key
+        # order). Blank for every record that does not state an arm.
+        _diaries_cell(record),
         _lineup_cell(record),
         _note_cell(record),
     ]
@@ -2225,12 +2403,21 @@ def render_detail(record: RawRecord) -> str:
       shape-specific extras: ollama ``models`` digests + ``server_version``, or
       the bedrock ``note``.
     - **settings** — the effective resolved values incl. ``games``, plus
-      ``metrics_version`` mirrored here for a like-for-like repeat, plus — spec
-      036, only when present — a ``persona`` sub-block naming the conditions a
-      persona-generation measurement ran under (``diversity_enabled``,
-      ``collision_threshold``, ``regen_attempts``, ``temperature``). A record
-      without the sub-map gains no line, so every played game reads as before.
-    - **quality** — the run-quality counts.
+      ``metrics_version`` mirrored here for a like-for-like repeat, plus two
+      conditional one-line fields between ``max_days`` and the lineup —
+      ``scripted_player`` (spec 026) and ``private_diaries_enabled`` (spec 039,
+      the arm of the private-diaries A/B; **absent ⇒ no line, never ``False``**)
+      — plus — spec 036, only when present — a ``persona`` sub-block naming the
+      conditions a persona-generation measurement ran under
+      (``diversity_enabled``, ``collision_threshold``, ``regen_attempts``,
+      ``temperature``). A record without a field gains no line, so every already-
+      committed record reads as before.
+    - **quality** — the run-quality counts, plus — spec 039, only when the run
+      attempted a diary entry — the three flat ``diary_*`` run-health keys
+      (``diary_fallback_rate``, ``diary_fallback_entries``,
+      ``diary_entries_attempted``) between ``games_failed_early`` and
+      ``duration_seconds``. Omitted together when no entry was attempted, so
+      absence reads as "no opportunity", never as a clean ``0.0``.
     - **outcomes** — the win-rate by side (013 §2.1): ``games``, then
       ``law_abiding``/``mafia`` each with ``wins`` + **full-precision** ``rate`` +
       a ``[ci_low–ci_high]`` band (rate/band omitted on the ``games == 0`` path),
@@ -2391,6 +2578,27 @@ def _render_settings_section(record: RawRecord) -> str:
     the already-committed game records, which is a visible regression, not a
     faithful render. Present ⇒ four indented lines; absent ⇒ **no line at all**,
     so a game record's detail view is byte-identical to before.
+
+    **Two more conditional one-line fields sit between ``max_days`` and the
+    lineup**, in the record's own key order (``render_record`` emits
+    ``scripted_player`` → ``private_diaries_enabled`` → the nested ``lineup``):
+
+    - ``scripted_player`` (spec 026) — written to every record since spec 026 and,
+      until now, **never rendered here**: it existed only as the table's
+      ``Stand-in`` column. Exactly the "written to the record and invisible in the
+      drill-down" gap the spec-036 follow-up closed for ``run.kind``,
+      ``generation`` and ``settings.persona``, left open for this one field.
+    - ``private_diaries_enabled`` (spec 039) — the arm of the private-diaries A/B
+      the run measured. **Absence renders as no line at all, never ``False``**: a
+      pre-039 record was played by a build with no diary feature, so a ``False``
+      would assert a measurement nobody made (see :func:`_diaries_cell`).
+
+    Both are conditional for the same reason as ``persona``: unconditional lines
+    would print ``—`` on records that never carried the field — ``scripted_player``
+    on the pre-026 ones, ``private_diaries_enabled`` on all 30 committed records.
+    A present ``False`` still renders (``_text(False)`` is ``"False"``, not blank),
+    so the diaries-**off** arm reads as the measurement it is — the same trap
+    ``persona.diversity_enabled`` documents.
     """
     settings = _dig(record, "settings")
     if not isinstance(settings, dict):
@@ -2414,6 +2622,30 @@ def _render_settings_section(record: RawRecord) -> str:
                 default=_dig(record, "settings.max_rounds"),
             ),
         ),
+    ]
+    # Spec 026, rendered here for the first time by spec 039's Slice 5: the
+    # human-seat stand-in mode. CONDITIONAL, because a pre-026 record does not
+    # carry the field and would otherwise gain an ``—`` line — but note the
+    # asymmetry with the ``Stand-in`` table cell, which *defaults* an absent
+    # field to ``passive``. The cell can do that because a column of blanks
+    # would read as an unfilled field; a drill-down line cannot, because adding
+    # one to records that never carried the field is the visible regression this
+    # function's own docstring rules out. Absent ⇒ no line; the ``evals/README.md``
+    # contract (absent ⇒ read as ``passive``) is where that reading lives.
+    scripted_player = _dig(record, "settings.scripted_player")
+    if scripted_player is not None:
+        lines.append(_field("scripted_player", scripted_player))
+    # Spec 039 §2.10: the diaries ARM the run measured, straight after
+    # ``scripted_player`` and before the lineup — the record's own key order.
+    # CONDITIONAL, and for this field absence is a THIRD case rather than a falsy
+    # one: not ``_STAND_IN_DEFAULT``'s "the prior default" and not
+    # ``_KIND_DEFAULT``'s "a played game", but "the build that played this run had
+    # no diary feature at all". So it gains no line and no ``False`` — which would
+    # claim the control arm of an experiment that did not exist yet.
+    private_diaries_enabled = _dig(record, "settings.private_diaries_enabled")
+    if private_diaries_enabled is not None:
+        lines.append(_field("private_diaries_enabled", private_diaries_enabled))
+    lines += [
         # Spec-014 lineup, defensively dug — a pre-014 record (no
         # ``settings.lineup``) shows the ``—`` em-dash, no migration.
         _field("citizens", _dig(record, "settings.lineup.num_citizens")),
@@ -2439,19 +2671,81 @@ def _render_settings_section(record: RawRecord) -> str:
     return _section("settings", lines)
 
 
+# The three flat ``quality.diary_*`` keys (spec 039 §2.13), in the order
+# ``render_record`` inserts them — rate, then the count, then the denominator it
+# was taken over. One tuple rather than three call sites, following
+# :data:`_PERSONA_SETTING_FIELDS`: the writer's key list and the reader's field
+# list are the same contract.
+#
+# The **rate is read, never recomputed.** ``render_record`` derives it once from
+# the count/denominator pair precisely so there is one definition of it; deriving
+# it a second time here would create a second, and a record whose stored rate
+# disagreed with its own operands would then render as though it agreed.
+_DIARY_QUALITY_FIELDS: tuple[str, ...] = (
+    "diary_fallback_rate",
+    "diary_fallback_entries",
+    "diary_entries_attempted",
+)
+
+# The key the whole ``diary_*`` trio is gated on — the DENOMINATOR, mirroring the
+# writer's own gate (``render_record`` emits all three only when entries were
+# attempted). Gating on the denominator rather than on the rate is the
+# absent-not-zero rule stated from the reading side: a ``diary_fallback_rate`` of
+# ``0.0`` is a real, clean measurement, so presence can never be inferred from
+# truthiness, and a rate is by contract never written without its denominator
+# beside it.
+_DIARY_QUALITY_GATE = "quality.diary_entries_attempted"
+
+
 def _render_quality_section(record: RawRecord) -> str:
+    """The ``quality`` block — run-health counts, or one ``—`` line.
+
+    A whole **absent** ``quality`` block collapses to a single ``—`` line. The
+    four original counts render unconditionally; spec 039's three flat
+    ``diary_*`` keys render **only when the run attempted a diary entry**,
+    positioned between ``games_failed_early`` — the other "did this run measure
+    anything?" count — and ``duration_seconds``, matching the record's own key
+    order.
+
+    **They are run health, not an AI-quality metric**, which is why they live here
+    and not in ``metrics``: ``quality`` is a *census of one run* rather than a
+    sample of a population — ``games_failed_early`` is an exact count — so nothing
+    in this block carries a Wilson band, and ``METRIC_ORDER`` and the metric tail
+    are untouched. The observed fallbacks also cluster by fan-out (a whole Day's
+    entries fail together), violating the independent-Bernoulli assumption a
+    Wilson band rests on, in the direction that would make the band a lie.
+
+    **What they are for.** The diary node falls back to a deterministic
+    placeholder when structured output fails, and a run that measured mostly
+    placeholder text is *not a measurement of diary content* — a 1-game smoke
+    produced 9 of 11 placeholder entries with nothing in the ledger, the
+    transcript or the log saying so. Reading ``diary_fallback_rate`` beside its
+    ``diary_entries_attempted`` denominator is what makes a diaries-on arm
+    self-validating: a high rate is visibly not a measurement of diaries, where
+    before it was indistinguishable from a clean one.
+
+    **Absent, never a misleading zero.** All three are omitted together when no
+    entry was attempted — a diaries-off arm, or any pre-039 record — so absence
+    means "no opportunity", exactly as it does for a denominator-0 metric. The
+    trio is therefore gated on the **denominator** (:data:`_DIARY_QUALITY_GATE`),
+    never on the rate: a genuine ``0.0`` is the *clean* reading and must stay
+    distinct from absence.
+    """
     quality = _dig(record, "quality")
     if not isinstance(quality, dict):
         return _section("quality", [f"  {_ABSENT}"])
-    return _section(
-        "quality",
-        [
-            _field("games_attempted", _dig(record, "quality.games_attempted")),
-            _field("games_completed", _dig(record, "quality.games_completed")),
-            _field("games_failed_early", _dig(record, "quality.games_failed_early")),
-            _field("duration_seconds", _dig(record, "quality.duration_seconds")),
-        ],
-    )
+    lines = [
+        _field("games_attempted", _dig(record, "quality.games_attempted")),
+        _field("games_completed", _dig(record, "quality.games_completed")),
+        _field("games_failed_early", _dig(record, "quality.games_failed_early")),
+    ]
+    if _dig(record, _DIARY_QUALITY_GATE, _MISSING) is not _MISSING:
+        lines += [
+            _field(name, _dig(record, f"quality.{name}"))
+            for name in _DIARY_QUALITY_FIELDS
+        ]
+    lines.append(_field("duration_seconds", _dig(record, "quality.duration_seconds")))
+    return _section("quality", lines)
 
 
 def _render_outcomes_section(record: RawRecord) -> str:

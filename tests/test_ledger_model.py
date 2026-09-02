@@ -339,6 +339,12 @@ def test_columns_are_fixed_columns_then_metric_labels() -> None:
         "Unres (R/N)",
         "Votes (LA/M)",
         "Stand-in",
+        # Spec 039: the diaries ARM column, between ``Stand-in`` and ``Lineup``
+        # so the three settings facts stay contiguous in the record's own key
+        # order. A FIXED (head) column, not a metric one -- diaries is a
+        # setting -- so ``METRIC_ORDER`` is untouched and the assertion below
+        # (metric labels are exactly the tail) still holds unchanged.
+        "Diaries",
         "Lineup",
         "Notes",
     ]
@@ -1175,9 +1181,10 @@ def _detail_section(doc: str, name: str) -> list[str]:
     return lines[start:end]
 
 
-# The ``settings`` section's fixed field labels, in render order — every record
-# with a ``settings`` block gets exactly these, and a *game* record must get
-# NOTHING MORE (the spec-036 ``persona`` sub-block is conditional).
+# The ``settings`` section's UNCONDITIONAL field labels, in render order — every
+# record with a ``settings`` block gets exactly these, and a *game* record that
+# carries no conditional settings key must get NOTHING MORE (the spec-036
+# ``persona`` sub-block and spec 026's ``scripted_player`` line are conditional).
 _SETTINGS_FIXED_LABELS: tuple[str, ...] = (
     "large_model",
     "small_model",
@@ -1185,6 +1192,31 @@ _SETTINGS_FIXED_LABELS: tuple[str, ...] = (
     "games",
     "seed",
     "max_days",
+    "citizens",
+    "mafia",
+)
+
+# The same section for a record that ALSO carries ``settings.scripted_player``
+# (written to every record since spec 026, and first rendered in the drill-down
+# by spec 039's Slice 5). The conditional label lands between ``max_days`` and
+# the lineup pair — the record's own key order.
+#
+# **Written out in full, per fixture, rather than appended to the shared literal
+# above.** Only ONE of the three game fixtures swept below carries the key, so a
+# single shared literal cannot express the contract: appending
+# ``scripted_player`` to it would demand the line of the two fixtures that never
+# had the field (the exact "unconditional ``—`` line on every committed record"
+# regression the conditional branch exists to avoid), while leaving it out would
+# excuse the one fixture that does carry it. Deriving the expectation from the
+# record under test instead would make the assertion agree with itself.
+_SETTINGS_LABELS_WITH_STAND_IN: tuple[str, ...] = (
+    "large_model",
+    "small_model",
+    "base_url",
+    "games",
+    "seed",
+    "max_days",
+    "scripted_player",
     "citizens",
     "mafia",
 )
@@ -1368,24 +1400,45 @@ def test_render_detail_shows_the_persona_knobs_for_a_bench_record(
 
 
 @pytest.mark.parametrize(
-    ("doc", "shape"),
+    ("doc", "expected_labels", "shape"),
     [
-        pytest.param(_FULL_NO_CI_DOC, "full settings, no persona", id="full-no-ci"),
-        pytest.param(_FULL_SPEC029_DOC, "every spec-029 field", id="full-spec029"),
-        pytest.param(_FULL_WITH_CI_DOC, "full + CI band", id="full-with-ci"),
+        pytest.param(
+            _FULL_NO_CI_DOC,
+            _SETTINGS_FIXED_LABELS,
+            "full settings, no persona, no scripted_player",
+            id="full-no-ci",
+        ),
+        pytest.param(
+            _FULL_SPEC029_DOC,
+            _SETTINGS_LABELS_WITH_STAND_IN,
+            "every spec-029 field, incl. scripted_player",
+            id="full-spec029",
+        ),
+        pytest.param(
+            _FULL_WITH_CI_DOC,
+            _SETTINGS_FIXED_LABELS,
+            "full + CI band, no scripted_player",
+            id="full-with-ci",
+        ),
     ],
 )
 def test_render_detail_omits_the_persona_block_for_a_game_record(
     tmp_path: Path,
     doc: str,
+    expected_labels: tuple[str, ...],
     shape: str,
 ) -> None:
     """A game record's ``settings`` section gains NO line — not even an em-dash.
 
     The conditional half, pinned on the WHOLE section rather than a substring: a
-    record without ``settings.persona`` renders exactly the eight fixed labels it
-    always did. Four unconditional ``—`` lines on every committed game record is
-    the regression this test exists to fail on.
+    record without ``settings.persona`` renders exactly the labels its own record
+    carries — the eight unconditional ones, plus spec 026's ``scripted_player``
+    on the one fixture of the three that has the field (spec 039's Slice 5 gave
+    that long-written-but-never-rendered key its drill-down line). Four
+    unconditional ``—`` lines on every committed game record is the regression
+    this test exists to fail on, and a ``scripted_player: —`` line on the two
+    fixtures without the field is the same regression one key over — which is
+    why the expectation is PER FIXTURE and not one shared literal.
     """
     records = load_ledger(_write_ledger(tmp_path, doc))
     (record,) = records
@@ -1393,7 +1446,7 @@ def test_render_detail_omits_the_persona_block_for_a_game_record(
     section = _detail_section(render_detail(record), "settings")
 
     labels = [line.split(":", 1)[0].strip() for line in section[1:]]
-    assert labels == list(_SETTINGS_FIXED_LABELS), shape
+    assert labels == list(expected_labels), shape
     assert "persona:" not in "\n".join(section), shape
 
 

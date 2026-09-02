@@ -48,6 +48,7 @@ from graphia.eval_ledger import (
     KIND_ATTR,
     KIND_ATTR_LAW_ABIDING,
     KIND_ATTR_MAFIA,
+    KIND_DIARY,
     KIND_FIELD_LABEL,
     KIND_MARKER,
     KIND_PLAIN,
@@ -2970,6 +2971,14 @@ _HIGHLIGHT_BODY = (
     '<thought player="Alice">Bo suspects me.</thought>\n'
     "<recap>Alive: Alice, Bo.</recap>\n"
     "  </round>\n"
+    # SPEC 039 ADDED THIS LINE, and where it sits is half of what it says: a
+    # diary is the DAY'S TRAILER, so `_render_phases` puts it between the last
+    # `</round>` and `</day>` — "between the day it was written about and the
+    # Night that followed". Bo is the owner because he is the fixture's
+    # `role="Mafia"` cast entry, so the tag also carries the side-bearing owner
+    # (`attr-mafia`) beside an achromatic Day value, which is spec 039's own
+    # split in a single tag.
+    '<diary player="Bo" day="1">Cleo folded under pressure.</diary>\n'
     "</day>\n"
     "</transcript>"
 )
@@ -3071,6 +3080,22 @@ _HIGHLIGHT_EXPECTED_STYLED_TEXTS = [
     "Alive: Alice, Bo.",  # recap
     "</recap>",  # marker
     "</round>",  # marker
+    # ...and spec 039's diary, in the Day's trailer AFTER that `</round>`. Seven
+    # runs: three head pieces, the owner, the Day, the body and the closing tag.
+    # The two attribute values sit side by side in one tag and take DIFFERENT
+    # kinds — the owner's name carries Bo's side, the Day carries none — which is
+    # the widget-level statement of spec 039's attribute rule.
+    '<diary player="',  # marker
+    "Bo",  # attr-mafia
+    '" day="',  # marker
+    "1",  # attr
+    '">',  # marker
+    # Never side-tinted although its owner is: a private reflection is not an act
+    # of allegiance. Its rule is `thought`'s plus `underline` — asserted as a
+    # RELATION in `test_the_diary_style_is_the_thoughts_rule_plus_underline`,
+    # never as a colour.
+    "Cleo folded under pressure.",  # diary
+    "</diary>",  # marker
     "</day>",  # marker
     "</transcript>",  # marker
 ]
@@ -3384,6 +3409,15 @@ async def test_the_rendered_body_carries_a_span_per_styled_run_at_exact_offsets(
         for opening, body, closing in (
             ('<thought player="Alice">', "Bo suspects me.", "</thought>"),
             ("<recap>", "Alive: Alice, Bo.", "</recap>"),
+            # Spec 039's third inline body, and the one whose opening tag ends in
+            # an `attr` run rather than a bare `>` — so `start in by_end` is
+            # checking that the tag's LAST piece stops at the body, not that some
+            # single-span tag does.
+            (
+                '<diary player="Bo" day="1">',
+                "Cleo folded under pressure.",
+                "</diary>",
+            ),
         ):
             element = content.plain.index(opening + body + closing)
             start = element + len(opening)
@@ -3413,11 +3447,19 @@ async def test_no_rendered_span_covers_a_newline(tmp_path: Path) -> None:
     LAST thing on their line, which is precisely where a body whose extent was
     computed from the wrong end would take the separator with it.
 
-    Slice 4 moves it to 48: two more cast entries (six painted runs each, since
+    Slice 4 moved it to 48: two more cast entries (six painted runs each, since
     `(no persona recorded)` is content) and two more spoken lines. No boundary
-    moved — the slice re-kinds spans and never re-splits one — so the growth is
+    moved — the slice re-kinds spans and never re-splits one — so the growth was
     entirely the longer fixture, and a count that came out at anything other than
-    48 would mean the side split had touched a boundary after all.
+    48 would have meant the side split had touched a boundary after all.
+
+    Spec 039 moves it to 55, and the arithmetic is the same argument one more
+    time: seven runs, all from the single `<diary player="Bo" day="1">…</diary>`
+    line in the Day's trailer, and not one existing boundary touched. The diary
+    is the LAST thing on its line — the same position that made Slice 3's thought
+    and recap the sharp cases here — so a body whose extent were computed from
+    the wrong end would take the separator with it and be caught by the
+    `offenders` check below rather than by the count.
     """
     ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="hl-newline.yaml")
 
@@ -3427,7 +3469,7 @@ async def test_no_rendered_span_covers_a_newline(tmp_path: Path) -> None:
         screen = await _open_the_only_game(pilot)
         runs = _rendered_runs(_transcript_body_content(screen))
 
-        assert len(runs) == len(_HIGHLIGHT_EXPECTED_STYLED_TEXTS) == 48
+        assert len(runs) == len(_HIGHLIGHT_EXPECTED_STYLED_TEXTS) == 55
         offenders = [text for _, _, text in runs if "\n" in text]
         assert not offenders, f"styled runs carrying a newline: {offenders}"
 
@@ -3608,6 +3650,103 @@ async def test_each_seat_style_is_its_side_mates_colour_plus_bold(
             )
             == 3
         )
+
+
+async def test_the_diary_style_is_the_thoughts_rule_plus_underline(
+    tmp_path: Path,
+) -> None:
+    """Spec 039's rule, asserted as a RELATION to the rule it is derived from.
+
+    Tech-spec 039 §2.8 does not describe the diary's appearance in colours; it
+    describes it as an operation on an existing rule — "the body style is
+    `thought`'s rule plus `underline`", the same shape Slice 5 used for the
+    reviewer's seat ("its side's colour plus bold, and nothing else"). So that is
+    what is asserted, and asserting anything else would be worse: rendered colour
+    is theme-dependent (`$text-muted` resolves differently on `textual-dark`,
+    `textual-light` and `textual-ansi`), spec 037 established it is a poor test
+    subject, and a hue pinned here would be wrong under one theme and meaningless
+    under another. The RELATION holds under all three.
+
+    Read through `_kind_styles`, which is where the CSS actually becomes the
+    style a span carries — so a rule that parsed but resolved to nothing (Textual
+    silently drops `overline`, the axis this design measured dead and rejected
+    for exactly that reason) fails here rather than looking right in the
+    stylesheet and painting nothing.
+
+    Four claims, and the third is the one the whole design turns on:
+
+    * **same colour as a thought**, and not None — a diary is a thought's
+      sibling, both private and neither an act of allegiance, so the family trait
+      is inherited rather than merely asserted;
+    * **both are italic** — the second half of that inheritance, and what makes a
+      diary read as a thought's sibling at all;
+    * **the diary is underlined and the thought is NOT.** This is the entire
+      differentia. The hard problem is not telling a diary from body text; it is
+      telling it from a `thought`, the one kind it shares a colour and a register
+      with. Under `textual-ansi` both colours collapse to the terminal default
+      and this single SGR flag is *all* that separates them;
+    * **exactly one axis**, so `bold` (Slice 5's, on a player's line) and
+      `reverse` (`recap`'s scroll landmark) are both absent. Without this the
+      third claim would pass on a stylesheet that piled on every flag it could
+      and re-collided the diary with two other kinds.
+
+    The last assertion is the non-vacuity guard the pairing cannot supply: a
+    thought's colour must differ from a side's, or "the diary is a thought's
+    colour" would hold trivially on a stylesheet where every kind is the body
+    colour.
+    """
+    module = importlib.import_module("graphia.ui.ledger_viewer")
+    # The class name as a WRITTEN-OUT LITERAL, because the mapping's own guard
+    # (`set(mapping.values()) <= set(TranscriptScreen.COMPONENT_CLASSES)`) reads
+    # two production tables against each other and would agree with itself
+    # through a rename of both. The resolved-style assertions below are the real
+    # protection — a class the stylesheet does not name resolves to a default
+    # style and fails them — and this line is what makes the failure say *which*
+    # of the three spellings drifted.
+    assert module._TRANSCRIPT_KIND_COMPONENTS[KIND_DIARY] == "transcript--diary"
+
+    ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="hl-diary-style.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        styles = screen._kind_styles()
+
+        diary, thought = styles[KIND_DIARY], styles[KIND_THOUGHT]
+
+        assert diary.color == thought.color, (
+            "a diary is a thought's sibling and must inherit its colour — a "
+            "private reflection is not an act of allegiance, whichever kind it is"
+        )
+        assert diary.color is not None, (
+            "the diary rule resolved to no colour at all, so the equality above "
+            "is vacuous"
+        )
+        assert diary.italic is True and thought.italic is True, (
+            "italic is the inherited half; dropping it from either would stop a "
+            "diary reading as a thought's sibling"
+        )
+        assert diary.underline is True, "the diary is not underlined"
+        assert thought.underline is not True, (
+            "a thought is underlined too, so underline no longer separates the "
+            "day trailer from the round bodies above it — which is the one thing "
+            "a diary being its own kind exists to say"
+        )
+        # Exactly ONE axis: the two flags already spoken for stay unspoken here.
+        assert diary.bold is not True, (
+            "bold is the reviewer's own seat (Slice 5); a diary body wearing it "
+            "puts a player's private note in the seat's register"
+        )
+        assert diary.reverse is not True, (
+            "reverse is `recap`'s scroll landmark; a second inverted block files "
+            "the moderator's posted fact and a player's private note as one look"
+        )
+
+        # ...and a thought's colour really is not a side's, so "the diary is a
+        # thought's colour" is saying something.
+        assert thought.color != styles[KIND_SPEECH_MAFIA].color
+        assert thought.color != styles[KIND_SPEECH_LAW_ABIDING].color
 
 
 # ---------------------------------------------------------------------------

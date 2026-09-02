@@ -204,6 +204,7 @@ async def _run_invocation(
             context_token_budget=_config.context_token_budget,
             private_thoughts_enabled=_config.private_thoughts_enabled,
             night_roster_shuffle_enabled=_config.night_roster_shuffle_enabled,
+            private_diaries_enabled=_config.private_diaries_enabled,
             persona_diversity_enabled=_config.persona_diversity_enabled,
             persona_collision_threshold=_config.persona_collision_threshold,
             persona_regen_attempts=_config.persona_regen_attempts,

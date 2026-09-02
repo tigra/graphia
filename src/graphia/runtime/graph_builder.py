@@ -46,6 +46,7 @@ def build_runtime_graph(
     context_token_budget: int = 20000,
     private_thoughts_enabled: bool = True,
     night_roster_shuffle_enabled: bool = True,
+    private_diaries_enabled: bool = True,
     persona_diversity_enabled: bool = True,
     persona_collision_threshold: float = 0.6,
     persona_regen_attempts: int = 2,
@@ -116,6 +117,13 @@ def build_runtime_graph(
     requirement: both builders must thread it. Defaults to ``True`` (matching the
     config default).
 
+    ``private_diaries_enabled`` (spec 039, ADR 011) is threaded the same way —
+    the production entrypoint passes ``load_config().private_diaries_enabled`` —
+    so the deployed Runtime runs the ``day_diary`` node at the Day→Night hinge
+    (and, when off, writes no entry at all) by the same ablation flag as local
+    mode. Same anti-drift requirement: both builders must thread it. Defaults to
+    ``True`` (matching the config default).
+
     ``persona_diversity_enabled`` (spec 034, ADR 011) plus its three tunables —
     ``persona_collision_threshold`` / ``persona_regen_attempts`` /
     ``persona_temperature`` — are threaded the same way; the production entrypoint
@@ -149,6 +157,7 @@ def build_runtime_graph(
         context_token_budget=context_token_budget,
         private_thoughts_enabled=private_thoughts_enabled,
         night_roster_shuffle_enabled=night_roster_shuffle_enabled,
+        private_diaries_enabled=private_diaries_enabled,
         persona_diversity_enabled=persona_diversity_enabled,
         persona_collision_threshold=persona_collision_threshold,
         persona_regen_attempts=persona_regen_attempts,

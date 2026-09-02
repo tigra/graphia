@@ -384,6 +384,34 @@ class Reflection(BaseModel):
     thought: str
 
 
+class Diary(BaseModel):
+    """A single AI player's private end-of-Day diary entry (spec 039).
+
+    Kept deliberately flat with one primitive field — the same Bedrock-Converse
+    constraint that shapes ``Roster`` / ``Pointing`` / ``Ballot`` / ``DayAction``
+    / ``Reflection`` (no nested or discriminated shapes). ``entry`` is the
+    once-per-day-cycle private note a surviving AI player writes just before
+    Night: a summing-up of the whole day, deliberately LONGER than spec 028's
+    per-round ``Reflection`` (which reacts to a single round), and seen by no
+    other player and never by the human.
+
+    **Three names, three things** — the collision is deliberate to record here
+    because it is easy to conflate:
+
+    - ``Diary`` (this class) — the structured-output schema the model fills in.
+    - ``graphia.state.DiaryRecord`` — the ``GameState`` channel entry (the text
+      plus its ``day`` and cross-channel interleave cursor).
+    - ``graphia.diary_store.DiaryEntry`` — the persistence DTO the AgentCore
+      Memory-backed store reads and writes. **Unchanged by spec 039.**
+
+    The diary node accepts a non-empty ``entry`` and otherwise falls back to a
+    deterministic placeholder, so a model hiccup never blanks the channel and
+    the tests stay non-flaky (the posture ``Reflection`` already documents).
+    """
+
+    entry: str
+
+
 class DayAction(BaseModel):
     """Flat schema for a Day-phase action.
 

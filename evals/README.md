@@ -148,6 +148,7 @@ settings:                       # the EFFECTIVE resolved values, so a run can be
   seed: 20260613                # base structural seed (null = unseeded; game i used seed+i)
   max_days: 12                  # runaway Day cap (spec 023; null = not applicable, e.g. a bench run)
   scripted_player: 'active'     # spec 026 — human-seat stand-in: 'active' or 'passive' (omitted on pre-026 records → read as 'passive')
+  private_diaries_enabled: true # spec 039 — which ARM of the private-diaries A/B this run measured; OMITTED (never false) on pre-039 records
   persona:                      # spec 036 — persona-bench runs ONLY: the knobs the generation ran under (whole sub-map omitted for a game run)
     diversity_enabled: true     # the --diversity ARM actually invoked, NOT the ambient config default
     collision_threshold: 0.6    # the similarity bar at which two personas count as too alike
@@ -157,6 +158,11 @@ quality:                        # so a degenerate run cannot masquerade as a cle
   games_attempted: 5            # UNIT FOLLOWS run.kind — games for a game run, ROSTERS for a persona-bench run
   games_completed: 5
   games_failed_early: 0         # games that raised mid-run and were skipped
+  # spec 039 — RUN HEALTH, not an AI-quality metric, and no Wilson band (see the `quality` bullet).
+  # All three are OMITTED TOGETHER when the run attempted no diary entry — absent, never a 0.0.
+  diary_fallback_rate: 0.045    # placeholder entries / entries attempted (derived once, at write time)
+  diary_fallback_entries: 2     # diary entries that came out as the node's deterministic placeholder
+  diary_entries_attempted: 44   # THE DENOMINATOR — the rate is never written without it
   duration_seconds: 412.3       # same wall-clock duration, mirrored beside the run-quality counts
 outcomes:                       # win-rate by side over the COMPLETED games — four buckets that partition the run
   games: 20                     # completed-game denominator (failed-early games excluded)
@@ -249,7 +255,11 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   what makes a flag-on / flag-off pair readable **as a pair**: recording the
   default would silently mislabel every flag-off arm. Conditional and additive
   like every other new field — a game run omits the whole sub-map, so existing
-  records are untouched.
+  records are untouched. A record also carries
+  **`private_diaries_enabled`** (spec 039) when the run could state which arm of
+  the private-diaries A/B it measured — see
+  [`settings.private_diaries_enabled`](#settingsprivate_diaries_enabled) below,
+  which is also where the absence rule and the definition of a valid pair live.
 - **`quality`** — run-quality counts so a degenerate run can't pass as a clean
   baseline: `games_attempted`, `games_completed`, `games_failed_early` (games
   that raised mid-run and were skipped), and `duration_seconds` (mirrored from
@@ -258,6 +268,48 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   reused rather than forked into a parallel set, so one renderer and one viewer
   keep serving both kinds; `run.kind` is the single field that says what is being
   counted. See [`run.kind`](#runkind).
+
+  A run that **attempted at least one diary entry** additionally carries three
+  flat spec-039 keys, between `games_failed_early` and `duration_seconds`:
+  **`diary_fallback_rate`**, **`diary_fallback_entries`** and
+  **`diary_entries_attempted`**.
+
+  - **What they are for.** The diary node writes a fixed, deterministic
+    placeholder whenever its structured-output call fails, and a run that
+    measured mostly placeholder text is **not a measurement of diary content at
+    all** — it just looks like one. A 1-game smoke produced **9 of 11**
+    byte-identical placeholder entries and said so nowhere: not in the ledger,
+    not in the transcript, and not in the log (`blunder_eval` installs no logging
+    handler, so the node's `logger.exception` is *not* an observability channel
+    for a measured run). These keys make a diaries-on arm **self-validating** —
+    a run reading `diary_fallback_rate: 0.82` is visibly not a measurement of
+    diaries, where before it was indistinguishable from a clean one. Read the
+    rate **beside its `diary_entries_attempted` denominator**, always; the
+    denominator is small (a handful of entries per game) and the rate alone
+    reads as certainty it has not earned.
+  - **Run health, not a metric — so no Wilson band.** They sit in `quality`
+    beside `games_failed_early`, the other "did this run measure anything?"
+    count, and deliberately **not** in `metrics`: `METRIC_ORDER` and the metric
+    tail are untouched. `quality` is a **census of one run** rather than a sample
+    of a population — `games_failed_early: 3` is an exact count, which is why
+    nothing in this block carries an interval — and the observed fallbacks
+    **cluster by fan-out** (a whole Day's entries fail together), violating the
+    independent-Bernoulli assumption a Wilson band rests on, in the direction
+    that would make the band a lie.
+  - **Flat, and the rate is derived once.** Three flat scalars matching
+    `quality`'s existing shape, not `metrics`' nested `{rate, count,
+    denominator}` facet — this must not *read* as a scored metric. The rate is
+    computed at write time from the count and the denominator, so there is exactly
+    one definition of it; the viewer displays the recorded value rather than
+    recomputing it.
+  - **Absent, never a misleading zero.** All three are **omitted together** when
+    the run attempted no diary entry — a diaries-off arm, a `persona-bench`
+    record, or any record written before spec 039 — exactly like a metric whose
+    denominator was 0. Absence means *no opportunity*, and `0.0` is the distinct,
+    genuinely *clean* reading. The gate is the **denominator**, not the arm
+    label: an off-arm run that somehow *did* write entries (an ADR-011 parity
+    break) is counted rather than hidden, and an on-arm run that had no
+    opportunity records nothing rather than a flattering `0.0`.
 - **`outcomes`** — win-rate by side over the run's **completed** games (so a
   reader can ask "did this fix help one side win more?"); see
   [`outcomes`](#outcomes) below.
@@ -392,6 +444,48 @@ measured* as a difference in *quality*. So a comparison means something only whe
 **kind, provider and `metrics_version` all match**: diff two bench records
 against each other, or two game records — never one of each. Filtering the viewer
 by `Kind` before reading down a column is the practical form of the rule.
+
+### settings.private_diaries_enabled
+
+`settings.private_diaries_enabled` (spec 039, _Per-AI Private Diaries_) is the
+**arm label**: which side of the diaries-on / diaries-off comparison a run
+measured. A boolean, recorded from the arm the run was actually **invoked** with
+(`make blunder-eval ARGS="--diaries on|off"`), *not* the ambient config default —
+recording the default would silently mislabel every off arm, the same trap
+`settings.persona.diversity_enabled` documents. The harness **refuses to start**
+rather than guess: a config that cannot answer fails before game 1, because a
+record without a truthful arm label is worthless and 30 minutes of tokens spent
+on an unlabelled record cannot be recovered (the ledger is append-only).
+
+**Absence is a third case, and it does not mean `false`.** The ledger already has
+two absent-means-something fields — `settings.scripted_player` (absent ⇒ read as
+the prior default `'passive'`) and `run.kind` (absent ⇒ "a played game"). This is
+neither. A record without this key was played by a build in which **the diary
+feature did not exist at all**; it is not the claim "this run measured the off
+arm". So it renders **blank** in the viewer — both in the `Diaries` column and in
+the drill-down, which gains no line at all — and never `false`, which would
+assert a measurement nobody made. The practical consequence: **a pre-039 record
+is not the other half of an A/B pair.** All 30 records committed before spec 039
+omit the key, and none of them is a control arm for a diaries-on run.
+
+**What a valid pair is.** Two **spec-039-era** records — both carrying the key —
+that agree on everything except the arm:
+
+- the same **`code.commit`** (and both `code.dirty: false`, or the numbers are
+  not attributable to any recorded version at all);
+- the same **`provider.name`** (an Ollama record and a Bedrock record are
+  different measurements — runs are made per provider);
+- the same **`run.kind`** (see [`run.kind`](#runkind));
+- the same **`run.metrics_version`** (see [Versioning and older
+  records](#versioning-and-older-records));
+
+…and differing **only** in `private_diaries_enabled`. Anything else that differs
+between the two records is a second variable, and a difference in the numbers can
+then no longer be attributed to the diaries. On a diaries-**on** arm, read
+[`quality.diary_fallback_rate`](#record-shape--field-legend) before reading the
+arm's results: a high fallback share means the on arm measured the deterministic
+placeholder rather than diary content, so the pair is not a comparison of what it
+claims to be.
 
 ### outcomes
 
@@ -551,3 +645,20 @@ rewritten**.
   the spec-036 boundary, on the same precedent as `ci_low` / `ci_high` and the
   spec-013 blocks above. Comparability *across kinds* is a separate and stricter
   matter — see [`run.kind`](#runkind).
+- **Records written before spec 039 lack `settings.private_diaries_enabled` and
+  the three `quality.diary_*` keys.** All 30 records committed before spec 039
+  omit them. Neither absence is a gap to be backfilled, and the two mean
+  different things: the missing **arm label** means *the diary feature did not
+  exist in that build*, so such a record is **not** the off arm of an A/B pair
+  (see
+  [`settings.private_diaries_enabled`](#settingsprivate_diaries_enabled)), while
+  the missing **`diary_*`** keys mean *no diary entry was attempted*, the same
+  **Absent ≠ 0** rule the metric family follows. Their arrival **did not bump
+  `metrics_version`**: one settings field plus one run-health census change no
+  detection rule and no denominator definition, no scorer reads either of them,
+  and `METRIC_ORDER` and the metric tail are untouched — so every blunder `rate`
+  stays cross-comparable across the spec-039 boundary, on exactly the precedent
+  of `ci_low` / `ci_high`, the spec-013 `outcomes` / `vote_activity` blocks and
+  the spec-036 fields above. A bump would have falsely flagged all 30 committed
+  rates as incomparable. What the arm label does instead is **narrow** the
+  comparability contract, in the one place it can be read — the record itself.

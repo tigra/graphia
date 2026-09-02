@@ -25,6 +25,7 @@ Topology contract (Slice 7):
 from __future__ import annotations
 
 import dataclasses
+import logging
 import random
 from typing import cast
 
@@ -38,7 +39,8 @@ from graphia.career_events import (
     CareerEvent,
     CareerEventEmitter,
 )
-from graphia.llm import Ballot, DayAction, Reflection, get_large
+from graphia.diary_store import DiaryStore
+from graphia.llm import Ballot, DayAction, Diary, Reflection, get_large
 from graphia.prompts import (
     AI_VOTE_SYSTEM,
     AI_VOTE_USER_TEMPLATE,
@@ -47,6 +49,8 @@ from graphia.prompts import (
     DAY_ROUND_RECAP_TEMPLATE,
     DAY_SPEAK_SYSTEM,
     DAY_SPEAK_USER_TEMPLATE,
+    DIARY_SYSTEM,
+    DIARY_USER_TEMPLATE,
     REFLECTION_SYSTEM,
     REFLECTION_USER_TEMPLATE,
     ROLE_GUIDANCE_LABEL,
@@ -58,7 +62,15 @@ from graphia.prompts import (
     VOTE_PER_BALLOT_TEMPLATE,
     VOTE_TALLY_TEMPLATE,
 )
-from graphia.state import ActiveVote, GameState, KillRecord, PlayerState
+from graphia.state import (
+    ActiveVote,
+    DiaryRecord,
+    GameState,
+    KillRecord,
+    PlayerState,
+)
+
+logger = logging.getLogger(__name__)
 
 # The Day ends automatically after this many rounds with no vote called.
 DAY_MAX_ROUNDS = 6
@@ -396,6 +408,144 @@ def _private_thoughts_block(thoughts: list[str], *, enabled: bool) -> str:
     return f"\n{PRIVATE_THOUGHTS_LABEL}\n{bullets}\n"
 
 
+# The tag that marks a DIARY line inside the merged private-record block (spec
+# 039 §2.4) — the analogue of ``PRIVATE_THOUGHTS_LABEL``: the structural marker
+# the ``GRAPHIA_PRIVATE_DIARIES`` ablation flag (ADR 011) toggles and the tests
+# assert on. Only the diary lines carry it; thought lines stay bare ``- `` items
+# exactly as spec 028 renders them, so turning diaries ON is PURELY an insertion
+# of new lines into an otherwise unchanged block.
+#
+# Deliberately the INVARIANT PREFIX of the tag rather than a ``"…{day}]"``
+# template. The rendered tag closes with the Day number and a ``]`` —
+# ``- [Diary — end of Day 2] …`` — so a template constant would make the
+# flag-off assertion ``DIARY_LINE_MARKER not in prompt`` VACUOUSLY true (a
+# literal ``{day}`` never appears in a rendered prompt), which is exactly the
+# vacuity shape this spec's implementer notes warn about. As a prefix it is
+# present in every diary line and absent whenever no diary is shown.
+DIARY_LINE_MARKER = "[Diary — end of Day"
+
+# How many of a player's own most recent diary entries reach its decisions —
+# the functional spec's "Only the three most recent entries are carried
+# forward". Applied ONCE, in ``_private_record_block`` (spec 039 §2.5):
+#
+# - NOT at write time, which would destroy "every entry ever written is still
+#   kept in the record of the game": the ``private_diaries`` channel and the
+#   eval transcript keep the full history, and only what a player REASONS from
+#   is windowed.
+# - NOT at the four call sites (``_ai_day_action``, ``_ai_ballot``,
+#   ``_ai_pick_target``, ``_ai_diary``), which would be four copies of one
+#   constant — one drifts and one decision silently reasons from a different
+#   window than the other three.
+#
+# A CONSTANT, not a config knob: the functional spec fixes it at three, and
+# ADR 011 asks for an ablation flag, not a tunable.
+DIARY_WINDOW = 3
+
+
+def _private_record_block(
+    thoughts: list[str],
+    diaries: list[DiaryRecord] | None = None,
+    *,
+    thoughts_enabled: bool,
+    diaries_enabled: bool,
+) -> str:
+    """Render ONE player's merged private record for the ``{private_thoughts}`` slot.
+
+    Spec 039 §2.4. Spec 028's Day-round thoughts and spec 039's before-Night
+    diaries are two channels that must read as ONE train of thought in event
+    order, so they share the EXISTING slot rather than taking a second one — a
+    fourth ``{diaries}`` slot would ``KeyError`` at 16 ``.format()`` call sites
+    and, decisively, two slots are two positions and cannot express event order
+    across each other at all.
+
+    BYTE-IDENTITY BY CONSTRUCTION, NOT BY ASSERTION. When there is no diary to
+    show — the flag is off, or none has been written yet, which is all of Day 1
+    in every game — this returns ``_private_thoughts_block(thoughts,
+    enabled=thoughts_enabled)`` VERBATIM. The spec-028 rendering is therefore
+    not reproduced here, it is *called*, so no test can be true of this function
+    and false of that one, and the change is invisible until the first diary
+    exists. ``_private_thoughts_block`` keeps its signature, its docstring, its
+    unit tests and its remaining caller ``_ai_reflect``.
+
+    The cross-product of the two ADR-011 flags (new contract surface):
+
+    ==================  =================  ==================================
+    ``thoughts_enabled``  ``diaries_enabled``  Block
+    ==================  =================  ==================================
+    ON                  OFF                Exactly 028's block, by delegation
+    OFF                 OFF                ``""`` — byte-identical to pre-028
+    ON                  ON, none written   Exactly 028's block, by delegation
+    ON                  ON, entries exist  Merged, interleaved, tagged, windowed
+    OFF                 ON                 Heading + tagged diary lines only
+    ==================  =================  ==================================
+
+    From spec 039 on, reproducing PRE-028 prompt bytes needs BOTH flags off,
+    because the two features share one slot.
+
+    THE MERGE RULE (the ``thoughts_before`` cursor — see :class:`DiaryRecord`).
+    028's channel holds bare strings with no ordering metadata and spec 039 must
+    not touch it, so all the ordering information lives on the diary side: each
+    entry records how many thoughts that player had written when it was set
+    down. Walk the diaries in order; before diary *i*, emit every
+    not-yet-emitted thought at index ``< thoughts_before`` of that entry; after
+    the last diary, emit the remainder. A stable two-way merge, not a sort — the
+    cursors are non-decreasing because thoughts only ever accumulate and the two
+    writing nodes never share a super-step.
+
+    THE WINDOW IS APPLIED BEFORE THE MERGE, and that ordering is correct rather
+    than incidental: thoughts are indexed independently of diaries, so dropping
+    the oldest diary removes only its own line and the surviving cursors still
+    partition the thought list exactly as before. Merging first and then trying
+    to drop a diary line would have to decide what to do with the thoughts that
+    entry's cursor was gating. Note the asymmetry this leaves, inherited from
+    028 and deliberately NOT fixed here: thoughts are unwindowed, so the merged
+    block stays unbounded in that dimension (spec 025's ``context_window`` /
+    ``context_token_budget`` govern only ``_render_context``).
+
+    Only ever passed ONE player's own thoughts and own diaries, keyed at the
+    call site on the acting player's id — a player never receives another
+    player's private record. PURE: no state read beyond the two passed lists, no
+    RNG, no LLM, no ``set`` iteration, so the dual-mode byte-equal smoke is
+    unaffected. Defensive over the channel's shape the way
+    ``eval_transcript._append_diaries`` is: ``DiaryRecord`` is
+    ``total=False``, so every field is read through ``.get`` with a default and
+    a nonsensical cursor degrades to 0 rather than raising inside a prompt
+    build.
+    """
+    # The window, before the merge. ``diaries_enabled`` off collapses to the
+    # empty window, which is the same "nothing to show" case as no entries yet
+    # — one branch, so the two byte-identity cells cannot diverge.
+    window = diaries[-DIARY_WINDOW:] if diaries_enabled and diaries else []
+    if not window:
+        return _private_thoughts_block(thoughts, enabled=thoughts_enabled)
+
+    notes = list(thoughts) if thoughts_enabled else []
+    lines: list[str] = []
+    emitted = 0
+    for record in window:
+        cursor = record.get("thoughts_before", 0)
+        if isinstance(cursor, bool) or not isinstance(cursor, int):
+            cursor = 0
+        # ``max(emitted, …)`` keeps the walk monotone even if a cursor went
+        # backwards; ``min(…, len(notes))`` covers a cursor pointing past the
+        # notes actually in hand (a diary written with thoughts ON, read back
+        # with thoughts OFF).
+        stop = max(emitted, min(cursor, len(notes)))
+        lines.extend(f"- {note}" for note in notes[emitted:stop])
+        emitted = stop
+        # A record with no usable ``day`` still carries an entry worth showing,
+        # so the tag renders with a placeholder rather than the line being
+        # dropped — the same reasoning ``_diary_day_attr`` uses to omit the
+        # transcript attribute and still render the element.
+        day = record.get("day", "?")
+        text = record.get("text", "")
+        lines.append(f"- {DIARY_LINE_MARKER} {day}] {text}".rstrip())
+    lines.extend(f"- {note}" for note in notes[emitted:])
+
+    bullets = "\n".join(lines)
+    return f"\n{PRIVATE_THOUGHTS_LABEL}\n{bullets}\n"
+
+
 # In-world clock for the Day's rounds (spec 020): round 1 is morning, advancing
 # one step per round toward midnight at round 6, so the recap reads like the Day
 # burning down toward Night. Indexed by ``round - 1`` after clamping.
@@ -671,6 +821,8 @@ def _ai_day_action(
     context_token_budget: int | None = None,
     private_thoughts: list[str] | None = None,
     private_thoughts_enabled: bool = True,
+    diaries: list[DiaryRecord] | None = None,
+    diaries_enabled: bool = True,
 ) -> DayAction:
     """Call the gameplay model for the AI's speaking turn. Returns a DayAction.
 
@@ -698,6 +850,18 @@ def _ai_day_action(
     its pre-028 form. ``private_thoughts`` defaults to no notes so direct test
     calls stay byte-identical; the caller passes only the acting player's own
     notes (``state["private_thoughts"].get(speaker.id, [])``).
+
+    ``diaries`` / ``diaries_enabled`` (spec 039 ablation flag, ADR 011) extend
+    that SAME slot rather than taking a fourth one: the block is built by
+    ``_private_record_block``, which merges this speaker's own before-Night
+    diary entries into its own Day-round thoughts in event order (each entry's
+    ``thoughts_before`` cursor) and windows the diaries to ``DIARY_WINDOW``.
+    With no diary to show — flag off, or none written yet, which is all of Day 1
+    in every game — it delegates to ``_private_thoughts_block`` verbatim, so
+    spec 028's rendering is preserved BY CONSTRUCTION. Defaulted to no entries /
+    ON so existing direct test calls stay byte-identical; the caller passes only
+    the acting player's own entries
+    (``state["private_diaries"].get(speaker.id, [])``).
     """
     players = state.get("players", {})
     roster = _render_alive_roster(players)
@@ -736,8 +900,11 @@ def _ai_day_action(
                 ),
                 roster=roster,
                 context=context,
-                private_thoughts=_private_thoughts_block(
-                    private_thoughts or [], enabled=private_thoughts_enabled
+                private_thoughts=_private_record_block(
+                    private_thoughts or [],
+                    diaries or [],
+                    thoughts_enabled=private_thoughts_enabled,
+                    diaries_enabled=diaries_enabled,
                 ),
                 role_guidance=_role_guidance_block(
                     speaker.role, enabled=role_guidance_enabled
@@ -945,6 +1112,7 @@ def day_turn(
     context_window: int = _CONTEXT_WINDOW,
     context_token_budget: int | None = None,
     private_thoughts_enabled: bool = True,
+    private_diaries_enabled: bool = True,
 ) -> dict:
     """Run exactly one player's Day turn, then advance bookkeeping.
 
@@ -958,6 +1126,14 @@ def day_turn(
     next ``day_turn`` invocation starts the next round cleanly. The
     conditional edge then decides between looping, voting, or transitioning
     to ``day_close``.
+
+    ``private_diaries_enabled`` (spec 039 ablation flag, ADR 011) is bound by
+    ``_assemble_graph`` and threaded into the AI speaker's prompt alongside the
+    spec-028 ``private_thoughts_enabled``: the two share ONE
+    ``{private_thoughts}`` slot, rendered by ``_private_record_block``, so an AI
+    player speaks from its own thoughts and its own diaries as one train of
+    thought in event order. Defaulted ON so direct test calls / both builders
+    stay valid.
     """
     players = state.get("players", {})
     order: list[str] = list(state.get("day_order", []))
@@ -1072,6 +1248,10 @@ def day_turn(
             context_token_budget=context_token_budget,
             private_thoughts=state.get("private_thoughts", {}).get(player.id, []),
             private_thoughts_enabled=private_thoughts_enabled,
+            # ONLY this speaker's own entries, keyed on its own id — the
+            # highest-stakes invariant in spec 039. Never the whole channel.
+            diaries=state.get("private_diaries", {}).get(player.id, []),
+            diaries_enabled=private_diaries_enabled,
         )
         if action.kind == "vote":
             assert action.target_id is not None  # validated in _ai_day_action
@@ -1146,6 +1326,8 @@ def _ai_ballot(
     context_token_budget: int | None = None,
     private_thoughts: list[str] | None = None,
     private_thoughts_enabled: bool = True,
+    diaries: list[DiaryRecord] | None = None,
+    diaries_enabled: bool = True,
 ) -> Ballot:
     """Ask the gameplay model for a Yes/No ballot. Conservative fallback.
 
@@ -1167,6 +1349,15 @@ def _ai_ballot(
     voter's own accumulated reflections; OFF (or empty) reverts the prompt to its
     pre-028 form. The caller passes only the voter's own notes
     (``state["private_thoughts"].get(voter.id, [])``).
+
+    ``diaries`` / ``diaries_enabled`` (spec 039 ablation flag, ADR 011) extend
+    that SAME slot: ``_private_record_block`` merges this voter's own
+    before-Night diary entries into its own Day-round thoughts in event order
+    and windows the diaries to ``DIARY_WINDOW``, delegating to
+    ``_private_thoughts_block`` verbatim when there is no diary to show.
+    Defaulted so existing direct test calls stay byte-identical; the caller
+    passes only the voter's own entries
+    (``state["private_diaries"].get(voter.id, [])``).
     """
     players = state.get("players", {})
     context = _render_context(
@@ -1200,8 +1391,11 @@ def _ai_ballot(
                 target=target.name,
                 relationship=relationship,
                 context=context,
-                private_thoughts=_private_thoughts_block(
-                    private_thoughts or [], enabled=private_thoughts_enabled
+                private_thoughts=_private_record_block(
+                    private_thoughts or [],
+                    diaries or [],
+                    thoughts_enabled=private_thoughts_enabled,
+                    diaries_enabled=diaries_enabled,
                 ),
                 role_guidance=_role_guidance_block(
                     voter.role, enabled=role_guidance_enabled
@@ -1236,6 +1430,7 @@ def collect_votes(
     context_window: int = _CONTEXT_WINDOW,
     context_token_budget: int | None = None,
     private_thoughts_enabled: bool = True,
+    private_diaries_enabled: bool = True,
 ) -> dict:
     """Poll ONE voter per super-step. Replay-safe like ``day_turn``.
 
@@ -1243,6 +1438,13 @@ def collect_votes(
     (interrupting for a human, Bedrock-calling for an AI), records it, and
     pops from ``pending``. When ``pending`` empties, the conditional edge
     routes to ``resolve_vote``.
+
+    ``private_diaries_enabled`` (spec 039 ablation flag, ADR 011) is bound by
+    ``_assemble_graph`` and threaded into the AI voter's prompt alongside the
+    spec-028 ``private_thoughts_enabled``: the two share ONE
+    ``{private_thoughts}`` slot, rendered by ``_private_record_block``, so an AI
+    voter weighs its own thoughts and its own diaries as one train of thought in
+    event order. Defaulted ON so direct test calls / both builders stay valid.
     """
     active = state.get("active_vote")
     if not active:
@@ -1317,6 +1519,9 @@ def collect_votes(
                 context_token_budget=context_token_budget,
                 private_thoughts=state.get("private_thoughts", {}).get(voter.id, []),
                 private_thoughts_enabled=private_thoughts_enabled,
+                # ONLY this voter's own entries, keyed on its own id.
+                diaries=state.get("private_diaries", {}).get(voter.id, []),
+                diaries_enabled=private_diaries_enabled,
             )
             yes = ballot.yes
         if career_emitter is not None and game_id is not None:
@@ -1515,6 +1720,406 @@ def day_close(state: GameState, *, recap_enabled: bool = True) -> dict:
     if not messages:
         return {}
     return {"messages": messages}
+
+
+# ---------------------------------------------------------------------------
+# Per-AI before-Night private diaries (spec 039)
+# ---------------------------------------------------------------------------
+
+# HARD character cap on ONE accepted diary entry. ``DIARY_SENTENCE_BOUND``
+# (prompts.py, interpolated into ``DIARY_SYSTEM``) is a REQUEST the model may
+# ignore; the functional spec requires the bound to hold for every entry
+# actually written, so the enforcement lives here — ``_clamp_diary_entry``,
+# applied to the model text before it is recorded. ~900 chars is roughly
+# ``DIARY_SENTENCE_BOUND`` (6) sentences of ordinary English prose at ~150
+# chars each: generous enough that a compliant entry is never truncated, tight
+# enough that a runaway one cannot grow the prompt without limit. A CONSTANT,
+# not a config knob: ADR 011 asks for an ablation flag, not a tunable.
+DIARY_MAX_CHARS = 900
+
+# Deterministic entry recorded when a player's diary model call fails or yields
+# an empty entry — so one model hiccup never blanks that player's channel and
+# the tests stay non-flaky (the posture ``_REFLECTION_FALLBACK`` /
+# ``_ai_day_action``'s speak fallback already take). Deliberately role-neutral
+# and strategy-free: it must not steer the player that reads it back later, and
+# it must name no other player. Kept comfortably under ``DIARY_MAX_CHARS``, so
+# the clamp applies only to model text.
+_DIARY_FALLBACK = (
+    "Nothing much more to set down tonight. I will sleep on what I heard "
+    "today and see how it reads in the morning."
+)
+
+
+def _clamp_diary_entry(text: str) -> str:
+    """Normalise ONE diary entry to a single line and clamp it to ``DIARY_MAX_CHARS``.
+
+    The enforcement half of the functional spec's third length criterion (the
+    stated sentence bound in ``DIARY_SYSTEM`` is the request half). In order:
+    every run of whitespace — newlines, blank lines, tabs — is folded to ONE
+    space (which also strips the ends), then the result is truncated to the cap
+    and right-stripped so a cut landing mid-space cannot leave a trailing
+    blank. The accepted entry is therefore always single-line and never longer
+    than the cap.
+
+    WHY SINGLE-LINE, AND WHY HERE (spec 039 §2.8, folded in at the top of Slice
+    2). ``eval_transcript._inline_attr`` promises a single-line element, and
+    ``DIARY_SENTENCE_BOUND`` (6) invites six sentences where spec 028 invited
+    one or two — so a model putting a blank line between two thoughts would
+    produce the transcript format's FIRST multi-line inline element (verified:
+    zero exist across the 298 committed transcripts). The fold belongs at the
+    CLAMP, not in the renderer, because the clamp is the single point where an
+    entry is accepted: one call covers the ``private_diaries`` state channel,
+    the diary-store write and the transcript together, whereas a renderer-side
+    fix would leave state and store disagreeing with the transcript. It is also
+    what lets ``_private_record_block`` render an entry as one ``- `` bullet
+    without re-normalising.
+
+    Folding BEFORE the cap, not after, so the cap measures the text as it will
+    actually be stored and rendered — and because folding can only shorten,
+    never lengthen, the two steps cannot fight.
+
+    PURE: no state, no RNG, no clock, so replay and the dual-mode byte-equal
+    smoke are unaffected.
+    """
+    return " ".join(text.split())[:DIARY_MAX_CHARS].rstrip()
+
+
+def _ai_diary(
+    speaker: PlayerState,
+    state: GameState,
+    *,
+    recap_aware_reasoning_enabled: bool = True,
+    context_window: int = _CONTEXT_WINDOW,
+    context_token_budget: int | None = None,
+    private_thoughts: list[str] | None = None,
+    private_thoughts_enabled: bool = True,
+    diaries: list[DiaryRecord] | None = None,
+    diaries_enabled: bool = True,
+) -> str:
+    """Produce ONE surviving AI player's before-Night diary entry (spec 039).
+
+    The structural twin of :func:`_ai_reflect`, and deliberately built from the
+    SAME grounding helpers — role facts (``_role_label`` /
+    ``_win_condition_line`` / ``_team_line``), persona (``_persona_block``),
+    standings (``_standings_prompt_block``), the recent discussion
+    (``_render_context`` honouring the configured window / token budget) and
+    this player's OWN running private record (``_private_record_block``) — so
+    ``DIARY_USER_TEMPLATE`` needs no plumbing of its own. What differs from a
+    Day-round reflection is grain (a whole day, not one speaking round), length
+    (``DIARY_SENTENCE_BOUND`` and the ``DIARY_MAX_CHARS`` clamp) and the open
+    invitation in ``DIARY_SYSTEM``.
+
+    ``recap_aware_reasoning_enabled`` (spec 019, ADR 011) is threaded through to
+    ``_standings_prompt_block`` PROPERLY rather than hard-coded ``True``. That
+    hard-coding is a latent defect on ``_ai_reflect``'s path — spec 019's
+    ablation is incomplete there — and fixing 028 is out of scope for spec 039,
+    so this call site simply does not inherit it. Logged as a 028 follow-up.
+
+    ``private_thoughts`` is passed IN (rather than re-read from ``state`` here)
+    because ``day_diary`` reads the same list to compute the entry's
+    ``thoughts_before`` cursor: one read, so the number recorded and the notes
+    shown can never disagree. Only ever this player's own notes.
+
+    ``diaries`` / ``diaries_enabled`` (spec 039 Slice 2 — the FOURTH call site
+    of ``_private_record_block``, and the one most easily missed) put this
+    player's OWN PRIOR entries in front of it as it writes the next one.
+    Without them a player writing Day 3's entry has never read Day 1's or Day
+    2's, which undercuts the settled-read-carried-forward the whole feature
+    rests on. Passed in, like ``private_thoughts``, from ``day_diary``'s single
+    per-player read; the current Day's entries do not exist yet (the fan-out
+    returns ONE delta after the loop), so a writer never sees its own
+    not-yet-committed entry, and never another player's.
+
+    Calls ``get_large().with_structured_output(Diary)`` once. On any failure or
+    an empty entry it returns ``_DIARY_FALLBACK``; on success it returns the
+    CLAMPED entry.
+    """
+    players = state.get("players", {})
+    context = _render_context(
+        list(state.get("messages", [])),
+        speaker.id,
+        window=context_window,
+        token_budget=context_token_budget,
+    )
+    llm = get_large().with_structured_output(Diary)
+    messages: list = [
+        SystemMessage(content=DIARY_SYSTEM),
+        HumanMessage(
+            content=DIARY_USER_TEMPLATE.format(
+                speaker=speaker.name,
+                role_label=_role_label(speaker.role),
+                win_condition=_win_condition_line(speaker.role),
+                team_line=_team_line(speaker, players),
+                persona=_persona_block(speaker),
+                standings=_standings_prompt_block(
+                    state, enabled=recap_aware_reasoning_enabled
+                ),
+                context=context,
+                private_thoughts=_private_record_block(
+                    list(private_thoughts or []),
+                    list(diaries or []),
+                    thoughts_enabled=private_thoughts_enabled,
+                    diaries_enabled=diaries_enabled,
+                ),
+            )
+        ),
+    ]
+    try:
+        result = llm.invoke(messages)
+        if isinstance(result, Diary) and result.entry.strip():
+            return _clamp_diary_entry(result.entry)
+    except Exception:
+        pass
+    return _DIARY_FALLBACK
+
+
+def _persist_diary(
+    record: DiaryRecord,
+    *,
+    player_id: str,
+    diary_store: DiaryStore | None,
+    game_id: str | None,
+) -> None:
+    """Best-effort write of ONE accepted diary entry to the ``DiaryStore``.
+
+    The second half of spec 039's DUAL WRITE (tech-spec §2.7). The first half
+    is the ``private_diaries`` state channel, which is what reaches the prompts
+    and the eval transcript; this is the persistence side-channel — the
+    AgentCore Memory demonstration the roadmap item exists to exercise, and the
+    replacement for the trivial synthetic write that stood at ``night_close``
+    from spec 002 until this slice.
+
+    CALLED PER PLAYER, INSIDE ``day_diary``'s FAN-OUT, BEFORE THE STATE DELTA IS
+    RETURNED — and it can never stop that delta being returned. Every failure
+    mode is swallowed here: ``diary_store.write`` reaches AgentCore Memory
+    through the Gateway in remote mode, so it can raise for reasons that have
+    nothing to do with the game (Gateway unreachable, credentials expired, the
+    Memory resource throttling). State is the gameplay and transcript source of
+    truth; the store is a side-channel. The broad ``except`` + ``logger.exception``
+    is therefore deliberate and is exactly the posture ``night_close`` already
+    documents for its read-back: catch broadly, log, continue, so one player's
+    persistence failure neither crashes the hinge nor skips the players after it.
+
+    ``night_index = record["day"] + 1`` — THE NIGHT THE ENTRY PRECEDES, not the
+    Day it sums up. ``night_close`` wrote ``night_index=cycle`` where ``cycle``
+    was the ALREADY-BUMPED Night; ``day_diary`` runs at Day cycle N, one
+    super-step before ``night_open`` bumps. Adding one preserves the field's
+    existing meaning, so ``DiaryStore.read``'s ``sorted(key=night_index)`` keeps
+    ordering entries the way it always did and ``graphia.tools.inspect_diary``
+    keeps printing the number it always printed. Entries therefore occupy
+    nights 2..N: the Day→Night hinge is only reached from Day 1 onwards, so the
+    lowest ``day`` is 1 and the lowest ``night_index`` is 2 — which is also the
+    first Night ``night_close``'s read-back looks at (its ``cycle >= 2`` gate).
+    Numbering by the Day summarised would silently redefine the field and shift
+    what every reader of the store shows.
+
+    ``record["text"]`` is written AS IS. ``_clamp_diary_entry`` has already
+    folded every whitespace run to a single space and applied
+    ``DIARY_MAX_CHARS``; the clamp is the single point where an entry is
+    accepted precisely so the state channel, this write and the transcript can
+    never disagree. Do NOT re-normalise here.
+
+    AN HONEST ASYMMETRY, so a reviewer does not have to ask (tech-spec §2.7).
+    With ``GRAPHIA_PRIVATE_DIARIES=0`` NO DIARY REACHES THE STORE AT ALL — the
+    retired spec-002 synthetic entry does not come back in its place, because
+    that write was deleted rather than made conditional. Flag-off is identical
+    in everything ADR 011 is about — prompts, public messages, the eval
+    transcript — but it is NOT byte-identical in the store: the off arm's store
+    is simply empty. That is the intended reading of the ablation (the retired
+    entry was never gameplay, only a persistence smoke) but it is the one
+    respect in which flag-off does not reproduce prior behaviour.
+
+    ``diary_store`` / ``game_id`` are ``None`` only for direct test calls and
+    for a graph assembled without the service injection; a live game always has
+    both, bound by ``graph._assemble_graph``.
+    """
+    if diary_store is None or game_id is None:
+        return
+    # The Night this entry precedes — see the docstring; do NOT use
+    # ``record["day"]`` directly.
+    night_index = record["day"] + 1
+    try:
+        diary_store.write(
+            game_id=game_id,
+            player_id=player_id,
+            night_index=night_index,
+            content=record["text"],
+        )
+    except Exception:
+        logger.exception(
+            "Diary write failed for player %s before night %s; continuing — "
+            "the entry is still in the private_diaries state channel.",
+            player_id,
+            night_index,
+        )
+
+
+def day_diary(
+    state: GameState,
+    *,
+    private_diaries_enabled: bool = True,
+    private_thoughts_enabled: bool = True,
+    recap_aware_reasoning_enabled: bool = True,
+    context_window: int = _CONTEXT_WINDOW,
+    context_token_budget: int | None = None,
+    max_days: int = 12,
+    diary_store: DiaryStore | None = None,
+    game_id: str | None = None,
+) -> dict:
+    """At the Day→Night hinge, every surviving AI player writes one diary entry.
+
+    Wired ``day_close -> day_diary -> night_open``: two unconditional edges
+    replacing the single ``day_close -> night_open`` one.
+
+    A DEDICATED node rather than a fold into ``day_close`` (tech-spec 039 §2.1 —
+    and NOT for spec 028's replay-safety reason, which does not transfer: there
+    is no ``interrupt()`` at this hinge until ``mafia_point``, several committed
+    super-steps later). The reasons that do hold: the eval transcript renderer
+    dispatches on the ``{node: delta}`` key, so its own delta is what lets a
+    diary be placed as day-level content; a fan-out that raised past its
+    per-player guard would otherwise take ``day_close``'s already-computed
+    closing recap with it; and ``day_close`` is pure and deterministic today,
+    which is worth keeping.
+
+    NOT at ``night_open``'s head either — three blockers: it bumps ``cycle`` on
+    re-entry, so ``state["cycle"]`` there is already the NEW Night's; Night 1
+    arrives at it from ``first_night_mafia_intros`` and would need a special
+    case; and it carries the spec-023 runaway short-circuit.
+
+    Self-guards, each returning ``{}`` BEFORE any model call:
+
+    - ``private_diaries_enabled`` off (ADR 011) — the whole feature ablated.
+    - ``winner`` already set — the game is over; nothing to sum up.
+    - The spec-023 RUNAWAY CAP, ``cycle + 1 >= max_days``. This one is not
+      optional and is easy to miss: this node runs BEFORE ``night_open`` detects
+      the cap, so without it the final Day of a capped game would fire a full
+      fan-out of model calls for a Night that never happens. The predicate is
+      exactly ``night_open``'s, evaluated one super-step earlier: ``night_open``
+      bumps the cycle iff the prior phase is ``"day"``, which it always is here
+      (``day_close`` leaves ``phase`` alone), so the Night it is about to test is
+      ``cycle + 1``. ``max_days`` is bound from the SAME ``_assemble_graph``
+      value that binds ``night_open`` — one value bound twice, so there is no
+      second constant to drift.
+    - No surviving non-human player.
+
+    Writers are ``is_alive and not is_human`` — the predicate
+    ``day_round_reflect`` and ``night_close`` already use. The spec-026 scripted
+    eval stand-in occupies the HUMAN seat, so it is excluded with no special
+    case; dead players and the person playing write nothing.
+
+    Two boundary conditions need no code here, only confirming (they are what a
+    count of entries in a preserved game looks wrong against):
+
+    - **Night 1 has no entry.** The graph enters ``night_open`` from
+      ``first_night_mafia_intros``, never through this node, so a game of N
+      Nights holds at most N-1 entries.
+    - **The winning Day has no entries.** ``check_win_day`` routes a winning
+      move to ``end_screen``, bypassing ``day_close`` — so this node never runs
+      on the Day the game is won.
+
+    Returns ONE ``private_diaries`` delta keyed per player, and NO public
+    ``messages`` — the privacy invariant, which is structural here rather than
+    filtered: an entry never enters the message stream at all, so it can never
+    carry ``private_to`` and can never reach the UI or another player's context.
+
+    THE DUAL WRITE (spec 039 Slice 3, tech-spec §2.7). Each accepted entry goes
+    to two places: the ``private_diaries`` delta below, and — via
+    ``_persist_diary`` — the ``DiaryStore``, which is ``InProcessDiaryStore`` in
+    local mode and the Gateway-fronted AgentCore Memory surface in remote mode.
+    That store write REPLACES the trivial synthetic entry ``night_close`` wrote
+    from spec 002 until this slice; ``night_close``'s read-back survives as the
+    liveness probe of the Gateway-fronted read path.
+    ``diary_store`` and ``game_id`` are injected by ``partial`` in
+    ``graph._assemble_graph`` — the project's own service-injection pattern,
+    the same one that bound them into ``night_close`` — so this node keeps no
+    module-level singletons and a test can drive it with neither.
+
+    ORDER PER PLAYER, and it matters: build the prompt → call the model
+    (guarded) → clamp → write to the store (guarded) → accumulate into the
+    delta. The delta is returned ONCE, after the loop. A store failure can
+    therefore never prevent the state write and never skip the remaining
+    players — state is the gameplay and transcript source of truth, the store
+    is the persistence side-channel.
+
+    Per-player failure is isolated on BOTH axes and neither can crash the
+    fan-out or skip the players after it: a model failure inside ``_ai_diary``
+    (broad ``try/except`` + ``_DIARY_FALLBACK``), and a persistence failure
+    inside ``_persist_diary`` (broad ``try/except`` + ``logger.exception``).
+
+    FLAG-OFF IS NOT BYTE-IDENTICAL IN THE STORE, and that is deliberate: the
+    early ``return {}`` above the fan-out means an off run writes NO diary to
+    the store at all, and the retired placeholder does not come back in its
+    place. See ``_persist_diary``'s docstring for the full statement of that
+    asymmetry — flag-off is identical in everything ADR 011 is about (prompts,
+    public messages, transcript) but the off arm's store is simply empty.
+    """
+    if not private_diaries_enabled:
+        return {}
+    if state.get("winner") is not None:
+        return {}
+    cycle = state.get("cycle", 1)
+    if cycle + 1 >= max_days:
+        return {}
+
+    players = state.get("players", {})
+    # Insertion order over ``dict.values()`` — never a ``set`` — so the fan-out
+    # order is stable and the dual-mode byte-equal smoke is unaffected.
+    writers = [p for p in players.values() if p.is_alive and not p.is_human]
+    if not writers:
+        return {}
+
+    # THE CROSS-CHANNEL CURSOR (tech-spec §2.3, and the ``DiaryRecord``
+    # docstring). ``state`` as handed to a node is the COMMITTED post-reducer
+    # view of the previous super-step, so ``len(thoughts)`` here is a function
+    # of committed state alone — no clock, no RNG — and a replay recomputes the
+    # same number. ``day_round_reflect`` (the only writer of the other channel)
+    # is a different node and never shares a super-step with this one, and
+    # thoughts only ever accumulate, so the cursors are non-decreasing and
+    # Slice 2's merge is a stable two-way merge rather than a sort.
+    all_thoughts = state.get("private_thoughts", {}) or {}
+    # The players' OWN PRIOR diaries (spec 039 Slice 2, tech-spec §2.4's fourth
+    # call site). Read here, keyed per writer below, so the diary prompt sees
+    # the same merged private record the three decision prompts do — a player
+    # writing Day 3's entry has read Day 1's and Day 2's. The entries written
+    # THIS super-step are accumulated in ``new_diaries`` and returned once after
+    # the loop, so no writer can see its own not-yet-committed entry.
+    all_diaries = state.get("private_diaries", {}) or {}
+
+    new_diaries: dict[str, list[DiaryRecord]] = {}
+    for player in writers:
+        own_thoughts = list(all_thoughts.get(player.id) or [])
+        entry = _ai_diary(
+            player,
+            state,
+            recap_aware_reasoning_enabled=recap_aware_reasoning_enabled,
+            context_window=context_window,
+            context_token_budget=context_token_budget,
+            private_thoughts=own_thoughts,
+            private_thoughts_enabled=private_thoughts_enabled,
+            # ONLY this player's own entries, keyed on its own id.
+            diaries=list(all_diaries.get(player.id) or []),
+            diaries_enabled=private_diaries_enabled,
+        )
+        record: DiaryRecord = {
+            # The Day being summed up: ``cycle`` BEFORE ``night_open`` bumps it.
+            # ``_persist_diary`` derives the store's ``night_index`` from this
+            # as ``day + 1`` — the Night the entry precedes.
+            "day": cycle,
+            "thoughts_before": len(own_thoughts),
+            "text": entry,
+        }
+        # The store write comes BEFORE the accumulate, and is fully guarded, so
+        # a persistence failure can neither drop this player's state entry nor
+        # skip the players after it.
+        _persist_diary(
+            record,
+            player_id=player.id,
+            diary_store=diary_store,
+            game_id=game_id,
+        )
+        new_diaries[player.id] = [record]
+
+    return {"private_diaries": new_diaries}
 
 
 def route_day_turn(state: GameState) -> str:

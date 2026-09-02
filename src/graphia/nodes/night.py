@@ -17,13 +17,13 @@ from graphia.career_events import (
 )
 from graphia.diary_store import DiaryStore
 from graphia.llm import Pointing, get_large
-from graphia.nodes.day import _private_thoughts_block
+from graphia.nodes.day import _private_record_block
 from graphia.prompts import (
     MAFIA_POINT_SYSTEM,
     MAFIA_POINT_USER_TEMPLATE,
     MAFIA_TEAMMATE_INTRO_TEMPLATE,
 )
-from graphia.state import GameState, KillRecord, PlayerState
+from graphia.state import DiaryRecord, GameState, KillRecord, PlayerState
 
 logger = logging.getLogger(__name__)
 
@@ -237,6 +237,8 @@ def _ai_pick_target(
     *,
     private_thoughts: list[str] | None = None,
     private_thoughts_enabled: bool = True,
+    diaries: list[DiaryRecord] | None = None,
+    diaries_enabled: bool = True,
 ) -> str:
     """Ask the gameplay model for this Mafioso's Night pick. Random fallback.
 
@@ -247,6 +249,16 @@ def _ai_pick_target(
     player never receives another player's notes (the spec-013 knowledge
     boundary applied to the private channel). Defaulted so direct test calls stay
     byte-identical.
+
+    ``diaries`` / ``diaries_enabled`` (spec 039 ablation flag, ADR 011) extend
+    that SAME slot rather than taking a second one: the block is built by
+    ``_private_record_block``, which merges this Mafioso's own before-Night
+    diary entries into its own Day-round thoughts in event order (each entry's
+    ``thoughts_before`` cursor) and windows the diaries to ``DIARY_WINDOW``.
+    With no diary to show — flag off, or none written yet, which is every Night
+    1 — it delegates to ``_private_thoughts_block`` verbatim, so spec 028's
+    rendering is preserved BY CONSTRUCTION. The same knowledge boundary applies:
+    only ever the pointer's OWN entries, keyed at the call site.
     """
     valid_ids = {p.id for p in alive_law_abiding}
     valid_ids_list = sorted(valid_ids)
@@ -272,8 +284,11 @@ def _ai_pick_target(
                 roster=roster,
                 mafia_persona=mafia_persona_block,
                 prior_picks=prior_picks_block,
-                private_thoughts=_private_thoughts_block(
-                    private_thoughts or [], enabled=private_thoughts_enabled
+                private_thoughts=_private_record_block(
+                    private_thoughts or [],
+                    diaries or [],
+                    thoughts_enabled=private_thoughts_enabled,
+                    diaries_enabled=diaries_enabled,
                 ),
             )
         ),
@@ -388,7 +403,12 @@ def mafia_round_start(
     return delta
 
 
-def mafia_point(state: GameState, *, private_thoughts_enabled: bool = True) -> dict:
+def mafia_point(
+    state: GameState,
+    *,
+    private_thoughts_enabled: bool = True,
+    private_diaries_enabled: bool = True,
+) -> dict:
     """Handle exactly ONE pointer's pick this super-step (replay-safe).
 
     All work before the ``interrupt()`` is a pure read of committed state, so a
@@ -401,6 +421,12 @@ def mafia_point(state: GameState, *, private_thoughts_enabled: bool = True) -> d
     ``_assemble_graph`` and threaded into the AI pointer's prompt so an AI
     Mafioso's Night pick is grounded in its OWN accumulated Day reflections.
     Defaulted ON so direct test calls / both builders stay valid.
+
+    ``private_diaries_enabled`` (spec 039 ablation flag, ADR 011) is bound the
+    same way and threaded into the same prompt: the two flags share ONE
+    ``{private_thoughts}`` slot, rendered by ``_private_record_block``, so an AI
+    Mafioso points from its own Day reflections and its own before-Night diaries
+    as one train of thought in event order. Also defaulted ON.
     """
     order: list[str] = list(state.get("night_mafia_order", []))
     index = state.get("night_pointer_index", 0)
@@ -484,6 +510,10 @@ def mafia_point(state: GameState, *, private_thoughts_enabled: bool = True) -> d
             prior_picks=prior_picks,
             private_thoughts=state.get("private_thoughts", {}).get(pointer_id, []),
             private_thoughts_enabled=private_thoughts_enabled,
+            # ONLY this pointer's own entries, keyed on its own id — the
+            # spec-013 knowledge boundary applied to the diary channel.
+            diaries=state.get("private_diaries", {}).get(pointer_id, []),
+            diaries_enabled=private_diaries_enabled,
         )
 
     new_picks: dict[str, str] = dict(state.get("night_round_picks", {}))
@@ -615,15 +645,24 @@ def night_close(
 ) -> dict:
     cycle = state.get("cycle", 1)
 
-    # Slice 11 read-back (spec 002 §2.4.2): on Night 2+ each surviving AI
-    # player reads back its own prior diary entries before this Night's write.
-    # Running the read before the write means on Night N it reads cycles
-    # 1..N-1 and then writes cycle N — exercising the genuine write/read
-    # round-trip in both modes (local ``InProcessDiaryStore``; remote
-    # ``AgentCoreMemoryDiaryStore`` via the Gateway-fronted Lambda). The
-    # Phase-2 use of the result is a placeholder log of the entry count —
-    # Phase 6 will feed the entries into the AI's reasoning. Like the write,
-    # each read is guarded so a persistence failure never crashes gameplay.
+    # LIVENESS PROBE OF THE GATEWAY-FRONTED READ PATH (spec 002 §2.4.2,
+    # retargeted by spec 039 Slice 3). On Night 2+ each surviving AI player
+    # reads back its own prior diary entries and the count is logged.
+    #
+    # Its ORIGINAL purpose is superseded: the AI now reasons from its diaries
+    # via the ``private_diaries`` state channel, which ``day_diary`` renders
+    # into the four decision prompts, so nothing here feeds the model. What the
+    # loop still does is the reason it stays: it is the ONLY thing that
+    # exercises ``DiaryStore.read`` in a live game, and in remote mode that read
+    # is the whole Gateway -> Lambda -> AgentCore Memory round-trip. Delete it
+    # and a broken remote read path would go unnoticed until someone ran
+    # ``inspect_diary`` by hand.
+    #
+    # The entries it reads are ``day_diary``'s real prose, written one
+    # super-step before ``night_open`` at ``night_index = day + 1``. Since the
+    # lowest such index is 2 and this loop is gated on ``cycle >= 2``, Night N
+    # reads exactly nights 2..N-1 — everything written so far, nothing missing.
+    # Each read is guarded so a persistence failure never crashes gameplay.
     if diary_store is not None and game_id is not None and cycle >= 2:
         players = state.get("players", {})
         for player in players.values():
@@ -647,36 +686,19 @@ def night_close(
                         cycle,
                     )
 
-    # Slice 6 smoke-test placeholder (spec 002 §2.4): one diary entry per
-    # surviving AI player per Night. The content is intentionally trivial —
-    # Phase 6 will replace it with the AI's actual private reflection.
-    # In remote mode this fires real ``bedrock-agentcore:CreateEvent`` calls
-    # against AgentCore Memory; in local mode it appends to the dict-backed
-    # ``InProcessDiaryStore``. Same call site, parallel implementations.
-    if diary_store is not None and game_id is not None:
-        players = state.get("players", {})
-        for player in players.values():
-            if player.is_alive and not player.is_human:
-                # A diary write can hit AgentCore Memory / the Gateway in
-                # remote mode and so can raise (e.g. Gateway unreachable).
-                # Persistence must never crash gameplay: catch broadly, log,
-                # and continue so one player's failure doesn't skip the rest
-                # (Functional §2.4.5).
-                try:
-                    diary_store.write(
-                        game_id=game_id,
-                        player_id=player.id,
-                        night_index=cycle,
-                        content=f"Night {cycle} diary placeholder for {player.id}",
-                    )
-                except Exception:
-                    logger.exception(
-                        "Diary write failed for player %s on night %s; "
-                        "continuing without that entry.",
-                        player.id,
-                        cycle,
-                    )
-
+    # NO DIARY WRITE HERE — retired by spec 039 Slice 3. From spec 002 until
+    # then a second loop sat at this point writing one trivial synthetic entry
+    # per surviving AI — text naming only the night and the player id, no
+    # reasoning in it at all — under a comment saying Phase 6 would replace it
+    # with the AI's actual private reflection. That string is now absent from
+    # the whole package, deliberately, so a grep for it finds nothing.
+    # Spec 039 IS that Phase-6 item: ``nodes/day.py:day_diary``
+    # writes the real entry at the Day->Night hinge, one super-step before
+    # ``night_open``, at ``night_index = day + 1`` — the Night it precedes — so
+    # the store's numbering is unchanged and only the ``content`` differs.
+    # Removing the placeholder is the point of that slice, not a side effect:
+    # leaving it would interleave synthetic entries with real ones in the same
+    # ``(game_id, player_id)`` namespace.
     return {
         "messages": [SystemMessage(content=f"Night {cycle} ends.")],
         "phase": "day",
