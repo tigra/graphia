@@ -13,6 +13,7 @@ deliberately, behind ``make blunder-eval``::
 
     make blunder-eval ARGS="--provider ollama --games 5"
     make blunder-eval ARGS="--provider bedrock --games 5 --seed 20260613"
+    make blunder-eval ARGS="--provider ollama --games 1 --diaries off --ledger-path /tmp/smoke.yaml --transcripts-root /tmp/smoke-transcripts"
 
 Bedrock runs need live AWS credentials and cost real tokens; the Ollama path
 needs the verified local model pair installed (the boot preflight enforces
@@ -148,10 +149,15 @@ _NEAR_DUP_THRESHOLD = 0.85
 # NOT a bump: purely ADDITIVE record-shape fields that change no detection rule
 # and no denominator. The derived ``ci_low``/``ci_high`` band, the spec-013
 # ``outcomes`` / ``vote_activity`` blocks, the conditional ``settings.lineup`` /
-# ``settings.scripted_player`` keys — and, spec 036, the conditional
-# ``run.kind`` record-kind label — all leave every scorer untouched, so rates
-# measured before and after stay directly comparable. Bumping for any of them
-# would falsely flag every prior rate as incomparable.
+# ``settings.scripted_player`` keys, spec 036's conditional ``run.kind``
+# record-kind label — and, spec 039, the conditional
+# ``settings.private_diaries_enabled`` arm label — all leave every scorer
+# untouched, so rates measured before and after stay directly comparable.
+# Bumping for any of them would falsely flag every prior rate as incomparable.
+# An ARM LABEL is the clearest case of the rule: no scorer reads ``settings``,
+# ``tally_outcomes`` is untouched, and the field NARROWS the comparability
+# contract (these rates were measured with diaries on/off) rather than
+# invalidating it — which is the whole reason the field exists.
 METRICS_VERSION = 1
 
 # Wilson score confidence-interval constants for the per-metric reliability band
@@ -434,6 +440,64 @@ def _apply_scripted_role(role: str | None) -> None:
         os.environ["GRAPHIA_ROLE"] = role
     else:
         os.environ.setdefault("GRAPHIA_ROLE", "law-abiding")
+
+
+# ===========================================================================
+# Spec 039 §2.10 — the diaries ARM LABEL.
+#
+# ``settings.private_diaries_enabled`` is what makes a diaries-on / diaries-off
+# pair of records readable AS A PAIR; without it the two are indistinguishable
+# columns of numbers. It is read off the RESOLVED config — the same values every
+# game will build its graph from — through a ``None`` SENTINEL, deliberately NOT
+# the permissive ``getattr(config, ..., True)`` shape ``settings.scripted_player``
+# uses one field over: a config that cannot answer would then record the ON arm
+# for an OFF run, and unlike a ``null`` a ``true`` is indistinguishable from a
+# real measurement.
+#
+# This is NOT a graceful-degradation violation. That rule protects *instruments*
+# — an unavailable embeddings client omits its metric and the run continues.
+# This is the label saying WHICH ARM THE RUN IS: a record without it is
+# worthless, and a wrongly-labelled one corrupts the comparison it exists to
+# serve. So ``main`` refuses the run outright, before game 1.
+# ===========================================================================
+
+
+def _diaries_arm(config: object) -> bool | None:
+    """The run's private-diaries arm as the record will state it, or ``None``.
+
+    ``None`` means *this config cannot answer* — the field is absent (a thin
+    stub object, or a rename this harness has not followed). Callers must treat
+    that as "unlabelled"; never as the on arm.
+    """
+    arm = getattr(config, "private_diaries_enabled", None)
+    return None if arm is None else bool(arm)
+
+
+def _require_diaries_arm(config: object) -> bool:
+    """The arm, or abort the run — the fail-fast half of the sentinel.
+
+    Called by ``main`` immediately after ``load_config()``, so an unanswerable
+    config costs nothing: the run stops *before* the provider preflight and long
+    before game 1, rather than after half an hour of Bedrock tokens has bought a
+    record nobody can attribute to an arm. The ledger is append-only and
+    repo-committed — a mislabelled record cannot be rewritten, so "no record"
+    beats "a record whose arm is a guess".
+
+    Raises:
+        SystemExit: when the resolved config reports no
+            ``private_diaries_enabled`` field.
+    """
+    arm = _diaries_arm(config)
+    if arm is None:
+        raise SystemExit(
+            "blunder-eval: the resolved config does not report "
+            "private_diaries_enabled, so this run could not say which arm of "
+            "the diaries A/B it measured — refusing to play. An unlabelled "
+            "record is worthless and a wrongly-labelled one corrupts the "
+            "comparison. Check that GraphiaConfig.private_diaries_enabled "
+            "(spec 039) still exists and that load_config() returns it."
+        )
+    return arm
 
 
 def _seed_game(base_seed: int | None, game_index: int) -> None:
@@ -1978,6 +2042,7 @@ def render_record(result: EvalResult, run_date: str) -> str:
           seed: <int> | null
           max_days: <int> | null   # spec 023 — runaway Day cap (was max_rounds)
           scripted_player: 'active' | 'passive'  # spec 026 — human-seat stand-in (omitted on pre-026 records → passive)
+          private_diaries_enabled: <bool>  # spec 039 — the diaries ARM this run measured; OMITTED (never false) when the run could not state it
           lineup:                  # spec 014 — the configured whole-table counts
             num_citizens: <int>
             num_mafia: <int>
@@ -2142,6 +2207,19 @@ def render_record(result: EvalResult, run_date: str) -> str:
     scripted_player = settings.get("scripted_player")
     if scripted_player is not None:
         flat_settings["scripted_player"] = scripted_player
+    # Spec 039 §2.10: the diaries ARM LABEL — which side of the on/off A/B this
+    # run measured — rendered flat, straight after ``scripted_player`` and before
+    # the nested ``lineup``. CONDITIONAL for a reason peculiar to this key:
+    # ABSENCE IS A THIRD CASE, not a falsy one. The ledger already has
+    # absent ⇒ prior-default readings (``scripted_player``, ``run.kind``); this
+    # is neither of those. A pre-039 record was played by a build with NO diary
+    # feature at all — behaviourally the off arm insofar as ADR-011 parity holds,
+    # but NOT the claim "this run measured the off arm". So an unstated arm is
+    # omitted and renders blank downstream; rendering ``false`` would assert a
+    # measurement nobody made. Additive ⇒ no ``METRICS_VERSION`` bump.
+    private_diaries_enabled = settings.get("private_diaries_enabled")
+    if private_diaries_enabled is not None:
+        flat_settings["private_diaries_enabled"] = private_diaries_enabled
     lines += _yaml_block(flat_settings, indent=1)
     # ``settings.lineup`` (spec 014 §2.4) — the configured whole-table counts,
     # rendered after the flat settings keys as a one-level nested sub-map (the
@@ -2933,7 +3011,16 @@ def run_eval(
     (:func:`~graphia.tools.eval_transcript.render_transcript`) and written to
     ``<transcripts_root>/<run-id>/game-NN.txt``; the run-id is then recorded on
     the result as ``run.transcript_dir`` so the viewer can locate the run's
-    transcripts from the ledger.
+    transcripts from the ledger. Spec 039 §5 adds the CLI equivalents:
+    ``args.transcripts_root`` and ``args.ledger_path`` redirect the same two
+    seams for a real run (a smoke run into a scratch dir; one ledger file per
+    arm), with the injected kwarg still winning for tests.
+
+    Spec 039 §2.10: the run's diaries ARM (``settings.private_diaries_enabled``,
+    plus a ``diaries=on|off`` part in every transcript header) is read off
+    ``config`` through the ``_diaries_arm`` sentinel, so a config that cannot
+    answer records NOTHING rather than the on arm. ``main`` refuses such a run
+    outright; a direct call with a thin stub config simply omits the key.
     """
     large_model, small_model = _resolved_model_names(config)
 
@@ -2941,18 +3028,42 @@ def run_eval(
     # defaults to the repo's ``evals/transcripts/`` but is injectable; the run-id
     # is a fresh fs-safe timestamp unless a test pins one. Generated here, before
     # the loop, so every game in the run shares one directory.
-    transcripts_base = (
-        transcripts_root if transcripts_root is not None else TRANSCRIPTS_ROOT
-    )
+    # Precedence: the injected kwarg (tests, a ``tmp_path``) beats the CLI
+    # ``--transcripts-root`` (spec 039 §5), which beats the repo's
+    # ``evals/transcripts/``. The CLI arm exists because ``collect_code_provenance``
+    # runs ``git status --porcelain``, which SEES an untracked transcript dir — so
+    # a smoke run left in the tree stamps the NEXT record ``code.dirty: true``.
+    # Writing outside the repo removes that cross-contamination without a
+    # worktree. Read off ``args`` with ``getattr``, like the settings block below,
+    # so the thin ``argparse.Namespace``s built directly in tests stay valid.
+    cli_transcripts_root = getattr(args, "transcripts_root", None)
+    if transcripts_root is not None:
+        transcripts_base = transcripts_root
+    elif cli_transcripts_root is not None:
+        transcripts_base = Path(cli_transcripts_root)
+    else:
+        transcripts_base = TRANSCRIPTS_ROOT
     transcript_run_id = run_id if run_id is not None else make_run_id()
     # ``run_meta`` feeds the per-transcript header (provider + resolved models +
     # game count); read defensively by the renderer so a thin mapping is fine.
-    run_meta = {
+    # Spec 039 §2.10: this run's diaries ARM, resolved ONCE off the config the
+    # games themselves will load. ``main`` set ``GRAPHIA_PRIVATE_DIARIES`` from
+    # ``--diaries`` BEFORE ``load_config()``, so this is the arm actually played
+    # rather than the ambient default. ``None`` only for a thin/stub config
+    # passed to ``run_eval`` directly — ``main`` refuses such a run before game 1.
+    diaries_arm = _diaries_arm(config)
+    run_meta: dict[str, object] = {
         "provider": args.provider,
         "large_model": large_model,
         "small_model": small_model,
         "games": args.games,
     }
+    # The arm goes into every transcript header too, as the STRING "on"/"off":
+    # ``eval_transcript._meta_get`` is truthiness-gated, so a raw ``False`` would
+    # be silently dropped here — and the off arm's transcripts, the very files
+    # that evidence the flag-off path wrote no diary, would carry no label.
+    if diaries_arm is not None:
+        run_meta["diaries"] = "on" if diaries_arm else "off"
     # Zero-pad the game index to the width of the run's game count (≥ 2), so a
     # 10-game run writes game-01 … game-10 and a 100-game run game-001 … game-100,
     # both sorting lexically in chronological order.
@@ -3004,6 +3115,18 @@ def run_eval(
             else "passive"
         ),
     }
+    # Spec 039 §2.10: the diaries ARM LABEL. FLAT because there is one knob
+    # (spec 036's ``settings.persona`` sub-map earned its nesting with four) and
+    # BOOLEAN because the direct analogue ``persona.diversity_enabled`` is one,
+    # while ``scripted_player``'s strings name two real policies. Emitted after
+    # ``scripted_player`` and before the nested ``lineup``.
+    #
+    # CONDITIONAL, and absence is a distinct third case here — see
+    # ``render_record``: an absent key means the run could not state its arm (or
+    # predates the feature), which is NOT the claim ``false`` makes. Additive ⇒
+    # no ``METRICS_VERSION`` bump.
+    if diaries_arm is not None:
+        settings["private_diaries_enabled"] = diaries_arm
 
     result = EvalResult(
         provider=args.provider,
@@ -3365,7 +3488,17 @@ def run_eval(
     # run becomes a tracked, comparable, history-backed datapoint (functional-
     # spec 011 §2.3). ``run_eval`` still returns the result for the CLI summary.
     # ``date.today()`` is the run date (no forbidden ``Date.now()``-style call).
-    ledger = append_record(result, date.today().isoformat())
+    # ``--ledger-path`` (spec 039 §5) redirects this write — a smoke run into a
+    # scratch file outside the repo, or one file per arm so two concurrent runs
+    # never share a writer (there is no lock). Absent ⇒ ``append_record``
+    # resolves the module-global ``LEDGER_PATH`` AT CALL TIME, so the suite's
+    # ``monkeypatch.setattr(blunder_eval, "LEDGER_PATH", ...)`` still lands and
+    # the committed ledger is never touched by a test.
+    ledger = append_record(
+        result,
+        date.today().isoformat(),
+        ledger_path=getattr(args, "ledger_path", None),
+    )
     print(f"Appended one record to {ledger}")
     return result
 
@@ -3480,6 +3613,45 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     ap.add_argument(
+        "--diaries",
+        choices=("on", "off"),
+        default=None,
+        help=(
+            "the per-AI private-diaries ARM for this run (spec 039): 'on' (the "
+            "default) writes a diary before each Night and feeds each player its "
+            "own recent entries; 'off' makes the day_diary node a no-op. Sets "
+            "GRAPHIA_PRIVATE_DIARIES before the config is resolved and is "
+            "recorded as settings.private_diaries_enabled, so the two arms of a "
+            "comparison can be told apart in the ledger. Omit to record whatever "
+            "the ambient default resolves to. Prefer this flag over exporting the "
+            "env var around 'make': the Makefile does 'include .env' then "
+            "'export', and a makefile assignment overrides the shell value."
+        ),
+    )
+    ap.add_argument(
+        "--ledger-path",
+        type=Path,
+        default=None,
+        help=(
+            "append this run's record here instead of the repo ledger "
+            "(evals/blunder-ledger.yaml) — a scratch file for a smoke run, or "
+            "one file per arm so two concurrent runs never share a writer "
+            "(there is no lock). The parent dir is created; records are always "
+            "appended, never rewritten. Merge by appending afterwards."
+        ),
+    )
+    ap.add_argument(
+        "--transcripts-root",
+        type=Path,
+        default=None,
+        help=(
+            "write this run's per-game transcripts under <root>/<run-id>/ "
+            "instead of evals/transcripts/. Keeps a smoke run's untracked dir "
+            "OUT of the repo, where 'git status --porcelain' would otherwise "
+            "see it and stamp the NEXT run's record code.dirty: true."
+        ),
+    )
+    ap.add_argument(
         "--note",
         type=str,
         default="",
@@ -3518,6 +3690,25 @@ def main(argv: list[str] | None = None) -> int:
     # ``--scripted-role random`` leaves it to the game-default deal (both policies
     # within one batch). Set before ``load_config`` (config reads it at load time).
     _apply_scripted_role(args.scripted_role)
+    # Spec 039 §2.10: the diaries ARM for this run. Assigned HERE — in ``main``,
+    # beside ``--scripted-player``'s, BEFORE ``load_config()`` — because the
+    # config resolved just below is what the recorded ``settings`` block is built
+    # from. ``--max-days`` is the live defect of exactly this class: it assigns
+    # ``GRAPHIA_MAX_DAYS`` inside ``_play_one_game``, AFTER that config was
+    # resolved, so a ``--max-days 6`` run still records ``12`` (not this spec's
+    # to fix, but it is the rule this assignment obeys).
+    #
+    # A CLI arm, NOT an env var around ``make``: the ``Makefile`` does
+    # ``include .env`` then ``export``, and a makefile assignment OVERRIDES the
+    # environment-derived value (reproduced experimentally). Today's ``.env``
+    # holds no ``GRAPHIA_*`` gameplay flag, so ``GRAPHIA_PRIVATE_DIARIES=0 make
+    # blunder-eval`` works only BY ACCIDENT — and would flip the moment anyone
+    # adds one, producing a record that correctly says ``true`` while the
+    # operator believed they had run the off arm.
+    if args.diaries is not None:
+        os.environ["GRAPHIA_PRIVATE_DIARIES"] = (
+            "1" if args.diaries == "on" else "0"
+        )
 
     # Imported here (after the env is set) so config picks up the forced
     # provider and the isolation, and so a missing dependency fails with a clear
@@ -3525,6 +3716,12 @@ def main(argv: list[str] | None = None) -> int:
     from graphia.config import load_config
 
     config = load_config()
+
+    # Spec 039 §2.10: read the diaries arm back off the resolved config and
+    # REFUSE the run if it cannot be stated — before the preflight, before game
+    # 1, before a single token. This is the sentinel's fail-fast half; the
+    # record's label is then guaranteed for every run that reaches the CLI.
+    diaries_on = _require_diaries_arm(config)
 
     # Ollama path: same fail-fast boot preflight the game uses — verify the
     # server is up and both configured models are installed before any games.
@@ -3552,6 +3749,10 @@ def main(argv: list[str] | None = None) -> int:
             if args.max_days is not None
             else ", default 12-Day runaway cap"
         )
+        # Spec 039 §2.10: echo the ARM before the batch starts, so the operator
+        # sees which side of the A/B is about to be measured rather than reading
+        # it off the record afterwards.
+        + f", diaries {'on' if diaries_on else 'off'}"
         + ". Real model; runs to natural end; non-deterministic dialogue.",
     )
 

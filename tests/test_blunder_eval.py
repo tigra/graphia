@@ -148,6 +148,24 @@ def _set_all_cloud_stores(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(_REMOTE_ENV, "1")
 
 
+def _cli_stub_config() -> object:
+    """The thinnest config ``main``'s pre-run path accepts (was a bare ``object()``).
+
+    ``main`` reads exactly ONE field off the resolved config before handing over
+    to ``run_eval``: spec 039's ``private_diaries_enabled``, the ledger's arm
+    label. ``_require_diaries_arm`` refuses to play without it — an unlabelled
+    record is worthless and a wrongly-labelled one corrupts the comparison — so a
+    bare ``object()`` is now (correctly) rejected before the preflight. These
+    tests stub the preflights and ``run_eval``, so no other attribute is ever
+    touched: this stays a one-field stub, not a real ``GraphiaConfig``.
+    """
+
+    class _CliCfg:
+        private_diaries_enabled = True
+
+    return _CliCfg()
+
+
 def test_isolate_cloud_stores_pops_every_constant_var_and_remote(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -192,9 +210,10 @@ def test_pre_run_setup_isolates_and_forces_provider_for_every_provider(
 
     ``run_eval`` is stubbed to a sentinel that captures the live env at the
     moment the harness *would* start playing games — so no graph is built and no
-    provider client is ever constructed. ``load_config`` is stubbed to a bare
-    object and the ollama preflight is stubbed to a no-op, so nothing reaches a
-    config branch that could touch AWS / Ollama / the network.
+    provider client is ever constructed. ``load_config`` is stubbed to the
+    one-field ``_cli_stub_config`` (spec 039's arm label, the only field ``main``
+    itself reads) and the ollama preflight is stubbed to a no-op, so nothing
+    reaches a config branch that could touch AWS / Ollama / the network.
     """
 
     _set_all_cloud_stores(monkeypatch)
@@ -211,13 +230,13 @@ def test_pre_run_setup_isolates_and_forces_provider_for_every_provider(
 
     monkeypatch.setattr(blunder_eval, "run_eval", _fake_run_eval)
     # load_config is imported inside main() from graphia.config — stub the source.
-    monkeypatch.setattr("graphia.config.load_config", lambda: object())
+    monkeypatch.setattr("graphia.config.load_config", _cli_stub_config)
     # The ollama branch imports run_ollama_preflight from graphia.preflight.
     monkeypatch.setattr("graphia.preflight.run_ollama_preflight", lambda cfg: None)
     # Spec 035: the bedrock-claude branch likewise boots a preflight. This test
     # is about env isolation + provider forcing, not preflight behaviour (that
     # has its own tests below), so stub it out the same way — otherwise the
-    # stubbed bare-object config trips its real config attribute reads.
+    # one-field stub config trips its real config attribute reads.
     monkeypatch.setattr("graphia.preflight.run_claude_preflight", lambda cfg: None)
 
     rc = main(["--provider", provider, "--games", "1"])
@@ -267,7 +286,7 @@ def test_model_overrides_flow_through_main_for_ollama(
         return EvalResult(provider=args.provider)
 
     monkeypatch.setattr(blunder_eval, "run_eval", _fake_run_eval)
-    monkeypatch.setattr("graphia.config.load_config", lambda: object())
+    monkeypatch.setattr("graphia.config.load_config", _cli_stub_config)
     monkeypatch.setattr("graphia.preflight.run_ollama_preflight", lambda cfg: None)
 
     main(
@@ -300,7 +319,7 @@ def test_ollama_provider_runs_the_preflight_before_any_game(
         "graphia.preflight.run_ollama_preflight",
         lambda cfg: order.append("preflight"),
     )
-    monkeypatch.setattr("graphia.config.load_config", lambda: object())
+    monkeypatch.setattr("graphia.config.load_config", _cli_stub_config)
     monkeypatch.setattr(
         blunder_eval,
         "run_eval",
@@ -319,7 +338,7 @@ def test_bedrock_provider_does_not_run_the_ollama_preflight(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The bedrock path must never invoke the Ollama preflight."""
-    monkeypatch.setattr("graphia.config.load_config", lambda: object())
+    monkeypatch.setattr("graphia.config.load_config", _cli_stub_config)
     monkeypatch.setattr(
         blunder_eval, "run_eval", lambda config, args: EvalResult(provider="bedrock")
     )
@@ -354,7 +373,7 @@ def test_bedrock_claude_runs_the_claude_preflight_before_any_game(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The Claude arm preflights before the first game, and never plays if it fails."""
-    monkeypatch.setattr("graphia.config.load_config", lambda: object())
+    monkeypatch.setattr("graphia.config.load_config", _cli_stub_config)
 
     calls: list[str] = []
 
@@ -378,7 +397,7 @@ def test_bedrock_claude_preflight_failure_stops_before_playing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """An unreachable Claude aborts the run without playing a (paid) game."""
-    monkeypatch.setattr("graphia.config.load_config", lambda: object())
+    monkeypatch.setattr("graphia.config.load_config", _cli_stub_config)
 
     def _unreachable(cfg: object) -> None:
         raise SystemExit("Claude is unreachable: refresh your credentials.")
@@ -397,7 +416,7 @@ def test_bedrock_claude_does_not_run_the_ollama_preflight(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The Claude arm must never invoke the Ollama preflight."""
-    monkeypatch.setattr("graphia.config.load_config", lambda: object())
+    monkeypatch.setattr("graphia.config.load_config", _cli_stub_config)
     monkeypatch.setattr(
         blunder_eval,
         "run_eval",
@@ -417,7 +436,7 @@ def test_nova_bedrock_does_not_run_the_claude_preflight(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Regression: Nova keeps its existing no-preflight story (spec 035 §2.6)."""
-    monkeypatch.setattr("graphia.config.load_config", lambda: object())
+    monkeypatch.setattr("graphia.config.load_config", _cli_stub_config)
     monkeypatch.setattr(
         blunder_eval, "run_eval", lambda config, args: EvalResult(provider="bedrock")
     )

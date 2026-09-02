@@ -187,8 +187,8 @@ def _header(game_index: int, run_meta: Any) -> str:
 
     ``run_meta`` may be ``None``, a mapping, or any object; only cleanly
     available scalars (``provider``, ``large_model`` / ``small_model``,
-    ``games``) are surfaced, each omitted when absent so a thin / ``None``
-    ``run_meta`` still renders a header.
+    ``games``, and spec 039's ``diaries`` arm) are surfaced, each omitted when
+    absent so a thin / ``None`` ``run_meta`` still renders a header.
     """
     parts = [f"Game {game_index}"]
     provider = _meta_get(run_meta, "provider")
@@ -203,6 +203,15 @@ def _header(game_index: int, run_meta: Any) -> str:
     games = _meta_get(run_meta, "games")
     if games:
         parts.append(f"games={games}")
+    # Spec 039 §2.10: the diaries ARM this game was played under, so a preserved
+    # transcript says which side of the A/B it evidences without a trip to the
+    # ledger. ``run_eval`` passes the STRING ``"on"``/``"off"`` on purpose:
+    # ``_meta_get`` is truthiness-gated, so a raw ``False`` would be dropped
+    # here — and the off arm, whose transcripts are the evidence that the
+    # flag-off path wrote no diary, is exactly the one that would go unlabelled.
+    diaries = _meta_get(run_meta, "diaries")
+    if diaries:
+        parts.append(f"diaries={diaries}")
     return " | ".join(parts)
 
 
