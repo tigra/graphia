@@ -140,7 +140,9 @@ class _CapturingFake:
         self._output = output
         self.messages_log: list[Any] = []
 
-    def with_structured_output(self, schema: type, **kwargs: object) -> "_CapturingFake":
+    def with_structured_output(
+        self, schema: type, **kwargs: object
+    ) -> "_CapturingFake":
         return self
 
     def invoke(self, messages: Any) -> Any:

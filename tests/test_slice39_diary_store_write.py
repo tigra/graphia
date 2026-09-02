@@ -250,7 +250,9 @@ class _ScriptedDiaryFake:
         self._entry = entry
         self.messages_log: list[Any] = []
 
-    def with_structured_output(self, schema: type, **kwargs: object) -> "_ScriptedDiaryFake":
+    def with_structured_output(
+        self, schema: type, **kwargs: object
+    ) -> "_ScriptedDiaryFake":
         assert schema is Diary, f"unexpected schema bound: {schema!r}"
         return self
 
@@ -690,7 +692,9 @@ def test_a_store_failure_is_not_confused_with_a_model_failure(
     """
 
     class _ModelFailsForBen:
-        def with_structured_output(self, schema: type, **kwargs: object) -> "_ModelFailsForBen":
+        def with_structured_output(
+            self, schema: type, **kwargs: object
+        ) -> "_ModelFailsForBen":
             return self
 
         def invoke(self, messages: Any) -> Any:

@@ -170,13 +170,16 @@ class _RepliesWith:
         ),
         pytest.param("", None, id="empty-content-refused"),
         pytest.param("   \n  ", None, id="whitespace-only-refused"),
-        pytest.param('{"other": "no entry key"}', None, id="json-without-entry-refused"),
+        pytest.param(
+            '{"other": "no entry key"}', None, id="json-without-entry-refused"
+        ),
         pytest.param('{"entry": "   "}', None, id="json-with-blank-entry-refused"),
     ],
 )
 def test_recovered_diary_text_shaping(content: object, expected: str | None) -> None:
     """Each shape the ollama path actually produces, and each refusal."""
-    assert _recovered_diary_text(AIMessage(content=content)) == expected  # type: ignore[arg-type]
+    message = AIMessage(content=content)  # type: ignore[arg-type]
+    assert _recovered_diary_text(message) == expected
 
 
 def test_a_missing_raw_message_is_refused_rather_than_crashing() -> None:
