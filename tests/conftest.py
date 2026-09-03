@@ -10,6 +10,7 @@ from langchain_core.messages import AIMessage, BaseMessage
 from rich.text import Text
 from textual.widget import Widget
 
+from graphia.config import load_config
 from graphia.llm import (
     Ballot,
     DayAction,
@@ -19,6 +20,7 @@ from graphia.llm import (
     Reflection,
     Roster,
 )
+from graphia.nodes.setup import ai_name_count
 
 
 def _fake_embed_documents(texts: list[str]) -> list[list[float]]:
@@ -283,12 +285,22 @@ def safe_memory_client(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 class FakeSmall:
-    """Stand-in for ``ChatBedrockConverse`` used inside ``generate_roster``.
+    """STRICT stand-in for the small model — installed by ``fake_small(outputs=[...])``.
 
     The real code path is ``get_small().with_structured_output(Roster).invoke(msgs)``.
     This fake collapses that to a scripted-outputs queue. Each entry is either a
     ``Roster`` to return or an ``Exception`` to raise (e.g. ``ValidationError``
     to exercise the retry path).
+
+    **One of the fixture's two call forms** (spec 042 §2.2): this strict queue
+    backs ``outputs=`` ONLY, and drains one entry per ``.invoke``, raising
+    ``AssertionError`` once empty. That guard is the point of the form — it is
+    how a test pins "the corrective retry ran exactly once and then stopped",
+    so retry- and coercion-semantics tests get a fake that cannot quietly
+    answer a call they did not script. The other form (a plain list of names)
+    routes to the permissive :class:`_PooledSmall` instead and must NEVER be
+    routed here; see :func:`fake_small` for why blurring the two would hide a
+    real defect.
 
     Attributes:
         call_count: How many times ``.invoke`` was called. Useful for asserting
@@ -319,20 +331,157 @@ class FakeSmall:
         return out
 
 
+def _pooled_names(pool: Sequence[str], count: int) -> list[str]:
+    """Exactly ``count`` distinct names drawn from ``pool``, extended when short.
+
+    The pure name-supply behind :class:`_PooledSmall` (spec 042 §2.2). The
+    supplied list is a **pool**, not a scripted answer: it is consumed in order,
+    stripped and case-insensitively de-duplicated (:class:`graphia.llm.Roster`'s
+    validator rejects blanks and case-insensitive duplicates, so the result has
+    to hold that invariant before it is ever constructed), then truncated to
+    ``count``.
+
+    When the pool is shorter than ``count`` it is extended by cycling the
+    surviving names with a generation suffix — ``["Ivy", "Marco"]`` at count 5
+    yields ``["Ivy", "Marco", "Ivy-2", "Marco-2", "Ivy-3"]``. Two properties of
+    that scheme are load-bearing:
+
+    - **Deterministic.** Same ``(pool, count)`` in, same list out, always — no
+      RNG, no clock, no counter. ``tests/test_dual_mode_smoke.py``'s byte-equal
+      cross-mode comparison only means something if both modes derive an
+      identical roster from an identical pool.
+    - **Not the production placeholder.** The suffix form is deliberately NOT
+      the ``Player-{k}`` shape ``graphia.nodes.setup._coerce_to_count`` pads
+      with, so a fixture-extended roster can never be mistaken for a coerced
+      one by a test asserting that no placeholder reached the table.
+    """
+    seen: set[str] = set()
+    names: list[str] = []
+    for raw in pool:
+        name = raw.strip()
+        key = name.lower()
+        if not name or key in seen:
+            continue
+        seen.add(key)
+        names.append(name)
+        if len(names) == count:
+            return names
+    if not names:
+        raise AssertionError(
+            "fake_small was given an empty name pool; it needs at least one "
+            "non-blank name to extend from."
+        )
+    # Cycle a frozen snapshot of the surviving pool, not the growing list, so
+    # the generation suffixes stay a pure function of the input.
+    base = list(names)
+    index = 0
+    while len(names) < count:
+        candidate = f"{base[index % len(base)]}-{index // len(base) + 2}"
+        index += 1
+        key = candidate.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        names.append(candidate)
+    return names
+
+
+class _PooledSmall:
+    """PERMISSIVE stand-in for the small model — installed by ``fake_small([...])``.
+
+    Production call shape is
+    ``get_small().with_structured_output(Roster).invoke(msgs)``, and
+    ``graphia.nodes.setup._generate_names`` decides how many names it wants from
+    the *resolved config*, at runtime. A pre-scripted queue therefore cannot
+    know the right answer: at the wrong count the production guard
+    ``len(roster.names) == count`` fails, ``_generate_names`` issues its
+    corrective retry, the queue starves, and the resulting ``AssertionError``
+    escapes ``generate_roster`` — swallowed in UI-driven tests into a multi-second
+    poll timeout that never names the cause (spec 042 §2.2).
+
+    So this fake answers the question instead of guessing it: every ``.invoke``
+    asks :func:`graphia.nodes.setup.ai_name_count` how many names the lineup
+    needs and returns exactly that many distinct names from the supplied pool
+    (:func:`_pooled_names`). Every call is independent and idempotent — no
+    queue, no replay, no exhaustion — exactly the reasoning behind
+    :class:`_DynamicNightPointing` one phase later in the game.
+
+    ``call_count`` still increments, so a test wanting "generated exactly once"
+    keeps asserting it explicitly; what is gone is only the *implicit*,
+    unwritten "…and never more than I scripted" that 82 scaffolding call sites
+    were asserting by accident and could not read when it fired.
+
+    Attributes:
+        call_count: How many times ``.invoke`` was called.
+    """
+
+    def __init__(self, pool: Sequence[str]) -> None:
+        self._pool: list[str] = list(pool)
+        self.call_count = 0
+        self._bound_schema: type | None = None
+
+    def with_structured_output(self, schema: type, **kwargs: Any) -> "_PooledSmall":
+        # Mirrors ``FakeSmall``: record the bound schema and return self.
+        self._bound_schema = schema
+        return self
+
+    def invoke(self, messages: Any) -> Roster:
+        self.call_count += 1
+        # Derived HERE, at invoke time — not in ``__init__``, not at import.
+        # ``tests/test_configurable_lineup.py`` and its siblings vary the lineup
+        # per test through ``monkeypatch.setenv``, so a count bound any earlier
+        # would be pinned to the default and disagree with the game actually
+        # being played. ``ai_name_count`` is called rather than re-derived
+        # because a second copy of ``num_citizens + num_mafia - 1`` living here
+        # could silently drift from the production one.
+        count = ai_name_count(load_config())
+        # The rendered prompt is deliberately ignored: parsing the count out of
+        # it would couple this fake to prompt wording that other specs change
+        # freely.
+        return Roster(names=_pooled_names(self._pool, count))
+
+
 @pytest.fixture
-def fake_small(monkeypatch: pytest.MonkeyPatch) -> Callable[..., FakeSmall]:
+def fake_small(
+    monkeypatch: pytest.MonkeyPatch,
+) -> Callable[..., FakeSmall | _PooledSmall]:
     """Factory fixture: patch ``graphia.nodes.setup.get_small`` with a fake.
 
-    Usage::
+    **Two call forms, two different meanings** (spec 042 §2.2). Do not blur
+    them — the separation is the whole reason the permissive form is safe:
 
-        fake = fake_small(["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"])
-        # ...run the app / node under test...
-        assert fake.call_count == 1
+    1. **The list form — a permissive POOL.** ``fake_small([...])`` installs
+       :class:`_PooledSmall`: stateless, count-derived, no queue, no drain, no
+       replay. Every ``.invoke`` asks the production helper
+       :func:`graphia.nodes.setup.ai_name_count` how many names the *resolved
+       config* wants and answers with exactly that many distinct names, drawing
+       the supplied list as a pool and extending it deterministically when the
+       pool is short (:func:`_pooled_names`). The list is therefore a supply of
+       recognisable names, **not** a lineup-sized script — it never needs
+       resizing when the default table changes. This is the right form for the
+       overwhelming majority of tests, which only need the roster step to
+       produce *some* names so the game can proceed. ``call_count`` still
+       increments, so::
 
-    Accepts either a single list of names — sized to the lineup's AI-name
-    count (``num_citizens + num_mafia - 1``; 6 for the default 5+2 table) —
-    converted to a one-shot ``Roster``, or an explicit ``outputs=`` sequence
-    mixing ``Roster`` values and ``Exception`` instances for retry-path tests.
+           fake = fake_small(["Ivy", "Marco", "Priya", "Silas", "Yuki"])
+           # ...run the app / node under test...
+           assert fake.call_count == 1  # generated exactly once
+
+       still says exactly what it used to say.
+
+    2. **The ``outputs=`` form — a STRICT one-shot queue.** ``fake_small(
+       outputs=[...])`` installs :class:`FakeSmall`: a sequence of ``Roster``
+       values and ``Exception`` instances, one consumed per ``.invoke``, raising
+       ``AssertionError`` once drained. **For retry and coercion tests only** —
+       those are the tests whose subject *is* how many times the model was
+       called and what it returned each time, and the drain guard is what makes
+       them able to catch a real defect in ``_generate_names``.
+
+    The safety constraint, stated so it is not re-litigated: **the ``outputs=``
+    form must never be routed to the permissive fake.** A permissive fake could
+    in principle mask a defect in the retry/coercion path; keeping the three
+    call sites that test that path on the strict queue is what contains the
+    risk by construction.
 
     Patches the ``get_small`` binding **inside** ``graphia.nodes.setup`` (the
     call site) so the already-imported reference is replaced cleanly — patching
@@ -344,12 +493,20 @@ def fake_small(monkeypatch: pytest.MonkeyPatch) -> Callable[..., FakeSmall]:
         names: Sequence[str] | None = None,
         *,
         outputs: Sequence[Roster | Exception] | None = None,
-    ) -> FakeSmall:
-        if outputs is None:
-            if names is None:
-                raise TypeError("fake_small requires either `names` or `outputs`")
-            outputs = [Roster(names=list(names))]
-        fake = FakeSmall(outputs)
+    ) -> FakeSmall | _PooledSmall:
+        if outputs is not None and names is not None:
+            raise TypeError(
+                "fake_small takes `names` (permissive pool) OR `outputs` "
+                "(strict queue), never both — the two forms mean different "
+                "things; see the fixture docstring."
+            )
+        if outputs is not None:
+            return _patched(FakeSmall(outputs))
+        if names is None:
+            raise TypeError("fake_small requires either `names` or `outputs`")
+        return _patched(_PooledSmall(names))
+
+    def _patched(fake: FakeSmall | _PooledSmall) -> FakeSmall | _PooledSmall:
         monkeypatch.setattr("graphia.nodes.setup.get_small", lambda: fake)
         return fake
 
