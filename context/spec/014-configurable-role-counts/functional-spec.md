@@ -8,6 +8,8 @@
 
 ## 1. Overview and Rationale (The "Why")
 
+> **Superseded on one number (2026-09-03).** The default this section records — five Law-abiding Citizens and two Mafiosos — is no longer the default; it is now **six Law-abiding Citizens and two Mafiosos**, per [CR 007](../../change-requests/007-starter-lineup-balance-claim-and-default.md) and [spec 042](../042-default-lineup-six-plus-two/functional-spec.md). Nothing here was wrong and nothing else has changed: the lineup is still set through pre-launch configuration, the counts are still fully player-configurable — the old five-and-two included — and this spec remains an accurate record of what was built.
+
 Today every game starts with the same fixed lineup — **seven players: five Law-abiding Citizens and two Mafiosos**, one of whom is the human. That makes every run structurally identical and, now that the project measures AI behaviour across batches of games (the quality-ledger work), it means every measured run is locked to one lineup — we can't study how behaviour or outcomes shift with table size or Mafia density.
 
 This increment lets the player **choose the lineup** — how many Law-abiding Citizens and how many Mafiosos sit at the table — and then deals the roles **randomly**, so each run starts fresh. The chosen lineup is also **recorded with each measured (eval) run and shown in the ledger viewer**, so a run's results can be read in light of the table it was played on.
@@ -23,6 +25,8 @@ The lineup is set through **pre-launch configuration** — the same place the pl
 ## 2. Functional Requirements (The "What")
 
 ### 2.1 Choose the lineup before launch
+
+> **Superseded on one number (2026-09-03).** The default this section records — five Law-abiding Citizens and two Mafiosos — is no longer the default; it is now **six Law-abiding Citizens and two Mafiosos**, per [CR 007](../../change-requests/007-starter-lineup-balance-claim-and-default.md) and [spec 042](../042-default-lineup-six-plus-two/functional-spec.md). Nothing here was wrong and nothing else has changed: the lineup is still set through pre-launch configuration, the counts are still fully player-configurable — the old five-and-two included — and this spec remains an accurate record of what was built.
 
 - **As a** player, **I want** to set how many Law-abiding Citizens and Mafiosos are at the table before I launch, **so that** I can play (and measure) tables other than the fixed five-plus-two.
   - **Acceptance Criteria:**
@@ -56,6 +60,8 @@ The lineup is set through **pre-launch configuration** — the same place the pl
 ## 3. Scope and Boundaries
 
 ### In-Scope
+
+> **Superseded on one number (2026-09-03).** The default this section records — five Law-abiding Citizens and two Mafiosos — is no longer the default; it is now **six Law-abiding Citizens and two Mafiosos**, per [CR 007](../../change-requests/007-starter-lineup-balance-claim-and-default.md) and [spec 042](../042-default-lineup-six-plus-two/functional-spec.md). Nothing here was wrong and nothing else has changed: the lineup is still set through pre-launch configuration, the counts are still fully player-configurable — the old five-and-two included — and this spec remains an accurate record of what was built.
 
 - **Pre-launch configuration** of the table's Law-abiding-Citizen and Mafioso counts (whole-table, human included), with a documented **default** (today's five-plus-two) when unset.
 - **Startup validation** of the lineup with a **fail-fast exit and a clear message** on anything unworkable (no Mafia, Mafia ≥ Citizens, zero/negative, non-numeric).

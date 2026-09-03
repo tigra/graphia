@@ -8,6 +8,8 @@
 
 ## 1. Overview and Rationale (The "Why")
 
+> **Superseded on two numbers (2026-09-03).** The fixed table this section names — two Mafia and five Law-abiding, seven players — was the whole story when this spec shipped, but the counts became player-configurable in [spec 014](../014-configurable-role-counts/functional-spec.md) and the default is now **six Law-abiding Citizens and two Mafiosos**, eight players, per [CR 007](../../change-requests/007-starter-lineup-balance-claim-and-default.md) and [spec 042](../042-default-lineup-six-plus-two/functional-spec.md). What this spec built is unaffected and still correctly described: pinning the human's seat leaves the rest of the table exactly as it would have been dealt, whatever size that table is. Only the numbers named here as fixed have moved.
+
 Today a player's role (Mafia or Law-abiding Citizen) is dealt at random from the fixed seven-card lineup — two Mafia, five Law-abiding. There's no way to choose which side you play; you take whatever the shuffle hands you. For someone repeatedly exercising the game — especially the author testing Mafia-only flows (night kills, private intros) versus Citizen-only flows — the random draw is friction: you relaunch until the seed happens to deal you the side you want.
 
 This adds an optional setting, the `GRAPHIA_ROLE` environment variable, that pins the human's role for the session. It is read the same way as the other Graphia settings (from the environment / `.env`), which means it composes cleanly with the existing `make play` / `make play-remote` launch flow without threading a new command-line flag through the Makefile. The rest of the lineup fills the remaining cards as usual, the overall composition is unchanged, and (when a seed is set) the full assignment stays reproducible. When the variable is unset, behaviour is exactly as today — a random draw.
@@ -28,6 +30,8 @@ This adds an optional setting, the `GRAPHIA_ROLE` environment variable, that pin
     - [x] Only `mafia` and `law-abiding` are accepted. Any other value (e.g. `citizen`, `villain`, empty string) makes the program refuse to start and print an error that names the two valid choices.
 
 ### 2.2 Composition and the rest of the lineup are unchanged
+
+> **Superseded on two numbers (2026-09-03).** The fixed table this section names — two Mafia and five Law-abiding, seven players — was the whole story when this spec shipped, but the counts became player-configurable in [spec 014](../014-configurable-role-counts/functional-spec.md) and the default is now **six Law-abiding Citizens and two Mafiosos**, eight players, per [CR 007](../../change-requests/007-starter-lineup-balance-claim-and-default.md) and [spec 042](../042-default-lineup-six-plus-two/functional-spec.md). What this spec built is unaffected and still correctly described: pinning the human's seat leaves the rest of the table exactly as it would have been dealt, whatever size that table is. Only the numbers named here as fixed have moved.
 
 - **As a** developer, **I want** forcing my role to NOT change the overall game balance, **so that** the game I'm testing is the same game everyone else plays — just with my seat pinned.
   - **Acceptance Criteria:**
@@ -87,6 +91,8 @@ This adds an optional setting, the `GRAPHIA_ROLE` environment variable, that pin
 ## 3. Scope and Boundaries
 
 ### In-Scope
+
+> **Superseded on two numbers (2026-09-03).** The fixed table this section names — two Mafia and five Law-abiding, seven players — was the whole story when this spec shipped, but the counts became player-configurable in [spec 014](../014-configurable-role-counts/functional-spec.md) and the default is now **six Law-abiding Citizens and two Mafiosos**, eight players, per [CR 007](../../change-requests/007-starter-lineup-balance-claim-and-default.md) and [spec 042](../042-default-lineup-six-plus-two/functional-spec.md). What this spec built is unaffected and still correctly described: pinning the human's seat leaves the rest of the table exactly as it would have been dealt, whatever size that table is. Only the numbers named here as fixed have moved.
 
 - A single setting, `GRAPHIA_ROLE`, read from the environment / `.env`, accepting exactly `mafia` or `law-abiding` (case-insensitive).
 - Pinning the human's role while preserving the fixed 2-Mafia / 5-Law-abiding composition.
