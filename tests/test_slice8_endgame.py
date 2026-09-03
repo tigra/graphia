@@ -342,8 +342,11 @@ def test_law_abiding_wins_when_all_mafia_executed(
     )
 
     # Full roster reveal: every player (alive OR dead) listed with role.
+    # The seat count is a **config echo** (spec 042 §2.3) — this game's roster
+    # was dealt by ``generate_roster`` from ``config`` above — so derive it
+    # instead of pinning whatever the default lineup happens to be.
     players = state.get("players", {})
-    assert len(players) == 7
+    assert len(players) == config.num_citizens + config.num_mafia
     for player in players.values():
         assert player.name in final, (
             f"roster reveal missing {player.name!r}"
@@ -471,9 +474,10 @@ def test_mafia_wins_when_parity_reached(
             f"kill-log entry {record!r} missing from end-screen"
         )
 
-    # Roster reveal: every player listed.
+    # Roster reveal: every player listed. Seat count derived from the resolved
+    # lineup (spec 042 §2.3): it echoes the config this game was built from.
     players = state.get("players", {})
-    assert len(players) == 7
+    assert len(players) == config.num_citizens + config.num_mafia
     for player in players.values():
         assert player.name in final
 
@@ -590,8 +594,10 @@ def test_endgame_message_contains_kill_log_and_roster(
 
     # Roster section contains EVERY player and their role label.
     assert ENDGAME_HEADER_ROSTER in final
+    # Seat count derived from the resolved lineup (spec 042 §2.3) — a config
+    # echo, since ``generate_roster`` sized this game's roster from ``config``.
     players = state.get("players", {})
-    assert len(players) == 7
+    assert len(players) == config.num_citizens + config.num_mafia
     roster_section = final.split(ENDGAME_HEADER_ROSTER, 1)[1]
     for player in players.values():
         assert player.name in roster_section, (

@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 from textual.widgets import Input, RichLog
 
+from graphia.config import load_config
 from graphia.llm import DayAction
 from graphia.ui.app import GraphiaApp
 
@@ -96,14 +97,32 @@ async def test_ui_unfreezes_after_first_day_turn(
         await pilot.press("enter")
 
         # Wait for the roster so assertions below can reference player ids.
-        await _wait(
-            pilot,
-            lambda: len(
-                app._graph.get_state(app._run_config).values.get("players", {})
+        # The seat count is a **config echo**, not this test's own construction
+        # (spec 042 §2.3): ``generate_roster`` sizes the roster from the
+        # resolved ``num_citizens + num_mafia`` (whole-table counts, human
+        # included), so read it from there rather than pinning a literal — a
+        # hard-coded number fails here as an opaque five-second poll timeout
+        # naming this lambda, not as a wrong count.
+        config = load_config()
+        expected_seats = config.num_citizens + config.num_mafia
+        try:
+            await _wait(
+                pilot,
+                lambda: len(
+                    app._graph.get_state(app._run_config).values.get(
+                        "players", {}
+                    )
+                )
+                == expected_seats,
+                timeout=5.0,
             )
-            == 7,
-            timeout=5.0,
-        )
+        except TimeoutError as exc:
+            seen = app._graph.get_state(app._run_config).values.get("players", {})
+            raise AssertionError(
+                f"roster never reached {expected_seats} seats (resolved "
+                f"lineup: {config.num_citizens} Citizens + {config.num_mafia} "
+                f"Mafiosos) within 5s; saw {len(seen)} player(s)"
+            ) from exc
 
         # Wait for the first human day_turn prompt.
         await _wait(

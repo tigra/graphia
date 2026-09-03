@@ -30,6 +30,7 @@ from typing import Awaitable, Callable
 import pytest
 from textual.widgets import Input, RichLog
 
+from graphia.config import load_config
 from graphia.llm import DayAction
 from graphia.nodes.day import resolve_vote
 from graphia.nodes.night import resolve_night_kill
@@ -103,19 +104,42 @@ def _players_snapshot(app: GraphiaApp) -> dict:
 
 
 async def _wait_for_players(app: GraphiaApp, pilot) -> dict:
-    """Poll until the graph state has a fully-assigned 7-player roster."""
+    """Poll until graph state holds a fully-roled roster at the resolved lineup.
+
+    The seat count is a **config echo**, not this test's own construction
+    (spec 042 §2.3): ``generate_roster`` sizes the roster from the resolved
+    ``num_citizens + num_mafia`` — whole-table counts, human included — so the
+    expectation is read from there rather than pinned to a literal. A hard-coded
+    number does not fail as a wrong count; it fails as a five-second poll
+    timeout whose message blames this predicate, which is why the timeout is
+    also re-raised below with the lineup and the observed roster named.
+    """
+    config = load_config()
+    expected_seats = config.num_citizens + config.num_mafia
 
     def _ready() -> bool:
         try:
             players = _players_snapshot(app)
         except Exception:  # noqa: BLE001 — state not there yet
             return False
-        if len(players) != 7:
+        if len(players) != expected_seats:
             return False
         # Roles are only populated after `assign_roles` runs.
         return all(p.role in ("mafia", "law_abiding") for p in players.values())
 
-    await _wait_for(pilot, _ready, timeout=5.0)
+    try:
+        await _wait_for(pilot, _ready, timeout=5.0)
+    except TimeoutError as exc:
+        try:
+            seen = _players_snapshot(app)
+        except Exception:  # noqa: BLE001
+            seen = {}
+        raise AssertionError(
+            f"roster never settled into {expected_seats} fully-roled seats "
+            f"(resolved lineup: {config.num_citizens} Citizens + "
+            f"{config.num_mafia} Mafiosos) within 5s; saw {len(seen)} player(s) "
+            f"with roles {sorted(p.role for p in seen.values())!r}"
+        ) from exc
     return _players_snapshot(app)
 
 
@@ -216,7 +240,10 @@ async def test_night1_human_law_abiding_kill_announced(
         final_players = state["players"]
         assert final_players[target_id].is_alive is False
         alive = [p for p in final_players.values() if p.is_alive]
-        assert len(alive) == 6
+        # Exactly one Night kill, so the alive count is the resolved table less
+        # one — a **config echo** (spec 042 §2.3), not a fixed 6.
+        config = load_config()
+        assert len(alive) == config.num_citizens + config.num_mafia - 1
 
         kill_log = state.get("kill_log", [])
         assert len(kill_log) >= 1
@@ -303,9 +330,13 @@ async def test_night1_human_mafia_picks_target_via_modal(
         law_abiding_ids = [
             pid for pid, p in players.items() if p.role == "law_abiding"
         ]
-        assert len(ai_mafia_ids) == 1
+        # The role split is a **config echo** (spec 042 §2.3): the human is
+        # pinned Mafia above, so the AI Mafiosi are the Mafia seats less the
+        # human's and every Citizen seat is an AI.
+        config = load_config()
+        assert len(ai_mafia_ids) == config.num_mafia - 1
         ai_mafia_id = ai_mafia_ids[0]
-        assert len(law_abiding_ids) == 5
+        assert len(law_abiding_ids) == config.num_citizens
 
         target_id = law_abiding_ids[0]
         target_name = players[target_id].name

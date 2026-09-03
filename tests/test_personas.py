@@ -50,7 +50,12 @@ from graphia.nodes.day import (
     resolve_vote,
 )
 from graphia.nodes.night import _ai_pick_target, resolve_night_kill
-from graphia.nodes.setup import assign_roles, generate_personas, generate_roster
+from graphia.nodes.setup import (
+    ai_name_count,
+    assign_roles,
+    generate_personas,
+    generate_roster,
+)
 from graphia.prompts import (
     DAY_SPEAK_USER_TEMPLATE,
     ENDGAME_PERSONA_HEADER,
@@ -150,14 +155,18 @@ def test_every_ai_gets_a_persona_human_has_none(
         personas=[_CITIZEN_PERSONA, _MAFIA_PERSONA],
     )
 
-    # 7-seat default table: 1 human + 6 AIs.
-    assert len(players) == 7
+    # The table is a **config echo**, not this test's construction (spec 042
+    # §2.3): ``generate_roster`` mints ``ai_name_count(config)`` AI seats onto
+    # the one human seat, so both counts are read from the resolved lineup
+    # rather than pinned to whatever the default happened to be.
+    config = load_config()
+    assert len(players) == config.num_citizens + config.num_mafia
     human = players["human"]
     assert human.is_human is True
     assert human.persona is None, "the human must never be given a persona"
 
     ai_players = [p for p in players.values() if not p.is_human]
-    assert len(ai_players) == 6
+    assert len(ai_players) == ai_name_count(config)
     for ai in ai_players:
         assert ai.persona is not None, f"AI {ai.name!r} has no persona"
         assert isinstance(ai.persona, PlayerPersona)
@@ -188,9 +197,13 @@ def test_mafioso_persona_has_public_and_true_self(
     ai_players = [p for p in players.values() if not p.is_human]
     mafiosi = [p for p in ai_players if p.role == "mafia"]
     citizens = [p for p in ai_players if p.role == "law_abiding"]
-    # Default lineup: 2 Mafia total, human is Law-abiding → 2 AI Mafiosi.
-    assert len(mafiosi) == 2
-    assert len(citizens) == 4
+    # Config echo (spec 042 §2.3), given the human is pinned Law-abiding
+    # above: every Mafioso seat is an AI, and the AI Citizens are the Citizen
+    # seats less the human's. Derived from the resolved lineup so the split
+    # tracks the table instead of pinning one.
+    config = load_config()
+    assert len(mafiosi) == config.num_mafia
+    assert len(citizens) == config.num_citizens - 1
 
     for maf in mafiosi:
         assert maf.persona is not None
@@ -241,7 +254,7 @@ def test_generate_personas_never_blocks_without_a_fake(
     )
 
     ai_players = [p for p in players.values() if not p.is_human]
-    assert len(ai_players) == 6
+    assert len(ai_players) == ai_name_count(load_config())
     for ai in ai_players:
         assert ai.persona is not None, (
             f"AI {ai.name!r} got no fallback persona — setup blocked"
@@ -625,9 +638,11 @@ def test_default_game_runs_to_completion_with_persona_node(
     assert state.get("phase") == "end"
 
     # Mechanics untouched: every Mafia was executed (no Mafia alive), kills
-    # were recorded, and the full roster (7 players) is intact.
+    # were recorded, and the full roster is intact — sized from the resolved
+    # lineup (spec 042 §2.3), since the roster this game dealt is a config
+    # echo and ``config`` is already in hand above.
     players = state.get("players", {})
-    assert len(players) == 7
+    assert len(players) == config.num_citizens + config.num_mafia
     alive_mafia = [p for p in players.values() if p.is_alive and p.role == "mafia"]
     assert alive_mafia == [], "Law win requires no Mafia alive"
     kill_log = state.get("kill_log", [])

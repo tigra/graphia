@@ -39,6 +39,7 @@ import graphia.nodes.day as day_nodes
 from graphia.config import load_config
 from graphia.graph import build_graph, make_run_config
 from graphia.llm import DayAction, Pointing
+from graphia.nodes.setup import ai_name_count
 from graphia.ui.app import GraphiaApp
 
 AI_NAMES = ["Aarav", "Bianca", "Chiko", "Daria", "Elias", "Finn"]
@@ -108,16 +109,41 @@ def _players_snapshot(app: GraphiaApp) -> dict:
 
 
 async def _wait_for_players(app: GraphiaApp, pilot) -> dict:
+    """Poll until graph state holds a fully-roled roster at the resolved lineup.
+
+    The seat count is a **config echo**, not this test's own construction
+    (spec 042 §2.3): ``generate_roster`` sizes the roster from the resolved
+    ``num_citizens + num_mafia`` — whole-table counts, human included — so the
+    expectation is read from there rather than pinned to a literal. A hard-coded
+    number does not fail as a wrong count; it fails as a five-second poll
+    timeout whose message blames this predicate, which is why the timeout is
+    also re-raised below with the lineup and the observed roster named.
+    """
+    config = load_config()
+    expected_seats = config.num_citizens + config.num_mafia
+
     def _ready() -> bool:
         try:
             players = _players_snapshot(app)
         except Exception:  # noqa: BLE001
             return False
-        if len(players) != 7:
+        if len(players) != expected_seats:
             return False
         return all(p.role in ("mafia", "law_abiding") for p in players.values())
 
-    await _wait_for(pilot, _ready, timeout=5.0)
+    try:
+        await _wait_for(pilot, _ready, timeout=5.0)
+    except TimeoutError as exc:
+        try:
+            seen = _players_snapshot(app)
+        except Exception:  # noqa: BLE001
+            seen = {}
+        raise AssertionError(
+            f"roster never settled into {expected_seats} fully-roled seats "
+            f"(resolved lineup: {config.num_citizens} Citizens + "
+            f"{config.num_mafia} Mafiosos) within 5s; saw {len(seen)} player(s) "
+            f"with roles {sorted(p.role for p in seen.values())!r}"
+        ) from exc
     return _players_snapshot(app)
 
 
@@ -282,19 +308,22 @@ async def test_day_rounds_shuffle_and_players_speak(
         ]
         target_id = law_abiding_ids[0]
 
-        # After the night, 5 AI players are alive. The human takes a slot
-        # somewhere in the round-1 order, so at minimum 0 AI turns precede
-        # the human's turn; at maximum 5 AI turns precede it. The
-        # ``_shuffle_order`` stub above places the human at index 3, so we
-        # expect at least 3 distinct AI speakers before the worker errors
-        # out on the unimplemented human-turn interrupt. Any number < 3
-        # would suggest the round-robin speaking isn't advancing at all.
+        # After the night one AI is dead, so the alive-AI count is the roster's
+        # AI count less one — a **config echo** (spec 042 §2.3), read from the
+        # resolved lineup rather than pinned. The human takes a slot somewhere
+        # in the round-1 order, so at minimum 0 AI turns precede the human's
+        # turn and at most every alive AI does. The ``_shuffle_order`` stub
+        # above places the human at index 3 — that 3 is this test's OWN
+        # construction, not the lineup's — so we expect at least 3 distinct AI
+        # speakers before the worker errors out on the unimplemented human-turn
+        # interrupt. Any number < 3 would suggest the round-robin speaking
+        # isn't advancing at all.
         alive_ai_names_after_night = {
             p.name
             for pid, p in players.items()
             if not p.is_human and pid != target_id
         }
-        assert len(alive_ai_names_after_night) == 5
+        assert len(alive_ai_names_after_night) == ai_name_count(load_config()) - 1
 
         def _ai_speakers() -> set[str]:
             try:

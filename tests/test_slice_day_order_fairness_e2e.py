@@ -79,8 +79,14 @@ DAY_CLOSE_NO_EXEC_LINE = "The Day ends with no one executed."
 # --------------------------------------------------------------------------
 BASE_SEED = 20250607
 M_GAMES = 120
-# After Night 1 exactly 6 players survive every game (one Law-abiding AI dies).
-N_ALIVE = 6
+# The alive population after Night 1 — exactly one Law-abiding AI dies, so it
+# is one seat short of the whole table — is a **config echo** (spec 042 §2.3),
+# not this module's own construction. It is therefore derived INSIDE the test
+# from the resolved lineup rather than pinned as a module constant here: an
+# import-time derivation could not see a per-test lineup override, and a literal
+# does not fail as a wrong number — it silently turns the population filter
+# below into a near-empty sample (measured at a table one seat larger: 18 of 21
+# captured orders discarded, leaving 3 to anchor a uniformity band).
 RELATIVE_TOLERANCE = 0.45
 
 
@@ -256,7 +262,7 @@ def test_emerging_day_order_is_fair_across_games(
     the running graph produces during each game's Day 1, then asserts:
 
     (a) Per-position uniformity: every alive player lands in each of the
-        ``N_ALIVE`` positions within ``RELATIVE_TOLERANCE`` of the per-cell
+        ``n_alive`` positions within ``RELATIVE_TOLERANCE`` of the per-cell
         expectation.
     (b) Role parity: aggregating by Mafia vs Law-abiding, each role's share at
         every position is proportional to its alive headcount.
@@ -269,6 +275,16 @@ def test_emerging_day_order_is_fair_across_games(
     role correctly even though the role deal varies run to run.
     """
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+
+    # The steady-state Day-1 population and its role split, derived from the
+    # resolved lineup (see the note beside ``RELATIVE_TOLERANCE``). The human is
+    # pinned Law-abiding just above and the Night pointing fake only ever
+    # targets AIs, so Night 1 always costs the town exactly one Law-abiding AI
+    # seat: every Mafioso is still alive, and one Citizen seat is gone.
+    lineup = load_config()
+    n_alive = lineup.num_citizens + lineup.num_mafia - 1
+    alive_mafia = lineup.num_mafia
+    alive_law = lineup.num_citizens - 1
 
     master = random.Random(BASE_SEED)
     child_seeds = [master.randrange(2**31) for _ in range(M_GAMES)]
@@ -338,17 +354,21 @@ def test_emerging_day_order_is_fair_across_games(
         # name interrupt above ``players`` is not yet in state — the roster is
         # generated only after the name is resumed inside the helper.)
         post_players = graph.get_state(run_config).values["players"]
-        assert len(post_players) == 7
+        # Seat count derived from the resolved lineup (spec 042 §2.3): a config
+        # echo, since ``generate_roster`` sized this game's roster from
+        # ``config`` a few lines up.
+        assert len(post_players) == config.num_citizens + config.num_mafia
         id_to_name = {pid: p.name for pid, p in post_players.items()}
         id_to_role = {pid: p.role for pid, p in post_players.items()}
         id_is_human = {pid: p.is_human for pid, p in post_players.items()}
 
         for order in orders:
-            # Only aggregate the steady-state 6-alive orders so every cell in
-            # the matrix is over an identical population. (day_open and every
-            # reshuffle here are all 6-alive; this guard just documents/guards
-            # the invariant.)
-            if len(order) != N_ALIVE:
+            # Only aggregate the steady-state ``n_alive`` orders so every cell
+            # in the matrix is over an identical population. (Day-1's day_open
+            # and every reshuffle are all at the post-Night-1 headcount; this
+            # guard documents that invariant and drops any straggler order
+            # captured after a later death.)
+            if len(order) != n_alive:
                 continue
             total_orders += 1
             for position, pid in enumerate(order):
@@ -366,21 +386,23 @@ def test_emerging_day_order_is_fair_across_games(
     # ----------------------------------------------------------------------
     # (a) Per-position uniformity for every seat.
     # ----------------------------------------------------------------------
-    # Every captured order is a permutation of the 6 alive seats, so each
-    # position receives exactly one placement per order: total placements at a
-    # position == total_orders, expected per (seat, position) == orders / 6.
+    # Every captured order is a permutation of the ``n_alive`` alive seats, so
+    # each position receives exactly one placement per order: total placements
+    # at a position == total_orders, expected per (seat, position) ==
+    # total_orders / n_alive.
     assert total_orders > 0
 
-    # The 7 roster seats are stable by name across games; after Night 1 one
-    # Law-abiding AI is dead, so a given name is absent from a game's orders in
-    # the (few) games where it was that Night's victim. The deterministic Night
-    # pointing fake targets the first alive Law-abiding non-human, so ONE seat
-    # ends up the victim disproportionately often and accumulates too few
-    # placements to anchor a tight per-cell band. We therefore assert per-seat
-    # uniformity only for seats that survived into most games' orders
-    # (``seat_total`` near the full order count); the under-sampled victim seat
-    # still feeds the robust aggregate role/position totals below. At least the
-    # human plus several AI seats clear this bar, so the check is not vacuous.
+    # The whole-table roster seats are stable by name across games; after
+    # Night 1 one Law-abiding AI is dead, so a given name is absent from a
+    # game's orders in the (few) games where it was that Night's victim. The
+    # deterministic Night pointing fake targets the first alive Law-abiding
+    # non-human, so ONE seat ends up the victim disproportionately often and
+    # accumulates too few placements to anchor a tight per-cell band. We
+    # therefore assert per-seat uniformity only for seats that survived into
+    # most games' orders (``seat_total`` near the full order count); the
+    # under-sampled victim seat still feeds the robust aggregate role/position
+    # totals below. At least the human plus several AI seats clear this bar, so
+    # the check is not vacuous.
     well_sampled_floor = 0.5 * total_orders
     asserted_seats = 0
     for name, counter in position_counts.items():
@@ -388,9 +410,9 @@ def test_emerging_day_order_is_fair_across_games(
         if seat_total < well_sampled_floor:
             continue
         asserted_seats += 1
-        seat_expected = seat_total / N_ALIVE
+        seat_expected = seat_total / n_alive
         seat_band = RELATIVE_TOLERANCE * seat_expected
-        for position in range(N_ALIVE):
+        for position in range(n_alive):
             observed = counter[position]
             assert abs(observed - seat_expected) <= seat_band, (
                 f"seat {name!r} at position {position}: observed {observed}, "
@@ -409,7 +431,7 @@ def test_emerging_day_order_is_fair_across_games(
     # (b) Role parity: each position gets one placement per order, split
     #     between Mafia and Law-abiding in proportion to their alive headcount.
     # ----------------------------------------------------------------------
-    for position in range(N_ALIVE):
+    for position in range(n_alive):
         assert (
             mafia_placements[position] + law_placements[position]
             == total_orders
@@ -418,10 +440,11 @@ def test_emerging_day_order_is_fair_across_games(
             f"mafia={mafia_placements[position]}, "
             f"law={law_placements[position]}, total={total_orders}"
         )
-        # 2 Mafia of 6 alive -> Mafia should hold ~1/3 of each position's
-        # placements, Law-abiding ~2/3. Use the same relative tolerance.
-        expected_mafia = total_orders * (2 / N_ALIVE)
-        expected_law = total_orders * (4 / N_ALIVE)
+        # Each role holds a share of every position's placements equal to its
+        # share of the alive headcount — both derived from the resolved lineup
+        # rather than pinned (spec 042 §2.3). Same relative tolerance.
+        expected_mafia = total_orders * (alive_mafia / n_alive)
+        expected_law = total_orders * (alive_law / n_alive)
         assert abs(mafia_placements[position] - expected_mafia) <= (
             RELATIVE_TOLERANCE * expected_mafia
         ), (
@@ -455,9 +478,9 @@ def test_emerging_day_order_is_fair_across_games(
     # Compare per-seat *rates* (placements per position relative to each seat's
     # own total) rather than raw counts, so any residual difference in the two
     # seats' game-participation denominators doesn't bias the comparison.
-    human_expected = human_total / N_ALIVE
-    ai_expected = ai_total / N_ALIVE
-    for position in range(N_ALIVE):
+    human_expected = human_total / n_alive
+    ai_expected = ai_total / n_alive
+    for position in range(n_alive):
         human_rate = human_placements[position] / human_expected
         ai_rate = comparison_ai_placements[position] / ai_expected
         assert abs(human_rate - ai_rate) <= 2 * RELATIVE_TOLERANCE, (

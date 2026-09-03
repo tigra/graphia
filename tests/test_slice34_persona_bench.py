@@ -56,6 +56,7 @@ present, still entirely offline:
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -63,7 +64,9 @@ from pathlib import Path
 
 import pytest
 
+from graphia.config import load_config
 from graphia.llm import Persona
+from graphia.nodes.setup import ai_name_count
 from graphia.tools import blunder_eval, persona_bench
 from graphia.tools.persona_bench import (
     RECORD_KIND,
@@ -222,8 +225,15 @@ def test_diversity_off_does_not_regenerate_a_colliding_cast(
     )
 
     assert summary.rosters_completed == 1
-    # An all-identical 6-AI cast → C(6,2)=15 colliding pairs, none regenerated.
-    assert summary.total_collisions == 15
+    # An all-identical cast collides on EVERY unordered pair, so the count is
+    # C(n_ai, 2) over the roster the bench actually generated. Both halves are
+    # config echoes (spec 042 §2.3): the bench builds its roster through the
+    # real ``generate_roster``, which sizes it by ``ai_name_count``, and the
+    # pair count is that size choose two. Derived rather than renumbered — the
+    # denominator moves with the lineup (six AIs give 15 pairs, seven give 21),
+    # and a literal would have to be recomputed by hand every time.
+    n_ai = ai_name_count(load_config())
+    assert summary.total_collisions == math.comb(n_ai, 2)
     assert summary.total_regenerations == 0
     # The lexical peak is a verbatim-copy 1.0.
     assert summary.persona_lex_peak == pytest.approx(1.0)

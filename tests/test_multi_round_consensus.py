@@ -44,6 +44,7 @@ import pytest
 from textual.app import App, ComposeResult
 from textual.widgets import Input, OptionList, RichLog, Static
 
+from graphia.config import load_config
 from graphia.llm import DayAction, Pointing
 from graphia.nodes import night as night_mod
 from graphia.nodes import setup as setup_mod
@@ -767,16 +768,44 @@ def _players_snapshot(app: GraphiaApp) -> dict:
 
 
 async def _wait_for_players(app: GraphiaApp, pilot) -> dict:
+    """Poll until graph state holds a fully-roled roster at the resolved lineup.
+
+    The seat count is a **config echo**, not this test's own construction
+    (spec 042 §2.3): ``generate_roster`` sizes the roster from the resolved
+    ``num_citizens + num_mafia`` — whole-table counts, human included — so the
+    expectation is read from there rather than pinned to a literal. A hard-coded
+    number does not fail as a wrong count; it fails as a five-second poll
+    timeout whose message blames this predicate, which is why the timeout is
+    also re-raised below with the lineup and the observed roster named.
+
+    ``tests/test_slice30_night_roster.py`` imports this helper, so it is the
+    readiness gate for two modules.
+    """
+    config = load_config()
+    expected_seats = config.num_citizens + config.num_mafia
+
     def _ready() -> bool:
         try:
             players = _players_snapshot(app)
         except Exception:  # noqa: BLE001
             return False
-        if len(players) != 7:
+        if len(players) != expected_seats:
             return False
         return all(p.role in ("mafia", "law_abiding") for p in players.values())
 
-    await _wait_for(pilot, _ready, timeout=5.0)
+    try:
+        await _wait_for(pilot, _ready, timeout=5.0)
+    except TimeoutError as exc:
+        try:
+            seen = _players_snapshot(app)
+        except Exception:  # noqa: BLE001
+            seen = {}
+        raise AssertionError(
+            f"roster never settled into {expected_seats} fully-roled seats "
+            f"(resolved lineup: {config.num_citizens} Citizens + "
+            f"{config.num_mafia} Mafiosos) within 5s; saw {len(seen)} player(s) "
+            f"with roles {sorted(p.role for p in seen.values())!r}"
+        ) from exc
     return _players_snapshot(app)
 
 
