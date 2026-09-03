@@ -149,6 +149,9 @@ settings:                       # the EFFECTIVE resolved values, so a run can be
   max_days: 12                  # runaway Day cap (spec 023; null = not applicable, e.g. a bench run)
   scripted_player: 'active'     # spec 026 — human-seat stand-in: 'active' or 'passive' (omitted on pre-026 records → read as 'passive')
   private_diaries_enabled: true # spec 039 — which ARM of the private-diaries A/B this run measured; OMITTED (never false) on pre-039 records
+  lineup:                       # spec 014 — the whole-table counts this run was PLAYED AT; BOTH record kinds carry it
+    num_citizens: 6             # law-abiding seats, the human's seat included
+    num_mafia: 2                # Mafioso seats — num_citizens + num_mafia = players at the table
   persona:                      # spec 036 — persona-bench runs ONLY: the knobs the generation ran under (whole sub-map omitted for a game run)
     diversity_enabled: true     # the --diversity ARM actually invoked, NOT the ambient config default
     collision_threshold: 0.6    # the similarity bar at which two personas count as too alike
@@ -267,8 +270,9 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   per roster is `C(that, 2)` — 15 at five-and-two, 21 at six-and-two. Without
   the lineup on the record, that shift in the denominator of the record's
   headline metrics would have nothing accounting for it, and records either side
-  of a lineup change would straddle the discontinuity silently. A record also
-  carries
+  of a lineup change would straddle the discontinuity silently. What the sub-map
+  records, and why a reader of *any* record needs it, is set out in
+  [`settings.lineup`](#settingslineup) below. A record also carries
   **`private_diaries_enabled`** (spec 039) when the run could state which arm of
   the private-diaries A/B it measured — see
   [`settings.private_diaries_enabled`](#settingsprivate_diaries_enabled) below,
@@ -499,6 +503,67 @@ then no longer be attributed to the diaries. On a diaries-**on** arm, read
 arm's results: a high fallback share means the on arm measured the deterministic
 placeholder rather than diary content, so the pair is not a comparison of what it
 claims to be.
+
+### settings.lineup
+
+`settings.lineup` (spec 014, _Configurable Role Counts_) is the **table the run
+was played at**: `num_citizens` and `num_mafia`, the **effective resolved** counts
+read off the loaded config, so a `--citizens` / `--mafia` flag or a `.env`
+override is what lands in the record rather than whatever the shipped default
+happens to be. The two numbers count **seats, the human's included** —
+`num_citizens + num_mafia` is how many players sat down, one of them the human and
+the rest AI. At the current default (`6` / `2`) that is eight players, seven of
+them AI.
+
+**It is the field that decides whether two records are comparable at all, so read
+it before reading any number below it.** Town win rate is the ledger's primary
+outcome, and it does **not** survive a lineup change, because such a change makes
+the game itself easier or harder: a town executing uniformly at random wins
+roughly **8.3%** of games at five-and-two but roughly **22.9%** at six-and-two,
+since the smaller table affords the law-abiding side **zero** mistaken executions
+while the larger one affords **one**. CR 007 (_Correct the starter-lineup balance
+claim, and give the law-abiding side a margin_) moved the default from
+five-and-two to six-and-two on **2026-09-03**, so that boundary now runs through
+the committed series: every record before it was measured at five-and-two, and
+reading an `outcomes.law_abiding.rate` across it reads a change in *the rules of
+the game* as a change in *AI quality*. Nothing else on the record shows the
+boundary.
+
+**And it qualifies far more than the win rate.** Nearly every rate here has a
+denominator that scales with table size: AI spoken lines (the `repetition` /
+`third_person_self_talk` denominator), the vote-initiation and ballot denominators
+of the four vote metrics, and the persona pair count, which is
+`C(num_citizens + num_mafia - 1, 2)` — **15** pairs per roster at five-and-two,
+**21** at six-and-two, a 40% shift. A rate whose denominator moved with nothing on
+the record accounting for it is not a rate anyone can read, which is why the
+lineup travels with every measurement instead of living in a commit message.
+
+**Both kinds of record carry it, with the same key and the same shape.** The game
+harness has stamped it since spec 014; the persona bench stamps it too since spec
+042 (_A Starter Table With Room For One Mistake_), because the bench builds every
+cast through the real roster path and so its pair denominator moves with the
+lineup exactly as a game's does. That sameness is deliberate: unlike
+`settings.persona`, `lineup` is **not** bench-specific, and one key with one shape
+is what keeps the two kinds legible against each other rather than merely
+similar-looking. (Comparison itself still holds only **within** a kind — see
+[`run.kind`](#runkind); the lineup narrows that contract further, it does not
+loosen it.)
+
+**Additive — and absence means the record predates the field, not that no lineup
+was used.** Every run has always been played at some lineup; twelve of the
+thirty-seven records committed as of spec 042 simply carry no field to say which.
+Ten are **game** records written **before spec 014**, when the table was fixed and
+five-and-two was the only lineup the game had; the other two are
+**`persona-bench`** records written **before spec 042**, when the bench recorded
+its persona knobs but not the table those personas were generated for. Read all
+twelve as absent — exactly like any other pre-feature field — and as
+five-and-two. A **present** sub-map whose counts read `null` is a third and rarer
+case: that run's config could not report the counts, and the harness records the
+gap honestly rather than substituting a default it cannot vouch for. The field's
+arrival **did not bump `metrics_version`** — it changed no detection rule and no
+denominator *definition* — and it is the precedent the later additive fields are
+written against in the code (`transcript_dir`, `scripted_player`, `run.kind`,
+`settings.persona`), which is why it is named throughout this legend.
 
 ### outcomes
 
