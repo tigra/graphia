@@ -17,7 +17,7 @@ from graphia.career_events import (
     CareerEvent,
     CareerEventEmitter,
 )
-from graphia.config import load_config
+from graphia.config import GraphiaConfig, load_config
 from graphia.llm import Persona, Roster, get_large, get_persona_model, get_small
 from graphia.prompts import (
     NAME_GEN_SYSTEM,
@@ -281,9 +281,32 @@ def _generate_names(count: int) -> Roster:
     return _coerce_to_count(roster, count)
 
 
+def ai_name_count(config: GraphiaConfig) -> int:
+    """How many AI names a roster needs at ``config``'s lineup.
+
+    The configured counts are **whole-table** totals that INCLUDE the human
+    seat: ``num_citizens + num_mafia`` is the number of players sitting down,
+    exactly one of whom is the human. The ``- 1`` is that human seat — every
+    other seat is an AI player needing a generated name. This is the ``count``
+    :func:`_generate_names` is asked for, and the length
+    :func:`_coerce_to_count` then guarantees.
+
+    Named rather than inlined at its one production call site because a **test
+    fixture calls this very function** (``fake_small`` in ``tests/conftest.py``,
+    spec 042): the roster fake answers with exactly as many names as the game
+    asked for, instead of a hard-coded list sized to whatever the default lineup
+    happened to be when it was written. That is the seam's whole reason for
+    existing — a second copy of the arithmetic living in the fixture could
+    silently disagree with this one if the formula ever changed, and the fake
+    would then starve its own queue on ``_generate_names``' corrective retry.
+    So: do not inline it back.
+    """
+    return config.num_citizens + config.num_mafia - 1
+
+
 def generate_roster(state: GameState) -> dict:
     config = load_config()
-    ai_count = config.num_citizens + config.num_mafia - 1
+    ai_count = ai_name_count(config)
     roster = _generate_names(ai_count)
     new_players: dict[str, PlayerState] = {}
     for ai_name in roster.names:
