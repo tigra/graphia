@@ -44,7 +44,6 @@ What's mocked
 
 from __future__ import annotations
 
-import asyncio
 import re
 from pathlib import Path
 from typing import Any, Iterator
@@ -53,6 +52,7 @@ import pytest
 from rich.text import Text
 from textual.widgets import Input, RichLog
 
+from conftest import drive_until_public_log_contains
 from graphia.config import load_config
 from graphia.llm import Ballot, DayAction, Pointing
 from graphia.nodes.setup import ai_name_count
@@ -378,38 +378,17 @@ async def _run_full_game(
         await pilot.press(*HUMAN_NAME)
         await pilot.press("enter")
 
-        # Each Day asks the human to speak six times across two Days. Submit
-        # ``.`` (becomes ``…`` in the graph) for every prompt and poll the
-        # public log for "Game over." between presses.
-        for _ in range(80):
-            text = _public_log_text(app)
-            if "Game over." in text:
-                break
-            try:
-                prompt = app.query_one("#player-input", Input)
-            except Exception:  # noqa: BLE001
-                prompt = None  # type: ignore[assignment]
-            if prompt is not None and prompt.disabled is False:
-                await pilot.press(".")
-                await pilot.press("enter")
-            else:
-                await pilot.pause(0.2)
-
-        # Final poll with a longer-grained interval for the very last
-        # super-step batch (end_screen + "Game over." banner).
-        deadline = asyncio.get_event_loop().time() + 10.0
-        while asyncio.get_event_loop().time() < deadline:
-            if "Game over." in _public_log_text(app):
-                break
-            await pilot.pause(0.1)
-
-        rendered = _public_log_text(app)
-        if "Game over." not in rendered:
-            app.exit()
-            raise AssertionError(
-                "'Game over.' never appeared in #public-log. Log was:\n"
-                + rendered
-            )
+        # Submit ``.`` (becomes ``…`` in the graph) for every Day-turn prompt
+        # until the game ends. The shared driver owns the budget, derived from
+        # the resolved lineup (spec 042, Task 4.1) — it replaces a hard-coded
+        # ``range(80)`` loop, a separate 10-second tail poll, and a
+        # hand-rolled "never appeared" block, and it raises with the rendered
+        # log on exhaustion. How many prompts a Day asks for is itself
+        # lineup-derived, which is precisely why the count no longer lives
+        # here.
+        rendered = await drive_until_public_log_contains(
+            pilot, log_text=lambda: _public_log_text(app)
+        )
 
         # Press any key to exit the post-game screen.
         await pilot.press("x")

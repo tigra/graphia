@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from typing import Any, Callable, Iterator, Sequence
 
@@ -9,8 +10,9 @@ import pytest
 from langchain_core.messages import AIMessage, BaseMessage
 from rich.text import Text
 from textual.widget import Widget
+from textual.widgets import Input
 
-from graphia.config import load_config
+from graphia.config import GraphiaConfig, load_config
 from graphia.llm import (
     Ballot,
     DayAction,
@@ -20,6 +22,7 @@ from graphia.llm import (
     Reflection,
     Roster,
 )
+from graphia.nodes.day import DAY_MAX_ROUNDS, DAY_MAX_VOTES
 from graphia.nodes.setup import ai_name_count
 
 
@@ -807,6 +810,242 @@ def plain_text(widget: Widget) -> str:
     if isinstance(rendered, Text):
         return rendered.plain
     return Text.from_markup(str(rendered)).plain
+
+
+# --------------------------------------------------------------------------
+# Lineup-derived test budgets (spec 042, Task 4.1)
+#
+# Two kinds of budget in this suite were sized against the seven-player table
+# and did not say so: a hard-coded LangGraph ``recursion_limit=50`` in
+# ``tests/test_vote_validation.py``'s two drive helpers, and a hard-coded
+# ``range(80)`` poll loop in the three UI game-drivers. The first FAILED the
+# moment the default lineup grew by one seat —
+# ``GraphRecursionError: Recursion limit of 50 reached`` — because the drive
+# that runs after the human's self-execution has no human interrupt left to
+# pause on and therefore free-runs the rest of the game in one ``stream``.
+#
+# **The cost is not "one more speaker per round."** Dead players do not speak,
+# so the real quantity is the *sum of alive players across the Days the game
+# lasts* — and the number of Days is itself lineup-derived. With nobody ever
+# executed (the shape every fake-driven game takes, since the scripted
+# ``DayAction`` queue only ever speaks), the Mafia reach parity after
+# ``total - 2 * num_mafia`` nights: three at five-and-two, **four** at
+# six-and-two. That is why the post-execution drive costs 17 super-steps at
+# seven players and 63 at eight — a quadratic step, not a linear one.
+#
+# Every budget below is therefore derived from the resolved config, so a larger
+# table cannot silently re-tighten it. Measured need vs. the derived
+# :func:`whole_game_recursion_limit` across the whole legal range (the numbers
+# on the left were measured by streaming the post-execution drive with the
+# limit lifted):
+#
+#     players   6    7    8    9   10   11   12
+#     measured  8   17   63  115  179  240  313
+#     derived 212  277  348  425  508  597  692
+#
+# The headroom is deliberate and cheap: a recursion limit is an anti-hang
+# guard, so being generous costs nothing on a healthy trajectory while still
+# terminating a genuine loop in well under a second.
+# --------------------------------------------------------------------------
+
+
+def game_cycles(config: GraphiaConfig) -> int:
+    """Upper bound on the Day/Night cycles a fake-driven game runs at ``config``.
+
+    Starting law-abiding count is ``total - num_mafia``; each Night removes one
+    of them and the Mafia win at parity, so with nobody ever executed the game
+    ends after ``total - 2 * num_mafia`` Nights. Two extra cycles are allowed
+    for the partial Day a drive may start inside and the Day the win-check
+    finally fires on, and the whole thing is clamped by production's own
+    ``max_days`` runaway cap so this can never claim more Days than the graph
+    will actually run.
+    """
+    total = config.num_citizens + config.num_mafia
+    nights_to_parity = max(1, total - 2 * config.num_mafia)
+    return min(nights_to_parity + 2, config.max_days)
+
+
+def alive_speaker_sum(config: GraphiaConfig) -> int:
+    """Sum of alive players across :func:`game_cycles` Days.
+
+    The quantity the tech spec's risk row names. One player dies per Night, so
+    the speaking roster shrinks by one each cycle — the reason a budget shaped
+    as "players x rounds" understates a bigger table while "one more speaker
+    per round" overstates it. Floored at 2 because a Day with fewer than two
+    players alive cannot happen before the win-check ends the game.
+    """
+    total = config.num_citizens + config.num_mafia
+    return sum(max(2, total - offset) for offset in range(game_cycles(config)))
+
+
+def whole_game_recursion_limit(config: GraphiaConfig) -> int:
+    """A LangGraph ``recursion_limit`` spanning a whole fake-driven game.
+
+    Replaces the hard-coded ``50`` in ``tests/test_vote_validation.py``. Sized
+    from production's own caps so it tracks the lineup instead of a remembered
+    table:
+
+    * **speech** — ``DAY_MAX_ROUNDS`` rounds per Day, each costing one
+      ``day_turn`` super-step per alive speaker (:func:`alive_speaker_sum`)
+      plus one round-wrap/reflect super-step;
+    * **ballots** — a full poll of the table for each of the ``DAY_MAX_VOTES``
+      votes a Day allows, plus that vote's open and resolve steps;
+    * **phase** — the fixed per-cycle nodes (``day_open``, ``day_close``,
+      ``day_diary``, both win-checks, ``night_open``, ``night_resolve``, the
+      end-screen) plus one ``mafia_pointing`` super-step per Mafioso.
+
+    Pass it wherever a test streams the graph without a guaranteed human
+    interrupt to pause on — after the human dies there is none, and the drive
+    then runs the entire remaining game in a single ``stream`` call.
+    """
+    total = config.num_citizens + config.num_mafia
+    cycles = game_cycles(config)
+    speech = DAY_MAX_ROUNDS * (alive_speaker_sum(config) + cycles)
+    ballots = DAY_MAX_VOTES * (total + 2)
+    phase = cycles * (12 + config.num_mafia)
+    return speech + ballots + phase
+
+
+def expected_human_day_prompts(config: GraphiaConfig) -> int:
+    """Upper bound on the Day-turn prompts a fake-driven game shows the human.
+
+    One prompt per Day round the human survives to see, over
+    :func:`game_cycles` Days. Used to size the UI game-driver's wall-clock
+    deadline, which is the quantity that actually moves with the lineup: a
+    bigger table means more Days before parity, hence more prompts, hence more
+    press/settle round-trips.
+    """
+    return DAY_MAX_ROUNDS * game_cycles(config)
+
+
+# How long a single "input still disabled" poll waits. Unchanged from the three
+# hand-rolled loops this helper replaces, so their pacing is preserved exactly.
+_PUBLIC_LOG_POLL_INTERVAL = 0.2
+
+# Slack for the final ``end_screen`` + banner super-step batch, which lands
+# with no further human prompt to drive it. This is the separate "longer-
+# grained final poll" each of the three call sites used to run AFTER its
+# exhausted loop — folded into the one deadline here, because a second phase
+# sitting behind an exhausted loop converts "the budget was too small" into a
+# confusing failure about the wrong thing.
+_PUBLIC_LOG_SETTLE_SECONDS = 10.0
+
+
+def public_log_deadline_seconds(config: GraphiaConfig) -> float:
+    """Wall-clock budget for driving one whole game through the Textual UI.
+
+    Sized from :func:`expected_human_day_prompts` at three poll intervals per
+    prompt — one to press, and two of slack for the worker's super-step batch
+    to land before the next prompt enables — plus
+    :data:`_PUBLIC_LOG_SETTLE_SECONDS` for the final end-screen batch. At
+    five-and-two this comes out at ~28s, at six-and-two ~32s, at the twelve-seat
+    table cap ~46s, so it is never tighter than the ``range(80)``-and-a-10s-tail
+    budget it replaces and it grows with the table.
+    """
+    prompts = expected_human_day_prompts(config)
+    return _PUBLIC_LOG_SETTLE_SECONDS + 3.0 * _PUBLIC_LOG_POLL_INTERVAL * prompts
+
+
+def public_log_iteration_cap(config: GraphiaConfig) -> int:
+    """Secondary stop for :func:`drive_until_public_log_contains`.
+
+    Derived FROM the deadline rather than alongside it, so the relationship
+    between the two stops holds by construction: the cap is more iterations
+    than the deadline could ever allow if every one of them paused, plus slack
+    for the cheap press-and-enter iterations that do not pause at all. The
+    consequence is the intended division of labour — on a healthy run the
+    deadline is what stops the loop, and the cap only bites when iterations
+    stop costing time, which is exactly the pathological
+    always-enabled-input shape (a bug that re-enables the prompt without the
+    graph ever advancing) that would otherwise spin for the full deadline
+    without telling anyone why.
+    """
+    deadline_iterations = int(
+        public_log_deadline_seconds(config) / _PUBLIC_LOG_POLL_INTERVAL
+    )
+    return deadline_iterations + 2 * expected_human_day_prompts(config) + 20
+
+
+async def drive_until_public_log_contains(
+    pilot: Any,
+    *,
+    log_text: Callable[[], str],
+    sentinel: str = "Game over.",
+    reply: str = ".",
+    input_selector: str = "#player-input",
+) -> str:
+    """Answer every Day-turn prompt until ``sentinel`` reaches the public log.
+
+    The one shared game-driver for the three UI smoke tests that used to
+    hand-roll it (``test_dual_mode_smoke.py``, ``test_remote_mode_smoke.py``,
+    ``test_slice8_endgame.py``), each with its own ``range(80)`` loop, its own
+    10-second tail poll, and its own near-identical "never appeared" block.
+    Returns the rendered log once ``sentinel`` appears; raises
+    ``AssertionError`` carrying that rendered log if neither stop is reached
+    first.
+
+    ``log_text`` renders the public pane; the three call sites disagree on how
+    (a module helper in two of them, a closure over the ``RichLog`` widget in
+    the third), so it stays the caller's business.
+
+    **The named trade-off, recorded because it was a deliberate choice.** This
+    helper is keyed on a **wall-clock deadline** (:func:`public_log_deadline_seconds`)
+    with an iteration count only as a secondary stop
+    (:func:`public_log_iteration_cap`). A deadline is *flakier on a loaded
+    machine* than an iteration count is reproducible — a busy CI box can blow
+    a wall-clock budget that a quiet laptop clears easily, and no amount of
+    care in this function changes that. It is accepted because the design this
+    replaces **already depended on wall-clock behaviour**: its per-iteration
+    ``pilot.pause(0.2)`` meant its ``range(80)`` was a time budget wearing an
+    iteration count's clothes, and a *badly sized* one — it could not say what
+    it was worth without the reader knowing how many of the 80 iterations
+    would pause. Naming the seconds makes the budget legible and lets it be
+    derived from the lineup; the mitigation is generous sizing.
+    """
+    config = load_config()
+    deadline_seconds = public_log_deadline_seconds(config)
+    iteration_cap = public_log_iteration_cap(config)
+    loop = asyncio.get_event_loop()
+    deadline = loop.time() + deadline_seconds
+    app = pilot.app
+    iterations = 0
+
+    while True:
+        rendered = log_text()
+        if sentinel in rendered:
+            return rendered
+
+        exhausted = (
+            f"iteration cap ({iteration_cap})"
+            if iterations >= iteration_cap
+            else f"deadline ({deadline_seconds:.1f}s)"
+            if loop.time() >= deadline
+            else None
+        )
+        if exhausted is not None:
+            app.exit()
+            raise AssertionError(
+                f"{sentinel!r} never appeared in the public log before the "
+                f"{exhausted} was reached "
+                f"({iterations} iterations, "
+                f"lineup {config.num_citizens}+{config.num_mafia}, "
+                f"{expected_human_day_prompts(config)} human prompts "
+                f"expected). If the game legitimately needs longer at this "
+                f"table, the budget is derived in "
+                f"tests/conftest.py::public_log_deadline_seconds — do not "
+                f"re-hard-code it. Log was:\n" + rendered
+            )
+
+        iterations += 1
+        try:
+            prompt = app.query_one(input_selector, Input)
+        except Exception:  # noqa: BLE001
+            prompt = None
+        if prompt is not None and prompt.disabled is False:
+            await pilot.press(*reply)
+            await pilot.press("enter")
+        else:
+            await pilot.pause(_PUBLIC_LOG_POLL_INTERVAL)
 
 
 # --------------------------------------------------------------------------

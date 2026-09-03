@@ -55,6 +55,7 @@ import pytest
 from langchain_core.messages import SystemMessage
 from langgraph.types import Command
 
+from conftest import drive_until_public_log_contains
 from graphia.config import load_config
 from graphia.graph import build_graph, make_run_config
 from graphia.llm import Ballot, DayAction, Diary, Persona, Pointing
@@ -934,8 +935,6 @@ async def test_end_screen_visible_in_ui(
     After ``end_screen`` runs the driver posts ``"Game over."`` and any
     keypress exits the app.
     """
-    import asyncio
-
     from rich.text import Text
     from textual.widgets import Input, RichLog
 
@@ -953,16 +952,6 @@ async def test_end_screen_visible_in_ui(
     )
 
     app = GraphiaApp()
-
-    async def _wait_for(predicate, timeout=30.0, interval=0.1) -> bool:
-        """Poll ``predicate`` until True or timeout. Returns True on success."""
-        loop = asyncio.get_event_loop()
-        deadline = loop.time() + timeout
-        while loop.time() < deadline:
-            if predicate():
-                return True
-            await pilot.pause(interval)
-        return False
 
     async with app.run_test() as pilot:
         await pilot.pause()
@@ -1030,40 +1019,19 @@ async def test_end_screen_visible_in_ui(
             return "\n".join(parts)
 
         # Interleave human day_turn responses with polling for "Game over.".
-        # Each human day_turn interrupt enables the input; we submit "..." to
-        # pass the turn. After ~12 human turns across Day 1 + Day 2, the
-        # second Night's parity check ends the game.
-        got_it = False
-        for _ in range(80):
-            text = _log_contents()
-            if "Game over." in text:
-                got_it = True
-                break
-            try:
-                prompt = app.query_one("#player-input", Input)
-            except Exception:  # noqa: BLE001
-                prompt = None  # type: ignore[assignment]
-            if prompt is not None and prompt.disabled is False:
-                # The input is live — submit an empty-ish speech.
-                await pilot.press(".")
-                await pilot.press("enter")
-            else:
-                await pilot.pause(0.2)
-
-        if not got_it:
-            got_it = await _wait_for(
-                lambda: "Game over." in _log_contents(), timeout=10.0
-            )
-
-        if not got_it:
-            rendered = _log_contents()
-            app.exit()
-            raise AssertionError(
-                "'Game over.' never appeared in #public-log. Log was:\n"
-                + rendered
-            )
-
-        rendered = _log_contents()
+        # Each human day_turn interrupt enables the input; the shared driver
+        # submits "." to pass the turn and stops when the win-check ends the
+        # game. How many turns that takes is lineup-derived — a bigger table
+        # means one more Night before the Mafia reach parity — which is why
+        # the budget now lives in ``tests/conftest.py`` and is computed from
+        # the resolved config rather than sitting here as a ``range(80)``
+        # sized against a remembered table (spec 042, Task 4.1). The driver
+        # also folds in the tail poll that used to run as a second phase after
+        # the loop: behind an exhausted loop, that wait turned "the budget was
+        # too small" into a confusing failure about the wrong thing.
+        rendered = await drive_until_public_log_contains(
+            pilot, log_text=_log_contents
+        )
         assert (
             ENDGAME_WINNER_LAW in rendered or ENDGAME_WINNER_MAFIA in rendered
         ), f"no winner line in public log; got:\n{rendered}"

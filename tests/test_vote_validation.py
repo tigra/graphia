@@ -46,9 +46,11 @@ from langchain_core.messages import AIMessage
 from langgraph.types import Command
 
 import graphia.nodes.day as day_nodes
+from conftest import game_cycles, whole_game_recursion_limit
 from graphia.config import load_config
 from graphia.graph import build_graph, make_run_config
-from graphia.llm import Ballot, DayAction, Pointing
+from graphia.llm import Ballot, DayAction, Diary, Pointing
+from graphia.nodes.day import DAY_MAX_ROUNDS, DAY_MAX_VOTES
 
 # Role assignment is pinned via ``GRAPHIA_ROLE`` per ADR-006. The human is
 # always Law-abiding here so the test never has to answer a ``kind="point"``
@@ -56,15 +58,38 @@ from graphia.llm import Ballot, DayAction, Pointing
 AI_NAMES = ["Aarav", "Bianca", "Chiko", "Daria", "Elias", "Finn"]
 HUMAN_NAME = "Alice"
 
+# Scripted answer for the spec-039 ``Diary`` binding, handed to every
+# ``fake_large(...)`` call in this file (spec 042, Task 4.1).
+#
+# The private-diaries flag defaults ON, so ``day_diary`` calls the large model
+# once per surviving AI at every Day->Night hinge. Leaving ``diaries=``
+# unscripted does NOT fail a test — the node wraps its model call in
+# ``try/except Exception`` and substitutes a deterministic fallback — but it
+# does dump one ERROR-level traceback per AI per Day into the captured log
+# ("FakeLarge.invoke called for Diary but no scripted outputs remain").
+#
+# That noise is why it is scripted here. During spec 042's Task 3.7 flip trial
+# it buried this file's REAL failure — a ``GraphRecursionError`` raised by the
+# post-execution drive — under six near-identical swallowed tracebacks, and the
+# diagnosis went after the wrong cause. Scripting a single entry covers every
+# call: the unified fake's per-schema queue replays its last value once
+# drained, so one Diary answers the whole game.
+DIARY_ENTRY = Diary(entry="Nothing added up today. I will watch the loud one.")
+
 
 # --------------------------------------------------------------------------
 # Day-1 speaker-order stub.
 #
 # Each test in this file drives the graph until the human's first Day-1
 # ``day_turn`` interrupt surfaces via ``_advance_until_human_day_turn``.
-# That helper walks the graph forward one super-step at a time, capped by
-# its own 20-iteration budget and LangGraph's ``recursion_limit=50``. With
-# production's ``_shuffle_order`` running against the module-global RNG, the
+# That helper walks the graph forward one super-step at a time, capped by its
+# own advance budget and by LangGraph's ``recursion_limit``. Both are DERIVED
+# FROM THE RESOLVED LINEUP (``conftest.whole_game_recursion_limit`` and the
+# per-round advance budget in the helper itself) rather than hard-coded — the
+# ``50`` this file used to carry was sized against the seven-player table and
+# broke deterministically on the first extra seat.
+#
+# With production's ``_shuffle_order`` running against the module-global RNG, the
 # human can land anywhere in the speaker order; if late, a single
 # ``_drive(Command(resume=...))`` after the human's turn may need to
 # traverse many AI speakers + a fresh round shuffle before pausing again,
@@ -95,8 +120,8 @@ def _human_first_factory():
     1. **Recursion budget.** On the Day-1 entry shuffle (the first call),
        the human sits at index 1 — exactly one AI super-step runs before
        the helper hits the human's interrupt. ``_advance_until_human_day_turn``
-       therefore pauses in two ``_drive`` cycles, well below the 50
-       super-step ``recursion_limit`` even on the slowest test.
+       therefore pauses in two ``_drive`` cycles, well below the derived
+       ``recursion_limit`` even on the slowest test.
     2. **Post-resolution ``day_turn`` chunk.** The self-vote-fails test
        asserts that ``day_turn`` re-fires after the failed vote
        reshuffles back to round-start. With the human at index 2 on the
@@ -164,11 +189,26 @@ def _collect_interrupt(graph, run_config) -> dict[str, Any] | None:
 def _drive(graph, run_config, payload) -> None:
     """Exhaust ``graph.stream`` super-steps until the next pause.
 
-    A low ``recursion_limit`` caps runaway day/night loops at 50 super-steps
-    so a single drive never hangs.
+    A ``recursion_limit`` caps runaway day/night loops so a single drive never
+    hangs. That limit is **derived from the resolved lineup**
+    (``conftest.whole_game_recursion_limit``) rather than hard-coded, and the
+    reason is a failure this file actually took: it read ``50``, a number sized
+    against the seven-player table, and the moment the default lineup grew by
+    one seat ``test_vote_against_self_passes_executes_human`` died on
+    ``GraphRecursionError: Recursion limit of 50 reached``.
+
+    The trap is that most drives here are short — they stop at the human's next
+    interrupt — so the budget looks comfortable. But once the human is DEAD
+    there is no human interrupt left to pause on, and the drive free-runs the
+    entire remaining game inside one ``stream`` call. That cost is the sum of
+    alive players across the Days to parity, which is quadratic in the table
+    size, not linear: 17 super-steps at seven players, **63** at eight. See the
+    derivation and the measured-vs-derived table in ``tests/conftest.py``.
     """
     bounded = dict(run_config)
-    bounded.setdefault("recursion_limit", 50)
+    bounded.setdefault(
+        "recursion_limit", whole_game_recursion_limit(load_config())
+    )
     for _ in graph.stream(payload, bounded, stream_mode="updates"):
         pass
 
@@ -248,12 +288,20 @@ def _advance_until_human_day_turn(graph, run_config, fake) -> None:
     # the first Day-1 day_turn interrupt (either an AI or the human).
     _drive(graph, run_config, Command(resume=HUMAN_NAME))
 
-    # Pre-stock a large queue of generic AI speech actions so any AI turn
-    # before (or after) the human cleanly advances without hitting the
-    # empty-queue assertion in the unified fake. The Ballot queue is unused
-    # by Slice 1 tests (no vote ever starts) but is pre-seeded defensively.
+    # Pre-stock a queue of generic AI speech actions so any AI turn before (or
+    # after) the human cleanly advances without hitting the empty-queue
+    # assertion in the unified fake. Sized from the resolved lineup — enough
+    # distinct lines to cover every speaking slot of a whole game at any legal
+    # table (``DAY_MAX_ROUNDS`` rounds per Day over ``game_cycles`` Days, for
+    # each of the AI seats) — so the numbering stays meaningful in a captured
+    # log instead of collapsing onto a replayed final entry partway through.
+    config = load_config()
+    speech_budget = DAY_MAX_ROUNDS * game_cycles(config) * (
+        config.num_citizens + config.num_mafia
+    )
     fake._queues[DayAction] = [
-        DayAction(kind="speak", text=f"AI speaks ({i}).") for i in range(40)
+        DayAction(kind="speak", text=f"AI speaks ({i}).")
+        for i in range(speech_budget)
     ]
     fake._last.pop(DayAction, None)
 
@@ -262,7 +310,13 @@ def _advance_until_human_day_turn(graph, run_config, fake) -> None:
     # interrupting, so each ``_drive(None)`` advances zero-or-more AI
     # turns before pausing on the next interrupt (which is either another
     # AI iteration or — eventually — the human's day_turn).
-    for _ in range(20):
+    # Budget derived from the lineup, not remembered: at worst the human is
+    # last in the speaking order and one AI super-step clears per drive, so
+    # every alive seat may need its own iteration, once per Day round.
+    advance_budget = DAY_MAX_ROUNDS * (
+        config.num_citizens + config.num_mafia
+    )
+    for _ in range(advance_budget):
         iv = _collect_interrupt(graph, run_config)
         if (
             iv is not None
@@ -273,7 +327,13 @@ def _advance_until_human_day_turn(graph, run_config, fake) -> None:
         # No human interrupt yet — drive once with no resume value to
         # advance to the next super-step.
         _drive(graph, run_config, None)
-    raise AssertionError("human day_turn never surfaced within budget")
+    raise AssertionError(
+        f"human day_turn never surfaced within {advance_budget} advance "
+        f"iterations at lineup {config.num_citizens}+{config.num_mafia}. The "
+        "budget is derived from the table size, so a larger lineup is not the "
+        "explanation — look at the pinned speaking order instead. Last "
+        f"interrupt seen: {_collect_interrupt(graph, run_config)!r}"
+    )
 
 
 # --------------------------------------------------------------------------
@@ -305,7 +365,9 @@ def test_vote_empty_name_shows_usage_hint(
     # first super-step after the name resume.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
     fake_small(AI_NAMES)
-    fake = fake_large(day_actions=[], ballots=[], pointings=[])
+    fake = fake_large(
+        day_actions=[], ballots=[], pointings=[], diaries=[DIARY_ENTRY]
+    )
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -376,7 +438,9 @@ def test_voted_yesterday_is_speech(
     # first super-step after the name resume.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
     fake_small(AI_NAMES)
-    fake = fake_large(day_actions=[], ballots=[], pointings=[])
+    fake = fake_large(
+        day_actions=[], ballots=[], pointings=[], diaries=[DIARY_ENTRY]
+    )
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -438,7 +502,9 @@ def test_votefor_alice_is_speech(
     # first super-step after the name resume.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
     fake_small(AI_NAMES)
-    fake = fake_large(day_actions=[], ballots=[], pointings=[])
+    fake = fake_large(
+        day_actions=[], ballots=[], pointings=[], diaries=[DIARY_ENTRY]
+    )
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -487,7 +553,9 @@ def _drive_capture(graph, run_config, payload) -> list[dict]:
     not, say, twice via a duplicate fan-out wiring bug).
     """
     bounded = dict(run_config)
-    bounded.setdefault("recursion_limit", 50)
+    bounded.setdefault(
+        "recursion_limit", whole_game_recursion_limit(load_config())
+    )
     chunks: list[dict] = []
     for chunk in graph.stream(payload, bounded, stream_mode="updates"):
         chunks.append(chunk)
@@ -531,7 +599,9 @@ def test_vote_against_self_passes_executes_human(
     # first super-step after the name resume.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
     fake_small(AI_NAMES)
-    fake = fake_large(day_actions=[], ballots=[], pointings=[])
+    fake = fake_large(
+        day_actions=[], ballots=[], pointings=[], diaries=[DIARY_ENTRY]
+    )
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -553,8 +623,11 @@ def test_vote_against_self_passes_executes_human(
 
     # Force every AI ballot to Yes. The unified fake's Ballot queue is
     # consumed in FIFO order by ``collect_votes``; the human's ballot is
-    # served via the interrupt path and never touches this queue.
-    fake._queues[Ballot] = [Ballot(yes=True)] * 20
+    # served via the interrupt path and never touches this queue. Sized from
+    # the resolved lineup rather than a remembered constant: one ballot per
+    # seat per vote, over every vote a Day allows.
+    ballot_budget = DAY_MAX_VOTES * (config.num_citizens + config.num_mafia)
+    fake._queues[Ballot] = [Ballot(yes=True)] * ballot_budget
     fake._last.pop(Ballot, None)
 
     # Resume the human's day_turn with /vote against themself. Uppercase
@@ -699,7 +772,9 @@ def test_vote_against_self_fails_human_survives(
     # first super-step after the name resume.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
     fake_small(AI_NAMES)
-    fake = fake_large(day_actions=[], ballots=[], pointings=[])
+    fake = fake_large(
+        day_actions=[], ballots=[], pointings=[], diaries=[DIARY_ENTRY]
+    )
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -725,8 +800,11 @@ def test_vote_against_self_fails_human_survives(
 
     # Force every AI ballot to No. The unified fake's Ballot queue is
     # consumed in FIFO order by ``collect_votes``; the human's ballot is
-    # served via the interrupt path and never touches this queue.
-    fake._queues[Ballot] = [Ballot(yes=False)] * 20
+    # served via the interrupt path and never touches this queue. Sized from
+    # the resolved lineup rather than a remembered constant: one ballot per
+    # seat per vote, over every vote a Day allows.
+    ballot_budget = DAY_MAX_VOTES * (config.num_citizens + config.num_mafia)
+    fake._queues[Ballot] = [Ballot(yes=False)] * ballot_budget
     fake._last.pop(Ballot, None)
 
     # Resume the human's day_turn with /vote against themself. Uppercase
@@ -855,7 +933,9 @@ def test_vote_nonexistent_name_reprompts(
     # first super-step after the name resume.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
     fake_small(AI_NAMES)
-    fake = fake_large(day_actions=[], ballots=[], pointings=[])
+    fake = fake_large(
+        day_actions=[], ballots=[], pointings=[], diaries=[DIARY_ENTRY]
+    )
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -945,7 +1025,9 @@ def test_vote_dead_player_reprompts(
     # first super-step after the name resume.
     monkeypatch.setattr(day_nodes, "_shuffle_order", _human_first_factory())
     fake_small(AI_NAMES)
-    fake = fake_large(day_actions=[], ballots=[], pointings=[])
+    fake = fake_large(
+        day_actions=[], ballots=[], pointings=[], diaries=[DIARY_ENTRY]
+    )
 
     config = load_config()
     graph, thread_id = build_graph(config)

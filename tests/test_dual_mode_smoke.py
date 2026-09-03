@@ -66,7 +66,6 @@ gameplay-visible ``#public-log`` transcript only.
 
 from __future__ import annotations
 
-import asyncio
 import random
 from pathlib import Path
 from typing import Any
@@ -75,6 +74,7 @@ import pytest
 from rich.text import Text
 from textual.widgets import Input, RichLog
 
+from conftest import drive_until_public_log_contains
 from graphia.llm import Ballot, DayAction, Pointing
 from graphia.stats_store import LocalFileStatsStore
 from graphia.ui.app import GraphiaApp
@@ -202,34 +202,14 @@ async def _run_full_game_collecting(
         await pilot.press(*HUMAN_NAME)
         await pilot.press("enter")
 
-        # Answer every Day-turn prompt with "." and poll for game end.
-        for _ in range(80):
-            if "Game over." in _public_log_text(app):
-                break
-            try:
-                prompt = app.query_one("#player-input", Input)
-            except Exception:  # noqa: BLE001
-                prompt = None  # type: ignore[assignment]
-            if prompt is not None and prompt.disabled is False:
-                await pilot.press(".")
-                await pilot.press("enter")
-            else:
-                await pilot.pause(0.2)
-
-        # Longer-grained final poll for the end_screen + banner super-step.
-        deadline = asyncio.get_event_loop().time() + 10.0
-        while asyncio.get_event_loop().time() < deadline:
-            if "Game over." in _public_log_text(app):
-                break
-            await pilot.pause(0.1)
-
-        rendered = _public_log_text(app)
-        if "Game over." not in rendered:
-            app.exit()
-            raise AssertionError(
-                "'Game over.' never appeared in #public-log. Log was:\n"
-                + rendered
-            )
+        # Answer every Day-turn prompt with "." until the game ends. The
+        # shared driver owns the budget, which is derived from the resolved
+        # lineup (spec 042, Task 4.1) — it replaces a hard-coded ``range(80)``
+        # loop, a separate 10-second tail poll, and a hand-rolled "never
+        # appeared" block, and it raises with the rendered log on exhaustion.
+        rendered = await drive_until_public_log_contains(
+            pilot, log_text=lambda: _public_log_text(app)
+        )
 
         # Harvest the terminal graph state while the app is still alive.
         final_state = graph.get_state(rc).values
