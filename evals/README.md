@@ -524,7 +524,7 @@ since the smaller table affords the law-abiding side **zero** mistaken execution
 while the larger one affords **one**. CR 007 (_Correct the starter-lineup balance
 claim, and give the law-abiding side a margin_) moved the default from
 five-and-two to six-and-two on **2026-09-03**, so that boundary now runs through
-the committed series: every record before it was measured at five-and-two, and
+the committed series — though the boundary is a *lineup* boundary, not a date one, which is precisely the point of reading this field: **four records committed well before it were already played at six-and-two** (two n=20 pairs from 2026-06-21/22, on both providers) and one exploratory run at four-and-one, so twenty of the twenty-five records carrying a lineup are five-and-two, not all of them. Those four are directly comparable with post-042 runs; a date rule would wrongly exclude them. And
 reading an `outcomes.law_abiding.rate` across it reads a change in *the rules of
 the game* as a change in *AI quality*. Nothing else on the record shows the
 boundary.

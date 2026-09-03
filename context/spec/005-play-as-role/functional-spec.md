@@ -41,6 +41,8 @@ This adds an optional setting, the `GRAPHIA_ROLE` environment variable, that pin
 
 ### 2.3 Default behaviour unchanged when the variable is unset
 
+> **Superseded on two numbers (2026-09-03).** The "seven roles" this section names was the whole story when this spec shipped, but the counts became player-configurable in spec 014 and the default is now **six Law-abiding Citizens and two Mafiosos**, eight players, per [CR 007](../../change-requests/007-starter-lineup-balance-claim-and-default.md) and spec 042. What this spec built is unaffected and still correctly described: with the variable unset, every seat is dealt at random and the human's role is unconstrained — however many seats the table has. Only the count named here as fixed has moved.
+
 - **As a** player who doesn't set the variable, **I want** the role deal to work exactly as it does today, **so that** the normal game is untouched.
   - **Acceptance Criteria:**
     - [x] With `GRAPHIA_ROLE` unset, all seven roles are dealt at random, with the human's role unconstrained.
