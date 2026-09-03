@@ -97,7 +97,7 @@ def test_defaults_when_lineup_env_unset() -> None:
     """
     cfg = load_config()
 
-    assert cfg.num_citizens == _DEFAULT_NUM_CITIZENS == 5
+    assert cfg.num_citizens == _DEFAULT_NUM_CITIZENS == 6
     assert cfg.num_mafia == _DEFAULT_NUM_MAFIA == 2
 
 

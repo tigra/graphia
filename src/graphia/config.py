@@ -48,7 +48,22 @@ _DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
 _DEFAULT_OLLAMA_LARGE_MODEL = "qwen3-coder:30b"
 _DEFAULT_OLLAMA_SMALL_MODEL = "qwen2.5:3b"
 
-_DEFAULT_NUM_CITIZENS = 5
+# Default lineup — whole-table counts including the human (spec 042, CR 007).
+# Six-and-two, NOT the five-and-two the project shipped with: at five-and-two
+# the town can afford ZERO mistaken executions (Night 1 takes a Citizen, one
+# wrong execution, and Night 2 brings the sides level before a second Day ever
+# runs), so a side voting at random wins ~8.3% of games — the "reasonably
+# balanced toward the Law-abiding side" claim the roadmap made was simply false.
+# One more Citizen buys room to be wrong once and roughly triples that to ~22.9%.
+# Six and not seven: the margin only widens with every SECOND Citizen added
+# while each extra seat makes any single execution less likely to find a
+# Mafioso, so seven-and-two measures ~15.6% — WORSE than six-and-two. "More
+# Citizens is better" is the wrong instinct, and six is the efficient choice.
+# Both counts stay player-configurable (``GRAPHIA_NUM_CITIZENS`` /
+# ``GRAPHIA_NUM_MAFIA``), so the old table remains reachable for anyone who
+# asks for it — and every measured run stamps the lineup it played, because a
+# win rate at one lineup is not comparable with one at another.
+_DEFAULT_NUM_CITIZENS = 6
 _DEFAULT_NUM_MAFIA = 2
 # Whole-game runaway safeguard (spec 023). A Mafia game thins out to a winner
 # on its own — at the largest allowed table the longest natural game is only
@@ -66,11 +81,15 @@ _MAX_TABLE_SIZE = 12
 # Fuller multi-day discussion window for AI players (spec 025). The AI Day-turn
 # / vote prompts show the speaker the recent discussion (``_render_context`` in
 # ``nodes/day.py``). The prior 30-message window didn't even cover one full Day
-# (~40-45 messages at the default table); this default of 150 spans 3+ days with
-# margin so cross-day continuity (who accused whom, how someone voted two days
-# ago) reaches the AI. Tunable via ``GRAPHIA_CONTEXT_WINDOW`` so the prior 30 is
-# reproducible for A/B (ADR 011); a value ``< 1`` is nonsensical and rejected
-# like ``GRAPHIA_MAX_DAYS``.
+# (~48-54 messages on Day 1 at the default eight-player table — six rounds of
+# one message per alive speaker, plus the Moderator's recaps; it was ~40-45 at
+# the old seven-player default); this default of 150 spans ~2.8 days with margin
+# so cross-day continuity (who accused whom, how someone voted two days ago)
+# reaches the AI. The span shrinks as the table grows — it is a MESSAGE count,
+# not a Day count — which is the point of stating the arithmetic here rather
+# than a bare "3+ days" a lineup change silently invalidates. Tunable via
+# ``GRAPHIA_CONTEXT_WINDOW`` so the prior 30 is reproducible for A/B (ADR 011);
+# a value ``< 1`` is nonsensical and rejected like ``GRAPHIA_MAX_DAYS``.
 _DEFAULT_CONTEXT_WINDOW = 150
 
 # Defensive token budget for the rendered discussion HISTORY only (spec 025,
@@ -185,9 +204,11 @@ class GraphiaConfig:
     role_guidance_enabled: bool = True
     # Fuller multi-day discussion window (spec 025, ADR 011). The number of
     # speaker-visible recent messages shown to an AI player at its Day turn /
-    # vote. Default ~150 spans 3+ days; set ``GRAPHIA_CONTEXT_WINDOW=30`` to
-    # reproduce the prior short window for A/B. Defaulted so tests constructing
-    # the config directly stay valid.
+    # vote. Default ~150 spans ~2.8 days at the default eight-player table (see
+    # ``_DEFAULT_CONTEXT_WINDOW`` for the arithmetic — it is a message count, so
+    # the Day span narrows as the table grows); set
+    # ``GRAPHIA_CONTEXT_WINDOW=30`` to reproduce the prior short window for
+    # A/B. Defaulted so tests constructing the config directly stay valid.
     context_window: int = _DEFAULT_CONTEXT_WINDOW
     # Defensive token-budget cap for the rendered discussion history (spec 025,
     # R2/R3) — derived from a conservatively-assumed effective context so the

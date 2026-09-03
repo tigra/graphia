@@ -423,7 +423,12 @@ def _apply_lineup_overrides(citizens: int | None, mafia: int | None) -> None:
     validation: an invalid lineup (e.g. ``--mafia 0`` or mafia ≥ citizens) is
     caught by the Slice-1 fail-fast guard in ``load_config`` and exits with the
     broken rule named, exactly as a bad ``.env`` would. Either flag unset leaves
-    its env var untouched, so the per-var ``.env``/default (today's 5 + 2) wins.
+    its env var untouched, so the per-var ``.env``/default wins — 6 + 2 since
+    spec 042, and deliberately named nowhere here: this is the ONE place a run's
+    lineup is *not* pinned, so the value belongs to ``config.py`` alone and a
+    reader is sent there rather than told a number that can drift out of date.
+    Every measured run stamps the resolved lineup into its own record, which is
+    what makes a run's table readable after the fact.
     """
     if citizens is not None:
         os.environ["GRAPHIA_NUM_CITIZENS"] = str(citizens)
@@ -3855,7 +3860,7 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "number of Citizens in the lineup (sets GRAPHIA_NUM_CITIZENS before "
-            "config load; default 5). An invalid lineup is rejected by the same "
+            "config load; default 6). An invalid lineup is rejected by the same "
             "fail-fast config guard the game uses."
         ),
     )

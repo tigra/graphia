@@ -762,8 +762,10 @@ def read_transcript(path: Path) -> str:
 #
 # A preserved game is one wall of plain text mixing content a reviewer reads in
 # completely different ways: the skeleton marking where a Night ends and a Day
-# begins, seven people talking in turn, each player's private thoughts, the
-# Moderator's factual recaps, and an opening cast list. :func:`tokenize_transcript`
+# begins, a whole table talking in turn (eight players at the default lineup
+# since spec 042, and a configurable count in general — the tokenizer neither
+# knows nor cares how many), each player's private thoughts, the Moderator's
+# factual recaps, and an opening cast list. :func:`tokenize_transcript`
 # splits that text into an ordered run of ``(text, kind)`` spans where ``kind``
 # names a **semantic** role — never a colour. The UI (``TranscriptScreen``) owns
 # the kind → style mapping; **this layer stays free of Rich and Textual**, which
