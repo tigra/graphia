@@ -66,10 +66,16 @@ On the local model, every answer the game asks an AI player for comes back reada
 
 - **As** someone reviewing a preserved game, **I want** a substituted answer to be marked where I read it, **so that** I can see at a glance that it was not the player's writing.
 
+  This covers the three kinds of answer that appear as text a reviewer reads: a player's **diary entry**, its **private end-of-round thought**, and what it **said during the Day**. The remaining kinds — who it pointed at, how it voted, its generated personality — leave nothing in a preserved game that could carry a mark, so they are covered by the recorded counts above rather than by a visible mark.
+
+  The mark must come from **what the game recorded when it substituted**, never from recognising the stand-in wording. Wording can be matched by accident, and a stand-in that stopped being recognised would read as genuine — which is worse than no mark at all.
+
   - **Acceptance Criteria:**
-    - [ ] Given a preserved game in which a substitution occurred, when it is read in the browsable transcript, then that entry is marked as a substitution and is visually distinguishable from a player's own writing.
-    - [ ] Given a preserved game in which no substitution occurred, when it is read, then no entry carries that marking.
-    - [ ] Given a marked entry, when the transcript reading view displays it, then the marking is legible there too and does not disturb the surrounding text.
+    - [ ] Given a preserved game in which a substitution occurred, when it is read in the browsable transcript, then that answer is marked as a substitution and is visually distinguishable from a player's own writing.
+    - [ ] Given a preserved game in which no substitution occurred, when it is read, then no answer carries that marking, and the game reads exactly as it does today.
+    - [ ] Given a marked answer, when the transcript reading view displays it, then the marking is legible there too and does not disturb the surrounding text.
+    - [ ] Given substituted answers of more than one kind in the same game, when they are read, then a substituted diary entry, a substituted thought and a substituted piece of Day speech remain distinguishable from one another.
+    - [ ] Given a game in which the stand-in wording is never produced by a player, when the transcript is read, then nothing is marked — the mark tracks what the game recorded, not what the text says.
 
 - **As** someone playing on the local model, **I want** a single failed answer never to end my game, **so that** twenty minutes of play is not lost to one hiccup.
 
@@ -91,7 +97,7 @@ On the local model, every answer the game asks an AI player for comes back reada
 
 - Making every answer the game asks an AI player for on the **local model** reliably readable by construction: the diary entry, the private end-of-round thought, the Night pointing choice, the vote, the Day speech, and the generated personality.
 - **Withdrawing the stopgap rescue** that currently recovers a diary entry when the model writes it as ordinary prose, along with the automated checks that described it, so one mechanism is responsible.
-- **Marking a substituted answer visibly** in the preserved, browsable transcript, in both the stored transcript and the reading view that displays it.
+- **Marking a substituted answer visibly** in the preserved, browsable transcript — for a diary entry, a private end-of-round thought, and a piece of Day speech — in both the stored transcript and the reading view that displays it, each kind distinguishable from the others, and driven by what the game recorded rather than by recognising the stand-in wording.
 - Recording, for each measured run, **how often a substitution occurred for each kind of answer**, so a run's trustworthiness is readable from its own record.
 - Confirming the five kinds of answer that already worked on the local model are unaffected.
 
