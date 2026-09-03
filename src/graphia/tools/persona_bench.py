@@ -423,6 +423,12 @@ def build_bench_record(
       count, since ``run.kind`` is what defines the unit; ``seed`` and
       ``max_days`` are genuinely inapplicable to a run that plays no game and so
       stay ``null`` rather than borrowing a config value that never applied. The
+      configured ``lineup`` is stamped in ``run_eval``'s own shape (spec 042
+      §2.5) — a bench run builds its roster through the real
+      ``generate_roster``/``assign_roles``, so the lineup is what sets the
+      personas per roster and hence the ``C(n, 2)`` pair denominator behind every
+      facet below; recording it is what keeps records comparable ACROSS a lineup
+      change instead of straddling the denominator shift in silence. The
       four persona knobs land under a nested ``settings.persona`` sub-map (the
       ``settings.lineup`` precedent) — and ``diversity_enabled`` is read off the
       SUMMARY, i.e. the ``--diversity`` arm the run was actually invoked with,
@@ -447,8 +453,9 @@ def build_bench_record(
 
     # ``settings`` — the conditions this measurement ran under (spec 036 §2 B).
     # Same flat keys ``run_eval`` records, so the two kinds of record read the
-    # same way, plus the nested ``persona`` sub-map that makes an A/B pair
-    # readable AS A PAIR.
+    # same way, plus the nested ``lineup`` sub-map (identical shape to the game
+    # path's) and the nested ``persona`` sub-map that makes an A/B pair readable
+    # AS A PAIR.
     base_url = getattr(config, "ollama_base_url", None)
     settings: dict[str, object] = {
         "large_model": large_model,
@@ -466,6 +473,27 @@ def build_bench_record(
         # ambient ``config.max_days`` would imply a cap that never ran.
         "seed": None,
         "max_days": None,
+        # The configured lineup (spec 042 §2.5), following ``run_eval``'s field
+        # shape exactly so the two kinds of record are COMPARABLE rather than
+        # merely similar: the same key, the same two sub-keys, the same
+        # ``getattr``-with-``None`` posture so a minimal stub config renders
+        # honestly-absent nulls instead of raising — the harness must never
+        # crash on a provenance gap.
+        #
+        # WHY a bench run needs it, though it plays no game: the roster comes
+        # from the REAL ``generate_roster`` → ``assign_roles`` off
+        # ``load_config``, so the AI personas per roster are
+        # ``num_citizens + num_mafia - 1`` and every persona facet's
+        # denominator is ``C(that, 2)``. The lineup is therefore the ONE
+        # recorded fact that explains the denominator a reader sees — at 5+2 it
+        # is 15 pairs per roster, at 6+2 it is 21, a 40% shift in the
+        # denominator of this record's headline metrics with no other field
+        # accounting for it. Without this key, records either side of a lineup
+        # change straddle that discontinuity silently.
+        "lineup": {
+            "num_citizens": getattr(config, "num_citizens", None),
+            "num_mafia": getattr(config, "num_mafia", None),
+        },
         "persona": {
             # The ARM the run was actually invoked with (``--diversity on|off``,
             # carried on the summary), NOT ``config.persona_diversity_enabled``:
