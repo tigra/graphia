@@ -255,7 +255,20 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   what makes a flag-on / flag-off pair readable **as a pair**: recording the
   default would silently mislabel every flag-off arm. Conditional and additive
   like every other new field — a game run omits the whole sub-map, so existing
-  records are untouched. A record also carries
+  records are untouched. **`persona` is not the only sub-map a bench record
+  carries.** Since spec 042 (*A Starter Table With Room For One Mistake*) the
+  bench also stamps the nested **`lineup`** sub-map (`num_citizens` /
+  `num_mafia`) that a game record carries — the same key with the same two
+  sub-keys, deliberately, so the two kinds of record stay **comparable** rather
+  than merely similar. Unlike `persona` it is therefore *not* bench-specific.
+  On a bench record it is the one field that explains the persona facets'
+  **denominator**: the bench builds each cast through the real roster path, so a
+  cast holds `num_citizens + num_mafia - 1` characters and the pooled pair count
+  per roster is `C(that, 2)` — 15 at five-and-two, 21 at six-and-two. Without
+  the lineup on the record, that shift in the denominator of the record's
+  headline metrics would have nothing accounting for it, and records either side
+  of a lineup change would straddle the discontinuity silently. A record also
+  carries
   **`private_diaries_enabled`** (spec 039) when the run could state which arm of
   the private-diaries A/B it measured — see
   [`settings.private_diaries_enabled`](#settingsprivate_diaries_enabled) below,

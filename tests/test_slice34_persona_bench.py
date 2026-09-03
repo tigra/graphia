@@ -1010,6 +1010,33 @@ def test_build_bench_record_persona_knobs_sit_in_a_settings_sub_map() -> None:
     assert "diversity_enabled" not in result.settings
 
 
+def test_build_bench_record_settings_carry_the_lineup_sub_map() -> None:
+    """``settings.lineup`` is stamped, with BOTH sub-keys (spec 042 Task 4.3).
+
+    The one recorded fact that explains this record's headline denominator. The
+    bench builds its rosters through the REAL ``generate_roster`` off
+    ``load_config``, so each cast holds ``num_citizens + num_mafia - 1``
+    personas and every persona facet pools ``C(that, 2)`` pairs — 15 per roster
+    at five-and-two, 21 at six-and-two. No other field in the record accounts
+    for that shift, so a reader comparing records either side of a lineup change
+    would straddle the discontinuity silently.
+
+    Asserted by EQUALITY rather than membership deliberately: every other
+    additive-key check in this module is subset-shaped (``flat_keys <=
+    set(result.settings)`` just above), so an edit that silently dropped this
+    key would leave the whole suite green — the worst failure mode there is for
+    a provenance field. Under this stub, which carries no lineup attributes, the
+    honest claim is present-with-NULLS — the same ``getattr(..., None)`` posture
+    the persona knobs keep (see
+    ``test_build_bench_record_unresolvable_persona_knobs_are_null_not_defaulted``).
+    The POPULATED case, off a real resolved config, is pinned end-to-end in
+    ``test_main_with_record_writes_the_generation_block_and_the_persona_knobs``.
+    """
+    result = build_bench_record(_summary(), config=_PersonaConfigStub())
+
+    assert result.settings["lineup"] == {"num_citizens": None, "num_mafia": None}
+
+
 @pytest.mark.parametrize(
     "arm",
     [pytest.param(True, id="invoked-on"), pytest.param(False, id="invoked-off")],
@@ -1375,6 +1402,19 @@ def test_main_with_record_writes_the_generation_block_and_the_persona_knobs(
     assert lines[generation_i + 2].startswith("  regenerations: ")
     assert int(lines[generation_i + 1].split(": ")[1]) >= 0
     assert int(lines[generation_i + 2].split(": ")[1]) >= 0
+
+    # The lineup sub-map is stamped from the REAL resolved config (``main``
+    # maps ``load_config()``), which is what makes the pair denominator behind
+    # the persona facets explicable. Derived from the resolved config rather
+    # than written as a literal: it is a config ECHO, not this test's own
+    # construction, so it states the same claim at any lineup.
+    cfg = load_config()
+    lineup_i = lines.index("  lineup:")
+    assert lines.index("settings:") < lineup_i
+    assert lines[lineup_i + 1 : lineup_i + 3] == [
+        f"    num_citizens: {cfg.num_citizens}",
+        f"    num_mafia: {cfg.num_mafia}",
+    ]
 
     persona_i = lines.index("  persona:")
     assert lines.index("settings:") < persona_i < lines.index("quality:")
