@@ -16,9 +16,21 @@ import pytest
 from pydantic import ValidationError
 from textual.widgets import Input, RichLog
 
+from graphia.config import load_config
 from graphia.llm import DayAction, Pointing, Roster
+from graphia.nodes.setup import ai_name_count
 from graphia.prompts import ROSTER_INTRO_TEMPLATE
 from graphia.ui.app import GraphiaApp
+
+# Re-use Task 3.4's roster-intro parser and its placeholder marker rather than
+# growing a third copy: the helper reads the *logical* Moderator message across
+# RichLog's wrapped rows, which is precisely the subtlety a re-implementation
+# here would get wrong (at eight seats the last name lands on the second row).
+# Importing a sibling test module is the established pattern in this suite —
+# ``tests/test_career_stats.py`` already pulls ``_rich_log_text`` / ``_wait_for``
+# from this same module, and ``tests/test_dual_mode_smoke.py`` imports from
+# ``tests/test_remote_mode_smoke.py``.
+from test_slice2_roster import PLACEHOLDER_PREFIX, _roster_intro_names
 
 
 def _install_large_defaults(fake_large) -> None:
@@ -45,6 +57,26 @@ def _install_large_defaults(fake_large) -> None:
 HUMAN_NAME = "Alice"
 SLICE2_HARDCODED = ["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"]
 ROSTER_INTRO_PREFIX = ROSTER_INTRO_TEMPLATE.split("{names}")[0]
+
+# Names ``test_retry_on_validation_failure`` slices its scripted retry roster
+# from. It scripts the STRICT ``outputs=`` queue (that form is the whole point
+# of a retry test and must stay), so the roster it hands back has to be the
+# size the game will actually ask for — sliced to ``ai_name_count(config)`` at
+# test time, never counted by hand. Longer than any lineup this suite plays
+# (``graphia.llm._MAX_AI_NAMES`` is 11), so the slice is always exact.
+RETRY_NAME_POOL = [
+    "Noor",
+    "Oleg",
+    "Pema",
+    "Quinn",
+    "Rafa",
+    "Sage",
+    "Tomas",
+    "Udo",
+    "Vera",
+    "Wren",
+    "Yara",
+]
 
 
 def _rich_log_text(widget: RichLog) -> str:
@@ -196,7 +228,31 @@ async def test_different_names_across_runs(
 async def test_retry_on_validation_failure(
     env: Path, fake_small, fake_large, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """First small-model response fails validation; second succeeds; app recovers."""
+    """The app survives a first-response validation failure and shows the retried roster.
+
+    A **recovery** test, and deliberately only that (spec 042, Task 3.5). The
+    exact-names half of the old claim — "the roster the game uses is verbatim
+    the one the retry returned" — now lives in
+    ``tests/test_configurable_lineup.py::test_generate_names_returns_the_retried_roster_verbatim``,
+    a unit test on ``_generate_names`` with an **explicit** count.
+
+    It had to move. Here the count comes from the *resolved config* at runtime,
+    while the scripted retry was a hand-written list of six names. The moment
+    the table wanted a different number, the retry answered with the wrong
+    count, ``_coerce_to_count`` padded the difference with ``Player-1``,
+    ``call_count == 2`` still held and all six scripted names still appeared —
+    so this test stayed green while exercising **coercion** instead of the
+    recovery its name promised, and the suite lost its only coverage of a
+    validation failure that recovers without anything going red.
+
+    What this test is still the only place to say is that the *app* comes back:
+    the graph advances past the failed call, the roster-intro renders, and the
+    table it renders is the real one — exactly as many seats as the config
+    asks for, with not one production placeholder among them. Those two
+    assertions are also what stop the vacuity returning: the scripted roster is
+    now sized from the config, and if that ever drifts again the placeholder
+    check fires instead of the test quietly changing subject.
+    """
     # Pin the human as Law-abiding to avoid the Mafia-modal stall; see sibling
     # test for the teardown-hang rationale.
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
@@ -213,7 +269,14 @@ async def test_retry_on_validation_failure(
     else:  # pragma: no cover
         raise AssertionError("expected Roster to reject an empty list")
 
-    good_names = ["Noor", "Oleg", "Pema", "Quinn", "Rafa", "Sage"]
+    # Read the lineup here, not at import time: sibling modules override the
+    # counts per test via ``monkeypatch.setenv``, and the whole point is that
+    # the scripted retry matches whatever table the graph is about to deal.
+    config = load_config()
+    expected_total = config.num_citizens + config.num_mafia
+    good_names = RETRY_NAME_POOL[: ai_name_count(config)]
+    # The STRICT one-shot queue, on purpose: this is a retry test, so the fake
+    # must not be able to quietly answer a call the test did not script.
     fake = fake_small(
         outputs=[validation_error, Roster(names=good_names)],
     )
@@ -231,5 +294,25 @@ async def test_retry_on_validation_failure(
 
         # Exactly two small-model invocations: the failing first + the successful retry.
         assert fake.call_count == 2
+
+        # The retry actually recovered — it was not papered over by coercion.
+        # ``_coerce_to_count`` pads a short roster with ``Player-{k}``, and that
+        # is the one way a seat nobody scripted reaches a real table, so its
+        # absence is the load-bearing claim: ``call_count == 2`` and the
+        # membership loop above are both satisfied by a coerced roster too.
+        intro_names = _roster_intro_names(rendered)
+        assert len(intro_names) == expected_total, (
+            f"roster-intro line should name exactly {expected_total} players "
+            f"({config.num_citizens} citizens + {config.num_mafia} mafia, "
+            f"human included), but named {len(intro_names)}: {intro_names!r}"
+        )
+        assert not [n for n in intro_names if n.startswith(PLACEHOLDER_PREFIX)], (
+            f"a coerced {PLACEHOLDER_PREFIX}N placeholder reached the roster, "
+            f"so the retry did not recover: {intro_names!r}"
+        )
+        assert PLACEHOLDER_PREFIX not in rendered, (
+            f"a coerced {PLACEHOLDER_PREFIX}N placeholder appears in the "
+            f"public log:\n{rendered}"
+        )
 
         await pilot.press("q")

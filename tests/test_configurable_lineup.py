@@ -9,8 +9,11 @@ All tests here are pure / node-level and reach **no** model or network:
 - **coerce** : :func:`graphia.nodes.setup._coerce_to_count` is the pure
   last-resort guarantee — exactly ``count`` distinct names every time.
 - **generate-names** : :func:`graphia.nodes.setup._generate_names` retries once
-  on a wrong-count response and otherwise coerces to exactly ``count`` (driven
-  by the ``fake_small`` scripted-queue fixture).
+  on a wrong-count response, retries once on a :class:`ValidationError` and
+  returns the recovered roster verbatim, and otherwise coerces to exactly
+  ``count`` (driven by the ``fake_small`` scripted-queue fixture). Every test in
+  this block passes ``count`` **explicitly**, which is why it is the right home
+  for the retry contract: nothing here moves when the default lineup does.
 - **default-regression** : with the lineup env unset, the default 5+2 table is
   intact end to end (``generate_roster`` asks for 6, ``assign_roles`` deals
   2 mafia + 5 law-abiding over 7 players).
@@ -25,6 +28,7 @@ import random
 import uuid
 
 import pytest
+from pydantic import ValidationError
 
 from graphia.config import load_config
 from graphia.llm import Roster
@@ -222,6 +226,85 @@ def test_generate_names_coerces_after_two_wrong(env, fake_small) -> None:
     # The last (wrong) response seeds the coercion, so its names survive.
     assert roster.names[:3] == ["A", "B", "C"]
     assert fake.call_count == 2  # initial + retry, then coerce (no 3rd call)
+
+
+# Names the validation-recovery test slices its scripted roster from. Longer
+# than any lineup this suite plays, so the slice is always exact and the list
+# never has to be resized. Prefix-free of one another, matching the roster
+# fake's own reserve discipline (nothing here votes, but the habit is cheap).
+_RECOVERY_NAMES = [
+    "Noor",
+    "Oleg",
+    "Pema",
+    "Quinn",
+    "Rafa",
+    "Sage",
+    "Tomas",
+    "Udo",
+    "Vera",
+    "Wren",
+    "Yara",
+]
+
+
+def _roster_validation_error() -> ValidationError:
+    """A genuine :class:`ValidationError` from the real ``Roster`` schema.
+
+    Built by provoking the schema rather than hand-rolling an exception, so the
+    retry path is entered by the same class the production ``except`` clause
+    names. Spec 014 relaxed the schema to ``min_length=1`` for variable
+    lineups, so a one-element list is now valid; an **empty** list still trips
+    ``min_length=1``.
+    """
+    try:
+        Roster(names=[])
+    except ValidationError as exc:
+        return exc
+    raise AssertionError("expected Roster to reject an empty list")
+
+
+@pytest.mark.parametrize("count", [4, 7])
+def test_generate_names_returns_the_retried_roster_verbatim(
+    env, fake_small, count: int
+) -> None:
+    """A ``ValidationError`` on the first call recovers, and the retry's names
+    are returned **untouched**.
+
+    This is the suite's only coverage of a validation failure that *recovers*
+    — the sibling tests above trigger their retries by wrong count, never by
+    exception — and spec 042, Task 3.5 moved it here from
+    ``tests/test_slice3_names.py::test_retry_on_validation_failure``. It had to
+    move because at UI level the count comes from the resolved config, while
+    the scripted roster was a hand-written list of six: the moment the table
+    wanted a different number, the retry answered with the wrong count,
+    :func:`graphia.nodes.setup._coerce_to_count` padded the difference,
+    ``call_count == 2`` still held and every scripted name still appeared. The
+    test stayed green while exercising **coercion** instead of the recovery it
+    documented.
+
+    Two choices here are what close that hole, and neither is cosmetic:
+
+    - ``count`` is **explicit**, so this can never again drift with the default
+      lineup.
+    - The assertion is **full equality**, not membership. Coercion preserves
+      the names it was given and appends placeholders, so
+      ``all(n in roster.names for n in scripted)`` passes over a coerced
+      roster; ``roster.names == scripted`` cannot, because the padded roster is
+      longer. Equality is the only form that distinguishes "the retry
+      succeeded" from "the retry failed and was papered over".
+    """
+    scripted = _RECOVERY_NAMES[:count]
+    fake = fake_small(outputs=[_roster_validation_error(), Roster(names=scripted)])
+
+    roster = _generate_names(count)
+
+    # Exactly the scripted list, in order and nothing appended — see the
+    # docstring: a membership check would also pass over a coerced roster.
+    assert roster.names == scripted
+    # The failing first call plus the one corrective retry, and no third call:
+    # the strict queue would raise on a fourth, and coercion would need no
+    # further call at all.
+    assert fake.call_count == 2
 
 
 # ---------------------------------------------------------------------------
