@@ -45,6 +45,7 @@ What's mocked
 from __future__ import annotations
 
 import asyncio
+import re
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -52,8 +53,14 @@ import pytest
 from rich.text import Text
 from textual.widgets import Input, RichLog
 
+from graphia.config import load_config
 from graphia.llm import Ballot, DayAction, Pointing
-from graphia.prompts import ENDGAME_WINNER_LAW, ENDGAME_WINNER_MAFIA
+from graphia.nodes.setup import ai_name_count
+from graphia.prompts import (
+    ENDGAME_WINNER_LAW,
+    ENDGAME_WINNER_MAFIA,
+    ROSTER_INTRO_TEMPLATE,
+)
 from graphia.ui.app import GraphiaApp
 
 # Role assignment is pinned via ``GRAPHIA_ROLE`` per ADR-006. The human is
@@ -62,8 +69,27 @@ from graphia.ui.app import GraphiaApp
 # Law-abiding AIs + 1 Law-abiding human is well-trodden by the Slice 8
 # end-screen pilot test as well.
 
+# A *pool* the roster fake draws from, not a lineup-sized script (spec 042
+# §2.2): every call answers with as many names as
+# ``ai_name_count(load_config())`` asks for, consuming this list in order and
+# topping up from the fixture's own reserve when the table wants more. The
+# names that must therefore appear are its first ``ai_name_count(config)``
+# entries — sliced from the resolved config below, never counted by hand.
 AI_NAMES = ["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"]
 HUMAN_NAME = "Alice"
+
+# Fixed markers from ROSTER_INTRO_TEMPLATE, either side of the templated
+# `{names}` slot, used to locate *and delimit* the Moderator's roster-intro
+# message inside the accumulated public log.
+ROSTER_INTRO_PREFIX, ROSTER_INTRO_SUFFIX = ROSTER_INTRO_TEMPLATE.split("{names}")
+
+# ``graphia.nodes.setup._coerce_to_count`` pads a short roster up to the
+# required count with ``Player-{k}`` placeholders — the one way an unnoticed
+# extra seat reaches a real table. The roster fake's extension names
+# (``Kappa-Extra``, ``Understudy-NNN``) are deliberately *not* ``Player-``
+# shaped, so this prefix discriminates a production-coerced roster from a
+# fixture-extended one.
+PLACEHOLDER_PREFIX = "Player-"
 
 # Synthetic runtime ARN used only to satisfy ``AgentCoreClient`` constructor
 # validation; never resolved against a real AWS endpoint because the client
@@ -173,6 +199,39 @@ def _public_log_text(app: GraphiaApp) -> str:
         else:
             parts.append(str(text_obj))
     return "\n".join(parts)
+
+
+def _roster_intro_names(rendered: str) -> list[str]:
+    """Every name the Moderator's roster-intro message actually seats.
+
+    Spec 042, Task 3.4. The public log is the whole game's transcript, so the
+    roster-intro message — emitted once during setup and never evicted
+    (``#public-log`` has no ``max_lines``) — is the one place that states the
+    full table in a single, countable list. The end-of-game "Full roster:"
+    reveal names everyone too, but wraps across three rows at any lineup,
+    which is why the count is taken here.
+
+    Reads the *logical* message rather than a physical row: ``#public-log`` is
+    a ``RichLog`` with ``wrap=True`` on an 80-column test terminal, and the
+    name list spills onto a second row as soon as the table grows. Slicing
+    between the template's fixed prefix and suffix and collapsing whitespace
+    rejoins the wrapped rows; Rich folds on whitespace, so a name is never
+    split across the boundary. The suffix is searched for in the collapsed
+    text because the wrap can fall between the last name and the suffix
+    itself (``"…Aarav.\nLet the game begin."``).
+    """
+    start = rendered.find(ROSTER_INTRO_PREFIX)
+    assert start != -1, (
+        f"roster-intro line not found in public log:\n{rendered}"
+    )
+    flat = re.sub(r"\s+", " ", rendered[start + len(ROSTER_INTRO_PREFIX) :])
+    end = flat.find(ROSTER_INTRO_SUFFIX)
+    assert end != -1, (
+        f"roster-intro message never closed with {ROSTER_INTRO_SUFFIX!r}; "
+        f"the roster may not be a single Moderator message. Log was:\n"
+        f"{rendered}"
+    )
+    return [name.strip() for name in flat[:end].split(",")]
 
 
 @pytest.fixture
@@ -486,10 +545,38 @@ async def test_local_and_remote_render_equivalent_winner(
     assert app._game_over is True
 
     # Final public-log mentions every player by name (full roster reveal).
-    for name in AI_NAMES + [HUMAN_NAME]:
+    # Sized from the *resolved* config, never from a literal: the pool is
+    # consumed in order, so the AI names that must appear are its first
+    # ``ai_name_count(config)`` entries.
+    config = load_config()
+    expected_total = config.num_citizens + config.num_mafia
+    expected_pool_names = AI_NAMES[: ai_name_count(config)]
+    for name in expected_pool_names + [HUMAN_NAME]:
         assert name in rendered, (
             f"[{mode}] roster reveal missing {name!r} in log:\n{rendered}"
         )
+
+    # ...and the table seated **exactly** that many players. The loop above
+    # only looks for names this test already scripted, so on its own it cannot
+    # detect an *extra* unknown member — it stayed green over an eight-seat
+    # table whose eighth name it had never heard of (spec 042, Task 3.4). The
+    # cardinality check is what makes an extra seat a failure, and the
+    # placeholder check names the specific degradation it guards against:
+    # ``_coerce_to_count`` padding a short roster with ``Player-{k}``.
+    intro_names = _roster_intro_names(rendered)
+    assert len(intro_names) == expected_total, (
+        f"[{mode}] roster-intro line should name exactly {expected_total} "
+        f"players ({config.num_citizens} citizens + {config.num_mafia} mafia, "
+        f"human included), but named {len(intro_names)}: {intro_names!r}"
+    )
+    assert not [n for n in intro_names if n.startswith(PLACEHOLDER_PREFIX)], (
+        f"[{mode}] a coerced {PLACEHOLDER_PREFIX}N placeholder reached the "
+        f"roster: {intro_names!r}"
+    )
+    assert PLACEHOLDER_PREFIX not in rendered, (
+        f"[{mode}] a coerced {PLACEHOLDER_PREFIX}N placeholder appears in the "
+        f"public log:\n{rendered}"
+    )
 
 
 # --------------------------------------------------------------------------
