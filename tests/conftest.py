@@ -331,38 +331,120 @@ class FakeSmall:
         return out
 
 
+# Names :func:`_pooled_names` draws on when the supplied pool is shorter than
+# the count the game asks for (spec 042, Task 3.3). Genuinely distinct names,
+# NOT recycled ones — a suffix on a name already in the roster violates the
+# prefix invariant by construction, which is the regression this reserve exists
+# to remove. Three properties of the contents are load-bearing:
+#
+# * **Plainly synthetic.** The ``-Extra`` marker (a film *extra* — an additional
+#   body at the table) means nobody reading a roster line or a captured log can
+#   mistake one of these for a name a test scripted itself.
+# * **Not the production placeholder.** ``graphia.nodes.setup._coerce_to_count``
+#   pads with ``Player-{k}``; none of these match that shape, so the
+#   "no placeholder reached the table" assertions keep discriminating.
+# * **Mutually distinct in their first three characters**, and distinct in those
+#   three from every pool the suite supplies. That is a stronger property than
+#   the prefix invariant itself, and it is deliberate: several tests resolve a
+#   vote target by ``name[:3]`` through the production SUBSTRING matcher
+#   ``graphia.nodes.day._fuzzy_match_alive`` and assert the match is unique, so
+#   a reserve name sharing a three-character opening with a pool name would
+#   reintroduce the same ambiguity in a slightly different disguise. ``Chi-`` is
+#   deliberately absent: it opens ``Chiko``, which sits in most of the suite's
+#   pools.
+#
+# Twelve entries against a worst case of ten (``graphia.llm._MAX_AI_NAMES`` is
+# 11, reached from a one-name pool), so the numbered fallback below is
+# unreachable at the table cap.
+_EXTENSION_RESERVE: tuple[str, ...] = (
+    "Kappa-Extra",
+    "Lambda-Extra",
+    "Omega-Extra",
+    "Theta-Extra",
+    "Sigma-Extra",
+    "Upsilon-Extra",
+    "Zeta-Extra",
+    "Delta-Extra",
+    "Gamma-Extra",
+    "Iota-Extra",
+    "Psi-Extra",
+    "Tau-Extra",
+)
+
+# Bound on the numbered last-resort family, so a caller asking for an absurd
+# count gets a named failure instead of an infinite loop.
+_MAX_FALLBACK_UNDERSTUDIES = 999
+
+
+def _prefix_free(candidate: str, accepted: Sequence[str]) -> bool:
+    """True when ``candidate`` neither opens nor is opened by any accepted name.
+
+    The single acceptance gate every name in :func:`_pooled_names`'s result
+    passes through — pool names and extension names alike — so the prefix
+    invariant holds **by construction** rather than by the extension scheme
+    happening to be well chosen.
+
+    Case-insensitive, matching :class:`graphia.llm.Roster`'s own distinctness
+    rule. Note that it *subsumes* that rule: two names equal under ``lower()``
+    each open the other, so this returns ``False`` for them and no separate
+    ``seen`` set is needed.
+    """
+    key = candidate.lower()
+    return not any(
+        key.startswith(other.lower()) or other.lower().startswith(key)
+        for other in accepted
+    )
+
+
 def _pooled_names(pool: Sequence[str], count: int) -> list[str]:
     """Exactly ``count`` distinct names drawn from ``pool``, extended when short.
 
     The pure name-supply behind :class:`_PooledSmall` (spec 042 §2.2). The
     supplied list is a **pool**, not a scripted answer: it is consumed in order,
-    stripped and case-insensitively de-duplicated (:class:`graphia.llm.Roster`'s
-    validator rejects blanks and case-insensitive duplicates, so the result has
-    to hold that invariant before it is ever constructed), then truncated to
-    ``count``.
+    stripped and filtered through :func:`_prefix_free`, then truncated to
+    ``count``. When the pool is shorter than ``count`` it is extended from
+    :data:`_EXTENSION_RESERVE` — ``["Ivy", "Marco"]`` at count 5 yields
+    ``["Ivy", "Marco", "Kappa-Extra", "Lambda-Extra", "Omega-Extra"]``.
 
-    When the pool is shorter than ``count`` it is extended by cycling the
-    surviving names with a generation suffix — ``["Ivy", "Marco"]`` at count 5
-    yields ``["Ivy", "Marco", "Ivy-2", "Marco-2", "Ivy-3"]``. Two properties of
-    that scheme are load-bearing:
+    Three properties of the result are load-bearing:
 
+    - **Prefix-safe (spec 042, Task 3.3).** No name in the returned list is a
+      prefix of another, case-insensitively. This is a real contract, not
+      tidiness: the production vote-target resolver
+      ``graphia.nodes.day._fuzzy_match_alive`` matches a needle as a
+      case-insensitive **substring** of an alive player's name and refuses to
+      act when two players match, and several tests point at a target by its
+      first three characters. The scheme this function used before Task 3.3
+      extended a short pool by recycling it with a generation suffix
+      (``Aarav`` → ``Aarav-2``), which violates the invariant *by construction*
+      — the base name opens the suffixed one. At seven AI seats that put
+      ``Aarav`` and ``Aarav-2`` at the same table and
+      ``tests/test_slice7_vote.py::test_human_vote_bumps_human_votes_called``
+      failed with ``prefix 'Aar' is ambiguous``, intermittently, because which
+      AI is dealt Mafia is an unseeded RNG decision. Drawing from a reserve of
+      genuinely distinct names is what removes the collision at the source.
     - **Deterministic.** Same ``(pool, count)`` in, same list out, always — no
       RNG, no clock, no counter. ``tests/test_dual_mode_smoke.py``'s byte-equal
       cross-mode comparison only means something if both modes derive an
       identical roster from an identical pool.
-    - **Not the production placeholder.** The suffix form is deliberately NOT
-      the ``Player-{k}`` shape ``graphia.nodes.setup._coerce_to_count`` pads
-      with, so a fixture-extended roster can never be mistaken for a coerced
-      one by a test asserting that no placeholder reached the table.
+    - **Not the production placeholder.** Neither the reserve's ``-Extra``
+      names nor the numbered last resort match the ``Player-{k}`` shape
+      ``graphia.nodes.setup._coerce_to_count`` pads with, so a fixture-extended
+      roster can never be mistaken for a coerced one by a test asserting that
+      no placeholder reached the table.
+
+    Because the invariant is stated over the **returned roster**, the gate runs
+    over the supplied pool too: a pool holding ``["Ann", "Anna"]`` yields only
+    ``Ann``, and the reserve makes up the difference. That is the same class of
+    cleaning the function already did for blanks and case-duplicates — it keeps
+    the invariant unconditional instead of contingent on the caller's pool. No
+    pool in the suite collides today, so nothing observable changes.
     """
-    seen: set[str] = set()
     names: list[str] = []
     for raw in pool:
         name = raw.strip()
-        key = name.lower()
-        if not name or key in seen:
+        if not name or not _prefix_free(name, names):
             continue
-        seen.add(key)
         names.append(name)
         if len(names) == count:
             return names
@@ -371,18 +453,27 @@ def _pooled_names(pool: Sequence[str], count: int) -> list[str]:
             "fake_small was given an empty name pool; it needs at least one "
             "non-blank name to extend from."
         )
-    # Cycle a frozen snapshot of the surviving pool, not the growing list, so
-    # the generation suffixes stay a pure function of the input.
-    base = list(names)
-    index = 0
+    for candidate in _EXTENSION_RESERVE:
+        if len(names) == count:
+            return names
+        if _prefix_free(candidate, names):
+            names.append(candidate)
+    # Last resort, unreachable at the 12-seat table cap (see the reserve's
+    # margin above): a numbered family, zero-padded to a fixed width so no
+    # member opens another. The gate above still applies, so even a width
+    # overflow cannot break the invariant — it would only skip a candidate.
+    k = 1
     while len(names) < count:
-        candidate = f"{base[index % len(base)]}-{index // len(base) + 2}"
-        index += 1
-        key = candidate.lower()
-        if key in seen:
-            continue
-        seen.add(key)
-        names.append(candidate)
+        if k > _MAX_FALLBACK_UNDERSTUDIES:
+            raise AssertionError(
+                f"_pooled_names could not reach {count} prefix-free names from "
+                f"pool {list(pool)!r}; the reserve and the numbered fallback "
+                "are both exhausted."
+            )
+        candidate = f"Understudy-{k:03d}"
+        if _prefix_free(candidate, names):
+            names.append(candidate)
+        k += 1
     return names
 
 

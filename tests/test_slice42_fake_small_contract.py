@@ -70,6 +70,14 @@ The remaining tests pin the properties that other tests silently depend on:
   :class:`graphia.llm.Roster`'s validator rejects blanks and case-insensitive
   duplicates — a pool the fixture failed to clean would blow up inside the fake
   rather than in the test that supplied it.
+* **Prefix-safety (Task 3.3).** No name in a returned roster may be a prefix of
+  another. Slice 2's own extension scheme broke this — it recycled a short pool
+  with a generation suffix, seating ``Aarav-2`` beside ``Aarav`` — and the
+  production vote-target resolver, which matches a needle as a case-insensitive
+  **substring**, then refused to act on ``Aar``. Section 5 pins the invariant as
+  a property sweep over four pool sizes and eight counts, plus one test that
+  drives the real resolver over a real seven-AI roster, so the next extension
+  scheme cannot reintroduce the collision quietly.
 
 Everything here is pure and offline: ``load_config`` reads environment
 variables and runs pure validation, ``_pooled_names`` is a pure function, and
@@ -85,12 +93,19 @@ import pytest
 # The subjects under test live in the suite's own conftest; ``from conftest
 # import ...`` is this repo's established idiom for reaching them (see
 # ``tests/test_lineup_recording.py``, ``tests/test_outcome_tracking.py``).
-from conftest import FakeSmall, _PooledSmall, _pooled_names
+from conftest import (
+    _EXTENSION_RESERVE,
+    FakeSmall,
+    _PooledSmall,
+    _pooled_names,
+)
 
 import graphia.nodes.setup as setup_nodes
 from graphia.config import load_config
 from graphia.llm import Roster
+from graphia.nodes.day import _fuzzy_match_alive
 from graphia.nodes.setup import _coerce_to_count, ai_name_count
+from graphia.state import PlayerState
 
 # A pool deliberately SHORTER than any lineup here needs, so almost every test
 # exercises the extension path as well as the truncation path.
@@ -392,7 +407,11 @@ def test_pooled_names_dedups_case_insensitively_and_strips() -> None:
 
     names = _pooled_names(messy, 3)
 
-    assert names == ["Ivy", "Marco", "Ivy-2"]
+    # Three of the five entries were dropped, so the third name is the first
+    # extension the reserve supplies. Read from ``_EXTENSION_RESERVE`` rather
+    # than hard-coded, so this test keeps stating "a duplicate was dropped and
+    # made up from the reserve" and not "the reserve's first entry is X".
+    assert names == ["Ivy", "Marco", _EXTENSION_RESERVE[0]]
     # The invariant the dedup exists for: the result is a constructible Roster.
     assert Roster(names=names).names == names
 
@@ -411,6 +430,112 @@ def test_pooled_names_result_is_always_a_valid_roster(count: int) -> None:
         assert len(names) == count
         assert len({n.lower() for n in names}) == count
         assert Roster(names=names).names == names
+
+
+# ==========================================================================
+# 5. The prefix invariant (Task 3.3) — the property a future extension
+#    scheme must not silently break again
+# ==========================================================================
+
+# Pools spanning the shapes the suite actually supplies, plus the degenerate
+# one-name pool that forces the deepest walk into the reserve (at count 11 it
+# needs ten extension names — the worst case the reserve is sized for). The two
+# six-name entries are verbatim the two pools ~23 test modules share as
+# ``AI_NAMES``, so the sweep covers the exact roster the regression fired on.
+_PROPERTY_POOLS: dict[str, list[str]] = {
+    "one_name": ["Solo"],
+    "three_names": list(POOL),
+    "suite_pool_aarav": ["Aarav", "Bianca", "Chiko", "Daria", "Elias", "Finn"],
+    "suite_pool_ivy": ["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"],
+}
+
+
+@pytest.mark.parametrize("pool_id", sorted(_PROPERTY_POOLS))
+@pytest.mark.parametrize("count", [1, 2, 3, 5, 6, 7, 8, 11])
+def test_pooled_names_is_always_prefix_free(pool_id: str, count: int) -> None:
+    """No name in a returned roster is a prefix of another. Any pool, any count.
+
+    The invariant Task 3.3 establishes, swept over four pool sizes and eight
+    counts so it covers truncation, exact fit, one-short (the seven-seat case
+    that broke) and the deepest extension the reserve supports.
+
+    **Why it is a contract and not tidiness.** The production vote-target
+    resolver :func:`graphia.nodes.day._fuzzy_match_alive` matches a needle as a
+    case-insensitive **substring** of an alive player's name and returns
+    ``None`` when two players match, so two names where one opens the other are
+    unaddressable by any needle short enough to be convenient. Slice 2's
+    extension scheme created exactly that pair by construction — it recycled a
+    short pool with a generation suffix, so ``Aarav`` sat next to ``Aarav-2``
+    — and at seven AI seats
+    ``tests/test_slice7_vote.py::test_human_vote_bumps_human_votes_called``
+    failed with ``prefix 'Aar' is ambiguous across alive roster [...]``.
+    *Intermittently*, which is worse: which AI is dealt Mafia is an unseeded
+    RNG decision (architecture §6), so the collision only bit on the runs where
+    the surviving Mafia AI happened to be ``Aarav`` or its recycled twin.
+
+    The pairwise check is written out here rather than importing
+    ``conftest._prefix_free``: a test that reuses the implementation's own
+    predicate proves only that the predicate agrees with itself.
+    """
+    pool = _PROPERTY_POOLS[pool_id]
+
+    names = _pooled_names(pool, count)
+
+    assert len(names) == count
+    lowered = [n.lower() for n in names]
+    offenders = [
+        (a, b)
+        for i, a in enumerate(lowered)
+        for j, b in enumerate(lowered)
+        if i != j and a.startswith(b)
+    ]
+    assert not offenders, (
+        f"pool {pool!r} at count {count} produced names where one opens "
+        f"another: {offenders!r} — the production substring matcher cannot "
+        f"tell such a pair apart. Full roster: {names!r}"
+    )
+    # The invariant is only worth having on a roster the schema accepts.
+    assert Roster(names=names).names == names
+
+
+@pytest.mark.parametrize("pool_id", ["suite_pool_aarav", "suite_pool_ivy"])
+def test_pooled_names_extension_keeps_short_vote_needles_unique(
+    pool_id: str,
+) -> None:
+    """The concrete failure: ``/vote <first three letters>`` resolves uniquely.
+
+    The sharper, end-of-the-chain statement of the invariant above, and the one
+    that would have caught the regression directly. Rather than restating the
+    matching rule, it drives the **production** resolver
+    :func:`graphia.nodes.day._fuzzy_match_alive` over a real seven-AI roster
+    plus the human seat — the shape ``tests/test_slice7_vote.py`` builds — and
+    asserts every player is reachable by their own first three characters.
+
+    Note the ``+ 1``: the human's name is part of the alive roster the matcher
+    searches, so a reserve name colliding with ``Alice`` would be just as
+    broken as one colliding with a pool name. That is why
+    :data:`conftest._EXTENSION_RESERVE`'s entries are kept distinct in their
+    first three characters from the human's name too, not only from each
+    other's.
+    """
+    human_name = "Alice"
+    names = [human_name, *_pooled_names(_PROPERTY_POOLS[pool_id], 7)]
+    players = {
+        f"p-{i}": PlayerState(
+            id=f"p-{i}",
+            name=name,
+            role="law_abiding",
+            is_human=(name == human_name),
+        )
+        for i, name in enumerate(names)
+    }
+
+    for player_id, player in players.items():
+        needle = player.name[:3]
+        assert _fuzzy_match_alive(players, needle) == player_id, (
+            f"needle {needle!r} for {player.name!r} did not resolve uniquely "
+            f"across the roster {names!r}"
+        )
 
 
 def test_pooled_names_rejects_an_empty_pool() -> None:
