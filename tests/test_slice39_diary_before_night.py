@@ -1379,20 +1379,44 @@ AI_NAMES = ["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"]
 
 
 def _pin_default_table(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Pin every env knob the two driven trajectories' absolute numbers rest on.
+    """Pin the five-and-two table the two driven trajectories' numbers rest on.
 
-    The cursor pins below are ABSOLUTE (5 / 10 / 0) and the Day counts are
-    absolute too, so they are only legitimate if the table size, the round cap,
-    the Day cap and spec 028's reflection flag are the documented defaults. A
-    developer with ``GRAPHIA_NUM_MAFIA`` or ``GRAPHIA_PRIVATE_THOUGHTS`` in
-    their shell would otherwise see a confusing failure about a number rather
-    than about their environment.
+    These tests' subject is the CROSS-CHANNEL CURSOR arithmetic — how many of a
+    writer's own committed private thoughts precede each diary entry — and the
+    pins are absolute (5 / 10 / 0), as is the number of Days each trajectory
+    takes. Both are only hand-checkable against a KNOWN table, so this helper
+    *sets* the lineup it claims to pin: five Law-abiding and two Mafia, seven
+    seats, which is the six ``AI_NAMES`` above plus the human.
+
+    Setting rather than clearing is the load-bearing part. An earlier version
+    called ``delenv`` on the two count knobs, which pins to whatever the
+    default happens to be — so when the default lineup moved (spec 042) the
+    Mafia needed one extra Day to reach parity and the Day pins below broke,
+    even though the per-Day cursor arithmetic these tests exist to protect was
+    untouched. The seven-seat table is this scenario's own choice, not the
+    product's default; deriving the expected Day counts from the resolved
+    config instead would only make the expectation restate the implementation.
+
+    What each knob does here:
+
+    * ``GRAPHIA_NUM_CITIZENS`` / ``GRAPHIA_NUM_MAFIA`` — the seven-seat table.
+      With the human pinned Mafia and exactly one kill per Night, the game
+      reaches 2-vs-2 parity on Night 3, so the capped trajectory closes exactly
+      two Days (hence ``{1: {5}, 2: {10}}`` and ``cycle == 3``).
+    * ``GRAPHIA_MAX_DAYS`` — cleared rather than set: both games end long
+      before any Day cap binds, so nothing below depends on its value; clearing
+      it only keeps a developer's stray shell override out of the way.
+    * ``GRAPHIA_PRIVATE_THOUGHTS`` — spec 028's reflections are what the cursor
+      counts. With them off every cursor would be 0 and the 5 / 10 pin would be
+      measuring nothing.
+
+    The Day's own 6-round cap is ``graphia.nodes.day.DAY_MAX_ROUNDS``, a code
+    constant rather than an env knob, so five of the six rounds wrap into a
+    reflection whatever the environment says.
     """
-    monkeypatch.delenv("GRAPHIA_NUM_MAFIA", raising=False)
-    monkeypatch.delenv("GRAPHIA_NUM_CITIZENS", raising=False)
+    monkeypatch.setenv("GRAPHIA_NUM_CITIZENS", "5")
+    monkeypatch.setenv("GRAPHIA_NUM_MAFIA", "2")
     monkeypatch.delenv("GRAPHIA_MAX_DAYS", raising=False)
-    # Spec 028's reflections are what the cursor counts — with them off every
-    # cursor would be 0 and the 5 / 10 pin would be measuring nothing.
     monkeypatch.setenv("GRAPHIA_PRIVATE_THOUGHTS", "1")
 
 

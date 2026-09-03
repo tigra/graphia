@@ -868,9 +868,40 @@ AI_NAMES = ["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"]
 
 
 def _pin_default_table(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Pin every env knob the driven trajectory's absolute numbers rest on."""
-    monkeypatch.delenv("GRAPHIA_NUM_MAFIA", raising=False)
-    monkeypatch.delenv("GRAPHIA_NUM_CITIZENS", raising=False)
+    """Pin the five-and-two table the driven trajectory's numbers rest on.
+
+    Every count below is absolute — nine entries over nights {2, 3}, nine diary
+    calls, four survivors read back on Night 2 — and each is a reading of one
+    fixed table: five Law-abiding and two Mafia, seven seats, the six
+    ``AI_NAMES`` above plus the human. So this helper *sets* the lineup it
+    claims to pin rather than merely clearing the knobs.
+
+    Setting rather than clearing is the load-bearing part. An earlier version
+    called ``delenv`` on the two count knobs, which pins to whatever the
+    default happens to be — so when the default lineup moved (spec 042) one
+    more Law-abiding had to die before the Mafia reached parity, the game grew
+    a third Day, and ``cycle == 3`` broke. The seven-seat table is this
+    scenario's own choice, not the product's default; deriving the expected
+    cycle and entry counts from the resolved config instead would only make
+    the expectation restate the implementation.
+
+    What each knob does here:
+
+    * ``GRAPHIA_NUM_CITIZENS`` / ``GRAPHIA_NUM_MAFIA`` — the seven-seat table.
+      With the human pinned Mafia there is one AI Mafioso and five AI
+      Law-abiding, and one kill per Night reaches 2-vs-2 parity on Night 3:
+      five Day-1 writers at night 2 plus four Day-2 writers at night 3 is the
+      nine entries asserted below.
+    * ``GRAPHIA_MAX_DAYS`` — cleared rather than set: the game ends on Night 3,
+      far inside any Day cap, so nothing below depends on its value; clearing
+      it only keeps a developer's stray shell override out of the way.
+    * ``GRAPHIA_PRIVATE_THOUGHTS`` / ``GRAPHIA_PRIVATE_DIARIES`` — the two
+      spec-028 / spec-039 flags whose on-state the whole trajectory assumes.
+    * ``GRAPHIA_ROLE`` — pins the human Mafia, which is what makes the survivor
+      arithmetic stable without a seed (ADR 006, architecture §6).
+    """
+    monkeypatch.setenv("GRAPHIA_NUM_CITIZENS", "5")
+    monkeypatch.setenv("GRAPHIA_NUM_MAFIA", "2")
     monkeypatch.delenv("GRAPHIA_MAX_DAYS", raising=False)
     monkeypatch.setenv("GRAPHIA_PRIVATE_THOUGHTS", "1")
     monkeypatch.setenv("GRAPHIA_PRIVATE_DIARIES", "1")
