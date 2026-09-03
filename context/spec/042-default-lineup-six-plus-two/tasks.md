@@ -1,0 +1,112 @@
+# Tasks: A Starter Table With Room For One Mistake (Spec 042)
+
+- **Functional Specification:** [`functional-spec.md`](./functional-spec.md)
+- **Technical Considerations:** [`technical-considerations.md`](./technical-considerations.md)
+- **Trigger:** [CR 007](../../change-requests/007-starter-lineup-balance-claim-and-default.md)
+
+---
+
+## Slicing rationale (read before reordering)
+
+**The default change lands in Slice 5, not Slice 1, and that is the whole plan.** Moving those two integers first would turn 29 test files red — the scripted six-name roster no longer matches a seven-AI table, the corrective retry starves the fake's queue, and the resulting error is swallowed into a poll timeout. The suite would be broken for the duration of several slices, which is exactly what vertical slicing exists to prevent.
+
+So every slice before the fifth **removes a coupling to the number**, and each is verified by temporarily flipping the default, confirming the suite is still green, and flipping it back. That converts "we think this is decoupled" into a check. By the time the default actually moves, the change is two integers and one deliberate tripwire.
+
+**Slice 1 comes first for a different reason:** the two criteria that state what this change *buys* have no test anywhere in the suite today. They are pure, lineup-parametrised, and pass both before and after — so they can land immediately, and they are what the final verification measures against.
+
+**A verification constraint worth knowing up front.** "Launch with nothing configured and see eight players" cannot be checked by driving the real terminal UI — the Textual app needs a genuine terminal, which a subagent does not have. Every live check in this plan therefore goes through the **headless eval harness** (a one-game run reads the same config and stamps `settings.lineup`) or through Textual's in-process test driver. This is a substitution, not a skip, and it is recorded in the Recommendations table.
+
+---
+
+## Slice 1: The win-margin criteria become testable
+
+**Value:** the two claims this change exists to deliver stop being assertions in a document and become tests. Nothing in production changes, and the tests pass immediately — they are the yardstick everything later is measured against.
+
+- [ ] **Slice 1: The win-margin criteria become testable**
+  - [ ] Task 1.1: Add a test module pinning the functional spec's two win-margin criteria, **parametrised over `[(6, 2), (5, 2)]`** so one body proves the difference between the tables. Drive `check_win_condition` directly — it is pure and read-only, with no graph, no model and no RNG — over hand-built player maps, walking the night-kill / mistaken-execution sequence. Assert that at six-and-two the law-abiding side still wins after one mistaken execution, and that at five-and-two the mafia win. The `(5, 2)` arm doubles as the functional spec's "the old behaviour is still reachable" criterion. Do **not** read config in this module: the whole point is that it states the arithmetic independently of whatever the default happens to be. **[Agent: testing]**
+  - [ ] Task 1.2: Verify. Run `uv run pytest -q` and confirm the suite is green with the new tests passing. Then mutate the parity rule in `check_win_condition` (make it strictly greater rather than greater-or-equal), confirm the new tests go **red**, and restore — a test that cannot fail proves nothing about the margin. **[Agent: testing]**
+
+---
+
+## Slice 2: The fixture stops caring about the lineup
+
+**Value:** the single largest coupling is gone. After this slice the roster fake answers with whatever count the game asks for, so 62 scaffolding call sites never need to know the table size again.
+
+- [ ] **Slice 2: The fixture stops caring about the lineup**
+  - [ ] Task 2.1: In `src/graphia/nodes/setup.py`, extract the inline `num_citizens + num_mafia - 1` from `generate_roster` into a **named helper** for the lineup's AI-name count, and call it from there. This is a legitimate seam, not a testability hack: it names a concept the codebase already reasons about in prose, and it gives the fixture something to call instead of repeating the arithmetic where it could silently drift. **[Agent: langgraph-agentic]**
+  - [ ] Task 2.2: Split `fake_small`'s two call forms in `tests/conftest.py` so they mean two different things. The **list form** becomes a stateless, count-derived fake: no queue, no drain, no replay; each invoke answers with exactly as many distinct names as the production helper says are needed, treating the supplied list as a **pool** and extending it deterministically when the pool is short. `call_count` must keep incrementing so a test wanting "generated exactly once" can still assert it. The **`outputs=` form** keeps the strict one-shot queue that raises on drain, untouched. State the two-forms contract in the fixture docstring — *list = permissive pool; `outputs=` = strict queue, for retry and coercion tests only* — because that distinction is what makes this safe and a future contributor must not blur it. Follow `_DynamicNightPointing` in the same file as the precedent: it already exists, documented "no queue, no replay, no exhaustion", for exactly this reason. **[Agent: testing]**
+  - [ ] Task 2.3: Delete the persona-bench test's `_rosters(n)` helper and simplify its 19 call sites to the list form. Its only reason for existing was the absent replay: with the permissive fake, one roster generation no longer eats two queue entries and starves the next. **[Agent: testing]**
+  - [ ] Task 2.4: Add tests for the fixture itself: the list form answers with the count the production code asked for **both at the default and under a per-test count override** — an import-time derivation would pass the first and fail the second, so both are needed; the `outputs=` form still raises on drain; and the two forms are **routed differently**, without which the safety constraint above is unenforced. **[Agent: testing]**
+  - [ ] Task 2.5: Verify, and prove the decoupling rather than asserting it. `uv run pytest -q` green. Then temporarily set the citizen default to 6, run the full suite again, and confirm the previously-affected files are **still green**; restore the default. Record the failure count from that trial run — anything still red is the remaining coupling that Slices 3 and 4 must clear. **[Agent: testing]**
+
+---
+
+## Slice 3: Tests say what they mean at any lineup
+
+**Value:** the assertions that echoed the table size now derive it, the two name checks can no longer be fooled by an extra seat, and the retry-success path is pinned by something coercion cannot satisfy.
+
+- [ ] **Slice 3: Tests say what they mean at any lineup**
+  - [ ] Task 3.1: Replace the roughly ten bare table-size literals with values **derived from the resolved config** rather than renumbered. These are config echoes, not the tests' own constructions. Two of them are readiness predicates that at eight players would fail by timing out after five seconds with a message blaming the predicate rather than the lineup — so deriving them fixes the diagnostic as well as the number. **[Agent: testing]**
+  - [ ] Task 3.2: Strengthen the two cardinality-blind name assertions. Both currently loop over a known list asserting each name appears, which **cannot detect an extra unknown member** — so both would pass over a table carrying a coerced `Player-1` placeholder. Assert that the roster line names **exactly** as many players as the config says. These two tests are the only ones that care *which* names appear, so this is where deriving the expected list from config genuinely pays. **[Agent: testing]**
+  - [ ] Task 3.3: Close the vacuity this change would otherwise introduce. The retry-on-validation-failure test scripts a validation error then a six-name roster; once the table needs seven, it keeps passing while silently exercising **coercion** instead of the retry-success path it documents — losing the suite's only coverage of a validation failure that recovers. Split the claim: move the contract to a unit test on `_generate_names` with an **explicit** count, asserting the returned names are **exactly** the scripted ones (equality is what closes the hole, because coercion cannot produce it) and that two calls happened; and leave the UI test as a recovery test, strengthened with an assertion that **no placeholder name appears** and that the roster line names exactly as many players as the config says. **[Agent: testing]**
+  - [ ] Task 3.4: Verify. `uv run pytest -q` green, then repeat Slice 2's flip-the-default trial and confirm the count of still-red files has dropped to only those the harness budgets explain (Slice 4). Then confirm Task 3.2's strengthened assertions actually bite: hand-build a roster containing one extra placeholder name, confirm the cardinality assertions go **red** where the old subset checks would have passed. **[Agent: testing]**
+
+---
+
+## Slice 4: The harnesses stop assuming one table
+
+**Value:** the game-driving budgets are expressed in a unit someone can size, and the persona bench stops recording metrics whose denominator moved without saying so.
+
+- [ ] **Slice 4: The harnesses stop assuming one table**
+  - [ ] Task 4.1: Replace the three `for _ in range(80)` game-driving loops with **one shared helper** in `tests/conftest.py`, keyed on a **wall-clock deadline** sized from the resolved player count, with a derived iteration cap as a secondary stop so a pathological always-enabled-input bug cannot spin to the deadline. On exhaustion it must raise with the rendered public log, collapsing the three hand-rolled "never appeared" blocks into one. Fold in each call site's separate final-deadline wait rather than leaving it as a second phase — sitting after an exhausted loop, it converts "budget too small" into a confusing failure about the wrong thing, masking the signal. Put the three call sites under the existing slow marker. Named trade-off to record in the helper's docstring: a deadline is flakier on a loaded machine than an iteration count is reproducible, accepted because the current design already depends on wall-clock behaviour through its per-iteration pause. **[Agent: testing]**
+  - [ ] Task 4.2: Re-derive `ollama_smoke`'s interrupt budget, which is sized per *round* rather than per *player*, so at eight players each Day round costs more super-steps between human interrupts and the "budget exhausted" return moves closer. Note for the record that `blunder_eval`'s equivalent needs **no** change — it is already Day-cap-derived with a comment reasoning about the largest table, so spec 014's pre-registered concern about it is **closed, not live**. **[Agent: ai-quality-eval]**
+  - [ ] Task 4.3: Stamp the lineup into `persona_bench`'s record, following the shape `blunder_eval` already uses. Its personas-per-roster goes from six to seven, moving its similarity denominator from 15 pairs to 21 with nothing in the record to explain the discontinuity — and its own comment cites the lineup precedent for other fields while not following it here. **[Agent: ai-quality-eval]**
+  - [ ] Task 4.4: Verify. `uv run pytest -q` green, including the three slow drivers. Then the decisive check: set the citizen default to 6 and run the **full** suite — it must now be **entirely green**, since this is the last slice that removes a coupling. Restore the default. If anything is still red here, it is a coupling this plan missed and Slice 5 must not proceed until it is understood. **[Agent: testing]**
+
+---
+
+## Slice 5: The default becomes six-and-two
+
+**Value:** the change itself. A player who configures nothing gets a table where their side can be wrong once and still win.
+
+- [ ] **Slice 5: The default becomes six-and-two**
+  - [ ] Task 5.1: Consolidate the default tripwire to **exactly one owner** before moving the number, so a 5→6 sweep cannot miss a site and leave a self-contradictory suite. The config defaults test keeps its literal and its triple-equality idiom, which fails if either the constant or the intent moves — it becomes the sole owner. Strip the value assertions from the lineup-deal test, derive its expectations from the resolved config, and rename it so no number is encoded in its name; what it then tests is the invariant that matters, that roster generation and role assignment agree with the config and each other at whatever the default is. In the lineup-recording test, compare against the imported default constants rather than a literal pair, since its real subject is that absent overrides write neither environment variable. **[Agent: testing]**
+  - [ ] Task 5.2: Change `_DEFAULT_NUM_CITIZENS` from 5 to 6 in `src/graphia/config.py`, leaving `_DEFAULT_NUM_MAFIA` at 2, and update the sole tripwire's literal. Update the two eval CLI help strings that say "default 5" and "default 2", and the three stale comments naming the old table — the message-count estimate in config, the "seven people talking in turn" aside in the ledger module, and the "today's 5 + 2" note in the harness — so no reader is told the old number by the tool applying the new one. **[Agent: python-backend]**
+  - [ ] Task 5.3: Verify against the functional spec's success measures, headlessly. Run `uv run pytest -q` and confirm the suite is green with **exactly one** test having needed its number changed. Then run a real one-game headless eval against the local model and confirm from the run's own record that `settings.lineup` reads six-and-two, that eight players took the table, and that the game reached a natural end without errors. Confirm an explicit override still wins by running a second one-game eval pinned to five-and-two. Clean or commit the resulting transcript directories before any further measured run. **[Agent: ai-quality-eval]**
+
+---
+
+## Slice 6: The documentation describes the game that exists
+
+**Value:** a reader is no longer told to look for a setup step that was deliberately never built, and the completed specs carrying present-tense claims point at what replaced them.
+
+- [ ] **Slice 6: The documentation describes the game that exists**
+  - [ ] Task 6.1: Rewrite the two present-tense sentences in `context/product/product-definition.md` that describe the player being asked at launch for the role counts. That step does not exist and was explicitly ruled out when the counts were made configurable — interactive setup prompts are in that spec's own out-of-scope list. Say instead that the table is chosen before launching, and state what an unconfigured player gets. **[Agent: general-purpose]**
+  - [ ] Task 6.2: Add a **superseded pointer** — not a rewrite — to the three present-tense statements in spec 014's functional spec ("today's default five-plus-two", "the current default lineup"), citing CR 007 and this spec. Do the same for spec 005, whose claim is *stronger* ("the total lineup is still two Mafia and five Law-abiding, seven players, regardless of the setting") and will read as flatly wrong to a future reader. Both specs are Completed and are accurate records of what was built, so they are annotated rather than edited — the same ruling CR 007 applied to spec 001. Leave spec 001, spec 008 and every tutorial untouched as historical. **[Agent: general-purpose]**
+  - [ ] Task 6.3: Verify by reading each edited passage against the code it describes, and confirm no remaining present-tense statement anywhere in `context/product/` asserts the old default or a launch prompt. Confirm the annotated specs still read as valid historical records rather than as corrected ones. **[Agent: general-purpose]**
+
+---
+
+## Slice 7: Adjacent defects in the name path
+
+**Value:** two ways the roster can silently end up with placeholder players are covered, in the code this spec's fixture change has to keep honest.
+
+- [ ] **Slice 7: Adjacent defects in the name path**
+  - [ ] Task 7.1: Cover the two untested behaviours in the name-generation path, both one entry away from the existing count-parametrised sweep and neither caused by this spec. First: **two consecutive validation failures** leave the roster unset, so coercion produces an **all-placeholder** table and the game proceeds with every AI seat named `Player-N` — reachable in production against a flaky local model. Second: the deduplication is **case-insensitive**, so a model returning `Ivy` and `IVY` silently pads. Add tests pinning both, then decide and record whether each is acceptable behaviour or a defect to fix — an all-placeholder table is arguably the latter, and if so it wants a distinct signal rather than a silent pad. **[Agent: testing]**
+  - [ ] Task 7.2: Verify. `uv run pytest -q` green, with the new tests demonstrated to fail against the pre-fix behaviour if either is changed rather than merely documented. **[Agent: testing]**
+
+---
+
+## Recommendations
+
+| Task/Slice | Issue | Recommendation |
+| --- | --- | --- |
+| Every live verification (Tasks 2.5, 3.4, 4.4, 5.3) | **The interactive terminal UI cannot be driven by a subagent** — the Textual app needs a real terminal. So "launch with nothing configured and see eight players" is not directly checkable the way a player would check it. | Verified instead through the **headless eval harness** (a one-game run reads the same config and stamps `settings.lineup` in its own record) and Textual's in-process test driver. This is a substitution, not a skip, and it exercises the same config path. A human should still launch the game once by hand after Slice 5 to confirm the table looks right in the real UI. |
+| Tasks 6.1, 6.2, 6.3 | Assigned `general-purpose` — there is no documentation specialist, and product-definition edits are normally the `/awos:product` chain command's territory. | Either accept the narrow edits here, or run `/awos:product` after this spec for a fuller pass. The spec-005 and spec-014 pointers have no chain command and belong here regardless. |
+| Tasks 5.3 | Needs a **live local model server** for the one-game headless runs, and a clean tree so the records do not stamp dirty. | The server was up during specification (`qwen3-coder:30b`). Commit or clean each slice's transcript directory before the next measured run. |
+| Tasks 2.5, 3.4, 4.4 | Each includes a **flip-the-default trial** — set the default to 6, run the suite, flip back — which is a manual, uncommitted check rather than a test. | Keep them. They are what turns "we believe the coupling is gone" into evidence, and they are the reason Slice 5 can be a two-integer change. Task 4.4's trial is the gate: if the suite is not entirely green there, Slice 5 must not proceed. |
+| Slice 7 | Not caused by this spec, and could be lifted out. | Keep it if the fixture work makes the surrounding code fresh in mind; drop it to its own change if this spec is running long. Nothing else depends on it. |
+
+---
+
+**Next command:** `/awos:implement`
