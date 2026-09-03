@@ -9,7 +9,7 @@ _This roadmap outlines our strategic direction based on customer needs and busin
 _A true skeleton: a playable end-to-end game on a fixed preset lineup, with the simplest possible resolution rules. The goal is to prove the core loop works before layering on flexibility or richer behavior._
 
 - [x] **Preset Game Lifecycle**
-  - [x] **Fixed Starter Lineup:** Ship with a single hard-coded lineup (2 Mafiosos vs. 5 Law-abiding Citizens — 7 players total with the human as one of them) so new runs start instantly without setup prompts and the game is reasonably balanced toward the Law-abiding side.
+  - [x] **Fixed Starter Lineup:** Ship with a single hard-coded lineup (2 Mafiosos vs. 5 Law-abiding Citizens — 7 players total with the human as one of them) so new runs start instantly without setup prompts. *(Shipped as described. This item originally also claimed the lineup left "the game reasonably balanced toward the Law-abiding side" — **that claim is withdrawn by [CR 007](../change-requests/007-starter-lineup-balance-claim-and-default.md)**. It was false: at 5-and-2 the town can afford **zero** mistaken executions — one wrong first-day vote and the next night's kill ends the game before a second day arrives — and a town executing at random wins only **8.3%** of games. Measured against that, no arm ever recorded has been shown to beat chance. The agreed default is now **6 Law-abiding + 2 Mafiosos**, which restores one mistake of margin.)*
   - [x] **Moderator & Phase Alternation:** Establish a Moderator voice that announces phase transitions and alternates Night → Day → Night until a win condition triggers, giving the game its rhythm.
   - [x] **Win Condition Detection & Endgame:** Detect the Law-abiding win (all Mafia eliminated) and the Mafia win (Mafia count ≥ Law-abiding count), stop the loop, and close the game.
 
@@ -64,7 +64,7 @@ _With AgentCore deployment and long-term Memory in place, give players a real ch
 _Add the configurability and richer consensus mechanics the product definition calls for, now that the deployment, memory, and provider foundations are in place._
 
 - [x] **Setup Flexibility**
-  - [x] **Configurable Role Counts:** Replace the fixed lineup with the way for a human to specify numbers of Law-abiding Citizens and Mafiosos, then randomly assign roles so every run starts fresh. *(Spec 014, Completed 2026-06-16.)*
+  - [x] **Configurable Role Counts:** Replace the fixed lineup with the way for a human to specify numbers of Law-abiding Citizens and Mafiosos, then randomly assign roles so every run starts fresh. *(Spec 014, Completed 2026-06-16. The **default** these counts fall back to is **6 Law-abiding + 2 Mafiosos** per [CR 007](../change-requests/007-starter-lineup-balance-claim-and-default.md), agreed 2026-09-03; it was 5-and-2 before that, and every quality-ledger record up to that date was measured on the old lineup — so town win rates are comparable only **within** one lineup. Going further than 6 is not simply better: 7-and-2 measures worse than 6-and-2, because the margin widens only with every second citizen while the odds of any execution finding a Mafioso keep falling.)*
 
 - [x] **Richer Night Resolution**
   - [x] **Multi-Round Mafia Consensus by Pointing:** Have Mafiosos converge on a victim across multiple rounds of private pointing, falling back to the Phase 1 single-round majority-with-random-tie-break only if they fail to agree within a round cap. *(Spec 015, Completed 2026-06-17.)*
