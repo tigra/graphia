@@ -943,8 +943,9 @@ outcomes:
   runaway: 0
   draw: 0
   no_winner: 0
-  note: 'win-rate is measured against a passive scripted human (always votes No, never initiates) \
-— a consistent comparable measure, not true game balance.'
+  note: 'win-rate is measured against an active rule-based scripted human (deterministic, no model call; \
+when Law-abiding it supplies the vote a correct town majority needs) — a consistent comparable measure, \
+not true game balance.'
 vote_activity:
   by_side:
     law_abiding: 2

@@ -57,7 +57,8 @@ from graphia.prompts import (
 )
 from graphia.state import PlayerState
 from graphia.tools.blunder_eval import (
-    _OUTCOMES_HUMAN_CAVEAT,
+    _OUTCOMES_HUMAN_CAVEAT_ACTIVE,
+    _OUTCOMES_HUMAN_CAVEAT_PASSIVE,
     EvalResult,
     render_record,
     score_vote_activity,
@@ -163,8 +164,9 @@ def test_tally_outcomes_four_buckets_populated() -> None:
     assert block["mafia"]["rate"] == pytest.approx(1 / 6)
     assert block["draw"] == 1
     assert block["no_winner"] == 1
-    # The immutable passive-human caveat rides along, by value.
-    assert block["note"] == _OUTCOMES_HUMAN_CAVEAT
+    # The scripted-human caveat rides along, by value, and reflects the
+    # DEFAULT stand-in (active since spec 026) rather than a fixed string.
+    assert block["note"] == _OUTCOMES_HUMAN_CAVEAT_ACTIVE
 
 
 def test_tally_outcomes_partition_invariant_holds() -> None:
@@ -289,7 +291,29 @@ def test_tally_outcomes_empty_list_omits_rates_and_ci_no_zero_division() -> None
     assert "ci_high" not in block["mafia"]
     assert block["draw"] == 0
     assert block["no_winner"] == 0
-    assert block["note"] == _OUTCOMES_HUMAN_CAVEAT
+    assert block["note"] == _OUTCOMES_HUMAN_CAVEAT_ACTIVE
+
+
+def test_the_outcomes_caveat_follows_the_runs_stand_in() -> None:
+    """The note is DERIVED from the stand-in, not restated beside it.
+
+    The regression this pins: a single hard-coded caveat went stale when spec
+    026 made the active stand-in the default, so seventeen committed records
+    assert a passive seat while their own ``settings.scripted_player`` reads
+    ``active``. Both branches are pinned, because a default-only test would
+    have passed throughout that entire period.
+    """
+    winners = ["law_abiding", "mafia"]
+    assert (
+        tally_outcomes(winners, scripted_active=True)["note"]
+        == _OUTCOMES_HUMAN_CAVEAT_ACTIVE
+    )
+    assert (
+        tally_outcomes(winners, scripted_active=False)["note"]
+        == _OUTCOMES_HUMAN_CAVEAT_PASSIVE
+    )
+    # The two must be distinguishable, or the derivation proves nothing.
+    assert _OUTCOMES_HUMAN_CAVEAT_ACTIVE != _OUTCOMES_HUMAN_CAVEAT_PASSIVE
 
 
 def test_tally_outcomes_none_only_maps_all_to_no_winner() -> None:
@@ -552,15 +576,15 @@ def test_render_record_both_blocks_in_fixed_key_order() -> None:
 
 
 def test_render_record_includes_immutable_outcomes_caveat() -> None:
-    """The fixed passive-human caveat is rendered verbatim under ``outcomes.note``."""
+    """The scripted-human caveat is rendered verbatim under ``outcomes.note``."""
     doc = render_record(_populated_result(), _RUN_DATE)
 
     # The caveat text appears verbatim in the document...
-    assert _OUTCOMES_HUMAN_CAVEAT in doc
+    assert _OUTCOMES_HUMAN_CAVEAT_ACTIVE in doc
     # ...and round-trips as the outcomes block's ``note`` value (a single-quoted
     # scalar under the ``outcomes`` mapping), not the top-level ``notes`` field.
     parsed = yaml.safe_load(doc)
-    assert parsed["outcomes"]["note"] == _OUTCOMES_HUMAN_CAVEAT
+    assert parsed["outcomes"]["note"] == _OUTCOMES_HUMAN_CAVEAT_ACTIVE
 
 
 def test_render_record_explicit_zero_renders_literal_empty_by_day_map() -> None:
@@ -613,7 +637,7 @@ def test_render_record_round_trips_through_yaml_safe_load() -> None:
     assert parsed["outcomes"]["mafia"]["wins"] == 1
     assert parsed["outcomes"]["draw"] == 1
     assert parsed["outcomes"]["no_winner"] == 1
-    assert parsed["outcomes"]["note"] == _OUTCOMES_HUMAN_CAVEAT
+    assert parsed["outcomes"]["note"] == _OUTCOMES_HUMAN_CAVEAT_ACTIVE
 
 
 def test_render_record_round_trips_numerically_sorted_day_keys() -> None:

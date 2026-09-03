@@ -601,6 +601,34 @@ rewritten**.
 
 ## Versioning and older records
 
+- **`outcomes.note` misdescribes the scripted human on records dated 2026-06-21
+  onward. Trust `settings.scripted_player`, not the note.** Seventeen records
+  carry a note asserting *"a passive scripted human (always votes No, never
+  initiates)"* while `settings.scripted_player` on the **same record** reads
+  `active`. The setting is right and the note is wrong. Cause: `outcomes.note`
+  was a single hard-coded string, written for spec 013 when the passive
+  stand-in was the only one there was; spec 026 introduced the active stand-in
+  and **made it the default** without revisiting the note, so it went stale
+  silently and stayed that way for ten weeks. Affected runs: `2026-06-21`
+  (bedrock, ollama), `2026-06-22` (bedrock, ollama), `2026-08-30` (bedrock ×2,
+  bedrock-claude, ollama), `2026-08-31` (bedrock-claude, ollama), `2026-09-02`
+  (bedrock ×2, bedrock-claude ×2, ollama ×3).
+
+  Records **older** than that which carry the same passive note and **no**
+  `settings.scripted_player` field are **correct** — passive was the only
+  behaviour when they were written. The absence of the field means passive, as
+  the field legend already states.
+
+  The seventeen notes are **left as written**, because this ledger is
+  append-only and a committed record is not edited after the fact; the
+  correction lives here instead, and `git log` holds the original text either
+  way. Fixed at the source on 2026-09-03: `outcomes.note` is now **derived**
+  from the run's actual stand-in rather than restated beside it, and both
+  branches are pinned by test. The general lesson, worth applying to any future
+  machine-emitted note: a note describing a **configurable** condition has to
+  be computed from that condition, or it becomes a second source of truth that
+  drifts from the first without anything failing.
+
 - **Persona facets written before spec 036 carry no value.** `render_record`
   filtered metric sub-keys through a tuple containing neither `mean` nor `peak`,
   so every value-type facet from specs 031/032/033 reached the ledger as a bare

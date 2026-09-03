@@ -578,16 +578,29 @@ _BEDROCK_UPDATE_NOTE = (
     "provider-side model updates are not observable; run date is the only proxy."
 )
 
-# The fixed passive-scripted-human caveat (spec-013 §2.1): every eval game is
-# played against the scripted law-abiding human who always votes No and never
-# initiates a vote, so win-rate is a CONSISTENT comparable measure across runs —
-# not a true game-balance figure. Machine-emitted as ``outcomes.note`` (immutable,
-# like ``_BEDROCK_UPDATE_NOTE``) and distinct from the human-mutable top-level
-# ``notes`` field. Stated here once so the one caveat and any offline test share
-# a single source of truth.
-_OUTCOMES_HUMAN_CAVEAT = (
+# The scripted-human caveat (spec-013 §2.1): every eval game is played against
+# an automated stand-in in the human seat, so win-rate is a CONSISTENT
+# comparable measure across runs — not a true game-balance figure.
+# Machine-emitted as ``outcomes.note`` (immutable, like ``_BEDROCK_UPDATE_NOTE``)
+# and distinct from the human-mutable top-level ``notes`` field.
+#
+# TWO VARIANTS, because spec 026 replaced the stand-in and MADE THE ACTIVE ONE
+# THE DEFAULT. A single hard-coded note went stale the moment that landed: it
+# kept asserting a passive seat while ``settings.scripted_player`` on the very
+# same record read ``active``. Seventeen committed records carry that
+# contradiction (2026-06-21 onward); they are left as-is because the ledger is
+# append-only, and the discrepancy is documented in ``evals/README.md``. The
+# lesson worth keeping: a machine-emitted note describing a CONFIGURABLE
+# condition has to be derived from that condition, never restated beside it.
+_OUTCOMES_HUMAN_CAVEAT_PASSIVE = (
     "win-rate is measured against a passive scripted human (always votes No, never "
     "initiates) — a consistent comparable measure, not true game balance."
+)
+_OUTCOMES_HUMAN_CAVEAT_ACTIVE = (
+    "win-rate is measured against an active rule-based scripted human "
+    "(deterministic, no model call; when Law-abiding it supplies the vote a "
+    "correct town majority needs) — a consistent comparable measure, not true "
+    "game balance."
 )
 
 
@@ -1509,6 +1522,8 @@ _OUTCOME_SIDES: tuple[str, str] = ("law_abiding", "mafia")
 def tally_outcomes(
     winners: list[str | None],
     scripted_sides: list[str | None] | None = None,
+    *,
+    scripted_active: bool = True,
 ) -> dict[str, object]:
     """Tally per-game ``winner`` values into the ``outcomes`` block (pure).
 
@@ -1605,7 +1620,13 @@ def tally_outcomes(
     block["runaway"] = runaway
     block["draw"] = draw
     block["no_winner"] = no_winner
-    block["note"] = _OUTCOMES_HUMAN_CAVEAT
+    # Derived from the run's actual stand-in, never restated independently of
+    # it — see the constants' banner for why.
+    block["note"] = (
+        _OUTCOMES_HUMAN_CAVEAT_ACTIVE
+        if scripted_active
+        else _OUTCOMES_HUMAN_CAVEAT_PASSIVE
+    )
     return block
 
 
@@ -2501,7 +2522,7 @@ def render_record(result: EvalResult, run_date: str) -> str:
             indent=1,
         )
         lines += _yaml_block(
-            {"note": result.outcomes.get("note", _OUTCOMES_HUMAN_CAVEAT)}, indent=1
+            {"note": result.outcomes.get("note", _OUTCOMES_HUMAN_CAVEAT_ACTIVE)}, indent=1
         )
 
     # ``vote_activity`` (spec-013 §2.2) — AI vote-initiation counts by side ×
@@ -3621,7 +3642,11 @@ def run_eval(
     # Spec-027: pass the parallel per-game scripted seat sides so ``outcomes``
     # also carries the scripted stand-in's-side win rate (omitted when no game
     # resolved a side — the absent-metric posture).
-    result.outcomes = tally_outcomes(winners, scripted_sides)
+    result.outcomes = tally_outcomes(
+        winners,
+        scripted_sides,
+        scripted_active=bool(getattr(config, "scripted_player_active", True)),
+    )
     result.vote_activity = {"by_side": vote_by_side, "by_day": vote_by_day}
 
     # Spec-039 (§2.10 fold-in): the diary-fallback run-health pair, recorded ONLY
