@@ -14,9 +14,15 @@ All tests here are pure / node-level and reach **no** model or network:
   ``count`` (driven by the ``fake_small`` scripted-queue fixture). Every test in
   this block passes ``count`` **explicitly**, which is why it is the right home
   for the retry contract: nothing here moves when the default lineup does.
-- **default-regression** : with the lineup env unset, the default 5+2 table is
-  intact end to end (``generate_roster`` asks for 6, ``assign_roles`` deals
-  2 mafia + 5 law-abiding over 7 players).
+- **default-regression** : with the lineup env unset, roster generation and role
+  assignment agree with the resolved config and with each other end to end —
+  ``generate_roster`` mints exactly :func:`graphia.nodes.setup.ai_name_count`
+  AI seats and ``assign_roles`` deals exactly ``num_mafia`` Mafiosos and
+  ``num_citizens`` Law-abiding across them. **No lineup number is written down
+  here** (spec 042, Task 5.1): tech-spec 042 §2.4 leaves
+  ``tests/test_lineup_config.py``'s defaults test as the *single* owner of the
+  default's value, because a second copy is exactly how a lineup sweep misses a
+  site and leaves a self-contradictory suite.
 
 ``assign_roles`` shuffles the deck via the module-global ``random``; tests that
 make order-sensitive assertions seed it first so the deal is reproducible.
@@ -35,6 +41,7 @@ from graphia.llm import Roster
 from graphia.nodes.setup import (
     _coerce_to_count,
     _generate_names,
+    ai_name_count,
     assign_roles,
     generate_roster,
 )
@@ -312,16 +319,48 @@ def test_generate_names_returns_the_retried_roster_verbatim(
 # ---------------------------------------------------------------------------
 
 
-def test_default_lineup_unset_env_yields_seven(env, fake_small) -> None:
-    """With the lineup env unset, the default 5+2 = 7-player deal is intact.
+def test_default_lineup_roster_and_deal_agree_with_config(
+    env, monkeypatch: pytest.MonkeyPatch, fake_small
+) -> None:
+    """At the default lineup, roster generation and the deal agree — with the
+    config and with each other.
 
-    ``generate_roster`` asks the small model for 6 AI names (``5 + 2 - 1``);
-    ``assign_roles`` then deals 2 mafia + 5 law-abiding across all 7 seats.
+    **This test deliberately owns no lineup number** (spec 042, Task 5.1).
+    It used to be called ``test_default_lineup_unset_env_yields_seven`` and did
+    two jobs: it asserted the default's *values* (``(5, 2)``, ``ai_count == 6``,
+    ``len(players) == 7``) and it asserted the *deal mechanics* at the default.
+    The first job now belongs solely to
+    ``tests/test_lineup_config.py::test_defaults_when_lineup_env_unset``, which
+    keeps its literal and its triple-equality idiom — tech-spec 042 §2.4 wants
+    exactly one owner, because three copies of the same number is precisely how
+    a 5→6 sweep misses a site and leaves a suite that contradicts itself. The
+    old name is gone for the same reason: "seven" becomes a lie the moment the
+    lineup moves, and a name cannot be caught by a failing assertion.
+
+    What is left is the invariant that actually matters and that nothing else
+    covers end to end: the two setup nodes and the resolved config all describe
+    **the same table**. Every expectation below is derived —
+    :func:`graphia.nodes.setup.ai_name_count` for the AI seat count (the named
+    seam the roster fake also calls, so a drift between the two statements of
+    ``num_citizens + num_mafia - 1`` would surface here), and
+    ``config.num_mafia`` / ``config.num_citizens`` for the deck composition. So
+    it holds at whatever the default happens to be, and it would go red if
+    ``generate_roster`` minted the wrong number of seats or ``assign_roles``
+    dealt a deck that disagreed with them.
+
+    The count env vars are explicitly cleared rather than assumed unset, so
+    "the default lineup" is a fact this test establishes instead of one it
+    inherits from the developer's environment.
     """
+    monkeypatch.delenv("GRAPHIA_NUM_CITIZENS", raising=False)
+    monkeypatch.delenv("GRAPHIA_NUM_MAFIA", raising=False)
+
     config = load_config()
-    assert (config.num_citizens, config.num_mafia) == (5, 2)
-    ai_count = config.num_citizens + config.num_mafia - 1
-    assert ai_count == 6
+    expected_total = config.num_citizens + config.num_mafia
+    expected_ai = ai_name_count(config)
+    # The whole-table counts include the human's seat; every other seat is an
+    # AI player needing a generated name. Stated as a relation, not a literal.
+    assert expected_ai == expected_total - 1
 
     # collect_name seeds the human first; generate_roster appends the AI seats.
     human_id = str(uuid.uuid4())
@@ -337,16 +376,24 @@ def test_default_lineup_unset_env_yields_seven(env, fake_small) -> None:
             )
         },
     }
+    # A name *pool*, not a lineup-sized script (spec 042 §2.2): the permissive
+    # ``fake_small`` list form answers with as many names as ``ai_name_count``
+    # asks for, extending the pool deterministically if it is short. So this
+    # list never needs resizing when the table does.
     fake = fake_small(["Bianca", "Chiko", "Daria", "Elias", "Farah", "Gus"])
     roster_delta = generate_roster(base)
     assert fake.call_count == 1
     base["players"] = roster_delta["players"]
-    assert len(base["players"]) == 7  # human + 6 AI
+    assert len(base["players"]) == expected_total  # the human plus the AI seats
+    ai_players = [p for p in base["players"].values() if not p.is_human]
+    assert len(ai_players) == expected_ai
 
     random.seed(99)
     result = assign_roles(base)
     players = result["players"]
-    assert len(players) == 7
+    # The deck is dealt 1:1 over the map the roster node built — no drops, no
+    # IndexError — and its composition is the configured one.
+    assert len(players) == expected_total
     roles = [p.role for p in players.values()]
-    assert roles.count("mafia") == 2
-    assert roles.count("law_abiding") == 5
+    assert roles.count("mafia") == config.num_mafia
+    assert roles.count("law_abiding") == config.num_citizens

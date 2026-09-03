@@ -2,8 +2,12 @@
 
 Covers the new ``GraphiaConfig`` lineup surface introduced in Task 1:
 
-- ``num_citizens`` (env ``GRAPHIA_NUM_CITIZENS``, default ``5``) and
-  ``num_mafia`` (env ``GRAPHIA_NUM_MAFIA``, default ``2``), both parsed by
+- ``num_citizens`` (env ``GRAPHIA_NUM_CITIZENS``, default
+  ``_DEFAULT_NUM_CITIZENS``) and ``num_mafia`` (env ``GRAPHIA_NUM_MAFIA``,
+  default ``_DEFAULT_NUM_MAFIA``) — named rather than spelled out so that
+  :func:`test_defaults_when_lineup_env_unset`'s assertion stays the *only*
+  place in the suite that writes the default lineup's value down (spec 042
+  §2.4) — both parsed by
   ``_parse_count`` (unset / empty-string → default; non-numeric → a
   ``SystemExit`` that names the offending var);
 - the fail-fast validation block in ``load_config`` — every invalid lineup
@@ -67,7 +71,30 @@ def lineup_env_clean(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_defaults_when_lineup_env_unset() -> None:
-    """Nothing set → the documented 5 Citizens / 2 Mafia defaults."""
+    """Nothing set → the documented 5 Citizens / 2 Mafia defaults.
+
+    **This is the suite's single default tripwire** (tech-spec 042 §2.4): the
+    one and only test that writes the default lineup's *value* down. Two
+    sibling tests used to assert it too, which is exactly how a lineup sweep
+    misses a site and leaves a suite contradicting itself, so spec 042's Task
+    5.1 stripped them — ``test_configurable_lineup.py``'s deal test now derives
+    everything from the resolved config, and ``test_lineup_recording.py``
+    compares against the imported constants. **Do not add a third owner, and
+    do not "derive" this one:** deriving it from ``load_config()`` would make
+    it mirror the implementation and it would stop being a tripwire at all.
+
+    The triple-equality is the load-bearing idiom, not a stylistic flourish. It
+    binds three things at once — the resolved config, the module constant, and
+    the *intent* recorded here — so it goes red if the constant moves without
+    the intent, **or** the intent moves without the constant. A two-way
+    ``cfg.num_citizens == _DEFAULT_NUM_CITIZENS`` (the shape the sibling test
+    just below deliberately uses, for its own different claim) is blind to a
+    changed constant, since both sides move together.
+
+    Consequence, stated so it is not mistaken for a failure: changing the
+    default lineup is *meant* to turn exactly these two lines red, and they are
+    meant to be the only thing needing an edit.
+    """
     cfg = load_config()
 
     assert cfg.num_citizens == _DEFAULT_NUM_CITIZENS == 5

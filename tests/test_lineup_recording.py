@@ -19,7 +19,10 @@ model, the network, or a live game**:
    flows through to the resolved config and an invalid one (e.g. ``citizens=0``)
    is rejected by the same single config choke point with a ``SystemExit`` — no
    separate CLI validation. ``None`` overrides leave the env untouched so the
-   per-var default (today's 5 + 2) stands.
+   per-var default stands — compared against the imported
+   ``_DEFAULT_NUM_CITIZENS`` / ``_DEFAULT_NUM_MAFIA`` rather than a literal
+   pair, because that pair is not this module's subject (spec 042 §2.4 keeps
+   exactly one test owning the default's value).
 
 3. **The eval-ledger flatten + viewer** (``graphia.eval_ledger`` +
    ``graphia.ui.ledger_viewer``) — a record carrying ``settings.lineup`` flattens
@@ -47,7 +50,11 @@ from pathlib import Path
 import pytest
 from textual.widgets import DataTable, Static
 
-from graphia.config import load_config
+from graphia.config import (
+    _DEFAULT_NUM_CITIZENS,
+    _DEFAULT_NUM_MAFIA,
+    load_config,
+)
 from graphia.eval_ledger import (
     METRIC_ORDER,
     build_table_model,
@@ -256,15 +263,29 @@ def test_apply_lineup_overrides_mafia_not_fewer_than_citizens_fails_fast() -> No
 
 
 def test_apply_lineup_overrides_none_leaves_env_untouched_defaults_stand() -> None:
-    """``None`` overrides write neither env var, so the per-var default wins."""
+    """``None`` overrides write neither env var, so the per-var default wins.
+
+    The subject is the *absence* of the two writes; which pair the config then
+    resolves to is incidental, so the tail assertion compares against the
+    **imported** ``_DEFAULT_NUM_CITIZENS`` / ``_DEFAULT_NUM_MAFIA`` rather than
+    a literal pair (spec 042, Task 5.1). Tech-spec 042 §2.4 leaves
+    ``tests/test_lineup_config.py``'s defaults test as the single owner of the
+    default's *value*; a literal here would be a second owner, and this test
+    would then need editing on every lineup change for a reason that has
+    nothing to do with what it checks.
+    """
     _apply_lineup_overrides(None, None)
 
     assert _CITIZENS_ENV not in os.environ
     assert _MAFIA_ENV not in os.environ
 
-    # With nothing set, the config resolves to the documented defaults (5 + 2).
+    # With nothing set, the config resolves to the per-var defaults — whatever
+    # those currently are.
     config = load_config()
-    assert (config.num_citizens, config.num_mafia) == (5, 2)
+    assert (config.num_citizens, config.num_mafia) == (
+        _DEFAULT_NUM_CITIZENS,
+        _DEFAULT_NUM_MAFIA,
+    )
 
 
 def test_apply_lineup_overrides_single_flag_only_sets_that_var() -> None:
