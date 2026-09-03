@@ -63,7 +63,7 @@ from pathlib import Path
 
 import pytest
 
-from graphia.llm import Persona, Roster
+from graphia.llm import Persona
 from graphia.tools import blunder_eval, persona_bench
 from graphia.tools.persona_bench import (
     RECORD_KIND,
@@ -96,19 +96,15 @@ def _isolate_bench_process_env(monkeypatch: pytest.MonkeyPatch) -> None:
     for var in ("GRAPHIA_LLM_PROVIDER", "GRAPHIA_REMOTE", *_CLOUD_STORE_ENV_VARS):
         monkeypatch.delenv(var, raising=False)
 
-# Default 5+2 table → 6 AI names. ``fake_small`` requires exactly that count.
+# A POOL of recognisable AI names, not a lineup-sized script (spec 042 §2.2).
+# ``fake_small(AI_NAMES)`` installs the permissive pooled fake: every roster
+# generation asks the production helper how many names the resolved lineup needs
+# and draws exactly that many from this pool, extending it deterministically if
+# the pool is short. So this list never needs resizing when the default table
+# changes, and a multi-roster bench needs no per-generation script — the deleted
+# ``_rosters(n)`` helper existed ONLY because the old strict queue did not
+# replay, so one generation ate one entry and starved the next.
 AI_NAMES = ["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"]
-
-
-def _rosters(n: int) -> list[Roster]:
-    """``n`` scripted roster outputs — one per bench roster.
-
-    ``FakeSmall`` is a one-shot-per-entry queue (no replay), and ``generate_roster``
-    calls ``get_small`` once per roster, so a multi-roster bench needs ``n`` Roster
-    outputs scripted up front. The same 6 names per roster is fine — each roster is
-    an independent generation.
-    """
-    return [Roster(names=list(AI_NAMES)) for _ in range(n)]
 
 # Distinct personas (below the default bar) so a diversity-on run finds no
 # residual collisions and makes no regeneration calls.
@@ -140,7 +136,7 @@ def test_run_bench_generates_rosters_and_scores_lexically(
     fake_large,
 ) -> None:
     """``run_bench`` produces N scored rosters with a populated lexical mean/peak."""
-    fake_small(outputs=_rosters(3))
+    fake_small(AI_NAMES)
     # A FIFO of distinct personas; the unified fake replays the last once drained,
     # so every AI seat across every roster gets a (distinct-enough) persona.
     fake_large(personas=_DISTINCT_PERSONAS)
@@ -174,7 +170,7 @@ def test_run_bench_semantic_populates_semantic_metrics(
     fake_large,
 ) -> None:
     """``--semantic`` fills persona_sem_mean/peak via the faked embedder (no Bedrock)."""
-    fake_small(outputs=_rosters(2))
+    fake_small(AI_NAMES)
     fake_large(personas=_DISTINCT_PERSONAS)
 
     summary = run_bench(
@@ -289,7 +285,7 @@ def test_main_runs_end_to_end_and_writes_no_ledger(
     over — the ledger the bench WOULD have used is never created, and the repo's
     real committed ledger is byte-unchanged.
     """
-    fake_small(outputs=_rosters(2))
+    fake_small(AI_NAMES)
     fake_large(personas=_DISTINCT_PERSONAS)
 
     # Snapshot the REAL committed ledger before redirecting, so the untouched
@@ -331,7 +327,7 @@ def test_bedrock_claude_is_an_accepted_bench_provider(
     Driven with the ``safe_llm`` fakes, so it reaches no real model — this locks
     the provider *vocabulary*, not a live Claude call.
     """
-    fake_small(outputs=_rosters(2))
+    fake_small(AI_NAMES)
     fake_large(personas=_DISTINCT_PERSONAS)
 
     rc = main(["--provider", "bedrock-claude", "--rosters", "2", "--diversity", "on"])
@@ -616,7 +612,7 @@ def test_main_with_record_appends_exactly_one_document(
     findings on screen. Driven under the ``safe_llm`` fakes against a ``tmp_path``
     ledger, so no model and no committed file is reached.
     """
-    fake_small(outputs=_rosters(2))
+    fake_small(AI_NAMES)
     fake_large(personas=_DISTINCT_PERSONAS)
 
     ledger = tmp_path / "ledger.yaml"
@@ -654,7 +650,7 @@ def test_main_with_record_leaves_every_prior_document_unchanged(
     text must remain an exact PREFIX of the file — no rewrite, no reorder, no
     re-render of anything already recorded.
     """
-    fake_small(outputs=_rosters(2))
+    fake_small(AI_NAMES)
     fake_large(personas=_DISTINCT_PERSONAS)
 
     ledger = tmp_path / "ledger.yaml"
@@ -682,7 +678,7 @@ def test_main_with_record_twice_accumulates_two_documents(
     Also covers the first-use path: the ledger file does not exist before the
     first append, so the appender creates it (and its parent) rather than failing.
     """
-    fake_small(outputs=_rosters(4))
+    fake_small(AI_NAMES)
     fake_large(personas=_DISTINCT_PERSONAS)
 
     ledger = tmp_path / "fresh" / "ledger.yaml"
@@ -716,7 +712,7 @@ def test_main_with_record_does_not_touch_the_real_committed_ledger(
     the original leak), this test is the one that catches it before ~25 more
     synthetic records land in a committed file.
     """
-    fake_small(outputs=_rosters(2))
+    fake_small(AI_NAMES)
     fake_large(personas=_DISTINCT_PERSONAS)
 
     real_ledger = blunder_eval.LEDGER_PATH
@@ -1155,7 +1151,7 @@ def test_main_with_record_collects_provenance_with_the_evals_collectors(
     provider collector is handed the run's provider plus the resolved tier ids,
     and both returned blocks reach the ledger document verbatim.
     """
-    fake_small(outputs=_rosters(2))
+    fake_small(AI_NAMES)
     fake_large(personas=_DISTINCT_PERSONAS)
 
     rc = main(
@@ -1194,7 +1190,7 @@ def test_main_without_record_collects_no_provenance(
     default path (and any test that drives it) provably away from ``git`` and
     from the ollama endpoints the provider collector would GET.
     """
-    fake_small(outputs=_rosters(2))
+    fake_small(AI_NAMES)
     fake_large(personas=_DISTINCT_PERSONAS)
 
     rc = main(["--provider", "bedrock", "--rosters", "2", "--diversity", "on"])
@@ -1269,7 +1265,7 @@ def test_main_with_record_writes_the_note_into_the_ledger_last(
     would break silently: an unset note must still render its empty-but-present
     last key rather than dropping the field.
     """
-    fake_small(outputs=_rosters(2))
+    fake_small(AI_NAMES)
     fake_large(personas=_DISTINCT_PERSONAS)
 
     rc = main(
@@ -1320,7 +1316,7 @@ def test_main_with_record_writes_the_invoked_arm_not_the_env_default(
     claims to be a flag-on one, making the two sides of the spec-034 comparison
     indistinguishable after the fact.
     """
-    fake_small(outputs=_rosters(2))
+    fake_small(AI_NAMES)
     fake_large(personas=_DISTINCT_PERSONAS)
     # The ambient default disagrees with the arm under test. ``run_bench`` passes
     # the CLI value into ``generate_personas`` directly, so this changes nothing
@@ -1352,7 +1348,7 @@ def test_main_with_record_writes_the_generation_block_and_the_persona_knobs(
     ``settings``. Everything a reviewer needs to compare this record against
     another is present in the file, not just in the objects.
     """
-    fake_small(outputs=_rosters(2))
+    fake_small(AI_NAMES)
     fake_large(personas=_DISTINCT_PERSONAS)
 
     rc = main(
@@ -1400,7 +1396,7 @@ def test_semantic_unavailable_still_completes_and_reports(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     """The run finishes, prints its summary, and keeps the free lexical figures."""
-    fake_small(outputs=_rosters(2))
+    fake_small(AI_NAMES)
     fake_large(personas=_DISTINCT_PERSONAS)
     monkeypatch.setattr(persona_bench, "_embed_documents", _raise_no_creds)
 
@@ -1419,7 +1415,7 @@ def test_semantic_unavailable_is_not_retried_on_every_roster(
     env: Path, fake_small, fake_large, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """One failure disables the instrument — a credential timeout per roster is slow."""
-    fake_small(outputs=_rosters(4))
+    fake_small(AI_NAMES)
     fake_large(personas=_DISTINCT_PERSONAS)
     calls: list[int] = []
 
@@ -1438,7 +1434,7 @@ def test_semantic_unavailable_record_omits_the_pair_entirely(
     env: Path, fake_small, fake_large, monkeypatch: pytest.MonkeyPatch, tmp_ledger: Path,
 ) -> None:
     """A degraded run is still recordable, with the semantic facets simply absent."""
-    fake_small(outputs=_rosters(2))
+    fake_small(AI_NAMES)
     fake_large(personas=_DISTINCT_PERSONAS)
     monkeypatch.setattr(persona_bench, "_embed_documents", _raise_no_creds)
 
@@ -1456,7 +1452,7 @@ def test_not_requesting_semantic_is_not_reported_as_unavailable(
     env: Path, fake_small, fake_large, capsys: pytest.CaptureFixture[str],
 ) -> None:
     """The normal free path must not look like a degraded one."""
-    fake_small(outputs=_rosters(2))
+    fake_small(AI_NAMES)
     fake_large(personas=_DISTINCT_PERSONAS)
 
     summary = persona_bench.run_bench(

@@ -35,7 +35,7 @@ import pytest
 from rich.text import Text
 from textual.widgets import Input, RichLog
 
-from graphia.llm import Ballot, DayAction, Pointing, Roster
+from graphia.llm import Ballot, DayAction, Pointing
 from graphia.stats_store import (
     CareerStats,
     GameSummary,
@@ -61,6 +61,10 @@ FIRST_RUN_MARKER = "first game"
 RETURNING_MARKER = "Welcome back"
 PANEL_MARKER = "Career update"
 
+# A POOL of recognisable AI names for ``fake_small``'s list form, not a
+# lineup-sized script: the pooled fake draws exactly as many as the resolved
+# config asks for and extends the pool deterministically if it is short, so
+# this list never needs resizing when the default table changes.
 AI_NAMES = ["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"]
 HUMAN_NAME = "Alice"
 
@@ -810,9 +814,23 @@ async def test_ui_panel_written_then_second_app_greets_cumulative(
     ``load`` picked it up.
     """
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
-    # Two rosters: one per game (the second app boots a fresh graph and calls
-    # the small model again before we read its greeting and exit).
-    fake_small(outputs=[Roster(names=AI_NAMES), Roster(names=AI_NAMES)])
+    # The permissive POOL form, not a two-entry script (spec 042 §2.2). This
+    # site used ``outputs=[Roster(...), Roster(...)]`` on the belief that the
+    # second app "calls the small model again before we read its greeting and
+    # exit" — measured, it does not: ``call_count`` is 1, because the cumulative
+    # greeting is emitted at mount from the stats store and the test presses "q"
+    # long before app2's setup reaches ``generate_roster``. So the second entry
+    # was never consumed, "two generations happened" was never asserted here and
+    # is not even true, and no ``call_count`` assertion belongs in a test whose
+    # subject is the record/load round-trip through the shared store path.
+    #
+    # The old script was also actively harmful once the lineup needs seven names:
+    # app1's generation would eat BOTH entries (the 6-name answer fails the
+    # production count guard, the corrective retry pops the second identical
+    # 6-name entry, and ``_coerce_to_count`` pads the roster with a ``Player-1``
+    # placeholder) and still pass green. The pool form cannot do that — it always
+    # answers with exactly the count the resolved config asks for.
+    fake_small(AI_NAMES)
     fake = fake_large(day_actions=[], ballots=[], pointings=[])
 
     store_path = tmp_path / "shared" / "career.json"
