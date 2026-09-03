@@ -17,12 +17,33 @@ Textual) mirroring the pattern used in ``test_slice7_vote.py``:
    the Law-abiding win to assert the final Moderator message includes the
    kill-log (chronological) AND the full roster reveal with roles.
 
+4. ``test_endgame_recap_omits_diaries_while_diaries_are_really_written``
+   (spec 042 Slice 3, Task 3.1) — pins BOTH halves of the recap/diary
+   boundary as it stands today: real scripted diary entries reach
+   ``private_diaries``, and none of that text reaches the recap.
+
 Plus a single Textual-pilot smoke test asserting the "Game over." marker
 renders in ``#public-log`` and any keypress exits the app.
 
 All LLM calls go through the unified ``fake_large`` fixture (DayAction,
-Ballot, Pointing served from one fake keyed on schema), plus
-``fake_small`` for name generation. No test touches real Bedrock.
+Ballot, Pointing, Persona and Diary served from one fake keyed on schema),
+plus ``fake_small`` for name generation. No test touches real Bedrock.
+
+Why every ``fake_large(...)`` call here scripts ``diaries=``
+------------------------------------------------------------
+
+``GRAPHIA_PRIVATE_DIARIES`` defaults **on**, so every Day→Night hinge in
+these driven games fans ``day_diary`` out across the surviving AI players.
+Until spec 042 Slice 3 (Task 3.1) none of these tests scripted a ``Diary``
+answer, so each of those calls drained an empty queue, raised inside
+``_ai_diary``, and was swallowed by its broad ``except`` into
+``graphia.nodes.day._DIARY_FALLBACK`` — 26 fallback entries across the four
+tests in this file, every one of them green and none of them exercising the
+diary model path. Scripting ``diaries=`` costs one line per call site,
+changes no assertion in tests 1–3 or the pilot (diary text never enters the
+message stream, and the recap reads no diaries), and puts the real path
+under all of them. See ``tests/test_slice39_diary_fake_coverage.py`` for the
+statement of why a missing ``Diary`` queue is a *silent* failure.
 """
 
 from __future__ import annotations
@@ -36,10 +57,12 @@ from langgraph.types import Command
 
 from graphia.config import load_config
 from graphia.graph import build_graph, make_run_config
-from graphia.llm import Ballot, DayAction, Pointing
+from graphia.llm import Ballot, DayAction, Diary, Persona, Pointing
+from graphia.nodes.day import _DIARY_FALLBACK
 from graphia.prompts import (
     ENDGAME_HEADER_KILLS,
     ENDGAME_HEADER_ROSTER,
+    ENDGAME_PERSONA_HEADER,
     ENDGAME_WINNER_LAW,
     ENDGAME_WINNER_MAFIA,
 )
@@ -47,6 +70,35 @@ from graphia.ui.app import GraphiaApp
 
 HUMAN_NAME = "Alice"
 AI_NAMES = ["Ivy", "Marco", "Priya", "Silas", "Yuki", "Aarav"]
+
+# The scripted diary entry every ``fake_large(diaries=...)`` call in this file
+# serves. Three properties are load-bearing and must survive any reword:
+#
+# * It carries a token no production string could emit, so an exact match
+#   proves the text travelled from the scripted queue into state untouched and
+#   a substring search over the recap cannot be satisfied by coincidence.
+# * It is SINGLE-LINE and far under ``DIARY_MAX_CHARS``, so
+#   ``_clamp_diary_entry`` (whitespace-fold then truncate) is the identity on
+#   it and exact equality is a fair assertion.
+# * It names no player and contains no roster name as a substring, so the
+#   "diary text is absent from the recap" assertion cannot be tripped by the
+#   roster reveal, and vice versa.
+DIARY_SENTINEL_TOKEN = "ENDGAME-DIARY-SENTINEL"
+SCRIPTED_DIARY_ENTRY = (
+    f"{DIARY_SENTINEL_TOKEN}: the whole day folded down to one thought, "
+    "and I have set it here where no one else can read it."
+)
+
+# Scripted persona so the recap's persona reveal is pinned against text this
+# test chose, not against ``setup._fallback_persona``'s name-anchored
+# stand-in. Distinctive tokens for the same reason as above.
+PERSONA_SENTINEL_TOKEN = "ENDGAME-PERSONA-SENTINEL"
+SCRIPTED_PERSONA = Persona(
+    personality=f"{PERSONA_SENTINEL_TOKEN}-personality.",
+    manner=f"{PERSONA_SENTINEL_TOKEN}-manner.",
+    public_backstory=f"{PERSONA_SENTINEL_TOKEN}-cover.",
+    secret_backstory=f"{PERSONA_SENTINEL_TOKEN}-truth.",
+)
 
 
 # --------------------------------------------------------------------------
@@ -159,7 +211,15 @@ def test_law_abiding_wins_when_all_mafia_executed(
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_small(AI_NAMES)
 
-    fake = fake_large(day_actions=[], ballots=[], pointings=[])
+    # ``diaries=`` is REQUIRED here, not decorative: without it the default-on
+    # ``day_diary`` fan-out drains an empty queue and every entry silently
+    # becomes ``_DIARY_FALLBACK`` (module docstring).
+    fake = fake_large(
+        day_actions=[],
+        ballots=[],
+        pointings=[],
+        diaries=[Diary(entry=SCRIPTED_DIARY_ENTRY)],
+    )
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -320,7 +380,15 @@ def test_mafia_wins_when_parity_reached(
     monkeypatch.setenv("GRAPHIA_ROLE", "mafia")
     fake_small(AI_NAMES)
 
-    fake = fake_large(day_actions=[], ballots=[], pointings=[])
+    # ``diaries=`` is REQUIRED here, not decorative: without it the default-on
+    # ``day_diary`` fan-out drains an empty queue and every entry silently
+    # becomes ``_DIARY_FALLBACK`` (module docstring).
+    fake = fake_large(
+        day_actions=[],
+        ballots=[],
+        pointings=[],
+        diaries=[Diary(entry=SCRIPTED_DIARY_ENTRY)],
+    )
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -434,7 +502,15 @@ def test_endgame_message_contains_kill_log_and_roster(
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_small(AI_NAMES)
 
-    fake = fake_large(day_actions=[], ballots=[], pointings=[])
+    # ``diaries=`` is REQUIRED here, not decorative: without it the default-on
+    # ``day_diary`` fan-out drains an empty queue and every entry silently
+    # becomes ``_DIARY_FALLBACK`` (module docstring).
+    fake = fake_large(
+        day_actions=[],
+        ballots=[],
+        pointings=[],
+        diaries=[Diary(entry=SCRIPTED_DIARY_ENTRY)],
+    )
 
     config = load_config()
     graph, thread_id = build_graph(config)
@@ -532,7 +608,296 @@ def test_endgame_message_contains_kill_log_and_roster(
 
 
 # --------------------------------------------------------------------------
-# Test 4: Textual pilot — end screen renders and any keypress exits.
+# Test 4: the recap/diary boundary — real diaries written, none of them read.
+# --------------------------------------------------------------------------
+
+
+def _diary_texts(state: dict[str, Any]) -> list[str]:
+    """Flatten the ``private_diaries`` channel into a flat list of entry texts.
+
+    ``DiaryRecord`` (spec 039) is a ``TypedDict`` carrying ``day``,
+    ``thoughts_before`` and ``text``; a checkpoint round-trip hands it back as a
+    plain ``dict``. Anything else is asserted against here rather than coerced,
+    so a wobble in that shape surfaces as a shape failure instead of quietly
+    emptying the list and making the caller's "the entries are real" assertions
+    vacuous.
+    """
+    channel = state.get("private_diaries")
+    assert isinstance(channel, dict), (
+        "expected a `private_diaries` dict keyed by player id; got "
+        f"{type(channel).__name__}: {channel!r}"
+    )
+    texts: list[str] = []
+    for player_id, records in channel.items():
+        assert isinstance(records, list), (
+            f"`private_diaries[{player_id!r}]` must be a list of DiaryRecord; "
+            f"got {type(records).__name__}: {records!r}"
+        )
+        for record in records:
+            assert isinstance(record, dict) and isinstance(
+                record.get("text"), str
+            ), (
+                f"`private_diaries[{player_id!r}]` holds {record!r}, which is "
+                "not a DiaryRecord with a string `text` field"
+            )
+            texts.append(record["text"])
+    return texts
+
+
+def test_endgame_recap_omits_diaries_while_diaries_are_really_written(
+    env: Path,
+    fake_small,
+    fake_large,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Real diaries get written; the recap contains none of their text.
+
+    Spec 042 Slice 3, Task 3.1. Two claims, and **only the pair is worth
+    anything** — which is the whole reason this test exists as one test rather
+    than two.
+
+    1. **The diaries are real.** With ``GRAPHIA_PRIVATE_DIARIES`` on, the
+       Day→Night hinge fans ``day_diary`` out over the surviving AI players.
+       Every recorded entry must equal :data:`SCRIPTED_DIARY_ENTRY` and none
+       may be ``graphia.nodes.day._DIARY_FALLBACK`` — imported, never copied,
+       so a reword of the fallback cannot disarm the check. The fallback is
+       itself non-empty in-voice prose, so "an entry exists" distinguishes
+       nothing; the discriminator is the text.
+
+    2. **The recap reads no diaries.** ``end_screen`` composes the winner line,
+       the chronological kill log, the roster-and-role reveal and the persona
+       reveal — and nothing else. No diary text appears in it.
+
+    Claim 2 alone passes trivially, including in the world this task was
+    written to end: one where every diary call fell through into the
+    deterministic fallback and the diary model path was never exercised at all.
+    Claim 1 is what makes claim 2 load-bearing.
+
+    **FOR WHOEVER IMPLEMENTS SPEC 040 (Moderator Creative Recap, Phase 6a,
+    still Draft):** the "no diary text in the recap" assertion below is
+    expected to **invert** when the recap learns to read the diaries. It is
+    written here deliberately, as documentation of today's boundary, so that
+    change *flips a stated expectation* instead of discovering an undeclared
+    coupling. Invert it — do not delete it, and do not weaken claim 1, which
+    stays true either way and is what keeps the inverted assertion honest.
+
+    Trajectory (the Law-abiding win from Test 1, so the recap has real content
+    to pin): Night 1 kills a Law-abiding AI → Day 1 executes the first Mafia →
+    ``day_close`` → ``day_diary`` fans out → Night 2 kills another Law-abiding
+    → Day 2 executes the second Mafia → ``check_win_day`` routes to
+    ``end_screen``. The human is pinned Law-abiding with ``GRAPHIA_ROLE``
+    (never a magic seed — ADR 006), so no ``kind="point"`` interrupt fires.
+
+    Note that the winning Day writes NO diaries (``check_win_day`` bypasses
+    ``day_close``) and Night 1 has none either, so the entries all come from
+    Day 1's hinge — that is expected, and why the assertion is on the *content*
+    of whatever was written rather than on a count of entries.
+    """
+    # Explicit rather than leaning on the default, so a future flag flip turns
+    # this into a loud failure instead of a silent no-op.
+    monkeypatch.setenv("GRAPHIA_PRIVATE_DIARIES", "1")
+    monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
+    fake_small(AI_NAMES)
+
+    # ``personas=`` as well as ``diaries=``: the persona reveal is part of the
+    # recap content this test pins, and without a scripted persona
+    # ``generate_personas`` falls back to its name-anchored stand-in, leaving
+    # nothing distinctive to assert against.
+    fake = fake_large(
+        day_actions=[],
+        ballots=[],
+        pointings=[],
+        personas=[SCRIPTED_PERSONA],
+        diaries=[Diary(entry=SCRIPTED_DIARY_ENTRY)],
+    )
+
+    config = load_config()
+    graph, thread_id = build_graph(config)
+    run_config = make_run_config(thread_id)
+
+    _drive(graph, run_config, {"messages": []})
+    assert _collect_interrupt(graph, run_config) == {"kind": "name"}
+
+    original_invoke = fake._invoke
+
+    def _invoke_live(schema, messages):
+        # Pointing / DayAction resolve against LIVE state — the real player
+        # uuids only exist once ``assign_roles`` has run, so they cannot be
+        # pre-scripted. ``Persona`` and ``Diary`` deliberately fall through to
+        # the scripted queues, which is what puts those two model paths under
+        # test.
+        if schema is Pointing:
+            law_ids = _alive_ai_ids_by_role(graph, run_config, "law_abiding")
+            if not law_ids:
+                return Pointing(target_id="missing")
+            return Pointing(target_id=law_ids[0])
+        if schema is DayAction:
+            mafia_ids = _alive_ai_ids_by_role(graph, run_config, "mafia")
+            if mafia_ids:
+                return DayAction(kind="vote", target_id=mafia_ids[0])
+            return DayAction(kind="speak", text="(nothing to add.)")
+        if schema is Ballot:
+            return Ballot(yes=True)
+        return original_invoke(schema, messages)
+
+    fake._invoke = _invoke_live  # type: ignore[method-assign]
+
+    def _respond(iv: dict[str, Any]) -> str:
+        kind = iv.get("kind")
+        if kind == "name":
+            return HUMAN_NAME
+        if kind == "day_turn":
+            return "..."
+        if kind == "vote":
+            return "yes"
+        if kind == "point":
+            options = iv.get("options") or []
+            return options[0]["id"] if options else ""
+        raise AssertionError(f"Unexpected interrupt kind: {kind!r}")
+
+    _advance_until(
+        graph,
+        run_config,
+        stop=lambda: graph.get_state(run_config).values.get("winner")
+        is not None,
+        interrupt_responder=_respond,
+        budget=200,
+    )
+
+    state = graph.get_state(run_config).values
+    assert state.get("winner") == "law_abiding", (
+        f"the scripted trajectory never reached the Law-abiding win; got "
+        f"winner={state.get('winner')!r}. Every assertion below is "
+        f"inconclusive until this holds."
+    )
+    assert state.get("phase") == "end"
+
+    # ------------------------------------------------------------------
+    # Claim 1: the diaries were written, and they are the player's own
+    # words rather than the deterministic stand-in.
+    # ------------------------------------------------------------------
+
+    # The ``Diary`` binding was invoked at all. NOTE, so nobody mistakes this
+    # for the discriminator: unlike the unknown-schema case in
+    # ``tests/test_slice39_diary_fake_coverage.py``, the ``Diary`` queue exists
+    # in ``FakeLargeUnified``, so this counter increments even when the queue
+    # is empty and the call raises into the fallback. It pins that
+    # ``day_diary`` ran through the model path at all — which is what stops the
+    # whole test going vacuous if a future change skips the hinge — and nothing
+    # more. The text assertions below are what separate real from fallback.
+    assert fake.calls_by_schema[Diary] >= 1, (
+        "`day_diary` never bound the Diary schema — the Day→Night hinge did "
+        "not fan out, so neither claim in this test was exercised"
+    )
+
+    diary_texts = _diary_texts(state)
+    assert diary_texts, (
+        "a flag-on game that closed at least one Day wrote no diary entries "
+        "at all; expected one per surviving AI player at Day 1's hinge"
+    )
+    assert _DIARY_FALLBACK not in diary_texts, (
+        f"_DIARY_FALLBACK ({_DIARY_FALLBACK!r}) reached state even though the "
+        f"Diary queue was scripted — the model call is failing and being "
+        f"swallowed by `_ai_diary`'s broad except. Entries were: "
+        f"{diary_texts!r}"
+    )
+    assert set(diary_texts) == {SCRIPTED_DIARY_ENTRY}, (
+        "every diary entry should be the scripted text, unchanged by "
+        f"`_clamp_diary_entry`; got {sorted(set(diary_texts))!r}"
+    )
+
+    # ------------------------------------------------------------------
+    # Claim 2 (part a): the recap's actual content, pinned.
+    # ------------------------------------------------------------------
+
+    system_msgs = [
+        m for m in state.get("messages", []) if isinstance(m, SystemMessage)
+    ]
+    final = system_msgs[-1].content
+
+    # The winner line.
+    assert ENDGAME_WINNER_LAW in final, (
+        f"final message missing the Law-abiding winner line; got:\n{final!r}"
+    )
+
+    # The kill log, chronologically.
+    assert ENDGAME_HEADER_KILLS in final
+    kill_log = state.get("kill_log", [])
+    assert kill_log, "kill log should be non-empty for this scenario"
+    positions = []
+    for record in kill_log:
+        index = final.find(record["name"])
+        assert index != -1, (
+            f"kill-log name {record['name']!r} missing from the recap:\n"
+            f"{final!r}"
+        )
+        positions.append(index)
+    assert positions == sorted(positions), (
+        f"kill names must appear in chronological order; order in log "
+        f"{[r['name'] for r in kill_log]!r}, first positions {positions!r}"
+    )
+
+    # The roster-and-role reveal: every player, alive or dead, with its role.
+    assert ENDGAME_HEADER_ROSTER in final
+    players = state.get("players", {})
+    roster_section = final.split(ENDGAME_HEADER_ROSTER, 1)[1]
+    for player in players.values():
+        role_label = (
+            "Mafia" if player.role == "mafia" else "Law-abiding Citizen"
+        )
+        assert f"{player.name} ({role_label})" in roster_section, (
+            f"roster reveal missing {player.name!r} ({role_label}):\n"
+            f"{roster_section!r}"
+        )
+
+    # The persona reveal: one bullet per AI player, carrying the scripted
+    # persona text. The human has no persona and gets no bullet.
+    assert ENDGAME_PERSONA_HEADER in final
+    persona_section = final.split(ENDGAME_PERSONA_HEADER, 1)[1]
+    assert PERSONA_SENTINEL_TOKEN in persona_section, (
+        "the persona reveal shows no scripted persona text — the persona "
+        f"queue was not reached:\n{persona_section!r}"
+    )
+    for player in players.values():
+        if player.is_human:
+            continue
+        role_label = (
+            "Mafia" if player.role == "mafia" else "Law-abiding Citizen"
+        )
+        assert f"{player.name} ({role_label})" in persona_section, (
+            f"persona reveal missing a bullet for {player.name!r}:\n"
+            f"{persona_section!r}"
+        )
+
+    # ------------------------------------------------------------------
+    # Claim 2 (part b): THE BOUNDARY. Today's recap reads no diaries.
+    #
+    # >>> SPEC 040 (Moderator Creative Recap) MUST INVERT THIS. <<<
+    #
+    # When the recap learns to read the private diaries, these two
+    # assertions become the wrong way round — flip them to assert the
+    # diary text IS present. Do not delete them, and do not touch Claim 1
+    # above: without a positive check that real, scripted entries exist,
+    # an absence assertion here passes in a world where the diaries were
+    # never written or were the deterministic fallback, which is exactly
+    # the vacuity this test was created to remove.
+    # ------------------------------------------------------------------
+
+    assert SCRIPTED_DIARY_ENTRY not in final, (
+        "the endgame recap contains a private diary entry verbatim. If this "
+        "is spec 040 landing, invert this assertion (and keep the entries-are-"
+        f"real assertions above). Recap was:\n{final!r}"
+    )
+    assert DIARY_SENTINEL_TOKEN not in final, (
+        "the endgame recap contains diary text (matched on the sentinel "
+        "token, so a paraphrased or truncated quotation is caught too). If "
+        "this is spec 040 landing, invert this assertion. Recap was:\n"
+        f"{final!r}"
+    )
+
+
+# --------------------------------------------------------------------------
+# Test 5: Textual pilot — end screen renders and any keypress exits.
 # --------------------------------------------------------------------------
 
 
@@ -571,7 +936,15 @@ async def test_end_screen_visible_in_ui(
     monkeypatch.setenv("GRAPHIA_ROLE", "law-abiding")
     fake_small(AI_NAMES)
 
-    fake = fake_large(day_actions=[], ballots=[], pointings=[])
+    # ``diaries=`` is REQUIRED here, not decorative: without it the default-on
+    # ``day_diary`` fan-out drains an empty queue and every entry silently
+    # becomes ``_DIARY_FALLBACK`` (module docstring).
+    fake = fake_large(
+        day_actions=[],
+        ballots=[],
+        pointings=[],
+        diaries=[Diary(entry=SCRIPTED_DIARY_ENTRY)],
+    )
 
     app = GraphiaApp()
 
