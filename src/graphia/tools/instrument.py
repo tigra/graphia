@@ -9,9 +9,12 @@ code. It does two things, independently selectable per proxy instance:
 
 - **counting** — per-schema raw-attempt outcomes (success / failure / masked
   fallback), the exact instrumentation ``ollama_smoke`` was built on. This is
-  the ADR-010 reliability gate's measurement; its semantics are preserved
-  byte-for-byte by this extraction (``ollama_smoke`` is refactored *onto* this
-  module with no behavior change).
+  the ADR-010 reliability gate's measurement; its semantics were preserved
+  byte-for-byte by the original extraction (``ollama_smoke`` is refactored
+  *onto* this module with no behavior change). **Spec 041 corrected exactly one
+  rule** — how an ``include_raw=True`` return is classified, see
+  :func:`_classification_error` — and ``ollama_smoke``'s four schemas are
+  untouched by that correction, because none of them binds ``include_raw``.
 - **raw capture** — per invoke, a :class:`CaptureRecord` of
   ``(schema, raw_result, speaker_id)``. ``speaker_id`` is resolved **at invoke
   time** through an injected ``speaker_resolver`` callback (default ``None``),
@@ -72,6 +75,7 @@ argument, or ``None`` when the call shape is unusual) so it can read the prompt;
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
@@ -101,11 +105,19 @@ class SchemaStats:
     (this is the moved definition):
 
     - ``attempts`` increments on every raw invoke (success or failure).
-    - ``failures`` increments on an exception OR a non-instance result.
+    - ``failures`` increments on an exception OR a result carrying no usable
+      schema instance, as decided by :func:`_classification_error` — which is
+      what makes an ``include_raw=True`` envelope judged on its ``parsed``
+      payload rather than on the envelope object itself.
     - ``fallbacks`` increments once per *two consecutive* failures on this
       schema — the signature of the game's retry-then-fallback path firing.
       Node helpers run to completion before the next starts (single-threaded
-      graph), so per-schema adjacency is sound.
+      graph), so per-schema adjacency is sound. Note that this figure is
+      **inferred, not counted**: it is a claim about the *game's* behaviour
+      derived from adjacency, so a mis-classified success does not merely add
+      one failure — it manufactures fallbacks that never fired. That is what
+      the pre-041 rule did to ``Diary``; again, see
+      :func:`_classification_error`.
     """
 
     attempts: int = 0
@@ -139,6 +151,127 @@ class SchemaStats:
 
 
 # ---------------------------------------------------------------------------
+# Outcome classification — what counts as a successful raw invoke.
+# ---------------------------------------------------------------------------
+
+# ``with_structured_output(..., include_raw=True)`` promises a mapping of ``raw``
+# / ``parsed`` / ``parsing_error``. ``parsed`` and ``parsing_error`` are the
+# *discriminating* pair, and a mapping must carry BOTH to be read as the
+# envelope. ``raw`` is deliberately NOT required: it is the one key a provider
+# that ignored the ``include_raw`` request may omit, and
+# ``day._diary_entry_from`` already tolerates its absence for exactly that
+# reason. Requiring the pair is what keeps a plain game payload — ``{"entry":
+# "x"}`` — outside the envelope branch.
+_INCLUDE_RAW_KEYS = ("parsed", "parsing_error")
+
+
+def _classification_error(result: Any, schema: Any) -> str | None:
+    """Classify ONE raw invoke's return value: ``None`` on success, else why not.
+
+    Three shapes reach here, because ``with_structured_output`` has two
+    documented return contracts and a failing model produces a third:
+
+    1. **A bare schema instance** — the ``include_raw=False`` contract, and what
+       every Graphia call site except the diary asks for. Success.
+    2. **An ``include_raw=True`` envelope** — a mapping of ``raw`` / ``parsed``
+       / ``parsing_error``. The envelope itself is *never* a schema instance;
+       the answer is inside it. Judged on ``parsed`` being a schema instance
+       with ``parsing_error is None``.
+    3. **Anything else** — ``None``, a bare ``AIMessage`` (langchain's shape
+       when the model emitted no tool call at all), or a plain dict that is not
+       the envelope. A masked parse failure: no exception surfaced, but the game
+       got nothing it can use.
+
+    Why the old rule was wrong, and which measurement it corrupted
+    --------------------------------------------------------------
+    Until spec 041 the rule was the single test ``isinstance(result, schema)``,
+    which is shape 2's *negation*: the envelope is a ``dict``, so **every**
+    ``include_raw`` invoke was booked ``record_failure("non-instance result:
+    dict")`` — including the ones carrying a perfectly good ``parsed``. The
+    production diary call is ``with_structured_output(Diary, include_raw=True)``
+    (spec 039), so on every provider, in every run, healthy or not:
+
+    - ``SchemaStats["Diary"].failure_rate`` was **1.0 by construction**, so the
+      ADR-013 transport gate could not observe its own fix and any smoke output
+      read as diary transport health was fabricated. The blast radius is exactly
+      the *counting* consumers, which is narrower than it first looks:
+      ``ollama_smoke`` installs this proxy with a ``stats`` map, whereas
+      ``blunder_eval`` installs it in capture-only mode (``captures=``, no
+      ``stats=``) and measures the diary through the independent sentinel scorer
+      ``score_diary_fallback``. That is why the ledger's committed
+      ``quality.diary_fallback_rate`` figures are NOT fabricated by this defect
+      — and why the genuine 0.50 was visible at all.
+    - ``fallbacks`` was corrupted too, and *more* misleadingly, because it is
+      inferred rather than counted: two *consecutive* failures are read as "the
+      game's retry-then-deterministic-fallback fired". The diary is a per-player
+      fan-out, so N healthy diary invokes booked ``N // 2`` fallbacks that never
+      happened — the instrument inventing a claim about the *game's* behaviour
+      out of its own mis-classification. Measured before this fix: six healthy
+      invokes gave ``attempts=6, failures=6, fallbacks=3``.
+
+    Nobody saw it because ``ollama_smoke.SCHEMA_NAMES`` omits ``Diary`` and both
+    the printed report and the verdict iterate that tuple; only the ``--json``
+    payload iterates the full stats map. The one place a 100% ``Diary`` failure
+    rate would have surfaced is a report nobody routinely reads. (Spec 041
+    Slice 11 derives that tuple from ``llm.GAMEPLAY_SCHEMAS`` instead.)
+
+    Why this ships even though ``include_raw`` is leaving
+    ----------------------------------------------------
+    Spec 041 Slice 4 withdraws the ``include_raw=True`` diary call, after which
+    no Graphia call site produces shape 2. The fix ships anyway, and ships
+    *first*: **this proxy is the measurement instrument.** It must not lie about
+    a shape LangChain can legitimately return, whether or not this codebase
+    currently asks for it — otherwise the next call site that wants the raw
+    message silently re-poisons the ledger. Repairing the instrument *after*
+    measuring the transport would also produce a number nobody could trust in
+    either direction, which is why Slice 1 precedes the swap it exists to grade.
+
+    The symmetric trap, stated so it stays shut
+    -------------------------------------------
+    "Any mapping passes" is the same bug wearing the opposite sign. A plain dict
+    such as ``{"entry": "x"}`` is a genuine parse failure and must still be
+    booked as one, so a mapping is read as the envelope only when it carries
+    **both** keys in ``_INCLUDE_RAW_KEYS``: the envelope is identified by its
+    *shape*, never by "is a mapping".
+
+    The returned string is what lands in ``SchemaStats.last_error``, so each
+    envelope failure names its own cause. ``last_error`` reading ``"dict"`` —
+    the pre-041 message for every diary invoke ever booked, healthy or not —
+    told a reader nothing about what the model actually did.
+
+    PURE: no state, no RNG, no clock, no I/O, no model call.
+    """
+    if not isinstance(schema, type):
+        # A dict JSON schema (or anything else non-class): there is nothing to
+        # ``isinstance`` against, so the invoke is taken at its word. Unchanged
+        # from the pre-041 rule.
+        return None
+    if isinstance(result, schema):
+        return None  # shape 1 — the bare parsed instance
+    if isinstance(result, Mapping) and all(k in result for k in _INCLUDE_RAW_KEYS):
+        # shape 2 — the ``include_raw`` envelope. The answer is ``parsed``.
+        parsing_error = result["parsing_error"]
+        if parsing_error is not None:
+            # langchain CATCHES the parse error under ``include_raw=True`` and
+            # hands it back here rather than raising, so this branch is the only
+            # place it is ever visible to the instrument.
+            return (
+                f"include_raw parsing_error: "
+                f"{type(parsing_error).__name__}: {parsing_error}"
+            )
+        parsed = result["parsed"]
+        if not isinstance(parsed, schema):
+            # The common live shape: the model answered in prose and emitted no
+            # tool call, so ``parsed`` is ``None`` and only ``raw`` holds text.
+            return (
+                f"include_raw parsed is {type(parsed).__name__}, "
+                f"not {schema.__name__}"
+            )
+        return None
+    return f"non-instance result: {type(result).__name__}"
+
+
+# ---------------------------------------------------------------------------
 # Raw capture — per-invoke (schema, raw_result, speaker_id) records.
 # ---------------------------------------------------------------------------
 
@@ -168,11 +301,19 @@ class _InstrumentedStructured:
     """Wraps one ``with_structured_output(schema)`` runnable.
 
     On each ``invoke`` it (optionally) updates the per-schema :class:`SchemaStats`
-    with the same success/failure rules ``ollama_smoke`` used, and (optionally)
-    appends a :class:`CaptureRecord` carrying the raw result and the speaker id
-    the resolver reads off THIS invoke's prompt. The inner runnable's return
-    value and exception behavior are passed through unchanged, so the game's own
+    — classifying the outcome through :func:`_classification_error`, so an
+    ``include_raw=True`` envelope is judged on its ``parsed`` payload rather
+    than on the envelope object — and (optionally) appends a
+    :class:`CaptureRecord` carrying the raw result and the speaker id the
+    resolver reads off THIS invoke's prompt. The inner runnable's return value
+    and exception behavior are passed through unchanged, so the game's own
     retry/fallback logic is untouched.
+
+    ``with_structured_output`` kwargs (``include_raw=``, ``method=``, anything a
+    provider adds) are forwarded verbatim to the inner runnable by
+    :meth:`InstrumentedModel.with_structured_output` — the proxy must never eat
+    a kwarg, because doing so would change the transport *only under the eval
+    harness*, which is the worst failure mode this project has.
     """
 
     def __init__(
@@ -243,14 +384,15 @@ class _InstrumentedStructured:
                 )
             )
         if rec is not None:
-            if isinstance(self._schema, type) and not isinstance(
-                result, self._schema
-            ):
-                # e.g. the model produced no tool call and langchain returned
-                # None / a raw message — a parse failure even though no
-                # exception surfaced. Return it unchanged so the game's
-                # validators decide.
-                rec.record_failure(f"non-instance result: {type(result).__name__}")
+            error = _classification_error(result, self._schema)
+            if error is not None:
+                # A masked parse failure: nothing was raised, but the invoke
+                # carries no usable schema instance — e.g. the model produced no
+                # tool call and langchain returned ``None`` / a raw message, or
+                # handed back an ``include_raw`` envelope whose ``parsed`` is
+                # empty. Booked as a failure, and returned UNCHANGED either way
+                # so the game's own validators decide.
+                rec.record_failure(error)
             else:
                 rec.record_success()
         return result
@@ -296,6 +438,17 @@ class InstrumentedModel:
     def with_structured_output(
         self, schema: Any, **kwargs: Any
     ) -> _InstrumentedStructured:
+        """Bind ``schema`` on the inner client and wrap the resulting runnable.
+
+        **Every kwarg is forwarded verbatim** — ``**kwargs`` in, ``**kwargs``
+        straight out: no allowlist, no injected defaults, nothing popped. That
+        matters twice over. ``include_raw=True`` (spec 039's diary call) must
+        reach the inner runnable or the harness would measure a different return
+        shape than production produces; and ``method="json_schema"`` (spec 041's
+        provider seam) must reach it or grammar-constrained decoding would be
+        disabled *only* while the eval harness is watching, which is the worst
+        failure mode this project has.
+        """
         return _InstrumentedStructured(
             self._inner.with_structured_output(schema, **kwargs),
             schema,
