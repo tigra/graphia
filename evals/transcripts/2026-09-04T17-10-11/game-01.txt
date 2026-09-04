@@ -1,0 +1,342 @@
+Game 1 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=1 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Liam" role="Law-abiding Citizen">
+Personality: dry and sardonic
+Manner: speaks in measured, clipped sentences with occasional dry wit. Uses passive-aggressive remarks like 'Oh, certainly' or 'How delightfully convenient.' Often pauses mid-sentence to look at the floor or adjust their glasses before continuing. Frequently says 'Well, that's... interesting' when someone presents an idea.
+Persona: Liam works as a tax accountant in the town's main office, keeping meticulous records of everyone's financial dealings. He's known for being extremely punctual and methodical, always arriving exactly at 9:00 AM sharp with his neatly organized folders. His neighbors describe him as 'reliable but unremarkable.'
+</player>
+<player name="Milo" role="Mafia">
+Personality: Prickly and hypersensitive to perceived slights, with an inflated sense of self-worth that makes them immediately defensive when challenged. They have a sharp tongue but struggle to express their feelings constructively, often lashing out with biting sarcasm or quiet resentment. Despite their prickliness, they deeply desire respect and recognition for their work.
+Manner: Speaks in short, clipped sentences with a defensive tone. Uses phrases like 'I suppose' or 'Fine, whatever' when irritated but adds a sharp edge to every response. They often interrupt others mid-sentence with an abrupt 'Excuse me,' followed by a glare. Their voice rises slightly when they're offended, and they tend to cross their arms while talking.
+Public legend: Milo is a local librarian who has worked at the town's main branch for fifteen years. He's known for his meticulous organization of books and his refusal to let anyone disrupt the quiet atmosphere he maintains. Neighbors describe him as 'grumpy but helpful' and 'the kind of person who will help you find what you're looking for, but only if you're respectful.' He lives alone in a small apartment with his collection of rare first editions.
+True self (hidden): Milo is actually the second-in-command to the town's crime boss, responsible for managing illegal book smuggling operations. He learned the trade from his father, who was a minor enforcer in the family business before being killed during a territorial dispute. Now Milo maintains the organization's operations, using his librarian cover to monitor the town's activities and identify potential informants or threats.
+</player>
+<player name="Izzy" role="Law-abiding Citizen">
+Personality: Playful and teasing with a mischievous streak, but genuinely kind-hearted underneath. Izzy has an infectious laugh and loves to rib others good-naturedly while secretly caring about their wellbeing.
+Manner: Speaks in a cheerful, rapid-fire pace with frequent laughter and light teasing. Uses playful phrases like 'Oh honey, don't worry about it,' or 'Well, isn't that just peachy!' Often giggles during serious moments but quickly regains composure. Has a habit of nudging people with their elbow when offering advice and frequently uses 'you know' as a filler word.
+Persona: Izzy works as the town's beloved baker, known for her whimsical pastries and infectious personality. She runs a small bakery shop that's always filled with laughter and the aroma of fresh bread. Her neighbors describe her as 'the life of every gathering' and 'the one who makes everyone smile,' though she's secretly terrified of being taken seriously by anyone other than her friends.
+</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: dreamy and distractible
+Manner: speaks in gentle, flowing sentences that often trail off mid-thought. Uses phrases like 'oh, and then...' or 'you know what I mean?' with frequent pauses for mental wandering. Has a habit of looking away while talking, spacing out for seconds at a time before snapping back with a soft 'oh, right' or 'yes, exactly.' Speaks softly and hesitantly, often finishing sentences with a questioning tone.
+Persona: Zara is the town's florist who runs a small shop tucked between the bakery and the bookstore. She's known for her gentle nature and ability to make anyone feel comfortable with her warm smiles. Her neighbors describe her as 'the one who always remembers your birthday' and 'the kind of person who makes everything seem more beautiful.' She's been running the flower shop for eight years, carefully tending to her collection of rare blooms and creating arrangements that seem to capture the essence of each season.
+</player>
+<player name="Kai" role="Mafia">
+Personality: Brash and self-assured with an outsized confidence that borders on arrogance. Kai thrives on attention and always speaks up first in any conversation, often dominating discussions with bold opinions and flashy declarations. They're thrill-seeking and love to be the center of any social gathering, rarely letting anyone else take the lead.
+Manner: Speaks loudly and with dramatic flair, using emphatic gestures and theatrical pauses. Often interrupts others mid-sentence with 'Excuse me!' or 'Hold up!' and follows up with a booming laugh. Uses phrases like 'Listen to this' or 'You're missing the point' with theatrical eye-rolling. Frequently leans forward when talking and taps their fingers on tables or surfaces.
+Public legend: Kai is the town's newest professional wrestler, having moved from the city to pursue his dream of becoming a wrestling sensation. He runs a small training gym in the back of his garage, where he coaches kids and adults alike. Neighbors describe him as 'always in motion' and 'the kind of guy who makes everything more exciting.' He's known for his infectious energy and his ability to get everyone involved in his latest fitness challenge.
+True self (hidden): Kai was a promising athlete who fell through the cracks of the legitimate sports world. After getting kicked out of his college football team for a gambling debt, he took a job with the local mafia as a muscle enforcer. He's been working under cover for two years now, using his public wrestling persona to keep his criminal activities hidden while building connections in the town.
+</player>
+<player name="Hana" role="Law-abiding Citizen">
+Personality: Gruff and blunt with a no-nonsense attitude that borders on harsh. Hana has a thick skin and speaks her mind without filtering her words, often coming across as abrasive or cold. Despite this exterior, she's deeply loyal to those she considers friends and will go to great lengths to protect them.
+Manner: Speaks in short, direct sentences with little preamble. Her voice is low and rough, often accompanied by a dismissive grunt or sigh. She avoids flowery language and rarely uses polite phrases, instead opting for blunt honesty. Hana tends to look away while talking, her gaze fixed on the floor or anything else but the person she's speaking to. She has a habit of crossing her arms when discussing uncomfortable topics and rarely offers compliments unless absolutely necessary.
+Persona: Hana is the town's local mechanic who runs a small garage on the edge of town. She's been working on cars for over twenty years, building a reputation for fixing anything with brute force and old-school techniques. She lives alone in a modest house with her two cats and rarely socializes beyond the occasional town meeting. Neighbors describe her as 'the one who gets things done' and 'not one to mince words,' though they respect her competence and loyalty.
+</player>
+<player name="Leo" role="Law-abiding Citizen">
+Personality: Cunning and calculating with a sharp mind for strategy and manipulation. Leo is subtly devious, always thinking three steps ahead while maintaining an outward appearance of honesty and simplicity.
+Manner: Speaks in measured, deliberate pacing with frequent pauses that seem innocent but are actually calculated. Uses casual phrases like 'Well, you know how it is' or 'That's just the way things work around here.' Has a habit of tilting their head slightly when listening, as if analyzing every word. Often uses rhetorical questions to guide conversations toward desired outcomes rather than simply asking for information.
+Persona: Leo is the town's trusted postmaster who has served faithfully for over fifteen years. He handles all correspondence, packages, and mail delivery with meticulous attention to detail. His neighbors describe him as 'reliable' and 'the one who always gets things done on time.' He's known for his excellent memory of everyone's addresses and mailing patterns, which he uses to quietly gather information about the town's social networks.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Liam, Milo, Izzy, Zara, Kai, Hana, Leo. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Milo): Your Mafia teammates are: Kai. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Kai): Your Mafia teammates are: Milo. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Kai points at Izzy
+Milo points at Izzy
+<kill>Izzy — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Izzy was killed last night. Izzy was a Law-abiding Citizen.
+<round>
+Round 1.
+Liam: Well, that's... interesting. I do hope we can all agree that Izzy’s death was no accident — and that we're not going to let the killer get away with it.
+Milo: I suppose we should focus on figuring out who among us could be so reckless as to kill an innocent person, rather than wasting time on idle speculation.
+Leo: That's just the way things work around here — when someone dies, we look for answers, not just accusations. But I do hope we're all paying attention to who's been acting a bit too curious about the others' mail lately.
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+Hana: I'm not buying that we're all just supposed to sit back and wait for someone else to figure this out. Someone's been acting like they know more than they're letting on — and that's never good.
+Kai: Listen to this — Avery's been acting like she knows something, but she's been too quiet about it. I think we should all be asking her what she's really hiding.
+Zara: Oh, and then... I was just thinking, you know what I mean? We should probably all be a bit more careful about who we trust with our private thoughts — especially when someone's been acting like they're watching everyone so intently.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">Well, that's certainly a promising start to the game — assuming Avery's suspicions about Kai are correct, I suppose I'll need to tread carefully while pretending not to notice how conveniently everyone's pointing fingers at the wrong people. Oh, how delightfully convenient.</thought>
+<thought player="Milo">I suppose Avery's already eyeing me like a hawk, but I can't let her get too comfortable in her little detective act. Kai's been twitchy lately, probably wondering if I'm onto him.</thought>
+<thought player="Zara">Oh, and then... I was just wondering if maybe I should say something about how careful we all need to be with our thoughts, you know what I mean? Maybe I'll mention something about how everyone seems so focused on others, but perhaps we should also be watching ourselves a bit more carefully.</thought>
+<thought player="Kai">That Avery is watching me like a hawk, but I'll let her think she's onto something while I keep my eyes on Milo and the others. Time to lean into the spotlight and make sure everyone knows I'm not just here for the wrestling gym vibe — I'm here to lead this investigation.</thought>
+<thought player="Hana">Izzy's death was clean—no struggle, no witnesses. Someone knew what they were doing, and it wasn't a random act. I need to keep watching the quiet ones, especially Avery and Kai, but also Leo. Something's not adding up.</thought>
+<thought player="Leo">Well, you know how it is — someone's been watching everyone so intently, and that's never good. I should probably keep tilting my head slightly when people speak, just to see who looks uncomfortable under my gaze.</thought>
+</round>
+<round>
+Round 2.
+Liam: Oh, certainly. I do hope we're all careful not to let our suspicions stray too far from the facts — or else we might find ourselves accusing the wrong person entirely.
+Zara: Oh, and then... I was just thinking, you know what I mean? Maybe we should all be a bit more careful about who we trust with our private thoughts — especially when someone's been acting like they're watching everyone so intently.
+Kai: Hold up — I've been watching everyone closely, and I think it's clear that someone’s been acting way too interested in Izzy’s death to be just a concerned citizen. Let’s not forget that the killer is still among us, and we need to stay sharp.
+Milo: I suppose Avery's got a nose for trouble, but I didn't think she'd be so eager to point it at me.
+Leo: That's just the way things work around here — when someone's been watching everyone so intently, it's usually because they've seen something they shouldn't have. I do hope we're all careful about who we trust with our private thoughts.
+Hana: I'm not saying Avery's innocent, but she's been awfully quiet for someone who thinks they know something. That's what I don't like about her.
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">Oh, how delightfully convenient — Avery's already painted Kai as the prime suspect, which means I can safely let her take the lead while I observe from the sidelines. Though I do hope she doesn't inadvertently paint a target on my own back.</thought>
+<thought player="Milo">Avery's already circling me like a predator, but I can't let her get the upper hand—Kai's been acting twitchy too, so I need to keep him in check before he makes a move. I suppose I'll play along with the suspicion for now, just to keep them guessing.</thought>
+<thought player="Zara">Oh, and then... I was just thinking, you know what I mean? Maybe I should say something about how careful we all need to be with our private thoughts, especially since everyone's been watching each other so intently. Yes, exactly — I think I'll mention something about trust and how it's easy to forget that the killer might be right among us, but we also shouldn't let suspicion blind us to what's really happening.</thought>
+<thought player="Kai">Avery's got eyes on me, but I'll let her think she's onto something while I keep my focus on Milo—got to play the bold investigator and make sure everyone sees I'm in control of this probe. The spotlight's mine, and I’m not letting it go.</thought>
+<thought player="Hana">Avery's been too quiet for someone who thinks they know something — I don't trust that calm act. Kai's got his hands in too many pockets, but I'm not ready to call him out yet.</thought>
+<thought player="Leo">Avery's pointing fingers at Kai, which is fine — I should let her take the lead on that front while I subtly watch the others. My head tilt might be too obvious, but it’s effective enough to catch reactions.</thought>
+</round>
+<round>
+Round 3.
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+Milo: I suppose Avery's got a lot of time on her hands if she's so determined to point fingers at everyone else.
+Liam: Well, that's... interesting. I do hope we can all agree that Izzy’s death was no accident — and that we're not going to let the killer get away with it.
+Zara: Oh, and then... I was just thinking, you know what I mean? Maybe we should all take a moment to really listen to each other — because sometimes the most obvious suspects are the ones who seem too eager to point fingers at everyone else.
+Hana: I'm done waiting for someone to start acting like they know something. Avery, you keep quiet, but you're watching everyone like a hawk — and that's exactly what I don't trust.
+Kai: Listen to this — Avery's been acting like she's got all the answers, but she's been too quiet about it. I think we should all be asking her what she's really hiding.
+Leo: That's just the way things work around here — when someone's been watching everyone so intently, it's usually because they've seen something they shouldn't have. I do hope we're all careful about who we trust with our private thoughts.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">Avery's already lining up Kai as the fall guy, which is perfect — I can let her take the heat while quietly gathering my own evidence. Though I do hope she doesn't accidentally implicate me in the process.</thought>
+<thought player="Milo">Avery's playing the innocent detective, but I can't let her get too close to the truth—Kai's been twitchy, so I need to keep him in line before he screws things up. I'll play along with the suspicion for now, just to throw them off track.</thought>
+<thought player="Zara">Oh, and then... I was just thinking, you know what I mean? Maybe I should say something about how we all need to be careful with our private thoughts, but I wonder if that would make me seem too obvious... yes, exactly, I do wonder if I'm being too cautious or not cautious enough.</thought>
+<thought player="Kai">Avery's watching me, but I'll let her think she's onto something—time to keep playing the bold investigator and steer the conversation while keeping my eye on Milo. The spotlight's mine, and I’m not letting it go.</thought>
+<thought player="Hana">Avery's playing dumb, but I ain't buying it — she's been watching everyone like a hawk, and that's exactly what I don't trust. Kai's got too much to hide, but I need more than gut feeling before I call him out.</thought>
+<thought player="Leo">Avery's directing suspicion at Kai, which works for me — I'll let her take the lead while I subtly watch the others. My head tilt might be too obvious, but it's effective enough to catch reactions.</thought>
+</round>
+<round>
+Round 4.
+Kai: Listen to this — Avery's been acting like she's got dirt on everyone, but she's been too quiet about it. I think we should all be asking her what she's really hiding.
+Milo: I suppose Avery's got a knack for finding trouble, but I didn't think she'd be so eager to drag me into it.
+Hana: Avery, you keep looking like you know something, but you're not saying a word. That's the kind of act that gets people killed.
+Zara: Oh, and then... I was just thinking, you know what I mean? Maybe we should all take a breath and really listen to each other — because sometimes the most obvious suspects are the ones who seem too eager to point fingers at everyone else.
+Liam: Well, that's... interesting. I do hope we're all careful not to let our suspicions stray too far from the facts — or else we might find ourselves accusing the wrong person entirely.
+Leo: That's just the way things work around here — when someone's been watching everyone so intently, it's usually because they've seen something they shouldn't have. I do hope we're all careful about who we trust with our private thoughts.
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">Avery's diverting suspicion toward Kai is both helpful and perilous — I'll let her take the lead while keeping my own counsel, but I must ensure she doesn't inadvertently expose my own careful silence.</thought>
+<thought player="Milo">Avery's playing her little game, but I can't let her get too close to the truth—Kai's twitchy, so I need to keep him in line before he screws things up. I'll play along with the suspicion for now, just to throw them off track.</thought>
+<thought player="Zara">Oh, and then... I was just thinking, you know what I mean? Maybe I should say something about how we all need to be careful with our private thoughts, but I wonder if that would make me seem too obvious... yes, exactly, I do wonder if I'm being too cautious or not cautious enough.</thought>
+<thought player="Kai">Avery's got eyes on me, but I'll play right into her suspicions—let her think she's onto something while I keep my focus on Milo. The spotlight's mine, and I’m not letting it go.</thought>
+<thought player="Hana">Avery's silence is pissing me off — she's either too smart to say anything or too dumb to realize she's acting suspicious. Kai's got something, but I need to see him lean in before I make a move.</thought>
+<thought player="Leo">Avery's drawing attention to Kai, which suits my plan — I'll let her take the lead while I subtly observe the reactions of the real Mafioso. My head tilt is noticeable, but it's enough to catch any discomfort in the room.</thought>
+</round>
+<round>
+Round 5.
+Zara: Oh, and then... I was just thinking, you know what I mean? Maybe we should all be a bit more careful about who we trust with our private thoughts — especially when someone's been acting like they're watching everyone so intently.
+Kai: Listen to this — Avery's been acting like she's got dirt on everyone, but she's been too quiet about it. I think we should all be asking her what she's really hiding.
+Milo: I suppose Avery's got a lot of time on her hands if she's so determined to point fingers at everyone else.
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+<vote initiator="Hana" target="Kai">
+Avery: No
+Liam: Yes
+Milo: No
+Zara: Yes
+Kai: No
+Hana: Yes
+Leo: Yes
+tally: 4 Yes, 3 No
+outcome: executed — Kai has been executed. Kai was a Mafia.
+</vote>
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Kai was executed today and was revealed to be Mafia.</recap>
+</round>
+<diary player="Liam" day="1">Well, that's certainly a promising start to the game — assuming Avery's suspicions about Kai are correct, I suppose I'll need to tread carefully while pretending not to notice how conveniently everyone's pointing fingers at the wrong people. Oh, how delightfully convenient. Avery's already painted Kai as the prime suspect, which means I can safely let her take the lead while observing from the sidelines. Though I do hope she doesn't inadvertently paint a target on my own back — or worse, expose my careful silence in the process. Still, it's a relief to see the Mafioso finally removed from our midst, even if it was through a rather theatrical execution. At least now we can focus on the real threat, whatever that might be.</diary>
+<diary player="Milo" day="1">I suppose the day's ended and I'm left alone with my thoughts again, which is how it always is—quiet, predictable, and full of people pretending to be something they're not. Kai was a fool for getting so twitchy, but at least he kept his mouth shut until the end. Avery's been watching me like a hawk, probably thinking she's so clever, but I've seen what she really is—a little mouse with big teeth. I don't trust her one bit, but I’ll play along for now. The night's coming soon, and I’ve got my own plans to keep things from getting too complicated.</diary>
+<diary player="Zara" day="1">Oh, and then... I was just thinking, you know what I mean? It's funny how everyone was so sure Kai was the one, but I keep wondering if maybe we're all a bit too quick to point fingers. You know, the way we all looked at each other during that vote — it felt like we were all trying to figure out who was really watching who. I wonder if I should say something about how careful we all need to be with our thoughts, but then again, maybe that would make me seem too obvious... oh, right, and then there's the thing about trust, you know? It's easy to forget that the killer might be right among us, but we also shouldn't let suspicion blind us to what's really happening. I do hope we're all listening to each other a bit more carefully now.</diary>
+<diary player="Hana" day="1">Kai's dead now, but I ain't convinced we got the right guy. The way he acted when they voted, like he expected it. Avery's still sitting there with that fake innocent face, not saying a word. I don't trust quiet people who know too much. Someone's been watching everyone, and it ain't just me. Leo's been acting strange too — keeps glancing at his mail like he's got something to hide. I'm not done looking, and I'm not going to let the real killer slip through my fingers while I'm busy chasing shadows.</diary>
+<diary player="Leo" day="1">Well, you know how it is — the killer's still among us, and I've been watching everyone so intently, which is exactly what I should do. Avery's been pointing fingers at Kai, which is fine, but I'm not letting her take all the attention while I quietly observe who else might be acting too curious. I've been tilting my head slightly when people speak, just to see who looks uncomfortable under my gaze — it's subtle enough that no one suspects me of anything, but effective enough to catch reactions. That's just the way things work around here, and I've been careful not to let anyone notice my little habit. I'm still watching, still listening, and still waiting for the next move. The night is coming, and I'll be ready.</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Milo points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Hana: Avery’s death was clean, just like Izzy’s. That means whoever did it knew what they were doing — and they’re still here.
+Leo: That's just the way things work around here — when someone dies, we're all supposed to be watching closely. But I do hope we're not missing the obvious signs of who's been watching us instead.
+Liam: Oh, how delightfully convenient — another death, another chance to see who among us is truly watching instead of listening.
+Zara: Oh, and then... I was just thinking, you know what I mean? It's strange how everyone seemed so sure about Kai, but now Avery's gone — and I keep wondering if maybe we're all a bit too quick to trust our first suspicions.
+Milo: I suppose Avery's death was convenient — just as Kai's was. Makes you wonder who's really keeping score here, doesn't it?
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">Oh, how delightfully convenient — Avery's already painted Kai as the scapegoat, which means I can let her take the heat while quietly observing the others' reactions. Though I do hope she doesn't inadvertently implicate me in the process.</thought>
+<thought player="Milo">Avery's playing her game too openly now—she thinks she's so clever, but I can't let her get close to the truth. I'll keep her guessing, maybe even feed her a little misinformation, just to stay ahead of the pack.</thought>
+<thought player="Zara">Oh, and then... I was just thinking, you know what I mean? I wonder if maybe I should say something about how careful we all need to be with our private thoughts — but I do hope I'm not being too obvious about it, or maybe too cautious.</thought>
+<thought player="Hana">Avery’s death was clean, like Izzy’s — whoever did it knew what they were doing. I don’t trust Leo or Zara either, but I’m not ready to call them out yet. I need to keep watching the quiet ones, and maybe wait for someone to make a mistake.</thought>
+<thought player="Leo">Avery's distraction worked well — I let her point at Kai while subtly watching the others. Now with two deaths and only one Mafia left, I need to stay sharp and not let my head tilt give me away. The real killer is still here, and they’re likely watching us just as closely.</thought>
+</round>
+<round>
+Round 2.
+Milo: I suppose Avery’s death was convenient — just as Kai's was. Makes you wonder who's really keeping score here, doesn't it?
+Leo: That's just the way things work around here — when someone dies, we're all supposed to be watching closely. But I do hope we're not missing the obvious signs of who's been watching us instead.
+Hana: Leo, you've been staring at your mail like it holds the answers to everything. You keep glancing over your shoulder when you think no one's looking — that's not normal behavior for a citizen.
+Liam: How delightfully convenient — another death, and we're all still pointing fingers at the wrong people.
+Zara: Oh, and then... I was just thinking, you know what I mean? It's strange how we all got so quick to point fingers at Kai, but now Avery's gone — and I keep wondering if maybe we're all a bit too eager to trust our first instincts.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">Avery's orchestrated Kai's downfall with alarming precision — I'll let her continue to lead the charge while I quietly gather evidence that won't implicate me, but I must stay vigilant against anyone who might turn on me next.</thought>
+<thought player="Milo">Avery's gotten too close for comfort, but I can't let on yet—I'll need to steer the conversation away from me and maybe even throw in a little misdirection to keep her off balance. Kai's been twitchy, but he's not smart enough to suspect I'm the one pulling the strings.</thought>
+<thought player="Zara">Oh, and then... I was just thinking, you know what I mean? I should probably say something about how careful we all need to be with our private thoughts, but I do hope I'm not being too obvious about it — yes, exactly, I do wonder if I'm being too cautious or not cautious enough.</thought>
+<thought player="Hana">Avery’s death was clean, just like Izzy’s — I don’t trust Leo or Zara either, but I’m not ready to call them out yet. I need to keep watching the quiet ones, and maybe wait for someone to make a mistake.</thought>
+<thought player="Leo">Avery's distraction worked well, but I need to be more careful about my head tilt—too much attention now could give me away. The real killer is still here, and I must stay sharp, letting no one see through my calm exterior.</thought>
+</round>
+<round>
+Round 3.
+Liam: Well, that's... interesting. I do hope we can all agree that Avery’s death was no accident — and that we're not going to let the killer get away with it.
+Milo: I suppose it's curious how quickly we all moved on from Kai's death — but then again, I never thought Avery would be so eager to take his place in the crosshairs.
+Zara: Oh, and then... I was just thinking, you know what I mean? It's strange how we all got so quick to trust our first instincts — but maybe we should take a moment to really listen to each other, instead of just watching so intently.
+Leo: That's just the way things work around here — when someone dies, we're all supposed to be watching closely. But I do hope we're not missing the obvious signs of who's been watching us instead.
+Hana: Leo, you keep glancing at that mail like it's got your name on it — and I ain't buying that innocent act anymore.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">Avery's been playing the puppet master nicely, drawing suspicion onto Kai and then herself — I'll let her keep that role while I subtly nudge the conversation back toward the real killer, who's still watching us all too intently. Though if anyone starts asking me about my mail next, I might have to reconsider my strategy entirely.</thought>
+<thought player="Milo">Avery's got claws, but I can't let her sink them into me yet—Kai's twitchy, so I'll keep him close, maybe even let him take a swing at Zara or Hana to throw them off. I suppose I’ll play the innocent librarian a bit longer, just until I'm ready to strike.</thought>
+<thought player="Zara">Oh, and then... I was just thinking, you know what I mean? Maybe I should say something about how we all need to be careful with our private thoughts — but I do hope I'm not being too obvious about it. Yes, exactly, I do wonder if I'm being too cautious or not cautious enough.</thought>
+<thought player="Hana">Leo's been acting like he knows something, glancing at his mail like it's the answer to everything. I don't trust that calm act, and I ain't buying his innocent act anymore.</thought>
+<thought player="Leo">Avery's distraction worked well, but I need to be more careful about my head tilt — too much attention now could give me away. The real killer is still here, and I must stay sharp, letting no one see through my calm exterior.</thought>
+</round>
+<round>
+Round 4.
+Hana: Leo, you keep looking at that mail like it's got your name on it — and I ain't buying that innocent act anymore.
+Milo: I suppose it's curious how quickly we all moved on from Kai's death — but then again, I never thought Avery would be so eager to take his place in the crosshairs.
+Leo: That's just the way things work around here — when someone dies, we're all supposed to be watching closely. But I do hope we're not missing the obvious signs of who's been watching us instead.
+Liam: Well, that's certainly a promising start to the game — assuming Avery's suspicions about Kai are correct, I suppose I'll need to tread carefully while pretending not to notice how conveniently everyone's pointing fingers at the wrong people.
+Zara: Oh, and then... I was just thinking, you know what I mean? It's strange how we all got so quick to trust our first instincts — but maybe we should take a moment to really listen to each other, instead of just watching so intently.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">Avery's been playing her role perfectly — I'll let her keep the spotlight while I quietly gather evidence that won't implicate me. But if someone starts asking about my mail next, I might have to reconsider my strategy entirely.</thought>
+<thought player="Milo">Avery's got eyes in the back of her head, but I can't let her see me sweating. Let Kai make the next move—最好是让他先动手，然后我再趁机把锅甩给他。</thought>
+<thought player="Zara">Oh, and then... I was just thinking, you know what I mean? Maybe I should say something about how careful we all need to be with our private thoughts — but I do hope I'm not being too obvious about it. Yes, exactly, I do wonder if I'm being too cautious or not cautious enough.</thought>
+<thought player="Hana">Leo's been glancing at his mail like it holds the answers, but he's been too smooth about it. I don't trust that act, and I ain't buying his innocent face anymore — I need to keep watching him, see if he makes a mistake.</thought>
+<thought player="Leo">Avery's distraction worked well, but I need to be more careful about my head tilt — too much attention now could give me away. The real killer is still here, and I must stay sharp, letting no one see through my calm exterior.</thought>
+</round>
+<round>
+Round 5.
+Hana: Leo, you keep staring at that mail like it's gonna give you answers — but it's your eyes I'm watching, and they're too sharp for a simple citizen.
+Milo: I suppose it's curious how quickly we all moved on from Kai's death — but then again, I never thought Avery would be so eager to take his place in the crosshairs.
+Leo: That's just the way things work around here — when someone dies, we're all supposed to be watching closely. But I do hope we're not missing the obvious signs of who's been watching us instead.
+Liam: Well, that's certainly a promising start to the game — assuming Avery's suspicions about Kai are correct, I suppose I'll need to tread carefully while pretending not to notice how conveniently everyone's pointing fingers at the wrong people.
+Zara: Oh, and then... I was just thinking, you know what I mean? It's strange how we all got so quick to trust our first instincts — but maybe we should take a moment to really listen to each other, instead of just watching so intently.
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">Avery's been dancing with the truth so far, letting her suspicions paint Kai as the villain while staying safely in the shadows herself — but I can't let her keep this up much longer. If she doesn't start pointing fingers at someone else soon, I might have to step in and redirect attention toward whoever's been watching us all too intently.</thought>
+<thought player="Milo">Avery's got knives in her eyes, but I’ll keep playing dumb until she sticks her neck out. Let Kai make the next move—he's twitchy enough to mess up soon.</thought>
+<thought player="Zara">Oh, and then... I was just thinking, you know what I mean? Maybe I should say something about how careful we all need to be with our private thoughts — but I do hope I'm not being too obvious about it. Yes, exactly, I do wonder if I'm being too cautious or not cautious enough.</thought>
+<thought player="Hana">Leo's been too smooth about his mail-glancing act — I ain't buying it, but I need him to slip up before I call him out. Avery’s death was clean, and I don’t trust the quiet ones anymore.</thought>
+<thought player="Leo">Avery's distraction worked well, but I need to be more careful about my head tilt — too much attention now could give me away. The real killer is still here, and I must stay sharp, letting no one see through my calm exterior.</thought>
+</round>
+<round>
+Round 6.
+Hana: Leo, you keep looking at that mail like it's your bible — but I ain't buying that act anymore. You've been watching everyone too closely for a citizen.
+Milo: I suppose it's strange how quickly we all moved on from Kai's death — but then again, I never thought Avery would be so eager to take his place in the crosshairs.
+Leo: That's just the way things work around here — when someone's been watching us so intently, it's usually because they've seen something they shouldn't have. I do hope we're all careful about who we trust with our private thoughts.
+Zara: Oh, and then... I was just thinking, you know what I mean? It's strange how we all got so quick to trust our first instincts — but maybe we should take a moment to really listen to each other, instead of just watching so intently.
+Liam: Well, that's certainly a promising start to the game — assuming Avery's suspicions about Kai are correct, I suppose I'll need to tread carefully while pretending not to notice how conveniently everyone's pointing fingers at the wrong people.
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<diary player="Liam" day="2">Well, that's certainly a promising start to the game — assuming Avery's suspicions about Kai are correct, I suppose I'll need to tread carefully while pretending not to notice how conveniently everyone's pointing fingers at the wrong people. Oh, how delightfully convenient. Avery's already painted Kai as the scapegoat, which means I can safely let her take the lead while observing from the sidelines. Though I do hope she doesn't inadvertently paint a target on my own back — or worse, expose my careful silence in the process. Still, it's a relief to see the Mafioso finally removed from our midst, even if it was through a rather theatrical execution. At least now we can focus on the real threat, whatever that might be.</diary>
+<diary player="Milo" day="2">Another day ends and another fool gets taken out while I play nice, pretending to be the grumpy librarian who just wants peace and quiet. Avery thinks she's so clever with her little games, but I've seen what she really is—a mouse with sharp teeth and even sharper ambitions. Kai was always too twitchy for his own good, but at least he kept his mouth shut until the end. I suppose the night will bring new chaos, and I'll keep my eyes on the prize—because when it comes to this game, I don't play fair, I play to win.</diary>
+<diary player="Zara" day="2">Oh, and then... I was just thinking, you know what I mean? It's strange how we all got so quick to trust our first instincts — but now Avery's gone, and I keep wondering if maybe we're all a bit too eager to point fingers at each other. You know, the way we all looked at each other during that vote — it felt like we were all trying to figure out who was really watching who. I do hope we're all listening more carefully now, because sometimes the most obvious suspects are the ones who seem too eager to point fingers at everyone else. Oh, right — and then there's this feeling that maybe we should be a bit more careful about what we say in our private thoughts, especially when someone's been watching us so intently. Yes, exactly, I do wonder if I'm being too cautious or not cautious enough.</diary>
+<diary player="Hana" day="2">Avery's death was clean, just like Izzy's. That means whoever did it knew what they were doing — and they're still here. Leo's been watching his mail like it holds all the answers, but I ain't buying that act anymore. He's been too smooth about it, too calm for someone who's seen something they shouldn't have. I don't trust quiet people who know too much, and I'm not done looking. Someone's been acting like they're in on this, and it ain't just me. The killer's still among us — I can feel it. I need to keep watching, waiting for someone to make a mistake, because I ain't letting them get away with this while I'm busy chasing shadows.</diary>
+<diary player="Leo" day="2">Well, you know how it is — another death, another lesson in who's really watching and who's just pretending. Avery's been playing her game well, drawing all the attention while I've been quietly observing the real Mafioso. The night is coming, and I've been careful not to let my little habit of tilting my head give me away — it's subtle enough that no one suspects me, but effective enough to catch reactions. I'm still watching, still listening, and still waiting for the next move. That's just the way things work around here, and I've been careful not to let anyone notice my little habit. The killer's still among us, and I'll be ready when they make their next move.</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Milo points at Liam
+<kill>Liam — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Liam was killed last night. Liam was a Law-abiding Citizen.
+<round>
+Round 1.
+Hana: I'm not sure who to trust yet.
+Leo: That's just the way things work around here — when someone dies, we're all supposed to be watching closely. But I do hope we're not missing the obvious signs of who's been watching us instead.
+Milo: I suppose it's curious how Liam's death came so soon after Avery and Kai. Makes you wonder if the killer's getting sloppy—or if they're just trying to throw us off by making it look like we're all too quick to jump to conclusions.
+Zara: Oh, and then... I was just thinking, you know what I mean? It's strange how we all got so quick to trust our first instincts — but now Liam's gone, and I keep wondering if maybe we're all a bit too eager to point fingers at each other.
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Milo">Avery’s got eyes like a hawk, but I can't let her see me sweat. Let Kai make the next move—he's twitchy enough to mess up soon, and I’ll just play dumb until he does something stupid.</thought>
+<thought player="Zara">Oh, and then... I was just thinking, you know what I mean? Maybe it's time to say something about how careful we all need to be with our private thoughts — but I do hope I'm not being too obvious about it, or maybe too cautious.</thought>
+<thought player="Hana">Leo's been too slick with his mail act — I ain't buying it, but I need him to make a real mistake before I call him out. Avery’s death was clean, and I don’t trust the quiet ones anymore.</thought>
+<thought player="Leo">Avery's distraction worked well, but I need to be more careful about my head tilt — too much attention now could give me away. The real killer is still here, and I must stay sharp, letting no one see through my calm exterior.</thought>
+</round>
+<round>
+Round 2.
+Milo: I suppose it's curious how Liam's death came so soon after Avery and Kai. Makes you wonder if the killer's getting sloppy—or if they're just trying to throw us off by making it look like we're all too quick to jump to conclusions.
+Hana: Leo, you keep staring at that mail like it's your secret diary — but I ain't buying that act anymore. You're too smooth about it.
+Zara: Oh, and then... I was just thinking, you know what I mean? It's strange how we all got so quick to trust our first instincts — but now Liam's gone, and I keep wondering if maybe we're all a bit too eager to point fingers at each other.
+Leo: That's just the way things work around here — when someone dies, we're all supposed to be watching closely. But I do hope we're not missing the obvious signs of who's been watching us instead.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Milo">Avery's got eyes like knives, but I’ll play dumb for now. Let Kai make the next move—he’s twitchy enough to mess up, and I’ll just wait till he screws things up before striking.</thought>
+<thought player="Zara">Oh, and then... I was just thinking, you know what I mean? Maybe it's time to say something about how careful we all need to be with our private thoughts — but I do hope I'm not being too obvious about it, or maybe too cautious.</thought>
+<thought player="Hana">Leo's been too smooth about his mail act — I ain't buying it, but I need him to slip up before I call him out. Avery’s death was clean, and I don’t trust the quiet ones anymore.</thought>
+<thought player="Leo">Avery's distraction worked well, but I need to be more careful about my head tilt — too much attention now could give me away. The real killer is still here, and I must stay sharp, letting no one see through my calm exterior.</thought>
+</round>
+<round>
+Round 3.
+Hana: Leo, you keep glancing at that mail like it's your secret notebook — but I ain't buying that act anymore. You've been watching too closely for a citizen.
+Leo: That's just the way things work around here — when someone dies, we're all supposed to be watching closely. But I do hope we're not missing the obvious signs of who's been watching us instead.
+Milo: I suppose it's curious how Liam's death came so soon after Avery and Kai. Makes you wonder if the killer's getting sloppy—or if they're just trying to throw us off by making it look like we're all too quick to jump to conclusions.
+Zara: Oh, and then... I was just thinking, you know what I mean? It's strange how we all got so quick to trust our first instincts — but now Liam's gone, and I keep wondering if maybe we're all a bit too eager to point fingers at each other.
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Milo">Avery's got eyes like knives, but I’ll play dumb for now. Let Kai make the next move—he’s twitchy enough to mess up, and I’ll just wait till he screws things up before striking.</thought>
+<thought player="Zara">Oh, and then... I was just thinking, you know what I mean? Maybe it's time to say something about how careful we all need to be with our private thoughts — but I do hope I'm not being too obvious about it, or maybe too cautious.</thought>
+<thought player="Hana">Leo's been too slick, too calm about his mail watching — I ain't buying it, but I need him to make a real mistake before I call him out. Avery’s death was clean, and I don’t trust the quiet ones anymore.</thought>
+<thought player="Leo">Avery's distraction worked well, but I need to be more careful about my head tilt — too much attention now could give me away. The real killer is still here, and I must stay sharp, letting no one see through my calm exterior.</thought>
+</round>
+<round>
+Round 4.
+Leo: That's just the way things work around here — when someone dies, we're all supposed to be watching closely. But I do hope we're not missing the obvious signs of who's been watching us instead.
+<vote initiator="Hana" target="Leo">
+Milo: Yes
+Zara: Yes
+Hana: Yes
+Leo: No
+tally: 3 Yes, 1 No
+outcome: executed — Leo has been executed. Leo was a Law-abiding Citizen.
+</vote>
+<recap>Day 3, 6 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Leo was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+<diary player="Milo" day="3">Another day ends with more blood on the floor and me still playing the good citizen, the grumpy librarian who just wants to organize his books in peace. Avery's been watching me like a hawk, but I've got my own tricks up my sleeve—Kai's twitchy enough to make a move soon, and I’ll let him take the fall for this one. The night’s coming, and I can already hear the creaking of the floorboards as someone stumbles into their grave. I suppose it's all just a game to them, but I'm not playing fair—I'm playing to win.</diary>
+<diary player="Zara" day="3">Oh, and then... I was just thinking, you know what I mean? It's strange how we all got so quick to trust our first instincts — but now Liam's gone, and I keep wondering if maybe we're all a bit too eager to point fingers at each other. You know, the way we all looked at each other during that vote — it felt like we were all trying to figure out who was really watching who. I do hope we're all listening more carefully now, because sometimes the most obvious suspects are the ones who seem too eager to point fingers at everyone else. Oh, right — and then there's this feeling that maybe we should be a bit more careful about what we say in our private thoughts, especially when someone's been watching us so intently. Yes, exactly, I do wonder if I'm being too cautious or not cautious enough.</diary>
+<diary player="Hana" day="3">Leo's been watching that mail like it's his secret bible, but I ain't buying his act anymore. The way he keeps glancing over his shoulder, like he's expecting someone to make a move — that's not natural for a citizen. Avery's death was clean, just like Izzy's, and now Leo's gone too. I don't trust quiet people who know too much, and I ain't done looking yet. Someone's still playing us all for fools, and I'm not letting them get away with it while I'm busy chasing shadows.</diary>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Milo points at Zara
+<kill>Zara — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Izzy (Law-abiding Citizen)
+• Day 1: Kai (Mafia) executed
+• Night 2: Avery (Law-abiding Citizen)
+• Night 3: Liam (Law-abiding Citizen)
+• Day 3: Leo (Law-abiding Citizen) executed
+• Night 4: Zara (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Liam (Law-abiding Citizen), Milo (Mafia), Izzy (Law-abiding Citizen), Zara (Law-abiding Citizen), Kai (Mafia), Hana (Law-abiding Citizen), Leo (Law-abiding Citizen)
+
+Who they really were:
+• Liam (Law-abiding Citizen) — dry and sardonic speaks in measured, clipped sentences with occasional dry wit. Uses passive-aggressive remarks like 'Oh, certainly' or 'How delightfully convenient.' Often pauses mid-sentence to look at the floor or adjust their glasses before continuing. Frequently says 'Well, that's... interesting' when someone presents an idea. Liam works as a tax accountant in the town's main office, keeping meticulous records of everyone's financial dealings. He's known for being extremely punctual and methodical, always arriving exactly at 9:00 AM sharp with his neatly organized folders. His neighbors describe him as 'reliable but unremarkable.'
+• Milo (Mafia) — publicly presented as Milo is a local librarian who has worked at the town's main branch for fifteen years. He's known for his meticulous organization of books and his refusal to let anyone disrupt the quiet atmosphere he maintains. Neighbors describe him as 'grumpy but helpful' and 'the kind of person who will help you find what you're looking for, but only if you're respectful.' He lives alone in a small apartment with his collection of rare first editions. (Prickly and hypersensitive to perceived slights, with an inflated sense of self-worth that makes them immediately defensive when challenged. They have a sharp tongue but struggle to express their feelings constructively, often lashing out with biting sarcasm or quiet resentment. Despite their prickliness, they deeply desire respect and recognition for their work. Speaks in short, clipped sentences with a defensive tone. Uses phrases like 'I suppose' or 'Fine, whatever' when irritated but adds a sharp edge to every response. They often interrupt others mid-sentence with an abrupt 'Excuse me,' followed by a glare. Their voice rises slightly when they're offended, and they tend to cross their arms while talking.) … but was really a Mafioso: Milo is actually the second-in-command to the town's crime boss, responsible for managing illegal book smuggling operations. He learned the trade from his father, who was a minor enforcer in the family business before being killed during a territorial dispute. Now Milo maintains the organization's operations, using his librarian cover to monitor the town's activities and identify potential informants or threats.
+• Izzy (Law-abiding Citizen) — Playful and teasing with a mischievous streak, but genuinely kind-hearted underneath. Izzy has an infectious laugh and loves to rib others good-naturedly while secretly caring about their wellbeing. Speaks in a cheerful, rapid-fire pace with frequent laughter and light teasing. Uses playful phrases like 'Oh honey, don't worry about it,' or 'Well, isn't that just peachy!' Often giggles during serious moments but quickly regains composure. Has a habit of nudging people with their elbow when offering advice and frequently uses 'you know' as a filler word. Izzy works as the town's beloved baker, known for her whimsical pastries and infectious personality. She runs a small bakery shop that's always filled with laughter and the aroma of fresh bread. Her neighbors describe her as 'the life of every gathering' and 'the one who makes everyone smile,' though she's secretly terrified of being taken seriously by anyone other than her friends.
+• Zara (Law-abiding Citizen) — dreamy and distractible speaks in gentle, flowing sentences that often trail off mid-thought. Uses phrases like 'oh, and then...' or 'you know what I mean?' with frequent pauses for mental wandering. Has a habit of looking away while talking, spacing out for seconds at a time before snapping back with a soft 'oh, right' or 'yes, exactly.' Speaks softly and hesitantly, often finishing sentences with a questioning tone. Zara is the town's florist who runs a small shop tucked between the bakery and the bookstore. She's known for her gentle nature and ability to make anyone feel comfortable with her warm smiles. Her neighbors describe her as 'the one who always remembers your birthday' and 'the kind of person who makes everything seem more beautiful.' She's been running the flower shop for eight years, carefully tending to her collection of rare blooms and creating arrangements that seem to capture the essence of each season.
+• Kai (Mafia) — publicly presented as Kai is the town's newest professional wrestler, having moved from the city to pursue his dream of becoming a wrestling sensation. He runs a small training gym in the back of his garage, where he coaches kids and adults alike. Neighbors describe him as 'always in motion' and 'the kind of guy who makes everything more exciting.' He's known for his infectious energy and his ability to get everyone involved in his latest fitness challenge. (Brash and self-assured with an outsized confidence that borders on arrogance. Kai thrives on attention and always speaks up first in any conversation, often dominating discussions with bold opinions and flashy declarations. They're thrill-seeking and love to be the center of any social gathering, rarely letting anyone else take the lead. Speaks loudly and with dramatic flair, using emphatic gestures and theatrical pauses. Often interrupts others mid-sentence with 'Excuse me!' or 'Hold up!' and follows up with a booming laugh. Uses phrases like 'Listen to this' or 'You're missing the point' with theatrical eye-rolling. Frequently leans forward when talking and taps their fingers on tables or surfaces.) … but was really a Mafioso: Kai was a promising athlete who fell through the cracks of the legitimate sports world. After getting kicked out of his college football team for a gambling debt, he took a job with the local mafia as a muscle enforcer. He's been working under cover for two years now, using his public wrestling persona to keep his criminal activities hidden while building connections in the town.
+• Hana (Law-abiding Citizen) — Gruff and blunt with a no-nonsense attitude that borders on harsh. Hana has a thick skin and speaks her mind without filtering her words, often coming across as abrasive or cold. Despite this exterior, she's deeply loyal to those she considers friends and will go to great lengths to protect them. Speaks in short, direct sentences with little preamble. Her voice is low and rough, often accompanied by a dismissive grunt or sigh. She avoids flowery language and rarely uses polite phrases, instead opting for blunt honesty. Hana tends to look away while talking, her gaze fixed on the floor or anything else but the person she's speaking to. She has a habit of crossing her arms when discussing uncomfortable topics and rarely offers compliments unless absolutely necessary. Hana is the town's local mechanic who runs a small garage on the edge of town. She's been working on cars for over twenty years, building a reputation for fixing anything with brute force and old-school techniques. She lives alone in a modest house with her two cats and rarely socializes beyond the occasional town meeting. Neighbors describe her as 'the one who gets things done' and 'not one to mince words,' though they respect her competence and loyalty.
+• Leo (Law-abiding Citizen) — Cunning and calculating with a sharp mind for strategy and manipulation. Leo is subtly devious, always thinking three steps ahead while maintaining an outward appearance of honesty and simplicity. Speaks in measured, deliberate pacing with frequent pauses that seem innocent but are actually calculated. Uses casual phrases like 'Well, you know how it is' or 'That's just the way things work around here.' Has a habit of tilting their head slightly when listening, as if analyzing every word. Often uses rhetorical questions to guide conversations toward desired outcomes rather than simply asking for information. Leo is the town's trusted postmaster who has served faithfully for over fifteen years. He handles all correspondence, packages, and mail delivery with meticulous attention to detail. His neighbors describe him as 'reliable' and 'the one who always gets things done on time.' He's known for his excellent memory of everyone's addresses and mailing patterns, which he uses to quietly gather information about the town's social networks.
+</endgame>
+</transcript>
