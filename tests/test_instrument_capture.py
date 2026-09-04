@@ -30,6 +30,28 @@ C. **``ollama_smoke``'s counting behaviour is unchanged** after the Task-1
    resulting :class:`SchemaStats` (attempts / failures / fallbacks / failure_rate)
    match the documented semantics ``ollama_smoke``'s verdict is built on.
 
+D. **``include_raw`` classification** (spec 041, Slice 1, Task 1.2 — added after
+   the defect). Until spec 041 success was the single test
+   ``isinstance(result, schema)``, so the ``include_raw=True`` envelope — a
+   ``dict`` — was booked ``"non-instance result: dict"`` on EVERY invoke, healthy
+   or not: ``SchemaStats["Diary"].failure_rate`` was 1.0 by construction and the
+   ADR-013 transport gate could not observe its own fix (six healthy invokes read
+   ``attempts=6 failures=6 fallbacks=3``). These tests drive the same count-only
+   path over envelope-shaped results and pin BOTH signs of the bug: a good
+   ``parsed`` books zero failures **and zero fallbacks**, while a plain dict that
+   is not the envelope is **still** a failure — because "any mapping passes" is
+   the identical defect wearing the opposite sign.
+
+E. **Kwarg forwarding.** ``method=`` and ``include_raw=`` must reach the inner
+   runnable verbatim, through one proxy and through the two-deep nesting the eval
+   stack actually builds. A proxy that ate ``method=`` would disable
+   grammar-constrained decoding *only while the eval harness is watching*.
+
+F. **The capture path's half of the envelope story.** ``CaptureRecord.raw_result``
+   is documented as the *unmodified* inner return, so an ``include_raw`` invoke
+   captures the envelope rather than the parsed object — and a scorer reading
+   captures sees nothing. Pinned so the hazard lives somewhere red-able.
+
 Everything is built on the REAL classes/constants (imported), so a rename breaks
 these tests; day-speak prompts use the REAL ``DAY_SPEAK_USER_TEMPLATE`` so a
 template reword breaks attribution loudly. No provider client is ever
@@ -41,9 +63,9 @@ runnable, not ``graphia.llm``).
 from __future__ import annotations
 
 import pytest
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from graphia.llm import DayAction, Ballot
+from graphia.llm import Ballot, DayAction, Diary
 from graphia.nodes.day import (
     _persona_block,
     _render_standings,
@@ -136,19 +158,24 @@ class _ScriptedInner:
 
     The inner the proxy wraps. Per-schema invoke outcomes are drained from a flat
     list in call order, so a sequence of Day turns (or one schema's run of
-    successes/failures) is driven with NO model. Records the schema each
-    ``with_structured_output`` was asked for so a test can confirm passthrough.
+    successes/failures) is driven with NO model. Records the schema AND the
+    kwargs each ``with_structured_output`` was asked for, so a test can confirm
+    both reach the inner untouched.
     """
 
     def __init__(self, outcomes: list[object]) -> None:
         self._outcomes = list(outcomes)
         self._i = 0
         self.requested_schemas: list[object] = []
+        self.requested_kwargs: list[dict[str, object]] = []
 
     def with_structured_output(
         self, schema: object, **kwargs: object
     ) -> _ScriptedStructured:
         self.requested_schemas.append(schema)
+        # Recorded so a test can assert the proxy forwards ``method=`` /
+        # ``include_raw=`` verbatim and injects nothing of its own (section E).
+        self.requested_kwargs.append(dict(kwargs))
         outcome = self._outcomes[self._i]
         self._i += 1
         return _ScriptedStructured([outcome])
@@ -572,3 +599,395 @@ def test_counting_failure_rate_zero_when_no_attempts() -> None:
     property must still be safe to read on a fresh ``SchemaStats`` (0/0 → 0.0).
     """
     assert SchemaStats().failure_rate == 0.0
+
+
+# ===========================================================================
+# D — ``include_raw`` classification (spec 041, Slice 1, Task 1.2).
+#
+# The defect: success used to be the single test ``isinstance(result, schema)``,
+# which is the ``include_raw=True`` envelope's exact NEGATION — the envelope is a
+# ``dict``, never a schema instance. So every diary invoke (production binds
+# ``with_structured_output(Diary, include_raw=True)``, spec 039) was booked
+# ``record_failure("non-instance result: dict")`` whether or not it carried a
+# perfectly good ``parsed``. ``SchemaStats["Diary"].failure_rate`` was therefore
+# 1.0 BY CONSTRUCTION, and the ADR-013 transport gate could not observe its own
+# fix. Measured before the fix: six healthy invokes read
+# ``attempts=6 failures=6 fallbacks=3``.
+#
+# Both signs are pinned below. "Any mapping passes" would be the identical defect
+# with the sign flipped, so a plain dict that is not the envelope — and a mapping
+# carrying only ONE of the discriminating pair — must still book a failure.
+#
+# The envelope's key names are written as LITERALS here on purpose: they are
+# LangChain's ``with_structured_output(include_raw=True)`` contract, not ours, so
+# these tests model the external shape rather than mirroring
+# ``instrument._INCLUDE_RAW_KEYS`` back at itself.
+# ===========================================================================
+
+
+def _envelope(
+    parsed: object,
+    parsing_error: object = None,
+    *,
+    with_raw: bool = True,
+) -> dict[str, object]:
+    """The mapping ``with_structured_output(..., include_raw=True)`` returns.
+
+    Built in LangChain's own key order (``raw`` / ``parsed`` / ``parsing_error``)
+    with a realistic ``AIMessage`` in ``raw``. ``with_raw=False`` drops the
+    ``raw`` key to model a provider that ignored the ``include_raw`` request —
+    which is why the instrument requires only the ``parsed`` / ``parsing_error``
+    pair to recognise the envelope.
+    """
+    env: dict[str, object] = {}
+    if with_raw:
+        env["raw"] = AIMessage(content='{"entry": "raw text"}')
+    env["parsed"] = parsed
+    env["parsing_error"] = parsing_error
+    return env
+
+
+def test_counting_an_include_raw_envelope_with_a_good_parsed_is_a_success() -> None:
+    """A healthy ``include_raw`` envelope books ZERO failures — THE missing test.
+
+    This is the test whose absence let the defect ship: the outer object is a
+    ``dict``, so the pre-041 ``isinstance(result, schema)`` rule booked it as
+    ``"non-instance result: dict"`` even though ``parsed`` holds a real
+    ``Diary``. The answer is INSIDE the envelope, and that is where the
+    classification must look.
+
+    ``last_error`` is asserted ``None`` too, because on the old rule this very
+    invoke wrote the string that told a reader nothing about what the model did.
+    """
+    stats = _drive_count_only(Diary, [_envelope(Diary(entry="Bo watched me."))])
+
+    assert stats.attempts == 1
+    assert stats.failures == 0
+    assert stats.fallbacks == 0
+    assert stats.failure_rate == 0.0
+    assert stats.last_error is None
+
+
+def test_counting_six_healthy_envelope_invokes_invent_no_fallbacks() -> None:
+    """Six healthy envelopes: 6 attempts, 0 failures, and — the point — 0 fallbacks.
+
+    ``fallbacks`` is **inferred**, not counted: two consecutive failures are read
+    as "the game's retry-then-deterministic-fallback fired". So the old rule did
+    not merely add N failures on a per-player diary fan-out — it manufactured
+    ``N // 2`` fallbacks that never happened, the instrument inventing a claim
+    about the GAME's behaviour out of its own mis-classification. Six healthy
+    invokes read ``attempts=6 failures=6 fallbacks=3`` before the fix, and the
+    ``3`` is the more misleading half: ``floor(6/2)`` happens to equal the
+    disqualified campaign's genuine 0.50 substitution rate, so cross-checking the
+    two figures could have shown spurious agreement. This test pins the derived
+    number, not just the counted one.
+    """
+    stats = _drive_count_only(
+        Diary,
+        [_envelope(Diary(entry=f"day {n}")) for n in range(6)],
+    )
+
+    assert stats.attempts == 6
+    assert stats.failures == 0
+    assert stats.fallbacks == 0
+    assert stats.failure_rate == 0.0
+
+
+def test_counting_an_include_raw_envelope_with_parsed_none_is_one_failure() -> None:
+    """``parsed: None`` is a real (masked) failure — and ``last_error`` names it.
+
+    The common live shape: the model answered in prose and emitted no tool call,
+    so LangChain hands back an envelope whose ``parsed`` is ``None`` and whose
+    ``raw`` holds the text. That IS a parse failure and must be booked as one —
+    the fix must not over-reach into "any envelope passes".
+
+    ``last_error`` must **not** read ``"dict"``: that was the pre-041 message for
+    every diary invoke ever booked, healthy or not, and it described the
+    instrument's own confusion rather than the model's behaviour. The assertion
+    is written both ways — the exact string, and the explicit absence of
+    ``"dict"`` — because the second is the regression the task names.
+    """
+    stats = _drive_count_only(Diary, [_envelope(None)])
+
+    assert stats.attempts == 1
+    assert stats.failures == 1
+    assert stats.fallbacks == 0
+    assert stats.last_error == "include_raw parsed is NoneType, not Diary"
+    assert "dict" not in (stats.last_error or "")
+
+
+def test_counting_an_include_raw_envelope_with_a_parsing_error_is_a_failure() -> None:
+    """A carried ``parsing_error`` is a failure, and the error text is reported.
+
+    Under ``include_raw=True`` LangChain **catches** the parse error and hands it
+    back in the envelope rather than raising, so this branch is the ONLY place
+    the instrument can ever see it — an exception-based classification would
+    score it a success. ``last_error`` carries the error's type and message so
+    the report names the actual cause.
+    """
+    stats = _drive_count_only(
+        Diary,
+        [_envelope(None, ValueError("bad json"))],
+    )
+
+    assert stats.attempts == 1
+    assert stats.failures == 1
+    assert stats.last_error == "include_raw parsing_error: ValueError: bad json"
+
+
+def test_counting_an_envelope_whose_parsed_is_a_different_schema_is_a_failure() -> None:
+    """``parsed`` must be an instance of the schema THIS call asked for.
+
+    An envelope carrying a well-formed ``Ballot`` where a ``Diary`` was requested
+    is not a usable answer, and the failure names both classes. Without this, the
+    envelope branch could degenerate into "``parsed`` is not None ⇒ success".
+    """
+    stats = _drive_count_only(Diary, [_envelope(Ballot(yes=True))])
+
+    assert stats.attempts == 1
+    assert stats.failures == 1
+    assert stats.last_error == "include_raw parsed is Ballot, not Diary"
+
+
+def test_counting_an_envelope_missing_only_raw_is_still_read_as_the_envelope() -> None:
+    """``raw`` is deliberately NOT part of the discriminating pair → success.
+
+    ``raw`` is the one key a provider that ignored the ``include_raw`` request may
+    omit (``day._diary_entry_from`` tolerated its absence for exactly that
+    reason), so the envelope is recognised by ``parsed`` + ``parsing_error``
+    alone. A mapping carrying a good ``parsed`` and a ``None``
+    ``parsing_error`` is a success even with no ``raw`` at all.
+    """
+    stats = _drive_count_only(
+        Diary,
+        [_envelope(Diary(entry="no raw key here"), with_raw=False)],
+    )
+
+    assert stats.attempts == 1
+    assert stats.failures == 0
+    assert stats.last_error is None
+
+
+@pytest.mark.parametrize(
+    "result",
+    [
+        pytest.param({"entry": "x"}, id="the-game-payload-shape"),
+        pytest.param({}, id="empty-dict"),
+        pytest.param({"parsed": Diary(entry="x")}, id="parsed-without-parsing-error"),
+        pytest.param({"parsing_error": None}, id="parsing-error-without-parsed"),
+        pytest.param(
+            {"raw": AIMessage(content="{}"), "parsed": Diary(entry="x")},
+            id="raw-and-parsed-but-no-parsing-error",
+        ),
+    ],
+)
+def test_counting_a_plain_dict_that_is_not_the_envelope_is_still_a_failure(
+    result: dict[str, object],
+) -> None:
+    """The inverse-bug guard: a mapping is NOT read as the envelope by default.
+
+    "Any dict passes" is the same defect wearing the opposite sign, and without
+    this sweep the fix could silently become it. ``{"entry": "x"}`` — the
+    ``Diary`` payload's own field, the mapping most likely to appear here — is a
+    genuine parse failure: the game asked for a ``Diary`` instance and got a raw
+    mapping it cannot use. So is a mapping carrying only ONE of the
+    discriminating pair, which is what keeps the envelope identified by its
+    *shape* rather than by "is a mapping".
+
+    ``last_error`` is asserted exactly, so a mapping that fell into the envelope
+    branch and failed there for a different reason would not pass this test.
+    """
+    stats = _drive_count_only(Diary, [result])
+
+    assert stats.attempts == 1
+    assert stats.failures == 1
+    assert stats.last_error == "non-instance result: dict"
+
+
+@pytest.mark.parametrize(
+    ("result", "expected_error"),
+    [
+        pytest.param(None, "non-instance result: NoneType", id="none"),
+        pytest.param(
+            AIMessage(content="I would rather just talk."),
+            "non-instance result: AIMessage",
+            id="bare-ai-message",
+        ),
+        pytest.param("just a string", "non-instance result: str", id="bare-string"),
+    ],
+)
+def test_counting_a_bare_non_instance_result_is_still_a_failure(
+    result: object,
+    expected_error: str,
+) -> None:
+    """The pre-041 rule's TRUE positives survive the fix, with their messages.
+
+    A bare ``AIMessage`` (LangChain's shape when the model emitted no tool call
+    at all), a ``None``, or a bare string are each a masked parse failure: nothing
+    raised, but the game got nothing usable. The envelope correction must not
+    swallow these — and ``last_error`` must still name the type it actually saw,
+    which is what makes the message informative here and uninformative on the
+    envelope.
+    """
+    stats = _drive_count_only(Diary, [result])
+
+    assert stats.attempts == 1
+    assert stats.failures == 1
+    assert stats.last_error == expected_error
+
+
+def test_counting_mixed_envelopes_book_only_the_empty_ones() -> None:
+    """One run of envelopes, discriminated: healthy, empty, healthy → 1 failure.
+
+    The single strongest anti-vacuity case in section D, because it goes red
+    under BOTH mutations: the old ``isinstance`` rule books 3 failures (and one
+    fallback from the two adjacent ones), an "any mapping passes" rule books 0.
+    Only a rule that reads INSIDE each envelope gives 3 attempts, 1 failure,
+    0 fallbacks — the success on either side breaking the consecutive run.
+    """
+    stats = _drive_count_only(
+        Diary,
+        [
+            _envelope(Diary(entry="a real entry")),
+            _envelope(None),  # prose answer, no tool call → masked failure
+            _envelope(Diary(entry="another real entry")),
+        ],
+    )
+
+    assert stats.attempts == 3
+    assert stats.failures == 1
+    assert stats.fallbacks == 0
+    assert stats.failure_rate == pytest.approx(1 / 3)
+
+
+# ===========================================================================
+# E — every ``with_structured_output`` kwarg reaches the recording inner.
+#
+# The proxy must never eat a kwarg. ``include_raw=True`` (spec 039's diary call)
+# changes the return SHAPE, so eating it would make the harness measure a
+# different shape than production produces; ``method="json_schema"`` (spec 041's
+# provider seam) selects grammar-constrained decoding, so eating it would disable
+# reliable decoding ONLY while the eval harness is watching — the worst failure
+# mode this project has.
+# ===========================================================================
+
+
+def test_with_structured_output_forwards_method_and_include_raw_to_the_inner() -> None:
+    """``method=`` and ``include_raw=`` arrive at the inner client verbatim.
+
+    Both kwargs on one call, recorded by the fake inner: the schema and the exact
+    kwargs mapping reach the inner untouched, and the invoke's return still
+    passes straight back through the proxy.
+    """
+    envelope = _envelope(Diary(entry="from the envelope"))
+    inner = _ScriptedInner([envelope])
+    stats: dict[str, SchemaStats] = {}
+    proxy = InstrumentedModel(inner, stats=stats)
+
+    bound = proxy.with_structured_output(Diary, method="json_schema", include_raw=True)
+    result = bound.invoke([HumanMessage(content="write your diary")])
+
+    assert inner.requested_schemas == [Diary]
+    assert inner.requested_kwargs == [{"method": "json_schema", "include_raw": True}]
+    assert result is envelope
+    # And the forwarded shape is classified on its ``parsed``, not the envelope.
+    assert stats["Diary"].failures == 0
+
+
+def test_with_structured_output_injects_no_kwargs_of_its_own() -> None:
+    """A bare bind forwards an EMPTY kwargs mapping — no allowlist, no defaults.
+
+    The anti-vacuity twin of the forwarding test above: asserting that kwargs
+    arrive proves nothing about a proxy that *adds* one. A proxy that injected
+    ``include_raw`` or a ``method`` default would change the transport under the
+    harness just as surely as one that dropped it.
+    """
+    inner = _ScriptedInner([Diary(entry="bare")])
+    proxy = InstrumentedModel(inner, stats={})
+
+    proxy.with_structured_output(Diary).invoke([HumanMessage(content="x")])
+
+    assert inner.requested_kwargs == [{}]
+
+
+def test_kwargs_survive_two_nested_instrumented_proxies() -> None:
+    """Two proxies deep — the eval stack's real arrangement — and nothing is eaten.
+
+    ``blunder_eval`` installs a capturing proxy over a client that may already be
+    proxied, so on an eval run the stack is two deep. Each layer's
+    ``with_structured_output`` must pass ``**kwargs`` straight out, or the
+    transport changes only under the harness. Both layers are also shown to do
+    their own job on the same invoke: the outer books the count (on the envelope's
+    ``parsed``, not the envelope) and the inner records the capture.
+    """
+    envelope = _envelope(Diary(entry="two proxies deep"))
+    client = _ScriptedInner([envelope])
+    captures: list[CaptureRecord] = []
+    stats: dict[str, SchemaStats] = {}
+    capturing = InstrumentedModel(
+        client, captures=captures, speaker_resolver=lambda _messages: "p-1"
+    )
+    counting = InstrumentedModel(capturing, stats=stats)
+
+    result = counting.with_structured_output(
+        Diary, method="json_schema", include_raw=True
+    ).invoke([HumanMessage(content="write your diary")])
+
+    # The kwargs reached the INNERMOST client, unchanged, through both layers.
+    assert client.requested_schemas == [Diary]
+    assert client.requested_kwargs == [{"method": "json_schema", "include_raw": True}]
+    assert result is envelope
+    # Both layers still did their own work on this one invoke.
+    assert stats["Diary"].attempts == 1
+    assert stats["Diary"].failures == 0
+    assert [c.raw_result for c in captures] == [envelope]
+
+
+# ===========================================================================
+# F — the capture path's half of the envelope story.
+# ===========================================================================
+
+
+def test_capture_of_an_include_raw_envelope_holds_the_envelope_not_the_parsed() -> None:
+    """``raw_result`` is the UNMODIFIED inner return — so a scorer sees nothing.
+
+    ``CaptureRecord.raw_result`` is documented as the unmodified return of the
+    inner runnable, captured before any validator runs, and this pins that
+    contract for the envelope shape: the record holds the mapping, not the
+    ``DayAction`` inside it.
+
+    The consequence is recorded here rather than left as a comment, because it is
+    the capture path's half of the same defect: ``score_self_vote_initiation``
+    tests ``isinstance(action, DayAction)``, so an envelope capture is skipped
+    entirely and the metric reads ABSENT. Had any ``DayAction`` call site ever
+    bound ``include_raw=True``, self-vote detection would have silently measured
+    nothing. The last two assertions are what make the ``rate: None`` non-vacuous:
+    the payload INSIDE the envelope is a genuine self-vote, so the absent metric
+    is caused by the envelope and by nothing else.
+    """
+    self_vote = DayAction(kind="vote", target_id="p-1")
+    envelope = _envelope(self_vote)
+    inner = _ScriptedInner([envelope])
+    captures: list[CaptureRecord] = []
+    proxy = InstrumentedModel(
+        inner, captures=captures, speaker_resolver=lambda _messages: "p-1"
+    )
+
+    result = proxy.with_structured_output(DayAction, include_raw=True).invoke(
+        [HumanMessage(content="x")]
+    )
+
+    assert result is envelope
+    assert len(captures) == 1
+    assert captures[0].raw_result is envelope
+    assert captures[0].speaker_id == "p-1"
+    # The scorer is envelope-blind: the attempt is invisible to it.
+    assert score_self_vote_initiation(captures) == {
+        "rate": None,
+        "count": 0,
+        "denominator": 0,
+    }
+    # Non-vacuity: the payload inside IS a self-vote by this very speaker, so the
+    # absent metric above is the envelope's doing, not a benign payload's.
+    assert envelope["parsed"] is self_vote
+    assert self_vote.target_id == captures[0].speaker_id
