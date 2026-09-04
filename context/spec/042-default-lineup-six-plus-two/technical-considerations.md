@@ -1,7 +1,7 @@
 # Technical Specification: A Starter Table With Room For One Mistake
 
 - **Functional Specification:** [`functional-spec.md`](./functional-spec.md)
-- **Status:** Draft
+- **Status:** Completed *(verified 2026-09-04)*
 - **Author(s):** Alexey Tigarev
 - **Trigger:** [CR 007](../../change-requests/007-starter-lineup-balance-claim-and-default.md) (Accepted 2026-09-03)
 

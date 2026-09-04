@@ -1,7 +1,7 @@
 # Functional Specification: A Starter Table With Room For One Mistake
 
 - **Roadmap Item:** Phase 5 — Setup Flexibility, **Configurable Role Counts**. This changes the default that item left standing; the configurability itself is untouched. Authorised by **[CR 007](../../change-requests/007-starter-lineup-balance-claim-and-default.md)** (Accepted 2026-09-03), which also withdrew the Phase 1 claim that the old default was "reasonably balanced toward the Law-abiding side".
-- **Status:** Draft
+- **Status:** Completed *(verified 2026-09-04 — 11 of 12 criteria verified mechanically; the twelfth is `[?]` awaiting the first post-change measured run, tracked as CR 007 action 107)*
 - **Author:** Alexey Tigarev
 
 ---
@@ -47,30 +47,30 @@ It also means the numbers recorded for a measured game are **not directly compar
 - **As** someone launching Graphia without configuring anything, **I want** a table that lets my side be wrong once, **so that** a single bad vote does not decide the game before I get another turn.
 
   - **Acceptance Criteria:**
-    - [ ] Given nothing is configured, when the game is launched, then eight players take the table — six Law-abiding Citizens and two Mafiosos — with the launching player one of the eight.
-    - [ ] Given nothing is configured, when the game is launched, then the launching player's own role is still dealt at random, and may be either side.
-    - [ ] Given the new table, when the town votes out one citizen by mistake on the first day and then votes out only Mafiosos, then the law-abiding side still wins the game.
-    - [ ] Given the old table of five citizens and two Mafiosos, when the town votes out one citizen by mistake on the first day, then the mafia win — confirming the difference the change is making, and that the old behaviour is still reachable for anyone who asks for it.
+    - [x] Given nothing is configured, when the game is launched, then eight players take the table — six Law-abiding Citizens and two Mafiosos — with the launching player one of the eight.
+    - [x] Given nothing is configured, when the game is launched, then the launching player's own role is still dealt at random, and may be either side.
+    - [x] Given the new table, when the town votes out one citizen by mistake on the first day and then votes out only Mafiosos, then the law-abiding side still wins the game.
+    - [x] Given the old table of five citizens and two Mafiosos, when the town votes out one citizen by mistake on the first day, then the mafia win — confirming the difference the change is making, and that the old behaviour is still reachable for anyone who asks for it.
 
 - **As** a player who sets my own table size, **I want** this change to pass me by entirely, **so that** my chosen game is exactly the game I get.
 
   - **Acceptance Criteria:**
-    - [ ] Given a player has chosen their own counts of Law-abiding Citizens and Mafiosos, when the game is launched, then it seats exactly those counts and the new default is not applied.
-    - [ ] Given a player has chosen the old five-and-two table, when the game is launched, then it plays exactly as it did before this change.
-    - [ ] Given a player has chosen a table that cannot make a game, when they launch, then the game still refuses it up front with a plain explanation, exactly as it did before.
+    - [x] Given a player has chosen their own counts of Law-abiding Citizens and Mafiosos, when the game is launched, then it seats exactly those counts and the new default is not applied.
+    - [x] Given a player has chosen the old five-and-two table, when the game is launched, then it plays exactly as it did before this change.
+    - [x] Given a player has chosen a table that cannot make a game, when they launch, then the game still refuses it up front with a plain explanation, exactly as it did before.
 
 - **As** someone reading the record of a measured game, **I want** to know when the table changed underneath the numbers, **so that** I do not compare two runs that were playing different games.
 
   - **Acceptance Criteria:**
-    - [ ] Given a measured run recorded after this change, when its record is read, then the record states the table it used, as every record already does.
-    - [ ] Given the **first** measured run recorded at the new table, when its record is read, then it carries a note saying that the table changed, that its figures are not directly comparable with runs recorded before it, and that the earlier runs remain valid records of the game as it then was.
-    - [ ] Given a measured run recorded before this change, when its record is read, then nothing about it has been altered.
+    - [x] Given a measured run recorded after this change, when its record is read, then the record states the table it used, as every record already does.
+    - [?] Given the **first** measured run recorded at the new table, when its record is read, then it carries a note saying that the table changed, that its figures are not directly comparable with runs recorded before it, and that the earlier runs remain valid records of the game as it then was. **AWAITING EVIDENCE (2026-09-04), not met and not waived.** No record dated on or after the change exists yet, because CR 007 defers the re-baseline until the Moderator Creative Recap has also landed — so this criterion cannot be satisfied by anything in this spec's scope. The obligation is carried by **CR 007 follow-up action 107** ("Record the re-baseline boundary in the quality ledger"), which is unticked and tracked there. Recording the flaw honestly: writing an acceptance criterion whose satisfaction depends on an event an accepted CR postpones was a spec-design error, and the criterion duplicates a follow-up action that already existed.
+    - [x] Given a measured run recorded before this change, when its record is read, then nothing about it has been altered.
 
 - **As** someone reading the product description to understand how a game starts, **I want** it to describe what actually happens, **so that** I am not looking for a step that does not exist.
 
   - **Acceptance Criteria:**
-    - [ ] Given the product description, when the account of starting a game is read, then it does not say the player is asked at launch for the number of Law-abiding Citizens and Mafiosos — because they are not, and were deliberately never meant to be.
-    - [ ] Given the product description, when the same passage is read, then it says the table is chosen before launch and states what a player gets if they choose nothing.
+    - [x] Given the product description, when the account of starting a game is read, then it does not say the player is asked at launch for the number of Law-abiding Citizens and Mafiosos — because they are not, and were deliberately never meant to be.
+    - [x] Given the product description, when the same passage is read, then it says the table is chosen before launch and states what a player gets if they choose nothing.
 
 ---
 
