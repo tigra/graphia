@@ -176,12 +176,12 @@ def test_ollama_factory_builds_chat_ollama_from_custom_env(
 
     client = factory()
 
-    assert isinstance(client, ChatOllama)
-    assert client.model == expected_model
-    assert client.base_url == "http://gpu-box:11434"
-    assert client.temperature == expected_temperature
-    assert client.num_ctx == _CUSTOM_NUM_CTX
-    assert client.num_predict == _NUM_PREDICT
+    assert isinstance(client.inner, ChatOllama)
+    assert client.inner.model == expected_model
+    assert client.inner.base_url == "http://gpu-box:11434"
+    assert client.inner.temperature == expected_temperature
+    assert client.inner.num_ctx == _CUSTOM_NUM_CTX
+    assert client.inner.num_predict == _NUM_PREDICT
 
 
 @pytest.mark.parametrize(
@@ -207,11 +207,11 @@ def test_ollama_factory_uses_documented_defaults(
 
     client = factory()
 
-    assert isinstance(client, ChatOllama)
-    assert client.model == expected_model
-    assert client.base_url == _DEFAULT_BASE_URL
-    assert client.num_ctx == _DEFAULT_NUM_CTX
-    assert client.num_predict == _NUM_PREDICT
+    assert isinstance(client.inner, ChatOllama)
+    assert client.inner.model == expected_model
+    assert client.inner.base_url == _DEFAULT_BASE_URL
+    assert client.inner.num_ctx == _DEFAULT_NUM_CTX
+    assert client.inner.num_predict == _NUM_PREDICT
 
 
 def test_ollama_persona_model_varies_only_the_temperature(
@@ -233,14 +233,17 @@ def test_ollama_persona_model_varies_only_the_temperature(
     gameplay = llm.get_large()
     persona = llm.get_persona_model(1.0)
 
-    assert isinstance(persona, ChatOllama)
+    assert isinstance(persona.inner, ChatOllama)
     assert persona is not gameplay
-    assert persona.temperature == 1.0
-    assert gameplay.temperature == 0.7
-    assert persona.model == _DEFAULT_LARGE_MODEL
-    assert persona.base_url == "http://gpu-box:11434"
-    assert persona.num_ctx == _CUSTOM_NUM_CTX
-    assert persona.num_predict == _NUM_PREDICT
+    # Both halves matter: a fresh *proxy* over the *same* cached client would
+    # satisfy the line above while defeating what it is there to check.
+    assert persona.inner is not gameplay.inner
+    assert persona.inner.temperature == 1.0
+    assert gameplay.inner.temperature == 0.7
+    assert persona.inner.model == _DEFAULT_LARGE_MODEL
+    assert persona.inner.base_url == "http://gpu-box:11434"
+    assert persona.inner.num_ctx == _CUSTOM_NUM_CTX
+    assert persona.inner.num_predict == _NUM_PREDICT
     # The uncached persona client did not displace the gameplay singleton.
     assert llm.get_large() is gameplay
 
@@ -280,7 +283,7 @@ def test_chat_ollama_construction_performs_no_model_validation(
 
     client = build()
 
-    assert isinstance(client, ChatOllama)
+    assert isinstance(client.inner, ChatOllama)
     assert client.validate_model_on_init is False
 
 
@@ -320,7 +323,7 @@ def test_bedrock_factory_still_builds_chat_bedrock_converse(
 
     client = factory()
 
-    assert isinstance(client, ChatBedrockConverse)
+    assert isinstance(client.inner, ChatBedrockConverse)
     assert client.model_id == expected_model_id
     assert client.temperature == expected_temperature
     assert client.region_name == llm.load_config().aws_region
@@ -362,7 +365,7 @@ def test_bedrock_claude_factory_builds_chat_bedrock_converse_on_haiku(
 
     client = factory()
 
-    assert isinstance(client, ChatBedrockConverse)
+    assert isinstance(client.inner, ChatBedrockConverse)
     assert client.model_id == _DEFAULT_CLAUDE_MODEL
     assert client.temperature == expected_temperature
     assert client.region_name == llm.load_config().aws_region
@@ -381,8 +384,8 @@ def test_bedrock_claude_honors_per_tier_overrides_at_construction(
     large = llm.get_large()
     small = llm.get_small()
 
-    assert isinstance(large, ChatBedrockConverse)
-    assert isinstance(small, ChatBedrockConverse)
+    assert isinstance(large.inner, ChatBedrockConverse)
+    assert isinstance(small.inner, ChatBedrockConverse)
     assert large.model_id == "us.anthropic.claude-sonnet-4-6"
     assert small.model_id == "us.anthropic.claude-opus-4-8"
 
@@ -403,21 +406,21 @@ def test_switching_among_three_providers_resolves_the_right_instances(
     monkeypatch.setenv("GRAPHIA_LLM_PROVIDER", "bedrock")
     _reset_seam(monkeypatch)
     nova = llm.get_large()
-    assert isinstance(nova, ChatBedrockConverse)
+    assert isinstance(nova.inner, ChatBedrockConverse)
     assert nova.model_id == "amazon.nova-pro-v1:0"
 
     # bedrock-claude → ChatBedrockConverse on the Claude Haiku id.
     monkeypatch.setenv("GRAPHIA_LLM_PROVIDER", "bedrock-claude")
     _reset_seam(monkeypatch)
     claude = llm.get_large()
-    assert isinstance(claude, ChatBedrockConverse)
+    assert isinstance(claude.inner, ChatBedrockConverse)
     assert claude.model_id == _DEFAULT_CLAUDE_MODEL
 
     # ollama → ChatOllama.
     monkeypatch.setenv("GRAPHIA_LLM_PROVIDER", "ollama")
     _reset_seam(monkeypatch)
     ollama = llm.get_large()
-    assert isinstance(ollama, ChatOllama)
+    assert isinstance(ollama.inner, ChatOllama)
 
     # Distinct instances per provider — no stale singleton leaked across flips.
     assert nova is not claude is not ollama
@@ -453,7 +456,7 @@ def test_seam_reset_after_env_change_builds_fresh_client(
     monkeypatch.setenv("GRAPHIA_OLLAMA_BASE_URL", "http://first-box:11434")
 
     stale = llm.get_large()
-    assert isinstance(stale, ChatOllama)
+    assert isinstance(stale.inner, ChatOllama)
     assert stale.base_url == "http://first-box:11434"
 
     # Env changes alone do not invalidate the cache...
@@ -466,7 +469,7 @@ def test_seam_reset_after_env_change_builds_fresh_client(
     fresh = llm.get_large()
 
     assert fresh is not stale
-    assert isinstance(fresh, ChatBedrockConverse)
+    assert isinstance(fresh.inner, ChatBedrockConverse)
 
 
 # ---------------------------------------------------------------------------
@@ -492,7 +495,7 @@ def test_ollama_path_constructs_without_any_credentials(
     large = llm.get_large()
     small = llm.get_small()
 
-    assert isinstance(large, ChatOllama)
-    assert isinstance(small, ChatOllama)
+    assert isinstance(large.inner, ChatOllama)
+    assert isinstance(small.inner, ChatOllama)
     assert large.base_url == _DEFAULT_BASE_URL
     assert small.base_url == _DEFAULT_BASE_URL

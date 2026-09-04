@@ -28,17 +28,33 @@ cache slots here (rather than inside the provider) preserves the established
 in-process override seam — ``graphia.tools.repetition_experiment`` rebuilds
 ``llm._large`` directly to vary temperature without source edits.
 
-Two module-level names carry the module's public contract, and both are read
-by consumers outside it: :class:`StructuredModel` — the one capability every
-tier client is actually used for, and the honest annotation for the tier
-factories — and :data:`GAMEPLAY_SCHEMAS` — the game's structured-output
-schema vocabulary, declared once at the foot of this module so no consumer
-has to retype it.
+Structured output is obtained through ONE seam, at the **provider boundary**
+(ADR-013 / spec 041 §3.2). Each provider's public tier method is a concrete
+template method: it calls an abstract ``_build_*`` hook for the vendor client
+and wraps the result in a :class:`StructuredMethodModel` carrying that
+provider's :meth:`LLMProvider.structured_output_defaults` — ``{"method":
+"json_schema"}`` on the local Ollama path (grammar-constrained decoding,
+*pinned* rather than inherited from a third-party default) and ``{}`` on both
+Bedrock providers, so the local method can never leak onto
+``ChatBedrockConverse`` (whose own default is ``function_calling``). Two
+consequences worth stating up front: a future provider **cannot forget to
+wrap**, because the only thing a subclass writes is vendor construction; and
+all eight ``with_structured_output`` call sites are **unchanged** — they bind a
+schema and know nothing about which method is requested.
+
+Three module-level names carry the module's public contract, and all three are
+read by consumers outside it: :class:`StructuredModel` — the one capability
+every tier client is actually used for, and the honest annotation for the tier
+factories — :class:`StructuredMethodModel` — the proxy that implements the
+seam, whose ``.inner`` is how a test reaches the vendor client behind it — and
+:data:`GAMEPLAY_SCHEMAS` — the game's structured-output schema vocabulary,
+declared once at the foot of this module so no consumer has to retype it.
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from typing import Any, Literal, Protocol
 
 from langchain_aws import BedrockEmbeddings, ChatBedrockConverse
@@ -118,8 +134,9 @@ class StructuredModel(Protocol):
     ``tools.ollama_smoke`` assigns one to count outcomes. ``InstrumentedModel``
     is a plain ``__getattr__`` passthrough object — it subclasses nothing — so
     the vendor base class named a lineage the returned object was never
-    guaranteed to have. Spec 041 §3.2 then wraps a **second** proxy at the
-    provider boundary, leaving the eval stack two proxies deep. An annotation
+    guaranteed to have. Spec 041 §3.2 has since wrapped a **second** proxy at
+    the provider boundary (:class:`StructuredMethodModel`), so the eval stack
+    is now two proxies deep in fact rather than in prospect. An annotation
     naming a vendor class cannot survive that; one naming a *capability* can.
 
     **Why exactly one method, and not more.** Swept across ``src/graphia/``:
@@ -158,33 +175,233 @@ class StructuredModel(Protocol):
         ...
 
 
+class StructuredMethodModel:
+    """Provider-boundary proxy that pins the structured-output *method*.
+
+    One job: every ``with_structured_output`` call reaching a tier client
+    carries the active provider's structured-output defaults, without any call
+    site knowing which provider it is talking to. ``defaults`` comes from
+    :meth:`LLMProvider.structured_output_defaults` — ``{"method":
+    "json_schema"}`` on the local Ollama path (ADR-013's grammar-constrained
+    decoding), ``{}`` on both Bedrock providers. Everything other than
+    ``with_structured_output`` is passed through to :attr:`inner`.
+
+    Structurally a :class:`StructuredModel`; it subclasses nothing, the same
+    posture ``tools.instrument.InstrumentedModel`` takes. The two compose in
+    either order, and both orders occur: ``ollama_smoke`` builds
+    ``InstrumentedModel(StructuredMethodModel(ChatOllama))``, because it wraps
+    what ``provider.large()`` already handed back.
+
+    **Why a proxy and not an argument at each call site.** The method is a
+    *transport* fact and the call sites are *game* code: a node that asks for a
+    ``Ballot`` has no business knowing whether the answer is constrained by a
+    grammar or requested via tool use. Branching at eight call sites would put
+    a provider conditional inside game logic — precisely the coupling ADR-009's
+    seam exists to prevent — and would need re-doing at the ninth.
+    """
+
+    def __init__(self, inner: BaseChatModel, defaults: Mapping[str, Any]) -> None:
+        # ``dict(defaults)`` rather than the mapping itself: this proxy outlives
+        # the call that built it (the tier singletons are cached for the whole
+        # game), so it must not alias a dict someone else can still mutate.
+        self._inner = inner
+        self._defaults = dict(defaults)
+
+    @property
+    def inner(self) -> BaseChatModel:
+        """The vendor client underneath — ``ChatOllama`` or ``ChatBedrockConverse``.
+
+        **A real property rather than something ``__getattr__`` serves**, and
+        that is the whole point: attribute lookup finds it on the class, so the
+        passthrough below can never shadow it — not even if a future vendor
+        client grows an ``inner`` field of its own. Read-only, because the
+        wrapped client is fixed at construction and rebinding it would silently
+        change which model a cached tier singleton talks to.
+
+        **Who this is for: tests, and nothing else.** The offline construction
+        suite asserts what config reached the vendor client
+        (``tests/test_llm_provider_construction.py``), and the method-pinning
+        suite reads the bound runnable's grammar off it. Production code has no
+        business reaching through: the seam exists so that every schema binding
+        goes through :meth:`with_structured_output` and picks up the provider's
+        defaults, so code that unwraps first gets the raw vendor default
+        (``function_calling`` on ``ChatBedrockConverse``) and quietly loses the
+        guarantee this class exists to provide.
+        """
+        return self._inner
+
+    def with_structured_output(
+        self, schema: type[BaseModel] | dict[str, Any], **kwargs: Any
+    ) -> Runnable[Any, Any]:
+        """Bind ``schema`` on the inner client with the provider's defaults merged in.
+
+        **``{**defaults, **kwargs}`` — caller kwargs win, and that ordering is
+        the contract.** Both halves are live in production simultaneously:
+        spec 039's diary call passes ``include_raw=True`` while the local
+        provider injects ``method="json_schema"``, and the inner client must
+        receive *both* (Slice 4 later withdraws the ``include_raw``, which does
+        not change the rule). Precedence only bites when a caller passes the
+        same key, and there the caller is the more specific instruction — a
+        future call site that deliberately wants ``method="function_calling"``
+        for one schema should get it rather than be silently overridden by a
+        provider-wide default it cannot see.
+
+        Nothing is popped, renamed or allowlisted: an unknown kwarg is the
+        vendor client's business to reject, not this proxy's to swallow.
+        """
+        return self._inner.with_structured_output(
+            schema, **{**self._defaults, **kwargs}
+        )
+
+    def __getattr__(self, name: str) -> Any:
+        """Pass every other attribute through to the wrapped vendor client.
+
+        Two guards, both for real failure modes rather than tidiness:
+
+        - **Dunders are never proxied.** Special methods are looked up on the
+          *type* by the interpreter, so proxying them here buys nothing, while
+          answering protocol probes (``__deepcopy__``, ``__setstate__``,
+          ``__iter__``) on the inner object's behalf makes this proxy claim
+          capabilities it cannot honour. ``copy.copy`` is the concrete case: it
+          probes ``__setstate__`` on a freshly-allocated instance whose
+          ``__init__`` has not run, and a proxy that answers "yes" there
+          corrupts the copy.
+        - **``_inner`` is read via ``object.__getattribute__``.** On that same
+          half-built instance a plain ``self._inner`` would itself miss,
+          re-enter ``__getattr__`` and recurse until the stack ends — the
+          classic passthrough-proxy crash. Missing state raises
+          ``AttributeError`` instead.
+
+        An attribute the vendor client genuinely does not have still raises
+        ``AttributeError``, because the ``getattr`` below is not caught — so a
+        typo fails where it is written rather than yielding ``None``.
+        """
+        if name.startswith("__") and name.endswith("__"):
+            raise AttributeError(name)
+        try:
+            inner = object.__getattribute__(self, "_inner")
+        except AttributeError:  # pragma: no cover — half-built instance
+            raise AttributeError(name) from None
+        return getattr(inner, name)
+
+    def __repr__(self) -> str:
+        """Name what is inside, because the eval stack is now two proxies deep.
+
+        ``InstrumentedModel(StructuredMethodModel(ChatOllama))`` under the
+        default ``object`` repr is two hex addresses that say nothing about
+        which model a run actually reached. The inner client's *class* is named
+        rather than ``repr``'d on purpose: both vendor clients are Pydantic
+        models whose repr dumps every field, which buries the one fact this
+        line exists to state. The defaults are included because "is the method
+        pinned on this object?" is the other question a reader has at that
+        point.
+        """
+        return (
+            f"{type(self).__name__}({type(self._inner).__name__}, "
+            f"defaults={self._defaults!r})"
+        )
+
+
 class LLMProvider(ABC):
     """Construction strategy for the two tier clients.
 
-    Implementations build a structured-output-capable LangChain chat model
-    per tier. They construct fresh clients — singleton caching is owned by
-    the module-level ``get_large`` / ``get_small`` factories, not by the
+    Implementations build a structured-output-capable LangChain chat model per
+    tier in ``_build_large`` / ``_build_large_at_temperature`` /
+    ``_build_small``. They construct fresh clients — singleton caching is owned
+    by the module-level ``get_large`` / ``get_small`` factories, not by the
     provider.
+
+    **The three public tier methods are concrete template methods, and that is
+    load-bearing.** Each calls its provider's ``_build_*`` hook and wraps the
+    result in a :class:`StructuredMethodModel` carrying
+    :meth:`structured_output_defaults`. A provider therefore cannot *forget* to
+    wrap: forgetting is not an omission a new subclass is able to make, because
+    the only thing a subclass writes is vendor construction. The alternative —
+    three providers each remembering to wrap in three places — is nine chances
+    to drop the guarantee, and a dropped one would be silent, since a client
+    that decodes without a grammar still answers, just unreliably.
+
+    **The annotations mark the seam.** The public methods return
+    :class:`StructuredModel` (a proxy, whose only guaranteed capability is
+    binding a schema); the ``_build_*`` hooks return ``BaseChatModel`` (a real
+    vendor client). Reading the two signatures side by side is the shortest
+    statement in this file of where the boundary sits.
+
+    **The wrap is here rather than in ``get_large`` / ``get_small``** because
+    the module factories are not the only entry point. ``tools.ollama_smoke``
+    constructs an ``OllamaProvider()`` and calls ``.large()`` / ``.small()``
+    itself; ``tools.blunder_eval`` calls ``_resolve_provider()`` and does the
+    same — both then install their own ``InstrumentedModel`` into the cache
+    slots. Wrapping in the factories would leave exactly the two harnesses that
+    measure transport reliability measuring an *unwrapped* client: reliable
+    decoding disabled only while the eval harness is watching, which is the
+    worst failure mode this project has. (``tools.repetition_experiment``
+    assigns a ``ChatBedrockConverse`` into ``llm._large`` directly, bypassing
+    the provider altogether. That one stays unwrapped and is deliberately left
+    alone: it is Bedrock-only, and Bedrock's defaults are empty, so a wrapped
+    client would request no method either — behaviourally identical, and
+    touching it would disturb the temperature-variation seam its module
+    docstring documents.)
     """
 
-    @abstractmethod
-    def large(self) -> BaseChatModel:
-        """Build the heavier gameplay-tier chat model."""
+    def structured_output_defaults(self) -> dict[str, Any]:
+        """Kwargs injected into every ``with_structured_output`` on this provider.
 
-    @abstractmethod
-    def large_at_temperature(self, temperature: float) -> BaseChatModel:
-        """Build a fresh large-tier client at an explicit ``temperature``.
+        **Non-abstract, returning ``{}``**, so the two Bedrock providers
+        inherit "no method at all" rather than each declaring it. Two
+        declarations of the same emptiness is exactly how that pair would
+        drift, and the cloud path's requirement *is* that nothing be requested
+        (spec 041's cloud-parity criterion) — so it must not depend on anyone
+        remembering to restate it. :class:`OllamaProvider` overrides.
+
+        A fresh dict per call: the template methods hand the result to a proxy
+        that keeps it, so a shared mutable default would put one provider's
+        mistake one aliasing bug away from changing another's behaviour.
+        """
+        return {}
+
+    def large(self) -> StructuredModel:
+        """The heavier gameplay-tier client, wrapped with this provider's defaults."""
+        return StructuredMethodModel(
+            self._build_large(), self.structured_output_defaults()
+        )
+
+    def large_at_temperature(self, temperature: float) -> StructuredModel:
+        """A FRESH large-tier client at an explicit ``temperature``, wrapped.
 
         Spec 034: persona generation runs hotter than gameplay. The same
         large-tier MODEL, only a different sampling temperature — so behavioural
         variation stays "prompts + temperature, not more models" (architecture
-        §4). Returns a FRESH instance (never the cached gameplay singleton) so
-        the gameplay temperature is untouched.
+        §4). Never the cached gameplay singleton, so the gameplay temperature is
+        untouched.
+        """
+        return StructuredMethodModel(
+            self._build_large_at_temperature(temperature),
+            self.structured_output_defaults(),
+        )
+
+    def small(self) -> StructuredModel:
+        """The lighter mechanical-tier client, wrapped with this provider's defaults."""
+        return StructuredMethodModel(
+            self._build_small(), self.structured_output_defaults()
+        )
+
+    @abstractmethod
+    def _build_large(self) -> BaseChatModel:
+        """Construct the vendor client for the heavier gameplay tier."""
+
+    @abstractmethod
+    def _build_large_at_temperature(self, temperature: float) -> BaseChatModel:
+        """Construct a FRESH large-tier vendor client at ``temperature``.
+
+        Fresh rather than cached because the gameplay singleton keeps its own
+        temperature; see :meth:`large_at_temperature` for the spec-034 reason
+        the two are separated.
         """
 
     @abstractmethod
-    def small(self) -> BaseChatModel:
-        """Build the lighter mechanical-tier chat model."""
+    def _build_small(self) -> BaseChatModel:
+        """Construct the vendor client for the lighter mechanical tier."""
 
 
 # Per-tier temperatures, read by ALL THREE providers (Nova, Claude, Ollama) —
@@ -233,19 +450,24 @@ class BedrockProvider(LLMProvider):
     pre-spec-035 hardcoded ids.
     """
 
-    def large(self) -> BaseChatModel:
+    # Structured-output defaults are INHERITED (``{}``) — see
+    # ``LLMProvider.structured_output_defaults`` for why this provider does not
+    # restate them. Bedrock Converse's own ``function_calling`` default is what
+    # the cloud path wants, so the correct request here is no request at all.
+
+    def _build_large(self) -> BaseChatModel:
         return _build_bedrock(
             load_config().large_model, _LARGE_TEMPERATURE
         )
 
-    def large_at_temperature(self, temperature: float) -> BaseChatModel:
+    def _build_large_at_temperature(self, temperature: float) -> BaseChatModel:
         # Config-driven large id (honors GRAPHIA_LARGE_MODEL), via the shared
         # _build_bedrock seam — a fresh instance at the override temperature.
         # ChatBedrockConverse accepts a per-instance temperature (same arg
         # large/small already pass).
         return _build_bedrock(load_config().large_model, temperature)
 
-    def small(self) -> BaseChatModel:
+    def _build_small(self) -> BaseChatModel:
         return _build_bedrock(
             load_config().small_model, _SMALL_TEMPERATURE
         )
@@ -265,17 +487,21 @@ class ClaudeBedrockProvider(LLMProvider):
     constructed id/region at the boundary and never reaches Bedrock.
     """
 
-    def large(self) -> BaseChatModel:
+    # Structured-output defaults are INHERITED (``{}``), exactly as for
+    # :class:`BedrockProvider` — the two Bedrock profiles cannot drift on this
+    # because neither one declares it.
+
+    def _build_large(self) -> BaseChatModel:
         return _build_bedrock(
             load_config().large_model, _LARGE_TEMPERATURE
         )
 
-    def large_at_temperature(self, temperature: float) -> BaseChatModel:
+    def _build_large_at_temperature(self, temperature: float) -> BaseChatModel:
         # Config-driven Claude large id, via the shared _build_bedrock seam
         # (the spec-034 persona-diversity path resolves a hotter instance here).
         return _build_bedrock(load_config().large_model, temperature)
 
-    def small(self) -> BaseChatModel:
+    def _build_small(self) -> BaseChatModel:
         return _build_bedrock(
             load_config().small_model, _SMALL_TEMPERATURE
         )
@@ -312,7 +538,8 @@ class OllamaProvider(LLMProvider):
     ``method="json_schema"``, re-confirmed against the pinned
     langchain-ollama 1.1.0: the bound runnable carries
     ``format == Schema.model_json_schema()`` and no ``tools``. Spec 041's
-    Slice 3 pins that method explicitly at the provider boundary, which is
+    Slice 3 now pins that method explicitly, through this class's
+    :meth:`structured_output_defaults` override, which is
     **defensive, not corrective** — immunity to a third-party default flip,
     plus proof the method cannot leak to ``ChatBedrockConverse`` (whose own
     default is ``function_calling``).
@@ -366,7 +593,26 @@ class OllamaProvider(LLMProvider):
     it True.
     """
 
-    def large(self) -> BaseChatModel:
+    def structured_output_defaults(self) -> dict[str, Any]:
+        """Pin ``method="json_schema"`` on every binding this provider serves.
+
+        The one override of :meth:`LLMProvider.structured_output_defaults`, and
+        the whole of spec 041's Slice 3 in three lines. It is **defensive, not
+        corrective**: this is already ``ChatOllama``'s own default in the pinned
+        langchain-ollama 1.1.0, so Slice 2's client swap is what delivered
+        reliable decoding. What stating it buys is that the guarantee stops
+        being *inherited* — a third-party default flip in a later release
+        becomes a no-op here instead of silently returning the game to
+        tool-use decoding, which is the failure ADR-013 exists to close and
+        which spec 039 measured at 45 of 90 diary entries replaced.
+
+        Requested per binding rather than set at construction because that is
+        where LangChain takes it: ``method`` is a ``with_structured_output``
+        argument, not a ``ChatOllama`` field. Hence the proxy.
+        """
+        return {"method": "json_schema"}
+
+    def _build_large(self) -> BaseChatModel:
         config = load_config()
         return ChatOllama(
             model=config.ollama_large_model,
@@ -376,7 +622,7 @@ class OllamaProvider(LLMProvider):
             num_ctx=config.ollama_num_ctx,
         )
 
-    def large_at_temperature(self, temperature: float) -> BaseChatModel:
+    def _build_large_at_temperature(self, temperature: float) -> BaseChatModel:
         # ``ChatOllama`` accepts a per-instance ``temperature`` — the same arg
         # ``large`` / ``small`` pass, forwarded into the native request's
         # ``options`` alongside ``num_predict`` and ``num_ctx``. Fresh instance,
@@ -393,7 +639,7 @@ class OllamaProvider(LLMProvider):
             num_ctx=config.ollama_num_ctx,
         )
 
-    def small(self) -> BaseChatModel:
+    def _build_small(self) -> BaseChatModel:
         config = load_config()
         return ChatOllama(
             model=config.ollama_small_model,
@@ -416,8 +662,9 @@ _active_provider: LLMProvider | None = None
 # Annotated :class:`StructuredModel`, not ``BaseChatModel``, because these two
 # slots are precisely where the lie was told: ``tools.blunder_eval`` and
 # ``tools.ollama_smoke`` both assign an ``InstrumentedModel`` proxy here, and
-# spec 041 §3.2 adds a second proxy above the provider. Whatever occupies these
-# slots is only ever asked to bind a schema.
+# spec 041 §3.2's provider seam puts a :class:`StructuredMethodModel` under it,
+# so on a harness run these slots hold two stacked proxies over the vendor
+# client. Whatever occupies them is only ever asked to bind a schema.
 _large: StructuredModel | None = None
 _small: StructuredModel | None = None
 
