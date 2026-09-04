@@ -27,16 +27,24 @@ built at most once, on first use, by whichever provider is active. Keeping the
 cache slots here (rather than inside the provider) preserves the established
 in-process override seam — ``graphia.tools.repetition_experiment`` rebuilds
 ``llm._large`` directly to vary temperature without source edits.
+
+Two module-level names carry the module's public contract, and both are read
+by consumers outside it: :class:`StructuredModel` — the one capability every
+tier client is actually used for, and the honest annotation for the tier
+factories — and :data:`GAMEPLAY_SCHEMAS` — the game's structured-output
+schema vocabulary, declared once at the foot of this module so no consumer
+has to retype it.
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Literal
+from typing import Any, Literal, Protocol
 
 from langchain_aws import BedrockEmbeddings, ChatBedrockConverse
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel
+from langchain_core.runnables import Runnable
 from langchain_ollama import ChatOllama
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -97,6 +105,57 @@ _EMBEDDINGS_MODEL_ID = "amazon.titan-embed-text-v2:0"
 # guard: grammar-constrained decoding pins the JSON *shape*, not termination —
 # a schema-valid string can be arbitrarily long.
 _OLLAMA_NUM_PREDICT = 1024
+
+
+class StructuredModel(Protocol):
+    """A client that can bind a schema — the only capability callers use.
+
+    **Why this replaced ``BaseChatModel`` on the tier factories.** That
+    annotation was not merely imprecise, it was **already false before this
+    spec touched anything**. Both eval harnesses install a proxy into the
+    module cache slots below: ``tools.blunder_eval`` assigns an
+    ``InstrumentedModel`` into ``_large`` / ``_small`` to capture payloads, and
+    ``tools.ollama_smoke`` assigns one to count outcomes. ``InstrumentedModel``
+    is a plain ``__getattr__`` passthrough object — it subclasses nothing — so
+    the vendor base class named a lineage the returned object was never
+    guaranteed to have. Spec 041 §3.2 then wraps a **second** proxy at the
+    provider boundary, leaving the eval stack two proxies deep. An annotation
+    naming a vendor class cannot survive that; one naming a *capability* can.
+
+    **Why exactly one method, and not more.** Swept across ``src/graphia/``:
+    all eight structured-output call sites — four in ``nodes/day.py``
+    (``DayAction`` / ``Reflection`` / ``Ballot`` / ``Diary``), one in
+    ``nodes/night.py`` (``Pointing``), two in ``nodes/setup.py`` (``Roster`` /
+    ``Persona``) and one in ``tools/claude_spike.py`` — call
+    ``with_structured_output`` and nothing else. No ``.invoke``, ``.bind`` or
+    ``.stream`` is ever called on a tier client directly; only on the runnable
+    it hands back. Widening this Protocol would invent a contract no caller
+    uses and no proxy is obliged to honour, which is how a second type lie
+    would start.
+
+    Deliberately **not** ``runtime_checkable``. Nothing needs ``isinstance``
+    here, and a runtime protocol check only confirms the method's *presence* —
+    never its signature, never its behaviour — so it would read as enforcement
+    while providing none. Add it when a real ``isinstance`` need appears, not
+    before.
+
+    Note what this buys and what it does not: the repo configures **no type
+    checker**, so this is documentation the next reader can trust rather than a
+    gate anything runs. It is written down because the previous annotation
+    misled, and a reader deserves to know the base class was a lie rather than
+    a simplification.
+    """
+
+    def with_structured_output(
+        self, schema: type[BaseModel] | dict[str, Any], **kwargs: Any
+    ) -> Runnable[Any, Any]:
+        """Bind ``schema`` and return a runnable that yields it.
+
+        ``**kwargs`` is open on purpose: production already passes
+        ``include_raw=True`` (spec 039's diary call), and spec 041 §3.2's
+        provider seam adds ``method="json_schema"`` on the local path.
+        """
+        ...
 
 
 class LLMProvider(ABC):
@@ -354,8 +413,13 @@ class OllamaProvider(LLMProvider):
 # and tools may assign a provider here directly to bypass config selection.
 _active_provider: LLMProvider | None = None
 
-_large: BaseChatModel | None = None
-_small: BaseChatModel | None = None
+# Annotated :class:`StructuredModel`, not ``BaseChatModel``, because these two
+# slots are precisely where the lie was told: ``tools.blunder_eval`` and
+# ``tools.ollama_smoke`` both assign an ``InstrumentedModel`` proxy here, and
+# spec 041 §3.2 adds a second proxy above the provider. Whatever occupies these
+# slots is only ever asked to bind a schema.
+_large: StructuredModel | None = None
+_small: StructuredModel | None = None
 
 
 def _resolve_provider() -> LLMProvider:
@@ -374,21 +438,21 @@ def _resolve_provider() -> LLMProvider:
     return _active_provider
 
 
-def get_large() -> BaseChatModel:
+def get_large() -> StructuredModel:
     global _large
     if _large is None:
         _large = _resolve_provider().large()
     return _large
 
 
-def get_small() -> BaseChatModel:
+def get_small() -> StructuredModel:
     global _small
     if _small is None:
         _small = _resolve_provider().small()
     return _small
 
 
-def get_persona_model(temperature: float) -> BaseChatModel:
+def get_persona_model(temperature: float) -> StructuredModel:
     """Build a large-tier chat model at a persona-generation ``temperature`` (spec 034).
 
     Persona generation (spec 016/031) used the cached gameplay ``get_large()``;
@@ -602,3 +666,49 @@ class DayAction(BaseModel):
             if self.target_id is None or not self.target_id.strip():
                 raise ValueError("vote requires non-empty target_id")
         return self
+
+
+# ---------------------------------------------------------------------------
+# The gameplay schema vocabulary, declared ONCE.
+#
+# Every schema the game binds through ``with_structured_output``: setup
+# (``Roster``, ``Persona``), Night (``Pointing``), Day (``Ballot``,
+# ``DayAction``), and the two private channels (``Reflection``, ``Diary``).
+#
+# **Declared once because it was previously declared twice, short both times.**
+# ``tools/ollama_smoke.py``'s hand-typed ``SCHEMA_NAMES`` lists four of the
+# seven, so ADR-013's live reliability gate silently skipped ``Persona``,
+# ``Reflection`` and ``Diary`` — and on 2026-09-04 returned ``RELIABLE`` with
+# exit code 0 on a full game whose ``Diary`` failure rate was 0.80, four times
+# its own threshold, because ``_judge`` iterated a tuple that omitted the
+# schema that failed (spec 041 §11.1). That is the cost of a vocabulary kept in
+# more than one place: not a style complaint, a gate that could not fail.
+# Consumers derive from THIS tuple instead of retyping it.
+#
+# The ORDER is load-bearing, not incidental: ``ollama_smoke`` renders it as a
+# human-readable table, so this is display order. Append new schemas at the end
+# rather than inserting, unless a reordered table is the intent.
+#
+# Still retyped elsewhere, and NOT fed by this tuple yet — named here so the
+# next reader does not assume the job is finished:
+#
+# - ``tools/claude_spike.py`` — ``_PROBES`` (name + hand-written prompt) and
+#   ``_schema_types()`` (name -> class) each list the same four, so the live
+#   Claude spike claims "every flat schema" while probing four of seven. It
+#   cannot be derived mechanically: each entry needs its own prompt.
+# - ``tests/conftest.py`` — ``FakeLargeUnified`` enumerates six (all but
+#   ``Roster``, which is the small tier) three times over: the queue map, the
+#   per-schema call counter, and the unknown-schema error text.
+#
+# Placed after the class definitions purely because a tuple cannot reference
+# them earlier. It is a local reference and imports nothing new.
+# ---------------------------------------------------------------------------
+GAMEPLAY_SCHEMAS: tuple[type[BaseModel], ...] = (
+    Roster,
+    Persona,
+    Pointing,
+    Ballot,
+    DayAction,
+    Reflection,
+    Diary,
+)
