@@ -104,7 +104,7 @@ _Revisionary on two counts: it withdraws a stated balance property, and it chang
 
 - [x] Correct the Phase 1 **Fixed Starter Lineup** wording in `context/product/roadmap.md` so it no longer asserts a balance the arithmetic contradicts.
 - [x] Change the default lineup to **6 Law-abiding Citizens and 2 Mafiosos**, leaving the counts configurable.
-- [ ] Record the re-baseline boundary in the quality ledger, so nobody compares a 6-and-2 town win rate against a 5-and-2 one without seeing that the underlying game changed.
+- [x] Record the re-baseline boundary in the quality ledger, so nobody compares a 6-and-2 town win rate against a 5-and-2 one without seeing that the underlying game changed.
 - [ ] Specify the **chance-baseline metric** as its own functional spec: record, per run, how the town's win rate compares with random play at that run's lineup (8.3% at 5-and-2, about 22.9% at 6-and-2), so "did the town beat chance?" becomes a falsifiable recorded result instead of a number nobody can interpret. This is the follow-up with the most measurement value, and it is what makes the deferred re-baseline readable when it happens.
 - [ ] Re-run the per-provider baselines **once**, after both this change and the Moderator Creative Recap have landed.
 - [ ] Update affected `functional-spec.md` / `technical-considerations.md` / `tasks.md` — none required; spec 001 is recorded as superseded rather than edited.

@@ -1,7 +1,7 @@
 # Functional Specification: A Starter Table With Room For One Mistake
 
 - **Roadmap Item:** Phase 5 — Setup Flexibility, **Configurable Role Counts**. This changes the default that item left standing; the configurability itself is untouched. Authorised by **[CR 007](../../change-requests/007-starter-lineup-balance-claim-and-default.md)** (Accepted 2026-09-03), which also withdrew the Phase 1 claim that the old default was "reasonably balanced toward the Law-abiding side".
-- **Status:** Completed *(verified 2026-09-04 — 11 of 12 criteria verified mechanically; the twelfth is `[?]` awaiting the first post-change measured run, tracked as CR 007 action 107)*
+- **Status:** Completed *(verified 2026-09-04 — all 12 acceptance criteria verified; eleven mechanically, and the twelfth by the first measured record written at the new default)*
 - **Author:** Alexey Tigarev
 
 ---
@@ -63,7 +63,7 @@ It also means the numbers recorded for a measured game are **not directly compar
 
   - **Acceptance Criteria:**
     - [x] Given a measured run recorded after this change, when its record is read, then the record states the table it used, as every record already does.
-    - [?] Given the **first** measured run recorded at the new table, when its record is read, then it carries a note saying that the table changed, that its figures are not directly comparable with runs recorded before it, and that the earlier runs remain valid records of the game as it then was. **AWAITING EVIDENCE (2026-09-04), not met and not waived.** No record dated on or after the change exists yet, because CR 007 defers the re-baseline until the Moderator Creative Recap has also landed — so this criterion cannot be satisfied by anything in this spec's scope. The obligation is carried by **CR 007 follow-up action 107** ("Record the re-baseline boundary in the quality ledger"), which is unticked and tracked there. Recording the flaw honestly: writing an acceptance criterion whose satisfaction depends on an event an accepted CR postpones was a spec-design error, and the criterion duplicates a follow-up action that already existed.
+    - [x] Given the **first** measured run recorded at the new table, when its record is read, then it carries a note saying that the table changed, that its figures are not directly comparable with runs recorded before it, and that the earlier runs remain valid records of the game as it then was. **VERIFIED 2026-09-04** by the record dated 2026-09-04 (`transcript_dir 2026-09-04T13-13-43`, ollama, `settings.lineup` 6+2, `dirty: false` at commit `7208627`) — the first written since the default moved. Its note carries all three parts, and adds the correction that a reader must key on `settings.lineup` rather than the date, since four records from 2026-06-21/22 were already played at 6+2 via explicit override. Recorded for the next reader: this criterion was `[?]` for a day because it depended on an artefact CR 007's deferral postponed — a spec-design error worth not repeating, since a criterion should not need an unrelated spec to ship first.
     - [x] Given a measured run recorded before this change, when its record is read, then nothing about it has been altered.
 
 - **As** someone reading the product description to understand how a game starts, **I want** it to describe what actually happens, **so that** I am not looking for a step that does not exist.
