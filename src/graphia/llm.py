@@ -11,8 +11,10 @@ construction strategy with three concrete implementations:
 :class:`BedrockProvider` (Amazon Nova Pro / Lite per ADR-003, the default
 baseline), :class:`ClaudeBedrockProvider` (Claude Haiku 4.5 on Bedrock per
 ADR-012 / spec 035), and :class:`OllamaProvider` (a local Ollama server
-reached through its Anthropic-compatible ``/v1/messages`` surface per
-ADR-010). The two Bedrock providers share one ``ChatBedrockConverse``
+reached through its NATIVE ``/api/chat`` surface per ADR-013, which revised
+ADR-010's Anthropic-compatible ``/v1/messages`` route after its
+verify-at-implementation gate failed — see :class:`OllamaProvider`). The two
+Bedrock providers share one ``ChatBedrockConverse``
 construction helper, parameterised only by the per-tier model id resolved
 from config — so the Claude profile is an additive config choice that leaves
 Nova's observable behavior byte-identical.
@@ -32,10 +34,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Literal
 
-from langchain_anthropic import ChatAnthropic
 from langchain_aws import BedrockEmbeddings, ChatBedrockConverse
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel
+from langchain_ollama import ChatOllama
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from graphia.config import _MAX_TABLE_SIZE, load_config
@@ -69,15 +71,32 @@ _SMALL_MODEL_ID = "amazon.nova-lite-v1:0"
 # never reaches Bedrock — see ``tests/conftest.py``'s ``safe_llm``).
 _EMBEDDINGS_MODEL_ID = "amazon.titan-embed-text-v2:0"
 
-# Anthropic Messages requires an explicit max_tokens on every request. Graphia
-# turns are short — one-to-two-sentence speeches, or a single structured tool
-# call (Pointing / Ballot / DayAction / Roster) — so 1024 is generous headroom
-# without inviting rambling completions from small local models.
-_OLLAMA_MAX_TOKENS = 1024
-
-# Ollama's Anthropic-compatible endpoint requires an api key to be present but
-# ignores its value (per Ollama's docs, ``api_key='ollama'``).
-_OLLAMA_DUMMY_API_KEY = "ollama"
+# Per-request output cap for the local tiers, sent as the native request's
+# ``options.num_predict``. Graphia turns are short — a one-to-two-sentence
+# speech, or a single structured answer (Roster / Persona / Pointing / Ballot /
+# DayAction / Reflection / Diary) — so 1024 is generous headroom without
+# inviting rambling completions from small local models.
+#
+# **Renamed from ``_OLLAMA_MAX_TOKENS``, never deleted** (ADR-013 / spec 041
+# §2.2), for two independent reasons:
+#
+# 1. ``ChatOllama`` has no ``max_tokens`` field at all; the native equivalent
+#    is ``num_predict``. The old name would have described nothing.
+# 2. The constant is **load-bearing by citation**: ``config.py`` derives
+#    ``_DEFAULT_CONTEXT_TOKEN_BUDGET`` by reserving this value as the
+#    completion budget out of the assumed 32768-token context. Deleting the
+#    name would leave that arithmetic unreconstructable, so the citation moves
+#    with the rename.
+#
+# The value is unchanged at 1024, but its *role* shifted with the transport.
+# Anthropic Messages **required** an explicit cap on every request; native
+# ``/api/chat`` does not, and omitting it would fall back to Ollama's own
+# ``num_predict`` default of **128** — which would truncate essentially every
+# diary entry (spec 039 measured real entries at 155–693 tokens). So passing
+# it explicitly is what keeps long answers intact, and it doubles as a runaway
+# guard: grammar-constrained decoding pins the JSON *shape*, not termination —
+# a schema-valid string can be arbitrarily long.
+_OLLAMA_NUM_PREDICT = 1024
 
 
 class LLMProvider(ABC):
@@ -109,12 +128,24 @@ class LLMProvider(ABC):
         """Build the lighter mechanical-tier chat model."""
 
 
-# Per-tier temperatures, shared across BOTH Bedrock profiles (Nova + Claude)
-# and mirrored by the Ollama tiers — gameplay tone is provider-independent
-# (only the model behind it changes). Factored out as named constants so the
-# two Bedrock providers can't drift apart.
-_BEDROCK_LARGE_TEMPERATURE = 0.7
-_BEDROCK_SMALL_TEMPERATURE = 0.8
+# Per-tier temperatures, read by ALL THREE providers (Nova, Claude, Ollama) —
+# gameplay tone is provider-independent; only the model behind it changes.
+#
+# **Renamed from ``_BEDROCK_LARGE_TEMPERATURE`` / ``_BEDROCK_SMALL_TEMPERATURE``
+# (spec 041 §2.2).** The old names' own comment claimed the constants existed
+# "so the two Bedrock providers can't drift apart" — while ``OllamaProvider``
+# sat directly below them hard-coding 0.7 / 0.8 as literals. The drift the
+# constants were meant to prevent was therefore already possible, hidden by a
+# Bedrock-flavoured name that read as though the Ollama path were out of their
+# scope. Dropping the prefix and having the local tiers read them too makes
+# the original claim true for all three.
+#
+# **Same literals, so the observable behaviour delta is exactly zero** — and
+# that is deliberate. A real temperature move is a *gameplay* change: it would
+# need its own default-on ``GRAPHIA_*`` flag with a flag-off parity test
+# (ADR-011) and a measured A/B, neither of which a transport swap carries.
+_LARGE_TEMPERATURE = 0.7
+_SMALL_TEMPERATURE = 0.8
 
 
 def _build_bedrock(model: str, temperature: float) -> BaseChatModel:
@@ -145,7 +176,7 @@ class BedrockProvider(LLMProvider):
 
     def large(self) -> BaseChatModel:
         return _build_bedrock(
-            load_config().large_model, _BEDROCK_LARGE_TEMPERATURE
+            load_config().large_model, _LARGE_TEMPERATURE
         )
 
     def large_at_temperature(self, temperature: float) -> BaseChatModel:
@@ -157,7 +188,7 @@ class BedrockProvider(LLMProvider):
 
     def small(self) -> BaseChatModel:
         return _build_bedrock(
-            load_config().small_model, _BEDROCK_SMALL_TEMPERATURE
+            load_config().small_model, _SMALL_TEMPERATURE
         )
 
 
@@ -177,7 +208,7 @@ class ClaudeBedrockProvider(LLMProvider):
 
     def large(self) -> BaseChatModel:
         return _build_bedrock(
-            load_config().large_model, _BEDROCK_LARGE_TEMPERATURE
+            load_config().large_model, _LARGE_TEMPERATURE
         )
 
     def large_at_temperature(self, temperature: float) -> BaseChatModel:
@@ -187,53 +218,95 @@ class ClaudeBedrockProvider(LLMProvider):
 
     def small(self) -> BaseChatModel:
         return _build_bedrock(
-            load_config().small_model, _BEDROCK_SMALL_TEMPERATURE
+            load_config().small_model, _SMALL_TEMPERATURE
         )
 
 
 class OllamaProvider(LLMProvider):
-    """Local-Ollama provider via the Anthropic-compatible API (ADR-010).
+    """Local-Ollama provider via the NATIVE Ollama API (ADR-013).
 
-    Ollama exposes an Anthropic Messages surface rooted at the server base
-    URL (clients call ``<base_url>/v1/messages``), so both tiers are plain
-    :class:`~langchain_anthropic.ChatAnthropic` instances pointed at
-    ``ollama_base_url`` with a dummy api key. Model names and the base URL
-    come from config (``GRAPHIA_OLLAMA_*``); temperatures mirror the Bedrock
-    tiers so gameplay tone is provider-independent. No AWS credentials are
-    read anywhere on this path.
+    Both tiers are :class:`~langchain_ollama.ChatOllama` instances pointed at
+    ``ollama_base_url`` — the plain server root (``http://localhost:11434`` by
+    default), which the native client resolves to ``/api/chat``. That is the
+    same root ``graphia.preflight`` already probes for ``/api/tags`` /
+    ``/api/show``, so one configured URL now serves the whole local path. No
+    api key exists on this surface, and no AWS credentials are read anywhere
+    on it.
+
+    **Why the native surface, not ADR-010's Anthropic-compatible one.**
+    Structured output over ``/v1/messages`` was Anthropic *tool use*, which
+    that endpoint treats as a request it may decline. Spec 039 measured the
+    cost: 45 of 90 diary entries were silently replaced by a deterministic
+    placeholder while the model's own complete, in-voice prose sat unused in
+    an ``end_turn`` reply — and ``tool_choice`` turned out to be accepted and
+    ignored, so it could not be forced. Native ``/api/chat`` instead takes a
+    JSON-schema ``format`` and performs **grammar-constrained decoding**: the
+    sampler is masked at each step to tokens that can continue a schema-valid
+    document, so a shape-invalid answer is *unrepresentable* rather than
+    merely discouraged. That is a stronger guarantee than Bedrock Converse's
+    ``toolConfig``, which asks the model to use a tool and trusts it to comply.
+
+    **The tier swap alone is what delivers that** — no per-call argument, and
+    none of the ``with_structured_output`` call sites change (ADR-009's
+    abstraction absorbing a client swap is that abstraction working as
+    designed). ``ChatOllama.with_structured_output`` defaults to
+    ``method="json_schema"``, re-confirmed against the pinned
+    langchain-ollama 1.1.0: the bound runnable carries
+    ``format == Schema.model_json_schema()`` and no ``tools``. Spec 041's
+    Slice 3 pins that method explicitly at the provider boundary, which is
+    **defensive, not corrective** — immunity to a third-party default flip,
+    plus proof the method cannot leak to ``ChatBedrockConverse`` (whose own
+    default is ``function_calling``).
+
+    Note what the grammar does NOT cover: it constrains JSON *shape*, never
+    *content*. ``DayAction``'s mutual-exclusion rule, ``Roster``'s
+    case-insensitive distinctness and ``Pointing``'s "names a living player"
+    all live in Pydantic validators that JSON Schema cannot express, so those
+    three keep a live substitution path on this transport too.
+
+    Model names and the base URL come from config (``GRAPHIA_OLLAMA_*``);
+    temperatures are the shared :data:`_LARGE_TEMPERATURE` /
+    :data:`_SMALL_TEMPERATURE` both Bedrock providers read, so gameplay tone
+    stays provider-independent (identical 0.7 / 0.8 to the literals this class
+    hard-coded before the rename — the swap moves the transport, not the
+    sampling).
+
+    Construction stays fully OFFLINE: ``validate_model_on_init`` defaults to
+    ``False``, so nothing here attempts HTTP. That default is what lets the
+    mocked suite construct these clients with no server running — do not set
+    it True.
     """
 
     def large(self) -> BaseChatModel:
         config = load_config()
-        return ChatAnthropic(
+        return ChatOllama(
             model=config.ollama_large_model,
             base_url=config.ollama_base_url,
-            api_key=_OLLAMA_DUMMY_API_KEY,
-            temperature=0.7,
-            max_tokens=_OLLAMA_MAX_TOKENS,
+            temperature=_LARGE_TEMPERATURE,
+            num_predict=_OLLAMA_NUM_PREDICT,
         )
 
     def large_at_temperature(self, temperature: float) -> BaseChatModel:
-        # ``ChatAnthropic`` (the Ollama Anthropic-compatible path) accepts a
-        # per-instance ``temperature`` via its constructor — the same arg
-        # ``large`` / ``small`` already pass. Fresh instance, hotter sampling.
+        # ``ChatOllama`` accepts a per-instance ``temperature`` — the same arg
+        # ``large`` / ``small`` pass, forwarded into the native request's
+        # ``options`` alongside ``num_predict``. Fresh instance, hotter
+        # sampling; the cached gameplay client keeps its own temperature (see
+        # ``get_persona_model``).
         config = load_config()
-        return ChatAnthropic(
+        return ChatOllama(
             model=config.ollama_large_model,
             base_url=config.ollama_base_url,
-            api_key=_OLLAMA_DUMMY_API_KEY,
             temperature=temperature,
-            max_tokens=_OLLAMA_MAX_TOKENS,
+            num_predict=_OLLAMA_NUM_PREDICT,
         )
 
     def small(self) -> BaseChatModel:
         config = load_config()
-        return ChatAnthropic(
+        return ChatOllama(
             model=config.ollama_small_model,
             base_url=config.ollama_base_url,
-            api_key=_OLLAMA_DUMMY_API_KEY,
-            temperature=0.8,
-            max_tokens=_OLLAMA_MAX_TOKENS,
+            temperature=_SMALL_TEMPERATURE,
+            num_predict=_OLLAMA_NUM_PREDICT,
         )
 
 
@@ -324,6 +397,42 @@ def get_embeddings() -> Embeddings:
     )
 
 
+# ---------------------------------------------------------------------------
+# The gameplay structured-output schemas.
+#
+# **Why they are flat, and why that is a Bedrock fact rather than a structured-
+# output fact.** Every schema below keeps primitive fields at the top level and
+# pushes any cross-field rule into a Pydantic validator. The reason is
+# **Bedrock Converse** specifically: it is finicky about nested and
+# discriminated shapes in a tool-use schema. It is NOT a property of structured
+# output in general — the Ollama path (ADR-013) derives a decoding grammar
+# straight from ``model_json_schema()``, and a grammar handles nesting and
+# unions perfectly well. The individual docstrings below used to read as though
+# the constraint came with structured output itself; that attribution was wrong
+# and is corrected here and in each of them.
+#
+# **The schemas nevertheless stay SHARED across all three providers**, flatness
+# and all, rather than being specialised per provider. Two reasons. Provider
+# difference would leak into game logic: a per-provider schema means the node
+# that reads a ``DayAction`` has to know which transport produced it, which is
+# precisely the coupling ADR-009's provider seam exists to prevent — the seam's
+# whole value is that a client swap changes nothing above it. And the flat
+# shape costs the local path nothing measurable, so the only thing a split
+# would buy is two shapes to keep in step.
+#
+# **What flatness moves, rather than removes.** A rule JSON Schema cannot
+# express lives in a validator, and a grammar cannot enforce a validator — it
+# constrains the JSON *shape*, never the *content*. Verified:
+# ``DayAction.model_json_schema()["required"] == ["kind"]``, so ``{"kind":
+# "vote"}`` with no target is grammar-valid and model-invalid. ``Roster``'s
+# case-insensitive distinctness is validator-only too, and ``Pointing`` can
+# return a well-formed id naming nobody. Those three therefore keep a live
+# substitution path on EVERY provider, reached by content rejection rather than
+# by unreadable output — which bounds what ADR-013's "unrepresentable" language
+# can promise.
+# ---------------------------------------------------------------------------
+
+
 class Roster(BaseModel):
     names: list[str] = Field(min_length=1, max_length=_MAX_AI_NAMES)
 
@@ -343,8 +452,11 @@ class Persona(BaseModel):
     """A generated character persona for one AI player.
 
     Kept deliberately flat (primitive string fields only) — the same
-    Bedrock-Converse constraint that shapes ``Roster``/``Ballot``/``DayAction``;
-    nested or discriminated shapes are rejected. ``public_backstory`` is the
+    **Bedrock Converse** constraint that shapes ``Roster``/``Ballot``/
+    ``DayAction``: nested or discriminated shapes are rejected *by that
+    transport*, not by structured output as such (the Ollama grammar would
+    accept them; see the flatness note above ``Roster``, and the reason the
+    schema stays shared anyway). ``public_backstory`` is the
     cover the character presents to the table; ``secret_backstory`` is a
     Mafioso's true self and is left empty for Citizens.
     """
@@ -362,8 +474,11 @@ class Pointing(BaseModel):
 class Ballot(BaseModel):
     """A single Yes/No ballot cast during a vote-to-execute.
 
-    Kept deliberately flat: Bedrock Converse tool-use schemas behave best with
-    a single top-level primitive field. The boolean ``yes`` is the only signal.
+    Kept deliberately flat: **Bedrock Converse** tool-use schemas behave best
+    with a single top-level primitive field. That is a constraint of that one
+    transport rather than of structured output — see the flatness note above
+    ``Roster`` for why the schema is still shared across providers. The boolean
+    ``yes`` is the only signal.
     """
 
     yes: bool
@@ -372,9 +487,12 @@ class Ballot(BaseModel):
 class Reflection(BaseModel):
     """A single AI player's private end-of-Day-round reflection (spec 028).
 
-    Kept deliberately flat with one primitive field — the same Bedrock-Converse
-    constraint that shapes ``Roster`` / ``Pointing`` / ``Ballot`` / ``DayAction``
-    (no nested or discriminated shapes). ``thought`` is the short private note
+    Kept deliberately flat with one primitive field — the same **Bedrock
+    Converse** constraint that shapes ``Roster`` / ``Pointing`` / ``Ballot`` /
+    ``DayAction`` (no nested or discriminated shapes). That constraint belongs
+    to that transport, not to structured output in general; the schema stays
+    shared across providers regardless — see the flatness note above
+    ``Roster``. ``thought`` is the short private note
     (one or two sentences) the player writes for itself, seen by no other
     player. The reflection node accepts a non-empty ``thought`` and otherwise
     falls back to a deterministic placeholder so a model hiccup never blanks the
@@ -387,9 +505,12 @@ class Reflection(BaseModel):
 class Diary(BaseModel):
     """A single AI player's private end-of-Day diary entry (spec 039).
 
-    Kept deliberately flat with one primitive field — the same Bedrock-Converse
-    constraint that shapes ``Roster`` / ``Pointing`` / ``Ballot`` / ``DayAction``
-    / ``Reflection`` (no nested or discriminated shapes). ``entry`` is the
+    Kept deliberately flat with one primitive field — the same **Bedrock
+    Converse** constraint that shapes ``Roster`` / ``Pointing`` / ``Ballot`` /
+    ``DayAction`` / ``Reflection`` (no nested or discriminated shapes). That
+    constraint belongs to that transport, not to structured output in general;
+    the schema stays shared across providers regardless — see the flatness note
+    above ``Roster``. ``entry`` is the
     once-per-day-cycle private note a surviving AI player writes just before
     Night: a summing-up of the whole day, deliberately LONGER than spec 028's
     per-round ``Reflection`` (which reacts to a single round), and seen by no
@@ -415,9 +536,18 @@ class Diary(BaseModel):
 class DayAction(BaseModel):
     """Flat schema for a Day-phase action.
 
-    Bedrock Converse is finicky about discriminated unions, so we keep
+    **Bedrock Converse** is finicky about discriminated unions, so we keep
     ``kind`` + ``text`` + ``target_id`` all at the top level and enforce
-    the mutual-exclusion invariant via a model validator.
+    the mutual-exclusion invariant via a model validator. The finickiness is
+    that transport's, not structured output's — Ollama's JSON-schema grammar
+    (ADR-013) would take a discriminated union — and the schema stays shared
+    across providers anyway; see the flatness note above ``Roster``.
+
+    This class is also the clearest case of what a grammar cannot do. Verified:
+    ``model_json_schema()["required"] == ["kind"]``, because JSON Schema cannot
+    express the mutual exclusion the validator enforces. So ``{"kind": "vote"}``
+    with no ``target_id`` is grammar-valid and model-invalid, and this schema
+    keeps a live substitution path on every provider.
     """
 
     kind: Literal["speak", "vote"]

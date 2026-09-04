@@ -108,13 +108,17 @@ _DEFAULT_CONTEXT_WINDOW = 150
 # live target is OLLAMA_CONTEXT_LENGTH=32768; qwen3-coder is 256K native and
 # Bedrock Nova far larger): from 32768, reserve the fixed prompt scaffold
 # (system prompt + role grounding + persona + standings + role-guidance, ~1.5K)
-# and the completion budget (``_OLLAMA_MAX_TOKENS`` ~1K), then take a ~0.75
-# headroom fraction (R2 anti-dilution, deliberately well short of filling the
-# context): (32768 - ~2500) * 0.75 ≈ 22700, floored to a round 20000. That
-# comfortably admits the worst-case ~6K 150-message history (so the fuller
-# window is delivered in full on a configured server) while still capping a
-# pathological history far below 32K. Only the discussion history is subject to
-# this cap; the role/objective/instructions are assembled OUTSIDE
+# and the completion budget (``llm._OLLAMA_NUM_PREDICT`` ~1K), then take a
+# ~0.75 headroom fraction (R2 anti-dilution, deliberately well short of
+# filling the context): (32768 - ~2500) * 0.75 ≈ 22700, floored to a round
+# 20000. (The completion constant was named ``_OLLAMA_MAX_TOKENS`` until spec
+# 041 moved the local tiers to the native Ollama client, which has no
+# ``max_tokens`` field — a rename kept precisely so this arithmetic stays
+# reconstructable; the 1024 value did not move, so neither does the result.)
+# That comfortably admits the worst-case ~6K 150-message history (so the
+# fuller window is delivered in full on a configured server) while still
+# capping a pathological history far below 32K. Only the discussion history
+# is subject to this cap; the role/objective/instructions are assembled OUTSIDE
 # ``_render_context`` and are never the dropped tokens. Overridable via
 # ``GRAPHIA_CONTEXT_TOKEN_BUDGET`` only if a future provider needs a different
 # assumed context.
