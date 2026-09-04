@@ -343,6 +343,21 @@ def test_persona_survives_role_assignment(
         persona=ai_persona,
     )
     state["players"]["ai-1"] = ai
+    # ``assign_roles`` deals a config-sized deck onto this map BY INDEX and now
+    # asserts the two agree (spec 042, Task 7.1), so the map has to hold the
+    # whole configured table rather than only the seat this test inspects.
+    # Before that guard existed, a two-seat map against an eight-card deck
+    # dropped six roles without complaint — the assertion below still passed,
+    # which is exactly the silent-wrong-table failure the guard removes.
+    for i in range(2, ai_name_count(load_config()) + 1):
+        pid = f"ai-{i}"
+        state["players"][pid] = PlayerState(
+            id=pid,
+            name=f"Filler-{i}",
+            role="law_abiding",
+            is_human=False,
+            is_alive=True,
+        )
 
     result = assign_roles(state)
     rebuilt = result["players"]["ai-1"]

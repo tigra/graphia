@@ -216,6 +216,29 @@ def _coerce_to_count(roster: Roster | None, count: int) -> Roster:
     many; pads with deterministically-distinct ``Player-{k}`` placeholders —
     skipping any that would collide (case-insensitively) with a name already
     present — when given too few or ``None``.
+
+    **Why distinctness is case-INSENSITIVE, and why that is deliberate rather
+    than overzealous (spec 042, Task 7.1 — reviewed and KEPT).** ``Ivy`` and
+    ``IVY`` collapse to one name here, so a response carrying both is one seat
+    short and gets padded. Two reasons that is the right rule, not a defect:
+
+    - The human's vote command resolves a target through
+      ``graphia.nodes.day._fuzzy_match_alive``, which matches the typed needle
+      as a **case-insensitive substring** of every alive player's name and
+      refuses to act when two players match. ``Ivy`` and ``IVY`` at one table
+      would therefore be *permanently unvotable* — every attempt at either
+      returns "No such player. Try again." That is the same class of collision
+      Task 3.3 removed from the roster fixture, and a harder break than a
+      padded seat.
+    - Names are spoken in dialogue, where case does not exist. Two players the
+      table cannot tell apart by name break the deduction the game is built on.
+
+    On the production parse path this branch is unreachable anyway: the same
+    rule lives in ``Roster``'s validator, so a case-variant response raises
+    :class:`~pydantic.ValidationError` and :func:`_generate_names` issues its
+    corrective retry instead of silently padding. The dedup here is the
+    defensive restatement that keeps the invariant unconditional for a roster
+    that never went through the validator.
     """
     names = list(roster.names) if roster is not None else []
     # De-dup defensively (case-insensitive) while preserving order; the schema
@@ -249,6 +272,50 @@ def _generate_names(count: int) -> Roster:
     still fails or is the wrong count, :func:`_coerce_to_count` trims/pads to a
     guaranteed ``count`` distinct names — the result is *always* exactly
     ``count`` (never an ``IndexError`` in :func:`assign_roles`).
+
+    **Two consecutive validation failures give an ALL-placeholder roster, and
+    that is accepted behaviour (spec 042, Task 7.1 — reviewed and KEPT).** The
+    first ``except`` clears ``roster`` to ``None`` and the second has nothing
+    to put back, so ``_coerce_to_count(None, count)`` returns
+    ``Player-1 … Player-{count}`` and every AI seat is a placeholder. Reachable
+    in production against a flaky local model. It is kept, for three reasons:
+
+    - It is what the never-block guarantee *means* at its limit. This
+      function's whole contract is that a flaky or missing small model must not
+      stop the game (the posture :func:`_fallback_persona` mirrors for
+      personas). Raising here would trade a degraded-but-fully-playable table
+      for no game at all, in precisely the flaky-model scenario the fallback
+      exists to survive.
+    - The degradation is cosmetic, not mechanical. Every game mechanic still
+      works on a ``Player-N`` table: the names are distinct, and each one
+      resolves uniquely through the vote matcher when typed in full. Mafia is
+      played on behaviour, not on names. The player also *sees* it immediately
+      — :func:`introduce_roster` reads the whole roster out to the table — so
+      the failure is visible, just not flagged as one. One precise caveat, at
+      tables of eleven seats or more only: the placeholders stop being
+      prefix-free of one another there (``Player-1`` opens ``Player-10``), and
+      ``graphia.nodes.day._fuzzy_match_alive`` matches on **substring**, so
+      the abbreviation ``Player-1`` becomes ambiguous and is refused. Typing
+      the full name still resolves, and the default eight-seat table never
+      reaches it — but it is the one place this table is worse than a
+      model-named one, so do not read the bullet above as "no consequences at
+      any lineup".
+    - It is the consistent treatment of the failure this function already
+      distinguishes. Only :class:`ValidationError` is caught, so a broken model
+      or transport (throttling, a dead endpoint) propagates and surfaces as an
+      error banner. Two validation failures mean the model *answered* twice
+      with something unparseable — the recover-and-coerce category — so
+      crashing on the second would contradict how the same function treats the
+      first.
+
+    What is genuinely missing is a **proactive** signal, and every mechanism
+    for one lies outside this file: the JSONL trace and the AgentCore
+    CloudWatch trace are both fed by the driver's ``graph.stream`` deltas and
+    record node/keys rather than values, and a node holds no logger — so
+    surfacing "this roster is entirely synthetic" would mean threading a
+    diagnostic sink through ``graph.py`` and the driver. That is its own
+    deliberate change, not a lineup spec's to make; recorded here so the next
+    reader knows the gap was measured rather than missed.
     """
     llm = get_small().with_structured_output(Roster)
     user_prompt = NAME_GEN_USER_TEMPLATE.format(count=count)
@@ -343,6 +410,29 @@ def assign_roles(
         _shuffle_deck(deck)
         roles = [pinned_role, *deck]
     existing = state.get("players", {})
+    # Companion to the mis-seating invariant above (spec 042, Task 7.1). The
+    # deck is dealt onto the player map BY INDEX, so a map that disagrees with
+    # the deck fails *silently* in one direction — a short map drops the surplus
+    # cards, and the table it produces holds the wrong number of Mafiosos — and
+    # obscurely in the other, where ``roles[index]`` raises a bare
+    # ``IndexError`` naming neither number.
+    #
+    # NOT reachable from production: ``generate_roster`` mints exactly
+    # ``ai_name_count(config)`` AI seats onto the single human seat, and
+    # ``_coerce_to_count`` guarantees that length unconditionally, so the two
+    # always agree. This is a robustness guard for hand-built states, and it is
+    # loud because the silent direction is expensive to diagnose: a seven-seat
+    # test map dealt against an eight-card deck dropped one card, and only the
+    # runs where the dropped card happened to be a Mafioso failed at all (spec
+    # 042, Task 3.6 — 38.7% of runs, missed entirely by two separate flip
+    # trials that each read as green). An assertion here would have made that a
+    # deterministic first-run failure naming both sizes.
+    assert len(roles) == len(existing), (
+        f"role deck ({len(roles)} cards) and player map ({len(existing)} "
+        f"seats) disagree at lineup {config.num_citizens} law-abiding + "
+        f"{config.num_mafia} mafia: a short map silently drops the surplus "
+        "roles, a longer one IndexErrors on the deal."
+    )
     human_id = state["human_id"]
     updated: dict[str, PlayerState] = {}
     human_role = "law_abiding"
