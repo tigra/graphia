@@ -47,6 +47,20 @@ _DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
 # making the tool call (40/40 DayAction failures).
 _DEFAULT_OLLAMA_LARGE_MODEL = "qwen3-coder:30b"
 _DEFAULT_OLLAMA_SMALL_MODEL = "qwen2.5:3b"
+# Per-request context length for the local tiers (spec 041 §2.2), sent as the
+# native request's ``options.num_ctx``. **This is the number
+# ``_DEFAULT_CONTEXT_TOKEN_BUDGET`` below is derived from** — see that
+# derivation, which used to describe 32768 as an assumption about the
+# operator's server and can now cite this setting instead.
+#
+# Env-driven rather than a bare constant because it is a **machine-capability**
+# knob: a larger context costs local KV-cache memory, and how much a machine
+# can spare is a property of the machine, not of the game. That puts it on the
+# same footing as ``GRAPHIA_OLLAMA_BASE_URL`` and the per-tier model overrides
+# — the three things a local operator legitimately varies. Lower it on a
+# memory-tight box (the discussion window degrades gracefully; see the budget
+# derivation), raise it only if a model and machine can genuinely serve more.
+_DEFAULT_OLLAMA_NUM_CTX = 32768
 
 # Default lineup — whole-table counts including the human (spec 042, CR 007).
 # Six-and-two, NOT the five-and-two the project shipped with: at five-and-two
@@ -101,14 +115,34 @@ _DEFAULT_CONTEXT_WINDOW = 150
 # window (~150) is the live limiter, and the cap is sized to sit ABOVE the full
 # 150-message history footprint so a correctly-configured server is never
 # needlessly trimmed — it only bites when the rendered history would otherwise
-# exceed what the model can safely read (e.g. an unconfigured Ollama server
-# whose default ``num_ctx`` is a tiny 4096).
+# exceed what the model can safely read.
 #
-# Derivation against the operator-documented effective context (the tech doc's
-# live target is OLLAMA_CONTEXT_LENGTH=32768; qwen3-coder is 256K native and
-# Bedrock Nova far larger): from 32768, reserve the fixed prompt scaffold
-# (system prompt + role grounding + persona + standings + role-guidance, ~1.5K)
-# and the completion budget (``llm._OLLAMA_NUM_PREDICT`` ~1K), then take a
+# **Where the 32768 below comes from — it is no longer an assumption on the
+# local path** (spec 041 §2.2). This derivation used to hope the operator had
+# exported ``OLLAMA_CONTEXT_LENGTH=32768`` before ``ollama serve``, and warned
+# about an unconfigured server falling back to a tiny 4096 default. Since spec
+# 041 moved the local tiers to the native Ollama client, Graphia SENDS the
+# context length on every request (``options.num_ctx``), so the figure is
+# ``_DEFAULT_OLLAMA_NUM_CTX`` / ``GRAPHIA_OLLAMA_NUM_CTX`` above — a setting
+# this file owns, not an environment it hopes for. Change that setting and this
+# derivation's input changes with it; the arithmetic is spelled out below
+# precisely so it can be re-run at a different context.
+#
+# It stays a real safety ceiling rather than dead code, for three reasons the
+# per-request setting does NOT cover: the budget is provider-independent (on
+# Bedrock the 32768 remains a deliberately conservative assumption — Nova's
+# real context is far larger, so the cap is pure slack there); ``num_ctx`` can
+# only ASK, so a model whose declared context is smaller, or a server without
+# the KV-cache memory to honour it, still gets less than requested (which is
+# what ``preflight.warn_if_ollama_context_too_small`` looks for); and an
+# operator who lowers ``GRAPHIA_OLLAMA_NUM_CTX`` on a memory-tight box wants
+# the history trimmed rather than the prompt overflowed.
+#
+# Derivation from that context length (qwen3-coder is 256K native and Bedrock
+# Nova far larger, so 32768 is the binding figure): from 32768, reserve the
+# fixed prompt scaffold (system prompt + role grounding + persona + standings
+# + role-guidance, ~1.5K) and the completion budget
+# (``llm._OLLAMA_NUM_PREDICT`` ~1K), then take a
 # ~0.75 headroom fraction (R2 anti-dilution, deliberately well short of
 # filling the context): (32768 - ~2500) * 0.75 ≈ 22700, floored to a round
 # 20000. (The completion constant was named ``_OLLAMA_MAX_TOKENS`` until spec
@@ -116,7 +150,7 @@ _DEFAULT_CONTEXT_WINDOW = 150
 # ``max_tokens`` field — a rename kept precisely so this arithmetic stays
 # reconstructable; the 1024 value did not move, so neither does the result.)
 # That comfortably admits the worst-case ~6K 150-message history (so the
-# fuller window is delivered in full on a configured server) while still
+# fuller window is delivered in full at the requested context) while still
 # capping a pathological history far below 32K. Only the discussion history
 # is subject to this cap; the role/objective/instructions are assembled OUTSIDE
 # ``_render_context`` and are never the dropped tokens. Overridable via
@@ -176,6 +210,14 @@ class GraphiaConfig:
     ollama_base_url: str = _DEFAULT_OLLAMA_BASE_URL
     ollama_large_model: str = _DEFAULT_OLLAMA_LARGE_MODEL
     ollama_small_model: str = _DEFAULT_OLLAMA_SMALL_MODEL
+    # Per-request context length for the local tiers (spec 041 §2.2), threaded
+    # into all three ``ChatOllama`` constructions as ``num_ctx``. Inert for both
+    # Bedrock providers (Converse has no such request field), exactly as the
+    # tier models and base URL above are. ``GRAPHIA_OLLAMA_NUM_CTX``, default
+    # 32768 — the figure ``_DEFAULT_CONTEXT_TOKEN_BUDGET`` is derived from, and
+    # now enforced per request rather than assumed of the operator's server.
+    # Defaulted so tests constructing the config directly stay valid.
+    ollama_num_ctx: int = _DEFAULT_OLLAMA_NUM_CTX
     # Configurable lineup (spec 014). Whole-table counts including the human;
     # validated in ``load_config`` before the TUI starts. Defaulted so tests
     # constructing the config directly stay valid.
@@ -475,6 +517,19 @@ def load_config() -> GraphiaConfig:
     ollama_small_model = os.environ.get(
         "GRAPHIA_OLLAMA_SMALL_MODEL", _DEFAULT_OLLAMA_SMALL_MODEL
     )
+    # Per-request context length for the local tiers (spec 041 §2.2). Parsed
+    # here beside its ``GRAPHIA_OLLAMA_*`` siblings rather than down with the
+    # other counts, so the local-provider settings read as one cluster — the
+    # placement ``persona_regen_attempts`` already establishes for a
+    # parse-and-guard that belongs next to its own family. A value ``< 1`` is
+    # nonsensical (a zero-token context can hold no prompt at all), so it is
+    # rejected like ``GRAPHIA_MAX_DAYS`` / ``GRAPHIA_CONTEXT_WINDOW``; a
+    # non-numeric value is refused by ``_parse_count`` itself.
+    ollama_num_ctx = _parse_count("GRAPHIA_OLLAMA_NUM_CTX", _DEFAULT_OLLAMA_NUM_CTX)
+    if ollama_num_ctx < 1:
+        raise SystemExit(
+            f"GRAPHIA_OLLAMA_NUM_CTX must be at least 1 (got {ollama_num_ctx})."
+        )
 
     if remote_mode and llm_provider == "ollama":
         raise SystemExit(
@@ -594,6 +649,7 @@ def load_config() -> GraphiaConfig:
         ollama_base_url=ollama_base_url,
         ollama_large_model=ollama_large_model,
         ollama_small_model=ollama_small_model,
+        ollama_num_ctx=ollama_num_ctx,
         num_citizens=num_citizens,
         num_mafia=num_mafia,
         max_days=max_days,

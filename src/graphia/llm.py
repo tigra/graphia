@@ -264,12 +264,42 @@ class OllamaProvider(LLMProvider):
     all live in Pydantic validators that JSON Schema cannot express, so those
     three keep a live substitution path on this transport too.
 
-    Model names and the base URL come from config (``GRAPHIA_OLLAMA_*``);
-    temperatures are the shared :data:`_LARGE_TEMPERATURE` /
-    :data:`_SMALL_TEMPERATURE` both Bedrock providers read, so gameplay tone
-    stays provider-independent (identical 0.7 / 0.8 to the literals this class
-    hard-coded before the rename — the swap moves the transport, not the
-    sampling).
+    Model names, the base URL and the per-request context length come from
+    config (``GRAPHIA_OLLAMA_*``); temperatures are the shared
+    :data:`_LARGE_TEMPERATURE` / :data:`_SMALL_TEMPERATURE` both Bedrock
+    providers read, so gameplay tone stays provider-independent (identical
+    0.7 / 0.8 to the literals this class hard-coded before the rename — the
+    swap moves the transport, not the sampling).
+
+    **``num_ctx`` turns an assumption into an enforced invariant** (spec 041
+    §2.2). ``config._DEFAULT_CONTEXT_TOKEN_BUDGET`` is derived from a
+    32768-token context, and until this change that figure was a *hope about
+    the operator's environment*: the only lever on the Anthropic-compatible
+    ``/v1/messages`` route was a server-side ``OLLAMA_CONTEXT_LENGTH=32768``
+    export before ``ollama serve``, which the app could document but never set
+    — so an operator who forgot it got Ollama's tiny 4096 default and the
+    fuller multi-day window was silently undelivered. Native ``/api/chat``
+    takes ``options.num_ctx`` per request, so Graphia now states the context it
+    needs on every call instead of inheriting whatever the server was started
+    with.
+
+    **Why it matters MORE under a grammar than it did before.** Overflow used
+    to be a *degradation*: the server dropped the oldest tokens and the model
+    answered from a thinner history. Grammar-constrained decoding gives that
+    failure a harder edge — the request carries a JSON-schema ``format`` that
+    must be satisfied, so a prompt the server cannot fit is a failed call
+    rather than a vaguer answer. Setting the context is what keeps the
+    reliability this spec buys from resting on an env var nobody checked.
+
+    Config-driven and not a bare constant because context is a
+    **machine-capability** knob: it costs local KV-cache memory in proportion
+    to its size, and how much a box can spare is a fact about the box. That is
+    the same footing as ``GRAPHIA_OLLAMA_BASE_URL`` and the per-tier model
+    overrides. Note the limit of what a request can do: ``num_ctx`` **asks** —
+    a model whose declared context is smaller, or a server without the memory
+    to honour it, still yields less, which is why
+    ``preflight.warn_if_ollama_context_too_small`` and the history token budget
+    both stay in place (see that derivation for the full reasoning).
 
     Construction stays fully OFFLINE: ``validate_model_on_init`` defaults to
     ``False``, so nothing here attempts HTTP. That default is what lets the
@@ -284,20 +314,24 @@ class OllamaProvider(LLMProvider):
             base_url=config.ollama_base_url,
             temperature=_LARGE_TEMPERATURE,
             num_predict=_OLLAMA_NUM_PREDICT,
+            num_ctx=config.ollama_num_ctx,
         )
 
     def large_at_temperature(self, temperature: float) -> BaseChatModel:
         # ``ChatOllama`` accepts a per-instance ``temperature`` — the same arg
         # ``large`` / ``small`` pass, forwarded into the native request's
-        # ``options`` alongside ``num_predict``. Fresh instance, hotter
-        # sampling; the cached gameplay client keeps its own temperature (see
-        # ``get_persona_model``).
+        # ``options`` alongside ``num_predict`` and ``num_ctx``. Fresh instance,
+        # hotter sampling; the cached gameplay client keeps its own temperature
+        # (see ``get_persona_model``). The context length is NOT varied here:
+        # persona generation is the same model on the same machine, so it needs
+        # the same context — only the sampling moves.
         config = load_config()
         return ChatOllama(
             model=config.ollama_large_model,
             base_url=config.ollama_base_url,
             temperature=temperature,
             num_predict=_OLLAMA_NUM_PREDICT,
+            num_ctx=config.ollama_num_ctx,
         )
 
     def small(self) -> BaseChatModel:
@@ -307,6 +341,11 @@ class OllamaProvider(LLMProvider):
             base_url=config.ollama_base_url,
             temperature=_SMALL_TEMPERATURE,
             num_predict=_OLLAMA_NUM_PREDICT,
+            # One context setting for BOTH tiers, deliberately: it is a
+            # machine-capability figure, and the small tier shares the machine.
+            # A per-tier split would be a second knob buying nothing — the
+            # mechanical tier's prompts are far shorter than the budget anyway.
+            num_ctx=config.ollama_num_ctx,
         )
 
 
