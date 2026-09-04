@@ -1,20 +1,24 @@
-"""Provider-selection config tests for spec 010 (Local Ollama Provider), Slice 2.
+"""Provider-selection config tests for the LLM provider surface.
 
-Covers the new ``GraphiaConfig`` surface introduced for LLM provider
-selection:
+Covers the ``GraphiaConfig`` fields that decide which model tiers a game runs
+on, and how they are reached:
 
 - ``llm_provider`` (env ``GRAPHIA_LLM_PROVIDER``, default ``"bedrock"``,
   case/whitespace-normalized, empty string falls back to the default,
-  anything outside {bedrock, ollama} is a ``SystemExit``);
-- ``ollama_base_url`` / ``ollama_large_model`` / ``ollama_small_model``
-  (envs ``GRAPHIA_OLLAMA_BASE_URL`` / ``GRAPHIA_OLLAMA_LARGE_MODEL`` /
-  ``GRAPHIA_OLLAMA_SMALL_MODEL`` with documented defaults);
+  anything outside {bedrock, bedrock-claude, ollama} is a ``SystemExit``);
+- ``large_model`` / ``small_model`` (envs ``GRAPHIA_LARGE_MODEL`` /
+  ``GRAPHIA_SMALL_MODEL``), whose documented defaults track the selected
+  Bedrock profile (spec 035);
+- ``ollama_base_url`` / ``ollama_large_model`` / ``ollama_small_model`` /
+  ``ollama_num_ctx`` (envs ``GRAPHIA_OLLAMA_BASE_URL`` /
+  ``GRAPHIA_OLLAMA_LARGE_MODEL`` / ``GRAPHIA_OLLAMA_SMALL_MODEL`` /
+  ``GRAPHIA_OLLAMA_NUM_CTX`` with documented defaults);
 - the remote-mode contradiction guard (``GRAPHIA_REMOTE=1`` +
   ``GRAPHIA_LLM_PROVIDER=ollama`` must fail loudly *before* the
   missing-runtime-URL guard);
-- ``graphia.llm._resolve_provider`` mapping: ``bedrock`` selects
-  ``BedrockProvider``; ``ollama`` currently raises the temporary
-  not-implemented ``SystemExit`` (the real provider lands in Slice 3);
+- ``graphia.llm._resolve_provider`` mapping: ``bedrock`` →
+  ``BedrockProvider``, ``bedrock-claude`` → ``ClaudeBedrockProvider``,
+  ``ollama`` → ``OllamaProvider``;
 - the offline gate (spec 010 follow-up): provider ``ollama`` forces the
   cloud-store config fields (``memory_id``, ``career_memory_id``,
   ``gateway_id``, ``gateway_url``, ``stats_strategy_id``) to ``None`` so a
@@ -22,8 +26,10 @@ selection:
   passes them through unchanged.
 
 All tests are config-only and offline: no LLM client is ever constructed
-(``BedrockProvider.large()/small()`` are never called), so the autouse
-``safe_llm`` fixture is never tripped and no network is reached.
+(``BedrockProvider.large()/small()`` and the ``OllamaProvider`` equivalents are
+never called), so the autouse ``safe_llm`` fixture is never tripped and no
+network is reached. Client construction — what these values actually flow
+*into* — is asserted in ``test_llm_provider_construction.py``.
 
 Following the ``test_config_auth.py`` convention, each test starts from the
 developer's real environment and explicitly sets/deletes only the env vars
@@ -36,7 +42,7 @@ from __future__ import annotations
 
 import pytest
 
-from graphia.config import load_config
+from graphia.config import _DEFAULT_OLLAMA_NUM_CTX, load_config
 
 _PROVIDER_ENV_VARS = (
     "GRAPHIA_LLM_PROVIDER",
@@ -45,6 +51,7 @@ _PROVIDER_ENV_VARS = (
     "GRAPHIA_OLLAMA_BASE_URL",
     "GRAPHIA_OLLAMA_LARGE_MODEL",
     "GRAPHIA_OLLAMA_SMALL_MODEL",
+    "GRAPHIA_OLLAMA_NUM_CTX",
     "GRAPHIA_REMOTE",
     "GRAPHIA_RUNTIME_URL",
 )
@@ -52,6 +59,8 @@ _PROVIDER_ENV_VARS = (
 _DEFAULT_BASE_URL = "http://localhost:11434"
 _DEFAULT_LARGE_MODEL = "qwen3-coder:30b"
 _DEFAULT_SMALL_MODEL = "qwen2.5:3b"
+# Spec 041 §2.2 — documented per-request context length for the local tiers.
+_DEFAULT_NUM_CTX = 32768
 
 # Spec 035 — documented per-tier Bedrock model-id defaults.
 _DEFAULT_NOVA_LARGE = "amazon.nova-pro-v1:0"
@@ -85,6 +94,7 @@ def test_defaults_select_bedrock_and_documented_ollama_fields() -> None:
     assert cfg.ollama_base_url == _DEFAULT_BASE_URL
     assert cfg.ollama_large_model == _DEFAULT_LARGE_MODEL
     assert cfg.ollama_small_model == _DEFAULT_SMALL_MODEL
+    assert cfg.ollama_num_ctx == _DEFAULT_NUM_CTX
     # Spec 035 — Bedrock per-tier defaults under the default provider are Nova.
     assert cfg.large_model == _DEFAULT_NOVA_LARGE
     assert cfg.small_model == _DEFAULT_NOVA_SMALL
@@ -236,11 +246,11 @@ def test_resolve_provider_maps_bedrock_to_bedrock_provider(
 def test_resolve_provider_ollama_resolves_to_ollama_provider(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """GRAPHIA_LLM_PROVIDER=ollama resolves to OllamaProvider (Slice 3).
+    """GRAPHIA_LLM_PROVIDER=ollama resolves to OllamaProvider.
 
     Only the provider object is instantiated — ``large()``/``small()`` are
-    never called, so no ``ChatAnthropic`` client is ever created and the
-    test stays offline.
+    never called, so no ``ChatOllama`` client is ever created and the test
+    stays offline.
     """
     import graphia.llm as llm
 
@@ -410,3 +420,130 @@ def test_bedrock_claude_keeps_cloud_store_ids(
     assert cfg.gateway_id == "gw-deadbeef"
     assert cfg.gateway_url == "https://example.invalid/mcp"
     assert cfg.stats_strategy_id == "strat-deadbeef"
+
+
+# ---------------------------------------------------------------------------
+# 9. Spec 041 — the local per-request context length (``GRAPHIA_OLLAMA_NUM_CTX``)
+# ---------------------------------------------------------------------------
+
+
+def test_ollama_num_ctx_defaults_to_the_documented_context_length() -> None:
+    """Unset → the documented 32768, and that default is the module constant.
+
+    Asserted against both the literal and ``_DEFAULT_OLLAMA_NUM_CTX`` on
+    purpose: the literal is what the ``_DEFAULT_CONTEXT_TOKEN_BUDGET``
+    derivation was computed from, and the constant is what
+    ``OllamaProvider`` actually sends — a drift between the two is exactly
+    the thing that would leave the arithmetic quietly wrong.
+    """
+    cfg = load_config()
+
+    assert cfg.ollama_num_ctx == _DEFAULT_NUM_CTX
+    assert cfg.ollama_num_ctx == _DEFAULT_OLLAMA_NUM_CTX
+
+
+def test_ollama_num_ctx_env_override_parses_through(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A memory-tight box can lower the context; the value parses to an int.
+
+    ``8192`` is nobody's default, so this distinguishes a threaded setting
+    from a hard-coded one, and ``is not`` a string checks the ``_parse_count``
+    conversion rather than just the plumbing.
+    """
+    monkeypatch.setenv("GRAPHIA_OLLAMA_NUM_CTX", "8192")
+
+    num_ctx = load_config().ollama_num_ctx
+
+    assert num_ctx == 8192
+    assert isinstance(num_ctx, int)
+
+
+def test_ollama_num_ctx_tolerates_surrounding_whitespace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``_parse_count`` strips, so a padded ``.env`` value still parses."""
+    monkeypatch.setenv("GRAPHIA_OLLAMA_NUM_CTX", "  16384\n")
+
+    assert load_config().ollama_num_ctx == 16384
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        pytest.param("", id="empty"),
+        pytest.param("   ", id="blank"),
+    ],
+)
+def test_ollama_num_ctx_blank_falls_back_to_the_default(
+    monkeypatch: pytest.MonkeyPatch, raw: str
+) -> None:
+    """An empty or blank value means "unset", not zero — the sibling-count idiom."""
+    monkeypatch.setenv("GRAPHIA_OLLAMA_NUM_CTX", raw)
+
+    assert load_config().ollama_num_ctx == _DEFAULT_NUM_CTX
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        pytest.param("0", id="zero"),
+        pytest.param("-1", id="negative"),
+        pytest.param("-32768", id="negative_large"),
+    ],
+)
+def test_ollama_num_ctx_below_one_is_rejected(
+    monkeypatch: pytest.MonkeyPatch, raw: str
+) -> None:
+    """A non-positive context can hold no prompt at all, so it fails fast.
+
+    Same posture as ``GRAPHIA_MAX_DAYS`` / ``GRAPHIA_CONTEXT_WINDOW``: the
+    message names the variable and echoes the offending value, so the operator
+    can fix their ``.env`` without reading the source.
+    """
+    monkeypatch.setenv("GRAPHIA_OLLAMA_NUM_CTX", raw)
+
+    with pytest.raises(SystemExit) as exc_info:
+        load_config()
+
+    message = str(exc_info.value)
+    assert "GRAPHIA_OLLAMA_NUM_CTX" in message
+    assert raw in message
+
+
+def test_ollama_num_ctx_non_numeric_is_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A non-numeric value is refused by ``_parse_count`` with the name shown."""
+    monkeypatch.setenv("GRAPHIA_OLLAMA_NUM_CTX", "lots")
+
+    with pytest.raises(SystemExit) as exc_info:
+        load_config()
+
+    message = str(exc_info.value)
+    assert "GRAPHIA_OLLAMA_NUM_CTX" in message
+    assert "lots" in message
+
+
+def test_the_context_token_budget_derivation_inputs_are_intact() -> None:
+    """The two numbers ``_DEFAULT_CONTEXT_TOKEN_BUDGET`` is derived from.
+
+    ``config._DEFAULT_CONTEXT_TOKEN_BUDGET``'s comment spells out
+    ``(32768 − ~1.5K scaffold − ~1K completion) × 0.75 ≈ 22700 → 20000``,
+    where the 32768 is ``_DEFAULT_OLLAMA_NUM_CTX`` and the ~1K completion is
+    ``llm._OLLAMA_NUM_PREDICT`` — the constant spec 041 **renamed rather than
+    deleted** precisely so this arithmetic stays reconstructable (``ChatOllama``
+    has no ``max_tokens`` field, so its old name described nothing).
+
+    Pinned here because a derivation whose inputs can move silently is not a
+    derivation. Either number changing should force a deliberate edit of this
+    test and a re-run of that arithmetic — not a stale comment. Deliberately
+    the constants themselves, not a recomputation of the budget: re-deriving
+    ``20000`` in a test would only restate the source's own formula.
+    """
+    import graphia.llm as llm
+    from graphia.config import _DEFAULT_CONTEXT_TOKEN_BUDGET
+
+    assert _DEFAULT_OLLAMA_NUM_CTX == 32768
+    assert llm._OLLAMA_NUM_PREDICT == 1024
+    assert _DEFAULT_CONTEXT_TOKEN_BUDGET == 20000

@@ -1,14 +1,15 @@
-"""Offline client-construction tests for spec 010 (Local Ollama Provider), Slice 3.
+"""Offline client-construction tests for the LLM provider boundary.
 
 Where ``test_llm_provider_config.py`` stops at provider *resolution* (no client
 is ever built there), this module goes one step further and exercises the
-``get_large()`` / ``get_small()`` factories end-to-end through both concrete
-providers — still strictly offline:
+``get_large()`` / ``get_small()`` / ``get_persona_model()`` factories
+end-to-end through all three concrete providers — still strictly offline:
 
-- constructing a ``ChatAnthropic`` or ``ChatBedrockConverse`` instance never
-  performs a network call (verified: ``ChatBedrockConverse`` builds its boto3
-  client lazily enough that no credentials are required at construction time,
-  and ``ChatAnthropic`` only validates fields);
+- constructing a ``ChatOllama`` or ``ChatBedrockConverse`` instance never
+  performs a network call (see the ``validate_model_on_init`` pin below for
+  why that holds on the local path, and
+  ``test_bedrock_factory_still_builds_chat_bedrock_converse`` for why it holds
+  on the cloud one);
 - no model is ever invoked, so the autouse ``safe_llm`` fixture is never
   tripped.
 
@@ -17,10 +18,25 @@ Every test resets the documented module-level seam (``_active_provider`` /
 singleton caching are observed from a clean slate, and the developer's real
 environment is neutralized the same way as in ``test_llm_provider_config.py``.
 
-``ChatAnthropic`` assertion targets were confirmed by introspection of
-langchain-anthropic 1.4.x: the constructor kwargs ``base_url`` / ``api_key``
-are *aliases* for the fields ``anthropic_api_url`` / ``anthropic_api_key``;
-``model``, ``temperature`` and ``max_tokens`` are the field names themselves.
+**What this module asserts, and what it deliberately does not.** The thing that
+has actually regressed here before is *config failing to reach the client*, so
+every assertion below is about a value flowing from ``GRAPHIA_*`` env → config →
+a constructed client field: ``model``, ``base_url``, ``temperature``,
+``num_ctx``, ``num_predict``. It does **not** assert ``keep_alive``,
+``client_kwargs``, ``reasoning`` or the class names of a bound runnable's
+steps — those mirror the implementation and would make this a change-detector
+rather than a contract. (Structured-output *method* pinning is a separate
+concern with its own module.)
+
+Assertion targets were confirmed by introspection of **langchain-ollama
+1.1.0** (the version Task 2.1 of spec 041 resolved): ``model``, ``base_url``,
+``temperature``, ``num_predict``, ``num_ctx`` and ``validate_model_on_init``
+are all first-class ``ChatOllama`` fields readable straight off the instance.
+Two absences matter as much as those presences: ``ChatOllama`` has **no**
+``max_tokens`` field at all (``num_predict`` is the native equivalent), and it
+has no api-key concept — the native ``/api/chat`` surface takes neither, which
+is why ADR-013's swap away from the Anthropic-compatible ``/v1/messages`` route
+deleted the dummy-key assertions this module used to carry along with them.
 """
 
 from __future__ import annotations
@@ -28,9 +44,9 @@ from __future__ import annotations
 from typing import Callable
 
 import pytest
-from langchain_anthropic import ChatAnthropic
 from langchain_aws import ChatBedrockConverse
 from langchain_core.language_models import BaseChatModel
+from langchain_ollama import ChatOllama
 
 import graphia.llm as llm
 
@@ -41,6 +57,7 @@ _PROVIDER_ENV_VARS = (
     "GRAPHIA_OLLAMA_BASE_URL",
     "GRAPHIA_OLLAMA_LARGE_MODEL",
     "GRAPHIA_OLLAMA_SMALL_MODEL",
+    "GRAPHIA_OLLAMA_NUM_CTX",
     "GRAPHIA_REMOTE",
     "GRAPHIA_RUNTIME_URL",
 )
@@ -48,7 +65,10 @@ _PROVIDER_ENV_VARS = (
 # Spec 035 — documented Claude Haiku 4.5 Bedrock default id (verify-at-runtime).
 _DEFAULT_CLAUDE_MODEL = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 
-# Credential-bearing variables that must be irrelevant on the ollama path.
+# AWS-credential-bearing variables that must be irrelevant on the ollama path —
+# and, per the Bedrock tests below, at Bedrock *construction* time too. There is
+# no vendor-key variable to strip any more: the native Ollama surface has no
+# api key (ADR-013), so "no credentials" now means exactly "no AWS identity".
 _CREDENTIAL_ENV_VARS = (
     "AWS_PROFILE",
     "AWS_DEFAULT_PROFILE",
@@ -56,12 +76,23 @@ _CREDENTIAL_ENV_VARS = (
     "AWS_ACCESS_KEY_ID",
     "AWS_SECRET_ACCESS_KEY",
     "AWS_SESSION_TOKEN",
-    "ANTHROPIC_API_KEY",
 )
 
 _DEFAULT_BASE_URL = "http://localhost:11434"
 _DEFAULT_LARGE_MODEL = "qwen3-coder:30b"
 _DEFAULT_SMALL_MODEL = "qwen2.5:3b"
+# Documented default per-request context length (spec 041 §2.2), sent as the
+# native request's ``options.num_ctx``.
+_DEFAULT_NUM_CTX = 32768
+# Documented per-request output cap, sent as ``options.num_predict``. Pinned as
+# a literal rather than imported from ``llm``: the value is cited by
+# ``config._DEFAULT_CONTEXT_TOKEN_BUDGET``'s arithmetic, so moving it should
+# cost a deliberate test edit (and a re-run of that derivation), not pass
+# silently. See ``test_llm_provider_config.py`` for the citation guard itself.
+_NUM_PREDICT = 1024
+# A context length that is nobody's default, so a client carrying it proves the
+# value was *threaded from config* rather than hard-coded at construction.
+_CUSTOM_NUM_CTX = 8192
 
 
 @pytest.fixture(autouse=True)
@@ -97,7 +128,7 @@ def _select_ollama(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 1. Ollama path: factories build ChatAnthropic carrying config values
+# 1. Ollama path: factories build ChatOllama carrying config values
 # ---------------------------------------------------------------------------
 
 
@@ -120,26 +151,37 @@ def _select_ollama(monkeypatch: pytest.MonkeyPatch) -> None:
         ),
     ],
 )
-def test_ollama_factory_builds_chat_anthropic_from_custom_env(
+def test_ollama_factory_builds_chat_ollama_from_custom_env(
     monkeypatch: pytest.MonkeyPatch,
     factory: Callable[[], BaseChatModel],
     model_env: str,
     expected_model: str,
     expected_temperature: float,
 ) -> None:
-    """Custom env values flow onto the constructed ``ChatAnthropic`` client."""
+    """Custom env values flow onto the constructed ``ChatOllama`` client.
+
+    The four-way check that config *reaches the transport*: the tier model and
+    the server root come from ``GRAPHIA_OLLAMA_*``, the context length from
+    ``GRAPHIA_OLLAMA_NUM_CTX`` (set to a value that is nobody's default, so a
+    hard-coded 32768 would fail here), and the output cap from the renamed
+    ``llm._OLLAMA_NUM_PREDICT``. The temperatures are the shared
+    ``_LARGE_TEMPERATURE`` / ``_SMALL_TEMPERATURE`` all three providers now
+    read — same 0.7 / 0.8 the local tiers hard-coded before spec 041, so this
+    is also the parity check on that rename.
+    """
     _select_ollama(monkeypatch)
     monkeypatch.setenv("GRAPHIA_OLLAMA_BASE_URL", "http://gpu-box:11434")
     monkeypatch.setenv(model_env, expected_model)
+    monkeypatch.setenv("GRAPHIA_OLLAMA_NUM_CTX", str(_CUSTOM_NUM_CTX))
 
     client = factory()
 
-    assert isinstance(client, ChatAnthropic)
-    assert client.anthropic_api_url == "http://gpu-box:11434"
+    assert isinstance(client, ChatOllama)
     assert client.model == expected_model
+    assert client.base_url == "http://gpu-box:11434"
     assert client.temperature == expected_temperature
-    assert client.max_tokens == 1024
-    assert client.anthropic_api_key.get_secret_value() == "ollama"
+    assert client.num_ctx == _CUSTOM_NUM_CTX
+    assert client.num_predict == _NUM_PREDICT
 
 
 @pytest.mark.parametrize(
@@ -154,14 +196,92 @@ def test_ollama_factory_uses_documented_defaults(
     factory: Callable[[], BaseChatModel],
     expected_model: str,
 ) -> None:
-    """With only the provider selected, clients carry the documented defaults."""
+    """With only the provider selected, clients carry the documented defaults.
+
+    ``num_ctx`` is included because the default is the figure
+    ``config._DEFAULT_CONTEXT_TOKEN_BUDGET``'s arithmetic is derived from: a
+    request that silently omitted it would inherit Ollama's own small default
+    and quietly undeliver the fuller multi-day window.
+    """
     _select_ollama(monkeypatch)
 
     client = factory()
 
-    assert isinstance(client, ChatAnthropic)
-    assert client.anthropic_api_url == _DEFAULT_BASE_URL
+    assert isinstance(client, ChatOllama)
     assert client.model == expected_model
+    assert client.base_url == _DEFAULT_BASE_URL
+    assert client.num_ctx == _DEFAULT_NUM_CTX
+    assert client.num_predict == _NUM_PREDICT
+
+
+def test_ollama_persona_model_varies_only_the_temperature(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``get_persona_model`` moves the sampling and nothing else (spec 034).
+
+    The third ``ChatOllama`` construction site — reached through
+    ``LLMProvider.large_at_temperature`` — and the one most easily forgotten
+    when a request option is added: it must carry the same large-tier model,
+    server root, context length and output cap as ``get_large()``, differing
+    only in ``temperature``. It is deliberately uncached, so it must also not
+    be (or replace) the gameplay singleton.
+    """
+    _select_ollama(monkeypatch)
+    monkeypatch.setenv("GRAPHIA_OLLAMA_BASE_URL", "http://gpu-box:11434")
+    monkeypatch.setenv("GRAPHIA_OLLAMA_NUM_CTX", str(_CUSTOM_NUM_CTX))
+
+    gameplay = llm.get_large()
+    persona = llm.get_persona_model(1.0)
+
+    assert isinstance(persona, ChatOllama)
+    assert persona is not gameplay
+    assert persona.temperature == 1.0
+    assert gameplay.temperature == 0.7
+    assert persona.model == _DEFAULT_LARGE_MODEL
+    assert persona.base_url == "http://gpu-box:11434"
+    assert persona.num_ctx == _CUSTOM_NUM_CTX
+    assert persona.num_predict == _NUM_PREDICT
+    # The uncached persona client did not displace the gameplay singleton.
+    assert llm.get_large() is gameplay
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        pytest.param(llm.get_large, id="large"),
+        pytest.param(llm.get_small, id="small"),
+        pytest.param(lambda: llm.get_persona_model(1.0), id="persona"),
+    ],
+)
+def test_chat_ollama_construction_performs_no_model_validation(
+    monkeypatch: pytest.MonkeyPatch,
+    build: Callable[[], BaseChatModel],
+) -> None:
+    """Every locally-constructed client keeps model validation off.
+
+    **This test is load-bearing, not decorative.** This module's docstring
+    promises that construction touches no network, and on the native Ollama
+    client that promise rests entirely on one library default:
+    ``validate_model_on_init`` is ``False``, so ``__init__`` does not call
+    ``/api/show`` to check the model exists. Flip it True — in
+    ``OllamaProvider``, or upstream in a langchain-ollama release — and the
+    whole mocked suite starts issuing HTTP to ``localhost:11434`` at
+    construction, which on a machine with no server is a connection error and
+    on one with a server is a real request from a test. Pinned here so that
+    failure arrives as a red assertion in three named tests rather than as a
+    suite that hangs or flakes by environment.
+
+    (Confirmed against langchain-ollama 1.1.0:
+    ``ChatOllama.model_fields["validate_model_on_init"].default is False``.
+    Graphia does not pass the flag, so it inherits that default — which is why
+    the assertion is on the constructed client, not on the field default.)
+    """
+    _select_ollama(monkeypatch)
+
+    client = build()
+
+    assert isinstance(client, ChatOllama)
+    assert client.validate_model_on_init is False
 
 
 # ---------------------------------------------------------------------------
@@ -183,6 +303,13 @@ def test_bedrock_factory_still_builds_chat_bedrock_converse(
     expected_temperature: float,
 ) -> None:
     """Default (bedrock) provider keeps producing ``ChatBedrockConverse``.
+
+    The cheapest possible cloud-parity check at this layer: spec 041 swapped
+    the *local* client, and the two Bedrock providers must be untouched — same
+    class, same per-tier Nova id, same region, and the same 0.7 / 0.8 now that
+    the temperature constants are shared with the local tiers rather than
+    Bedrock-only. (The fuller parity proof — that no structured-output method
+    leaks onto this path — belongs to its own module.)
 
     Construction-only: ``ChatBedrockConverse.__init__`` builds a boto3 client
     object but performs no network call and requires no credentials, so this
@@ -286,11 +413,11 @@ def test_switching_among_three_providers_resolves_the_right_instances(
     assert isinstance(claude, ChatBedrockConverse)
     assert claude.model_id == _DEFAULT_CLAUDE_MODEL
 
-    # ollama → ChatAnthropic.
+    # ollama → ChatOllama.
     monkeypatch.setenv("GRAPHIA_LLM_PROVIDER", "ollama")
     _reset_seam(monkeypatch)
     ollama = llm.get_large()
-    assert isinstance(ollama, ChatAnthropic)
+    assert isinstance(ollama, ChatOllama)
 
     # Distinct instances per provider — no stale singleton leaked across flips.
     assert nova is not claude is not ollama
@@ -326,8 +453,8 @@ def test_seam_reset_after_env_change_builds_fresh_client(
     monkeypatch.setenv("GRAPHIA_OLLAMA_BASE_URL", "http://first-box:11434")
 
     stale = llm.get_large()
-    assert isinstance(stale, ChatAnthropic)
-    assert stale.anthropic_api_url == "http://first-box:11434"
+    assert isinstance(stale, ChatOllama)
+    assert stale.base_url == "http://first-box:11434"
 
     # Env changes alone do not invalidate the cache...
     monkeypatch.setenv("GRAPHIA_LLM_PROVIDER", "bedrock")
@@ -350,7 +477,14 @@ def test_seam_reset_after_env_change_builds_fresh_client(
 def test_ollama_path_constructs_without_any_credentials(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """No AWS identity or Anthropic key is needed to build the ollama clients."""
+    """No AWS identity is needed to build the ollama clients — nor any key.
+
+    Both tiers construct with every AWS credential variable stripped, and land
+    pointed at the local server root. There is nothing left to assert about a
+    vendor key here, and that absence *is* the finding: the native
+    ``/api/chat`` surface has no api-key concept, so the dummy-key plumbing
+    this test used to pin (and assert the value of) no longer exists.
+    """
     for var in _CREDENTIAL_ENV_VARS:
         monkeypatch.delenv(var, raising=False)
     _select_ollama(monkeypatch)
@@ -358,7 +492,7 @@ def test_ollama_path_constructs_without_any_credentials(
     large = llm.get_large()
     small = llm.get_small()
 
-    assert isinstance(large, ChatAnthropic)
-    assert isinstance(small, ChatAnthropic)
-    assert large.anthropic_api_key.get_secret_value() == "ollama"
-    assert small.anthropic_api_key.get_secret_value() == "ollama"
+    assert isinstance(large, ChatOllama)
+    assert isinstance(small, ChatOllama)
+    assert large.base_url == _DEFAULT_BASE_URL
+    assert small.base_url == _DEFAULT_BASE_URL
