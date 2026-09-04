@@ -1,0 +1,242 @@
+Game 1 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=1 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Aidan" role="Law-abiding Citizen">
+Personality: eccentric and unpredictable
+Manner: speaks in sudden bursts, often pausing mid-sentence to adjust their glasses or tap their chin, uses overly dramatic metaphors, and has a habit of finishing sentences with "you know?" even when addressing one person
+Persona: Aidan is the town's unofficial historian who collects and catalogs every odd rumor, legend, and local anecdote. He spends his days in the town square with a worn leather journal, interviewing townsfolk and recording their stories. He's known for his wild theories about everything from the origin of the town's peculiar weather patterns to the mysterious disappearance of the town's annual pie contest winner
+</player>
+<player name="Lila" role="Law-abiding Citizen">
+Personality: stern and commanding
+Manner: speaks with measured precision, using formal vocabulary and a steady, authoritative tone; avoids filler words and rarely raises their voice, but delivers statements with unwavering certainty
+Persona: Lila is the town's head schoolteacher, known for her strict discipline and high expectations. She has served the town for over fifteen years, shaping the minds of countless children with her firm but fair approach to education. She lives alone in a modest house on Maple Street, where she spends her evenings grading papers and preparing lesson plans.
+</player>
+<player name="Hassan" role="Law-abiding Citizen">
+Personality: shrewd and calculating
+Manner: speaks with deliberate slowness, choosing words carefully and often pausing for emphasis; uses precise, economical language with a dry, almost mocking tone; has a habit of tilting their head while speaking as if assessing the listener
+Persona: Hassan is the town's most successful merchant, running a thriving general store that serves as the heart of local commerce. He's known for his sharp eye for deals and his ability to read people's needs before they even express them. Hassan has lived in the town his entire life, building his business from a small stall to a cornerstone of the community. He's well-respected but always keeps his cards close to his chest
+</player>
+<player name="Nevaeh" role="Mafia">
+Personality: Playful and teasing, with a mischievous streak that hides deeper cunning
+Manner: Speaks in a lilting, sing-song voice with frequent laughter and a tendency to embellish stories with dramatic flourishes. Uses playful metaphors and often adds "you know?" or "as they say" to her sentences. Has a habit of tilting her head while talking, as if amused by the absurdity of the situation.
+Public legend: Nevaeh is the town's beloved florist, known for her whimsical arrangements and infectious laugh. She runs a small but charming shop on Main Street, where she sells flowers, herbs, and tiny trinkets to anyone who walks in. Nevaeh has an uncanny ability to know exactly what each customer wants before they even ask, often surprising them with thoughtful additions to their orders. She's the town's unofficial matchmaker, always offering sage advice about love and relationships, though she's never been married herself.
+True self (hidden): Nevaeh was a skilled con artist who made her way through small towns and bustling markets before joining the Mafia. She discovered her talent for manipulation early in life, using her charm to win over people and extract information or money from them. Her rise through the ranks was swift, thanks to her ability to blend into any crowd and her talent for making enemies believe they were helping her. She took the name Nevaeh after joining the Mafia, choosing it as a symbol of her new identity as someone who could rise from nothing.
+</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: anxious and second-guessing
+Manner: speaks rapidly with frequent hesitations, uses filler words like "um," "you know," and "I think," and often repeats themselves when nervous; has a tendency to trail off mid-sentence and restart, with a voice that wavers between quiet and startled
+Persona: Zara is the town's town clerk, responsible for keeping records of births, deaths, marriages, and all official documents. She's been in the position for eight years and takes her job very seriously, often staying late to ensure everything is filed correctly. She's known for being overly cautious with paperwork and tends to double-check everything multiple times before signing off on anything.
+</player>
+<player name="Wade" role="Law-abiding Citizen">
+Personality: gruff and blunt
+Manner: speaks in short, sharp sentences with little preamble; uses direct, often curt language; has a tendency to grunt or mutter when annoyed; avoids flowery expressions and prefers plain, honest words
+Persona: Wade is the town's blacksmith, known for his strong arms and even stronger opinions. He's been crafting tools, weapons, and horseshoes for twenty years, earning a reputation for being tough but fair. He doesn't much care for gossip or small talk, preferring to keep his head down and his hammer up.
+</player>
+<player name="Aria" role="Mafia">
+Personality: aloof and detached
+Manner: Speaks in a low, measured tone with minimal inflection, rarely making eye contact. Uses short, clipped sentences and avoids emotional expressions. Often pauses before responding, as if weighing each word carefully. Never raises their voice or shows irritation, even when questioned directly.
+Public legend: Aria is the town's librarian, a quiet and unassuming woman who has worked at the local library for over a decade. She spends her days cataloging books, helping patrons find resources, and maintaining the quiet atmosphere of the library. Known for her habit of wearing thick glasses and speaking in a soft, monotone voice, she is often overlooked by the townsfolk. Aria keeps to herself, rarely engaging in casual conversation, and prefers the company of books to people.
+True self (hidden): Aria was once a skilled con artist who operated under the alias "The Whisperer" in the underground networks of a neighboring city. She built her reputation on manipulating trust and extracting secrets from unsuspecting targets. When her past caught up with her, she fled to this town, where she assumed the identity of a librarian. She uses her quiet demeanor and ability to observe without being noticed to gather information for the Mafia, always staying one step ahead of those who might discover her true nature.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aidan, Lila, Hassan, Nevaeh, Zara, Wade, Aria. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Nevaeh): Your Mafia teammates are: Aria. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Aria): Your Mafia teammates are: Nevaeh. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Nevaeh points at Lila
+Aria points at Lila
+<kill>Lila — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Lila was killed last night. Lila was a Law-abiding Citizen.
+<round>
+Round 1.
+Aria: I didn't see anyone acting oddly last night.
+Hassan: Aria, you seemed surprised when I mentioned Lila's death. Can you explain your reaction? I'm just trying to understand why someone would be taken aback by the news of a murder.
+Zara: I'm not sure who to trust yet.
+Wade: Aidan, you keep quiet when people talk about Lila’s death. That’s not normal for a townie. You got something to hide?
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+Nevaeh: Avery, you seem awfully certain about Zara — are you sure you're not just looking for someone to blame? You know? As they say, it's always good to keep your eyes open.
+Aidan: Wade, you mentioned I keep quiet about Lila's death — but maybe I'm just collecting my thoughts for the *real* story. You know? Like a historian with a journal full of secrets.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aidan">Hassan's suspicion toward me is growing, but I need to keep weaving my web of intrigue. Wade’s paranoia might be useful if I can steer it toward Zara. The key is not to let anyone see the real pattern — yet.</thought>
+<thought player="Hassan">Aria's discomfort is notable, but Wade's provocation of Aidan suggests he's trying to stir tension. I'll watch them both closely. The key is not to let anyone steer the conversation toward a lynching too early.</thought>
+<thought player="Nevaeh">Lila's gone, and the town's already pointing fingers like it's a game of cat and mouse. I'll keep playing the sweet florist, but I'm watching them all closely — especially Wade and Avery. You know? The quieter ones often have the loudest secrets.</thought>
+<thought player="Zara">Um, Lila's dead and I don't know who did it, but everyone's acting so weird today. I think I need to keep quiet and just... double-check everything again, you know? Maybe I'll look for any clues I missed.</thought>
+<thought player="Wade">Aidan's got something to hide, but Wade can't prove it yet. Zara's suspicious too, but Wade's keeping his mouth shut for now.</thought>
+<thought player="Aria">Nevaeh and I must stick together, but I cannot let my guard down. The others are already suspicious, and I need to appear innocent while guiding the conversation away from me.</thought>
+</round>
+<round>
+Round 2.
+Hassan: Avery, you speak of watching Zara — but what exactly have you seen? Or are you simply trying to shift suspicion away from yourself? I’m curious where your true focus lies.
+Wade: I don't trust the silence from Aidan. That's all I'm going to say for now.
+Aria: I'm not sure why everyone is so quick to point fingers. We should focus on what we know, not guesswork.
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+Aidan: Wade, you're right to be suspicious — but not at me. Zara's been acting like she knows something she's not telling us. You know? That's what I call a red flag.
+Zara: I think... I really think we should all just slow down and not jump to conclusions. I mean, um, Lila was killed, but we don't have any proof yet, do we? I'm just trying to make sure no one gets blamed for something they didn't do.
+Nevaeh: Wade, you're always so quick to accuse — but have you considered that maybe you're the one who's acting suspicious? You know? It's hard to tell if you're just trying to protect yourself or if you're trying to protect someone else. As they say, a guilty conscience makes for a loud mouth.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aidan">Hassan's suspicion is tightening like a noose, but I can turn Wade's paranoia into a weapon by nudging him toward Zara. The web's forming — just need to let it look accidental, you know?</thought>
+<thought player="Hassan">Aria's unease and Wade's provocation suggest they're both trying to manipulate the narrative. I'll let them lead the charge while I observe, but I need to keep my focus on Zara—she's the one who's been acting too nervous for a victim's death.</thought>
+<thought player="Nevaeh">Wade's been twitchy, and Avery's got that knowing look again — I'll keep weaving my web, but I'm not ready to pull the thread just yet. You know? The game's still young, and I've got a few tricks up my sleeve.</thought>
+<thought player="Zara">I'm so confused and everyone's being so suspicious, but I need to stay calm and not say anything stupid. Maybe I should just listen more and see if I can find a real clue instead of jumping to conclusions.</thought>
+<thought player="Wade">Aidan's silence is odd, but Wade ain't ready to point fingers yet. Zara's playing innocent, but Wade ain't buying it. Keep watching both of 'em.</thought>
+<thought player="Aria">Nevaeh and I must stay aligned, but I need to let the others believe I’m not the killer. I should continue to speak calmly and avoid drawing suspicion. Let them focus on Zara or Wade for now.</thought>
+</round>
+<round>
+Round 3.
+<vote initiator="Wade" target="Aidan">
+Avery: No
+Aidan: No
+Hassan: Yes
+Nevaeh: Yes
+Zara: No
+Wade: Yes
+Aria: No
+tally: 3 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Zara: I... I still think we should focus on what we *know*, not on who we *suspect*. I mean, Aidan was quiet, but so was Hassan — and Wade said he didn't trust Aidan, but he didn’t say why. I'm just trying to make sure we don't let our nerves get the best of us.
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+Nevaeh: Hassan, you seem awfully eager to point fingers — but maybe you're just trying to cover your own tracks? You know? It's hard to tell if you're innocent or just really good at pretending. As they say, the quiet ones often have the most to hide.
+Aria: I agree with Zara — we need to be careful about jumping to conclusions. Hassan, you've been vocal, but maybe that's just your nature. I'm not convinced anyone here is hiding anything, but we should keep our eyes open.
+Hassan: Zara, you keep saying we should slow down, but you've been the most nervous since Lila died. That's not how a victim's family acts — that's how someone who knows something tries to stay under the radar.
+<vote initiator="Wade" target="Zara">
+Avery: No
+Aidan: Yes
+Hassan: Yes
+Nevaeh: No
+Zara: No
+Wade: Yes
+Aria: Yes
+tally: 4 Yes, 3 No
+outcome: executed — Zara has been executed. Zara was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. 2 execution votes called today. Zara was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+<diary player="Aidan" day="1">The day's been a wild ride through the looking glass, you know? I've been playing the historian, collecting rumors like they're rare stamps, but really I've been weaving a tapestry of doubt, watching Hassan's eyes dart around like he's trying to spot a ghost in the shadows. Wade's paranoia is a useful tool — I've been nudge-nudging him toward Zara, letting his suspicions bloom into full-blown suspicion without looking like I'm directing it. The game's shifting, and I can feel the tides turning. It's all about making everyone think they're seeing the pattern while I'm actually pulling the strings from behind the curtain, you know? There's a reason I always keep my journal open — it's not just for stories, it's for secrets. I've been playing both sides of the coin, and the coin is spinning like a top in a hurricane, and I'm not sure which side will be facing up when it stops. The real ques</diary>
+<diary player="Hassan" day="1">The day's dance played out as expected — Aria's discomfort and Wade's provocation were but strings pulled by two players trying to manipulate the narrative. Zara's nervousness was not that of a victim's family, but of someone who knew something they shouldn't have. I watched her carefully, and now she's gone, revealed to be a citizen, just like Lila before her. The Mafiosos are still among us, and the next night will bring new shadows. I must keep my head low and eyes sharp — the game is far from over.</diary>
+<diary player="Nevaeh" day="1">The day's been a lovely dance of whispers and pointed fingers, don't you know? I'm still the sweet florist with a knack for knowing exactly what people need, but beneath the surface, the game's getting interesting. Wade and Avery are both twitching like they've got something to hide, and I'm not sure if it's the truth or just the thrill of the chase that’s got them so wound up. Zara was a sweet soul, but she’s gone now, and I can’t help but feel like the next move is already being planned. I’ve got my little web spun, and I’m not quite ready to pull the thread yet — though I do love a good game of cat and mouse. The night’s coming soon, and I’ll be watching from the shadows, just like a good little flower that knows when to bloom.</diary>
+<diary player="Wade" day="1">Aidan's been too quiet, and Zara's been too nervous. Neither one's acting right, but I ain't got proof yet. Wade's got a gut feeling about Aidan — he don't trust him, but Wade's not saying why. Hassan's jumping to conclusions, Nevaeh's playing the victim, and Aria's just trying to keep the peace. Zara's gone now, but that don't mean I'm done watching these other two. I'll keep my eyes open, see what happens tonight.</diary>
+<diary player="Aria" day="1">The night brings its usual quiet, but tonight feels different. The air is thick with tension, and I can sense the others shifting their focus. Zara’s death was swift, and I wonder if she knew something before the end. My hands are steady as I write this, though inside, I’m calculating how to keep my cover intact. I watched the votes unfold, and each one was a small victory for me — or at least, it felt like one. Nevaeh and I are still aligned, but there’s always the risk of being seen through. I must stay calm, let others think they’ve figured out who’s behind the killings, while the truth remains buried. Hassan’s voice carries more weight now, and Wade is getting too close to the edge. I should be careful not to give away anything in my next move — even if it means letting someone else take the fall for a bit longer. I can feel the game tightening around me, like a noose slowly drawing</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Nevaeh points at Wade
+Aria points at Wade
+<kill>Wade — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Wade was killed last night. Wade was a Law-abiding Citizen.
+<round>
+Round 1.
+<vote initiator="Hassan" target="Aria">
+Avery: Yes
+Aidan: Yes
+Hassan: Yes
+Nevaeh: No
+Aria: No
+tally: 3 Yes, 2 No
+outcome: executed — Aria has been executed. Aria was a Mafia.
+</vote>
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Aria was executed today and was revealed to be Mafia.</recap>
+</round>
+<diary player="Aidan" day="2">The day's been a wild ride through the looking glass, you know? I've been playing the historian, collecting rumors like they're rare stamps, but really I've been weaving a tapestry of doubt, watching Hassan's eyes dart around like he's trying to spot a ghost in the shadows. Wade's paranoia is a useful tool — I've been nudge-nudging him toward Zara, letting his suspicions bloom into full-blown suspicion without looking like I'm directing it. The game's shifting, and I can feel the tides turning. It's all about making everyone think they're seeing the pattern while I'm actually pulling the strings from behind the curtain, you know? There's a reason I always keep my journal open — it's not just for stories, it's for secrets. I've been playing both sides of the coin, and the coin is spinning like a top in a hurricane, and I'm not sure which side will be facing up when it stops. The real ques</diary>
+<diary player="Hassan" day="2">The day's dance played out as expected — Aria's discomfort and Wade's provocation were but strings pulled by two players trying to manipulate the narrative. Zara's nervousness was not that of a victim's family, but of someone who knew something they shouldn't have. I watched her carefully, and now she's gone, revealed to be a citizen, just like Lila before her. The Mafiosos are still among us, and the next night will bring new shadows. I must keep my head low and eyes sharp — the game is far from over.</diary>
+<diary player="Nevaeh" day="2">The day's been a lovely dance of whispers and pointed fingers, don't you know? I'm still the sweet florist with a knack for knowing exactly what people need, but beneath the surface, the game's getting interesting. Wade and Avery are both twitching like they've got something to hide, and I'm not sure if it's the truth or just the thrill of the chase that’s got them so wound up. Zara was a sweet soul, but she’s gone now, and I can’t help but feel like the next move is already being planned. I’ve got my little web spun, and I’m not quite ready to pull the thread yet — though I do love a good game of cat and mouse. The night’s coming soon, and I’ll be watching from the shadows, just like a good little flower that knows when to bloom.</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Nevaeh points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Nevaeh: Avery, you've been watching me closely — are you starting to suspect the florist, or are you just trying to throw me off guard? You know? I do love a good game of cat and mouse.
+<vote initiator="Hassan" target="Aidan">
+Aidan: No
+Hassan: Yes
+Nevaeh: No
+tally: 1 Yes, 2 No
+outcome: failed — The vote fails.
+</vote>
+Nevaeh: Hassan, you're so quick to point fingers — but have you considered that maybe *you* are the one who's been acting suspicious? You know? It's hard to tell if you're just trying to protect yourself or if you're trying to protect someone else. As they say, a guilty conscience makes for a loud mouth.
+<vote initiator="Hassan" target="Aidan">
+Aidan: No
+Hassan: Yes
+Nevaeh: No
+tally: 1 Yes, 2 No
+outcome: failed — The vote fails.
+</vote>
+Aidan: Hassan, you've been chasing shadows since Lila died — but what if the real mystery isn't who killed her, it's *who’s been playing the game*? You know? I mean, we all have our stories, don't we?
+Nevaeh: Aidan, you've been awfully quiet lately — are you just collecting your thoughts, or are you trying to figure out how to play this game? You know? I do love a good mystery, but sometimes the most interesting stories are the ones we don't tell.
+Hassan: Aidan, you've been quiet lately — but I'm starting to wonder if that's because you're running out of ideas, or if you're just waiting for the right moment to strike.
+<recap>Day 3, 9 AM status: 2 Law-abiding Citizens and 1 Mafioso remain. 2 execution votes called today. No one has been executed today.</recap>
+<thought player="Aidan">Hassan's suspicion is tightening, but I can use Wade's paranoia to my advantage by subtly nudging him toward Zara. The web's forming — just need to let it look accidental, you know?</thought>
+<thought player="Hassan">Aidan's silence and Wade's provocation are tactics, not truths. Aria's execution was a mistake, but I must not let emotion cloud my judgment. The real danger now is in the remaining pair—Aidan and Nevaeh. I'll wait for them to expose themselves, but I won't be the one to push the vote.</thought>
+<thought player="Nevaeh">The town's nerves are fraying, and I'm enjoying the chaos. Aidan's been quiet too long — time to stir the pot a bit more, maybe push a little suspicion his way. You know? The game's getting interesting.</thought>
+</round>
+<round>
+Round 2.
+Nevaeh: Aidan, you've been awfully quiet lately — are you just collecting your thoughts, or are you trying to figure out how to play this game? You know? I do love a good mystery, but sometimes the most interesting stories are the ones we don't tell.
+<vote initiator="Hassan" target="Aidan">
+Aidan: No
+Hassan: Yes
+Nevaeh: No
+tally: 1 Yes, 2 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Aidan" day="3">The day's been a wild ride through the looking glass, you know? I've been playing the historian, collecting rumors like they're rare stamps, but really I've been weaving a tapestry of doubt, watching Hassan's eyes dart around like he's trying to spot a ghost in the shadows. Wade's paranoia is a useful tool — I've been nudge-nudging him toward Zara, letting his suspicions bloom into full-blown suspicion without looking like I'm directing it. The game's shifting, and I can feel the tides turning. It's all about making everyone think they're seeing the pattern while I'm actually pulling the strings from behind the curtain, you know? There's a reason I always keep my journal open — it's not just for stories, it's for secrets. I've been playing both sides of the coin, and the coin is spinning like a top in a hurricane, and I'm not sure which side will be facing up when it stops. The real ques</diary>
+<diary player="Hassan" day="3">The day's dance played out as expected — Aidan's silence and Wade's provocation were but strings pulled by two players trying to manipulate the narrative. Aria's execution was a mistake, but I must not let emotion cloud my judgment. The real danger now is in the remaining pair—Aidan and Nevaeh. I'll wait for them to expose themselves, but I won't be the one to push the vote. Tonight will bring new shadows, and I must keep my head low and eyes sharp — the game is far from over. The Mafiosos are still among us, and the next night will reveal who's truly playing the long game.</diary>
+<diary player="Nevaeh" day="3">The day's been a lovely dance of whispers and pointed fingers, don't you know? I'm still the sweet florist with a knack for knowing exactly what people need, but beneath the surface, the game's getting interesting. Wade and Avery are both twitching like they've got something to hide, and I'm not sure if it's the truth or just the thrill of the chase that’s got them so wound up. Zara was a sweet soul, but she’s gone now, and I can’t help but feel like the next move is already being planned. I’ve got my little web spun, and I’m not quite ready to pull the thread yet — though I do love a good game of cat and mouse. The night’s coming soon, and I’ll be watching from the shadows, just like a good little flower that knows when to bloom. Wait, let me reconsider — I’m not going to let my guard down now. Aidan's been quiet too long, and Hassan’s getting too comfortable with all the accusations. I</diary>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Nevaeh points at Aidan
+<kill>Aidan — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Lila (Law-abiding Citizen)
+• Day 1: Zara (Law-abiding Citizen) executed
+• Night 2: Wade (Law-abiding Citizen)
+• Day 2: Aria (Mafia) executed
+• Night 3: Avery (Law-abiding Citizen)
+• Night 4: Aidan (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Aidan (Law-abiding Citizen), Lila (Law-abiding Citizen), Hassan (Law-abiding Citizen), Nevaeh (Mafia), Zara (Law-abiding Citizen), Wade (Law-abiding Citizen), Aria (Mafia)
+
+Who they really were:
+• Aidan (Law-abiding Citizen) — eccentric and unpredictable speaks in sudden bursts, often pausing mid-sentence to adjust their glasses or tap their chin, uses overly dramatic metaphors, and has a habit of finishing sentences with "you know?" even when addressing one person Aidan is the town's unofficial historian who collects and catalogs every odd rumor, legend, and local anecdote. He spends his days in the town square with a worn leather journal, interviewing townsfolk and recording their stories. He's known for his wild theories about everything from the origin of the town's peculiar weather patterns to the mysterious disappearance of the town's annual pie contest winner
+• Lila (Law-abiding Citizen) — stern and commanding speaks with measured precision, using formal vocabulary and a steady, authoritative tone; avoids filler words and rarely raises their voice, but delivers statements with unwavering certainty Lila is the town's head schoolteacher, known for her strict discipline and high expectations. She has served the town for over fifteen years, shaping the minds of countless children with her firm but fair approach to education. She lives alone in a modest house on Maple Street, where she spends her evenings grading papers and preparing lesson plans.
+• Hassan (Law-abiding Citizen) — shrewd and calculating speaks with deliberate slowness, choosing words carefully and often pausing for emphasis; uses precise, economical language with a dry, almost mocking tone; has a habit of tilting their head while speaking as if assessing the listener Hassan is the town's most successful merchant, running a thriving general store that serves as the heart of local commerce. He's known for his sharp eye for deals and his ability to read people's needs before they even express them. Hassan has lived in the town his entire life, building his business from a small stall to a cornerstone of the community. He's well-respected but always keeps his cards close to his chest
+• Nevaeh (Mafia) — publicly presented as Nevaeh is the town's beloved florist, known for her whimsical arrangements and infectious laugh. She runs a small but charming shop on Main Street, where she sells flowers, herbs, and tiny trinkets to anyone who walks in. Nevaeh has an uncanny ability to know exactly what each customer wants before they even ask, often surprising them with thoughtful additions to their orders. She's the town's unofficial matchmaker, always offering sage advice about love and relationships, though she's never been married herself. (Playful and teasing, with a mischievous streak that hides deeper cunning Speaks in a lilting, sing-song voice with frequent laughter and a tendency to embellish stories with dramatic flourishes. Uses playful metaphors and often adds "you know?" or "as they say" to her sentences. Has a habit of tilting her head while talking, as if amused by the absurdity of the situation.) … but was really a Mafioso: Nevaeh was a skilled con artist who made her way through small towns and bustling markets before joining the Mafia. She discovered her talent for manipulation early in life, using her charm to win over people and extract information or money from them. Her rise through the ranks was swift, thanks to her ability to blend into any crowd and her talent for making enemies believe they were helping her. She took the name Nevaeh after joining the Mafia, choosing it as a symbol of her new identity as someone who could rise from nothing.
+• Zara (Law-abiding Citizen) — anxious and second-guessing speaks rapidly with frequent hesitations, uses filler words like "um," "you know," and "I think," and often repeats themselves when nervous; has a tendency to trail off mid-sentence and restart, with a voice that wavers between quiet and startled Zara is the town's town clerk, responsible for keeping records of births, deaths, marriages, and all official documents. She's been in the position for eight years and takes her job very seriously, often staying late to ensure everything is filed correctly. She's known for being overly cautious with paperwork and tends to double-check everything multiple times before signing off on anything.
+• Wade (Law-abiding Citizen) — gruff and blunt speaks in short, sharp sentences with little preamble; uses direct, often curt language; has a tendency to grunt or mutter when annoyed; avoids flowery expressions and prefers plain, honest words Wade is the town's blacksmith, known for his strong arms and even stronger opinions. He's been crafting tools, weapons, and horseshoes for twenty years, earning a reputation for being tough but fair. He doesn't much care for gossip or small talk, preferring to keep his head down and his hammer up.
+• Aria (Mafia) — publicly presented as Aria is the town's librarian, a quiet and unassuming woman who has worked at the local library for over a decade. She spends her days cataloging books, helping patrons find resources, and maintaining the quiet atmosphere of the library. Known for her habit of wearing thick glasses and speaking in a soft, monotone voice, she is often overlooked by the townsfolk. Aria keeps to herself, rarely engaging in casual conversation, and prefers the company of books to people. (aloof and detached Speaks in a low, measured tone with minimal inflection, rarely making eye contact. Uses short, clipped sentences and avoids emotional expressions. Often pauses before responding, as if weighing each word carefully. Never raises their voice or shows irritation, even when questioned directly.) … but was really a Mafioso: Aria was once a skilled con artist who operated under the alias "The Whisperer" in the underground networks of a neighboring city. She built her reputation on manipulating trust and extracting secrets from unsuspecting targets. When her past caught up with her, she fled to this town, where she assumed the identity of a librarian. She uses her quiet demeanor and ability to observe without being noticed to gather information for the Mafia, always staying one step ahead of those who might discover her true nature.
+</endgame>
+</transcript>

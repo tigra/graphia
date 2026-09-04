@@ -3427,3 +3427,125 @@ metrics:
     peak: 0.5386086100053162
     denominator: 150
 notes: 'spec 039 RERUN on the prose-recovery fix (b9bfbd4, merged d115600). Supersedes the on-arm at transcript_dir 2026-09-02T14-19-02, which was disqualified by a 0.50 diary_fallback_rate: tool use is not enforced on the ollama endpoint, so half its entries were the deterministic placeholder. Compare against the off-arm record 2026-09-02T15-58-41 (commit 6af70e8) -- that arm is unaffected by the fix, since day_diary returns before any diary model call when diaries are off, so the only difference is code.commit. Read quality.diary_fallback_rate first: it should now be at or near 0.00.'
+---
+run:
+  date: '2026-09-04'
+  duration_seconds: 695.618
+  metrics_version: 1
+  transcript_dir: '2026-09-04T13-13-43'
+code:
+  commit: '72086274d0f6d39180d66bc404c18736aa0bdd4f'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.32.14'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 1
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 1
+  games_completed: 1
+  games_failed_early: 0
+  diary_fallback_rate: 0.0
+  diary_fallback_entries: 0
+  diary_entries_attempted: 11
+  duration_seconds: 695.618
+outcomes:
+  games: 1
+  law_abiding:
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+  mafia:
+    wins: 1
+    rate: 1.0
+    ci_low: 0.20654329147389294
+    ci_high: 1.0
+  scripted_side:
+    side: 'law_abiding'
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against an active rule-based scripted human (deterministic, no model call; when Law-abiding it supplies the vote a correct town majority needs) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 6
+    mafia: 0
+  by_day:
+    day_1: 2
+    day_2: 1
+    day_3: 3
+metrics:
+  repetition:
+    rate: 0.09090909090909091
+    count: 2
+    denominator: 22
+    ci_low: 0.025294896282837792
+    ci_high: 0.2781538065838578
+  third_person_self_talk:
+    rate: 0.0
+    count: 0
+    denominator: 22
+    ci_low: 0.0
+    ci_high: 0.14865952572596125
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 6
+    ci_low: 0.0
+    ci_high: 0.3903430336530645
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 6
+    ci_low: 0.0
+    ci_high: 0.3903430336530645
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 1
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 21
+    ci_low: 0.0
+    ci_high: 0.15464382326420195
+  persona_lex_mean:
+    mean: 0.03377979980335045
+    denominator: 21
+  persona_lex_peak:
+    peak: 0.07407407407407407
+    denominator: 21
+  persona_sem_mean:
+    mean: 0.3279999021681788
+    denominator: 21
+  persona_sem_peak:
+    peak: 0.46208964997057755
+    denominator: 21
+notes: 'FIRST record at the new 6+2 default (CR 007 / spec 042, changed 2026-09-03) -- 1-game SMOKE, not a baseline. Its figures are NOT directly comparable with records made at five-and-two: the larger table affords the town ONE mistaken execution where five-and-two afforded none, so a town executing at random wins roughly 8.3% of games at 5+2 against roughly 22.9% at 6+2. Nearly every rate here also has a denominator that scales with table size -- AI spoken lines, vote counts, and persona pairs (15 per roster at 5+2, 21 at 6+2). Earlier records remain valid records of the game as it then was; nothing about them changed. Read settings.lineup on each record and never its date: four records from 2026-06-21/22 were already played at 6+2 via explicit override, so a date rule would both mislabel those and wrongly discard the only pre-change records directly comparable with this one. CR 007 defers the per-provider re-baseline until the Moderator Creative Recap has also landed.'
