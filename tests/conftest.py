@@ -72,11 +72,15 @@ STRUCTURED_OUTPUT_KWARG_ALLOWLIST: frozenset[str] = frozenset({"method"})
 # that survives a swallow: it does not matter which thread the fake ran on, nor
 # how broad the ``except`` above it was, the entry is still here at teardown.
 #
-# Spec 041 Task 5.2 adds the autouse fixture that drains this at teardown and
-# fails the test naming each entry. Until then the list is written and read
-# only by tests that deliberately provoke a violation, which drain it via
-# :func:`drain_structured_output_violations` so the future tripwire starts
-# green.
+# The reading end is the autouse ``structured_output_tripwire`` fixture (spec
+# 041 Task 5.2), which drains this at teardown and fails the test naming each
+# entry. It is deliberately the OUTERMOST autouse fixture, so it reads the list
+# only after ``drain_driver_producers`` has joined any leaked driver worker —
+# see its docstring for the measurement behind that ordering.
+#
+# A test that provokes a violation on purpose must drain it via
+# :func:`drain_structured_output_violations` before it returns, or the tripwire
+# will fail it.
 structured_output_violations: list[str] = []
 
 
@@ -85,7 +89,16 @@ def drain_structured_output_violations() -> list[str]:
 
     Drain-and-return rather than read-then-clear, so a test that provokes a
     violation on purpose cannot leave one behind for the next test — nor for
-    Task 5.2's teardown tripwire, which will read the same list.
+    the ``structured_output_tripwire`` teardown fixture, which reads the same
+    list and fails the test if it is non-empty.
+
+    **The contract for a test that provokes a violation deliberately:** call
+    this before the test returns. You get the entries to assert on, and the
+    tripwire finds the list empty. Draining at BOTH ends (once before
+    provoking, once after) additionally guarantees the assertion sees only this
+    test's own entries. Worked example:
+    ``tests/test_slice39_diary_before_night.py::
+    test_the_diary_queue_serves_a_bare_schema_instance``.
     """
     drained = list(structured_output_violations)
     structured_output_violations.clear()
@@ -280,7 +293,107 @@ class _LoudFailureProvider(LLMProvider):
 
 
 @pytest.fixture(autouse=True)
-def drain_driver_producers() -> Iterator[None]:
+def structured_output_tripwire() -> Iterator[None]:
+    """Autouse teardown: fail any test whose fakes booked a structured-output violation.
+
+    The reading end of :data:`structured_output_violations`. Every fake books an
+    entry there whenever it is asked for something it cannot faithfully serve —
+    an unknown schema, a known schema with no default to fall back on, or a
+    kwarg outside :data:`STRUCTURED_OUTPUT_KWARG_ALLOWLIST`. This fixture drains
+    that list at teardown and fails the test naming each entry.
+
+    **Why a recorded fact and not just an exception.** The fakes already call
+    ``pytest.fail(..., pytrace=False)`` where they can, and ``Failed`` derives
+    from ``BaseException`` precisely so it walks through the four gameplay nodes'
+    ``except Exception``. But that only stops the *calling thread*: the Textual
+    driver runs each graph super-step on an ``asyncio.to_thread`` worker
+    (``graphia.driver._producer``), which swallows and reports rather than
+    re-raising into the test, and a node could acquire an ``except
+    BaseException`` tomorrow. A booked entry is immune to all of that — it does
+    not matter which thread the fake ran on, nor how broad the ``except`` above
+    it was, the entry is still in the list at teardown. So this complements the
+    ``pytest.fail``; it does not replace it. In the swallowed case this teardown
+    is the ONLY red mark the run produces.
+
+    **Ordering — this fixture must be torn down LAST, which is why it is set up
+    FIRST.** pytest finalises fixtures LIFO, so "torn down last" means every
+    other autouse fixture depends on it, not the other way round. That is why
+    :func:`drain_driver_producers` takes this fixture as a parameter — the
+    dependency exists purely to pin the order, which is also why it ignores the
+    value.
+
+    The direction was measured, not assumed (2026-09-05). A probe test
+    registered a real ``graphia.driver`` producer event and appended a violation
+    from that thread 0.5s after its body returned — the leaked-producer shape
+    ``drain_driver_producers`` exists for. With this fixture torn down FIRST
+    (the naive definition order, and equally a dependency pointing the other
+    way) the run reported::
+
+        2 passed, 1 error
+        ERROR at teardown of test_innocent_bystander_runs_next
+
+    The offender passed; the *next* test wore its violation — a false
+    attribution strictly worse than no tripwire, since it sends the developer to
+    a clean test. Running the offender alone under that ordering reported ``1
+    passed`` and nothing else: the violation was simply lost. With the order as
+    written here — this fixture outermost, so ``drain_driver_producers`` has
+    already joined the producer body by the time it reads the list — the same
+    probe reported ``ERROR at teardown of
+    test_offender_leaks_a_violation_on_a_producer_thread`` and the bystander was
+    clean.
+
+    **The drain contract for tests that provoke a violation deliberately.** A
+    test that means to book one (asserting the fake records rather than rejects
+    an out-of-allowlist kwarg, say) must call
+    :func:`drain_structured_output_violations` before it returns, which both
+    gives it the entries to assert on and leaves the list empty for this
+    tripwire. ``tests/test_slice39_diary_before_night.py::
+    test_the_diary_queue_serves_a_bare_schema_instance`` is the worked example:
+    it drains at both ends, so it neither inherits another test's entry nor
+    leaves one behind.
+
+    The drain here is unconditional and happens before the failure decision, so
+    a violation is reported exactly once and never charged to the next test as
+    well.
+    """
+    yield
+    violations = drain_structured_output_violations()
+    if not violations:
+        return
+    listed = "\n".join(f"  [{n}] {text}" for n, text in enumerate(violations, 1))
+    pytest.fail(
+        f"{len(violations)} structured-output violation(s) were booked by the "
+        "test fakes while this test ran. A violation is a fake being asked for "
+        "something it cannot faithfully serve. It is RECORDED rather than "
+        "raised so it survives a node's `except Exception` and a driver worker "
+        "thread that never re-raises — so this teardown may be the only red "
+        "mark for a call some node quietly turned into a substituted value.\n\n"
+        f"{listed}\n\n"
+        "What to do, by violation shape:\n"
+        "  * '... was passed <kwarg> ...' — a caller handed a fake a kwarg the "
+        "provider seam does not inject. Either stop passing it at the "
+        "production call site, or, if it is legitimate, add it to "
+        "STRUCTURED_OUTPUT_KWARG_ALLOWLIST in tests/conftest.py deliberately.\n"
+        "  * '... has no scripted queue for schema ...' — a structured-output "
+        "call site exists that the fakes were never taught about. Give it a "
+        "queue in FakeLargeUnified.__init__ AND an UNSCRIPTED_DEFAULTS entry, "
+        "in tests/conftest.py, in the same change that introduces the call "
+        "site.\n"
+        "  * '... but no UNSCRIPTED_DEFAULTS entry ...' — a queue was added "
+        "without the default a never-primed queue serves. Add one in "
+        "tests/conftest.py.\n\n"
+        "If this test provokes a violation ON PURPOSE, drain it before the test "
+        "returns with conftest.drain_structured_output_violations() — worked "
+        "example in tests/test_slice39_diary_before_night.py::"
+        "test_the_diary_queue_serves_a_bare_schema_instance.\n\n"
+        "If the test ALSO failed in its body above, read that failure first: "
+        "this one is often its consequence.",
+        pytrace=False,
+    )
+
+
+@pytest.fixture(autouse=True)
+def drain_driver_producers(structured_output_tripwire: None) -> Iterator[None]:
     """Autouse teardown: join any in-flight driver producer thread before next test.
 
     The Textual driver (``graphia.driver``) runs each graph super-step in a
@@ -303,6 +416,13 @@ def drain_driver_producers() -> Iterator[None]:
     threading-based and never touches an event loop, so it is safe from sync
     fixture teardown regardless of the test loop's state. Bounded so a genuinely
     stuck thread cannot hang the suite.
+
+    The ``structured_output_tripwire`` parameter is an ORDERING dependency, not
+    a value this fixture uses: requesting it forces it to be set up first and
+    therefore finalised last, so a violation booked by a fake running on one of
+    the very producer threads joined below is still charged to the test that
+    leaked the thread. Measured both ways — see that fixture's docstring for
+    the probe and its two outputs. Do not drop the parameter.
     """
     import graphia.driver as _driver
 
