@@ -487,12 +487,19 @@ class _CallSite:
     drive: Callable[[pytest.MonkeyPatch], None]
     # Schemas this drive is expected to bind.
     schemas: tuple[type, ...]
-    # Kwargs the CALL SITE itself passes, per schema. Only the diary call has
-    # any today (``include_raw=True``, spec 039). Slice 4 withdraws that, and
-    # when it does this map and
-    # ``test_the_diary_call_site_keeps_include_raw_beside_the_pinned_method``
-    # are what must be updated — Task 4.3's ``(Diary, {})`` assertion is the
-    # inverse of the entry below.
+    # Kwargs the CALL SITE itself passes, per schema. **Empty for every site
+    # as of spec 041 Slice 4**: the diary call was the only one that ever had
+    # any (``include_raw=True``, spec 039), and the withdrawal of the interim
+    # prose recovery took it — together with the dedicated
+    # ``test_the_diary_call_site_keeps_include_raw_beside_the_pinned_method``,
+    # which scripted it here. The merge itself stays covered at wrapper level by
+    # ``test_structured_output_method.py::test_caller_kwargs_are_merged_with_the_provider_default``;
+    # "no production call site passes any caller kwargs" is asserted across all
+    # eight sites by Task 4.3's ``tests/test_spec041_withdrawal.py``. The field
+    # stays because ``_assert_recorded``'s ``{**defaults, **site.caller_kwargs}``
+    # is the honest expression of what a call site is *allowed* to do — a future
+    # site that legitimately needs a kwarg declares it here rather than
+    # weakening the sweep.
     caller_kwargs: dict[type, dict[str, Any]] = field(default_factory=dict)
 
 
@@ -536,7 +543,6 @@ _CALL_SITES: tuple[_CallSite, ...] = (
         id="day._ai_diary",
         drive=_drive_ai_diary,
         schemas=(Diary,),
-        caller_kwargs={Diary: {"include_raw": True}},
     ),
     _CallSite(
         id="tools.claude_spike.run_spike",
@@ -775,28 +781,19 @@ def test_the_call_site_requests_no_method_on_the_cloud_twin(
     _assert_recorded(recorder, site, _BEDROCK_DEFAULTS)
 
 
-def test_the_diary_call_site_keeps_include_raw_beside_the_pinned_method(
-    seam: Callable[..., _RecordingModel],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Both halves of ``{**defaults, **kwargs}`` are live at one real call site.
-
-    ``_ai_diary`` passes ``include_raw=True`` (spec 039) while the local
-    provider injects the method, and the inner client must receive BOTH.
-    Dropping either would be silent: one loses the raw envelope, the other
-    quietly returns the game to tool-use decoding. Named separately from the
-    sweep above because this is the one place production exercises the merge,
-    and because Slice 4 withdraws the ``include_raw`` — at which point this
-    test and ``_CALL_SITES``' ``caller_kwargs`` are what must change (Task 4.3
-    asserts the inverse, ``(Diary, {})``).
-    """
-    recorder = seam(OllamaProvider)
-
-    _drive_ai_diary(monkeypatch)
-
-    assert [b.kwargs for b in recorder.bindings] == [
-        {"method": "json_schema", "include_raw": True}
-    ]
+# ``test_the_diary_call_site_keeps_include_raw_beside_the_pinned_method`` stood
+# here until spec 041 Slice 4. It scripted ``_ai_diary``'s ``include_raw=True``
+# (spec 039) beside the injected method to prove both halves of
+# ``{**defaults, **kwargs}`` were live at a real call site — the one place
+# production exercised the merge. The withdrawal of the interim prose recovery
+# removed that kwarg, and with it the *subject* of the coverage rather than the
+# coverage: no production call site passes any caller kwargs now, so a test that
+# scripted one into ``_CALL_SITES`` would assert a fiction. The merge stays
+# covered at wrapper level by
+# ``test_structured_output_method.py::test_caller_kwargs_are_merged_with_the_provider_default``,
+# and Task 4.3's ``tests/test_spec041_withdrawal.py`` asserts the stronger
+# replacement invariant — *no* caller kwargs at *any* of the eight sites, which
+# also catches a new site hard-coding one.
 
 
 # ---------------------------------------------------------------------------

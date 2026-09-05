@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Any, Callable, Iterator, Sequence
 
 import pytest
-from langchain_core.messages import AIMessage, BaseMessage
 from rich.text import Text
 from textual.widget import Widget
 from textual.widgets import Input
@@ -1189,31 +1188,27 @@ class _LargeQueue:
     same "keep serving the last output" behaviour the per-schema fakes use
     so long-running tests don't need to pre-script exactly the right number
     of invocations.
+
+    ``invoke`` returns the scripted object **bare**, which is the
+    ``include_raw=False`` contract every production call site now uses. Spec
+    039's interim diary recovery briefly needed the other shape — an
+    ``include_raw=True`` mapping of ``raw`` / ``parsed`` / ``parsing_error``,
+    optionally carrying a ``BaseMessage`` to model the prose reply the recovery
+    existed to salvage — and spec 041 Slice 4 withdrew both the recovery and
+    this scaffolding for it. The ``include_raw`` **parameter went with the
+    branch, deliberately**: a parameter kept after its branch is a trap, since
+    it would accept ``include_raw=True`` and silently hand back the bare
+    instance anyway. Gone, a re-introduction is a loud ``TypeError`` at the
+    binding — pinned by
+    ``tests/test_slice39_diary_before_night.py::test_the_diary_queue_serves_a_bare_schema_instance``.
     """
 
-    def __init__(
-        self, owner: "FakeLargeUnified", schema: type, *, include_raw: bool = False
-    ) -> None:
+    def __init__(self, owner: "FakeLargeUnified", schema: type) -> None:
         self._owner = owner
         self._schema = schema
-        self._include_raw = include_raw
 
     def invoke(self, messages: Any) -> Any:
-        out = self._owner._invoke(self._schema, messages)
-        if not self._include_raw:
-            return out
-        # ``include_raw=True`` (spec 039 defect fix; ``_ai_diary``'s call shape)
-        # hands back a MAPPING, not the parsed object. A scripted
-        # ``BaseMessage`` expresses the real ollama failure this fix exists
-        # for: the model answered in prose and emitted no tool call, so
-        # ``parsed`` is None and the entry survives only in ``raw``.
-        if isinstance(out, BaseMessage):
-            return {"raw": out, "parsed": None, "parsing_error": None}
-        return {
-            "raw": AIMessage(content="", response_metadata={"stop_reason": "tool_use"}),
-            "parsed": out,
-            "parsing_error": None,
-        }
+        return self._owner._invoke(self._schema, messages)
 
 
 class FakeLargeUnified:
@@ -1255,7 +1250,7 @@ class FakeLargeUnified:
         pointings: Sequence[Pointing | Exception] | None = None,
         personas: Sequence[Persona | Exception] | None = None,
         reflections: Sequence[Reflection | Exception] | None = None,
-        diaries: Sequence[Diary | BaseMessage | Exception] | None = None,
+        diaries: Sequence[Diary | Exception] | None = None,
     ) -> None:
         # The queue map is the ONE of this class's three schema listings that is
         # NOT derived from ``graphia.llm.GAMEPLAY_SCHEMAS`` (spec 041 §3.4 asked;
@@ -1310,9 +1305,7 @@ class FakeLargeUnified:
             schema: 0 for schema in self._queues
         }
 
-    def with_structured_output(
-        self, schema: type, *, include_raw: bool = False
-    ) -> _LargeQueue:
+    def with_structured_output(self, schema: type) -> _LargeQueue:
         if schema not in self._queues:
             # Also derived — same reason as ``calls_by_schema`` above. The
             # rendered text is byte-identical to the hand-typed list it
@@ -1322,7 +1315,7 @@ class FakeLargeUnified:
                 f"FakeLarge has no scripted queue for schema {schema!r}. "
                 f"Supported: {supported}."
             )
-        return _LargeQueue(self, schema, include_raw=include_raw)
+        return _LargeQueue(self, schema)
 
     def _invoke(self, schema: type, messages: Any) -> Any:
         self.call_count += 1
@@ -1518,7 +1511,7 @@ def fake_large(
         pointings: Sequence[Pointing | Exception] | None = None,
         personas: Sequence[Persona | Exception] | None = None,
         reflections: Sequence[Reflection | Exception] | None = None,
-        diaries: Sequence[Diary | BaseMessage | Exception] | None = None,
+        diaries: Sequence[Diary | Exception] | None = None,
     ) -> FakeLargeUnified:
         fake = FakeLargeUnified(
             day_actions=day_actions,

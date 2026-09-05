@@ -44,6 +44,7 @@ from ``_DIARY_FALLBACK`` by value.
 from __future__ import annotations
 
 import inspect
+import logging
 from pathlib import Path
 from typing import Any, Callable
 
@@ -82,6 +83,22 @@ STANDINGS_LABEL = "Current standings (act on these):"
 # the model's text reached state untouched — and, crucially, that what reached
 # state is NOT ``_DIARY_FALLBACK``.
 SCRIPTED_ENTRY = "SCRIPTED-DIARY-039: the miller would not meet my eye today."
+
+# ``_ai_diary``'s logger, as a literal rather than ``day_nodes.logger.name``, so
+# moving the node to another module is a visible change here.
+DAY_LOGGER = "graphia.nodes.day"
+
+# ``_ai_diary``'s no-usable-entry warning template, pinned verbatim. Spec 041
+# Slice 4 rewrote its parenthetical: it used to read
+# ``(no tool call and no recoverable prose)``, naming the interim recovery that
+# withdrawal removed. Pinned here so the NEXT rewording is a decision taken
+# against a red test rather than silent drift — the assertion this text belongs
+# to lived in ``tests/test_slice39_diary_prose_recovery.py`` until that file was
+# deleted with the mechanism it tested, and read only ``levelno`` and ``args``.
+DIARY_NO_ENTRY_WARNING = (
+    "diary: no usable entry for %s (the reply carried no Diary with "
+    "non-blank text); using the deterministic fallback"
+)
 
 
 # ==========================================================================
@@ -928,16 +945,99 @@ def test_one_players_model_failure_does_not_skip_the_others(
 
 @pytest.mark.parametrize("empty", ["", "   ", "\n\t "])
 def test_an_empty_model_entry_becomes_the_fallback(
-    empty: str, monkeypatch: pytest.MonkeyPatch
+    empty: str,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """A blank ``Diary.entry`` is refused in favour of the deterministic note."""
+    """A blank ``Diary.entry`` is refused in favour of the deterministic note.
+
+    **And it is not silent** — the ``logger.warning`` half of the assertion is
+    re-homed here by spec 041 Task 4.2. It previously lived in
+    ``tests/test_slice39_diary_prose_recovery.py``, whose subject (the interim
+    prose recovery) Slice 4 withdrew; the warning itself was deliberately
+    *kept*, so its sole coverage in the suite had to move rather than go with
+    the file. The bare ``except: pass`` this line replaced is why the spec-039
+    campaign's 50% ollama fallback rate left nothing to diagnose after the fact:
+    with reliable decoding now doing the work, the warning is the only way an
+    unusable reply is visible at all.
+
+    Four independent things are asserted, so it cannot pass on "some warning
+    was emitted" or on a non-empty record list. The records are collected at
+    ``>= WARNING`` and the level is then asserted per record rather than used
+    as the filter:
+
+    - **which records**: exactly one per surviving AI writer, in fan-out order,
+      identified by ``args`` — a warning for two of the three, or one naming
+      the wrong player, fails.
+    - **the level**: ``WARNING``, and *nothing above it* — a blank entry must
+      take the no-usable-entry route, not ``_ai_diary``'s ``logger.exception``
+      route, and the two are otherwise indistinguishable from the delta alone
+      (both yield ``_DIARY_FALLBACK``).
+    - **the ``args`` arity**: one argument, which
+      ``tests/test_slice39_diary_store_write.py::test_a_store_failure_is_not_confused_with_a_model_failure``
+      relies on to tell the model axis from the two-argument store axis.
+    - **the wording**: the full interpolated text, from the template literal at
+      module scope.
+    """
     fake = _CapturingDiaryFake(entry=empty)
     monkeypatch.setattr(day_nodes, "get_large", lambda: fake)
+    caplog.set_level(logging.DEBUG, logger=DAY_LOGGER)
 
     entries = _entries_by_player(day_diary(_day_close_state()))
 
     assert entries["p-ava"] == [_DIARY_FALLBACK]
     assert entries["p-mara"] == [_DIARY_FALLBACK]
+
+    notable = [
+        record
+        for record in caplog.records
+        if record.name == DAY_LOGGER and record.levelno >= logging.WARNING
+    ]
+    assert [(record.levelno, record.args) for record in notable] == [
+        (logging.WARNING, ("p-ava",)),
+        (logging.WARNING, ("p-ben",)),
+        (logging.WARNING, ("p-mara",)),
+    ]
+    assert [record.getMessage() for record in notable] == [
+        DIARY_NO_ENTRY_WARNING % pid for pid in ("p-ava", "p-ben", "p-mara")
+    ]
+
+
+def test_the_diary_queue_serves_a_bare_schema_instance(fake_large) -> None:
+    """``fake_large``'s ``Diary`` queue hands back a ``Diary``, not an envelope.
+
+    Spec 041 Slice 4 reverted ``_ai_diary`` to ``with_structured_output(Diary)``
+    and ``tests/conftest.py``'s ``_LargeQueue`` to serving the scripted object
+    bare. Pinned rather than left merely untested, because the withdrawn
+    scaffolding did the *opposite*: asked for ``include_raw``, it wrapped the
+    value in a ``{"raw", "parsed", "parsing_error"}`` mapping. A fake still
+    returning that mapping would fail the node's ``isinstance(result, Diary)``
+    guard and send every entry to ``_DIARY_FALLBACK`` — which is why this drives
+    the real node rather than only inspecting the returned object: the fallback
+    is non-empty prose too, so "an entry exists" is true in the broken world.
+
+    The last assertion pins the *removal of the parameter* alongside the removal
+    of the branch. A kept-but-inert ``include_raw`` would accept the kwarg and
+    hand back the bare instance anyway, so a re-introduced recovery would look
+    wired up and be silently ignored; gone, it is a loud ``TypeError`` at the
+    binding.
+    """
+    fake = fake_large(diaries=[Diary(entry=SCRIPTED_ENTRY)])
+
+    result = day_nodes.get_large().with_structured_output(Diary).invoke([])
+
+    assert isinstance(result, Diary)
+    assert result.entry == SCRIPTED_ENTRY
+    assert fake.calls_by_schema[Diary] == 1
+
+    # The node consumes that shape and records the model's own text — which is
+    # the assertion an envelope-returning queue would fail, since the node's
+    # ``isinstance`` guard would reject the mapping and substitute the fallback.
+    entries = _entries_by_player(day_diary(_day_close_state()))
+    assert entries["p-ava"] == [SCRIPTED_ENTRY]
+
+    with pytest.raises(TypeError):
+        fake.with_structured_output(Diary, include_raw=True)
 
 
 def test_safe_llm_nets_the_diary_call_site(monkeypatch: pytest.MonkeyPatch) -> None:
