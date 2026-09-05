@@ -158,10 +158,11 @@ class SchemaStats:
 # / ``parsed`` / ``parsing_error``. ``parsed`` and ``parsing_error`` are the
 # *discriminating* pair, and a mapping must carry BOTH to be read as the
 # envelope. ``raw`` is deliberately NOT required: it is the one key a provider
-# that ignored the ``include_raw`` request may omit, and
-# ``day._diary_entry_from`` already tolerates its absence for exactly that
-# reason. Requiring the pair is what keeps a plain game payload — ``{"entry":
-# "x"}`` — outside the envelope branch.
+# that ignored the ``include_raw`` request may omit, and such a reply still
+# carries a usable answer in ``parsed`` — booking it a failure would be the
+# same mis-classification this rule exists to fix. Requiring the pair is what
+# keeps a plain game payload — ``{"entry": "x"}`` — outside the envelope
+# branch.
 _INCLUDE_RAW_KEYS = ("parsed", "parsing_error")
 
 
@@ -188,8 +189,10 @@ def _classification_error(result: Any, schema: Any) -> str | None:
     which is shape 2's *negation*: the envelope is a ``dict``, so **every**
     ``include_raw`` invoke was booked ``record_failure("non-instance result:
     dict")`` — including the ones carrying a perfectly good ``parsed``. The
-    production diary call is ``with_structured_output(Diary, include_raw=True)``
-    (spec 039), so on every provider, in every run, healthy or not:
+    production diary call *was* ``with_structured_output(Diary,
+    include_raw=True)`` (spec 039; spec 041 Slice 4 withdrew the envelope
+    request with the prose recovery that consumed it), so while it stood — on
+    every provider, in every run, healthy or not:
 
     - ``SchemaStats["Diary"].failure_rate`` was **1.0 by construction**, so the
       ADR-013 transport gate could not observe its own fix and any smoke output

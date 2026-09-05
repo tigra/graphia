@@ -752,11 +752,11 @@ def test_counting_an_envelope_whose_parsed_is_a_different_schema_is_a_failure() 
 def test_counting_an_envelope_missing_only_raw_is_still_read_as_the_envelope() -> None:
     """``raw`` is deliberately NOT part of the discriminating pair → success.
 
-    ``raw`` is the one key a provider that ignored the ``include_raw`` request may
-    omit (``day._diary_entry_from`` tolerated its absence for exactly that
-    reason), so the envelope is recognised by ``parsed`` + ``parsing_error``
-    alone. A mapping carrying a good ``parsed`` and a ``None``
-    ``parsing_error`` is a success even with no ``raw`` at all.
+    ``raw`` is the one key a provider that ignored the ``include_raw`` request
+    may omit, and such a reply still carries a usable answer in ``parsed`` — so
+    the envelope is recognised by ``parsed`` + ``parsing_error`` alone. A
+    mapping carrying a good ``parsed`` and a ``None`` ``parsing_error`` is a
+    success even with no ``raw`` at all.
     """
     stats = _drive_count_only(
         Diary,

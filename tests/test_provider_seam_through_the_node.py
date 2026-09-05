@@ -494,12 +494,13 @@ class _CallSite:
     # ``test_the_diary_call_site_keeps_include_raw_beside_the_pinned_method``,
     # which scripted it here. The merge itself stays covered at wrapper level by
     # ``test_structured_output_method.py::test_caller_kwargs_are_merged_with_the_provider_default``;
-    # "no production call site passes any caller kwargs" is asserted across all
-    # eight sites by Task 4.3's ``tests/test_spec041_withdrawal.py``. The field
-    # stays because ``_assert_recorded``'s ``{**defaults, **site.caller_kwargs}``
-    # is the honest expression of what a call site is *allowed* to do — a future
-    # site that legitimately needs a kwarg declares it here rather than
-    # weakening the sweep.
+    # "no production call site passes any caller kwargs" is asserted across
+    # every row of this table by ``test_no_call_site_declares_any_caller_kwargs``
+    # below. The field stays because ``_assert_recorded``'s ``{**defaults,
+    # **site.caller_kwargs}`` is the honest expression of what a call site is
+    # *allowed* to do — a future site that legitimately needs a kwarg declares
+    # it here rather than weakening the sweep, and that guard is where the
+    # declaration gets noticed.
     caller_kwargs: dict[type, dict[str, Any]] = field(default_factory=dict)
 
 
@@ -791,9 +792,47 @@ def test_the_call_site_requests_no_method_on_the_cloud_twin(
 # scripted one into ``_CALL_SITES`` would assert a fiction. The merge stays
 # covered at wrapper level by
 # ``test_structured_output_method.py::test_caller_kwargs_are_merged_with_the_provider_default``,
-# and Task 4.3's ``tests/test_spec041_withdrawal.py`` asserts the stronger
-# replacement invariant — *no* caller kwargs at *any* of the eight sites, which
-# also catches a new site hard-coding one.
+# and the stronger replacement invariant — *no* caller kwargs at *any* site,
+# which also catches a new site hard-coding one — is the next test down.
+
+
+def test_no_call_site_declares_any_caller_kwargs() -> None:
+    """The two sweeps above cannot be weakened by a declaration in this table.
+
+    ``_assert_recorded`` asserts ``{**defaults, **site.caller_kwargs}``, which
+    is the right expression of what a call site is *allowed* to do — and also
+    the one way to make both sweeps stop noticing a caller kwarg that came
+    back: add an entry here and they go green again. So the empty maps are
+    **pinned rather than merely current**, and adding a ``_CallSite`` becomes a
+    decision about what it switches off instead of an edit nobody reads.
+
+    This is spec 041 Task 4.3's generalised replacement for the deleted
+    ``test_the_diary_call_site_keeps_include_raw_beside_the_pinned_method``
+    (tombstone above). It is homed here, beside the table it guards, rather
+    than in ``tests/test_spec041_withdrawal.py``: the invariant is a property
+    of this table, and stating it from another module would have meant
+    rebuilding this one's provider seam to re-drive nine rows that
+    ``_assert_recorded`` already checks exactly.
+
+    The row count is EXACT, not a floor, for the same reason — a tenth row
+    added silently is a call site whose kwargs nobody chose. Nine rows cover
+    the **eight** production ``with_structured_output`` call sites because
+    ``_generate_one_persona`` is driven twice: once through the cached
+    ``nodes.setup.get_large`` (spec 034 flag-OFF) and once through
+    ``nodes.setup.get_persona_model`` (flag-ON).
+    """
+    declaring = {s.id: s.caller_kwargs for s in _CALL_SITES if s.caller_kwargs}
+    assert declaring == {}, (
+        "a production call site declares caller kwargs, which switches off part "
+        f"of the exact-kwargs sweep for it: {declaring!r}. Spec 041 Slice 4 left "
+        "every map empty on purpose — no production call site passes any caller "
+        "kwargs. If a new site legitimately needs one, that is a deliberate "
+        "change to this guard, not a silent addition to the table."
+    )
+    assert len(_CALL_SITES) == 9, (
+        f"the call-site table has {len(_CALL_SITES)} rows, not 9 — a row was "
+        "added or removed without revisiting what caller kwargs it declares."
+    )
 
 
 # ---------------------------------------------------------------------------

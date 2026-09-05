@@ -1,13 +1,17 @@
 """Real-Ollama structured-output smoke — ADR-010's verify-at-implementation gate.
 
-ADR-010 routes the Ollama provider through Ollama's Anthropic-compatible
-``/v1/messages`` surface (``ChatAnthropic``). The open question that decision
-deliberately deferred is whether **tool-use / structured output** works
-reliably over that surface with small local models. This harness answers it
-empirically — it *reports*, it does not decide: if a model pair comes back
-UNRELIABLE, switching to a fallback transport (native ChatOllama / the
-OpenAI-compatible surface) is a deliberate follow-up decision, not something
-this tool performs silently.
+The Ollama provider reaches the model over Ollama's **native** surface
+(``langchain_ollama.ChatOllama``) under a JSON-schema ``format`` — a decoding
+grammar the server enforces, not a request it may decline. The open question
+ADR-010 deliberately deferred was whether **structured output** works reliably
+over the local path with small models, and this harness is what answered it:
+on the shim ADR-010 originally chose (Ollama's Anthropic-compatible
+``/v1/messages`` endpoint, where structured output was tool use) the answer was
+no — ``tool_choice`` was accepted and silently dropped — and spec 041 Slices 2
+and 3 replaced that transport on this evidence (ADR 013). The harness keeps
+reporting on whatever transport is current — it *reports*, it does not decide:
+if a model pair comes back UNRELIABLE, changing transport again is a deliberate
+follow-up decision, not something this tool performs silently.
 
 Like ``eval_dialogue`` (whose driver pattern this reuses), it is deliberately
 **not** a pytest test: it reaches a real local LLM server and is run on
@@ -515,8 +519,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description=(
             "Smoke-test structured output on real local Ollama models over the "
-            "Anthropic-compatible surface (ADR-010 gate). Reports per-schema "
-            "parse reliability; it does not switch transports."
+            "native surface (ADR-010 gate). Reports per-schema parse "
+            "reliability; it does not switch transports."
         )
     )
     ap.add_argument(
