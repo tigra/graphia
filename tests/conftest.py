@@ -25,6 +25,104 @@ from graphia.llm import (
 from graphia.nodes.day import DAY_MAX_ROUNDS, DAY_MAX_VOTES
 from graphia.nodes.setup import ai_name_count
 
+# ==========================================================================
+# Structured-output bookkeeping shared by EVERY fake (spec 041 Slice 5)
+#
+# The hazard this block exists to close: the offline suite passed for a whole
+# measured campaign while silently exercising the diary FALLBACK rather than a
+# real entry. Two properties of the old fakes made that possible, and each gets
+# its own mechanism here.
+#
+# 1. A fake that could not serve what it was asked for raised ``AssertionError``
+#    — an ``Exception``, so any node with a broad ``except Exception`` (four of
+#    them call the large tier) turned the fake's complaint into a plausible
+#    substituted value and the test went on to measure the substitution while
+#    passing. ``pytest.fail(..., pytrace=False)`` raises ``Failed``, which
+#    derives from ``BaseException``, so it walks straight through every
+#    ``except Exception`` in the codebase. See ``FakeLargeUnified``.
+#
+# 2. ``with_structured_output`` took a strict, keyword-free signature, so the
+#    first caller kwarg to appear (``method="json_schema"``, injected by the
+#    provider seam — ``graphia.llm.StructuredMethodModel``) would have been a
+#    ``TypeError`` from the *fake* rather than anything the real model would
+#    do. A stand-in that rejects what the thing it stands in for accepts is
+#    less faithful, not safer. Every fake now takes ``**kwargs``, RECORDS the
+#    call, and books anything outside the allowlist below as a violation.
+# ==========================================================================
+
+# The ONLY kwarg a fake may be handed without booking a violation.
+#
+# ``method`` is what the provider seam legitimately injects: the local Ollama
+# path's ``structured_output_defaults()`` is ``{"method": "json_schema"}``
+# (ADR 013), merged in by ``StructuredMethodModel.with_structured_output``
+# before the schema reaches the client. Both Bedrock providers contribute
+# ``{}``.
+#
+# ``include_raw`` is deliberately ABSENT. Spec 041 Slice 4 withdrew the interim
+# prose recovery that was its only caller, and no production call site passes
+# any caller kwarg at all now — so a fake seeing ``include_raw`` means a
+# recovery has been re-introduced somewhere, which is exactly the thing Task
+# 4.2 wanted to be loud about. It used to be loud as a ``TypeError`` raised by
+# a typed signature; it is loud as a booked violation now, which catches the
+# same mistake on all seven fakes instead of one.
+STRUCTURED_OUTPUT_KWARG_ALLOWLIST: frozenset[str] = frozenset({"method"})
+
+# Every "I was asked for something I cannot serve" a fake meets, in the order
+# it met them. A list rather than an exception because this is the ONE record
+# that survives a swallow: it does not matter which thread the fake ran on, nor
+# how broad the ``except`` above it was, the entry is still here at teardown.
+#
+# Spec 041 Task 5.2 adds the autouse fixture that drains this at teardown and
+# fails the test naming each entry. Until then the list is written and read
+# only by tests that deliberately provoke a violation, which drain it via
+# :func:`drain_structured_output_violations` so the future tripwire starts
+# green.
+structured_output_violations: list[str] = []
+
+
+def drain_structured_output_violations() -> list[str]:
+    """Return every recorded violation and clear the list.
+
+    Drain-and-return rather than read-then-clear, so a test that provokes a
+    violation on purpose cannot leave one behind for the next test — nor for
+    Task 5.2's teardown tripwire, which will read the same list.
+    """
+    drained = list(structured_output_violations)
+    structured_output_violations.clear()
+    return drained
+
+
+def _schema_label(schema: Any) -> str:
+    """Render a bound schema for a message — a class by name, anything else by repr."""
+    return schema.__name__ if isinstance(schema, type) else repr(schema)
+
+
+def _record_structured_output_call(
+    fake: Any, schema: Any, kwargs: dict[str, Any]
+) -> None:
+    """Book one ``with_structured_output`` call on ``fake.structured_calls``.
+
+    Appends ``(schema, dict(kwargs))`` — a *copy* of the kwargs, so a caller
+    that reuses and mutates its own dict cannot rewrite history — and books one
+    violation per kwarg outside
+    :data:`STRUCTURED_OUTPUT_KWARG_ALLOWLIST`. Never raises: an unexpected
+    kwarg is a fact to record, not a reason for the fake to behave differently
+    from the model it stands in for.
+    """
+    fake.structured_calls.append((schema, dict(kwargs)))
+    for name in kwargs:
+        if name not in STRUCTURED_OUTPUT_KWARG_ALLOWLIST:
+            structured_output_violations.append(
+                f"{type(fake).__name__}.with_structured_output("
+                f"{_schema_label(schema)}) was passed {name!r}, which is not in "
+                f"the allowlist {sorted(STRUCTURED_OUTPUT_KWARG_ALLOWLIST)}. No "
+                "production call site passes caller kwargs after spec 041 Slice "
+                "4; the provider seam injects `method` and nothing else. If a "
+                "new kwarg is legitimate, add it to "
+                "STRUCTURED_OUTPUT_KWARG_ALLOWLIST in tests/conftest.py "
+                "deliberately."
+            )
+
 
 def _fake_embed_documents(texts: list[str]) -> list[list[float]]:
     """Deterministic stand-in for ``BedrockEmbeddings.embed_documents`` (spec 033).
@@ -82,10 +180,15 @@ class _LoudFailureLLM:
         # a different fix than a missing per-test fixture. Defaulting to ``None``
         # keeps the five call-site bindings' message byte-identical.
         self._hint = hint
+        # Spec 041 Slice 5: recorded here too, even though this object exists to
+        # fail on ``invoke``. A test that reaches the net has already gone wrong,
+        # and the schema/kwargs it was binding is the first thing a reader wants.
+        self.structured_calls: list[tuple[Any, dict[str, Any]]] = []
 
     def with_structured_output(
         self, schema: type, **kwargs: Any
     ) -> "_LoudFailureLLM":
+        _record_structured_output_call(self, schema, kwargs)
         return self
 
     def invoke(self, messages: Any) -> Any:
@@ -437,11 +540,13 @@ class FakeSmall:
         self._outputs: list[Roster | Exception] = list(outputs)
         self.call_count = 0
         self._bound_schema: type | None = None
+        self.structured_calls: list[tuple[Any, dict[str, Any]]] = []
 
     def with_structured_output(self, schema: type, **kwargs: Any) -> "FakeSmall":
         # Real LangChain returns a new runnable bound to the schema; for the
         # test we just record the schema and return self so subsequent
         # ``.invoke`` calls go through the scripted queue.
+        _record_structured_output_call(self, schema, kwargs)
         self._bound_schema = schema
         return self
 
@@ -636,9 +741,11 @@ class _PooledSmall:
         self._pool: list[str] = list(pool)
         self.call_count = 0
         self._bound_schema: type | None = None
+        self.structured_calls: list[tuple[Any, dict[str, Any]]] = []
 
     def with_structured_output(self, schema: type, **kwargs: Any) -> "_PooledSmall":
         # Mirrors ``FakeSmall``: record the bound schema and return self.
+        _record_structured_output_call(self, schema, kwargs)
         self._bound_schema = schema
         return self
 
@@ -783,8 +890,10 @@ class FakeLarge:
         self._bound_schema: type | None = None
         self.last_messages: Any = None
         self.messages_log: list[Any] = []
+        self.structured_calls: list[tuple[Any, dict[str, Any]]] = []
 
     def with_structured_output(self, schema: type, **kwargs: Any) -> "FakeLarge":
+        _record_structured_output_call(self, schema, kwargs)
         self._bound_schema = schema
         return self
 
@@ -860,10 +969,12 @@ class FakeLargeDay:
         self.call_count = 0
         self._bound_schema: type | None = None
         self._last: DayAction | None = None
+        self.structured_calls: list[tuple[Any, dict[str, Any]]] = []
 
     def with_structured_output(
         self, schema: type, **kwargs: Any
     ) -> "FakeLargeDay":
+        _record_structured_output_call(self, schema, kwargs)
         self._bound_schema = schema
         return self
 
@@ -1180,6 +1291,81 @@ async def drive_until_public_log_contains(
 # --------------------------------------------------------------------------
 
 
+# --------------------------------------------------------------------------
+# The UNSCRIPTED DEFAULTS (spec 041 Task 5.1)
+#
+# What a known schema's queue serves when it was never primed. Before this,
+# that case raised ``AssertionError`` from inside ``_LargeQueue.invoke`` —
+# which is INSIDE every calling node's ``try``, so the four large-tier nodes
+# turned it into their own substituted value and the test measured the
+# substitution while passing green. That is precisely the hazard that let the
+# spec-039 diary defect live through a whole measured campaign.
+#
+# Serving a value instead means a test that simply does not care about diaries
+# (or reflections, or personas) no longer silently exercises the substitution
+# path. The value is recognisable on TWO independent axes, so neither a scripted
+# value nor a node fallback can be mistaken for it:
+#
+# * **By identity.** These are module-level singletons. ``value is
+#   UNSCRIPTED_DEFAULTS[Ballot]`` is exact, and it is the only axis available
+#   for ``Ballot``, whose whole payload is one bool. ``FakeLargeUnified``
+#   additionally records each schema it defaulted for in
+#   ``unscripted_defaults_served``.
+# * **By text.** Every text-carrying field holds :data:`UNSCRIPTED_MARKER` — a
+#   bracketed, upper-case, machine-shaped sentinel. It is unmistakable against a
+#   scripted value (tests script ordinary sentences) and unmistakable against
+#   ``graphia.nodes.day._DIARY_FALLBACK`` / ``_REFLECTION_FALLBACK`` / the
+#   ``_ai_day_action`` speak fallback, all of which are plausible in-character
+#   PROSE. Reading "[UNSCRIPTED-FAKE-DEFAULT …]" in a transcript or an
+#   assertion diff says "no queue was primed", never "the model answered".
+#
+# Two schemas need their behaviour spelled out, because their default is not a
+# free choice:
+#
+# * ``Pointing`` — the fake cannot know a valid target id. The roster's UUIDs
+#   only exist once ``assign_roles`` has run on live graph state, which is the
+#   whole reason ``_DynamicNightPointing`` exists, and parsing them out of the
+#   rendered prompt would couple this fake to prompt wording other specs change
+#   freely. So the default target is deliberately INVALID: ``_ai_pick_target``
+#   rejects it, retries, rejects it again and takes its random fallback —
+#   exactly what the old ``AssertionError`` produced, with the same two
+#   invocations booked. Behaviour preserved; the substitution here is the
+#   node's honest answer to "the fake cannot know", not a hidden one.
+# * ``Ballot`` — ``yes=False`` is the same conservative "No" ``_ai_ballot``'s
+#   own fallback returns, so an unprimed ballot queue moves no vote that it did
+#   not already move. What changes is that the node now ACCEPTS the first reply
+#   instead of failing twice, so a never-primed ``Ballot`` books one invocation
+#   where it used to book two.
+# --------------------------------------------------------------------------
+
+UNSCRIPTED_MARKER = "UNSCRIPTED-FAKE-DEFAULT"
+
+
+def _unscripted_text(schema_name: str) -> str:
+    """The recognisable body a text-carrying unscripted default carries."""
+    return (
+        f"[{UNSCRIPTED_MARKER}: no {schema_name} was scripted for this test, so "
+        "FakeLargeUnified served its default]"
+    )
+
+
+# A target id no roster can ever hold — see the ``Pointing`` note above.
+UNSCRIPTED_TARGET_ID = f"{UNSCRIPTED_MARKER}-no-pointing-was-scripted"
+
+UNSCRIPTED_DEFAULTS: dict[type, Any] = {
+    DayAction: DayAction(kind="speak", text=_unscripted_text("DayAction")),
+    Ballot: Ballot(yes=False),
+    Pointing: Pointing(target_id=UNSCRIPTED_TARGET_ID),
+    Persona: Persona(
+        personality=_unscripted_text("Persona"),
+        manner=_unscripted_text("Persona"),
+        public_backstory=_unscripted_text("Persona"),
+    ),
+    Reflection: Reflection(thought=_unscripted_text("Reflection")),
+    Diary: Diary(entry=_unscripted_text("Diary")),
+}
+
+
 class _LargeQueue:
     """Bound view over one of the unified fake's scripted queues.
 
@@ -1187,7 +1373,8 @@ class _LargeQueue:
     When the queue is empty the last popped value is replayed — the exact
     same "keep serving the last output" behaviour the per-schema fakes use
     so long-running tests don't need to pre-script exactly the right number
-    of invocations.
+    of invocations. A queue that was NEVER primed serves that schema's entry
+    from :data:`UNSCRIPTED_DEFAULTS` instead of raising (spec 041 Task 5.1).
 
     ``invoke`` returns the scripted object **bare**, which is the
     ``include_raw=False`` contract every production call site now uses. Spec
@@ -1198,8 +1385,23 @@ class _LargeQueue:
     this scaffolding for it. The ``include_raw`` **parameter went with the
     branch, deliberately**: a parameter kept after its branch is a trap, since
     it would accept ``include_raw=True`` and silently hand back the bare
-    instance anyway. Gone, a re-introduction is a loud ``TypeError`` at the
-    binding — pinned by
+    instance anyway.
+
+    **How that guarantee is enforced now, and why the mechanism changed.**
+    Slice 4 made a re-introduction a ``TypeError`` at the binding, by giving
+    ``FakeLargeUnified.with_structured_output`` a signature that took no
+    keywords at all. Spec 041 Task 5.1 replaced that signature with
+    ``**kwargs`` on every fake, for a reason that outranks it: the real model
+    accepts kwargs, the provider seam legitimately injects
+    ``method="json_schema"``, and a stand-in that rejects what the thing it
+    stands in for accepts is less faithful rather than safer. The guarantee did
+    not go with the signature — ``include_raw`` is simply not in
+    :data:`STRUCTURED_OUTPUT_KWARG_ALLOWLIST`, so passing it books an entry in
+    :data:`structured_output_violations`, which is louder in every way that
+    matters: it covers all seven fakes rather than this one, it catches ANY
+    unexpected kwarg rather than the one somebody thought of, and being a
+    recorded fact rather than a raised exception it survives a swallow.
+    Pinned by
     ``tests/test_slice39_diary_before_night.py::test_the_diary_queue_serves_a_bare_schema_instance``.
     """
 
@@ -1225,21 +1427,43 @@ class FakeLargeUnified:
     and ``Diary`` (spec 039 — the per-AI before-Night private diary entry)
     bindings without interference.
 
-    **A missing queue is a SILENT failure, not a loud one.** Both
-    ``day_round_reflect`` (028) and ``day_diary`` (039) wrap their model call
-    in ``try/except Exception`` and substitute a deterministic fallback note.
-    The ``AssertionError`` this class raises for an unknown schema is therefore
-    *swallowed by the node under test*, and the test goes on to measure the
-    fallback while passing — proving nothing about the real path. Every new
-    structured-output call site must get its queue here in the same change that
-    introduces it (tech-spec 039 §3).
+    **A missing queue USED TO BE a silent failure (spec 041 Task 5.1 closed
+    it).** Both ``day_round_reflect`` (028) and ``day_diary`` (039) wrap their
+    model call in ``try/except Exception`` and substitute a deterministic
+    fallback note, so the ``AssertionError`` this class raised was *swallowed
+    by the node under test* and the test went on to measure the fallback while
+    passing — proving nothing about the real path. The two cases are now split,
+    and neither can be swallowed:
+
+    - **Unknown schema** — a schema with no queue at all, i.e. a new
+      structured-output call site that nobody taught this fake about. That is a
+      test-suite defect, not a game outcome, so it goes through
+      ``pytest.fail(..., pytrace=False)``. ``Failed`` derives from
+      ``BaseException``, so it walks straight through every ``except
+      Exception`` between here and the test. A violation is booked as well, so
+      even an ``except BaseException`` somewhere could not hide it. Every new
+      structured-output call site must still get its queue here in the same
+      change that introduces it (tech-spec 039 §3) — this just makes forgetting
+      impossible to miss.
+    - **Known schema, never-primed queue** — an ordinary test that did not care
+      about this answer kind. That is not a defect, so it is not a failure: the
+      queue serves this schema's :data:`UNSCRIPTED_DEFAULTS` entry, which is
+      recognisable as a default and is therefore *not* the node's substituted
+      value. See that table for the two recognisability axes and for the
+      ``Pointing`` / ``Ballot`` caveats.
 
     Attributes:
         call_count: Total invocations across all schemas.
         calls_by_schema: Per-schema invocation counts, keyed by schema class.
             The counter is what distinguishes "the scripted queue served this
-            call" from "the queue was never reached": a swallowed
-            unknown-schema ``AssertionError`` leaves the schema's count at 0.
+            call" from "the queue was never reached".
+        structured_calls: Every ``with_structured_output`` call as
+            ``(schema, kwargs)``, in call order — what the provider seam
+            actually handed this fake.
+        unscripted_defaults_served: Each schema this fake served an
+            :data:`UNSCRIPTED_DEFAULTS` value for, in service order. The
+            recognisability axis for ``Ballot``, whose payload is one bool and
+            so carries no marker text of its own.
     """
 
     def __init__(
@@ -1296,6 +1520,8 @@ class FakeLargeUnified:
         }
         self._last: dict[type, Any] = {}
         self.call_count = 0
+        self.structured_calls: list[tuple[Any, dict[str, Any]]] = []
+        self.unscripted_defaults_served: list[type] = []
         # DERIVED from ``_queues`` rather than re-listed (spec 041 §3.4): the
         # six schemas were hand-typed here and in the error text below as well
         # as in the queue map, so a seventh queue could be added with a counter
@@ -1305,16 +1531,27 @@ class FakeLargeUnified:
             schema: 0 for schema in self._queues
         }
 
-    def with_structured_output(self, schema: type) -> _LargeQueue:
+    def with_structured_output(self, schema: type, **kwargs: Any) -> _LargeQueue:
+        _record_structured_output_call(self, schema, kwargs)
         if schema not in self._queues:
             # Also derived — same reason as ``calls_by_schema`` above. The
             # rendered text is byte-identical to the hand-typed list it
-            # replaces.
+            # replaces, and to the text this raised as an ``AssertionError``
+            # before Task 5.1 changed only HOW it is surfaced.
             supported = ", ".join(s.__name__ for s in self._queues)
-            raise AssertionError(
+            message = (
                 f"FakeLarge has no scripted queue for schema {schema!r}. "
                 f"Supported: {supported}."
             )
+            # BOTH mechanisms, and they are not redundant. The booked violation
+            # is the record that survives an ``except BaseException`` or a
+            # worker thread that never re-raises; ``pytest.fail`` is what stops
+            # the test HERE, at the call that went wrong, instead of letting it
+            # run on against a substituted value. ``pytrace=False`` because the
+            # traceback would point into this fake, and the fix is always at
+            # the call site that bound an unknown schema.
+            structured_output_violations.append(message)
+            pytest.fail(message, pytrace=False)
         return _LargeQueue(self, schema)
 
     def _invoke(self, schema: type, messages: Any) -> Any:
@@ -1324,10 +1561,30 @@ class FakeLargeUnified:
         if not queue:
             last = self._last.get(schema)
             if last is None:
-                raise AssertionError(
-                    f"FakeLarge.invoke called for {schema.__name__} but no "
-                    "scripted outputs remain and no prior output to repeat."
-                )
+                # NEVER PRIMED — the test simply did not script this answer
+                # kind. Serve the recognisable default rather than raising
+                # (spec 041 Task 5.1). The old ``AssertionError`` here was
+                # inside every calling node's ``try``, so it became the node's
+                # substituted value and the test measured the substitution
+                # while passing. A default that says out loud what it is
+                # cannot be mistaken for either a scripted value or a node
+                # fallback; see ``UNSCRIPTED_DEFAULTS``.
+                if schema not in UNSCRIPTED_DEFAULTS:
+                    # ``_queues`` and ``UNSCRIPTED_DEFAULTS`` are two hand-typed
+                    # listings of the same six schemas, so they can drift: a
+                    # seventh queue added without a default would otherwise be a
+                    # bare ``KeyError`` from inside a swallowing node — the very
+                    # silence this task removed. Loud, on both mechanisms.
+                    message = (
+                        f"FakeLarge has a scripted queue for {schema.__name__} "
+                        "but no UNSCRIPTED_DEFAULTS entry, so a never-primed "
+                        "queue has nothing to serve. Add one in "
+                        "tests/conftest.py."
+                    )
+                    structured_output_violations.append(message)
+                    pytest.fail(message, pytrace=False)
+                self.unscripted_defaults_served.append(schema)
+                return UNSCRIPTED_DEFAULTS[schema]
             return last
         out = queue.pop(0)
         if isinstance(out, Exception):
@@ -1358,10 +1615,12 @@ class _DynamicNightPointing:
     def __init__(self, state_provider: Callable[[], dict]) -> None:
         self._state_provider = state_provider
         self.call_count = 0
+        self.structured_calls: list[tuple[Any, dict[str, Any]]] = []
 
     def with_structured_output(
         self, schema: type, **kwargs: Any
     ) -> "_DynamicNightPointing":
+        _record_structured_output_call(self, schema, kwargs)
         return self
 
     def invoke(self, messages: Any) -> Pointing:
@@ -1418,10 +1677,12 @@ class _TargetHumanPointing:
     def __init__(self, state_provider: Callable[[], dict]) -> None:
         self._state_provider = state_provider
         self.call_count = 0
+        self.structured_calls: list[tuple[Any, dict[str, Any]]] = []
 
     def with_structured_output(
         self, schema: type, **kwargs: Any
     ) -> "_TargetHumanPointing":
+        _record_structured_output_call(self, schema, kwargs)
         return self
 
     def invoke(self, messages: Any) -> Pointing:
@@ -1498,9 +1759,11 @@ def fake_large(
     diary entry) on the same large-model binding.
 
     Script ``diaries=`` whenever the assertion depends on WHAT the diary node
-    wrote. Leaving it unscripted is not an error — the queue exists, so the
-    node's own empty-queue path decides the outcome — but a test that wants the
-    real path exercised must pass an entry AND check
+    wrote. Leaving it unscripted is not an error — the queue serves its
+    ``UNSCRIPTED_DEFAULTS`` entry, whose marker text says plainly that nothing
+    was scripted (spec 041 Task 5.1; before that it raised into the node's
+    ``except`` and the test silently measured ``_DIARY_FALLBACK``) — but a test
+    that wants the real path exercised must pass an entry AND check
     ``calls_by_schema[Diary]``; see ``tests/test_slice39_diary_fake_coverage.py``.
     """
 

@@ -9,15 +9,21 @@ Why this file exists, and why it is the first thing in the spec
 ``try/except`` and substitutes a deterministic ``_DIARY_FALLBACK`` on any
 failure, so one model hiccup can never blank the channel.
 
-That defensive posture has a nasty interaction with the test double.
-``FakeLargeUnified.with_structured_output`` raises
+That defensive posture had a nasty interaction with the test double.
+``FakeLargeUnified.with_structured_output`` used to raise
 ``AssertionError("... no scripted queue for schema ...")`` for a schema it does
-not know. **The node's ``except`` swallows that assertion**, writes the
-fallback, and returns a perfectly well-formed delta. A suite with no ``Diary``
+not know. **The node's ``except`` swallowed that assertion**, wrote the
+fallback, and returned a perfectly well-formed delta. A suite with no ``Diary``
 queue would therefore be *green while measuring the fallback everywhere* — every
 later assertion in spec 039 (the interleave cursor, the window, the clamp, the
 transcript tag, privacy) would be made against a constant string the model never
 produced. Tech-spec 039 §3 names this the spec's hard prerequisite.
+
+Spec 041 Task 5.1 removed the swallow-ability itself: the same message is now
+raised through ``pytest.fail(..., pytrace=False)``, whose ``Failed`` derives
+from ``BaseException`` and therefore passes through every ``except Exception``
+between the fake and the test. The message text is unchanged, and this file's
+assertions on it are unchanged with it; only the exception type moved.
 
 The detector is ``calls_by_schema[Diary]``, not the entry text
 --------------------------------------------------------------
@@ -27,9 +33,10 @@ produces one too. Two independent signals are asserted together, and only the
 pair is conclusive:
 
 1. ``fake.calls_by_schema[Diary] >= 1`` — the scripted queue was actually
-   *reached*. A swallowed unknown-schema ``AssertionError`` never gets as far as
-   ``_invoke``, so this counter stays at 0. This is the assertion that fails if
-   the ``Diary`` queue is ever removed from ``tests/conftest.py``.
+   *reached*. An unknown-schema failure never gets as far as ``_invoke``, so
+   this counter stays at 0. This is the assertion that fails if the ``Diary``
+   queue is ever removed from ``tests/conftest.py`` — and since Task 5.1 the
+   removal is loud on its own, so this is now belt as well as braces.
 2. Every recorded entry equals the scripted sentinel, and none is
    ``_DIARY_FALLBACK`` — the value the node kept is the one the fake handed it,
    not something it substituted after eating an exception.
@@ -60,6 +67,7 @@ import pytest
 from langgraph.types import Command
 
 import graphia.nodes.day as day_nodes
+from conftest import drain_structured_output_violations
 from graphia.config import load_config
 from graphia.graph import build_graph, make_run_config
 from graphia.llm import Ballot, DayAction, Diary, Pointing
@@ -201,22 +209,37 @@ def test_fake_large_serves_a_scripted_diary_through_the_day_call_site(
 
 
 def test_fake_large_unsupported_schema_message_lists_diary(fake_large) -> None:
-    """The unknown-schema ``AssertionError`` advertises ``Diary`` as supported.
+    """The unknown-schema failure advertises ``Diary`` as supported.
 
     That message is the only signpost a developer gets when a new call site
     binds a schema the fake does not know, so it must stay in step with
-    ``_queues``.
+    ``_queues``. Its TEXT is what this test pins, and Task 5.1 left the text
+    byte-identical.
+
+    What changed is the exception type: ``pytest.fail(..., pytrace=False)``
+    rather than ``raise AssertionError``, so the failure derives from
+    ``BaseException`` and cannot be swallowed by the four large-tier nodes'
+    ``except Exception``. ``pytest.raises(AssertionError)`` would therefore no
+    longer catch it, which is the whole point — an ``AssertionError`` is
+    catchable by exactly the code this file exists to defend against.
+
+    The provocation also books a violation (belt and braces: the record
+    survives even an ``except BaseException``), drained here so it does not
+    reach the teardown tripwire.
     """
     fake = fake_large()
 
     class _UnknownSchema:
         pass
 
-    with pytest.raises(AssertionError) as excinfo:
+    drain_structured_output_violations()
+    with pytest.raises(pytest.fail.Exception) as excinfo:
         fake.with_structured_output(_UnknownSchema)
 
     message = str(excinfo.value)
     assert "no scripted queue" in message
+    booked = drain_structured_output_violations()
+    assert booked == [message]
     for schema_name in (
         "DayAction",
         "Ballot",

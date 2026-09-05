@@ -53,6 +53,10 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.types import Command
 
 import graphia.nodes.day as day_nodes
+from conftest import (
+    STRUCTURED_OUTPUT_KWARG_ALLOWLIST,
+    drain_structured_output_violations,
+)
 from graphia.config import load_config
 from graphia.graph import build_graph, make_run_config
 from graphia.llm import Ballot, DayAction, Diary, Pointing, Reflection
@@ -1016,11 +1020,32 @@ def test_the_diary_queue_serves_a_bare_schema_instance(fake_large) -> None:
     the real node rather than only inspecting the returned object: the fallback
     is non-empty prose too, so "an entry exists" is true in the broken world.
 
-    The last assertion pins the *removal of the parameter* alongside the removal
-    of the branch. A kept-but-inert ``include_raw`` would accept the kwarg and
-    hand back the bare instance anyway, so a re-introduced recovery would look
-    wired up and be silently ignored; gone, it is a loud ``TypeError`` at the
-    binding.
+    The last block pins the *removal of the parameter* alongside the removal of
+    the branch. A kept-but-inert ``include_raw`` would accept the kwarg and hand
+    back the bare instance anyway, so a re-introduced recovery would look wired
+    up and be silently ignored.
+
+    **The mechanism enforcing that changed in spec 041 Task 5.1; the guarantee
+    did not.** Slice 4 made it a ``TypeError`` at the binding, by giving
+    ``FakeLargeUnified.with_structured_output`` a signature that accepted no
+    keywords at all. Task 5.1 replaced that with ``**kwargs`` on all seven
+    fakes, because the real model accepts kwargs and the provider seam
+    legitimately injects ``method="json_schema"`` — a stand-in that rejects
+    what the thing it stands in for accepts is less faithful, not safer. So
+    ``include_raw`` no longer raises here. It is instead absent from
+    ``conftest.STRUCTURED_OUTPUT_KWARG_ALLOWLIST``, which means passing it
+    books an entry in ``conftest.structured_output_violations`` — surfaced by
+    the teardown tripwire, and strictly stronger than what it replaces: it
+    covers every fake rather than this one, it catches ANY unexpected kwarg
+    rather than the single one somebody thought of, and being a recorded fact
+    rather than a raised exception it survives a swallow.
+
+    Three things are asserted about it, so it cannot pass on "something was
+    recorded": the call does NOT raise (the change of mechanism is real), the
+    kwarg is on the recorded call (the fake saw it), and exactly one violation
+    was booked naming ``include_raw`` (it is not quietly tolerated). The
+    violations list is drained at both ends so this deliberate provocation
+    neither inherits another test's entry nor leaves one for the tripwire.
     """
     fake = fake_large(diaries=[Diary(entry=SCRIPTED_ENTRY)])
 
@@ -1036,8 +1061,15 @@ def test_the_diary_queue_serves_a_bare_schema_instance(fake_large) -> None:
     entries = _entries_by_player(day_diary(_day_close_state()))
     assert entries["p-ava"] == [SCRIPTED_ENTRY]
 
-    with pytest.raises(TypeError):
-        fake.with_structured_output(Diary, include_raw=True)
+    assert "include_raw" not in STRUCTURED_OUTPUT_KWARG_ALLOWLIST
+
+    drain_structured_output_violations()
+    fake.with_structured_output(Diary, include_raw=True)
+
+    assert fake.structured_calls[-1] == (Diary, {"include_raw": True})
+    violations = drain_structured_output_violations()
+    assert len(violations) == 1, violations
+    assert "include_raw" in violations[0]
 
 
 def test_safe_llm_nets_the_diary_call_site(monkeypatch: pytest.MonkeyPatch) -> None:
