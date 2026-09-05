@@ -19,6 +19,27 @@ compares the two runs' full output to each other. ``test_diary_store.py``
 in isolation from a real game. This file is the missing piece: a full-game,
 whole-public-transcript, exact ``==`` comparison of the two modes.
 
+Not evidence about diaries
+--------------------------
+
+This file scripts no diaries, and that is deliberate rather than an oversight
+someone should later correct (spec 041 Slice 5). Its compared surface is the
+gameplay-visible ``#public-log`` transcript plus the final ``kill_log`` and
+``winner`` — and ``day_diary`` returns only ``{}`` or ``{"private_diaries":
+...}``, never a ``messages`` key, so diary text has no route to any of the
+three. A diary could be perfect or could be the deterministic fallback in both
+runs and this test would compare identical bytes either way.
+
+So the equality proved here is real but says nothing about diary quality, and
+citing a green dual-mode smoke as diaries evidence would be a category error.
+What stops the omission being *harmful* is Task 5.1's unscripted default:
+reaching an unprimed ``Diary`` queue now serves a marked
+``[UNSCRIPTED-FAKE-DEFAULT: ...]`` value rather than silently exercising the
+substitution path, and ``tests/test_conftest_guards.py`` is where that
+behaviour is pinned. Diaries belong in tests that assert on them; per the
+author's rule they are not scripted here, because they cannot influence this
+test's outcome.
+
 What makes the two runs comparable
 ----------------------------------
 
