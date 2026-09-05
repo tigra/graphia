@@ -17,6 +17,7 @@ from graphia.llm import (
     Ballot,
     DayAction,
     Diary,
+    LLMProvider,
     Persona,
     Pointing,
     Reflection,
@@ -76,8 +77,12 @@ class _LoudFailureLLM:
     warning). Failing loudly here surfaces the missing stub immediately.
     """
 
-    def __init__(self, which: str) -> None:
+    def __init__(self, which: str, *, hint: str | None = None) -> None:
         self._which = which
+        # ``hint`` only exists so the PROVIDER-level backstop below can point at
+        # a different fix than a missing per-test fixture. Defaulting to ``None``
+        # keeps the five call-site bindings' message byte-identical.
+        self._hint = hint
 
     def with_structured_output(
         self, schema: type, **kwargs: Any
@@ -86,10 +91,89 @@ class _LoudFailureLLM:
 
     def invoke(self, messages: Any) -> Any:
         raise RuntimeError(
-            f"Unstubbed LLM call through {self._which}. Add the matching "
-            "fixture to this test: `fake_small(...)` for roster generation, "
-            "`fake_large(...)` (unified) for Day/Night. Real Bedrock must "
-            "never be reached from the test suite."
+            f"Unstubbed LLM call through {self._which}. "
+            + (
+                self._hint
+                if self._hint is not None
+                else (
+                    "Add the matching fixture to this test: "
+                    "`fake_small(...)` for roster generation, "
+                    "`fake_large(...)` (unified) for Day/Night. Real Bedrock "
+                    "must never be reached from the test suite."
+                )
+            )
+        )
+
+
+# The fix a PROVIDER-level failure calls for, which is not the fix a missing
+# per-test fixture calls for — hence its own text (spec 041 §3.4).
+_PROVIDER_BACKSTOP_HINT = (
+    "Nothing patched this tier for this test, so the call fell through to the "
+    "module-level factory in `graphia.llm` itself. Either install a per-test "
+    "fixture (`fake_small(...)` / `fake_large(...)`), or — if this is a NEW "
+    "module that imports `get_large` / `get_small` / `get_persona_model` from "
+    "`graphia.llm` — add its binding to `safe_llm`'s patched call sites. Real "
+    "Bedrock must never be reached from the test suite."
+)
+
+
+class _LoudFailureProvider(LLMProvider):
+    """Provider-level twin of :class:`_LoudFailureLLM`, installed by ``safe_llm``.
+
+    **Why a second layer of net.** The five ``monkeypatch.setattr`` calls in
+    ``safe_llm`` patch *call-site bindings* — the ``get_large`` /
+    ``get_small`` / ``get_persona_model`` names as imported into
+    ``nodes/setup.py``, ``nodes/night.py`` and ``nodes/day.py``. A binding can
+    only be patched once someone knows it exists, so the net is exactly as
+    complete as this fixture's list, and a new module that does
+    ``from graphia.llm import get_large`` arrives **unnetted**: with
+    ``_active_provider`` unresolved, ``_resolve_provider()`` reads
+    ``GRAPHIA_LLM_PROVIDER`` from config, builds a real
+    ``ChatBedrockConverse``, and the first ``invoke`` starts boto3 retry loops
+    against whatever credentials the machine has — the failure mode
+    :class:`_LoudFailureLLM`'s docstring describes, reached by the one route it
+    does not cover. ``graphia.tools.claude_spike`` already takes that route
+    today (a function-local ``from graphia.llm import get_large``), so this is
+    a live gap rather than a hypothetical one.
+
+    Installing this on ``llm._active_provider`` closes it at the seam every
+    route passes through: with a provider already resolved,
+    ``_resolve_provider()`` never consults config and never constructs a vendor
+    client, so the tier factories hand back a loud-failure object instead.
+
+    **Subclassing ``LLMProvider`` and overriding only the three ``_build_*``
+    hooks is deliberate.** The concrete template methods then wrap each hook's
+    return in the real ``StructuredMethodModel`` (spec 041 §3.2), so a test
+    reaching a tier factory gets the *production object shape* — a proxy over
+    something — and fails on ``invoke`` rather than on construction. Failing at
+    build time would be louder but would also break the legitimate tests that
+    construct a tier client without ever invoking it.
+
+    Who legitimately overrides this: ``tests/test_llm_provider_construction.py``
+    resets ``_active_provider`` / ``_large`` / ``_small`` to ``None`` in its own
+    module-autouse fixture (which runs *after* this one) so it can exercise real
+    config-driven construction; ``tests/test_llm_provider_config.py`` does the
+    same in individual tests; ``tests/test_structured_output_method.py`` and
+    ``tests/test_provider_seam_through_the_node.py`` install their own providers.
+    """
+
+    # ``_LoudFailureLLM`` is not a ``BaseChatModel`` — deliberately, exactly as
+    # ``graphia.tools.instrument.InstrumentedModel`` is not. The hooks' declared
+    # return type is the vendor base class; what the seam actually requires is
+    # the one-method ``StructuredModel`` capability, which this satisfies.
+    def _build_large(self) -> Any:
+        return _LoudFailureLLM(
+            "graphia.llm.get_large", hint=_PROVIDER_BACKSTOP_HINT
+        )
+
+    def _build_large_at_temperature(self, temperature: float) -> Any:
+        return _LoudFailureLLM(
+            "graphia.llm.get_persona_model", hint=_PROVIDER_BACKSTOP_HINT
+        )
+
+    def _build_small(self) -> Any:
+        return _LoudFailureLLM(
+            "graphia.llm.get_small", hint=_PROVIDER_BACKSTOP_HINT
         )
 
 
@@ -128,14 +212,45 @@ def drain_driver_producers() -> Iterator[None]:
 def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     """Autouse safety net: any unstubbed LLM call raises immediately.
 
-    Patches the call-site bindings (``get_small`` and ``get_large`` in
-    ``nodes.setup``, and ``get_large`` in both ``nodes.night`` and
-    ``nodes.day``) with a loud-failure fake. Explicit per-test fixtures
-    (``fake_small``,
-    ``fake_large``, ``fake_large_pointing``, ``fake_large_day``) run after
-    this one and replace these bindings via the same ``monkeypatch`` surface,
-    so tests that *do* stub keep working while tests that forgot now fail
-    loudly instead of hanging on boto3 retries.
+    Two layers, because a call-site list can only net the call sites someone
+    has already thought of.
+
+    **Layer 1 — the FIVE tier bindings**, each patched with a
+    :class:`_LoudFailureLLM`:
+
+    - ``graphia.nodes.setup.get_small`` — roster name generation.
+    - ``graphia.nodes.setup.get_large`` — persona generation, flag-off path.
+    - ``graphia.nodes.setup.get_persona_model`` — persona generation, spec-034
+      hotter path (flag-on default).
+    - ``graphia.nodes.night.get_large`` — Night pointing.
+    - ``graphia.nodes.day.get_large`` — Day speech / reflection / ballot / diary.
+
+    **Layer 2 — the provider seam** (spec 041 §3.4): a
+    :class:`_LoudFailureProvider` on ``graphia.llm._active_provider``, with the
+    ``_large`` / ``_small`` singleton slots nulled so a cached client cannot be
+    inherited from a previous test. This nets the route Layer 1 structurally
+    cannot: a module that imports ``get_large`` straight from ``graphia.llm``
+    has no binding in the list above, so without this it would resolve a
+    provider from config, build a real vendor client and hang on boto3 retries.
+    See :class:`_LoudFailureProvider` for the full argument and for the tests
+    that legitimately override this seam.
+
+    **NOT a tier binding, and deliberately so:**
+    ``graphia.tools.blunder_eval.get_embeddings`` is patched here too, with the
+    deterministic :class:`_FakeEmbeddings` rather than a loud failure. The
+    spec-033 embeddings client sits **outside** the provider seam on purpose —
+    it is always Bedrock Titan, independent of ``GRAPHIA_LLM_PROVIDER``, so the
+    persona-similarity metric stays a comparable measuring stick across
+    providers (see :func:`graphia.llm.get_embeddings`). A test module that
+    re-points the five tier bindings at the real factories must therefore leave
+    this sixth patch alone; re-pointing it would send the offline suite at real
+    Bedrock embeddings.
+
+    Explicit per-test fixtures (``fake_small``, ``fake_large``,
+    ``fake_large_pointing``, ``fake_large_day``, ``dynamic_night_pointing``,
+    ``target_human_pointing``) run after this one and replace these bindings via
+    the same ``monkeypatch`` surface, so tests that *do* stub keep working while
+    tests that forgot now fail loudly instead of hanging on boto3 retries.
     """
     monkeypatch.setattr(
         "graphia.nodes.setup.get_small",
@@ -177,6 +292,15 @@ def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
         "graphia.tools.blunder_eval.get_embeddings",
         lambda: _FakeEmbeddings(),
     )
+    # Layer 2 (spec 041 §3.4): the provider seam itself. With a provider already
+    # resolved, ``_resolve_provider()`` never reads config and never constructs
+    # a vendor client, so a module reaching ``graphia.llm.get_large`` directly —
+    # with no binding in the five above — is netted rather than unnetted. The
+    # two singleton slots are nulled in the same breath: a client cached by an
+    # earlier test must not be what a later one resolves.
+    monkeypatch.setattr("graphia.llm._active_provider", _LoudFailureProvider())
+    monkeypatch.setattr("graphia.llm._large", None)
+    monkeypatch.setattr("graphia.llm._small", None)
 
 
 class _LoudFailureMemoryClient:
@@ -1133,6 +1257,18 @@ class FakeLargeUnified:
         reflections: Sequence[Reflection | Exception] | None = None,
         diaries: Sequence[Diary | BaseMessage | Exception] | None = None,
     ) -> None:
+        # The queue map is the ONE of this class's three schema listings that is
+        # NOT derived from ``graphia.llm.GAMEPLAY_SCHEMAS`` (spec 041 §3.4 asked;
+        # this is the answer). Each entry pairs a schema with the *named keyword
+        # argument* a test scripts it through (``day_actions``, ``ballots``, …),
+        # and those names are hand-written API. Deriving the key set from
+        # ``GAMEPLAY_SCHEMAS`` while the values still came from six named
+        # parameters would need a schema -> parameter-name map — a SECOND
+        # hand-typed vocabulary in place of the first, so it removes nothing.
+        # The two listings that were pure repetition (the counter and the error
+        # text, below) are derived from this map instead, which keeps them in
+        # step by construction. ``Roster`` is absent because it is the small
+        # tier's schema, served by ``FakeSmall``.
         self._queues: dict[type, list[Any]] = {
             DayAction: list(day_actions) if day_actions else [],
             Ballot: list(ballots) if ballots else [],
@@ -1165,23 +1301,26 @@ class FakeLargeUnified:
         }
         self._last: dict[type, Any] = {}
         self.call_count = 0
+        # DERIVED from ``_queues`` rather than re-listed (spec 041 §3.4): the
+        # six schemas were hand-typed here and in the error text below as well
+        # as in the queue map, so a seventh queue could be added with a counter
+        # that never initialises and an error message that lies. Insertion order
+        # is preserved, so the observable mapping is unchanged.
         self.calls_by_schema: dict[type, int] = {
-            DayAction: 0,
-            Ballot: 0,
-            Pointing: 0,
-            Persona: 0,
-            Reflection: 0,
-            Diary: 0,
+            schema: 0 for schema in self._queues
         }
 
     def with_structured_output(
         self, schema: type, *, include_raw: bool = False
     ) -> _LargeQueue:
         if schema not in self._queues:
+            # Also derived — same reason as ``calls_by_schema`` above. The
+            # rendered text is byte-identical to the hand-typed list it
+            # replaces.
+            supported = ", ".join(s.__name__ for s in self._queues)
             raise AssertionError(
                 f"FakeLarge has no scripted queue for schema {schema!r}. "
-                "Supported: DayAction, Ballot, Pointing, Persona, Reflection, "
-                "Diary."
+                f"Supported: {supported}."
             )
         return _LargeQueue(self, schema, include_raw=include_raw)
 
