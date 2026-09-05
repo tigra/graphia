@@ -3670,3 +3670,98 @@ metrics:
     peak: 0.5107672435782113
     denominator: 21
 notes: 'Spec 041 Slice 2 (Reliable Decoding on the Local Model) Task 2.5 -- LIVE TRANSPORT VERIFICATION at n=1. NOT a baseline and NOT a behaviour measurement: read no rate in metrics or outcomes here as a result. Purpose: prove live that ADR 013 holds -- the Ollama provider now reaches the model through native ChatOllama on /api/chat with a JSON-schema format, i.e. grammar-constrained decoding, instead of the Anthropic-compatible /v1/messages tool-use surface where structured output was a request the server could and did decline. The one assertion this record exists for is quality.diary_fallback_rate == 0.00 READ BESIDE quality.diary_entries_attempted, because a 0.00 rate over a zero denominator is also 0.00 and would prove nothing. Paired transport measurement, same server and same model pair, taken immediately before this run: make ollama-smoke at max-rounds 7 reported Diary 18 attempts / 0 classification failures / 0.00 failure rate, against the 0.80 measured at the same setting before the swap (Task 1.3), with Reflection 90/0, DayAction 108/0, Pointing 8/0 and Roster 1/0 all clean. BOUND ON WHAT THIS RECORD CAN CLAIM: the interim application-layer prose recovery (ADR 013 Alternative 1) is STILL PRESENT at this commit, so a clean diary rate here does not by itself separate grammar-constrained decoding from prose recovery -- the transport measurement above is what does, since a 0.00 classification-failure rate means the model emitted schema-valid JSON and the recovery was never reached. Slice 4 withdraws the recovery and Task 4.4 re-measures; that is the record that closes the question. At n=1 no METRIC_ORDER rate is usable -- denominators are single-digit to low-double-digit and no decrease of any size is detectable -- so per CR 005 this is recorded as effort, not result; the measured A/B that IS a result is Task 12.2, 10 games per arm. LINEUP: played at six-and-two (settings.lineup num_citizens 6 / num_mafia 2), the CR 007 / spec 042 default since 2026-09-03. NOT comparable across the lineup boundary: the larger table affords the town ONE mistaken execution where five-and-two afforded none, and nearly every denominator here scales with table size (21 persona pairs against 15, more AI spoken lines, more votes). Read settings.lineup on each record and never its date -- four records from 2026-06-21/22 were already played at six-and-two by explicit override. The directly comparable predecessor is the 2026-09-04 six-and-two one-game smoke, which measured the same channel under the interim recovery on the retired transport. CONTENT FINDING, recorded here because the diary channel has no repetition metric at all and this transcript is the only evidence: 2 of the 13 entries are near-verbatim self-rewrites by the same writer on consecutive days (difflib ratio 0.994 and 0.986, one noun swapped in each). These are model-written prose and not the fallback, so the assertion above is untouched. The transport swap markedly IMPROVED this rather than causing it -- on the pre-swap six-and-two transcript 2026-09-04T13-13-43, 7 of 9 same-writer pairs sit at or above 0.85 including four byte-identical repeats, where here it is 2 of 11 with none exact. Pre-existing, reduced, unmetered, and a follow-up candidate rather than a Slice 2 defect. ON metrics.repetition 0.714 SPECIFICALLY, which invites a false regression read next to the preceding smoke 0.091: not a regression signal. The two committed n=20 six-and-two baselines read 0.634 and 0.637 and the ollama series runs 0.29 to 0.64, so this is a noisy single game slightly above band, while the 0.091 was the outlier in the other direction over a 22-line denominator from a much shorter game. Neither figure is usable at n=1.'
+---
+run:
+  date: '2026-09-05'
+  duration_seconds: 1288.058
+  metrics_version: 1
+  transcript_dir: '2026-09-05T17-58-24'
+code:
+  commit: '81e43a855bf2a81b5564a772d22a59855f28152e'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.32.14'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 1
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 1
+  games_completed: 1
+  games_failed_early: 0
+  diary_fallback_rate: 0.0
+  diary_fallback_entries: 0
+  diary_entries_attempted: 18
+  duration_seconds: 1288.058
+outcomes:
+  games: 1
+  law_abiding:
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+  mafia:
+    wins: 1
+    rate: 1.0
+    ci_low: 0.20654329147389294
+    ci_high: 1.0
+  scripted_side:
+    side: 'law_abiding'
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against an active rule-based scripted human (deterministic, no model call; when Law-abiding it supplies the vote a correct town majority needs) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 0
+    mafia: 0
+  by_day: {}
+metrics:
+  repetition:
+    rate: 0.7407407407407407
+    count: 80
+    denominator: 108
+    ci_low: 0.6508333329885407
+    ci_high: 0.8141099439316748
+  third_person_self_talk:
+    rate: 0.0
+    count: 0
+    denominator: 108
+    ci_low: 0.0
+    ci_high: 0.03434857870416731
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 21
+    ci_low: 0.0
+    ci_high: 0.15464382326420195
+  persona_lex_mean:
+    mean: 0.024096570104469396
+    denominator: 21
+  persona_lex_peak:
+    peak: 0.05139186295503212
+    denominator: 21
+notes: 'Spec 041 Slice 4 (The Interim Recovery Is Withdrawn) Task 4.4 -- LIVE WITHDRAWAL VERIFICATION at n=1. NOT a baseline and NOT a behaviour measurement: read no rate in metrics or outcomes here as a result. WHY THIS RECORD IS DECISIVE WHERE THE SLICE 2 RECORD WAS NOT. Slice 4 withdrew the interim application-layer prose recovery (ADR 013 Alternative 1, shipped at commit b9bfbd4): _DIARY_LABEL_MAX, _content_text, _recovered_diary_text and _diary_entry_from are gone from src/graphia/nodes/day.py, the diary call is a plain with_structured_output(Diary), and the now-unused import json is dropped. Exactly ONE mechanism can now produce a readable diary entry -- grammar-constrained decoding on native ChatOllama over /api/chat under a JSON-schema format. The Slice 2 record (2026-09-04, transcript_dir 2026-09-04T17-10-11) measured this same channel at diary_fallback_rate 0.00 over 13 entries and recorded in its own note the bound it could not exceed: the recovery was STILL PRESENT at that commit, so a clean rate there could not distinguish grammar-constrained decoding from prose recovery, and what actually separated them was the paired transport measurement (Diary 18 invocations, 0 classification failures). That bound is now lifted. With no second mechanism left to credit, the game-level rate is decisive on its own, and THIS RECORD SUPERSEDES THE SLICE 2 RECORD ON THAT POINT ONLY -- not as a transport measurement and not as a record, both of which stand. THE ASSERTION, never read without its denominator: quality.diary_fallback_rate == 0.00 READ BESIDE quality.diary_entries_attempted, because a 0.00 rate over a zero denominator is also 0.00 and would prove nothing; the fallback check is EXACT STRING EQUALITY against graphia.nodes.day._DIARY_FALLBACK, never a substring grep, and the denominator is reconciled against this game own attrition (who died on which Night, who was executed on which Day, how many AI writers survived into each diary round) -- see the POST-RUN EXTENSION appended below. CONFIRMATORY TRANSPORT MEASUREMENT, same server (Ollama 0.32.14) and same model pair, taken immediately BEFORE this run: make ollama-smoke at --max-rounds 7 reported Diary 6 attempts / 0 classification failures / 0.00 failure rate, with Reflection 35/0, DayAction 41/0, Pointing 4/0 and Roster 1/0 all clean and Ballot not exercised (0 attempts); verdict RELIABLE, game completed, stopped at the 7-round sampling cap. It is CONFIRMATORY rather than necessary this time, which is precisely the difference from Slice 2, where it carried the separating weight. Two known instrument gaps that Slice 11 (Task 11.1) owns were reproduced by that run and are not findings of this one: the PRINTED per-schema table lists only four schemas while the JSON report carries six, and Persona never appears at all (zero attempts, absent from the stats map). LINEUP: played at six-and-two (settings.lineup num_citizens 6 / num_mafia 2), the CR 007 / spec 042 default since 2026-09-03. NOT comparable across the lineup boundary: the larger table affords the town ONE mistaken execution where five-and-two afforded none, and nearly every denominator here scales with table size (21 persona pairs against 15, more AI spoken lines, more votes). Read settings.lineup on each record and never its date -- four records from 2026-06-21/22 were already played at six-and-two by explicit override. The directly comparable predecessor is the Slice 2 record named above, same lineup and same provider, one generation earlier in transport. At n=1 no METRIC_ORDER rate is usable -- denominators run single-digit to low-double-digit and no decrease of any size is detectable -- so per CR 005 this is recorded as effort, not result; the measured A/B that IS a result is Task 12.2, 10 games per arm. POST-RUN EXTENSION (Task 4.4, appended by hand after the run; notes is the one human-mutable field per evals/README.md, and nothing else in this record was touched). DENOMINATOR RECONCILED -- the binding half of the assertion. quality.diary_entries_attempted is 18 and it reconciles exactly against this game''s own attrition. Eight seats (6+2); the scripted human seat is Avery (Law-abiding, human="true" in the preserved transcript) and Avery was the Night 1 kill, so from Day 1 onward every survivor was an AI writer. Night 1 killed Avery, leaving 7 alive -- Day 1 diary, 7 writers (Kai, Liam, Hao, Rio, Zoe, Leo, Lay). Night 2 killed Liam, leaving 6 -- Day 2 diary, 6 writers. Night 3 killed Leo, leaving 5 -- Day 3 diary, 5 writers. Night 4 killed Rio, leaving 2 Law-abiding against 2 Mafiosos, which is parity and the Mafia win, so there is no Day 4 and no fourth diary round. 7+6+5 = 18, matching the recorded denominator exactly. The two structural boundaries documented on day_diary hold: Night 1 carries no diary (the graph enters night_open from first_night_mafia_intros) and the winning transition carries none. INDEPENDENT CROSS-CHECK on the preserved transcript: 18 <diary> elements, and ZERO equal to graphia.nodes.day._DIARY_FALLBACK by EXACT STRING EQUALITY -- eval_transcript._inline_attr emits diary content verbatim with no escaping, so the byte comparison is valid -- with the closest any entry comes to the placeholder at difflib 0.160. That agrees with the record''s own sentinel scorer (diary_fallback_entries 0 of 18), which reads the private_diaries state channel rather than the file. ENGAGEMENT WARNING, READ THIS BESIDE THE CLEAN DIARY RATE. This game is a near-total AI non-engagement case and a reader who takes only the 0.00 away will misread it. vote_activity.by_side is law_abiding 0 / mafia 0 with by_day empty: the AI town initiated NOT ONE execution vote across three full Days, every Day ran its whole round schedule to midnight with "No one has been executed today", and all four deaths were Night kills. Consequently self_vote.initiation, self_vote.yes and peer_vote.yes are ABSENT from metrics rather than 0.00 -- correctly so, their denominators being zero -- and this record therefore carries only two behavioural rates (repetition 0.741 over 108 AI spoken lines; third_person_self_talk 0.00 over the same 108) beside the persona family. The Mafia win is attrition, not play. This does not weaken the diary assertion, whose denominator is driven by survival rather than by voting, but nothing in outcomes or vote_activity from this run is usable as behaviour. On metrics.repetition 0.741 specifically: the two committed n=20 six-and-two baselines read 0.634 and 0.637 and the Slice 2 single game read 0.714, so this is a noisy single game slightly above band, not a signal. SEMANTIC PERSONA METRICS ABSENT BY GRACEFUL DEGRADATION, NOT BY A ZERO. The spec-033 embeddings instrument failed with botocore UnauthorizedSSOTokenError (the SSO session on the profile had expired; the instrument is deliberately always Bedrock, independent of GRAPHIA_LLM_PROVIDER, so the measuring stick cannot move with the model under test). The harness logged the skip and the run completed, and persona_sem_mean / persona_sem_peak are OMITTED from metrics rather than written as 0.0 -- absent, never a misleading zero. The free lexical pair is unaffected (persona_lex_mean 0.024, persona_lex_peak 0.051 over 21 pairs), so the Slice 2 record''s persona_sem figures have no counterpart here and the two runs are not comparable on that pair. DIARY CONTENT FOLLOW-UP -- the open question Slice 2 left, re-measured here and deliberately NOT rounded to success. Same-writer consecutive-entry difflib over the 11 pairs this game affords: 2 at or above 0.85, namely Hao Day 2 to Day 3 at 0.891 and Leo Day 1 to Day 2 at 1.000, BYTE-IDENTICAL. Three generations, one game each: pre-swap transcript 2026-09-04T13-13-43, 6 pairs, 5 at or above 0.85, 4 byte-identical, median 1.000; Slice 2 transcript 2026-09-04T17-10-11, 8 pairs, 2 at or above 0.85, 0 byte-identical, median 0.199; this run, 11 pairs, 2 at or above 0.85, 1 byte-identical, median 0.513. The large improvement attributable to the transport swap stands. But the Slice 2 note''s claim that there were NONE exact after the swap was an n=1 observation rather than a property, and one exact repeat reappears here. Withdrawing the recovery cannot explain it: the recovery only ever supplied text when structured decoding failed, and it failed zero times in this run. So this remains the pre-existing, unmetered content defect it already was, at a much reduced level, and a follow-up-spec candidate. Two single games cannot separate 0 of 8 from 1 of 11 -- read neither as a trend. The diary channel still has NO repetition metric, so this observation lives only in these notes and in the preserved transcripts. VERDICT ON THE WITHDRAWAL: IT HOLDS. With the recovery removed there is exactly one mechanism able to produce a readable entry, and 18 of 18 entries are model-written prose with zero placeholders. Reliable decoding, not the recovery, was doing the work.'
