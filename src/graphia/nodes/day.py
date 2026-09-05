@@ -25,7 +25,6 @@ Topology contract (Slice 7):
 from __future__ import annotations
 
 import dataclasses
-import json
 import logging
 import random
 from typing import cast
@@ -1785,115 +1784,6 @@ def _clamp_diary_entry(text: str) -> str:
     return " ".join(text.split())[:DIARY_MAX_CHARS].rstrip()
 
 
-# Longest leading "Diary entry:"-style label line ``_recovered_diary_text`` will
-# treat as a header to drop rather than as the entry's own first line. A real
-# opening sentence that happens to end in a colon is normally longer than this.
-_DIARY_LABEL_MAX = 80
-
-
-def _content_text(content: object) -> str:
-    """Flatten one chat message's ``content`` to plain text.
-
-    Anthropic-shaped replies carry either a plain string or a list of typed
-    blocks, and a prose reply that skipped the tool call can arrive as either.
-    Only ``text`` blocks contribute: a ``thinking`` or ``tool_use`` block is
-    not diary prose.
-
-    PURE: no state, no RNG, no clock, no model call.
-    """
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts: list[str] = []
-        for block in content:
-            if isinstance(block, str):
-                parts.append(block)
-            elif isinstance(block, dict) and block.get("type") == "text":
-                parts.append(str(block.get("text") or ""))
-        return "".join(parts)
-    return ""
-
-
-def _recovered_diary_text(raw: object) -> str | None:
-    """Recover an entry from a reply that never emitted the tool call.
-
-    WHY THIS EXISTS. ``with_structured_output`` reaches the model through tool
-    use, and tool use is a REQUEST, not a guarantee. Bedrock Converse enforces
-    its ``toolConfig``, so Nova and Claude comply and this path never fires
-    (measured: 1/101 and 0/66 fallbacks). Ollama's Anthropic-compatible
-    endpoint *accepts ``tool_choice`` and drops it*, so a model handed
-    ``DIARY_SYSTEM`` — a long, deliberately open invitation to write freely,
-    where spec 028's ``REFLECTION_SYSTEM`` asks for a terse one-or-two-sentence
-    note — answers in PROSE about half the time: ``stop_reason='end_turn'``,
-    no tool call at all. Measured 11/24 on replayed real prompts, matching the
-    50% (45/90) recorded by the spec-039 on-arm campaign, whose thoughts on the
-    same model in the same runs failed 0/391.
-
-    The entry is not lost in that case. It sits in the reply's content, already
-    in the player's own voice and already the right shape, because the model
-    did the writing and merely skipped the envelope. Discarding it for
-    ``_DIARY_FALLBACK`` blanked half the on-arm channel and left that arm only
-    half-treated. Reading it back costs nothing and needs no second call.
-
-    Shaping, in order: a fenced block is unwrapped; a JSON-shaped reply (the
-    model was shown the ``Diary`` schema and sometimes hand-rolls it instead of
-    calling the tool) yields its ``entry`` field; a short leading label line
-    (``Diary entry:``) is dropped; matched wrapping quotes are removed.
-    Returns ``None`` when nothing usable remains, so the caller still reaches
-    the deterministic fallback rather than storing an empty entry.
-
-    Returns the UNCLAMPED text — the caller owns ``_clamp_diary_entry``, so a
-    recovered entry is folded and capped exactly like a parsed one.
-
-    PURE: no state, no RNG, no clock, no model call.
-    """
-    text = _content_text(getattr(raw, "content", raw)).strip()
-    if not text:
-        return None
-    if text.startswith("```"):
-        text = "\n".join(
-            line for line in text.splitlines() if not line.lstrip().startswith("```")
-        ).strip()
-    if text.startswith("{"):
-        try:
-            obj = json.loads(text)
-        except ValueError:
-            pass
-        else:
-            entry = obj.get("entry") if isinstance(obj, dict) else None
-            return str(entry).strip() or None if entry is not None else None
-    first, sep, rest = text.partition("\n")
-    if sep and first.rstrip().endswith(":") and len(first) <= _DIARY_LABEL_MAX:
-        text = rest.strip()
-    if len(text) >= 2 and text[0] == text[-1] and text[0] in "\"'":
-        text = text[1:-1].strip()
-    return text or None
-
-
-def _diary_entry_from(result: object) -> str | None:
-    """Pull the entry text out of ONE diary model result.
-
-    Accepts BOTH shapes ``with_structured_output`` can hand back: the
-    ``include_raw=True`` mapping (``parsed`` / ``raw`` / ``parsing_error``) the
-    production call now asks for, and a bare ``Diary``, which is what a
-    provider ignoring ``include_raw`` would return. Tolerating both keeps this
-    helper honest about the contract it cannot enforce.
-
-    A parsed entry ALWAYS wins; ``_recovered_diary_text`` is consulted only
-    when the tool call is absent or its entry is blank. Returns unclamped text.
-
-    PURE: no state, no RNG, no clock, no model call.
-    """
-    parsed: object = result
-    raw: object = None
-    if isinstance(result, dict):
-        parsed = result.get("parsed")
-        raw = result.get("raw")
-    if isinstance(parsed, Diary) and parsed.entry.strip():
-        return parsed.entry
-    return _recovered_diary_text(raw)
-
-
 def _ai_diary(
     speaker: PlayerState,
     state: GameState,
@@ -1940,12 +1830,36 @@ def _ai_diary(
     returns ONE delta after the loop), so a writer never sees its own
     not-yet-committed entry, and never another player's.
 
-    Calls ``get_large().with_structured_output(Diary, include_raw=True)`` once.
-    A parsed entry is CLAMPED and returned. When the reply carries no tool call
-    — which ollama does about half the time on this prompt, see
-    ``_recovered_diary_text`` — the prose is recovered and clamped the same
-    way. Only a raised call, or a reply with nothing usable in it, reaches
-    ``_DIARY_FALLBACK``, and both now leave a log line.
+    Calls ``get_large().with_structured_output(Diary)`` once. A parsed entry is
+    CLAMPED and returned; a raised call, or a reply that yields no ``Diary``
+    with non-blank text, reaches ``_DIARY_FALLBACK``, and both leave a log
+    line.
+
+    THERE IS EXACTLY ONE MECHANISM HERE (spec 041 Slice 4, ADR 013 §3). The
+    interim application-layer prose recovery this function carried between
+    commit ``b9bfbd4`` and spec 041 is WITHDRAWN. It existed because the Ollama
+    provider reached the model through the Anthropic-compatible
+    ``/v1/messages`` shim, where structured output was tool use — a *request*
+    the server could decline, and did: ``tool_choice`` was accepted and
+    silently dropped, so this deliberately open prompt came back as prose about
+    half the time (measured 11/24) and the entry was discarded for the
+    fallback. Slices 2 and 3 replaced that transport with native ``ChatOllama``
+    under a JSON-schema ``format`` — grammar-constrained decoding, which the
+    server cannot decline — measured 0.80 → 0.00 diary classification
+    failures. The recovery is not merely dead weight now: with two mechanisms
+    able to produce a readable entry, no reader can tell which one did, so the
+    fallback rate stops being evidence of anything. Reliable decoding REPLACES
+    the compensation rather than layering over it. If a future provider ever
+    needs a backstop again, ADR 013 §3 records the argument that would have to
+    be answered.
+
+    The two log lines are NOT part of the withdrawal and are deliberately
+    kept: they replaced a bare ``except Exception: pass``, and they are the
+    only reason a diary failure is visible at all. The ``logger.exception``
+    call passes ``speaker.id`` ALONE — one argument — because
+    ``test_a_store_failure_is_not_confused_with_a_model_failure`` tells a model
+    failure from a store failure by ``record.args`` arity, the store side
+    carrying ``(player, day)``.
     """
     players = state.get("players", {})
     context = _render_context(
@@ -1954,7 +1868,7 @@ def _ai_diary(
         window=context_window,
         token_budget=context_token_budget,
     )
-    llm = get_large().with_structured_output(Diary, include_raw=True)
+    llm = get_large().with_structured_output(Diary)
     messages: list = [
         SystemMessage(content=DIARY_SYSTEM),
         HumanMessage(
@@ -1979,12 +1893,11 @@ def _ai_diary(
     ]
     try:
         result = llm.invoke(messages)
-        entry = _diary_entry_from(result)
-        if entry:
-            return _clamp_diary_entry(entry)
+        if isinstance(result, Diary) and result.entry.strip():
+            return _clamp_diary_entry(result.entry)
         logger.warning(
-            "diary: no usable entry for %s (no tool call and no recoverable "
-            "prose); using the deterministic fallback",
+            "diary: no usable entry for %s (the reply carried no Diary with "
+            "non-blank text); using the deterministic fallback",
             speaker.id,
         )
     except Exception:
