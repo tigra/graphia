@@ -69,6 +69,7 @@ from graphia.state import (
     KillRecord,
     PlayerState,
 )
+from graphia.substitution import SubstitutionKind, note_attempt, note_substitution
 
 logger = logging.getLogger(__name__)
 
@@ -862,7 +863,16 @@ def _ai_day_action(
     ON so existing direct test calls stay byte-identical; the caller passes only
     the acting player's own entries
     (``state["private_diaries"].get(speaker.id, [])``).
+
+    Spec 041 Slice 6: one ``note_attempt`` on entry and one
+    ``note_substitution`` on the generic-speak branch. The bland fallback line
+    is exactly what a small model emits unprompted, so no post-hoc scorer can
+    recognise it — the substitution has to say so where it happens.
     """
+    # Before the ``try``, and once for the whole helper: two invocations serve
+    # ONE answer, and a raising harness sink must crash naming itself rather
+    # than be swallowed below and returned as the generic speak.
+    note_attempt(SubstitutionKind.DAY_ACTION)
     players = state.get("players", {})
     roster = _render_alive_roster(players)
     context = _render_context(
@@ -957,7 +967,19 @@ def _ai_day_action(
     except Exception:
         pass
 
-    # Deterministic fallback so tests aren't flaky.
+    # Deterministic fallback so tests aren't flaky. The one substitution
+    # branch, and BOTH invocations reach it two different ways:
+    #
+    #   - a raise inside ``llm.invoke`` — the transport, or ``DayAction``'s own
+    #     model validator, which is where a blank ``speak`` and Task 6.4's
+    #     grammar-valid ``{"kind": "vote"}`` with no target actually land;
+    #   - an ``_accept`` rejection with NO raise — a reply that is not a
+    #     ``DayAction`` at all, or a ``vote`` at an id that is not alive or is
+    #     the speaker's own.
+    #
+    # Four routes, one convergence point. A notification per ``except`` would
+    # double-book the two raising routes and miss the two silent ones.
+    note_substitution(SubstitutionKind.DAY_ACTION)
     return DayAction(kind="speak", text="I'm not sure who to trust yet.")
 
 
@@ -987,7 +1009,14 @@ def _ai_reflect(
     running train of thought. Calls ``get_large().with_structured_output(
     Reflection)`` once; on any failure or an empty thought it returns the
     deterministic fallback note (defensive posture mirroring ``_ai_day_action``).
+
+    Spec 041 Slice 6: one ``note_attempt`` on entry, one ``note_substitution``
+    on the fallback-note branch. This helper invokes ONCE where ``_ai_ballot``
+    invokes twice, and the pair of events is identical either way — which is
+    what makes the seven kinds' rates readable against one another.
     """
+    # Before the ``try`` (see :func:`_ai_day_action`).
+    note_attempt(SubstitutionKind.REFLECTION)
     players = state.get("players", {})
     context = _render_context(
         list(state.get("messages", [])),
@@ -1027,6 +1056,9 @@ def _ai_reflect(
             return result.thought.strip()
     except Exception:
         pass
+    # The one substitution branch: a raised call, a non-``Reflection`` reply,
+    # and a blank thought all land here.
+    note_substitution(SubstitutionKind.REFLECTION)
     return _REFLECTION_FALLBACK
 
 
@@ -1358,7 +1390,14 @@ def _ai_ballot(
     Defaulted so existing direct test calls stay byte-identical; the caller
     passes only the voter's own entries
     (``state["private_diaries"].get(voter.id, [])``).
+
+    Spec 041 Slice 6: one ``note_attempt`` on entry and one
+    ``note_substitution`` on the conservative-No branch. ``Ballot(yes=False)``
+    is the game's most common GENUINE answer, so the count taken here is the
+    only thing that can tell a considered No from a substituted one.
     """
+    # Before the ``try``, once for both invocations.
+    note_attempt(SubstitutionKind.BALLOT)
     players = state.get("players", {})
     context = _render_context(
         list(state.get("messages", [])),
@@ -1416,7 +1455,12 @@ def _ai_ballot(
             return second
     except Exception:
         pass
-    # Conservative fallback: No.
+    # Conservative fallback: No. The one substitution branch, and the clearest
+    # case for putting it on the ``return`` rather than in the ``except``
+    # clauses: a wrong-typed reply falls through ``isinstance(first, Ballot)``
+    # WITHOUT raising, so an except-based notification would miss exactly the
+    # shape a decoding regression takes, while double-booking the two raises.
+    note_substitution(SubstitutionKind.BALLOT)
     return Ballot(yes=False)
 
 
@@ -1860,7 +1904,20 @@ def _ai_diary(
     ``test_a_store_failure_is_not_confused_with_a_model_failure`` tells a model
     failure from a store failure by ``record.args`` arity, the store side
     carrying ``(player, day)``.
+
+    Spec 041 Slice 6 adds the count beside those two log lines: one
+    ``note_attempt`` on entry, and one ``note_substitution`` on the
+    ``_DIARY_FALLBACK`` return, which BOTH failure routes reach — the
+    ``logger.warning`` no-usable-entry route and the ``logger.exception``
+    raised route. The two node-side lines are kept as they are (the arity
+    contract above is load-bearing); the substitution line is the sink's, and
+    is emitted once for either route.
     """
+    # Before the ``try``: inside it, a raising harness sink would be caught by
+    # the ``except Exception`` below, logged as a model failure and returned as
+    # the fallback entry — the measurement manufacturing the event it exists to
+    # measure.
+    note_attempt(SubstitutionKind.DIARY)
     players = state.get("players", {})
     context = _render_context(
         list(state.get("messages", [])),
@@ -1910,6 +1967,10 @@ def _ai_diary(
             "diary: model call failed for %s; using the deterministic fallback",
             speaker.id,
         )
+    # The one substitution branch, reached from BOTH routes above: the
+    # no-usable-entry fall-through inside the ``try`` and the ``except``. One
+    # notification covers both, because both substituted one answer.
+    note_substitution(SubstitutionKind.DIARY)
     return _DIARY_FALLBACK
 
 

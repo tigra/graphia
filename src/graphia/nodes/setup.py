@@ -31,6 +31,7 @@ from graphia.prompts import (
     ROSTER_INTRO_TEMPLATE,
 )
 from graphia.state import GameState, PlayerPersona, PlayerState
+from graphia.substitution import SubstitutionKind, note_attempt, note_substitution
 
 # Spec 034: the spec-009 lexical machinery, IMPORTED (never reimplemented) so the
 # in-loop collision check and the recorded ``persona_lex_*`` metric speak the same
@@ -316,7 +317,17 @@ def _generate_names(count: int) -> Roster:
     diagnostic sink through ``graph.py`` and the driver. That is its own
     deliberate change, not a lineup spec's to make; recorded here so the next
     reader knows the gap was measured rather than missed.
+
+    Spec 041 Slice 6 supplies exactly the proactive signal that gap describes,
+    without the threading: one ``note_attempt`` on entry and one
+    ``note_substitution`` on the coerce branch, through the injectable sink in
+    ``graphia.substitution``.
     """
+    # ONE attempt per roster wanted, not per model invocation — this helper
+    # invokes twice on the retry path and both invocations serve one answer.
+    # Before the ``try`` on purpose: a raising harness sink must crash naming
+    # itself rather than be caught below and laundered into a substitution.
+    note_attempt(SubstitutionKind.ROSTER)
     llm = get_small().with_structured_output(Roster)
     user_prompt = NAME_GEN_USER_TEMPLATE.format(count=count)
     messages: list = [
@@ -345,6 +356,11 @@ def _generate_names(count: int) -> Roster:
         roster = retried
     except ValidationError:
         pass
+    # The one substitution branch. Every route to it — a ValidationError on
+    # either invocation, or a parsed roster of the wrong length on either
+    # (which does NOT raise) — converges on this return, which is why the
+    # notification sits here and not in the ``except`` clauses.
+    note_substitution(SubstitutionKind.ROSTER)
     return _coerce_to_count(roster, count)
 
 
@@ -572,7 +588,14 @@ def _generate_one_persona(
     alongside any distinct-from block. The caller already shuffled
     ``prior_personas`` (a fresh order per attempt) and drew a fresh ``archetype``
     per regeneration, so a retry diverges rather than repeating.
+
+    Spec 041 Slice 6: one ``note_attempt`` per CALL, so the diversity-on regen
+    loop in :func:`_generate_with_regen` books one attempt per generation it
+    asks for — three attempts for a player regenerated twice — which is the
+    honest denominator, since each of those three could have substituted.
     """
+    # Before the ``try`` (see :func:`_generate_names` for why).
+    note_attempt(SubstitutionKind.PERSONA)
     is_mafia = player.role == "mafia"
     template = (
         PERSONA_MAFIA_USER_TEMPLATE if is_mafia else PERSONA_CITIZEN_USER_TEMPLATE
@@ -623,6 +646,9 @@ def _generate_one_persona(
             return _to_player_persona(retried, is_mafia=is_mafia, player=player)
     except Exception:
         pass
+    # The one substitution branch: a raised call or a clearly-empty persona on
+    # either invocation lands here, and nothing else does.
+    note_substitution(SubstitutionKind.PERSONA)
     return _fallback_persona(player)
 
 

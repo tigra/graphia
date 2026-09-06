@@ -24,6 +24,7 @@ from graphia.prompts import (
     MAFIA_TEAMMATE_INTRO_TEMPLATE,
 )
 from graphia.state import DiaryRecord, GameState, KillRecord, PlayerState
+from graphia.substitution import SubstitutionKind, note_attempt, note_substitution
 
 logger = logging.getLogger(__name__)
 
@@ -259,7 +260,15 @@ def _ai_pick_target(
     1 — it delegates to ``_private_thoughts_block`` verbatim, so spec 028's
     rendering is preserved BY CONSTRUCTION. The same knowledge boundary applies:
     only ever the pointer's OWN entries, keyed at the call site.
+
+    Spec 041 Slice 6: one ``note_attempt`` on entry and one
+    ``note_substitution`` on the random-choice branch, so the random fallback
+    is countable rather than indistinguishable from a genuine pick — which it
+    otherwise is, being a ``random.choice`` over real player ids.
     """
+    # Before the ``try``: a raising harness sink must not be caught by this
+    # helper's own ``except Exception`` and returned as a random pick.
+    note_attempt(SubstitutionKind.POINTING)
     valid_ids = {p.id for p in alive_law_abiding}
     valid_ids_list = sorted(valid_ids)
     roster = _roster_lines(alive_law_abiding)
@@ -318,7 +327,10 @@ def _ai_pick_target(
     except Exception:
         pass
 
-    # Fall back to a random choice so the game doesn't stall.
+    # Fall back to a random choice so the game doesn't stall. The one
+    # substitution branch: both ``except`` clauses AND both out-of-roster
+    # ``target_id`` replies (which do not raise) converge here.
+    note_substitution(SubstitutionKind.POINTING)
     return random.choice(alive_law_abiding).id
 
 
