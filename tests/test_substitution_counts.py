@@ -63,12 +63,20 @@ NODE with diversity on and asserts on generations (three per seat), and its
 flag-off twin asserts one per seat — so the reading Slice 7 has to label is
 pinned here rather than left to be rediscovered from the ledger.
 
+Task 6.4's negative controls, added below the sweep
+---------------------------------------------------
+
+The schema-valid/model-invalid ``DayAction`` and its ``Roster`` twin now live
+here too, in their own section: ADR 013's grammar makes a malformed *document*
+unrepresentable, and these two show that every rule stated in a Pydantic
+validator instead of in JSON Schema stays outside that guarantee, so the
+substitution path is still reachable on the enforcing provider. Neither is
+constructible as an instance, so both arrive as raw payload through a fake that
+parses — see that section's own header comment for the delivery choice and for
+where each one actually lands, which is not where a reader would guess.
+
 What is deliberately NOT here
 -----------------------------
-
-Task 6.4's negative controls — the schema-valid/model-invalid ``DayAction`` and
-its ``Roster`` twin, both of which are unconstructible as instances and must
-arrive as raw payload through a parsing fake. That is the next task.
 
 No assertion is made about the INNER keys of a ``DiaryRecord``. Slice 8 adds
 ``substituted`` to that record on purpose, and pre-breaking it here would
@@ -84,8 +92,9 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any, Callable
 
+import jsonschema
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 import graphia.nodes.day as day_nodes
 import graphia.nodes.night as night_nodes
@@ -105,6 +114,7 @@ from graphia.state import GameState, PlayerPersona, PlayerState
 from graphia.substitution import (
     SubstitutionEvent,
     SubstitutionKind,
+    default_sink,
     note_attempt,
     note_substitution,
     reset_sink,
@@ -984,6 +994,379 @@ def test_a_scripted_success_leaves_no_substitution_warning(
 
     assert result == "A scripted diary entry."
     assert [r for r in caplog.records if r.name == "graphia.substitution"] == []
+
+
+# ==========================================================================
+# Task 6.4: the negative controls — the grammar guarantees SHAPE, not meaning
+# ==========================================================================
+#
+# ADR 013 moved the local provider to grammar-constrained decoding, where
+# non-conforming output is unrepresentable at the token level rather than
+# merely requested. That is true, and it is spec 041's main result. These two
+# controls exist so that nobody reads it as a reason to stop looking: what a
+# grammar makes unrepresentable is a malformed DOCUMENT, and every rule the
+# game states in a Pydantic validator rather than in JSON Schema sits outside
+# the grammar's reach. ADR 013 §5 already records this ("the grammar
+# constrains SHAPE, not CONTENT"); these tests are what stop that bullet from
+# being a claim nobody checks.
+#
+# The gap is DEMONSTRATED, not asserted in a comment.
+# :func:`test_the_grammar_accepts_the_payload_the_validator_rejects` validates
+# each payload against the very ``model_json_schema()`` a provider is handed as
+# its grammar, and THEN shows construction raising. Two lines, and they are the
+# whole argument — a comment reading "the grammar would allow this" is exactly
+# the claim under test, so a comment cannot be the evidence for it.
+#
+# **Delivery: raw payload through a fake that PARSES, not an instance.**
+# ``DayAction(kind="vote")`` and ``Roster(names=["Ava", "ava"])`` each raise
+# ``ValidationError`` at CONSTRUCTION, so neither control can be handed in as
+# an object at all — which is the point rather than an obstacle.
+# :class:`_GrammarConstrainedFake` therefore holds the raw dict and calls
+# ``schema.model_validate`` inside ``invoke``, which is what the real
+# structured-output runnable does with the document the grammar emitted: the
+# ``ValidationError`` escapes ``invoke`` at exactly the boundary a provider
+# raises it. ``model_construct`` — the other route Task 6.4 allows — bypasses
+# validation and hands the helper an object no provider could have produced,
+# so it lands somewhere ELSE. That difference is worth pinning rather than
+# picking one and forgetting the other, so it has its own test below.
+#
+# **Where each control lands, because it is not where a reader would guess:**
+#
+# - ``DayAction``'s lands in ``_ai_day_action``'s ``except Exception``, NOT in
+#   ``_accept``. ``_accept`` never sees it — parsing failed before any
+#   acceptance check could run, so no ``DayAction`` object ever existed. Pinned
+#   by ``fake.parsed == []``.
+# - ``Roster``'s is caught by ``_generate_names``' NARROWER
+#   ``except ValidationError`` — the one clause among the seven helpers that
+#   does not catch broadly. That this control RETURNS at all, where
+#   :func:`test_a_roster_transport_failure_propagates_and_books_no_substitution`
+#   propagates, is itself the proof of which clause caught it.
+#
+# Both still book exactly one substitution, through the fallback ``return``
+# where Task 6.2 put the notification — and both assert the count AND the
+# returned value, for Task 6.3's reason: either alone is vacuous.
+
+
+@dataclass(frozen=True)
+class _GapCase:
+    """One payload the JSON-Schema grammar accepts and the Pydantic model refuses.
+
+    ``expected_required`` is carried as data rather than left implicit because
+    it is the mechanism, not a detail: ``DayAction``'s ``["kind"]`` is precisely
+    why ``{"kind": "vote"}`` is grammar-legal, and ``Roster``'s ``["names"]``
+    with no ``uniqueItems`` anywhere is why a case-variant pair is. If somebody
+    later expresses either rule IN the schema — a ``uniqueItems``, a
+    ``oneOf`` — this field is where that shows up as a readable diff, and the
+    ``jsonschema.validate`` line below is where it turns into a failure that
+    says "the gap closed" rather than a silent change of meaning.
+    """
+
+    label: str
+    schema: type[BaseModel]
+    payload: dict[str, Any]
+    expected_required: tuple[str, ...]
+    validator_message: str
+
+
+_GAP_CASES = (
+    _GapCase(
+        label="day_action",
+        schema=DayAction,
+        # Grammar-legal: only ``kind`` is required, so a vote with no target is
+        # a schema-valid document. Model-invalid: the mutual-exclusion rule
+        # lives in ``_check_kind``, a ``@model_validator``.
+        payload={"kind": "vote"},
+        expected_required=("kind",),
+        validator_message="vote requires non-empty target_id",
+    ),
+    _GapCase(
+        label="roster",
+        schema=Roster,
+        # Grammar-legal: ``names`` is an array of strings with a length range
+        # and no distinctness constraint of any kind. Model-invalid: the
+        # case-insensitive rule lives in ``_distinct_nonempty``, a
+        # ``@field_validator``.
+        payload={"names": ["Ava", "ava"]},
+        expected_required=("names",),
+        validator_message="names must be distinct (case-insensitive)",
+    ),
+)
+
+
+class _GrammarConstrainedFake:
+    """A tier stand-in that returns a raw grammar-valid payload and PARSES it.
+
+    The delivery mechanism these controls need, and the reason they cannot be
+    written with an instance. It models the real path one step at a time:
+    grammar-constrained decoding emits a JSON document that satisfies
+    ``model_json_schema()``; the structured-output runnable then hands that
+    document to the Pydantic model; and the model's validators — which the
+    grammar could not express — reject it. So ``model_validate`` is called
+    INSIDE :meth:`invoke`, and the ``ValidationError`` escapes from exactly the
+    boundary a provider raises it from.
+
+    Every invocation replays the same payload, for :class:`_FailingModel`'s
+    reason: ``_ai_day_action`` and ``_generate_names`` each invoke twice for one
+    answer, and a fake that succeeded on the second would never substitute.
+
+    ``parsed`` and ``raised`` are the route evidence. ``parsed == []`` says no
+    model object ever existed, which is how the control proves ``_accept`` was
+    never consulted; ``raised`` says what kind of exception the helper's
+    ``except`` clause actually had to catch, which is what separates
+    ``_generate_names``' ``except ValidationError`` from a broad one.
+    """
+
+    def __init__(self, payload: dict[str, Any]) -> None:
+        self._payload = payload
+        self._schema: type[BaseModel] | None = None
+        self.invocations = 0
+        self.bound_schemas: list[type] = []
+        self.parsed: list[Any] = []
+        self.raised: list[Exception] = []
+
+    def with_structured_output(
+        self, schema: type, **kwargs: Any
+    ) -> "_GrammarConstrainedFake":
+        self.bound_schemas.append(schema)
+        self._schema = schema
+        return self
+
+    def invoke(self, messages: Any) -> Any:
+        self.invocations += 1
+        if self._schema is None:  # pragma: no cover - defensive
+            pytest.fail(
+                "_GrammarConstrainedFake.invoke was reached without a bound "
+                "schema, so there is nothing to parse the payload with.",
+                pytrace=False,
+            )
+        try:
+            value = self._schema.model_validate(self._payload)
+        except ValidationError as exc:
+            self.raised.append(exc)
+            raise
+        self.parsed.append(value)
+        return value
+
+
+class _ChainingSink(_RecordingSink):
+    """Records ``(event, kind)`` AND delegates to ``default_sink``.
+
+    Task 6.1 kept ``default_sink`` public for exactly this: a counting sink can
+    keep the log line instead of reproducing its message. The two controls use
+    it so that "``note_substitution`` owns the log line, so a count and a log
+    can never disagree" is checked at the site where a substitution is hardest
+    to see from outside — nothing in the returned fallback, the log text or the
+    count distinguishes a validator rejection from a transport failure, so all
+    three are pinned together here rather than in three separate tests.
+
+    The plain :class:`_RecordingSink` cannot serve: it displaces
+    ``default_sink`` entirely, so a ``caplog`` assertion under it would be
+    asserting the absence of a record the fixture itself suppressed.
+    """
+
+    def __call__(self, event: SubstitutionEvent, kind: SubstitutionKind) -> None:
+        super().__call__(event, kind)
+        default_sink(event, kind)
+
+
+@pytest.fixture
+def chaining_sink() -> _ChainingSink:
+    """Install a :class:`_ChainingSink`; teardown is :func:`sink_reset`'s job."""
+    recorder = _ChainingSink()
+    set_sink(recorder)
+    return recorder
+
+
+def _substitution_records(
+    caplog: pytest.LogCaptureFixture,
+) -> list[logging.LogRecord]:
+    """Only ``graphia.substitution``'s records — trap (d), applied uniformly.
+
+    Task 6.3's warning: ``_ai_day_action``'s sibling helpers emit their own
+    records on these same paths (``_ai_diary``'s ``logger.warning`` /
+    ``logger.exception`` on ``graphia.nodes.day``), and third-party libraries
+    on the parse path may emit more. A bare ``len(caplog.records) == 1`` would
+    therefore be true today only by accident and would fail confusingly the
+    first time anything else logged. Filtering by name states which logger the
+    assertion is about.
+    """
+    return [r for r in caplog.records if r.name == "graphia.substitution"]
+
+
+@pytest.mark.parametrize("case", _GAP_CASES, ids=lambda c: c.label)
+def test_the_grammar_accepts_the_payload_the_validator_rejects(
+    case: _GapCase,
+) -> None:
+    """The whole argument, in two steps: the grammar allows it, Pydantic does not.
+
+    ``model_json_schema()`` is not a stand-in for the grammar here — it IS the
+    grammar. ADR 013's route hands that exact document to Ollama as ``format``,
+    and ``tests/test_structured_output_method.py`` pins that wiring
+    (``format == Schema.model_json_schema()``, no ``tools``). So
+    ``jsonschema.validate`` passing on this payload says the constrained decoder
+    could emit it, and ``pytest.raises(ValidationError)`` on the next line says
+    the application would then throw it away. Between those two lines sits the
+    substitution path that the two controls below walk.
+
+    This test is what makes those controls evidence rather than decoration. It
+    also fails in the RIGHT direction if the gap is ever closed: expressing
+    either rule in JSON Schema turns ``jsonschema.validate`` red here, at a
+    test whose name says what changed, instead of leaving two controls quietly
+    exercising an unreachable branch.
+    """
+    schema = case.schema.model_json_schema()
+
+    # The grammar's own view of the rule: it is not there.
+    assert tuple(schema.get("required", ())) == case.expected_required
+    jsonschema.validate(case.payload, schema)  # raises if the grammar refuses
+
+    # The application's view: it is there, and it is fatal.
+    with pytest.raises(ValidationError) as excinfo:
+        case.schema(**case.payload)
+    assert case.validator_message in str(excinfo.value)
+
+
+def test_a_grammar_valid_day_action_with_no_target_books_exactly_one(
+    chaining_sink: _ChainingSink,
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Control one: ``{"kind": "vote"}`` substitutes once, and says so once.
+
+    The route is the part worth reading. ``_accept`` — the function that exists
+    to reject an unusable vote — is never consulted, because
+    ``model_validate`` raised before any object existed for it to inspect
+    (``fake.parsed == []``, ``fake.raised`` two ``ValidationError``s). The
+    payload lands in ``_ai_day_action``'s broad ``except Exception`` instead,
+    on both invocations, and converges on the single fallback ``return``.
+
+    So a reader auditing this class of failure by reading ``_accept`` would
+    find nothing, and would conclude the path is unreachable under a grammar.
+    It is reachable; this is the test that says so.
+
+    Four assertions, Task 6.3's pairing: exactly one substitution, exactly one
+    attempt, the known fallback value, and the model genuinely reached twice.
+    Plus the log line, because the chaining sink keeps it.
+    """
+    fake = _GrammarConstrainedFake({"kind": "vote"})
+    monkeypatch.setattr("graphia.nodes.day.get_large", lambda: fake)
+    state = _state()
+    speaker = state["players"]["p-ava"]
+
+    with caplog.at_level(logging.WARNING, logger="graphia.substitution"):
+        result = day_nodes._ai_day_action(speaker, state)
+
+    assert chaining_sink.substitutions() == [SubstitutionKind.DAY_ACTION]
+    assert chaining_sink.attempts() == [SubstitutionKind.DAY_ACTION]
+    assert result == DayAction(kind="speak", text=_DAY_ACTION_FALLBACK_TEXT)
+    assert fake.invocations == 2
+    assert fake.bound_schemas == [DayAction]
+
+    # The route: parsing failed, so ``_accept`` had nothing to accept.
+    assert fake.parsed == []
+    assert [type(exc) for exc in fake.raised] == [ValidationError, ValidationError]
+
+    records = _substitution_records(caplog)
+    assert len(records) == 1
+    assert records[0].levelno == logging.WARNING
+    assert "day_action" in records[0].getMessage()
+
+
+def test_a_grammar_valid_roster_with_a_case_variant_books_exactly_one(
+    chaining_sink: _ChainingSink,
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Control two: ``["Ava", "ava"]`` substitutes once, and says so once.
+
+    ``Roster``'s twin of the ``DayAction`` gap, and the reason the pair is worth
+    having rather than one example: the missing rule is a ``@field_validator``
+    here and a ``@model_validator`` there, so between them they cover both
+    places a Pydantic rule can hide from JSON Schema.
+
+    The route is the narrow one. ``_generate_names`` is the single helper of the
+    seven whose ``except`` clauses name ``ValidationError`` rather than
+    ``Exception``, so this control returning AT ALL — where
+    :func:`test_a_roster_transport_failure_propagates_and_books_no_substitution`
+    propagates a ``RuntimeError`` straight out — is itself the evidence that the
+    narrow clause is what caught it.
+
+    The value is the clean all-placeholder end of the two-shape fallback: both
+    invocations raised, so the first ``except`` cleared ``roster`` to ``None``
+    and the second had nothing to put back, leaving ``_coerce_to_count(None, 3)``
+    to fill every seat. The mixed shape has its own test above; naming which of
+    the two this is keeps the expectation honest.
+    """
+    fake = _GrammarConstrainedFake({"names": ["Ava", "ava"]})
+    monkeypatch.setattr("graphia.nodes.setup.get_small", lambda: fake)
+
+    with caplog.at_level(logging.WARNING, logger="graphia.substitution"):
+        result = setup_nodes._generate_names(_ROSTER_COUNT)
+
+    assert chaining_sink.substitutions() == [SubstitutionKind.ROSTER]
+    assert chaining_sink.attempts() == [SubstitutionKind.ROSTER]
+    assert result == Roster(names=["Player-1", "Player-2", "Player-3"])
+    assert fake.invocations == 2
+    assert fake.bound_schemas == [Roster]
+
+    # The route: a ValidationError on each invocation, caught by the one
+    # narrow ``except`` in the seven — which is why this returns rather than
+    # propagating.
+    assert fake.parsed == []
+    assert [type(exc) for exc in fake.raised] == [ValidationError, ValidationError]
+
+    records = _substitution_records(caplog)
+    assert len(records) == 1
+    assert records[0].levelno == logging.WARNING
+    assert "roster" in records[0].getMessage()
+
+
+def test_a_validation_bypassed_day_action_lands_in_accept_and_still_books_one(
+    sink: _RecordingSink, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The counterfactual delivery: ``model_construct`` takes the OTHER route.
+
+    Task 6.4 allows two deliveries for an unconstructible payload — a parsing
+    fake or ``model_construct`` — and they are not interchangeable, which is
+    why this is a test rather than a sentence in a comment. ``model_construct``
+    skips the validator, so a real ``DayAction`` instance carrying
+    ``kind="vote"`` and ``target_id=None`` reaches the helper: ``_accept``'s
+    ``isinstance`` check passes, and ``_accept`` itself does the rejecting,
+    silently, with nothing raised anywhere. The control above walks the raising
+    route; this one walks the silent one.
+
+    Both converge on the same single ``note_substitution``, which is the
+    property Task 6.2 chose the fallback ``return`` to get: four routes into one
+    branch, counted once each. A notification placed in the two ``except``
+    blocks would double-book the route above and MISS this one entirely — and
+    "missed entirely" is the worse failure, because it reads in the ledger as a
+    clean game.
+
+    The parsing fake stays the primary delivery for the control because
+    ``model_construct`` produces an object no grammar-constrained provider could
+    hand over: the wire carries a document, not an instance.
+    """
+    bypassed = DayAction.model_construct(kind="vote")
+    # Nothing was validated, so the instance holds a state its own validator
+    # forbids — this is what makes it the other route rather than a duplicate.
+    assert isinstance(bypassed, DayAction)
+    assert bypassed.target_id is None
+
+    model = _ScriptedModel({DayAction: bypassed})
+    monkeypatch.setattr("graphia.nodes.day.get_large", lambda: model)
+    state = _state()
+    speaker = state["players"]["p-ava"]
+
+    result = day_nodes._ai_day_action(speaker, state)
+
+    assert sink.substitutions() == [SubstitutionKind.DAY_ACTION]
+    assert sink.attempts() == [SubstitutionKind.DAY_ACTION]
+    assert result == DayAction(kind="speak", text=_DAY_ACTION_FALLBACK_TEXT)
+    assert result is not bypassed
+    # Both invocations returned normally: the rejection was ``_accept``'s, not
+    # an exception's.
+    assert model.invocations == 2
+    assert model.bound_schemas == [DayAction]
 
 
 # ==========================================================================
