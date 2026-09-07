@@ -22,13 +22,54 @@ demand, outside the mocked suite:
     make ollama-smoke ARGS="--max-rounds 2 --json smoke.json"
 
 For each LARGE,SMALL pair it (a) runs the same fail-fast preflight the game
-boots with, then (b) drives ONE full scripted game against the real local
-provider while counting, per structured-output schema (``Roster``,
-``Pointing``, ``Ballot``, ``DayAction``), how many raw
-``with_structured_output(...).invoke(...)`` attempts parsed cleanly vs
-failed. The game's own retry-then-deterministic-fallback logic masks parse
-failures from the *game's* perspective — the counting proxy sits underneath
-that logic, so masked failures stay visible in the report.
+boots with, then (b) drives ONE scripted game against the real local provider
+while counting, per structured-output schema, how many raw
+``with_structured_output(...).invoke(...)`` attempts parsed cleanly vs failed.
+The game's own retry-then-deterministic-fallback logic masks parse failures
+from the *game's* perspective — the counting proxy sits underneath that logic,
+so masked failures stay visible in the report.
+
+What the verdict requires, and why it is four conditions rather than one
+------------------------------------------------------------------------
+
+Spec 041 Slice 11 — ADR-013's own acceptance condition. Until Slice 11 the
+verdict was a failure-RATE check over a hand-typed tuple of FOUR schema names,
+and it passed a full game whose ``Diary`` failure rate was 80% — four times its
+own advisory threshold — with exit code 0. Four independent holes sat in one
+``if``: the tuple omitted ``Persona``, ``Reflection`` and ``Diary``; a schema
+missing from the stats map was skipped (``s is not None``); a schema present
+with ZERO attempts was treated as passing (a falsy ``and s.attempts``); and the
+bound asserted was a rate under 0.20 rather than no failures at all. A fifth
+hole sat one level down, in the install: the counting proxies were assigned to
+``llm._large`` / ``llm._small``, which is not where persona generation reads
+its model from — see :class:`_CountingOllamaProvider`.
+
+So the verdict is now the conjunction of four conditions, each of which was
+separately absent, and each of which prints its own reason when it fails:
+
+1. **Every schema in** :data:`graphia.llm.GAMEPLAY_SCHEMAS` **was exercised** —
+   ``attempts > 0``, with a schema absent from the stats map read as
+   un-exercised rather than skipped, and the un-exercised ones NAMED. A gate
+   that never asked for a ``Diary`` has not reported on diary decoding; the
+   old code called that RELIABLE.
+2. **Zero failures per schema**, not a rate under the advisory threshold. The
+   threshold survives as reported context — it separates "past the advisory
+   bound" from "under it but still nonzero" in the reason text — but it no
+   longer decides. Under a server-enforced grammar the honest expectation is
+   that nothing fails, so any failure is a finding.
+3. **The provider seam resolved** ``method="json_schema"``: the mechanism, read
+   off the provider actually installed for this run. Zero failures under
+   tool-use decoding would be a weaker claim than zero failures under a
+   grammar, and telling the two apart is the whole of ADR-013.
+4. **The substitution census reads zero** for all seven answer kinds. NOT
+   implied by (1) and (2): the raw-invoke counter sees a *transport* failure,
+   while ``graphia.substitution`` sees the *game* deciding no usable answer
+   arrived. A validator rejecting a well-formed answer substitutes without any
+   parse failure at all. Two instruments, two questions, both required.
+
+Conditions (3) and (4) fail CLOSED — an unobserved method or an absent census
+is not a clean measurement, because "the instrument was never installed" and
+"the instrument read zero" are exactly the two things hole (c) above conflated.
 
 Instrumentation is entirely tool-side: the production ``graphia.llm`` module
 already exposes ``_active_provider`` / ``_large`` / ``_small`` as in-process
@@ -47,6 +88,8 @@ import random
 import sys
 import tempfile
 import time
+from collections import Counter
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -68,14 +111,70 @@ from graphia.tools.eval_dialogue import (
 # they simply moved (Slice 3, Task 1).
 from graphia.tools.instrument import InstrumentedModel, SchemaStats
 
+# THE ONE PRODUCTION IMPORT THIS MODULE MAKES AT IMPORT TIME, and a deliberate
+# exception to the local-import discipline the rest of the file keeps (see
+# ``_derive_interrupt_budget``). Two names are needed at module scope and
+# neither can wait for ``main``: ``GAMEPLAY_SCHEMAS`` because ``SCHEMA_NAMES``
+# below is derived from it rather than typed, and ``OllamaProvider`` because
+# ``_CountingOllamaProvider`` subclasses it.
+#
+# Safe, checked rather than assumed: ``graphia.llm`` reads NO environment at
+# module scope, resolves no provider (``_active_provider`` starts ``None``) and
+# constructs no client — ``_resolve_provider`` runs on the first factory call,
+# which happens long after ``main`` has forced ``GRAPHIA_LLM_PROVIDER=ollama``
+# and cleared the cloud store ids. The discipline exists to keep provider
+# SELECTION out of import time, and importing names does not select. The
+# sibling harness ``tools/blunder_eval.py`` imports this same module at module
+# scope for the same reason and has done since spec 011.
+from graphia.llm import GAMEPLAY_SCHEMAS, OllamaProvider, StructuredModel
+
+# The substitution census's source (spec 041 Slice 6). A LEAF module — no
+# ``graphia`` imports at all, no env, no I/O beyond ``logging`` — so this costs
+# nothing at import and raises no discipline question. ``default_sink`` is
+# public precisely so ``_SubstitutionCensus`` can chain to it and keep
+# production's substitution log line while counting.
+from graphia.substitution import (
+    SubstitutionEvent,
+    SubstitutionKind,
+    default_sink,
+    reset_sink,
+    set_sink,
+)
+
 if TYPE_CHECKING:  # pragma: no cover - annotation only
     from graphia.config import GraphiaConfig
 
-# The four structured-output surfaces under test (tech-spec §2.6 / ADR-010).
-SCHEMA_NAMES = ("Roster", "Pointing", "Ballot", "DayAction")
+# ---------------------------------------------------------------------------
+# The structured-output surfaces under test — DERIVED, never typed.
+#
+# This tuple was hand-typed as ``("Roster", "Pointing", "Ballot", "DayAction")``
+# and was missing THREE of the seven (``Persona``, ``Reflection``, ``Diary``),
+# which is how ADR-013's gate returned RELIABLE on a game whose ``Diary``
+# failure rate was 0.80. Deriving it from ``llm.GAMEPLAY_SCHEMAS`` — the
+# project's single declaration of the schema vocabulary — makes an eighth
+# schema appear here automatically instead of silently going unmeasured.
+#
+# ``__name__`` because that is exactly the key ``instrument._InstrumentedStructured``
+# books stats under (``schema.__name__`` for a class), so the two ends of the
+# instrument cannot drift. Declaration order is preserved because
+# ``GAMEPLAY_SCHEMAS`` states that its order is display order and this table is
+# the display it means.
+# ---------------------------------------------------------------------------
+SCHEMA_NAMES: tuple[str, ...] = tuple(schema.__name__ for schema in GAMEPLAY_SCHEMAS)
 
-# Advisory failure-rate threshold for the RELIABLE/UNRELIABLE call. The table
-# is the substance; this just gives the one-word verdict a definition.
+# The structured-output method the gate requires the provider seam to have
+# resolved — ADR-013's grammar-constrained decoding. Named here rather than
+# spelled inline so the reason text, the printed line and the JSON payload all
+# quote the same string.
+EXPECTED_STRUCTURED_OUTPUT_METHOD = "json_schema"
+
+# Advisory failure-rate threshold. NO LONGER THE PASS/FAIL BOUND: the gate
+# requires ``failures == 0`` per schema (see ``_unreliable_reasons``), because
+# 0.20 is four times the rate that disqualified a real arm while the old
+# ``failure_rate > threshold`` test called it RELIABLE. What the threshold still
+# does is give a nonzero failure count a stated frame of reference — "past the
+# 20% advisory bound" reads differently from "under it, but the gate requires
+# zero" — so it is reported, not enforced.
 DEFAULT_THRESHOLD = 0.20
 
 
@@ -90,21 +189,171 @@ DEFAULT_THRESHOLD = 0.20
 # ---------------------------------------------------------------------------
 
 
-def _install_counting_provider(stats: dict[str, SchemaStats]) -> None:
+class _CountingOllamaProvider(OllamaProvider):
+    """``OllamaProvider`` whose THREE tier factories hand back counted clients.
+
+    **Why a provider subclass and not two assignments to ``llm._large`` /
+    ``llm._small``** — which is what this harness did until spec 041 Slice 11,
+    and it is the fifth hole in the gate. ``llm.get_persona_model`` does not
+    read those cache slots: it calls
+    ``_resolve_provider().large_at_temperature(t)`` and builds a FRESH client
+    per persona-generation pass, because spec 034 runs personas hotter than
+    gameplay. So a harness that instruments only the two cached slots counts
+    every schema EXCEPT ``Persona`` — which is exactly why ``Persona`` was
+    absent from the stats map of the run that motivated this slice, and why
+    "absent" had to be read as un-exercised rather than skipped. Deriving
+    ``SCHEMA_NAMES`` from the enum without this fix would have made the gate
+    unsatisfiable rather than correct.
+
+    Wrapping at the provider covers the persona path in BOTH flag arms:
+    ``GRAPHIA_PERSONA_DIVERSITY`` on routes through ``large_at_temperature``,
+    off routes through the cached ``large()``.
+
+    Overriding the three CONCRETE template methods rather than the ``_build_*``
+    hooks is deliberate on two counts. It yields
+    ``InstrumentedModel(StructuredMethodModel(ChatOllama))`` — the exact
+    arrangement ``graphia.llm``'s own docstring documents for this harness and
+    that ``tests/test_structured_output_method.py`` pins as transparent — so no
+    new nesting order is invented here. And it leaves the provider's own
+    wrapping untouched, so what gets counted is a client built exactly the way
+    production builds it, with the method pinned by production code rather than
+    by the measurement.
+    """
+
+    def __init__(self, stats: dict[str, SchemaStats]) -> None:
+        super().__init__()
+        self._stats = stats
+
+    def large(self) -> StructuredModel:
+        return InstrumentedModel(super().large(), stats=self._stats)
+
+    def large_at_temperature(self, temperature: float) -> StructuredModel:
+        return InstrumentedModel(
+            super().large_at_temperature(temperature), stats=self._stats
+        )
+
+    def small(self) -> StructuredModel:
+        return InstrumentedModel(super().small(), stats=self._stats)
+
+
+def _install_counting_provider(
+    stats: dict[str, SchemaStats],
+) -> _CountingOllamaProvider:
     """Point ``graphia.llm``'s module-level seams at counted Ollama clients.
 
     Uses the documented override seams (``_active_provider`` / ``_large`` /
     ``_small``) — the same ones ``repetition_experiment`` rebuilds — so no
     production code changes and no Bedrock client is ever constructed. The
-    proxy counts only (``stats`` supplied, no ``speaker_resolver``); raw capture
-    is a different consumer's concern (Slice 3, Task 2).
+    proxies count only (``stats`` supplied, no ``speaker_resolver``); raw
+    capture is a different consumer's concern (Slice 3, Task 2).
+
+    ``_active_provider`` now carries the counting provider itself, so the one
+    tier factory that bypasses the cache slots (``get_persona_model``) is
+    counted too. Returns the installed provider so the caller can record the
+    structured-output method it resolved.
     """
     import graphia.llm as llm_mod
 
-    provider = llm_mod.OllamaProvider()
+    provider = _CountingOllamaProvider(stats)
     llm_mod._active_provider = provider
-    llm_mod._large = InstrumentedModel(provider.large(), stats=stats)
-    llm_mod._small = InstrumentedModel(provider.small(), stats=stats)
+    llm_mod._large = provider.large()
+    llm_mod._small = provider.small()
+    return provider
+
+
+def _resolved_structured_output_method(provider: OllamaProvider) -> str | None:
+    """The structured-output method the INSTALLED provider seam resolved.
+
+    Read off the provider object this run actually installed — not a freshly
+    constructed one — because the question the gate asks is "what did the
+    clients this game used carry?", and a fresh construction would answer a
+    different question that cannot fail.
+
+    ``None`` when the seam resolved no method at all, which is what a Bedrock
+    provider returns and what a dropped pin would look like. The gate treats
+    that as a failure rather than as "no data".
+
+    Deliberately NOT a wire-level assertion. Proving that the bound runnable
+    carries ``format == Schema.model_json_schema()`` for each of the seven is
+    ``tests/test_structured_output_method.py``'s job, it needs no live model,
+    and re-doing it here would couple this harness to LangChain's internal
+    runnable shape for a fact already pinned offline. What this harness adds is
+    the live half: seven schemas exercised with zero failures, under the method
+    named here.
+    """
+    return provider.structured_output_defaults().get("method")
+
+
+@dataclass(slots=True)
+class _SubstitutionCensus:
+    """An accumulating substitution sink for ONE scripted game, chaining on.
+
+    The harness half of ``graphia.substitution``'s injectable-sink design, and
+    the fourth of the gate's four conditions. It exists because ``attempts > 0,
+    failures == 0`` does **not** imply no substitution: the raw-invoke counter
+    above sees the transport, while the seven helpers' own substitution
+    branches see the game deciding no usable answer arrived. A validator
+    rejecting a well-formed, cleanly-decoded answer books a substitution and no
+    parse failure whatsoever.
+
+    IT CHAINS TO :func:`~graphia.substitution.default_sink`, which is public
+    precisely so it can. Replacing the sink replaces what happens to the count
+    AND to the log line at once (``note_substitution`` owns both), so a sink
+    that only counted would take production's substitution warning away from
+    the one run that most wants it. The count is booked BEFORE the chain, so
+    even a logging failure cannot lose it.
+
+    Reports all seven kinds INCLUDING zeros, which is the opposite of the
+    ledger's "absent, never a misleading zero" rule — deliberately, and the
+    difference is what the number is for. The ledger PUBLISHES a rate, so a
+    ``0.0`` over no attempts would assert a clean measurement of something that
+    never ran. This census is ASSERTED against, so every kind has to appear:
+    a missing key here means the instrument was not installed, and the gate has
+    to be able to tell that apart from a genuine zero. Hence
+    ``_unreliable_reasons`` requires the full seven and fails closed on a short
+    census.
+
+    NO LOCKING, stated rather than assumed: ``counts[kind] += 1`` is a
+    read-modify-write. The whole synchronous graph runs inside one
+    ``asyncio.to_thread`` worker, so no two of the seven helpers overlap today.
+    """
+
+    attempted: Counter[str] = field(default_factory=Counter)
+    substituted: Counter[str] = field(default_factory=Counter)
+
+    def __call__(self, event: SubstitutionEvent, kind: SubstitutionKind) -> None:
+        """Count, then chain — the sink contract's ``(event, kind) -> None``.
+
+        Must not raise: ``substitution.py`` guards no notification, so an
+        exception here would surface from inside a game node and, worse, be
+        swallowed by the helper's own ``except Exception`` and returned as a
+        fallback — the measurement manufacturing the event it measures.
+        """
+        match event:
+            case SubstitutionEvent.ATTEMPT:
+                self.attempted[kind.value] += 1
+            case SubstitutionEvent.SUBSTITUTION:
+                self.substituted[kind.value] += 1
+            case _:  # pragma: no cover - a future event kind, chained on only
+                pass
+        default_sink(event, kind)
+
+    def as_report(self) -> dict[str, dict[str, int]]:
+        """All seven kinds, each with its two counts — the report-ready shape.
+
+        Iterates :class:`~graphia.substitution.SubstitutionKind` rather than the
+        counters, so a kind that never fired is present with zeros instead of
+        missing. A fresh census's ``as_report()`` is therefore the canonical
+        "clean" census, which is also the cheapest way for an offline test to
+        build one without retyping seven keys.
+        """
+        return {
+            kind.value: {
+                "attempted": self.attempted[kind.value],
+                "substituted": self.substituted[kind.value],
+            }
+            for kind in SubstitutionKind
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -201,10 +450,12 @@ def _derive_interrupt_budget(config: GraphiaConfig) -> InterruptBudget:
     Every term reads a production constant rather than a remembered table, so a
     larger lineup widens the budget instead of silently tightening it.
     """
-    # Local imports for the same reason every other production import in this
+    # Local imports for the reason nearly every production import in this
     # module is local: nothing that touches the game package should be pulled in
     # before ``main`` has forced ``GRAPHIA_LLM_PROVIDER=ollama`` and cleared the
-    # cloud store ids.
+    # cloud store ids. The two module-scope exceptions (``graphia.llm``'s schema
+    # vocabulary and provider class, and the leaf ``graphia.substitution``) are
+    # argued at the import site; both read no environment at import.
     from graphia.nodes.day import DAY_MAX_ROUNDS, DAY_MAX_VOTES
     from graphia.nodes.night import NIGHT_ROUND_CAP
 
@@ -260,7 +511,23 @@ class PairReport:
     stop_reason: str = ""
     duration_seconds: float = 0.0
     stats: dict[str, SchemaStats] = field(default_factory=dict)
+    # The structured-output method the provider seam resolved for THIS run's
+    # clients (gate condition 3). ``None`` means "not observed", which the
+    # verdict treats as a failure rather than as no data — see
+    # ``_resolved_structured_output_method``.
+    structured_output_method: str | None = None
+    # ``{kind: {"attempted": n, "substituted": m}}`` for all seven answer kinds
+    # (gate condition 4), from the ``_SubstitutionCensus`` installed around the
+    # game. Empty means the census was never installed, which the verdict also
+    # treats as a failure.
+    substitutions: dict[str, dict[str, int]] = field(default_factory=dict)
     verdict: str = "UNRELIABLE"
+    # WHY the verdict reads as it does, one string per breached condition, in
+    # the same field for the printed report and the JSON record. A one-word
+    # UNRELIABLE that does not say which of the four conditions failed sends
+    # the reader back to the table to guess — and on the run that motivated
+    # this slice the table did not contain the answer.
+    verdict_reasons: tuple[str, ...] = ()
 
 
 def _run_scripted_game(
@@ -324,11 +591,18 @@ def _run_scripted_game(
             for _ in range(limit):
                 used += 1
                 if rounds >= max_rounds:
-                    # Script ran its course. NOTE: at the default max_rounds=3
-                    # this fires INSIDE Day 1 (DAY_MAX_ROUNDS is 6), i.e. before
-                    # the first Day -> Night hinge — so the diary and the last
-                    # reflection never run. Named in the stop reason because
-                    # "which schemas got exercised" is read off this report.
+                    # Script ran its course. NOTE: this cap decides how much of
+                    # the game is measured, and a cap at or below
+                    # ``DAY_MAX_ROUNDS`` (6) fires INSIDE Day 1 — before the
+                    # first Day -> Night hinge, so ``day_diary``, the last
+                    # reflection and the whole Night never run, and ``Diary``,
+                    # ``Reflection`` and ``Pointing`` go unexercised. That is
+                    # why ``main`` derives the default as ``DAY_MAX_ROUNDS + 1``
+                    # instead of the old literal 3: the gate now REQUIRES all
+                    # seven schemas exercised, so a default that cannot reach
+                    # three of them would make it unsatisfiable. Named in the
+                    # stop reason because "which schemas got exercised" is read
+                    # off this report.
                     return (
                         True,
                         None,
@@ -382,15 +656,178 @@ def _run_scripted_game(
             return False, f"{type(exc).__name__}: {exc}", "exception"
 
 
-def _judge(report: PairReport, threshold: float) -> str:
-    """Advisory RELIABLE/UNRELIABLE call. The table is the substance."""
-    if not report.preflight_ok or not report.game_completed:
-        return "UNRELIABLE"
-    for name in SCHEMA_NAMES:
-        s = report.stats.get(name)
-        if s is not None and s.attempts and s.failure_rate > threshold:
-            return "UNRELIABLE"
-    return "RELIABLE"
+def _schema_rows(
+    report: PairReport, *, schema_names: Sequence[str] | None = None
+) -> list[tuple[str, SchemaStats]]:
+    """The ``(name, stats)`` rows every surface reads — table, JSON and verdict.
+
+    ONE function, because the human table and the machine record disagreeing is
+    a measured defect rather than a hypothetical: the run that motivated this
+    slice printed FOUR rows while its JSON carried SIX, since
+    ``_print_pair_report`` iterated the hand-typed tuple and ``_json_payload``
+    iterated ``report.stats``. Both now call this, and so does the verdict, so
+    all three judge and display exactly the same set.
+
+    Vocabulary order first (``GAMEPLAY_SCHEMAS``'s order, which it declares to
+    be display order), with a zeroed :class:`SchemaStats` standing in for a
+    schema the run never bound — the row has to appear, because "never
+    exercised" IS the finding. Then any EXTRA key present in ``stats`` but not
+    in the vocabulary, sorted for stability: the old JSON path would at least
+    have surfaced such a key, and iterating the tuple alone would silently drop
+    it, which is the same class of blindness in the opposite direction.
+    """
+    names = SCHEMA_NAMES if schema_names is None else tuple(schema_names)
+    rows: list[tuple[str, SchemaStats]] = []
+    for name in names:
+        booked = report.stats.get(name)
+        rows.append((name, booked if booked is not None else SchemaStats()))
+    for name in sorted(set(report.stats) - set(names)):
+        rows.append((name, report.stats[name]))
+    return rows
+
+
+def _unreliable_reasons(
+    report: PairReport,
+    threshold: float,
+    *,
+    require_all_schemas: bool = True,
+    schema_names: Sequence[str] | None = None,
+) -> tuple[str, ...]:
+    """Every gate condition this report breaches, as printable strings.
+
+    The verdict's single source of truth: :func:`_judge` is one word over
+    exactly this tuple, so the word and the stated reasons cannot disagree.
+    Empty tuple means RELIABLE. Pure — reads only its arguments and, unless
+    ``schema_names`` says otherwise, module scope.
+
+    ``require_all_schemas`` (default ``True``, the gate) is the fix for the hole
+    that let a run reporting on four of seven schemas pass. Setting it
+    ``False`` isolates the failure/method/substitution conditions from the
+    coverage one; it does not weaken them.
+
+    ``schema_names`` is the seam for the coupling this module now has to
+    ``llm.GAMEPLAY_SCHEMAS``. ``None`` — the production path — reads the derived
+    module tuple at CALL time (never bound as a signature default, which is how
+    a redirected constant gets ignored). Passing a tuple states the vocabulary
+    at the call site instead. A caller therefore chooses explicitly between
+    "test the derivation" and "test the rule over a fixed vocabulary"; a test
+    that silently depends on the enum's contents is how the four-of-seven hole
+    survived in the first place.
+    """
+    reasons: list[str] = []
+
+    if not report.preflight_ok:
+        # Nothing downstream was measured, so every other condition would fire
+        # for the same single cause. One reason, not seven.
+        return (
+            "preflight failed: "
+            + (report.preflight_message or "no message recorded"),
+        )
+
+    if not report.game_completed:
+        reasons.append(
+            "the scripted game did not complete"
+            + (f" (stopped at: {report.stop_reason})" if report.stop_reason else "")
+        )
+
+    names = SCHEMA_NAMES if schema_names is None else tuple(schema_names)
+    rows = _schema_rows(report, schema_names=names)
+
+    if require_all_schemas:
+        # Coverage is judged over the VOCABULARY, not over ``rows`` — the rows
+        # may carry extra keys ``stats`` booked outside it, and denominating
+        # "1 of 7" against those would report a coverage fraction nobody asked
+        # for. Extras are still displayed, and still checked for failures below.
+        booked = dict(rows)
+        unexercised = [name for name in names if not booked[name].attempts]
+        if unexercised:
+            reasons.append(
+                f"{len(unexercised)} of {len(names)} schemas went unexercised "
+                f"(no structured-output attempt was made, so this run reports "
+                f"nothing about them): " + ", ".join(unexercised)
+            )
+
+    for name, s in rows:
+        if not s.failures:
+            continue
+        frame = (
+            f"past the {100 * threshold:.0f}% advisory bound"
+            if s.failure_rate > threshold
+            else f"under the {100 * threshold:.0f}% advisory bound, but the "
+            f"gate requires zero"
+        )
+        reasons.append(
+            f"{name} booked {s.failures} failure(s) in {s.attempts} attempt(s) "
+            f"— {100 * s.failure_rate:.0f}%, {frame}"
+        )
+
+    if report.structured_output_method != EXPECTED_STRUCTURED_OUTPUT_METHOD:
+        reasons.append(
+            "the provider seam resolved structured-output method "
+            + (
+                repr(report.structured_output_method)
+                if report.structured_output_method is not None
+                else "nothing (not observed)"
+            )
+            + f", not {EXPECTED_STRUCTURED_OUTPUT_METHOD!r} — so a clean "
+            "decode here would not be evidence about grammar-constrained "
+            "decoding"
+        )
+
+    missing_kinds = [
+        kind.value
+        for kind in SubstitutionKind
+        if kind.value not in report.substitutions
+    ]
+    if missing_kinds:
+        reasons.append(
+            f"the substitution census covers only "
+            f"{len(report.substitutions)} of {len(SubstitutionKind)} answer "
+            f"kinds (missing: " + ", ".join(missing_kinds) + ") — an "
+            "instrument that was not installed is not a clean measurement"
+        )
+    nonzero = [
+        (kind, facets)
+        for kind, facets in report.substitutions.items()
+        if facets.get("substituted")
+    ]
+    if nonzero:
+        reasons.append(
+            "the substitution census is nonzero — the game fell back to a "
+            "deterministic stand-in despite the transport: "
+            + ", ".join(
+                f"{kind} {facets['substituted']}/{facets.get('attempted', 0)}"
+                for kind, facets in nonzero
+            )
+        )
+
+    return tuple(reasons)
+
+
+def _judge(
+    report: PairReport,
+    threshold: float,
+    *,
+    require_all_schemas: bool = True,
+    schema_names: Sequence[str] | None = None,
+) -> str:
+    """The one-word RELIABLE/UNRELIABLE call over :func:`_unreliable_reasons`.
+
+    Kept as a separate function returning a bare word because that word is what
+    ``PairReport.verdict`` holds, what the summary block prints and what the
+    process exit code is derived from. It delegates rather than re-deriving, so
+    there is exactly one place the four conditions are expressed.
+    """
+    return (
+        "UNRELIABLE"
+        if _unreliable_reasons(
+            report,
+            threshold,
+            require_all_schemas=require_all_schemas,
+            schema_names=schema_names,
+        )
+        else "RELIABLE"
+    )
 
 
 def _smoke_one_pair(
@@ -411,20 +848,43 @@ def _smoke_one_pair(
         run_ollama_preflight(load_config())
     except SystemExit as exc:
         report.preflight_message = str(exc)
+        # Stamp the reason on this path too. ``_print_pair_report`` says
+        # "(preflight)" on screen, but the JSON record would otherwise carry an
+        # empty ``verdict_reasons`` beside an UNRELIABLE verdict — the printed
+        # and machine surfaces disagreeing again, in the one case where nothing
+        # downstream ran.
+        report.verdict_reasons = _unreliable_reasons(report, threshold)
         return report
     report.preflight_ok = True
 
     stats: dict[str, SchemaStats] = {name: SchemaStats() for name in SCHEMA_NAMES}
-    _install_counting_provider(stats)
+    provider = _install_counting_provider(stats)
     report.stats = stats
+    report.structured_output_method = _resolved_structured_output_method(provider)
 
+    # The substitution sink is installed around the GAME, not around the
+    # process: ``set_sink`` is process-global by design and only the harness
+    # knows where one measured game ends. Restored in ``finally`` so a raising
+    # drive cannot leave the game package counting into a dead census.
+    census = _SubstitutionCensus()
+    set_sink(census)
     started = time.monotonic()
-    (
-        report.game_completed,
-        report.game_error,
-        report.stop_reason,
-    ) = _run_scripted_game(max_rounds, seed)
-    report.duration_seconds = time.monotonic() - started
+    try:
+        (
+            report.game_completed,
+            report.game_error,
+            report.stop_reason,
+        ) = _run_scripted_game(max_rounds, seed)
+    finally:
+        reset_sink()
+        report.duration_seconds = time.monotonic() - started
+        report.substitutions = census.as_report()
+
+    # Computed twice, on purpose. ``_judge`` is the decision function and must
+    # be the one production calls — a verdict derived here from a local variable
+    # would leave ``_judge`` tested but unused. Both readings come from the same
+    # pure predicate over the same report, so they cannot disagree.
+    report.verdict_reasons = _unreliable_reasons(report, threshold)
     report.verdict = _judge(report, threshold)
     return report
 
@@ -441,8 +901,9 @@ def _print_pair_report(report: PairReport, threshold: float) -> None:
         print("  verdict: UNRELIABLE (preflight)")
         return
     print(f"  {'schema':<10} {'attempts':>8} {'failures':>8} {'fallbacks':>9} {'fail%':>6}")
-    for name in SCHEMA_NAMES:
-        s = report.stats.get(name, SchemaStats())
+    # ``_schema_rows`` — the SAME rows ``_json_payload`` and the verdict read,
+    # so the printed table and the machine record cannot disagree again.
+    for name, s in _schema_rows(report):
         note = "" if s.attempts else "   (not exercised)"
         print(
             f"  {name:<10} {s.attempts:>8} {s.failures:>8} {s.fallbacks:>9}"
@@ -460,7 +921,34 @@ def _print_pair_report(report: PairReport, threshold: float) -> None:
         # Its own line: the backstop-exhaustion message is a paragraph, and
         # squeezing it onto the summary line is what made it unreadable before.
         print(f"    {report.game_error}")
-    print(f"  verdict: {report.verdict}  (advisory threshold: fail% > {100 * threshold:.0f}%)")
+    method = report.structured_output_method
+    print(
+        f"  structured-output method: {method or 'not observed'}"
+        + (
+            ""
+            if method == EXPECTED_STRUCTURED_OUTPUT_METHOD
+            else f"   (the gate requires {EXPECTED_STRUCTURED_OUTPUT_METHOD})"
+        )
+    )
+    if report.substitutions:
+        print(
+            "  substitutions (substituted/attempted): "
+            + ", ".join(
+                f"{kind}={facets.get('substituted', 0)}"
+                f"/{facets.get('attempted', 0)}"
+                for kind, facets in report.substitutions.items()
+            )
+        )
+    else:
+        print("  substitutions: not observed (no census was installed)")
+    print(
+        f"  verdict: {report.verdict}  (requires: all {len(SCHEMA_NAMES)} "
+        f"schemas exercised, zero failures, method "
+        f"{EXPECTED_STRUCTURED_OUTPUT_METHOD}, zero substitutions; the "
+        f"{100 * threshold:.0f}% rate bound is reported, not enforced)"
+    )
+    for reason in report.verdict_reasons:
+        print(f"    - {reason}")
 
 
 def _json_payload(reports: list[PairReport], args: argparse.Namespace) -> dict:
@@ -468,6 +956,11 @@ def _json_payload(reports: list[PairReport], args: argparse.Namespace) -> dict:
         "max_rounds": args.max_rounds,
         "seed": args.seed,
         "threshold": args.threshold,
+        # What the run judged ITSELF against, stated in the record rather than
+        # left for a reader to infer from the row count. The whole defect this
+        # payload once hid was a vocabulary nobody could see.
+        "schemas_required": list(SCHEMA_NAMES),
+        "expected_structured_output_method": EXPECTED_STRUCTURED_OUTPUT_METHOD,
         "pairs": [
             {
                 "large": r.large,
@@ -479,6 +972,13 @@ def _json_payload(reports: list[PairReport], args: argparse.Namespace) -> dict:
                 "stop_reason": r.stop_reason,
                 "duration_seconds": round(r.duration_seconds, 2),
                 "verdict": r.verdict,
+                "verdict_reasons": list(r.verdict_reasons),
+                "structured_output_method": r.structured_output_method,
+                "substitutions": r.substitutions,
+                # ``_schema_rows`` — the SAME rows the printed table and the
+                # verdict read. Previously this iterated ``r.stats`` while the
+                # table iterated a shorter hand-typed tuple, so one run
+                # reported four schemas on screen and six in JSON.
                 "schemas": {
                     name: {
                         "attempts": s.attempts,
@@ -487,7 +987,7 @@ def _json_payload(reports: list[PairReport], args: argparse.Namespace) -> dict:
                         "failure_rate": round(s.failure_rate, 4),
                         "last_error": s.last_error,
                     }
-                    for name, s in r.stats.items()
+                    for name, s in _schema_rows(r)
                 },
             }
             for r in reports
@@ -535,15 +1035,24 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--max-rounds",
         type=int,
-        default=3,
-        help="cap on scripted-human Day rounds per game (local model time)",
+        default=None,
+        help=(
+            "cap on scripted-human Day rounds per game (local model time); "
+            "default = DAY_MAX_ROUNDS + 1, the smallest cap that closes one "
+            "full Day and crosses the Day->Night hinge, so the diary, the "
+            "final reflection and the Night pointing are all exercised"
+        ),
     )
     ap.add_argument("--seed", type=int, default=20260611, help="seed for game structure")
     ap.add_argument(
         "--threshold",
         type=float,
         default=DEFAULT_THRESHOLD,
-        help="advisory per-schema failure-rate bound for the RELIABLE call",
+        help=(
+            "advisory per-schema failure-rate bound, REPORTED not enforced: "
+            "the verdict requires zero failures per schema, and this only "
+            "frames a nonzero count as past or under the bound"
+        ),
     )
     ap.add_argument("--json", type=str, default=None, help="write a JSON report to this path")
     args = ap.parse_args(argv)
@@ -570,6 +1079,30 @@ def main(argv: list[str] | None = None) -> int:
         "GRAPHIA_STATS_STRATEGY_ID",
     ):
         os.environ.pop(var, None)
+    # Force ON the two ADR-011 ablation flags that GATE two of the seven
+    # schemas: ``private_thoughts_enabled`` gates ``day_round_reflect``
+    # (``Reflection``) and ``private_diaries_enabled`` gates ``day_diary``
+    # (``Diary``). Both default on, so this only bites when a wired-in ``.env``
+    # has turned one off — and then the gate would fail for a reason that says
+    # nothing about the transport it exists to measure. Forced rather than
+    # defaulted because this is a TRANSPORT gate, not an ablation measurement:
+    # ``blunder_eval`` is where those flags are a variable, and it reads them
+    # from config as normal.
+    os.environ["GRAPHIA_PRIVATE_THOUGHTS"] = "1"
+    os.environ["GRAPHIA_PRIVATE_DIARIES"] = "1"
+
+    # ``--max-rounds``'s default, DERIVED from production's own Day cap rather
+    # than typed. The old literal 3 could not reach the first Day -> Night
+    # hinge (``DAY_MAX_ROUNDS`` is 6), so ``Diary``, ``Reflection`` and
+    # ``Pointing`` went unexercised on a default run — invisible while the
+    # verdict iterated four schema names, unsatisfiable now that it requires
+    # all seven. Resolved HERE, after the env forcing above, so the production
+    # import stays on the far side of it; ``argparse`` carries ``None`` and the
+    # help text names the derivation.
+    from graphia.nodes.day import DAY_MAX_ROUNDS
+
+    if args.max_rounds is None:
+        args.max_rounds = DAY_MAX_ROUNDS + 1
 
     from graphia.config import load_config
 
@@ -581,6 +1114,11 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f"Ollama structured-output smoke: {len(pairs)} pair(s), one scripted game "
         f"each (max {args.max_rounds} Day rounds). Local model time; non-deterministic."
+    )
+    print(
+        f"  verdict requires all {len(SCHEMA_NAMES)} schemas exercised "
+        f"({', '.join(SCHEMA_NAMES)}) with zero failures, method "
+        f"{EXPECTED_STRUCTURED_OUTPUT_METHOD}, and a zero substitution census."
     )
 
     reports: list[PairReport] = []

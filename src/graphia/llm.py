@@ -923,14 +923,16 @@ class DayAction(BaseModel):
 # ``DayAction``), and the two private channels (``Reflection``, ``Diary``).
 #
 # **Declared once because it was previously declared twice, short both times.**
-# ``tools/ollama_smoke.py``'s hand-typed ``SCHEMA_NAMES`` lists four of the
+# ``tools/ollama_smoke.py``'s hand-typed ``SCHEMA_NAMES`` listed four of the
 # seven, so ADR-013's live reliability gate silently skipped ``Persona``,
 # ``Reflection`` and ``Diary`` — and on 2026-09-04 returned ``RELIABLE`` with
 # exit code 0 on a full game whose ``Diary`` failure rate was 0.80, four times
 # its own threshold, because ``_judge`` iterated a tuple that omitted the
-# schema that failed (spec 041 §11.1). That is the cost of a vocabulary kept in
-# more than one place: not a style complaint, a gate that could not fail.
-# Consumers derive from THIS tuple instead of retyping it.
+# schema that failed. That is the cost of a vocabulary kept in more than one
+# place: not a style complaint, a gate that could not fail. Spec 041 Slice 11
+# (Task 11.1) has since derived that tuple from here, so the gate's vocabulary
+# and this declaration cannot diverge again. Consumers derive from THIS tuple
+# instead of retyping it.
 #
 # The ORDER is load-bearing, not incidental: ``ollama_smoke`` renders it as a
 # human-readable table, so this is display order. Append new schemas at the end

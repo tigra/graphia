@@ -594,9 +594,14 @@ def test_counting_four_consecutive_failures_trip_two_fallbacks() -> None:
 def test_counting_failure_rate_zero_when_no_attempts() -> None:
     """A never-exercised schema has ``failure_rate == 0.0`` (no ZeroDivisionError).
 
-    ``ollama_smoke`` reports unexercised schemas as ``(not exercised)`` and its
-    ``_judge`` guards on ``s.attempts`` before reading ``failure_rate`` — but the
-    property must still be safe to read on a fresh ``SchemaStats`` (0/0 → 0.0).
+    ``ollama_smoke`` reports unexercised schemas as ``(not exercised)``, and
+    since spec 041 Slice 11 its table renders a row for EVERY schema in
+    ``llm.GAMEPLAY_SCHEMAS`` — printing ``100 * s.failure_rate`` on a
+    never-bound schema's zeroed stats — so this property is read on a fresh
+    ``SchemaStats`` on every run rather than only when something went wrong.
+    (Its ``_judge`` no longer guards on ``s.attempts`` at all: a zero-attempt
+    schema is now a failing gate condition in its own right, which is the hole
+    that guard used to hide.) 0/0 → 0.0, never ``ZeroDivisionError``.
     """
     assert SchemaStats().failure_rate == 0.0
 

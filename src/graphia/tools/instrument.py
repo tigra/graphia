@@ -13,8 +13,11 @@ code. It does two things, independently selectable per proxy instance:
   byte-for-byte by the original extraction (``ollama_smoke`` is refactored
   *onto* this module with no behavior change). **Spec 041 corrected exactly one
   rule** — how an ``include_raw=True`` return is classified, see
-  :func:`_classification_error` — and ``ollama_smoke``'s four schemas are
-  untouched by that correction, because none of them binds ``include_raw``.
+  :func:`_classification_error`. No production call site binds ``include_raw``
+  any more (Slice 4 withdrew the diary's), so that correction is now a
+  guarantee about a shape this module still handles rather than one any current
+  caller produces; the classification rule stays because the envelope is
+  LangChain's, not the diary's.
 - **raw capture** — per invoke, a :class:`CaptureRecord` of
   ``(schema, raw_result, speaker_id)``. ``speaker_id`` is resolved **at invoke
   time** through an injected ``speaker_resolver`` callback (default ``None``),

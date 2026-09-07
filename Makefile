@@ -111,7 +111,7 @@ help:
 	@echo "Live AI-quality evals (reach a REAL model — NOT the mocked suite; run deliberately):"
 	@echo "  make eval-dialogue      Play N real-Nova games and score AI Day-speech repetition. Bedrock: needs AWS creds, costs tokens."
 	@echo "  make repetition-experiment  Rigorous paired A/B of repetition fixes on real Nova (bootstrap CIs). Bedrock: long run, costs tokens."
-	@echo "  make ollama-smoke       Real-Ollama structured-output smoke per model pair. Needs a running 'ollama serve' with the models pulled."
+	@echo "  make ollama-smoke       Real-Ollama structured-output smoke per model pair; RELIABLE only if all 7 schemas were exercised with zero failures. Needs a running 'ollama serve' with the models pulled."
 	@echo "  make blunder-eval       Play N games on a chosen provider, count self-consistency blunders + repetition, append one record to evals/blunder-ledger.yaml. Both providers; Bedrock costs real tokens. ARGS=\"--provider ollama|bedrock --games N\"."
 	@echo ""
 	@echo "Career stats (spec 006 / ADR 007 — self-managed long-term Memory strategy):"
@@ -481,11 +481,24 @@ repetition-experiment:
 	uv run python -m graphia.tools.repetition_experiment $(ARGS)
 
 # Real-Ollama structured-output smoke (spec 010 Slice 5 / ADR-010's
-# verify-at-implementation gate): for each LARGE,SMALL model pair, preflight
-# the local Ollama server then drive ONE scripted game on the real provider,
-# counting raw structured-output parse outcomes per schema (Roster / Pointing /
-# Ballot / DayAction) underneath the game's retry-then-fallback masking.
-# Reports RELIABLE/UNRELIABLE per pair — it never switches transports itself.
+# verify-at-implementation gate, tightened by spec 041 Slice 11 into ADR-013's
+# acceptance condition): for each LARGE,SMALL model pair, preflight the local
+# Ollama server then drive ONE scripted game on the real provider, counting raw
+# structured-output parse outcomes per schema underneath the game's
+# retry-then-fallback masking. The schema list is DERIVED from
+# llm.GAMEPLAY_SCHEMAS (all seven: Roster / Persona / Pointing / Ballot /
+# DayAction / Reflection / Diary), not hand-typed — the hand-typed four is what
+# let a run with an 80% Diary failure rate exit zero. A pair is RELIABLE only
+# if every one of the seven was actually exercised, none failed, the provider
+# seam resolved method="json_schema", and the substitution census reads zero;
+# any breach is printed as a named reason. Reports per pair — it never switches
+# transports itself. Two consequences of the tightening: the default
+# --max-rounds is derived as DAY_MAX_ROUNDS + 1 (7, was 3) so the run crosses
+# the Day->Night hinge where the diary and Night pointing fire, which roughly
+# doubles the local model time; and GRAPHIA_PRIVATE_THOUGHTS /
+# GRAPHIA_PRIVATE_DIARIES are forced on in-process, since those ADR-011
+# ablation flags gate two of the seven schemas and this is a transport gate,
+# not an ablation measurement.
 # NOT a mocked unit test: needs a running `ollama serve` with the models
 # pulled; burns local model time, no AWS. Start the server with a fuller
 # context window so spec-025's multi-day window is delivered (Ollama's 4096
