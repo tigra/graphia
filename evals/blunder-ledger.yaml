@@ -3871,3 +3871,153 @@ metrics:
     peak: 0.6212030449575563
     denominator: 21
 notes: 'Spec 041 Slice 6 (Substitutions Are Counted Where They Happen) Task 6.5 -- LIVE COUNTING VERIFICATION at n=1. NOT a baseline and NOT a behaviour measurement: read no rate in metrics or outcomes here as a result, and per CR 005 this is recorded as measured effort, not a result. WHAT IS VERIFIED: that the seven note_attempt / note_substitution call sites wired by Task 6.2 behave correctly against a real model -- a log line for a kind that genuinely substituted, and NO line for a kind that did not, which is the half that makes the count trustworthy rather than decorative. The positive direction is already covered offline by Task 6.3 seven-way forced sweep and Task 6.4 negative controls, both of which assert count AND value together, so a run with ZERO substitutions is a PASS and the headline good-news result rather than a failed verification -- no substitution was manufactured to produce a log line. HOW THE LOG LINES WERE MADE OBSERVABLE: GRAPHIA_LOG_FILE is StreamTraceLogger JSONL of graph-stream deltas and is NOT a logging destination, and nothing in src/ outside runtime/observability.py installs a logging handler, so substitution.default_sink WARNING records reach logging.lastResort on stderr with no logger name and no level. For this run a harness-side sitecustomize hook, reached ONLY via PYTHONPATH and living outside the repo (no file under src/ or tests/ was touched), added a root logging FileHandler at WARNING and installed an accumulating sink that CHAINS to substitution.default_sink -- the affordance substitution.py documents explicitly -- so production emitted its own log line while the DENOMINATORS became observable too. That second half is necessary because note_attempt is silent by design and Slice 7 has not landed, so there is no quality.substitutions block yet: without attempts, a kind with no log line cannot be distinguished from a kind that had no opportunity, which is exactly the absent-not-zero distinction the ledger will express from Slice 7 onward. NO PRODUCTION LOGGING HANDLER WAS ADDED -- if one is wanted, it should be a reviewed, deliberate change rather than a side effect of a verification task. LINEUP: played at six-and-two (settings.lineup num_citizens 6 / num_mafia 2), the CR 007 / spec 042 default since 2026-09-03. NOT comparable across the lineup boundary: the larger table affords the town ONE mistaken execution where five-and-two afforded none, and nearly every denominator here scales with table size (21 persona pairs against 15, more AI spoken lines, more votes). Read settings.lineup on each record and never its date -- four records from 2026-06-21/22 were already played at six-and-two by explicit override. The directly comparable predecessor is the Slice 4 record (2026-09-05, transcript_dir 2026-09-05T17-58-24), same lineup, same provider, same transport generation. At n=1 no METRIC_ORDER rate is usable -- denominators run single-digit to low-double-digit and no decrease of any size is detectable -- so the measured A/B that IS a result remains Task 12.2 at 10 games per arm. POST-RUN EXTENSION (Task 6.5, appended by hand after the run; notes is the one human-mutable field per evals/README.md, and nothing else in this record was touched). HEADLINE: ZERO SUBSTITUTIONS ACROSS ALL SEVEN KINDS, over 131 attempts, and that is the result rather than a missing one. Per kind, substituted / attempted: roster 0/1, persona 0/7, pointing 0/4, ballot 0/10, day_action 0/54, reflection 0/50, diary 0/5. Every one of the seven has a NON-ZERO denominator, so no kind in this run is an absent-not-zero case and every kind had a real opportunity to emit a spurious line. THE NEGATIVE HALF, which is the assertion that actually carries weight: the captured log holds ZERO graphia.substitution records. The only WARNING-or-above record in the whole capture is the observation hook own banner -- and that includes the two node-side diary diagnostics at src/graphia/nodes/day.py (the no-usable-entry logger.warning and the raised-route logger.exception), both silent, which is the independent confirmation that the sink and the node agree there was nothing to report. Count and log line therefore agree for all seven kinds in the only way available at zero: no count, no line. DENOMINATORS RECONCILED INDEPENDENTLY, per kind, because a count is worthless without a denominator that can be checked. roster 1 -- one _generate_names per game. persona 7 -- eight seats minus the scripted human seat Avery (who carries no persona in the preserved transcript), corroborated by metrics.persona_near_dup denominator 21 == C(7,2); note that PERSONA counts GENERATIONS ASKED FOR and not players (diversity-on allows persona_regen_attempts + 1 == 3 calls per seat), so the two coincide here only because no collision triggered a regeneration -- do not read persona.attempted as a headcount when Slice 7 renders it. pointing 4 -- two Mafiosos (Ahmed, Nina) across two Nights, both alive throughout since all four deaths were Law-abiding; the transcript shows both pointing on each Night. ballot 10 -- the two vote blocks list 7 and 5 ballots, less the human Avery in each, so 6 + 4. day_action 54 -- exactly the 54 AI spoken lines the console reported and exactly metrics.repetition denominator 54. reflection 50 -- exactly the 50 thought elements in the preserved transcript. diary 5 -- exactly quality.diary_entries_attempted 5 and exactly the 5 diary elements in the transcript, and it reconciles against attrition: Night 1 carries no diary (the graph enters night_open from first_night_mafia_intros) and the winning Day 2 transition carries none, so there is ONE diary round, Day 1 into Night 2, with 5 AI writers alive after Milo was executed. CROSS-CHECK AGAINST THE INDEPENDENT SENTINEL: quality.diary_fallback_rate 0.00 over quality.diary_entries_attempted 5, measured by score_diary_fallback reading the private_diaries state channel by EXACT STRING EQUALITY against nodes.day._DIARY_FALLBACK -- a different instrument from note_attempt / note_substitution, which instrument the helper. Both read 0 of 5, and a third reading of the preserved transcript finds 5 diary elements with 0 byte-equal to the placeholder. A clean rate and zero substitution lines agreeing with each other is the evidence here. SEMANTIC PERSONA METRICS PRESENT THIS TIME: persona_sem_mean 0.373 and persona_sem_peak 0.621 over 21 pairs, so unlike the Slice 4 record -- where the spec-033 embeddings instrument failed with botocore UnauthorizedSSOTokenError and the harness correctly OMITTED the pair rather than writing 0.0 -- this run carries the semantic counterpart the Slice 4 record lacks. The instrument is deliberately always Bedrock and independent of GRAPHIA_LLM_PROVIDER, so a valid SSO session is what changed, not the measuring stick. ENGAGEMENT WARNING, READ THIS BESIDE THE ZEROS. The AI town initiated NOT ONE execution vote: vote_activity.by_side is law_abiding 0 / mafia 0 with by_day empty, and score_vote_activity counts AI initiations only. Both of the two votes played were initiated by the scripted human seat Avery, and BOTH executed a Law-abiding Citizen (Milo on Day 1, Liam on Day 2) -- so the Mafia win is two town mistakes plus attrition, not play. Consequently self_vote.yes is present with a denominator of only 2 while self_vote.initiation and peer_vote.yes are ABSENT rather than 0.00, correctly so, their denominators being zero. This DOES NOT weaken the substitution result, whose denominators come from model calls the graph makes regardless of who proposes -- and the ballot denominator of 10 is in fact the engagement the Slice 4 game lacked entirely (that game recorded zero ballots) -- but nothing in outcomes or vote_activity from this run is usable as behaviour. metrics.repetition 0.630 over 54 lines sits inside the band of the two committed n=20 six-and-two baselines (0.634 and 0.637), unlike the Slice 4 single game at 0.741; at n=1 read neither as a signal. KNOWN STALE COMMENT, NOT FIXED HERE. src/graphia/nodes/day.py still describes the two _ai_diary log lines as diagnostic under the game log file, which the caveat above falsifies -- there is no logging handler in that path either. It is left for Task 12.1 rather than edited, because this task is a verification and must not change src/. VERDICT ON THE COUNTING: IT HOLDS LIVE. All seven call sites fired their note_attempt, every denominator is independently reconstructible from the record and the preserved transcript, no kind substituted, and no kind produced a substitution line. Zero false positives at 131 attempts.'
+---
+run:
+  date: '2026-09-07'
+  duration_seconds: 295.151
+  metrics_version: 1
+  transcript_dir: '2026-09-07T21-56-47'
+code:
+  commit: '737d7773e536fe9b5329e409c2e3429495cd651a'
+  branch: 'main'
+  dirty: true
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  structured_output: 'json_schema'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.32.14'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 1
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 1
+  games_completed: 1
+  games_failed_early: 0
+  diary_fallback_rate: 0.0
+  diary_fallback_entries: 0
+  diary_entries_attempted: 5
+  substitutions:
+    roster:
+      rate: 0.0
+      count: 0
+      attempted: 1
+    persona:
+      rate: 0.0
+      count: 0
+      attempted: 7
+    pointing:
+      rate: 0.0
+      count: 0
+      attempted: 3
+    ballot:
+      rate: 0.0
+      count: 0
+      attempted: 10
+    day_action:
+      rate: 0.0
+      count: 0
+      attempted: 44
+    reflection:
+      rate: 0.0
+      count: 0
+      attempted: 38
+    diary:
+      rate: 0.0
+      count: 0
+      attempted: 5
+  duration_seconds: 295.151
+outcomes:
+  games: 1
+  law_abiding:
+    wins: 1
+    rate: 1.0
+    ci_low: 0.20654329147389294
+    ci_high: 1.0
+  mafia:
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+  scripted_side:
+    side: 'law_abiding'
+    wins: 1
+    rate: 1.0
+    ci_low: 0.20654329147389294
+    ci_high: 1.0
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against an active rule-based scripted human (deterministic, no model call; when Law-abiding it supplies the vote a correct town majority needs) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 1
+    mafia: 0
+  by_day:
+    day_1: 1
+metrics:
+  repetition:
+    rate: 0.3953488372093023
+    count: 17
+    denominator: 43
+    ci_low: 0.263651061984564
+    ci_high: 0.5442120340668091
+  third_person_self_talk:
+    rate: 0.0
+    count: 0
+    denominator: 43
+    ci_low: 0.0
+    ci_high: 0.08201257002322722
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 1
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 2
+    ci_low: 0.0
+    ci_high: 0.6576280471103807
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 1
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 21
+    ci_low: 0.0
+    ci_high: 0.15464382326420195
+  persona_lex_mean:
+    mean: 0.030588599448474203
+    denominator: 21
+  persona_lex_peak:
+    peak: 0.06307053941908713
+    denominator: 21
+  persona_sem_mean:
+    mean: 0.3379354564804412
+    denominator: 21
+  persona_sem_peak:
+    peak: 0.47808104898679654
+    denominator: 21
+notes: 'Spec 041 Task 9.5 live half: one local-model game confirming spec 028 private_thoughts reshaped to list[ThoughtRecord] survives a real game end to end - records reach both {private_thoughts} renderers, the reflection prompt and the eval transcript. code.dirty is a CONCURRENT edit to src/graphia/ui/ledger_viewer.py + tests/test_ledger_viewer.py (Task 9.5 item (b) style test); neither is imported by the game or by this harness, so the measured behaviour is commit 737d777s. The dict-repr-in-prompt failure this run originally targeted is now pinned offline by Task 9.4, so what this run adds is only that the live model is reached and the reshaped channel round-trips.'

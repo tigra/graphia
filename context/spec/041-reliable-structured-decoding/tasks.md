@@ -206,7 +206,7 @@
 
 **Value:** the same guarantee for the channel a reviewer reads most — the corpus holds 10,491 thought bodies against 325 diary bodies. **This is the highest-risk slice in the spec; see the recommendations table.**
 
-- [ ] **Slice 9: A substituted thought is visibly marked**
+- [x] **Slice 9: A substituted thought is visibly marked**
 
   **A forward concern from Task 8.4 that measurement REFUTES — recorded 2026-09-07 so this slice does not inherit an obligation that cannot arise.** Task 8.4 flagged that Slices 9 and 10 "inherit the shape but not the bound" of `italic underline strike`: its worry was **block texture** — a long body wrapped over many rows, each carrying two horizontal rules, ceasing to read as prose and becoming a hatch pattern — bounded for the diary only because `_DIARY_FALLBACK` is a fixed 110-character sentence. It reasoned that a substituted thought is "a real thought" at corpus length and could hit the multi-row case.
 
@@ -231,7 +231,7 @@
     **One guard this task does not name, and Slice 8 already proved why it matters — added 2026-09-07 by Task 9.2.** Slice 8's `test_record_carries_exactly_day_cursor_and_text` fires **one layer upstream** of the transcript and is what makes an unconditional flag red at the *record* level. **The thought channel has no counterpart**, so today an unconditional `record["substituted"] = False` in `day_round_reflect` would be caught only at the transcript layer. Task 8.5's own correction established that the two layers **each catch a mutation the other cannot see** — the renderer mutation turned 24 red with the record guard silent, and the node mutation turned 2 red with the whole marking module green. Write the sibling explicitly: **the `ThoughtRecord` carries exactly `text` on the authored path.**
 
     Also settled by Task 9.2, so do not re-litigate it: **the marking is deliberately NOT rendered into the prompt**, matching Slice 8 — `_private_record_block` renders a substituted `DiaryRecord` unmarked too. A prompt-visible mark would change what the player reasons from, which is a game-design change rather than this spec's. **[Agent: testing]**
-  - [ ] Task 9.5: Verify. `uv run pytest -q` green (this is the slice most likely to surface unrelated breakage — the whole spec-028 and spec-039 suites are in its blast radius), then a real single-game run confirming thoughts still reach the prompts they are supposed to reach.
+  - [x] Task 9.5: Verify. `uv run pytest -q` green (this is the slice most likely to surface unrelated breakage — the whole spec-028 and spec-039 suites are in its blast radius), then a real single-game run confirming thoughts still reach the prompts they are supposed to reach.
 
     **This task's risk forecast is over-stated, and the measurement is in — recorded 2026-09-07 by Task 9.2.** Slice 9's framing calls this "the slice most likely to surface unrelated breakage" with "the whole spec-028 and spec-039 suites in its blast radius". Measured across Tasks 9.1 and 9.2: **two forced tests in total**, both in `tests/test_slice28_private_thoughts.py`, both the same one-line idiom (`thoughts[pid][0].strip()` → read through the seam), and the **entire spec-039 suite passed unchanged** — including `test_slice39_diary_interleave.py` with its 39 renderer references — because those modules hand-build `str` thoughts and the seam accepts them. The 225-reference blast radius was real; the breakage was not. The read-helper-first sequencing is why.
 

@@ -83,7 +83,11 @@ What is pinned, and why each one is not free
    search**, so what is pinned is the invariant rather than the two lines: a
    cell a reader can read is a cell a reader can find, and an *unlabelled*
    record matches neither transport (the present-only assertion, which is what
-   stops the phantom hit).
+   stops the phantom hit). The real-ledger half of that is a
+   **spelling-consistency rule, not a corpus snapshot**: absence spelled one
+   way, a label spelled one way. It was a snapshot until 2026-09-07 and the
+   first honest eval run turned it red — see
+   :func:`test_every_committed_record_spells_its_transport_absent_or_findable`.
 
 9. **A clean run does not look like a problem** (Task 7.5(b)). The
    ``Subst (worst)`` cell has THREE states and they must stay tellable apart::
@@ -170,6 +174,21 @@ Each of these was observed failing under a deliberate, reverted mutation of
   so ``_worst_substitution_cell``'s tie-break (a tie was the common case in
   Task 7.1's first real run) and ``_transport_cell``'s absent-vs-verbatim
   behaviour were unguarded beyond Task 7.2's manual check until now.
+* **The committed-corpus transport sweep was a corpus SNAPSHOT, and is now a
+  rule.** Its pre-fix form (``{cell for every row} == {_ABSENT}``) went red on
+  Task 9.5's legitimately appended record — the first labelled record the ledger
+  has ever held — and would have gone red on the first record of any future run,
+  on any provider. The replacement was measured on **both** sides of that 41→42
+  boundary: green on the 42-record working tree and on ``737d777``'s 41-record
+  ledger; red on **both** when ``_transport_cell`` is given a crept-in ``or
+  "tool_use"`` default (reporting a readable label over an empty haystack on
+  record 0 — the exact defect the pre-fix docstring claimed to guard and could
+  not distinguish from an honest label); and red on the working tree when the
+  cell renames a real label (record 41, both complaints at once, which is what
+  proves the labelled branch is live where the corpus supplies one). The
+  labelled branch is deliberately NOT floored with a ``>= 1`` guard, unlike the
+  unlabelled one — a pre-041 checkout has none, and that is exactly the
+  brittleness being removed.
 * **``autouse=True`` removed from ``conftest.reset_substitution_sink``** — the
   cross-module leak, constructed and caught. With the global reset gone AND
   ``tests/test_substitution_counts.py``'s module-local reset disabled, running
@@ -240,6 +259,7 @@ from graphia.tools.blunder_eval import (
     METRICS_VERSION,
     EvalResult,
     _GameCapture,
+    _PROVIDER_CLASSES,
     _structured_output_transport,
     _SubstitutionCounter,
     _ai_lines_with_names,
@@ -1062,6 +1082,28 @@ def test_the_transport_label_is_read_off_the_providers_own_declaration(
 # cell nor the blob maps it through a lookup table.
 _TRANSPORT_QUERIES = ("json_schema", "tool_use", "some_future_transport")
 
+# The transport labels a KNOWN provider can actually record, DERIVED from the
+# harness's own provider table rather than typed out here — a fourth provider
+# extends this set by existing, so the corpus sweep at the end of this section
+# never has to be edited to accept a label the harness legitimately writes.
+# (:data:`_TRANSPORT_QUERIES` above is the *renderer's* vocabulary and is
+# deliberately wider: ``_transport_cell`` passes an unknown transport through
+# verbatim, which is a property of the cell, not a licence for the committed
+# ledger to hold one.)
+#
+# The exact per-provider labels are pinned next door — against the provider
+# classes' own ``structured_output_defaults`` — by
+# :func:`test_the_transport_label_is_read_off_the_providers_own_declaration`,
+# so this derivation deliberately re-asserts none of them.
+_RECORDABLE_TRANSPORTS = frozenset(
+    label
+    for label in (
+        _structured_output_transport(name)  # type: ignore[arg-type]
+        for name in _PROVIDER_CLASSES
+    )
+    if label is not None
+)
+
 
 def _labelled(transport: str | None, **extra: Any) -> dict[str, Any]:
     """A minimal record carrying (or deliberately lacking) a transport label."""
@@ -1158,23 +1200,190 @@ def test_every_readable_transport_cell_is_findable_by_its_own_text() -> None:
         assert index in _matching_rows(model, SEARCH_SCOPE_ALL, cell)
 
 
-def test_no_committed_record_carries_a_searchable_transport() -> None:
-    """The 41 committed records stay unlabelled in the haystack too (read-only).
+def _transport_spelling_problems(cell: str, scoped: str) -> list[str]:
+    """Every way ONE row can spell its transport inconsistently. ``[]`` is clean.
 
-    The real-ledger half of the present-only rule, and the guard that would go
-    red if a default ever crept in: every committed record's ``Transport`` cell
-    reads ``—``, so every committed record's scoped ``transport`` text must be
-    empty. Asserted on the scoped field rather than on the blob deliberately —
-    two committed records mention ``structured_output`` in their ``notes``
-    prose, and a note is allowed to say anything.
+    The invariant the corpus sweep enforces, factored out of it so the
+    crept-in-default shape it exists to catch can be constructed **directly**
+    (:func:`test_an_inconsistently_spelled_transport_is_rejected`) instead of
+    only by mutating ``src/``. Both halves of one rule — *absence is spelled one
+    way and presence is spelled one way* — so a ``—`` cell can never be
+    searchable and a labelled cell always is.
+    """
+    if cell == _ABSENT:
+        if scoped != "":
+            return [
+                f"the cell reads {_ABSENT} but the scoped transport text is "
+                f"{scoped!r} — an unrecorded transport must be UNSEARCHABLE, or "
+                "the em-dash filler itself becomes a search term"
+            ]
+        return []
+
+    problems: list[str] = []
+    if scoped == "":
+        problems.append(
+            f"the cell reads {cell!r} but the scoped transport text is EMPTY — a "
+            "label a reader can read must be a label a reader can find, and a "
+            "transport DEFAULTED into the cell renders exactly this way"
+        )
+    elif scoped != cell:
+        problems.append(
+            f"the cell reads {cell!r} but the scoped transport text is "
+            f"{scoped!r} — the column and the haystack must not be able to "
+            "disagree about what this record says"
+        )
+    if cell not in _RECORDABLE_TRANSPORTS:
+        problems.append(
+            f"the cell reads {cell!r}, which no provider this harness knows can "
+            f"record (it writes one of {sorted(_RECORDABLE_TRANSPORTS)}) — a "
+            "committed record's label comes from "
+            "``_structured_output_transport``, never from anywhere else"
+        )
+    return problems
+
+
+def test_every_committed_record_spells_its_transport_absent_or_findable() -> None:
+    """Absence spelled ONE way, a label spelled ONE way — over the real ledger.
+
+    The real-ledger half of the present-only rule (read-only; the one place the
+    committed file is touched at all). Per record: the ``Transport`` cell is
+    ``—`` **or** a label a known provider can record, an unlabelled record
+    contributes nothing to the scoped haystack and is therefore matched by
+    NEITHER transport query, and a labelled one is findable by exactly the text
+    its cell shows. Asserted on the scoped field rather than on the blob
+    deliberately — two committed records mention ``structured_output`` in their
+    ``notes`` prose, and a note is allowed to say anything.
+
+    **This was a corpus SNAPSHOT until 2026-09-07 and it went red on the first
+    honest eval run.** It asserted ``{cell for every row} == {_ABSENT}``, true
+    of the pre-041 corpus of 41 records and false by design the moment Task 9.5
+    appended a measured record carrying ``provider.structured_output:
+    json_schema`` — a field spec 041 §2.5 added and ``blunder_eval`` writes for
+    every known provider. Its own ``assert len(records) >= 41`` anticipated the
+    corpus growing while the next line forbade that growth from carrying a
+    label, and its stated purpose ("the guard that would go red if a default
+    ever crept in") could not tell a crept-in default from a legitimately
+    recorded transport. The sibling
+    :func:`test_the_committed_ledgers_substitution_blocks_are_well_formed` had
+    already recorded the lesson — "deliberately NOT an assertion that zero
+    records carry the block: a real measured run will legitimately add one" —
+    and this test missed it. The rule above is what the snapshot was reaching
+    for, and it holds on both sides of the 41→42 boundary.
+
+    Only the ABSENT branch carries an anti-vacuity floor. A labelled record is
+    corpus-dependent by nature (there were none before Task 9.5 and asserting
+    one exists would go red on any pre-041 checkout), so the labelled branch is
+    exercised synthetically by section 4b above and by
+    :func:`test_an_inconsistently_spelled_transport_is_rejected`, which is also
+    what keeps :func:`_transport_spelling_problems` from being a helper that
+    silently returns ``[]`` for everything.
     """
     records = load_ledger(_COMMITTED_LEDGER)
     model = build_table_model(records)
     transport_column = model.columns.index("Transport")
 
+    # The derived vocabulary is non-degenerate: an empty set would turn the
+    # labelled branch below into a guaranteed failure, and ``—`` must never be
+    # a recordable value (absence is not a transport).
+    assert len(_RECORDABLE_TRANSPORTS) >= 2
+    assert _ABSENT not in _RECORDABLE_TRANSPORTS
+
     assert len(records) >= 41
-    assert {row[transport_column] for row in model.rows} == {_ABSENT}
-    assert {fields["transport"] for fields in model.search_fields} == {""}
+
+    unlabelled = 0
+    for index, record in enumerate(records):
+        cell = model.rows[index][transport_column]
+        scoped = model.search_fields[index]["transport"]
+        provider = record.get("provider")
+        recorded = (
+            provider.get("structured_output") if isinstance(provider, dict) else None
+        )
+        where = f"record {index} ({(record.get('run') or {}).get('date')})"
+
+        problems = _transport_spelling_problems(cell, scoped)
+        assert problems == [], f"{where}: " + "; ".join(problems)
+
+        if recorded is None:
+            unlabelled += 1
+            assert cell == _ABSENT, f"{where}: unrecorded transport rendered {cell!r}"
+            # THE phantom hit, over the real corpus: a pre-041 record almost
+            # certainly ran ``tool_use``, and it must still match neither.
+            for transport in sorted(_RECORDABLE_TRANSPORTS):
+                assert index not in _matching_rows(model, "transport", transport), (
+                    f"{where}: an unlabelled record was swept in by a "
+                    f"{transport!r} query"
+                )
+        else:
+            assert cell == str(recorded), f"{where}: cell disagrees with the record"
+            assert index in _matching_rows(model, "transport", cell), (
+                f"{where}: its own label {cell!r} does not find it"
+            )
+            assert index in _matching_rows(model, SEARCH_SCOPE_ALL, cell), (
+                f"{where}: its own label {cell!r} is missing from the free-text blob"
+            )
+
+    assert unlabelled >= 1, (
+        "no committed record exercises the unlabelled branch — the present-only "
+        "rule this sweep is mostly about would be untested"
+    )
+
+
+@pytest.mark.parametrize(
+    ("cell", "scoped", "complaint"),
+    [
+        # THE crept-in default, which is what the pre-fix snapshot claimed to
+        # guard: ``_transport_cell`` returning ``or "tool_use"`` for an absent
+        # key renders a readable label while ``_search_fields`` — reading the
+        # same absent key — leaves the scoped text empty.
+        pytest.param("tool_use", "", "EMPTY", id="a-crept-in-default"),
+        pytest.param("json_schema", "", "EMPTY", id="a-crept-in-default-json"),
+        pytest.param(_ABSENT, "tool_use", "UNSEARCHABLE", id="a-searchable-em-dash"),
+        pytest.param(
+            "tool_use", "json_schema", "disagree", id="cell-and-haystack-disagree"
+        ),
+        pytest.param(
+            "prose_recovery",
+            "prose_recovery",
+            "no provider this harness knows",
+            id="a-label-no-provider-can-record",
+        ),
+    ],
+)
+def test_an_inconsistently_spelled_transport_is_rejected(
+    cell: str, scoped: str, complaint: str
+) -> None:
+    """The corpus sweep's rule, shown FAILING on each shape it must catch.
+
+    Without this the sweep above is unfalsifiable on the labelled branch: on a
+    pre-041 checkout it visits only ``—`` rows, and a
+    :func:`_transport_spelling_problems` that returned ``[]`` unconditionally
+    would keep it green forever. The first two cases are the crept-in default
+    the pre-fix snapshot named as its purpose and could not actually distinguish
+    from an honest label.
+    """
+    problems = _transport_spelling_problems(cell, scoped)
+
+    assert problems, f"({cell!r}, {scoped!r}) must be reported as inconsistent"
+    assert any(complaint in problem for problem in problems), problems
+
+
+@pytest.mark.parametrize(
+    ("cell", "scoped"),
+    [pytest.param(_ABSENT, "", id="absent")]
+    + [
+        pytest.param(transport, transport, id=transport)
+        for transport in sorted(_RECORDABLE_TRANSPORTS)
+    ],
+)
+def test_a_consistently_spelled_transport_is_accepted(cell: str, scoped: str) -> None:
+    """The positive control: the two legitimate spellings report nothing.
+
+    Parametrized over the DERIVED vocabulary, so a fourth provider's transport
+    joins this sweep without an edit here — and so an over-eager rule that
+    rejected an honest label would fail here rather than only on the next
+    measured run.
+    """
+    assert _transport_spelling_problems(cell, scoped) == []
 
 
 # ==========================================================================
