@@ -862,6 +862,7 @@ def _ai_day_action(
     private_thoughts_enabled: bool = True,
     diaries: list[DiaryRecord] | None = None,
     diaries_enabled: bool = True,
+    substitution_mark: _SubstitutionMark | None = None,
 ) -> DayAction:
     """Call the gameplay model for the AI's speaking turn. Returns a DayAction.
 
@@ -906,6 +907,40 @@ def _ai_day_action(
     ``note_substitution`` on the generic-speak branch. The bland fallback line
     is exactly what a small model emits unprompted, so no post-hoc scorer can
     recognise it — the substitution has to say so where it happens.
+
+    Spec 041 Slice 10 adds ``substitution_mark``, the SAME
+    :class:`_SubstitutionMark` carrier ``_ai_diary`` (Slice 8) and ``_ai_reflect``
+    (Slice 9) already take, stamped on the same line that books
+    ``note_substitution``. Its consumer is the one ``AIMessage`` construction in
+    ``day_turn``'s AI branch, which conditionally adds
+    ``additional_kwargs["substituted"] = True``.
+
+    KEYWORD-ONLY AND OPTIONAL, and — unlike the diary and the reflection — NOT
+    because the return type is pinned by ``==`` assertions on a ``str``. This
+    helper returns a ``DayAction``, so widening the return to a
+    ``(DayAction, bool)`` tuple was genuinely available. It was rejected on
+    blast radius: **twenty-one direct calls across eight offline test modules**
+    (counted 2026-09-07 — ``test_behavioral_integrity`` 4, ``test_role_guidance``
+    4, ``test_recap_aware_reasoning`` 3, ``test_slice28_private_thoughts`` 3,
+    ``test_substitution_counts`` 3, ``test_slice_day_context_window`` 2,
+    ``test_personas`` 1, ``test_provider_seam_through_the_node`` 1), plus a NINTH
+    module, ``test_slice39_diary_interleave``, which reaches this signature
+    through ``inspect.signature`` without calling it. Those calls either bind
+    the result and read ``.kind`` / ``.text`` / ``.target_id`` off it or call for
+    the prompt side effect alone. A tuple return rewrites all of them for one
+    bit; a keyword-only optional parameter is invisible to every one of them —
+    and the interleave sweep pins ``diaries`` / ``diaries_enabled`` DEFAULTS,
+    which a trailing keyword-only addition leaves untouched. Reusing the
+    established carrier also keeps three channels stamping the fact one way.
+    ``None`` (every direct test call) simply drops the fact, which cannot change
+    what this function returns or what it renders into a prompt.
+
+    THE MARK IS NOT INFERRABLE FROM THE RETURNED TEXT, which is why it travels
+    at all. ``"I'm not sure who to trust yet."`` is an entirely plausible thing
+    for a model to say in character — see :class:`_SubstitutionMark` for the
+    measurement (Task 7.1) that settles this: a scripted model answering with the
+    diary placeholder verbatim produced a text-match rate of 1.0 beside a
+    source-counted rate of 0.0.
     """
     # Before the ``try``, and once for the whole helper: two invocations serve
     # ONE answer, and a raising harness sink must crash naming itself rather
@@ -1016,8 +1051,14 @@ def _ai_day_action(
     #     the speaker's own.
     #
     # Four routes, one convergence point. A notification per ``except`` would
-    # double-book the two raising routes and miss the two silent ones.
+    # double-book the two raising routes and miss the two silent ones — and,
+    # from spec 041 Slice 10, ONE mark for the same reason and at the same
+    # joint. All four routes converge here, so the mark is set once and covers
+    # every one of them; a stamp inside either ``except`` would miss both
+    # ``_accept`` rejections, which never raise.
     note_substitution(SubstitutionKind.DAY_ACTION)
+    if substitution_mark is not None:
+        substitution_mark.substituted = True
     return DayAction(kind="speak", text="I'm not sure who to trust yet.")
 
 
@@ -1351,6 +1392,16 @@ def day_turn(
         if not text:
             text = "(stays silent.)"
 
+        # DELIBERATELY UNMARKED, and this is the site to say so because it is
+        # the twin of the AI branch's construction below and the asymmetry is
+        # not obvious. Spec 041 Slice 10's ``substituted`` flag records that a
+        # MODEL ANSWER was replaced by a deterministic stand-in; the human path
+        # calls no model, books no ``note_attempt``, and has no
+        # ``SubstitutionKind``. ``"(stays silent.)"`` above is the one thing
+        # here that could be mistaken for a substitution and is not: it stands
+        # in for the human's own decision to type nothing, not for an answer
+        # that failed to decode, so marking it would put honest human silence in
+        # the same visual class as a failed structured decode.
         msg = AIMessage(
             content=text,
             name=player.name,
@@ -1363,6 +1414,15 @@ def day_turn(
         # --------------------------------------------------------------
         # AI turn: may either speak or initiate a vote via DayAction.
         # --------------------------------------------------------------
+        # THE CARRIED FACT (spec 041 Slice 10), the exact shape ``day_diary``
+        # and ``day_round_reflect`` use. One fresh mark per turn — ``day_turn``
+        # runs ONE player's turn per super-step, so there is no fan-out here and
+        # nothing to reset. ``_ai_day_action`` stamps it on its single
+        # substitution branch, which all four failure routes reach (a raise from
+        # the transport, a raise from ``DayAction``'s own model validator, an
+        # ``_accept`` rejection of a non-``DayAction`` reply, and an ``_accept``
+        # rejection of a vote at a dead / absent / self target).
+        mark = _SubstitutionMark()
         action = _ai_day_action(
             player,
             state,
@@ -1376,6 +1436,7 @@ def day_turn(
             # highest-stakes invariant in spec 039. Never the whole channel.
             diaries=state.get("private_diaries", {}).get(player.id, []),
             diaries_enabled=private_diaries_enabled,
+            substitution_mark=mark,
         )
         if action.kind == "vote":
             assert action.target_id is not None  # validated in _ai_day_action
@@ -1396,10 +1457,25 @@ def day_turn(
             }
         # kind == "speak"
         assert action.text is not None
+        # PRESENT ONLY WHEN TRUE — never ``"substituted": False``. An authored
+        # line keeps exactly the one ``speaker`` key it has always had, byte-
+        # identical to the 372 preserved transcripts, which is what lets Task
+        # 10.2 leave unsubstituted lines in the bare ``Speaker: text`` form
+        # completely unchanged and wrap ONLY the marked ones. The same load-
+        # bearing asymmetry ``day_diary`` writes for a ``DiaryRecord`` and
+        # ``day_round_reflect`` for a ``ThoughtRecord``; an unconditional flag
+        # would touch every Day-speech line in the corpus.
+        #
+        # ``mark.substituted`` can only be true on this branch: the fallback
+        # ``DayAction`` is always ``kind="speak"``, so the vote branch above
+        # cannot carry a mark and needs no key of its own.
+        speech_kwargs: dict = {"speaker": player.name}
+        if mark.substituted:
+            speech_kwargs["substituted"] = True
         msg = AIMessage(
             content=action.text.strip(),
             name=player.name,
-            additional_kwargs={"speaker": player.name},
+            additional_kwargs=speech_kwargs,
         )
         clear_error = {}
 
@@ -1890,16 +1966,31 @@ _DIARY_FALLBACK = (
 class _SubstitutionMark:
     """A one-bit mailbox: did the helper return its deterministic stand-in?
 
-    Spec 041 Slice 8's CARRIER, REUSED UNCHANGED BY SLICE 9. Two writers now
-    take one: ``_ai_diary`` (stamping into a
-    :class:`graphia.state.DiaryRecord`) and ``_ai_reflect`` (stamping into a
-    :class:`graphia.state.ThoughtRecord`). The argument below was made about the
-    diary and holds verbatim for the thought — the same ``str`` return pinned by
-    the same kind of direct-call assertions, the same keyword-only optional
-    parameter, the same "present only when true" key — so the class is shared
-    rather than twinned. DELIBERATELY NOT MADE GENERIC beyond this: it carries
-    one bit and needs no kind, because a fresh instance per writer is already
-    addressed to exactly one answer.
+    Spec 041 Slice 8's CARRIER, REUSED UNCHANGED BY SLICES 9 AND 10. Three
+    writers now take one: ``_ai_diary`` (stamping into a
+    :class:`graphia.state.DiaryRecord`), ``_ai_reflect`` (stamping into a
+    :class:`graphia.state.ThoughtRecord`) and ``_ai_day_action`` (stamping into
+    the Day-speech ``AIMessage``'s ``additional_kwargs``). The argument below was
+    made about the diary and holds verbatim for the thought — the same ``str``
+    return pinned by the same kind of direct-call assertions, the same
+    keyword-only optional parameter, the same "present only when true" key — so
+    the class is shared rather than twinned. DELIBERATELY NOT MADE GENERIC
+    beyond this: it carries one bit and needs no kind, because a fresh instance
+    per writer is already addressed to exactly one answer.
+
+    THE THIRD WRITER REACHES THE SAME CHOICE BY A DIFFERENT ROUTE, which is
+    worth recording because it is the case where the shared class was NOT forced.
+    ``_ai_day_action`` returns a ``DayAction``, not a ``str``, so no
+    returned-string assertion constrained it and a ``(DayAction, bool)`` tuple
+    return was genuinely available. It was rejected on the blast radius of 21
+    direct calls rather than on a type pin — see that function's docstring. Of
+    the two ALTERNATIVES below, the FIRST is rejected for it on exactly the
+    grounds stated and with more force: ``action.text == "I'm not sure who to
+    trust yet."`` in ``day_turn`` is the same provably-wrong text inference, and
+    that sentence is a MORE plausible thing for a model to say unprompted than
+    the diary placeholder is. The SECOND is not even available there — the
+    day-speech fallback is an inline literal with no named constant behind it,
+    so there is no object to compare identity against.
 
     ``day_diary`` builds the ``DiaryRecord``, but
     ``_ai_diary`` is the only code that knows whether the text going into it is
