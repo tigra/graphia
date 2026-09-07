@@ -132,6 +132,7 @@ provider:
   name: 'bedrock'               # 'ollama' or 'bedrock'
   large_model: '...'            # resolved gameplay model id (post env-override)
   small_model: '...'            # resolved mechanical model id
+  structured_output: 'tool_use' # spec 041 — the TRANSPORT structured answers came back through: 'json_schema' (grammar-constrained) or 'tool_use'; omitted on pre-041 records
   # ── ollama runs only: ──
   models:                       # per-model content fingerprint, so a re-pulled tag with changed weights is distinguishable
     '<name>':
@@ -166,6 +167,23 @@ quality:                        # so a degenerate run cannot masquerade as a cle
   diary_fallback_rate: 0.045    # placeholder entries / entries attempted (derived once, at write time)
   diary_fallback_entries: 2     # diary entries that came out as the node's deterministic placeholder
   diary_entries_attempted: 44   # THE DENOMINATOR — the rate is never written without it
+  # spec 041 — the SUBSTITUTION CENSUS: per answer kind, how much of this run was the
+  # model's answer and how much a deterministic stand-in. One entry per kind the run
+  # ATTEMPTED, in schema order; a kind with no opportunity is OMITTED, never rate: 0.0.
+  # Run health, not a metric — and no Wilson band on any of them (census, not sample).
+  substitutions:
+    roster:                     # roster|persona|pointing|ballot|day_action|reflection|diary
+      rate: 0.0                 # count / attempted (derived once, at write time)
+      count: 0                  # answers replaced by the deterministic stand-in
+      attempted: 1              # THE DENOMINATOR — answers asked of the model
+    persona:
+      rate: 0.0
+      count: 0
+      attempted: 7              # GENERATIONS asked for, NOT players — see quality.substitutions below
+    day_action:
+      rate: 0.028
+      count: 3
+      attempted: 108
   duration_seconds: 412.3       # same wall-clock duration, mirrored beside the run-quality counts
 outcomes:                       # win-rate by side over the COMPLETED games — four buckets that partition the run
   games: 20                     # completed-game denominator (failed-early games excluded)
@@ -238,7 +256,21 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   it) and `server_version` (the local server's version, `null` if unreachable).
   For **bedrock** it carries `note` instead — a fixed caveat that provider-side
   model updates leave no client-visible signal, so the run `date` is the only
-  proxy for which weights answered.
+  proxy for which weights answered. Both kinds of run also carry
+  **`structured_output`** (spec 041) — the **transport** every structured answer
+  in the run came back through, read off the provider's own declared
+  `with_structured_output` defaults rather than restated here: `'json_schema'`
+  is ADR-013's grammar-constrained decoding (the local path; the server cannot
+  decline it) and `'tool_use'` is the tool-call channel (both Bedrock paths,
+  which request no method and so get the client's own tool-use default). It
+  exists so the **three transport generations** — tool-use decoding, the
+  withdrawn application-layer recovery, and grammar-constrained decoding — are
+  tellable apart **from the record itself** rather than by dating it against
+  `git log`, which is exactly the reading a rate comparison across the spec-041
+  boundary depends on. Read it **beside `quality.substitutions`**: the transport
+  is the cause, the census is the effect. Additive and conditional like every
+  other new field — **omitted** on records written before spec 041, where absent
+  means *this record predates the label*, not *no transport*.
 - **`settings`** — the **effective resolved values actually used** (post
   env-override), so a run can be repeated like-for-like: `large_model`,
   `small_model`, `base_url` (Ollama only; `null` for bedrock), `games`, `seed`
@@ -327,6 +359,12 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
     label: an off-arm run that somehow *did* write entries (an ADR-011 parity
     break) is counted rather than hidden, and an on-arm run that had no
     opportunity records nothing rather than a flattering `0.0`.
+
+  A run that attempted **any** structured answer additionally carries the nested
+  **`substitutions`** sub-map (spec 041) — the same question as the diary trio,
+  asked for **all seven** answer kinds and asked at the source. See
+  [`quality.substitutions`](#qualitysubstitutions) below, which is also where the
+  `persona` denominator caveat and the relationship to the diary trio live.
 - **`outcomes`** — win-rate by side over the run's **completed** games (so a
   reader can ask "did this fix help one side win more?"); see
   [`outcomes`](#outcomes) below.
@@ -565,6 +603,85 @@ denominator *definition* — and it is the precedent the later additive fields a
 written against in the code (`transcript_dir`, `scripted_player`, `run.kind`,
 `settings.persona`), which is why it is named throughout this legend.
 
+### quality.substitutions
+
+`quality.substitutions` (spec 041, _Reliable Structured Decoding_) answers, per
+**answer kind**, the question the diary trio answers for one of them: *how much
+of this run was the model's answer, and how much was a deterministic stand-in?*
+Seven kinds, named after the structured-output schema whose answer failed —
+`roster`, `persona`, `pointing`, `ballot`, `day_action`, `reflection`, `diary` —
+each a `{rate, count, attempted}` map where `count` is the answers replaced by
+the node's fallback, `attempted` is the answers **asked of the model**, and
+`rate` = `count / attempted`, derived once at write time.
+
+- **Why it exists.** Every one of the seven helpers substitutes a deterministic
+  stand-in when its structured-output call fails, and five of them used to
+  swallow the failure entirely. A run could therefore report clean, comparable
+  rates while a third of its diary entries, or all of its Night pointing, was
+  the fallback — and nothing in the record, the transcript or the log said so.
+  Read this block **first**: it says whether the rest of the record is a
+  measurement of the model at all. Read it beside
+  **`provider.structured_output`**, which names the transport that produced it.
+- **Counted at the source, so there are no false positives.** The count comes
+  from inside the substituting code, not from inspecting the output. That is not
+  a stylistic choice: `Ballot(yes=False)` is the game's most common *genuine*
+  answer, `pointing`'s fallback is a random pick among real player ids, and
+  `day_action`'s stand-in is exactly the bland line a small model emits
+  unprompted — none of the three is recoverable from the output at all. It is
+  also why a retry needs no modelling: the count is taken after every retry is
+  spent, so a kind that retries and a kind that does not produce identical
+  records.
+- **Absent, never a misleading zero — per kind.** A kind appears **only if the
+  run attempted it**. `pointing` is absent from a run whose games had no living
+  Mafioso, `diary` from a diaries-off arm, `ballot` from a run where no vote was
+  ever called, `reflection` from a run where no Day round ever completed. A
+  `rate: 0.0` is the distinct and genuinely *clean* reading: attempted, never
+  substituted. This is the one distinction the block would lose without its
+  denominator, so **never read a rate without `attempted` beside it** — and never
+  read an absence as a zero.
+- **`persona.attempted` counts GENERATIONS, not players.** The one denominator
+  here that a reader will reliably misread. With `persona_diversity_enabled` (the
+  default), a persona that comes back too similar to one already accepted — or
+  whose generation fails — is thrown away and generated again, up to
+  `settings.persona.regen_attempts` more times for the **same seat**. So each
+  regeneration is one more `attempted` for one player: a clean eight-seat game
+  reads `attempted: 7` (one per AI seat, the human excluded), while the same
+  game with two colliding seats reads more, and a seat whose model fails every
+  time books three attempts and three substitutions **by itself**. With the
+  diversity flag off it is exactly one per AI seat. Cross-check the seat count
+  against `settings.lineup` and `metrics.persona_near_dup`'s denominator
+  (`C(AI seats, 2)`), never against `persona.attempted`.
+- **Run health, not a metric — so no Wilson band on any of the seven.** They sit
+  in `quality` beside `games_failed_early` and the `diary_*` trio, and
+  deliberately **not** in `metrics`: `METRIC_ORDER` and the metric tail are
+  untouched, and no model is judged well or badly by them. The missing interval
+  is deliberate and load-bearing, for two independent reasons. First, this is a
+  **census, not a sample**: the counter sees *every* attempt the run made, so
+  3-of-108 substituted `day_action` answers is the complete, exact composition of
+  this run's Day speech, not an estimate of some underlying rate — there is no
+  sampling uncertainty for an interval to express. Second, substitutions
+  **cluster by fan-out** (a whole Day's diary or reflection fan-out fails
+  together), so the independent-Bernoulli assumption a Wilson band rests on is
+  violated in exactly the direction that would make the band a lie. What the
+  ledger's rate convention actually protects against is still honoured: the rate
+  is never written without its denominator.
+- **`substitutions.diary` and the `diary_*` trio are two instruments, kept
+  separate on purpose.** They measure the same channel by different routes — the
+  census counts substitutions *at the source*, the trio counts placeholder
+  *text* in the final `private_diaries` channel — so agreement is evidence both
+  are wired up and a **disagreement is a finding**. `diary_fallback_rate: 1.0`
+  beside `substitutions.diary.rate: 0.0` means the model genuinely emitted the
+  placeholder sentence itself (the false positive exact-text matching admits
+  to); the reverse means a substituted entry never reached the channel. The
+  harness prints a per-game warning to stderr when the two disagree and records
+  **both** figures as measured, reconciling neither. The trio keeps its spec-039
+  spelling unchanged — eight committed records carry it — so nothing is
+  re-spelled or backfilled.
+- **Units and folding.** Counts are summed over the run's **completed** games
+  (a game that raised mid-run is scored by nothing, here as everywhere), and each
+  recorded rate is `Σcount / Σattempted` — never a mean of per-game rates. Key
+  order is the schema order above, which is also the order the viewer renders.
+
 ### outcomes
 
 The `outcomes` block is a win-rate snapshot over the run's **completed** games
@@ -768,3 +885,28 @@ rewritten**.
   the spec-036 fields above. A bump would have falsely flagged all 30 committed
   rates as incomparable. What the arm label does instead is **narrow** the
   comparability contract, in the one place it can be read — the record itself.
+- **Records written before spec 041 lack `provider.structured_output` and
+  `quality.substitutions`.** All 41 records committed before spec 041 omit both.
+  The absences mean different things, and neither is backfillable: a missing
+  **transport label** means *this record predates the label* (the transport it
+  ran under is recoverable only by dating the record against the code), while a
+  missing **`substitutions`** block means *nothing was counted*, since the
+  instrument did not exist — which is **not** the same claim as a present block
+  reading `rate: 0.0`, and not the same as an individual kind being absent from
+  a present block (that one means *no opportunity*). Their arrival **did not
+  bump `metrics_version`**, and here the reason is worth stating twice over,
+  because spec 041 changed more than the record shape:
+  - The **record additions** are additive — one provider field and one
+    run-health census, read by no scorer, with `METRIC_ORDER` and the metric
+    tail untouched. Exactly the `ci_low` / `ci_high`, spec-013, spec-036 and
+    spec-039 precedent above.
+  - The **transport itself changed** (ADR 013: grammar-constrained
+    `json_schema` decoding replaced tool-use decoding on the local path), and
+    that is *not what `metrics_version` versions*. It changes the **subject** of
+    the measurement, not the **rules** of it: every detection rule and every
+    denominator definition is identical either side of the boundary, so a rate
+    measured before and a rate measured after are the same quantity measured the
+    same way — which is precisely what makes the comparison worth making.
+    Bumping would have declared all 41 prior rates incomparable at the moment
+    they became most worth comparing. What records the generation instead is
+    `provider.structured_output`.

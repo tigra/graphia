@@ -71,6 +71,20 @@ from graphia.llm import DayAction
 # eval never reaches real Bedrock. ``run_eval`` calls it through the module-level
 # binding (``get_embeddings``), not a local import, precisely so that patch lands.
 from graphia.llm import get_embeddings
+
+# Spec 041 §2.5: the provider classes, imported ONLY to read their declared
+# ``structured_output_defaults()`` for the ``provider.structured_output`` record
+# field (:func:`_structured_output_transport`). No client is constructed and no
+# server is reached — these classes take no arguments and build their vendor
+# client lazily. Imported rather than copied so that removing ADR 013's
+# ``method="json_schema"`` pin changes what the next record says, instead of
+# leaving a hardcoded label in this module asserting a transport nobody uses.
+from graphia.llm import (
+    BedrockProvider,
+    ClaudeBedrockProvider,
+    LLMProvider,
+    OllamaProvider,
+)
 from graphia.prompts import (
     DAY_OPEN_NO_VICTIM_TEMPLATE,
     DAY_OPEN_VICTIM_REVEAL_TEMPLATE,
@@ -79,6 +93,30 @@ from graphia.prompts import (
     VOTE_PER_BALLOT_TEMPLATE,
 )
 from graphia.state import DiaryRecord, PlayerState
+
+# Spec 041 Slice 6/7: the substitution vocabulary + the injectable sink. THIS
+# module may import it (it already drags ``graphia.llm`` two imports above, and
+# ``substitution`` is a leaf with no ``graphia`` imports at all, so it costs
+# nothing); ``eval_ledger.py`` may NOT — that is the module the model-free
+# viewer loads, which is why Task 7.2 duplicates the seven names there instead.
+# The names, and why each is needed here:
+# - ``SubstitutionKind`` — the closed seven-member vocabulary AND the record's
+#   key ORDER (its declaration order mirrors ``llm.GAMEPLAY_SCHEMAS``), so the
+#   writer never hardcodes a list that could drift from the enum.
+# - ``SubstitutionEvent`` — the sink's discriminator (attempt vs substitution).
+# - ``default_sink`` — deliberately PUBLIC so the accumulating sink below can
+#   CHAIN to it and keep production's substitution log line. Without the chain a
+#   measured run would lose exactly the diagnostics it most wants.
+# - ``set_sink`` / ``reset_sink`` — the per-game install/uninstall pair
+#   ``run_eval`` owns (``substitution.py`` states plainly that isolation is the
+#   installer's job, because only the harness knows where one game ends).
+from graphia.substitution import (
+    SubstitutionEvent,
+    SubstitutionKind,
+    default_sink,
+    reset_sink,
+    set_sink,
+)
 
 # The shared structured-output proxy (tech-spec 011 §2.2): Slice 3 Task 2 uses
 # it in CAPTURE mode — a ``captures`` list + a prompt-parse ``speaker_resolver``
@@ -158,6 +196,22 @@ _NEAR_DUP_THRESHOLD = 0.85
 # ``tally_outcomes`` is untouched, and the field NARROWS the comparability
 # contract (these rates were measured with diaries on/off) rather than
 # invalidating it — which is the whole reason the field exists.
+#
+# SPEC 041 STAYS AT 1, AND THE REASON NEEDS SAYING OUT LOUD, because the next
+# reader will otherwise assume a bump was forgotten. Spec 041 changed the
+# structured-output TRANSPORT — ADR 013's grammar-constrained ``json_schema``
+# decoding on the local path, replacing tool-use decoding — which is a change to
+# the SUBJECT of the measurement, not to the RULES of it. Every scorer, every
+# detection rule and every denominator is byte-identical either side of it, so a
+# rate measured before and a rate measured after are measuring the same quantity
+# in the same way; that is exactly what ``METRICS_VERSION`` promises, and
+# bumping it would falsely declare all 41 prior rates incomparable at the moment
+# they became most worth comparing. What the transport generation IS recorded as
+# is ``provider.structured_output`` (also additive), so a reader can tell the
+# three generations apart without ``git log``. Spec 041's other additions — the
+# ``quality.substitutions`` census — add a NEW block beside the existing ones
+# and move no denominator: the ``outcomes`` / ``vote_activity`` / ``ci_low``
+# precedent, no bump.
 METRICS_VERSION = 1
 
 # Wilson score confidence-interval constants for the per-metric reliability band
@@ -337,6 +391,24 @@ class EvalResult:
     # :func:`score_diary_fallback`'s section banner for that argument and for
     # why it carries no Wilson band. Additive ⇒ NO ``METRICS_VERSION`` bump.
     diary_fallback: dict[str, int] = field(default_factory=dict)
+    # --- Spec-041 substitution census (§2.5, Slice 7) ---
+    # ``{"<kind>": {"count": <substituted>, "attempted": <asked of the model>}}``
+    # per :class:`~graphia.substitution.SubstitutionKind`, summed over the run's
+    # COMPLETED games from the accumulating sink ``run_eval`` installs per game.
+    # Carries the PAIR only — ``render_record`` derives the rate, exactly as it
+    # does for the diary trio, so there is one definition of it and it is never
+    # written without its denominator beside it.
+    #
+    # A kind is present here only when the run ATTEMPTED it: a kind with no
+    # opportunity (no Mafioso alive ⇒ no ``pointing``; diaries off ⇒ no
+    # ``diary``) is ABSENT, never a misleading ``0.0``. That distinction is the
+    # whole reason ``note_attempt`` exists as a separate notification — without
+    # an attempt count, a kind attempted and never substituted is
+    # indistinguishable from one that never had the chance.
+    #
+    # Insertion order is the enum's declaration order, which is the record's key
+    # order and Slice 7's display order. Additive ⇒ NO ``METRICS_VERSION`` bump.
+    substitutions: dict[str, dict[str, int]] = field(default_factory=dict)
     # --- Slice 4 run-provenance blocks (functional-spec 011 §2.3, tech §2.4) ---
     # The code provenance: ``{"commit": <sha|None>, "branch": <str|None>,
     # "dirty": <bool>}`` from :func:`collect_code_provenance`. A clean record is
@@ -777,6 +849,64 @@ def _digest_for(
     return None
 
 
+# Spec 041 §2.5: the two transport labels the ledger records, and the ONLY two.
+# They name the WIRE mechanism a structured answer comes back through, not
+# LangChain's kwarg spelling: ``json_schema`` is grammar-constrained decoding
+# (ADR 013 — the server cannot decline it), and ``tool_use`` is the tool-call
+# channel, which is what BOTH an explicit ``method="function_calling"`` and
+# "no method requested at all" resolve to on the wire. Keeping the vocabulary
+# closed at two is what makes the column readable as a generation label; a
+# third value would appear only if a provider requested a transport this
+# harness has never heard of, and the mapping below deliberately folds that
+# into ``tool_use`` rather than leaking a LangChain identifier into the ledger.
+_STRUCTURED_OUTPUT_JSON_SCHEMA = "json_schema"
+_STRUCTURED_OUTPUT_TOOL_USE = "tool_use"
+
+# Provider NAME → the provider class whose ``structured_output_defaults()`` is
+# read for the label. Keyed by name rather than resolved from the live
+# ``llm._resolve_provider()`` on purpose: :func:`collect_provider_provenance` is
+# a pure function of its arguments (the offline suite calls it with a name under
+# an unrelated ambient env), and reading the ambient provider there would label
+# a record with whatever the environment happened to say rather than with the
+# provider the caller named. Construction is OFFLINE — these classes take no
+# arguments and build their vendor client lazily in ``_build_*`` — so nothing
+# here touches a server, and ``structured_output_defaults`` is the same
+# declaration the games themselves are served through (imported, never copied,
+# so removing the ADR-013 pin shows up in the next record instead of nowhere).
+_PROVIDER_CLASSES: dict[str, type[LLMProvider]] = {
+    "ollama": OllamaProvider,
+    "bedrock": BedrockProvider,
+    "bedrock-claude": ClaudeBedrockProvider,
+}
+
+
+def _structured_output_transport(provider: Provider) -> str | None:
+    """The transport label for ``provider`` — ``json_schema`` / ``tool_use``.
+
+    Read off the named provider's own
+    :meth:`~graphia.llm.LLMProvider.structured_output_defaults`, so the record
+    states what the run actually requested: ``{"method": "json_schema"}`` on the
+    local path (ADR 013's grammar-constrained decoding) and ``{}`` — no method
+    requested, hence the cloud client's own tool-use default — on both Bedrock
+    paths.
+
+    Returns ``None`` for a provider name this harness does not know, and the
+    caller then OMITS the key: an unknown provider gets no label rather than a
+    plausible-looking wrong one, the same absent-never-misleading posture the
+    rest of the record takes.
+    """
+    provider_cls = _PROVIDER_CLASSES.get(provider)
+    if provider_cls is None:
+        return None
+    match provider_cls().structured_output_defaults().get("method"):
+        case "json_schema":
+            return _STRUCTURED_OUTPUT_JSON_SCHEMA
+        case _:
+            # An explicit ``function_calling`` and an unrequested method both
+            # decode through the tool-call channel; see the banner above.
+            return _STRUCTURED_OUTPUT_TOOL_USE
+
+
 def collect_provider_provenance(
     provider: Provider,
     large_model: str,
@@ -802,6 +932,16 @@ def collect_provider_provenance(
         "large_model": large_model,
         "small_model": small_model,
     }
+    # Spec 041 §2.5: the structured-output TRANSPORT this provider requests, so
+    # the three generations (tool-use decoding → the withdrawn application-layer
+    # recovery → ADR 013's grammar-constrained ``json_schema``) are tellable
+    # apart from the record itself rather than from ``git log``. It sits with the
+    # flat identity keys because it describes how the provider was ASKED, not
+    # which weights answered — the per-provider fingerprint detail follows. Only
+    # emitted when the provider is known (see :func:`_structured_output_transport`).
+    transport = _structured_output_transport(provider)
+    if transport is not None:
+        block["structured_output"] = transport
     match provider:
         case "ollama":
             ollama = collect_ollama_model_provenance(
@@ -1824,6 +1964,118 @@ def score_diary_fallback(
     return {"count": count, "denominator": denominator}
 
 
+# ===========================================================================
+# SPEC 041 §2.5 — THE SUBSTITUTION CENSUS: how much of a measured run is the
+# model's answer and how much is a deterministic stand-in, per answer kind.
+#
+# The generalisation of the diary signal directly above. That one asks the
+# question for ONE of the seven structured answers and asks it of the OUTPUT
+# (does this entry's text equal the placeholder?); this asks it for all seven
+# and asks it AT THE SOURCE — ``graphia.substitution``'s two notifications fire
+# from inside the substituting helpers, so the count has no false positives to
+# argue about. ``Ballot(yes=False)`` is the game's most common GENUINE answer
+# and ``Pointing``'s fallback is a ``random.choice`` over real player ids;
+# neither is scoreable from the output at all, which is why the diary sentinel
+# was never generalisable and this is a different instrument rather than a
+# bigger version of the same one.
+#
+# WHERE IT SITS, AND WHY NOT IN ``metrics``. Under ``quality.substitutions``,
+# beside the diary trio and ``games_failed_early``: it is RUN HEALTH — "did this
+# run measure the thing it claims to?" — and no model is judged well or badly by
+# it. So it must never enter ``eval_ledger.METRIC_ORDER`` or the record's metric
+# tail. A NESTED sub-map rather than the trio's flat scalars, because seven
+# kinds × three facets is 21 flat keys, and because a per-kind facet is exactly
+# what Slice 7's per-kind gate reads.
+#
+# NO WILSON BAND ON ANY OF THE SEVEN — deliberately, and someone WILL later
+# read the absence as an oversight, since every rate in ``metrics`` carries one.
+# Two independent reasons, either sufficient:
+#
+# 1. It is a CENSUS, not a sample. The sink sees every attempt the game made,
+#    so 3-of-54 substituted ``day_action`` answers is not an ESTIMATE of an
+#    underlying substitution rate drawn from a population — it is the complete,
+#    exact composition of this run's Day speech. There is no sampling
+#    uncertainty for an interval to express. This is the same argument the
+#    ``quality`` block already makes for ``games_failed_early`` and the diary
+#    trio, and it is why nothing in this block carries an interval.
+# 2. A fan-out fails as a CLUSTER. A whole Day's diary or reflection fan-out
+#    goes together (spec 039 measured exactly that: Day 1 all fallback, Day 2
+#    partly real), so the independent-Bernoulli assumption a Wilson band rests
+#    on is violated in precisely the direction that would make the band a lie —
+#    it would report tight confidence over correlated trials.
+#
+# Mechanically there is a third: ``_attach_ci`` walks ``result.metrics`` and
+# keys off ``count``, so banding these would mean either leaking them into the
+# versioned metric map or restating that contract in a second place. What the
+# ledger's rate convention actually protects against is honoured — the rate is
+# never written without its denominator beside it.
+#
+# ABSENT, NEVER A MISLEADING ZERO, PER KIND. A kind is emitted only when the run
+# ATTEMPTED it. This is the distinction the separate ``note_attempt``
+# notification exists for: with a numerator alone, "attempted 54 times, never
+# substituted" and "never had the chance" are the same record. ``pointing`` is
+# absent from a game with no living Mafioso, ``diary`` from a diaries-off arm,
+# and a ``rate: 0.0`` in either place would assert a clean measurement of
+# something that never ran.
+# ===========================================================================
+
+
+@dataclass(slots=True)
+class _SubstitutionCounter:
+    """An accumulating substitution sink for ONE game, chaining to the default.
+
+    The harness half of ``graphia.substitution``'s injectable-sink design.
+    Production runs on ``default_sink``, which logs and accumulates nothing, so
+    the measurement does not reshape the thing measured; this is the
+    accumulating sink the eval installs, and ``run_eval`` owns its lifetime
+    because only the harness knows where one game ends and the next begins.
+
+    IT CHAINS TO :func:`~graphia.substitution.default_sink`, which is public
+    precisely so it can. Replacing the sink replaces what happens to the count
+    AND to the log line at once (``note_substitution`` owns both), so a sink
+    that only counted would silently take production's substitution warning away
+    from the one run that most wants it — a measured game where a third of the
+    diary entries were the stand-in would count them and say nothing. The count
+    is booked BEFORE the chain, so even a logging failure cannot lose it.
+
+    ``attempted`` and ``substituted`` are separate counters rather than a
+    ``{count, attempted}`` pair per kind, because the two notifications are
+    independent by construction: ``substitution.py`` never pairs an attempt with
+    its own substitution, so neither may this. Keys are the enum's ``.value``
+    strings (a :class:`~enum.StrEnum` member hashes equal to its own string, so
+    a mixed-spelling dict cannot grow a second bucket for one kind).
+
+    NO LOCKING, stated rather than assumed: ``counts[kind] += 1`` is a
+    read-modify-write. Today the whole synchronous graph runs inside one
+    ``asyncio.to_thread`` worker so no two of the seven helpers ever overlap;
+    when the roadmap's Asynchronous Day Chat breaks that premise, the lock
+    belongs here (the installer owns its sink's safety) and the sink reference
+    itself moves to a ``contextvars.ContextVar`` inside ``substitution.py``.
+    """
+
+    attempted: Counter[str] = field(default_factory=Counter)
+    substituted: Counter[str] = field(default_factory=Counter)
+
+    def __call__(self, event: SubstitutionEvent, kind: SubstitutionKind) -> None:
+        """Count, then chain — the sink contract's ``(event, kind) -> None``.
+
+        Must not raise: ``substitution.py`` guards no notification, so an
+        exception here would surface from inside a game node (and, worse, be
+        swallowed by the helper's own ``except Exception`` and returned as a
+        fallback — the measurement manufacturing the event it measures). A
+        ``Counter`` increment and a log call is all this does.
+        """
+        match event:
+            case SubstitutionEvent.ATTEMPT:
+                self.attempted[kind.value] += 1
+            case SubstitutionEvent.SUBSTITUTION:
+                self.substituted[kind.value] += 1
+            case _:  # pragma: no cover - a future event kind, chained on only
+                pass
+        # The chain: production's log line, unchanged, from its one owner.
+        default_sink(event, kind)
+
+
 # The two day-open markers, full-anchored ``^...$`` regexes derived from the
 # imported templates (the same template-coupling discipline the announce/ballot
 # anchors use — a reword breaks the offline tests loudly). Both placeholders are
@@ -2201,6 +2453,7 @@ def render_record(result: EvalResult, run_date: str) -> str:
           name: '<ollama|bedrock>'
           large_model: '<id>'
           small_model: '<id>'
+          structured_output: '<json_schema|tool_use>'  # spec 041 — the transport structured answers came back through; omitted on pre-041 records
           # ollama only:
           models:
             '<name>':
@@ -2235,6 +2488,14 @@ def render_record(result: EvalResult, run_date: str) -> str:
           diary_fallback_rate: <float>      # placeholder entries / entries attempted
           diary_fallback_entries: <int>     # entries that are graphia.nodes.day._DIARY_FALLBACK
           diary_entries_attempted: <int>    # the denominator — the rate is never written alone
+          # spec 041 — the substitution census, one entry per ATTEMPTED answer kind
+          # (enum order). A kind with no opportunity is OMITTED, never rate: 0.0.
+          # No Wilson band on any of them: a census, not a sample.
+          substitutions:
+            <kind>:                         # roster|persona|pointing|ballot|day_action|reflection|diary
+              rate: <float>                 # count / attempted (derived once, at write time)
+              count: <int>                  # answers replaced by the deterministic stand-in
+              attempted: <int>              # THE DENOMINATOR — answers asked of the model
           duration_seconds: <float|null>
         outcomes:
           games: <int>
@@ -2345,6 +2606,16 @@ def render_record(result: EvalResult, run_date: str) -> str:
         },
         indent=1,
     )
+    # Spec 041 §2.5: the transport label, rendered straight after the flat
+    # identity keys and BEFORE the per-provider fingerprint detail. CONDITIONAL
+    # in the ``server_version`` / ``note`` style — a synthetic ``EvalResult``, a
+    # hand-built ``provider_block``, or an unknown provider name simply omits the
+    # key, so every already-committed record renders byte-identically and absent
+    # keeps meaning "this record predates the label".
+    if "structured_output" in block:
+        lines += _yaml_block(
+            {"structured_output": block.get("structured_output")}, indent=1
+        )
     models = block.get("models")
     if isinstance(models, dict):
         lines.append("  models:")
@@ -2467,14 +2738,72 @@ def render_record(result: EvalResult, run_date: str) -> str:
     # bump; and because the whole trio is conditional on a denominator the
     # feature only produces, every one of the committed records renders
     # byte-identically.
+    #
+    # THE PRE-041 SPELLING, KEPT AS IS. These three flat keys are spec 039's and
+    # spec 041 does NOT re-spell them, even though ``quality.substitutions.diary``
+    # below now measures the same channel by a different route. EIGHT committed
+    # records carry the trio (ledger indices 30, 31, 34, 36-40) and
+    # ``tests/test_slice39_diary_measurement.py`` pins it in 25 places; renaming
+    # or folding it would either break those records' comparability or require a
+    # backfill of records nobody re-measured. ``eval_ledger.py``'s
+    # ``_DIARY_QUALITY_FIELDS`` / ``_DIARY_QUALITY_GATE`` and
+    # ``tools/instrument.py`` name the same trio for the same reason.
     diary_attempted = int(result.diary_fallback.get("denominator", 0))
     if diary_attempted > 0:
         diary_placeholders = int(result.diary_fallback.get("count", 0))
         quality_block["diary_fallback_rate"] = diary_placeholders / diary_attempted
         quality_block["diary_fallback_entries"] = diary_placeholders
         quality_block["diary_entries_attempted"] = diary_attempted
-    quality_block["duration_seconds"] = result.duration_seconds
     lines += _yaml_block(quality_block, indent=1)
+
+    # ``quality.substitutions`` (spec 041 §2.5) — the per-answer-kind census: how
+    # much of this run was the model's answer and how much a deterministic
+    # stand-in. See the section banner at :class:`_SubstitutionCounter` for why
+    # it lives in ``quality`` rather than ``metrics``, and why not one of the
+    # seven carries a Wilson band.
+    #
+    # POSITION: after the diary trio and BEFORE ``duration_seconds``, which is
+    # why the flat block above is now written in two calls. The same reason spec
+    # 039 gave for the trio applies verbatim — these belong beside
+    # ``games_failed_early``, the other "did this run measure anything?" count,
+    # rather than trailing after the wall clock. A nested sub-map cannot ride
+    # inside ``_yaml_block`` (which renders flat scalars), so the split is
+    # mechanical, not a change of shape: ``duration_seconds`` stays the last key
+    # of ``quality``, exactly as in all 41 committed records.
+    #
+    # KEY ORDER comes from iterating ``SubstitutionKind`` — the enum's
+    # declaration order, which mirrors ``llm.GAMEPLAY_SCHEMAS`` and is Slice 7's
+    # display order. Derived, never retyped, so the writer's order and the
+    # reader's cannot drift; and iterating the vocabulary rather than the result
+    # dict means a hand-built ``EvalResult`` that inserted kinds in some other
+    # order still renders in canonical order.
+    #
+    # THE RATE IS DERIVED HERE, from the count/attempted pair the result carries
+    # — one definition of it, and it can never be written without its
+    # denominator beside it (the diary trio's rule, applied per kind).
+    substitution_block: dict[str, object] = {}
+    for kind in SubstitutionKind:
+        facets = result.substitutions.get(kind.value)
+        if not isinstance(facets, dict):
+            continue
+        attempted = int(facets.get("attempted", 0))
+        # THE GATE IS THE DENOMINATOR. A kind the run never attempted is absent,
+        # not ``0.0`` — and gating on the numerator or on truthiness would hide
+        # exactly the finding a clean run reports, since ``count: 0`` over a real
+        # denominator is the GOOD result and must stay visible.
+        if attempted <= 0:
+            continue
+        count = int(facets.get("count", 0))
+        substitution_block[kind.value] = {
+            "rate": count / attempted,
+            "count": count,
+            "attempted": attempted,
+        }
+    if substitution_block:
+        lines.append("  substitutions:")
+        lines += _yaml_nested_map(substitution_block, indent=2)
+
+    lines += _yaml_block({"duration_seconds": result.duration_seconds}, indent=1)
 
     # ``outcomes`` (spec-013 §2.1) — win-rate by side, after ``quality`` and
     # before ``metrics``. ``games`` then the two sides (each ``{wins, rate?,
@@ -3253,6 +3582,15 @@ def run_eval(
     seams for a real run (a smoke run into a scratch dir; one ledger file per
     arm), with the injected kwarg still winning for tests.
 
+    Spec 041 §2.5: an accumulating :class:`_SubstitutionCounter` is installed as
+    ``graphia.substitution``'s sink around EACH game and uninstalled in a
+    ``finally`` — per-game isolation the harness owns because the sink reference
+    is process-global by design, and the failed-early path resets it too. Each
+    completed game's per-kind counts fold into the ``quality.substitutions``
+    census, and the sink's ``diary`` count is cross-checked against
+    :func:`score_diary_fallback` (two independent instruments over one channel;
+    a disagreement is printed, never reconciled).
+
     Spec 039 §2.10: the run's diaries ARM (``settings.private_diaries_enabled``,
     plus a ``diaries=on|off`` part in every transcript header) is read off
     ``config`` through the ``_diaries_arm`` sentinel, so a config that cannot
@@ -3501,8 +3839,35 @@ def run_eval(
     # rate is Σplaceholder / Σattempted and never a mean-of-rates.
     diary_fallback_total: dict[str, int] = {"count": 0, "denominator": 0}
 
+    # Spec-041 §2.5 SUBSTITUTION CENSUS: Σ substituted and Σ attempted answers
+    # per kind across the completed games — the same per-game-then-sum pattern,
+    # so each recorded rate is Σcount / Σattempted and never a mean-of-rates.
+    # Built in ``SubstitutionKind`` order (the enum's declaration order) and
+    # holding only the kinds the run actually attempted, so a kind with no
+    # opportunity never enters the record at all. See the section banner at
+    # :class:`_SubstitutionCounter` for the census/no-Wilson-band argument.
+    substitution_totals: dict[str, dict[str, int]] = {}
+
     for game_index in range(args.games):
         result.games_attempted += 1
+        # PER-GAME ISOLATION, and this loop is the only place that can own it:
+        # ``substitution.set_sink`` is process-global by design (``substitution``
+        # keeps exactly one reference and no per-game state), and only the
+        # harness knows where one game ends. A fresh counter per game means a
+        # game's counts cannot be inherited from the previous one — the failure
+        # mode a module-global counter would have made a question about when
+        # somebody last remembered to clear it.
+        #
+        # Installed BEFORE ``_play_one_game``, which is where the roster and the
+        # personas are generated, so ``roster`` / ``persona`` attempts are inside
+        # the window rather than lost ahead of it.
+        #
+        # ``finally`` rather than a trailing call, so the sink is uninstalled on
+        # the failed-early path too (``continue`` still runs it) and no game's
+        # counter can survive into the scoring below, into the next game, or —
+        # the ``append_record`` case — into the ledger write.
+        counter = _SubstitutionCounter()
+        set_sink(counter)
         try:
             cap = _play_one_game(args, game_index)
         except Exception as exc:  # noqa: BLE001 - record and continue the batch
@@ -3512,6 +3877,8 @@ def run_eval(
                 file=sys.stderr,
             )
             continue
+        finally:
+            reset_sink()
         result.games_completed += 1
 
         # Spec-017: render this completed game's ordered event log (NOT a final-
@@ -3639,6 +4006,87 @@ def run_eval(
             diary_fallback_total["count"] += diary_facets["count"]
             diary_fallback_total["denominator"] += diary_facets["denominator"]
 
+            # Spec-041 §2.5 CROSS-CHECK — the sink's ``diary`` count against
+            # :func:`score_diary_fallback`, kept as an INDEPENDENT instrument rather
+            # than collapsed into one. The point of two instruments is that they read
+            # the same channel by different routes: the sink counts substitutions AT
+            # THE SOURCE (inside ``_ai_diary``, before anything is stored), the
+            # sentinel counts placeholder TEXT in the final ``private_diaries``
+            # channel. Agreement is evidence both are wired up; disagreement is a
+            # finding, and each direction names a different defect:
+            #
+            # - sentinel > sink ⇒ text that IS the placeholder but was never
+            #   substituted. Either the model genuinely emitted that exact sentence
+            #   (the false positive ``score_diary_fallback``'s docstring admits to)
+            #   or a substitution happened somewhere the notification does not cover.
+            # - sink > sentinel ⇒ a substituted entry that never reached the channel
+            #   (a fan-out cut short by the anti-hang backstop), so the record's
+            #   diary trio is measuring fewer entries than the game wrote.
+            # - attempted disagreement ⇒ the two denominators are not the same set of
+            #   entries, which silently breaks the comparability of the two blocks.
+            #
+            # Reported per game, so the message names the game rather than a batch
+            # total; a run-level disagreement is implied by any per-game one, both
+            # sides being plain sums. Printed to stderr like every other harness
+            # diagnostic here rather than via ``logging``: ``blunder_eval`` installs
+            # no logging handler (Task 6.5 established that), so a ``logger.warning``
+            # would reach ``logging.lastResort`` — visible, but by accident, and
+            # silent the moment anything configures logging.
+            sink_diary = counter.substituted[SubstitutionKind.DIARY.value]
+            sink_diary_attempted = counter.attempted[SubstitutionKind.DIARY.value]
+            if (
+                sink_diary != diary_facets["count"]
+                or sink_diary_attempted != diary_facets["denominator"]
+            ):
+                print(
+                    f"  game {game_index}: the two diary instruments DISAGREE — "
+                    f"the substitution sink counted {sink_diary}/"
+                    f"{sink_diary_attempted} (substituted/attempted at the "
+                    f"source), score_diary_fallback counted "
+                    f"{diary_facets['count']}/{diary_facets['denominator']} "
+                    "(placeholder text in the private_diaries channel). Both "
+                    "figures are recorded as measured; read quality.diary_* and "
+                    "quality.substitutions.diary as the two independent "
+                    "instruments they are",
+                    file=sys.stderr,
+                )
+
+        # Spec-041 §2.5: fold THIS game's per-kind counts, from the sink that was
+        # installed for exactly this game's duration, into the batch totals.
+        # Completed games only — the same boundary every other scorer here uses,
+        # and it is what keeps the cross-checks in the reference table valid:
+        # ``day_action.attempted`` is comparable with ``metrics.repetition``'s
+        # denominator, and ``diary.attempted`` with
+        # ``quality.diary_entries_attempted``, only if both sides count the same
+        # games. A game that raised mid-run is scored by nothing.
+        for kind in SubstitutionKind:
+            attempted = counter.attempted[kind.value]
+            substituted = counter.substituted[kind.value]
+            if not attempted and not substituted:
+                # No opportunity in THIS game; the kind stays absent from the
+                # record unless some other game in the batch attempted it.
+                continue
+            totals = substitution_totals.setdefault(
+                kind.value, {"count": 0, "attempted": 0}
+            )
+            totals["count"] += substituted
+            totals["attempted"] += attempted
+            if substituted > attempted:
+                # STRUCTURALLY IMPOSSIBLE, and therefore worth saying: every
+                # ``note_substitution`` is a subset of one ``note_attempt``, so a
+                # numerator above its denominator means a helper substitutes on a
+                # path that books no attempt — a wiring defect that would
+                # otherwise reach the ledger as a rate above 1.0 with no
+                # explanation. Reported, not repaired: the harness does not get
+                # to launder a broken instrument into a plausible number.
+                print(
+                    f"  game {game_index}: substitutions.{kind.value} booked "
+                    f"{substituted} substitution(s) over {attempted} attempt(s) "
+                    "— a substitution outside any attempt; the counting wiring "
+                    "in graphia/nodes is defective",
+                    file=sys.stderr,
+                )
+
     # Spec-013 game-dynamics blocks, folded over the completed games. ``outcomes``
     # partitions the winners (``games`` = completed games denominator); the side
     # win-rates carry a Wilson CI, ``draw``/``no_winner`` are bare counts.
@@ -3661,6 +4109,14 @@ def run_eval(
     # ``render_record`` derives the rate from this pair.
     if diary_fallback_total["denominator"] > 0:
         result.diary_fallback = dict(diary_fallback_total)
+
+    # Spec-041 §2.5: the per-kind census, carried as the ``{count, attempted}``
+    # pair per kind — ``render_record`` derives each rate (one definition of it)
+    # and applies the per-kind absent-not-zero gate a second time on the write
+    # side. Kinds with no opportunity in ANY completed game never entered
+    # ``substitution_totals``, so a diaries-off run carries no ``diary`` entry
+    # and a run with no living Mafioso carries no ``pointing`` one.
+    result.substitutions = substitution_totals
 
     result.ai_speeches = pooled_lines
     # Both speech metrics share the AI-spoken-line denominator; they are computed
