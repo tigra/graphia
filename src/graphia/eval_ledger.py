@@ -22,6 +22,29 @@ game count under ``run.games``; later records carry the full ``code`` /
 :func:`_dig`, a defensive dotted-get with a default — a ``KeyError`` from a
 missing nesting level (or a missing nested ``metrics.self_vote.initiation``)
 must never reach the UI.
+
+**One intra-package import, and it is deliberate (spec 041, Slice 7).**
+:class:`graphia.substitution.SubstitutionKind` is imported for the
+``quality.substitutions`` vocabulary — the seven answer kinds and, by its
+declaration order, the render order and the last tie-break of the
+``Subst (worst)`` column. Spec 041's task list originally forbade this and told
+this module to *duplicate* the seven names, on the reasoning that the
+model-free viewer loads this module and must not drag the model stack in. That
+reasoning was correct when written and is measurably false now:
+``graphia.substitution`` is a stdlib-only leaf (``logging`` / ``enum`` /
+``collections.abc``, and nothing from ``graphia``), and importing it beside
+this module adds **zero** heavy modules — no ``langchain``, no ``boto3``, not
+even ``pydantic``. What it buys is that the vocabulary is declared **once**:
+a guarded duplicate still needs its guard to exist and keep working, whereas
+one vocabulary needs nothing, and a stale duplicate of exactly this kind is
+what let a four-name tuple report ``RELIABLE`` over an 0.80 failure rate
+earlier in this same spec. Note what is **not** imported: ``graphia.llm``'s
+``GAMEPLAY_SCHEMAS`` (the nominal source of the schema order) *is* heavy, and
+is not needed — :class:`~graphia.substitution.SubstitutionKind` is held 1:1
+with it, in set AND in order, by
+``tests/test_substitution_counts.py::test_the_kind_vocabulary_covers_GAMEPLAY_SCHEMAS_exactly``,
+so the enum carries the schema order for free and this module never has to see
+``graphia.llm``.
 """
 
 from __future__ import annotations
@@ -33,6 +56,8 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+
+from graphia.substitution import SubstitutionKind
 
 __all__ = [
     "RawRecord",
@@ -179,6 +204,29 @@ _FIXED_COLUMNS: tuple[str, ...] = (
     "Provider",
     "Large model",
     "Small model",
+    # Spec 041: the structured-output TRANSPORT the run's answers came back
+    # through (``provider.structured_output`` — :func:`_transport_cell`).
+    # Positioned right after the two model ids because it mirrors the record's
+    # own ``provider`` key order (``render_record`` emits ``name`` →
+    # ``large_model`` → ``small_model`` → ``structured_output``), the same
+    # mirror-the-record rule that put ``Kind`` after ``Date`` and ``Diaries``
+    # between ``Stand-in`` and ``Lineup``. A *fixed* (head) column, so
+    # ``METRIC_ORDER`` is untouched and the UI's right-justify split
+    # (``len(columns) - len(METRIC_ORDER)``) keys off the metric count — every
+    # metric cell stays exactly where it was.
+    #
+    # WHY A COLUMN AND NOT ONLY THE DRILL-DOWN LINE. Spec 039 stated the
+    # argument for ``Diaries`` and it transfers verbatim: the whole point of
+    # this label is reading records **as a pair** across the transport change,
+    # and a drill-down-only field makes that a two-screen job. It also
+    # disambiguates a case the ``Subst (worst)`` column cannot: a persona-bench
+    # record carries this label but never ``quality.substitutions`` (that
+    # harness installs no sink), so its ``—`` census cell means *not measured
+    # here* while a pre-041 record's identical ``—`` means *the instrument did
+    # not exist*. With this column beside it the two absences are tellable
+    # apart in the table, which is this slice's own absent-versus-zero rule one
+    # level up.
+    "Transport",
     "Games",
     "Wins (LA/M)",
     # Spec 029: three curated game-dynamics columns, added before ``Notes`` so the
@@ -211,6 +259,23 @@ _FIXED_COLUMNS: tuple[str, ...] = (
     # see :func:`_diaries_cell`.
     "Diaries",
     "Lineup",
+    # Spec 041: the run's WORST substitution rate, named
+    # (:func:`_worst_substitution_cell` — e.g. ``diary 0.50``). Placed here, at
+    # the end of the fixed head, so it reads **before the metric block it
+    # qualifies**: a run that substituted a deterministic stand-in for a third
+    # of its answers is not a measurement of the model, and that warning is
+    # worthless if the reader meets it after the rates. Immediately before
+    # ``Notes`` follows the spec-029 precedent for a curated column ("added
+    # before ``Notes``") and groups it with the other did-this-run-measure-
+    # anything cells (``Unres (R/N)``, ``Votes (LA/M)``) rather than wedging a
+    # number between the free-text note and the rates.
+    #
+    # A *fixed* (head) column and deliberately **NOT** in ``METRIC_ORDER``: the
+    # census is RUN HEALTH, not an AI-quality metric (no model is judged well or
+    # badly by it, and it carries no Wilson band — census, not sample), so the
+    # metric tail, the right-justify split
+    # (``len(columns) - len(METRIC_ORDER)``) and every metric cell stay put.
+    "Subst (worst)",
     "Notes",
 )
 
@@ -424,6 +489,127 @@ def _diaries_cell(record: RawRecord) -> str:
     if arm is None:
         return ""
     return _DIARIES_ON if bool(arm) else _DIARIES_OFF
+
+
+def _transport_cell(record: RawRecord) -> str:
+    """The ``Transport`` table cell — how structured answers came back (spec 041).
+
+    Reads ``provider.structured_output`` via :func:`_dig` and renders it
+    **verbatim** (``json_schema`` / ``tool_use``), for :func:`_kind_cell`'s
+    reason: the cell text, the drill-down line and the on-disk value then cannot
+    drift apart, and a transport a future provider records renders as itself
+    rather than being silently mislabelled by a lookup table that has not heard
+    of it.
+
+    **Absence renders** :data:`_ABSENT`, **not blank and not a default.** All 41
+    records committed before spec 041 omit the key, and absence means *this
+    record predates the label* — the transport it ran under is recoverable only
+    by dating the record against the code. Blanking would read as an unfilled
+    field, and defaulting to ``tool_use`` (which is what those records almost
+    certainly used) would state a fact nobody recorded — the same mistake
+    :func:`_diaries_cell` refuses to make by rendering ``off`` for a pre-039
+    record. The em-dash is already this table's "present but no reading"
+    vocabulary (:func:`_table_rate`), so it introduces no new convention.
+    """
+    return _text(_dig(record, "provider.structured_output")) or _ABSENT
+
+
+# The ``quality.substitutions`` per-kind facets, in the order
+# ``blunder_eval.render_record`` writes them (spec 041 §2.5) — the writer's key
+# list and the reader's field list are the same contract, kept as one tuple
+# rather than three call sites, exactly as :data:`_DIARY_QUALITY_FIELDS` is.
+#
+# The **rate is read, never recomputed**, for the same reason the diary trio's
+# is: ``render_record`` derives it once from the count/attempted pair precisely
+# so there is one definition of it, and a second derivation here would render a
+# record whose stored rate disagreed with its own operands as though it agreed.
+_SUBSTITUTION_FACET_FIELDS: tuple[str, ...] = ("rate", "count", "attempted")
+
+# The key each KIND is gated on — the DENOMINATOR, which is
+# :data:`_DIARY_QUALITY_GATE`'s rule restated per kind. A kind the run never
+# attempted is absent from the record entirely (the writer omits it), and a
+# ``rate: 0.0`` over a real denominator is the genuinely CLEAN reading, so
+# presence can never be inferred from truthiness. Gating on *presence of the
+# key* rather than on a positive value is deliberate: a hand-built record that
+# states ``attempted: 0`` is malformed, and showing it is more honest than
+# silently hiding it behind an absence it did not claim.
+_SUBSTITUTION_GATE_FIELD = "attempted"
+
+
+def _worst_substitution_cell(record: RawRecord) -> str:
+    """The ``Subst (worst)`` table cell — the worst kind's rate, named (spec 041).
+
+    ``day_action 0.03`` / ``diary 0.50``: the single kind whose substitution rate
+    is highest in this run, and its rate at the same two decimals every other
+    rate in the table uses (:func:`_metric_cell`'s ``f"{rate:.2f}"``, not
+    :func:`_table_rate`'s leading-dot form — that compact spelling exists to fit
+    two rates into one ``LA .55 / M .30`` cell and there is only one rate here).
+
+    **The name is half the cell.** A bare ``0.50`` says a run was half
+    stand-in-answers and not which channel is unusable, which is the difference
+    between "ignore the diary reading" and "ignore the record". The full
+    per-kind block is in the drill-down; this is the at-a-glance warning that
+    sends a reader there.
+
+    **THE TIE-BREAK, which is not incidental — ties are the common case.** The
+    Slice 7 run that first exercised this had ``pointing``, ``reflection`` and
+    ``diary`` all at ``1.0``. The rule, in order:
+
+    1. **highest ``rate``** — the worst channel is the point of the cell;
+    2. then **larger ``attempted``** — between two kinds at the same rate the
+       better-evidenced one is the more useful warning (``1.0`` over 18
+       attempts is a finding, ``1.0`` over 1 is a coin toss);
+    3. then **schema order** — :class:`~graphia.substitution.SubstitutionKind`'s
+       declaration order, which
+       ``tests/test_substitution_counts.py::test_the_kind_vocabulary_covers_GAMEPLAY_SCHEMAS_exactly``
+       holds 1:1 with ``llm.GAMEPLAY_SCHEMAS`` in set and in order. A **total**
+       order, so this cell is reproducible rather than dependent on the order
+       the record's keys happen to be in. A kind this reader has never heard of
+       sorts after the seven (in the record's own order) but **is** a candidate,
+       for :func:`_substitution_lines`' reason: a column that reported
+       ``diary 0.50`` while the drill-down showed an unknown kind at ``1.00``
+       would understate the worst channel, which is the one thing this cell
+       must not do.
+
+    **Absent renders** :data:`_ABSENT`. A record with no ``substitutions`` block
+    (every pre-041 record; also a persona-bench record, which generates rosters
+    and personas but installs no sink) took no reading at all, and a blank cell
+    in a column of rates invites exactly the misreading this whole block exists
+    to prevent — "nothing substituted" — where ``—`` claims nothing. Read it
+    beside the ``Transport`` cell, which distinguishes *not measured here* from
+    *the instrument did not exist*. A present block whose every kind lacks a
+    usable ``rate``/``attempted`` pair also reads ``—``: present-but-no-reading,
+    :func:`_table_rate`'s own posture.
+    """
+    substitutions = _dig(record, "quality.substitutions")
+    if not isinstance(substitutions, dict):
+        return _ABSENT
+    # ``(-rate, -attempted, schema order, name)`` — one ``min`` over a total
+    # sort key IS the tie-break rule above, so the two cannot drift apart.
+    known = [kind.value for kind in SubstitutionKind]
+    ordered = known + [name for name in substitutions if name not in known]
+    candidates: list[tuple[float, int, int, str]] = []
+    for order, name in enumerate(ordered):
+        facets = substitutions.get(name)
+        if not isinstance(facets, dict):
+            continue
+        try:
+            rate = float(facets["rate"])
+            attempted = int(facets[_SUBSTITUTION_GATE_FIELD])
+        except (KeyError, TypeError, ValueError):
+            # A malformed/partial kind is not a candidate rather than a crash —
+            # the defensive posture every other cell in this module takes.
+            continue
+        if attempted <= 0:
+            # A rate over a zero denominator is not a reading, whatever it says.
+            continue
+        candidates.append((-rate, -attempted, order, name))
+    if not candidates:
+        return _ABSENT
+    # ``min`` over the negated keys IS "highest rate, then larger denominator";
+    # negate the rate back for display.
+    negated_rate, _, _, worst_kind = min(candidates)
+    return f"{worst_kind} {-negated_rate:.2f}"
 
 
 # The record kind read for a pre-036 record. ``run.kind`` was added in spec 036
@@ -2127,6 +2313,11 @@ def _row_cells(record: RawRecord) -> list[str]:
         _text(_dig(record, "provider.name", "")),
         _text(large_model),
         _text(small_model),
+        # Spec 041: the structured-output transport, at the position
+        # ``_FIXED_COLUMNS`` declares (right after the two model ids, the
+        # record's own ``provider`` key order). ``—`` on every record that does
+        # not state one — never blank, never a default.
+        _transport_cell(record),
         _text(games),
         _outcomes_cell(record),
         # Spec 029: positions MUST track ``_FIXED_COLUMNS`` exactly (the
@@ -2141,6 +2332,9 @@ def _row_cells(record: RawRecord) -> list[str]:
         # order). Blank for every record that does not state an arm.
         _diaries_cell(record),
         _lineup_cell(record),
+        # Spec 041: the worst substitution rate with its name, last of the fixed
+        # head so it reads immediately before the metric block it qualifies.
+        _worst_substitution_cell(record),
         _note_cell(record),
     ]
     cells.extend(_metric_cell(record, dotted_key) for dotted_key, _ in METRIC_ORDER)
@@ -2401,9 +2595,11 @@ def render_detail(record: RawRecord) -> str:
       the ``run.games`` fallback count when present.
     - **code** — ``commit``, ``branch``, and the working-copy state spelled out
       as ``dirty`` / ``clean`` (the table only flags it with ``⚠``).
-    - **provider** — ``name`` and the resolved model ids, then the
-      shape-specific extras: ollama ``models`` digests + ``server_version``, or
-      the bedrock ``note``.
+    - **provider** — ``name`` and the resolved model ids, then — spec 041, only
+      when present — the ``structured_output`` transport label
+      (``json_schema`` / ``tool_use``, the one field that tells the transport
+      generations apart without ``git log``), then the shape-specific extras:
+      ollama ``models`` digests + ``server_version``, or the bedrock ``note``.
     - **settings** — the effective resolved values incl. ``games``, plus
       ``metrics_version`` mirrored here for a like-for-like repeat, plus two
       conditional one-line fields between ``max_days`` and the lineup —
@@ -2419,7 +2615,12 @@ def render_detail(record: RawRecord) -> str:
       (``diary_fallback_rate``, ``diary_fallback_entries``,
       ``diary_entries_attempted``) between ``games_failed_early`` and
       ``duration_seconds``. Omitted together when no entry was attempted, so
-      absence reads as "no opportunity", never as a clean ``0.0``.
+      absence reads as "no opportunity", never as a clean ``0.0``. Plus — spec
+      041, only for the answer kinds the run **attempted** — a
+      ``substitutions`` sub-block (``<kind>`` → ``rate``/``count``/
+      ``attempted``, in schema order), gated per kind on that kind's own
+      denominator, so a kind with no opportunity is absent rather than a
+      misleading zero. No Wilson band on any of them (census, not sample).
     - **outcomes** — the win-rate by side (013 §2.1): ``games``, then
       ``law_abiding``/``mafia`` each with ``wins`` + **full-precision** ``rate`` +
       a ``[ci_low–ci_high]`` band (rate/band omitted on the ``games == 0`` path),
@@ -2472,8 +2673,11 @@ def _field(label: str, value: Any, *, indent: int = 1) -> str:
     what every top-level section field uses) renders ``"  label: value"``, and
     ``2`` renders a field *inside* a sub-block at four spaces — the same depth the
     hand-rolled ``outcomes.scripted_side`` / ``vote_activity.by_side`` sub-block
-    lines already emit. The default is deliberately behaviour-preserving, so
-    adding the parameter changes not one byte of any existing section.
+    lines already emit. ``3`` (six spaces) is one level deeper again, which is
+    what ``quality.substitutions``'s per-kind facets need — the only
+    three-level nesting any record shape has. The default is deliberately
+    behaviour-preserving, so adding the parameter changes not one byte of any
+    existing section.
     """
     text = _text(value)
     return f"{'  ' * indent}{label}: {text if text else _ABSENT}"
@@ -2534,6 +2738,23 @@ def _render_provider_section(record: RawRecord) -> str:
         _field("large_model", _dig(record, "provider.large_model")),
         _field("small_model", _dig(record, "provider.small_model")),
     ]
+    # Spec 041: the structured-output TRANSPORT the run's answers came back
+    # through — ``json_schema`` (ADR 013's grammar-constrained decoding, the
+    # local path) or ``tool_use`` (the tool-call channel, both Bedrock paths).
+    # Rendered after the flat identity keys and BEFORE the per-provider
+    # fingerprint detail, mirroring the record's own key order, and
+    # **conditional** in the ``server_version`` / ``note`` style below — a
+    # record that does not carry the key gains no line, so all 41 records
+    # committed before spec 041 render byte-identically.
+    #
+    # Without this line the label was WRITTEN AND NEVER READ, which would have
+    # defeated the stated value of the slice that added it: telling the three
+    # transport generations apart from the record itself rather than by dating
+    # it against ``git log``. Read it beside ``quality.substitutions`` — the
+    # transport is the cause, the census is the effect.
+    structured_output = _dig(record, "provider.structured_output")
+    if structured_output is not None:
+        lines.append(_field("structured_output", structured_output))
     # Shape-specific extras: ollama carries per-model digests + a server version;
     # bedrock carries a fixed caveat ``note`` instead. Show whichever is present.
     models = _dig(record, "provider.models")
@@ -2746,8 +2967,99 @@ def _render_quality_section(record: RawRecord) -> str:
             _field(name, _dig(record, f"quality.{name}"))
             for name in _DIARY_QUALITY_FIELDS
         ]
+    lines += _substitution_lines(record)
     lines.append(_field("duration_seconds", _dig(record, "quality.duration_seconds")))
     return _section("quality", lines)
+
+
+def _substitution_lines(record: RawRecord) -> list[str]:
+    """The ``quality.substitutions`` sub-block's lines, or ``[]`` when absent.
+
+    One ``<kind>:`` header per **attempted** answer kind, each followed by its
+    ``rate`` / ``count`` / ``attempted`` facets — the writer's key order
+    (:data:`_SUBSTITUTION_FACET_FIELDS`), at the record's own nesting depth::
+
+        quality
+          ...
+          substitutions:
+            roster:
+              rate: 0.0
+              count: 0
+              attempted: 1
+            day_action:
+              rate: 0.027777777777777776
+              count: 3
+              attempted: 108
+
+    Positioned between the flat ``diary_*`` trio and ``duration_seconds``,
+    matching the record's own key order — the same place, and for the same
+    reason, that spec 039 put the trio: these belong beside
+    ``games_failed_early``, the other *did this run measure anything?* count,
+    rather than trailing after the wall clock.
+
+    **GATED PER KIND on that kind's own denominator** — the
+    :data:`_DIARY_QUALITY_GATE` rule restated once per kind
+    (:data:`_SUBSTITUTION_GATE_FIELD`). A kind with no opportunity (no living
+    Mafioso ⇒ no ``pointing``; a diaries-off arm ⇒ no ``diary``; no vote called
+    ⇒ no ``ballot``) is **absent, never a misleading** ``0.0``, and ``rate:
+    0.0`` over a real denominator is the genuinely *clean* reading, so presence
+    is never inferred from truthiness. Absence is per kind as well as per
+    block: a record can legitimately carry three kinds and omit four.
+
+    **Render order is the enum's declaration order**, never the record's dict
+    order — so a record whose kinds were written in some other order still
+    reads in canonical (schema) order, and the writer's order and the reader's
+    cannot drift, because both derive from
+    :class:`~graphia.substitution.SubstitutionKind`.
+
+    **A kind this reader has never heard of is rendered anyway**, verbatim,
+    after the seven known ones. Iterating the vocabulary is what gives the
+    canonical order, but iterating it *exclusively* would silently drop a kind
+    an eighth-schema build recorded — and a kind that WAS measured rendering as
+    absent is precisely the misreading this whole block exists to prevent,
+    wearing the opposite sign. Same posture, same reason, as
+    :func:`_kind_cell`'s refusal to run ``run.kind`` through a label map that
+    has not heard of it. The tail keeps the record's own order among themselves,
+    since this reader has no opinion about where they belong.
+
+    An absent block, or a present block naming no attempted kind, adds **not
+    one line** — which is what keeps every pre-041 record's drill-down
+    byte-identical. Unlike an absent ``code`` / ``outcomes`` block this does not
+    collapse to a ``—`` line: it is a sub-block inside a section that is
+    otherwise present, exactly like ``outcomes.scripted_side``, and an
+    unconditional em-dash line would be a visible regression on 41 records.
+
+    Nothing here carries a Wilson band, deliberately: this is a **census, not a
+    sample** (the counter sees every attempt the run made, so there is no
+    sampling uncertainty for an interval to express), and substitutions
+    **cluster by fan-out** (a whole Day's diary fan-out fails together), so the
+    independent-Bernoulli assumption a band rests on is violated in exactly the
+    direction that would make the band a lie. ``METRIC_ORDER`` and the metric
+    tail are untouched.
+    """
+    substitutions = _dig(record, "quality.substitutions")
+    if not isinstance(substitutions, dict):
+        return []
+    known = [kind.value for kind in SubstitutionKind]
+    # The seven in schema order, then anything else the record names, in its own
+    # order — see the docstring: canonical order for the vocabulary this reader
+    # knows, and no silent drop for a kind it does not.
+    ordered = known + [name for name in substitutions if name not in known]
+    lines: list[str] = []
+    for name in ordered:
+        facets = substitutions.get(name)
+        if not isinstance(facets, dict):
+            continue
+        if _SUBSTITUTION_GATE_FIELD not in facets:
+            continue
+        lines.append(f"    {name}:")
+        lines += [
+            _field(field_name, facets.get(field_name), indent=3)
+            for field_name in _SUBSTITUTION_FACET_FIELDS
+        ]
+    if not lines:
+        return []
+    return ["  substitutions:", *lines]
 
 
 def _render_outcomes_section(record: RawRecord) -> str:

@@ -97,8 +97,21 @@ from graphia.state import DiaryRecord, PlayerState
 # Spec 041 Slice 6/7: the substitution vocabulary + the injectable sink. THIS
 # module may import it (it already drags ``graphia.llm`` two imports above, and
 # ``substitution`` is a leaf with no ``graphia`` imports at all, so it costs
-# nothing); ``eval_ledger.py`` may NOT — that is the module the model-free
-# viewer loads, which is why Task 7.2 duplicates the seven names there instead.
+# nothing).
+#
+# CORRECTED BY TASK 7.2: this banner used to add "``eval_ledger.py`` may NOT —
+# that is the module the model-free viewer loads, which is why Task 7.2
+# duplicates the seven names there instead." Task 7.2 imports the enum there and
+# duplicates nothing, on a measurement: ``eval_ledger.py`` pulls only stdlib
+# plus ``yaml``, and importing ``graphia.substitution`` beside it adds zero
+# heavy modules — no ``langchain``, no ``boto3``, not even ``pydantic`` —
+# because Task 6.1 deliberately built this as a stdlib-only leaf. The
+# vocabulary is therefore declared once, in one place, for both the writer and
+# the reader. What is still true, and is the reason the leaf was built that
+# way: ``eval_ledger.py`` must not import ``graphia.llm`` (``GAMEPLAY_SCHEMAS``
+# lives there and IS heavy), which is why the enum rather than the schema tuple
+# carries the order the reader needs.
+#
 # The names, and why each is needed here:
 # - ``SubstitutionKind`` — the closed seven-member vocabulary AND the record's
 #   key ORDER (its declaration order mirrors ``llm.GAMEPLAY_SCHEMAS``), so the

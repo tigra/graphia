@@ -270,7 +270,11 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   boundary depends on. Read it **beside `quality.substitutions`**: the transport
   is the cause, the census is the effect. Additive and conditional like every
   other new field — **omitted** on records written before spec 041, where absent
-  means *this record predates the label*, not *no transport*.
+  means *this record predates the label*, not *no transport*. The viewer shows
+  it as a `provider` drill-down line **and** as a `Transport` column, so the
+  generations are tellable apart without opening each record; an absent label
+  renders `—` in both places, never blank and never a defaulted `tool_use` —
+  the transport those records almost certainly used, but not one they recorded.
 - **`settings`** — the **effective resolved values actually used** (post
   env-override), so a run can be repeated like-for-like: `large_model`,
   `small_model`, `base_url` (Ollama only; `null` for bedrock), `games`, `seed`
@@ -681,6 +685,16 @@ the node's fallback, `attempted` is the answers **asked of the model**, and
   (a game that raised mid-run is scored by nothing, here as everywhere), and each
   recorded rate is `Σcount / Σattempted` — never a mean of per-game rates. Key
   order is the schema order above, which is also the order the viewer renders.
+- **How the viewer surfaces it.** The drill-down renders the sub-block in full,
+  one gate per kind, so an unattempted kind gains no line. The table carries a
+  single `Subst (worst)` column — the **worst kind's rate with its name**
+  (`diary 0.50`), placed ahead of the metric columns because it says whether
+  those columns are a measurement of the model at all. Its tie-break is fixed
+  and total, so the cell is reproducible rather than incidental: **highest
+  rate**, then **larger `attempted`** (`1.0` over 18 attempts is a finding,
+  `1.0` over 1 is a coin toss), then **schema order**. A record with no
+  `substitutions` block renders `—`, never blank and never `0.00`: blank in a
+  column of rates invites the one misreading this block exists to prevent.
 
 ### outcomes
 

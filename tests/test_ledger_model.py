@@ -332,6 +332,13 @@ def test_columns_are_fixed_columns_then_metric_labels() -> None:
         "Provider",
         "Large model",
         "Small model",
+        # Spec 041: the structured-output TRANSPORT column, grouped with the
+        # provider identity columns (right after the two model ids, mirroring
+        # the record's own ``provider`` key order) and NOT in the metric tail,
+        # so the assertion below -- metric labels are exactly the tail -- still
+        # holds and the UI's right-justify split keeps this column
+        # left-justified.
+        "Transport",
         "Games",
         "Wins (LA/M)",
         # Spec 029: the three curated game-dynamics columns, before ``Notes``.
@@ -346,6 +353,12 @@ def test_columns_are_fixed_columns_then_metric_labels() -> None:
         # (metric labels are exactly the tail) still holds unchanged.
         "Diaries",
         "Lineup",
+        # Spec 041: the worst substitution rate with its name -- last of the
+        # FIXED head, so it reads before the metric block it qualifies (a run
+        # that substituted a stand-in for a third of its answers is not a
+        # measurement of the model). Run health, not a metric: ``METRIC_ORDER``
+        # is untouched and the tail assertion below still holds.
+        "Subst (worst)",
         "Notes",
     ]
     assert model.columns[_FIXED_COLUMN_COUNT:] == [label for _, label in METRIC_ORDER]
