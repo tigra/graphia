@@ -166,6 +166,8 @@
 
 **Value:** the functional spec's fourth requirement, delivered end-to-end for the first kind. A reviewer reading a preserved game can see that an entry was not the player's writing.
 
+**Scope boundary, decided by the author 2026-09-07 and closed:** "visibly marked" means **the preserved transcript and the ledger viewer**, not the diary store. `DiaryStore.write` takes text, so the flag never reaches it and **`make inspect-diary` shows the placeholder sentence unmarked** — accepted for now rather than deferred, so this is not an open item. The fact is recorded in `nodes/day.py`'s `day_diary` docstring for anyone who meets it there. Slices 9 and 10 inherit the same boundary.
+
 - [ ] **Slice 8: A substituted diary entry is visibly marked**
   - [x] Task 8.1: In `src/graphia/state.py`, add `substituted: bool` to `DiaryRecord` (already `total=False`, so absent reads False and both the committed transcripts and any resumed checkpoint read correctly; a `TypedDict` never reaches the msgpack ext hook, so `make_checkpoint_serde`'s allowlist is unaffected). Set it in `nodes/day.py` where the diary substitutes — the fact is **carried**, never inferred from the text. Update the argument in `blunder_eval._diary_fallback_text`'s docstring, which explicitly rejected a node-carried flag as out of proportion "to avoid one private import in a measurement tool": that cost is no longer what is being paid, because the marking cannot be derived post-hoc. **[Agent: langgraph-agentic]**
 
