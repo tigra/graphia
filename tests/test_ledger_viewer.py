@@ -49,6 +49,7 @@ from graphia.eval_ledger import (
     KIND_ATTR_LAW_ABIDING,
     KIND_ATTR_MAFIA,
     KIND_DIARY,
+    KIND_DIARY_SUBSTITUTED,
     KIND_FIELD_LABEL,
     KIND_MARKER,
     KIND_PLAIN,
@@ -3747,6 +3748,126 @@ async def test_the_diary_style_is_the_thoughts_rule_plus_underline(
         # thought's colour" is saying something.
         assert thought.color != styles[KIND_SPEECH_MAFIA].color
         assert thought.color != styles[KIND_SPEECH_LAW_ABIDING].color
+
+
+async def test_the_substituted_diary_style_is_the_diarys_rule_plus_strike(
+    tmp_path: Path,
+) -> None:
+    """Spec 041's rule, asserted as a RELATION — the third use of the shape.
+
+    The direct sibling of
+    :func:`test_the_diary_style_is_the_thoughts_rule_plus_underline`, and
+    written to the same pattern for the same reason: tech-spec 041 does not
+    describe a substituted entry's appearance in colours, it describes it as an
+    operation on an existing rule — "the `diary` rule plus `strike`". So that is
+    what is asserted. Slice 5 stated the seat as "its side's colour plus bold,
+    and nothing else" and spec 039 the diary as "`thought`'s rule plus
+    `underline`"; this is the third rule in the stylesheet built that way, and
+    the derivation IS the design: a substituted entry can only ever read as "a
+    diary, and struck", never as some fourth unrelated kind.
+
+    Resolved through the PILOT API rather than pinned as a snapshot, which is
+    the choice tasks.md ratifies and which matters more here than anywhere
+    else in this section. This rule stacks THREE `text-style` flags
+    (`italic underline strike`) on `$text-muted`, and how two thin horizontal
+    rules compose with sheared glyphs is the terminal font's business — a
+    snapshot would pin one font's answer to a question the app does not own,
+    and would go red on a machine where nothing had changed. `_kind_styles` is
+    where the CSS actually becomes the style a span carries, so what is asserted
+    here is what the span really gets. That distinction is not academic: this
+    design measured `overline` DEAD at exactly that hop (it parses, `o` is in
+    Textual's `VALID_STYLE_FLAGS`, and `textual.style.Style.from_rich_style` on
+    the installed 8.2.4 has no `overline` parameter, so the span renders
+    undecorated), which is why the axis is `strike` and why reading the resolved
+    style rather than the stylesheet text is the whole protection.
+
+    Four claims, and the third is the differentia:
+
+    * **the whole `diary` family look is inherited** — same colour, and italic
+      AND underline both still set. A substituted entry is still a diary:
+      still private, still filed at the Day->Night hinge, still not an act of
+      allegiance. Asserted against the `diary` rule itself, not against
+      literals, so the two cannot drift apart;
+    * **the colour is not None**, or the inheritance equality is vacuous;
+    * **it is struck and an honest diary is NOT.** The entire differentia, and
+      the only thing separating the two under `textual-ansi`, where
+      `$text-muted` collapses to the terminal default and the SGR flags are all
+      that remain;
+    * **exactly one axis**, so `bold` (the reviewer's seat) and `reverse`
+      (`recap`'s scroll landmark) stay absent. Without this the third claim
+      would pass on a stylesheet that piled on every flag it could and
+      re-collided the marked entry with two other kinds.
+
+    The last assertion is the non-vacuity guard the pairing cannot supply: a
+    diary's colour must differ from a side's, or "a substituted diary is a
+    diary's colour" would hold trivially on a stylesheet where every kind is
+    the body colour.
+    """
+    module = importlib.import_module("graphia.ui.ledger_viewer")
+    # The class name as a WRITTEN-OUT LITERAL, exactly as the diary test above
+    # does it and for the same reason: the mapping's own guard reads two
+    # production tables against each other and would agree with itself through
+    # a rename of both. This line is what makes a drift report WHICH of the
+    # three spellings moved.
+    assert (
+        module._TRANSCRIPT_KIND_COMPONENTS[KIND_DIARY_SUBSTITUTED]
+        == "transcript--diary-substituted"
+    )
+
+    ledger, _ = _ledger_with_body(
+        tmp_path, _HIGHLIGHT_BODY, name="hl-diary-substituted-style.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        styles = screen._kind_styles()
+
+        substituted, diary = styles[KIND_DIARY_SUBSTITUTED], styles[KIND_DIARY]
+
+        assert substituted.color == diary.color, (
+            "a substituted entry is still a diary and must inherit its colour "
+            "— the marking is about authorship, not about allegiance or kind"
+        )
+        assert substituted.color is not None, (
+            "the substituted rule resolved to no colour at all, so the "
+            "equality above is vacuous"
+        )
+        assert substituted.italic is True and diary.italic is True, (
+            "italic is inherited from `thought` through `diary`; dropping it "
+            "from either would stop a substituted entry reading as a diary"
+        )
+        assert substituted.underline is True and diary.underline is True, (
+            "underline is `diary`'s own differentia; a substituted entry keeps "
+            "it, because it is still an entry filed on the record"
+        )
+        assert substituted.strike is True, (
+            "the substituted body is not struck, so nothing in the rendered "
+            "body says the words are not the player's — functional-spec 041's "
+            "fourth requirement is unmet"
+        )
+        assert diary.strike is not True, (
+            "an honest diary is struck too, so strike no longer separates a "
+            "substituted entry from a real one — which is the one thing this "
+            "kind exists to say, and all that separates them under "
+            "`textual-ansi`"
+        )
+        # Exactly ONE axis beyond `diary`'s: the two flags already spoken for
+        # stay unspoken here.
+        assert substituted.bold is not True, (
+            "bold is the reviewer's own seat (Slice 5); a substituted body "
+            "wearing it puts a stand-in sentence in the seat's register"
+        )
+        assert substituted.reverse is not True, (
+            "reverse is `recap`'s scroll landmark; a second inverted block "
+            "files the moderator's posted fact and a void entry as one look"
+        )
+
+        # ...and a diary's colour really is not a side's, so "a substituted
+        # diary is a diary's colour" is saying something.
+        assert diary.color != styles[KIND_SPEECH_MAFIA].color
+        assert diary.color != styles[KIND_SPEECH_LAW_ABIDING].color
 
 
 # ---------------------------------------------------------------------------

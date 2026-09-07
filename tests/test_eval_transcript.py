@@ -37,6 +37,11 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, SystemMessage
 
+# The deterministic diary stand-in, imported rather than copied so the
+# single-line sweep below is a statement about the REAL substituted body
+# (spec 041 Slice 8) and cannot drift from it. An import only — no node is
+# ever called from this module, and no model is ever reached.
+from graphia.nodes.day import _DIARY_FALLBACK
 from graphia.state import PlayerPersona, PlayerState
 from graphia.tools.eval_transcript import render_transcript
 
@@ -1352,23 +1357,108 @@ def test_endgame_block_is_top_level_not_folded_into_the_last_night() -> None:
 
 
 def test_one_line_sections_are_written_inline() -> None:
-    """Single-line sections are inline ``<tag>…</tag>`` (kill, recap) — spec 022."""
-    doc = _render_full_game()
+    """Inline ``<tag …>…</tag>`` elements really are one line — spec 022, 028, 039.
 
-    # An inline kill: the open tag, content, and close tag share one line.
+    Bare ``<kill>`` and ``<recap>`` are spec 022's, and were the whole of this
+    test until spec 041 Slice 8 measured the gap: the two ATTRIBUTED inline
+    shapes, ``<thought player="…">`` (spec 028) and ``<diary player="…"
+    day="…">`` (spec 039), had **no single-line assertion anywhere in the
+    suite**. Their inline-ness rested entirely on ``_clamp_diary_entry`` /
+    ``_REFLECTION`` bounds upstream — that is, on the model's text happening to
+    be short and newline-free, and on a clamp that no test here reads.
+
+    That is not a cosmetic gap for a diary. ``eval_ledger.tokenize_transcript``
+    decides a body's KIND per line, off the attributes on the tag that opens
+    that same line, so an element broken across two lines gives a reviewer a tag
+    with no body and a body with no tag — and spec 041's ``substituted="true"``
+    marking, which is read off exactly that tag, would be silently lost for the
+    entry it was written about. So the marked diary is swept here too: it is the
+    one body the renderer takes VERBATIM (``nodes.day._DIARY_FALLBACK``, filed
+    without passing through the clamp at all).
+
+    The sweep is written as "every line that OPENS one of these tags closes it",
+    which is the form that catches a break, and each shape is separately
+    asserted to be PRESENT — without that a typo'd tag name would make the sweep
+    vacuous, and the two attributed shapes do not occur in the base full game at
+    all.
+    """
+    doc = _render_full_game()
+    # The two attributed shapes need a Day carrying a reflection and a diary
+    # trailer, which the base full game has none of — so they are rendered as a
+    # second document rather than by changing a fixture 14 other tests read.
+    doc += "\n" + _render_day_with_private_channels()
+
     for line in doc.splitlines():
-        if line.startswith("<kill>"):
-            assert line.endswith("</kill>"), f"kill not inline: {line!r}"
-        if line.startswith("<recap>"):
-            assert line.endswith("</recap>"), f"recap not inline: {line!r}"
-    # Both kinds are present as inline one-liners.
-    assert any(
-        line.startswith("<kill>") and line.endswith("</kill>")
-        for line in doc.splitlines()
-    )
-    assert any(
-        line.startswith("<recap>") and line.endswith("</recap>")
-        for line in doc.splitlines()
+        for tag in ("kill", "recap", "thought", "diary"):
+            if line.startswith(f"<{tag}>") or line.startswith(f"<{tag} "):
+                assert line.endswith(f"</{tag}>"), f"{tag} not inline: {line!r}"
+
+    # ...and every shape really is present as an inline one-liner, so none of
+    # the four branches above is swept over an empty set.
+    def _inline_count(tag: str) -> int:
+        return sum(
+            1
+            for line in doc.splitlines()
+            if (line.startswith(f"<{tag}>") or line.startswith(f"<{tag} "))
+            and line.endswith(f"</{tag}>")
+        )
+
+    assert _inline_count("kill") >= 1
+    assert _inline_count("recap") >= 1
+    assert _inline_count("thought") >= 1
+    # Two diaries: one the player's own writing, one the deterministic stand-in
+    # carrying spec 041's marking. Both must be single-line, and the marked one
+    # is the one whose text the renderer does not clamp.
+    assert _inline_count("diary") == 2
+    assert f'substituted="true">{_DIARY_FALLBACK}</diary>' in doc
+
+
+def _render_day_with_private_channels() -> str:
+    """One Day whose round holds a ``<thought>`` and whose trailer holds diaries.
+
+    The two private channels the base full game does not exercise, rendered as a
+    document of their own: a ``day_round_reflect`` delta (spec 028) inside the
+    round, and a ``day_diary`` delta (spec 039) in the day-level trailer — one
+    authored entry and one carrying spec 041's ``substituted`` flag.
+    """
+    events: list[dict[str, Any]] = [
+        {"day_open": {"messages": [SystemMessage(content="Day 1 breaks.")]}},
+        {
+            "day_turn": {
+                "messages": [AIMessage(content="I heard nothing.", name="Mira")],
+                "day_rounds": 1,
+            }
+        },
+        {
+            "day_round_reflect": {
+                "private_thoughts": {"p-mira": ["Bo will not meet my eye."]}
+            }
+        },
+        {"day_close": {"messages": [SystemMessage(content="The Day ends.")]}},
+        {
+            "day_diary": {
+                "private_diaries": {
+                    "p-mira": [
+                        {
+                            "day": 1,
+                            "thoughts_before": 1,
+                            "text": "Bo folded the moment the vote was called.",
+                        }
+                    ],
+                    "p-bo": [
+                        {
+                            "day": 1,
+                            "thoughts_before": 0,
+                            "text": _DIARY_FALLBACK,
+                            "substituted": True,
+                        }
+                    ],
+                }
+            }
+        },
+    ]
+    return render_transcript(
+        events, _final_players(), game_index=1, run_meta=None
     )
 
 
