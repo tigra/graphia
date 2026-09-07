@@ -783,6 +783,14 @@ def test_the_flag_re_kinds_only_a_body_that_has_a_marked_kind_registered() -> No
     would land on ``KIND_PLAIN``, so a stray attribute in a hand-edited file
     would silently un-style a whole element — degradation by attribute, which
     is the failure mode the chained ``.get`` exists to prevent.
+
+    **Slice 9 registered the second pair, and this test's subject is unchanged
+    by that** — which is the point of having picked ``<recap>`` as the probe
+    rather than ``<thought>``. The moderator has no model call to substitute
+    for, so no slice will ever register ``recap``, and the fallback therefore
+    stays exercised on a genuinely unregistered tag for the life of the spec.
+    The registration set below widened to two; the assertion it protects did
+    not move.
     """
     source = f'<recap substituted="true">{_BODY}</recap>'
     kinds = {text: kind for text, kind in tokenize_transcript(source)}
@@ -790,13 +798,25 @@ def test_the_flag_re_kinds_only_a_body_that_has_a_marked_kind_registered() -> No
     assert kinds[_BODY] == KIND_RECAP
     assert eval_ledger.KIND_PLAIN not in set(kinds.values())
     # The registration this rests on, pinned in one place: the pair exists for
-    # `diary` and for nothing else in Slice 8. Slices 9 and 10 add their own
-    # rows here, and the assertion says which shape they take.
+    # `diary` (Slice 8) and `thought` (Slice 9), and for nothing else. Slice 10
+    # adds its own row, and the assertion says which shape it takes.
+    #
+    # WIDENED, NOT LOOSENED, and the distinction is the one the failure message
+    # below insists on: the probe above is still an UNregistered tag, so the
+    # fallback guarantee is still under test at full strength. What this line
+    # tracks is a different thing — which tags have *claimed* a marked kind — so
+    # a slice that registers one without covering it is still caught, by the
+    # `(tag, True)` coverage rows this module owns.
+    #
+    # TASK 9.4 STILL OWES `("thought", True)` A COVERAGE ROW ABOVE. Slice 9's
+    # Task 9.3 registered the pair and styled it; the marked/unmarked thought
+    # directions and the diary-versus-thought distinguishability claim are Task
+    # 9.4's, so this comment is the handoff rather than a note to nobody.
     assert {
         tag for tag, flag in eval_ledger._INLINE_CONTENT_KINDS if flag
-    } == {"diary"}, (
-        "a tag other than `diary` has a marked body kind registered. That is "
-        "what Slices 9 and 10 legitimately do (`thought`, then speech) — so "
+    } == {"diary", "thought"}, (
+        "a tag other than `diary` / `thought` has a marked body kind "
+        "registered. That is what Slice 10 legitimately does (speech) — so "
         "add the tag here AND give it a `(tag, True)` row of coverage above; "
         "do not simply widen this set, because the fallback assertion in this "
         "test is what keeps an UNregistered flag from demoting a body to plain."

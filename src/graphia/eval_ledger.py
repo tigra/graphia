@@ -102,6 +102,7 @@ __all__ = [
     "KIND_SPEECH_LAW_ABIDING_HUMAN",
     "KIND_DIARY",
     "KIND_DIARY_SUBSTITUTED",
+    "KIND_THOUGHT_SUBSTITUTED",
     "TRANSCRIPT_KINDS",
     "tokenize_transcript",
 ]
@@ -1158,6 +1159,47 @@ KIND_DIARY = "diary"
 # records the palette as fully spent; this kind asks nothing of it.
 KIND_DIARY_SUBSTITUTED = "diary-substituted"
 
+# Spec 041 Slice 9 — the twenty-third kind, and the SECOND of the marking
+# family. ``thought-substituted`` is the body of a
+# ``<thought player="X" substituted="true">…</thought>``: the deterministic
+# stand-in ``graphia.nodes.day._REFLECTION_FALLBACK`` that ``_ai_reflect`` files
+# when the model's answer could not be decoded, rather than the player's own
+# reflection.
+#
+# **The same shape as :data:`KIND_DIARY_SUBSTITUTED`, and deliberately its own
+# kind rather than a reuse of it.** A reviewer must be able to tell a
+# substituted *thought* from a substituted *diary*: the two channels answer
+# different questions (one round's reaction against a whole Day's settled read),
+# the transcript files them in different places (inside a ``<round>`` against
+# after the last ``</round>``), and the honest forms are already separate kinds.
+# Collapsing the marked forms into one would undo that distinction at exactly
+# the moment a reviewer is looking hardest. So this kind derives from
+# :data:`KIND_THOUGHT` the way that one derives from :data:`KIND_DIARY` — same
+# operation, different base — and the two marked kinds differ by precisely the
+# one flag (``underline``) by which their honest forms differ.
+#
+# **WHY THIS CHANNEL MATTERS MOST, measured:** the committed corpus holds
+# **10,706 thought bodies against 376 diary bodies** (counted 2026-09-07 across
+# all 372 files; 10,707 ``<thought`` tags, one of them with an empty body that
+# contributes no span at all), so this is the marking a
+# reviewer will actually meet. It is also why the *absence* of the attribute on
+# an authored thought is load-bearing rather than tidy — an unconditional flag
+# would mark all 10,706.
+#
+# **A second BODY kind rather than a second treatment of the attribute**, on the
+# reasoning :data:`KIND_DIARY_SUBSTITUTED` sets out in full: the flag's own value
+# is already lifted into an achromatic :data:`KIND_ATTR` span on the tag line by
+# :data:`_ATTR_NAMES`, so the tag-line axis needs nothing here and this kind is
+# the body axis. Two axes, so a terminal that cannot draw one still shows the
+# other.
+#
+# **It inherits :data:`KIND_THOUGHT`'s colour and is never side-tinted.** A
+# substituted thought is still a private reflection, so it keeps the family's
+# muted appearance; and "nobody wrote this" is a fact about authorship, not
+# about allegiance, which is what the two hues have meant since spec 038's
+# Slice 4. The owner's name inside the tag still carries the side.
+KIND_THOUGHT_SUBSTITUTED = "thought-substituted"
+
 # The canonical kind vocabulary, in the order the kinds were introduced — the
 # single source of truth for which kinds exist, following the same house pattern
 # as :data:`METRIC_ORDER` (a later spec appends its entries and nothing else has
@@ -1183,6 +1225,34 @@ KIND_DIARY_SUBSTITUTED = "diary-substituted"
 # a branch that returned :data:`KIND_ATTR` to say so would be dead code
 # duplicating the default, which is a worse outcome than the route running
 # short. No existing kind, rule or span moved for this one either.
+#
+# Spec 041's Slice 9 appends the twenty-third, :data:`KIND_THOUGHT_SUBSTITUTED`,
+# and it is **cheaper still — THREE touchpoints, not six** — which is worth
+# recording because it is the route's cost curve rather than a one-off. It takes
+# its constant, this entry, its ``__all__`` line and one
+# :data:`_INLINE_CONTENT_KINDS` entry. The three it does NOT take are each a
+# no-op for a *stated* reason rather than an omission:
+#
+# - :data:`_MARKER_TAGS` already whitelists ``thought`` — it has since spec
+#   038's Slice 1, longer than ``diary`` has;
+# - :func:`_attr_kind` needs no branch, because ``(thought, substituted)`` is
+#   not side-bearing and that function's default already returns
+#   :data:`KIND_ATTR`. Writing the branch to make the route look complete would
+#   be dead code duplicating the default, on the same judgment Slice 8 made;
+# - :data:`_ATTR_NAMES` already contains ``substituted``, added by Slice 8, and
+#   the tuple is keyed by attribute NAME rather than by ``(tag, name)`` — so
+#   the moment the writer emits the attribute on a ``<thought>`` tag, the
+#   existing :data:`_ATTR_VALUE_RE` scan finds it and both
+#   :func:`_tag_head_spans` and :func:`_is_substituted` read it with no change.
+#
+# **What the chained fallback in :func:`_tag_element_spans` was protecting in
+# the meantime, now discharged.** Between Slice 8 and this entry a
+# ``<thought … substituted="true">`` was a flagged tag with no marked kind
+# registered, and the fallback made it re-kind *nothing* — the body stayed
+# :data:`KIND_THOUGHT` rather than being demoted to :data:`KIND_PLAIN`. This
+# entry is what turns that body into its own kind. Both directions are pinned
+# by test, because a fallback that silently stopped applying would look exactly
+# like a fallback that was never needed.
 TRANSCRIPT_KINDS: tuple[str, ...] = (
     KIND_MARKER,
     KIND_PLAIN,
@@ -1206,6 +1276,7 @@ TRANSCRIPT_KINDS: tuple[str, ...] = (
     KIND_SPEECH_LAW_ABIDING_HUMAN,
     KIND_DIARY,
     KIND_DIARY_SUBSTITUTED,
+    KIND_THOUGHT_SUBSTITUTED,
 )
 
 # The two sides, as the internal token that selects a side-bearing kind. Private
@@ -1302,12 +1373,16 @@ _ROLE_SIDES: dict[str, str] = {
 # times across the 298 committed transcripts (measured): no committed line can
 # tokenize differently for this entry existing.
 #
-# **Spec 041 adds no name here at all**, and that is the point of the entry it
-# does add: :data:`KIND_DIARY_SUBSTITUTED` is a second body kind for this same
-# ``diary`` tag, told apart by an attribute written **on** the tag rather than
-# by a tag of its own. A marking that had needed a ``<diary-substituted>`` tag
-# would have changed the file's shape for every reader; this one changes only
-# what an existing shape can say.
+# **Spec 041 adds no name here at all**, and that is the point of the entries it
+# does add: :data:`KIND_DIARY_SUBSTITUTED` and, from Slice 9,
+# :data:`KIND_THOUGHT_SUBSTITUTED` are second body kinds for the ``diary`` and
+# ``thought`` tags already listed here, told apart by an attribute written **on**
+# the tag rather than by tags of their own. A marking that had needed a
+# ``<diary-substituted>`` / ``<thought-substituted>`` tag would have changed the
+# file's shape for every reader — and on the thought channel that means all
+# 10,706 bodies in the corpus; this one changes only what an existing shape can
+# say. ``thought`` has been on this whitelist since spec 038's Slice 1, so
+# Slice 9's marking arrives with its tag already recognised.
 #
 # (One correction to the paragraph above while a reader is here: ``<diary`` was
 # measured at zero occurrences when spec 039 wrote that, and the corpus has
@@ -1371,9 +1446,21 @@ _MARKER_TAGS: frozenset[str] = frozenset(
 # reads as a thought until the slice that registers its marked form arrives.
 # Degrading a recognised body to plain because of an attribute would be the
 # marking making a transcript **less** readable than before it existed.
+#
+# **That last rule stopped being hypothetical and is now discharged for
+# ``thought``.** From Slice 8 to Slice 9 a ``<thought … substituted="true">``
+# was exactly the case the sentence above describes — flagged, unregistered,
+# re-kinded to nothing — and ``("thought", True)`` below is the entry that
+# retires it. The clause stays as written, because ``speech`` is next and is in
+# the same position today.
+#
+# Slice 9's entry is the whole of its change to this table: the re-keying was
+# Slice 8's cost, paid once, and the second marked kind is one line. That is the
+# property the pair-keying was for.
 _INLINE_CONTENT_KINDS: dict[tuple[str, bool], str] = {
     ("kill", False): KIND_MARKER,
     ("thought", False): KIND_THOUGHT,
+    ("thought", True): KIND_THOUGHT_SUBSTITUTED,
     ("recap", False): KIND_RECAP,
     ("diary", False): KIND_DIARY,
     ("diary", True): KIND_DIARY_SUBSTITUTED,
@@ -1415,7 +1502,20 @@ _TAG_HEAD_RE = re.compile(
 # ways round.
 #
 # ``substituted`` is spec 041's seventh, carried by
-# ``<diary player="…" day="…" substituted="true">``, and it is a **departure
+# ``<diary player="…" day="…" substituted="true">`` and — from Slice 9, at no
+# cost to this tuple — by ``<thought player="…" substituted="true">``. **This
+# tuple is keyed by attribute NAME, not by ``(tag, name)``**, unlike
+# :func:`_attr_kind`'s side-bearing decision, so one entry serves every tag that
+# ever carries the flag: the moment the writer emits it on a second tag,
+# :data:`_ATTR_VALUE_RE` finds it and both :func:`_tag_head_spans` and
+# :func:`_is_substituted` read it with nothing changed here. That is deliberate
+# and not an accident of ordering — the flag means the same thing on every
+# channel, so a per-tag spelling would be three places to keep in step for one
+# fact. (Contrast ``player``, which is name-keyed here for the SPAN and
+# tag-keyed in :func:`_attr_kind` for the KIND, because whether a name is
+# side-bearing genuinely is a per-tag decision.)
+#
+# It is a **departure
 # from the ``human="true"`` precedent stated in the paragraph above**. The
 # justification is that note's **own test**: an attribute is lifted because a
 # reviewer reads it as a *specific*, and ``human`` was excluded because a
@@ -1455,8 +1555,9 @@ _TAG_HEAD_RE = re.compile(
 # hypothetical ``notsubstituted="true"`` is not read as the flag.
 #
 # The lifted value is also load-bearing rather than incidental: it is the
-# **tag-line axis** of the marking, with :data:`KIND_DIARY_SUBSTITUTED` as the
-# body axis. And it **cannot move a committed transcript**: ``substituted="``
+# **tag-line axis** of the marking, with :data:`KIND_DIARY_SUBSTITUTED` and
+# :data:`KIND_THOUGHT_SUBSTITUTED` as the body axis on their own channels. And
+# it **cannot move a committed transcript**: ``substituted="``
 # occurs **zero** times across the committed corpus (measured 2026-09-07 over
 # all 26 committed run dirs), because no committed game was played by a build
 # that could write it. Note the contrast with ``day``, whose own note above was
@@ -1633,8 +1734,10 @@ _THOUGHT_OWNER_ATTR = "player"
 _DIARY_TAG = "diary"
 _DIARY_OWNER_ATTR = "player"
 
-# The substitution marking on a ``<diary … substituted="true">`` tag (spec 041)
-# and the single value that means it. A whitelist of one literal — the same
+# The substitution marking on a ``<diary … substituted="true">`` or
+# ``<thought … substituted="true">`` tag (spec 041) — one attribute name and
+# one literal, shared by every channel that carries the flag, because the flag
+# means the same thing on each. A whitelist of one literal — the same
 # never-guess posture as :data:`_HUMAN_ATTR_TRUE` — matched to the writer's own
 # rule: ``eval_transcript._diary_substituted_attr`` emits the attribute **only**
 # for the literal ``True`` and never emits ``substituted="false"``. So
@@ -1935,6 +2038,17 @@ def _attr_kind(tag: str, key: str, value: str, sides: Mapping[str, str]) -> str:
     duplicating the default, and the six-touchpoint route running one short is
     a better outcome than code written to make a route look complete.
 
+    **And it stays no-branch as the marking spreads, which is the stronger
+    statement.** Slice 9 carries the same flag on ``<thought … substituted=…>``
+    and Slice 10 will carry it on speech; because the reason is a property of
+    the *attribute* — a flag about authorship names no side — and not of the
+    tag it happens to sit on, each of those channels also needs nothing here.
+    A ``(thought, substituted)`` branch would be the same dead code one tag
+    over. What DOES stay per-``(tag, key)`` is ``player``: a substituted
+    thought's owner name still takes its side colour through the
+    ``_THOUGHT_TAG`` branch below, so the tag line shows *whose* reflection was
+    stood in for even though the flag beside it is achromatic.
+
     **The rule underneath all three halves:** inside a marker, the side colour
     lands on whichever token actually *tells the reviewer the side* — the role
     where a role is written (the cast entry), the name where none is (the
@@ -2061,6 +2175,15 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
       fact is *carried* by the game state and can be recovered no other way: a
       model can answer with the stand-in's exact sentence, and the run's
       substitution count is a per-run aggregate that names no entry.
+    - :data:`KIND_THOUGHT_SUBSTITUTED` — the same relation one channel over
+      (spec 041 Slice 9): a ``<thought player="X" substituted="true">…
+      </thought>`` body, ``graphia.nodes.day._REFLECTION_FALLBACK`` rather than
+      the player's own reflection. Its own kind rather than a reuse of the
+      diary's, so a reviewer can tell a stood-in *round reaction* from a
+      stood-in *Day summary* — the honest forms are already separate kinds and
+      the marked ones follow them. Everything else about it reads off the entry
+      above: two axes, tag stays :data:`KIND_MARKER`, flag value achromatic,
+      owner's name still side-tinted, body never.
     - :data:`KIND_PLAIN` — **everything else**, including every line separator.
       This fallback is what makes degradation total: an unrecognised tag, a
       pre-spec-022 transcript's indented ``Name — Role`` cast list, model-generated
@@ -2087,6 +2210,7 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
       content span's kind (or split attribute values out of the tag) instead of
       breaking one span into several. ``<thought>``, ``<recap>`` and spec 039's
       ``<diary>`` bodies are claimed that way, and from spec 041 a ``<diary>``
+      or ``<thought>``
       body's kind depends on the ``substituted="true"`` flag on its own tag as
       well as on the tag name (:data:`_INLINE_CONTENT_KINDS`); ``<kill>`` is
       the exception whose content is *already* marker, so it coalesces back to

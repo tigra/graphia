@@ -1200,6 +1200,16 @@ def test_the_kind_family_tuples_are_index_aligned_and_complete() -> None:
         # family-classifying sweep is blind to — which is the assertion working,
         # and it is what sent this slice's author here.
         eval_ledger.KIND_DIARY_SUBSTITUTED,
+        # Spec 041 Slice 9. `thought-substituted` for the same reason one channel
+        # over — a flag about AUTHORSHIP names neither a side nor a seat, whatever
+        # tag it sits on. Worth reading as the shape holding rather than as a
+        # third copy of one line: the marking family will always land here,
+        # because "nobody wrote this" is the one fact in the vocabulary that is
+        # orthogonal to both families. Slice 10's speech marking is the case to
+        # watch — it will be the first marked kind whose HONEST form *is*
+        # side-bearing, so unlike these two it is a real decision rather than a
+        # foregone one.
+        eval_ledger.KIND_THOUGHT_SUBSTITUTED,
     }
     assert familied | unfamilied == set(eval_ledger.TRANSCRIPT_KINDS), (
         "a declared kind belongs to no family and to no named exception, so every "
@@ -1277,6 +1287,17 @@ def test_every_kind_constant_is_exported_and_declared_exactly_once() -> None:
     already right). Two of the six touchpoints being no-ops is the route being
     honest rather than the route being skipped; production records which two and
     why.
+
+    **And Slice 9 takes it to twenty-three on THREE touchpoints, not six** —
+    which is the route's cost curve rather than a third anecdote, and the reason
+    this count is written out rather than derived. `thought-substituted` needed
+    the constant, the `TRANSCRIPT_KINDS` entry, the ``__all__`` line and one
+    `_INLINE_CONTENT_KINDS` entry. Beyond Slice 8's two no-ops it inherited a
+    third: `substituted` was **already** in `_ATTR_NAMES`, because that tuple is
+    keyed by attribute NAME and not by ``(tag, name)``, so the flag became a
+    span on a second tag with nothing added anywhere. A slice arriving after
+    this one should expect the route to keep shrinking, and should record which
+    touchpoints it did not need rather than writing code to fill them.
     """
     kind_constants = {
         name: value
@@ -1284,10 +1305,10 @@ def test_every_kind_constant_is_exported_and_declared_exactly_once() -> None:
         if name.startswith("KIND_") and isinstance(value, str)
     }
 
-    assert len(eval_ledger.TRANSCRIPT_KINDS) == 22, (
+    assert len(eval_ledger.TRANSCRIPT_KINDS) == 23, (
         "spec 038 closed the vocabulary at twenty kinds, spec 039 appended the "
-        "twenty-first, `diary`, and spec 041 the twenty-second, "
-        "`diary-substituted`; "
+        "twenty-first, `diary`, and spec 041 the twenty-second and twenty-third, "
+        "`diary-substituted` and `thought-substituted`; "
         f"found {eval_ledger.TRANSCRIPT_KINDS}"
     )
     assert len(set(eval_ledger.TRANSCRIPT_KINDS)) == len(
@@ -3587,13 +3608,38 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
     # down here, not hidden behind a weaker operator, and the equality closes
     # back up in the same slice.
     #
+    # AND SLICE 9 IS THE NEXT KIND TO NEED THAT REASON — which is the pattern
+    # above being followed rather than a regression in it. Task 9.3 registers
+    # `thought-substituted` and styles it; the fixture that emits it is Task
+    # 9.4's, one task later, exactly as `diary-substituted`'s was. So the gap is
+    # carried as a named exception with its reason written here, not by weakening
+    # the operator, and Task 9.4 deletes this set when it supplies the fixture.
+    #
+    # NOT solved by adding a marked `<thought>` to `_SUBSTITUTED_DIARY_GAME`
+    # here, though it is two lines: that fixture's own note explains that a
+    # marked body cannot go into `_RICH_SYNTHETIC_TRANSCRIPT` without claiming to
+    # be part of a full-shape game, and Task 9.4 additionally owes the
+    # *distinguishability* claim (a substituted thought and a substituted diary
+    # must stay tellable apart), which wants one fixture designed for that
+    # question rather than a line appended to a game named for the other one.
+    unfixtured = {eval_ledger.KIND_THOUGHT_SUBSTITUTED}
+
     # Still an equality in BOTH directions rather than a `<=`: nothing outside
     # the vocabulary may be emitted, nothing inside it may go missing, and the
     # next declared-but-unreachable kind fails here and needs its own reason.
-    assert set().union(*per_game.values()) == set(eval_ledger.TRANSCRIPT_KINDS), (
-        "a declared kind is emitted by none of the four synthetic games, so "
-        "nobody will ever see it: "
-        f"{sorted(set(eval_ledger.TRANSCRIPT_KINDS) - set().union(*per_game.values()))}"
+    assert set().union(*per_game.values()) | unfixtured == set(
+        eval_ledger.TRANSCRIPT_KINDS
+    ), (
+        "a declared kind is emitted by none of the four synthetic games and is "
+        "not a named exception, so nobody will ever see it: "
+        f"{sorted(set(eval_ledger.TRANSCRIPT_KINDS) - set().union(*per_game.values()) - unfixtured)}"
+    )
+    # ...and the exception cannot go stale silently: the moment Task 9.4's
+    # fixture emits the kind, this fails and the set must be deleted.
+    assert not set().union(*per_game.values()) & unfixtured, (
+        "a kind named as unfixtured IS now emitted by a synthetic game — delete "
+        "it from `unfixtured` so the equality closes back up: "
+        f"{sorted(set().union(*per_game.values()) & unfixtured)}"
     )
     assert len(eval_ledger.TRANSCRIPT_KINDS) == len(set(eval_ledger.TRANSCRIPT_KINDS))
 

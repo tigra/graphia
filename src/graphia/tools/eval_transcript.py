@@ -996,6 +996,26 @@ def _append_thoughts(
     ``if not text`` skip then drops exactly as the old ``isinstance`` guard
     dropped it. So a ``None``, an ``int`` or a shapeless ``dict`` still renders
     nothing, and the 298 preserved transcripts are unaffected.
+
+    A SUBSTITUTED THOUGHT CARRIES ``substituted="true"`` (spec 041 Slice 9),
+    written by the same conditional-attribute idiom
+    :func:`_diary_substituted_attr` establishes for the diary one slice over:
+    present only when the flag is the literal ``True``, **omitted** — never
+    ``substituted="false"`` — otherwise. That asymmetry is what makes "no
+    thought in a preserved game carries this marking" hold *structurally*
+    rather than by intent: an authored thought renders byte-for-byte as it did
+    before spec 041, which matters far more on this channel than on the diary's
+    because the corpus holds 10,706 thought bodies against 376 diary ones
+    (counted 2026-09-07 across all 372 committed files). An
+    unconditional flag would mark every one of them.
+
+    The flag is read off ``note`` — the RAW entry — rather than off anything
+    ``thought_text`` returns, because that helper deliberately returns only the
+    words. The ``isinstance(note, dict)`` hop is exactly what
+    :data:`~graphia.state.ThoughtEntry`'s union costs: a bare ``str`` entry (a
+    resumed pre-reshape checkpoint, or any of the ~100 offline-suite sites that
+    hand-build this channel as strings) has nowhere to carry a flag, so it is
+    authored by construction and needs no branch of its own.
     """
     thoughts = delta.get("private_thoughts")
     if not isinstance(thoughts, dict):
@@ -1008,7 +1028,26 @@ def _append_thoughts(
             text = thought_text(note).strip()
             if not text:
                 continue
-            buf.append(_inline_attr("thought", f'player="{author}"', text))
+            attrs = f'player="{author}"'
+            # ``_diary_substituted_attr`` IS CALLED FROM HERE ON PURPOSE, AND
+            # ITS NAME IS NOT RENAMED. The function is a pure test of one value
+            # against the literal ``True`` — there is nothing diary-specific in
+            # it, and having one definition is what makes the two channels
+            # provably agree on the literal the reader in
+            # :mod:`graphia.eval_ledger` matches. The ``diary_`` prefix names
+            # its first caller rather than its semantics; renaming it now would
+            # force edits into Slice 9's own committed marking tests for no
+            # behavioural gain, so the collapse to a channel-neutral name is
+            # left to Slice 10's Task 10.2, where a THIRD caller makes the
+            # prefix indefensible and that test file is being edited anyway.
+            substituted = (
+                _diary_substituted_attr(note.get("substituted"))
+                if isinstance(note, dict)
+                else ""
+            )
+            if substituted:
+                attrs = f"{attrs} {substituted}"
+            buf.append(_inline_attr("thought", attrs, text))
 
 
 def _append_diaries(
@@ -1082,6 +1121,16 @@ def _append_diaries(
 def _diary_substituted_attr(substituted: Any) -> str:
     """``substituted="true"`` for a substituted entry, else ``""`` (spec 041).
 
+    TWO CALLERS SINCE SLICE 9, AND THE ``diary_`` PREFIX IS NOW HISTORICAL:
+    :func:`_append_diaries` reads it off a :class:`~graphia.state.DiaryRecord`
+    and :func:`_append_thoughts` off a :class:`~graphia.state.ThoughtRecord`.
+    Nothing in the body is diary-specific — it tests one value against one
+    literal — and keeping ONE definition is what makes the two channels
+    provably agree with each other and with the reader's single literal in
+    ``graphia.eval_ledger._SUBSTITUTED_ATTR_TRUE``. Two copies could drift; one
+    cannot. The rename is deferred rather than declined: see the note at the
+    call site in :func:`_append_thoughts`.
+
     The conditional-attribute idiom of :func:`_diary_day_attr`, and for a
     sharper reason: **the attribute must be absent on an authored entry, not
     ``substituted="false"``.** That is what makes "no entry carries this
@@ -1090,7 +1139,8 @@ def _diary_substituted_attr(substituted: Any) -> str:
     always-present field that a reader learns to ignore.
 
     Only the literal ``True`` yields the attribute. ``nodes.day.day_diary``
-    writes the key **only** on the substitution branch and only as ``True``, so
+    and ``nodes.day.day_round_reflect`` each write the key **only** on their
+    substitution branch and only as ``True``, so
     anything else reaching here came from a hand-built record or a hand-edited
     checkpoint — this is defensiveness at a read boundary, not coverage of a
     reachable node path. ``"true"``, ``1`` and ``1.0`` are all rejected rather

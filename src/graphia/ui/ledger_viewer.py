@@ -70,6 +70,7 @@ from graphia.eval_ledger import (
     KIND_SPEECH_MAFIA,
     KIND_SPEECH_MAFIA_HUMAN,
     KIND_THOUGHT,
+    KIND_THOUGHT_SUBSTITUTED,
     LedgerParseError,
     METRIC_ORDER,
     RawRecord,
@@ -575,6 +576,20 @@ _NO_TRANSCRIPTS_MESSAGE = "No transcripts for this run."
 # (which is what ``diary-substituted`` itself does — see its rule) or separate
 # itself on something this stylesheet has not used yet at all.
 #
+# ...AND SLICE 9 IS THE FIRST KIND TO TAKE THAT FIRST ROUTE RATHER THAN SPEND
+# ANYTHING, which is the accounting one step further and the reason this note is
+# extended rather than repeated. ``thought-substituted`` REUSES ``strike`` on a
+# second kind; it does not spend a new flag, and the ledger above is therefore
+# unchanged by it. What makes the reuse honest is that ``strike`` means the same
+# thing on both kinds — *this body is not the player's writing* — so the flag
+# has one meaning across the stylesheet rather than two, and the two marked
+# kinds are told apart by the flags their HONEST forms already differ by
+# (``diary`` carries ``underline``, ``thought`` does not). A flag reused for a
+# second, unrelated meaning would be the thing to refuse; a marking family
+# sharing one flag is the thing the family is for. Slice 10's speech marking
+# takes the same route again, so the eight-flag budget above holds for all
+# three channels.
+#
 # SIX SIDE-BEARING KINDS, NOT TWO — two hues, but ``speaker``, ``speech`` and
 # ``attr`` each split two ways, so six entries and six rules. The neutral
 # ``speaker`` / ``speech`` / ``attr`` above are UNTOUCHED by that: Slice 4 adds,
@@ -645,6 +660,21 @@ _TRANSCRIPT_KIND_COMPONENTS: dict[str, str] = {
     # `thought` rule's "TWO AXES, NOT ONE" precedent asks for, and one axis is
     # one thing to lose.
     KIND_DIARY_SUBSTITUTED: "transcript--diary-substituted",
+    # A SUBSTITUTED THOUGHT body (spec 041 Slice 9) — the twenty-third kind, and
+    # the second of the marking family. Same route again: one constant in
+    # `eval_ledger`, one entry here, one rule below, nothing moved.
+    #
+    # ITS OWN CLASS RATHER THAN A REUSE OF `transcript--diary-substituted`, and
+    # that is the point rather than the paperwork: the two marked kinds must stay
+    # tellable apart, because a reviewer asking "was this stood in for?" is
+    # usually also asking "which channel?" — a round's reaction or a whole Day's
+    # settled read. Each derives from ITS OWN honest rule (`thought` here,
+    # `diary` there), so the pair differs by exactly the flag their honest forms
+    # differ by, and no third look is invented.
+    #
+    # This is the channel that matters most, measured: 10,706 thought bodies in
+    # the committed corpus against 376 diary ones.
+    KIND_THOUGHT_SUBSTITUTED: "transcript--thought-substituted",
 }
 
 
@@ -1236,10 +1266,21 @@ class TranscriptScreen(Screen):
        columns this rule paints one or two rows, every time, for every
        substituted entry in the corpus. The failure mode a long body would have
        (nine wrapped rows each carrying two horizontal rules, reading as a hatch
-       pattern rather than as prose) is therefore unreachable here. Where it
-       becomes reachable is Slices 9 and 10, whose bodies are a real thought and
-       a real line of speech at their real lengths — so those slices inherit this
-       rule's shape but NOT this bound, and each owes the check on its own body.
+       pattern rather than as prose) is therefore unreachable here.
+
+       THAT FORECAST FOR SLICES 9 AND 10 WAS WRONG, AND SLICE 9 MEASURED IT.
+       This paragraph used to end "where it becomes reachable is Slices 9 and 10,
+       whose bodies are a real thought and a real line of speech at their real
+       lengths — so those slices inherit this rule's shape but NOT this bound".
+       They do inherit the bound, and for a stronger reason than the diary has
+       it: the mark is set ONLY on the substitution branch, where the body *is*
+       the channel's fallback constant. Those constants are SHORTER than this
+       one — `_REFLECTION_FALLBACK` is 52 characters and the day-speech fallback
+       30, against `_DIARY_FALLBACK`'s 110 — so every marked body in every
+       channel is one row at ~100 columns. The corpus's 46-626 character range is
+       the range of AUTHORED bodies, which never carry the marking. The bound is
+       structural for the whole family; no later rule owes a length check, and
+       none should be weakened on this basis.
        **Slice 8's Task 8.6 is where that gets answered** — `make view-ledger`
        against a transcript carrying a deliberately-substituted entry, on both
        the light and the dark theme. If it does not read there, the cheapest
@@ -1282,6 +1323,90 @@ class TranscriptScreen(Screen):
     TranscriptScreen > .transcript--diary-substituted {
         color: $text-muted;
         text-style: italic underline strike;
+    }
+
+    /* ------------------------------------------------------------------
+       A SUBSTITUTED THOUGHT (spec 041 Slice 9) — the body of a
+       `<thought player="X" substituted="true">…</thought>`: the deterministic
+       stand-in `graphia.nodes.day._REFLECTION_FALLBACK` that `_ai_reflect` files
+       when the model's answer could not be decoded, rather than the player's own
+       reflection. The same requirement as the rule above, on the channel a
+       reviewer actually reads: the committed corpus holds 10,706 thought bodies
+       against 376 diary ones.
+
+       THIS RULE IS THE `thought` RULE PLUS `strike`, AND NOTHING ELSE — the
+       fourth use of the shape ("its side's colour plus bold, and nothing else";
+       "`thought`'s rule plus `underline`"; "the `diary` rule plus `strike`").
+       It derives from `thought`, NOT from `diary-substituted`, and that choice
+       is the whole design of the marking family: each marked kind is its own
+       honest kind plus the one flag, so the two marked kinds differ by exactly
+       the flag their honest forms differ by (`underline`) and a reviewer who has
+       learnt "struck = nobody wrote this" reads both without learning a second
+       thing. Deriving this one from `diary-substituted` instead would have had
+       to *subtract* `underline` — an operation the family has never needed and
+       one that would leave a substituted thought looking like a retreat from a
+       diary rather than a thought that was stood in for.
+
+       TWO `text-style` FLAGS, NOT THREE, and this rule is therefore LESS stacked
+       than the `diary-substituted` rule above it — the one place in this
+       stylesheet where the later kind is the quieter one. `italic` is inherited
+       from `thought`; `strike` is the mark. The legibility question the rule
+       above states as open does not reach here: there is no `underline` for the
+       strike to compose with, so what a reviewer sees is one horizontal rule
+       through slanted glyphs, which is the plainest form the marking takes
+       anywhere.
+
+       `strike` IS REUSED, NOT SPENT, and that is why this rule needs no new axis
+       (see the flag ledger above `_TRANSCRIPT_KIND_COMPONENTS`). The flag carries
+       ONE meaning across this stylesheet — *this body is not the player's
+       writing* — so a second kind wearing it says the same thing about a second
+       channel rather than overloading it. Reusing a flag for an unrelated
+       meaning is what this ledger exists to prevent; a marking family sharing
+       one flag is what the family is.
+
+       THE BLOCK-TEXTURE CONCERN THE RULE ABOVE FORWARDED TO THIS SLICE IS
+       REFUTED, MEASURED RATHER THAN ARGUED. That rule worried that a marked
+       thought would be "a real thought at corpus length" (46-626 characters,
+       n=8183, p90 316) and so could wrap to many rows, each carrying horizontal
+       rules, until the block read as a hatch pattern rather than as prose. It
+       cannot: the mark is set ONLY on the substitution branch, where the body
+       *is* the fallback constant — `_REFLECTION_FALLBACK` at **52 characters**,
+       less than half `_DIARY_FALLBACK`'s 110. So this rule paints ONE row at
+       ~100 columns, every time; the corpus range is the range of AUTHORED
+       thoughts, which never carry the marking. The bound is structural for every
+       channel in this family rather than incidental to the diary, which is also
+       why nothing here is weakened on that basis.
+
+       TWO AXES, and this rule is only ONE of them — the belt-and-braces `attr`,
+       `thought` and `diary-substituted` all use. The flag's own value is already
+       an ordinary bold `attr` span on the tag line (`_ATTR_NAMES` lifts it; no
+       rule here does that work), so a terminal without SGR 9 still shows
+       `substituted="true"` on the tag and a reviewer skimming bodies still sees
+       the struck prose. Under `textual-ansi`, where `$text-muted` collapses to
+       the terminal default exactly as `marker`'s, `thought`'s and `diary`'s do,
+       the two SGR flags are the whole of what separates a substituted thought
+       from body text — and the STRIKE ALONE is what separates it from an honest
+       one, the case the differentia had to survive and the reason it is an SGR
+       attribute and not a hue.
+
+       NO HUE, for the reason `diary-substituted` gives and one more of its own:
+       the two surviving variables mean *side*, "nobody wrote this" is not a
+       side, and a thought's body has been un-tinted since spec 038's Slice 3
+       precisely so a private reflection never reads as an act of allegiance. A
+       substituted one is still a private reflection.
+
+       Verified at the two hops that killed `overline`, on the installed Textual
+       8.2.4: `rich.style.Style.parse("strike")` is `Style(strike=True)` and
+       `textual.style.Style.from_rich_style` carries `strike=rich_style.strike`
+       explicitly into the `Content` conversion.
+
+       Permanent, like `thought`: no later slice re-kinds a substituted thought.
+       Slice 10 adds the same treatment to Day speech as its OWN kind, derived
+       from its own honest rule the way this one derives from `thought` — it does
+       not reuse this class. */
+    TranscriptScreen > .transcript--thought-substituted {
+        color: $text-muted;
+        text-style: italic strike;
     }
     """
 
