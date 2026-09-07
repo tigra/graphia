@@ -53,6 +53,7 @@ from graphia.eval_ledger import (
     KIND_ATTR_LAW_ABIDING,
     KIND_ATTR_MAFIA,
     KIND_DIARY,
+    KIND_DIARY_SUBSTITUTED,
     KIND_FIELD_LABEL,
     KIND_MARKER,
     KIND_RECAP,
@@ -553,6 +554,27 @@ _NO_TRANSCRIPTS_MESSAGE = "No transcripts for this run."
 # it took exactly that route:** its ``diary`` body reuses ``thought``'s
 # ``$text-muted`` unchanged and separates itself on ``underline``.
 #
+# ...AND SPEC 041 SPENDS THE LAST COMFORTABLE ``text-style`` SLOT, which is the
+# same accounting one axis over and is recorded here for the same reason: the
+# fallback route the paragraph above hands to "a later kind" is now nearly gone
+# too, and the next kind will need to hear that from this comment rather than
+# rediscover it. Textual's ``VALID_STYLE_FLAGS`` offers eight usable flags;
+# ``bold`` (Slice 5's seat), ``italic`` (``thought``), ``underline`` (``diary``),
+# ``reverse`` (``recap``) and now ``strike`` (``diary-substituted``) are spent,
+# and the three survivors are all compromised — ``uu`` (SGR 4:2, far thinner
+# terminal support than SGR 4's), ``dim`` (a second intensity reduction on a
+# variable already ``auto 60%``, unmeasurable from inside the app and the wrong
+# thing to bet a 4.5:1 floor on) and ``blink``. A ninth flag only *looks*
+# available: ``overline`` is in ``VALID_STYLE_FLAGS`` and parses in the
+# stylesheet, but it is MEASURED DEAD at both downstream hops on the installed
+# Textual 8.2.4 — ``rich.style.Style.parse("overline")`` returns an empty
+# ``Style()``, and ``textual.style.Style`` has no ``overline`` field for
+# ``from_rich_style`` to carry — so the declaration would read correctly in this
+# stylesheet and paint nothing on screen. So a kind arriving after this one
+# cannot assume either axis is free: it must either compose two spent flags
+# (which is what ``diary-substituted`` itself does — see its rule) or separate
+# itself on something this stylesheet has not used yet at all.
+#
 # SIX SIDE-BEARING KINDS, NOT TWO — two hues, but ``speaker``, ``speech`` and
 # ``attr`` each split two ways, so six entries and six rules. The neutral
 # ``speaker`` / ``speech`` / ``attr`` above are UNTOUCHED by that: Slice 4 adds,
@@ -611,6 +633,18 @@ _TRANSCRIPT_KIND_COMPONENTS: dict[str, str] = {
     # existing kind, class or rule moved. That the house pattern held for a kind
     # arriving from another spec is the pattern's first real test.
     KIND_DIARY: "transcript--diary",
+    # A SUBSTITUTED diary body (spec 041) — the twenty-second kind, and the
+    # first that says nothing about WHO wrote a line and everything about
+    # WHETHER anybody did. Appended by the same route spec 039 proved: one
+    # constant in `eval_ledger`, one entry here, one rule below, nothing moved.
+    #
+    # It is a second BODY kind rather than a second treatment of the tag: the
+    # `substituted="true"` flag's own value is already lifted out as an ordinary
+    # bold `attr` span by `_ATTR_NAMES`, so the tag-line axis needs no entry
+    # here at all. This entry is the body axis — the second of the two the
+    # `thought` rule's "TWO AXES, NOT ONE" precedent asks for, and one axis is
+    # one thing to lose.
+    KIND_DIARY_SUBSTITUTED: "transcript--diary-substituted",
 }
 
 
@@ -1142,6 +1176,112 @@ class TranscriptScreen(Screen):
     TranscriptScreen > .transcript--diary {
         color: $text-muted;
         text-style: italic underline;
+    }
+
+    /* ------------------------------------------------------------------
+       A SUBSTITUTED DIARY (spec 041) — the body of a
+       `<diary player="X" day="N" substituted="true">…</diary>`: the
+       deterministic stand-in `graphia.nodes.day._DIARY_FALLBACK` the node files
+       when the model's answer could not be decoded, rather than the player's own
+       writing. Functional-spec 041 asks that such an entry be *visibly marked*,
+       so a reviewer reading a preserved game can see that the words are not the
+       player's.
+
+       THIS RULE IS THE `diary` RULE PLUS `strike`, AND NOTHING ELSE — the third
+       use of the shape Slice 5 introduced and spec 039 reused ("its side's
+       colour plus bold, and nothing else"; "`thought`'s rule plus `underline`").
+       The inheritance is the point and not economy: a substituted entry is still
+       a diary — still private, still filed at the Day->Night hinge, still not an
+       act of allegiance — so it keeps the whole of the family's appearance
+       (`$text-muted`, `italic`, `underline`, all three verbatim from the rule
+       above) and adds exactly one flag saying the one thing that is different.
+       Its measured contrast is therefore `diary`'s, untouched: 7.16:1 on
+       `textual-dark`, 5.31:1 on `textual-light`, the same variable, still clear
+       of AA on both.
+
+       WHY `strike` — by meaning, and then because the alternatives are gone.
+       The meaning is exact and it is the reason this flag was held back rather
+       than spent earlier: strike-through is the typographic convention for text
+       that is *void* — struck from the record, not to be read as the author's.
+       That is precisely a substituted entry's status, and it is the one register
+       none of the other kinds wants. The `diary` rule above rejected `strike`
+       for itself in one clause ("`strike` reads as retracted") — and this rule
+       is the reason that reading was correct rather than dismissive: the flag
+       was never wrong, it was describing a fact no kind had yet needed to state.
+       The elimination half is short because the map above now records it in
+       full: `bold`, `italic`, `underline` and `reverse` are spent on the seat,
+       the thought, the diary and the recap; `uu`, `dim` and `blink` are the
+       three compromised survivors; and `overline` is measured dead at both
+       downstream hops. `strike` was the last comfortable slot, and this is what
+       it went on.
+
+       WHAT THE REVIEWER ACTUALLY SEES, stated as the open question it is rather
+       than as a settled claim. This is the first rule in this stylesheet to
+       stack THREE `text-style` flags on `$text-muted`: `italic underline strike`
+       on the quietest colour in the palette. The design is sound on the axis
+       that matters — the mark is *derived*, so a substituted entry can only ever
+       read as "a diary, and struck", never as some fourth unrelated kind, and
+       the strike is a horizontal rule through the glyphs where the underline is
+       a rule beneath them, which is a different place on the row rather than a
+       second rule in the same place. But three stacked decorations on slanted
+       muted prose is a real legibility risk and it cannot be settled from
+       inside the source: `underline` and `strike` are both thin horizontal
+       rules, italic shears the glyphs they cross, and how the two lines and the
+       slant compose is the terminal's font's business, not this stylesheet's.
+
+       WHAT BOUNDS THAT RISK, and it is a measured fact rather than a hope: the
+       marked body is not a 900-character diary. It is `_DIARY_FALLBACK`
+       VERBATIM — one fixed 110-character sentence, which `nodes.day` files
+       without passing it through `_clamp_diary_entry` at all — so at ~100
+       columns this rule paints one or two rows, every time, for every
+       substituted entry in the corpus. The failure mode a long body would have
+       (nine wrapped rows each carrying two horizontal rules, reading as a hatch
+       pattern rather than as prose) is therefore unreachable here. Where it
+       becomes reachable is Slices 9 and 10, whose bodies are a real thought and
+       a real line of speech at their real lengths — so those slices inherit this
+       rule's shape but NOT this bound, and each owes the check on its own body.
+       **Slice 8's Task 8.6 is where that gets answered** — `make view-ledger`
+       against a transcript carrying a deliberately-substituted entry, on both
+       the light and the dark theme. If it does not read there, the cheapest
+       retreat is to drop the inherited `underline` from THIS rule only (leaving
+       `italic strike`, which keeps the family colour and the void reading and
+       gives up only the "on the record" half that a struck entry arguably should
+       not be claiming anyway) — recorded here so that decision is made once,
+       with the reasoning to hand, rather than re-derived under a rendering bug.
+
+       TWO AXES, and this rule is only ONE of them — the same belt-and-braces
+       `attr` and `thought` use, and here it is what makes the marking survive a
+       terminal that cannot draw it. The flag's own value is already an ordinary
+       bold `attr` span on the tag line (`_ATTR_NAMES` lifts it; no rule here
+       does that work), so a terminal without SGR 9 still shows
+       `substituted="true"` in bold on the tag, and a reviewer skimming bodies
+       rather than tags still sees the struck prose. Under `textual-ansi`, where
+       `$text-muted` collapses to the terminal default exactly as `marker`'s,
+       `thought`'s and `diary`'s do, the three SGR flags are the whole of what
+       separates a substituted diary from body text — and the STRIKE ALONE is
+       what separates it from an honest one, which is the case the differentia
+       had to survive and the reason it had to be an SGR attribute and not a hue.
+
+       NO HUE, and unlike `diary`'s that is not even a shortage argument: the two
+       surviving variables mean *side*, and "nobody wrote this" is not a side.
+       Tinting a substituted entry would say a fact about allegiance where the
+       fact is about authorship.
+
+       Verified rather than assumed, at the two hops that killed `overline`:
+       `rich.style.Style.parse("strike")` is `Style(strike=True)` (so it reaches
+       the resolved Rich style and survives `_kind_styles`' `without_color +
+       Style.from_color(...)`), and `textual.style.Style.from_rich_style` carries
+       `strike=rich_style.strike` explicitly into the `Content` conversion — the
+       parameter `overline` does not have. Measured on the installed Textual
+       8.2.4.
+
+       Permanent, like `diary`: no later slice re-kinds a substituted entry.
+       Slices 9 and 10 add the same treatment to the thought and speech channels
+       as their OWN kinds, deriving each from its own honest rule the way this
+       one derives from `diary` — they do not reuse this class. */
+    TranscriptScreen > .transcript--diary-substituted {
+        color: $text-muted;
+        text-style: italic underline strike;
     }
     """
 
