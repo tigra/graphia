@@ -45,6 +45,15 @@ from graphia.nodes.day import _DIARY_FALLBACK
 from graphia.state import PlayerPersona, PlayerState
 from graphia.tools.eval_transcript import render_transcript
 
+# The deterministic DAY-SPEECH stand-in (spec 041 Slice 10) — written out as a
+# literal rather than imported, unlike ``_DIARY_FALLBACK`` above, for the only
+# reason that matters: there is nothing to import. ``_ai_day_action`` returns it
+# as an inline literal in its fallback ``DayAction``, so this is the same
+# spelling ``tests/test_substitution_counts`` and
+# ``tests/test_spec041_substitution_marking`` carry, and these are the bytes a
+# committed transcript must hold.
+_DAY_ACTION_FALLBACK = "I'm not sure who to trust yet."
+
 # ===========================================================================
 # Synthetic roster — three players carrying REAL personas off the final map.
 # A Mafioso with both a public legend AND a true self; two honest Citizens.
@@ -1357,7 +1366,7 @@ def test_endgame_block_is_top_level_not_folded_into_the_last_night() -> None:
 
 
 def test_one_line_sections_are_written_inline() -> None:
-    """Inline ``<tag …>…</tag>`` elements really are one line — spec 022, 028, 039.
+    """Inline ``<tag …>…</tag>`` elements really are one line — specs 022, 028, 039, 041.
 
     Bare ``<kill>`` and ``<recap>`` are spec 022's, and were the whole of this
     test until spec 041 Slice 8 measured the gap: the two ATTRIBUTED inline
@@ -1376,25 +1385,39 @@ def test_one_line_sections_are_written_inline() -> None:
     one body the renderer takes VERBATIM (``nodes.day._DIARY_FALLBACK``, filed
     without passing through the clamp at all).
 
+    **SPEC 041 SLICE 10 ADDS A FIFTH SHAPE, ``<speech speaker="…"
+    substituted="true">``, AND IT IS THE ONE THE ARGUMENT ABOVE APPLIES TO MOST
+    SHARPLY.** The other four are elements in every document that carries them;
+    this one exists ONLY when a Day-speech line was substituted — an authored
+    line stays the bare ``Speaker: text`` shape and is never an element at all
+    — so it is the one inline shape whose single-line-ness cannot be inferred
+    from any committed transcript, because no committed transcript contains
+    one. Its body is also taken verbatim (the deterministic stand-in, past no
+    clamp), exactly as the marked diary's is.
+
     The sweep is written as "every line that OPENS one of these tags closes it",
     which is the form that catches a break, and each shape is separately
     asserted to be PRESENT — without that a typo'd tag name would make the sweep
-    vacuous, and the two attributed shapes do not occur in the base full game at
-    all.
+    vacuous, and the three attributed shapes do not occur in the base full game
+    at all.
     """
     doc = _render_full_game()
-    # The two attributed shapes need a Day carrying a reflection and a diary
-    # trailer, which the base full game has none of — so they are rendered as a
-    # second document rather than by changing a fixture 14 other tests read.
+    # The two PRIVATE attributed shapes need a Day carrying a reflection and a
+    # diary trailer, which the base full game has none of — so they are
+    # rendered as a second document rather than by changing a fixture 14 other
+    # tests read. The marked SPEECH line needs a third for the same reason and
+    # one more: the full game's Day rounds are full of authored utterances, and
+    # a substituted one is not something a working game produces.
     doc += "\n" + _render_day_with_private_channels()
+    doc += "\n" + _render_day_with_a_substituted_line()
 
     for line in doc.splitlines():
-        for tag in ("kill", "recap", "thought", "diary"):
+        for tag in ("kill", "recap", "thought", "diary", "speech"):
             if line.startswith(f"<{tag}>") or line.startswith(f"<{tag} "):
                 assert line.endswith(f"</{tag}>"), f"{tag} not inline: {line!r}"
 
     # ...and every shape really is present as an inline one-liner, so none of
-    # the four branches above is swept over an empty set.
+    # the five branches above is swept over an empty set.
     def _inline_count(tag: str) -> int:
         return sum(
             1
@@ -1411,6 +1434,55 @@ def test_one_line_sections_are_written_inline() -> None:
     # is the one whose text the renderer does not clamp.
     assert _inline_count("diary") == 2
     assert f'substituted="true">{_DIARY_FALLBACK}</diary>' in doc
+    # ONE speech element, and exactly one: the third document's marked line.
+    # Every other utterance in all three documents is an authored bare line, so
+    # a count above one would mean the wrap had stopped being conditional and
+    # the format's dominant line shape had changed.
+    assert _inline_count("speech") == 1, (
+        "the number of `<speech>` elements is not one, so either the marked "
+        "line stopped being wrapped or an AUTHORED line started being — and an "
+        "authored line must keep the bare `Speaker: text` shape byte for byte"
+    )
+    assert f'substituted="true">{_DAY_ACTION_FALLBACK}</speech>' in doc
+
+
+def _render_day_with_a_substituted_line() -> str:
+    """One Day whose round holds a SUBSTITUTED Day-speech line (spec 041 Slice 10).
+
+    The only shape in this module's fixtures that a working game does not
+    produce: ``day_turn``'s AI branch writes
+    ``additional_kwargs["substituted"] = True`` only when ``_ai_day_action``
+    could not decode the model's answer, and the renderer wraps only then. The
+    authored line beside it is the shape every other utterance in this module
+    has, so this one document holds the pair.
+    """
+    events: list[dict[str, Any]] = [
+        {"day_open": {"messages": [SystemMessage(content="Day 1 breaks.")]}},
+        {
+            "day_turn": {
+                "messages": [
+                    AIMessage(
+                        content="I think the fishmonger is lying.",
+                        name="Mira",
+                        additional_kwargs={"speaker": "Mira"},
+                    ),
+                    AIMessage(
+                        content=_DAY_ACTION_FALLBACK,
+                        name="Bo",
+                        additional_kwargs={
+                            "speaker": "Bo",
+                            "substituted": True,
+                        },
+                    ),
+                ],
+                "day_rounds": 1,
+            }
+        },
+        {"day_close": {"messages": [SystemMessage(content="The Day ends.")]}},
+    ]
+    return render_transcript(
+        events, _final_players(), game_index=1, run_meta=None
+    )
 
 
 def _render_day_with_private_channels() -> str:

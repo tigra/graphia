@@ -953,7 +953,7 @@ def _append_messages(
             # taken it and the two never disagree; reading it from the kwargs
             # instead would be a second source of one truth.
             extra = getattr(msg, "additional_kwargs", None) or {}
-            substituted = _diary_substituted_attr(extra.get("substituted"))
+            substituted = _substituted_attr(extra.get("substituted"))
             if not substituted:
                 buf.append(f"{speaker}: {text}")
                 continue
@@ -1041,7 +1041,7 @@ def _append_thoughts(
 
     A SUBSTITUTED THOUGHT CARRIES ``substituted="true"`` (spec 041 Slice 9),
     written by the same conditional-attribute idiom
-    :func:`_diary_substituted_attr` establishes for the diary one slice over:
+    :func:`_substituted_attr` establishes for the diary one slice over:
     present only when the flag is the literal ``True``, **omitted** — never
     ``substituted="false"`` — otherwise. That asymmetry is what makes "no
     thought in a preserved game carries this marking" hold *structurally*
@@ -1071,19 +1071,20 @@ def _append_thoughts(
             if not text:
                 continue
             attrs = f'player="{author}"'
-            # ``_diary_substituted_attr`` IS CALLED FROM HERE ON PURPOSE, AND
-            # ITS NAME IS NOT RENAMED. The function is a pure test of one value
-            # against the literal ``True`` — there is nothing diary-specific in
-            # it, and having one definition is what makes the two channels
-            # provably agree on the literal the reader in
-            # :mod:`graphia.eval_ledger` matches. The ``diary_`` prefix names
-            # its first caller rather than its semantics; renaming it now would
-            # force edits into Slice 9's own committed marking tests for no
-            # behavioural gain, so the collapse to a channel-neutral name is
-            # left to Slice 10's Task 10.2, where a THIRD caller makes the
-            # prefix indefensible and that test file is being edited anyway.
+            # ``_substituted_attr`` IS CALLED FROM HERE ON PURPOSE, AND IS
+            # SHARED WITH THE OTHER TWO CHANNELS. The function is a pure test of
+            # one value against the literal ``True`` — there is nothing
+            # channel-specific in it, and having one definition is what makes
+            # all three channels provably agree on the literal the reader in
+            # :mod:`graphia.eval_ledger` matches.
+            #
+            # It was ``_diary_substituted_attr`` when Slice 9 wrote this, whose
+            # prefix named its first caller rather than its semantics. Slice 9
+            # deferred the collapse to a channel-neutral name to the task with
+            # a THIRD caller AND the marking tests already open; Task 10.2 had
+            # the first and not the second, and **Task 10.3 renamed it**.
             substituted = (
-                _diary_substituted_attr(note.get("substituted"))
+                _substituted_attr(note.get("substituted"))
                 if isinstance(note, dict)
                 else ""
             )
@@ -1154,39 +1155,49 @@ def _append_diaries(
             day = _diary_day_attr(record.get("day"))
             if day:
                 attrs = f"{attrs} {day}"
-            substituted = _diary_substituted_attr(record.get("substituted"))
+            substituted = _substituted_attr(record.get("substituted"))
             if substituted:
                 attrs = f"{attrs} {substituted}"
             buf.append(_inline_attr("diary", attrs, text))
 
 
-def _diary_substituted_attr(substituted: Any) -> str:
+def _substituted_attr(substituted: Any) -> str:
     """``substituted="true"`` for a substituted entry, else ``""`` (spec 041).
 
-    THREE CALLERS SINCE SLICE 10, AND THE ``diary_`` PREFIX IS NOW PURELY
-    HISTORICAL: :func:`_append_diaries` reads it off a
-    :class:`~graphia.state.DiaryRecord`, :func:`_append_thoughts` off a
+    THREE CALLERS, AND THE NAME NOW SAYS SO: :func:`_append_diaries` reads it
+    off a :class:`~graphia.state.DiaryRecord`, :func:`_append_thoughts` off a
     :class:`~graphia.state.ThoughtRecord`, and :func:`_append_messages` off an
     ``AIMessage``'s ``additional_kwargs`` — a private record, a private record
     and a **public utterance**, which is as channel-neutral as the callers can
-    get. Nothing in the body is diary-specific — it tests one value against one
-    literal — and keeping ONE definition is what makes all three channels
+    get. Nothing in the body is channel-specific — it tests one value against
+    one literal — and keeping ONE definition is what makes all three channels
     provably agree with each other and with the reader's single literal in
     ``graphia.eval_ledger._SUBSTITUTED_ATTR_TRUE``. Three copies could drift;
     one cannot.
 
-    **THE RENAME IS DEFERRED AGAIN, AND THIS TIME BY A BOUNDARY RATHER THAN BY
-    JUDGMENT.** Slice 9's note at the :func:`_append_thoughts` call site left
-    the collapse to a channel-neutral name to Slice 10's Task 10.2 "where a
-    THIRD caller makes the prefix indefensible and that test file is being
-    edited anyway". The prefix is indeed now indefensible; the second half of
-    that reasoning is not true of this task. The name is asserted five times in
-    ``tests/test_spec041_substitution_marking.py``, which Task 10.3 owns and
-    Task 10.2 is explicitly fenced out of — so a rename here would force edits
-    into a file this task must not touch, which is a worse outcome than a
-    misleading prefix on a function whose docstring says what it actually does.
-    **Task 10.3 is the cheapest home for it**: that task edits those five
-    assertions anyway.
+    **RENAMED FROM ``_diary_substituted_attr`` BY TASK 10.3, on the condition
+    Slice 9 set for it and both halves of which are now true.** Slice 9's note
+    at the :func:`_append_thoughts` call site deferred the collapse to a
+    channel-neutral name to "where a THIRD caller makes the prefix
+    indefensible **and** that test file is being edited anyway". Task 10.2 made
+    the first half true and left the second false — it was fenced out of
+    ``tests/test_spec041_substitution_marking.py``, where the name is asserted
+    — so it deferred once more rather than forcing edits into a file it must
+    not touch. Task 10.3 owns that file and edits those assertions regardless,
+    which made it the cheapest home. Twelve occurrences moved across three
+    files (this module 6, ``eval_ledger``'s two prose references, that test
+    module's 4) and nothing else: the rename is behaviour-preserving, and the
+    suite's own ``_is_substituted`` / literal-agreement tests are what prove
+    the two halves of the format still meet.
+
+    ``_substituted_attr`` rather than ``_substitution_attr`` or
+    ``_marking_attr``: the parameter it tests is spelled ``substituted`` in
+    every one of the three record/kwargs shapes and in the emitted attribute
+    itself, so the function is named after the fact it reads. The uppercase
+    ``eval_ledger._SUBSTITUTED_ATTR`` is the reader's *attribute name* constant
+    and is a different thing one module over — the case distinguishes them, and
+    the literal-agreement test ties them together deliberately rather than by
+    a shared spelling.
 
     The conditional-attribute idiom of :func:`_diary_day_attr`, and for a
     sharper reason: **the attribute must be absent on an authored entry, not

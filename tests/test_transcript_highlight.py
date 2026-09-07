@@ -1070,7 +1070,7 @@ def _spans(text: str) -> list[tuple[str, str]]:
 # ---------------------------------------------------------------------------
 
 def test_the_kind_constants_hold_the_literal_names_the_tables_use() -> None:
-    """The twenty-one kind constants really are these twenty-one strings.
+    """The twenty-four kind constants really are these twenty-four strings.
 
     The expectation tables below are written with literal ``"marker"`` /
     ``"attr"`` strings rather than ``eval_ledger.KIND_*`` references, because a
@@ -1081,7 +1081,7 @@ def test_the_kind_constants_hold_the_literal_names_the_tables_use() -> None:
     against a string the production code no longer emits.
 
     Pinned to the literals, not to ``TRANSCRIPT_KINDS`` — the tuple is allowed to
-    grow (later slices, and now later SPECS, append), these twenty-one names are
+    grow (later slices, and now later SPECS, append), these twenty-four names are
     not allowed to change.
 
     **The six Slice-4 literals are the ones with a rule to break.** Each is the
@@ -1145,6 +1145,22 @@ def test_the_kind_constants_hold_the_literal_names_the_tables_use() -> None:
     # qualifier names WHAT THE BODY IS, never how it is drawn:
     # `diary-substituted` is a kind, `diary-struck` never is.
     assert eval_ledger.KIND_DIARY_SUBSTITUTED == "diary-substituted"
+    # ...and spec 041's other two, the twenty-third and twenty-fourth,
+    # completing the marking family. **Slice 9 did not pin its kind and Slice
+    # 10 did not pin its own; both are pinned here by Task 10.3**, because the
+    # argument the diary's entry makes gets STRONGER with each channel rather
+    # than weaker: all three literals are one hyphenated qualifier away from an
+    # existing kind (`thought`, `speech`), each is spelled a second time as a
+    # `transcript--…` component class in the UI, and the reading view's
+    # ratified fallback is to render an unknown kind UNSTYLED rather than to
+    # raise — so a rename caught by nothing here would silently stop striking
+    # the very bodies this slice exists to strike, on the channel a reviewer
+    # reads most.
+    #
+    # The qualifier names WHAT THE BODY IS, never how it is drawn, on all
+    # three: `speech-substituted` is a kind, `speech-struck` never is.
+    assert eval_ledger.KIND_THOUGHT_SUBSTITUTED == "thought-substituted"
+    assert eval_ledger.KIND_SPEECH_SUBSTITUTED == "speech-substituted"
 
 
 def test_the_kind_family_tuples_are_index_aligned_and_complete() -> None:
@@ -3254,7 +3270,8 @@ def test_line_separators_are_plain_spans_of_their_own() -> None:
 # a transcript has exactly ONE seat, so one file can emit at most TWO of the six
 # seat kinds and no single fixture can reach the whole twenty-kind vocabulary any
 # more (see `test_every_kind_emitted_is_declared_in_the_vocabulary`, which is now
-# the union of FIVE games — spec 041 added the fourth and fifth). This one owns
+# the union of SIX games — spec 041 added the fourth, fifth and sixth, one per
+# marked channel). This one owns
 # the case
 # where the seat's SIDE IS
 # UNKNOWN — the pre-spec-022 story, and the half most easily lost, since it is
@@ -3320,8 +3337,9 @@ _RICH_SYNTHETIC_TRANSCRIPT = (
 
 # TWO of the other games the vocabulary now takes to cover (see
 # `test_every_kind_emitted_is_declared_in_the_vocabulary`, and
-# `_SUBSTITUTED_DIARY_GAME` / `_MARKED_CHANNELS_GAME` below for spec 041's
-# fourth and fifth). A transcript has
+# `_SUBSTITUTED_DIARY_GAME` / `_MARKED_CHANNELS_GAME` /
+# `_THREE_MARKED_CHANNELS_GAME` below for spec 041's fourth, fifth and sixth).
+# A transcript has
 # exactly one seat, so no single file can emit more than two of the six seat
 # kinds, and the fixture above owns the pair whose side is unknown. These own the
 # four side-qualified ones.
@@ -3523,6 +3541,195 @@ def test_the_two_marked_channels_are_four_distinct_kinds_in_one_game() -> None:
         "".join(text for text, _ in _spans(_MARKED_CHANNELS_GAME))
         == _MARKED_CHANNELS_GAME
     )
+
+
+# A SIXTH game, spec 041 Slice 10's, and the last of the marking family. It owns
+# the claim the fifth cannot make even in principle: THE THREE MARKED CHANNELS
+# STAY TELLABLE APART, each from the other two AND each from its own honest
+# twin.
+#
+# WHY A SIXTH RATHER THAN TWO LINES IN THE FIFTH, which is exactly the choice
+# Task 10.2's note in `test_every_kind_emitted_is_declared_in_the_vocabulary`
+# left here and answered: the fifth game is named, shaped and DOCUMENTED for
+# the two PRIVATE channels ("deliberately NO seat, NO `<preamble>` and NO
+# speech: … this game's whole job is the four private body kinds"). Appending a
+# public utterance to it would contradict its own recorded design and would
+# leave the three-channel question stated nowhere. The precedent is Slice 5's
+# and it has now been followed three times: when a claim does not fit an
+# existing fixture it gets a game of its own rather than blurring one.
+#
+# AND WHY THE FIFTH IS KEPT rather than superseded, since this game's bodies
+# are a superset of its four: the fifth isolates the pair that is HARDEST to
+# tell apart — two muted, italic, private kinds separated by `underline` alone
+# — while this game's third channel is separated from both by more (it is
+# outside the muted family, and carries no italic on any theme). A regression
+# that collapsed the two private kinds into one would still pass a six-way
+# distinctness count here if speech stayed distinct from the merged pair; the
+# fifth's four-way count is what refuses that. Two fixtures, two strengths.
+#
+# SIX BODIES, THREE MARKED AND THREE AUTHORED, and the speech pair is the one
+# whose two halves are DIFFERENT LINE SHAPES rather than one shape differing by
+# an attribute. That asymmetry is the channel's whole character and is why the
+# honest twin here is a bare `Vera: …` line: an authored Day-speech line is
+# never an element, so "the same shape plus a flag" is not available and
+# pretending otherwise would test a document the writer cannot produce.
+#
+# VERA IS THE MARKED SPEAKER AND SHE IS `role="Mafia"`, WHICH IS THE POINT
+# RATHER THAN SYMMETRY WITH THE FIFTH GAME. Task 10.2 moved the side off a
+# marked body and onto the `speaker="…"` name, so a marked line whose speaker
+# is absent from the cast list lifts that name ACHROMATIC and the relocation is
+# invisible. With her in the cast list this game states the relocation as part
+# of the three-channel claim: her name reads `attr-mafia` inside the tag while
+# the struck body carries no side at all, one line below Iris's bare
+# `speaker-law-abiding` / `speech-law-abiding` pair.
+#
+# NO SEAT, NO `<preamble>`: the six seat kinds belong to the two seated games,
+# and a substituted line can never be a human-seat kind anyway
+# (`nodes.day._ai_day_action` is the only writer of the flag and the human
+# branch never calls it — see the marking module's section 7).
+_THREE_MARKED_CHANNELS_GAME = (
+    "<transcript>\n"
+    "<setup>\n"
+    '<player name="Vera" role="Mafia">(no persona recorded)</player>\n'
+    '<player name="Iris" role="Law-abiding Citizen">(no persona recorded)</player>\n'
+    "</setup>\n"
+    "<day>\n"
+    "<round>\n"
+    "Iris: You have not answered the question.\n"
+    '<speech speaker="Vera" substituted="true">I\'m not sure who to trust '
+    "yet.</speech>\n"
+    '<thought player="Iris">Vera answered that too quickly.</thought>\n'
+    '<thought player="Vera" substituted="true">I\'ll keep watching and weigh '
+    "what I've heard so far.</thought>\n"
+    "</round>\n"
+    '<diary player="Iris" day="1">Vera folded under pressure.</diary>\n'
+    '<diary player="Vera" day="1" substituted="true">Nothing much more to set '
+    "down tonight.</diary>\n"
+    "</day>\n"
+    "</transcript>"
+)
+
+# The six bodies of `_THREE_MARKED_CHANNELS_GAME`, keyed by the kind each must
+# take. Written as a mapping rather than six locals so the test's headline
+# assertion is one comparison and its failure names the body that moved.
+#
+# NOTE THE LEADING SPACE ON THE AUTHORED SPEECH. The bare shape gives the colon
+# to `speaker` and the separating space to `speech` (the ratified Slice-3
+# convention), so the authored body's span text is `" You have not…"` while the
+# marked body's is the element's content with no space at all. That is not a
+# blemish in the fixture — it is the line-shape difference this channel's
+# marking makes, visible in the span text itself.
+_THREE_CHANNEL_BODY_KINDS = {
+    " You have not answered the question.": eval_ledger.KIND_SPEECH_LAW_ABIDING,
+    "I'm not sure who to trust yet.": eval_ledger.KIND_SPEECH_SUBSTITUTED,
+    "Vera answered that too quickly.": eval_ledger.KIND_THOUGHT,
+    "I'll keep watching and weigh what I've heard so far.": (
+        eval_ledger.KIND_THOUGHT_SUBSTITUTED
+    ),
+    "Vera folded under pressure.": eval_ledger.KIND_DIARY,
+    "Nothing much more to set down tonight.": eval_ledger.KIND_DIARY_SUBSTITUTED,
+}
+
+
+def test_the_three_marked_channels_are_six_distinct_kinds_in_one_game() -> None:
+    """The sixth fixture's own claim — the marking family's headline, complete.
+
+    ``test_every_kind_emitted_is_declared_in_the_vocabulary`` below pins that
+    this game contributes ``speech-substituted`` to the union, which is what
+    discharged Task 10.2's ``unfixtured`` exception. That is a statement about
+    REACHABILITY and it would hold just as well on a tokenizer that returned
+    one shared marked kind for every channel — the union would simply be
+    smaller and the vocabulary would have shrunk to match.
+
+    This is the statement about DISTINGUISHABILITY, and at three channels it is
+    a stronger claim than the fifth game's at two: a reviewer reading a struck
+    line has to be able to say WHICH of the three answers the model failed to
+    give — a public turn the whole table heard, a private reflection, or a
+    Day's settled note — because the per-run counts (Slices 6 and 7) report how
+    many failed and can never report which.
+
+    Looked up BY BODY TEXT rather than by position, so a failure names which
+    body took which kind; the six texts are distinct for exactly that reason.
+
+    THE SPEECH PAIR IS WHAT MAKES THIS MORE THAN A THIRD ROW. Its two halves
+    are different LINE SHAPES — a bare ``Iris: …`` against a ``<speech …>``
+    element — so this fixture also states the two things that follow from that
+    and from nothing else in this file:
+
+    * **the authored twin keeps its side on both spans** while the marked body
+      carries none, and
+    * **the marked line's side is on its speaker's NAME** (``attr-mafia``),
+      which is where Task 10.2 moved it. A marked speaker absent from the cast
+      list would lift achromatic and the relocation would be untestable here,
+      which is why Vera is in the cast list.
+    """
+    spans = _spans(_THREE_MARKED_CHANNELS_GAME)
+    kinds = {text: kind for text, kind in spans}
+
+    # The premise: all six bodies survived as spans of their own.
+    for body in _THREE_CHANNEL_BODY_KINDS:
+        assert body in kinds, f"body did not survive to a span: {body!r}"
+
+    assert {
+        body: kinds[body] for body in _THREE_CHANNEL_BODY_KINDS
+    } == _THREE_CHANNEL_BODY_KINDS
+
+    # ...and the six really are six, which is the claim a shared marked kind
+    # would break while every per-channel test in this file passed.
+    assert len(set(_THREE_CHANNEL_BODY_KINDS.values())) == 6
+    marked = {
+        eval_ledger.KIND_SPEECH_SUBSTITUTED,
+        eval_ledger.KIND_THOUGHT_SUBSTITUTED,
+        eval_ledger.KIND_DIARY_SUBSTITUTED,
+    }
+    assert marked <= set(kinds.values()), (
+        "a marked kind is missing from the one game that carries all three, so "
+        "either a flag stopped being read or two channels collapsed into one "
+        "kind — and a struck line no longer says which of the three answers "
+        f"the model failed to give: {sorted(marked - set(kinds.values()))}"
+    )
+
+    # THE SIDE, on the axis Task 10.2 moved it to — asserted as the marked
+    # line's OWN span sublist rather than through the by-text map above, and
+    # that is a correction rather than a flourish: Vera's name appears on four
+    # tags in this file (her cast entry, and all three of her marked ones), so
+    # a `kinds["Vera"]` lookup reports whichever came LAST and would be
+    # satisfied by the `<diary player=…>` branch with the `<speech speaker=…>`
+    # branch deleted. Measured: with the speech branch disabled and everything
+    # else intact, the map lookup passes and this sublist fails.
+    head = spans.index(('<speech speaker="', eval_ledger.KIND_MARKER))
+    assert spans[head : head + 7] == [
+        ('<speech speaker="', eval_ledger.KIND_MARKER),
+        ("Vera", eval_ledger.KIND_ATTR_MAFIA),
+        ('" substituted="', eval_ledger.KIND_MARKER),
+        ("true", eval_ledger.KIND_ATTR),
+        ('">', eval_ledger.KIND_MARKER),
+        ("I'm not sure who to trust yet.", eval_ledger.KIND_SPEECH_SUBSTITUTED),
+        ("</speech>", eval_ledger.KIND_MARKER),
+    ]
+    # ...and the authored twin one line above carries Iris's side on its
+    # speaker prefix, which is the contrast the marked line is read against.
+    assert kinds["Iris:"] == eval_ledger.KIND_SPEAKER_LAW_ABIDING
+    # ...and not one of the three MARKED bodies took a side, while the authored
+    # speech body one line above did. Read off the document rather than off the
+    # constants, so this is a claim about what the tokenizer produced.
+    marked_body_kinds = {
+        kinds[body]
+        for body, kind in _THREE_CHANNEL_BODY_KINDS.items()
+        if kind in marked
+    }
+    assert not marked_body_kinds & _SIDE_KINDS, (
+        "a marked body carries a side, which the words of a stand-in cannot "
+        f"have — nobody wrote them: {sorted(marked_body_kinds & _SIDE_KINDS)}"
+    )
+    assert kinds[" You have not answered the question."] in _SIDE_KINDS, (
+        "the AUTHORED speech body lost its side, so the contrast this fixture "
+        "draws is between two untinted bodies rather than between a player's "
+        "words and a stand-in's"
+    )
+
+    # The round trip, which every kind added to the tokenizer must leave intact.
+    assert "".join(text for text, _ in spans) == _THREE_MARKED_CHANNELS_GAME
 
 
 def test_no_styled_span_carries_a_newline_across_a_whole_synthetic_game() -> None:
@@ -3765,6 +3972,26 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
     it asserts the distinctness on. Both of spec 041's kinds therefore reach
     this union through a fixture written for a claim of its own rather than
     through a line appended to make an equality close.
+
+    **AND SLICE 10 ADDED A SIXTH, whose reason is neither the fourth's nor the
+    fifth's.** ``_THREE_MARKED_CHANNELS_GAME`` is the only file holding all
+    THREE marked channels, so it is what makes ``speech-substituted`` reachable
+    here and what
+    ``test_the_three_marked_channels_are_six_distinct_kinds_in_one_game``
+    asserts the three-way distinctness on. It is also the only fixture whose
+    marked pair is two different LINE SHAPES — an authored Day-speech line is a
+    bare ``Iris: …`` and a substituted one is a ``<speech …>`` element — and the
+    only one that carries the marked speaker IN the cast list, which is what
+    makes Task 10.2's relocation of the side onto the ``speaker="…"`` name
+    visible at all.
+
+    Three fixtures for three channels, each written for a claim its
+    predecessors cannot state, and **none of the three is a line appended to
+    the full-shape game**: a marked body is what a game looks like when a model
+    answer could not be decoded, so putting one in ``_RICH_SYNTHETIC_TRANSCRIPT``
+    would assert that it is part of a full shape and would move that fixture's
+    pinned span count for a reason unrelated to the separator rule the count
+    guards.
     """
     per_game = {
         "rich": {kind for _, kind in _spans(_RICH_SYNTHETIC_TRANSCRIPT)},
@@ -3781,6 +4008,16 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
         # keeps it distinguishable from `diary-substituted`. See
         # `_MARKED_CHANNELS_GAME`.
         "marked-channels": {kind for _, kind in _spans(_MARKED_CHANNELS_GAME)},
+        # Spec 041 Slice 10's, and the SIXTH game for a reason neither the
+        # fourth's nor the fifth's covers: it is the only file holding all
+        # THREE marked channels, which is what makes `speech-substituted`
+        # reachable AND keeps it distinguishable from the two private marks —
+        # and the only one whose marked pair is two different LINE SHAPES. See
+        # `_THREE_MARKED_CHANNELS_GAME`, and the `unfixtured` note that used to
+        # stand below.
+        "three-marked-channels": {
+            kind for _, kind in _spans(_THREE_MARKED_CHANNELS_GAME)
+        },
     }
     for name, kinds in per_game.items():
         assert kinds <= set(eval_ledger.TRANSCRIPT_KINDS), (
@@ -3850,6 +4087,24 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
         eval_ledger.KIND_DIARY,
         eval_ledger.KIND_DIARY_SUBSTITUTED,
     } <= per_game["marked-channels"]
+    # ...and SIX from the sixth (Slice 10), which is the only file holding all
+    # three marked channels. Pinned as the marked/authored pair of each channel
+    # rather than as the one new kind, for the reason the line above gives one
+    # channel smaller: a shared marked kind for every channel would leave this
+    # set with four members and would still satisfy the union equality below.
+    #
+    # The speech pair is the one whose halves are different LINE SHAPES — the
+    # authored twin is a bare `Iris: …` line, so its body kind is a
+    # side-qualified `speech-law-abiding` rather than a neutral one, which is
+    # itself part of what the fixture states.
+    assert {
+        eval_ledger.KIND_SPEECH_LAW_ABIDING,
+        eval_ledger.KIND_SPEECH_SUBSTITUTED,
+        eval_ledger.KIND_THOUGHT,
+        eval_ledger.KIND_THOUGHT_SUBSTITUTED,
+        eval_ledger.KIND_DIARY,
+        eval_ledger.KIND_DIARY_SUBSTITUTED,
+    } <= per_game["three-marked-channels"]
 
     # As of Slice 5 the vocabulary had no declared-but-unreachable entry, and
     # this was a bare equality against `TRANSCRIPT_KINDS`.
@@ -3883,48 +4138,52 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
     # assertion in this test — and that claim needs one file holding both
     # channels. See `_MARKED_CHANNELS_GAME` and the test beside it.
     #
-    # SLICE 10 IS THE NEXT KIND TO NEED A REASON HERE (`speech-substituted`),
-    # and the route is the one just walked twice.
+    # SLICE 10 RAN IT A THIRD TIME AND IT IS CLOSED TOO — the last one, since
+    # `speech-substituted` is the marking family's last kind. Task 10.2
+    # registered it and styled it before any fixture emitted it, and carried
+    # the gap as `unfixtured = {KIND_SPEECH_SUBSTITUTED}` with its reason
+    # written here; **Task 10.3 supplied the fixture — a SIXTH game,
+    # `_THREE_MARKED_CHANNELS_GAME` — and DELETED that set**, exactly as Tasks
+    # 8.5 and 9.4 deleted theirs. Three times, three deletions, and the
+    # equality has closed back up inside its own slice every time. The
+    # `unfixtured` name appears nowhere in this file now, which is the state
+    # the pattern is supposed to end in: the exception is a way to carry one
+    # task's lag honestly, never a permanent fixture of the test.
     #
-    # ...AND IT WALKS IT A THIRD TIME, which is the pattern being followed
-    # rather than a regression in it. Task 10.2 registers `speech-substituted`
-    # and styles it; the fixture that emits it is Task 10.3's, one task later,
-    # exactly as `diary-substituted`'s and `thought-substituted`'s were. So the
-    # gap is carried as a named exception with its reason written here, not by
-    # weakening the operator, and **Task 10.3 deletes this set** when it
-    # supplies the fixture.
+    # WHY THE SIXTH GAME AND NOT TWO LINES IN THE FIFTH — the same shape of
+    # decision the fifth faced against the fourth, and Task 10.2 wrote the
+    # answer into this comment before the fixture existed: Task 10.3 owed the
+    # THREE-WAY distinguishability claim, and the fifth game is documented as
+    # carrying "NO speech" on purpose (its job is the two PRIVATE channels).
+    # Appending to it would have contradicted its own recorded design and left
+    # the three-channel question stated nowhere. See
+    # `_THREE_MARKED_CHANNELS_GAME` and the test beside it, which also carries
+    # the SIDE half of Task 10.2's decision — the marked speaker's name in the
+    # cast list, tinted `attr-mafia` while the struck body carries no side.
     #
-    # NOT solved by adding a marked line to `_MARKED_CHANNELS_GAME` here,
-    # though it is two lines, and the reason is sharper than it was for the
-    # thought: Task 10.3 owes the THREE-WAY distinguishability claim (a
-    # substituted line of speech, a substituted thought and a substituted diary
-    # must stay tellable apart from one another and each from its honest twin),
-    # and that wants one fixture designed for the three-channel question. It
-    # also owes an assertion this kind's shape makes newly necessary — that a
+    # AND NOT A LINE IN `_RICH_SYNTHETIC_TRANSCRIPT` EITHER, for the third time
+    # and the same reason as the first two: a marked line is what a game looks
+    # like when a model answer could not be decoded, so putting one in the
+    # FULL-SHAPE game would assert that it is part of a full shape — and would
+    # move that fixture's pinned 72-span count and its hand-written per-kind
+    # Counter for a reason that has nothing to do with the separator rule the
+    # count guards.
+    #
+    # The other assertion Slice 10's shape makes newly necessary — that a
     # substituted HUMAN-seat line cannot be built at all, because
     # `nodes.day._ai_day_action` is the only writer of the flag and the human
-    # branch never calls it.
-    unfixtured = {eval_ledger.KIND_SPEECH_SUBSTITUTED}
+    # branch never calls it — is the marking module's, where the writer is
+    # (`test_spec041_substitution_marking`, section 7).
 
-    # Still an equality in BOTH directions rather than a `<=`: nothing outside
-    # the vocabulary may be emitted, nothing inside it may go missing, and the
-    # next declared-but-unreachable kind fails here and needs its own named
-    # exception with its reason written down.
-    assert set().union(*per_game.values()) | unfixtured == set(
-        eval_ledger.TRANSCRIPT_KINDS
-    ), (
-        "a declared kind is emitted by none of the five synthetic games and is "
-        "not a named exception, so nobody will ever see it — give it a fixture, "
-        "or carry it as a NAMED exception here with the reason and the task "
-        "that discharges it: "
-        f"{sorted(set(eval_ledger.TRANSCRIPT_KINDS) - set().union(*per_game.values()) - unfixtured)}"
-    )
-    # ...and the exception cannot go stale silently: the moment Task 10.3's
-    # fixture emits the kind, this fails and the set must be deleted.
-    assert not set().union(*per_game.values()) & unfixtured, (
-        "a kind named as unfixtured IS now emitted by a synthetic game — delete "
-        "it from `unfixtured` so the equality closes back up: "
-        f"{sorted(set().union(*per_game.values()) & unfixtured)}"
+    # An equality in BOTH directions rather than a `<=`, and with no exception
+    # set beside it: nothing outside the vocabulary may be emitted, nothing
+    # inside it may go missing, and the next declared-but-unreachable kind
+    # fails here and needs its own named exception with its reason written down.
+    assert set().union(*per_game.values()) == set(eval_ledger.TRANSCRIPT_KINDS), (
+        "a declared kind is emitted by none of the six synthetic games, so "
+        "nobody will ever see it — give it a fixture, or carry it as a NAMED "
+        "exception here with the reason and the task that discharges it: "
+        f"{sorted(set(eval_ledger.TRANSCRIPT_KINDS) - set().union(*per_game.values()))}"
     )
     assert len(eval_ledger.TRANSCRIPT_KINDS) == len(set(eval_ledger.TRANSCRIPT_KINDS))
 
@@ -4722,6 +4981,140 @@ def test_a_diary_owner_in_the_cast_list_takes_their_side(
         ('">', "marker"),
         ("Nobody suspects me.", "diary"),
         ("</diary>", "marker"),
+    ]
+
+
+# ---------------------------------------------------------------------------
+# The `<speech speaker="X" substituted="true">` speaker (spec 041 Slice 10)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("speaker", "expected_kind"),
+    [
+        pytest.param("Vera", "attr-mafia", id="mafia-speaker"),
+        pytest.param("Iris", "attr-law-abiding", id="law-abiding-speaker"),
+        pytest.param("Zed", "attr", id="speaker-absent-from-the-cast-list"),
+    ],
+)
+def test_a_substituted_speech_lines_speaker_in_the_cast_list_takes_their_side(
+    speaker: str, expected_kind: str
+) -> None:
+    """The THIRD place a name-shaped attribute is side-bearing (spec 041 Slice 10).
+
+    **THE ASSERTION THAT PROTECTS TASK 10.2'S WHOLE DECISION, and until this
+    test there was none.** Slice 10 had a genuinely open question its two
+    predecessors did not: ``diary`` and ``thought`` bodies were never
+    side-tinted, so for them "keep the family colour" and "carry no side" were
+    the same act — but speech's honest forms ARE side-bearing
+    (``speech-mafia`` / ``speech-law-abiding`` / the neutral), so a substituted
+    line could have kept its tint, lost it, or moved it. Production **moved
+    it**: the body carries no side (:data:`KIND_SPEECH_SUBSTITUTED` — the words
+    have no author, so they have no allegiance) and the wrapping tag's
+    ``speaker="…"`` name carries it instead, through ``speaker`` in
+    ``_ATTR_NAMES`` plus a fourth ``_attr_kind`` branch.
+
+    That relocation is the substance of the decision, and every other piece of
+    its coverage is blind to it. ``_ATTR_NAME_CASES``' ``speaker`` row carries
+    no ``<setup>`` block, so the name lifts **achromatic** there and the row
+    would pass unchanged with the branch deleted; the marking module's tests are
+    about the flag and the body. Deleting ``"speaker"`` from ``_ATTR_NAMES``
+    turns THIS test red (measured) and nothing else that is about the side.
+
+    **A copy of the thought's and diary's tests rather than a parametrization
+    of the three, for the reason spec 039 wrote down when it made the second
+    copy:** the decision is per ``(tag, key)`` PAIR, production needed a third
+    ``elif``, and a tag nobody has ruled on still gets no side. Folding them
+    together would assert exactly what the tag-scoped rule exists to deny.
+
+    Four claims ride on every row here — one more than the diary's, and the
+    extra one is this channel's own:
+
+    * **the speaker takes their side**, or the achromatic ``attr`` when the cast
+      list does not know them (the third row). Never a guessed side, and the
+      corpus cannot check any of the three: ``speaker="`` occurs nowhere in it;
+    * **the flag's own value stays achromatic in all three rows**, including the
+      two where a side is sitting right there on the same tag to spend. It names
+      no person and no specific of any kind, only whether the body was written by
+      the player;
+    * **the BODY is ``speech-substituted`` and never side-tinted in any row** —
+      the half of the decision this test states from the other end. A row where
+      the body took ``speech-mafia`` would be the "keep the tint on the body"
+      alternative, which would also break the ``speaker``/``speech`` families'
+      index alignment (a wrapped line has no speaker span to pair with);
+    * **and the name is lifted out of the marker at all.** Without the
+      whitelist entry the whole head would coalesce into one ``marker`` span and
+      the most useful token on the row would sit in punctuation at ``auto 60%``
+      — a marked line carrying LESS information than the bare ``Vera: …`` line
+      it replaces, whose prefix IS side-kinded. That inversion is what the
+      relocation exists to prevent, and this expectation is where it is denied.
+    """
+    source = _TWO_SIDED_CAST + (
+        f'<speech speaker="{speaker}" substituted="true">'
+        "I'm not sure who to trust yet.</speech>"
+    )
+
+    assert _dialogue_spans(source) == [
+        ('<speech speaker="', "marker"),
+        (speaker, expected_kind),
+        ('" substituted="', "marker"),
+        ("true", "attr"),
+        ('">', "marker"),
+        ("I'm not sure who to trust yet.", "speech-substituted"),
+        ("</speech>", "marker"),
+    ]
+
+
+def test_the_marked_lines_side_moved_onto_the_name_and_off_the_body() -> None:
+    """The relocation stated as a COMPARISON against the bare line it replaces.
+
+    The sweep above pins each shape absolutely; this pins the RELATION between
+    the two shapes, which is the form in which "the side moved" is a single
+    readable claim rather than two expectations a reader has to diff by eye.
+
+    One speaker, one cast list, two line shapes:
+
+    * the bare ``Vera: …`` line puts her side on BOTH its spans
+      (``speaker-mafia`` and ``speech-mafia``) and has no ``attr`` span at all;
+    * the marked element puts it on the ``attr`` span that holds her NAME, and
+      its body carries no side.
+
+    So the file never loses the fact and never states it twice — which is the
+    whole of Task 10.2's answer, and it is not visible from inside either shape
+    alone. A production change that dropped the ``_attr_kind`` branch would
+    leave the marked line with no side anywhere; one that tinted the body
+    instead would leave it with a side in the wrong place. Both fail here.
+    """
+    bare = _TWO_SIDED_CAST + "Vera: I'm not sure who to trust yet."
+    marked = _TWO_SIDED_CAST + (
+        '<speech speaker="Vera" substituted="true">'
+        "I'm not sure who to trust yet.</speech>"
+    )
+
+    bare_kinds = [kind for _, kind in _dialogue_spans(bare)]
+    marked_kinds = [kind for _, kind in _dialogue_spans(marked)]
+
+    # The bare line: the side on the speaker AND on the words, nowhere else.
+    assert bare_kinds == ["speaker-mafia", "speech-mafia"]
+    # The marked line: the side on the NAME, and the body outside the side
+    # palette entirely.
+    assert "attr-mafia" in marked_kinds, (
+        "the marked line carries no side anywhere, so the one line a reviewer "
+        "most wants to place is the one line whose speaker has no side — check "
+        "`speaker` in `_ATTR_NAMES` and its `_attr_kind` branch"
+    )
+    assert not set(marked_kinds) & set(_SPEECH_KINDS), (
+        "a marked body took a side-qualified speech kind, so the side is on the "
+        "words rather than on the name: the words of a substituted line have no "
+        "author and therefore no allegiance"
+    )
+    assert "speech-substituted" in marked_kinds
+    # ...and the fact really is stated ONCE in each shape rather than twice in
+    # one of them, which is what "moved" means as opposed to "copied".
+    assert [kind for kind in marked_kinds if kind in _SIDE_KINDS] == ["attr-mafia"]
+    assert [kind for kind in bare_kinds if kind in _SIDE_KINDS] == [
+        "speaker-mafia",
+        "speech-mafia",
     ]
 
 

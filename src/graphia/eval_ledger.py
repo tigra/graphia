@@ -1948,7 +1948,7 @@ _SPEECH_SPEAKER_ATTR = "speaker"
 # one literal, shared by all three channels that carry the flag, because the
 # flag means the same thing on each. A whitelist of one literal — the same
 # never-guess posture as :data:`_HUMAN_ATTR_TRUE` — matched to the writer's own
-# rule: ``eval_transcript._diary_substituted_attr`` emits the attribute **only**
+# rule: ``eval_transcript._substituted_attr`` emits the attribute **only**
 # for the literal ``True`` and never emits ``substituted="false"``. So
 # ``substituted="false"``, ``substituted=""``, ``substituted="1"`` and any
 # future tri-state mark nothing here rather than being coerced into a boolean.
@@ -2881,7 +2881,7 @@ def _is_substituted(attrs: str | None) -> bool:
     ``substituted="false"``, an empty value, ``"1"`` and anything else answer
     ``False``, so a hand-edited file reads as **authored** rather than as a
     guess — the reader's half of the writer's rule in
-    ``eval_transcript._diary_substituted_attr``.
+    ``eval_transcript._substituted_attr``.
     """
     if not attrs:
         return False
