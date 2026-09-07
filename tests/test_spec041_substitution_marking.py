@@ -1,15 +1,27 @@
-"""A substituted diary entry is visibly marked — spec 041, Slice 8 (Task 8.5).
+"""A substituted body is visibly marked — spec 041, Slices 8 and 9.
 
-Functional-spec 041's fourth requirement, delivered end-to-end for the first
-of the three substitution channels: *a reviewer reading a preserved game can
-see that an entry was not the player's writing.* Three layers had to agree for
-that to be true, and this module is where they are held to it.
+Functional-spec 041's fourth requirement, delivered end-to-end: *a reviewer
+reading a preserved game can see that a body was not the player's writing.*
+Three layers had to agree for that to be true, and this module is where they
+are held to it.
 
     ``nodes/day.day_diary``            writes ``DiaryRecord["substituted"]``,
                                        and ONLY on the substitution branch
     ``tools/eval_transcript``          emits ``substituted="true"``,
                                        and ONLY for the literal ``True``
     ``eval_ledger.tokenize_transcript``reads it back, and ONLY off ``"true"``
+
+TWO OF THE THREE SUBSTITUTION CHANNELS LIVE HERE NOW. Sections 1-4 are Slice
+8's diary (Task 8.5); section 5 is Slice 9's THOUGHT (Task 9.4), the same three
+layers one channel over with a fourth joint in front of them
+(``_ai_reflect``'s ``_SubstitutionMark``, stamped inside a fan-out); and
+section 6 is the claim neither channel can make alone — that the two markings
+stay tellable apart from ONE ANOTHER, not merely each from its own honest twin.
+Slice 10's Day speech is the third and is not here yet. One module rather than
+one per channel because the layers, the literal and the reader are SHARED: the
+writer's value test is literally one function for both channels, so a
+per-channel module would assert it twice and would still not hold the
+cross-channel claim, which needs both in a single document.
 
 Each of those "only"s is what the marking is worth. A flag written on every
 record would mark every honest entry in every preserved game; an attribute
@@ -36,22 +48,42 @@ direct sibling.
 What lives elsewhere, deliberately
 ----------------------------------
 
-* **The record's shape** —
+* **The record's shape** — one guard per channel, both one layer UPSTREAM of
+  everything here, before any transcript is rendered:
   ``test_slice39_diary_before_night.test_record_carries_exactly_day_cursor_and_text``
-  asserts an authored record carries exactly its three pre-041 keys, with a
-  message naming the unconditional-flag error. That fires one layer UPSTREAM of
-  everything here, before any transcript is rendered. This module's
-  :func:`test_an_authored_document_carries_no_marking_anywhere` catches the same
-  class of error at the transcript layer, and the two fail with different
-  messages. Both are worth keeping: the upstream one names the node, this one
-  names the artifact a reviewer actually reads.
+  for the diary and
+  ``test_slice28_private_thoughts.test_an_authored_thought_record_carries_exactly_text``
+  for the thought, each asserting that an authored record carries exactly its
+  pre-041 keys with a message naming the unconditional-flag error. This
+  module's :func:`test_an_authored_document_carries_no_marking_anywhere` and
+  :func:`test_an_authored_thought_document_carries_no_marking_whatever_the_shape`
+  catch the same class of error at the transcript layer, and the two altitudes
+  fail with different messages. Both are worth keeping, and Slice 8 proved it
+  by mutation rather than by argument: a renderer mutation turned 24
+  transcript tests red with the record guard silent, and a NODE mutation
+  turned the record guard red with this whole module green. Sharper still on
+  the thought channel — an unconditional ``substituted: False`` leaves every
+  rendered document byte-identical, because the writer emits the attribute for
+  the literal ``True`` alone, so the record guard is the ONLY thing that sees
+  it.
 * **The attribute's span kind** — ``test_transcript_highlight``'s
   ``_ATTR_NAME_CASES`` sweep pins that ``substituted``'s value is lifted into
   its own achromatic ``attr`` span, and ``_ACHROMATIC_ATTR_KEYS`` pins that it
   never takes a side. Not repeated here.
 * **The body's colour and text style** —
   ``test_ledger_viewer.test_the_substituted_diary_style_is_the_diarys_rule_plus_strike``,
-  next to that file's ``App.run_test()`` harness. This module is terminal-free.
+  next to that file's ``App.run_test()`` harness. This module is terminal-free,
+  which is why section 6's distinguishability claim is made at the KIND level:
+  four distinct kinds, plus that file's own completeness equality
+  (``_TRANSCRIPT_KIND_COMPONENTS`` == ``TRANSCRIPT_KINDS`` less ``plain``),
+  is what guarantees four separate component classes and therefore four rules.
+* **The reshaped thought ELEMENT** — ``str | ThoughtRecord``, the seam
+  ``graphia.state.thought_text``, the mixed accumulated list and the two
+  prompt renderers' shape-agnosticism are spec 028's and spec 039's, in
+  ``test_slice28_private_thoughts`` and ``test_slice39_diary_interleave``.
+  Nothing about the marking depends on them, and the marking is deliberately
+  NOT rendered into either prompt (a prompt-visible mark would change what the
+  player reasons from, which is a game-design change and not this spec's).
 * **The per-run substitution COUNTS** — ``test_substitution_counts`` and
   ``test_substitution_ledger`` (Slices 6 and 7). A count is a per-run aggregate
   with no addressee; it cannot say *which* entry substituted, which is the
@@ -74,11 +106,12 @@ fixture stopped exercising anything:
 * the span-shape test asserts the tag head GROWS, which is the direction easily
   written backwards — see :func:`test_the_flag_splits_the_tag_head_and_nothing_else`.
 
-Strictly offline: no model, no network, no terminal. One test drives the real
-``day_diary`` node with a failing tier stand-in, which is why
-``monkeypatch``ing ``get_large`` appears at all; the autouse ``safe_llm`` net
-covers every other call site, and the autouse ``reset_substitution_sink``
-fixture in ``conftest`` owns the sink that node's substitution books.
+Strictly offline: no model, no network, no terminal. Two tests drive a real
+node with a failing tier stand-in — ``day_diary`` in section 4 and
+``day_round_reflect`` in section 5 — which is why ``monkeypatch``ing
+``get_large`` appears at all; the autouse ``safe_llm`` net covers every other
+call site, and the autouse ``reset_substitution_sink`` fixture in ``conftest``
+owns the sink those nodes' substitutions book.
 """
 
 from __future__ import annotations
@@ -95,6 +128,8 @@ from graphia.eval_ledger import (
     KIND_DIARY_SUBSTITUTED,
     KIND_MARKER,
     KIND_RECAP,
+    KIND_THOUGHT,
+    KIND_THOUGHT_SUBSTITUTED,
     tokenize_transcript,
 )
 from graphia.nodes import day as day_nodes
@@ -164,13 +199,25 @@ def _record(text: str, *, substituted: bool | None = None) -> dict[str, Any]:
     return record
 
 
-def _day_events(diaries: dict[str, list[dict[str, Any]]] | None) -> list[dict[str, Any]]:
+def _day_events(
+    diaries: dict[str, list[dict[str, Any]]] | None,
+    *,
+    thoughts: dict[str, list[Any]] | None = None,
+) -> list[dict[str, Any]]:
     """A one-round Day whose trailer carries ``diaries`` (or no diary delta).
 
     Shaped from the real engine's stream: ``day_open`` → a ``day_turn`` that
-    wraps the round → ``day_close`` → ``day_diary``. The diary delta arrives
-    while the ``<day>`` section is still open, which is what puts the elements
-    in the day-level trailer rather than inside the last ``<round>``.
+    wraps the round → (Slice 9) ``day_round_reflect`` → ``day_close`` →
+    ``day_diary``. The diary delta arrives while the ``<day>`` section is still
+    open, which is what puts the elements in the day-level trailer rather than
+    inside the last ``<round>``; a thought delta lands INSIDE the round, which
+    is the structural difference between the two channels and the reason the
+    same builder can carry both.
+
+    ``thoughts`` is keyword-only and defaults to no delta at all, so every
+    Slice-8 caller passing ``diaries`` positionally is untouched — the shared
+    builder is what lets Slice 9's distinguishability tests put a marked
+    thought and a marked entry in ONE document rendered by the same code path.
     """
     events: list[dict[str, Any]] = [
         {"day_open": {"messages": [SystemMessage(content="Day 2 breaks.")]}},
@@ -180,17 +227,25 @@ def _day_events(diaries: dict[str, list[dict[str, Any]]] | None) -> list[dict[st
                 "day_rounds": 1,
             }
         },
-        {"day_close": {"messages": [SystemMessage(content="The Day ends.")]}},
     ]
+    if thoughts is not None:
+        events.append({"day_round_reflect": {"private_thoughts": thoughts}})
+    events.append(
+        {"day_close": {"messages": [SystemMessage(content="The Day ends.")]}}
+    )
     if diaries is not None:
         events.append({"day_diary": {"private_diaries": diaries}})
     return events
 
 
-def _render(diaries: dict[str, list[dict[str, Any]]] | None) -> str:
+def _render(
+    diaries: dict[str, list[dict[str, Any]]] | None,
+    *,
+    thoughts: dict[str, list[Any]] | None = None,
+) -> str:
     """Render the fixture Day through the real production renderer."""
     return render_transcript(
-        _day_events(diaries),
+        _day_events(diaries, thoughts=thoughts),
         _transcript_players(),
         game_index=1,
         run_meta=None,
@@ -573,28 +628,69 @@ _MARKED_ELEMENT = (
     f'<diary player="Alice" day="2" {_SUBSTITUTED_ATTRIBUTE}>{_BODY}</diary>'
 )
 
+# SLICE 9'S PAIR, in the same hand-written form and beside the diary's on
+# purpose: ``_INLINE_CONTENT_KINDS`` is keyed by ``(tag, flag)``, so "which
+# tags have a marked body kind registered" is a table with one row per channel
+# and the coverage below is that table read back. The bodies differ from the
+# diary's so a row that came back with the wrong kind also comes back with the
+# wrong text.
+_THOUGHT_BODY = "I'll keep watching and weigh what I've heard so far."
+_AUTHORED_THOUGHT_ELEMENT = f'<thought player="Alice">{_THOUGHT_BODY}</thought>'
+_MARKED_THOUGHT_ELEMENT = (
+    f'<thought player="Alice" {_SUBSTITUTED_ATTRIBUTE}>{_THOUGHT_BODY}</thought>'
+)
+
 
 @pytest.mark.parametrize(
     ("source", "expected_kind", "forbidden_kind"),
     [
         pytest.param(
-            _MARKED_ELEMENT, KIND_DIARY_SUBSTITUTED, KIND_DIARY, id="marked"
+            _MARKED_ELEMENT, KIND_DIARY_SUBSTITUTED, KIND_DIARY, id="marked-diary"
         ),
         pytest.param(
-            _AUTHORED_ELEMENT, KIND_DIARY, KIND_DIARY_SUBSTITUTED, id="authored"
+            _AUTHORED_ELEMENT,
+            KIND_DIARY,
+            KIND_DIARY_SUBSTITUTED,
+            id="authored-diary",
+        ),
+        # SLICE 9'S ROWS — the `("thought", True)` coverage the registration
+        # assertion two tests down explicitly demands rather than a widened
+        # set. Task 9.3 registered the pair and styled it; these are the rows
+        # that make the registration mean something.
+        pytest.param(
+            _MARKED_THOUGHT_ELEMENT,
+            KIND_THOUGHT_SUBSTITUTED,
+            KIND_THOUGHT,
+            id="marked-thought",
+        ),
+        pytest.param(
+            _AUTHORED_THOUGHT_ELEMENT,
+            KIND_THOUGHT,
+            KIND_THOUGHT_SUBSTITUTED,
+            id="authored-thought",
         ),
     ],
 )
 def test_the_body_kind_follows_the_flag_in_both_directions(
     source: str, expected_kind: str, forbidden_kind: str
 ) -> None:
-    """The body axis of the marking, and BOTH directions of it.
+    """The body axis of the marking, both directions, on both marked channels.
 
     Spec 041 re-keyed ``_INLINE_CONTENT_KINDS`` from ``tag`` to
-    ``(tag, flag)``, so a ``<diary>`` body is no longer a function of its tag
-    NAME alone. Both rows are needed because either alone is passable by a
-    constant: a reader hard-wired to ``diary-substituted`` passes the marked
-    row, and one that never learned the flag passes the authored row.
+    ``(tag, flag)``, so a ``<diary>`` or ``<thought>`` body is no longer a
+    function of its tag NAME alone. Both directions are needed per channel
+    because either alone is passable by a constant: a reader hard-wired to
+    ``diary-substituted`` passes the marked row, and one that never learned the
+    flag passes the authored row.
+
+    THE TWO CHANNELS ARE SEPARATE ROWS AND NOT A SAMPLE OF ONE RULE. The lookup
+    is a table, so ``thought`` being registered is not implied by ``diary``
+    being registered — and the marked kinds are DIFFERENT kinds by design
+    (functional-spec 041's fourth requirement wants a reviewer to see which
+    channel a stand-in landed in), which is what makes each row's
+    forbidden-kind assertion a statement about its own channel. The
+    cross-channel half of that claim — that the two marks stay tellable apart
+    inside ONE document — is section 5's.
 
     The forbidden-kind assertion is what makes each row exclusive rather than
     merely satisfied.
@@ -808,10 +904,12 @@ def test_the_flag_re_kinds_only_a_body_that_has_a_marked_kind_registered() -> No
     # a slice that registers one without covering it is still caught, by the
     # `(tag, True)` coverage rows this module owns.
     #
-    # TASK 9.4 STILL OWES `("thought", True)` A COVERAGE ROW ABOVE. Slice 9's
-    # Task 9.3 registered the pair and styled it; the marked/unmarked thought
-    # directions and the diary-versus-thought distinguishability claim are Task
-    # 9.4's, so this comment is the handoff rather than a note to nobody.
+    # BOTH ROWS ARE NOW COVERED. `("diary", True)` has had its pair of
+    # directions since Slice 8; `("thought", True)` got its own two rows in
+    # `test_the_body_kind_follows_the_flag_in_both_directions` above (Task
+    # 9.4), which is what discharges the handoff that stood here — the set
+    # widened in Task 9.3 and the coverage it demands landed one task later,
+    # exactly as the failure message asks of Slice 10.
     assert {
         tag for tag, flag in eval_ledger._INLINE_CONTENT_KINDS if flag
     } == {"diary", "thought"}, (
@@ -933,3 +1031,620 @@ def test_the_node_marks_what_it_substituted_and_the_reader_strikes_it(
     # The round trip still holds over the whole document, which is the promise
     # every kind added to the tokenizer must leave intact.
     assert "".join(text for text, _ in spans) == doc
+
+
+# ===========================================================================
+# 5. The SECOND marked channel: a substituted thought (Slice 9)
+# ===========================================================================
+#
+# The same three layers, one channel over:
+#
+#     ``nodes/day._ai_reflect``          stamps the ``_SubstitutionMark``, and
+#                                        ONLY on its substitution branch
+#     ``nodes/day.day_round_reflect``    writes ``ThoughtRecord["substituted"]``,
+#                                        and ONLY when the mark is set
+#     ``tools/eval_transcript``          emits ``substituted="true"`` on
+#                                        ``<thought>``, ONLY for the literal
+#                                        ``True``
+#     ``eval_ledger.tokenize_transcript``re-kinds the body, ONLY off ``"true"``
+#
+# WHAT IS SHARED WITH THE DIARY AND THEREFORE NOT RETESTED HERE. The writer's
+# value test is ONE function — ``eval_transcript._diary_substituted_attr``, whose
+# ``diary_`` prefix now names its first caller rather than its semantics — so
+# section 1's eleven-row identity sweep and section 2's writer/reader literal
+# agreement cover both channels by construction. Duplicating them per channel
+# would assert the same function twice and would go stale the moment Slice 10
+# collapses the name.
+#
+# WHAT IS GENUINELY NEW AND HAS TO BE TESTED HERE:
+#
+#   * ``_append_thoughts`` reads the flag off the RAW entry behind an
+#     ``isinstance(note, dict)`` hop, because ``ThoughtEntry`` is the union
+#     ``str | ThoughtRecord`` — a shape the diary channel does not have. A bare
+#     ``str`` has nowhere to carry a flag and is authored by construction;
+#   * the byte-identity stake is an order of magnitude larger. The preserved
+#     corpus holds 10,706 thought bodies against 376 diary ones, so an
+#     unconditional attribute here would mark almost every private line in
+#     every committed transcript;
+#   * a ``<thought>`` tag has ONE attribute before the flag where a ``<diary>``
+#     has two, so the flag lands at a different position in the head and the
+#     tag-line axis is a different span shape;
+#   * the WRITER is a different node reached by a different route
+#     (``_SubstitutionMark`` through a fan-out, one mark per reflector).
+
+# DISTINCT FROM `_AVA_ENTRY` / `_BEN_ENTRY` BY DESIGN, and the reason is not
+# tidiness. Section 6 looks each body's kind up BY ITS TEXT — the only form in
+# which a failure can name which body took which kind — so two bodies sharing a
+# sentence would silently collapse into one entry of that map and the
+# distinguishability assertion would compare a channel against itself. (Written
+# down because the first draft of this fixture reused the diary's sentence for
+# the thought and that is exactly what happened.)
+_AVA_THOUGHT = "Ben has not met my eye all round."
+_BEN_THOUGHT = "Ava keeps circling back to the same question."
+
+
+def _thought(text: str, *, substituted: bool | None = None) -> dict[str, Any]:
+    """One ``ThoughtRecord``, in the exact shape ``day_round_reflect`` builds.
+
+    Tri-state for the same reason :func:`_record` is: ``substituted=None``
+    means the key is ABSENT, which is what an authored thought looks like —
+    never ``False``. Passing ``False`` explicitly is a hand-edit, a
+    reader-boundary shape the node cannot produce, and is available as such.
+    """
+    record: dict[str, Any] = {"text": text}
+    if substituted is not None:
+        record["substituted"] = substituted
+    return record
+
+
+def _thought_lines(doc: str) -> list[str]:
+    """Every ``<thought …>`` line of a rendered document, in order."""
+    return [line for line in doc.splitlines() if line.startswith("<thought ")]
+
+
+def _authored_thoughts() -> dict[str, list[Any]]:
+    """Both thoughts the players' own — the pre-041 words in the new shape."""
+    return {
+        "p-ava": [_thought(_AVA_THOUGHT)],
+        "p-ben": [_thought(_BEN_THOUGHT)],
+    }
+
+
+def _marked_thoughts() -> dict[str, list[Any]]:
+    """Both thoughts substituted — the same records plus the carried flag."""
+    return {
+        "p-ava": [_thought(_AVA_THOUGHT, substituted=True)],
+        "p-ben": [_thought(_BEN_THOUGHT, substituted=True)],
+    }
+
+
+def _one_marked_thoughts() -> dict[str, list[Any]]:
+    """Ben's thought substituted, Ava's authored — one marked line, one not."""
+    return {
+        "p-ava": [_thought(_AVA_THOUGHT)],
+        "p-ben": [_thought(_BEN_THOUGHT, substituted=True)],
+    }
+
+
+def test_the_marked_thought_carries_exactly_the_substituted_true_attribute() -> None:
+    """The emitted element, pinned as the whole line — the thought's twin of §1.
+
+    The same bytes as the diary's attribute (one shared writer guarantees that,
+    and section 2 pins it), but at a DIFFERENT POSITION in the head: a
+    ``<thought>`` tag carries only ``player`` before the flag, so this is where
+    ``player="Ava" substituted="true"`` — the actual adjacency a committed
+    transcript holds — is stated. The near-misses are re-asserted because they
+    are a claim about the rendered document and not about the helper.
+    """
+    doc = _render(None, thoughts=_marked_thoughts())
+    lines = _thought_lines(doc)
+
+    assert lines == [
+        f'<thought player="Ava" {_SUBSTITUTED_ATTRIBUTE}>{_AVA_THOUGHT}</thought>',
+        f'<thought player="Ben" {_SUBSTITUTED_ATTRIBUTE}>{_BEN_THOUGHT}</thought>',
+    ]
+    assert doc.count(_SUBSTITUTED_ATTRIBUTE) == 2
+    assert "substituted='true'" not in doc
+    assert 'substituted="True"' not in doc
+    assert 'Substituted="' not in doc
+
+
+@pytest.mark.parametrize(
+    ("label", "entries"),
+    [
+        pytest.param(
+            "records",
+            {"p-ava": [_thought(_AVA_THOUGHT)], "p-ben": [_thought(_BEN_THOUGHT)]},
+            id="records",
+        ),
+        pytest.param(
+            "bare-strings",
+            {"p-ava": [_AVA_THOUGHT], "p-ben": [_BEN_THOUGHT]},
+            id="bare-strings",
+        ),
+        pytest.param(
+            "mixed",
+            {"p-ava": [_AVA_THOUGHT], "p-ben": [_thought(_BEN_THOUGHT)]},
+            id="mixed",
+        ),
+    ],
+)
+def test_an_authored_thought_document_carries_no_marking_whatever_the_shape(
+    label: str, entries: dict[str, list[Any]]
+) -> None:
+    """No marking on the authored path — and the SAME BYTES for all three shapes.
+
+    Two claims in one, and the second is the one the diary channel cannot make.
+    :data:`graphia.state.ThoughtEntry` is the PERMANENT union ``str |
+    ThoughtRecord``, so a preserved-corpus game, a resumed pre-reshape
+    checkpoint and this session all reach this renderer with different element
+    shapes. A bare ``str`` has nowhere to carry a flag, which is exactly why
+    ``_append_thoughts`` needs no branch for it: it is authored by
+    construction. The three rows therefore assert one document, not three.
+
+    The stake here is an order of magnitude above the diary's: 10,706 thought
+    bodies across the 372 committed transcripts against 376 diary ones. An
+    unconditional attribute — or an ``if "substituted" in note`` presence test
+    — would mark essentially every private line ever preserved.
+
+    Bracketed by a presence assertion, so "no marking" is a statement about
+    marked-ness and not about an empty round.
+    """
+    doc = _render(None, thoughts=entries)
+    lines = _thought_lines(doc)
+
+    # The premise: two real thoughts went in, whatever shape they arrived as.
+    assert len(lines) == 2
+    assert lines == [
+        f'<thought player="Ava">{_AVA_THOUGHT}</thought>',
+        f'<thought player="Ben">{_BEN_THOUGHT}</thought>',
+    ]
+    assert "substituted" not in doc, (
+        f"an authored thought document ({label}) carries the substitution "
+        "marking, so nearly every private line in every preserved game is now "
+        "marked. The attribute must be written ONLY where the record's own "
+        "`substituted` is the literal `True` — see the `isinstance(note, "
+        "dict)` hop in `eval_transcript._append_thoughts`."
+    )
+    # ...and no dict repr leaked in either, which is the OTHER way this
+    # renderer can be wrong about the new element shape: well-formed output.
+    assert "{" not in doc and "'text'" not in doc
+
+
+def test_marking_a_thought_adds_the_attribute_and_changes_nothing_else() -> None:
+    """Byte identity as a DIFFERENCE, the thought channel's copy of §1's form.
+
+    Rendering the same round twice — once authored, once with the same records
+    plus the flag — and asserting that deleting the attribute from the second
+    reproduces the first EXACTLY. That covers what a substring assertion
+    cannot: no line re-flows, no element re-orders, and the elements keep their
+    place inside the ``<round>`` rather than drifting into the Day trailer where
+    the diaries live.
+
+    Non-vacuous by construction: the two documents are asserted to differ
+    first, and the number of deletions is pinned.
+    """
+    authored = _render(None, thoughts=_authored_thoughts())
+    marked = _render(None, thoughts=_marked_thoughts())
+
+    assert marked != authored, "the flag changed nothing at all"
+    assert marked.count(f" {_SUBSTITUTED_ATTRIBUTE}") == 2
+    assert marked.replace(f" {_SUBSTITUTED_ATTRIBUTE}", "") == authored, (
+        "the substitution marking changed something other than adding its own "
+        "attribute to the `<thought>` tags that carry it"
+    )
+    assert len(marked.splitlines()) == len(authored.splitlines())
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        pytest.param("true", id="the-string-true"),
+        pytest.param("True", id="the-string-True"),
+        pytest.param(1, id="the-int-1"),
+        pytest.param(1.0, id="the-float-1"),
+        pytest.param(False, id="False"),
+    ],
+)
+def test_a_hand_edited_thought_record_value_renders_as_authored(value: Any) -> None:
+    """The writer's defence through ``_append_thoughts``' own caller path.
+
+    Section 1 pins the shared helper and section 1's diary twin pins
+    ``_append_diaries``' use of it. This pins the THIRD thing, which neither
+    covers: the branch in ``_append_thoughts`` that decides whether to consult
+    the helper at all. A caller that appended the helper's result
+    unconditionally, or that tested ``if "substituted" in note``, would pass
+    both of those and mark a hand-edited record here.
+
+    ``False`` is the row that bites hardest under a presence test: a record
+    explicitly DENYING substitution must not be marked because it mentioned the
+    subject. ``1`` is the row that makes it an identity check — ``1 == True``
+    in Python, so an equality would honour it and the reader would then read
+    the resulting marking back as authored, the two halves disagreeing about
+    what the file says.
+    """
+    doc = _render(None, thoughts={"p-ava": [_thought(_AVA_THOUGHT, substituted=value)]})
+
+    assert _thought_lines(doc) == [
+        f'<thought player="Ava">{_AVA_THOUGHT}</thought>'
+    ]
+    assert "substituted" not in doc
+
+
+def test_the_substituted_thought_body_is_single_line_and_needs_no_clamp() -> None:
+    """The bound Slice 9's own forward note claims, checked rather than cited.
+
+    Task 8.4 worried that a marked body at CORPUS length (46-626 characters,
+    p90 316) would wrap over many rows and turn ``italic underline strike``
+    into a hatch pattern. It cannot, and the reason is structural rather than
+    lucky: the mark is set only on the substitution branch, where the returned
+    body IS ``nodes.day._REFLECTION_FALLBACK`` verbatim. So the marked body is
+    a fixed short string — and this channel's is SHORTER than the diary's (52
+    characters against 110), which is the direction that matters.
+
+    Pinned here, in the slice that depends on it, so the argument cannot rot
+    into a task note nobody rechecks. The corresponding diary claim is
+    :func:`test_the_substituted_body_is_single_line_and_needs_no_clamp`.
+    """
+    fallback = day_nodes._REFLECTION_FALLBACK
+
+    assert "\n" not in fallback and "\r" not in fallback
+    assert fallback == fallback.strip(), "a stripped body would not round-trip"
+    assert len(fallback) < len(day_nodes._DIARY_FALLBACK), (
+        "the reflection fallback grew past the diary's, so the bound Slice 9 "
+        "relies on ('shorter than the diary's, which already renders on one "
+        "row') no longer holds"
+    )
+    # And it really does render as one line through the writer.
+    doc = _render(None, thoughts={"p-ava": [_thought(fallback, substituted=True)]})
+    assert _thought_lines(doc) == [
+        f'<thought player="Ava" {_SUBSTITUTED_ATTRIBUTE}>{fallback}</thought>'
+    ]
+
+
+def test_the_flag_splits_the_thought_tag_head_and_nothing_else() -> None:
+    """The tag-line axis on a tag with ONE attribute, not two.
+
+    The diary's version of this test is over a head that already holds
+    ``player`` and ``day``; a ``<thought>`` head holds only ``player``, so the
+    flag lands in a different position and the span arithmetic is its own:
+    FIVE spans become SEVEN. Written in the direction it actually goes — the
+    flag ADDS to the head, by design, because a terminal without SGR 9 still
+    shows the marking in bold on the tag even though it cannot strike the body.
+
+    What must NOT split is the BODY: one span in both shapes, changing only its
+    kind, so a reviewer's eye lands on one struck sentence rather than on a
+    body diced at the flag's boundary.
+    """
+    authored = tokenize_transcript(_AUTHORED_THOUGHT_ELEMENT)
+    marked = tokenize_transcript(_MARKED_THOUGHT_ELEMENT)
+
+    assert authored == [
+        ('<thought player="', KIND_MARKER),
+        ("Alice", KIND_ATTR),
+        ('">', KIND_MARKER),
+        (_THOUGHT_BODY, KIND_THOUGHT),
+        ("</thought>", KIND_MARKER),
+    ]
+    assert marked == [
+        ('<thought player="', KIND_MARKER),
+        ("Alice", KIND_ATTR),
+        ('" substituted="', KIND_MARKER),
+        (_SUBSTITUTED_VALUE, KIND_ATTR),
+        ('">', KIND_MARKER),
+        (_THOUGHT_BODY, KIND_THOUGHT_SUBSTITUTED),
+        ("</thought>", KIND_MARKER),
+    ]
+
+    # Restated as the relation, so a regression reports WHICH rule broke.
+    assert len(authored) == 5
+    assert len(marked) == 7, "the tag-line axis of the thought's marking is gone"
+    assert [text for text, kind in marked if kind == KIND_ATTR] == [
+        "Alice",
+        _SUBSTITUTED_VALUE,
+    ]
+    assert [text for text, _ in marked if text == _THOUGHT_BODY] == [_THOUGHT_BODY]
+    assert marked[-1] == authored[-1] == ("</thought>", KIND_MARKER)
+    assert "".join(text for text, _ in marked) == _MARKED_THOUGHT_ELEMENT
+    assert "".join(text for text, _ in authored) == _AUTHORED_THOUGHT_ELEMENT
+
+
+def test_no_line_but_the_marked_thoughts_own_tokenizes_differently() -> None:
+    """The flag is read PER LINE on this channel too, and it matters more here.
+
+    ``tokenize_transcript`` makes two WHOLE-FILE passes before the per-line
+    chain runs, so a flag read at the wrong level would re-kind every
+    ``<thought>`` in the file — and on this channel that is thousands of bodies
+    per preserved run rather than one per Day.
+
+    Measured by regrouping both documents' spans into lines and asserting that
+    exactly ONE index differs. Ava's authored thought sits on the line directly
+    above Ben's marked one, so the neighbour case is covered as well as the
+    distant one.
+    """
+    authored = _spans_by_line(_render(None, thoughts=_authored_thoughts()))
+    one_marked = _spans_by_line(_render(None, thoughts=_one_marked_thoughts()))
+
+    assert len(one_marked) == len(authored)
+    differing = [
+        index
+        for index, (before, after) in enumerate(zip(authored, one_marked, strict=True))
+        if before != after
+    ]
+
+    assert len(differing) == 1, (
+        f"marking one thought changed {len(differing)} lines; the flag must be "
+        "read per line, off the tag whose body it re-kinds"
+    )
+    moved = "".join(text for text, _ in one_marked[differing[0]])
+    assert moved == (
+        f'<thought player="Ben" {_SUBSTITUTED_ATTRIBUTE}>{_BEN_THOUGHT}</thought>'
+    )
+
+    # ...and Ava's thought, one line away, is untouched in both kind and shape.
+    ava_line = next(
+        line
+        for line in one_marked
+        if "".join(text for text, _ in line).startswith('<thought player="Ava"')
+    )
+    assert [kind for _, kind in ava_line][-2:] == [KIND_THOUGHT, KIND_MARKER]
+    assert KIND_THOUGHT_SUBSTITUTED not in {kind for _, kind in ava_line}
+
+
+class _FailingReflectionTier:
+    """A tier stand-in whose every ``invoke`` raises — forces the substitution.
+
+    The reflection twin of :class:`_FailingTier`, and separate from it only
+    because ``day_round_reflect`` fans out: raising on EVERY invocation rather
+    than from a queue is what makes it independent of how many reflectors the
+    fixture state holds.
+    """
+
+    def __init__(self) -> None:
+        self.invocations = 0
+
+    def with_structured_output(
+        self, schema: type, **kwargs: Any
+    ) -> "_FailingReflectionTier":
+        return self
+
+    def invoke(self, messages: Any) -> Any:
+        self.invocations += 1
+        raise RuntimeError("reflection model down")
+
+
+def test_the_node_marks_the_thought_it_substituted_and_the_reader_strikes_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The whole chain on real data, one channel over from §4's diary version.
+
+    Drives the REAL ``day_round_reflect`` against a tier that cannot answer,
+    takes the delta it returns, renders it through the real
+    ``render_transcript`` and tokenizes the result — so the marking travels
+    from ``_ai_reflect``'s substitution branch, through the
+    ``_SubstitutionMark`` carrier and the ``ThoughtRecord``, to the span a
+    reviewer's terminal strikes, with no literal shared between the ends but
+    the body text the node itself chose.
+
+    It is the test that would catch a chain broken at any single joint while
+    every layer's own tests stayed green: a helper that stopped stamping the
+    mark, a node that stopped reading it, a renderer that omitted the
+    attribute, a reader that ignored it. The mark-stamping joint in particular
+    has no other end-to-end cover.
+
+    ``_hinge_state`` is reused verbatim: its ``day_turn_index == 0`` and
+    ``day_rounds == 1`` are exactly the reflection node's own self-guard for a
+    fresh-round start, and its one surviving AI player keeps the delta to a
+    single record.
+
+    The premise is asserted first — the model really did fail and the node
+    really did substitute — because a chain test whose first link never fired
+    would be measuring an authored thought and would pass the moment the
+    marking was deleted from all four layers at once.
+    """
+    tier = _FailingReflectionTier()
+    monkeypatch.setattr(day_nodes, "get_large", lambda: tier)
+
+    delta = day_nodes.day_round_reflect(_hinge_state())  # type: ignore[arg-type]
+    record = delta["private_thoughts"]["p-ava"][0]
+
+    # The premise: the model was reached, it failed, and the node substituted.
+    assert tier.invocations >= 1, "the failing tier was never invoked"
+    assert record["text"] == day_nodes._REFLECTION_FALLBACK
+    # ``.get`` rather than a subscript, deliberately, and unlike section 4's
+    # diary twin: the fault this joint actually has — `_ai_reflect` no longer
+    # stamping the mark — leaves the key ABSENT, and a subscript would report it
+    # as a bare ``KeyError`` from a test whose message is the only place the
+    # mark-stamping joint is named at all.
+    assert record.get("substituted") is True, (
+        "the node substituted its deterministic stand-in and did not carry the "
+        "fact out on the record, so nothing downstream can mark it — check "
+        "that `_ai_reflect` stamps its `substitution_mark` on the fallback "
+        "branch and that `day_round_reflect` reads it"
+    )
+
+    doc = _render(None, thoughts={"p-ava": [record]})
+
+    # The writer marked it...
+    assert _thought_lines(doc) == [
+        f'<thought player="Ava" {_SUBSTITUTED_ATTRIBUTE}>'
+        f"{day_nodes._REFLECTION_FALLBACK}</thought>"
+    ]
+    # ...and the reader strikes exactly that body and nothing else.
+    spans = tokenize_transcript(doc)
+    struck = [text for text, kind in spans if kind == KIND_THOUGHT_SUBSTITUTED]
+    assert struck == [day_nodes._REFLECTION_FALLBACK]
+    assert KIND_THOUGHT not in {kind for _, kind in spans}, (
+        "an honest `thought` span survives in a document whose only thought "
+        "was substituted"
+    )
+    assert "".join(text for text, _ in spans) == doc
+
+
+# ===========================================================================
+# 6. DISTINGUISHABILITY: the two marked channels stay tellable apart
+# ===========================================================================
+#
+# The claim Task 9.4 owes beyond "each channel's flag works": a substituted
+# diary entry and a substituted thought must remain distinguishable FROM ONE
+# ANOTHER, not merely each from its own honest twin.
+#
+# WHY IT IS A CLAIM AT ALL, rather than something the two sections above imply.
+# ``_INLINE_CONTENT_KINDS`` is one table with a shared value space, and the
+# natural cheap implementation of "mark a substituted body" is a single
+# ``KIND_SUBSTITUTED`` for every channel — which would satisfy every
+# marked/authored pair above (each row asserts a kind is present and its own
+# honest twin absent; a shared kind passes all four) while collapsing what a
+# reviewer sees: a struck line in a preserved game would no longer say WHICH
+# private channel the model failed to answer on. That is the diagnosis the
+# marking exists to give, since the per-run counts (Slices 6 and 7) already
+# report how many failed and cannot report which entry.
+#
+# THE FIXTURE IS ONE DOCUMENT HOLDING ALL FOUR BODIES — marked and authored, on
+# both channels — because the failure is a COLLISION and a collision is
+# invisible from inside either channel's own document. It is also the shape a
+# real run produces: ``day_round_reflect`` writes inside the round and
+# ``day_diary`` into the Day trailer of the same ``<day>``, so a run in which
+# the local model was unreliable holds exactly this.
+
+
+def _all_four_bodies() -> str:
+    """One rendered Day carrying a marked and an authored body on BOTH channels.
+
+    Ava's are the authored pair and Ben's the marked pair, and Ben being
+    ``role="Mafia"`` is deliberate: his owner name is ``attr-mafia`` on both
+    tags, so the two marked elements are the more decorated of the two shapes
+    and the distinguishability claim is made against the harder case.
+    """
+    return _render(
+        {
+            "p-ava": [_record(_AVA_ENTRY)],
+            "p-ben": [_record(_BEN_ENTRY, substituted=True)],
+        },
+        thoughts=_one_marked_thoughts(),
+    )
+
+
+def test_the_four_marked_and_authored_body_kinds_are_four_distinct_kinds() -> None:
+    """One document, four bodies, four different kinds — the headline claim.
+
+    Every body is looked up by its own TEXT rather than by position, so a
+    failure names which body took which kind. The set assertion is what catches
+    a collapse to a shared ``substituted`` kind: four texts mapping to fewer
+    than four kinds fails here and nowhere else in this module.
+    """
+    doc = _all_four_bodies()
+    kinds = {text: kind for text, kind in tokenize_transcript(doc)}
+
+    # The premise: all four bodies survived to the tokenizer as spans of their
+    # own, so the mapping below is about kinds and not about absence.
+    for body in (_AVA_THOUGHT, _BEN_THOUGHT, _AVA_ENTRY, _BEN_ENTRY):
+        assert body in kinds, f"body did not survive to the tokenizer: {body!r}"
+
+    assert kinds[_AVA_THOUGHT] == KIND_THOUGHT
+    assert kinds[_BEN_THOUGHT] == KIND_THOUGHT_SUBSTITUTED
+    assert kinds[_AVA_ENTRY] == KIND_DIARY
+    assert kinds[_BEN_ENTRY] == KIND_DIARY_SUBSTITUTED
+
+    # ...and the four really are four, which is the claim a shared
+    # `KIND_SUBSTITUTED` would break while every pairwise test above passed.
+    assert len(
+        {
+            kinds[_AVA_THOUGHT],
+            kinds[_BEN_THOUGHT],
+            kinds[_AVA_ENTRY],
+            kinds[_BEN_ENTRY],
+        }
+    ) == 4, (
+        "two of the four private-body kinds collapsed into one, so a struck "
+        "line in a preserved game no longer says which channel the model "
+        "failed to answer on"
+    )
+    # Stated once more at the constants, so a failure can be read without the
+    # document: these are what the UI's style map is keyed on, and the viewer's
+    # own completeness equality (`test_ledger_viewer`, `_TRANSCRIPT_KIND_COMPONENTS`
+    # == `TRANSCRIPT_KINDS` less `plain`) then guarantees each gets its own
+    # component class and therefore its own rule.
+    assert KIND_THOUGHT_SUBSTITUTED != KIND_DIARY_SUBSTITUTED
+    assert len(
+        {KIND_THOUGHT, KIND_THOUGHT_SUBSTITUTED, KIND_DIARY, KIND_DIARY_SUBSTITUTED}
+    ) == 4
+    assert {
+        KIND_THOUGHT,
+        KIND_THOUGHT_SUBSTITUTED,
+        KIND_DIARY,
+        KIND_DIARY_SUBSTITUTED,
+    } <= set(eval_ledger.TRANSCRIPT_KINDS)
+
+
+@pytest.mark.parametrize(
+    ("label", "diaries", "thoughts", "expected_marked"),
+    [
+        pytest.param(
+            "diary-only",
+            {"p-ava": [_record(_AVA_ENTRY, substituted=True)]},
+            {"p-ava": [_thought(_AVA_THOUGHT)]},
+            {KIND_DIARY_SUBSTITUTED},
+            id="diary-only",
+        ),
+        pytest.param(
+            "thought-only",
+            {"p-ava": [_record(_AVA_ENTRY)]},
+            {"p-ava": [_thought(_AVA_THOUGHT, substituted=True)]},
+            {KIND_THOUGHT_SUBSTITUTED},
+            id="thought-only",
+        ),
+        pytest.param(
+            "both",
+            {"p-ava": [_record(_AVA_ENTRY, substituted=True)]},
+            {"p-ava": [_thought(_AVA_THOUGHT, substituted=True)]},
+            {KIND_DIARY_SUBSTITUTED, KIND_THOUGHT_SUBSTITUTED},
+            id="both",
+        ),
+        pytest.param(
+            "neither",
+            {"p-ava": [_record(_AVA_ENTRY)]},
+            {"p-ava": [_thought(_AVA_THOUGHT)]},
+            set(),
+            id="neither",
+        ),
+    ],
+)
+def test_a_flag_on_one_channel_never_reaches_the_other(
+    label: str,
+    diaries: dict[str, list[dict[str, Any]]],
+    thoughts: dict[str, list[Any]],
+    expected_marked: set[str],
+) -> None:
+    """The full cross-product of the two channels' flags, in one document each.
+
+    The sharpest form of distinguishability: a reader that keyed the body kind
+    on the FLAG and forgot the tag, or that hoisted "this file has a
+    substitution in it" to a document-level fact, would mark both bodies in the
+    two single-channel rows. Both of those pass every test in sections 3 and 5,
+    because each of those feeds a document in which one channel is the only one
+    present.
+
+    Four rows rather than two, because the ``neither`` row is the one that keeps
+    the other three honest — it asserts that the marked kinds are absent from a
+    clean game, so a reader that emitted them unconditionally cannot pass the
+    sweep — and the ``both`` row is the only one that shows the two flags do not
+    interfere when they arrive together.
+    """
+    doc = _render(diaries, thoughts=thoughts)
+    kinds = {text: kind for text, kind in tokenize_transcript(doc)}
+
+    # The premise: both bodies are in the document in every row.
+    assert _AVA_THOUGHT in kinds and _AVA_ENTRY in kinds
+
+    marked = {KIND_THOUGHT_SUBSTITUTED, KIND_DIARY_SUBSTITUTED} & set(kinds.values())
+    assert marked == expected_marked, (
+        f"the {label} row produced the wrong marked kinds: a flag on one "
+        "channel reached the other, or was read as a document-level fact"
+    )
+    # ...and every body that is NOT marked keeps its own honest kind rather
+    # than being demoted, which is the other half of "a flag may only re-kind".
+    if KIND_THOUGHT_SUBSTITUTED not in expected_marked:
+        assert kinds[_AVA_THOUGHT] == KIND_THOUGHT
+    if KIND_DIARY_SUBSTITUTED not in expected_marked:
+        assert kinds[_AVA_ENTRY] == KIND_DIARY

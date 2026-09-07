@@ -3144,7 +3144,8 @@ def test_line_separators_are_plain_spans_of_their_own() -> None:
 # a transcript has exactly ONE seat, so one file can emit at most TWO of the six
 # seat kinds and no single fixture can reach the whole twenty-kind vocabulary any
 # more (see `test_every_kind_emitted_is_declared_in_the_vocabulary`, which is now
-# the union of FOUR games — spec 041 added the fourth). This one owns the case
+# the union of FIVE games — spec 041 added the fourth and fifth). This one owns
+# the case
 # where the seat's SIDE IS
 # UNKNOWN — the pre-spec-022 story, and the half most easily lost, since it is
 # the one that proves side and seat are independent facts rather than one fact
@@ -3209,7 +3210,8 @@ _RICH_SYNTHETIC_TRANSCRIPT = (
 
 # TWO of the other games the vocabulary now takes to cover (see
 # `test_every_kind_emitted_is_declared_in_the_vocabulary`, and
-# `_SUBSTITUTED_DIARY_GAME` below for spec 041's fourth). A transcript has
+# `_SUBSTITUTED_DIARY_GAME` / `_MARKED_CHANNELS_GAME` below for spec 041's
+# fourth and fifth). A transcript has
 # exactly one seat, so no single file can emit more than two of the six seat
 # kinds, and the fixture above owns the pair whose side is unknown. These own the
 # four side-qualified ones.
@@ -3298,6 +3300,119 @@ _SUBSTITUTED_DIARY_GAME = (
     "</day>\n"
     "</transcript>"
 )
+
+# A FIFTH game, spec 041 Slice 9's, and it owns the ONE claim no other fixture
+# in this file can state: THE TWO MARKED CHANNELS STAY TELLABLE APART. It is
+# the fixture the `unfixtured` exception below was deliberately left waiting
+# for, rather than being discharged by appending a marked `<thought>` line to
+# the fourth game.
+#
+# WHY NOT A LINE IN `_SUBSTITUTED_DIARY_GAME`, which would have been two lines
+# and would have emitted the kind. Because that game is named, shaped and
+# documented for the DIARY: a marked entry beside an authored one, one line
+# apart, stating that the diary's flag is read per line. Adding a thought to it
+# would have made its per-game assertion say two unrelated things and would
+# have left the cross-channel claim untested — a shared `KIND_SUBSTITUTED` for
+# every channel satisfies "each marked kind appears somewhere" perfectly, and
+# collapses exactly what a reviewer needs a struck line to say: WHICH private
+# channel the model failed to answer on. The per-run substitution counts
+# (Slices 6 and 7) already report how many failed; only the marking can say
+# which, and only if the kinds differ.
+#
+# SO ALL FOUR PRIVATE BODIES ARE HERE, marked and authored on both channels,
+# and the structural positions are the real ones rather than a convenient
+# flattening: the two `<thought>` elements sit inside the `<round>` where
+# `day_round_reflect`'s delta renders them, and the two `<diary>` elements in
+# the Day's trailer between `</round>` and `</day>` where `day_diary`'s does.
+# This is the shape a real run holds when the local model was unreliable.
+#
+# THE TWO OWNERS ARE ON OPPOSITE SIDES, so Vera's `role="Mafia"` name is
+# `attr-mafia` on BOTH of her marked tags while the achromatic `true` flag
+# value sits beside it — the more decorated of the two shapes, which is the
+# harder case to keep the flag's own span achromatic in. Iris carries the
+# authored pair.
+#
+# Deliberately NO seat, NO `<preamble>` and NO speech: the six seat kinds
+# belong to the two games above, and this game's whole job is the four private
+# body kinds.
+_MARKED_CHANNELS_GAME = (
+    "<transcript>\n"
+    "<setup>\n"
+    '<player name="Vera" role="Mafia">(no persona recorded)</player>\n'
+    '<player name="Iris" role="Law-abiding Citizen">(no persona recorded)</player>\n'
+    "</setup>\n"
+    "<day>\n"
+    "<round>\n"
+    '<thought player="Iris">Vera answered that too quickly.</thought>\n'
+    '<thought player="Vera" substituted="true">I\'ll keep watching and weigh '
+    "what I've heard so far.</thought>\n"
+    "</round>\n"
+    '<diary player="Iris" day="1">Vera folded under pressure.</diary>\n'
+    '<diary player="Vera" day="1" substituted="true">Nothing much more to set '
+    "down tonight.</diary>\n"
+    "</day>\n"
+    "</transcript>"
+)
+
+
+def test_the_two_marked_channels_are_four_distinct_kinds_in_one_game() -> None:
+    """The fifth fixture's own claim, asserted where the fixture lives.
+
+    ``test_every_kind_emitted_is_declared_in_the_vocabulary`` below pins that
+    this game contributes ``thought-substituted`` to the union, which is what
+    discharges the ``unfixtured`` exception. That is a statement about
+    REACHABILITY and it would hold just as well on a tokenizer that returned
+    one shared marked kind for every channel — the union would simply be
+    smaller and the vocabulary would have shrunk to match.
+
+    This is the statement about DISTINGUISHABILITY: the four private bodies in
+    this one file come back as four different kinds, so a struck line in a
+    preserved game says which channel the model failed to answer on. Looked up
+    BY BODY TEXT rather than by position, so a failure names which body took
+    which kind; the four texts are distinct for exactly that reason.
+
+    The end-to-end version of the same claim — the same four kinds off a
+    document the real ``render_transcript`` produced from real node deltas —
+    is ``test_spec041_substitution_marking``'s section 6. This one is the
+    reader-side half, on bytes small enough to check by eye.
+    """
+    kinds = {text: kind for text, kind in _spans(_MARKED_CHANNELS_GAME)}
+
+    authored_thought = "Vera answered that too quickly."
+    marked_thought = "I'll keep watching and weigh what I've heard so far."
+    authored_diary = "Vera folded under pressure."
+    marked_diary = "Nothing much more to set down tonight."
+
+    # The premise: all four bodies survived as spans of their own.
+    for body in (authored_thought, marked_thought, authored_diary, marked_diary):
+        assert body in kinds, f"body did not survive to a span: {body!r}"
+
+    assert kinds[authored_thought] == eval_ledger.KIND_THOUGHT
+    assert kinds[marked_thought] == eval_ledger.KIND_THOUGHT_SUBSTITUTED
+    assert kinds[authored_diary] == eval_ledger.KIND_DIARY
+    assert kinds[marked_diary] == eval_ledger.KIND_DIARY_SUBSTITUTED
+    assert len(
+        {
+            kinds[authored_thought],
+            kinds[marked_thought],
+            kinds[authored_diary],
+            kinds[marked_diary],
+        }
+    ) == 4, (
+        "two of the four private-body kinds collapsed into one, so a struck "
+        "line no longer says which channel it came from"
+    )
+    # ...and the flag's own value stays achromatic beside a side-bearing owner
+    # name on the very same tag — the harder shape, and the reason both marked
+    # elements are Vera's.
+    assert kinds["true"] == eval_ledger.KIND_ATTR
+    assert kinds["Vera"] == eval_ledger.KIND_ATTR_MAFIA
+    assert kinds["Iris"] == eval_ledger.KIND_ATTR_LAW_ABIDING
+    # The round trip, which every kind added to the tokenizer must leave intact.
+    assert (
+        "".join(text for text, _ in _spans(_MARKED_CHANNELS_GAME))
+        == _MARKED_CHANNELS_GAME
+    )
 
 
 def test_no_styled_span_carries_a_newline_across_a_whole_synthetic_game() -> None:
@@ -3528,6 +3643,18 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
     claim, carries a marked entry and an authored one on adjacent lines (so the
     flag's per-LINE reading is part of what the fixture states), and is pinned
     per game below like the seat pairs.
+
+    **Slice 9 added a FIFTH, and its reason is not the fourth's.** The fourth
+    exists because a marked body is not part of a full-shape game; the fifth
+    exists because the two marked channels must stay tellable apart FROM ONE
+    ANOTHER, and a collision between them is invisible from inside either
+    channel's own document. ``_MARKED_CHANNELS_GAME`` is the only file holding
+    all four private bodies — marked and authored, thought and diary — so it is
+    what makes ``thought-substituted`` reachable here AND what
+    ``test_the_two_marked_channels_are_four_distinct_kinds_in_one_game`` beside
+    it asserts the distinctness on. Both of spec 041's kinds therefore reach
+    this union through a fixture written for a claim of its own rather than
+    through a line appended to make an equality close.
     """
     per_game = {
         "rich": {kind for _, kind in _spans(_RICH_SYNTHETIC_TRANSCRIPT)},
@@ -3538,6 +3665,12 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
         # cannot live in the rich fixture without saying it is. See
         # `_SUBSTITUTED_DIARY_GAME` for why it is not a line there.
         "substituted-diary": {kind for _, kind in _spans(_SUBSTITUTED_DIARY_GAME)},
+        # Spec 041 Slice 9's, and the FIFTH game for a reason the fourth's
+        # reason does not cover: it is the only file holding BOTH marked
+        # channels, which is what makes `thought-substituted` reachable AND
+        # keeps it distinguishable from `diary-substituted`. See
+        # `_MARKED_CHANNELS_GAME`.
+        "marked-channels": {kind for _, kind in _spans(_MARKED_CHANNELS_GAME)},
     }
     for name, kinds in per_game.items():
         assert kinds <= set(eval_ledger.TRANSCRIPT_KINDS), (
@@ -3585,15 +3718,28 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
     assert eval_ledger.KIND_SPEAKER_MAFIA in per_game["mafia-seat"]
     assert eval_ledger.KIND_SPEAKER_LAW_ABIDING in per_game["law-abiding-seat"]
 
-    # ...and spec 041's kind, which is the fourth game's whole reason for
-    # existing, pinned per game like the seat pairs so it cannot go dead behind
-    # the union either. BOTH diary kinds, because the fixture carries a marked
-    # entry and an authored one on adjacent lines: if the flag were read per
-    # FILE rather than per line, one of these two would be missing here.
+    # ...and spec 041's kinds, which are the fourth and fifth games' whole
+    # reason for existing, pinned per game like the seat pairs so neither can
+    # go dead behind the union.
+    #
+    # BOTH diary kinds from the fourth game, because that fixture carries a
+    # marked entry and an authored one on adjacent lines: if the flag were read
+    # per FILE rather than per line, one of these two would be missing here.
     assert {
         eval_ledger.KIND_DIARY,
         eval_ledger.KIND_DIARY_SUBSTITUTED,
     } <= per_game["substituted-diary"]
+    # ...and ALL FOUR from the fifth, which is the only file holding both
+    # marked channels. Pinned as four rather than as the one new kind because
+    # that is the fixture's actual claim: a shared marked kind for every
+    # channel would leave this set with three members and would still satisfy
+    # the union equality below.
+    assert {
+        eval_ledger.KIND_THOUGHT,
+        eval_ledger.KIND_THOUGHT_SUBSTITUTED,
+        eval_ledger.KIND_DIARY,
+        eval_ledger.KIND_DIARY_SUBSTITUTED,
+    } <= per_game["marked-channels"]
 
     # As of Slice 5 the vocabulary had no declared-but-unreachable entry, and
     # this was a bare equality against `TRANSCRIPT_KINDS`.
@@ -3608,38 +3754,37 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
     # down here, not hidden behind a weaker operator, and the equality closes
     # back up in the same slice.
     #
-    # AND SLICE 9 IS THE NEXT KIND TO NEED THAT REASON — which is the pattern
-    # above being followed rather than a regression in it. Task 9.3 registers
-    # `thought-substituted` and styles it; the fixture that emits it is Task
-    # 9.4's, one task later, exactly as `diary-substituted`'s was. So the gap is
-    # carried as a named exception with its reason written here, not by weakening
-    # the operator, and Task 9.4 deletes this set when it supplies the fixture.
+    # SLICE 9 RAN THE SAME TWO-STEP AND IT IS CLOSED TOO. Task 9.3 registered
+    # `thought-substituted` and styled it before any fixture emitted it, and
+    # carried the gap as `unfixtured = {KIND_THOUGHT_SUBSTITUTED}` with its
+    # reason written here; Task 9.4 supplied the fixture — a FIFTH game,
+    # `_MARKED_CHANNELS_GAME` — and the exception is gone again, exactly as
+    # `diary-substituted`'s was one slice earlier. That is now twice, so the
+    # two-step is the ratified pattern rather than an improvisation: a kind
+    # that ships one task ahead of its fixture is declared with its reason
+    # written down HERE, never hidden behind a weaker operator, and the
+    # equality closes back up inside the same slice.
     #
-    # NOT solved by adding a marked `<thought>` to `_SUBSTITUTED_DIARY_GAME`
-    # here, though it is two lines: that fixture's own note explains that a
-    # marked body cannot go into `_RICH_SYNTHETIC_TRANSCRIPT` without claiming to
-    # be part of a full-shape game, and Task 9.4 additionally owes the
-    # *distinguishability* claim (a substituted thought and a substituted diary
-    # must stay tellable apart), which wants one fixture designed for that
-    # question rather than a line appended to a game named for the other one.
-    unfixtured = {eval_ledger.KIND_THOUGHT_SUBSTITUTED}
-
-    # Still an equality in BOTH directions rather than a `<=`: nothing outside
-    # the vocabulary may be emitted, nothing inside it may go missing, and the
-    # next declared-but-unreachable kind fails here and needs its own reason.
-    assert set().union(*per_game.values()) | unfixtured == set(
-        eval_ledger.TRANSCRIPT_KINDS
-    ), (
-        "a declared kind is emitted by none of the four synthetic games and is "
-        "not a named exception, so nobody will ever see it: "
-        f"{sorted(set(eval_ledger.TRANSCRIPT_KINDS) - set().union(*per_game.values()) - unfixtured)}"
-    )
-    # ...and the exception cannot go stale silently: the moment Task 9.4's
-    # fixture emits the kind, this fails and the set must be deleted.
-    assert not set().union(*per_game.values()) & unfixtured, (
-        "a kind named as unfixtured IS now emitted by a synthetic game — delete "
-        "it from `unfixtured` so the equality closes back up: "
-        f"{sorted(set().union(*per_game.values()) & unfixtured)}"
+    # WHY THE FIFTH GAME AND NOT TWO LINES IN THE FOURTH, recorded because it
+    # is the part of the decision that cost thought rather than typing: Task
+    # 9.4 also owed the DISTINGUISHABILITY claim — a substituted thought and a
+    # substituted diary must stay tellable apart from one another, which a
+    # shared marked kind would break while satisfying every reachability
+    # assertion in this test — and that claim needs one file holding both
+    # channels. See `_MARKED_CHANNELS_GAME` and the test beside it.
+    #
+    # SLICE 10 IS THE NEXT KIND TO NEED A REASON HERE (`speech-substituted`),
+    # and the route is the one just walked twice.
+    #
+    # An equality in BOTH directions rather than a `<=`: nothing outside the
+    # vocabulary may be emitted, nothing inside it may go missing, and the next
+    # declared-but-unreachable kind fails here and needs its own named
+    # exception with its reason written down.
+    assert set().union(*per_game.values()) == set(eval_ledger.TRANSCRIPT_KINDS), (
+        "a declared kind is emitted by none of the five synthetic games, so "
+        "nobody will ever see it — give it a fixture, or carry it as a NAMED "
+        "exception here with the reason and the task that discharges it: "
+        f"{sorted(set(eval_ledger.TRANSCRIPT_KINDS) - set().union(*per_game.values()))}"
     )
     assert len(eval_ledger.TRANSCRIPT_KINDS) == len(set(eval_ledger.TRANSCRIPT_KINDS))
 

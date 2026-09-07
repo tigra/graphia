@@ -469,6 +469,16 @@ def test_transcript_renders_thought_as_private_attributed_element() -> None:
         {"p-unknown": ["orphan note"]},  # id absent from the roster
         {"p-ava": [None, 123]},  # non-string notes (defensive)
         "not-a-dict",  # wrong type entirely
+        # SPEC 041 SLICE 9 rows: the element is `str | ThoughtRecord` now, and
+        # `ThoughtRecord` is `total=False`, so a record with no usable `text`
+        # is a legal instance of the type and must be dropped exactly as a
+        # `None` note was. These are the shapes the retired
+        # `isinstance(note, str)` guard used to drop for the opposite reason —
+        # it dropped EVERY record, which is why it had to go.
+        {"p-ava": [{}]},  # a record carrying no keys at all
+        {"p-ava": [{"substituted": True}]},  # the flag, but no words
+        {"p-ava": [{"text": None}, {"text": 123}]},  # unusable `text`
+        {"p-ava": [{"text": "   "}]},  # whitespace-only, dropped by the strip
     ],
 )
 def test_transcript_thoughts_rendering_is_defensive(
@@ -487,6 +497,17 @@ def test_transcript_thoughts_rendering_is_defensive(
     # An unknown id still resolves (to its raw id) — surfaced, not crashed.
     if thoughts_value == {"p-unknown": ["orphan note"]}:
         assert '<thought player="p-unknown">orphan note</thought>' in out
+    else:
+        # ...and every OTHER row surfaces nothing at all, which is a stronger
+        # claim than "did not raise" and the one that catches a reader emitting
+        # an empty `<thought player="Ava"></thought>` for an unusable element.
+        # Added with the spec-041 record rows, because a `ThoughtRecord` with no
+        # `text` is the first shape that could plausibly render a tag with no
+        # body: it has a player id and a place in the list, and only the seam
+        # returning `""` stops it.
+        assert "<thought" not in out, (
+            f"an unusable thought element rendered a tag anyway: {out!r}"
+        )
 
 
 # ==========================================================================
@@ -846,3 +867,321 @@ def test_safe_llm_covers_reflection_call_site_via_fallback(
     # ``thought_text`` for the same reason as above (spec 041 Slice 9).
     for pid in ("p-ava", "p-ben", "p-mara"):
         assert thought_text(thoughts[pid][0]).strip()
+
+
+# ==========================================================================
+# Spec 041 Slice 9 — the element is a RECORD now (``str | ThoughtRecord``)
+# ==========================================================================
+#
+# Slice 9 reshaped THIS channel's element from a bare ``str`` to
+# :class:`graphia.state.ThoughtRecord`, so that a thought which is the node's
+# deterministic stand-in rather than the player's own reflection can carry that
+# fact out to the transcript. Three properties are new, and none of them
+# existed to be tested before:
+#
+#   * ``day_round_reflect`` writes the record, and an AUTHORED one carries
+#     exactly ``text`` — never ``substituted: False``;
+#   * :func:`graphia.state.thought_text` is the seam every reader goes through,
+#     so what it does with a malformed element is a contract rather than an
+#     accident;
+#   * :data:`graphia.state.ThoughtEntry` is a PERMANENT union, so one
+#     accumulated list may legitimately hold both shapes at once — a resumed
+#     checkpoint's strings followed by this session's records — and every
+#     reader must render the two indistinguishably.
+#
+# THE REDUCER TESTS ABOVE ARE DELIBERATELY NOT RE-PARAMETRISED OVER THE NEW
+# SHAPE, and that is a measured decision rather than an omission.
+# ``_merge_private_thoughts`` never subscripts an element, never reads a field
+# off one and never compares two — it concatenates and copies lists — so
+# widening the element is a type-level change there and re-running those four
+# tests with dicts in place of strings would assert nothing the ``str`` rows
+# already assert. What IS new is the MIXED list, and that has a test of its own
+# below.
+
+
+def test_an_authored_thought_record_carries_exactly_text(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The record-level guard, one layer UPSTREAM of any transcript.
+
+    The direct sibling of
+    ``test_slice39_diary_before_night.test_record_carries_exactly_day_cursor_and_text``,
+    and it exists because spec 041's Slice 8 established BY MUTATION that the
+    record layer and the transcript layer each catch a fault the other cannot
+    see: a renderer mutation turned 24 transcript tests red while the diary's
+    record guard stayed silent, and a NODE mutation turned that guard red while
+    the entire marking module stayed green. The thought channel had no
+    counterpart at all, so this is the missing half.
+
+    IT IS NOT A DUPLICATE OF THE TRANSCRIPT-LEVEL ABSENCE TEST, and the reason
+    is sharper here than a difference of altitude. An unconditional
+    ``record["substituted"] = mark.substituted`` writes ``False`` onto every
+    authored record — and the eval transcript emits its attribute for the
+    literal ``True`` ALONE, so every rendered document stays byte-identical and
+    the transcript layer reports nothing whatsoever. The bug would then sit in
+    the checkpoint, in every ``stream_mode="updates"`` delta and in every diary
+    prompt's context, visible to no test in the suite. This assertion is the
+    only thing that sees it.
+
+    ``substituted`` is the only key that could appear beyond ``text``:
+    :class:`graphia.state.ThoughtRecord` declares exactly those two, and
+    deliberately carries no ``day`` and no cursor of its own (that class's
+    docstring gives the reason), so the set equality is a complete statement
+    about the authored shape rather than a sample of it.
+    """
+    fake = _CapturingFake(Reflection(thought="A private musing."))
+    monkeypatch.setattr(day_nodes, "get_large", lambda: fake)
+
+    delta = day_round_reflect(_round_close_state())
+    reflectors = ("p-ava", "p-ben", "p-mara")
+    records = [delta["private_thoughts"][pid][0] for pid in reflectors]
+
+    # The premise: the model really answered, so every record here is on the
+    # AUTHORED path. Without this the set equality below would also pass on a
+    # node whose model call never happened.
+    assert [record["text"] for record in records] == ["A private musing."] * 3
+    for pid, record in zip(reflectors, records, strict=True):
+        assert set(record) == {"text"}, (
+            f"{pid}'s authored thought record carries more than `text` "
+            f"({sorted(record)}). A `substituted` key on this path means the "
+            "spec-041 marking is written unconditionally instead of only on "
+            "`_ai_reflect`'s substitution branch. Note that `False` here is "
+            "INVISIBLE to every transcript test — the writer emits the "
+            "attribute for the literal `True` alone — so this assertion is "
+            "the only one that fails."
+        )
+
+
+def test_a_substituted_thought_record_carries_text_and_the_flag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The other direction, without which the guard above is passable by nothing.
+
+    A node that had never learned to write ``substituted`` at all would satisfy
+    ``set(record) == {"text"}`` perfectly, so the authored guard is only worth
+    something beside a test that the key IS written when it is true. The pair is
+    the record-level statement of the asymmetry the whole slice rests on:
+    present when true, absent otherwise.
+
+    Driven through the real ``day_round_reflect`` against a tier that cannot
+    answer, so the flag travels ``_ai_reflect``'s substitution branch and the
+    ``_SubstitutionMark`` carrier rather than being handed in.
+    """
+
+    class _Boom:
+        def with_structured_output(self, schema: type, **kwargs: object) -> "_Boom":
+            return self
+
+        def invoke(self, messages: Any) -> Any:
+            raise RuntimeError("reflection model down")
+
+    monkeypatch.setattr(day_nodes, "get_large", lambda: _Boom())
+
+    delta = day_round_reflect(_round_close_state())
+    for pid in ("p-ava", "p-ben", "p-mara"):
+        record = delta["private_thoughts"][pid][0]
+        # The premise: the model failed and the node substituted its stand-in.
+        assert record["text"] == day_nodes._REFLECTION_FALLBACK
+        assert set(record) == {"text", "substituted"}, (
+            f"{pid}'s substituted record does not carry the marking "
+            f"({sorted(record)}), so nothing downstream can mark it"
+        )
+        assert record["substituted"] is True, (
+            "the flag must be the literal `True` — the eval transcript's "
+            "writer tests identity against it, so any other truthy value "
+            "renders as authored"
+        )
+
+
+@pytest.mark.parametrize(
+    ("entry", "expected"),
+    [
+        # The pre-reshape shape, still what a resumed checkpoint and ~100
+        # offline-suite sites hold. Returned AS-IS, including the blank cases:
+        # `thought_text` deliberately does not strip and does not filter, and
+        # both of those are load-bearing (its two families of caller want
+        # opposite things about a blank — the transcript renderers drop it, the
+        # prompt block renders a bare `- ` bullet for it).
+        pytest.param("a plain string", "a plain string", id="str"),
+        pytest.param("", "", id="empty-str"),
+        pytest.param("   ", "   ", id="blank-str-not-stripped"),
+        pytest.param("  padded  ", "  padded  ", id="str-not-stripped"),
+        # The post-reshape shape.
+        pytest.param({"text": "words"}, "words", id="record"),
+        pytest.param(
+            {"text": "words", "substituted": True},
+            "words",
+            id="record-marked-reads-the-same",
+        ),
+        # MALFORMED, which is the half that has no other home. `ThoughtRecord`
+        # is `total=False`, so a record with no `text` is a legal instance of
+        # the type and an illegal thing to render.
+        pytest.param({}, "", id="record-with-no-keys"),
+        pytest.param({"substituted": True}, "", id="record-with-only-the-flag"),
+        pytest.param({"text": None}, "", id="record-text-None"),
+        pytest.param({"text": 42}, "", id="record-text-int"),
+        pytest.param({"text": ["words"]}, "", id="record-text-list"),
+        pytest.param({"text": b"words"}, "", id="record-text-bytes"),
+        pytest.param({"text": {"text": "words"}}, "", id="record-text-nested"),
+        # Not an entry at all. Every one of these is what the guard this seam
+        # replaced (`if not isinstance(note, str): continue`) used to drop, and
+        # the contract is that they still contribute nothing.
+        pytest.param(None, "", id="None"),
+        pytest.param(42, "", id="int"),
+        pytest.param(True, "", id="bool-is-not-a-str-despite-being-an-int"),
+        pytest.param(["words"], "", id="list"),
+        pytest.param(("words",), "", id="tuple"),
+        pytest.param(object(), "", id="an-arbitrary-object"),
+    ],
+)
+def test_thought_text_reads_every_shape_and_degrades_rather_than_raising(
+    entry: Any, expected: str
+) -> None:
+    """The seam's whole contract, including the shapes that carry no text.
+
+    ``thought_text`` is what lets Slice 9 land incrementally across ~225
+    references instead of as one unreviewable change, so every reader in
+    ``src/`` now depends on this table. It DEGRADES RATHER THAN RAISES because
+    every caller is on a prompt-build or transcript-render path, where the
+    house style is that a malformed element costs one line of output instead of
+    aborting a game — the same posture ``_private_record_block`` and
+    ``_append_diaries`` already take field-by-field, applied one level down at
+    the element.
+
+    The ``bool`` row is the one that looks like padding and is not: ``True`` is
+    an ``int`` in Python, so a seam written with a truthiness or numeric test
+    somewhere in it could plausibly return something for it.
+    """
+    assert thought_text(entry) == expected
+
+
+def test_the_reducer_accumulates_a_resumed_checkpoints_strings_beside_new_records() -> None:
+    """The MIXED list, across super-steps — the one genuinely new reducer case.
+
+    :data:`graphia.state.ThoughtEntry` is permanent, not transitional, and the
+    reason is this exact list: a game resumed from a checkpoint written before
+    the reshape holds ``str`` entries, and ``day_round_reflect`` then appends
+    ``ThoughtRecord``s to the same per-player list, one per round, through the
+    reducer. So the mixed list is not a hypothetical hand-built shape — it is
+    what the channel holds on the first resumed game, and no migration exists
+    (none is needed, because no checkpoint crosses sessions; this is the
+    property that makes that true).
+
+    Two super-steps rather than one, because a single merge cannot show
+    accumulation: the reducer is called once per delta and the claim is that the
+    third round's record lands after the second round's, which lands after the
+    checkpoint's string.
+
+    The IDENTITY assertions are the sharp half. The reducer copies the LISTS and
+    must pass the ELEMENTS through untouched — if it ever rebuilt an element (to
+    normalise a ``str`` into a record, say) a substituted record's flag would be
+    the thing most likely to be dropped in the rebuild, silently, on the merge
+    rather than at the writer.
+    """
+    from_checkpoint = "written before the reshape"
+    round_two = {"text": "this session's second round"}
+    round_three = {"text": day_nodes._REFLECTION_FALLBACK, "substituted": True}
+
+    resumed = {"p-ava": [from_checkpoint], "p-ben": [from_checkpoint]}
+    after_two = _merge_private_thoughts(resumed, {"p-ava": [round_two]})
+    after_three = _merge_private_thoughts(after_two, {"p-ava": [round_three]})
+
+    assert after_three == {
+        "p-ava": [from_checkpoint, round_two, round_three],
+        "p-ben": [from_checkpoint],
+    }
+    # ...and the elements are the very objects handed in, not copies or
+    # coercions of them, so the flag cannot be lost in a rebuild.
+    assert after_three["p-ava"][1] is round_two
+    assert after_three["p-ava"][2] is round_three
+    assert after_three["p-ava"][2]["substituted"] is True
+    # Purity over the new shape: the record dicts themselves are unmutated, and
+    # the untouched player's list is still the pre-reshape one it started as.
+    assert round_two == {"text": "this session's second round"}
+    assert after_three["p-ben"] == [from_checkpoint]
+    # The count-based cursor `DiaryRecord.thoughts_before` reads off this list,
+    # so what matters to it is the LENGTH — and a mixed list counts exactly as a
+    # uniform one does.
+    assert len(after_three["p-ava"]) == 3
+
+
+def test_a_mixed_list_renders_the_same_prompt_bullets_as_an_all_string_list() -> None:
+    """One block, two element shapes, byte-identical output — and NO marking.
+
+    Two claims in one equality, and both are deliberate:
+
+    * the mixed list renders indistinguishably from the all-``str`` list the
+      same words would have produced before the reshape, so a resumed
+      checkpoint's prompts are unaffected and the ~100 offline-suite sites that
+      hand-build this channel as strings stay correct;
+    * THE SUBSTITUTION MARKING IS NOT RENDERED INTO THE PROMPT. That is settled
+      design rather than an oversight (it matches how ``_private_record_block``
+      renders a substituted ``DiaryRecord``): a prompt-visible mark would change
+      what the player reasons from, which is a game-design change and not this
+      spec's. The third entry below is substituted and its bullet is the
+      stand-in's words and nothing more.
+
+    The premise assertion keeps it non-vacuous: a block that had stopped
+    rendering bullets at all would satisfy the equality trivially.
+    """
+    mixed = [
+        "from the resumed checkpoint",
+        {"text": "from this session"},
+        {"text": "a deterministic stand-in", "substituted": True},
+    ]
+    all_strings = [
+        "from the resumed checkpoint",
+        "from this session",
+        "a deterministic stand-in",
+    ]
+
+    block = _private_thoughts_block(mixed, enabled=True)
+
+    # The premise: three bullets really are in there, in order.
+    assert block.count("\n- ") == 3
+    assert block.index("resumed checkpoint") < block.index("this session")
+    assert block.index("this session") < block.index("stand-in")
+    assert block == _private_thoughts_block(all_strings, enabled=True)
+    # ...and nothing in the rendered prompt says which one was a stand-in.
+    assert "substituted" not in block
+    assert "{" not in block and "}" not in block, (
+        "a dict repr reached the model's context — an element was rendered "
+        "without going through `thought_text`"
+    )
+
+
+def test_the_transcript_renders_a_record_and_a_string_thought_alike() -> None:
+    """``_append_thoughts`` over both element shapes, in one delta.
+
+    The transcript-layer twin of the prompt-block test above, and it is a
+    separate reader: ``_append_thoughts`` reads the words through
+    ``thought_text`` but reads the FLAG off the raw entry, so it is the one
+    reader that must handle both shapes and treat only one of them as capable
+    of carrying a marking.
+
+    Ava's entry is a bare ``str`` (a resumed checkpoint's), Mara's a record —
+    and the two elements render byte-identically apart from the words, which is
+    the guarantee that made the reshape landable across 225 references.
+    """
+    events: list[dict[str, Any]] = [
+        {"day_open": {"messages": [SystemMessage(content="Day 1 breaks.")]}},
+        {
+            "day_round_reflect": {
+                "private_thoughts": {
+                    "p-ava": ["A_STRING_ENTRY"],
+                    "p-mara": [{"text": "A_RECORD_ENTRY"}],
+                }
+            }
+        },
+    ]
+    out = render_transcript(
+        events, _transcript_players(), game_index=1, run_meta=None
+    )
+
+    assert '<thought player="Ava">A_STRING_ENTRY</thought>' in out
+    assert '<thought player="Mara">A_RECORD_ENTRY</thought>' in out
+    # No dict repr leaked into the artifact, which is the failure mode of a
+    # reader that skipped the seam: well-formed output, not a crash.
+    assert "{" not in out and "'text'" not in out
+    # An authored record carries no marking, whichever shape it arrived in.
+    assert "substituted" not in out

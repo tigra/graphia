@@ -1247,3 +1247,156 @@ def test_the_reflection_prompt_carries_no_diary_even_when_entries_exist(
         assert BEN_DIARY not in prompt
         assert MARA_DIARY not in prompt
     assert "ava-thought" in _human_prompt(fake.messages_log[0])
+
+
+# ==========================================================================
+# Spec 041 Slice 9 — the merged block over the reshaped thought element
+# ==========================================================================
+#
+# Slice 9 reshaped spec 028's element from a bare ``str`` to
+# :class:`graphia.state.ThoughtRecord`, and THIS renderer is the one whose
+# failure mode is well-formed output rather than a crash: a thought rendered
+# without going through :func:`graphia.state.thought_text` becomes a
+# ``{'text': …}`` dict repr inside the model's context, in every Day-speech,
+# vote, Night-point and diary prompt after the first diary exists. Nothing
+# raises and nothing looks wrong in a log.
+#
+# WHY THIS IS NOT COVERED BY THE SPEC-028 BLOCK TEST ONE MODULE OVER. There are
+# TWO renderers. ``_private_thoughts_block`` reads the whole list in one
+# comprehension; ``_private_record_block`` reads it in TWO — ``notes[emitted:
+# stop]`` inside the per-diary walk and ``notes[emitted:]`` after the last entry
+# — so a conversion applied to one of those two lines and not the other renders
+# correctly for exactly the thoughts on one side of a diary. The cases below
+# put entries on both sides of a diary on purpose.
+#
+# The whole spec-039 suite otherwise passes unchanged over the new shape,
+# measured rather than assumed: every module here hand-builds this channel as
+# lists of plain ``str``, and the seam accepts those unchanged. So these are
+# additions, not conversions.
+
+_MIXED_NOTES = [
+    "from a resumed checkpoint",
+    {"text": "from this session"},
+    {"text": "a deterministic stand-in", "substituted": True},
+    {"text": "back to an authored one"},
+]
+_MIXED_WORDS = [
+    "from a resumed checkpoint",
+    "from this session",
+    "a deterministic stand-in",
+    "back to an authored one",
+]
+
+
+@pytest.mark.parametrize("cursor", [0, 1, 2, 3, 4])
+def test_a_mixed_shape_thought_list_merges_exactly_as_an_all_string_one(
+    cursor: int,
+) -> None:
+    """A list holding both element shapes renders byte-identically, at every cut.
+
+    Swept over the cursor rather than sampled, because the sweep is what puts
+    the mixed elements on BOTH SIDES of the diary line: at ``cursor == 0`` all
+    four bullets come from ``notes[emitted:]`` after the entry, at ``cursor ==
+    4`` all four come from ``notes[emitted:stop]`` before it, and the middle
+    three split them across the two comprehensions. A conversion applied to one
+    of those two lines and not the other passes some rows and fails others,
+    which is exactly what a single-cursor test could not tell apart.
+
+    The equality is against the all-``str`` list — the shape every one of this
+    module's other tests uses and the shape a pre-reshape checkpoint holds — so
+    what is asserted is that the reshape is invisible in the prompt.
+    """
+    mixed = _private_record_block(
+        _MIXED_NOTES,
+        [_rec(1, cursor, "ENTRY")],
+        thoughts_enabled=True,
+        diaries_enabled=True,
+    )
+    all_strings = _private_record_block(
+        _MIXED_WORDS,
+        [_rec(1, cursor, "ENTRY")],
+        thoughts_enabled=True,
+        diaries_enabled=True,
+    )
+
+    # The premise: five bullets (four thoughts and the entry), and the entry
+    # really did land at the cut this row names.
+    assert len(_bullets(mixed)) == 5
+    assert len(_thought_bullets(mixed)) == 4
+    assert _diary_bullets(mixed) == [_diary_line(1, "ENTRY")]
+    assert mixed == all_strings
+    # ...and no element reached the model as a dict repr, stated in its own
+    # words so the failure names the actual defect rather than a diff.
+    assert "{" not in mixed and "'text'" not in mixed, (
+        "a thought element rendered as its dict repr — a slice bound in "
+        "`_private_record_block` is not reading through `thought_text`"
+    )
+
+
+def test_the_merged_block_renders_no_substitution_marking() -> None:
+    """SETTLED DESIGN, pinned so a later slice cannot drift into it.
+
+    The marking is deliberately absent from the prompt, matching how this same
+    renderer treats a substituted ``DiaryRecord``: a prompt-visible mark would
+    change what the player reasons from, which is a game-design change and not
+    spec 041's. So a substituted thought and a substituted entry are rendered
+    here as their words alone.
+
+    Non-vacuous by construction: both the marked thought and the marked entry
+    are asserted PRESENT by their words first, so a block that had stopped
+    rendering them would fail rather than satisfy the absence trivially.
+    """
+    marked_entry: DiaryRecord = {
+        "day": 1,
+        "thoughts_before": 2,
+        "text": "an entry that is a stand-in",
+        "substituted": True,
+    }
+    block = _private_record_block(
+        _MIXED_NOTES,
+        [marked_entry],
+        thoughts_enabled=True,
+        diaries_enabled=True,
+    )
+
+    # The premise: both marked bodies really are in the block.
+    assert "a deterministic stand-in" in block
+    assert "an entry that is a stand-in" in block
+    # ...and nothing in it says which of them was one.
+    assert "substituted" not in block
+    assert "True" not in block
+
+
+def test_a_malformed_thought_element_costs_one_blank_bullet_not_a_raise() -> None:
+    """The seam's degrade-rather-than-raise posture, at THIS caller.
+
+    ``_private_record_block`` builds a prompt, so the house rule is that a
+    malformed element costs one line of output instead of aborting a game — the
+    same posture this function already takes field-by-field over a
+    ``total=False`` ``DiaryRecord``, applied one level down to the elements.
+
+    The bullet is BLANK rather than absent, and that is the seam's documented
+    contract rather than an accident: ``thought_text`` returns ``""`` and does
+    not filter, because its two families of caller want opposite things about a
+    blank — the transcript renderers drop it, and this block renders one
+    ``- `` bullet per entry unconditionally (it would already do so for an
+    empty ``str``). Filtering inside the helper would silently change that.
+    """
+    block = _private_record_block(
+        ["a real thought", {}, {"text": None}, "another real thought"],
+        [_rec(1, 2, "ENTRY")],
+        thoughts_enabled=True,
+        diaries_enabled=True,
+    )
+
+    # The blank bullet keeps its trailing space ("- ", not "-"), which is not
+    # cosmetic trivia: only the DIARY line is `.rstrip()`ed in this function, so
+    # a future tidy-up that rstripped the thought bullets too would change the
+    # prompt bytes for every game holding a malformed element.
+    assert _bullets(block) == [
+        "- a real thought",
+        "- ",
+        _diary_line(1, "ENTRY"),
+        "- ",
+        "- another real thought",
+    ]
