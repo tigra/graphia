@@ -3750,8 +3750,19 @@ async def test_the_diary_style_is_the_thoughts_rule_plus_underline(
         assert thought.color != styles[KIND_SPEECH_LAW_ABIDING].color
 
 
+# THE THREE THEMES THIS RULE HAS TO HOLD UNDER, swept rather than sampled.
+# `textual-dark` is the app's default and was the only one this test ran under
+# when it was written; the other two are the ones a `$text-muted` redefinition
+# or a Textual palette change could break in isolation while the default case
+# stayed green. `textual-ansi` is last because it is the thinnest case and the
+# one whose failure would matter most: there `$text-muted` collapses to the
+# terminal default for BOTH diary kinds, so the strike is the whole differentia.
+_TRANSCRIPT_STYLE_THEMES = ["textual-dark", "textual-light", "textual-ansi"]
+
+
+@pytest.mark.parametrize("theme", _TRANSCRIPT_STYLE_THEMES)
 async def test_the_substituted_diary_style_is_the_diarys_rule_plus_strike(
-    tmp_path: Path,
+    tmp_path: Path, theme: str
 ) -> None:
     """Spec 041's rule, asserted as a RELATION — the third use of the shape.
 
@@ -3780,6 +3791,26 @@ async def test_the_substituted_diary_style_is_the_diarys_rule_plus_strike(
     the installed 8.2.4 has no `overline` parameter, so the span renders
     undecorated), which is why the axis is `strike` and why reading the resolved
     style rather than the stylesheet text is the whole protection.
+
+    SWEPT OVER ALL THREE THEMES rather than run under the default, which is the
+    one thing the relational shape does not give for free. Every claim below is
+    a relation between two resolved styles, and a relation can hold on one
+    palette and break on another: `$text-muted` is a different value on each of
+    `textual-dark` (`#a0a0a0`), `textual-light` (`#595959`) and `textual-ansi`
+    (the terminal default), and only the last of those is a colour this
+    stylesheet cannot reason about at all. Under a single-theme test a future
+    palette change — or a redefinition of `$text-muted` in one theme — could
+    quietly break a theme nobody's test ran, and the suite would stay green.
+
+    THE THEME IS SET BEFORE THE TRANSCRIPT SCREEN IS OPENED, and that ordering
+    is a measured fact rather than a style choice. `_styled_body` bakes the
+    resolved Rich styles into the ``Static``'s renderable at **compose** time,
+    so switching the theme on an already-open transcript re-themes the chrome
+    but leaves the body's spans painted in the colours of the theme that
+    composed them. `_kind_styles` itself re-resolves live either way — so the
+    assertions below would pass under either ordering — but composing under the
+    theme is what a reviewer actually gets, and it keeps this test's subject and
+    the pixels on their screen the same thing.
 
     Four claims, and the third is the differentia:
 
@@ -3815,13 +3846,22 @@ async def test_the_substituted_diary_style_is_the_diarys_rule_plus_strike(
     )
 
     ledger, _ = _ledger_with_body(
-        tmp_path, _HIGHLIGHT_BODY, name="hl-diary-substituted-style.yaml"
+        tmp_path, _HIGHLIGHT_BODY, name=f"hl-diary-substituted-style-{theme}.yaml"
     )
 
     app = LedgerViewerApp(path=ledger)
     async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        # The assignment itself is the guard for a theme that stopped existing:
+        # `App.theme` is a validated reactive and raises `InvalidThemeError` on
+        # a name Textual has not registered, so a renamed or removed built-in
+        # fails loudly here rather than silently leaving this case sampling the
+        # default palette a second time.
+        pilot.app.theme = theme
         await pilot.pause()
+
         screen = await _open_the_only_game(pilot)
+        # Resolved against the theme this case names — the whole point of the
+        # sweep is that these are three different resolutions, not one.
         styles = screen._kind_styles()
 
         substituted, diary = styles[KIND_DIARY_SUBSTITUTED], styles[KIND_DIARY]
@@ -3834,6 +3874,26 @@ async def test_the_substituted_diary_style_is_the_diarys_rule_plus_strike(
             "the substituted rule resolved to no colour at all, so the "
             "equality above is vacuous"
         )
+        # THE NON-VACUITY GUARD FOR THE SWEEP ITSELF, and it is the reason the
+        # parametrization is worth more than three copies of one assertion: it
+        # pins that `textual-ansi` really does resolve this family to the
+        # TERMINAL DEFAULT while the other two resolve it to a concrete hue. Not
+        # a colour literal — the hue is deliberately unpinned, exactly as the
+        # relations below are — but a statement about which KIND of colour
+        # arrives, which is what makes the ansi case the thin one. Without it a
+        # future change that stopped the theme taking effect would leave all
+        # three cases asserting the dark palette and all three passing.
+        if theme == "textual-ansi":
+            assert substituted.color.is_default, (
+                "the ansi theme resolved this family to a concrete hue, so the "
+                "thinnest case — where the SGR flags are the whole separation "
+                "— is no longer being tested"
+            )
+        else:
+            assert not substituted.color.is_default, (
+                f"{theme} resolved this family to the terminal default, so its "
+                "measured contrast is no longer a fact about this stylesheet"
+            )
         assert substituted.italic is True and diary.italic is True, (
             "italic is inherited from `thought` through `diary`; dropping it "
             "from either would stop a substituted entry reading as a diary"
