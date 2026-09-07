@@ -685,6 +685,18 @@ the node's fallback, `attempted` is the answers **asked of the model**, and
   (a game that raised mid-run is scored by nothing, here as everywhere), and each
   recorded rate is `Σcount / Σattempted` — never a mean of per-game rates. Key
   order is the schema order above, which is also the order the viewer renders.
+- **`blunder-eval` only — and in a `persona-bench` record its absence means
+  _not measured_, not zero.** Only `blunder-eval` installs the counting sink, so
+  only a **game** record can carry this block. A **persona-bench** record does
+  carry `provider.structured_output` (both harnesses share the same provenance
+  collector) yet never carries `quality.substitutions` — even though it
+  generates rosters and personas and so genuinely *could* substitute. Read a
+  missing block on a bench record as *this harness took no reading*, exactly as
+  you would read a missing kind inside a present block as *no opportunity*;
+  reading it as "nothing substituted" is the same absent-versus-zero mistake
+  this block exists to prevent, one level up. Installing a sink in
+  `persona_bench` as well is a separate decision, deliberately not taken in spec
+  041.
 - **How the viewer surfaces it.** The drill-down renders the sub-block in full,
   one gate per kind, so an unattempted kind gains no line. The table carries a
   single `Subst (worst)` column — the **worst kind's rate with its name**

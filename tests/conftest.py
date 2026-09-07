@@ -25,6 +25,13 @@ from graphia.llm import (
 from graphia.nodes.day import DAY_MAX_ROUNDS, DAY_MAX_VOTES
 from graphia.nodes.setup import ai_name_count
 
+# Spec 041 Slice 6/7: the substitution sink's reset, for the autouse teardown
+# below. ``graphia.substitution`` is a stdlib-only leaf (``logging`` / ``enum``
+# / ``collections.abc``), so importing it here adds nothing to the suite's
+# import cost. Aliased because the fixture that calls it wants the descriptive
+# name ``reset_substitution_sink`` for itself.
+from graphia.substitution import reset_sink as reset_substitution_sink_fn
+
 # ==========================================================================
 # Structured-output bookkeeping shared by EVERY fake (spec 041 Slice 5)
 #
@@ -523,6 +530,58 @@ def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("graphia.llm._active_provider", _LoudFailureProvider())
     monkeypatch.setattr("graphia.llm._large", None)
     monkeypatch.setattr("graphia.llm._small", None)
+
+
+@pytest.fixture(autouse=True)
+def reset_substitution_sink() -> Iterator[None]:
+    """Autouse safety net: restore ``graphia.substitution``'s production sink.
+
+    ``substitution.set_sink`` is process-global by design — the module keeps
+    exactly one reference and no per-game state, and says plainly that isolation
+    belongs to whoever installs a sink. Two callers install one: ``run_eval``
+    (an accumulating ``_SubstitutionCounter`` per game, reset in a ``finally``)
+    and tests. A test that installs one and returns early, raises, or simply
+    forgets leaves it installed **for every later test in the session**.
+
+    **Why this is global rather than one autouse fixture per module** (spec 041
+    Task 7.3, and the same argument :func:`safe_llm` makes for its Layer 2
+    provider backstop): a per-module fixture can only protect the modules whose
+    author remembered to write it. The modules that install sinks today each
+    have one; the module that adds a sink next year is the hazard, and it is a
+    *silent* hazard — Task 6.3 measured it by removing its own module-local
+    reset, which left 28 tests green and turned exactly 2 red, one of them a
+    test that had been unknowingly exercising a previous test's sink instead of
+    production's ``default_sink``. A leaked counting sink does not usually break
+    the next test; it just quietly answers its questions with the wrong
+    instrument.
+
+    **Both sides of the ``yield``**, so a leak from anywhere cannot reach a
+    test and a test cannot leak outward. **To ``default_sink``, not to a no-op**
+    — that is the fixed point ``reset_sink`` documents: clearing to silence
+    would leave every test that installs no sink running with the
+    instrumentation dead, and the tests that assert on production's own
+    substitution warning would then be measuring a fixture artefact.
+
+    Costs one function call per test. Proven, not assumed: the leak it prevents
+    is constructed on purpose in
+    ``tests/test_substitution_ledger.py::test_leak_probe_a_…`` /
+    ``…::test_leak_probe_b_…`` — a module that deliberately has no local reset
+    fixture, so removing ``autouse=True`` here turns probe B red.
+
+    The CROSS-module half was measured the same way (2026-09-07). With this
+    fixture's ``autouse`` removed **and** ``tests/test_substitution_counts.py``'s
+    module-local reset disabled, running that file's leak probe A followed by
+    the counts module's
+    ``test_a_forced_substitution_leaves_one_warning_from_the_default_sink``
+    fails in the SECOND module — ``assert 0 == 1``, because the first module's
+    leaked sink had displaced ``default_sink`` and swallowed the warning — while
+    probe A itself stays green. Restoring only this fixture makes the pair green
+    again with that module's local reset still disabled, which is the whole
+    argument for the reset living here.
+    """
+    reset_substitution_sink_fn()
+    yield
+    reset_substitution_sink_fn()
 
 
 class _LoudFailureMemoryClient:
