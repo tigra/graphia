@@ -661,12 +661,23 @@ def test_dead_players_never_write(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_record_carries_exactly_day_cursor_and_text(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A ``DiaryRecord`` holds ``day`` / ``thoughts_before`` / ``text``, no more.
+    """An AUTHORED record holds ``day`` / ``thoughts_before`` / ``text``, no more.
 
     ``day`` is pinned to the literal 3 — the state's cycle BEFORE
     ``night_open`` bumps it. ``"day": cycle + 1`` (the store's ``night_index``
     arithmetic, which Slice 3 applies at the store boundary and NOT here) would
     read as 4 and is caught.
+
+    THE SET EQUALITY NOW CARRIES A SECOND GUARANTEE (spec 041 Slice 8), which
+    is why "no more" is worth keeping rather than relaxing. ``DiaryRecord``
+    gained a fourth DECLARED key, ``substituted``, and the fake here scripts a
+    real entry — so the record under test is on the AUTHORED path, where that
+    key must be ABSENT rather than ``False``. This assertion is therefore the
+    first thing that goes red if ``day_diary`` ever writes the marking
+    unconditionally, which matters because the eval transcript emits it as a
+    conditional ``substituted="true"`` attribute: an unconditional flag would
+    mark every honest entry in every preserved game. The substituted half of
+    the contract lives in ``tests/test_spec041_substitution_marking.py``.
     """
     fake = _CapturingDiaryFake()
     monkeypatch.setattr(day_nodes, "get_large", lambda: fake)
@@ -674,7 +685,11 @@ def test_record_carries_exactly_day_cursor_and_text(
     delta = day_diary(_day_close_state(cycle=3))
     record = delta["private_diaries"]["p-ava"][0]
 
-    assert set(record) == {"day", "thoughts_before", "text"}
+    assert set(record) == {"day", "thoughts_before", "text"}, (
+        "An authored diary entry must carry exactly the three pre-041 keys. A "
+        "`substituted` key here means the spec-041 marking was written "
+        "unconditionally rather than only on the substitution branch."
+    )
     assert record["day"] == 3
     assert record["text"] == SCRIPTED_ENTRY
     assert isinstance(record["thoughts_before"], int)

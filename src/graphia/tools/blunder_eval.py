@@ -1912,6 +1912,23 @@ def _diary_fallback_text() -> str | None:
     private import in a measurement tool. The measurement must not reshape the
     thing measured.
 
+    THAT ARGUMENT WAS SOUND AND HAS BEEN OVERTAKEN — read it as history, not as
+    guidance. Spec 041 Slice 8 added ``DiaryRecord["substituted"]``, set in
+    ``day_diary`` from the mark ``_ai_diary`` stamps on its substitution
+    branch. Nothing about the trade changed; what changed is which cost is on
+    the table. The cost the old argument weighed was a state-shape change bought
+    for MEASUREMENT, and this function no longer needs one: Slice 6 counts
+    substitutions AT THE SOURCE (``graphia.substitution``), so the harness gets
+    its numerator without asking the node's state shape for anything, and the
+    import below stays exactly the one private import it always was. The flag
+    is there for DISPLAY, and display is what text cannot serve: Task 7.1
+    scripted a model to answer with ``_DIARY_FALLBACK``'s own sentence and the
+    resulting record reads ``diary_fallback_rate: 1.0`` (18/18 by the exact
+    match below) beside ``substitutions.diary`` at rate 0.0 (0/18 at the
+    source), with a warning naming both routes. A player who writes the
+    placeholder has not substituted — so the marking cannot be derived
+    post-hoc, and the flag is the only record of its fact.
+
     Imported LAZILY, not at module scope: ``graphia.ui.ledger_viewer`` imports
     ``LEDGER_PATH`` from this module, and ``graphia.nodes.day`` drags in the
     whole gameplay stack (``diary_store``, ``career_events``, the prompts) —

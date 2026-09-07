@@ -139,6 +139,15 @@ class DiaryRecord(TypedDict, total=False):
     that never resumes. A ``TypedDict`` *is* a ``dict`` at runtime, so it never
     reaches the ext hook and round-trips exactly.
 
+    ``substituted`` (spec 041 Slice 8) rides that same guarantee and needed NO
+    change to ``make_checkpoint_serde``'s allowlist, for exactly the reason
+    argued above: adding a key to a ``TypedDict`` adds a key to a ``dict``, and
+    a ``dict`` never reaches the ext hook at all. ``total=False`` covers the
+    other direction — a record that predates the key (one resumed from a
+    checkpoint written before it existed, or hand-built in a test) is still a
+    valid ``DiaryRecord``, and every read goes through ``.get``, so its absence
+    reports the entry as authored, which is what it was.
+
     Fields
     ------
 
@@ -154,6 +163,26 @@ class DiaryRecord(TypedDict, total=False):
 
     ``text``
         The entry itself.
+
+    ``substituted``
+        PRESENT ONLY WHEN TRUE — the entry is the node's deterministic
+        stand-in (``nodes.day._DIARY_FALLBACK``) rather than the player's own
+        writing (spec 041 Slice 8). ``day_diary`` writes it from the mark
+        ``_ai_diary`` stamps in its single substitution branch, so the fact is
+        CARRIED out of the code that substituted; it is never recovered by
+        comparing ``text`` against the placeholder sentence. Spec 041 Task 7.1
+        measured why that distinction is not pedantry: a model scripted to
+        answer with ``_DIARY_FALLBACK``'s exact sentence produced a ledger
+        record reading ``diary_fallback_rate: 1.0`` (18/18 by text match)
+        beside ``substitutions.diary`` at rate 0.0 (0/18 at the source).
+        Nothing had substituted, and no amount of text inspection can tell the
+        two cases apart — so this key is the ONLY record of its fact.
+
+        An AUTHORED entry OMITS the key entirely rather than carrying
+        ``False``, and that asymmetry is load-bearing downstream: the eval
+        transcript emits ``substituted="true"`` as a conditional attribute, so
+        an authored entry renders byte-identically to every transcript
+        preserved before this key existed.
 
     The cursor, and why nothing simpler works
     -----------------------------------------
@@ -187,6 +216,7 @@ class DiaryRecord(TypedDict, total=False):
     day: int
     thoughts_before: int
     text: str
+    substituted: bool
 
 
 class GameState(TypedDict, total=False):

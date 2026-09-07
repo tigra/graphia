@@ -1794,6 +1794,52 @@ _DIARY_FALLBACK = (
 )
 
 
+@dataclasses.dataclass(slots=True)
+class _SubstitutionMark:
+    """A one-bit mailbox: did the helper return its deterministic stand-in?
+
+    Spec 041 Slice 8's CARRIER. ``day_diary`` builds the ``DiaryRecord``, but
+    ``_ai_diary`` is the only code that knows whether the text going into it is
+    the player's writing or ``_DIARY_FALLBACK`` — and ``_ai_diary`` returns a
+    ``str`` either way. That return type is not free to change: FIVE direct
+    calls in the offline suite assert on the returned ``str`` itself, by ``==``
+    or by ``in`` — four in ``tests/test_substitution_counts.py`` (the seven-way
+    sweep's ``_Case.run``, the two log-line tests, and
+    ``_force_one_diary_substitution``) and one in
+    ``tests/test_provider_seam_through_the_node.py``, which asserts the canned
+    entry is ``in`` it. A sixth reference, in
+    ``tests/test_slice39_diary_interleave.py``, pins this signature's
+    ``diaries`` defaults without calling it, so a new keyword-only parameter is
+    free where a changed return is not. The fact therefore travels out BESIDE
+    the return rather than inside it, stamped at the same line that books
+    ``note_substitution`` — one place says both, which is the posture
+    ``graphia.substitution`` already argues for.
+
+    NEITHER ALTERNATIVE WORKS, and both were considered:
+
+    - ``entry == _DIARY_FALLBACK`` in ``day_diary`` — inference from the text,
+      and provably wrong rather than merely inelegant. Spec 041 Task 7.1
+      scripted a model to answer with that exact sentence; the resulting ledger
+      record reads ``diary_fallback_rate: 1.0`` (18/18 by text match) beside
+      ``substitutions.diary`` at rate 0.0 (0/18 at the source). A player who
+      writes the placeholder has not substituted, and the text cannot say so.
+    - ``entry is _DIARY_FALLBACK`` — identity, which happens to be correct
+      today (the accepted branch runs ``_clamp_diary_entry``, which builds a
+      fresh ``str``), but whose failure mode is SILENCE: any later copy or
+      re-normalisation of the constant would stop the marking without failing
+      anything. This spec exists to remove silent substitution, not to detect
+      it silently.
+
+    CALL-LOCAL ONLY — this never enters ``GameState`` and never reaches a
+    checkpoint. See :class:`graphia.state.DiaryRecord`'s docstring for why a
+    dataclass in a state channel comes back from a resume as a bare ``dict``;
+    that hazard is the reason this one stays on the stack. A fresh instance per
+    writer, so there is no reset step for the fan-out to forget.
+    """
+
+    substituted: bool = False
+
+
 def _clamp_diary_entry(text: str) -> str:
     """Normalise ONE diary entry to a single line and clamp it to ``DIARY_MAX_CHARS``.
 
@@ -1839,6 +1885,7 @@ def _ai_diary(
     private_thoughts_enabled: bool = True,
     diaries: list[DiaryRecord] | None = None,
     diaries_enabled: bool = True,
+    substitution_mark: _SubstitutionMark | None = None,
 ) -> str:
     """Produce ONE surviving AI player's before-Night diary entry (spec 039).
 
@@ -1912,6 +1959,17 @@ def _ai_diary(
     raised route. The two node-side lines are kept as they are (the arity
     contract above is load-bearing); the substitution line is the sink's, and
     is emitted once for either route.
+
+    ``substitution_mark`` (spec 041 Slice 8) is stamped on that same single
+    return, so it covers both routes for the same reason one
+    ``note_substitution`` does — and it is the ONLY thing that does. The sink
+    booking is a count with no addressee: it cannot tell ``day_diary`` WHICH of
+    its writers substituted, and production runs on ``default_sink``, which
+    accumulates nothing at all. So the count and the mark are two facts with
+    two audiences, emitted from one line. Optional, and ``None`` at every
+    direct call site in the suite: this function's contract is still "produce
+    the text", and a caller that does not build a ``DiaryRecord`` has nothing
+    to mark. See :class:`_SubstitutionMark` for why the fact is not returned.
     """
     # Before the ``try``: inside it, a raising harness sink would be caught by
     # the ``except Exception`` below, logged as a model failure and returned as
@@ -1969,8 +2027,13 @@ def _ai_diary(
         )
     # The one substitution branch, reached from BOTH routes above: the
     # no-usable-entry fall-through inside the ``try`` and the ``except``. One
-    # notification covers both, because both substituted one answer.
+    # notification covers both, because both substituted one answer — and, from
+    # spec 041 Slice 8, one mark for the same reason. The mark is the caller's
+    # copy of the fact the sink counts: ``day_diary`` needs to know that THIS
+    # writer's entry is a stand-in, which a count cannot tell it.
     note_substitution(SubstitutionKind.DIARY)
+    if substitution_mark is not None:
+        substitution_mark.substituted = True
     return _DIARY_FALLBACK
 
 
@@ -2147,6 +2210,18 @@ def day_diary(
     (broad ``try/except`` + ``_DIARY_FALLBACK``), and a persistence failure
     inside ``_persist_diary`` (broad ``try/except`` + ``logger.exception``).
 
+    A SUBSTITUTED ENTRY IS MARKED ON ITS RECORD (spec 041 Slice 8). The model
+    failure above no longer leaves the record indistinguishable from an honest
+    one: each writer gets a fresh :class:`_SubstitutionMark`, ``_ai_diary``
+    stamps it where it substitutes, and this node copies that into
+    ``DiaryRecord["substituted"]`` — present only when true, so an authored
+    entry carries exactly the three keys it carried before this spec. The fact
+    is carried out of the code that substituted rather than recovered by
+    comparing the text to ``_DIARY_FALLBACK``, which Task 7.1 measured to be
+    unsound — see :class:`_SubstitutionMark`. The store write is deliberately
+    NOT told: the marking is for a reviewer reading a preserved game, and
+    ``DiaryStore.write`` takes text.
+
     FLAG-OFF IS NOT BYTE-IDENTICAL IN THE STORE, and that is deliberate: the
     early ``return {}`` above the fan-out means an off run writes NO diary to
     the store at all, and the retired placeholder does not come back in its
@@ -2189,6 +2264,12 @@ def day_diary(
     new_diaries: dict[str, list[DiaryRecord]] = {}
     for player in writers:
         own_thoughts = list(all_thoughts.get(player.id) or [])
+        # THE CARRIED FACT (spec 041 Slice 8). One fresh mark per writer, so
+        # there is no per-iteration reset to forget. ``_ai_diary`` stamps it on
+        # its single substitution branch, which BOTH failure routes reach — the
+        # no-usable-entry fall-through and the raised call — so this covers the
+        # two of them the same way one ``note_substitution`` does.
+        mark = _SubstitutionMark()
         entry = _ai_diary(
             player,
             state,
@@ -2200,6 +2281,7 @@ def day_diary(
             # ONLY this player's own entries, keyed on its own id.
             diaries=list(all_diaries.get(player.id) or []),
             diaries_enabled=private_diaries_enabled,
+            substitution_mark=mark,
         )
         record: DiaryRecord = {
             # The Day being summed up: ``cycle`` BEFORE ``night_open`` bumps it.
@@ -2209,6 +2291,13 @@ def day_diary(
             "thoughts_before": len(own_thoughts),
             "text": entry,
         }
+        # PRESENT ONLY WHEN TRUE — never ``"substituted": False``. An authored
+        # entry keeps exactly the three pre-041 keys, which is what lets the
+        # eval transcript's conditional ``substituted="true"`` attribute leave
+        # every honest entry rendering byte-identically to the preserved games.
+        # An unconditional flag would mark all of them.
+        if mark.substituted:
+            record["substituted"] = True
         # The store write comes BEFORE the accumulate, and is fully guarded, so
         # a persistence failure can neither drop this player's state entry nor
         # skip the players after it.
