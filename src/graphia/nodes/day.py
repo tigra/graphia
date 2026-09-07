@@ -1200,7 +1200,7 @@ def day_round_reflect(
         # eval transcript's conditional attribute leave every honest thought
         # rendering byte-identically to the 298 preserved transcripts. The same
         # load-bearing asymmetry ``day_diary`` writes for a ``DiaryRecord``; an
-        # unconditional flag would mark all 10,491 thought bodies in the corpus.
+        # unconditional flag would mark all 10,706 thought bodies in the corpus.
         if mark.substituted:
             record["substituted"] = True
         new_thoughts[player.id] = [record]
