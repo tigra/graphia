@@ -11,9 +11,9 @@ from langgraph.graph.message import add_messages
 
 
 def _merge_private_thoughts(
-    prior: dict[str, list[str]] | None,
-    incoming: dict[str, list[str]] | None,
-) -> dict[str, list[str]]:
+    prior: dict[str, list[ThoughtEntry]] | None,
+    incoming: dict[str, list[ThoughtEntry]] | None,
+) -> dict[str, list[ThoughtEntry]]:
     """Accumulate per-player private thoughts (spec 028) — the channel reducer.
 
     The per-key analogue of ``operator.add`` on lists: given the prior map and
@@ -29,8 +29,19 @@ def _merge_private_thoughts(
     (never a ``set``), so the order is deterministic and the dual-mode
     byte-equal smoke is unaffected. ``add_messages`` is the custom-reducer
     precedent; ``kill_log``'s ``operator.add`` the accumulation precedent.
+
+    SHAPE-AGNOSTIC OVER THE ELEMENT, which is what spec 041's reshape of this
+    channel turns from an accident into a property worth naming. The body
+    concatenates and copies lists; it never subscripts an element, never reads a
+    field off one, and never compares two. So widening the element from ``str``
+    to :data:`ThoughtEntry` (``str | ThoughtRecord``) is a TYPE-LEVEL change
+    here and nothing more — no branch, no behavioural difference, and a mixed
+    list (a resumed checkpoint's strings followed by this session's records)
+    merges exactly like a uniform one. That is precisely the property the
+    incremental landing depends on: the reducer did not have to be sequenced
+    against the writers.
     """
-    merged: dict[str, list[str]] = {
+    merged: dict[str, list[ThoughtEntry]] = {
         player_id: list(notes) for player_id, notes in (prior or {}).items()
     }
     for player_id, notes in (incoming or {}).items():
@@ -46,7 +57,8 @@ def _merge_private_diaries(
 
     The exact structural twin of :func:`_merge_private_thoughts` above, over
     :class:`DiaryRecord` values (defined below with the other state
-    ``TypedDict``s) instead of bare strings: given the prior map and an
+    ``TypedDict``s) rather than that channel's :data:`ThoughtEntry`: given the
+    prior map and an
     incoming delta map, return a NEW map where each player's list is
     ``prior + incoming`` (concatenation, preserving the order the entries were
     written). A plain ``dict`` merge would let a later Day's delta CLOBBER the
@@ -59,6 +71,16 @@ def _merge_private_diaries(
     028's behaviour. Six duplicated lines is the cheaper side of that trade.
     Keep the pair in step by hand — a fix to one is almost certainly a fix to
     both.
+
+    THE TEMPTATION TO FOLD THESE TWO GOT STRONGER, NOT WEAKER, WITH SPEC 041,
+    which is why this warning is being reinforced rather than left as it stood.
+    The original argument had an easy tell: one reducer was over ``str`` and the
+    other over a record, so they merely looked similar. Now that 041 has
+    reshaped 028's element into :class:`ThoughtRecord`, the two bodies are
+    element-agnostic concatenations that differ in NOTHING but their type
+    annotation — so "obviously the same function twice" is now the honest first
+    impression and the reason to keep them apart is entirely the ownership one
+    above. Do not fold them.
 
     PURE (copy-not-mutate): neither input is mutated — the prior map is shallow-
     copied and each touched player's list is rebuilt as a fresh ``list`` — so
@@ -188,8 +210,12 @@ class DiaryRecord(TypedDict, total=False):
     -----------------------------------------
 
     Diaries and spec 028's ``private_thoughts`` have to render as ONE private
-    record in event order, but 028's channel holds bare strings carrying no
-    ordering metadata, and spec 039 must not touch that channel. So all the
+    record in event order, but 028's channel carries NO ORDERING METADATA, and
+    spec 039 must not touch that channel. (It held bare ``str`` entries when
+    this was written; spec 041 reshaped the element to
+    :class:`ThoughtRecord`, which deliberately still carries no ordering field
+    — see that class — so this whole argument is unchanged, and the phrasing
+    above is now about metadata rather than about strings.) So all the
     ordering information lives on this side: each entry records
     ``len(state["private_thoughts"].get(player_id, []))`` as observed at write
     time. The merge then walks the diary list in order, emitting every
@@ -217,6 +243,136 @@ class DiaryRecord(TypedDict, total=False):
     thoughts_before: int
     text: str
     substituted: bool
+
+
+class ThoughtRecord(TypedDict, total=False):
+    """One Day-round private thought for one player (spec 028, reshaped by 041).
+
+    DEFINED AFTER :class:`DiaryRecord` DELIBERATELY, though spec 028's channel
+    is declared before spec 039's in :class:`GameState` below. This record's
+    entire justification is *the argument already made in ``DiaryRecord``'s
+    docstring* — read that one first; this one only records what differs. A
+    future tidy-up that reorders these two to match the channel order would put
+    the citation before the thing it cites.
+
+    A ``TypedDict``, ON THE SAME HARD CONSTRAINT, for the same reason, with the
+    same consequence — see :class:`DiaryRecord`. Restated only as far as the
+    conclusion: a dataclass here would come back from an interrupt/resume as a
+    bare ``dict`` and read ``.text`` as ``AttributeError``, and it would do so
+    ONLY after a resume, invisible to any test that never resumes. Because a
+    ``TypedDict`` *is* a ``dict`` at runtime it never reaches the ext hook, so
+    adding this class needed NO change to ``graph.py:make_checkpoint_serde``'s
+    ``allowed_msgpack_modules`` allowlist — verified by round trip, not
+    inferred.
+
+    WHAT DIFFERS FROM ``DiaryRecord``, AND WHY IT IS NOT A COPY OF IT:
+
+    - NO ``day``. A thought is written per Day *round*; only a diary sums up a
+      whole Day. The transcript renders a thought inside its ``<round>``, so
+      the round is positional there and needs no field.
+    - NO ``thoughts_before``. That cursor exists on the diary side precisely
+      because THIS channel carries no ordering metadata (see "The cursor" in
+      :class:`DiaryRecord`). Adding a counterpart here would create a second,
+      independently-drifting source of order for the same merge.
+    - THE COUNT-BASED CURSOR IS UNAFFECTED BY THIS RESHAPE, which is the one
+      cross-spec claim worth stating outright rather than leaving to be
+      rediscovered. ``thoughts_before`` is ``len(own_thoughts)`` — a count of
+      LIST ELEMENTS, never of characters and never derived from any element's
+      contents — and ``day_round_reflect`` appends exactly one element per
+      player per round both before and after this change. ``len`` of a list of
+      ``str`` and ``len`` of a list of ``ThoughtRecord`` are the same number,
+      and every use of the cursor downstream is a slice bound over positions
+      (``notes[emitted:stop]``, ``min(cursor, len(notes))``), so no arithmetic
+      anywhere reads an element's value.
+
+    Fields
+    ------
+
+    ``text``
+        The thought itself. Read through :func:`thought_text`, NOT by
+        subscripting: during and after this reshape the channel legitimately
+        holds bare ``str`` entries as well (see that function).
+
+    ``substituted``
+        PRESENT ONLY WHEN TRUE — the thought is ``nodes.day._REFLECTION_FALLBACK``,
+        the node's deterministic stand-in, rather than the player's own
+        reflection. Carried out of ``_ai_reflect``'s single substitution branch
+        rather than recovered by comparing ``text`` against the placeholder:
+        spec 041 Task 7.1 measured a model scripted to answer with the
+        placeholder's exact sentence and got a text-match rate of 1.0 against a
+        true substitution rate of 0.0, so the text provably cannot report this
+        fact. An AUTHORED thought OMITS the key rather than carrying ``False``,
+        the same load-bearing asymmetry ``DiaryRecord.substituted`` documents:
+        it is what lets the eval transcript's conditional attribute leave every
+        honest thought rendering byte-identically to the preserved transcripts.
+    """
+
+    text: str
+    substituted: bool
+
+
+# What one entry in the ``private_thoughts`` channel may be. NOT a transitional
+# convenience to be narrowed to ``ThoughtRecord`` later — an honest permanent
+# type, because a bare ``str`` remains a valid entry by design:
+#
+# - A checkpoint resumed mid-game was written before the reshape.
+# - Roughly a hundred references across the offline suite hand-build this
+#   channel as lists of plain strings, and the backward-compatible read helper
+#   below exists exactly so they stay correct rather than being rewritten.
+#
+# Nothing narrows this union without first converting every one of those.
+ThoughtEntry = str | ThoughtRecord
+
+
+def thought_text(entry: object) -> str:
+    """Read the text out of ONE ``private_thoughts`` entry, whatever its shape.
+
+    THE BACKWARD-COMPATIBILITY SEAM for spec 041's reshape of spec 028's
+    channel, and the reason that reshape can land incrementally instead of as
+    one unreviewable change. ``private_thoughts`` has ~225 references across
+    ``src/`` and ``tests/`` (measured, not estimated); a shape change applied at
+    all of them in one move is not reviewable. Every reader that only ever
+    wanted the words routes through here and keeps working against BOTH shapes,
+    so the diff shrinks to the writers plus the few readers that genuinely need
+    the new key.
+
+    Accepts, in order of what it is actually handed:
+
+    - a ``str`` — returned as-is. The pre-041 shape, still what a resumed
+      checkpoint and most of the offline suite hold.
+    - a :class:`ThoughtRecord` (or any ``dict``) — returns ``text`` when that is
+      a ``str``.
+    - anything else, including a ``dict`` with a missing or non-``str`` ``text``
+      — returns ``""``.
+
+    DEGRADES RATHER THAN RAISES, and that posture is inherited, not invented:
+    every caller is on a prompt-build or transcript-render path, where
+    ``eval_transcript._append_diaries`` and ``nodes.day._private_record_block``
+    already read a ``total=False`` record field-by-field through ``.get`` so a
+    malformed entry costs one line of output instead of aborting a game. This
+    is the same contract at the element level.
+
+    ``""`` MEANS "NOTHING USABLE HERE", AND THE CALLER OWNS WHAT TO DO WITH IT.
+    This function does not skip blanks, because its two families of caller want
+    opposite things: the transcript renderers already drop empty text
+    (``if not text: continue``), while ``_private_thoughts_block`` renders one
+    ``- `` bullet per entry unconditionally and would today render a bare ``- ``
+    for an empty ``str`` too. Filtering here would silently change the second
+    behaviour under cover of a compatibility helper.
+
+    PURE: no state read, no RNG, no LLM, no ``set`` iteration, so
+    ``tests/test_dual_mode_smoke.py``'s byte-equality is unaffected.
+    """
+    if isinstance(entry, str):
+        return entry
+    if isinstance(entry, dict):
+        # ``ThoughtRecord`` is ``total=False`` and is a plain ``dict`` at
+        # runtime, so ``text`` may be absent (an entry predating the key) or
+        # unusable; both report as "nothing usable" rather than raising.
+        text = entry.get("text")
+        if isinstance(text, str):
+            return text
+    return ""
 
 
 class GameState(TypedDict, total=False):
@@ -297,7 +453,17 @@ class GameState(TypedDict, total=False):
     # reader's context — the opposite of the privacy invariant). Read ONLY by the
     # per-player prompt builders (each player sees only its own
     # ``private_thoughts.get(player.id, [])``) and the eval-transcript renderer.
-    private_thoughts: Annotated[dict[str, list[str]], _merge_private_thoughts]
+    #
+    # Spec 041 reshaped the ELEMENT from a bare ``str`` to :class:`ThoughtRecord`
+    # so a substituted thought can be marked at its source. The declared element
+    # type is the UNION :data:`ThoughtEntry`, not ``ThoughtRecord`` alone, and
+    # that is accurate rather than lax: a mid-game resumed checkpoint holds
+    # strings, and the offline suite hand-builds this channel as strings in
+    # ~19 modules. Read every entry through :func:`thought_text`, which accepts
+    # either; do not subscript an entry directly.
+    private_thoughts: Annotated[
+        dict[str, list[ThoughtEntry]], _merge_private_thoughts
+    ]
     # Per-AI before-Night diary entries (spec 039). One entry per surviving
     # AI player per Day, written at the Day→Night hinge and accumulated here
     # keyed by player id, in the order written, via the
