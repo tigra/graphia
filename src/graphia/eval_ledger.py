@@ -101,6 +101,7 @@ __all__ = [
     "KIND_SPEECH_MAFIA_HUMAN",
     "KIND_SPEECH_LAW_ABIDING_HUMAN",
     "KIND_DIARY",
+    "KIND_DIARY_SUBSTITUTED",
     "TRANSCRIPT_KINDS",
     "tokenize_transcript",
 ]
@@ -1134,6 +1135,29 @@ KIND_SPEECH_LAW_ABIDING_HUMAN = "speech-law-abiding-human"
 # kind needs no new hue in a palette tech-spec 039 §2.8 records as fully spent.
 KIND_DIARY = "diary"
 
+# Spec 041 — the twenty-second kind, and the first that says nothing about WHO
+# wrote a line and everything about WHETHER anybody did. ``diary-substituted``
+# is the body of a ``<diary player="X" day="N" substituted="true">…</diary>``:
+# the deterministic stand-in ``graphia.nodes.day._DIARY_FALLBACK`` the node
+# files when the model's answer could not be decoded, rather than the player's
+# own writing.
+#
+# **A second BODY kind rather than a second treatment of the attribute.** The
+# flag's own value is already lifted into an :data:`KIND_ATTR` span by
+# :data:`_ATTR_NAMES`, which marks the **tag line**; this kind marks the
+# **body**. Two axes, deliberately, on the precedent :data:`KIND_THOUGHT`'s
+# styling already set: a terminal that cannot draw the body's treatment still
+# shows the flag on the tag, and a reviewer skimming bodies rather than tags
+# still sees the body. Functional-spec 041 asks that a substituted entry be
+# visibly marked, and one axis is one thing to lose.
+#
+# **It inherits :data:`KIND_DIARY`'s colour and is never side-tinted** (the
+# styling itself belongs to the UI): a substituted entry is still a private
+# note, so it keeps the thought/diary family's muted appearance and adds one
+# signal on top of it rather than moving to a hue of its own. Tech-spec 039 §2.8
+# records the palette as fully spent; this kind asks nothing of it.
+KIND_DIARY_SUBSTITUTED = "diary-substituted"
+
 # The canonical kind vocabulary, in the order the kinds were introduced — the
 # single source of truth for which kinds exist, following the same house pattern
 # as :data:`METRIC_ORDER` (a later spec appends its entries and nothing else has
@@ -1146,6 +1170,19 @@ KIND_DIARY = "diary"
 # pattern promises — one constant, one entry here, one ``__all__`` line, one tag
 # name in :data:`_MARKER_TAGS`, one entry in :data:`_INLINE_CONTENT_KINDS` and
 # one branch in :func:`_attr_kind`. No existing kind, rule or span moved.
+#
+# Spec 041 appends the twenty-second, :data:`KIND_DIARY_SUBSTITUTED`, by that
+# same route — and **two of the six touchpoints were already satisfied**, which
+# is recorded here rather than papered over with redundant code. It takes its
+# constant, this entry, its ``__all__`` line and its
+# :data:`_INLINE_CONTENT_KINDS` entry. It takes **no** new name in
+# :data:`_MARKER_TAGS`, because it is a second body kind for the ``diary`` tag
+# already whitelisted there. And it takes **no** branch in :func:`_attr_kind`,
+# because its attribute is not side-bearing and that function's default is
+# already the right answer — exactly as spec 039's ``day`` needed none. Writing
+# a branch that returned :data:`KIND_ATTR` to say so would be dead code
+# duplicating the default, which is a worse outcome than the route running
+# short. No existing kind, rule or span moved for this one either.
 TRANSCRIPT_KINDS: tuple[str, ...] = (
     KIND_MARKER,
     KIND_PLAIN,
@@ -1168,6 +1205,7 @@ TRANSCRIPT_KINDS: tuple[str, ...] = (
     KIND_SPEECH_MAFIA_HUMAN,
     KIND_SPEECH_LAW_ABIDING_HUMAN,
     KIND_DIARY,
+    KIND_DIARY_SUBSTITUTED,
 )
 
 # The two sides, as the internal token that selects a side-bearing kind. Private
@@ -1263,6 +1301,18 @@ _ROLE_SIDES: dict[str, str] = {
 # adding a name can only affect lines that carry it, and ``<diary`` occurs zero
 # times across the 298 committed transcripts (measured): no committed line can
 # tokenize differently for this entry existing.
+#
+# **Spec 041 adds no name here at all**, and that is the point of the entry it
+# does add: :data:`KIND_DIARY_SUBSTITUTED` is a second body kind for this same
+# ``diary`` tag, told apart by an attribute written **on** the tag rather than
+# by a tag of its own. A marking that had needed a ``<diary-substituted>`` tag
+# would have changed the file's shape for every reader; this one changes only
+# what an existing shape can say.
+#
+# (One correction to the paragraph above while a reader is here: ``<diary`` was
+# measured at zero occurrences when spec 039 wrote that, and the corpus has
+# since grown diaries — 376 of them across the 26 committed run dirs, measured
+# 2026-09-07. The whitelist reasoning is unchanged; only the count is.)
 _MARKER_TAGS: frozenset[str] = frozenset(
     {
         "transcript",
@@ -1299,11 +1349,34 @@ _MARKER_TAGS: frozenset[str] = frozenset(
 # defaults to :data:`KIND_PLAIN`, which is the right answer for the ``(no persona
 # recorded)`` body of an inline ``<player>``: that is prose, not a kind of its
 # own.
-_INLINE_CONTENT_KINDS: dict[str, str] = {
-    "kill": KIND_MARKER,
-    "thought": KIND_THOUGHT,
-    "recap": KIND_RECAP,
-    "diary": KIND_DIARY,
+#
+# **Keyed by ``(tag, substituted)`` from spec 041, not by tag alone.** A body's
+# kind stopped being a function of its tag the moment a ``<diary>`` could state
+# that its content is the node's stand-in rather than the player's writing, so
+# the key now carries both halves of the question this lookup actually asks.
+# The re-keying is the whole of the change: every kind, rule and span the four
+# original entries produce is untouched, and the corpus round-trip is the guard
+# that says so.
+#
+# It stays a **pure per-line decision**. The flag sits on the very tag whose
+# body it re-kinds, so :func:`_tag_element_spans` reads it off the match it
+# already holds (:func:`_is_substituted`) — nothing is threaded in from the two
+# whole-file passes and nothing is remembered between lines, which is the one
+# property that made spec 038's Slices 4 and 5 expensive and this addition
+# cheap.
+#
+# **A flag may only ever re-kind a body, never demote one.** A flagged tag with
+# no marked kind registered here falls back to its own UNFLAGGED entry rather
+# than to :data:`KIND_PLAIN`, so a ``<thought … substituted="true">`` still
+# reads as a thought until the slice that registers its marked form arrives.
+# Degrading a recognised body to plain because of an attribute would be the
+# marking making a transcript **less** readable than before it existed.
+_INLINE_CONTENT_KINDS: dict[tuple[str, bool], str] = {
+    ("kill", False): KIND_MARKER,
+    ("thought", False): KIND_THOUGHT,
+    ("recap", False): KIND_RECAP,
+    ("diary", False): KIND_DIARY,
+    ("diary", True): KIND_DIARY_SUBSTITUTED,
 }
 
 # One transcript line's tag head: ``<name>``, ``</name>`` or ``<name attrs…>``.
@@ -1340,6 +1413,56 @@ _TAG_HEAD_RE = re.compile(
 # is the other side of that line — a value a person reads, not a flag a program
 # does — which is why the two attributes spec 038 and 039 added land opposite
 # ways round.
+#
+# ``substituted`` is spec 041's seventh, carried by
+# ``<diary player="…" day="…" substituted="true">``, and it is a **departure
+# from the ``human="true"`` precedent stated in the paragraph above**. The
+# justification is that note's **own test**: an attribute is lifted because a
+# reviewer reads it as a *specific*, and ``human`` was excluded because a
+# machine flag is not one.
+#
+# The line that actually decides it is not "flag versus value" but
+# **restatement versus only record.** ``human="true"`` restates a fact the file
+# already carries without it — the preamble's ``Welcome, <name>.`` greeting
+# names the same seat in every one of the 298 committed transcripts, and the
+# cast list leaves exactly that seat persona-less — which is precisely why
+# :func:`_human_seat` can still seat the reviewer in files written before the
+# marker existed. ``substituted="true"`` carries a fact **nothing else in the
+# file records at all**. So ``day`` — the sixth name above, a thing the file
+# says once and nowhere else — is the governing precedent here, not ``human``.
+#
+# **Two independent supports for "the only record", both measured by spec 041
+# rather than reasoned about:**
+#
+# * the TEXT provably cannot carry it. A model scripted to answer with
+#   ``graphia.nodes.day._DIARY_FALLBACK``'s exact sentence produced a ledger
+#   record reading ``diary_fallback_rate: 1.0`` (18/18 by text match) beside
+#   ``substitutions.diary`` at 0.0 (0/18 at the source). Nothing had
+#   substituted. Text-matching the placeholder and carrying the fact are
+#   different answers, not the same answer computed twice — see
+#   ``graphia.state.DiaryRecord``, which records the measurement.
+# * the run's substitution COUNT cannot carry it either. It is a per-run
+#   aggregate with **no addressee**: it can say that a diary substituted
+#   somewhere in this game and can never say *which* entry the reviewer is
+#   looking at, which is the only question a preserved transcript is read to
+#   answer.
+#
+# A practical asymmetry sits on top of the principled one and points the same
+# way: **inclusion reuses the regex that already exists, where exclusion would
+# need a new one.** :data:`_ATTR_VALUE_RE` is built from this tuple, so adding
+# the name is the whole change. Leaving it out would mean a second bespoke
+# pattern beside :data:`_HUMAN_ATTR_RE`, carrying its own lookbehind so a
+# hypothetical ``notsubstituted="true"`` is not read as the flag.
+#
+# The lifted value is also load-bearing rather than incidental: it is the
+# **tag-line axis** of the marking, with :data:`KIND_DIARY_SUBSTITUTED` as the
+# body axis. And it **cannot move a committed transcript**: ``substituted="``
+# occurs **zero** times across the committed corpus (measured 2026-09-07 over
+# all 26 committed run dirs), because no committed game was played by a build
+# that could write it. Note the contrast with ``day``, whose own note above was
+# written when it too had zero occurrences: the corpus has since grown diaries
+# and now carries 376 ``day="`` values, so that guard is live on real data and
+# this one is not yet.
 _ATTR_NAMES: tuple[str, ...] = (
     "name",
     "role",
@@ -1347,6 +1470,7 @@ _ATTR_NAMES: tuple[str, ...] = (
     "initiator",
     "target",
     "day",
+    "substituted",
 )
 
 # One ``name="value"`` pair inside a tag's attribute run. Only the ``value``
@@ -1508,6 +1632,23 @@ _THOUGHT_OWNER_ATTR = "player"
 # :data:`_ATTR_NAMES` and :func:`_attr_kind`'s default, with no rule of its own.
 _DIARY_TAG = "diary"
 _DIARY_OWNER_ATTR = "player"
+
+# The substitution marking on a ``<diary … substituted="true">`` tag (spec 041)
+# and the single value that means it. A whitelist of one literal — the same
+# never-guess posture as :data:`_HUMAN_ATTR_TRUE` — matched to the writer's own
+# rule: ``eval_transcript._diary_substituted_attr`` emits the attribute **only**
+# for the literal ``True`` and never emits ``substituted="false"``. So
+# ``substituted="false"``, ``substituted=""``, ``substituted="1"`` and any
+# future tri-state mark nothing here rather than being coerced into a boolean.
+# The writer and the reader agree on one literal, or the entry is read as
+# authored; a hand-edited checkpoint is the only thing that can produce
+# anything else, and reading it as authored is the honest answer.
+#
+# Unlike :data:`_HUMAN_ATTR_RE` this needs **no pattern of its own**: the name
+# is in :data:`_ATTR_NAMES`, so :data:`_ATTR_VALUE_RE` already finds the pair
+# and the flag is read off the same scan that splits its value into a span.
+_SUBSTITUTED_ATTR = "substituted"
+_SUBSTITUTED_ATTR_TRUE = "true"
 
 # The scene-setting section, and the two literals that delimit it. The welcome
 # line :func:`_human_seat` falls back to is scoped to it for exactly the reason
@@ -1770,17 +1911,29 @@ def _attr_kind(tag: str, key: str, value: str, sides: Mapping[str, str]) -> str:
       few lines apart in the same file, inviting a reviewer to read a
       distinction that is not there.
 
-    The other four (a cast entry's ``name``, a vote's ``initiator`` and
-    ``target``, and a diary's ``day``) stay achromatic :data:`KIND_ATTR`. Colour
-    has meant side since Slice 4; those four are *specifics* a reviewer reads —
-    three names and a Day number — lifted out of the punctuation by weight and
-    brightness instead. Tinting the three names was considered and rejected on
+    The other five (a cast entry's ``name``, a vote's ``initiator`` and
+    ``target``, and a diary's ``day`` and ``substituted``) stay achromatic
+    :data:`KIND_ATTR`. Colour has meant side since Slice 4; the first four of
+    those are *specifics* a reviewer reads — three names and a Day number —
+    lifted out of the punctuation by weight and brightness instead, and the
+    fifth is a flag (see below). Tinting the three names was considered and
+    rejected on
     two grounds: it would leave ``attr`` with almost no occupants in a real
     transcript (before spec 039 it would have left it with none at all — those
     three were the whole achromatic half of the whitelist), and a vote marker's
     job is to say *who called it and against whom*, which the side colours on
     the ballot lines below it already answer. ``day`` is not even a candidate:
     it names no person, so there is no side it could carry.
+
+    ``substituted`` (spec 041) is a candidate one step further out still: it
+    names no person *and* no specific of any kind, only whether the body under
+    it was written by the player. It lifts out of the punctuation by weight so
+    the tag line carries one axis of that marking while
+    :data:`KIND_DIARY_SUBSTITUTED` carries the other on the body — and it takes
+    **no branch here**, because the default below is already the answer. A
+    branch returning :data:`KIND_ATTR` to state that would be dead code
+    duplicating the default, and the six-touchpoint route running one short is
+    a better outcome than code written to make a route look complete.
 
     **The rule underneath all three halves:** inside a marker, the side colour
     lands on whichever token actually *tells the reviewer the side* — the role
@@ -1900,6 +2053,14 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
       takes the owner's side, the body never does — and a kind of its own
       because a Day's settled read is not a round's reaction, and the trailer
       would otherwise be indistinguishable from the round bodies above it.
+    - :data:`KIND_DIARY_SUBSTITUTED` — the same body when its tag carries
+      ``substituted="true"`` (spec 041): the node's deterministic stand-in
+      rather than the player's own writing. The tag stays :data:`KIND_MARKER`
+      and the flag's value becomes an ordinary :data:`KIND_ATTR` span, so the
+      marking reads on **two** axes — one on the tag line, one on the body. The
+      fact is *carried* by the game state and can be recovered no other way: a
+      model can answer with the stand-in's exact sentence, and the run's
+      substitution count is a per-run aggregate that names no entry.
     - :data:`KIND_PLAIN` — **everything else**, including every line separator.
       This fallback is what makes degradation total: an unrecognised tag, a
       pre-spec-022 transcript's indented ``Name — Role`` cast list, model-generated
@@ -1919,16 +2080,17 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     How a line is split (the extension point is :func:`_line_spans`):
 
     - a tag on a line of its own becomes one marker span — or, when it carries
-      one of the five detail attributes, an alternating marker/attr/marker run
+      one of the seven detail attributes, an alternating marker/attr/marker run
       whose pieces still concatenate to the tag exactly (:func:`_tag_head_spans`);
     - an inline ``<tag …>content</tag>`` becomes *three* spans — opening tag,
       content, closing tag — so a slice claiming a body need only change the
       content span's kind (or split attribute values out of the tag) instead of
       breaking one span into several. ``<thought>``, ``<recap>`` and spec 039's
-      ``<diary>`` bodies are claimed that way
-      (:data:`_INLINE_CONTENT_KINDS`); ``<kill>`` is the
-      exception whose content is *already* marker, so it coalesces back to a
-      single span. An element whose content does **not** close on the same line
+      ``<diary>`` bodies are claimed that way, and from spec 041 a ``<diary>``
+      body's kind depends on the ``substituted="true"`` flag on its own tag as
+      well as on the tag name (:data:`_INLINE_CONTENT_KINDS`); ``<kill>`` is
+      the exception whose content is *already* marker, so it coalesces back to
+      a single span. An element whose content does **not** close on the same line
       keeps that remainder :data:`KIND_PLAIN` rather than inheriting the tag's
       content kind — the extent is unknown, and styling an unknown extent as a
       private thought is exactly the kind of guess this module declines;
@@ -2194,7 +2356,10 @@ def _tag_element_spans(
 
     - ``<tag …>`` / ``</tag>`` alone on the line → one marker span;
     - ``<tag …>content</tag>`` inline → opening tag, content, closing tag, the
-      content's kind taken from :data:`_INLINE_CONTENT_KINDS` (default plain);
+      content's kind taken from :data:`_INLINE_CONTENT_KINDS`, which spec 041
+      keys by the ``(tag, substituted)`` PAIR: a flagged tag with no marked kind
+      registered falls back to its own unflagged kind, and a tag with neither to
+      plain;
     - defensively, an opening tag whose content is *not* closed on the same line
       (a shape the corpus does not contain, but a multi-line model-generated
       thought could produce) → marker for the tag, plain for the remainder.
@@ -2216,8 +2381,22 @@ def _tag_element_spans(
             # An empty body (``<night></night>``, which ``_wrap`` emits for a
             # section that captured nothing) contributes no span at all — the
             # no-empty-span guarantee.
+            #
+            # Spec 041: the body's kind is a function of the tag AND of the
+            # ``substituted="true"`` flag written on that same tag, so the
+            # lookup is keyed by the pair. Reading the flag here keeps the
+            # decision **per line** — it is on the match this function already
+            # holds, not a whole-file fact like the cast map or the seat.
+            #
+            # The chained fallback is the "a flag may only re-kind a body,
+            # never demote one" rule of :data:`_INLINE_CONTENT_KINDS`: an
+            # unregistered ``(tag, True)`` lands on ``(tag, False)`` — the kind
+            # the body had before the flag existed — and only a tag in neither
+            # falls through to :data:`KIND_PLAIN`.
+            tag_name = match.group("name")
             inner_kind = _INLINE_CONTENT_KINDS.get(
-                match.group("name"), KIND_PLAIN
+                (tag_name, _is_substituted(match.group("attrs"))),
+                _INLINE_CONTENT_KINDS.get((tag_name, False), KIND_PLAIN),
             )
             spans.append((inner, inner_kind))
         spans.append((closing, KIND_MARKER))
@@ -2281,6 +2460,39 @@ def _tag_head_spans(
         cursor = offset + end
     spans.append((head[cursor:], KIND_MARKER))
     return spans
+
+
+def _is_substituted(attrs: str | None) -> bool:
+    """Does this tag's attribute run carry ``substituted="true"`` (spec 041)?
+
+    One tag's attributes in, one ``bool`` out. **This is what keeps
+    :data:`_INLINE_CONTENT_KINDS`'s ``(tag, flag)`` key a pure per-line
+    decision**: the flag sits on the very tag whose body it re-kinds, so the
+    answer is already in hand where it is used and nothing has to join the two
+    whole-file passes :func:`tokenize_transcript` runs. Nothing is cached,
+    nothing is remembered between calls, and the round trip cannot be affected
+    — only a *kind* is chosen here, never a boundary.
+
+    Read through :data:`_ATTR_VALUE_RE`, the same scan that lifts the value into
+    its own :data:`KIND_ATTR` span, rather than through a pattern of its own —
+    which is the practical half of why ``substituted`` is in
+    :data:`_ATTR_NAMES` at all (see that tuple for the principled half). The
+    lookbehind that regex already carries is what stops a hypothetical
+    ``notsubstituted="true"`` being read as the flag.
+
+    Only the exact literal :data:`_SUBSTITUTED_ATTR_TRUE` answers ``True``.
+    ``substituted="false"``, an empty value, ``"1"`` and anything else answer
+    ``False``, so a hand-edited file reads as **authored** rather than as a
+    guess — the reader's half of the writer's rule in
+    ``eval_transcript._diary_substituted_attr``.
+    """
+    if not attrs:
+        return False
+    return any(
+        pair.group("key") == _SUBSTITUTED_ATTR
+        and pair.group("value") == _SUBSTITUTED_ATTR_TRUE
+        for pair in _ATTR_VALUE_RE.finditer(attrs)
+    )
 
 
 def _coalesce_spans(spans: list[tuple[str, str]]) -> list[tuple[str, str]]:

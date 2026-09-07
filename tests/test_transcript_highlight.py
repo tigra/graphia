@@ -643,7 +643,18 @@ _EXPECTED_ROLE_KINDS = {
 # committed transcripts (measured: `day="` appears nowhere), so today this row is
 # carried entirely by those synthetic tests and it starts biting on real data the
 # first time a diaries-on eval run is committed.
-_ACHROMATIC_ATTR_KEYS = frozenset({"name", "initiator", "target", "day"})
+#
+# SPEC 041 ADDS `substituted`, one step further out than `day`: it names no
+# person and no specific of any kind, only whether the body under it was
+# written by the player. `_attr_kind` gives it the default achromatic `attr`
+# and takes no branch for it, so "colour the whole marked tag" fails here. Like
+# `day` when `day` was new it has **zero** corpus occurrences, so this row is
+# dormant and starts biting the first time a run with a substituted entry is
+# committed. Adding it now rather than then is the cheap half of the lesson
+# `_ATTR_NAME_CASES` records above.
+_ACHROMATIC_ATTR_KEYS = frozenset(
+    {"name", "initiator", "target", "day", "substituted"}
+)
 
 # The attribute names the corpus must ALWAYS carry — spec 038's five, written out
 # as literals rather than read from `_ATTR_NAMES`, because this is the sweep's
@@ -935,11 +946,14 @@ def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
         f"{sorted(set(attr_names) - set(eval_ledger._ATTR_NAMES))}, which is not "
         "on the tokenizer's whitelist at all"
     )
-    assert set(eval_ledger._ATTR_NAMES) - _CORPUS_REQUIRED_ATTR_NAMES == {"day"}, (
+    assert set(eval_ledger._ATTR_NAMES) - _CORPUS_REQUIRED_ATTR_NAMES == {
+        "day",
+        "substituted",
+    }, (
         "the whitelist grew a name the corpus is not required to carry: "
         f"{sorted(set(eval_ledger._ATTR_NAMES) - _CORPUS_REQUIRED_ATTR_NAMES)} — "
-        "`day` is the one spec-039 exception, and a second one needs its own "
-        "reason here"
+        "`day` is the spec-039 exception and `substituted` the spec-041 one, and "
+        "a third needs its own reason here"
     )
     assert set(label_texts) == labels, (
         f"field labels found: {sorted(label_texts)}, expected all of "
@@ -1109,6 +1123,15 @@ def test_the_kind_constants_hold_the_literal_names_the_tables_use() -> None:
     # `KIND_DIARY in TRANSCRIPT_KINDS` would leave those three agreeing with each
     # other and disagreeing with the constant.
     assert eval_ledger.KIND_DIARY == "diary"
+    # Spec 041's one, and the twenty-second. Pinned as a bare literal for the
+    # same reason and then some: `"diary-substituted"` is the UI's
+    # `transcript--diary-substituted` component class spelled a second time, and
+    # it is one hyphenated qualifier away from `KIND_DIARY` — so a rename that
+    # only checked membership in `TRANSCRIPT_KINDS` could leave the two kinds
+    # agreeing with each other and the reading view silently unstyled. The
+    # qualifier names WHAT THE BODY IS, never how it is drawn:
+    # `diary-substituted` is a kind, `diary-struck` never is.
+    assert eval_ledger.KIND_DIARY_SUBSTITUTED == "diary-substituted"
 
 
 def test_the_kind_family_tuples_are_index_aligned_and_complete() -> None:
@@ -1171,6 +1194,12 @@ def test_the_kind_family_tuples_are_index_aligned_and_complete() -> None:
         # named here or the completeness assertion below reports it as a kind
         # every family-classifying sweep is blind to. Which is what it did.
         eval_ledger.KIND_DIARY,
+        # Spec 041. `diary-substituted` is the same body kind under a flag on its
+        # own tag, so it joins `diary` here for the same reason: it names neither
+        # a side nor a seat. Not naming it would report it as a kind every
+        # family-classifying sweep is blind to — which is the assertion working,
+        # and it is what sent this slice's author here.
+        eval_ledger.KIND_DIARY_SUBSTITUTED,
     }
     assert familied | unfamilied == set(eval_ledger.TRANSCRIPT_KINDS), (
         "a declared kind belongs to no family and to no named exception, so every "
@@ -1238,6 +1267,16 @@ def test_every_kind_constant_is_exported_and_declared_exactly_once() -> None:
     house pattern: one constant, one ``TRANSCRIPT_KINDS`` entry, one ``__all__``
     line. Nothing else about this test changed, which is the route working — a
     kind is added by appending, never by moving anything.
+
+    **Spec 041 takes it to twenty-two**, and its arrival is worth reading as a
+    second confirmation: `diary-substituted` needed the constant, the
+    `TRANSCRIPT_KINDS` entry, the ``__all__`` line and an
+    `_INLINE_CONTENT_KINDS` entry — and needed **no** new `_MARKER_TAGS` name
+    (it is a second body kind for a tag already whitelisted) and **no**
+    `_attr_kind` branch (its attribute carries no side, and the default is
+    already right). Two of the six touchpoints being no-ops is the route being
+    honest rather than the route being skipped; production records which two and
+    why.
     """
     kind_constants = {
         name: value
@@ -1245,9 +1284,10 @@ def test_every_kind_constant_is_exported_and_declared_exactly_once() -> None:
         if name.startswith("KIND_") and isinstance(value, str)
     }
 
-    assert len(eval_ledger.TRANSCRIPT_KINDS) == 21, (
-        "spec 038 closed the vocabulary at twenty kinds and spec 039 appended "
-        "the twenty-first, `diary`; "
+    assert len(eval_ledger.TRANSCRIPT_KINDS) == 22, (
+        "spec 038 closed the vocabulary at twenty kinds, spec 039 appended the "
+        "twenty-first, `diary`, and spec 041 the twenty-second, "
+        "`diary-substituted`; "
         f"found {eval_ledger.TRANSCRIPT_KINDS}"
     )
     assert len(set(eval_ledger.TRANSCRIPT_KINDS)) == len(
@@ -1742,6 +1782,14 @@ _ATTR_NAME_CASES: tuple[tuple[str, str, str], ...] = (
     ("initiator", '<vote initiator="Avery" target="Bo">', "Avery"),
     ("target", '<vote initiator="Avery" target="Bo">', "Bo"),
     ("day", '<diary player="Avery" day="2">', "2"),
+    # Spec 041's, and the first swept value that is not read for its content at
+    # all: `true` is the one literal that means "substituted", so what this row
+    # asserts is that the FLAG is lifted out of the punctuation rather than left
+    # inside the marker — the tag-line axis of the marking, beside the body-kind
+    # axis the tests further down cover. Zero occurrences in the committed
+    # corpus, so this row and its guard are the whole of its coverage, exactly
+    # as they were for `day` when `day` was new.
+    ("substituted", '<diary player="Avery" day="2" substituted="true">', "true"),
 )
 
 
@@ -1753,10 +1801,15 @@ def test_the_swept_attribute_names_match_the_tokenizers_whitelist() -> None:
     the "distinct ``attr`` spans for both values" coverage this task owes would
     become "the two values somebody remembered".
 
-    It fired for real on spec 039's ``day``, which is the sixth — and the one the
-    corpus cannot cover at all, since ``day="`` occurs nowhere in the 298
-    committed transcripts. For that attribute this sweep and its row in
-    ``_ATTR_NAME_CASES`` are the only coverage there is.
+    It fired for real on spec 039's ``day``, which is the sixth and was
+    uncoverable by the corpus when it was added, since ``day="`` occurred
+    nowhere in the 298 transcripts committed then. The corpus has since grown
+    diaries and carries 376 of them, so that row is live on real data now.
+
+    It fired again on spec 041's ``substituted``, the seventh — and that one is
+    where ``day`` was: zero occurrences in the committed corpus, so this sweep
+    and its row in ``_ATTR_NAME_CASES`` are the only coverage there is until a
+    run with a substituted entry is committed.
     """
     whitelist = getattr(eval_ledger, "_ATTR_NAMES", None)
     assert whitelist is not None, (
@@ -1764,7 +1817,7 @@ def test_the_swept_attribute_names_match_the_tokenizers_whitelist() -> None:
         "or was renamed; update _ATTR_NAME_CASES and this guard together"
     )
     assert {name for name, _, _ in _ATTR_NAME_CASES} == set(whitelist)
-    assert len(_ATTR_NAME_CASES) == 6
+    assert len(_ATTR_NAME_CASES) == 7
 
 
 @pytest.mark.parametrize(
@@ -3456,8 +3509,28 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
     assert eval_ledger.KIND_SPEAKER_MAFIA in per_game["mafia-seat"]
     assert eval_ledger.KIND_SPEAKER_LAW_ABIDING in per_game["law-abiding-seat"]
 
-    # As of Slice 5 the vocabulary still has no declared-but-unreachable entry.
-    assert set().union(*per_game.values()) == set(eval_ledger.TRANSCRIPT_KINDS)
+    # As of Slice 5 the vocabulary had no declared-but-unreachable entry, and
+    # this was a bare equality against `TRANSCRIPT_KINDS`.
+    #
+    # SPEC 041 ADDS THE FIRST EXCEPTION, and it is named rather than dropped —
+    # the same shape `_CORPUS_REQUIRED_ATTR_NAMES` takes for the same reason.
+    # `diary-substituted` is emitted only for a `<diary … substituted="true">`,
+    # which none of these three fixtures carries: the tokenizer task registers
+    # the kind and the marking tests that follow it supply the fixture, so this
+    # assertion is where a kind that is declared and has NO fixture at all is
+    # reported. Kept as an equality in both directions rather than a `<=`, so
+    # the guard survives intact: nothing outside the vocabulary may be emitted,
+    # nothing inside it may go missing, and a SECOND unreachable kind fails here
+    # and needs its own reason — which is the whole of what the bare equality
+    # was buying.
+    unfixtured = {eval_ledger.KIND_DIARY_SUBSTITUTED}
+    assert set().union(*per_game.values()) == (
+        set(eval_ledger.TRANSCRIPT_KINDS) - unfixtured
+    ), (
+        "a declared kind is emitted by none of the three synthetic games, so "
+        "nobody will ever see it: "
+        f"{sorted(set(eval_ledger.TRANSCRIPT_KINDS) - unfixtured - set().union(*per_game.values()))}"
+    )
     assert len(eval_ledger.TRANSCRIPT_KINDS) == len(set(eval_ledger.TRANSCRIPT_KINDS))
 
 
