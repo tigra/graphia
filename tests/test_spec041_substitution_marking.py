@@ -910,14 +910,38 @@ def test_the_flag_re_kinds_only_a_body_that_has_a_marked_kind_registered() -> No
     # 9.4), which is what discharges the handoff that stood here — the set
     # widened in Task 9.3 and the coverage it demands landed one task later,
     # exactly as the failure message asks of Slice 10.
+    # SLICE 10 REGISTERED THE THIRD PAIR (`speech`), so the set is widened
+    # here by Task 10.2 — the one edit this module's own failure message
+    # instructs that task to make, and the only line of this file it touches.
+    # The `("speech", True)` COVERAGE ROW the message also demands is Task
+    # 10.3's, exactly as `("thought", True)`'s row was Task 9.4's rather than
+    # Task 9.3's; that is the same one-task lag, not a skipped obligation.
+    #
+    # The probe above is STILL an unregistered tag, so the fallback guarantee
+    # is untouched at full strength — `<recap>` remains the right probe and no
+    # slice will ever register it.
+    #
+    # ONE ASYMMETRY WORTH KNOWING, because it is the first: `speech` is
+    # registered for the FLAGGED form only — there is no `("speech", False)`
+    # entry, unlike `diary` and `thought`, which have both. The writer never
+    # emits an unflagged `<speech>` tag (an authored line stays the bare
+    # `Speaker: text` shape), so a hand-written `<speech speaker="Ava">…` body
+    # lands on `KIND_PLAIN` rather than on a speech kind. That is deliberate:
+    # `KIND_SPEECH` is the *side-unknown* form and this lookup cannot consult
+    # the cast list, so claiming it would read achromatic where the bare line
+    # it imitates reads tinted. It does not weaken the rule this test protects
+    # — nothing is demoted, because there was never an unflagged kind for the
+    # flag to take away.
     assert {
         tag for tag, flag in eval_ledger._INLINE_CONTENT_KINDS if flag
-    } == {"diary", "thought"}, (
-        "a tag other than `diary` / `thought` has a marked body kind "
-        "registered. That is what Slice 10 legitimately does (speech) — so "
-        "add the tag here AND give it a `(tag, True)` row of coverage above; "
-        "do not simply widen this set, because the fallback assertion in this "
-        "test is what keeps an UNregistered flag from demoting a body to plain."
+    } == {"diary", "thought", "speech"}, (
+        "a tag other than `diary` / `thought` / `speech` has a marked body "
+        "kind registered — so add the tag here AND give it a `(tag, True)` row "
+        "of coverage above; do not simply widen this set, because the fallback "
+        "assertion in this test is what keeps an UNregistered flag from "
+        "demoting a body to plain. Note that `speech` was the LAST channel the "
+        "spec marks: `_ai_day_action`, `_ai_reflect` and `day_diary` are the "
+        "three substitution sites that produce reader-visible prose."
     )
 
 

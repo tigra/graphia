@@ -103,6 +103,7 @@ __all__ = [
     "KIND_DIARY",
     "KIND_DIARY_SUBSTITUTED",
     "KIND_THOUGHT_SUBSTITUTED",
+    "KIND_SPEECH_SUBSTITUTED",
     "TRANSCRIPT_KINDS",
     "tokenize_transcript",
 ]
@@ -1200,6 +1201,74 @@ KIND_DIARY_SUBSTITUTED = "diary-substituted"
 # Slice 4. The owner's name inside the tag still carries the side.
 KIND_THOUGHT_SUBSTITUTED = "thought-substituted"
 
+# Spec 041 Slice 10 — the twenty-fourth kind, the THIRD and last of the marking
+# family, and the only one whose honest form is **side-bearing**.
+# ``speech-substituted`` is the body of a
+# ``<speech speaker="X" substituted="true">…</speech>``: the deterministic
+# stand-in ``"I'm not sure who to trust yet."`` that ``_ai_day_action`` files
+# when the model's answer could not be decoded, rather than the words the
+# player would have said out loud.
+#
+# **THE ONLY MARKED KIND WHOSE LINE IS A DIFFERENT SHAPE FROM ITS HONEST
+# TWIN.** A diary and a thought were already elements, so Slices 8 and 9 marked
+# them by adding an attribute to a tag that existed. Day speech is written as a
+# bare ``Speaker: text`` line with no tag at all, so a substituted line is
+# **promoted to an element** and an authored one is left exactly as it was
+# (``eval_transcript._append_messages``). That conditionality is what made
+# covering this channel affordable: the bare shape is the dominant line of the
+# format — 22,508 of them across the 373 committed transcripts — and not one of
+# them moves.
+#
+# **IT IS ONE KIND, NOT THREE: A SUBSTITUTED LINE KEEPS ITS SIDE, BUT ON THE
+# NAME RATHER THAN ON THE BODY.** This is the marking family's first genuinely
+# open decision — ``diary`` and ``thought`` bodies were never side-tinted, so
+# for them "keep the family colour" and "carry no side" were the same act;
+# speech's honest forms are ``speech-mafia`` / ``speech-law-abiding`` /
+# ``speech-human`` and the two come apart here. Resolved by relocating the side
+# rather than by choosing between keeping and losing it:
+#
+# - **the body carries no side.** Colour has meant *side* since spec 038's
+#   Slice 4, and a side is a fact about the SPEAKER. The words of a substituted
+#   line have no author at all, so tinting them would attribute an act of
+#   allegiance to a sentence nobody uttered — the same argument
+#   :data:`KIND_DIARY_SUBSTITUTED` and :data:`KIND_THOUGHT_SUBSTITUTED` each
+#   record ("nobody wrote this is not a side"), and it does not weaken for the
+#   body being public rather than private.
+# - **the speaker's name carries it instead**, exactly as a ``<thought
+#   player="…">`` owner's and a ``<diary player="…">`` owner's do. The wrapped
+#   line has a tag, the tag names a person and no role, and
+#   :func:`_attr_kind`'s ratified rule for that shape is already "the side
+#   colour lands on the name where no role is written". So ``speaker`` joins
+#   :data:`_ATTR_NAMES` and takes a side-bearing branch, and the reviewer still
+#   reads the side of a marked line at a glance.
+#
+# **What that costs and what it buys.** Keeping the tint on the BODY would have
+# taken three kinds (mafia / law-abiding / neutral — never a human form, since
+# ``_ai_day_action`` is the only writer of the flag and the human branch never
+# calls it), three component classes and three CSS rules, and it would have
+# broken a structural invariant rather than merely multiplying: the
+# ``speaker``/``speech`` kind families are **index-aligned pairs** — "a speaker
+# and their words carry the same side and the same seat" — and a wrapped line
+# has **no speaker span at all**, so a ``speech-mafia-substituted`` with no
+# ``speaker-mafia-substituted`` twin would leave that pairing unpairable.
+# Dropping the tint outright would have cost the reviewer the side on the one
+# line they most want to inspect. Relocating it costs two touchpoints on the
+# *speaker* axis (:data:`_ATTR_NAMES` and one :func:`_attr_kind` branch) and
+# keeps the vocabulary at one new kind.
+#
+# **A second BODY kind rather than a second treatment of the attribute**, on the
+# reasoning the two kinds above set out in full: the flag's own value is already
+# an achromatic :data:`KIND_ATTR` span on the tag line, so this kind is the body
+# axis and there are two axes to lose rather than one.
+#
+# **Its own kind rather than a reuse of either predecessor**, for the reason
+# that made them separate from each other: a struck line has to say WHICH
+# channel the model failed to answer on, and a public utterance is the one
+# channel of the three that other players actually heard. Collapsing it into
+# ``thought-substituted`` would file a failed public turn and a failed private
+# reflection under one appearance.
+KIND_SPEECH_SUBSTITUTED = "speech-substituted"
+
 # The canonical kind vocabulary, in the order the kinds were introduced — the
 # single source of truth for which kinds exist, following the same house pattern
 # as :data:`METRIC_ORDER` (a later spec appends its entries and nothing else has
@@ -1253,6 +1322,34 @@ KIND_THOUGHT_SUBSTITUTED = "thought-substituted"
 # entry is what turns that body into its own kind. Both directions are pinned
 # by test, because a fallback that silently stopped applying would look exactly
 # like a fallback that was never needed.
+#
+# **AND SLICE 10 APPENDS THE TWENTY-FOURTH, :data:`KIND_SPEECH_SUBSTITUTED`, ON
+# FIVE TOUCHPOINTS — the first time in this spec the route grew rather than
+# shrank, and the reason is worth reading because it is structural rather than
+# an oversight.** It takes its constant, this entry, its ``__all__`` line, one
+# :data:`_INLINE_CONTENT_KINDS` entry **and one new name in
+# :data:`_MARKER_TAGS`** — ``speech``. Slices 8 and 9 needed no tag name
+# because ``diary`` and ``thought`` were already whitelisted; a bare
+# ``Speaker: text`` line is **not a tag at all**, so marking this channel is
+# the one case in the family that introduces a shape the tokenizer has never
+# seen. That was the first change to this module's tag vocabulary in spec 041,
+# and the 373 committed transcripts (measured 2026-09-07: 27 run dirs, zero
+# occurrences of ``<speech``, ``</speech>``, ``speaker="`` or ``substituted="``)
+# are the regression net that says nothing else moved.
+#
+# Two touchpoints it did NOT need, both inherited: :func:`_attr_kind` needs no
+# branch **for the flag** (the default is right, exactly as for ``diary`` and
+# ``thought``), and :data:`_ATTR_NAMES` needs no entry for it either, because
+# that tuple is keyed by attribute NAME and ``substituted`` has been in it
+# since Slice 8 — so the flag became a span on a THIRD tag with nothing added.
+#
+# And two it needed on a **different axis**, which the kind constant argues in
+# full: ``speaker`` joins :data:`_ATTR_NAMES` and takes a side-bearing branch in
+# :func:`_attr_kind`. Those are not the marking's cost — they are the cost of
+# the LINE SHAPE changing. A wrapped line has no ``Name:`` prefix for the side
+# to land on, so without them a marked line would carry less information than
+# the authored line it replaces, which is the one thing this whole table's
+# "a flag may only re-kind a body, never demote one" rule forbids.
 TRANSCRIPT_KINDS: tuple[str, ...] = (
     KIND_MARKER,
     KIND_PLAIN,
@@ -1277,6 +1374,7 @@ TRANSCRIPT_KINDS: tuple[str, ...] = (
     KIND_DIARY,
     KIND_DIARY_SUBSTITUTED,
     KIND_THOUGHT_SUBSTITUTED,
+    KIND_SPEECH_SUBSTITUTED,
 )
 
 # The two sides, as the internal token that selects a side-bearing kind. Private
@@ -1388,6 +1486,35 @@ _ROLE_SIDES: dict[str, str] = {
 # measured at zero occurrences when spec 039 wrote that, and the corpus has
 # since grown diaries — 376 of them across the 26 committed run dirs, measured
 # 2026-09-07. The whitelist reasoning is unchanged; only the count is.)
+#
+# **AND SLICE 10 DOES ADD ONE — ``speech``, the fourteenth, and the paragraph
+# above needs reading with this exception beside it.** "Spec 041 adds no name
+# here at all" was true of Slices 8 and 9 and is false of Slice 10, for a
+# structural reason rather than a change of mind: a diary and a thought were
+# already elements, so their marking only had to add an attribute to a
+# recognised tag. **Day speech is not an element** — the writer emits it as a
+# bare ``Speaker: text`` line, read by :data:`_SPEAKER_RE` and by nothing here
+# — so a substituted line has nowhere to carry the fact and is promoted to
+# ``<speech speaker="…" substituted="true">…</speech>``. That promotion is what
+# needs the name.
+#
+# **It is a whitelist, so the addition can only affect lines that carry the
+# name**, and the measurement says none does: ``<speech`` occurs **zero** times
+# across the 373 committed transcripts (27 run dirs, measured 2026-09-07), so
+# no committed line can tokenize differently for this entry existing. The
+# authored form is untouched by construction — an authored line is still the
+# bare shape and never reaches this whitelist at all, which is the whole reason
+# the marking is conditional (``eval_transcript._append_messages``).
+#
+# **The one asymmetry against the other twelve, recorded because it is
+# deliberate:** every other name here has an entry in
+# :data:`_INLINE_CONTENT_KINDS` for its UNFLAGGED form (or is content-free).
+# ``speech`` has **only** ``("speech", True)``. An unflagged ``<speech>`` is a
+# shape the writer never emits, and registering :data:`KIND_SPEECH` for it
+# would be worse than leaving it plain: that kind is the *side-unknown* form,
+# and this lookup cannot consult the cast list, so a hand-written unflagged
+# ``<speech>`` would read achromatic where the bare line it imitates reads
+# tinted. Plain is the honest answer for a body nothing produces.
 _MARKER_TAGS: frozenset[str] = frozenset(
     {
         "transcript",
@@ -1403,6 +1530,7 @@ _MARKER_TAGS: frozenset[str] = frozenset(
         "recap",
         "thought",
         "diary",
+        "speech",
     }
 )
 
@@ -1457,6 +1585,26 @@ _MARKER_TAGS: frozenset[str] = frozenset(
 # Slice 9's entry is the whole of its change to this table: the re-keying was
 # Slice 8's cost, paid once, and the second marked kind is one line. That is the
 # property the pair-keying was for.
+#
+# **AND SLICE 10 IS ONE LINE TOO — but it is the first entry with NO unflagged
+# twin, and that is a decision rather than an omission.** ``("speech", True)``
+# is registered; ``("speech", False)`` deliberately is **not**. Every other tag
+# here got its unflagged entry first and its flagged one later; ``speech``
+# arrives flagged-only because the writer only ever emits the tag when the flag
+# is set — an authored line stays the bare ``Speaker: text`` shape and never
+# becomes an element at all. Registering :data:`KIND_SPEECH` for the unflagged
+# pair would claim a kind for a shape nothing produces, and claim the WRONG
+# one: :data:`KIND_SPEECH` is the *side-unknown* form and this lookup has no
+# access to the cast map, so a hand-written ``<speech speaker="Ava">…</speech>``
+# would read achromatic where the bare ``Ava: …`` line it imitates reads in
+# Ava's side colour. :data:`KIND_PLAIN` — "this body is not a kind I know" — is
+# the honest answer, and it is the first time the chained fallback's final hop
+# is reachable for a WHITELISTED tag.
+#
+# That does not weaken the "a flag may only re-kind a body, never demote one"
+# rule above: nothing is demoted here, because there is no unflagged kind for
+# the flag to have taken away. The rule is about a flag changing a body's
+# standing; this is a body the table has simply never claimed.
 _INLINE_CONTENT_KINDS: dict[tuple[str, bool], str] = {
     ("kill", False): KIND_MARKER,
     ("thought", False): KIND_THOUGHT,
@@ -1464,6 +1612,7 @@ _INLINE_CONTENT_KINDS: dict[tuple[str, bool], str] = {
     ("recap", False): KIND_RECAP,
     ("diary", False): KIND_DIARY,
     ("diary", True): KIND_DIARY_SUBSTITUTED,
+    ("speech", True): KIND_SPEECH_SUBSTITUTED,
 }
 
 # One transcript line's tag head: ``<name>``, ``</name>`` or ``<name attrs…>``.
@@ -1564,6 +1713,33 @@ _TAG_HEAD_RE = re.compile(
 # written when it too had zero occurrences: the corpus has since grown diaries
 # and now carries 376 ``day="`` values, so that guard is live on real data and
 # this one is not yet.
+# ``speaker`` is spec 041 Slice 10's eighth, carried by
+# ``<speech speaker="…" substituted="true">`` — and it is the ONLY name this
+# whitelist has ever gained for a reason that is not about a new *fact* but
+# about a new *line shape*. Day speech has always named its speaker; it named
+# them in the bare ``Speaker: text`` prefix, which :data:`_SPEAKER_RE` reads and
+# this tuple never saw. When a substituted line is promoted to an element, that
+# prefix is gone and the name moves inside the tag — so **without this entry
+# the marked line would carry LESS information than the authored line it
+# replaces**: the name would sit in marker punctuation at ``auto 60%`` while
+# being the single most useful token on the row, which inverts the very
+# requirement this tuple exists to satisfy (the ``attr-mafia`` note one screen
+# down states the inversion in those words for ``role``).
+#
+# It passes the tuple's own test more cleanly than any member except ``name``:
+# it is **a person's name**, the paradigm "specific a reviewer reads", not a
+# machine flag. And it is the only name-valued attribute in the writer's whole
+# vocabulary that would otherwise be left buried — ``<player name="…">``,
+# ``<thought player="…">``, ``<diary player="…">`` and ``<vote initiator="…"
+# target="…">`` are all lifted.
+#
+# It is also the second member (after ``role``, and unlike ``player``, which is
+# tag-keyed in :func:`_attr_kind` but name-keyed here) to be **side-bearing**,
+# which is the other half of the same argument — see :func:`_attr_kind`'s
+# fourth branch. And it **cannot move a committed transcript**: ``speaker="``
+# occurs **zero** times across the 373 committed files (27 run dirs, measured
+# 2026-09-07), and :data:`_ATTR_VALUE_RE`'s lookbehind stops it matching the
+# tail of a hypothetical ``mainspeaker="…"``.
 _ATTR_NAMES: tuple[str, ...] = (
     "name",
     "role",
@@ -1572,6 +1748,7 @@ _ATTR_NAMES: tuple[str, ...] = (
     "target",
     "day",
     "substituted",
+    "speaker",
 )
 
 # One ``name="value"`` pair inside a tag's attribute run. Only the ``value``
@@ -1647,6 +1824,16 @@ _FIELD_LABEL_RE = re.compile(
 # speech as ``f"{speaker}: {text}"`` (``eval_transcript._append_messages``) —
 # a bare display name, a colon, a space — and that is the whole shape available,
 # because a Day round carries no other structure a reader could key off.
+#
+# **STILL THE SHAPE OF EVERY AUTHORED LINE AFTER SPEC 041 SLICE 10, AND THAT IS
+# WHY THE MARKING IS CONDITIONAL.** Slice 10 promotes a **substituted** line to
+# ``<speech speaker="…" substituted="true">…</speech>`` — an element, read by
+# :func:`_tag_element_spans` and never by this pattern — and leaves an authored
+# line exactly as written. So this rule's measured basis is undisturbed: all
+# 22,508 corpus lines under 498 names still match it, no committed line moved,
+# and what this pattern now means precisely is "somebody speaking **in their own
+# words**". A marked line is not a miss for it; it is a different shape that a
+# branch above the speaker branch claims first.
 #
 # **How permissive, and why exactly this permissive.** The name is one
 # whitespace-free token that begins with a *letter* (``[^\W\d_]`` — Unicode, so
@@ -1734,10 +1921,32 @@ _THOUGHT_OWNER_ATTR = "player"
 _DIARY_TAG = "diary"
 _DIARY_OWNER_ATTR = "player"
 
-# The substitution marking on a ``<diary … substituted="true">`` or
-# ``<thought … substituted="true">`` tag (spec 041) — one attribute name and
-# one literal, shared by every channel that carries the flag, because the flag
-# means the same thing on each. A whitelist of one literal — the same
+# The ``<speech speaker="X" substituted="true">`` tag and its speaker attribute
+# (spec 041 Slice 10) — the THIRD side-bearing ``(tag, name)`` pair, written out
+# separately for the reason the diary pair is: :func:`_attr_kind` keys on the
+# PAIR, and folding them together would hide that this is an independent
+# decision about a third tag.
+#
+# ``speaker`` rather than ``player``, deliberately and not incidentally: the
+# other two tags carry a private record and name its **owner**, this one carries
+# a public utterance and names the person who **said** it. The writer's own
+# message key is ``additional_kwargs["speaker"]``, so the transcript spells the
+# tag the way the state does.
+#
+# Only the SUBSTITUTED form of a Day-speech line is ever an element at all — an
+# authored line stays the bare ``Speaker: text`` shape — so in practice this
+# pair only ever appears on a marked tag. The branch is written against the
+# ``(tag, key)`` pair rather than against the flag regardless, because whether a
+# NAME is side-bearing is a fact about the tag it sits on and not about the
+# other attributes beside it.
+_SPEECH_TAG = "speech"
+_SPEECH_SPEAKER_ATTR = "speaker"
+
+# The substitution marking on a ``<diary … substituted="true">``,
+# ``<thought … substituted="true">`` or — from Slice 10 —
+# ``<speech … substituted="true">`` tag (spec 041): one attribute name and
+# one literal, shared by all three channels that carry the flag, because the
+# flag means the same thing on each. A whitelist of one literal — the same
 # never-guess posture as :data:`_HUMAN_ATTR_TRUE` — matched to the writer's own
 # rule: ``eval_transcript._diary_substituted_attr`` emits the attribute **only**
 # for the literal ``True`` and never emits ``substituted="false"``. So
@@ -1990,7 +2199,7 @@ def _attr_kind(tag: str, key: str, value: str, sides: Mapping[str, str]) -> str:
 
     **The decision is per ``(tag, key)`` PAIR, never per attribute name** — which
     is why spec 039's ``<diary player="…">`` needed a branch of its own even
-    though ``<thought player="…">`` already had one. Three pairs carry a side;
+    though ``<thought player="…">`` already had one. **Four** pairs carry a side;
     every other pair does not, and a tag nobody has ruled on gets no side at all:
 
     - a cast entry's ``role="Mafia"`` — "the side colours used in the cast list
@@ -2013,6 +2222,19 @@ def _attr_kind(tag: str, key: str, value: str, sides: Mapping[str, str]) -> str:
       rejected: it would show one player's name in two different treatments a
       few lines apart in the same file, inviting a reviewer to read a
       distinction that is not there.
+    - a ``<speech speaker="Avery" substituted="true">`` speaker's name (spec 041
+      Slice 10) — the same map lookup a third time, and the case that shows the
+      rule stated at the bottom of this docstring was the right one. A
+      substituted Day-speech line is written as an element precisely because a
+      bare line has no attribute run to carry the flag; the bare line it
+      replaces showed Avery's side on BOTH its spans (``speaker-mafia`` and
+      ``speech-mafia``), and the marked body deliberately carries no side at
+      all (:data:`KIND_SPEECH_SUBSTITUTED` — the words have no author, so they
+      have no allegiance). That makes this name the only token left on the line
+      that can say whose turn it was. Leaving it achromatic was the
+      alternative and is exactly the outcome the marking must not have: the one
+      line in a transcript a reviewer most wants to place would be the one line
+      whose speaker has no side.
 
     The other five (a cast entry's ``name``, a vote's ``initiator`` and
     ``target``, and a diary's ``day`` and ``substituted``) stay achromatic
@@ -2038,23 +2260,28 @@ def _attr_kind(tag: str, key: str, value: str, sides: Mapping[str, str]) -> str:
     duplicating the default, and the six-touchpoint route running one short is
     a better outcome than code written to make a route look complete.
 
-    **And it stays no-branch as the marking spreads, which is the stronger
-    statement.** Slice 9 carries the same flag on ``<thought … substituted=…>``
-    and Slice 10 will carry it on speech; because the reason is a property of
-    the *attribute* — a flag about authorship names no side — and not of the
-    tag it happens to sit on, each of those channels also needs nothing here.
-    A ``(thought, substituted)`` branch would be the same dead code one tag
-    over. What DOES stay per-``(tag, key)`` is ``player``: a substituted
-    thought's owner name still takes its side colour through the
-    ``_THOUGHT_TAG`` branch below, so the tag line shows *whose* reflection was
-    stood in for even though the flag beside it is achromatic.
+    **And it stayed no-branch as the marking spread, which is the stronger
+    statement — confirmed now for all three channels rather than forecast.**
+    Slice 9 carries the same flag on ``<thought … substituted=…>`` and Slice 10
+    on ``<speech … substituted=…>``; because the reason is a property of the
+    *attribute* — a flag about authorship names no side — and not of the tag it
+    happens to sit on, neither channel needed anything here for the FLAG. A
+    ``(thought, substituted)`` or ``(speech, substituted)`` branch would be the
+    same dead code one tag over. What DOES stay per-``(tag, key)`` is the
+    **name**: a substituted thought's owner and a substituted line's speaker
+    each take their side colour through their own branch, so the tag line shows
+    *whose* answer was stood in for even though the flag beside it is
+    achromatic. Slice 10 is where those two halves come apart most visibly —
+    one branch added for ``speaker``, none for ``substituted``, on the same
+    tag.
 
-    **The rule underneath all three halves:** inside a marker, the side colour
+    **The rule underneath all four halves:** inside a marker, the side colour
     lands on whichever token actually *tells the reviewer the side* — the role
     where a role is written (the cast entry), the name where none is (the
-    thought and diary tags, which name a person and, for a diary, a Day).
-    Everywhere a name sits next to its own role, the role carries the colour and
-    the name does not, so the two treatments never compete on one line.
+    thought, diary and speech tags, which name a person and, for a diary, a
+    Day). Everywhere a name sits next to its own role, the role carries the
+    colour and the name does not, so the two treatments never compete on one
+    line.
     """
     if tag == _CAST_TAG and key == _CAST_ROLE_ATTR:
         side = _ROLE_SIDES.get(value)
@@ -2067,6 +2294,17 @@ def _attr_kind(tag: str, key: str, value: str, sides: Mapping[str, str]) -> str:
         # — falls back to the achromatic :data:`KIND_ATTR` exactly as a thought's
         # owner does. Never a guessed side; the degradation is the same one the
         # whole module is built around.
+        side = sides.get(value)
+    elif tag == _SPEECH_TAG and key == _SPEECH_SPEAKER_ATTR:
+        # Spec 041 Slice 10, the same rule one tag further and the case the
+        # rule was really for: a ``<speech speaker="Ava" substituted="true">``
+        # tag names a person and no role, and the bare ``Ava: …`` line it
+        # replaces DID show Ava's side (on both its spans). So the name is the
+        # only token on this tag that can keep that fact, and leaving it
+        # achromatic would make a marked line the one place in a transcript
+        # where a speaker's side is unavailable. Same ``sides.get`` lookup,
+        # same never-guessed degradation: an unknown name, or a game with no
+        # cast map, falls back to :data:`KIND_ATTR`.
         side = sides.get(value)
     else:
         return KIND_ATTR
@@ -2104,31 +2342,37 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     ``<setup>`` block that grants it, and one that wants a bolded seat must carry
     the marker or the welcome line that names it.
 
-    **Kinds recognised so far** (twenty-one — spec 038's twenty plus spec 039's
-    :data:`KIND_DIARY`; see :data:`TRANSCRIPT_KINDS`):
+    **Kinds recognised so far** (twenty-four — spec 038's twenty, spec 039's
+    :data:`KIND_DIARY`, and spec 041's three marked bodies; see
+    :data:`TRANSCRIPT_KINDS`):
 
     - :data:`KIND_MARKER` — the game's skeleton: the structural tags
       (``<transcript>``, ``<setup>``, ``<preamble>``, ``<night>``, ``<day>``,
       ``<round>``, ``<endgame>``, ``<kill>``, ``<player …>``, ``<vote …>``,
-      ``<recap>``, ``<thought …>``, ``<diary …>``) and each one's closing form,
+      ``<recap>``, ``<thought …>``, ``<diary …>``, ``<speech …>``) and each
+      one's closing form,
       the top ``Game N | provider=…`` metadata line, and the bare ``Round N.``
       label —
       **including the punctuation of a tag's attributes**, which stays marker so
       that only the values below are lifted out of it.
     - :data:`KIND_ATTR` — the **value** of a detail-carrying attribute inside a
       marker: the ``name``/``role`` of a cast entry, a thought's ``player``, a
-      vote's ``initiator``/``target``, a diary's ``day`` (see
-      :data:`_ATTR_NAMES`). ``Avery``, never ``name="Avery"``. Achromatic: it
-      lifts by weight and brightness, because from Slice 4 onward colour means
-      **side** and neither a bare name nor a Day number carries one.
+      vote's ``initiator``/``target``, a diary's ``day``, a marked body's
+      ``substituted`` (see :data:`_ATTR_NAMES`). ``Avery``, never
+      ``name="Avery"``. Achromatic: it lifts by weight and brightness, because
+      from Slice 4 onward colour means **side** and neither a bare name, a Day
+      number nor an authorship flag carries one.
     - :data:`KIND_ATTR_MAFIA` / :data:`KIND_ATTR_LAW_ABIDING` — the exceptions to
       that, the first two required by functional-spec §2 in so many words: a cast
       entry's ``role="…"`` (so the cast list and the dialogue agree on the
       colours), a ``<thought player="…">`` owner's name (so a private reflection
-      shows whose it is in their own colour) and, from spec 039, a ``<diary
-      player="…">`` owner's name on the same reasoning. See :func:`_attr_kind`,
-      which decides per ``(tag, attribute)`` pair rather than per attribute
-      name.
+      shows whose it is in their own colour), from spec 039 a ``<diary
+      player="…">`` owner's name on the same reasoning, and from spec 041 Slice
+      10 a ``<speech speaker="…">`` speaker's name — where it is load-bearing
+      rather than consistent, since a marked line has no ``Name:`` prefix left
+      to colour and its body deliberately carries no side. See
+      :func:`_attr_kind`, which decides per ``(tag, attribute)`` pair rather
+      than per attribute name.
     - :data:`KIND_FIELD_LABEL` — a cast-list field's label, **colon included**
       (see :data:`_FIELD_LABELS`); the prose after it is content, not label.
     - :data:`KIND_SPEAKER` / :data:`KIND_SPEECH` — a spoken line **whose side is
@@ -2184,6 +2428,20 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
       the marked ones follow them. Everything else about it reads off the entry
       above: two axes, tag stays :data:`KIND_MARKER`, flag value achromatic,
       owner's name still side-tinted, body never.
+    - :data:`KIND_SPEECH_SUBSTITUTED` — the third and last of the family (spec
+      041 Slice 10), and the only one whose LINE is a different shape from its
+      honest twin's. An authored Day-speech line is the bare
+      ``Avery: I saw nothing.`` above; a substituted one is
+      ``<speech speaker="Avery" substituted="true">I'm not sure who to trust
+      yet.</speech>``, because a bare line has no attribute run to carry the
+      fact. Only the marked line is promoted, so **every authored line in the
+      corpus is byte-identical to what it always was**. One kind rather than
+      three: the body carries no side (the words have no author, so they have
+      no allegiance) and the SPEAKER'S NAME carries it instead, tinted through
+      :func:`_attr_kind` exactly as a thought's and a diary's owner are — so
+      the side is relocated rather than lost. There is no human-seat form and
+      cannot be: ``nodes.day._ai_day_action`` is the only writer of the flag
+      and the human branch never calls it.
     - :data:`KIND_PLAIN` — **everything else**, including every line separator.
       This fallback is what makes degradation total: an unrecognised tag, a
       pre-spec-022 transcript's indented ``Name — Role`` cast list, model-generated
@@ -2203,16 +2461,18 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     How a line is split (the extension point is :func:`_line_spans`):
 
     - a tag on a line of its own becomes one marker span — or, when it carries
-      one of the seven detail attributes, an alternating marker/attr/marker run
+      one of the eight detail attributes, an alternating marker/attr/marker run
       whose pieces still concatenate to the tag exactly (:func:`_tag_head_spans`);
     - an inline ``<tag …>content</tag>`` becomes *three* spans — opening tag,
       content, closing tag — so a slice claiming a body need only change the
       content span's kind (or split attribute values out of the tag) instead of
       breaking one span into several. ``<thought>``, ``<recap>`` and spec 039's
-      ``<diary>`` bodies are claimed that way, and from spec 041 a ``<diary>``
-      or ``<thought>``
+      ``<diary>`` bodies are claimed that way, and from spec 041 a ``<diary>``,
+      ``<thought>`` or ``<speech>``
       body's kind depends on the ``substituted="true"`` flag on its own tag as
-      well as on the tag name (:data:`_INLINE_CONTENT_KINDS`); ``<kill>`` is
+      well as on the tag name (:data:`_INLINE_CONTENT_KINDS` — where ``speech``
+      is registered for the flagged form ONLY, since the writer emits the tag
+      only when the flag is set); ``<kill>`` is
       the exception whose content is *already* marker, so it coalesces back to
       a single span. An element whose content does **not** close on the same line
       keeps that remainder :data:`KIND_PLAIN` rather than inheriting the tag's
@@ -2291,6 +2551,16 @@ def tokenize_transcript(text: str) -> list[tuple[str, str]]:
     ballot alike, since spec 022 strips the moderator's voice off a ballot
     precisely so it reads as the player's own word — takes the human form of
     whichever kind the side axis chose.
+
+    **Spec 041 Slice 10 does not touch that, and cannot.** A substituted
+    Day-speech line is written as a ``<speech …>`` element rather than as a
+    ``Name:`` line, so it never reaches the speaker branch and never composes
+    with the seat axis — and it never needs to: the flag is written only by
+    ``nodes.day._ai_day_action``, which the human branch never calls, so
+    ``substituted="true"`` is unreachable in combination with any of the three
+    human-seat kinds. The human path's own ``"(stays silent.)"`` stands in for
+    the person's decision to type nothing rather than for an answer that failed
+    to decode, and is deliberately left unmarked.
 
     The two axes compose in all four combinations: side and seat both known (the
     268 spec-022 games), seat known and side not (all 30 pre-spec-022 games,
@@ -2476,7 +2746,10 @@ def _tag_element_spans(
     The three shapes the writer emits (verified across all 298 committed
     transcripts — every ``<`` and ``>`` in the corpus belongs to one of them;
     spec 039's ``<diary player="…" day="…">…</diary>`` is the second shape, the
-    same one ``<thought>`` has always taken):
+    same one ``<thought>`` has always taken, and spec 041 Slice 10's
+    ``<speech speaker="…" substituted="true">…</speech>`` is that second shape
+    again — a THIRD tag rather than a fourth shape, which is why the marking on
+    the last channel needed no new branch here):
 
     - ``<tag …>`` / ``</tag>`` alone on the line → one marker span;
     - ``<tag …>content</tag>`` inline → opening tag, content, closing tag, the

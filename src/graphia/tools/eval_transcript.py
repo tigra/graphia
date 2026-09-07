@@ -898,7 +898,14 @@ def _append_messages(
     by voice (spec 022):
 
     - an ``AIMessage`` (player speech / a human turn — both carry the speaker's
-      ``name``) as a plain ``<name>: <text>`` utterance, unchanged;
+      ``name``) as a plain ``<name>: <text>`` utterance, unchanged — **unless it
+      carries ``additional_kwargs["substituted"] is True``** (spec 041 Slice
+      10), in which case it becomes an inline
+      ``<speech speaker="Name" substituted="true">…</speech>`` element. That is
+      the only conditional line shape in this writer, and the condition is the
+      point: an authored line is byte-identical to what every committed
+      transcript holds, so wrapping the marked one costs the format nothing
+      (see the note at the branch);
     - a public ``SystemMessage`` (the Moderator voice):
         * a **night-kill** line ("During the night, X was killed.") becomes an
           inline ``<kill>X — Side</kill>`` block (side off the final roster);
@@ -925,7 +932,42 @@ def _append_messages(
             continue
         if isinstance(msg, AIMessage):
             speaker = getattr(msg, "name", None) or "Unknown"
-            buf.append(f"{speaker}: {text}")
+            # THE ONLY CONDITIONAL LINE SHAPE IN THIS WRITER (spec 041 Slice
+            # 10), and the conditionality is what makes covering speech
+            # affordable at all. An authored line keeps the bare
+            # ``Speaker: text`` form BYTE FOR BYTE — that shape is the
+            # dominant line of the format (22,508 of them across the 373
+            # committed transcripts, under 498 distinct names) and the one the
+            # tokenizer's ``_SPEAKER_RE`` reads — so the marking cannot move a
+            # single committed line, and no existing span test moves either.
+            # Only the substituted line is promoted to an element, because
+            # only it has a fact to carry that the bare shape has nowhere to
+            # put: a bare line has no attribute run.
+            #
+            # THE FLAG IS READ OFF ``additional_kwargs``, THE NAME OFF
+            # ``msg.name``. Both are written by ``nodes.day.day_turn``'s AI
+            # branch, which puts the speaker's display name in BOTH places
+            # (``name=`` and ``additional_kwargs["speaker"]``, always in
+            # agreement) and the flag in the kwargs alone. The name is taken
+            # from ``msg.name`` because that is where this function has always
+            # taken it and the two never disagree; reading it from the kwargs
+            # instead would be a second source of one truth.
+            extra = getattr(msg, "additional_kwargs", None) or {}
+            substituted = _diary_substituted_attr(extra.get("substituted"))
+            if not substituted:
+                buf.append(f"{speaker}: {text}")
+                continue
+            # ``speaker="…"`` rather than ``player="…"``: the other two marked
+            # channels are PRIVATE records with an owner, and this one is a
+            # public utterance with a speaker. The attribute is whitelisted in
+            # ``eval_ledger._ATTR_NAMES`` and side-bearing on this tag, so the
+            # name is lifted out of the punctuation and tinted with its side —
+            # which is what stops a marked line reading with LESS information
+            # than the bare line it replaces (the bare form kinds the ``Name:``
+            # prefix by side; a name buried in marker punctuation would not).
+            buf.append(
+                _inline_attr("speech", f'speaker="{speaker}" {substituted}', text)
+            )
             continue
         if isinstance(msg, SystemMessage):
             if skip_first_system and not skipped:
@@ -1121,15 +1163,30 @@ def _append_diaries(
 def _diary_substituted_attr(substituted: Any) -> str:
     """``substituted="true"`` for a substituted entry, else ``""`` (spec 041).
 
-    TWO CALLERS SINCE SLICE 9, AND THE ``diary_`` PREFIX IS NOW HISTORICAL:
-    :func:`_append_diaries` reads it off a :class:`~graphia.state.DiaryRecord`
-    and :func:`_append_thoughts` off a :class:`~graphia.state.ThoughtRecord`.
-    Nothing in the body is diary-specific — it tests one value against one
-    literal — and keeping ONE definition is what makes the two channels
+    THREE CALLERS SINCE SLICE 10, AND THE ``diary_`` PREFIX IS NOW PURELY
+    HISTORICAL: :func:`_append_diaries` reads it off a
+    :class:`~graphia.state.DiaryRecord`, :func:`_append_thoughts` off a
+    :class:`~graphia.state.ThoughtRecord`, and :func:`_append_messages` off an
+    ``AIMessage``'s ``additional_kwargs`` — a private record, a private record
+    and a **public utterance**, which is as channel-neutral as the callers can
+    get. Nothing in the body is diary-specific — it tests one value against one
+    literal — and keeping ONE definition is what makes all three channels
     provably agree with each other and with the reader's single literal in
-    ``graphia.eval_ledger._SUBSTITUTED_ATTR_TRUE``. Two copies could drift; one
-    cannot. The rename is deferred rather than declined: see the note at the
-    call site in :func:`_append_thoughts`.
+    ``graphia.eval_ledger._SUBSTITUTED_ATTR_TRUE``. Three copies could drift;
+    one cannot.
+
+    **THE RENAME IS DEFERRED AGAIN, AND THIS TIME BY A BOUNDARY RATHER THAN BY
+    JUDGMENT.** Slice 9's note at the :func:`_append_thoughts` call site left
+    the collapse to a channel-neutral name to Slice 10's Task 10.2 "where a
+    THIRD caller makes the prefix indefensible and that test file is being
+    edited anyway". The prefix is indeed now indefensible; the second half of
+    that reasoning is not true of this task. The name is asserted five times in
+    ``tests/test_spec041_substitution_marking.py``, which Task 10.3 owns and
+    Task 10.2 is explicitly fenced out of — so a rename here would force edits
+    into a file this task must not touch, which is a worse outcome than a
+    misleading prefix on a function whose docstring says what it actually does.
+    **Task 10.3 is the cheapest home for it**: that task edits those five
+    assertions anyway.
 
     The conditional-attribute idiom of :func:`_diary_day_attr`, and for a
     sharper reason: **the attribute must be absent on an authored entry, not
@@ -1172,8 +1229,13 @@ def _inline_attr(tag: str, attrs: str, content: str) -> str:
     """A single-line element with attributes: ``<tag attrs>content</tag>``.
 
     The attributed analogue of :func:`_inline`, used for the spec-028
-    ``<thought player="…">…</thought>`` private notes and the spec-039
-    ``<diary player="…" day="…">…</diary>`` before-Night entries.
+    ``<thought player="…">…</thought>`` private notes, the spec-039
+    ``<diary player="…" day="…">…</diary>`` before-Night entries and — from
+    spec 041 Slice 10 — the
+    ``<speech speaker="…" substituted="true">…</speech>`` form a SUBSTITUTED
+    Day-speech line takes. The third caller is the first whose element is
+    **conditional**: an authored line never reaches here at all, it stays the
+    bare ``Speaker: text`` shape (see :func:`_append_messages`).
     """
     return f"<{tag} {attrs}>{content}</{tag}>"
 

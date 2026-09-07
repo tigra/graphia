@@ -69,6 +69,7 @@ from graphia.eval_ledger import (
     KIND_SPEECH_LAW_ABIDING_HUMAN,
     KIND_SPEECH_MAFIA,
     KIND_SPEECH_MAFIA_HUMAN,
+    KIND_SPEECH_SUBSTITUTED,
     KIND_THOUGHT,
     KIND_THOUGHT_SUBSTITUTED,
     LedgerParseError,
@@ -590,6 +591,32 @@ _NO_TRANSCRIPTS_MESSAGE = "No transcripts for this run."
 # takes the same route again, so the eight-flag budget above holds for all
 # three channels.
 #
+# ...AND SLICE 10 CLOSES THE LEDGER WITH A THIRD REUSE AND NO NEW SPEND, which
+# is the accounting complete rather than a fourth instalment. ``speech-
+# substituted`` REUSES ``strike`` on a third kind; ``bold`` (the seat),
+# ``italic`` (``thought``), ``underline`` (``diary``), ``reverse`` (``recap``)
+# and ``strike`` (the marking family) remain the five spent flags, and the
+# three compromised survivors (``uu``, ``dim``, ``blink``) plus the
+# measured-dead ``overline`` are still the whole of what a later kind can
+# reach for. **So the entire marking family cost the budget exactly one flag**
+# — which is the strongest form of the one-meaning-per-flag rule this ledger
+# exists to keep: three channels, one flag, one meaning ("this body is not the
+# player's writing"), and the three marked kinds separated by the flags their
+# HONEST forms already differ by.
+#
+# THE THREE-WAY SEPARATION, written out because it is what a reader will want
+# to check: ``diary-substituted`` is ``italic underline strike``,
+# ``thought-substituted`` is ``italic strike``, ``speech-substituted`` is
+# ``strike`` alone. Each is its own honest rule plus the one flag, and the
+# stack shrinks as the honest forms do — so the LAST marked kind is the
+# PLAINEST of the three, and it is the only one outside the muted family
+# (``$text``, not ``$text-muted``). That makes speech the easiest of the three
+# to keep distinguishable, exactly the opposite of what the channel's
+# prominence would suggest: under ``textual-ansi`` the two private kinds
+# collapse to the terminal default and rely on their flags alone, and this one
+# collapses there too — but it is separated from BOTH of them by the absence of
+# ``italic``, which no theme can take away.
+#
 # SIX SIDE-BEARING KINDS, NOT TWO — two hues, but ``speaker``, ``speech`` and
 # ``attr`` each split two ways, so six entries and six rules. The neutral
 # ``speaker`` / ``speech`` / ``attr`` above are UNTOUCHED by that: Slice 4 adds,
@@ -675,6 +702,39 @@ _TRANSCRIPT_KIND_COMPONENTS: dict[str, str] = {
     # This is the channel that matters most, measured: 10,706 thought bodies in
     # the committed corpus against 376 diary ones.
     KIND_THOUGHT_SUBSTITUTED: "transcript--thought-substituted",
+    # A SUBSTITUTED DAY-SPEECH body (spec 041 Slice 10) — the twenty-fourth
+    # kind, the third and last of the marking family, and the only one whose
+    # LINE is a different shape from its honest twin's: an authored line is the
+    # bare `Speaker: text` the tokenizer splits into `speaker` + `speech`, a
+    # substituted one is a `<speech speaker="…" substituted="true">…</speech>`
+    # element. Same route as the other two: one constant in `eval_ledger`, one
+    # entry here, one rule below, nothing moved.
+    #
+    # ONE CLASS, NOT THREE, AND THE SIDE IS NOT LOST — it moves. Speech is the
+    # only channel in the family whose honest forms are side-bearing
+    # (`speech-mafia` / `speech-law-abiding` / the neutral), so this is the
+    # first marked kind where "does it keep its side tint?" had a real answer
+    # either way. The body does not: colour has meant *side* since Slice 4, a
+    # side is a fact about the SPEAKER, and the words of a substituted line have
+    # no author to have a side. The speaker's NAME carries it instead, tinted
+    # `attr-mafia` / `attr-law-abiding` on the wrapping tag exactly as a
+    # `<thought player=…>` owner's is — so a reviewer still places the line at a
+    # glance while the prose stays outside the side palette.
+    #
+    # Three classes would also have broken a structural invariant rather than
+    # merely tripling: `speaker` and `speech` are INDEX-ALIGNED families ("a
+    # speaker and their words carry the same side and the same seat"), and a
+    # wrapped line has no speaker span at all — so a `speech-mafia-substituted`
+    # with no `speaker-mafia-substituted` twin would leave that pairing
+    # unpairable.
+    #
+    # NO HUMAN FORM, and by construction rather than by omission:
+    # `nodes.day._ai_day_action` is the only writer of the flag and the human
+    # branch never calls it, so `substituted="true"` cannot co-occur with the
+    # reviewer's seat. The human path's own `"(stays silent.)"` is deliberately
+    # unmarked — it stands in for a person's decision to type nothing, not for
+    # an answer that failed to decode.
+    KIND_SPEECH_SUBSTITUTED: "transcript--speech-substituted",
 }
 
 
@@ -1407,6 +1467,97 @@ class TranscriptScreen(Screen):
     TranscriptScreen > .transcript--thought-substituted {
         color: $text-muted;
         text-style: italic strike;
+    }
+
+    /* ------------------------------------------------------------------
+       A SUBSTITUTED PIECE OF DAY SPEECH (spec 041 Slice 10) — the body of a
+       `<speech speaker="X" substituted="true">…</speech>`: the deterministic
+       stand-in `"I'm not sure who to trust yet."` that `_ai_day_action` files
+       when the model's answer could not be decoded, rather than the words the
+       player would have said out loud. The third and last channel of the
+       marking family, and the only PUBLIC one — the other two are things
+       nobody at the table could see, this is a turn the whole table heard.
+
+       THIS RULE IS THE `speech` RULE PLUS `strike`, AND NOTHING ELSE — the
+       fifth use of the shape ("its side's colour plus bold, and nothing else";
+       "`thought`'s rule plus `underline`"; "the `diary` rule plus `strike`";
+       "the `thought` rule plus `strike`"). `color: $text` is inherited verbatim
+       from the neutral `speech` rule; `strike` is the mark. THE PLAINEST FORM
+       THE MARKING TAKES ANYWHERE: ONE flag, against `thought-substituted`'s two
+       and `diary-substituted`'s three, because the honest form it derives from
+       carries none. The stack shrinks as the honest forms do, so the last kind
+       added is the quietest — which is the second time in this stylesheet that
+       happens (see the rule above) and is worth stating rather than reading as
+       an oversight.
+
+       IT DERIVES FROM THE *NEUTRAL* `speech`, WHICH IS THE SIDE-TINTING
+       DECISION MADE VISIBLE. Speech is the only channel in the family whose
+       honest forms are side-bearing (`speech-mafia`, `speech-law-abiding`, and
+       the neutral for a line whose side is unknown), so this rule had a real
+       choice its two predecessors did not: inherit a side, or inherit the
+       body colour. It inherits the body colour, for the reason both rules above
+       give and which does not weaken for the body being public: colour has
+       meant *side* since Slice 4, a side is a fact about the SPEAKER, and the
+       words of a substituted line have no author to have a side. Tinting them
+       would attribute an act of allegiance to a sentence nobody uttered.
+
+       THE SIDE IS NOT LOST, IT MOVES — and this is the half that made the
+       decision affordable rather than a sacrifice. The wrapped line carries a
+       `speaker="X"` attribute, `speaker` is whitelisted in `_ATTR_NAMES`, and
+       `_attr_kind` gives it the speaker's side — so the name reads
+       `attr-mafia` / `attr-law-abiding` through the rules above, exactly as a
+       `<thought player=…>` owner's does. A reviewer still places a marked line
+       at a glance. Without that relocation the honest alternative would have
+       been three tinted body kinds, which `_TRANSCRIPT_KIND_COMPONENTS`'
+       entry records as breaking the `speaker`/`speech` families' index
+       alignment.
+
+       NO HUE OF ITS OWN, for the reason the two rules above give and one more
+       that is specific to this channel: `$text` is the body's own colour, so a
+       substituted line reads as *body text, struck* — which is the honest
+       rendering of "these are not anybody's words". The two surviving
+       variables mean *side*, and "nobody wrote this" is not a side.
+
+       WHAT THE REVIEWER ACTUALLY SEES, and the block-texture worry does not
+       reach here either: the marked body is the fallback constant
+       `"I'm not sure who to trust yet."` — **30 characters**, the SHORTEST of
+       the three (against `_REFLECTION_FALLBACK`'s 52 and `_DIARY_FALLBACK`'s
+       110) — so this rule paints one row at ~100 columns, every time. The
+       corpus's 46-626 character range is the range of AUTHORED speech, which
+       never carries the marking, because the flag is set only on the
+       substitution branch where the body IS the constant. Nothing here is
+       weakened on that basis.
+
+       DEGRADATION, and this is the one place the family gets EASIER rather
+       than thinner. `$text` clears AA on both builtin themes (14.19:1 on
+       `textual-dark`, 12.77:1 on `textual-light`) and collapses to the terminal
+       default under `textual-ansi`, exactly as `speech`'s and `recap`'s do. So
+       under `textual-ansi` all three marked kinds resolve to the terminal
+       default and the SGR flags are the entire separation — but this kind is
+       separated from BOTH of the others by the ABSENCE of `italic`, which no
+       theme can take away, and from an honest line by `strike`. Being outside
+       the muted family also means it never has to be told apart from `marker`,
+       `thought` or `diary` by brightness at all.
+
+       TWO AXES, and this rule is only ONE of them — the belt-and-braces every
+       marked kind uses. The flag's own value is already an ordinary bold `attr`
+       span on the tag line (`_ATTR_NAMES` lifts it; no rule here does that
+       work), and here there is a THIRD signal the other two channels do not
+       have: the line's whole SHAPE changes, from `Speaker: text` to a tag. A
+       terminal with no SGR 9 at all still shows a marked turn as the one
+       element in a Day round.
+
+       Verified at the two hops that killed `overline`, on the installed Textual
+       8.2.4: `rich.style.Style.parse("strike")` is `Style(strike=True)` and
+       `textual.style.Style.from_rich_style` carries `strike=rich_style.strike`
+       explicitly into the `Content` conversion.
+
+       Permanent: no later slice re-kinds a substituted line of speech, and this
+       is the last channel — `_ai_day_action`, `_ai_reflect` and `day_diary` are
+       the three substitution sites that produce reader-visible prose. */
+    TranscriptScreen > .transcript--speech-substituted {
+        color: $text;
+        text-style: strike;
     }
     """
 

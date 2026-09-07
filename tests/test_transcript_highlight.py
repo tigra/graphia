@@ -949,11 +949,24 @@ def test_the_line_splitting_kinds_hold_their_shape_across_the_corpus() -> None:
     assert set(eval_ledger._ATTR_NAMES) - _CORPUS_REQUIRED_ATTR_NAMES == {
         "day",
         "substituted",
+        # Spec 041 Slice 10's `speaker`, and the third exception has the same
+        # reason as the first two: `speaker="` occurs ZERO times across the
+        # committed corpus (373 files in 27 run dirs, measured 2026-09-07),
+        # because the attribute exists only on a `<speech … substituted="true">`
+        # element and no committed game was played by a build that could write
+        # one. So the corpus cannot be required to carry it.
+        #
+        # It is the exception with the SHORTEST fuse, though, and that is worth
+        # knowing: `day` waited for a diaries-on run and `substituted` is still
+        # waiting for a substitution, whereas `speaker` appears the first time
+        # ANY committed game substitutes a Day-speech line — the same event that
+        # discharges `substituted`. The two will land together or not at all.
+        "speaker",
     }, (
         "the whitelist grew a name the corpus is not required to carry: "
         f"{sorted(set(eval_ledger._ATTR_NAMES) - _CORPUS_REQUIRED_ATTR_NAMES)} — "
-        "`day` is the spec-039 exception and `substituted` the spec-041 one, and "
-        "a third needs its own reason here"
+        "`day` is the spec-039 exception and `substituted` / `speaker` the two "
+        "spec-041 ones, and a fourth needs its own reason here"
     )
     assert set(label_texts) == labels, (
         f"field labels found: {sorted(label_texts)}, expected all of "
@@ -1210,6 +1223,33 @@ def test_the_kind_family_tuples_are_index_aligned_and_complete() -> None:
         # side-bearing, so unlike these two it is a real decision rather than a
         # foregone one.
         eval_ledger.KIND_THOUGHT_SUBSTITUTED,
+        # Spec 041 Slice 10, and THE CASE THE NOTE ABOVE FLAGGED TO WATCH —
+        # answered here rather than left as a question. `speech-substituted` is
+        # the first marked kind whose HONEST form is side-bearing
+        # (`speech-mafia` / `speech-law-abiding` / the neutral), so unlike the
+        # two above it genuinely could have joined `_SPEECH_KINDS` as three
+        # side-qualified members. It does not, and it lands here with the other
+        # two, for two reasons that point the same way:
+        #
+        # * the flag is a fact about AUTHORSHIP, which names neither a side nor
+        #   a seat — the same reason as its two siblings, undiminished by the
+        #   honest form being tinted. Production's decision is that the BODY
+        #   carries no side and the wrapping tag's `speaker="…"` name carries it
+        #   instead (`_attr_kind`'s fourth branch), so the side is relocated
+        #   onto the `attr` family rather than dropped;
+        # * and the family shape forbids the alternative outright. These two
+        #   tuples are INDEX-ALIGNED — "a speaker and their words carry the same
+        #   side and the same seat" — and a substituted line is written as a
+        #   `<speech …>` element with NO speaker span at all. A
+        #   `speech-mafia-substituted` with no `speaker-mafia-substituted` twin
+        #   could not be paired by position, which is exactly what the first
+        #   assertion in this test protects.
+        #
+        # So the marking family lands here in all three channels after all, and
+        # for a slightly stronger reason than "nobody wrote this is orthogonal
+        # to both families": on the one channel where it was NOT orthogonal, the
+        # side went somewhere else.
+        eval_ledger.KIND_SPEECH_SUBSTITUTED,
     }
     assert familied | unfamilied == set(eval_ledger.TRANSCRIPT_KINDS), (
         "a declared kind belongs to no family and to no named exception, so every "
@@ -1298,6 +1338,25 @@ def test_every_kind_constant_is_exported_and_declared_exactly_once() -> None:
     span on a second tag with nothing added anywhere. A slice arriving after
     this one should expect the route to keep shrinking, and should record which
     touchpoints it did not need rather than writing code to fill them.
+
+    **AND SLICE 10 TAKES IT TO TWENTY-FOUR, WHERE THE ROUTE STOPPED SHRINKING
+    — which is the more useful lesson than three shrinking anecdotes.** The
+    advice above was wrong in one direction: the route's cost is not a
+    monotonic curve, it is a function of how much of the shape already exists.
+    `speech-substituted` needed the constant, the `TRANSCRIPT_KINDS` entry, the
+    ``__all__`` line, one `_INLINE_CONTENT_KINDS` entry **and a new
+    `_MARKER_TAGS` name** — because `diary` and `thought` were already tags and
+    a bare ``Speaker: text`` line is not a tag at all, so this is the one
+    channel in the family whose marking introduces a shape the tokenizer had
+    never seen.
+
+    It also needed **two touchpoints on a different axis** — `speaker` in
+    `_ATTR_NAMES` and one `_attr_kind` branch for it — which is not the
+    marking's cost but the LINE SHAPE's: a wrapped line has no ``Name:`` prefix
+    for the side to land on, so without them a marked line would read with less
+    information than the authored line it replaces. What it still did NOT need
+    is an `_attr_kind` branch for the FLAG, for the third time and for the
+    reason that is a property of the attribute rather than of the tag.
     """
     kind_constants = {
         name: value
@@ -1305,10 +1364,11 @@ def test_every_kind_constant_is_exported_and_declared_exactly_once() -> None:
         if name.startswith("KIND_") and isinstance(value, str)
     }
 
-    assert len(eval_ledger.TRANSCRIPT_KINDS) == 23, (
+    assert len(eval_ledger.TRANSCRIPT_KINDS) == 24, (
         "spec 038 closed the vocabulary at twenty kinds, spec 039 appended the "
-        "twenty-first, `diary`, and spec 041 the twenty-second and twenty-third, "
-        "`diary-substituted` and `thought-substituted`; "
+        "twenty-first, `diary`, and spec 041 the twenty-second, twenty-third "
+        "and twenty-fourth — `diary-substituted`, `thought-substituted` and "
+        "`speech-substituted`, the whole marking family; "
         f"found {eval_ledger.TRANSCRIPT_KINDS}"
     )
     assert len(set(eval_ledger.TRANSCRIPT_KINDS)) == len(
@@ -1407,6 +1467,30 @@ _STRUCTURAL_TAGS: tuple[tuple[str, str, list[tuple[str, str]]], ...] = (
             ('">', "marker"),
         ],
     ),
+    # Spec 041 Slice 10's fourteenth, and the first tag added because a LINE
+    # SHAPE changed rather than because a channel appeared. Day speech has
+    # always been a bare ``Speaker: text`` line; a SUBSTITUTED line is promoted
+    # to an element so it has somewhere to carry the flag, and an authored one
+    # is left exactly as it was. So this tag only ever occurs marked — which is
+    # why the representative form below carries the flag, unlike ``<diary>``'s
+    # (whose authored form is the common one).
+    #
+    # Both values are ``attr`` in THIS input for two different reasons, and the
+    # difference matters: ``Alice`` is side-BEARING and lands achromatic only
+    # because this input carries no ``<setup>`` to look her up in (exactly as
+    # ``<thought>``'s and ``<diary>``'s owner does), while ``true`` is
+    # achromatic permanently — a flag about authorship names no side.
+    (
+        "speech",
+        '<speech speaker="Alice" substituted="true">',
+        [
+            ('<speech speaker="', "marker"),
+            ("Alice", "attr"),
+            ('" substituted="', "marker"),
+            ("true", "attr"),
+            ('">', "marker"),
+        ],
+    ),
 )
 
 # The tag name the ``plain`` fallback's "an unrecognised tag" case is written
@@ -1445,27 +1529,29 @@ _ATTRIBUTE_FREE_TAG_CASES = [
 
 
 def test_the_swept_tag_vocabulary_matches_the_tokenizers_whitelist() -> None:
-    """The thirteen tags below are exactly the ones the tokenizer recognises.
+    """The fourteen tags below are exactly the ones the tokenizer recognises.
 
     A ROT GUARD, in the same spirit as ``test_ledger_viewer``'s
     ``_DETAIL_KEYS_SWEPT`` check against ``DetailScreen.BINDINGS``: without it a
     fourteenth tag could be added to the tokenizer and never swept by the case
     tables below, and the "each recognised marker" coverage this task owes would
-    quietly become "each marker somebody remembered". It has fired once for real
-    now — spec 039's ``<diary>`` is the thirteenth, and this is where that slice's
-    author was sent.
+    quietly become "each marker somebody remembered". It has fired twice for
+    real now — spec 039's ``<diary>`` is the thirteenth and spec 041 Slice 10's
+    ``<speech>`` the fourteenth, and this is where both slices' authors were
+    sent.
 
     Reaches for the module-private ``_MARKER_TAGS`` deliberately — it is the
     whitelist itself, and there is no public projection of it. The count is
     pinned absolutely as well, because a set comparison against a table derived
     from the same source could not catch both sides shrinking together.
 
-    The 9 / 4 split is pinned too (Slice 2, widened by spec 039): the derived
-    ``_ATTRIBUTE_FREE_TAG_CASES`` is what the "still a single marker span" test
-    sweeps, so a table edit that quietly emptied it would make that test vacuous
-    rather than failing. Note which half ``<diary>`` joined — the attribute
-    carriers — so the attribute-free count is unmoved and a table edit that put
-    it in the wrong half fails on the count rather than on the spans.
+    The 9 / 5 split is pinned too (Slice 2, widened by spec 039 and again by
+    spec 041 Slice 10): the derived ``_ATTRIBUTE_FREE_TAG_CASES`` is what the
+    "still a single marker span" test sweeps, so a table edit that quietly
+    emptied it would make that test vacuous rather than failing. Note which half
+    ``<diary>`` and ``<speech>`` joined — the attribute carriers, both of them —
+    so the attribute-free count has never moved from nine, and a table edit that
+    put one in the wrong half fails on the count rather than on the spans.
     """
     whitelist = getattr(eval_ledger, "_MARKER_TAGS", None)
     assert whitelist is not None, (
@@ -1474,13 +1560,14 @@ def test_the_swept_tag_vocabulary_matches_the_tokenizers_whitelist() -> None:
     )
     swept = {name for name, _, _ in _STRUCTURAL_TAGS}
     assert swept == set(whitelist)
-    assert len(_STRUCTURAL_TAGS) == 13, (
-        "spec 038 ratified twelve tags (tasks.md, Slice 1 header note) and spec "
-        "039 added `diary`, the thirteenth"
+    assert len(_STRUCTURAL_TAGS) == 14, (
+        "spec 038 ratified twelve tags (tasks.md, Slice 1 header note), spec "
+        "039 added `diary`, the thirteenth, and spec 041's Slice 10 added "
+        "`speech`, the fourteenth"
     )
     assert len(_ATTRIBUTE_FREE_TAG_CASES) == 9, (
-        "nine of the thirteen tags carry no attribute; four do "
-        "(<player>, <vote>, <thought>, <diary>)"
+        "nine of the fourteen tags carry no attribute; five do "
+        "(<player>, <vote>, <thought>, <diary>, <speech>)"
     )
     # ...and the tag the `plain` fallback's unrecognised-tag case is written
     # against is still unrecognised. See `_UNRECOGNISED_TAG`: spec 038 wrote that
@@ -1811,13 +1898,31 @@ _ATTR_NAME_CASES: tuple[tuple[str, str, str], ...] = (
     # corpus, so this row and its guard are the whole of its coverage, exactly
     # as they were for `day` when `day` was new.
     ("substituted", '<diary player="Avery" day="2" substituted="true">', "true"),
+    # Spec 041 Slice 10's, and the eighth. The only member added because a LINE
+    # SHAPE changed: Day speech has always named its speaker, in the bare
+    # ``Avery: …`` prefix that ``_SPEAKER_RE`` reads and this whitelist never
+    # saw. When a substituted line is promoted to an element that prefix is
+    # gone, so without the whitelist entry the name would sit in marker
+    # punctuation while being the most useful token on the row.
+    #
+    # Also the second side-BEARING member (after ``role``), which this row
+    # cannot show — the source below carries no ``<setup>``, so ``Avery`` lifts
+    # achromatic here exactly as ``<thought player=…>``'s owner does. The side
+    # half lives with the ``_attr_kind`` tests. Zero occurrences in the
+    # committed corpus, on the same fuse as ``substituted``: both appear the
+    # first time any committed game substitutes a Day-speech line.
+    (
+        "speaker",
+        '<speech speaker="Avery" substituted="true">',
+        "Avery",
+    ),
 )
 
 
 def test_the_swept_attribute_names_match_the_tokenizers_whitelist() -> None:
-    """The six attributes swept below are exactly the ones the tokenizer lifts.
+    """The eight attributes swept below are exactly the ones the tokenizer lifts.
 
-    The same rot guard the tag vocabulary gets, for the same reason: a seventh
+    The same rot guard the tag vocabulary gets, for the same reason: a ninth
     attribute added to ``_ATTR_NAMES`` and never swept would ship untested, and
     the "distinct ``attr`` spans for both values" coverage this task owes would
     become "the two values somebody remembered".
@@ -1831,6 +1936,11 @@ def test_the_swept_attribute_names_match_the_tokenizers_whitelist() -> None:
     where ``day`` was: zero occurrences in the committed corpus, so this sweep
     and its row in ``_ATTR_NAME_CASES`` are the only coverage there is until a
     run with a substituted entry is committed.
+
+    And a third time on spec 041 Slice 10's ``speaker``, the eighth, which is
+    on the same fuse — both land the first time a committed game substitutes a
+    Day-speech line, because ``speaker="…"`` only ever appears on the
+    ``<speech … substituted="true">`` element that marking creates.
     """
     whitelist = getattr(eval_ledger, "_ATTR_NAMES", None)
     assert whitelist is not None, (
@@ -1838,7 +1948,7 @@ def test_the_swept_attribute_names_match_the_tokenizers_whitelist() -> None:
         "or was renamed; update _ATTR_NAME_CASES and this guard together"
     )
     assert {name for name, _, _ in _ATTR_NAME_CASES} == set(whitelist)
-    assert len(_ATTR_NAME_CASES) == 7
+    assert len(_ATTR_NAME_CASES) == 8
 
 
 @pytest.mark.parametrize(
@@ -3776,15 +3886,45 @@ def test_every_kind_emitted_is_declared_in_the_vocabulary() -> None:
     # SLICE 10 IS THE NEXT KIND TO NEED A REASON HERE (`speech-substituted`),
     # and the route is the one just walked twice.
     #
-    # An equality in BOTH directions rather than a `<=`: nothing outside the
-    # vocabulary may be emitted, nothing inside it may go missing, and the next
-    # declared-but-unreachable kind fails here and needs its own named
+    # ...AND IT WALKS IT A THIRD TIME, which is the pattern being followed
+    # rather than a regression in it. Task 10.2 registers `speech-substituted`
+    # and styles it; the fixture that emits it is Task 10.3's, one task later,
+    # exactly as `diary-substituted`'s and `thought-substituted`'s were. So the
+    # gap is carried as a named exception with its reason written here, not by
+    # weakening the operator, and **Task 10.3 deletes this set** when it
+    # supplies the fixture.
+    #
+    # NOT solved by adding a marked line to `_MARKED_CHANNELS_GAME` here,
+    # though it is two lines, and the reason is sharper than it was for the
+    # thought: Task 10.3 owes the THREE-WAY distinguishability claim (a
+    # substituted line of speech, a substituted thought and a substituted diary
+    # must stay tellable apart from one another and each from its honest twin),
+    # and that wants one fixture designed for the three-channel question. It
+    # also owes an assertion this kind's shape makes newly necessary — that a
+    # substituted HUMAN-seat line cannot be built at all, because
+    # `nodes.day._ai_day_action` is the only writer of the flag and the human
+    # branch never calls it.
+    unfixtured = {eval_ledger.KIND_SPEECH_SUBSTITUTED}
+
+    # Still an equality in BOTH directions rather than a `<=`: nothing outside
+    # the vocabulary may be emitted, nothing inside it may go missing, and the
+    # next declared-but-unreachable kind fails here and needs its own named
     # exception with its reason written down.
-    assert set().union(*per_game.values()) == set(eval_ledger.TRANSCRIPT_KINDS), (
-        "a declared kind is emitted by none of the five synthetic games, so "
-        "nobody will ever see it — give it a fixture, or carry it as a NAMED "
-        "exception here with the reason and the task that discharges it: "
-        f"{sorted(set(eval_ledger.TRANSCRIPT_KINDS) - set().union(*per_game.values()))}"
+    assert set().union(*per_game.values()) | unfixtured == set(
+        eval_ledger.TRANSCRIPT_KINDS
+    ), (
+        "a declared kind is emitted by none of the five synthetic games and is "
+        "not a named exception, so nobody will ever see it — give it a fixture, "
+        "or carry it as a NAMED exception here with the reason and the task "
+        "that discharges it: "
+        f"{sorted(set(eval_ledger.TRANSCRIPT_KINDS) - set().union(*per_game.values()) - unfixtured)}"
+    )
+    # ...and the exception cannot go stale silently: the moment Task 10.3's
+    # fixture emits the kind, this fails and the set must be deleted.
+    assert not set().union(*per_game.values()) & unfixtured, (
+        "a kind named as unfixtured IS now emitted by a synthetic game — delete "
+        "it from `unfixtured` so the equality closes back up: "
+        f"{sorted(set().union(*per_game.values()) & unfixtured)}"
     )
     assert len(eval_ledger.TRANSCRIPT_KINDS) == len(set(eval_ledger.TRANSCRIPT_KINDS))
 
