@@ -70,6 +70,36 @@ What is pinned, and why each one is not free
    asserts the harness's per-game warning fires with both figures recorded and
    neither reconciled.
 
+8. **The transport label is FINDABLE, not merely readable** (Task 7.5(a),
+   section 4b). Task 7.4 measured the gap: a record whose ``Transport`` cell
+   visibly read ``json_schema`` was not returned by searching ``json_schema``
+   under ANY scope, while searching ``structured_output`` on the real ledger
+   returned two rows whose cells read ``—`` — matching ``notes`` prose only,
+   the phantom-hit hazard inverted. So ``provider.structured_output`` joined
+   :func:`~graphia.eval_ledger._search_blob` (**present-only**) and
+   ``transport`` joined :data:`~graphia.eval_ledger.SEARCH_FIELDS`, following
+   spec 036's precedent of landing all three touchpoints — columns, blob,
+   scope — in one change. The gap existed **because nothing here tested
+   search**, so what is pinned is the invariant rather than the two lines: a
+   cell a reader can read is a cell a reader can find, and an *unlabelled*
+   record matches neither transport (the present-only assertion, which is what
+   stops the phantom hit).
+
+9. **A clean run does not look like a problem** (Task 7.5(b)). The
+   ``Subst (worst)`` cell has THREE states and they must stay tellable apart::
+
+       clean run         |  0.00
+       something wrong   |  diary 0.50
+       nothing measured  |  —
+
+   A fully clean run used to render ``day_action 0.00`` (all attempted kinds
+   tied at zero, tie broken by the largest denominator, exactly per the
+   documented contract), and a warning-shaped column naming a channel is how a
+   *problem* looks. The test is the rate being **exactly** zero, not its
+   rounded display: ``0.001`` keeps its name, because the half-implementation
+   to guard against is one written against the formatted string, which would
+   pass the all-zero case and swallow a real substitution.
+
 The committed ledger is NEVER a write target
 --------------------------------------------
 
@@ -179,6 +209,8 @@ import conftest as suite_conftest
 import graphia.substitution as substitution
 from graphia.eval_ledger import (
     METRIC_ORDER,
+    SEARCH_FIELDS,
+    SEARCH_SCOPE_ALL,
     _ABSENT,
     _FIXED_COLUMNS,
     _SUBSTITUTION_FACET_FIELDS,
@@ -189,6 +221,7 @@ from graphia.eval_ledger import (
     build_table_model,
     load_ledger,
     render_detail,
+    row_matches_field,
 )
 from graphia.llm import Ballot, DayAction, Diary, Pointing
 # The node's deterministic placeholder, IMPORTED (never copied) — the same loud
@@ -703,10 +736,15 @@ def test_a_rows_cells_still_match_the_column_count() -> None:
             "diary 0.50",
             id="worst-of-two",
         ),
+        # Task 7.5(b): a clean run renders a BARE rate. Before 7.5 this case
+        # expected ``pointing 0.00`` — every attempted kind tied at zero, broken
+        # by the largest denominator, exactly per the documented contract — but
+        # a warning-shaped column naming a channel is how a *problem* looks, and
+        # in the all-zero case the name carries no information at all.
         pytest.param(
             {"pointing": {"rate": 0.0, "count": 0, "attempted": 20}},
-            "pointing 0.00",
-            id="a-clean-run-still-names-a-kind",
+            "0.00",
+            id="a-clean-run-names-no-kind",
         ),
         pytest.param(None, _ABSENT, id="absent-block"),
         pytest.param({}, _ABSENT, id="empty-block"),
@@ -731,9 +769,144 @@ def test_the_worst_substitution_cell_names_the_kind_and_its_rate(
     is unusable, which is the difference between "ignore the diary reading" and
     "ignore the record". Absence renders ``—`` rather than blank or ``0.00``:
     blank in a column of rates invites the one misreading this whole block
-    exists to prevent.
+    exists to prevent. And on a **fully clean** run the name goes away
+    (Task 7.5(b)) — see
+    :func:`test_a_clean_run_a_problem_and_no_measurement_are_three_cells`.
     """
     assert _worst_substitution_cell(_raw_record(census)) == expected
+
+
+def test_a_clean_run_a_problem_and_no_measurement_are_three_cells() -> None:
+    """The three states of this cell, side by side and pairwise distinct.
+
+    ::
+
+        clean run         |  0.00
+        something wrong   |  diary 0.50
+        nothing measured  |  —
+
+    Task 7.5(b), decided by the author from Task 7.4's verification. A fully
+    clean run used to render ``day_action 0.00`` — all seven kinds tied at zero,
+    tie broken by the largest denominator, exactly per the documented tie-break
+    — and a warning-shaped column naming a channel is how a *problem* looks.
+    The three states are asserted in ONE test on purpose: the value of the
+    change is that they stay tellable apart, which no single-state assertion
+    states.
+    """
+    clean = {
+        kind.value: {"rate": 0.0, "count": 0, "attempted": attempted}
+        for kind, attempted in zip(
+            SubstitutionKind, (6, 6, 18, 108, 18, 18, 18), strict=True
+        )
+    }
+    problem = {**clean, "diary": {"rate": 0.5, "count": 9, "attempted": 18}}
+
+    clean_cell = _worst_substitution_cell(_raw_record(clean))
+    problem_cell = _worst_substitution_cell(_raw_record(problem))
+    unmeasured_cell = _worst_substitution_cell(_raw_record(None))
+
+    assert clean_cell == "0.00"
+    assert problem_cell == "diary 0.50"
+    assert unmeasured_cell == _ABSENT
+    assert len({clean_cell, problem_cell, unmeasured_cell}) == 3
+
+
+def test_the_clean_run_cell_names_no_kind_at_all() -> None:
+    """Not one of the seven names survives into an all-zero cell.
+
+    Stronger than ``== "0.00"`` and it is the assertion that catches a
+    half-implementation — a cell that dropped only the tie-break's *favourite*
+    name (``day_action``, the largest denominator) while still printing
+    whichever kind won a smaller census. The census here deliberately makes a
+    DIFFERENT kind the tie-break winner than the one the real clean run picked.
+    """
+    census = {
+        kind.value: {"rate": 0.0, "count": 0, "attempted": 3}
+        for kind in SubstitutionKind
+    }
+    census["reflection"] = {"rate": 0.0, "count": 0, "attempted": 999}
+
+    cell = _worst_substitution_cell(_raw_record(census))
+
+    assert cell == "0.00"
+    assert not any(kind.value in cell for kind in SubstitutionKind)
+
+
+@pytest.mark.parametrize(
+    ("worst_rate", "expected"),
+    [
+        pytest.param(0.0, "0.00", id="exactly-zero-drops-the-name"),
+        pytest.param(0.001, "diary 0.00", id="rounds-to-zero-but-KEEPS-the-name"),
+        pytest.param(0.01, "diary 0.01", id="visible-non-zero"),
+        pytest.param(1.0, "diary 1.00", id="total-substitution"),
+    ],
+)
+def test_the_name_returns_the_moment_a_rate_is_non_zero(
+    worst_rate: float, expected: str
+) -> None:
+    """The test is the rate being EXACTLY zero, not its rounded display.
+
+    ``0.001`` renders ``diary 0.00`` **with** the name, because a substitution
+    genuinely happened and the name is what sends the reader to the drill-down
+    showing ``1/1000``. Implementing Task 7.5(b) on the *formatted* string
+    (``if cell.endswith("0.00")``) would pass the all-zero case and silently
+    swallow that one — this parametrization is what forbids it. Rates are
+    stored as ``count / attempted``, so exact zero is precisely "nothing was
+    booked anywhere".
+    """
+    census = {
+        "pointing": {"rate": 0.0, "count": 0, "attempted": 40},
+        "diary": {"rate": worst_rate, "count": 1, "attempted": 1000},
+    }
+
+    assert _worst_substitution_cell(_raw_record(census)) == expected
+
+
+def test_an_unknown_kind_at_zero_does_not_resurrect_the_name() -> None:
+    """The clean-run rule holds over a kind this reader has never heard of.
+
+    Strangers compete for the cell (an eighth-schema build's kind must not
+    vanish), so the all-zero rule has to be about the winning *rate* rather than
+    about the seven known names — otherwise an eighth kind at zero would print
+    its own name on an otherwise clean run.
+    """
+    clean = {
+        "diary": {"rate": 0.0, "count": 0, "attempted": 4},
+        "seance": {"rate": 0.0, "count": 0, "attempted": 9},
+    }
+    dirty = {**clean, "seance": {"rate": 0.25, "count": 1, "attempted": 4}}
+
+    assert _worst_substitution_cell(_raw_record(clean)) == "0.00"
+    assert _worst_substitution_cell(_raw_record(dirty)) == "seance 0.25"
+
+
+def test_a_negated_zero_on_disk_still_renders_the_bare_positive_zero() -> None:
+    """``rate: -0.0`` must not render ``-0.00``.
+
+    A sign-of-zero artefact would read as a *negative* substitution rate, which
+    is not a thing. ``f"{-0.0:.2f}"`` prints ``-0.00`` in Python, so the cell
+    formats the normalised zero rather than the operand.
+    """
+    census = {"diary": {"rate": -0.0, "count": 0, "attempted": 4}}
+
+    assert _worst_substitution_cell(_raw_record(census)) == "0.00"
+
+
+def test_the_clean_run_cell_reaches_the_table_row() -> None:
+    """The rule is visible in the actual row, not only in the cell helper.
+
+    Driven through ``build_table_model`` over a record whose census the WRITER
+    produced, so the clean-run reading is pinned across the writer/reader seam
+    the rest of this module exists to guard — a clean measured run is the case
+    a reader meets most often, and it is the one Task 7.4 flagged.
+    """
+    clean = {kind.value: {"count": 0, "attempted": 4} for kind in SubstitutionKind}
+    record = _record_of(_result(clean))
+
+    model = build_table_model([record])
+    cell = model.rows[0][model.columns.index("Subst (worst)")]
+
+    assert cell == "0.00"
 
 
 def test_the_worst_cell_breaks_a_rate_tie_on_the_larger_denominator() -> None:
@@ -866,6 +1039,142 @@ def test_the_transport_label_is_read_off_the_providers_own_declaration(
     label.
     """
     assert _structured_output_transport(provider) == expected  # type: ignore[arg-type]
+
+
+# ==========================================================================
+# 4b. The transport label is FINDABLE, not merely readable (Task 7.5(a))
+#
+# Task 7.4 measured the gap these close: a record whose ``Transport`` cell
+# visibly read ``json_schema`` was NOT returned by searching ``json_schema``
+# under any scope, while searching ``structured_output`` on the real ledger
+# returned two rows whose cells read ``—`` — matching ``notes`` prose only,
+# which is the phantom-hit hazard inverted. The governing precedent is spec
+# 036: it added ``run.kind`` to the columns AND the blob AND ``SEARCH_FIELDS``
+# in one change, on the reasoning that filtering the history to one kind of
+# measurement is the whole point of labelling the kind. Spec 041 landed two of
+# those three touchpoints, and the gap existed precisely because NOTHING here
+# tested search.
+# ==========================================================================
+
+
+# The two transports the harness records today, plus a stranger — a future
+# provider's label has to be findable by its own text too, since neither the
+# cell nor the blob maps it through a lookup table.
+_TRANSPORT_QUERIES = ("json_schema", "tool_use", "some_future_transport")
+
+
+def _labelled(transport: str | None, **extra: Any) -> dict[str, Any]:
+    """A minimal record carrying (or deliberately lacking) a transport label."""
+    provider: dict[str, Any] = {"name": "ollama"}
+    if transport is not None:
+        provider["structured_output"] = transport
+    return {"run": {"date": "2026-09-07"}, "provider": provider, **extra}
+
+
+def _matching_rows(model: Any, field: str, value: str) -> list[int]:
+    """The row indices the viewer's own pure matcher would keep."""
+    return [
+        index
+        for index in range(len(model.rows))
+        if row_matches_field(
+            field, value, model.search_blobs[index], model.search_fields[index]
+        )
+    ]
+
+
+def test_transport_is_a_usable_search_scope() -> None:
+    """``transport`` is in the dropdown AND in every row's field map.
+
+    Both halves are needed and neither implies the other: the viewer builds its
+    ``Select`` from :data:`SEARCH_FIELDS` (``ledger_viewer`` line ~1374), so a
+    name missing there is un-pickable, while a name missing from
+    ``search_fields`` scopes to the empty string and silently matches nothing —
+    a scope that appears to work and always returns zero rows.
+    """
+    model = build_table_model([_labelled("json_schema"), _labelled(None)])
+
+    assert "transport" in SEARCH_FIELDS
+    assert all(set(fields) == set(SEARCH_FIELDS) for fields in model.search_fields)
+    assert all("transport" in fields for fields in model.search_fields)
+
+
+@pytest.mark.parametrize("transport", _TRANSPORT_QUERIES)
+@pytest.mark.parametrize("scope", [SEARCH_SCOPE_ALL, "transport"])
+def test_a_recorded_transport_is_found_by_typing_it(
+    transport: str, scope: str
+) -> None:
+    """Typing what the cell says finds the row that says it — under both scopes.
+
+    THE regression Task 7.4 caught, stated positively. ``SEARCH_SCOPE_ALL`` is
+    the free-text default a reader reaches for first; ``transport`` is the
+    scoped filter that avoids the ``notes``-prose hits.
+    """
+    labelled = _labelled(transport)
+    other = _labelled("a_different_transport")
+
+    model = build_table_model([labelled, other])
+
+    assert _matching_rows(model, scope, transport) == [0]
+
+
+@pytest.mark.parametrize("scope", [SEARCH_SCOPE_ALL, "transport"])
+def test_an_unlabelled_record_is_not_swept_in_by_a_tool_use_query(scope: str) -> None:
+    """THE present-only assertion — the phantom hit, forbidden.
+
+    A pre-041 record almost certainly ran ``tool_use``, and defaulting it in
+    would make a ``tool_use`` query match the entire committed history while
+    stating a fact nobody recorded. This is what "present-only" buys, and it is
+    the assertion that stops the phantom hit: only the record that RECORDED
+    ``tool_use`` matches it, and the unlabelled row matches neither transport.
+    """
+    recorded = _labelled("tool_use")
+    unlabelled = _labelled(None)
+
+    model = build_table_model([recorded, unlabelled])
+
+    assert _matching_rows(model, scope, "tool_use") == [0]
+    assert _matching_rows(model, scope, "json_schema") == []
+
+
+def test_every_readable_transport_cell_is_findable_by_its_own_text() -> None:
+    """A cell you can read is a cell you can search — the invariant, swept.
+
+    Stated over the cell rather than over the record, which is the shape of
+    Task 7.4's finding: the ``Transport`` column and the search haystack must
+    not be able to disagree about what this record says. The ``—`` row is
+    excluded on purpose — it is display vocabulary for "no reading", not a
+    fact, so it is deliberately unsearchable (see ``_search_fields``).
+    """
+    records = [_labelled(t) for t in _TRANSPORT_QUERIES] + [_labelled(None)]
+    model = build_table_model(records)
+    transport_column = model.columns.index("Transport")
+
+    for index, row in enumerate(model.rows):
+        cell = row[transport_column]
+        if cell == _ABSENT:
+            assert model.search_fields[index]["transport"] == ""
+            continue
+        assert _matching_rows(model, "transport", cell) == [index]
+        assert index in _matching_rows(model, SEARCH_SCOPE_ALL, cell)
+
+
+def test_no_committed_record_carries_a_searchable_transport() -> None:
+    """The 41 committed records stay unlabelled in the haystack too (read-only).
+
+    The real-ledger half of the present-only rule, and the guard that would go
+    red if a default ever crept in: every committed record's ``Transport`` cell
+    reads ``—``, so every committed record's scoped ``transport`` text must be
+    empty. Asserted on the scoped field rather than on the blob deliberately —
+    two committed records mention ``structured_output`` in their ``notes``
+    prose, and a note is allowed to say anything.
+    """
+    records = load_ledger(_COMMITTED_LEDGER)
+    model = build_table_model(records)
+    transport_column = model.columns.index("Transport")
+
+    assert len(records) >= 41
+    assert {row[transport_column] for row in model.rows} == {_ABSENT}
+    assert {fields["transport"] for fields in model.search_fields} == {""}
 
 
 # ==========================================================================

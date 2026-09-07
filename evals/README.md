@@ -275,6 +275,12 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   generations are tellable apart without opening each record; an absent label
   renders `—` in both places, never blank and never a defaulted `tool_use` —
   the transport those records almost certainly used, but not one they recorded.
+  The label is also **searchable**: typing `json_schema` finds the runs that
+  recorded it (free-text, or scoped with the viewer's `transport` field
+  selector), because a label you can read and cannot find is only half a label.
+  The **absent** label stays unsearchable, for the same reason it is not
+  defaulted — a `tool_use` query returns the runs that recorded `tool_use`, not
+  the whole pre-041 history.
 - **`settings`** — the **effective resolved values actually used** (post
   env-override), so a run can be repeated like-for-like: `large_model`,
   `small_model`, `base_url` (Ollama only; `null` for bedrock), `games`, `seed`
@@ -707,6 +713,15 @@ the node's fallback, `attempted` is the answers **asked of the model**, and
   `1.0` over 1 is a coin toss), then **schema order**. A record with no
   `substitutions` block renders `—`, never blank and never `0.00`: blank in a
   column of rates invites the one misreading this block exists to prevent.
+  **Three states, and they stay tellable apart** — `0.00` a clean run,
+  `diary 0.50` something wrong, `—` nothing measured. The **name is dropped on
+  a fully clean run**: with every attempted kind at rate `0.0` the tie-break
+  still picks one (`day_action`, by largest denominator), but a warning-shaped
+  column naming a channel is how a *problem* looks and there the name carries no
+  information at all. It returns the moment any rate is non-zero, which is when
+  it means something — including a rate that merely *rounds* to zero, so a
+  single substitution in a thousand still reads `diary 0.00` and still points
+  at its channel.
 
 ### outcomes
 

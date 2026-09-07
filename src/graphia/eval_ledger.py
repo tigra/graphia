@@ -260,7 +260,8 @@ _FIXED_COLUMNS: tuple[str, ...] = (
     "Diaries",
     "Lineup",
     # Spec 041: the run's WORST substitution rate, named
-    # (:func:`_worst_substitution_cell` — e.g. ``diary 0.50``). Placed here, at
+    # (:func:`_worst_substitution_cell` — e.g. ``diary 0.50``; a bare ``0.00``
+    # on a fully clean run, where no channel is worth naming). Placed here, at
     # the end of the fixed head, so it reads **before the metric block it
     # qualifies**: a run that substituted a deterministic stand-in for a third
     # of its answers is not a measurement of the model, and that warning is
@@ -545,17 +546,41 @@ def _worst_substitution_cell(record: RawRecord) -> str:
     :func:`_table_rate`'s leading-dot form — that compact spelling exists to fit
     two rates into one ``LA .55 / M .30`` cell and there is only one rate here).
 
-    **The name is half the cell.** A bare ``0.50`` says a run was half
-    stand-in-answers and not which channel is unusable, which is the difference
-    between "ignore the diary reading" and "ignore the record". The full
-    per-kind block is in the drill-down; this is the at-a-glance warning that
-    sends a reader there.
+    **The name is half the cell — WHEN there is something to name.** A bare
+    ``0.50`` says a run was half stand-in-answers and not which channel is
+    unusable, which is the difference between "ignore the diary reading" and
+    "ignore the record". The full per-kind block is in the drill-down; this is
+    the at-a-glance warning that sends a reader there.
+
+    **A CLEAN RUN RENDERS A BARE ``0.00``, no kind named (spec 041, Task 7.5).**
+    Three states, and they must stay distinguishable at a glance::
+
+        clean run         |  0.00
+        something wrong   |  diary 0.50
+        nothing measured  |  —
+
+    When **every** attempted kind is at rate ``0.0``, the tie-break still runs
+    but its answer is suppressed: it would print ``day_action 0.00`` (all seven
+    tied at zero, broken by the largest denominator), and a warning-shaped
+    column naming a channel is exactly how a *problem* looks. In the all-zero
+    case the name carries **no information at all** — no channel substituted, so
+    singling one out is an artefact of the tie-break, not a reading. The name
+    returns the moment any rate is non-zero, which is when it means something.
+    Task 7.4 measured this on a real clean run and the author decided it here.
+
+    Note the test is the rate being **exactly zero**, not its rounded display: a
+    kind at ``0.001`` renders ``diary 0.00`` *with* the name, because a
+    substitution genuinely happened and the name is what sends the reader to the
+    drill-down that shows ``1/1000``. Rates are stored as ``count / attempted``,
+    so exact zero is precisely "no substitution was booked anywhere".
 
     **THE TIE-BREAK, which is not incidental — ties are the common case.** The
     Slice 7 run that first exercised this had ``pointing``, ``reflection`` and
     ``diary`` all at ``1.0``. The rule, in order:
 
-    1. **highest ``rate``** — the worst channel is the point of the cell;
+    1. **highest ``rate``** — the worst channel is the point of the cell (and if
+       that highest rate is ``0.0``, there is no worst channel, so the name is
+       dropped and only the rate is rendered — see the clean-run rule above);
     2. then **larger ``attempted``** — between two kinds at the same rate the
        better-evidenced one is the more useful warning (``1.0`` over 18
        attempts is a finding, ``1.0`` over 1 is a coin toss);
@@ -609,7 +634,21 @@ def _worst_substitution_cell(record: RawRecord) -> str:
     # ``min`` over the negated keys IS "highest rate, then larger denominator";
     # negate the rate back for display.
     negated_rate, _, _, worst_kind = min(candidates)
-    return f"{worst_kind} {-negated_rate:.2f}"
+    worst_rate = -negated_rate
+    if worst_rate == 0.0:
+        # A FULLY CLEAN run: the winner holds the HIGHEST rate, so a zero here
+        # proves every attempted kind is at zero — one check is enough, and that
+        # inference is why this sits after the ``min`` rather than being a
+        # separate sweep. The tie-break above ran and picked a name (``day_action``
+        # on a real clean run, by largest denominator); it is deliberately
+        # DISCARDED, because naming a channel in a warning-shaped column is how a
+        # problem looks and here the name is an artefact of the tie-break, not a
+        # reading. ``-0.0 == 0.0`` in Python, so a negated zero is caught too —
+        # and the NORMALISED zero is what is formatted, because
+        # ``f"{-0.0:.2f}"`` prints ``-0.00`` and this cell's contract is a bare
+        # ``0.00``.
+        return f"{0.0:.2f}"
+    return f"{worst_kind} {worst_rate:.2f}"
 
 
 # The record kind read for a pre-036 record. ``run.kind`` was added in spec 036
@@ -748,6 +787,17 @@ SEARCH_FIELDS: tuple[str, ...] = (
     # same resolved text the ``Kind`` cell shows, defaults included.
     "kind",
     "model",
+    # Spec 041, Task 7.5: scope the search to the structured-output TRANSPORT, so
+    # a reviewer can filter the history to one transport generation — which is
+    # the whole point of labelling it, exactly as spec 036 argued for ``kind``.
+    # That precedent is the governing one: 036 added ``run.kind`` to the columns
+    # AND the blob AND this tuple in one change, and spec 041 landed only the
+    # first two — Task 7.4 then measured the consequence (a visible
+    # ``json_schema`` cell that no search could reach). Positioned right after
+    # ``model`` to mirror both the ``provider`` block's own key order
+    # (``name`` → ``large_model`` → ``small_model`` → ``structured_output``) and
+    # the ``Transport`` column's position after the two model ids.
+    "transport",
     "commit",
     "branch",
     "games",
@@ -2444,9 +2494,12 @@ def _search_blob(record: RawRecord) -> str:
     code commit and branch, a ``dirty``/``clean`` keyword, the recorded
     ``run.kind`` (spec 036 — **only when present**, so a bench record is findable
     by typing ``persona-bench`` without seeding every older record with a
-    ``game`` token), the derived ``winner`` keyword (the side that won the run's
-    majority — :func:`_winner_keyword` — empty on a pre-013 record), and the
-    **full notes** text — the facets the
+    ``game`` token), the recorded ``provider.structured_output`` transport
+    (spec 041 — **also only when present**, so ``json_schema`` finds the runs
+    that recorded it while a ``tool_use`` query does not sweep in the 41 records
+    that never carried a label), the derived ``winner`` keyword (the side that
+    won the run's majority — :func:`_winner_keyword` — empty on a pre-013
+    record), and the **full notes** text — the facets the
     viewer's substring filter searches across. Model ids
     prefer the effective ``settings`` values with the ``provider`` fallback (same
     rule as the row cells), so a pre-provenance record still contributes its
@@ -2472,6 +2525,19 @@ def _search_blob(record: RawRecord) -> str:
         # for; the blob's job here is to make a bench record findable by typing
         # ``persona-bench`` under "All".
         _text(_dig(record, "run.kind", "")),
+        # Spec 041, Task 7.5: the structured-output TRANSPORT, contributed
+        # **present-only** for the same reason ``run.kind`` is. Task 7.4
+        # measured the gap this closes: a record whose ``Transport`` cell
+        # visibly read ``json_schema`` was not returned by searching
+        # ``json_schema`` under ANY scope, while searching ``structured_output``
+        # returned two rows whose cells read ``—`` — matching ``notes`` prose
+        # only, the phantom-hit hazard inverted. Present-only matters here in
+        # the concrete: seeding the 41 pre-041 records with ``tool_use`` (which
+        # is what they almost certainly ran) would make a ``tool_use`` query
+        # match the whole ledger and would state a fact nobody recorded — the
+        # default-versus-absent rule :func:`_transport_cell` already enforces
+        # for the cell, applied to the haystack.
+        _text(_dig(record, "provider.structured_output", "")),
         _winner_keyword(record),
         _lineup_keyword(record),
         _text(_dig(record, "notes", "")),
@@ -2498,7 +2564,11 @@ def _search_fields(record: RawRecord) -> dict[str, str]:
     so scoping to ``kind`` and typing ``game`` selects the played games while
     ``persona-bench`` selects the bench measurements. This is the one field whose
     text is deliberately *richer* than the blob's contribution, which stays
-    present-only (see :func:`_search_blob`). ``winner`` carries the
+    present-only (see :func:`_search_blob`). ``transport`` (spec 041) carries the
+    recorded ``provider.structured_output`` label and is **present-only in both**
+    haystacks — the ``winner`` posture rather than ``kind``'s, because an absent
+    transport has no resolved value to match (the cell renders :data:`_ABSENT`,
+    which is display vocabulary, not a fact). ``winner`` carries the
     derived majority-side keyword (:func:`_winner_keyword` — ``law_abiding`` /
     ``mafia`` / ``draw`` / ``mixed``, empty on a pre-013 record); there is
     deliberately **no** vote-activity field (a count, not a searchable keyword).
@@ -2520,6 +2590,16 @@ def _search_fields(record: RawRecord) -> dict[str, str]:
         # including the ``game`` default a pre-036 record reads.
         "kind": _kind_cell(record),
         "model": models,
+        # Spec 041, Task 7.5: the recorded transport, **present-only** — the
+        # ``winner`` posture, NOT ``kind``'s richer one. The difference is that
+        # ``kind``'s absence resolves to a real recorded fact (``game``, per the
+        # ``evals/README.md`` contract) which the cell shows and the scoped
+        # search can therefore honestly match, whereas this cell's absence
+        # renders :data:`_ABSENT` — display vocabulary for "no reading", not a
+        # value. Putting ``—`` in a haystack would make the filler itself
+        # searchable, so an unlabelled record contributes nothing and any
+        # non-empty ``transport`` query correctly excludes it.
+        "transport": _text(_dig(record, "provider.structured_output", "")),
         "commit": _text(_dig(record, "code.commit", "")),
         "branch": _text(_dig(record, "code.branch", "")),
         "games": _text(_resolved_games(record)),
