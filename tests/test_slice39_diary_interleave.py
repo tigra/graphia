@@ -178,9 +178,14 @@ def _human_prompt(messages: Any) -> str:
 # ==========================================================================
 #
 # The single highest-value property in the spec. ``thoughts_before`` is the ONLY
-# ordering metadata that exists — spec 028's channel is bare strings and spec
-# 039 must not touch it — so if the merge misreads the cursor a player's own
-# history renders in the wrong order inside its own prompt. That produces
+# ordering metadata that exists — spec 028's channel carries no ordering FIELD
+# on its element and spec 039 must not touch it — so if the merge misreads the
+# cursor a player's own history renders in the wrong order inside its own
+# prompt. (CORRECTED, spec 041 Slice 9: this said "spec 028's channel is bare
+# strings", which stopped being true when that slice reshaped the element to
+# ``ThoughtRecord``. The rationale is unchanged, because it never rested on the
+# element's shape — ``ThoughtRecord`` deliberately carries no counterpart
+# cursor, so the diary side is still the sole source of order.) That produces
 # perfectly well-formed output and never crashes, so nothing but a direct
 # assertion catches it.
 

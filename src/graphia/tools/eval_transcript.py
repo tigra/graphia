@@ -67,7 +67,7 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, SystemMessage
 
-from graphia.state import PlayerPersona, PlayerState
+from graphia.state import PlayerPersona, PlayerState, thought_text
 
 __all__ = ["render_transcript"]
 
@@ -973,9 +973,29 @@ def _append_thoughts(
     live human UI.
 
     Defensive (the renderer's house style): a missing channel, a non-dict value,
-    an empty / non-list per-player value, a non-string note, or an unknown id
+    an empty / non-list per-player value, an unusable note, or an unknown id
     must never raise — surface what's present, omit the rest. An unknown id
     resolves to itself via ``_name_of``.
+
+    EACH NOTE IS READ THROUGH :func:`graphia.state.thought_text` (spec 041 Slice
+    9), NOT BY ``isinstance(note, str)``. This function is a READER of spec
+    028's channel, and Slice 9 reshaped that channel's element from a bare
+    ``str`` to :class:`graphia.state.ThoughtRecord`. The guard that stood here —
+    ``if not isinstance(note, str): continue`` — was correct for every entry
+    that existed when it was written and became a **silent total data loss** the
+    moment ``day_round_reflect`` began writing records: every thought in every
+    transcript would have been dropped with no error and no partial output, so
+    the absence would have been indistinguishable from a game in which nobody
+    reflected. It is fixed here, WITH the writer, rather than in Slice 9's
+    transcript-attribute task, because nothing must ever read a transcript for
+    evidence in between.
+
+    The read is shape-agnostic and BYTE-IDENTICAL on every input the old guard
+    accepted: ``thought_text`` returns a ``str`` unchanged, reads ``text`` out
+    of a record, and returns ``""`` for anything else — which the existing
+    ``if not text`` skip then drops exactly as the old ``isinstance`` guard
+    dropped it. So a ``None``, an ``int`` or a shapeless ``dict`` still renders
+    nothing, and the 298 preserved transcripts are unaffected.
     """
     thoughts = delta.get("private_thoughts")
     if not isinstance(thoughts, dict):
@@ -985,9 +1005,7 @@ def _append_thoughts(
             continue
         author = _name_of(player_id, names)
         for note in notes:
-            if not isinstance(note, str):
-                continue
-            text = note.strip()
+            text = thought_text(note).strip()
             if not text:
                 continue
             buf.append(_inline_attr("thought", f'player="{author}"', text))

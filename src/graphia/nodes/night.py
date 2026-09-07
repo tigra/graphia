@@ -23,7 +23,13 @@ from graphia.prompts import (
     MAFIA_POINT_USER_TEMPLATE,
     MAFIA_TEAMMATE_INTRO_TEMPLATE,
 )
-from graphia.state import DiaryRecord, GameState, KillRecord, PlayerState
+from graphia.state import (
+    DiaryRecord,
+    GameState,
+    KillRecord,
+    PlayerState,
+    ThoughtEntry,
+)
 from graphia.substitution import SubstitutionKind, note_attempt, note_substitution
 
 logger = logging.getLogger(__name__)
@@ -236,7 +242,7 @@ def _ai_pick_target(
     mafia: PlayerState,
     prior_picks: str = "",
     *,
-    private_thoughts: list[str] | None = None,
+    private_thoughts: list[ThoughtEntry] | None = None,
     private_thoughts_enabled: bool = True,
     diaries: list[DiaryRecord] | None = None,
     diaries_enabled: bool = True,

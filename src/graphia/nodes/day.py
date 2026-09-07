@@ -68,6 +68,9 @@ from graphia.state import (
     GameState,
     KillRecord,
     PlayerState,
+    ThoughtEntry,
+    ThoughtRecord,
+    thought_text,
 )
 from graphia.substitution import SubstitutionKind, note_attempt, note_substitution
 
@@ -380,7 +383,7 @@ def _role_guidance_block(role: str, *, enabled: bool) -> str:
 PRIVATE_THOUGHTS_LABEL = "Your private notes so far (yours alone):"
 
 
-def _private_thoughts_block(thoughts: list[str], *, enabled: bool) -> str:
+def _private_thoughts_block(thoughts: list[ThoughtEntry], *, enabled: bool) -> str:
     """Render the ``{private_thoughts}`` slot for the three AI decision prompts.
 
     The spec-028 own-thoughts injection block (ADR 011 ablation shape), mirroring
@@ -402,10 +405,31 @@ def _private_thoughts_block(thoughts: list[str], *, enabled: bool) -> str:
     acting player's id) — a player never receives another player's notes. PURE:
     no state read beyond the passed list, no RNG, no LLM, no ``set`` iteration,
     so the dual-mode byte-equal smoke is unaffected.
+
+    SHAPE-AGNOSTIC OVER THE CHANNEL'S ELEMENT (spec 041 Slice 9). Each entry is
+    read through :func:`graphia.state.thought_text`, so a bare ``str`` (a
+    resumed pre-041 checkpoint, and most of the offline suite) and a
+    :class:`graphia.state.ThoughtRecord` render IDENTICALLY, and one list may
+    legitimately hold both — the reducer accumulates whatever the super-steps
+    wrote. THIS IS THE SECOND RENDERER OF THIS SLOT AND THE ONE MOST EASILY
+    MISSED: it is not only ``_private_record_block``'s byte-identity delegation
+    target (all of Day 1 in every game, and both flag-off cells) but ALSO
+    ``_ai_reflect``'s direct caller, so the reflection prompt reaches the model
+    through here and nowhere else. Converting only the merged renderer would
+    have put ``{'text': …}`` dict reprs into every Day-1 decision prompt and
+    every reflection prompt — well-formed output, no exception, nothing to
+    catch it but the rendered prompt itself.
+
+    The MARKING is deliberately NOT rendered here. A substituted thought is
+    marked in the eval transcript and the ledger viewer, exactly as spec 041
+    Slice 8 marks a substituted diary: ``_private_record_block`` renders a
+    substituted ``DiaryRecord`` with no marking either. A prompt-visible mark
+    would change what the player reasons from, which is a game-design change
+    and not this spec's business.
     """
     if not enabled or not thoughts:
         return ""
-    bullets = "\n".join(f"- {note}" for note in thoughts)
+    bullets = "\n".join(f"- {thought_text(note)}" for note in thoughts)
     return f"\n{PRIVATE_THOUGHTS_LABEL}\n{bullets}\n"
 
 
@@ -444,7 +468,7 @@ DIARY_WINDOW = 3
 
 
 def _private_record_block(
-    thoughts: list[str],
+    thoughts: list[ThoughtEntry],
     diaries: list[DiaryRecord] | None = None,
     *,
     thoughts_enabled: bool,
@@ -484,12 +508,19 @@ def _private_record_block(
     because the two features share one slot.
 
     THE MERGE RULE (the ``thoughts_before`` cursor — see :class:`DiaryRecord`).
-    028's channel holds bare strings with no ordering metadata and spec 039 must
-    not touch it, so all the ordering information lives on the diary side: each
-    entry records how many thoughts that player had written when it was set
-    down. Walk the diaries in order; before diary *i*, emit every
-    not-yet-emitted thought at index ``< thoughts_before`` of that entry; after
-    the last diary, emit the remainder. A stable two-way merge, not a sort — the
+    028's channel carries NO ORDERING METADATA and spec 039 must not touch it,
+    so all the ordering information lives on the diary side: each entry records
+    how many thoughts that player had written when it was set down.
+    (CORRECTED, spec 041 Slice 9: this paragraph said "holds bare strings" until
+    that slice reshaped the element to :class:`graphia.state.ThoughtRecord`. The
+    element's SHAPE was never what the merge rule rested on — the absence of an
+    ordering FIELD on it was, and that is still true: ``ThoughtRecord``
+    deliberately carries no ``day`` and no counterpart cursor, so a second
+    independently-drifting source of order for the same merge does not exist.)
+
+    Walk the diaries in order; before diary *i*, emit every not-yet-emitted
+    thought at index ``< thoughts_before`` of that entry; after the last diary,
+    emit the remainder. A stable two-way merge, not a sort — the
     cursors are non-decreasing because thoughts only ever accumulate and the two
     writing nodes never share a super-step.
 
@@ -511,7 +542,14 @@ def _private_record_block(
     ``eval_transcript._append_diaries`` is: ``DiaryRecord`` is
     ``total=False``, so every field is read through ``.get`` with a default and
     a nonsensical cursor degrades to 0 rather than raising inside a prompt
-    build.
+    build. Spec 041 Slice 9 extends the same posture ONE LEVEL DOWN, to the
+    thought elements: each is read through
+    :func:`graphia.state.thought_text`, so a ``str``, a
+    :class:`graphia.state.ThoughtRecord` and a list mixing the two all render
+    the same ``- `` bullets, and a malformed element costs one blank bullet
+    rather than a ``{'text': …}`` dict repr in the model's context. The
+    substituted marking is NOT rendered here, matching how a substituted
+    ``DiaryRecord`` renders — see :func:`_private_thoughts_block`.
     """
     # The window, before the merge. ``diaries_enabled`` off collapses to the
     # empty window, which is the same "nothing to show" case as no entries yet
@@ -532,7 +570,7 @@ def _private_record_block(
         # notes actually in hand (a diary written with thoughts ON, read back
         # with thoughts OFF).
         stop = max(emitted, min(cursor, len(notes)))
-        lines.extend(f"- {note}" for note in notes[emitted:stop])
+        lines.extend(f"- {thought_text(note)}" for note in notes[emitted:stop])
         emitted = stop
         # A record with no usable ``day`` still carries an entry worth showing,
         # so the tag renders with a placeholder rather than the line being
@@ -541,7 +579,7 @@ def _private_record_block(
         day = record.get("day", "?")
         text = record.get("text", "")
         lines.append(f"- {DIARY_LINE_MARKER} {day}] {text}".rstrip())
-    lines.extend(f"- {note}" for note in notes[emitted:])
+    lines.extend(f"- {thought_text(note)}" for note in notes[emitted:])
 
     bullets = "\n".join(lines)
     return f"\n{PRIVATE_THOUGHTS_LABEL}\n{bullets}\n"
@@ -820,7 +858,7 @@ def _ai_day_action(
     role_guidance_enabled: bool = True,
     context_window: int = _CONTEXT_WINDOW,
     context_token_budget: int | None = None,
-    private_thoughts: list[str] | None = None,
+    private_thoughts: list[ThoughtEntry] | None = None,
     private_thoughts_enabled: bool = True,
     diaries: list[DiaryRecord] | None = None,
     diaries_enabled: bool = True,
@@ -996,6 +1034,7 @@ def _ai_reflect(
     context_window: int = _CONTEXT_WINDOW,
     context_token_budget: int | None = None,
     private_thoughts_enabled: bool = True,
+    substitution_mark: _SubstitutionMark | None = None,
 ) -> str:
     """Produce ONE surviving AI player's private end-of-round reflection (spec 028).
 
@@ -1014,6 +1053,27 @@ def _ai_reflect(
     on the fallback-note branch. This helper invokes ONCE where ``_ai_ballot``
     invokes twice, and the pair of events is identical either way — which is
     what makes the seven kinds' rates readable against one another.
+
+    Spec 041 Slice 9 adds ``substitution_mark``, the SAME
+    :class:`_SubstitutionMark` carrier ``_ai_diary`` already takes, stamped on
+    the same line that books ``note_substitution``. KEYWORD-ONLY AND OPTIONAL
+    because the return type is not free: five call sites assert on the returned
+    ``str`` (``tests/test_substitution_counts.py``'s seven-way sweep and
+    ``tests/test_provider_seam_through_the_node.py``'s node drive), so the fact
+    travels BESIDE the return, exactly as it does for the diary. Its consumer is
+    the one line in ``day_round_reflect`` that builds the
+    :class:`graphia.state.ThoughtRecord`; ``None`` (every direct test call, and
+    any future caller that does not care) simply drops the fact, which cannot
+    change what this function returns or what it renders.
+
+    THE MARK CANNOT INTERACT WITH THIS FUNCTION'S OWN
+    ``_private_thoughts_block`` CALL, and that is worth stating because the two
+    touch the same channel. The block renders ``own_thoughts`` read from
+    ``state`` BEFORE the model call; the mark is stamped AFTER it, on the
+    fallback branch only; and ``day_round_reflect`` returns its delta once after
+    the whole fan-out, so the reducer has not merged this round's thoughts when
+    any of them is rendered. No reflector reads its own not-yet-committed
+    thought — the same guarantee ``day_diary`` documents for diaries.
     """
     # Before the ``try`` (see :func:`_ai_day_action`).
     note_attempt(SubstitutionKind.REFLECTION)
@@ -1057,8 +1117,13 @@ def _ai_reflect(
     except Exception:
         pass
     # The one substitution branch: a raised call, a non-``Reflection`` reply,
-    # and a blank thought all land here.
+    # and a blank thought all land here — and, from spec 041 Slice 9, one mark
+    # for the same reason the count is booked once. The mark is the caller's
+    # copy of the fact the sink counts: ``day_round_reflect`` needs to know that
+    # THIS reflector's thought is a stand-in, which a per-run count cannot say.
     note_substitution(SubstitutionKind.REFLECTION)
+    if substitution_mark is not None:
+        substitution_mark.substituted = True
     return _REFLECTION_FALLBACK
 
 
@@ -1090,6 +1155,17 @@ def day_round_reflect(
     ``messages`` (the privacy invariant — a thought never enters the message
     stream and never carries ``private_to``). When the ablation flag is OFF, the
     node is a pure no-op (``{}``) so the prompts revert to their pre-028 form.
+
+    THE ELEMENT IS A :class:`graphia.state.ThoughtRecord` FROM SPEC 041 SLICE 9,
+    where it was a bare ``str``. This node is the channel's ONLY writer, so this
+    one line is where the reshape becomes real; every reader goes through
+    :func:`graphia.state.thought_text` and keeps working against both shapes,
+    which is why a resumed checkpoint's ``str`` entries and this node's records
+    can sit in one accumulated list without any migration. ``thoughts_before``
+    is UNAFFECTED, measured rather than assumed: it is ``len(own_thoughts)``, a
+    count of list ELEMENTS, and this loop still appends exactly one element per
+    player per round — ``len`` of a list of ``str`` and ``len`` of a list of
+    ``ThoughtRecord`` are the same number.
     """
     if not private_thoughts_enabled:
         return {}
@@ -1100,18 +1176,34 @@ def day_round_reflect(
         return {}
 
     players = state.get("players", {})
-    new_thoughts: dict[str, list[str]] = {}
+    new_thoughts: dict[str, list[ThoughtEntry]] = {}
     for player in players.values():
         if not player.is_alive or player.is_human:
             continue
+        # THE CARRIED FACT (spec 041 Slice 9), the exact shape ``day_diary``
+        # uses. One fresh mark per reflector, so the fan-out has no per-
+        # iteration reset to forget; ``_ai_reflect`` stamps it on its single
+        # substitution branch, which all three failure routes reach (a raised
+        # call, a non-``Reflection`` reply, a blank thought).
+        mark = _SubstitutionMark()
         thought = _ai_reflect(
             player,
             state,
             context_window=context_window,
             context_token_budget=context_token_budget,
             private_thoughts_enabled=private_thoughts_enabled,
+            substitution_mark=mark,
         )
-        new_thoughts[player.id] = [thought]
+        record: ThoughtRecord = {"text": thought}
+        # PRESENT ONLY WHEN TRUE — never ``"substituted": False``. An authored
+        # thought keeps exactly the one ``text`` key, which is what lets the
+        # eval transcript's conditional attribute leave every honest thought
+        # rendering byte-identically to the 298 preserved transcripts. The same
+        # load-bearing asymmetry ``day_diary`` writes for a ``DiaryRecord``; an
+        # unconditional flag would mark all 10,491 thought bodies in the corpus.
+        if mark.substituted:
+            record["substituted"] = True
+        new_thoughts[player.id] = [record]
 
     if not new_thoughts:
         return {}
@@ -1356,7 +1448,7 @@ def _ai_ballot(
     role_guidance_enabled: bool = True,
     context_window: int = _CONTEXT_WINDOW,
     context_token_budget: int | None = None,
-    private_thoughts: list[str] | None = None,
+    private_thoughts: list[ThoughtEntry] | None = None,
     private_thoughts_enabled: bool = True,
     diaries: list[DiaryRecord] | None = None,
     diaries_enabled: bool = True,
@@ -1798,7 +1890,18 @@ _DIARY_FALLBACK = (
 class _SubstitutionMark:
     """A one-bit mailbox: did the helper return its deterministic stand-in?
 
-    Spec 041 Slice 8's CARRIER. ``day_diary`` builds the ``DiaryRecord``, but
+    Spec 041 Slice 8's CARRIER, REUSED UNCHANGED BY SLICE 9. Two writers now
+    take one: ``_ai_diary`` (stamping into a
+    :class:`graphia.state.DiaryRecord`) and ``_ai_reflect`` (stamping into a
+    :class:`graphia.state.ThoughtRecord`). The argument below was made about the
+    diary and holds verbatim for the thought — the same ``str`` return pinned by
+    the same kind of direct-call assertions, the same keyword-only optional
+    parameter, the same "present only when true" key — so the class is shared
+    rather than twinned. DELIBERATELY NOT MADE GENERIC beyond this: it carries
+    one bit and needs no kind, because a fresh instance per writer is already
+    addressed to exactly one answer.
+
+    ``day_diary`` builds the ``DiaryRecord``, but
     ``_ai_diary`` is the only code that knows whether the text going into it is
     the player's writing or ``_DIARY_FALLBACK`` — and ``_ai_diary`` returns a
     ``str`` either way. That return type is not free to change: FIVE direct
@@ -1833,8 +1936,10 @@ class _SubstitutionMark:
     CALL-LOCAL ONLY — this never enters ``GameState`` and never reaches a
     checkpoint. See :class:`graphia.state.DiaryRecord`'s docstring for why a
     dataclass in a state channel comes back from a resume as a bare ``dict``;
-    that hazard is the reason this one stays on the stack. A fresh instance per
-    writer, so there is no reset step for the fan-out to forget.
+    that hazard is the reason this one stays on the stack, and it is why the
+    thought channel's element is a ``TypedDict`` rather than this class. A fresh
+    instance per writer, so there is no reset step for either fan-out to
+    forget.
     """
 
     substituted: bool = False
@@ -1881,7 +1986,7 @@ def _ai_diary(
     recap_aware_reasoning_enabled: bool = True,
     context_window: int = _CONTEXT_WINDOW,
     context_token_budget: int | None = None,
-    private_thoughts: list[str] | None = None,
+    private_thoughts: list[ThoughtEntry] | None = None,
     private_thoughts_enabled: bool = True,
     diaries: list[DiaryRecord] | None = None,
     diaries_enabled: bool = True,
@@ -2263,7 +2368,11 @@ def day_diary(
 
     new_diaries: dict[str, list[DiaryRecord]] = {}
     for player in writers:
-        own_thoughts = list(all_thoughts.get(player.id) or [])
+        # ``list[ThoughtEntry]`` from spec 041 Slice 9 — passed straight through
+        # to ``_ai_diary`` (which renders it through ``thought_text``) and
+        # measured only by ``len`` for the cursor below, so this loop is
+        # shape-agnostic and needed no change.
+        own_thoughts: list[ThoughtEntry] = list(all_thoughts.get(player.id) or [])
         # THE CARRIED FACT (spec 041 Slice 8). One fresh mark per writer, so
         # there is no per-iteration reset to forget. ``_ai_diary`` stamps it on
         # its single substitution branch, which BOTH failure routes reach — the

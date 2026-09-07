@@ -67,7 +67,12 @@ from graphia.prompts import (
     MAFIA_POINT_USER_TEMPLATE,
 )
 from graphia.runtime.graph_builder import build_runtime_graph
-from graphia.state import GameState, PlayerState, _merge_private_thoughts
+from graphia.state import (
+    GameState,
+    PlayerState,
+    _merge_private_thoughts,
+    thought_text,
+)
 from graphia.tools.eval_transcript import render_transcript
 
 
@@ -279,10 +284,13 @@ def test_reflect_falls_back_when_model_fails(
 
     delta = day_round_reflect(state)
     thoughts = delta["private_thoughts"]
-    # Every surviving AI still gets a (fallback) note — none is blank.
+    # Every surviving AI still gets a (fallback) note — none is blank. Read
+    # through ``thought_text`` because spec 041 Slice 9 reshaped the element
+    # from a bare ``str`` to a ``ThoughtRecord``; the property asserted is
+    # unchanged (one non-blank note per surviving AI), only the read is.
     for pid in ("p-ava", "p-ben", "p-mara"):
         assert len(thoughts[pid]) == 1
-        assert thoughts[pid][0].strip()
+        assert thought_text(thoughts[pid][0]).strip()
 
 
 def test_reflect_self_guard_no_op_mid_round(
@@ -835,5 +843,6 @@ def test_safe_llm_covers_reflection_call_site_via_fallback(
     state = _round_close_state()
     delta = day_round_reflect(state)
     thoughts = delta["private_thoughts"]
+    # ``thought_text`` for the same reason as above (spec 041 Slice 9).
     for pid in ("p-ava", "p-ben", "p-mara"):
-        assert thoughts[pid][0].strip()
+        assert thought_text(thoughts[pid][0]).strip()
