@@ -67,6 +67,7 @@ from graphia.eval_ledger import (
     KIND_SPEECH_MAFIA,
     KIND_SPEECH_MAFIA_HUMAN,
     KIND_THOUGHT,
+    KIND_THOUGHT_SUBSTITUTED,
     METRIC_ORDER,
     SEARCH_SCOPE_ALL,
     TRANSCRIPT_KINDS,
@@ -3928,6 +3929,263 @@ async def test_the_substituted_diary_style_is_the_diarys_rule_plus_strike(
         # diary is a diary's colour" is saying something.
         assert diary.color != styles[KIND_SPEECH_MAFIA].color
         assert diary.color != styles[KIND_SPEECH_LAW_ABIDING].color
+
+
+@pytest.mark.parametrize("theme", _TRANSCRIPT_STYLE_THEMES)
+async def test_the_substituted_thought_style_is_the_thoughts_rule_plus_strike(
+    tmp_path: Path, theme: str
+) -> None:
+    """Spec 041 Slice 9's rule, asserted as a RELATION — the fourth use of the shape.
+
+    The direct sibling of
+    :func:`test_the_substituted_diary_style_is_the_diarys_rule_plus_strike`, and
+    written to the same pattern for the same reason: tech-spec 041 does not
+    describe a substituted body's appearance in colours, it describes it as an
+    operation on an existing rule — here "the `thought` rule plus `strike`". So
+    that is what is asserted. Slice 5 stated the seat as "its side's colour plus
+    bold, and nothing else", spec 039 the diary as "`thought`'s rule plus
+    `underline`", Slice 8 the marked diary as "the `diary` rule plus `strike`";
+    this is the fourth rule in the stylesheet built that way.
+
+    THE DERIVATION IS FROM `thought`, NOT FROM `diary-substituted`, which is the
+    whole design of the marking family and the reason this test is not a copy of
+    the diary's with two names swapped. Each marked kind is *its own honest kind
+    plus the one flag*, so the two marked kinds differ by exactly the flag their
+    honest forms already differ by (`underline`), and a reviewer who has learnt
+    "struck = nobody wrote this" reads both without learning a second thing.
+    Deriving this rule from `diary-substituted` would have had to SUBTRACT
+    `underline` — an operation the family has never needed — and would leave a
+    substituted thought looking like a retreat from a diary rather than a
+    thought that was stood in for. This one is therefore the stylesheet's one
+    place where the later kind is the QUIETER one: two flags (`italic strike`)
+    against the marked diary's three.
+
+    Resolved through the PILOT API rather than pinned as a snapshot, for the
+    reason the diary sibling records: `_kind_styles` is where the CSS actually
+    becomes the style a span carries, and that hop is where this design measured
+    `overline` DEAD on the installed Textual 8.2.4 (it parses, and `o` is in
+    ``VALID_STYLE_FLAGS``, but ``rich.style.Style.parse("overline")`` returns an
+    empty ``Style()`` and ``textual.style.Style`` has no ``overline`` field for
+    ``from_rich_style`` to carry — so the declaration reads correctly and paints
+    nothing). Reading the resolved style rather than the stylesheet text is the
+    whole protection against a flag that silently does not arrive.
+
+    SWEPT OVER ALL THREE THEMES rather than run under the default, because every
+    claim below is a relation between two resolved styles and a relation can
+    hold on one palette and break on another: ``$text-muted`` is a different
+    value on each of ``textual-dark``, ``textual-light`` and ``textual-ansi``,
+    and only the last is a colour this stylesheet cannot reason about at all.
+
+    THE THEME IS SET BEFORE THE TRANSCRIPT SCREEN IS OPENED, which is Task 8.6's
+    measured finding rather than a style choice: `_styled_body` bakes the
+    resolved Rich styles into the ``Static``'s renderable at **compose** time, so
+    switching the theme on an already-open transcript re-themes the chrome and
+    leaves the body's spans painted in the palette that composed them.
+    `_kind_styles` re-resolves live either way, so the assertions would pass
+    under either ordering — but composing under the theme keeps this test's
+    subject and the pixels on a reviewer's screen the same thing.
+
+    The claims, and the LAST ONE IS THE LOAD-BEARING ADDITION the diary sibling
+    does not make:
+
+    * **the whole `thought` look is inherited** — same colour, and italic still
+      set. A substituted thought is still a thought: still private, still an
+      aside, still not an act of allegiance. Asserted against the `thought` rule
+      itself, not against literals, so the two cannot drift apart;
+    * **the colour is not None**, or the inheritance equality is vacuous, plus
+      the sweep's own non-vacuity guard on WHICH KIND of colour arrives;
+    * **it is struck and an honest thought is NOT** — the entire differentia,
+      and all that separates them under ``textual-ansi``;
+    * **exactly one axis**, so `underline` (`diary`'s differentia), `bold` (the
+      reviewer's seat) and `reverse` (`recap`'s scroll landmark) stay absent.
+      Without this the third claim would pass on a stylesheet that piled on
+      every flag it could and re-collided the marked thought with three other
+      kinds;
+    * **and the two MARKED kinds stay tellable apart from each other.** Task 9.4
+      proved that at the TOKENIZER level
+      (``test_the_four_marked_and_authored_body_kinds_are_four_distinct_kinds``);
+      this is the style-level half of the same claim, and it is the one thing
+      the module's completeness equality
+      (``_TRANSCRIPT_KIND_COMPONENTS == TRANSCRIPT_KINDS - {plain}``) cannot
+      give — that equality proves a CLASS EXISTS, not that its rule says
+      anything different from the other marked kind's. ``textual-ansi`` is where
+      the claim is thinnest: both kinds resolve to ``$text-muted``, which there
+      collapses to the terminal default, so the SGR flags are the ENTIRE
+      separation. A struck line in a preserved game has to say WHICH private
+      channel the model failed to answer on — the per-run counts (Slices 6 and
+      7) already report how many failed and cannot report which — so a reviewer
+      who has learnt "struck = nobody wrote this" must still be able to tell a
+      voided reflection from a voided diary entry. Asserted as the difference
+      being PRECISELY ``underline``, axis by axis, rather than as a bare
+      inequality: a bare ``!=`` would also be satisfied by two rules that
+      diverged on hue or on `bold`, which would break the family's one-meaning
+      -per-flag accounting while passing the test.
+    """
+    module = importlib.import_module("graphia.ui.ledger_viewer")
+    # The class name as a WRITTEN-OUT LITERAL, exactly as the two rules above do
+    # it and for the same reason: the mapping's own guard reads two production
+    # tables against each other and would agree with itself through a rename of
+    # both. This line is what makes a drift report WHICH of the three spellings
+    # moved.
+    assert (
+        module._TRANSCRIPT_KIND_COMPONENTS[KIND_THOUGHT_SUBSTITUTED]
+        == "transcript--thought-substituted"
+    )
+
+    ledger, _ = _ledger_with_body(
+        tmp_path, _HIGHLIGHT_BODY, name=f"hl-thought-substituted-style-{theme}.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        # The assignment itself is the guard for a theme that stopped existing:
+        # `App.theme` is a validated reactive and raises `InvalidThemeError` on
+        # a name Textual has not registered, so a renamed or removed built-in
+        # fails loudly here rather than silently leaving this case sampling the
+        # default palette a second time.
+        pilot.app.theme = theme
+        await pilot.pause()
+
+        screen = await _open_the_only_game(pilot)
+        # Resolved against the theme this case names — the whole point of the
+        # sweep is that these are three different resolutions, not one.
+        styles = screen._kind_styles()
+
+        substituted, thought = styles[KIND_THOUGHT_SUBSTITUTED], styles[KIND_THOUGHT]
+
+        assert substituted.color == thought.color, (
+            "a substituted thought is still a thought and must inherit its "
+            "colour — the marking is about authorship, not about allegiance "
+            "or kind"
+        )
+        assert substituted.color is not None, (
+            "the substituted rule resolved to no colour at all, so the "
+            "equality above is vacuous"
+        )
+        # THE NON-VACUITY GUARD FOR THE SWEEP ITSELF, and the reason the
+        # parametrization is worth more than three copies of one assertion: it
+        # pins that `textual-ansi` really does resolve this family to the
+        # TERMINAL DEFAULT while the other two resolve it to a concrete hue. Not
+        # a colour literal — the hue is deliberately unpinned, exactly as the
+        # relations below are — but a statement about which KIND of colour
+        # arrives, which is what makes the ansi case the thin one. Without it a
+        # future change that stopped the theme taking effect would leave all
+        # three cases asserting the dark palette and all three passing.
+        if theme == "textual-ansi":
+            assert substituted.color.is_default, (
+                "the ansi theme resolved this family to a concrete hue, so the "
+                "thinnest case — where the SGR flags are the whole separation "
+                "— is no longer being tested"
+            )
+        else:
+            assert not substituted.color.is_default, (
+                f"{theme} resolved this family to the terminal default, so its "
+                "measured contrast is no longer a fact about this stylesheet"
+            )
+        assert substituted.italic is True and thought.italic is True, (
+            "italic is `thought`'s own differentia and the inherited half here; "
+            "dropping it from either would stop a substituted thought reading "
+            "as a thought"
+        )
+        assert substituted.strike is True, (
+            "the substituted body is not struck, so nothing in the rendered "
+            "body says the words are not the player's — functional-spec 041's "
+            "fourth requirement is unmet on the channel a reviewer actually "
+            "reads (10,706 thought bodies in the committed corpus against 376 "
+            "diary ones)"
+        )
+        assert thought.strike is not True, (
+            "an honest thought is struck too, so strike no longer separates a "
+            "substituted thought from a real one — which is the one thing this "
+            "kind exists to say, and all that separates them under "
+            "`textual-ansi`"
+        )
+        # Exactly ONE axis beyond `thought`'s, so this rule stays TWO flags to
+        # the marked diary's three. `underline` is named first because it is not
+        # merely "a flag someone else owns" here: it is the flag that tells the
+        # two MARKED kinds apart, so a substituted thought wearing it is the
+        # collision the section below exists to catch.
+        assert substituted.underline is not True, (
+            "underline is `diary`'s differentia; a substituted thought wearing "
+            "it derives from `diary-substituted` rather than from `thought`, "
+            "and collides with a voided diary entry under `textual-ansi`"
+        )
+        assert substituted.bold is not True, (
+            "bold is the reviewer's own seat (Slice 5); a substituted body "
+            "wearing it puts a stand-in sentence in the seat's register"
+        )
+        assert substituted.reverse is not True, (
+            "reverse is `recap`'s scroll landmark; a second inverted block "
+            "files the moderator's posted fact and a voided thought as one look"
+        )
+
+        # THE STYLE-LEVEL HALF OF THE DISTINGUISHABILITY CLAIM — the assertion
+        # this test exists for and the one the diary sibling cannot make, since
+        # it is a claim about the PAIR. Task 9.4 settled it at the tokenizer;
+        # here it is settled at the pixels, on the theme where the colours give
+        # nothing.
+        diary_substituted, diary = (
+            styles[KIND_DIARY_SUBSTITUTED],
+            styles[KIND_DIARY],
+        )
+
+        # First the premise the separation rests on: the two marked kinds share
+        # a colour (both `$text-muted`), so under NO theme can hue be what tells
+        # them apart — and under `textual-ansi` that shared colour is the
+        # terminal default, so the flags are literally all there is.
+        assert substituted.color == diary_substituted.color, (
+            "the two marked kinds no longer share a colour, so this test's "
+            "premise has changed: check the flag ledger above "
+            "`_TRANSCRIPT_KIND_COMPONENTS` before relaxing anything below"
+        )
+        if theme == "textual-ansi":
+            assert (
+                substituted.color.is_default and diary_substituted.color.is_default
+            ), (
+                "the ansi case no longer collapses both marked kinds to the "
+                "terminal default, so the hardest form of distinguishability "
+                "is no longer being tested"
+            )
+
+        # THE DIFFERENCE IS PRECISELY `underline`. Asserted axis by axis rather
+        # than as `substituted != diary_substituted`, because a bare inequality
+        # would also be satisfied by two rules that had diverged on hue or on a
+        # flag the family has spent elsewhere — which would tell them apart
+        # while breaking the one-meaning-per-flag accounting the family is for.
+        assert diary_substituted.underline is True, (
+            "a voided diary entry lost `underline`, so the two marked kinds now "
+            "resolve to the same style: a struck line in a preserved game no "
+            "longer says WHICH private channel the model failed to answer on"
+        )
+        assert substituted.underline is not diary_substituted.underline, (
+            "the two marked kinds agree on `underline`, which is the only axis "
+            "separating them — see the assertion above"
+        )
+        # ...and they agree on everything else, which is what makes `underline`
+        # the WHOLE difference rather than one of several.
+        assert substituted.strike is diary_substituted.strike is True, (
+            "the two marked kinds disagree on `strike`, so the flag no longer "
+            "carries one meaning — *this body is not the player's writing* — "
+            "across the stylesheet"
+        )
+        assert substituted.italic is diary_substituted.italic is True
+        assert substituted.bold is diary_substituted.bold
+        assert substituted.reverse is diary_substituted.reverse
+
+        # ...and the separation really is the one the HONEST forms already draw,
+        # which is why a reviewer needs no second thing to learn: `diary` is
+        # underlined and `thought` is not, and the marked pair inherits exactly
+        # that.
+        assert diary.underline is True and thought.underline is not True, (
+            "the honest pair no longer differs by `underline`, so the marked "
+            "pair's separation is an unrelated fact a reviewer has to learn "
+            "twice rather than the family's own derivation showing through"
+        )
+
+        # ...and a thought's colour really is not a side's, so "a substituted
+        # thought is a thought's colour" is saying something.
+        assert thought.color != styles[KIND_SPEECH_MAFIA].color
+        assert thought.color != styles[KIND_SPEECH_LAW_ABIDING].color
 
 
 # ---------------------------------------------------------------------------
