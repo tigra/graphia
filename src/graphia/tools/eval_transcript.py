@@ -1055,7 +1055,32 @@ def _append_diaries(
             day = _diary_day_attr(record.get("day"))
             if day:
                 attrs = f"{attrs} {day}"
+            substituted = _diary_substituted_attr(record.get("substituted"))
+            if substituted:
+                attrs = f"{attrs} {substituted}"
             buf.append(_inline_attr("diary", attrs, text))
+
+
+def _diary_substituted_attr(substituted: Any) -> str:
+    """``substituted="true"`` for a substituted entry, else ``""`` (spec 041).
+
+    The conditional-attribute idiom of :func:`_diary_day_attr`, and for a
+    sharper reason: **the attribute must be absent on an authored entry, not
+    ``substituted="false"``.** That is what makes "no entry carries this
+    marking" hold *structurally* — a transcript of a clean game is byte-for-byte
+    what it was before spec 041, so the marking cannot creep in as a
+    always-present field that a reader learns to ignore.
+
+    Only the literal ``True`` yields the attribute. ``nodes.day.day_diary``
+    writes the key **only** on the substitution branch and only as ``True``, so
+    anything else reaching here came from a hand-built record or a hand-edited
+    checkpoint — this is defensiveness at a read boundary, not coverage of a
+    reachable node path. ``"true"``, ``1`` and ``1.0`` are all rejected rather
+    than guessed: each is a plausible hand-edit, and honouring them would let
+    this renderer disagree with :func:`graphia.eval_ledger` about what the file
+    says. The fact is carried or it is not.
+    """
+    return 'substituted="true"' if substituted is True else ""
 
 
 def _diary_day_attr(day: Any) -> str:
