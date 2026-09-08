@@ -16,11 +16,16 @@ Topology contract (Slice 8):
   TOTAL — it returns a story message or nothing at all, and never raises — and
   it does not touch ``phase``, which ``end_screen`` has already set.
 
-Note the ORDER in which spec 040 lands that second bullet: this module gains
-the node in Task 1.4 and ``graph.py`` gains the ``end_screen`` ->
-``moderator_story`` -> END edge in Task 1.6. Between those two tasks the node
-exists and is importable but is UNREACHABLE from any graph, which is why the
-tests written for it drive it directly rather than through a game.
+Note the ORDER in which spec 040 landed that second bullet: this module gained
+the node in Task 1.4 and ``graph.py`` gained the ``end_screen`` ->
+``moderator_story`` -> END edge in Task 1.6. **Both have landed — the node is
+reachable from every ending now**, and the tense here is corrected rather than
+deleted because the ordering explains a shape in the tests: for one task the
+node existed and was importable but was UNREACHABLE from any graph, so the
+tests written for it drive it directly, and a direct-call test is still the
+right instrument for its failure path. The three ARRIVAL paths — the two win
+checks and the spec-023 runaway short-circuit — are pinned through real games
+in ``tests/test_spec040_story_topology.py``.
 """
 
 from __future__ import annotations

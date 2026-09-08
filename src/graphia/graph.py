@@ -34,6 +34,7 @@ from graphia.nodes import (
     introduce_roster,
     mafia_point,
     mafia_round_start,
+    moderator_story,
     night_close,
     night_open,
     resolve_night_kill,
@@ -296,6 +297,13 @@ def _assemble_graph(
     builder.add_node("check_win_night", check_win_condition)
     builder.add_node("check_win_day", check_win_condition)
     builder.add_node("end_screen", emit(end_screen))
+    # Spec 040 (The Moderator's Closing Story): one extra super-step after the
+    # facts, NOT a fold into ``end_screen`` (§2.1). It is deliberately NOT
+    # wrapped in ``emit`` — it takes ``state`` alone and emits no career event.
+    # ``end_screen`` keeps the ``KIND_GAME_ENDED`` emit at its own tail, so that
+    # event is committed and checkpointed a super-step BEFORE the story's 5-15s
+    # non-deterministic call, which is the whole reason these are two nodes.
+    builder.add_node("moderator_story", moderator_story)
 
     builder.add_edge(START, "collect_name")
     builder.add_edge("collect_name", "generate_roster")
@@ -384,8 +392,20 @@ def _assemble_graph(
         },
     )
 
-    # Terminal edge: the recap message is posted and the graph halts.
-    builder.add_edge("end_screen", END)
+    # Terminal edges: the facts are posted, the Moderator tells one closing
+    # story, and the graph halts.
+    #
+    # THREE ARRIVAL EDGES, ONE CHANGE (spec 040 §2.1). ``end_screen`` is reached
+    # from ``route_after_win_night``, ``route_after_win_day`` and the spec-023
+    # (Game Length Runaway Safeguard) short-circuit in ``route_after_night_open``
+    # — but it has exactly ONE outgoing edge, so re-pointing it at
+    # ``moderator_story`` covers all three arrival paths by construction. It
+    # looks like three changes and is one. What is NOT guaranteed by
+    # construction is that a future router keeps routing here, which is why
+    # ``tests/test_spec040_story_topology.py`` pins each of the three
+    # separately.
+    builder.add_edge("end_screen", "moderator_story")
+    builder.add_edge("moderator_story", END)
 
     # Day → Night cycle. night_open bumps cycle on re-entry.
     # Spec 039: the hinge gains one super-step — ``day_close -> day_diary ->
