@@ -698,13 +698,26 @@ def test_endgame_recap_omits_diaries_while_diaries_are_really_written(
     deterministic fallback and the diary model path was never exercised at all.
     Claim 1 is what makes claim 2 load-bearing.
 
-    **FOR WHOEVER IMPLEMENTS SPEC 040 (Moderator Creative Recap, Phase 6a,
-    still Draft):** the "no diary text in the recap" assertion below is
-    expected to **invert** when the recap learns to read the diaries. It is
-    written here deliberately, as documentation of today's boundary, so that
-    change *flips a stated expectation* instead of discovering an undeclared
-    coupling. Invert it — do not delete it, and do not weaken claim 1, which
-    stays true either way and is what keeps the inverted assertion honest.
+    **SPEC 040 HAS LANDED AND DID NOT INVERT THE ASSERTION BELOW — see the
+    block at claim 2 (part b) for the reason, which is the whole point of its
+    §2.1.** This docstring used to instruct the implementer of spec 040 to
+    *flip* the "no diary text in the recap" assertion when the recap learned to
+    read the diaries. That prediction was wrong about the mechanism: spec 040
+    did not teach ONE message to read the diaries, it added a **second**
+    message. ``end_screen`` stays a pure deterministic string builder and the
+    private material reaches the model-written closing story instead — a
+    different ``SystemMessage``, the one ``CLOSING_STORY_KWARG`` flags. So the
+    two assertions below **stay absence assertions**, and claim 1 is still what
+    keeps them from being vacuous.
+
+    The prediction is recorded rather than erased because it is the reason the
+    assertions were written in the first place, and because the correction is
+    the point: a stated expectation was flipped by *measurement*, not by an
+    undeclared coupling discovered later. (Corrected 2026-09-08, spec 040 Task
+    3.6: Task 1.7 corrected the inline block and left this docstring saying the
+    opposite — one function carrying two directly opposed instructions about
+    the same two assertions, which is exactly the trap spec 040's Slice 3
+    preamble warns about.)
 
     Trajectory (the Law-abiding win from Test 1, so the recap has real content
     to pin): Night 1 kills a Law-abiding AI → Day 1 executes the first Mafia →
