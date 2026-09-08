@@ -345,10 +345,15 @@ def end_screen(
 # was corrected when they arrived rather than left contradicting the prompt it
 # describes. Read them at ``prompts.py``, above ``STORY_PARAGRAPH_BOUND``, which
 # is where the STATED paragraph bound now lives (the 039 split: the bound the
-# prompt states sits with the prompt). STILL OUTSTANDING HERE: Task 4.2's
-# runaway wording, and Slice 5's paragraph-preserving clamp with its truncation
-# flag — whose ``STORY_MAX_PARAGRAPHS`` / ``STORY_MAX_CHARS`` are the
-# ENFORCEMENT half and belong in this module, beside that clamp.
+# prompt states sits with the prompt). TASK 4.2 HAS ALSO LANDED, and it was
+# never outstanding "HERE" — this comment used to list its runaway wording as
+# work pending in this module, but it is PROMPT TEXT and shipped as move 5's
+# third sentence in ``prompts.py``; the five-reference outcome audit sits above
+# ``STORY_SYSTEM`` there. What that audit turned up in THIS module is recorded
+# at the ``_render_context`` call in ``_ai_story`` below. STILL OUTSTANDING
+# HERE: Slice 5's paragraph-preserving clamp with its truncation flag — whose
+# ``STORY_MAX_PARAGRAPHS`` / ``STORY_MAX_CHARS`` are the ENFORCEMENT half and
+# belong in this module, beside that clamp.
 # ---------------------------------------------------------------------------
 
 # The human seat's marker, and it is the deliverable of Task 3.3 rather than a
@@ -898,6 +903,47 @@ def _ai_story(
         # than an empty history. The private material is NOT trimmed to fit —
         # that is the protection this ordering exists to give it.
         context_budget = max(0, story_token_budget - private_tokens)
+        # =================================================================
+        # AUDIT FINDING (Task 4.2, 2026-09-08) — MEASURED, NOT FIXED HERE.
+        # ``end_screen``'s facts message RE-ENTERS THE PROMPT THROUGH THIS
+        # SLOT, in every game, guaranteed. The chain is short and each link
+        # was checked: ``end_screen`` returns ``{"messages": [final_msg]}``
+        # where ``final_msg`` is a PUBLIC ``SystemMessage`` (no
+        # ``private_to``); ``graph.py`` wires ``add_edge("end_screen",
+        # "moderator_story")``, so it is in ``state["messages"]`` by the time
+        # this call runs; and ``_render_context`` keeps public
+        # ``SystemMessage``s and labels them ``Moderator``. It is the NEWEST
+        # message, so ``visible[-window:]`` always keeps it and the
+        # token-budget trim — which drops the OLDEST lines — can never drop
+        # it. Rendered output confirms it: the outcome line, the events list,
+        # the full roster with every role, AND ``_persona_reveal_line``'s
+        # cover-vs-true-self reveal all appear under
+        # ``STORY_USER_TEMPLATE``'s heading "What was said out loud, oldest
+        # first" — text that was never said out loud during play.
+        #
+        # WHY IT IS NOT FIXED HERE: the slot is Task 3.3's, the fabrication
+        # measurement is Task 4.4's, and a filter here would also move the
+        # byte-equality baseline ``test_spec040_story_whisper_privacy`` pins.
+        # Scope discipline — reported, not fixed.
+        #
+        # WHY IT MATTERS, and it cuts two ways. (a) For the OUTCOME it is
+        # benign, even helpful: ``_winner_line``'s sentence lands a second
+        # time in the tail-most public position, so a runaway's "did not
+        # resolve" is stated twice. (b) For §2.6's CENTRAL THESIS it is the
+        # opposite. Move 1 tells the model the reader "has just read those
+        # facts … they do not need any of that again", while this slot hands
+        # it those exact facts as the most recent thing anyone said. §2.6's
+        # account of the flat summary is "handed a fact sheet … a model
+        # produces a chronological recap of the facts the player just read" —
+        # and the fact sheet is in this prompt TWICE, once as slots and once
+        # verbatim. That is a candidate explanation for the two live flat
+        # recaps standing alongside Task 4.4's material-void one, and unlike
+        # the void it is NOT closed by Slice 3: Slice 3 introduced it.
+        # (c) It is the same SHAPE as Task 3.4's finding — non-play material
+        # admitted into the public-history slot — but NOT the same route, so
+        # ``speaker_id=""`` does nothing about it: the facts message is
+        # public, not a whisper. Task 4.4 should distinguish a third cause.
+        # =================================================================
         context = _render_context(
             state.get("messages", []),
             # An id matching NO player: every whisper is dropped. A privacy
@@ -914,6 +960,10 @@ def _ai_story(
                     # ``_winner_line`` is REUSED (§2.2) so the story's outcome
                     # and the facts message's cannot drift, and it already
                     # renders a whole sentence for the runaway and draw cases.
+                    # Reference 4 of Task 4.2's outcome audit (above
+                    # ``STORY_SYSTEM`` in ``prompts.py``): of its five branches
+                    # only LAW and MAFIA name a side, and the defensive
+                    # ``None`` fall-through names nothing at all.
                     outcome=_winner_line(state.get("winner")),
                     roster=_story_roster_block(players),
                     events=_story_events_block(kill_log, players),

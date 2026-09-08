@@ -510,6 +510,20 @@ keeping within the sentence limit you were given.
 #      tail is part of it, not decoration. Its second sentence carries the
 #      functional spec's own wording ("not to invent events, players or
 #      motives").
+#
+#      ITS THIRD SENTENCE IS TASK 4.2'S ("How the game ended is stated below
+#      and is not yours to settle…"), and it lives HERE — inside move 5's
+#      paragraph — because the gap it closes is a gap in move 5 itself. The
+#      noun boundary enumerates three noun classes (players, deaths, votes) and
+#      the second sentence three more (events, players, motives); A WINNING
+#      SIDE IS NONE OF THOSE SIX. So a story that wrote "and so the Mafia's
+#      grip closed on the town" on an unresolved game would satisfy every word
+#      of the first two sentences while asserting an outcome the record denies.
+#      The "not yours to settle" phrasing deliberately mirrors "the telling is
+#      yours" one sentence earlier, opposite in polarity, so the pair reads as
+#      one boundary: the telling is free, the ending is fixed. See the TASK 4.2
+#      note below for why this is stated actively rather than left passive, and
+#      for the audit of every other outcome reference.
 #   6. THE HUMAN CLAUSE, AS ITS OWN SENTENCE ("One seat on the roster below…"),
 #      so it is separately assertable. It references the MARKED SEAT rather
 #      than "the reader" in the abstract — Task 3.3 shipped
@@ -554,24 +568,96 @@ keeping within the sentence limit you were given.
 #     the game is characterised (spec 016's personas, 024's role guidance);
 #     this one is the game's narrator and stays uncharacterised.
 #
-# WHAT THIS TASK DID **NOT** DO, so the next reader does not think it is done:
+# ===========================================================================
+# TASK 4.2 — THE OUTCOME, AND WHY IT IS STATED ACTIVELY (2026-09-08)
+# ===========================================================================
+# ``winner`` can be ``"runaway"`` (spec 023's Day cap) and defensively
+# ``"draw"``, and §2.6 requires that the prompt not assume a winning side — a
+# story declaring a winner on an unresolved game is the most conspicuous
+# fabrication available to it. THE PASSIVE HALF WAS ALREADY DONE when this task
+# opened, by Tasks 3.3 and 4.1 rather than by anything left over: move 1 says
+# "how the game ended" and never "who won", and ``STORY_USER_TEMPLATE``'s first
+# slot label is literally "How the game ended: {outcome}". So the question this
+# task actually had to answer was whether NOT ASSUMING a winner is the same as
+# FORBIDDING one. It is not, and move 5's third sentence is the difference.
 #
-# - **Task 4.2 owns the runaway wording.** ``winner`` can be ``"runaway"``
-#   (spec 023's Day cap) and defensively ``"draw"``, and the prompt must not
-#   assume a winning side — a story declaring a winner on an unresolved game is
-#   the most conspicuous fabrication available to it. Move 1 is already written
-#   neutrally ("how the game ended", never "who won") for the same reason the
-#   ``{outcome}`` slot label was: writing a bug knowingly, for one task, is how
-#   it has to be found again. That is NOT Task 4.2 done — it still owns the
-#   explicit non-assumption clause and the audit of every outcome reference.
-# - **Task 4.3 owns the tests.** No test asserts on this text yet.
+# THE ARGUMENT THAT DECIDED IT IS STRUCTURAL, NOT BEHAVIOURAL — and the honest
+# version matters, because the behavioural case is weaker than it looks. Move
+# 5's two existing sentences bound six noun classes (players, deaths, votes;
+# events, players, motives) and a WINNING SIDE is none of them, so the
+# instruction as it stood PERMITTED the one fabrication §2.6 singles out as the
+# most conspicuous. §2.7 is explicit that the instruction is the only thing
+# this feature can guarantee ("the instruction itself is directly testable",
+# and there is deliberately no automated grounding check), so a gap in the
+# instruction is the whole of the exposure. That is why one sentence was added.
+#
+# WHAT WAS *NOT* THE REASON, recorded because the dispatch brief offered it and
+# it does not survive checking. The brief argued from Task 4.4's live
+# observation — a story asserting "the final night's killer was REVEALED to be
+# one of these two" in a game with zero votes and zero executions — that "a
+# model that invents a reveal from an absence will invent a winner from an
+# absence". BOTH live fabrications were VOID-FILLS, not overrides of an
+# explicit negative: Slice 1's template carried no vote record and no public
+# history at all, so nothing in either prompt said "no vote was ever held" or
+# "no Day was ever played". The runaway is not that shape. ``_winner_line``
+# renders a whole negative SENTENCE for it ("The game did not resolve and was
+# stopped at the Day cap (runaway / unresolved game)."), and — measured, see
+# the audit below — that sentence reaches the model TWICE. So the model is told
+# in words, twice, that the game did not resolve. Predicting an override from
+# two void-fills would be a real inference gap. The instruction gap is not.
+#
+# SHAPE CONSTRAINTS THE SENTENCE HAD TO MEET, and they are why it is phrased
+# the way it is. It is ONE sentence, and OUTCOME-SHAPED rather than
+# CASE-SHAPED: it names neither "runaway" nor "draw" and reads identically
+# whoever won, because a per-outcome branch in the prompt text would be exactly
+# the checklist shape 039 fought and the DELIBERATELY ABSENT note above
+# forbids. Its conditional is over THE RECORD, not over a case, which is what
+# keeps it a single rule ("defer to the record") rather than a switch. It also
+# happens to cover ``_winner_line``'s fifth branch — see the audit.
+#
+# ==== THE AUDIT OF EVERY OUTCOME REFERENCE IN THE STORY PATH ====
+# Five references reach the model, all verified by reading the code and the
+# last one by rendering it:
+#
+#   1. ``STORY_SYSTEM`` move 1 — "how the game ended, who died, and who every
+#      player really was". Names no side. Correct as written.
+#   2. ``STORY_SYSTEM`` move 5, third sentence — this task's addition.
+#   3. ``STORY_USER_TEMPLATE``'s first slot label — "How the game ended:".
+#      Names no side. Correct as written (it is §2.6's own prescribed phrasing,
+#      "how the game ended, below").
+#   4. The ``{outcome}`` VALUE — ``endgame:_winner_line(state["winner"])``,
+#      REUSED so the story's outcome and the facts message's cannot drift. Five
+#      branches, and only two of them name a side: ``ENDGAME_WINNER_LAW`` and
+#      ``ENDGAME_WINNER_MAFIA`` do; ``ENDGAME_WINNER_DRAW`` names a resolution
+#      without a side; ``ENDGAME_WINNER_RUNAWAY`` names a NON-resolution; and
+#      the defensive ``winner is None`` fall-through renders "The game has
+#      ended.", which names NOTHING — a genuine void about the outcome, not
+#      merely a missing side. That fifth branch is unreachable in practice
+#      (every edge into ``end_screen`` sets a winner first) but it is the one
+#      case where the material would give the model nothing at all, and move
+#      5's new sentence covers it for free, since a tautology names no winning
+#      side either.
+#   5. **THE FACTS MESSAGE ITSELF, re-entering through ``{context}`` — NOT A
+#      REFERENCE ANYONE PLANNED, and reported rather than fixed because the
+#      slot is Task 3.3's and the measurement is Task 4.4's.** See the note at
+#      the ``_render_context`` call in ``endgame:_ai_story``, which carries the
+#      measurement. For THIS task it is benign and mildly helpful: the outcome
+#      sentence lands a second time in the tail-most public position, so the
+#      runaway's negative is stated twice rather than once. For §2.6's central
+#      thesis it is the opposite of helpful, which is why it is written down.
+#
+# WHAT THIS SLICE STILL DOES **NOT** DO, so the next reader does not think it
+# is done:
+#
+# - **Task 4.3 owns the tests.** No test asserts on this text yet — not on the
+#   seven moves, and not on move 5's new third sentence. What to assert for
+#   this task: that the composed prompt contains no winning-side claim on a
+#   ``winner="runaway"`` game, and that the non-assumption sentence is present
+#   as its own sentence (assert the sentence, not the word "runaway" — the
+#   sentence deliberately does not contain it).
 # - **Task 5.2 owns the ENFORCEMENT pair** (``STORY_MAX_PARAGRAPHS`` and
 #   ``STORY_MAX_CHARS``, both in ``nodes/endgame.py`` with the clamp). Only the
 #   STATED bound is here — see ``STORY_PARAGRAPH_BOUND``.
-#
-# ONE THING THAT IS ALREADY RIGHT AND SHOULD STAY, rather than an accident to
-# be tidied later: the outcome slot is introduced as "How the game ended", not
-# as "The winner was" — see the Task 4.2 note above.
 
 # The paragraph bound the prompt STATES, interpolated into ``STORY_SYSTEM``
 # exactly once so the prose and the number cannot drift.
@@ -630,7 +716,8 @@ headings, no bullet points, no numbering.
 
 Every player you name, every death and every vote you mention must appear
 below; within that, the telling is yours. Do not invent events, players or
-motives that no one recorded.
+motives that no one recorded. How the game ended is stated below and is not
+yours to settle: where the record names no winning side, neither do you.
 
 One seat on the roster below is marked as the person you are telling this to;
 nothing that seat privately thought was ever recorded, so speak of it only by
@@ -675,9 +762,12 @@ paragraphs separated by blank lines.
 # ``STORY_PRIVATE_EMPTY`` with no legend at all and a bare bullet under nothing
 # would be unattributed.
 #
-# ONE THING THAT IS ALREADY RIGHT AND SHOULD STAY: the outcome slot is
-# introduced as "How the game ended", not as "The winner was" — see the note
-# above ``STORY_SYSTEM``.
+# THE OUTCOME SLOT LABEL IS LOAD-BEARING AND SHOULD STAY: it is introduced as
+# "How the game ended", not as "The winner was", because ``winner`` can be
+# ``"runaway"`` and a story declaring a winner on an unresolved game is §2.6's
+# most conspicuous fabrication. It is reference 3 of the five-reference audit
+# above ``STORY_SYSTEM`` (Task 4.2), which is where the whole outcome argument
+# lives — including why the passive label is not, on its own, sufficient.
 STORY_USER_TEMPLATE = """How the game ended: {outcome}
 
 The players:
