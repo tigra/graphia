@@ -10,6 +10,74 @@ from langchain_core.messages import AnyMessage
 from langgraph.graph.message import add_messages
 
 
+# The ``additional_kwargs`` key that marks the Moderator's closing story
+# (spec 040 — The Moderator's Closing Story) — a PUBLIC contract constant,
+# and deliberately in THIS module rather than in ``nodes/endgame.py`` where the
+# message is built.
+#
+# ONE FLAG, THREE CONSUMERS IN THREE LAYERS, AND THEY MUST AGREE:
+#
+# - ``nodes.endgame.moderator_story`` SETS it on the story's public
+#   ``SystemMessage`` (Moderator voice, no ``name``).
+# - ``tools.eval_transcript`` READS it to partition an endgame delta's
+#   ``SystemMessage``s into ``(facts, story)`` and render the ``<story>`` block.
+# - ``tools.blunder_eval`` READS it to decide whether a game produced a story
+#   at all — the ledger's ``quality.story_missing_*`` signal.
+#
+# DISCRIMINATE ON THE MESSAGE, NOT ON THE NODE OR THE POSITION (spec 040 §2.9).
+# Both readers see a stream of messages rather than a call graph: "the last
+# ``SystemMessage`` of the endgame delta" holds only until something else is
+# appended to the ending, and "whatever ``moderator_story`` emitted" is not
+# recoverable from a capture that records the delta and not its author. A flag
+# carried ON the message survives both.
+#
+# WHY PUBLIC, AND WHY HERE — A SPEC-039 LESSON ALREADY PAID FOR ONCE. Spec 039
+# (Per-AI Private Diaries) left ``blunder_eval._diary_fallback_text`` reaching
+# LAZILY into ``nodes.day._DIARY_FALLBACK``, a module-PRIVATE constant, and
+# spending fifteen docstring lines justifying it: lazily because ``nodes.day``
+# drags in the whole gameplay stack (``diary_store``, ``career_events``, the
+# prompts) that the no-model ledger viewer has no business loading, and
+# defensively — ``try/except`` returning ``None`` — so a rename degrades a
+# measurement to silence rather than failing. None of that is needed here, and
+# both halves of the reason were checked rather than assumed:
+#
+# - ``graphia.state`` drags in NO gameplay stack. Importing it pulls no
+#   ``boto3``/``botocore``, no ``langchain_aws``, no ``langchain_ollama``, and
+#   none of ``graphia.llm`` / ``nodes`` / ``prompts`` / ``graph``. It needs only
+#   ``langchain_core.messages`` and ``langgraph.graph.message``.
+# - BOTH eval-layer modules already import from it at module scope
+#   (``eval_transcript``: ``PlayerPersona, PlayerState, thought_text``;
+#   ``blunder_eval``: ``DiaryRecord, PlayerState``), and both already import
+#   ``langchain_core.messages`` on their own account. So the marginal cost of
+#   reaching this constant is zero new imports; measured, this module's own body
+#   costs 1.4 ms atop the two it needs.
+#
+# IMPORT IT, NEVER COPY THE LITERAL — 039's rule, and the whole point of a
+# shared name: a reword then breaks loudly in the offline suite instead of
+# silently drifting a measurement. A copied ``"closing_story"`` in
+# ``blunder_eval`` would report a clean ``story_missing_rate: 0.0`` for a run in
+# which every single story was in fact missing.
+#
+# ON THE SIBLING FLAG COMING IN SPEC 040 TASK 5.3 (the clipped-story marker that
+# renders ``<story truncated="true">``): it belongs BESIDE this line, named
+# ``CLOSING_STORY_TRUNCATED_KWARG``, and the shared ``CLOSING_STORY_`` prefix is
+# all the grouping the pair needs. No container was built here to hold them —
+# not a ``dict``, not an ``Enum``, not a namespace class — because every read is
+# ``extra.get(KEY)`` against ``additional_kwargs``, where a bare ``str`` is
+# exactly the right shape, and a container would buy an indirection at all three
+# call sites above in exchange for holding two strings. This project's precedent
+# is prefix families, never containers: ``KIND_*`` in ``career_events``, and the
+# ``DIARY_*`` family that spans two modules (``DIARY_LINE_MARKER`` /
+# ``DIARY_WINDOW`` / ``DIARY_MAX_CHARS`` in ``nodes.day``,
+# ``DIARY_SENTENCE_BOUND`` in ``prompts``) held together by nothing but the
+# prefix. What DOES need saying, because it is the part a reader can get wrong:
+# the sibling has a cross-layer reader too (the transcript renderer emits the
+# attribute), so it must be public and it must live HERE. Declaring it in
+# ``nodes/endgame.py`` would re-create precisely the 039 coupling this constant
+# exists to avoid.
+CLOSING_STORY_KWARG = "closing_story"
+
+
 def _merge_private_thoughts(
     prior: dict[str, list[ThoughtEntry]] | None,
     incoming: dict[str, list[ThoughtEntry]] | None,
