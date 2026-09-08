@@ -14,7 +14,15 @@ deliverable and Task 3.6 owns the game-level material assertions (both channels
 reach a driven game's story, an early-death contributor, the human's structural
 absence). The whisper case below is deliberately present anyway, because Task
 3.3 is what *implements* the exclusion and a privacy property should not sit
-unproven for a task; Task 3.4's fuller version replaces rather than repeats it.
+unproven for a task. **This line used to say Task 3.4's fuller version would
+"replace rather than repeat" it; Task 3.4 deliberately KEPT it, 2026-09-08.**
+Two measured reasons: it is the only witness anywhere for the absence of the
+``"Moderator (private)"`` label ``_render_context`` gives an admitted whisper,
+and it is an INDEPENDENT one — hand-typed sentinels over this file's own
+fixtures, so a defect in
+``tests/test_spec040_story_whisper_privacy.py``'s shared state builder cannot
+hide behind it. It went red under two of that file's six mutations. What it
+cannot catch is recorded there rather than here.
 
 THE TEST LEVEL IS A DELIBERATE CHOICE, and Slice 3's preamble is why. It warns
 against copying ``tests/test_spec040_story_ui_order.py``'s live-dispatcher
