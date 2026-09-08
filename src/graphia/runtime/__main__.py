@@ -202,6 +202,8 @@ async def _run_invocation(
             max_days=_config.max_days,
             context_window=_config.context_window,
             context_token_budget=_config.context_token_budget,
+            story_context_window=_config.story_context_window,
+            story_token_budget=_config.story_token_budget,
             private_thoughts_enabled=_config.private_thoughts_enabled,
             night_roster_shuffle_enabled=_config.night_roster_shuffle_enabled,
             private_diaries_enabled=_config.private_diaries_enabled,

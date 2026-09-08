@@ -48,10 +48,11 @@ production code for real, from 15 green in this file, measured, and reverted
 behaviour is worthless, and this suite has been bitten by exactly that twice
 (Task 1.7's inverted assertion, spec 041's three exception-stubbing tests):
 
-* ``token_budget=STORY_TOKEN_BUDGET`` passed to ``_render_context`` instead of
+* ``token_budget=story_token_budget`` passed to ``_render_context`` instead of
   the remainder — **THE BUDGET ORDER REVERSED, the silent failure this task
-  exists to prevent** — **3 failed**: both budget tests and the
-  over-budget-private-material one.
+  exists to prevent** — **3 failed** when Task 3.3 measured it and **4 failed**
+  when Task 3.5 re-measured it against the config-threaded version: both budget
+  tests, the over-budget-private-material one, and the new bound-budget one.
 * ``_persona_field`` swapped for bare attribute access (``persona.manner``) —
   **1 failed**, the post-checkpoint-``dict`` param, and it failed through
   ``_compose``'s "expected exactly one invoke, got 0" rather than on any text
@@ -68,8 +69,19 @@ behaviour is worthless, and this suite has been bitten by exactly that twice
   GREEN. That is why both exist: an equality against the block's own helper
   cannot see the helper being replaced, so the reuse needs its own witness.
 * ``STORY_CONTEXT_WINDOW`` frozen into a default argument at import time
-  instead of read at call time — **1 failed**, the window test. Pinned because
-  Task 3.5's config threading depends on the call-time read.
+  instead of read at call time — **1 failed**, the window test. **That
+  mutation, and the test that caught it, are RETIRED as of Task 3.5** — and
+  deliberately, not by attrition. Task 3.5 replaced both module constants with
+  keyword arguments bound off ``GraphiaConfig`` by both graph builders, which is
+  the mechanism the call-time read existed to enable; a default argument
+  evaluated at import is now the correct shape (it is ``day_turn``'s), so the
+  old mutation is no longer a defect to detect. What the property became is
+  recorded at ``test_the_story_window_is_its_own_and_larger_than_the_days``:
+  the RELATION between the two config defaults, plus two argument-passing tests
+  that prove the bound value is what reaches ``_render_context``, plus the
+  environment-to-``_render_context`` chain in
+  ``tests/test_spec040_story_governors.py``. The coverage was moved, not
+  dropped.
 * the private block dropped from the prompt (``private_record=""``) — **6
   failed**, which is what says the material assertions here are not vacuous.
 """
@@ -82,7 +94,12 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 import graphia.nodes.endgame as endgame
-from graphia.config import _DEFAULT_CONTEXT_WINDOW
+from graphia.config import (
+    _DEFAULT_CONTEXT_TOKEN_BUDGET,
+    _DEFAULT_CONTEXT_WINDOW,
+    _DEFAULT_STORY_CONTEXT_WINDOW,
+    _DEFAULT_STORY_TOKEN_BUDGET,
+)
 from graphia.llm import Story
 from graphia.nodes.day import _estimate_tokens
 from graphia.nodes.endgame import (
@@ -195,16 +212,25 @@ class _CapturingStoryFake:
         return Story(text=self._text)
 
 
-def _compose(monkeypatch: pytest.MonkeyPatch, state: dict) -> str:
+def _compose(
+    monkeypatch: pytest.MonkeyPatch, state: dict, **governors: int
+) -> str:
     """Run ``_ai_story`` against ``state`` and return the rendered user prompt.
 
     Asserts the call was REACHED and ``Story`` was bound before returning, so a
     fixture mistake cannot masquerade as the legitimate no-story ending
     ``_ai_story``'s totality produces (see this module's docstring).
+
+    ``**governors`` forwards ``story_context_window`` / ``story_token_budget``
+    (Task 3.5). Passing NOTHING is the default path and is what the budget
+    arithmetic below is measured against, so those tests keep asserting against
+    the numbers the game actually ships; passing one explicitly is how the
+    tests prove the ARGUMENT — not a module constant — is what governs the
+    assembly.
     """
     fake = _CapturingStoryFake()
     monkeypatch.setattr(endgame, "get_large", lambda: fake)
-    text = endgame._ai_story(state)  # type: ignore[arg-type]
+    text = endgame._ai_story(state, **governors)  # type: ignore[arg-type]
     assert fake.schemas == [Story], (
         "the large tier was never reached with the Story schema, so this test "
         f"would measure nothing — bindings={fake.bindings}, "
@@ -252,7 +278,8 @@ def _public(index: int) -> SystemMessage:
     """One bulky, individually identifiable public Moderator line.
 
     ~300 chars each so a realistic number of them crosses the real
-    ``STORY_TOKEN_BUDGET`` without the test having to move the governors — the
+    ``story_token_budget`` default without the test having to move the governors —
+    the
     budget arithmetic is then measured against the values the game ships.
     """
     # No trailing space: ``_render_context`` strips each rendered line and
@@ -474,7 +501,7 @@ def test_a_seat_with_no_persona_still_gets_its_line(
 
 
 def _budget_state(*, private: bool, lines: int = 170) -> dict:
-    """A public history long enough to cross ``STORY_TOKEN_BUDGET`` on its own.
+    """A public history long enough to cross the default budget on its own.
 
     ``private`` toggles a bulky private record on ONE author while leaving
     everything else identical, so the only difference between the two
@@ -511,7 +538,7 @@ def test_the_private_block_is_measured_first_and_the_public_history_is_cut(
     that shrinks to pay for it — §2.2's rationale that the story "earns its
     place from the private material".
 
-    Reversed (the full ``STORY_TOKEN_BUDGET`` handed to ``_render_context``,
+    Reversed (the full ``story_token_budget`` handed to ``_render_context``,
     ignoring what the private block costs) both compositions render an
     IDENTICAL public history and the strict inequality below fails. That is the
     silent failure this task exists to prevent: a well-formed prompt, a
@@ -540,13 +567,21 @@ def test_the_public_historys_budget_is_the_remainder_after_the_private_block(
     ``_estimate_tokens`` is imported rather than re-derived, so this asserts the
     relation §2.2 states — public budget == ``story_token_budget`` MINUS the
     measured private block — and not a re-guess of the chars-per-token ratio.
+
+    Measured on the DEFAULT path (``_compose`` passes no governors), so the
+    subtraction is checked against the figure the game ships. Task 3.5 moved
+    that figure from a module constant in ``nodes/endgame.py`` to
+    ``config._DEFAULT_STORY_TOKEN_BUDGET``; the relation asserted did not move.
+    ``test_the_bound_budget_is_what_the_public_history_is_measured_against``
+    below is the companion that proves the ARGUMENT governs, which a
+    default-path test cannot see.
     """
     state = _budget_state(private=True)
     prompt = _compose(monkeypatch, state)
 
     private_block = _slot_text(prompt, "private_record")
     private_tokens = _estimate_tokens(private_block)
-    remainder = endgame.STORY_TOKEN_BUDGET - private_tokens
+    remainder = _DEFAULT_STORY_TOKEN_BUDGET - private_tokens
     assert private_tokens > 0 and remainder > 0, (
         "fixture no longer exercises the subtraction"
     )
@@ -575,7 +610,8 @@ def test_private_material_larger_than_the_whole_budget_is_still_not_cut(
 ) -> None:
     """Structural protection, at the limit: the private block is never trimmed.
 
-    A private record on its own bigger than ``STORY_TOKEN_BUDGET`` leaves the
+    A private record on its own bigger than the whole ``story_token_budget``
+    leaves the
     public history nothing. ``_render_context``'s own ``len(lines) > 1`` guard
     then keeps exactly the newest line — strictly better than an empty history —
     and the private material still arrives whole.
@@ -593,27 +629,130 @@ def test_private_material_larger_than_the_whole_budget_is_still_not_cut(
     assert _context_lines(prompt) == ["Moderator: " + _public(19).content]
 
 
-def test_the_story_window_is_its_own_and_is_read_at_call_time(
+def test_the_story_window_is_its_own_and_larger_than_the_days(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Not the Day's window (§2.2), and overridable — which Task 3.5 needs.
+    """Not the Day's window (§2.2), and the relation is what is pinned.
 
     The Day's count expresses "the recent discussion"; a retrospective often
-    needs Day 1, so the story gets its own, larger one. Reading it at call time
-    is what lets Task 3.5 replace the constant with a bound config value without
-    touching the assembly, and is why the override below is asserted rather than
-    the literal value: the number moves in Task 3.5, the relation does not.
-    """
-    assert endgame.STORY_CONTEXT_WINDOW > _DEFAULT_CONTEXT_WINDOW
+    needs Day 1, so the story gets its own, LARGER one. **Task 3.5 changed the
+    mechanism and not the property.** The old version of this test asserted
+    ``endgame.STORY_CONTEXT_WINDOW > _DEFAULT_CONTEXT_WINDOW`` and then
+    ``monkeypatch.setattr``'d that module constant to prove the value was read
+    at call time rather than frozen into a default argument — a mechanism Task
+    3.5 deliberately invalidated by replacing the two constants with bound
+    keyword arguments off ``GraphiaConfig``. Both halves survive here in their
+    successor form: the relation is now between the two CONFIG defaults, and
+    the injectability is proved by passing the argument
+    (``test_the_bound_window_is_what_slices_the_public_history`` below) and,
+    end to end from the environment, by
+    ``tests/test_spec040_story_governors.py``.
 
-    monkeypatch.setattr(endgame, "STORY_CONTEXT_WINDOW", 2)
+    Deliberately a comparison and not a literal: the assertion must survive
+    either number being re-tuned, and ``tests/test_lineup_config.py`` is the one
+    place that writes the shipped values down.
+    """
+    assert _DEFAULT_STORY_CONTEXT_WINDOW > _DEFAULT_CONTEXT_WINDOW, (
+        "the story must get a LARGER window than the Day (§2.2) — a "
+        "retrospective often needs Day 1, which a recency window drops first"
+    )
+    # And the story's budget is deliberately SMALLER than the Day's, which is
+    # the counter-intuitive half and the one a reader "fixes" by raising it to
+    # match: the story's figure bounds the private block AND the public history
+    # together, so the same context has to hold strictly more kinds of material
+    # at the ending than during a Day (config's derivation records the
+    # arithmetic).
+    assert _DEFAULT_STORY_TOKEN_BUDGET < _DEFAULT_CONTEXT_TOKEN_BUDGET
+
+    # The default really does admit a long history — otherwise the override
+    # test below could not tell a working bind from a stuck-at-2 window.
     prompt = _compose(
         monkeypatch, _state(messages=[_public(i) for i in range(5)])
+    )
+    assert len(_context_lines(prompt)) == 5
+
+
+def test_the_bound_window_is_what_slices_the_public_history(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The ARGUMENT governs the count — the successor to the call-time-read pin.
+
+    Task 3.5 replaced ``STORY_CONTEXT_WINDOW`` with a keyword argument bound by
+    both graph builders off ``GraphiaConfig.story_context_window``. What used to
+    be proved by monkeypatching the module constant is proved here by passing
+    the argument: a window of 2 must keep exactly the two NEWEST public lines,
+    in order.
+
+    Mutation this is here to catch: binding the Day's ``context_window`` (150)
+    at the graph, or ignoring the argument and hard-coding a number in
+    ``_ai_story``, both leave five lines rendered.
+    """
+    prompt = _compose(
+        monkeypatch,
+        _state(messages=[_public(i) for i in range(5)]),
+        story_context_window=2,
     )
 
     lines = _context_lines(prompt)
     assert len(lines) == 2
     assert "public-0003" in lines[0] and "public-0004" in lines[1]
+
+
+def test_the_bound_budget_is_what_the_public_history_is_measured_against(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The ARGUMENT governs the tokens, and the subtraction is applied to IT.
+
+    The companion to the default-path arithmetic test above, and the one that
+    can see a wrong bind. A budget an order of magnitude below the shipped
+    figure must (a) trim the public history strictly harder than the default
+    does and (b) still fit ``passed_budget − private_tokens`` — so a
+    ``_ai_story`` that ignored the argument, or a builder that bound
+    ``config.context_token_budget`` (20000) instead, fails here rather than
+    silently rendering a bigger prompt than the operator asked for.
+
+    The private material is asserted WHOLE at the tight budget too: the
+    subtraction protects it structurally, and a budget small enough to starve
+    the public history must not start cutting the thing the feature exists for.
+
+    THE TIGHT BUDGET IS DERIVED, NOT PICKED. It is the measured private block
+    plus a small public allowance, so the remainder handed to
+    ``_render_context`` is that allowance BY CONSTRUCTION and the assertion is
+    exact rather than an inequality against a floor. A hand-picked round number
+    sat below the private block's own cost, which drove the budget to the
+    ``max(0, …)`` floor and made this test a duplicate of
+    ``test_private_material_larger_than_the_whole_budget_is_still_not_cut``
+    (which owns that case) instead of a witness for the argument.
+    """
+    at_default = _compose(monkeypatch, _budget_state(private=True))
+    private_tokens = _estimate_tokens(_slot_text(at_default, "private_record"))
+    public_allowance = 400
+    tight = private_tokens + public_allowance
+    assert 0 < tight < _DEFAULT_STORY_TOKEN_BUDGET, (
+        "the fixture must sit strictly inside the shipped budget for the "
+        "comparison below to mean anything"
+    )
+
+    at_tight = _compose(
+        monkeypatch, _budget_state(private=True), story_token_budget=tight
+    )
+
+    default_lines = _context_lines(at_default)
+    tight_lines = _context_lines(at_tight)
+    assert 0 < len(tight_lines) < len(default_lines), (
+        "the passed budget did not tighten the public history, so the "
+        "argument is not what _render_context was given"
+    )
+    # The private block is unchanged between the two compositions (same
+    # fixture), so the remainder really is the allowance.
+    assert _estimate_tokens(_slot_text(at_tight, "private_record")) == (
+        private_tokens
+    )
+    assert _estimate_tokens(_slot_text(at_tight, "context")) <= public_allowance
+    # Whole, uncut, even though it alone costs most of the budget it was
+    # measured against.
+    for day in range(1, 9):
+        assert f"diary-{day:02d} " + "secret " * 59 + "secret" in at_tight
 
 
 # ==========================================================================

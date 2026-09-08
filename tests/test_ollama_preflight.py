@@ -59,6 +59,7 @@ def _make_config(
     ollama_large_model: str = _LARGE_MODEL,
     ollama_small_model: str = _SMALL_MODEL,
     context_token_budget: int = 20000,
+    story_token_budget: int = 12000,
 ) -> GraphiaConfig:
     """Build a ``GraphiaConfig`` directly, bypassing env (frozen dataclass)."""
     return GraphiaConfig(
@@ -84,6 +85,7 @@ def _make_config(
         ollama_large_model=ollama_large_model,
         ollama_small_model=ollama_small_model,
         context_token_budget=context_token_budget,
+        story_token_budget=story_token_budget,
     )
 
 
@@ -512,6 +514,96 @@ def test_context_check_never_raises_on_network_error(
 
     # No exception escapes — the check is best-effort.
     assert warn_if_ollama_context_too_small(_make_config()) is None
+
+
+# ---------------------------------------------------------------------------
+# Spec 040 Task 3.5 — the check covers the LARGER of the two prompt budgets.
+#
+# Why this was extended rather than left alone, recorded here because the
+# default-path behaviour is unchanged and a reader will otherwise see the
+# ``max``-style branch as gratuitous: until spec 040 the discussion history was
+# the only prompt budget in the game, so ``context_token_budget`` was the only
+# ceiling worth probing. Spec 040 added ``story_token_budget`` — the closing
+# story's JOINT private+public ceiling, and the largest single prompt the game
+# builds — and Task 3.5 turned it into an operator knob. At the shipped defaults
+# 12000 < 20000, so the story prompt was covered BY LUCK: by an invariant that
+# nothing enforced and that ``GRAPHIA_STORY_TOKEN_BUDGET`` now lets an operator
+# break in one line. The tests below pin both halves: silence while the Day's
+# budget is the larger (the default path, byte-identical to pre-040), and a
+# warning that names the STORY's variable once the story's budget wins.
+# ---------------------------------------------------------------------------
+
+
+def test_context_check_ignores_a_story_budget_below_the_days(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The default relation (story < Day) leaves the check exactly as it was.
+
+    A declared context between the two budgets warns about the DAY's, and says
+    nothing about the story's — which fits, because at 12000 the story prompt
+    genuinely does fit a 16384-token model.
+    """
+    _stub_show_endpoint(monkeypatch, {"qwen3.context_length": 16384})
+
+    with caplog.at_level("WARNING", logger="graphia.preflight"):
+        warn_if_ollama_context_too_small(
+            _make_config(context_token_budget=20000, story_token_budget=12000)
+        )
+
+    message = caplog.text
+    assert "20000" in message
+    assert "GRAPHIA_CONTEXT_TOKEN_BUDGET" in message
+    assert "GRAPHIA_STORY_TOKEN_BUDGET" not in message
+
+
+def test_context_check_covers_a_story_budget_raised_above_the_days(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """THE NEWLY-REACHABLE HAZARD: the story's budget is now the binding one.
+
+    An operator who raises ``GRAPHIA_STORY_TOKEN_BUDGET`` past the Day's makes
+    the closing story the largest prompt in the system, and before this
+    extension it was the ONLY prompt with no preflight — the declared context
+    (24576) clears the Day's 20000, so the pre-040 check was silent while the
+    40000-token story prompt could not fit.
+
+    The message must name the STORY's variable and its own remedy: a warning
+    quoting the Day's number here sends the operator to the wrong knob, and
+    lowering ``GRAPHIA_STORY_CONTEXT_WINDOW`` would not fix it either (that
+    bounds the message count, never the tokens per message).
+    """
+    _stub_show_endpoint(monkeypatch, {"qwen3.context_length": 24576})
+
+    with caplog.at_level("WARNING", logger="graphia.preflight"):
+        warn_if_ollama_context_too_small(
+            _make_config(context_token_budget=20000, story_token_budget=40000)
+        )
+
+    assert any(record.levelname == "WARNING" for record in caplog.records)
+    message = caplog.text
+    assert "24576" in message
+    assert "40000" in message
+    assert "GRAPHIA_STORY_TOKEN_BUDGET" in message
+    assert "closing-story" in message
+    # The Day's figure must not appear — it is not what is too large here.
+    assert "20000" not in message
+
+
+def test_context_check_silent_when_the_context_clears_both_budgets(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A context above the larger budget is silent even with the story raised."""
+    _stub_show_endpoint(monkeypatch, {"qwen3.context_length": 65536})
+
+    with caplog.at_level("WARNING", logger="graphia.preflight"):
+        warn_if_ollama_context_too_small(
+            _make_config(context_token_budget=20000, story_token_budget=40000)
+        )
+
+    assert caplog.records == []
 
 
 def test_context_check_is_a_no_op_for_bedrock(

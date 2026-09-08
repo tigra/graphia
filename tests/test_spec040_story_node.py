@@ -140,7 +140,11 @@ from langchain_core.messages import AIMessage, SystemMessage
 
 from conftest import endgame_facts_message
 from graphia.career_events import KIND_GAME_ENDED
-from graphia.config import load_config
+from graphia.config import (
+    _DEFAULT_STORY_CONTEXT_WINDOW,
+    _DEFAULT_STORY_TOKEN_BUDGET,
+    load_config,
+)
 from graphia.graph import build_graph, make_run_config
 from graphia.llm import Ballot, DayAction, Diary, Pointing, Story
 from graphia.nodes.endgame import moderator_story
@@ -699,15 +703,38 @@ def test_a_helper_that_breaks_its_contract_yields_no_story_rather_than_a_raise(
     ``fake_large`` is installed even though the model is never reached, so a
     regression that stops honouring the monkeypatched helper cannot fall
     through to ``safe_llm``'s loud double and pass for the wrong reason.
+
+    **THE STUB RECORDS ITS KWARGS, AND THAT IS AN ANTI-VACUITY GUARD ADDED BY
+    TASK 3.5.** This stub was ``lambda state: 17`` until Task 3.5 gave
+    ``moderator_story`` two size-governor keyword arguments that it FORWARDS to
+    ``_ai_story``. A one-parameter stub then raises ``TypeError`` on arity, the
+    outer catch absorbs that exactly as happily as the Pydantic validation this
+    test is about, and the assertion below stays green while measuring nothing —
+    the precise trap this file's own docstring warns about for the model queue.
+    So the stub accepts the governors and the test asserts they arrived, which
+    fails loudly if the forwarding is renamed or dropped instead of degrading
+    into a false pass.
     """
     fake_large(stories=[SCRIPTED_STORY])
-    monkeypatch.setattr(
-        "graphia.nodes.endgame._ai_story", lambda state: 17
-    )
+    forwarded: dict[str, object] = {}
+
+    def _contract_breaker(state: object, **kwargs: object) -> int:
+        forwarded.update(kwargs)
+        return 17
+
+    monkeypatch.setattr("graphia.nodes.endgame._ai_story", _contract_breaker)
 
     assert moderator_story(DIRECT_STATE) == {}, (
         "a helper that breaks its str | None contract must be absorbed into "
         "an empty update; the node must never raise"
+    )
+    assert forwarded == {
+        "story_context_window": _DEFAULT_STORY_CONTEXT_WINDOW,
+        "story_token_budget": _DEFAULT_STORY_TOKEN_BUDGET,
+    }, (
+        "the stub was not reached with the two governors, so the empty update "
+        f"above may be an arity TypeError rather than the Pydantic validation "
+        f"this test exists for; got {forwarded!r}"
     )
 
 

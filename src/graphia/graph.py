@@ -92,6 +92,15 @@ def _assemble_graph(
     max_days: int = 12,
     context_window: int = 150,
     context_token_budget: int = 20000,
+    # Spec 040 (The Moderator's Closing Story) §2.2 / §2.12 — the endgame's own
+    # size governors, and the ONLY spec-040 parameters here. §2.12 is explicit
+    # that the story itself gets no ``GRAPHIA_*`` feature flag and therefore no
+    # ``_assemble_graph`` flag parameter; these two are provider-capability
+    # knobs on spec 025's ``context_token_budget`` precedent, not an ablation
+    # arm. Literal defaults matching the config defaults, exactly as the Day
+    # pair above does it.
+    story_context_window: int = 400,
+    story_token_budget: int = 12000,
     private_thoughts_enabled: bool = True,
     night_roster_shuffle_enabled: bool = True,
     private_diaries_enabled: bool = True,
@@ -303,7 +312,24 @@ def _assemble_graph(
     # ``end_screen`` keeps the ``KIND_GAME_ENDED`` emit at its own tail, so that
     # event is committed and checkpointed a super-step BEFORE the story's 5-15s
     # non-deterministic call, which is the whole reason these are two nodes.
-    builder.add_node("moderator_story", moderator_story)
+    #
+    # IT IS WRAPPED IN A ``partial`` FROM TASK 3.5 ON, and only for the two
+    # size governors — there is no flag to bind (§2.12). They are bound here
+    # rather than read inside the node for the same reason the Day pair is: the
+    # numbers belong to ``GraphiaConfig``, and both builders must thread them
+    # or the deployed Runtime silently runs on this signature's defaults
+    # instead of the operator's setting. The two are NOT independent — the
+    # window is the outer bound and the budget can only cut further; the
+    # argument is at ``config._DEFAULT_STORY_TOKEN_BUDGET`` and repeated at
+    # ``endgame:_ai_story``.
+    builder.add_node(
+        "moderator_story",
+        partial(
+            moderator_story,
+            story_context_window=story_context_window,
+            story_token_budget=story_token_budget,
+        ),
+    )
 
     builder.add_edge(START, "collect_name")
     builder.add_edge("collect_name", "generate_roster")
@@ -465,6 +491,8 @@ def build_graph(
         max_days=config.max_days,
         context_window=config.context_window,
         context_token_budget=config.context_token_budget,
+        story_context_window=config.story_context_window,
+        story_token_budget=config.story_token_budget,
         private_thoughts_enabled=config.private_thoughts_enabled,
         night_roster_shuffle_enabled=config.night_roster_shuffle_enabled,
         private_diaries_enabled=config.private_diaries_enabled,

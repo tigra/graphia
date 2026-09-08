@@ -172,13 +172,37 @@ def warn_if_ollama_context_too_small(
     native request — but a per-request ``num_ctx`` only **asks**: a model whose
     own declared context is smaller cannot serve more than it declares. So this
     check keeps reading the large model's declared context (``/api/show``) and
-    logging a warning when it is below ``config.context_token_budget``; what
-    changed is only the remedy it names. The fix is a larger-context model or a
-    smaller ``GRAPHIA_CONTEXT_WINDOW`` — **not** the server-side env var, which
-    would send an operator off configuring something the game no longer reads.
-    It NEVER raises — the token-budget cap already guarantees the prompt can't
-    overflow, so a too-small context is a "fuller window not delivered"
-    condition, not a truncated-instructions one.
+    logging a warning when it is below the largest configured prompt budget;
+    what changed is only the remedy it names. The fix is a larger-context model
+    or a smaller budget — **not** the server-side env var, which would send an
+    operator off configuring something the game no longer reads.
+
+    **TWO BUDGETS, AND THE LARGER IS THE ONE THAT MATTERS (spec 040 Task 3.5).**
+    This check compared against ``config.context_token_budget`` alone while that
+    was the only prompt budget in the game. Spec 040 added a second —
+    ``config.story_token_budget``, the closing story's joint private+public
+    ceiling — and made it an operator knob, so ``GRAPHIA_STORY_TOKEN_BUDGET``
+    can now be set ABOVE ``GRAPHIA_CONTEXT_TOKEN_BUDGET``. That is the whole
+    reason this check was extended rather than left alone: at the shipped
+    defaults the story's 12000 sits comfortably below the Day's 20000, so the
+    story prompt was covered **by luck** — by an invariant nothing enforced —
+    and the moment an operator raised it the largest prompt in the system became
+    the one prompt with no preflight. It now compares against the MAXIMUM of the
+    two and names which budget is the binding one, because a warning that quotes
+    the Day's number while the story's is what overflows sends the operator to
+    the wrong knob. At the defaults the maximum is still the Day's, so the
+    default-path output is unchanged.
+
+    It NEVER raises. What a too-small context means depends on which budget
+    binds: for the Day it is a "fuller window not delivered" condition (the
+    oldest history is trimmed and the role/instructions are assembled outside
+    the trimmed string), and for the story it is "less public history reaches
+    the Moderator". Neither is a truncated-instructions one. Note the honest
+    limit on the *cap's* own guarantee, which reads stronger than it is: the
+    trim bounds the rendered material at the configured budget, so it prevents
+    overflow only while that budget fits the model — an operator who raises
+    either budget past what the model declares is exactly the case this warning
+    exists to catch, not a case the cap silently handles.
 
     No-op for Bedrock / remote (whose context far exceeds the window) and a
     silent no-op when the signal can't be read.
@@ -192,20 +216,43 @@ def warn_if_ollama_context_too_small(
     if context_length is None:
         # Couldn't read the signal — stay quiet rather than cry wolf.
         return
-    if context_length < config.context_token_budget:
+    # WHICH BUDGET BINDS (see the docstring). Strictly greater, so a tie keeps
+    # the Day's wording — the Day prompt is the one that runs every round, and
+    # at the shipped defaults (20000 vs 12000) this branch is not taken at all,
+    # which is what makes the extension a no-op on the default path.
+    if config.story_token_budget > config.context_token_budget:
+        budget = config.story_token_budget
+        budget_label = (
+            "closing-story prompt budget of %d (GRAPHIA_STORY_TOKEN_BUDGET)"
+        )
+        consequence = (
+            "so less of the game's public history reaches the Moderator's "
+            "closing story (the oldest history is trimmed to fit)"
+        )
+        remedy = "lower GRAPHIA_STORY_TOKEN_BUDGET"
+    else:
+        budget = config.context_token_budget
+        budget_label = (
+            "discussion-window budget of %d (GRAPHIA_CONTEXT_TOKEN_BUDGET)"
+        )
+        consequence = (
+            "so the fuller multi-day window may not be fully delivered (the "
+            "oldest history is trimmed to fit)"
+        )
+        remedy = "lower GRAPHIA_CONTEXT_WINDOW"
+    if context_length < budget:
         logger.warning(
             "Ollama large model %r declares a context length of %d tokens, "
-            "below the configured discussion-window budget of %d. Graphia asks "
+            "below the configured " + budget_label + ". Graphia asks "
             "for %d tokens on every request (GRAPHIA_OLLAMA_NUM_CTX), but a "
-            "model cannot serve more context than it declares, so the fuller "
-            "multi-day window may not be fully delivered (the oldest history is "
-            "trimmed to fit). Exporting OLLAMA_CONTEXT_LENGTH before "
+            "model cannot serve more context than it declares, " + consequence
+            + ". Exporting OLLAMA_CONTEXT_LENGTH before "
             "`ollama serve` will NOT fix this — the context is sent per request "
-            "now. Use a larger-context model, or lower GRAPHIA_CONTEXT_WINDOW "
-            "to fit this one.",
+            "now. Use a larger-context model, or " + remedy + " to fit this "
+            "one.",
             config.ollama_large_model,
             context_length,
-            config.context_token_budget,
+            budget,
             config.ollama_num_ctx,
         )
 

@@ -44,6 +44,8 @@ def build_runtime_graph(
     max_days: int = 12,
     context_window: int = 150,
     context_token_budget: int = 20000,
+    story_context_window: int = 400,
+    story_token_budget: int = 12000,
     private_thoughts_enabled: bool = True,
     night_roster_shuffle_enabled: bool = True,
     private_diaries_enabled: bool = True,
@@ -102,6 +104,26 @@ def build_runtime_graph(
     builders must thread them. Default to ``150`` / ``20000`` (matching the
     config defaults).
 
+    ``story_context_window`` / ``story_token_budget`` (spec 040 §2.2) are
+    threaded the same way — the production entrypoint passes
+    ``load_config().story_context_window`` /
+    ``load_config().story_token_budget`` — so the deployed Runtime assembles the
+    Moderator's closing story from the same amount of material as local mode.
+    Same anti-drift requirement: both builders must thread them, and a
+    ``build_runtime_graph`` that dropped them would silently run the story on
+    this signature's defaults rather than the operator's setting. Default to
+    ``400`` / ``12000`` (matching the config defaults).
+
+    **These are the ONLY spec-040 parameters, deliberately.** §2.12 records that
+    the closing story ships with no ``GRAPHIA_*`` feature flag — it is post-game,
+    changes no decision and no metric — so there is no story flag to thread
+    here. The pair below is a provider-capability knob (Ollama's context, not
+    cost, is the binding constraint), not an ablation arm. Note also that the
+    two are NOT independent: ``story_context_window`` is the outer bound
+    (``_render_context`` slices by count before it applies the token trim), so
+    ``story_token_budget`` can only cut further and raising it above what that
+    many messages render has no effect at all.
+
     ``private_thoughts_enabled`` (spec 028, ADR 011) is threaded the same way —
     the production entrypoint passes ``load_config().private_thoughts_enabled`` —
     so the deployed Runtime runs the ``day_round_reflect`` node and injects each
@@ -155,6 +177,8 @@ def build_runtime_graph(
         max_days=max_days,
         context_window=context_window,
         context_token_budget=context_token_budget,
+        story_context_window=story_context_window,
+        story_token_budget=story_token_budget,
         private_thoughts_enabled=private_thoughts_enabled,
         night_roster_shuffle_enabled=night_roster_shuffle_enabled,
         private_diaries_enabled=private_diaries_enabled,

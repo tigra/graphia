@@ -37,6 +37,8 @@ from graphia.config import (
     _DEFAULT_MAX_DAYS,
     _DEFAULT_NUM_CITIZENS,
     _DEFAULT_NUM_MAFIA,
+    _DEFAULT_STORY_CONTEXT_WINDOW,
+    _DEFAULT_STORY_TOKEN_BUDGET,
     _MAX_TABLE_SIZE,
     load_config,
 )
@@ -51,6 +53,12 @@ _LINEUP_ENV_VARS = (
     "GRAPHIA_MAX_DAYS",
     "GRAPHIA_CONTEXT_WINDOW",
     "GRAPHIA_CONTEXT_TOKEN_BUDGET",
+    # Spec 040 (The Moderator's Closing Story) §2.2: the endgame's own two size
+    # governors, wiped for the same reason as the Day pair — a developer's
+    # ``.env`` setting either of them would otherwise make the default
+    # assertions below read that value instead of the shipped constant.
+    "GRAPHIA_STORY_CONTEXT_WINDOW",
+    "GRAPHIA_STORY_TOKEN_BUDGET",
     "GRAPHIA_LLM_PROVIDER",
     "GRAPHIA_REMOTE",
     "GRAPHIA_RUNTIME_URL",
@@ -397,3 +405,170 @@ def test_context_token_budget_below_one_rejected(
     message = str(exc_info.value)
     assert "GRAPHIA_CONTEXT_TOKEN_BUDGET" in message
     assert "at least 1" in message
+
+
+# ---------------------------------------------------------------------------
+# 7. The closing story's two size governors (spec 040 §2.2, Task 3.5) —
+#    GRAPHIA_STORY_CONTEXT_WINDOW / GRAPHIA_STORY_TOKEN_BUDGET
+#
+# Placed here rather than in a spec-040 file because this module is where the
+# `_parse_count` + bounds-check config surface lives (sections 5 and 6 above are
+# spec 025's pair, in a file named for spec 014) — the same split spec 025 itself
+# used, with the THREADING through the two graph builders and the
+# environment-to-prompt chain in `tests/test_spec040_story_governors.py`.
+#
+# WHAT THESE CANNOT SEE, stated so nobody reads them as proof of anything more:
+# a default-value assertion is vacuous on its own — it would pass against a
+# field that no graph builder ever reads. That the value reaches
+# `nodes.day:_render_context` is proved in the companion file, not here.
+# ---------------------------------------------------------------------------
+
+
+def test_story_governors_default_when_unset() -> None:
+    """Nothing set → the two shipped defaults.
+
+    THIS ASSERTION IS THE ONE PLACE THE SHIPPED VALUES ARE WRITTEN DOWN
+    (spec 042 §2.4's convention, and the reason sections 5/6 above name their
+    constants rather than spelling the numbers): every other test in the suite
+    asserts a RELATION against the imported constants, so re-tuning either
+    number is a one-line change here.
+    """
+    cfg = load_config()
+
+    assert cfg.story_context_window == _DEFAULT_STORY_CONTEXT_WINDOW == 400
+    assert cfg.story_token_budget == _DEFAULT_STORY_TOKEN_BUDGET == 12000
+
+
+def test_story_governors_are_not_the_days(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The story does NOT inherit the Day's pair, and the direction differs.
+
+    §2.2 is explicit on both halves and they point opposite ways, which is why
+    a single "the story's numbers differ" assertion would not do: the WINDOW is
+    larger (150 expresses "the recent discussion", and a retrospective often
+    needs Day 1, which a recency window drops first) while the BUDGET is smaller
+    (the story's figure bounds the private block AND the public history
+    together, so the same model context must hold strictly more kinds of
+    material at the ending than during a Day). Setting the Day's pair here as
+    well proves the two are read from independent env vars rather than one
+    feeding the other.
+    """
+    monkeypatch.setenv("GRAPHIA_CONTEXT_WINDOW", "150")
+    monkeypatch.setenv("GRAPHIA_CONTEXT_TOKEN_BUDGET", "20000")
+
+    cfg = load_config()
+
+    assert cfg.story_context_window > cfg.context_window
+    assert cfg.story_token_budget < cfg.context_token_budget
+
+
+def test_story_context_window_env_override_parses_through(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``GRAPHIA_STORY_CONTEXT_WINDOW`` overrides the default."""
+    monkeypatch.setenv("GRAPHIA_STORY_CONTEXT_WINDOW", "60")
+
+    assert load_config().story_context_window == 60
+
+
+def test_story_context_window_empty_string_falls_back_to_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Empty / blank is treated as unset (``_parse_count``'s contract)."""
+    monkeypatch.setenv("GRAPHIA_STORY_CONTEXT_WINDOW", "   ")
+
+    assert load_config().story_context_window == _DEFAULT_STORY_CONTEXT_WINDOW
+
+
+def test_story_context_window_below_one_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A non-positive window would show the story no public history at all."""
+    monkeypatch.setenv("GRAPHIA_STORY_CONTEXT_WINDOW", "0")
+
+    with pytest.raises(SystemExit) as exc_info:
+        load_config()
+
+    message = str(exc_info.value)
+    assert "GRAPHIA_STORY_CONTEXT_WINDOW" in message
+    assert "at least 1" in message
+
+
+def test_story_context_window_non_numeric_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A non-integer is a ``SystemExit`` from ``_parse_count``, var named."""
+    monkeypatch.setenv("GRAPHIA_STORY_CONTEXT_WINDOW", "lots")
+
+    with pytest.raises(SystemExit) as exc_info:
+        load_config()
+
+    message = str(exc_info.value)
+    assert "GRAPHIA_STORY_CONTEXT_WINDOW" in message
+    assert "whole number" in message
+
+
+def test_story_token_budget_env_override_parses_through(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The knob an operator on an 8k local model lowers (§2.2)."""
+    monkeypatch.setenv("GRAPHIA_STORY_TOKEN_BUDGET", "5000")
+
+    assert load_config().story_token_budget == 5000
+
+
+def test_story_token_budget_empty_string_falls_back_to_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Empty / blank is treated as unset (``_parse_count``'s contract)."""
+    monkeypatch.setenv("GRAPHIA_STORY_TOKEN_BUDGET", "\t")
+
+    assert load_config().story_token_budget == _DEFAULT_STORY_TOKEN_BUDGET
+
+
+def test_story_token_budget_below_one_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A non-positive JOINT budget leaves nothing for either block — rejected."""
+    monkeypatch.setenv("GRAPHIA_STORY_TOKEN_BUDGET", "0")
+
+    with pytest.raises(SystemExit) as exc_info:
+        load_config()
+
+    message = str(exc_info.value)
+    assert "GRAPHIA_STORY_TOKEN_BUDGET" in message
+    assert "at least 1" in message
+
+
+def test_story_token_budget_non_numeric_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A non-integer is a ``SystemExit`` from ``_parse_count``, var named."""
+    monkeypatch.setenv("GRAPHIA_STORY_TOKEN_BUDGET", "12k")
+
+    with pytest.raises(SystemExit) as exc_info:
+        load_config()
+
+    message = str(exc_info.value)
+    assert "GRAPHIA_STORY_TOKEN_BUDGET" in message
+    assert "whole number" in message
+
+
+def test_story_governor_bounds_are_independent_of_the_days(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Each guard names its OWN variable — the four are not one shared check.
+
+    A single shared bounds check that happened to run first would let a broken
+    story value be reported as a Day one (or, worse, pass), so this asserts the
+    story guards fire while the Day pair is set to perfectly valid values.
+    """
+    monkeypatch.setenv("GRAPHIA_CONTEXT_WINDOW", "150")
+    monkeypatch.setenv("GRAPHIA_CONTEXT_TOKEN_BUDGET", "20000")
+    monkeypatch.setenv("GRAPHIA_STORY_TOKEN_BUDGET", "-1")
+
+    with pytest.raises(SystemExit) as exc_info:
+        load_config()
+
+    message = str(exc_info.value)
+    assert "GRAPHIA_STORY_TOKEN_BUDGET" in message
+    assert "GRAPHIA_CONTEXT_TOKEN_BUDGET" not in message

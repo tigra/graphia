@@ -158,6 +158,93 @@ _DEFAULT_CONTEXT_WINDOW = 150
 # assumed context.
 _DEFAULT_CONTEXT_TOKEN_BUDGET = 20000
 
+# ===========================================================================
+# The endgame's two size governors (spec 040 — The Moderator's Closing Story,
+# §2.2 / §2.12). They govern ONE prompt, ``nodes/endgame:_ai_story``'s, and
+# they are deliberately NOT the Day's pair above.
+#
+# WHY THEY ARE CONFIG AT ALL, given spec 040 ships no ``GRAPHIA_*`` feature
+# flag: they are PROVIDER-CAPABILITY knobs, not an ablation arm (§2.12, which
+# spells out that the story itself has no flag, no ``_assemble_graph`` flag
+# parameter, no header arm part and no ledger arm to label). Ollama — not cost
+# — is the binding constraint: at a large table over five Days the public
+# history alone is 15k-45k tokens against typical locally-served context of
+# 8k-32k, so an ungoverned story prompt fails EVERY game there. An operator on
+# an 8k model must be able to lower the budget, and that is the whole reason
+# these two are settable rather than module constants.
+#
+# THE TWO ARE NOT INDEPENDENT, and this is the thing to know before touching
+# either (measured against ``nodes.day:_render_context``, spec 040 Task 3.3):
+# that function slices by COUNT first (``recent = visible[-window:]``) and
+# applies the token trim to the ALREADY-SLICED lines afterwards. So the window
+# is the OUTER bound and the budget can only ever cut FURTHER. Two consequences
+# neither number can express on its own:
+#
+#   * Raising ``GRAPHIA_STORY_TOKEN_BUDGET`` above what
+#     ``GRAPHIA_STORY_CONTEXT_WINDOW`` messages actually render has NO EFFECT
+#     AT ALL — the count slice has already thrown the rest away.
+#   * Fitting a smaller model works only through the BUDGET. Lowering the
+#     window bounds the message COUNT, never the tokens per message, so a game
+#     of 400 unusually long messages is not made to fit by lowering the count
+#     unless the count goes low enough to lose material the story needs.
+# ===========================================================================
+
+# Message-count window for the closing story's public-history slot (spec 040
+# §2.2). DELIBERATELY NOT ``_DEFAULT_CONTEXT_WINDOW`` (150): that number
+# expresses "the recent discussion", which is the right frame for an AI player
+# deciding what to say next, and the WRONG frame for a retrospective — a story
+# often wants Day 1, which is exactly what a recency window drops first. So the
+# story gets its own, larger count. 400 covers the longest game measured to
+# date (~500 rendered lines at the default lineup, so it is not binding there)
+# while still bounding a pathological large-table/12-Day run. It is a MESSAGE
+# count, so like the Day's it spans fewer Days as the table grows.
+_DEFAULT_STORY_CONTEXT_WINDOW = 400
+
+# JOINT token budget for the closing story's private block AND its public
+# history (spec 040 §2.2). **JOINT IS THE OPERATOR-FACING MEANING, and §2.2
+# admits of a second reading that this comment settles** (measured, spec 040
+# Task 3.3): the section's instruction says to pass
+# ``story_token_budget − private_tokens`` as the public history's budget, which
+# makes the figure joint, while the paragraph that justifies its SIZE reasons
+# from the public history's own 15k-45k sizing, which reads public-only. The
+# two differ materially — with a 4000-token private record they give an 8000-
+# or a 12000-token public history.
+#
+# **JOINT, and not merely because the code already does it.** Under the
+# public-only reading this knob would guarantee nothing: the private block is
+# never windowed and never trimmed (that structural protection is the point of
+# the assembly order — the story "earns its place from the private material"),
+# so a public-only 12000 plus an unbounded private block has no ceiling at all,
+# and the one hazard the knob exists for — an Ollama prompt that overflows the
+# model's context — stays wide open. Joint is the only reading under which the
+# number is a real ceiling.
+#
+# WHAT AN OPERATOR SHOULD THEREFORE PREDICT, stated as arithmetic because the
+# subtraction is invisible from the knob's name: the public history receives
+# ``GRAPHIA_STORY_TOKEN_BUDGET`` MINUS the measured size of the private block,
+# floored at zero. Set 12000 on a diary-heavy game whose private record
+# measures 4000 tokens and the public history gets 8000 — the private material
+# is not cut to make room for it. When the private block alone exceeds the
+# whole budget, the public history keeps exactly its newest line
+# (``_render_context``'s own ``len(lines) > 1`` guard) and the private material
+# still arrives whole.
+#
+# WHY 12000 IS LOWER THAN THE DAY'S 20000 — it is deliberate, not an oversight
+# to be raised to match. ``_DEFAULT_CONTEXT_TOKEN_BUDGET`` above is derived as
+# ``(32768 - ~2500) * 0.75`` for ONE block, the discussion history, with
+# everything else in the Day prompt (role, objective, persona, standings,
+# guidance) assembled outside it. Here the figure bounds TWO kinds of material
+# together, and the outcome sentence, the roster and the events block then sit
+# outside it as the Day's role/objective block does. So the same 32768 has to
+# hold strictly more kinds of material at the ending than during a Day, and the
+# lower ceiling is the headroom for that.
+#
+# NOT BUDGETED, and correctly so: the outcome sentence, the roster and the
+# events block are O(table size) and O(deaths) — a handful of lines each,
+# bounded by the game's own shape. Should a future table make the roster large
+# enough to matter, it is the roster that needs a bound, not this figure.
+_DEFAULT_STORY_TOKEN_BUDGET = 12000
+
 
 @dataclass(slots=True, frozen=True)
 class GraphiaConfig:
@@ -263,6 +350,34 @@ class GraphiaConfig:
     # different assumed context. Defaulted so tests constructing the config
     # directly stay valid.
     context_token_budget: int = _DEFAULT_CONTEXT_TOKEN_BUDGET
+    # Message-count window for the closing story's public-history slot (spec
+    # 040 §2.2). NOT ``context_window`` (150) — a retrospective often needs Day
+    # 1, which a recency window drops first; see
+    # ``_DEFAULT_STORY_CONTEXT_WINDOW`` for the sizing. **It is the OUTER of
+    # the two story governors:** ``_render_context`` slices by count and only
+    # then applies the token trim, so ``story_token_budget`` can only cut
+    # further, and raising that budget above what this many messages render has
+    # no effect at all. Lowering THIS bounds the message count, never the
+    # tokens per message — fitting a smaller model is the budget's job, not
+    # this one's. Settable via ``GRAPHIA_STORY_CONTEXT_WINDOW``; a
+    # provider-capability knob, not an ablation arm (§2.12). Defaulted so tests
+    # constructing the config directly stay valid.
+    story_context_window: int = _DEFAULT_STORY_CONTEXT_WINDOW
+    # JOINT token budget for the closing story's private block AND its public
+    # history (spec 040 §2.2) — the private material is measured first and the
+    # public history receives **this figure MINUS that measurement**, floored
+    # at zero. So an operator who sets 12000 on a game whose private record
+    # measures 4000 tokens gets an 8000-token public history: the subtraction
+    # is real and the private material is never cut to make room for the
+    # public. Joint rather than public-only because the private block is
+    # unwindowed and untrimmed, so a public-only reading would put no ceiling
+    # on the prompt at all — the full argument, and why 12000 is deliberately
+    # LOWER than the Day's 20000, is at ``_DEFAULT_STORY_TOKEN_BUDGET``. This
+    # is the governor an operator on an 8k local model lowers. Settable via
+    # ``GRAPHIA_STORY_TOKEN_BUDGET``; a provider-capability knob, not an
+    # ablation arm (§2.12). Defaulted so tests constructing the config directly
+    # stay valid.
+    story_token_budget: int = _DEFAULT_STORY_TOKEN_BUDGET
     # Active scripted player for measured runs (spec 026, ADR 011). The eval
     # harness's human-seat stand-in: ON by default (the active deterministic
     # rule-based policy that lets a correct town majority form); an explicit
@@ -602,6 +717,27 @@ def load_config() -> GraphiaConfig:
             "GRAPHIA_CONTEXT_TOKEN_BUDGET must be at least 1 "
             f"(got {context_token_budget})."
         )
+    # The closing story's own two governors (spec 040 §2.2). Parsed and bounded
+    # exactly like the Day pair above — the reasons a non-positive value is
+    # nonsensical are the same ones, and are worth restating per-knob rather
+    # than shared because the two governors are not independent (the window is
+    # the outer bound; see the constants).
+    story_context_window = _parse_count(
+        "GRAPHIA_STORY_CONTEXT_WINDOW", _DEFAULT_STORY_CONTEXT_WINDOW
+    )
+    if story_context_window < 1:
+        raise SystemExit(
+            "GRAPHIA_STORY_CONTEXT_WINDOW must be at least 1 "
+            f"(got {story_context_window})."
+        )
+    story_token_budget = _parse_count(
+        "GRAPHIA_STORY_TOKEN_BUDGET", _DEFAULT_STORY_TOKEN_BUDGET
+    )
+    if story_token_budget < 1:
+        raise SystemExit(
+            "GRAPHIA_STORY_TOKEN_BUDGET must be at least 1 "
+            f"(got {story_token_budget})."
+        )
 
     if num_mafia < 1:
         raise SystemExit(
@@ -658,6 +794,8 @@ def load_config() -> GraphiaConfig:
         role_guidance_enabled=role_guidance_enabled,
         context_window=context_window,
         context_token_budget=context_token_budget,
+        story_context_window=story_context_window,
+        story_token_budget=story_token_budget,
         scripted_player_active=scripted_player_active,
         private_thoughts_enabled=private_thoughts_enabled,
         night_roster_shuffle_enabled=night_roster_shuffle_enabled,

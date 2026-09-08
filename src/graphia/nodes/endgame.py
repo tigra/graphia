@@ -37,6 +37,21 @@ from graphia.career_events import (
     CareerEvent,
     CareerEventEmitter,
 )
+# The story's two size governors (spec 040 §2.2, Task 3.5). Imported as the
+# keyword DEFAULTS for :func:`moderator_story` / :func:`_ai_story` so the
+# numbers live in exactly one place — ``graphia.config`` — and a direct call
+# from a test or a probe renders the same prompt the graph does. The LIVE values
+# come from ``GraphiaConfig`` through both graph builders' ``partial`` binds;
+# these defaults exist only so a direct call is well-defined, which is why they
+# are the config defaults rather than some pre-spec baseline (unlike
+# ``nodes.day:_render_context``'s ``window=_CONTEXT_WINDOW``, whose 30 is a
+# deliberate pre-025 ablation baseline — the story has no pre-spec behaviour to
+# reproduce). ``graphia.config`` imports nothing from ``graphia``, so this is
+# not a cycle; ``nodes/setup.py`` already imports from it.
+from graphia.config import (
+    _DEFAULT_STORY_CONTEXT_WINDOW,
+    _DEFAULT_STORY_TOKEN_BUDGET,
+)
 # Spec 040 Task 1.2 — THE PATCH TARGET, landed one task ahead of its consumer.
 #
 # **The consumer has since landed (Task 1.4): ``_ai_story`` below is what calls
@@ -79,7 +94,9 @@ from graphia.llm import Story, get_large
 # (labels, the whisper filter, the oldest-first trim) cannot drift from what
 # every other prompt in the game shows. §2.2 names both by their ``nodes.day``
 # path for exactly that reason. What the story does NOT inherit is the Day's
-# ``context_window`` value; see ``STORY_CONTEXT_WINDOW``.
+# ``context_window`` / ``context_token_budget`` VALUES; the story's own pair is
+# imported from ``graphia.config`` below and bound per-node by both graph
+# builders.
 from graphia.nodes.day import (
     DIARY_DAY_UNKNOWN,
     PRIVATE_RECORD_KIND_DIARY,
@@ -328,46 +345,6 @@ def end_screen(
 # Slice 5 adds the paragraph-preserving clamp and its truncation flag.
 # ---------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# The two endgame size governors — PROVISIONAL, and Task 3.5 is what makes them
-# config (spec 040 §2.2 / tasks.md Task 3.5).
-#
-# WHY THEY ARE CONSTANTS FOR ONE TASK RATHER THAN CONFIG NOW. Task 3.3 needs a
-# budget to subtract the private block from; Task 3.5 owns turning both numbers
-# into ``GraphiaConfig`` fields threaded through BOTH graph builders on spec
-# 025's ``context_token_budget`` precedent (its env parsing, its bounds checks,
-# the ``partial`` binds in ``build_graph`` AND ``build_runtime_graph``, and the
-# recorded trade-off). Landing the consumer one task ahead of the provider is
-# the same ordering this module already used for its ``get_large`` import, and
-# for the same reason: the value is needed where it is consumed before the
-# plumbing that supplies it exists, and a hard-coded number with no note is how
-# a "temporary" default becomes permanent. **Task 3.5 should replace these two
-# reads with bound keyword arguments and delete this block, not keep both.**
-#
-# WHY NOT THE DAY'S ``context_window`` (150) — §2.2, and it is deliberate: that
-# number expresses "the recent discussion", and a retrospective often needs Day
-# 1. The story gets its own, larger window.
-#
-# The ~12000-token budget is a PROVIDER-CAPABILITY knob, not an ablation arm
-# (§2.12): Ollama is the binding constraint rather than cost, because at a large
-# table over five Days the public history alone is 15k-45k tokens against
-# typical locally-served context of 8k-32k, so an ungoverned prompt fails EVERY
-# game there. An operator on an 8k model must be able to lower it, which is
-# exactly why Task 3.5 exists.
-#
-# WHAT THE BUDGET COVERS, and it is why 12000 is LOWER than the Day's 20000
-# rather than an oversight to be raised to match. ``config``'s Day figure is
-# derived as ``(32768 - ~2500) * 0.75`` for ONE block — the discussion history —
-# with everything else assembled outside it. Here the number bounds the private
-# block AND the public history TOGETHER, because the public history's own budget
-# is this figure MINUS the measured private block; the outcome sentence, the
-# roster and the events then sit outside it, as the Day's role/objective block
-# does. So the same 32k context has to hold strictly more kinds of material at
-# the ending than during a Day, and the lower ceiling is the headroom for that.
-STORY_CONTEXT_WINDOW = 400
-STORY_TOKEN_BUDGET = 12000
-# ---------------------------------------------------------------------------
-
 # The human seat's marker, and it is the deliverable of Task 3.3 rather than a
 # flourish: Slice 1's roster emitted name / role / alive-or-dead only, and a
 # live run (Task 2.3) had the story narrate the reader in the third person as
@@ -511,7 +488,9 @@ def _story_events_block(
 #
 # ``_ai_story`` NOW CALLS THIS (Task 3.3), and the assembly ORDER there is
 # load-bearing: this block is rendered FIRST and measured, and the public
-# history gets what is left of ``STORY_TOKEN_BUDGET``. The tense here is
+# history gets what is left of ``story_token_budget`` (Task 3.5 turned that
+# provisional module constant into a config-threaded argument, so the name is
+# now a parameter of ``_ai_story`` rather than a module global). The tense is
 # corrected rather than deleted because the boundary explains the shape: for
 # one task this renderer existed with nothing calling it, on purpose, so it
 # could be proven as a pure function before any prompt depended on it.
@@ -776,7 +755,12 @@ def _story_private_block(
     return "\n\n".join([STORY_PRIVATE_LEGEND, *sections])
 
 
-def _ai_story(state: GameState) -> str | None:
+def _ai_story(
+    state: GameState,
+    *,
+    story_context_window: int = _DEFAULT_STORY_CONTEXT_WINDOW,
+    story_token_budget: int = _DEFAULT_STORY_TOKEN_BUDGET,
+) -> str | None:
     """Ask the large tier for the closing story; ``None`` when there is none.
 
     THE ASSEMBLY ORDER IS LOAD-BEARING, AND IT IS THE POINT OF TASK 3.3
@@ -784,7 +768,7 @@ def _ai_story(state: GameState) -> str | None:
 
     The private block is rendered FIRST and measured with
     :func:`~graphia.nodes.day._estimate_tokens`; the public history is then
-    rendered with ``STORY_TOKEN_BUDGET - private_tokens`` as ITS budget. So the
+    rendered with ``story_token_budget - private_tokens`` as ITS budget. So the
     private material is structurally protected and the public history is what
     gets cut — which is the spec's own rationale (§2.2): the story "earns its
     place from the private material". **Reversing this starves the thing the
@@ -804,6 +788,30 @@ def _ai_story(state: GameState) -> str | None:
     bounded by the game's own shape — so §2.2 budgets neither, and neither does
     this. Should a future table make the roster large enough to matter, it is
     the roster that would need a bound, not this ordering.
+
+    THE TWO GOVERNORS ARE ARGUMENTS, NOT MODULE CONSTANTS (Task 3.5), and they
+    come from ``GraphiaConfig.story_context_window`` /
+    ``GraphiaConfig.story_token_budget`` through both graph builders'
+    ``partial`` binds. They replaced a pair of provisional module constants
+    read at call time; the numbers, their sizing arithmetic and the argument
+    for the joint reading now live at ``config._DEFAULT_STORY_CONTEXT_WINDOW``
+    / ``config._DEFAULT_STORY_TOKEN_BUDGET``, which is where an operator
+    setting ``GRAPHIA_STORY_*`` will look. Three things worth carrying here:
+
+    - **``story_token_budget`` IS JOINT** — it bounds the private block and the
+      public history TOGETHER, which is why the subtraction below is a
+      subtraction and not a second budget. §2.2 can be read either way; the
+      config comment records why joint is the only reading under which the
+      knob is a real ceiling (the private block is never windowed and never
+      trimmed, so a public-only reading bounds nothing).
+    - **The two are NOT independent.** ``_render_context`` slices by count
+      first and applies the token trim afterwards, so ``story_context_window``
+      is the outer bound and ``story_token_budget`` can only cut further.
+      Raising the budget above what that many messages render does nothing at
+      all, and fitting a smaller model is the *budget's* job — lowering the
+      window bounds the message count, never the tokens per message.
+    - Not the Day's ``context_window`` (150), deliberately (§2.2): that number
+      expresses "the recent discussion", and a retrospective often needs Day 1.
 
     **``speaker_id=""`` IS A PRIVACY REQUIREMENT, NOT A CONVENIENCE** (§2.2,
     Task 3.4 owns the assertion). ``_render_context``'s filter is ``if
@@ -883,13 +891,13 @@ def _ai_story(state: GameState) -> str | None:
         # guard then keeps exactly the newest line, which is strictly better
         # than an empty history. The private material is NOT trimmed to fit —
         # that is the protection this ordering exists to give it.
-        context_budget = max(0, STORY_TOKEN_BUDGET - private_tokens)
+        context_budget = max(0, story_token_budget - private_tokens)
         context = _render_context(
             state.get("messages", []),
             # An id matching NO player: every whisper is dropped. A privacy
             # requirement — see the docstring.
             "",
-            window=STORY_CONTEXT_WINDOW,
+            window=story_context_window,
             token_budget=context_budget,
         )
         llm = get_large().with_structured_output(Story)
@@ -1009,10 +1017,26 @@ def _ai_story(state: GameState) -> str | None:
         return None
 
 
-def moderator_story(state: GameState) -> dict:
+def moderator_story(
+    state: GameState,
+    *,
+    story_context_window: int = _DEFAULT_STORY_CONTEXT_WINDOW,
+    story_token_budget: int = _DEFAULT_STORY_TOKEN_BUDGET,
+) -> dict:
     """Tell the Moderator's closing story, or say nothing at all.
 
     Returns ``{"messages": [story_msg]}`` or ``{}``, and **never raises**.
+
+    THE TWO SIZE GOVERNORS ARE BOUND HERE, NOT READ (spec 040 Task 3.5). Both
+    graph builders bind ``GraphiaConfig.story_context_window`` /
+    ``GraphiaConfig.story_token_budget`` into this node with ``partial``, the
+    same service-injection shape ``day_turn`` / ``day_diary`` use for the Day
+    pair, and this node's only job with them is to forward them to
+    :func:`_ai_story` — which is where the argument for the joint budget and
+    the count-then-tokens dependency between the two is written down. The
+    keyword defaults are the config defaults so the direct-call tests (and the
+    unbound registration a future refactor might leave behind) render the same
+    prompt the graph does.
 
     IT DOES NOT RETURN ``phase``. ``end_screen`` set it one super-step ago;
     returning it again would re-assert a value this node has no opinion about.
@@ -1076,7 +1100,11 @@ def moderator_story(state: GameState) -> dict:
     both layers.
     """
     try:
-        text = _ai_story(state)
+        text = _ai_story(
+            state,
+            story_context_window=story_context_window,
+            story_token_budget=story_token_budget,
+        )
         if text is None:
             # The OTHER place a placeholder would be injected (``text =
             # _STORY_FALLBACK`` here, instead of in the helper). It must not
