@@ -7,6 +7,24 @@ that there is deliberately no automated grounding check, so the instruction is
 the whole of this feature's guarantee. Until this file existed, none of it was
 under test.
 
+**AND NOTHING HERE IS A GROUNDING PROOF — read this before citing a green run
+as evidence about story quality (recorded by Task 4.4, 2026-09-08, which owns
+§2.7's re-check).** Every assertion in this file, in
+``test_spec040_story_whisper_privacy.py`` and in
+``test_spec040_story_material_from_a_game.py`` is a property of the **request**:
+what the instruction says, what may not enter the prompt, what does. Not one of
+them observes a story. So a green suite means *the request was composed as
+designed* and says nothing whatever about whether what came back is grounded —
+and because §2.7's own position is that the instruction is all there is, the
+temptation to read these tests as the guarantee is exactly the mistake to
+avoid. What the gap looks like when it is measured: §2.7 lists **four**
+fabrication categories that cannot be ruled out, the fourth of them — a phase or
+process the game never ran — observed in **4 of 4** live games, twice on this
+prompt. Two of those four categories are unreachable by any request-level test
+by construction (an embellishing adjective and an invented event are both
+well-formed output). CR 005's effort-not-results principle is what covers the
+remainder; a green suite is not a substitute for it.
+
 **THE GAP WAS MEASURED, NOT ARGUED.** Task 4.1 reduced ``STORY_SYSTEM`` to a
 stub — all seven moves deleted at once — and the suite stayed byte-for-byte at
 2674 passed / 1 skipped. Re-verified here before writing a line (see the

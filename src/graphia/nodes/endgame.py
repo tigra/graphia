@@ -557,6 +557,26 @@ STORY_PRIVATE_THOUGHT_MARKER = "[reflection]"
 # reasoning: a blank section invites a model to read an omission it should fill.
 # NOT a hypothetical case — a game won on the first Night ends before any
 # reflection or diary is written, so this is the real ending of a short game.
+#
+# MEASURED CONSEQUENCE, AND THE MITIGATION IS NOT SUFFICIENT ON ITS OWN
+# (Task 4.4, 2026-09-08 — the answer to the question Task 4.1 (v) routed to it).
+# The reasoning above is right about the mechanism and incomplete about the
+# remedy. Saying the emptiness IN WORDS does not close the void-fill, because
+# ``STORY_SYSTEM``'s move 2 has already told the model that the private writing
+# "is the substance of this story" — so on an empty record the INSTRUCTION names
+# an absent substance while the MATERIAL says it is absent, and the instruction
+# is the half a model weighs. Live evidence: a three-seat Ollama game that ended
+# at ``check_win_night`` with no Day played, zero AI spoken lines and this exact
+# constant in ``{private_record}`` produced a story narrating a whole speech
+# phase — "Imane sat across from Avery at the table. She spoke with her usual
+# earnest conviction…" — in a game that never opened one. That is Task 4.4's
+# fourth fabrication category (a phase or process the game never ran).
+#
+# DO NOT "FIX" THIS BY BLANKING THE SECTION — that is strictly worse and is what
+# the paragraph above already rules out. The fix is prompt-side: qualify move 2
+# for the empty case, so the instruction never names a substance the material
+# has just said does not exist. Recorded as named follow-up (ii) in tech spec
+# §2.7 for Slice 10 to log; it is prompt text, not this constant's business.
 STORY_PRIVATE_EMPTY = "• (nothing was written privately this game)"
 
 
@@ -943,6 +963,70 @@ def _ai_story(
         # admitted into the public-history slot — but NOT the same route, so
         # ``speaker_id=""`` does nothing about it: the facts message is
         # public, not a whisper. Task 4.4 should distinguish a third cause.
+        #
+        # -----------------------------------------------------------------
+        # DECIDED (Task 4.4, 2026-09-08): EXCLUDE IT. STILL NOT DONE HERE —
+        # it is a named follow-up for Slice 10 to log, because the change is
+        # to the assembly and this task's remit was to measure. The full
+        # seven-reason argument is in tech spec §2.7 ("THE DECISION TASK 4.2
+        # ASSIGNED TO TASK 4.4"); the two reasons that turn a redundancy
+        # into a FABRICATION ROUTE, and that were not known when the block
+        # above was written, are recorded here because this is the call site
+        # a maintainer reads:
+        #
+        # 1. THE SLOT BOUNDARY BREAKS. ``_render_context`` prefixes only a
+        #    message's FIRST line (see ``day.py``'s ``lines.append(
+        #    f"{speaker}: {content}")``), so the fact sheet's own
+        #    sub-headings — "Events this game:", "Full roster:", "Who they
+        #    really were:" — land FLUSH-LEFT inside this slot and are
+        #    typographically indistinguishable from
+        #    ``STORY_USER_TEMPLATE``'s own slot labels. Measured on a
+        #    composed prompt: EIGHT heading-like sections — five the
+        #    template's own labels and three the facts message's
+        #    sub-headings — and nothing marks which, because only the
+        #    message's FIRST line carries the "Moderator: " prefix that
+        #    would have shown the rest is quoted speech. So it is not "the
+        #    fact sheet twice"; it is the fact sheet once as slots and once
+        #    as three unlabelled pseudo-slots.
+        # 2. IT PRESENTS THE REVEAL AS SPEECH. ``_persona_reveal_line``'s
+        #    cover-vs-true-self text is the furthest thing in the prompt
+        #    from anything anyone said in play, and this slot labels it
+        #    "said out loud". Both live games that had no vote produced a
+        #    story containing the word "revealed" for an event that never
+        #    happened, which is Task 4.4's fourth fabrication category
+        #    (a phase or process the game never ran) arriving through the
+        #    MATERIAL. That is the third cause the block above asks for.
+        #
+        # SIZE, MEASURED RATHER THAN ARGUED, because "it is only one extra
+        # message" is the natural objection: the block is ONE ATOMIC entry
+        # that the trim cannot partially cut, and it was 48% of this slot's
+        # estimated tokens in a live four-seat game with a full Day of
+        # speech (1342 of ~2813), 74% in a short synthetic one, and 100% at
+        # ``token_budget=1``. The tighter the budget — i.e. the smaller the
+        # local model the budget exists to serve — the more this slot
+        # degenerates into nothing but the fact sheet.
+        #
+        # NOTHING IS LOST: every fact in the message already has its own
+        # slot from the SAME helper — ``_winner_line`` into ``{outcome}``,
+        # ``_format_kill_line`` into ``{events}``, and
+        # ``_story_roster_block`` into ``{roster}`` carrying side, fate, the
+        # ``(the person playing)`` marker and each persona through
+        # ``_persona_field``. Reason (a) above also survives: ``{outcome}``
+        # still states a runaway's negative in full, and Task 4.3's outcome
+        # tests assert PRESENCE, never a count, exactly so this decision
+        # cannot break them.
+        #
+        # THE SHAPE THE FIX SHOULD TAKE, so the next reader does not pick
+        # the worse of the two: mark the facts message the way
+        # ``CLOSING_STORY_KWARG`` marks the story message and filter
+        # ``state["messages"]`` HERE, before the call below. Do NOT teach
+        # ``_render_context`` a skip-kwarg — the Day path shares it. And
+        # prefixing every line of a multi-line message with its speaker was
+        # considered and rejected: it fixes 1 alone, leaves 2 and the sizing
+        # standing, and changes the Day path too.
+        # ``tests/test_spec040_story_instruction.py``'s
+        # ``test_the_facts_message_reaches_the_public_history_slot`` is the
+        # standing witness and goes RED ON PURPOSE when this lands.
         # =================================================================
         context = _render_context(
             state.get("messages", []),
