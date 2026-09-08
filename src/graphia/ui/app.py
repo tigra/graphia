@@ -26,6 +26,7 @@ from graphia.config import GraphiaConfig, load_config
 from graphia.driver import drive_graph
 from graphia.graph import build_graph, make_run_config
 from graphia.logging import StreamTraceLogger, setup_logger
+from graphia.state import CLOSING_STORY_KWARG
 from graphia.stats_store import (
     StatsStore,
     make_stats_store,
@@ -195,20 +196,99 @@ class GraphiaApp(App[None]):
                     self._write_private(msg)
 
     def _write_private(self, msg: BaseMessage) -> None:
+        """Write one private whisper to the whispers pane, as styled spans.
+
+        Spans rather than markup for the reasons argued at
+        :meth:`_write_public` — and the exposure here is the same in kind, not
+        a lesser one: this pane carries the human's role reveal and the Mafia
+        teammate intros, prose built by the same nodes and, for the personas
+        woven into them, by the same model.
+        """
         log = self.query_one("#private-log", RichLog)
         body = _content_to_text(msg.content)
-        log.write(Text.from_markup(f"[bold magenta]Moderator (private):[/] {body}"))
+        log.write(
+            Text.assemble(("Moderator (private): ", "bold magenta"), (body, ""))
+        )
 
     def _write_public(self, msg: BaseMessage) -> None:
+        """Write one graph message to the public pane, as STYLED SPANS.
+
+        **A message body is never handed to ``Text.from_markup``** (spec 040 —
+        The Moderator's Closing Story, Slice 2, fixing a fault that predates
+        it). Interpolating a body into a markup string hands Rich's tag parser
+        text nobody authored, and it does two different wrong things with it.
+        Both measured on the installed Rich, against this exact label:
+
+        - ``'he called it [gibberish] and moved on'`` renders as
+          ``'he called it  and moved on'`` — **silently deleted**: no error, no
+          trace, and the player never learns a word went missing. This is the
+          insidious half. It is also **case-sensitive** — Rich only treats a
+          bracket as a tag when its body opens with a lowercase letter, ``#``,
+          ``/`` or ``@`` — so ``[Gibberish]`` and ``[Sic]`` survive untouched
+          and a capitalised probe passes against unfixed code and proves
+          nothing.
+        - ``'a stray [/bold] close'`` and ``'a stray [/] close'`` raise
+          ``MarkupError``, which is the half that costs more than it looks. It
+          propagates :meth:`_write_public` -> :meth:`_handle_graph_message` ->
+          ``driver._consume_stream`` -> ``driver.drive_graph`` -> :meth:`_drive`'s
+          ``except``, so :meth:`_record_career` is never reached and a red
+          banner replaces the ending — defeating spec 040's designed no-error
+          failure path from the one side the story node's own guards cannot
+          reach.
+
+        ``Text.assemble`` attaches each style to a character *range* instead of
+        parsing it out of the text, so both halves go away at once: the label
+        keeps its colour and the body renders exactly as written. This is spec
+        038 (Colour-Coded Transcript Reading View)'s answer, already
+        load-bearing in ``ui/ledger_viewer.py``, and the ``markup=False`` both
+        panes are already built with keeps the string path closed behind it.
+
+        **Nothing is lost by the switch**, checked rather than assumed: no
+        message body in ``prompts.py`` or ``nodes/`` contains markup, and all
+        393 committed transcripts contain zero lowercase-bracket sequences. The
+        visible consequence is one-way — bracketed text that used to vanish
+        from players' lines now appears, which the functional spec lists as a
+        deliberate difference.
+
+        The project's OWN literals — labels, hints, banners — stay on
+        ``from_markup`` elsewhere in this file: those are authored strings that
+        legitimately carry markup. The line drawn is *authored literal* versus
+        *model or player content*, and every value interpolated here is the
+        latter: the body, and the speaker name (a roster name from the small
+        model, or the one the person typed at the name prompt, neither of them
+        sanitised for brackets).
+        """
         log = self.query_one("#public-log", RichLog)
         body = _content_to_text(msg.content)
         if isinstance(msg, SystemMessage):
-            markup = f"[bold cyan]Moderator:[/] {body}"
+            label, style = "Moderator: ", "bold cyan"
         elif isinstance(msg, AIMessage):
-            markup = f"[bold]{_speaker_of(msg)}:[/] {body}"
+            label, style = f"{_speaker_of(msg)}: ", "bold"
         else:
             return
-        log.write(Text.from_markup(markup))
+        extra = getattr(msg, "additional_kwargs", {}) or {}
+        if extra.get(CLOSING_STORY_KWARG):
+            # Belt-and-braces at the point of no return (spec 040 §2.11).
+            #
+            # DELIBERATELY NARROW — this guard wraps the closing story and
+            # nothing else, because the story is the one write whose failure
+            # costs more than itself. It is the last graph message of the game,
+            # so anything raising here unwinds past ``_record_career`` and the
+            # person gets a banner where the career panel should be; every
+            # other beat is mid-game and re-renders next turn.
+            #
+            # It is NOT the bracket fix. The span path above cannot raise on
+            # markup any more, and this catch would be pointless if that were
+            # the only hazard. What it covers is the residue: a
+            # several-paragraph model-written body is by far the largest string
+            # this pane has ever taken, and the fallback keeps the ending whole
+            # by giving up the styling rather than the story.
+            try:
+                log.write(Text.assemble((label, style), (body, "")))
+            except Exception:  # noqa: BLE001
+                log.write(Text(f"{label}{body}"))
+            return
+        log.write(Text.assemble((label, style), (body, "")))
 
     def _check_spectator_transition(self) -> None:
         """Detect the human's death from the streamed-state mirror.
@@ -308,10 +388,19 @@ class GraphiaApp(App[None]):
             raw_error = payload.get("error")
             error = raw_error if isinstance(raw_error, str) and raw_error else None
             if error:
-                log.write(Text.from_markup(f"[bold red]{error}[/]"))
-            log.write(
-                Text.from_markup(f"[dim]It's your turn, {speaker_name}.[/dim]")
-            )
+                # Whole-line style, not markup. The string itself is one of the
+                # graph's own authored literals ("Usage: /vote <name>", "No such
+                # player. Try again.") — but this call site cannot see that, and
+                # the day the hint quotes back what the person typed it would
+                # re-open the bracket fault with no change here to notice. A
+                # style on the whole ``Text`` is exactly what the tags meant.
+                log.write(Text(error, style="bold red"))
+            # ``speaker_name`` is the name the person typed at the name prompt,
+            # taken as ``value.strip()`` with no bracket sanitising — so a
+            # player calling themselves ``[/]`` used to crash their own first
+            # turn here, and one calling themselves ``[sic]`` had the name
+            # deleted from the line announcing it.
+            log.write(Text(f"It's your turn, {speaker_name}.", style="dim"))
             # Show the /vote hint once per Day. If the cycle can't be read
             # (shouldn't happen here), fall back to never repeating.
             cycle = self._current_cycle()
