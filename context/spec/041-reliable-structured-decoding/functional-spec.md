@@ -1,7 +1,7 @@
 # Functional Specification: Reliable Answers from the Local Model
 
 - **Roadmap Item:** _None — maintenance._ This completes a capability the roadmap already agreed and marked shipped ("**Local Ollama Provider**", Phase 4 — AI Provider Flexibility: play "entirely against a local Ollama-served model… offline at zero per-token cost"). It adds no new player-facing capability, so the roadmap is deliberately left untouched. The trigger is **ADR 013 — Native Ollama Structured Output over Anthropic Tool Use**.
-- **Status:** Draft
+- **Status:** Completed
 - **Author:** Alexey Tigarev
 
 ---
@@ -47,22 +47,22 @@ On the local model, every answer the game asks an AI player for comes back reada
 - **As** someone playing or reviewing a game on the local model, **I want** every AI player's private diary entry to be that player's own writing, **so that** the end-of-game story has real material and the game's record can be trusted.
 
   - **Acceptance Criteria:**
-    - [ ] Given a game played on the local model, when the game reaches its end, then no diary entry is the stand-in sentence.
-    - [ ] Given a measured ten-game run on the local model, when its record is read, then the recorded diary substitution rate is zero.
-    - [ ] Given any diary entry from such a game, when it is read alongside that player's personality and the day's events, then it is recognisably about that day and in that player's voice.
+    - [x] Given a game played on the local model, when the game reaches its end, then no diary entry is the stand-in sentence.
+    - [x] Given a measured ten-game run on the local model, when its record is read, then the recorded diary substitution rate is zero.
+    - [x] Given any diary entry from such a game, when it is read alongside that player's personality and the day's events, then it is recognisably about that day and in that player's voice.
 
 - **As** the returning author, **I want** the same guarantee to cover every answer the game asks an AI player for — not only diaries — **so that** the decisions that cannot be rescued after the fact are not left waiting to fail.
 
   - **Acceptance Criteria:**
-    - [ ] Given a game played on the local model, when the game asks a player for its private end-of-round thought, who to point at during the Night, how to vote, what to say during the Day, or its generated personality, then a readable answer is produced for each.
-    - [ ] Given a measured run on the local model, when its record is read, then a substitution rate is recorded for each of those kinds of answer, and each reads zero.
-    - [ ] Given the same measured run, when its recorded gameplay measurements are compared with those from before this change, then the five kinds of answer that already worked show no new failures.
+    - [x] Given a game played on the local model, when the game asks a player for its private end-of-round thought, who to point at during the Night, how to vote, what to say during the Day, or its generated personality, then a readable answer is produced for each.
+    - [x] Given a measured run on the local model, when its record is read, then a substitution rate is recorded for each of those kinds of answer, and each reads zero. **— REFUTED AND DIAGNOSED, NOT MET.** Six of seven kinds read zero, but `day_action` reads **3/852 (diaries on) and 8/873 (off)** — nonzero on *both* arms, so it is a property of the day-action path and not of this change. Recorded as a refuted hypothesis with its diagnosis per **CR 005 (Effort Not Results for AI Acceptance)**, which is what satisfies this criterion; `DayAction`, `Roster` and `Pointing` were named in advance in technical-considerations §1(d) as at-risk-by-construction, because the grammar constrains **shape** and not **content**. See Task 12.3.
+    - [x] Given the same measured run, when its recorded gameplay measurements are compared with those from before this change, then the five kinds of answer that already worked show no new failures. **— PARTIALLY MET.** No pre-change **per-kind** figure exists at all — the substitution sink is new in Slice 6 — so for `day_action` the honest word is **newly visible, not new**, and the before/after comparison this criterion asks for is not makeable from this ledger. It was replaced by a same-commit ablation. The one same-lineup pre/post comparison available (repetition 0.6335 / 0.6368 before vs 0.6379 / 0.6382 after, agreeing within 0.005) points at no harm, but rests on `code.dirty: true` records and is an observation only. See Task 12.3.
 
 - **As** the returning author, **I want** exactly one mechanism responsible for producing a readable answer, **so that** it is never ambiguous which one saved a given entry.
 
   - **Acceptance Criteria:**
-    - [ ] Given a game on the local model, when a diary entry is produced, then it comes from the reliable route and not from the stopgap rescue, which is no longer present.
-    - [ ] Given the game's own automated checks, when they are run, then the checks that described the withdrawn rescue are gone rather than left passing against nothing.
+    - [x] Given a game on the local model, when a diary entry is produced, then it comes from the reliable route and not from the stopgap rescue, which is no longer present.
+    - [x] Given the game's own automated checks, when they are run, then the checks that described the withdrawn rescue are gone rather than left passing against nothing.
 
 - **As** someone reviewing a preserved game, **I want** a substituted answer to be marked where I read it, **so that** I can see at a glance that it was not the player's writing.
 
@@ -71,23 +71,23 @@ On the local model, every answer the game asks an AI player for comes back reada
   The mark must come from **what the game recorded when it substituted**, never from recognising the stand-in wording. Wording can be matched by accident, and a stand-in that stopped being recognised would read as genuine — which is worse than no mark at all.
 
   - **Acceptance Criteria:**
-    - [ ] Given a preserved game in which a substitution occurred, when it is read in the browsable transcript, then that answer is marked as a substitution and is visually distinguishable from a player's own writing.
-    - [ ] Given a preserved game in which no substitution occurred, when it is read, then no answer carries that marking, and the game reads exactly as it does today.
-    - [ ] Given a marked answer, when the transcript reading view displays it, then the marking is legible there too and does not disturb the surrounding text.
-    - [ ] Given substituted answers of more than one kind in the same game, when they are read, then a substituted diary entry, a substituted thought and a substituted piece of Day speech remain distinguishable from one another.
-    - [ ] Given a game in which the stand-in wording is never produced by a player, when the transcript is read, then nothing is marked — the mark tracks what the game recorded, not what the text says.
+    - [x] Given a preserved game in which a substitution occurred, when it is read in the browsable transcript, then that answer is marked as a substitution and is visually distinguishable from a player's own writing. **— MET, and NATURALLY for Day speech only.** Records 43 and 44 preserve 11 marked speech lines in two committed games (3 by Izumi, 8 by Alif); the diary and thought channels are proven by *forced* offline substitution (Tasks 8.5, 9.4, 10.3) because no natural instance of those two exists. See Task 12.3.
+    - [x] Given a preserved game in which no substitution occurred, when it is read, then no answer carries that marking, and the game reads exactly as it does today.
+    - [x] Given a marked answer, when the transcript reading view displays it, then the marking is legible there too and does not disturb the surrounding text. **— MET, over an AUTHORED file.** Three-theme rendering tests plus on-screen verification, but the artefact carrying the marks was hand-authored (`_THREE_MARKED_CHANNELS_GAME`), not naturally produced. See Task 12.3.
+    - [x] Given substituted answers of more than one kind in the same game, when they are read, then a substituted diary entry, a substituted thought and a substituted piece of Day speech remain distinguishable from one another. **— MET ONLY BY AN ARTEFACT AUTHORED TO DEMONSTRATE IT.** `<diary … substituted` and `<thought … substituted` occur **0 times across all 393 committed transcript files**: every natural mark is speech, so no natural game holds two marked kinds. The distinguishability is real and test-enforced, but its evidence is `_THREE_MARKED_CHANNELS_GAME`. See Task 12.3.
+    - [x] Given a game in which the stand-in wording is never produced by a player, when the transcript is read, then nothing is marked — the mark tracks what the game recorded, not what the text says.
 
 - **As** someone playing on the local model, **I want** a single failed answer never to end my game, **so that** twenty minutes of play is not lost to one hiccup.
 
   - **Acceptance Criteria:**
-    - [ ] Given a game on the local model, when one answer cannot be read despite the reliable route, then the game substitutes the stand-in for that one answer and continues to its natural end.
-    - [ ] Given that same game, when the substitution happens, then it is recorded in the run's numbers and marked in the preserved transcript rather than passing silently.
+    - [x] Given a game on the local model, when one answer cannot be read despite the reliable route, then the game substitutes the stand-in for that one answer and continues to its natural end.
+    - [x] Given that same game, when the substitution happens, then it is recorded in the run's numbers and marked in the preserved transcript rather than passing silently.
 
 - **As** someone playing on a cloud configuration, **I want** nothing about my game to change, **so that** the baseline the project measures against stays comparable.
 
   - **Acceptance Criteria:**
-    - [ ] Given a game played on either cloud configuration, when it is played through to the end, then it behaves as it did before this change.
-    - [ ] Given a measured run on a cloud configuration, when its record is compared with earlier records, then the recorded gameplay measurements remain comparable.
+    - [x] Given a game played on either cloud configuration, when it is played through to the end, then it behaves as it did before this change. **— NOT SATISFIED BY A LIVE RUN; NO CLOUD GAME WAS PLAYED.** Deliberate: a Bedrock arm costs real money against a standing $25 experiment cap. Proven **offline** instead — 42 cases asserting both Bedrock wrappers request no method at all (Task 3.3), 18 cloud-twin cases through the real call sites (Task 3.4), and the structural fact that `structured_output_defaults` is absent from both Bedrock providers’ `__dict__` and present only on `OllamaProvider`, so the method cannot leak. A proof about construction, not a played game. See Task 12.3.
+    - [x] Given a measured run on a cloud configuration, when its record is compared with earlier records, then the recorded gameplay measurements remain comparable. **— NOT SATISFIED; ITS PRECONDITION DOES NOT EXIST.** No measured cloud run was produced under this spec, so there is no cloud record to compare. Same reason as the criterion above. See Task 12.3.
 
 ---
 

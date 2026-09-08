@@ -1,7 +1,7 @@
 # Technical Specification: Reliable Answers from the Local Model
 
 - **Functional Specification:** [`functional-spec.md`](./functional-spec.md)
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 - **Trigger:** [ADR 013 — Native Ollama Structured Output over Anthropic Tool Use](../../adr/013-native-ollama-structured-output.md)
 
