@@ -205,12 +205,20 @@ def _first_row_of(line: str, words: int = 5) -> str:
 # --------------------------------------------------------------------------
 
 
-async def _boot_and_name(app: GraphiaApp, pilot: Any) -> Any:
+async def _boot_and_name(app: GraphiaApp, pilot: Any, name: str = HUMAN_NAME) -> Any:
     """Wait for the drive worker to build the graph, then submit the name.
 
     Returns the compiled graph so the caller can install a live dispatcher —
     the Night target cannot be pre-scripted, because the real player ids only
     exist once ``assign_roles`` has run.
+
+    ``name`` is a parameter rather than the module constant because Task 2.2's
+    ``tests/test_spec040_markup_regression.py`` boots the same app as a player
+    called ``[sic]`` / ``[/]`` — the name goes straight into the "It's your
+    turn, …" hint with no bracket sanitising, so the name prompt is one of the
+    two places this spec's markup fault is reachable from. Typed key by key
+    (Textual maps ``[`` to ``left_square_bracket`` and back to the character),
+    so it is the same path a person's keyboard takes.
     """
     await pilot.pause()
     for _ in range(200):
@@ -227,7 +235,7 @@ async def _boot_and_name(app: GraphiaApp, pilot: Any) -> Any:
         if prompt is not None and prompt.disabled is False:
             break
         await pilot.pause(0.05)
-    await pilot.press(*HUMAN_NAME)
+    await pilot.press(*name)
     await pilot.press("enter")
     return app._graph
 
