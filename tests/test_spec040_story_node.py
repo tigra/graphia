@@ -16,7 +16,12 @@ clauses, all of them small and every one of them load-bearing:
 2. It is a ``SystemMessage`` with **no** ``name`` — a ledger-corruption guard,
    not a style choice (§2.6).
 3. It carries ``additional_kwargs={CLOSING_STORY_KWARG: True}``, which is the
-   only way any downstream reader identifies it.
+   only way any downstream reader identifies it. Task 5.3 added a SECOND flag,
+   ``CLOSING_STORY_TRUNCATED_KWARG``, present only when the clamp actually
+   dropped a paragraph — so the exact-equality assertion below still holds for
+   every story in this file (all of them fit the bound) and going red under an
+   always-set flag is the point of writing it as equality. Task 5.4 owns the
+   clipped case; nothing here exercises it.
 4. It does **not** return ``phase``; ``end_screen`` set that a super-step ago.
 5. Failure means NO story — no placeholder, no error, nothing half-rendered —
    and the node never raises whatever comes back at it.
@@ -689,16 +694,42 @@ def test_a_helper_that_breaks_its_contract_yields_no_story_rather_than_a_raise(
     is, because §2.8's stated reason for it ("belt-and-braces for a malformed
     ``players`` map or a persona shape surprise") names two things that are read
     INSIDE ``_ai_story``'s own ``try``. The node's docstring records the real,
-    measured reason: a helper return that breaks the ``str | None`` contract
-    makes the ``SystemMessage`` construction two lines below raise Pydantic
-    validation, OUTSIDE the inner ``try`` entirely.
+    measured reason: a helper return that breaks the helper's contract raises
+    OUTSIDE the inner ``try`` entirely, and only this catch is between that and
+    the graph.
+
+    **THE MECHANISM CHANGED UNDER THIS TEST AND THE DOCSTRING IS UPDATED
+    RATHER THAN LEFT DESCRIBING A PATH THAT NO LONGER EXISTS (Task 5.3,
+    2026-09-09).** The contract was ``str | None`` and the raise was Pydantic
+    validation at the ``SystemMessage`` construction. Task 5.3 widened
+    ``_ai_story`` to ``tuple[str, bool] | None`` so the clipped flag could
+    cross out of the clamp, so ``17`` now raises ``TypeError`` at the
+    ``text, clipped = told`` unpack ONE LINE EARLIER. Same catch, same empty
+    update, a different raise — and the property this test asserts is
+    unchanged, which is why the assertion below did not move.
+
+    **WHAT IT NO LONGER COVERS, measured rather than reasoned — the first
+    reasoned answer was wrong.** Under the old contract every non-``str``
+    return raised. Under the tuple contract two layers still catch: a return
+    that will not unpack into two raises at the unpack (``17``, ``object()``,
+    any string but a two-character one), and a two-element return whose first
+    element is not valid ``content`` still raises Pydantic validation below
+    (``[1, 2]`` yields ``content=1`` and is caught). What slips through is
+    exactly a two-element return whose FIRST element is a valid ``content``:
+    ``{"a": 1, "b": 2}`` and the old contract's own ``"ab"`` both produce a
+    story message with ``content="a"``. ``17`` is a non-iterable and so still
+    exercises the guard; do not "strengthen" this test by swapping it for a
+    dict or a two-char string without reading ``moderator_story``'s unpack
+    comment first, which records why no guard was added for that case.
 
     "The node never raises" is a property the graph and the UI both depend on:
     ``GraphiaApp._record_career`` sits inside ``_drive``'s ``try`` after
     ``await drive_graph(...)``, so a raising story node would drop the UI-side
-    career fold and show an error banner where the ending should be. And the
-    coverage grows rather than shrinking — Slice 5's truncation-flag
-    computation lands on that same line.
+    career fold and show an error banner where the ending should be. Slice 5's
+    flag PLUMBING (the unpack and the conditional ``additional_kwargs`` entry)
+    landed beside that line, so the lines this catch covers did grow — though
+    the clamp that COMPUTES the flag went inside ``_ai_story``, under the inner
+    layer, which is the half the original prediction got wrong.
 
     ``fake_large`` is installed even though the model is never reached, so a
     regression that stops honouring the monkeypatched helper cannot fall
@@ -725,8 +756,8 @@ def test_a_helper_that_breaks_its_contract_yields_no_story_rather_than_a_raise(
     monkeypatch.setattr("graphia.nodes.endgame._ai_story", _contract_breaker)
 
     assert moderator_story(DIRECT_STATE) == {}, (
-        "a helper that breaks its str | None contract must be absorbed into "
-        "an empty update; the node must never raise"
+        "a helper that breaks its tuple[str, bool] | None contract must be "
+        "absorbed into an empty update; the node must never raise"
     )
     assert forwarded == {
         "story_context_window": _DEFAULT_STORY_CONTEXT_WINDOW,

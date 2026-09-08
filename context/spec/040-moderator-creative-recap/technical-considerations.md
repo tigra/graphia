@@ -115,6 +115,13 @@ Module constants, not config — the functional spec fixes the length, and ADR 0
 
 **Marking a clipped story (author-approved).** When the cap actually fires, the story message carries a second machine flag and the transcript element renders `<story truncated="true">`. Without it a reviewer judging the prose attributes a story that stops early to the storyteller rather than the cap — exactly the wrong conclusion when the point of preserving it is to judge it. **Deliberately NOT added to `_ATTR_NAMES`**, following spec 038's ratified treatment of `human="true"`: a machine flag is not a detail a reviewer reads, so it stays part of the tag's punctuation.
 
+> **AMENDED 2026-09-09 BY TASK 5.3 — the paragraph above is ONE deliverable in two slices, not one.** The two halves shipped apart because an attribute cannot precede its element.
+>
+> - **The message flag is Slice 5's and is live:** `state.CLOSING_STORY_TRUNCATED_KWARG` (`= "closing_story_truncated"`), declared beside `CLOSING_STORY_KWARG` for the same cross-layer reason, added to the story message's `additional_kwargs` by `nodes.endgame.moderator_story` **only when `_clamp_story` reports a drop** — absent otherwise, never `False`. The flag crosses out of the clamp through `_ai_story`, whose return was widened from `str | None` to `tuple[str, bool] | None`; it is read from the clamp and never re-derived, because an exactly-`STORY_MAX_PARAGRAPHS` story and a longer one that lost its last are indistinguishable afterwards.
+> - **`<story truncated="true">` is Slice 8's**, which is the slice that builds the element. Verified 2026-09-09: `src/graphia/tools/eval_transcript.py` contains zero occurrences of "story" (case-insensitive), Task 8.3 creates `_render_story`, Task 8.5 registers the tag and Task 8.6 tests it.
+>
+> **And the "NOT added to `_ATTR_NAMES`" clause points at the wrong module.** Both `_ATTR_NAMES` (`:1743`) and `_MARKER_TAGS` (`:1518`) are defined in **`src/graphia/eval_ledger.py`**, not in `tools/eval_transcript.py` — the renderer refers to the former as `eval_ledger._ATTR_NAMES`. So Slice 8's transcript half spans two modules. The decision itself is unchanged and Task 8.5 states it independently; only its address needed fixing. `eval_ledger.py` was checked for the same premise and also has zero `<story` occurrences.
+
 ### 2.6 Prompts, schema, and the collapse this spec fights
 
 **Schema** — `class Story(BaseModel): text: str` in `llm.py`. One flat primitive field, the sixth of the family, for the Bedrock Converse constraint. `with_structured_output`, never `bind_tools`.

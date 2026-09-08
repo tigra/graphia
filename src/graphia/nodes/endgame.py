@@ -127,6 +127,7 @@ from graphia.prompts import (
 )
 from graphia.state import (
     CLOSING_STORY_KWARG,
+    CLOSING_STORY_TRUNCATED_KWARG,
     DiaryRecord,
     GameState,
     KillRecord,
@@ -994,8 +995,25 @@ def _ai_story(
     *,
     story_context_window: int = _DEFAULT_STORY_CONTEXT_WINDOW,
     story_token_budget: int = _DEFAULT_STORY_TOKEN_BUDGET,
-) -> str | None:
+) -> tuple[str, bool] | None:
     """Ask the large tier for the closing story; ``None`` when there is none.
+
+    Returns ``(story, clipped)`` — the clamped story and whether the cap
+    actually fired — or ``None`` when there is no usable story at all.
+
+    THE RETURN WAS WIDENED FROM ``str | None`` BY TASK 5.3, and the alternative
+    is worth knowing because the old contract was deliberate and directly
+    tested. ``clipped`` is knowable in exactly one place, inside
+    :func:`_clamp_story` between the split and the join (an exactly-four-
+    paragraph story is indistinguishable from a five-paragraph one that lost
+    its last), and it is needed in exactly one other, beside the
+    ``SystemMessage`` construction in :func:`moderator_story`. The only two
+    shapes are this one and out-of-band state that is neither returned nor a
+    parameter — which this module has none of and the node is written to
+    avoid. So the tuple travels, and the cost is paid honestly at
+    ``test_a_helper_that_breaks_its_contract_yields_no_story_rather_than_a_raise``,
+    whose stated mechanism changed with it: see :func:`moderator_story`'s
+    unpack for what that guard now catches and what it no longer does.
 
     THE ASSEMBLY ORDER IS LOAD-BEARING, AND IT IS THE POINT OF TASK 3.3
     -------------------------------------------------------------------
@@ -1280,12 +1298,14 @@ def _ai_story(
             # is the vacuous-guard trap Task 10.1 recorded. The invariant is
             # worth a test; a dead branch is not.
             #
-            # TASK 5.3 STARTS HERE. ``_clipped`` is the fact it needs and the
-            # only place it is knowable; this helper's ``str | None`` contract
-            # is what stops it being forwarded today. See the note at
-            # :func:`moderator_story`'s call for the two plumbing shapes.
-            story, _clipped = _clamp_story(result.text)
-            return story
+            # TASK 5.3 LANDED HERE, and it is one line: the clamp's second
+            # element is FORWARDED rather than discarded. The tuple is returned
+            # exactly as the clamp produced it and the flag is never re-derived
+            # downstream — a story that is exactly ``STORY_MAX_PARAGRAPHS``
+            # paragraphs long is indistinguishable from a longer one that lost
+            # its last, which is the entire reason §2.5 wants it marked. The
+            # widening of this helper's return is argued in the docstring.
+            return _clamp_story(result.text)
         return None
     # =====================================================================
     # NO FALLBACK TEXT. Both ``return None``s above and the one below are
@@ -1420,6 +1440,18 @@ def moderator_story(
     precisely so ``eval_transcript`` and ``blunder_eval`` can import it instead
     of reaching into a private ``nodes`` constant the way 039 had to.
 
+    A SECOND, INDEPENDENT MACHINE FLAG JOINS IT ONLY WHEN THE CAP FIRED (Task
+    5.3): ``CLOSING_STORY_TRUNCATED_KWARG``, added when :func:`_clamp_story`
+    dropped at least one whole paragraph and ABSENT otherwise, never ``False``.
+    It exists so a reviewer judging a story that stops early attributes the
+    stop to the cap rather than to the storyteller — the wrong conclusion being
+    exactly the one the whole feature is meant to be judged against. It cannot
+    be recovered downstream (an exactly-``STORY_MAX_PARAGRAPHS`` story and a
+    longer one that lost its last look identical), so it is read from the clamp
+    and plumbed, never measured off the story. The transcript attribute it
+    feeds, ``<story truncated="true">``, belongs to **Slice 8**, which is the
+    slice that builds the element; today the flag has one writer and no reader.
+
     WHY THERE ARE TWO GUARD LAYERS, and what each catches that the other
     cannot — because the second looks redundant and §2.8's stated reason for it
     does not survive checking. §2.8 calls this one "belt-and-braces for a
@@ -1429,20 +1461,27 @@ def moderator_story(
     ``_ai_story`` cannot reach:
 
     - **Measured, not argued:** feed :func:`_ai_story` a return that breaks its
-      ``str | None`` contract (an ``int``, a ``dict``, a bare ``object``) and
-      the ``SystemMessage`` construction two lines below raises Pydantic
-      validation. Only this catch is between that and the graph. So the outer
-      layer's real job is guarding against the HELPER, not against the model —
-      which is a different failure than the one §2.8 named, and a live one.
+      contract and the graph sees an empty update instead of a raise. Only this
+      catch is between the two. So the outer layer's real job is guarding
+      against the HELPER, not against the model — which is a different failure
+      than the one §2.8 named, and a live one. **The RAISE it catches moved
+      when Task 5.3 widened the helper's return to ``tuple[str, bool] | None``:
+      the test's ``17`` now fails at the unpack (``TypeError``) rather than at
+      the ``SystemMessage`` construction (Pydantic validation). Same catch,
+      same outcome, one line earlier — and the coverage is narrower than it
+      was, because a two-element return now unpacks cleanly. The unpack site
+      records exactly what that costs; do not restate the pre-5.3 mechanism
+      here or in the test.**
     - Slice 5's truncation-flag computation lands here too, on the story that
       comes back (§2.5), so this catch grows in coverage while the inner one
-      does not. **Half-true as written, corrected by Task 5.1:** the clamp
-      that COMPUTES the flag went inside :func:`_ai_story`, so it sits under
-      the INNER layer and this catch gained nothing from it. What will land
-      out here is Task 5.3's plumbing — reading the flag and putting it on
-      ``additional_kwargs`` — which is beside the ``SystemMessage``
-      construction and therefore genuinely only this layer's to catch. The
-      prediction is right about the layer and wrong about which half arrives.
+      does not. **Half-true as written, corrected by Task 5.1 and now settled
+      by Task 5.3:** the clamp that COMPUTES the flag went inside
+      :func:`_ai_story`, under the INNER layer, so this catch gained nothing
+      from it. What did land out here is the flag's PLUMBING — the unpack and
+      the conditional ``additional_kwargs`` entry, both beside the
+      ``SystemMessage`` construction and therefore genuinely only this layer's
+      to catch. The prediction was right about the layer and wrong about which
+      half arrives.
 
     "The node never raises" is a property the graph and the UI depend on, and
     it must not be one that a later refactor of a private helper can quietly
@@ -1468,47 +1507,65 @@ def moderator_story(
     both layers.
     """
     try:
-        # TASK 5.3's PLUMBING DECISION, left here rather than pre-empted by
-        # Task 5.1 (which owns the clamp, not the flag). ``_clamp_story``
-        # already returns ``(story, clipped)``; what it does NOT do is get the
-        # second element out of :func:`_ai_story`, whose ``str | None``
-        # contract is deliberate and directly tested
-        # (``test_a_helper_that_breaks_its_contract_yields_no_story_rather_``
-        # ``than_a_raise`` feeds it an ``int``, a ``dict`` and a bare
-        # ``object``). Two shapes, and neither is free:
-        #
-        # 1. Widen the helper to ``tuple[str, bool] | None`` and unpack here.
-        #    Cheapest — the clamp's return travels unchanged and the flag is
-        #    in scope exactly where the message is built. Costs a re-read of
-        #    that contract test, because a non-tuple return then fails at the
-        #    unpack rather than at the ``SystemMessage`` construction; the
-        #    outer catch still holds, so the property survives, but the test's
-        #    stated mechanism changes and it says so in its docstring.
-        # 2. Leave the helper alone and have it record the flag out of band.
-        #    Keeps the contract and the test verbatim, at the price of state
-        #    that is neither returned nor a parameter — which this module has
-        #    none of, and which the whole node is written to avoid.
-        #
-        # Shape 1 is the one the clamp's signature was built for. Whichever is
-        # taken, the flag must be read from the CLAMP and never re-derived by
-        # measuring the story afterwards: a story that is exactly four
-        # paragraphs long is indistinguishable from a five-paragraph one that
-        # lost its last, which is the entire reason §2.5 wants it marked.
-        text = _ai_story(
+        # TASK 5.3's PLUMBING DECISION, TAKEN: SHAPE 1, the widening.
+        # :func:`_ai_story` returns ``(story, clipped) | None`` and this
+        # unpacks it. The alternative was to leave the ``str | None`` contract
+        # alone and have the helper record the flag out of band — rejected
+        # because out-of-band state in this module has NO precedent and would
+        # be the first, whereas the widening's whole cost is one test's
+        # docstring. The clamp's signature was built for this shape.
+        told = _ai_story(
             state,
             story_context_window=story_context_window,
             story_token_budget=story_token_budget,
         )
-        if text is None:
-            # The OTHER place a placeholder would be injected (``text =
-            # _STORY_FALLBACK`` here, instead of in the helper). It must not
-            # be, for the three reasons argued at :func:`_ai_story`'s
+        if told is None:
+            # The OTHER place a placeholder would be injected (``told =
+            # (_STORY_FALLBACK, False)`` here, instead of in the helper). It
+            # must not be, for the three reasons argued at :func:`_ai_story`'s
             # ``except``. An ending with no story is the designed outcome.
             return {}
-        story_msg = SystemMessage(
-            content=text,
-            additional_kwargs={CLOSING_STORY_KWARG: True},
-        )
+        # WHAT THE OUTER CATCH NOW GUARDS, AND WHAT IT NO LONGER DOES — read
+        # this before trusting the test's name. The measured claim behind
+        # ``test_a_helper_that_breaks_its_contract_yields_no_story_rather_than_a_raise``
+        # was that a contract-breaking return raises Pydantic validation at the
+        # ``SystemMessage`` construction below, outside the inner ``try``. Two
+        # corrections, both verified 2026-09-09:
+        #
+        # - THE MECHANISM MOVED ONE LINE UP. A non-iterable return (the test's
+        #   ``17``) now raises ``TypeError`` at THIS unpack, not Pydantic
+        #   validation below. Same catch, same empty update, different raise —
+        #   the docstring says so, because a stale stated mechanism is how this
+        #   spec has already produced four wrong in-source instructions.
+        # - THE GUARANTEE IS GENUINELY NARROWER, and the exact shape of the
+        #   hole was MEASURED rather than reasoned, because reasoning got it
+        #   wrong first. Two layers still catch, in this order: a return that
+        #   will not unpack into two raises here (``17``, ``object()``, any
+        #   string but a two-character one), and a two-element return whose
+        #   first element is not valid ``content`` still raises Pydantic
+        #   validation below (``[1, 2]`` -> ``content=1`` -> caught). What
+        #   slips through is precisely a two-element return whose FIRST element
+        #   is a valid ``content``: ``{"a": 1, "b": 2}`` (dict unpacking yields
+        #   its keys) and the old contract's own two-character ``"ab"`` both
+        #   produce a story message with ``content="a"``. No guard was added
+        #   for it, deliberately: ``_ai_story`` sits in this module and returns
+        #   either ``None`` or :func:`_clamp_story`'s tuple, so the case is
+        #   unreachable without a monkeypatch, and this module's own rule
+        #   (Task 10.1's vacuous-guard finding) is that a branch no production
+        #   path can enter is worse than the hole it closes. Recorded rather
+        #   than defended.
+        text, clipped = told
+        # ONLY WHEN THE CAP ACTUALLY FIRED. The flag is added, never set to
+        # ``False``: every reader is ``extra.get(KEY)``, so absent and ``False``
+        # are one answer, and an unclipped story's ``additional_kwargs`` stays
+        # byte-identical to what Slice 1 shipped — which is what
+        # ``test_spec040_story_node``'s exact ``== {CLOSING_STORY_KWARG: True}``
+        # equality pins, and it is right to pin it. Full argument at
+        # ``state.CLOSING_STORY_TRUNCATED_KWARG``.
+        extra: dict[str, bool] = {CLOSING_STORY_KWARG: True}
+        if clipped:
+            extra[CLOSING_STORY_TRUNCATED_KWARG] = True
+        story_msg = SystemMessage(content=text, additional_kwargs=extra)
         return {"messages": [story_msg]}
     except Exception:
         return {}

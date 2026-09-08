@@ -15,14 +15,26 @@ from langgraph.graph.message import add_messages
 # and deliberately in THIS module rather than in ``nodes/endgame.py`` where the
 # message is built.
 #
-# ONE FLAG, THREE CONSUMERS IN THREE LAYERS, AND THEY MUST AGREE:
+# ONE FLAG, FOUR CONSUMERS IN THREE LAYERS, AND THEY MUST AGREE. **This
+# inventory was wrong when it was written, and it is corrected rather than
+# re-stated (Task 5.3, 2026-09-09): it said THREE, listed two readers that do
+# not exist yet, and omitted the only one that does.** Present tense now means
+# live; where it is not, the slice that builds it is named.
 #
 # - ``nodes.endgame.moderator_story`` SETS it on the story's public
-#   ``SystemMessage`` (Moderator voice, no ``name``).
-# - ``tools.eval_transcript`` READS it to partition an endgame delta's
-#   ``SystemMessage``s into ``(facts, story)`` and render the ``<story>`` block.
-# - ``tools.blunder_eval`` READS it to decide whether a game produced a story
-#   at all — the ledger's ``quality.story_missing_*`` signal.
+#   ``SystemMessage`` (Moderator voice, no ``name``) — live.
+# - ``ui.app.GraphiaApp._write_public`` READS it to wrap the one write whose
+#   failure costs more than itself in a narrow markup guard (§2.11) — live,
+#   and today the ONLY reader. Slice 2 added it after this list was written,
+#   which is how it came to be missing from it.
+# - ``tools.eval_transcript`` WILL read it to partition an endgame delta's
+#   ``SystemMessage``s into ``(facts, story)`` and render the ``<story>``
+#   block — **Slice 8** (Task 8.3 builds ``_render_story``, Task 8.5
+#   registers the tag). Verified 2026-09-09: that module contains zero
+#   occurrences of "story", case-insensitive.
+# - ``tools.blunder_eval`` WILL read it to decide whether a game produced a
+#   story at all — the ledger's ``quality.story_missing_*`` signal, **Slice 9,
+#   Task 9.1**. Verified: zero occurrences there too.
 #
 # DISCRIMINATE ON THE MESSAGE, NOT ON THE NODE OR THE POSITION (spec 040 §2.9).
 # Both readers see a stream of messages rather than a call graph: "the last
@@ -58,24 +70,63 @@ from langgraph.graph.message import add_messages
 # ``blunder_eval`` would report a clean ``story_missing_rate: 0.0`` for a run in
 # which every single story was in fact missing.
 #
-# ON THE SIBLING FLAG COMING IN SPEC 040 TASK 5.3 (the clipped-story marker that
-# renders ``<story truncated="true">``): it belongs BESIDE this line, named
-# ``CLOSING_STORY_TRUNCATED_KWARG``, and the shared ``CLOSING_STORY_`` prefix is
-# all the grouping the pair needs. No container was built here to hold them —
-# not a ``dict``, not an ``Enum``, not a namespace class — because every read is
-# ``extra.get(KEY)`` against ``additional_kwargs``, where a bare ``str`` is
-# exactly the right shape, and a container would buy an indirection at all three
-# call sites above in exchange for holding two strings. This project's precedent
-# is prefix families, never containers: ``KIND_*`` in ``career_events``, and the
-# ``DIARY_*`` family that spans two modules (``DIARY_LINE_MARKER`` /
-# ``DIARY_WINDOW`` / ``DIARY_MAX_CHARS`` in ``nodes.day``,
-# ``DIARY_SENTENCE_BOUND`` in ``prompts``) held together by nothing but the
-# prefix. What DOES need saying, because it is the part a reader can get wrong:
-# the sibling has a cross-layer reader too (the transcript renderer emits the
-# attribute), so it must be public and it must live HERE. Declaring it in
-# ``nodes/endgame.py`` would re-create precisely the 039 coupling this constant
-# exists to avoid.
+# THE SIBLING FLAG HAS LANDED (Task 5.3) AND IT IS DECLARED BELOW, at the name
+# and in the place this comment reserved for it. No container was built to hold
+# the pair — not a ``dict``, not an ``Enum``, not a namespace class — because
+# every read is ``extra.get(KEY)`` against ``additional_kwargs``, where a bare
+# ``str`` is exactly the right shape, and a container would buy an indirection
+# at every call site above in exchange for holding two strings. This project's
+# precedent is prefix families, never containers: ``KIND_*`` in
+# ``career_events``, and the ``DIARY_*`` family that spans two modules
+# (``DIARY_LINE_MARKER`` / ``DIARY_WINDOW`` / ``DIARY_MAX_CHARS`` in
+# ``nodes.day``, ``DIARY_SENTENCE_BOUND`` in ``prompts``) held together by
+# nothing but the prefix. And the reason the sibling lives HERE rather than in
+# ``nodes/endgame.py`` beside its writer is the same 039 lesson: it has a
+# cross-layer reader coming (Slice 8's transcript renderer emits the
+# attribute), so declaring it next to the message builder would re-create
+# precisely the coupling this module exists to avoid.
 CLOSING_STORY_KWARG = "closing_story"
+
+# The second, INDEPENDENT machine flag on the same message: the story came back
+# longer than the bound and ``nodes.endgame._clamp_story`` dropped at least one
+# whole paragraph (spec 040 §2.5, Task 5.3).
+#
+# PRESENT ONLY WHEN THE CAP ACTUALLY FIRED, never ``False`` (§2.5's "when the
+# cap actually fires"; Task 5.4's "marked only when the cap fired, and absent
+# otherwise"). Three reasons, and the third is the one that costs something:
+#
+# 1. A reader is ``extra.get(KEY)``, so absent and ``False`` are the same
+#    answer — a stored ``False`` is a key that means nothing.
+# 2. The transcript half renders an ATTRIBUTE, and ``<story truncated="false">``
+#    on all but a handful of stories is noise in a corpus a person reads.
+# 3. ``tests/test_spec040_story_node.py`` asserts ``story.additional_kwargs ==
+#    {CLOSING_STORY_KWARG: True}`` — exact dict equality — for an unclipped
+#    story. Always-set turns that red, and it is right to: the unclipped story
+#    is the one whose ending must read exactly as it did before this task.
+#
+# WHY IT IS NOT DERIVABLE DOWNSTREAM, which is the whole reason it is carried
+# at all: a story that is exactly ``STORY_MAX_PARAGRAPHS`` paragraphs long is
+# indistinguishable from a longer one that lost its last, so nothing that sees
+# only the message can recover the fact. It is knowable in exactly one place —
+# inside ``_clamp_story``, between the split and the join — and from there it is
+# plumbed out through ``_ai_story``'s return.
+#
+# WHAT IT IS FOR (§2.5): a reviewer judging the prose of a story that stops
+# early must attribute the stop to the CAP and not to the storyteller. Without
+# the flag they draw exactly the wrong conclusion about the one thing the whole
+# feature exists to be judged on.
+#
+# DELIBERATELY NOT IN ``eval_transcript``'s ``_ATTR_NAMES``, following spec
+# 038's ratified treatment of ``human="true"``: a machine flag is not a detail
+# a reviewer reads, so it stays part of the tag's punctuation. Task 8.5 says
+# the same thing independently — the two lines agreed before they met.
+#
+# ZERO READERS TODAY, and that is a resequencing rather than dead weight. The
+# transcript element that carries the attribute does not exist yet: Task 8.3
+# builds ``_render_story``, Task 8.5 registers the tag, Task 8.6 tests it. An
+# attribute cannot precede its element, so Task 5.3 shipped the message flag
+# and handed ``<story truncated="true">`` to Slice 8.
+CLOSING_STORY_TRUNCATED_KWARG = "closing_story_truncated"
 
 
 def _merge_private_thoughts(
