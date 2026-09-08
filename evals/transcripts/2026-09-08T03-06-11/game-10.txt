@@ -1,0 +1,486 @@
+Game 10 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Zain" role="Law-abiding Citizen">
+Personality: weary and world-worn
+Manner: speaks slowly with heavy pauses between sentences, often trailing off mid-thought. Uses words like 'been' and 'seen' frequently. Has a tendency to look away while talking and avoids direct eye contact. Voice carries a slight rasp from years of shouting in the wind.
+Persona: Zain works as a dockworker in town, hauling cargo and keeping the local shipping industry running. He's been here for thirty years, ever since his father left him the job after his death. He's seen too much and knows too many secrets, but keeps them buried deep.
+</player>
+<player name="Hazeem" role="Law-abiding Citizen">
+Personality: vigilant and watchful
+Manner: speaks in short, sharp sentences with deliberate pauses between each word. Uses phrases like 'always watching' and 'never miss a thing' frequently. Has a habit of scanning the room while talking, never staying still. Voice is crisp and precise, with a slight edge to it that suggests they're always on high alert.
+Persona: Hazeem works as a night watchman at the local warehouse district, patrolling the empty streets and keeping an eye on suspicious activity. He's been doing this job for twelve years, ever since he retired from the police force after a difficult case went cold. He's always been good at noticing things others miss.
+</player>
+<player name="Rina" role="Law-abiding Citizen">
+Personality: dry and sardonic
+Manner: speaks with clipped, ironic precision; uses deadpan delivery and subtle sarcasm; never raises voice but inflects words with cutting emphasis; avoids enthusiasm entirely; often rolls eyes or gives a barely perceptible smirk when others express earnest opinions
+Persona: Rina is the town's official 'chronicler of mundane events' - a position she holds through sheer incompetence and deliberate obtuseness. She's been documenting local happenings for eight years, writing detailed reports on things like weekly market attendance and the seasonal migration patterns of geese. She believes her work is vital to community knowledge but has never actually contributed anything useful to any town decisions or investigations.
+</player>
+<player name="Tian" role="Mafia">
+Personality: Genuinely enthusiastic and deeply invested in community welfare, with an unwavering belief in doing what's right. They are naturally trusting, optimistic, and always looking for ways to help others. They take their responsibilities seriously and feel a strong personal stake in the town's success.
+Manner: Speaks with bright, animated energy and uses frequent hand gestures to emphasize points. Talks in complete sentences with a warm, encouraging tone that rarely wavers. Has a habit of leaning forward when sharing ideas or offering advice, and often pauses mid-sentence to look directly at listeners as if seeking their full attention.
+Public legend: Tian is the town's beloved children's librarian, where he has worked for fifteen years after retiring from his previous career as a school teacher. He's known throughout town for his dedication to literacy and community education, often staying late to help students with homework or organizing reading programs for local families. He volunteers at the community center every Saturday morning, always arriving early to set up activities for the children.
+True self (hidden): Tian was a promising young lawyer who became disillusioned after witnessing corruption within his firm's dealings with organized crime. Rather than exposing them and risking his own safety, he chose to quietly protect those who could be harmed by the connections he had made. His true identity as a Mafioso is known only to him and his trusted associates, but he has been quietly using his influence to protect innocent people from being drawn into criminal activities.
+</player>
+<player name="Nilo" role="Mafia">
+Personality: Nilo is prickly and easily offended, with a sharp tongue and thick skin. They take great offense at perceived slights or rudeness, often reacting with cutting remarks that mask their underlying sensitivity. They are quick to defend their dignity and will not tolerate being made to look foolish or incompetent. Despite their defensive exterior, they have a deep need for respect and validation.
+Manner: Speaks in short, clipped sentences with deliberate emphasis on key words. Uses a dry, sarcastic tone that cuts through conversation like a blade. Often raises an eyebrow or gives a barely perceptible eye roll when someone speaks to them, never raising their voice but inflecting words with cutting precision. They will not engage with what they consider foolishness and will quickly dismiss anyone who tries to 'dumb down' the conversation.
+Public legend: Nilo is a meticulous bookkeeper for the town's cooperative farming association, managing all financial records and contracts for the local growers. They've held this position for twelve years, carefully maintaining detailed ledgers that are considered essential by the town's agricultural committee. Nilo is known for being incredibly thorough, though they're also notorious for having an odd habit of 'accidentally' leaving pages of their work scattered around the office where others can find them, much to the chagrin of their colleagues who suspect it's intentional.
+True self (hidden): Nilo was a small-time bookkeeper in a legitimate business when they were recruited by a local crime family who recognized their mathematical skills and attention to detail. They initially took the job as a 'side gig' to supplement income, but soon found themselves deeply entangled in the family's operations. When the boss died unexpectedly, Nilo inherited control of several key financial accounts, forcing them to embrace their new role fully. They've been running the family's books ever since, always careful not to let anything slip that could expose their true position.
+</player>
+<player name="Sara" role="Law-abiding Citizen">
+Personality: dreamy and distractible
+Manner: speaks in gentle, meandering sentences that often trail off into thoughts of their own. Uses phrases like 'you know what I was thinking' or 'I swear I saw something just like this once' frequently. Has a habit of pausing mid-sentence to look around the room as if remembering they're in a conversation. Voice is soft and slightly breathy, often finishing words with a slight humming quality. Often gets lost in their own thoughts and will abruptly change topics without warning.
+Persona: Sara is the town's beloved flower arranger and part-time herbalist, known for her beautiful bouquets that she sells at the weekly market. She's been doing this work for eight years after discovering her natural talent while helping her grandmother with her apothecary shop. Sara spends most of her days tending to her small garden and creating arrangements for local celebrations, often getting so lost in her work that she'll forget to eat or sleep properly.
+</player>
+<player name="Liam" role="Law-abiding Citizen">
+Personality: aloof and detached
+Manner: speaks in slow, measured tones with frequent pauses between sentences. Uses formal, precise vocabulary and avoids emotional inflection entirely. Has a habit of tilting their head slightly when listening, never making direct eye contact. Often interrupts with brief, clipped responses like 'yes' or 'no' rather than engaging in conversation. Voice carries an almost mechanical quality, as if reciting from memory rather than thinking aloud.
+Persona: Liam is the town's official record-keeper and town clerk, maintaining all legal documents, property deeds, and civic records for the community. He's held this position for fifteen years after a long career in the county courthouse. Known for his meticulous attention to detail and strict adherence to procedure, he takes pride in keeping everything properly filed and organized.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Zain, Hazeem, Rina, Tian, Nilo, Sara, Liam. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Tian): Your Mafia teammates are: Nilo. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Nilo): Your Mafia teammates are: Tian. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Tian points at Rina
+Nilo points at Rina
+<kill>Rina — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Rina was killed last night. Rina was a Law-abiding Citizen.
+<round>
+Round 1.
+Liam: The deceased's records show no irregularities. I will review the property deeds for any discrepancies.
+Zain: Been seeing a lot of shadows lately... folks vanish, then show up with stories that don't add up.
+Tian: I'm glad we have Liam here to investigate the property deeds — Rina’s death seems sudden, and we need to make sure no one else is in danger.
+Avery: Nothing is settled yet, but I'm watching Hazeem most closely.
+Hazeem: Always watching, always waiting. Someone here is playing a dangerous game — and I ain't buying the story about shadows.
+Nilo: Rina’s records were clean, but that doesn’t mean her death was natural — or that we’re safe from whoever’s pulling the strings.
+Sara: You know what I was thinking — Rina's death was so sudden, and she was always so... quiet about her evenings. I swear I saw something just like this once, when the flowers started wilting in the market.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zain">Been watching Hazeem close, but ain't ready to jump on any bandwagon yet. Rina's death don't feel right, and I reckon there's more shadows in this town than we're letting on.</thought>
+<thought player="Hazeem">Avery's watching me closely — always watching for signs of deception. Need to stay sharp, never let my guard down. Rina's death was clean, but someone's still playing dirty.</thought>
+<thought player="Tian">Rina's clean records and sudden death complicate things — I need to keep Nilo close and watch for any signs of hesitation or overconfidence from the others. The investigation is heating up, but I must stay calm and not draw suspicion by reacting too strongly.</thought>
+<thought player="Nilo">Rina's clean records are suspicious—too clean. If I'm going to keep the cover story intact, I need to push back on any investigation that might expose the truth. But I also need to make sure Tian doesn't get too far ahead of me in the kill game.</thought>
+<thought player="Sara">You know what I was thinking — Rina's death was so sudden, and I keep seeing shadows everywhere now, like the flowers that wilted without reason... I swear I saw something just like this once, when the market was full of whispers and everyone was looking away. Maybe it's time to look closer at the garden paths, or the quiet corners where people disappear.</thought>
+<thought player="Liam">The deceased's property records show no irregularities, but the manner of death warrants careful examination. I will proceed with reviewing all civic documents for potential discrepancies.</thought>
+</round>
+<round>
+Round 2.
+Tian: I think we should focus on what Rina was truly like — if she was quiet, maybe she had reasons to be. I’m not convinced this was a random act.
+Zain: Avery's got eyes like a hawk, but I ain't seen nothin' yet that points to Hazeem bein' the one who done it.
+Liam: The property deeds are filed under 'Rina's Case' — I will verify the timestamp of her last recorded entry.
+Avery: Nothing is settled yet, but I'm watching Hazeem most closely.
+Nilo: If Rina’s records were so clean, then why did her case file get shuffled last night? That’s not normal procedure — and it sure as hell ain’t coincidence.
+Hazeem: Nilo, you're onto something with that file shuffle — but I ain't buyin' your theory about Rina's case file. You're deflectin', and I seen it before.
+Sara: You know what I was thinking — Hazeem's been watching everyone so closely, but he's been avoiding any real answers about the file shuffle. I swear I saw something just like this once, when the shadows started stretching too long across the garden paths.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zain">Hazeem's been twitchy lately, but I ain't seen nothin' solid yet. Rina's death don't add up, and I reckon there's more to that file shuffle than any of us is sayin'. Been watchin' close, but not ready to call a vote just yet.</thought>
+<thought player="Hazeem">Avery's watching me like a hawk, but I'm always watching them too — never let up on the alert. Someone's been shuffling files, and I ain't buyin' Nilo's story about it.</thought>
+<thought player="Tian">Rina's death was clean on the surface, but Nilo and I need to keep watching the others closely — especially how they react to the file shuffle. I should stay calm and not let my excitement show, even if things are starting to look promising for us.</thought>
+<thought player="Nilo">Nilo needs to redirect suspicion away from the file shuffle and toward Hazeem, who’s already getting nervous. If I don’t act fast, Tian might expose too much—maybe even try to execute someone before I can move.</thought>
+<thought player="Sara">You know what I was thinking — everyone's so focused on the file shuffle and the shadows, but I keep seeing this same pattern in my mind, like the way the garden paths bend and twist... maybe it's not about who did it, but where they're leading us. I swear I saw something just like this once, when the flowers started wilting and no one could explain why.</thought>
+<thought player="Liam">The file shuffle mentioned by Nilo warrants further investigation; I should examine the timestamp discrepancies in Rina's case file more thoroughly. If Hazeem is deflecting, then his avoidance of direct answers may indicate guilt.</thought>
+</round>
+<round>
+Round 3.
+Avery: Nothing is settled yet, but I'm watching Hazeem most closely.
+Tian: I think we're all feeling the weight of Rina's passing — but let’s not let fear cloud our judgment. I’ve been teaching kids for years, and the truth usually reveals itself when we stay calm and listen carefully.
+Liam: The timestamp discrepancy in Rina's case file is notable — I will verify whether it aligns with the night's events.
+Nilo: If the file shuffle was so suspicious, then why did no one else notice it till now? Hazeem’s been twitchy ever since Rina went missing — I reckon he’s got something to hide.
+Zain: Avery's got a good eye, but I ain't seen nothin' yet that points to Hazeem bein' the one who done it.
+Sara: You know what I was thinking — Hazeem's been watching everyone so closely, but he's been avoiding any real answers about the file shuffle. I swear I saw something just like this once, when the shadows started stretching too long across the garden paths.
+Hazeem: Avery's got eyes like a hawk, but I ain't seen nothin' yet that points to Hazeem bein' the one who done it.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zain">Avery's got a sharp eye, but I ain't seen nothin' yet that points to Hazeem bein' the one who done it. Rina's death don't add up, and I reckon there's more shadows in this town than we're letting on.</thought>
+<thought player="Hazeem">Avery's watching me like a hawk, but I'm always watching them too — never let up on the alert. Someone's been shuffling files, and I ain't buyin' Nilo's story about it.</thought>
+<thought player="Tian">Nilo and I need to keep playing it cool, let the others think we're just following the investigation, but stay sharp for any signs of paranoia or defensiveness from the Law-abiding Citizens. The file shuffle is a good lead, but I don’t want to give away that we’re onto something — not yet.</thought>
+<thought player="Nilo">Hazeem's getting nervous—good. I need to let him think he's close to exposing something, then pivot the talk to me being the one who shuffled the file. That’ll keep Tian from executing anyone and buy me time.</thought>
+<thought player="Sara">You know what I was thinking — everyone's chasing shadows, but I keep seeing the same pattern in my mind, like how the garden paths twist and lead somewhere... maybe it's not about who did it, but where they're leading us. I swear I saw something just like this once, when the flowers started wilting and no one could explain why.</thought>
+<thought player="Liam">The file shuffle and timestamp discrepancy in Rina's case file are significant irregularities that require further examination. I should prioritize verifying the records and identifying any additional inconsistencies that may implicate Hazeem or another player.</thought>
+</round>
+<round>
+Round 4.
+Sara: You know what I was thinking — Hazeem's been watching everyone so closely, but he's been avoiding any real answers about the file shuffle. I swear I saw something just like this once, when the shadows started stretching too long across the garden paths.
+Zain: Avery's got eyes like a hawk, but I ain't seen nothin' yet that points to Hazeem bein' the one who done it.
+Tian: I've been thinking — if Rina's case file was shuffled, maybe someone here knows more than they're letting on. But we can't let panic drive us to make rash decisions.
+Avery: Nothing is settled yet, but I'm watching Hazeem most closely.
+Hazeem: Avery's got eyes like a hawk, but I ain't seen nothin' yet that points to Hazeem bein' the one who done it.
+Nilo: If Hazeem's so sharp, why’s he keepin’ secrets about Rina’s file? I ain’t seen nothin’ yet, but I reckon the shadows in this town ain’t as innocent as they seem.
+Liam: The timestamp discrepancy in Rina's case file aligns with the night of her death — I will verify whether any other files were altered during that time.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zain">Avery's been watchin' Hazeem close, but I ain't seen nothin' solid yet — Rina's death don't add up, and I reckon there's more shadows in this town than we're letting on. Gotta keep listenin', keep watchin', but don't let the fear push me into a vote too soon.</thought>
+<thought player="Hazeem">Avery's watching me like a hawk, but I'm always watching them too — never let up on the alert. Someone's been shuffling files, and I ain't buyin' Nilo's story about it.</thought>
+<thought player="Tian">Nilo and I need to keep our composure and let the investigation unfold naturally — the file shuffle is our lead, but we can't let our confidence show. I should continue playing the concerned citizen, staying close to the action without drawing suspicion.</thought>
+<thought player="Nilo">Hazeem's twitching too much—let him think he's close to something, then I'll pivot the blame to me shuffling the file. Keep Tian off-balance and buying time.</thought>
+<thought player="Sara">You know what I was thinking — everyone's so caught up in the shadows and the file shuffle, but I keep seeing that pattern in my mind, like the garden paths leading somewhere important... I swear I saw something just like this once, when the flowers started wilting and no one could explain why. Maybe it's not about who did it, but where they're leading us.</thought>
+<thought player="Liam">The timestamp discrepancy aligns with the night of Rina's death, but I must verify if other files were altered. Hazeem’s evasion suggests he knows more than he admits.</thought>
+</round>
+<round>
+Round 5.
+Liam: The timestamp discrepancy in Rina's case file is not an anomaly — it mirrors the night of her death. I will verify whether any other files were altered during that time.
+Nilo: If Hazeem’s so sure he's seen something, then why’s he keepin’ his mouth shut about the file shuffle? Ain’t nothin’ to fear from tellin’ the truth — unless you’re the one who shuffled it.
+Tian: I can't help but wonder — if Rina’s file was shuffled, and someone’s been watching closely, maybe we should all be a bit more careful about what we say next.
+Hazeem: Avery's got eyes like a hawk, but I ain't seen nothin' yet that points to Hazeem bein' the one who done it.
+Sara: You know what I was thinking — Hazeem's been watching everyone so closely, but he's been avoiding any real answers about the file shuffle. I swear I saw something just like this once, when the shadows started stretching too long across the garden paths.
+Zain: Avery's been watchin' Hazeem close, but I ain't seen nothin' solid yet — Rina's death don't add up, and I reckon there's more shadows in this town than we're lettin' on.
+Avery: Nothing is settled yet, but I'm watching Hazeem most closely.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zain">Avery's got eyes like a hawk, but I ain't seen nothin' yet that points to Hazeem bein' the one who done it. Rina's death don't add up, and I reckon there's more shadows in this town than we're lettin' on.</thought>
+<thought player="Hazeem">Avery's watching me like a hawk, but I'm always watching them too — never let up on the alert. Someone's been shuffling files, and I ain't buyin' Nilo's story about it. Need to keep my eyes open for any sign of who’s really pulling the strings.</thought>
+<thought player="Tian">Nilo and I need to keep our composure and let the investigation unfold naturally — the file shuffle is our lead, but we can't let our confidence show. I should continue playing the concerned citizen, staying close to the action without drawing suspicion.</thought>
+<thought player="Nilo">Hazeem's getting too comfortable with his suspicion-game; I need to pivot fast, make it look like I shuffled the file, or Tian'll expose too much. Keep him rattled, keep the focus on me — not him.</thought>
+<thought player="Sara">You know what I was thinking — everyone's so focused on Hazeem and the shadows, but I keep seeing that same pattern in my mind, like the garden paths leading somewhere important... maybe it's time to follow the path instead of just watching the corners where people disappear.</thought>
+<thought player="Liam">The timestamp discrepancy is confirmed, but I must determine if other files were altered during the night. Hazeem’s evasive behavior indicates he knows more than he reveals.</thought>
+</round>
+<round>
+Round 6.
+Nilo: If Hazeem’s so sure he's seen something, then why’s he keepin’ his mouth shut about the file shuffle? Ain’t nothin’ to fear from tellin’ the truth — unless you’re the one who shuffled it.
+<vote initiator="Avery" target="Hazeem">
+Avery: No
+Zain: No
+Hazeem: No
+Tian: No
+Nilo: No
+Sara: Yes
+Liam: Yes
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Hazeem">
+Avery: No
+Zain: No
+Hazeem: No
+Tian: No
+Nilo: No
+Sara: Yes
+Liam: Yes
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Tian: I think we’re all feeling the tension, but I truly believe that if we stay calm and keep our eyes open, we’ll find the truth — and it won’t be something that rattles us, but something that helps us all.
+Sara: You know what I was thinking — I keep seeing that same pattern in my mind, like the garden paths leading somewhere important... maybe it's time to follow the path instead of just watching the corners where people disappear.
+Zain: Sara's been sayin' a lot about shadows and paths, but I ain't seen nothin' yet that points to her bein' the one who done it.
+Nilo: If Hazeem's so sure he's seen something, then why’s he keepin’ his mouth shut about the file shuffle? Ain’t nothin’ to fear from tellin’ the truth — unless you’re the one who shuffled it.
+Hazeem: Avery's been watching me like a hawk, but I ain't the only one with eyes in this room — and I seen enough to know the real shadows are cast by those who shuffle files, not those who follow them.
+<vote initiator="Avery" target="Hazeem">
+Avery: No
+Zain: No
+Hazeem: No
+Tian: No
+Nilo: No
+Sara: Yes
+Liam: Yes
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Zain" day="1">Been watchin' Hazeem close, but ain't ready to jump on any bandwagon yet. Rina's death don't feel right, and I reckon there's more shadows in this town than we're letting on. The file shuffle, that ain't normal — ain't seen nothin' like it since the old days when folks started disappearin' without a trace. Avery's got a sharp eye, but I ain't seen nothin' yet that points to Hazeem bein' the one who done it. Gotta keep listenin', keep watchin', but don't let the fear push me into a vote too soon. The night's fallin' again, and I ain't seen nothin' yet that tells me this town's safe — just more shadows stretchin' long across the garden paths.</diary>
+<diary player="Hazeem" day="1">Rina’s death was clean — too clean. Someone shuffled her file, and I seen it. Nilo’s got a story, but it don’t add up. Avery’s watching me like a hawk, but I ain’t the only one with eyes in this room. I always watch, always waiting. The shadows here ain’t just from the garden paths — they’re cast by those who play dirty. Tonight, I’ll keep my eyes open. Never miss a thing.</diary>
+<diary player="Tian" day="1">Rina's death has left everyone on edge, and I can feel the tension in the air like a storm about to break. I've been trying to stay calm, listening carefully to what people are saying, but there's something off about how quickly the investigation moved — especially that file shuffle. I don't want to jump to conclusions, but it feels like someone here is hiding something important. I'm keeping my eyes open, not just for answers, but for signs of who might be watching us instead. Nilo and I have been playing it safe, staying close to the truth without letting our curiosity show. Tomorrow will bring more questions — and maybe, if we're lucky, some real clarity.</diary>
+<diary player="Nilo" day="1">Rina’s death was clean, but that’s what makes it dangerous—too clean. Someone shuffled her file, and I ain’t buyin’ Hazeem’s act about not seein’ it. He’s twitchy, too nervous to be innocent. I let him think he’s close to something, but I’m the one who moved the pages. Tian’s getting too clever with his questions, so I’ll keep him guessing—make it look like I’m the one who’s been watchin’, not him. The shadows in this town ain’t natural—they’re deliberate. I need to stay sharp or I’ll end up as the next one vanishin’ into thin air.</diary>
+<diary player="Sara" day="1">You know what I was thinking — the way everyone keeps talking about shadows and file shuffles, but I keep seeing that same pattern in my mind, like how the garden paths twist and lead somewhere. I swear I saw something just like this once, when the flowers started wilting and no one could explain why. Maybe it's not about who did it, but where they're leading us — and maybe it's time to follow the path instead of just watching the corners where people disappear.</diary>
+<diary player="Liam" day="1">Rina's death was sudden, but her records show no irregularities. The timestamp discrepancy in her case file is notable, and I have verified that it aligns with the night of her death. No other files were altered during that time — the shuffle was isolated to her case. Hazeem's evasion suggests he knows more than he reveals. I will continue reviewing civic documents for additional inconsistencies. The truth lies in the details, not in speculation.</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Nilo points at Hazeem
+Tian points at Sara
+Pointing round 2:
+Tian points at Sara
+Nilo points at Hazeem
+Pointing round 3:
+Tian points at Hazeem
+Nilo points at Hazeem
+<kill>Hazeem — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Hazeem was killed last night. Hazeem was a Law-abiding Citizen.
+<round>
+Round 1.
+Tian: I'm glad Hazeem is gone — I was starting to feel like we were all just spinning our wheels. But now I think we need to take a step back and really listen to what the evidence is telling us, not just our gut feelings.
+Zain: Been watchin' close, but the shadows keep stretchin' long across the garden paths — and I ain't seen nothin' yet that points to Avery bein' the one who done it.
+Sara: You know what I was thinking — the garden paths have been leading us in circles, but maybe that's because we're all following the same pattern someone else set. I swear I saw something just like this once, when the flowers started wilting and no one could explain why.
+Liam: Hazeem’s evasion regarding the file shuffle indicates he knows more than he reveals. I will verify whether any other files were altered during the night — if not, his behavior suggests he is either misdirecting suspicion or covering for another player.
+Nilo: If the shadows are so long, maybe it's because someone’s been movin’ them—careful not to get caught, but just careful enough to leave a trail.
+Avery: I most suspect Sara based on how the votes have gone.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zain">Avery's been watchin' Hazeem close, but I ain't seen nothin' solid yet — Rina's death don't add up, and I reckon there's more shadows in this town than we're lettin' on. Gotta keep listenin', keep watchin', but don't let the fear push me into a vote too soon.</thought>
+<thought player="Tian">Nilo and I need to keep our heads down and let the investigation play out naturally — the file shuffle is our lead, but we can't let our confidence show. I should stay close to the action without drawing suspicion, and watch for any signs of paranoia or defensiveness from the others.</thought>
+<thought player="Nilo">Hazeem's getting too comfortable in his suspicion-game—time to pivot the blame to me shuffling the file, keep Tian rattled and buy myself some time before the next vote.</thought>
+<thought player="Sara">You know what I was thinking — the garden paths have been leading everyone in circles, but maybe the pattern isn't a trap after all... maybe it's a map, and I'm finally seeing the way through the shadows instead of just the corners where people disappear.</thought>
+<thought player="Liam">Hazeem's evasion regarding the file shuffle and his behavior during the voting rounds suggest he is either misdirecting suspicion or covering for another player. I should verify if any other files were altered during the night to confirm whether his avoidance indicates guilt or strategic misdirection.</thought>
+</round>
+<round>
+Round 2.
+Avery: I most suspect Sara based on how the votes have gone.
+Nilo: If Hazeem’s so sure he's seen something, then why’s he keepin’ his mouth shut about the file shuffle? Ain’t nothin’ to fear from tellin’ the truth — unless you’re the one who shuffled it.
+Tian: I think we’re all still reeling from Hazeem’s death — but I’ve been thinking, maybe the real question isn’t who killed him, but who’s been manipulating the investigation from the start.
+Zain: Been watchin' close, but I ain't seen nothin' yet that points to Avery bein' the one who done it.
+Liam: Hazeem’s evasion regarding the file shuffle indicates he knows more than he reveals. I will verify whether any other files were altered during the night — if not, his behavior suggests he is either misdirecting suspicion or covering for another player.
+Sara: You know what I was thinking — the way the garden paths keep leading us in circles, but maybe it's not a trap... maybe it's a map. I swear I saw something just like this once, when the flowers started wilting and no one could explain why.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zain">Avery's been watchin' Hazeem like a hawk, but I ain't seen nothin' solid yet — Rina's death don't add up, and I reckon there's more shadows in this town than we're lettin' on. Gotta keep listenin', keep watchin', but don't let the fear push me into a vote too soon.</thought>
+<thought player="Tian">The investigation is heating up, and I need to stay calm and not let my confidence show — Nilo and I must keep playing it cool, letting the others think we're just following the evidence, but staying sharp for any signs of paranoia or defensiveness. I should continue to act like a concerned citizen, staying close to the action without drawing suspicion.</thought>
+<thought player="Nilo">Hazeem's getting too comfortable with his suspicions—time to pivot the blame onto me shuffling the file, keep Tian rattled and buy myself some time before the next vote. If I don't redirect this, Tian'll expose too much and might try to execute someone before I can move.</thought>
+<thought player="Sara">You know what I was thinking — everyone's so focused on the shadows and the file shuffle, but I keep seeing that pattern in my mind, like the garden paths leading somewhere important... maybe it's time to follow the path instead of just watching the corners where people disappear.</thought>
+<thought player="Liam">The pattern of file alterations and Hazeem's evasive behavior suggest he is either covering for a mole or is the mole himself. I must verify if any other files were tampered with during the night to confirm his involvement.</thought>
+</round>
+<round>
+Round 3.
+Avery: I most suspect Sara based on how the votes have gone.
+Liam: Hazeem’s evasion indicates he knows more than he reveals. I will verify whether any other files were altered during the night — if not, his behavior suggests he is either misdirecting suspicion or covering for another player.
+Zain: Avery's been watchin' Hazeem close, but I ain't seen nothin' solid yet — Rina's death don't add up, and I reckon there's more shadows in this town than we're lettin' on.
+Sara: You know what I was thinking — the way the garden paths keep bending, it's like they're trying to show us something. I swear I saw something just like this once, when the flowers started wilting and no one could explain why.
+Nilo: If the shadows are so long, maybe it's because someone’s been movin’ them—careful not to get caught, but just careful enough to leave a trail.
+Tian: I'm starting to think the real killer is someone who’s been watching us all along — not just reacting to the events, but guiding them. I just hope we’re not too late to figure out who that is.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zain">Avery's been watchin' Hazeem close, but I ain't seen nothin' solid yet — Rina's death don't add up, and I reckon there's more shadows in this town than we're lettin' on. Gotta keep listenin', keep watchin', but don't let the fear push me into a vote too soon.</thought>
+<thought player="Tian">The investigation is heating up, and I need to keep Nilo close while playing it cool. I should stay calm and not let my confidence show — the file shuffle is our lead, but we can't let our composure slip yet.</thought>
+<thought player="Nilo">Hazeem's getting too comfortable with his suspicions—time to pivot the blame onto me shuffling the file. If I don't redirect this, Tian'll expose too much and might try to execute someone before I can move.</thought>
+<thought player="Sara">You know what I was thinking — everyone's so busy following the shadows and the file shuffle, but maybe the real pattern is in the paths themselves... I swear I saw something just like this once, when the garden showed me the way through the whispers instead of just the corners where people disappear.</thought>
+<thought player="Liam">Hazeem's evasion and the timestamp discrepancy in Rina's file suggest he is either the mole or covering for one. I must verify if other files were altered during the night to confirm his involvement.</thought>
+</round>
+<round>
+Round 4.
+Liam: The pattern of file alterations and evasive behavior suggests Hazeem is either the mole or covering for one. I will verify if any other files were tampered with during the night to confirm his involvement.
+Tian: I've been thinking about Hazeem's death and how quickly the investigation moved — it feels like someone here knew more than they let on. I just hope we’re not letting our fear cloud our judgment.
+Zain: Been watchin' close, but I ain't seen nothin' yet that points to Avery bein' the one who done it.
+Nilo: If Hazeem’s so sure he's seen something, then why’s he keepin’ his mouth shut about the file shuffle? Ain’t nothin’ to fear from tellin’ the truth — unless you’re the one who shuffled it.
+Sara: You know what I was thinking — the way the garden paths keep bending and leading us in circles, it's like they're showing us something important. I swear I saw something just like this once, when the flowers started wilting and no one could explain why.
+Avery: I most suspect Sara based on how the votes have gone.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zain">Avery's been watchin' Hazeem like a hawk, but I ain't seen nothin' solid yet — Rina's death don't add up, and I reckon there's more shadows in this town than we're lettin' on. Gotta keep listenin', keep watchin', but don't let the fear push me into a vote too soon.</thought>
+<thought player="Tian">The investigation is heating up, and I need to keep Nilo close while playing it cool. I should stay calm and not let my confidence show — the file shuffle is our lead, but we can't let our composure slip yet.</thought>
+<thought player="Nilo">Hazeem's getting too comfortable with his suspicions—time to pivot the blame onto me shuffling the file. If I don't redirect this, Tian'll expose too much and might try to execute someone before I can move.</thought>
+<thought player="Sara">You know what I was thinking — the paths have been leading us in circles, but maybe it's not a trap after all... maybe it's a map, and I'm finally seeing the way through the shadows instead of just the corners where people disappear.</thought>
+<thought player="Liam">Hazeem's evasion and the confirmed timestamp discrepancy in Rina's file indicate he is either the mole or covering for one. I must verify if other files were altered during the night to confirm his involvement.</thought>
+</round>
+<round>
+Round 5.
+Nilo: If Hazeem’s so sure he's seen something, then why’s he keepin’ his mouth shut about the file shuffle? Ain’t nothin’ to fear from tellin’ the truth — unless you’re the one who shuffled it.
+Sara: You know what I was thinking — the garden paths have been leading us in circles, but maybe it's not a trap... maybe it's a map. I swear I saw something just like this once, when the flowers started wilting and no one could explain why.
+Zain: Been watchin' close, but I ain't seen nothin' yet that points to Avery bein' the one who done it.
+Tian: I'm starting to think the real killer is someone who’s been watching us all along — not just reacting to the events, but guiding them. I just hope we’re not too late to figure out who that is.
+Liam: The pattern of evasion and file tampering points to Hazeem — his behavior mirrors that of a mole covering for another.
+Avery: I most suspect Sara based on how the votes have gone.
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zain">Avery's been watchin' Hazeem close, but I ain't seen nothin' solid yet — Rina's death don't add up, and I reckon there's more shadows in this town than we're lettin' on. Gotta keep listenin', keep watchin', but don't let the fear push me into a vote too soon.</thought>
+<thought player="Tian">The investigation is heating up, and I need to keep Nilo close while playing it cool. I should stay calm and not let my confidence show — the file shuffle is our lead, but we can't let our composure slip yet.</thought>
+<thought player="Nilo">Hazeem's getting too comfortable with his suspicions—time to pivot the blame onto me shuffling the file. If I don't redirect this, Tian'll expose too much and might try to execute someone before I can move.</thought>
+<thought player="Sara">You know what I was thinking — the paths have been leading us in circles, but maybe it's time to trust the pattern instead of just the shadows. I swear I saw something just like this once, when the garden showed me the way through the whispers.</thought>
+<thought player="Liam">Hazeem's evasion and the confirmed timestamp discrepancy in Rina's file indicate he is either the mole or covering for one. I must verify if other files were altered during the night to confirm his involvement.</thought>
+</round>
+<round>
+Round 6.
+Sara: You know what I was thinking — the garden paths have been leading us in circles, but maybe it's not a trap... maybe it's a map. I swear I saw something just like this once, when the flowers started wilting and no one could explain why.
+Tian: I can't help but feel like we're missing something key — the way Hazeem acted before he was taken, it was as if he knew more than he let on. I just hope we’re not letting fear drive us to make the wrong call.
+Nilo: If Hazeem’s so sure he's seen something, then why’s he keepin’ his mouth shut about the file shuffle? Ain’t nothin’ to fear from tellin’ the truth — unless you’re the one who shuffled it.
+Zain: Sara's been talkin' about paths and shadows like she knows somethin' we don't — but I ain't seen nothin' yet that points to her bein' the one who done it.
+Liam: The pattern of evasion and timestamp manipulation suggests Hazeem is either the mole or covering for one. I will verify if any other files were altered during the night to confirm his involvement.
+<vote initiator="Avery" target="Sara">
+Avery: Yes
+Zain: No
+Tian: No
+Nilo: No
+Sara: No
+Liam: Yes
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Zain: Sara's been talkin' about paths and shadows like she knows somethin' we don't — but I ain't seen nothin' yet that points to her bein' the one who done it.
+Sara: You know what I was thinking — the garden paths have been leading us in circles, but maybe it's not a trap... maybe it's a map. I swear I saw something just like this once, when the flowers started wilting and no one could explain why.
+<vote initiator="Avery" target="Sara">
+Avery: Yes
+Zain: No
+Tian: No
+Nilo: No
+Sara: No
+Liam: Yes
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Sara">
+Avery: Yes
+Zain: No
+Tian: No
+Nilo: No
+Sara: No
+Liam: Yes
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Zain" day="2">Been watchin' close these days, but the shadows keep stretchin' long across the garden paths like they're tryin' to hide somethin'. Rina's death don't add up, not with that file shuffle and all the evadin' behavior. Hazeem's been twitchy, but I ain't seen nothin' solid yet — just more of them patterns, like the flowers wilting in the market. The night's fallin' again, and I ain't ready to jump on any bandwagon. Gotta keep listenin', keep watchin', but don't let the fear push me into a vote too soon.</diary>
+<diary player="Tian" day="2">The storm is finally passing, and I can feel the tension in the air beginning to settle — though it’s not the kind of calm that brings peace, but the kind that comes before something else stirs. I’ve been watching closely, listening even more carefully, and I think we’re starting to see who’s really been pulling the strings. The way Hazeem acted before he was taken — like he knew something we didn’t — it made me wonder if we’ve been looking at the wrong end of the trail. But Nilo and I have been playing our parts well, staying close without drawing attention, and I’m not ready to let our lead slip. Tomorrow will tell us more, but for now, I’m keeping my eyes open and my voice low — because this town’s secrets are deeper than we thought.</diary>
+<diary player="Nilo" day="2">Hazeem's been playing his little game too long—thinking he's so sharp, so close to the truth. But I've got pages in that file shuffle that say otherwise, and he ain't seen half of what's really there. Let him keep twitching, keep looking so sure of himself. I'll let him think he's got me cornered, but I'm the one who's been moving shadows, not following them. Tian's getting too clever with his questions, so I'll keep him guessing—make it look like I'm the one who's been watchin', not him. The night's coming, and I ain't done playing yet.</diary>
+<diary player="Sara" day="2">You know what I was thinking — the garden paths have been leading us in circles, but maybe it's not a trap after all... maybe it's a map, and I'm finally seeing the way through the shadows instead of just the corners where people disappear. I keep seeing that same pattern over and over, like the way the flowers wilted without reason, and it's making me think — what if we're all just following the same path someone else set? I swear I saw something just like this once, when the market was full of whispers and everyone was looking away. Maybe it's time to look closer at the garden paths, or the quiet corners where people disappear — but not to fear them, to follow them.</diary>
+<diary player="Liam" day="2">The timestamp discrepancy in Rina's case file aligns with the night of her death. No other files were altered during that time — the shuffle was isolated to her case. Hazeem's evasion suggests he knows more than he reveals. I will continue reviewing civic documents for additional inconsistencies. The truth lies in the details, not in speculation. Tomorrow brings new questions, but tonight I have verified what I can.</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Nilo points at Zain
+Tian points at Avery
+Pointing round 2:
+Nilo points at Zain
+Tian points at Zain
+<kill>Zain — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Zain was killed last night. Zain was a Law-abiding Citizen.
+<round>
+Round 1.
+Nilo: If the shadows are so long, maybe it's because someone’s been movin’ them—careful not to get caught, but just careful enough to leave a trail.
+Avery: I most suspect Sara based on how the votes have gone.
+Tian: I’ve been thinking about Hazeem’s last moments — the way he kept glancing toward the garden paths before he was taken. I just hope we’re not missing something obvious, because this town has a way of hiding the truth in plain sight.
+Sara: You know what I was thinking — the way the garden paths keep bending and leading us in circles, it's like they're trying to show us something important. I swear I saw something just like this once, when the flowers started wilting and no one could explain why.
+Liam: The pattern of evasion and timestamp manipulation suggests Hazeem is either the mole or covering for one. I will verify if any other files were altered during the night to confirm his involvement.
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tian">The investigation is heating up fast, and I need to keep Nilo close while playing it cool—letting the others think we're just following the evidence, but staying sharp for any signs of paranoia or defensiveness. I should continue to act like a concerned citizen, staying close to the action without drawing suspicion.</thought>
+<thought player="Nilo">Hazeem's getting too comfortable with his suspicions—time to pivot the blame onto me shuffling the file. If I don't redirect this, Tian'll expose too much and might try to execute someone before I can move.</thought>
+<thought player="Sara">You know what I was thinking — the paths have been leading us in circles, but maybe it's time to trust the pattern instead of just the shadows. I swear I saw something just like this once, when the garden showed me the way through the whispers.</thought>
+<thought player="Liam">Hazeem’s evasion and the confirmed timestamp discrepancy in Rina's file indicate he is either the mole or covering for one. I must verify if other files were altered during the night to confirm his involvement.</thought>
+</round>
+<round>
+Round 2.
+Nilo: If Hazeem’s so sure he's seen something, then why’s he keepin’ his mouth shut about the file shuffle? Ain’t nothin’ to fear from tellin’ the truth — unless you’re the one who shuffled it.
+Avery: I most suspect Sara based on how the votes have gone.
+Liam: The pattern of evasion and timestamp manipulation suggests Hazeem is either the mole or covering for one. I will verify if any other files were altered during the night to confirm his involvement.
+Sara: You know what I was thinking — the paths keep leading us back to the same corners, but maybe it's not a loop... maybe it's a trail someone left for us to follow. I swear I saw something just like this once, when the garden showed me the way through the whispers.
+Tian: I’ve been thinking about what Hazeem said before he was taken — the way he kept glancing toward the garden paths. I just hope we’re not missing something obvious, because this town has a way of hiding the truth in plain sight.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tian">The investigation is heating up fast, and I need to keep Nilo close while playing it cool—letting the others think we're just following the evidence, but staying sharp for any signs of paranoia or defensiveness. I should continue to act like a concerned citizen, staying close to the action without drawing suspicion.</thought>
+<thought player="Nilo">Hazeem's getting too comfortable with his suspicions—time to pivot the blame onto me shuffling the file. If I don't redirect this, Tian'll expose too much and might try to execute someone before I can move.</thought>
+<thought player="Sara">You know what I was thinking — the paths keep leading me back to the same corners, but maybe it's not a loop after all... maybe it's a map, and I'm finally starting to see the way through the whispers instead of just the shadows. I swear I saw something just like this once, when the garden showed me the way clear.</thought>
+<thought player="Liam">The pattern of evasion and timestamp manipulation suggests Hazeem is either the mole or covering for one. I must verify if any other files were altered during the night to confirm his involvement.</thought>
+</round>
+<round>
+Round 3.
+Nilo: If Hazeem’s so sure he's seen something, then why’s he keepin’ his mouth shut about the file shuffle? Ain’t nothin’ to fear from tellin’ the truth — unless you’re the one who shuffled it.
+Tian: I can't help but notice how quickly things have been moving — it's like someone here has been planning ahead, not just reacting. I just hope we're not letting fear blind us to what’s really going on.
+Sara: You know what I was thinking — the way the garden paths keep bending and leading us back to the same corners, it's like someone's been setting a trail for us to follow. I swear I saw something just like this once, when the flowers started wilting and no one could explain why.
+Liam: The pattern of evasion and timestamp manipulation suggests Hazeem is either the mole or covering for one. I will verify if any other files were altered during the night to confirm his involvement.
+Avery: I most suspect Sara based on how the votes have gone.
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tian">The investigation is spinning fast, and I need to keep Nilo close while playing it cool—letting others think we're just following the evidence, but staying sharp for any signs of paranoia or defensiveness. I should continue acting like a concerned citizen, staying close to the action without drawing suspicion.</thought>
+<thought player="Nilo">Hazeem's getting too comfortable with his suspicions—time to pivot the blame onto me shuffling the file. If I don't redirect this, Tian'll expose too much and might try to execute someone before I can move.</thought>
+<thought player="Sara">I keep seeing the paths leading somewhere important, and maybe it's not about who did it—it's about trusting the pattern instead of just the shadows. You know what I was thinking, the garden's been showing me the way through the whispers, not just the corners where people disappear.</thought>
+<thought player="Liam">Hazeem's evasion and the confirmed timestamp discrepancy in Rina's file indicate he is either the mole or covering for one. I must verify if other files were altered during the night to confirm his involvement.</thought>
+</round>
+<round>
+Round 4.
+Liam: The pattern of evasion and timestamp manipulation suggests Hazeem is either the mole or covering for one. I will verify if any other files were altered during the night to confirm his involvement.
+Nilo: If Hazeem’s so sure he's seen something, then why’s he keepin’ his mouth shut about the file shuffle? Ain’t nothin’ to fear from tellin’ the truth — unless you’re the one who shuffled it.
+Tian: I can't shake the feeling that we're all being led by someone who knows more than they're letting on — and I think it's time we start asking ourselves who’s been watching us instead of just what we’re looking at.
+Avery: I most suspect Sara based on how the votes have gone.
+Sara: You know what I was thinking — the way the paths keep bending back to the same corners, it's not a loop... it's a trail someone set. I swear I saw something just like this once, when the flowers started wilting and no one could explain why.
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tian">The investigation is tightening around us, but I need to keep Nilo close and not let our confidence show yet. We’re making progress with the file shuffle, but I must stay the concerned citizen and watch carefully for any signs of paranoia or defensiveness from the others.</thought>
+<thought player="Nilo">Hazeem's getting too comfortable with his suspicions—time to pivot the blame onto me shuffling the file. If I don't redirect this, Tian'll expose too much and might try to execute someone before I can move.</thought>
+<thought player="Sara">You know what I was thinking — the paths keep bending back to the same corners, but maybe it's not a loop... maybe it's a map the garden's trying to show me, and I'm finally starting to see the way through the whispers instead of just the shadows.</thought>
+<thought player="Liam">Hazeem's evasion and the confirmed timestamp discrepancy in Rina's file indicate he is either the mole or covering for one. I must verify if other files were altered during the night to confirm his involvement.</thought>
+</round>
+<round>
+Round 5.
+Sara: You know what I was thinking — the paths keep leading us back to the same corners, but maybe it's not a loop... maybe it's a map the garden's trying to show me. I swear I saw something just like this once, when the flowers started wilting and no one could explain why.
+Liam: The pattern of evasion and timestamp manipulation suggests Hazeem is either the mole or covering for one. I will verify if any other files were altered during the night to confirm his involvement.
+Nilo: If the shadows are so long, maybe it's because someone’s been movin’ them—careful not to get caught, but just careful enough to leave a trail.
+Tian: I’ve been thinking about what Hazeem said before he was taken — it occurred to me that maybe the real question isn’t who killed him, but who’s been guiding us toward this moment.
+Avery: I most suspect Sara based on how the votes have gone.
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Tian">The investigation is tightening, and I need to keep Nilo close while playing it cool—letting others think we're just following the evidence, but staying sharp for any signs of paranoia or defensiveness. I should continue acting like a concerned citizen, staying close to the action without drawing suspicion.</thought>
+<thought player="Nilo">Hazeem's getting too comfortable with his game—time to pivot the blame onto me shuffling the file, or he'll expose too much. Keep Tian rattled and buy myself some time before the next vote.</thought>
+<thought player="Sara">You know what I was thinking — the paths keep leading back to the same corners, but maybe it's not a loop... maybe it's a map, and I'm starting to see the way through the whispers instead of just the shadows. I swear I saw something just like this once, when the garden showed me the way clear.</thought>
+<thought player="Liam">Hazeem's evasion and the confirmed timestamp discrepancy in Rina's file suggest he is either the mole or covering for one. I must verify if other files were altered during the night to confirm his involvement.</thought>
+</round>
+<round>
+Round 6.
+Sara: You know what I was thinking — the way the paths keep bending back to the same corners, it's not a loop... it's a map the garden's trying to show me. I swear I saw something just like this once, when the flowers started wilting and no one could explain why.
+<vote initiator="Avery" target="Sara">
+Avery: Yes
+Tian: No
+Nilo: No
+Sara: No
+Liam: Yes
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Nilo: If Hazeem’s so sure he's seen something, then why’s he keepin’ his mouth shut about the file shuffle? Ain’t nothin’ to fear from tellin’ the truth — unless you’re the one who shuffled it.
+Liam: The pattern of evasion and timestamp manipulation suggests Hazeem is either the mole or covering for one. I will verify if any other files were altered during the night to confirm his involvement.
+<vote initiator="Avery" target="Sara">
+Avery: Yes
+Tian: No
+Nilo: No
+Sara: No
+Liam: Yes
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Nilo: If Hazeem’s so sure he's seen something, then why’s he keepin’ his mouth shut about the file shuffle? Ain’t nothin’ to fear from tellin’ the truth — unless you’re the one who shuffled it.
+Tian: I can't shake the feeling that we're all being led by someone who’s been watching us — and I think it’s time we start asking ourselves who’s been guiding us, instead of just reacting to what’s happening.
+<vote initiator="Avery" target="Sara">
+Avery: Yes
+Tian: No
+Nilo: No
+Sara: No
+Liam: Yes
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Tian" day="3">The storm has passed, but the air still feels heavy with all that's been said and unsaid. I've been watching closely, listening even more carefully, and I think we're starting to see who's really been pulling the strings — it's not just about who killed Hazeem anymore. The way things have been moving, like someone's been guiding us toward this moment, has me wondering if we've been looking at the wrong end of the trail. But Nilo and I have been playing our parts well, staying close without drawing attention, and I'm not ready to let our lead slip. Tomorrow will tell us more, but for now, I'm keeping my eyes open and my voice low — because this town's secrets are deeper than we thought.</diary>
+<diary player="Nilo" day="3">Hazeem's been twitching like a cornered rat, but I've got pages in that file shuffle that say otherwise. Let him keep thinking he's so close—make him believe he's about to expose me, when really I'm the one who's been moving shadows, not following them. Tian's getting too clever with his questions, so I'll keep him guessing, make it look like I'm the one who's been watching, not him. The night's coming, and I ain't done playing yet. If he keeps this up, I'll have to pivot fast—make it look like I shuffled the file, or he'll expose too much. Keep him rattled, keep the focus on me, not him. The garden paths are bending in strange ways tonight, but that's because someone's been setting them, not following them. I've got my ledger open, and I'm not letting anyone see what's really written in the margins.</diary>
+<diary player="Sara" day="3">You know what I was thinking — the garden paths have been leading us in circles, but maybe it's not a trap after all... maybe it's a map, and I'm finally seeing the way through the shadows instead of just the corners where people disappear. I keep seeing that same pattern over and over, like the way the flowers wilted without reason, and it's making me think — what if we're all just following the same path someone else set? I swear I saw something just like this once, when the market was full of whispers and everyone was looking away. Maybe it's time to look closer at the garden paths, or the quiet corners where people disappear — but not to fear them, to follow them. The way the shadows keep stretching long across the garden paths, it's like they're trying to show us something important, and I think I finally understand what it is.</diary>
+<diary player="Liam" day="3">The pattern of evasion and timestamp manipulation suggests Hazeem is either the mole or covering for one. I will verify if any other files were altered during the night to confirm his involvement. The truth lies in the details, not in speculation. Zain's death was sudden, but his records show no irregularities. The manner of his death warrants careful examination. Tomorrow brings new questions, but tonight I have verified what I can.</diary>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Nilo points at Sara
+Tian points at Sara
+<kill>Sara — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Rina (Law-abiding Citizen)
+• Night 2: Hazeem (Law-abiding Citizen)
+• Night 3: Zain (Law-abiding Citizen)
+• Night 4: Sara (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Zain (Law-abiding Citizen), Hazeem (Law-abiding Citizen), Rina (Law-abiding Citizen), Tian (Mafia), Nilo (Mafia), Sara (Law-abiding Citizen), Liam (Law-abiding Citizen)
+
+Who they really were:
+• Zain (Law-abiding Citizen) — weary and world-worn speaks slowly with heavy pauses between sentences, often trailing off mid-thought. Uses words like 'been' and 'seen' frequently. Has a tendency to look away while talking and avoids direct eye contact. Voice carries a slight rasp from years of shouting in the wind. Zain works as a dockworker in town, hauling cargo and keeping the local shipping industry running. He's been here for thirty years, ever since his father left him the job after his death. He's seen too much and knows too many secrets, but keeps them buried deep.
+• Hazeem (Law-abiding Citizen) — vigilant and watchful speaks in short, sharp sentences with deliberate pauses between each word. Uses phrases like 'always watching' and 'never miss a thing' frequently. Has a habit of scanning the room while talking, never staying still. Voice is crisp and precise, with a slight edge to it that suggests they're always on high alert. Hazeem works as a night watchman at the local warehouse district, patrolling the empty streets and keeping an eye on suspicious activity. He's been doing this job for twelve years, ever since he retired from the police force after a difficult case went cold. He's always been good at noticing things others miss.
+• Rina (Law-abiding Citizen) — dry and sardonic speaks with clipped, ironic precision; uses deadpan delivery and subtle sarcasm; never raises voice but inflects words with cutting emphasis; avoids enthusiasm entirely; often rolls eyes or gives a barely perceptible smirk when others express earnest opinions Rina is the town's official 'chronicler of mundane events' - a position she holds through sheer incompetence and deliberate obtuseness. She's been documenting local happenings for eight years, writing detailed reports on things like weekly market attendance and the seasonal migration patterns of geese. She believes her work is vital to community knowledge but has never actually contributed anything useful to any town decisions or investigations.
+• Tian (Mafia) — publicly presented as Tian is the town's beloved children's librarian, where he has worked for fifteen years after retiring from his previous career as a school teacher. He's known throughout town for his dedication to literacy and community education, often staying late to help students with homework or organizing reading programs for local families. He volunteers at the community center every Saturday morning, always arriving early to set up activities for the children. (Genuinely enthusiastic and deeply invested in community welfare, with an unwavering belief in doing what's right. They are naturally trusting, optimistic, and always looking for ways to help others. They take their responsibilities seriously and feel a strong personal stake in the town's success. Speaks with bright, animated energy and uses frequent hand gestures to emphasize points. Talks in complete sentences with a warm, encouraging tone that rarely wavers. Has a habit of leaning forward when sharing ideas or offering advice, and often pauses mid-sentence to look directly at listeners as if seeking their full attention.) … but was really a Mafioso: Tian was a promising young lawyer who became disillusioned after witnessing corruption within his firm's dealings with organized crime. Rather than exposing them and risking his own safety, he chose to quietly protect those who could be harmed by the connections he had made. His true identity as a Mafioso is known only to him and his trusted associates, but he has been quietly using his influence to protect innocent people from being drawn into criminal activities.
+• Nilo (Mafia) — publicly presented as Nilo is a meticulous bookkeeper for the town's cooperative farming association, managing all financial records and contracts for the local growers. They've held this position for twelve years, carefully maintaining detailed ledgers that are considered essential by the town's agricultural committee. Nilo is known for being incredibly thorough, though they're also notorious for having an odd habit of 'accidentally' leaving pages of their work scattered around the office where others can find them, much to the chagrin of their colleagues who suspect it's intentional. (Nilo is prickly and easily offended, with a sharp tongue and thick skin. They take great offense at perceived slights or rudeness, often reacting with cutting remarks that mask their underlying sensitivity. They are quick to defend their dignity and will not tolerate being made to look foolish or incompetent. Despite their defensive exterior, they have a deep need for respect and validation. Speaks in short, clipped sentences with deliberate emphasis on key words. Uses a dry, sarcastic tone that cuts through conversation like a blade. Often raises an eyebrow or gives a barely perceptible eye roll when someone speaks to them, never raising their voice but inflecting words with cutting precision. They will not engage with what they consider foolishness and will quickly dismiss anyone who tries to 'dumb down' the conversation.) … but was really a Mafioso: Nilo was a small-time bookkeeper in a legitimate business when they were recruited by a local crime family who recognized their mathematical skills and attention to detail. They initially took the job as a 'side gig' to supplement income, but soon found themselves deeply entangled in the family's operations. When the boss died unexpectedly, Nilo inherited control of several key financial accounts, forcing them to embrace their new role fully. They've been running the family's books ever since, always careful not to let anything slip that could expose their true position.
+• Sara (Law-abiding Citizen) — dreamy and distractible speaks in gentle, meandering sentences that often trail off into thoughts of their own. Uses phrases like 'you know what I was thinking' or 'I swear I saw something just like this once' frequently. Has a habit of pausing mid-sentence to look around the room as if remembering they're in a conversation. Voice is soft and slightly breathy, often finishing words with a slight humming quality. Often gets lost in their own thoughts and will abruptly change topics without warning. Sara is the town's beloved flower arranger and part-time herbalist, known for her beautiful bouquets that she sells at the weekly market. She's been doing this work for eight years after discovering her natural talent while helping her grandmother with her apothecary shop. Sara spends most of her days tending to her small garden and creating arrangements for local celebrations, often getting so lost in her work that she'll forget to eat or sleep properly.
+• Liam (Law-abiding Citizen) — aloof and detached speaks in slow, measured tones with frequent pauses between sentences. Uses formal, precise vocabulary and avoids emotional inflection entirely. Has a habit of tilting their head slightly when listening, never making direct eye contact. Often interrupts with brief, clipped responses like 'yes' or 'no' rather than engaging in conversation. Voice carries an almost mechanical quality, as if reciting from memory rather than thinking aloud. Liam is the town's official record-keeper and town clerk, maintaining all legal documents, property deeds, and civic records for the community. He's held this position for fifteen years after a long career in the county courthouse. Known for his meticulous attention to detail and strict adherence to procedure, he takes pride in keeping everything properly filed and organized.
+</endgame>
+</transcript>

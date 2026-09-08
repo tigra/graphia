@@ -4021,3 +4021,293 @@ metrics:
     peak: 0.47808104898679654
     denominator: 21
 notes: 'Spec 041 Task 9.5 live half: one local-model game confirming spec 028 private_thoughts reshaped to list[ThoughtRecord] survives a real game end to end - records reach both {private_thoughts} renderers, the reflection prompt and the eval transcript. code.dirty is a CONCURRENT edit to src/graphia/ui/ledger_viewer.py + tests/test_ledger_viewer.py (Task 9.5 item (b) style test); neither is imported by the game or by this harness, so the measured behaviour is commit 737d777s. The dict-repr-in-prompt failure this run originally targeted is now pinned offline by Task 9.4, so what this run adds is only that the live model is reached and the reshaped channel round-trips.'
+---
+run:
+  date: '2026-09-08'
+  duration_seconds: 11338.919
+  metrics_version: 1
+  transcript_dir: '2026-09-08T03-06-11'
+code:
+  commit: '6143d3c2d7c25c4fa4c98fc671c7508fb7f1ab38'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  structured_output: 'json_schema'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.32.14'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 10
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  diary_fallback_rate: 0.0
+  diary_fallback_entries: 0
+  diary_entries_attempted: 118
+  substitutions:
+    roster:
+      rate: 0.0
+      count: 0
+      attempted: 10
+    persona:
+      rate: 0.0
+      count: 0
+      attempted: 70
+    pointing:
+      rate: 0.0
+      count: 0
+      attempted: 88
+    ballot:
+      rate: 0.0
+      count: 0
+      attempted: 289
+    day_action:
+      rate: 0.0035211267605633804
+      count: 3
+      attempted: 852
+    reflection:
+      rate: 0.0
+      count: 0
+      attempted: 694
+    diary:
+      rate: 0.0
+      count: 0
+      attempted: 118
+  duration_seconds: 11338.919
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 3
+    rate: 0.3
+    ci_low: 0.10778928748621183
+    ci_high: 0.6032267800204347
+  mafia:
+    wins: 7
+    rate: 0.7
+    ci_low: 0.39677321997956516
+    ci_high: 0.892210712513788
+  scripted_side:
+    side: 'law_abiding'
+    wins: 3
+    rate: 0.3
+    ci_low: 0.10778928748621183
+    ci_high: 0.6032267800204347
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against an active rule-based scripted human (deterministic, no model call; when Law-abiding it supplies the vote a correct town majority needs) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 7
+    mafia: 0
+  by_day:
+    day_1: 5
+    day_2: 1
+    day_4: 1
+metrics:
+  repetition:
+    rate: 0.6378698224852071
+    count: 539
+    denominator: 845
+    ci_low: 0.6049072080966735
+    ci_high: 0.6695845227515789
+  third_person_self_talk:
+    rate: 0.008284023668639054
+    count: 7
+    denominator: 845
+    ci_low: 0.004018416580233788
+    ci_high: 0.01700034593093437
+  self_vote.initiation:
+    rate: 0.25
+    count: 3
+    denominator: 12
+    ci_low: 0.08894003962896138
+    ci_high: 0.53231033912066
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 57
+    ci_low: 0.0
+    ci_high: 0.06314100878346394
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 14
+    ci_low: 0.0
+    ci_high: 0.21531701192718142
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 210
+    ci_low: 0.0
+    ci_high: 0.017964699104383804
+  persona_lex_mean:
+    mean: 0.0263218222416847
+    denominator: 210
+  persona_lex_peak:
+    peak: 0.11745244003308519
+    denominator: 210
+  persona_sem_mean:
+    mean: 0.3408332599649277
+    denominator: 210
+  persona_sem_peak:
+    peak: 0.7172692343961469
+    denominator: 210
+notes: 'spec 041 Task 12.2 measured A/B: per-AI private diaries ON. TRANSPORT GENERATION: ADR 013 as shipped by Slices 2 and 3 -- the native ChatOllama client on /api/chat with method=json_schema pinned at the provider seam, so the model emits under a JSON-schema grammar rather than through Anthropic-compatible tool use. Pair with the off-arm record on the same commit. THAT PAIRED ARM IS THE ONLY VALID COMPARATOR: no clean, lineup-comparable, same-transport ollama record of n>=10 exists in this ledger -- the two n=20 six-and-two baselines (2026-06-21 and 2026-06-22) are both code.dirty AND pre-swap, and the spec 039 n=10 ollama trio (2026-09-02) was played five-and-two, across the CR 007 lineup boundary that scales nearly every denominator. PRE-REGISTERED per CR 005, because this run answers TWO DIFFERENT QUESTIONS with two different instruments and only one of them is a result. (1) DOES THE SWAP FIX THE DIARY -- a CENSUS, answered by quality.substitutions.diary read with its attempted denominator. The sink counts every attempt the game actually made, not a draw from a population, so n=10 is plenty and NO SIGNIFICANCE TEST APPLIES. A zero here is BY CONSTRUCTION, NOT BY RECOVERY: Slices 2 and 3 make an off-schema diary undecodable at the transport, and Slice 4 then WITHDREW the application-layer prose repair that produced the 0.00 on the 2026-09-02 rerun record (transcript_dir 2026-09-02T19-43-31) -- so a zero here is the grammar, not a salvage, and the two records reach the same number by different mechanisms. (2) DID THE SWAP HARM THE FIVE KINDS THAT ALREADY WORKED -- answered by the eleven METRIC_ORDER metrics, where n=10 per arm reveals a several-fold increase and essentially nothing finer. NO DECREASE OF ANY SIZE IS DETECTABLE AT n=10: the vote denominators here run single-digit, and at the town-win base rate this ledger records the off arm alone reads zero town wins a large fraction of the time, so this cannot even reveal a collapse. Question (2) is therefore recorded as AN OBSERVATION, NEVER AN ACCEPTANCE CRITERION. A recorded observation, not a guarantee of no harm. READ IN THIS ORDER: quality.substitutions.diary with its attempted denominator FIRST, then the other six substitution kinds each with theirs, and only then any METRIC_ORDER rate. Never read a substitutions rate without its denominator beside it, and never read an ABSENT kind as a clean zero -- the absent-not-zero gate omits any kind whose attempted is 0, so absence means the run gave that kind no opportunity, which is uninformative rather than good. || FINDING, both arms complete on commit 6143d3c, both code.dirty false, both provider ollama with structured_output json_schema, both n=10, same lineup and scripted seat. CENSUS (question 1, DOES THE SWAP FIX THE DIARY): quality.substitutions.diary 0/118, rate 0.0000, Wilson [0.0000, 0.0315]. CONFIRMED. Read with its denominator, as pre-registered. It triangulates THREE independent ways: the sink''s attempted 118, the sentinel quality.diary_entries_attempted 118, and the preserved transcripts'' own <diary> element count -- all equal. quality.diary_fallback_rate 0.0 over 118 entries confirms no entry was the deterministic placeholder. This zero is BY CONSTRUCTION AND NOT BY RECOVERY: Slices 2 and 3 make an off-schema diary undecodable at the transport and Slice 4 withdrew the application-layer prose repair. EVERY SUBSTITUTION KIND WITH ITS DENOMINATOR: roster 0/10 rate 0.0000 Wilson [0.0000, 0.2775]; persona 0/70 rate 0.0000 Wilson [0.0000, 0.0520]; pointing 0/88 rate 0.0000 Wilson [0.0000, 0.0418]; ballot 0/289 rate 0.0000 Wilson [0.0000, 0.0131]; day_action 3/852 rate 0.0035 Wilson [0.0012, 0.0103]; reflection 0/694 rate 0.0000 Wilson [0.0000, 0.0055]; diary 0/118 rate 0.0000 Wilson [0.0000, 0.0315]. ALL 7 PRESENT DENOMINATORS RECONCILE EXACTLY against independent observables read from the preserved transcripts (roster vs one _generate_names per completed game; persona vs AI seats; pointing vs ''points at'' lines; ballot vs per-ballot lines minus the human seat; day_action vs metrics.repetition denominator PLUS AI vote initiations; reflection vs <thought> elements; diary vs the sentinel scorer). Run health: 10 attempted, 10 completed, 0 failed early -- so no game died before scoring and no rate here is silently ''over the survivors''. ROSTER EXPLICITLY: substitutions.roster 0/10, rate 0.0000, Wilson [0.0000, 0.2775] -- the 1-in-20 duplicate-name case did not fire in these rosters. The interval is the honest statement of what 10 rosters can establish; a point estimate of 0.00 here does NOT establish that the kind is immune, and Roster remains named at risk by construction. THE ONE NONZERO CONTENT-DRIVEN KIND, AND ITS DIAGNOSIS: substitutions.day_action 3/852 (rate 0.0035, Wilson [0.0012, 0.0103]). Recorded as a REFUTED hypothesis per CR 005 -- the transport swap did NOT drive every answer kind to zero -- and this is exactly the class tech spec 041 section 1(d) ''Answer kinds at risk by construction'' predicts, because the JSON-schema grammar constrains SHAPE and not CONTENT. IT IS NOT A DIARIES EFFECT: BOTH arms book it nonzero (3 here, 8 on the paired arm), so it is a property of the day-action path and not of the feature under ablation. LEADING HYPOTHESIS: repeated vote initiations at an INVALID TARGET -- an id that is not alive, not in the roster, or the speaker''s own -- which _accept correctly refuses without raising. The surviving evidence is the accepted-vs-attempted gap: this arm attempted 12 AI vote initiations and only 7 were accepted and announced, leaving 5 refused; the paired arm attempted 25 and accepted 5, leaving 20 refused. AND A READING THAT LOOKED OBVIOUS ON ONE ARM IS REFUTED BY THE OTHER, WHICH IS WHY IT IS RECORDED HERE: self-targeted voting is NOT the mechanism. metrics.self_vote.initiation reads 3/12 on this arm and 0/25 on the paired arm, so the arm with MORE day_action substitutions has FEWER self-votes; on the diaries-on arm alone the counts 3 and 3 coincided exactly and would have invited the wrong conclusion had the control not been measured. THE EXPLICIT LIMIT: none of this is a decomposition. The stand-in fires only when BOTH the initial call AND the corrective retry fail, so each event consumes two failures, and a blank ''speak'' raises in DayAction''s own model validator without ever entering the vote denominator -- on the diaries-on arm 2x3=6 failures exceed the 5 refused vote attempts available, so at least one was a non-vote route. THE RECORD CANNOT SETTLE WHICH ROUTE FIRED, because the node funnels FOUR rejection routes -- a raising invoke, the model validator, a non-DayAction reply, and a vote at a dead or self id -- into ONE convergence point with ONE log line (''no usable day_action answer from the model''). THAT THE LOG CANNOT DISTINGUISH THE FOUR ROUTES IS ITSELF THE FINDING WORTH RECORDING, and is the thing to fix before this kind is diagnosed any further. THE ELEVEN METRIC_ORDER METRICS (question 2, DID THE SWAP HARM WHAT ALREADY WORKED) ARE AN OBSERVATION AND NEVER AN ACCEPTANCE CRITERION, per CR 005. Town-win rate diaries-on 3/10 Wilson [0.108, 0.603] vs diaries-off 2/10 Wilson [0.057, 0.510]; Fisher exact two-sided p = 1.0000. THE DECISIVE POINT IS THE DESIGN LIMIT, NOT THE p-VALUE: against an off arm of 2/10, the nearest on-arm count reaching p<0.05 is 8 of 10, so NO DECREASE OF ANY SIZE IS DETECTABLE AT n=10 -- only a several-fold increase ever could have been. metrics.peer_vote.initiation is ABSENT on a zero denominator (no Mafioso AI initiated a vote at all), which is uninformative rather than good. SEMANTIC PERSONA INSTRUMENT, PRESENT HERE BUT NOT ON THE PAIRED ARM: persona_sem_mean 0.3408 (n=210 pairs), persona_sem_peak 0.7173 (n=210 pairs). The paired diaries-off record has NO persona_sem_mean / persona_sem_peak AT ALL, and that absence is an INSTRUMENT OUTAGE, not an observation about the diaries-off condition. NO ARM-VS-ARM SEMANTIC COMPARISON IS LICENSED; the other nine metrics are unaffected and remain paired. WALL CLOCK IS HOST-LIMITED AND IS NOT A COST OF THE TRANSPORT: 11339s over 10 games (1134s/game mean). The per-game spread on this host is several-fold and coincides with the local model being evicted from and reloaded into VRAM between calls, so it says nothing about ADR 013 or about the diaries feature.'
+---
+run:
+  date: '2026-09-08'
+  duration_seconds: 11302.374
+  metrics_version: 1
+  transcript_dir: '2026-09-08T06-15-12'
+code:
+  commit: '6143d3c2d7c25c4fa4c98fc671c7508fb7f1ab38'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  structured_output: 'json_schema'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.32.14'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 10
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: false
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  substitutions:
+    roster:
+      rate: 0.0
+      count: 0
+      attempted: 10
+    persona:
+      rate: 0.0
+      count: 0
+      attempted: 70
+    pointing:
+      rate: 0.0
+      count: 0
+      attempted: 75
+    ballot:
+      rate: 0.0
+      count: 0
+      attempted: 345
+    day_action:
+      rate: 0.009163802978235968
+      count: 8
+      attempted: 873
+    reflection:
+      rate: 0.0
+      count: 0
+      attempted: 683
+  duration_seconds: 11302.374
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 2
+    rate: 0.2
+    ci_low: 0.056680947980693314
+    ci_high: 0.5098431532792765
+  mafia:
+    wins: 8
+    rate: 0.8
+    ci_low: 0.49015684672072335
+    ci_high: 0.9433190520193067
+  scripted_side:
+    side: 'law_abiding'
+    wins: 2
+    rate: 0.2
+    ci_low: 0.056680947980693314
+    ci_high: 0.5098431532792765
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against an active rule-based scripted human (deterministic, no model call; when Law-abiding it supplies the vote a correct town majority needs) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 5
+    mafia: 0
+  by_day:
+    day_1: 3
+    day_3: 2
+metrics:
+  repetition:
+    rate: 0.6382488479262672
+    count: 554
+    denominator: 868
+    ci_low: 0.605737788691356
+    ci_high: 0.6695415739818635
+  third_person_self_talk:
+    rate: 0.010368663594470046
+    count: 9
+    denominator: 868
+    ci_low: 0.005464370233902466
+    ci_high: 0.019587886965111666
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 25
+    ci_low: 0.0
+    ci_high: 0.13319649395317873
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 67
+    ci_low: 0.0
+    ci_high: 0.05422802421176257
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 24
+    ci_low: 0.0
+    ci_high: 0.13798057582897535
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 210
+    ci_low: 0.0
+    ci_high: 0.017964699104383804
+  persona_lex_mean:
+    mean: 0.02750963671853103
+    denominator: 210
+  persona_lex_peak:
+    peak: 0.19120725750174458
+    denominator: 210
+notes: 'spec 041 Task 12.2 measured A/B: per-AI private diaries OFF -- the control arm. TRANSPORT GENERATION: ADR 013 as shipped by Slices 2 and 3 -- the native ChatOllama client on /api/chat with method=json_schema pinned at the provider seam, so the model emits under a JSON-schema grammar rather than through Anthropic-compatible tool use. Pair with the on-arm record on the same commit; the two arms are each other''s only valid comparator, for the reason spelled out on the on-arm record -- no clean, lineup-comparable, same-transport ollama record of n>=10 exists in this ledger. PRE-REGISTERED per CR 005: THIS ARM CANNOT ANSWER THE CENSUS QUESTION, AND IS NOT SUPPOSED TO. With diaries off, day_diary returns before any diary model call is made, so no diary attempt is ever booked -- quality.substitutions.diary and the quality.diary_* trio are ABSENT from this record BY DESIGN, which is the ledger''s absent-not-zero posture and must not be read as a clean zero. The census DOES THE SWAP FIX THE DIARY lives on the on-arm record alone, answered by its quality.substitutions.diary with its attempted denominator, where n=10 is plenty and NO SIGNIFICANCE TEST APPLIES because the sink counts every attempt the game made rather than a sample of them; and the zero it reports is BY CONSTRUCTION, NOT BY RECOVERY, Slice 4 having withdrawn the application-layer prose repair that produced the 0.00 on the 2026-09-02 rerun record. What THIS arm contributes is the control half of the second, weaker question -- DID THE SWAP HARM THE FIVE KINDS THAT ALREADY WORKED -- answered by the eleven METRIC_ORDER metrics, where n=10 per arm reveals a several-fold increase and essentially nothing finer. NO DECREASE OF ANY SIZE IS DETECTABLE AT n=10: the vote denominators here run single-digit, and at the town-win base rate this ledger records this arm alone reads zero town wins a large fraction of the time, so this cannot even reveal a collapse. Recorded as AN OBSERVATION, NEVER AN ACCEPTANCE CRITERION. A recorded observation, not a guarantee of no harm. READ IN THIS ORDER: confirm the diary keys are ABSENT here, read the on-arm quality.substitutions.diary FIRST, then the six substitution kinds this arm does book, each with its attempted denominator, and only then any METRIC_ORDER rate. || FINDING, both arms complete on commit 6143d3c, both code.dirty false, both provider ollama with structured_output json_schema, both n=10, same lineup and scripted seat. CENSUS: quality.substitutions.diary is ABSENT on this arm BY DESIGN -- day_diary self-guards on private_diaries_enabled and returns before any model call, so no diary attempt is ever booked, and the quality.diary_* trio is gated on a nonzero denominator. This arm CANNOT answer the census question and is not supposed to; the census lives on the paired diaries-on record. EVERY SUBSTITUTION KIND WITH ITS DENOMINATOR: roster 0/10 rate 0.0000 Wilson [0.0000, 0.2775]; persona 0/70 rate 0.0000 Wilson [0.0000, 0.0520]; pointing 0/75 rate 0.0000 Wilson [0.0000, 0.0487]; ballot 0/345 rate 0.0000 Wilson [0.0000, 0.0110]; day_action 8/873 rate 0.0092 Wilson [0.0047, 0.0180]; reflection 0/683 rate 0.0000 Wilson [0.0000, 0.0056]; diary ABSENT (attempted 0, no opportunity -- NOT a clean zero). ALL 6 PRESENT DENOMINATORS RECONCILE EXACTLY against independent observables read from the preserved transcripts (roster vs one _generate_names per completed game; persona vs AI seats; pointing vs ''points at'' lines; ballot vs per-ballot lines minus the human seat; day_action vs metrics.repetition denominator PLUS AI vote initiations; reflection vs <thought> elements; diary vs the sentinel scorer). Run health: 10 attempted, 10 completed, 0 failed early -- so no game died before scoring and no rate here is silently ''over the survivors''. ROSTER EXPLICITLY: substitutions.roster 0/10, rate 0.0000, Wilson [0.0000, 0.2775] -- the 1-in-20 duplicate-name case did not fire in these rosters. The interval is the honest statement of what 10 rosters can establish; a point estimate of 0.00 here does NOT establish that the kind is immune, and Roster remains named at risk by construction. THE ONE NONZERO CONTENT-DRIVEN KIND, AND ITS DIAGNOSIS: substitutions.day_action 8/873 (rate 0.0092, Wilson [0.0047, 0.0180]). Recorded as a REFUTED hypothesis per CR 005 -- the transport swap did NOT drive every answer kind to zero -- and this is exactly the class tech spec 041 section 1(d) ''Answer kinds at risk by construction'' predicts, because the JSON-schema grammar constrains SHAPE and not CONTENT. IT IS NOT A DIARIES EFFECT: BOTH arms book it nonzero (8 here, 3 on the paired arm), so it is a property of the day-action path and not of the feature under ablation. LEADING HYPOTHESIS: repeated vote initiations at an INVALID TARGET -- an id that is not alive, not in the roster, or the speaker''s own -- which _accept correctly refuses without raising. The surviving evidence is the accepted-vs-attempted gap: this arm attempted 25 AI vote initiations and only 5 were accepted and announced, leaving 20 refused; the paired arm attempted 12 and accepted 7, leaving 5 refused. AND A READING THAT LOOKED OBVIOUS ON ONE ARM IS REFUTED BY THE OTHER, WHICH IS WHY IT IS RECORDED HERE: self-targeted voting is NOT the mechanism. metrics.self_vote.initiation reads 0/25 on this arm and 3/12 on the paired arm, so the arm with MORE day_action substitutions has FEWER self-votes; on the diaries-on arm alone the counts 3 and 3 coincided exactly and would have invited the wrong conclusion had the control not been measured. THE EXPLICIT LIMIT: none of this is a decomposition. The stand-in fires only when BOTH the initial call AND the corrective retry fail, so each event consumes two failures, and a blank ''speak'' raises in DayAction''s own model validator without ever entering the vote denominator -- on the diaries-on arm 2x3=6 failures exceed the 5 refused vote attempts available, so at least one was a non-vote route. THE RECORD CANNOT SETTLE WHICH ROUTE FIRED, because the node funnels FOUR rejection routes -- a raising invoke, the model validator, a non-DayAction reply, and a vote at a dead or self id -- into ONE convergence point with ONE log line (''no usable day_action answer from the model''). THAT THE LOG CANNOT DISTINGUISH THE FOUR ROUTES IS ITSELF THE FINDING WORTH RECORDING, and is the thing to fix before this kind is diagnosed any further. THE ELEVEN METRIC_ORDER METRICS (question 2, DID THE SWAP HARM WHAT ALREADY WORKED) ARE AN OBSERVATION AND NEVER AN ACCEPTANCE CRITERION, per CR 005. Town-win rate diaries-on 3/10 Wilson [0.108, 0.603] vs diaries-off 2/10 Wilson [0.057, 0.510]; Fisher exact two-sided p = 1.0000. THE DECISIVE POINT IS THE DESIGN LIMIT, NOT THE p-VALUE: against an off arm of 2/10, the nearest on-arm count reaching p<0.05 is 8 of 10, so NO DECREASE OF ANY SIZE IS DETECTABLE AT n=10 -- only a several-fold increase ever could have been. metrics.peer_vote.initiation is ABSENT on a zero denominator (no Mafioso AI initiated a vote at all), which is uninformative rather than good. WHY persona_sem_mean / persona_sem_peak ARE ABSENT FROM THIS RECORD -- READ THIS BEFORE INFERRING ANYTHING FROM THEIR ABSENCE. persona_sem_mean is absent and persona_sem_peak is absent because THE EMBEDDINGS INSTRUMENT WAS UNAVAILABLE FOR THE WHOLE OF THIS ARM, NOT because a diaries-off game has no persona semantics. The spec-033 instrument is always Bedrock and independent of the ollama gameplay provider; the AWS SSO session expired between the two arms (UnauthorizedSSOTokenError), so this arm''s game 1 embed call raised, the harness''s graceful-degradation guard caught it, and its LATCH set embed_fn to None -- skipping semantic scoring for the remaining nine games. THIS ARM THEREFORE ACCUMULATED ZERO SEMANTIC PAIRS, and the absent-not-zero gate omitted both keys rather than writing a misleading 0.0. The paired diaries-on record on this same commit DOES carry both keys, fully denominated. NO ARM-VS-ARM SEMANTIC COMPARISON IS LICENSED between these two records; the other nine metrics are unaffected and remain paired. FOLLOW-UP CANDIDATE, DELIBERATELY NOT IN SPEC 041''S SCOPE: the latch converts a single transient embeddings failure on game 1 into the loss of both semantic metrics for all ten games, a blast radius wider than ''skip this game''s contribution'' suggests. WALL CLOCK IS HOST-LIMITED AND IS NOT A COST OF THE TRANSPORT: 11302s over 10 games (1130s/game mean). The per-game spread on this host is several-fold and coincides with the local model being evicted from and reloaded into VRAM between calls, so it says nothing about ADR 013 or about the diaries feature.'

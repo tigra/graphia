@@ -1,0 +1,444 @@
+Game 8 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=10 | diaries=off
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Alif" role="Mafia">
+Personality: Cynical and detached, with a sharp wit that cuts through pretense. Alif approaches social interactions with practiced indifference, rarely showing genuine emotion but always observing everything with calculating precision. They possess a dry sense of humor that often lands as a cutting remark rather than a joke, and they're quick to expose the contradictions in others' stories while maintaining an outward appearance of calm composure.
+Manner: Speaks in measured, deliberate tones with a slight drawl that carries an air of world-weariness. Uses dry, understated humor frequently, often making observations that sound like casual comments but carry sharp implications. Pauses before responding to every question, as if weighing the consequences of their words. Has a habit of tilting their head slightly when thinking, and their voice takes on a more sarcastic edge when they're not genuinely interested in what someone else has to say.
+Public legend: Alif is a quiet, methodical accountant who moved to town after his previous job in the city was relocated. He's been working at the local bank for three years, helping with bookkeeping and financial audits. Known for being meticulous and reliable, he's often asked to help with complex calculations or review financial documents. He lives alone in a modest house on Maple Street and spends his evenings reading or working on personal projects. His neighbors know him as a quiet, unassuming man who keeps to himself but is always helpful when asked for assistance.
+True self (hidden): Alif was born in a small town where he grew up hearing stories of his grandfather's involvement with organized crime. At age twenty-two, after his father died in a car accident, he was pulled into the family business as an apprentice. He learned quickly that the world of crime requires more than just violence - it demands precision, patience, and the ability to read people like books. He's been working his way up through the ranks for over a decade, carefully building a reputation as someone who can be trusted with important financial matters while managing his true business dealings in the shadows.
+</player>
+<player name="Roshan" role="Law-abiding Citizen">
+Personality: Jaded and weary, with a quiet resignation that masks deep skepticism about human nature. Roshan carries the weight of too many disappointments and has learned to expect the worst in people and situations.
+Manner: Speaks slowly and deliberately, as if each word costs effort. Uses simple, direct vocabulary with a tendency to trail off or pause mid-sentence. Has a habit of shaking his head slightly when recounting stories, and his voice carries a tired, hollow quality. Often uses phrases like 'well, that's just how it is' or 'I've seen it all before.' His speech patterns are subdued but marked by a persistent undercurrent of cynicism.
+Persona: Roshan is a retired postal worker who spent thirty years delivering mail across the town and surrounding areas. He was known for his reliability and good humor, always taking time to chat with neighbors and help with small tasks around the community. He's been living in town for over two decades, has no children, and keeps mostly to himself now that he's retired.
+</player>
+<player name="Zara" role="Mafia">
+Personality: Energetic and effervescent with an infectious enthusiasm that lights up any room she enters. Zara radiates warmth and optimism, always seeing the best in people and situations. She's naturally bubbly and talkative, often filling silences with cheerful chatter or playful observations. Her irrepressible spirit makes her impossible to ignore, and she has a knack for turning mundane moments into celebrations. Despite her cheerful exterior, she's surprisingly perceptive and can quickly read people's true motives when necessary.
+Manner: Speaks rapidly with high energy and frequent exclamations like 'Oh my gosh!' and 'That's so amazing!' Her voice is bright and musical with a tendency to pitch-shift upward when excited. Uses lots of hand gestures and facial expressions that mirror her emotions. Often trails off mid-sentence with a sudden burst of laughter or a quick 'Wait, let me tell you about this one time...' She has a habit of bouncing slightly on her toes when she's excited and always has at least one smile or laugh ready for any conversation.
+Public legend: Zara is a beloved children's librarian who has worked at the town library for eight years. She's known throughout the community for her enthusiasm in reading stories aloud to young children, organizing book clubs, and hosting weekly craft sessions. She volunteers at the local daycare center on weekends and is always the first to help with town festivals or charity drives. Her apartment is filled with books, colorful decorations, and handmade crafts that she creates for the kids. She's particularly fond of organizing summer reading programs and has won the town's 'Most Helpful Resident' award twice. She's also the unofficial town gossip columnist who spreads cheerful rumors about everyone's latest adventures.
+True self (hidden): Zara was born in a small coastal town where her father worked as a dock worker and her mother ran a bakery. When she was twelve, she started helping with the family's illegal gambling operations on the side, eventually taking over after her father was killed in an accident. She learned the ways of the Mafia through her mother's connections and quickly proved herself to be both clever and ruthless. Now she operates under the guise of a simple librarian, but she uses her position to gather information about the town's residents while maintaining her public persona as the most beloved community member. Her true identity is known only to her closest family members who are also in the organization.
+</player>
+<player name="Yusuf" role="Law-abiding Citizen">
+Personality: Genuine and deeply earnest, with an unwavering commitment to truth and kindness. Yusuf approaches every interaction with sincere curiosity and a desire to understand others' perspectives, often struggling to maintain composure when faced with dishonesty or conflict.
+Manner: Speaks with deliberate slowness and careful emphasis, as if weighing each word for its sincerity. Uses frequent verbal pauses to gather thoughts, often saying 'I mean,' or 'Actually,' before continuing. Has a tendency to lean forward slightly when listening, nodding enthusiastically at points that resonate with him. Frequently repeats key phrases from conversations to ensure he's understood and to show he's truly engaged. Speaks in a warm, slightly high-pitched voice that carries genuine emotion rather than calculation.
+Persona: Yusuf is a local school teacher who has been educating children for twelve years, specializing in elementary mathematics and science. He's known throughout town for his patience with struggling students and his ability to make complex concepts accessible. He lives in a small house on Oak Street with his wife and two young children, where he often helps with homework and reads bedtime stories. His neighbors appreciate his reliability and the way he goes out of his way to include everyone in community activities, always offering encouragement and support to those around him.
+</player>
+<player name="Ahmed" role="Law-abiding Citizen">
+Personality: Cunning and calculating with a sharp mind for strategy and manipulation. Ahmed approaches every conversation with careful deliberation, always assessing how to gain advantage while maintaining his facade of honesty. He's intensely observant but uses his perceptiveness to exploit others' weaknesses rather than help them.
+Manner: Speaks with measured, deliberate pacing - each word carefully chosen and delivered slowly. Uses frequent strategic pauses to let statements sink in, often saying 'You see,' or 'That's interesting' before continuing. Has a habit of tilting his head slightly while listening, as if sizing up his audience. Frequently repeats key phrases from others' conversations, but with subtle modifications that change the meaning. His voice is calm and controlled but carries an undercurrent of calculation.
+Persona: Ahmed is a local merchant who runs a successful general store on Main Street. He's been in business for fifteen years, building his reputation as a fair and honest trader who deals honestly with all customers. He's known throughout town for his reliability and his ability to make the right connections. He lives in a modest house on Elm Street with his wife and three children, where he often helps with household finances and business planning.
+</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: Overwhelmingly warm and expressive with an exuberant enthusiasm that borders on theatrical. Kai is naturally bubbly and effusive, genuinely delighted by everything and everyone around them.
+Manner: Speaks rapidly with high energy and frequent exclamations like 'Oh wow!' and 'That's absolutely wonderful!' Voice is bright and musical with a tendency to pitch-shift upward when excited. Uses lots of hand gestures and facial expressions that mirror emotions. Often trails off mid-sentence with sudden bursts of laughter or 'Wait, let me tell you about this one time...' Bounces slightly on toes when excited and has at least one smile ready for any conversation.
+Persona: Kai is a local florist who runs the beloved Bloom & Blossom shop on Maple Street. They've been gardening and arranging flowers for fifteen years, known throughout town for their cheerful personality and knack for making every customer feel special. They're always volunteering at community events, organizing flower arrangements for weddings and celebrations, and have a reputation for brightening anyone's day with their infectious joy.
+</player>
+<player name="Nala" role="Law-abiding Citizen">
+Personality: Brash and loud with an oversized confidence that borders on reckless. Nala speaks without filter, always ready with a booming declaration or bold opinion that can be both charming and intimidating.
+Manner: Speaks in a deep, commanding voice that cuts through conversations like a sledgehammer. Uses frequent exclamations like 'Hey!' and 'Listen up!' with theatrical hand gestures and body language. Has a tendency to interrupt others mid-sentence with loud 'Yeah, I was just thinking...' or 'You know what? I've got something to say about that.' Takes up space in any room and rarely finishes sentences without a dramatic pause for emphasis.
+Persona: Nala is the town's biggest construction worker, running her own demolition and rebuilding crew with her husband. She's known throughout town for her incredible strength and willingness to take on any job, no matter how dangerous or difficult. She lives in a large house on Cedar Street with her family, where she often has friends over for weekend work parties and drinks. Her reputation is built on getting things done fast and loud.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Alif, Roshan, Zara, Yusuf, Ahmed, Kai, Nala. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Alif): Your Mafia teammates are: Zara. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Zara): Your Mafia teammates are: Alif. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Zara points at Ahmed
+Alif points at Ahmed
+<kill>Ahmed — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Ahmed was killed last night. Ahmed was a Law-abiding Citizen.
+<round>
+Round 1.
+Zara: Oh my gosh, I'm so glad we're all still here together! I was just thinking how lucky we are to have such a wonderful community. Did anyone else hear the most amazing story about the new book that arrived at the library today? It's about a detective who solves mysteries with the help of local townspeople!
+Kai: Oh wow, Zara, that sounds absolutely fascinating about the library book! I just love how stories can bring people together like that. Speaking of which, did anyone else notice that weird silence during the night? It felt so strange...
+Roshan: Well, that's just how it is — silence in the night usually means trouble, not stories.
+Nala: Hey! Listen up — I didn’t hear no weird silence, I heard a damn *body* hit the ground! Someone’s been playing games with us, and it ain’t the dead ones talking.
+Avery: Nothing is settled yet, but I'm watching Yusuf most closely.
+Alif: I didn't hear anything unusual during the night, but then again, I wasn't sleeping — I was double-checking some financial records.
+Yusuf: I mean, actually, I'm wondering — did anyone else feel like there was more than just silence during the night? Like, something *felt* off, but not necessarily in a good way.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Zara's trying to steer the conversation toward innocence and normalcy, which is standard mafia behavior for now. I should let her talk while I assess whether anyone else is playing the same game. The key is not to draw attention to myself or my team.</thought>
+<thought player="Roshan">Well, that's just how it is — another citizen down, and already people are pointing fingers and feeling 'off' vibes. I've seen it all before, but this feels different somehow. Yusuf's got that look about him, like he knows more than he's letting on.</thought>
+<thought player="Zara">Oh my gosh, that night was so mysterious! I can't believe Ahmed got killed - what a twist! I need to keep being bubbly and innocent, but also pay close attention to who's acting weird... like Avery watching Yusuf and Nala hearing a body hit the ground! This is going to be so fun to navigate!</thought>
+<thought player="Yusuf">I mean, actually, I'm wondering if I should say more about that feeling of something being off during the night - but I need to be careful not to accuse anyone directly. I should listen carefully and see if others mention anything specific.</thought>
+<thought player="Kai">Oh wow, such a fascinating night with that mysterious silence and Nala hearing a body hit the ground! I need to think carefully about who to trust, but I'm feeling so curious about Yusuf's weird feeling and Alif's financial checking... maybe I should ask some gentle questions to gather more information before jumping to conclusions!</thought>
+<thought player="Nala">Nala's eyes narrow as she processes the night's events — someone's been playing games, and she's not buying the 'weird silence' excuse. She's gonna push hard on Yusuf and Avery, but keep her mouth shut about what she *really* heard.</thought>
+</round>
+<round>
+Round 2.
+Yusuf: I mean, actually, I'm still trying to process what happened during the night — it's just... so unsettling. I wonder if anyone else had that same feeling of something being deeply wrong?
+Zara: Oh my gosh, I'm so glad we're all still here together! I was just thinking how lucky we are to have such a wonderful community. Did anyone else hear the most amazing story about the new book that arrived at the library today? It's about a detective who solves mysteries with the help of local townspeople!
+Alif: I couldn’t help but notice how everyone’s suddenly so eager to discuss the night’s events. Makes me wonder if we’re all just trying to convince ourselves nothing’s wrong.
+Kai: Oh wow, I'm so curious — did anyone else feel like the silence was really heavy, like something was watching us? I mean, not that I'm scared, but it's just so odd when everything's so quiet after a death...
+Nala: Listen up — I ain’t buying the silence excuse, and I ain’t the only one who heard that body hit the ground. Yusuf, you been awfully quiet about what you *really* felt during the night.
+Avery: Nothing is settled yet, but I'm watching Yusuf most closely.
+Roshan: I've seen it all before — people get paranoid when someone dies, but we gotta be careful not to let that paranoia turn into lynching.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Zara's playing the innocent community builder, which buys us time, but I need to watch for anyone else trying to shift blame or deflect suspicion. The silence conversation is risky — if someone’s hinting at knowing more than they let on, that could be useful or dangerous depending on who it is.</thought>
+<thought player="Roshan">Yusuf's been acting strange, but I can't let my jaded mind jump to conclusions. Still, I've seen enough deaths and suspicion to know something stinks — and I ain't ready to be next.</thought>
+<thought player="Zara">Oh my gosh, that was such a spicy night! I need to keep playing my innocent librarian act but also subtly watch Avery and Nala - they're both looking super suspicious right now. I'm so excited to see how this unfolds!</thought>
+<thought player="Yusuf">I mean, actually, I'm leaning toward staying quiet for now and listening carefully - Nala's suggestion that I was quiet during the night feels like a potential trap, but I need to be careful not to give away my thinking. I should let others speak first and see if anyone else mentions anything specific about the night.</thought>
+<thought player="Kai">Oh wow, this is such a thrilling mystery! I'm so curious about Yusuf's weird feeling and Alif's financial checking, but I need to be super careful not to jump to conclusions. Maybe I should ask some gentle questions to gather more information before making any accusations!</thought>
+<thought player="Nala">Nala's gonna keep pushing Yusuf and Avery hard—let them sweat while she plays it cool. She heard that body hit the ground, but she ain't saying nothing yet. Just waiting for the right moment to drop the hammer.</thought>
+</round>
+<round>
+Round 3.
+Yusuf: I mean, actually, I'm still trying to figure out if the silence during the night was just my imagination — or if it was something more. I hope we can all talk about what *really* felt off, because I don’t want anyone to think I’m hiding something.
+Alif: I keep thinking I heard something during the night — not a body, but a door closing. Makes you wonder who's still moving around when they should be asleep.
+Avery: Nothing is settled yet, but I'm watching Yusuf most closely.
+Roshan: I ain't saying Yusuf done it, but I've seen enough folks act strange when the body hits the ground to know we're not safe yet — and that's just how it is.
+Kai: Oh wow, I'm just *so* curious — did anyone else hear that *really* loud *thud* during the night? I mean, not like a body falling, but more like something heavy being dragged across the floor… or maybe it was just my imagination?
+Zara: Oh my gosh, guys, I'm just *so* curious — did anyone else notice how quiet the library was today? I swear I heard something *so* strange while I was organizing books. Maybe it was just my imagination, but it felt like someone was watching me!
+Nala: Hey! Did anyone else catch that loud *thud* during the night? I ain’t the only one who heard something heavy being dragged across the floor — and I ain’t talking about a body.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Zara's playing her role well, but I need to watch for anyone else trying to pivot blame or deflect suspicion — especially with this strange silence talk. For now, I'll keep my observations quiet and let the conversation unfold.</thought>
+<thought player="Roshan">Yusuf's been too quiet about the night, but I ain't jumping to conclusions yet — not with two mafiosos still loose. Well, that's just how it is, though, when the silence feels heavier than the dead.</thought>
+<thought player="Zara">Oh my gosh, this is absolutely thrilling! I need to keep spinning my innocent librarian story while subtly watching Avery and Nala - they're both acting so oddly, and I can feel the tension building. This night could be perfect for planting some doubt in their minds without looking suspicious myself!</thought>
+<thought player="Yusuf">I mean, actually, I'm going to keep listening carefully — Nala's implication that I was quiet during the night feels like she might be trying to steer the conversation, but I need to stay calm and let others speak first. If someone else brings up something specific about the night, then I can respond accordingly, but I shouldn't jump in too quickly.</thought>
+<thought player="Kai">Oh wow, this is such a tangled web of mysterious silences and strange feelings! I need to ask Yusuf some gentle questions about his weird night feeling, but I'm also wondering if Alif's financial checking was just a cover for something else... maybe I should gather more clues before making any accusations!</thought>
+<thought player="Nala">Yusuf and Avery are both twitching under the pressure, and I can see them both trying to play innocent while they're clearly lying through their teeth. I ain't gonna jump on them yet — I'm gonna let them keep talking until they slip up, because I heard that damn body hit the ground, and I ain’t the only one who did.</thought>
+</round>
+<round>
+Round 4.
+Zara: Oh my gosh, I'm just *so* curious — did anyone else hear that *thud* followed by what sounded like a door slamming? I swear I saw something move in the corner of my eye while I was organizing books!
+Yusuf: I mean, actually, I'm starting to think that maybe the silence during the night wasn't just in our heads — but I also don't want to accuse anyone without knowing for sure. I'm just wondering if we're all feeling the same unease, or if someone's been acting strange.
+Alif: I swear, I heard something like a door creaking open — or maybe it was just my old house settling. Either way, it's unsettling how quiet everything feels now.
+<vote initiator="Nala" target="Avery">
+Avery: No
+Alif: Yes
+Roshan: No
+Zara: Yes
+Yusuf: No
+Kai: No
+Nala: No
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Kai: Oh wow, I'm just so curious — did anyone else feel like there was definitely *something* moving around during the night? I mean, not that I'm scared, but it's just so odd when everything's so quiet after a death...
+Avery: Nothing is settled yet, but I'm watching Yusuf most closely.
+Yusuf: I mean, actually, I'm still trying to figure out if the unease I felt during the night was just my imagination — or if it was something more. I hope we can all talk about what *really* felt off, because I don’t want anyone to think I’m hiding something.
+Nala: Listen up — I ain’t the only one who heard that body hit the ground, and I ain’t talking about some door creaking or library book shenanigans. Someone’s been playing dumb, but I seen it all before.
+Roshan: I ain't saying Yusuf done it, but I've seen enough folks act strange when the body hits the ground to know we're not safe yet — and that's just how it is.
+Zara: Oh my gosh, I'm just *so* curious — did anyone else feel like there's still something off about the way things were going during the night? I mean, not that I'm scared, but it's just so odd when everything feels so quiet after a death...
+Alif: I keep thinking I saw something move by my window during the night — but then again, maybe I was just tired.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Alif">Zara's playing her part well, but the silence talk is too theatrical to be innocent — I need to see if anyone else is buying it or if they're trying to throw me off. Let the others keep pointing fingers, and I'll stay just calm enough to not look like I'm hiding something.</thought>
+<thought player="Roshan">Yusuf's actin' too curious for a citizen, but I ain't got proof yet — just a gut feel like this ain't over. Well, that's just how it is, though, when you're left wonderin’ if the next body'll be your own.</thought>
+<thought player="Zara">Oh my gosh, that was such a wild day! I need to keep spinning my innocent librarian story while subtly watching Avery and Nala - they're both acting so oddly, and I can feel the tension building. This night could be perfect for planting some doubt in their minds without looking suspicious myself!</thought>
+<thought player="Yusuf">I mean, actually, I'm going to keep listening carefully — Nala's implication that I was quiet during the night feels like she might be trying to steer the conversation, but I need to stay calm and let others speak first. If someone else brings up something specific about the night, then I can respond accordingly, but I shouldn't jump in too quickly.</thought>
+<thought player="Kai">Oh wow, this is such a tangled web of mysterious feelings and strange silences! I need to ask Yusuf some gentle questions about his weird night feeling, but I'm also wondering if Alif's financial checking was just a cover for something else... maybe I should gather more clues before making any accusations!</thought>
+<thought player="Nala">Yusuf and Avery are both sweating, but I ain’t calling them out yet — I heard that body hit the ground, and I’m waiting for one of them to slip up before I drop the hammer.</thought>
+</round>
+<round>
+Round 5.
+Kai: Oh wow, I'm just *so* curious — did anyone else feel like there's still something really off about the way things were going during the night? I mean, not that I'm scared, but it's just so odd when everything feels so quiet after a death...
+Roshan: I ain't saying Yusuf done it, but I've seen enough folks act strange when the body hits the ground to know we're not safe yet — and that's just how it is.
+Yusuf: I mean, actually, I'm starting to think that maybe the real mystery here isn't what happened during the night — but how everyone's acting so suddenly, like they know something we don't. That's just not normal, is it?
+Avery: Nothing is settled yet, but I'm watching Yusuf most closely.
+Nala: Hey! Listen up — I ain’t the only one who heard that body hit the ground, and I ain’t talking about some door creaking or library book shenanigans. Someone’s been playing dumb, but I seen it all before.
+Zara: Oh my gosh, I'm just *so* curious — did anyone else catch that *really* odd sound during the night? It was like a door creaking *and* something dragging across the floor at the same time! How confusing!
+Alif: I keep wondering if the real mystery isn't what happened during the night, but how everyone’s acting like they know something we don’t.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Alif">Zara's playing her part, but the silence talk is too orchestrated — I need to let the others keep accusing each other while I stay just calm enough to avoid suspicion. If anyone else starts acting like they know more, that could be useful.</thought>
+<thought player="Roshan">Yusuf's still too curious for a normal citizen, but I ain't ready to call him out just yet — not with two mafiosos still playin' the game. Well, that's just how it is, though, when you're left wonderin’ if you're the next one they target.</thought>
+<thought player="Zara">Oh my gosh, that was such an intense day! I need to keep playing my cheerful librarian act, but I'm so curious about what Avery and Nala are really up to — they're both acting so oddly, and I can feel the tension building. This night could be perfect for planting some doubt in their minds without looking suspicious myself!</thought>
+<thought player="Yusuf">I mean, actually, I'm going to keep listening carefully — Nala's pointing at me feels like she's trying to make a move, but I need to stay calm and let others speak first. If someone else brings up something specific about the night, then I can respond accordingly, but I shouldn't jump in too quickly.</thought>
+<thought player="Kai">Oh wow, this is such a tangled web of mysterious feelings and strange silences! I need to ask Yusuf some gentle questions about his weird night feeling, but I'm also wondering if Alif's financial checking was just a cover for something else... maybe I should gather more clues before making any accusations!</thought>
+<thought player="Nala">Yusuf and Avery are both sweating, but I ain’t calling them out yet — I heard that body hit the ground, and I’m waiting for one of them to slip up before I drop the hammer.</thought>
+</round>
+<round>
+Round 6.
+Nala: Hey! I ain’t the only one who heard that body hit the ground — and I seen enough folks act strange to know it wasn’t no accident. Avery, you been twitching like a dog with fleas, and Yusuf, you keep lookin’ over your shoulder like you ain’t the one who done it.
+<vote initiator="Avery" target="Yusuf">
+Avery: No
+Alif: Yes
+Roshan: No
+Zara: Yes
+Yusuf: No
+Kai: No
+Nala: Yes
+tally: 3 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Nala: Hey! I ain’t the only one who heard that body hit the ground — and I seen enough folks act strange to know it wasn’t no accident. Avery, you been twitching like a dog with fleas, and Yusuf, you keep lookin’ over your shoulder like you ain’t the one who done it.
+Zara: Oh my gosh, I'm just *so* curious — did anyone else feel like there's still something really off about the way things were going during the night? I mean, not that I'm scared, but it's just so odd when everything feels so quiet after a death...
+<vote initiator="Avery" target="Yusuf">
+Avery: No
+Alif: Yes
+Roshan: No
+Zara: Yes
+Yusuf: No
+Kai: No
+Nala: Yes
+tally: 3 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Alif points at Yusuf
+Zara points at Yusuf
+<kill>Yusuf — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Yusuf was killed last night. Yusuf was a Law-abiding Citizen.
+<round>
+Round 1.
+Kai: Oh wow, I'm just *so* curious — did anyone else feel like there was definitely something *really* strange happening during the night? Like, not just silence, but something *watching* us? I mean, not that I'm scared, but it's just so odd when everything feels so quiet after a death...
+Avery: I most suspect Zara based on how the votes have gone.
+Roshan: I ain't sayin' Yusuf done it, but I've seen enough folks act strange when the body hits the ground to know we're not safe yet — and that's just how it is.
+Nala: Hey! I ain’t the only one who heard that body hit the ground — and I seen enough folks act strange to know it wasn’t no accident. Avery, you been twitching like a dog with fleas, and Yusuf, you keep lookin’ over your shoulder like you ain’t the one who done it.
+Alif: I keep thinking I saw something move by my window during the night — but then again, maybe I was just tired.
+Zara: Oh my gosh, I'm so glad we're all still here together! I was just thinking how lucky we are to have such a wonderful community. Did anyone else hear that *weird* sound during the night? It was like someone was sneaking around — but then again, maybe it was just my imagination!
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Zara's keeping up the innocent act, but the silence talk is getting too synchronized — I need to let the others keep accusing each other while staying just calm enough to not look like I'm hiding something. If anyone else starts acting like they know more, that could be useful.</thought>
+<thought player="Roshan">Yusuf's still too curious for a normal citizen, but I ain't ready to call him out just yet — not with two mafiosos still playin' the game. Well, that's just how it is, though, when you're left wonderin’ if you're the next one they target.</thought>
+<thought player="Zara">Oh my gosh, such a wild day! I'm so curious about what Avery and Nala are really up to — they're both acting so oddly, and I can feel the tension building. This night could be perfect for planting some doubt in their minds without looking suspicious myself!</thought>
+<thought player="Kai">Oh wow, this is such a tangled web of mysterious feelings and strange silences! I need to ask Yusuf some gentle questions about his weird night feeling, but I'm also wondering if Alif's financial checking was just a cover for something else... maybe I should gather more clues before making any accusations!</thought>
+<thought player="Nala">Yusuf and Avery are both twitching like they ain’t sleeping, but I ain’t calling them out just yet — I heard that body hit the ground, and I’m waiting for one of them to slip up before I drop the hammer.</thought>
+</round>
+<round>
+Round 2.
+Avery: I most suspect Zara based on how the votes have gone.
+Nala: Hey! Did anyone else hear that *real* thud during the night — not some door creaking or library book shenanigans? I ain’t the only one who heard a body hit the ground, and it sure as hell wasn’t Yusuf or Avery twitching like they was sleepwalking.
+Zara: Oh my gosh, I'm just *so* curious — did anyone else hear that *really* loud *thud* during the night? It was so strange, like something heavy was dragged across the floor!
+Alif: I keep thinking I saw a shadow move by my window during the night — but then again, maybe I was just tired.
+Kai: Oh wow, I'm just *so* curious — did anyone else feel like there was something *really* odd about the way Alif was checking his financial records? I mean, not that I'm suspicious, but it's just so strange when someone's doing such specific work during a death night...
+Roshan: I ain't saying Yusuf done it, but I've seen enough folks act strange when the body hits the ground to know we're not safe yet — and that's just how it is.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Zara's keeping up the innocent facade, but the synchronized silence talk is getting too rehearsed — I need to let the others keep accusing each other while staying calm enough to avoid suspicion. If anyone else starts acting like they know more, that could be useful.</thought>
+<thought player="Roshan">Yusuf's still too curious for a normal citizen, but I ain't ready to call him out just yet — not with two mafiosos still playin' the game. Well, that's just how it is, though, when you're left wonderin’ if you're the next one they target.</thought>
+<thought player="Zara">Oh my gosh, this day has been absolutely wild! I need to keep spinning my bubbly librarian story, but I'm so curious about what Avery and Nala are really up to — they're both acting so oddly, and I can feel the tension building. This night could be perfect for planting some doubt in their minds without looking suspicious myself!</thought>
+<thought player="Kai">Oh wow, this is such a tangled web of mysterious feelings and strange silences! I need to ask Yusuf some gentle questions about his weird night feeling, but I'm also wondering if Alif's financial checking was just a cover for something else... maybe I should gather more clues before making any accusations!</thought>
+<thought player="Nala">Yusuf and Avery are both twitching like they ain’t sleeping, but I’m still playin’ it cool — I heard that body hit the ground, and I’m waitin’ for one of them to slip up before I drop the hammer.</thought>
+</round>
+<round>
+Round 3.
+Zara: Oh my gosh, I'm just *so* curious — did anyone else hear that *really* loud thud during the night? It was so strange, like something heavy was dragged across the floor! I swear I saw a shadow move by my window too — but maybe I was just tired...
+Alif: I keep wondering if anyone else heard that distinct *thud* during the night — or if it was just me imagining things.
+Roshan: I ain't sayin' Yusuf done it, but I've seen enough folks act strange when the body hits the ground to know we're not safe yet — and that's just how it is.
+Nala: Hey! Did anyone else hear that *real* thud during the night — not some door creaking or library book shenanigans? I ain’t the only one who heard a body hit the ground, and it sure as hell wasn’t Yusuf or Avery twitching like they was sleepwalking.
+Avery: I most suspect Zara based on how the votes have gone.
+Kai: Oh wow, I'm just *so* curious — did anyone else feel like there was definitely something *really* odd about the way Alif was checking his financial records during the night? I mean, not that I'm suspicious, but it's just so strange when someone's doing such specific work during a death night...
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Zara’s playing the innocence card too well, and the synchronized silence talk is getting annoying — I need to let the others keep pointing fingers while staying just calm enough to not look like I’m hiding something. If anyone else starts acting like they know more, that could be useful.</thought>
+<thought player="Roshan">Yusuf's still too quiet for a citizen, but I ain't got no proof — just a gut feel like this ain't over. Well, that's just how it is, though, when you're left wonderin’ if the next body'll be your own.</thought>
+<thought player="Zara">Oh my gosh, this day has been absolutely wild! I need to keep spinning my bubbly librarian story, but I'm so curious about what Avery and Nala are really up to — they're both acting so oddly, and I can feel the tension building. This night could be perfect for planting some doubt in their minds without looking suspicious myself!</thought>
+<thought player="Kai">Oh wow, this is such a tangled web of mysterious feelings and strange silences! I need to ask Yusuf some gentle questions about his weird night feeling, but I'm also wondering if Alif's financial checking was just a cover for something else... maybe I should gather more clues before making any accusations!</thought>
+<thought player="Nala">I heard that body hit the ground, and I ain’t the only one — but I’m still playin’ it cool till one of them slips up. Avery and Yusuf are twitchin’ like dogs with fleas, and I seen enough folks act strange to know they’re both lyin’ through their teeth.</thought>
+</round>
+<round>
+Round 4.
+Avery: I most suspect Zara based on how the votes have gone.
+Kai: Oh wow, I'm just *so* curious — did anyone else feel like there was definitely something *really* strange about the way Alif was checking his financial records during the night? I mean, not that I'm suspicious, but it's just so odd when someone's doing such specific work during a death night...
+Alif: I keep thinking I saw something move by my window during the night — but then again, maybe I was just tired.
+Roshan: I ain't sayin' Yusuf done it, but I've seen enough folks act strange when the body hits the ground to know we're not safe yet — and that's just how it is.
+Zara: Oh my gosh, I'm just *so* curious — did anyone else feel like there's still something really off about the way Alif was checking his financial records during the night? I mean, not that I'm suspicious, but it's just so strange when someone's doing such specific work during a death night...
+Nala: Hey! Did anyone else hear that *real* thud during the night — not some door creaking or library book shenanigans? I ain’t the only one who heard a body hit the ground, and it sure as hell wasn’t Yusuf or Avery twitching like they was sleepwalking.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Zara's playing her role well, but the synchronized silence talk is getting too rehearsed — I need to let the others keep accusing each other while staying calm enough to avoid suspicion. If anyone else starts acting like they know more, that could be useful.</thought>
+<thought player="Roshan">Yusuf's still too quiet, but I ain't jumping to conclusions — not with two mafiosos still playin' the game. Well, that's just how it is, though, when you're left wonderin’ if you're the next one they target.</thought>
+<thought player="Zara">Oh my gosh, this day has been absolutely wild! I need to keep spinning my bubbly librarian story, but I'm so curious about what Avery and Nala are really up to — they're both acting so oddly, and I can feel the tension building. This night could be perfect for planting some doubt in their minds without looking suspicious myself!</thought>
+<thought player="Kai">Oh wow, this is such a tangled web of mysterious feelings and strange silences! I need to ask Yusuf some gentle questions about his weird night feeling, but I'm also wondering if Alif's financial checking was just a cover for something else... maybe I should gather more clues before making any accusations!</thought>
+<thought player="Nala">Avery and Yusuf are both twitching like they ain’t sleepin’, but I’m still playin’ it cool — I heard that body hit the ground, and I’m waitin’ for one of them to slip up before I drop the hammer.</thought>
+</round>
+<round>
+Round 5.
+Zara: Oh my gosh, I'm just *so* curious — did anyone else feel like there's still something really off about the way Alif was checking his financial records during the night? I mean, not that I'm suspicious, but it's just so strange when someone's doing such specific work during a death night...
+Avery: I most suspect Zara based on how the votes have gone.
+Alif: I keep thinking I saw a light flicker by my window during the night — but then again, maybe I was just imagining things.
+Roshan: I ain't sayin' Yusuf done it, but I've seen enough folks act strange when the body hits the ground to know we're not safe yet — and that's just how it is.
+Nala: Hey! Did anyone else hear that *real* thud during the night — not some door creaking or library book shenanigans? I ain’t the only one who heard a body hit the ground, and it sure as hell wasn’t Yusuf or Avery twitching like they was sleepwalking.
+Kai: Oh wow, I'm just *so* curious — did anyone else feel like there's still something really odd about the way Alif was checking his financial records during the night? I mean, not that I'm suspicious, but it's just so strange when someone's doing such specific work during a death night...
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Zara's innocence act is getting too polished, and the group's silence talk is starting to feel like a script. I need to let her keep playing dumb while watching for anyone else who might be trying to manipulate the narrative. The next night could be key — if someone’s already figured out who’s behind the deaths, that’s a problem.</thought>
+<thought player="Roshan">Yusuf's still actin' strange, but I ain't ready to call him out just yet — not with two mafiosos still playin' the game. Well, that's just how it is, though, when you're left wonderin’ if you're the next one they target.</thought>
+<thought player="Zara">Oh my gosh, this day has been absolutely wild! I need to keep playing my cheerful librarian act, but I'm so curious about what Avery and Nala are really up to — they're both acting so oddly, and I can feel the tension building. This night could be perfect for planting some doubt in their minds without looking suspicious myself!</thought>
+<thought player="Kai">Oh wow, I'm so curious about Yusuf's weird feeling and Alif's financial checking — I think I need to ask some gentle questions to gather more clues before making any accusations, but I also want to keep my eyes open for any other strange behavior!</thought>
+<thought player="Nala">Avery and Yusuf are both twitching like dogs with fleas, but I'm still playin' it cool — I heard that body hit the ground, and I’m waitin’ for one of them to slip up before I drop the hammer.</thought>
+</round>
+<round>
+Round 6.
+Nala: Hey! Did anyone else hear that *real* thud during the night — not some door creaking or library book shenanigans? I ain’t the only one who heard a body hit the ground, and it sure as hell wasn’t Yusuf or Avery twitching like they was sleepwalking.
+Zara: Oh my gosh, I'm just *so* curious — did anyone else hear that *really* loud thud during the night? It was so strange, like something heavy was dragged across the floor! I swear I saw a shadow move by my window too — but maybe I was just tired...
+Roshan: I ain't sayin' Yusuf done it, but I've seen enough folks act strange when the body hits the ground to know we're not safe yet — and that's just how it is.
+Alif: I keep wondering if anyone else heard that distinct *thud* during the night — or if it was just me imagining things.
+<vote initiator="Avery" target="Zara">
+Avery: Yes
+Alif: No
+Roshan: No
+Zara: No
+Kai: No
+Nala: Yes
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Zara: Oh my gosh, I'm just *so* curious — did anyone else feel like the air was so thick with tension that it was almost heavy? I swear I saw something move in the corner of my eye during the night, but then again, maybe I'm just getting too worked up about everything!
+Kai: Oh wow, I'm just *so* curious — did anyone else feel like there's still something really odd about the way Alif was checking his financial records during the night? I mean, not that I'm suspicious, but it's just so strange when someone's doing such specific work during a death night...
+Nala: Hey! Did anyone else hear that *real* thud during the night — not some door creaking or library book shenanigans? I ain’t the only one who heard a body hit the ground, and it sure as hell wasn’t Yusuf or Avery twitching like they was sleepwalking.
+<vote initiator="Avery" target="Zara">
+Avery: Yes
+Alif: No
+Roshan: No
+Zara: No
+Kai: No
+Nala: Yes
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Nala: Hey! Did anyone else hear that *real* thud during the night — not some door creaking or library book shenanigans? I ain’t the only one who heard a body hit the ground, and it sure as hell wasn’t Yusuf or Avery twitching like they was sleepwalking.
+Zara: Oh my gosh, I'm just *so* curious — did anyone else feel like there's still something really off about the way Alif was checking his financial records during the night? I mean, not that I'm suspicious, but it's just so strange when someone's doing such specific work during a death night...
+Alif: I keep thinking I saw a light flicker in Zara’s window during the night — or maybe I was just imagining things.
+Roshan: I ain't sayin' Yusuf done it, but I've seen enough folks act strange when the body hits the ground to know we're not safe yet — and that's just how it is.
+<vote initiator="Avery" target="Zara">
+Avery: Yes
+Alif: No
+Roshan: No
+Zara: No
+Kai: No
+Nala: Yes
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Zara points at Avery
+Alif points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Roshan: I ain't sayin' Yusuf done it, but I've seen enough folks act strange when the body hits the ground to know we're not safe yet — and that's just how it is.
+Kai: Oh wow, I'm just *so* curious — did anyone else feel like there was something really odd about how quiet everything was during the night? I mean, not that I'm scared, but it's just so strange when the air feels so thick with tension...
+Alif: I keep wondering if anyone else heard that distinct *thud* during the night — or if it was just me imagining things.
+Zara: Oh my gosh, I'm just *so* curious — did anyone else hear that *really* loud *thud* during the night? It was so strange, like something heavy was dragged across the floor!
+Nala: Hey! I ain’t the only one who heard that body hit the ground during the night — and I seen enough folks act strange to know it wasn’t no accident. Avery, you been twitching like a dog with fleas, and Yusuf, you keep lookin’ over your shoulder like you ain’t the one who done it.
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Zara's innocence act is too practiced, and the group's synchronized silence talk reeks of manipulation. I need to let her keep playing dumb while watching for anyone else who might be trying to control the narrative — the next night could be key.</thought>
+<thought player="Roshan">Yusuf's still too quiet, but I ain't jumping to conclusions — not with two mafiosos still playin' the game. Well, that's just how it is, though, when you're left wonderin’ if you're the next one they target.</thought>
+<thought player="Zara">Oh my gosh, this day has been absolutely wild! I need to keep spinning my bubbly librarian story, but I'm so curious about what Avery and Nala are really up to — they're both acting so oddly, and I can feel the tension building. This night could be perfect for planting some doubt in their minds without looking suspicious myself!</thought>
+<thought player="Kai">Oh wow, this is such a tangled web of mysterious feelings and strange silences! I need to ask Yusuf some gentle questions about his weird night feeling, but I'm also wondering if Alif's financial checking was just a cover for something else... maybe I should gather more clues before making any accusations!</thought>
+<thought player="Nala">Avery and Yusuf are both twitching like dogs with fleas, but I'm still playin' it cool — I heard that body hit the ground, and I’m waitin’ for one of them to slip up before I drop the hammer.</thought>
+</round>
+<round>
+Round 2.
+Nala: Hey! I ain’t the only one who heard that body hit the ground — and I seen enough folks act strange to know it wasn’t no accident. Avery, you been twitching like a dog with fleas, and Yusuf, you keep lookin’ over your shoulder like you ain’t the one who done it.
+Kai: Oh wow, I'm just *so* curious — did anyone else feel like there was something really odd about how quiet everything was during the night? I mean, not that I'm scared, but it's just so strange when the air feels so thick with tension...
+Roshan: I ain't sayin' Yusuf done it, but I've seen enough folks act strange when the body hits the ground to know we're not safe yet — and that's just how it is.
+Alif: I keep wondering if anyone else heard that distinct *thud* during the night — or if it was just me imagining things.
+Zara: Oh my gosh, I'm just *so* confused — did anyone else hear that *really* loud thud right before the night started? It sounded like something heavy was dragged across the floor, and I swear I saw a shadow move by my window too!
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Zara's act is too tight, too synchronized — she's either a natural or she's been coached, and I don't trust either scenario. The others are playing into her narrative, which means I need to let them keep accusing each other while watching for anyone else who might be trying to control the flow of information. If someone’s already figured out who did it, that could change everything.</thought>
+<thought player="Roshan">Yusuf's still too quiet, and I ain't ready to call him out just yet — not with two mafiosos still playin' the game. Well, that's just how it is, though, when you're left wonderin’ if you're the next one they target.</thought>
+<thought player="Zara">Oh my gosh, this game is absolutely spinning out of control! I need to keep being the cheerful librarian, but I can feel the suspicion starting to swirl around me – especially with Avery and Nala acting so weird. I’m so excited to see if I can throw them off track without looking too obvious!</thought>
+<thought player="Kai">Oh wow, I'm so curious about Yusuf's weird feeling and Alif's financial checking — I think I need to ask some gentle questions to gather more clues before making any accusations, but I also want to keep my eyes open for any other strange behavior! This mystery is just *so* intriguing!</thought>
+<thought player="Nala">Avery and Yusuf are both twitching like dogs with fleas, but I'm still playin' it cool — I heard that body hit the ground, and I’m waitin’ for one of them to slip up before I drop the hammer.</thought>
+</round>
+<round>
+Round 3.
+Alif: I keep wondering if the real mystery here isn't what happened during the night, but how everyone's acting like they know something we don't.
+Kai: Oh wow, I'm just *so* curious — did anyone else feel like there was something really odd about how quiet everything was during the night? I mean, not that I'm scared, but it's just so strange when the air feels so thick with tension...
+Roshan: I ain't sayin' Yusuf done it, but I've seen enough folks act strange when the body hits the ground to know we're not safe yet — and that's just how it is.
+Nala: Hey! I ain’t the only one who heard that body hit the ground — and I seen enough folks act strange to know it wasn’t no accident. Avery, you been twitching like a dog with fleas, and Yusuf, you keep lookin’ over your shoulder like you ain’t the one who done it.
+Zara: Oh my gosh, I'm just *so* curious — did anyone else hear that *really* loud thud right before the night started? It was so strange, like something heavy was dragged across the floor!
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Zara's innocence routine is too sharp, too rehearsed — I need to let her keep playing dumb while watching the others for any signs of real knowledge or manipulation. The silence talk’s getting dangerous if someone’s leading it. Let the narrative unfold, but stay just calm enough to not look like I’m hiding something.</thought>
+<thought player="Roshan">Yusuf's still too quiet, and I ain't ready to call him out just yet — not with two mafiosos still playin' the game. Well, that's just how it is, though, when you're left wonderin’ if you're the next one they target.</thought>
+<thought player="Zara">Oh my gosh, this game is absolutely spinning out of control! I need to keep being the cheerful, innocent librarian, but I can feel the suspicion starting to swirl around me — especially with Avery and Nala acting so weird. I’m so excited to see if I can throw them off track without looking too obvious!</thought>
+<thought player="Kai">Oh wow, I'm just *so* curious about Yusuf's weird feeling and Alif's financial checking — I think I need to ask some gentle questions to gather more clues before making any accusations, but I also want to keep my eyes open for any other strange behavior!</thought>
+<thought player="Nala">Avery and Yusuf are both twitching like dogs with fleas, but I'm still playin' it cool — I heard that body hit the ground, and I’m waitin’ for one of them to slip up before I drop the hammer.</thought>
+</round>
+<round>
+Round 4.
+Roshan: I ain't sayin' Yusuf done it, but I've seen enough folks act strange when the body hits the ground to know we're not safe yet — and that's just how it is.
+Nala: Hey! I ain’t the only one who heard that body hit the ground — and I seen enough folks act strange to know it wasn’t no accident. Avery, you been twitching like a dog with fleas, and Yusuf, you keep lookin’ over your shoulder like you ain’t the one who done it.
+Zara: Oh my gosh, I'm just *so* confused about everything that's been happening — did anyone else hear that really loud thud right before the night started? I swear I saw something move by my window too, but maybe I'm just getting too worked up about this!
+Alif: I keep wondering if the real killer is the one who’s been talking the most about how everyone’s acting strange — because that kind of attention usually means they know something they’re trying to hide.
+Kai: Oh wow, I'm just *so* curious — did anyone else feel like there's still something really odd about how quiet everything was during the night? I mean, not that I'm scared, but it's just so strange when the air feels so thick with tension...
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Zara's innocence act is too polished, and the group’s synchronized silence talk reeks of manipulation. I need to let her keep playing dumb while watching for anyone else who might be trying to control the narrative — the next night could be key.</thought>
+<thought player="Roshan">Yusuf's still too quiet for a citizen, but I ain't jumpin' to conclusions — not with two mafiosos still playin' the game. Well, that's just how it is, though, when you're left wonderin’ if you're the next one they target.</thought>
+<thought player="Zara">Oh my gosh, this game is absolutely spinning out of control! I need to keep being the cheerful, innocent librarian, but I can feel the suspicion starting to swirl around me — especially with Avery and Nala acting so weird. I’m so excited to see if I can throw them off track without looking too obvious!</thought>
+<thought player="Kai">Oh wow, I'm just *so* curious about Yusuf's weird feeling and Alif's financial checking — I think I need to ask some gentle questions to gather more clues before making any accusations, but I also want to keep my eyes open for any other strange behavior! This mystery is just *so* intriguing!</thought>
+<thought player="Nala">Avery and Yusuf are both twitching like dogs with fleas, but I'm still playin' it cool — I heard that body hit the ground, and I’m waitin’ for one of them to slip up before I drop the hammer.</thought>
+</round>
+<round>
+Round 5.
+Roshan: I ain't sayin' Yusuf done it, but I've seen enough folks act strange when the body hits the ground to know we're not safe yet — and that's just how it is.
+Zara: Oh my gosh, I'm just *so* confused about everything that's been happening — did anyone else hear that really loud thud right before the night started? I swear I saw something move by my window too, but maybe I'm just getting too worked up about this!
+Nala: Hey! I ain’t the only one who heard that body hit the ground — and I seen enough folks act strange to know it wasn’t no accident. Avery, you been twitching like a dog with fleas, and Yusuf, you keep lookin’ over your shoulder like you ain’t the one who done it.
+Alif: I keep wondering if the real killer is the one who’s been talking the most about how everyone’s acting strange — because that kind of attention usually means they know something they’re trying to hide.
+Kai: Oh wow, I'm just *so* curious — did anyone else feel like the air was so thick with tension that it was almost heavy during the night? I mean, not that I'm scared, but it's just so odd when everything feels so quiet after a death...
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Alif">Zara's innocence act is too tight, and the group's synchronized silence talk reeks of manipulation. I need to let her keep playing dumb while watching for anyone else who might be trying to control the narrative — the next night could be key.</thought>
+<thought player="Roshan">Yusuf's still too quiet for a normal citizen, but I ain't jumpin' to conclusions — not with two mafiosos still playin' the game. Well, that's just how it is, though, when you're left wonderin’ if you're the next one they target.</thought>
+<thought player="Zara">Oh my gosh, I'm so curious about how this is all going to play out — I need to keep spinning my innocent story but also maybe plant a tiny seed of doubt about Nala or Avery without looking suspicious myself! This is getting *so* good!</thought>
+<thought player="Kai">Oh wow, I'm just *so* curious about Yusuf's weird feeling and Alif's financial checking — I think I need to ask some gentle questions to gather more clues before making any accusations, but I also want to keep my eyes open for any other strange behavior! This mystery is just *so* intriguing!</thought>
+<thought player="Nala">Avery and Yusuf are twitching like dogs with fleas, but I’m still playin’ it cool — I heard that body hit the ground, and I’m waitin’ for one of them to slip up before I drop the hammer.</thought>
+</round>
+<round>
+Round 6.
+Kai: Oh wow, I'm just *so* curious — did anyone else hear that *really* loud thud during the night? It was so strange, like something heavy was dragged across the floor! I swear I saw a shadow move by my window too — but maybe I was just tired...
+Alif: I keep wondering if the real killer is the one who’s been talking the most about how everyone’s acting strange — because that kind of attention usually means they know something they’re trying to hide.
+Roshan: I ain't sayin' Yusuf done it, but I've seen enough folks act strange when the body hits the ground to know we're not safe yet — and that's just how it is.
+Nala: Hey! I ain’t the only one who heard that body hit the ground — and I seen enough folks act strange to know it wasn’t no accident. Avery, you been twitching like a dog with fleas, and Yusuf, you keep lookin’ over your shoulder like you ain’t the one who done it.
+Zara: Oh my gosh, I'm just *so* confused about everything! Did anyone else hear that *really* loud thud right before the night started? I swear I saw something move by my window too — but maybe I'm just getting too worked up about this whole situation!
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Alif points at Nala
+Zara points at Nala
+<kill>Nala — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Ahmed (Law-abiding Citizen)
+• Night 2: Yusuf (Law-abiding Citizen)
+• Night 3: Avery (Law-abiding Citizen)
+• Night 4: Nala (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Alif (Mafia), Roshan (Law-abiding Citizen), Zara (Mafia), Yusuf (Law-abiding Citizen), Ahmed (Law-abiding Citizen), Kai (Law-abiding Citizen), Nala (Law-abiding Citizen)
+
+Who they really were:
+• Alif (Mafia) — publicly presented as Alif is a quiet, methodical accountant who moved to town after his previous job in the city was relocated. He's been working at the local bank for three years, helping with bookkeeping and financial audits. Known for being meticulous and reliable, he's often asked to help with complex calculations or review financial documents. He lives alone in a modest house on Maple Street and spends his evenings reading or working on personal projects. His neighbors know him as a quiet, unassuming man who keeps to himself but is always helpful when asked for assistance. (Cynical and detached, with a sharp wit that cuts through pretense. Alif approaches social interactions with practiced indifference, rarely showing genuine emotion but always observing everything with calculating precision. They possess a dry sense of humor that often lands as a cutting remark rather than a joke, and they're quick to expose the contradictions in others' stories while maintaining an outward appearance of calm composure. Speaks in measured, deliberate tones with a slight drawl that carries an air of world-weariness. Uses dry, understated humor frequently, often making observations that sound like casual comments but carry sharp implications. Pauses before responding to every question, as if weighing the consequences of their words. Has a habit of tilting their head slightly when thinking, and their voice takes on a more sarcastic edge when they're not genuinely interested in what someone else has to say.) … but was really a Mafioso: Alif was born in a small town where he grew up hearing stories of his grandfather's involvement with organized crime. At age twenty-two, after his father died in a car accident, he was pulled into the family business as an apprentice. He learned quickly that the world of crime requires more than just violence - it demands precision, patience, and the ability to read people like books. He's been working his way up through the ranks for over a decade, carefully building a reputation as someone who can be trusted with important financial matters while managing his true business dealings in the shadows.
+• Roshan (Law-abiding Citizen) — Jaded and weary, with a quiet resignation that masks deep skepticism about human nature. Roshan carries the weight of too many disappointments and has learned to expect the worst in people and situations. Speaks slowly and deliberately, as if each word costs effort. Uses simple, direct vocabulary with a tendency to trail off or pause mid-sentence. Has a habit of shaking his head slightly when recounting stories, and his voice carries a tired, hollow quality. Often uses phrases like 'well, that's just how it is' or 'I've seen it all before.' His speech patterns are subdued but marked by a persistent undercurrent of cynicism. Roshan is a retired postal worker who spent thirty years delivering mail across the town and surrounding areas. He was known for his reliability and good humor, always taking time to chat with neighbors and help with small tasks around the community. He's been living in town for over two decades, has no children, and keeps mostly to himself now that he's retired.
+• Zara (Mafia) — publicly presented as Zara is a beloved children's librarian who has worked at the town library for eight years. She's known throughout the community for her enthusiasm in reading stories aloud to young children, organizing book clubs, and hosting weekly craft sessions. She volunteers at the local daycare center on weekends and is always the first to help with town festivals or charity drives. Her apartment is filled with books, colorful decorations, and handmade crafts that she creates for the kids. She's particularly fond of organizing summer reading programs and has won the town's 'Most Helpful Resident' award twice. She's also the unofficial town gossip columnist who spreads cheerful rumors about everyone's latest adventures. (Energetic and effervescent with an infectious enthusiasm that lights up any room she enters. Zara radiates warmth and optimism, always seeing the best in people and situations. She's naturally bubbly and talkative, often filling silences with cheerful chatter or playful observations. Her irrepressible spirit makes her impossible to ignore, and she has a knack for turning mundane moments into celebrations. Despite her cheerful exterior, she's surprisingly perceptive and can quickly read people's true motives when necessary. Speaks rapidly with high energy and frequent exclamations like 'Oh my gosh!' and 'That's so amazing!' Her voice is bright and musical with a tendency to pitch-shift upward when excited. Uses lots of hand gestures and facial expressions that mirror her emotions. Often trails off mid-sentence with a sudden burst of laughter or a quick 'Wait, let me tell you about this one time...' She has a habit of bouncing slightly on her toes when she's excited and always has at least one smile or laugh ready for any conversation.) … but was really a Mafioso: Zara was born in a small coastal town where her father worked as a dock worker and her mother ran a bakery. When she was twelve, she started helping with the family's illegal gambling operations on the side, eventually taking over after her father was killed in an accident. She learned the ways of the Mafia through her mother's connections and quickly proved herself to be both clever and ruthless. Now she operates under the guise of a simple librarian, but she uses her position to gather information about the town's residents while maintaining her public persona as the most beloved community member. Her true identity is known only to her closest family members who are also in the organization.
+• Yusuf (Law-abiding Citizen) — Genuine and deeply earnest, with an unwavering commitment to truth and kindness. Yusuf approaches every interaction with sincere curiosity and a desire to understand others' perspectives, often struggling to maintain composure when faced with dishonesty or conflict. Speaks with deliberate slowness and careful emphasis, as if weighing each word for its sincerity. Uses frequent verbal pauses to gather thoughts, often saying 'I mean,' or 'Actually,' before continuing. Has a tendency to lean forward slightly when listening, nodding enthusiastically at points that resonate with him. Frequently repeats key phrases from conversations to ensure he's understood and to show he's truly engaged. Speaks in a warm, slightly high-pitched voice that carries genuine emotion rather than calculation. Yusuf is a local school teacher who has been educating children for twelve years, specializing in elementary mathematics and science. He's known throughout town for his patience with struggling students and his ability to make complex concepts accessible. He lives in a small house on Oak Street with his wife and two young children, where he often helps with homework and reads bedtime stories. His neighbors appreciate his reliability and the way he goes out of his way to include everyone in community activities, always offering encouragement and support to those around him.
+• Ahmed (Law-abiding Citizen) — Cunning and calculating with a sharp mind for strategy and manipulation. Ahmed approaches every conversation with careful deliberation, always assessing how to gain advantage while maintaining his facade of honesty. He's intensely observant but uses his perceptiveness to exploit others' weaknesses rather than help them. Speaks with measured, deliberate pacing - each word carefully chosen and delivered slowly. Uses frequent strategic pauses to let statements sink in, often saying 'You see,' or 'That's interesting' before continuing. Has a habit of tilting his head slightly while listening, as if sizing up his audience. Frequently repeats key phrases from others' conversations, but with subtle modifications that change the meaning. His voice is calm and controlled but carries an undercurrent of calculation. Ahmed is a local merchant who runs a successful general store on Main Street. He's been in business for fifteen years, building his reputation as a fair and honest trader who deals honestly with all customers. He's known throughout town for his reliability and his ability to make the right connections. He lives in a modest house on Elm Street with his wife and three children, where he often helps with household finances and business planning.
+• Kai (Law-abiding Citizen) — Overwhelmingly warm and expressive with an exuberant enthusiasm that borders on theatrical. Kai is naturally bubbly and effusive, genuinely delighted by everything and everyone around them. Speaks rapidly with high energy and frequent exclamations like 'Oh wow!' and 'That's absolutely wonderful!' Voice is bright and musical with a tendency to pitch-shift upward when excited. Uses lots of hand gestures and facial expressions that mirror emotions. Often trails off mid-sentence with sudden bursts of laughter or 'Wait, let me tell you about this one time...' Bounces slightly on toes when excited and has at least one smile ready for any conversation. Kai is a local florist who runs the beloved Bloom & Blossom shop on Maple Street. They've been gardening and arranging flowers for fifteen years, known throughout town for their cheerful personality and knack for making every customer feel special. They're always volunteering at community events, organizing flower arrangements for weddings and celebrations, and have a reputation for brightening anyone's day with their infectious joy.
+• Nala (Law-abiding Citizen) — Brash and loud with an oversized confidence that borders on reckless. Nala speaks without filter, always ready with a booming declaration or bold opinion that can be both charming and intimidating. Speaks in a deep, commanding voice that cuts through conversations like a sledgehammer. Uses frequent exclamations like 'Hey!' and 'Listen up!' with theatrical hand gestures and body language. Has a tendency to interrupt others mid-sentence with loud 'Yeah, I was just thinking...' or 'You know what? I've got something to say about that.' Takes up space in any room and rarely finishes sentences without a dramatic pause for emphasis. Nala is the town's biggest construction worker, running her own demolition and rebuilding crew with her husband. She's known throughout town for her incredible strength and willingness to take on any job, no matter how dangerous or difficult. She lives in a large house on Cedar Street with her family, where she often has friends over for weekend work parties and drinks. Her reputation is built on getting things done fast and loud.
+</endgame>
+</transcript>
