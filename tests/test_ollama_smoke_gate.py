@@ -82,6 +82,7 @@ where the rejection lives.
 
 from __future__ import annotations
 
+import dataclasses
 import importlib
 import importlib.util
 import inspect
@@ -1399,3 +1400,311 @@ def test_a_bare_interpreter_import_of_the_harness_resolves_no_provider() -> None
     assert observed["large"] == "None"
     assert observed["small"] == "None"
     assert observed["names"] == list(_harness().SCHEMA_NAMES)
+
+
+# ===========================================================================
+# 8. Ballot reachability — Task 11.4's probe, and the refusal it does NOT relax.
+#
+# The sixth hole: the gate was CORRECT and the script was INCOMPLETE. A vote is
+# initiated only by the human typing ``/vote <name>`` or an AI returning
+# ``DayAction(kind="vote")``, and the scripted human's lines are deliberately
+# non-committal — so ``Ballot`` had no guaranteed path and the finished gate
+# passed one live run in four. The three failures were not the gate crying
+# wolf about the transport; they were the gate correctly refusing a run that
+# had measured six of seven surfaces.
+#
+# Nothing here invokes a model. ``_ballot_probe_pair`` is pure, and
+# ``_probe_ballot_if_unexercised``'s "already exercised" branch returns before
+# it imports ``nodes.day``, so it is reachable with ``None`` standing in for
+# every live argument — which is itself part of the claim: the probe must not
+# touch the graph when the game already voted.
+# ===========================================================================
+
+
+def _player(
+    player_id: str,
+    *,
+    is_human: bool = False,
+    is_alive: bool = True,
+    name: str | None = None,
+) -> Any:
+    """One ``PlayerState``, imported at call time like the harness itself."""
+    from graphia.state import PlayerState
+
+    return PlayerState(
+        id=player_id,
+        name=name or player_id.title(),
+        role="law_abiding",
+        is_human=is_human,
+        is_alive=is_alive,
+    )
+
+
+def _roster(*players: Any) -> dict[str, Any]:
+    """A ``players`` map in insertion order — the order the probe reads."""
+    return {player.id: player for player in players}
+
+
+def test_the_ballot_schema_name_is_derived_from_the_schema_class() -> None:
+    """Pins **the derivation**: the probe's key is ``Ballot.__name__``.
+
+    Typed, it would be a lookup that silently stops matching the moment the
+    schema is renamed — and a probe that never fires puts the gate straight
+    back to passing one run in four, with nothing on screen to say why. The
+    name must also be IN the vocabulary the verdict iterates, or the probe
+    would be filling a row nobody judges.
+    """
+    ollama_smoke = _harness()
+    llm = importlib.import_module("graphia.llm")
+
+    assert ollama_smoke.BALLOT_SCHEMA_NAME == llm.Ballot.__name__
+    assert ollama_smoke.BALLOT_SCHEMA_NAME in ollama_smoke.SCHEMA_NAMES
+
+
+def test_the_probe_pair_prefers_an_alive_ai_voter_and_an_alive_target() -> None:
+    """Pins **the rule**: alive-first, and never the human as voter.
+
+    ``_ai_ballot`` is the AI branch of ``collect_votes`` — a human voter has no
+    model call to make — so a roster whose first entry is the human must still
+    yield an AI voter.
+    """
+    ollama_smoke = _harness()
+    players = _roster(
+        _player("p1", is_human=True),
+        _player("p2", is_alive=False),
+        _player("p3"),
+        _player("p4"),
+    )
+
+    voter, target = ollama_smoke._ballot_probe_pair(players)
+
+    assert voter.id == "p3", "the first ALIVE AI player should be the voter"
+    assert not voter.is_human
+    assert target.id == "p1", (
+        "the target is the first alive player other than the voter, human or "
+        "not — the probe renders a Ballot prompt, it does not stage a legal vote"
+    )
+
+
+def test_the_probe_pair_falls_back_to_a_dead_stand_in_rather_than_declining() -> (
+    None
+):
+    """Pins **the rule**: alive-FIRST, not alive-only.
+
+    At a natural game end the survivors can be one side or one player. The
+    probe's job is to exercise the *decode*; declining would leave ``Ballot``
+    at zero attempts and fail the gate for a reason that says nothing about
+    the transport under test, which is the exact failure mode being fixed.
+    """
+    ollama_smoke = _harness()
+
+    dead_ai = _roster(_player("p1", is_alive=False), _player("p2", is_alive=False))
+    voter, target = ollama_smoke._ballot_probe_pair(dead_ai)
+    assert (voter.id, target.id) == ("p1", "p2")
+
+    lone_survivor = _roster(_player("p1"), _player("p2", is_alive=False))
+    voter, target = ollama_smoke._ballot_probe_pair(lone_survivor)
+    assert (voter.id, target.id) == ("p1", "p2")
+
+
+@pytest.mark.parametrize(
+    "players,why",
+    [
+        ({}, "an empty roster"),
+        ("human-only", "a roster with no AI player at all"),
+        ("single-ai", "an AI player with nobody to vote on"),
+    ],
+    ids=["empty", "human-only", "single-ai"],
+)
+def test_the_probe_pair_is_none_when_no_usable_pair_exists(
+    players: Any, why: str
+) -> None:
+    """Pins **the rule**: no pair -> ``None``, so the caller can say so.
+
+    ``None`` is not a failure path that needs its own gate condition: it leaves
+    ``Ballot`` at zero attempts, and ``require_all_schemas`` already refuses
+    that. The probe supplies a missing attempt; it never excuses one.
+    """
+    ollama_smoke = _harness()
+    if players == "human-only":
+        players = _roster(_player("p1", is_human=True), _player("p2", is_human=True))
+    elif players == "single-ai":
+        players = _roster(_player("p1"))
+
+    assert ollama_smoke._ballot_probe_pair(players) is None, why
+
+
+def test_the_probe_does_nothing_when_the_game_already_reached_a_vote() -> None:
+    """The probe is a BACKSTOP: in-game evidence is preferred and left alone.
+
+    ``None`` for the graph, run config and settings is the assertion, not a
+    convenience: on this branch the probe must not read the graph state, must
+    not import ``nodes.day`` and must not invoke anything. Any of those would
+    raise on ``None`` here.
+    """
+    ollama_smoke = _harness()
+    stats = {ollama_smoke.BALLOT_SCHEMA_NAME: _stats(attempts=7)}
+
+    note = ollama_smoke._probe_ballot_if_unexercised(None, None, None, stats)
+
+    assert note.startswith("not needed")
+    assert "7 in-game Ballot attempt(s)" in note
+    assert stats[ollama_smoke.BALLOT_SCHEMA_NAME].attempts == 7, (
+        "the backstop must not touch the counts it read"
+    )
+
+
+@pytest.mark.parametrize(
+    "stats_map",
+    [{}, {"Ballot": None}],
+    ids=["absent-from-the-map", "booked-with-zero-attempts"],
+)
+def test_a_missing_ballot_row_is_what_sends_the_probe_looking(
+    stats_map: dict[str, Any]
+) -> None:
+    """Both readings of "unexercised" reach the probe, not just one.
+
+    A schema ABSENT from the stats map and one PRESENT with zero attempts are
+    the same finding — that pair of shapes is holes (b) and (c) of the original
+    defect — so the probe must not be reachable from only one of them. Proven
+    by the exception: with ``None`` for the graph, a probe that decided to look
+    fails on ``graph.get_state``, and one that returned early would not.
+    """
+    ollama_smoke = _harness()
+    stats = {
+        name: (_stats() if value is None else value)
+        for name, value in stats_map.items()
+    }
+
+    with pytest.raises(AttributeError):
+        ollama_smoke._probe_ballot_if_unexercised(None, None, None, stats)
+
+
+def test_a_probe_that_could_not_run_still_leaves_the_gate_refusing() -> None:
+    """The forbidden fix, asserted as NOT taken: the note is not an excuse.
+
+    A report carrying a "could not run" probe note and ``Ballot`` at zero
+    attempts must still be UNRELIABLE, and the reason must still NAME
+    ``Ballot``. If the probe note had been wired into the verdict as a
+    mitigating circumstance, this is the test that would go red.
+    """
+    ollama_smoke = _harness()
+    names = ("Roster", "Ballot")
+    report = _clean_report(
+        schema_names=names,
+        stats={"Roster": _stats(attempts=_CLEAN_ATTEMPTS), "Ballot": _stats()},
+        ballot_probe="could not run — the final state carries no AI player",
+    )
+
+    reasons = ollama_smoke._unreliable_reasons(report, 0.20, schema_names=names)
+
+    assert ollama_smoke._judge(report, 0.20, schema_names=names) == "UNRELIABLE"
+    assert any("1 of 2 schemas went unexercised" in r for r in reasons)
+    assert any("Ballot" in r for r in reasons)
+
+
+def test_the_probe_note_is_reported_on_both_surfaces() -> None:
+    """The note reaches the screen AND the record — a claim, not a nicety.
+
+    "``Ballot`` was decoded" and "``Ballot`` was decoded IN A GAME" are
+    different claims, and a run where the game initiated no vote supports only
+    the weaker one. A reader of either surface has to be able to tell which.
+
+    The printed label is lower-case ``ballot probe:`` on purpose: the table
+    parity test reads a data row as "first token is a schema name", so a line
+    opening with ``Ballot`` would be miscounted as an eighth row.
+    """
+    ollama_smoke = _harness()
+    note = "ran — the game initiated no vote, so ONE direct Ballot decode"
+    report = _clean_report(
+        schema_names=ollama_smoke.SCHEMA_NAMES, ballot_probe=note
+    )
+    args = Namespace(max_rounds=7, seed=20260611, threshold=0.20)
+
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        ollama_smoke._print_pair_report(report, 0.20)
+    printed = buffer.getvalue()
+
+    assert f"  ballot probe: {note}" in printed
+    assert ollama_smoke._json_payload([report], args)["pairs"][0][
+        "ballot_probe"
+    ] == note
+    # The verdict is untouched by the note either way.
+    assert report.verdict_reasons == ()
+    assert ollama_smoke._judge(report, 0.20) == "RELIABLE"
+    probe_lines = [
+        line for line in printed.splitlines() if "ballot probe:" in line
+    ]
+    assert len(probe_lines) == 1, "exactly one probe line, whatever it says"
+    assert probe_lines[0].split()[0] == "ballot", (
+        "the label must not open with a schema name, or the table-parity test "
+        "would read this line as an eighth data row"
+    )
+
+
+def test_an_unrecorded_probe_prints_as_unrecorded_rather_than_silently() -> None:
+    """An absent note is visible, for the reason conditions (3) and (4) fail closed.
+
+    "The probe was never reached" and "the probe found nothing to do" are the
+    same conflation the zero-attempts hole was, one level up, so the line is
+    printed unconditionally rather than under an ``if``.
+    """
+    ollama_smoke = _harness()
+    report = _clean_report(schema_names=("Roster",))
+    assert report.ballot_probe == ""
+
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        ollama_smoke._print_pair_report(report, 0.20)
+
+    assert "  ballot probe: not recorded" in buffer.getvalue()
+
+
+def test_the_scripted_game_outcome_carries_the_probe_as_a_fourth_term() -> None:
+    """The drive's result is a value object, and the probe note is part of it.
+
+    ``_run_scripted_game`` used to return a bare 3-tuple; Task 11.4 needed a
+    fourth term, and four strings and a bool unpacked positionally at the call
+    site is where a silent reordering would live. ``ballot_probe`` defaults to
+    empty so the error paths that never reach a probe stay constructible.
+    """
+    ollama_smoke = _harness()
+
+    outcome = ollama_smoke.ScriptedGameOutcome(True, None, "natural game end")
+    assert (outcome.completed, outcome.error, outcome.stop_reason) == (
+        True,
+        None,
+        "natural game end",
+    )
+    assert outcome.ballot_probe == ""
+    assert [
+        field.name for field in dataclasses.fields(ollama_smoke.ScriptedGameOutcome)
+    ] == ["completed", "error", "stop_reason", "ballot_probe"]
+
+
+def test_the_harness_does_not_reach_into_the_shared_scripted_human() -> None:
+    """The fix stays LOCAL: ``eval_dialogue.HUMAN_LINES`` is untouched.
+
+    Three other harnesses read that pool — ``eval_dialogue`` itself,
+    ``blunder_eval`` (which imports it) and ``repetition_experiment`` (its own
+    copy) — and ``blunder_eval`` measures BEHAVIOUR. Injecting a forced
+    ``/vote`` into the shared line pool would change what the ledger's records
+    mean, which is why Task 11.4's fix is a probe in this module rather than an
+    edit one level down. Asserted rather than trusted: the lines stay
+    non-committal, and this file is where that goes red if someone "fixes"
+    reachability by editing the pool.
+    """
+    lines = importlib.import_module("graphia.tools.eval_dialogue").HUMAN_LINES
+
+    assert not any("/vote" in line for line in lines), (
+        "a scripted /vote in the SHARED human line pool would change what "
+        "blunder_eval measures; Task 11.4's probe is local to ollama_smoke"
+    )
+    source = (
+        _REPO_ROOT / "src" / "graphia" / "tools" / "ollama_smoke.py"
+    ).read_text()
+    assert 'Command(resume="/vote' not in source, (
+        "the harness drives no /vote turn: it cannot fix the run shape where "
+        "the human is killed on Night 1 and there are no human turns at all"
+    )

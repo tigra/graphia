@@ -71,6 +71,48 @@ Conditions (3) and (4) fail CLOSED — an unobserved method or an absent census
 is not a clean measurement, because "the instrument was never installed" and
 "the instrument read zero" are exactly the two things hole (c) above conflated.
 
+Reachability: why one schema needs a probe rather than luck
+-----------------------------------------------------------
+
+Condition (1) is only usable if the scripted game can actually REACH all seven
+surfaces, and one of them it cannot. A vote-to-execute is initiated in exactly
+two ways — the human typing ``/vote <name>``, or an AI turn returning
+``DayAction(kind="vote")`` — and the scripted human's line pool
+(``eval_dialogue.HUMAN_LINES``) is deliberately non-committal, so ``Ballot``
+has NO guaranteed path. Measured over four live runs of the finished gate: it
+passed ONE. The other three reported ``Ballot`` at zero attempts — once with
+the human alive through seven answered Day rounds and no vote initiated, and
+twice with the human killed on Night 1, which leaves the game AI-only with ZERO
+human turns to script. Those runs made 149 combined ``DayAction`` invokes and
+not one of them chose to vote.
+
+So a scripted ``/vote`` turn would fix the first shape and CANNOT fix the
+second: when the Mafia's LLM-chosen Night-1 target is the scripted human, there
+is no human turn to script. And a gate that cries wolf three times in four
+trains its reader to ignore it — which is exactly how the
+0.80-``Diary``-returns-RELIABLE defect survived a whole measured campaign. A
+gate that cannot pass when everything is fine defeats its own value statement
+as thoroughly as one that passes when nothing is.
+
+The fix is :func:`_probe_ballot_if_unexercised`: when — and ONLY when — the
+game left ``Ballot`` unexercised, the harness makes one direct call to
+production's own ``nodes.day._ai_ballot`` on the game's FINAL state, through the
+same counted client and the same substitution census, with the six prompt flags
+bound off the same ``GraphiaConfig`` the graph binds them from. So the attempt
+is a real structured-output decode of a real ``Ballot`` prompt rather than a
+synthetic one, and it is reported AS a probe (``ballot probe:`` on screen,
+``ballot_probe`` in the JSON) so nobody reads it as in-game evidence.
+
+This does NOT weaken condition (1), and the difference matters: the probe
+SUPPLIES the missing attempt, it does not excuse its absence.
+``require_all_schemas`` still demands ``attempts > 0`` with zero failures, and a
+probe that cannot run — no AI player, no second player, an exception before the
+counted invoke — leaves ``Ballot`` at zero and the gate still refuses. Two
+residuals remain, stated on the ``make help`` line where the operator meets
+them: on a run where the game initiated no vote, ``Ballot``'s evidence is ONE
+out-of-game decode rather than a whole in-game poll, and the other six schemas
+are reachable only because ``--max-rounds`` defaults past the Day->Night hinge.
+
 Instrumentation is entirely tool-side: the production ``graphia.llm`` module
 already exposes ``_active_provider`` / ``_large`` / ``_small`` as in-process
 override seams (the same seams ``repetition_experiment`` uses), so we install
@@ -113,10 +155,11 @@ from graphia.tools.instrument import InstrumentedModel, SchemaStats
 
 # THE ONE PRODUCTION IMPORT THIS MODULE MAKES AT IMPORT TIME, and a deliberate
 # exception to the local-import discipline the rest of the file keeps (see
-# ``_derive_interrupt_budget``). Two names are needed at module scope and
-# neither can wait for ``main``: ``GAMEPLAY_SCHEMAS`` because ``SCHEMA_NAMES``
-# below is derived from it rather than typed, and ``OllamaProvider`` because
-# ``_CountingOllamaProvider`` subclasses it.
+# ``_derive_interrupt_budget``). Three names are needed at module scope and
+# none can wait for ``main``: ``GAMEPLAY_SCHEMAS`` because ``SCHEMA_NAMES``
+# below is derived from it rather than typed, ``Ballot`` because
+# ``BALLOT_SCHEMA_NAME`` is derived from it for the same reason, and
+# ``OllamaProvider`` because ``_CountingOllamaProvider`` subclasses it.
 #
 # Safe, checked rather than assumed: ``graphia.llm`` reads NO environment at
 # module scope, resolves no provider (``_active_provider`` starts ``None``) and
@@ -126,7 +169,12 @@ from graphia.tools.instrument import InstrumentedModel, SchemaStats
 # SELECTION out of import time, and importing names does not select. The
 # sibling harness ``tools/blunder_eval.py`` imports this same module at module
 # scope for the same reason and has done since spec 011.
-from graphia.llm import GAMEPLAY_SCHEMAS, OllamaProvider, StructuredModel
+from graphia.llm import (
+    GAMEPLAY_SCHEMAS,
+    Ballot,
+    OllamaProvider,
+    StructuredModel,
+)
 
 # The substitution census's source (spec 041 Slice 6). A LEAF module — no
 # ``graphia`` imports at all, no env, no I/O beyond ``logging`` — so this costs
@@ -143,6 +191,7 @@ from graphia.substitution import (
 
 if TYPE_CHECKING:  # pragma: no cover - annotation only
     from graphia.config import GraphiaConfig
+    from graphia.state import PlayerState
 
 # ---------------------------------------------------------------------------
 # The structured-output surfaces under test — DERIVED, never typed.
@@ -161,6 +210,14 @@ if TYPE_CHECKING:  # pragma: no cover - annotation only
 # the display it means.
 # ---------------------------------------------------------------------------
 SCHEMA_NAMES: tuple[str, ...] = tuple(schema.__name__ for schema in GAMEPLAY_SCHEMAS)
+
+# The ONE schema in that vocabulary with no guaranteed path through a scripted
+# game — see the docstring's reachability section and
+# :func:`_probe_ballot_if_unexercised`. Derived from the class for the same
+# reason ``SCHEMA_NAMES`` is derived: a rename must not silently turn the probe
+# into a lookup that never matches, which would put the gate straight back to
+# passing one run in four.
+BALLOT_SCHEMA_NAME: str = Ballot.__name__
 
 # The structured-output method the gate requires the provider seam to have
 # resolved — ADR-013's grammar-constrained decoding. Named here rather than
@@ -521,6 +578,13 @@ class PairReport:
     # game. Empty means the census was never installed, which the verdict also
     # treats as a failure.
     substitutions: dict[str, dict[str, int]] = field(default_factory=dict)
+    # What happened to the ONE schema a scripted game cannot be relied on to
+    # reach (Task 11.4). Either "not needed" with the in-game attempt count, or
+    # what :func:`_probe_ballot_if_unexercised` did. Reported beside the table
+    # rather than folded into it, because "``Ballot`` was decoded" and
+    # "``Ballot`` was decoded IN A GAME" are different claims and the reader
+    # has to be able to tell which one this run supports.
+    ballot_probe: str = ""
     verdict: str = "UNRELIABLE"
     # WHY the verdict reads as it does, one string per breached condition, in
     # the same field for the printed report and the JSON record. A one-word
@@ -530,17 +594,271 @@ class PairReport:
     verdict_reasons: tuple[str, ...] = ()
 
 
-def _run_scripted_game(
-    max_rounds: int, seed: int, *, budget_override: int | None = None
+@dataclass(frozen=True, slots=True)
+class ScriptedGameOutcome:
+    """What one scripted game did, in the four terms the report reads.
+
+    A value object rather than the 3-tuple this used to be, because Task 11.4
+    added a fourth term and a four-tuple unpacked at the call site is exactly
+    where two silently swapped strings would live. ``ballot_probe`` is
+    always populated on a path that ran a game — it says either "not needed"
+    with the in-game attempt count, or what the probe did.
+    """
+
+    completed: bool
+    error: str | None
+    stop_reason: str
+    ballot_probe: str = ""
+
+
+def _ballot_probe_pair(
+    players: dict[str, PlayerState],
+) -> tuple[PlayerState, PlayerState] | None:
+    """Pick ``(voter, target)`` for the ballot probe — alive-first, deterministic.
+
+    Pure, and deterministic in roster insertion order (which ``--seed`` fixes),
+    so a probe is reproducible for a given game structure. ``None`` means no
+    usable pair exists, which the caller reports and the verdict then refuses
+    on — the probe adds no gate condition of its own.
+
+    ALIVE-FIRST rather than alive-only, on purpose. At a natural game end the
+    survivors can be one side or a single player, and the probe's job is to
+    exercise the *decode*, not to stage a legal vote — a dead stand-in still
+    renders a real ``Ballot`` prompt, whereas declining to probe would leave
+    ``Ballot`` at zero attempts and fail the gate for a reason that says
+    nothing about the transport under test.
+
+    The voter must be an AI: ``_ai_ballot`` is the AI branch of
+    ``collect_votes``, and a human voter has no model call to make at all.
+    """
+    ais = [player for player in players.values() if not player.is_human]
+    voter = next((p for p in ais if p.is_alive), None) or next(iter(ais), None)
+    if voter is None:
+        return None
+    others = [player for player in players.values() if player.id != voter.id]
+    target = next((p for p in others if p.is_alive), None) or next(iter(others), None)
+    if target is None:
+        return None
+    return voter, target
+
+
+def _probe_ballot_if_unexercised(
+    graph,
+    run_config,
+    config: GraphiaConfig,
+    stats: dict[str, SchemaStats],
+) -> str:
+    """Reach ``Ballot`` when the game did not, and say which of those happened.
+
+    The sixth hole, one level up from the fifth: Task 11.1 made the instrument
+    able to SEE ``Persona``; nothing made the script able to REACH ``Ballot``.
+    A vote is initiated only by the human typing ``/vote <name>`` or an AI
+    returning ``DayAction(kind="vote")``, and the scripted human's lines are
+    deliberately non-committal — so across four live runs of the finished gate
+    ``Ballot`` came back at zero attempts three times, twice because the Mafia
+    killed the scripted human on Night 1 and there were no human turns left to
+    script at all. See the module docstring for why a scripted ``/vote`` cannot
+    fix that second shape and this can.
+
+    Calls production's ``nodes.day._ai_ballot`` — the private helper that owns
+    the ``Ballot`` structured-output call, reached the way this module already
+    reaches ``llm``'s override seams — on the game's FINAL state, through the
+    counted client and inside the installed substitution census. So the attempt
+    lands in the same two instruments an in-game ballot would, and a probe
+    whose decode fails is a finding rather than a silent skip.
+
+    Returns a human-readable note, never raising: it is called after the drive
+    has already decided the outcome, and a measurement that can take down the
+    run it is reporting on is worse than a missing note.
+    """
+    booked = stats.get(BALLOT_SCHEMA_NAME)
+    if booked is not None and booked.attempts:
+        return (
+            "not needed — the game initiated a vote on its own "
+            f"({booked.attempts} in-game {BALLOT_SCHEMA_NAME} attempt(s))"
+        )
+
+    # Local import for the same reason every other production import here is
+    # local, and after the early return so the cheap path stays cheap.
+    from graphia.nodes.day import _ai_ballot
+
+    state = dict(graph.get_state(run_config).values)
+    pair = _ballot_probe_pair(state.get("players") or {})
+    if pair is None:
+        # Leaves ``Ballot`` at zero attempts, so ``require_all_schemas``
+        # refuses: fail-closed by construction rather than by a new condition.
+        return (
+            "could not run — the final state carries no AI player with a "
+            f"second player to vote on, so {BALLOT_SCHEMA_NAME} stays "
+            "unexercised and the verdict refuses"
+        )
+    voter, target = pair
+    try:
+        ballot = _ai_ballot(
+            voter,
+            target,
+            state,
+            # The SAME six values ``graph.py`` binds into ``collect_votes``,
+            # off the same config object, so the probe renders production's
+            # prompt rather than the helper's test-facing defaults. A shorter
+            # context window would make the probe an easier decode than the
+            # thing it stands in for.
+            recap_aware_reasoning_enabled=config.recap_aware_reasoning_enabled,
+            role_guidance_enabled=config.role_guidance_enabled,
+            context_window=config.context_window,
+            context_token_budget=config.context_token_budget,
+            private_thoughts=(state.get("private_thoughts") or {}).get(voter.id, []),
+            private_thoughts_enabled=config.private_thoughts_enabled,
+            diaries=(state.get("private_diaries") or {}).get(voter.id, []),
+            diaries_enabled=config.private_diaries_enabled,
+        )
+    except Exception as exc:
+        return (
+            f"raised {type(exc).__name__}: {exc} — any attempt it did make is "
+            "still counted, so a parse failure shows in the table above"
+        )
+    return (
+        "ran — the game initiated no vote, so ONE direct "
+        f"{BALLOT_SCHEMA_NAME} decode was made off the final state "
+        f"({voter.name} on {target.name} -> {'yes' if ballot.yes else 'no'}); "
+        "that schema's evidence is out-of-game, not an in-game poll"
+    )
+
+
+def _drive_script(
+    graph,
+    run_config,
+    config: GraphiaConfig,
+    max_rounds: int,
+    budget_override: int | None,
 ) -> tuple[bool, str | None, str]:
+    """The scripted-human drive loop — everything between name and last turn.
+
+    Extracted from :func:`_run_scripted_game` verbatim (Task 11.4) so the
+    ballot probe can run AFTER the drive and BEFORE the checkpoint directory
+    goes away, without threading a post-step through this loop's six return
+    sites.
+    """
+    try:
+        _drive(graph, run_config, {"messages": []})
+        first = _collect_interrupt(graph, run_config)
+        if not first or first.get("kind") != "name":
+            return False, f"no name interrupt: {first!r}", "no name interrupt"
+        _drive(graph, run_config, Command(resume=HUMAN_NAME))
+
+        # The backstop is derived from THIS game's resolved lineup, so a
+        # bigger table widens it rather than tightening it. See the
+        # derivation block above for the unit and the measured comparison.
+        budget = _derive_interrupt_budget(config)
+        limit = budget.total if budget_override is None else budget_override
+        # Observed counts, so an exhaustion message can say what the loop
+        # actually did rather than only what it was allowed to do.
+        answered = {"day_turn": 0, "vote": 0, "point": 0, "advance": 0}
+        used = 0
+
+        rounds = 0
+        line_idx = 0
+        # NOTE (spec 023): this ``max_rounds`` is a smoke-test *sampling* cap —
+        # it bounds how many Day rounds run to exercise the structured-output
+        # schemas quickly — NOT the whole-game runaway Day cap
+        # (``config.max_days`` / GRAPHIA_MAX_DAYS, the in-game safeguard).
+        # Deliberately left as a fast schema-exercise budget; only the
+        # blunder-eval harness drives games to their natural end.
+        #
+        # Spec 042: the loop's ``range`` is a THIRD, distinct cap — the
+        # derived anti-hang backstop, not a sampling cap. ``max_rounds``
+        # decides how much of the game is measured; the backstop only
+        # decides when to give up on a graph that has stopped progressing.
+        # Conflating them is what produced the old ``max_rounds * 12 + 20``.
+        for _ in range(limit):
+            used += 1
+            if rounds >= max_rounds:
+                # Script ran its course. NOTE: this cap decides how much of
+                # the game is measured, and a cap at or below
+                # ``DAY_MAX_ROUNDS`` (6) fires INSIDE Day 1 — before the
+                # first Day -> Night hinge, so ``day_diary``, the last
+                # reflection and the whole Night never run, and ``Diary``,
+                # ``Reflection`` and ``Pointing`` go unexercised. That is
+                # why ``main`` derives the default as ``DAY_MAX_ROUNDS + 1``
+                # instead of the old literal 3: the gate now REQUIRES all
+                # seven schemas exercised, so a default that cannot reach
+                # three of them would make it unsatisfiable. Named in the
+                # stop reason because "which schemas got exercised" is read
+                # off this report.
+                return (
+                    True,
+                    None,
+                    f"sampling round cap ({rounds}/{max_rounds} Day rounds "
+                    f"answered; {used}/{limit} backstop steps used)",
+                )
+            snapshot = graph.get_state(run_config)
+            if not snapshot.next:
+                return (
+                    True,
+                    None,
+                    f"natural game end ({rounds}/{max_rounds} Day rounds "
+                    f"answered; {used}/{limit} backstop steps used)",
+                )
+            iv = _collect_interrupt(graph, run_config)
+            if iv is None:
+                answered["advance"] += 1
+                _drive(graph, run_config, None)
+                continue
+            kind = iv.get("kind")
+            if kind == "day_turn":
+                resume: str = HUMAN_LINES[line_idx % len(HUMAN_LINES)]
+                line_idx += 1
+                rounds += 1
+            elif kind == "vote":
+                resume = "no"  # keep the game alive across rounds
+            elif kind == "point":
+                options = iv.get("options") or []  # defensive; human is law-abiding
+                resume = options[0]["id"] if options else ""
+            else:
+                return False, f"unexpected interrupt {kind!r}", "unexpected interrupt"
+            answered[kind] += 1
+            _drive(graph, run_config, Command(resume=resume))
+        return (
+            False,
+            (
+                f"interrupt budget exhausted after {used} steps: "
+                f"{budget.describe()}"
+                + ("" if budget_override is None else f", forced to {limit}")
+                + f". Observed: {answered['day_turn']}/{max_rounds} Day "
+                f"rounds answered, {answered['vote']} ballots, "
+                f"{answered['point']} night points, "
+                f"{answered['advance']} non-interrupt advances. The game "
+                "neither reached the sampling round cap nor ended "
+                "naturally, so read this as a wedged graph first and a "
+                "budget too small second — the budget tracks the lineup."
+            ),
+            "backstop budget exhausted",
+        )
+    except Exception as exc:
+        return False, f"{type(exc).__name__}: {exc}", "exception"
+
+
+def _run_scripted_game(
+    max_rounds: int,
+    seed: int,
+    *,
+    budget_override: int | None = None,
+    stats: dict[str, SchemaStats] | None = None,
+) -> ScriptedGameOutcome:
     """Drive one game on the (already-installed) counted provider.
 
     Scripted human: law-abiding (no night-point interrupts), neutral day
     lines, always votes "no" so the game runs long enough to exercise the
-    Day-phase schemas. Returns (completed, error, stop_reason). "Completed"
-    means the script ran its course — to the round cap or a natural game end —
-    without an exception or an unexpected interrupt; ``stop_reason`` says which,
-    because those two endings mean different things about what was measured.
+    Day-phase schemas. Reports whether the script ran its course — to the round
+    cap or a natural game end — without an exception or an unexpected
+    interrupt, and ``stop_reason`` says which, because those two endings mean
+    different things about what was measured.
+
+    ``stats`` is the SAME counted map the provider books into. Supplied, this
+    runs the ballot probe once the drive is done — the fix for the one schema a
+    scripted game cannot be relied on to reach (see
+    :func:`_probe_ballot_if_unexercised`). Left ``None``, no probe runs and the
+    note says so; the verdict then refuses on the zero attempts, unweakened.
 
     ``budget_override`` exists only to make the exhaustion path reachable on
     demand (forcing a tiny budget proves the message is informative). Leave it
@@ -557,103 +875,22 @@ def _run_scripted_game(
         graph, thread_id = build_graph(config)
         run_config = make_run_config(thread_id)
 
-        try:
-            _drive(graph, run_config, {"messages": []})
-            first = _collect_interrupt(graph, run_config)
-            if not first or first.get("kind") != "name":
-                return False, f"no name interrupt: {first!r}", "no name interrupt"
-            _drive(graph, run_config, Command(resume=HUMAN_NAME))
-
-            # The backstop is derived from THIS game's resolved lineup, so a
-            # bigger table widens it rather than tightening it. See the
-            # derivation block above for the unit and the measured comparison.
-            budget = _derive_interrupt_budget(config)
-            limit = budget.total if budget_override is None else budget_override
-            # Observed counts, so an exhaustion message can say what the loop
-            # actually did rather than only what it was allowed to do.
-            answered = {"day_turn": 0, "vote": 0, "point": 0, "advance": 0}
-            used = 0
-
-            rounds = 0
-            line_idx = 0
-            # NOTE (spec 023): this ``max_rounds`` is a smoke-test *sampling* cap —
-            # it bounds how many Day rounds run to exercise the structured-output
-            # schemas quickly — NOT the whole-game runaway Day cap
-            # (``config.max_days`` / GRAPHIA_MAX_DAYS, the in-game safeguard).
-            # Deliberately left as a fast schema-exercise budget; only the
-            # blunder-eval harness drives games to their natural end.
-            #
-            # Spec 042: the loop's ``range`` is a THIRD, distinct cap — the
-            # derived anti-hang backstop, not a sampling cap. ``max_rounds``
-            # decides how much of the game is measured; the backstop only
-            # decides when to give up on a graph that has stopped progressing.
-            # Conflating them is what produced the old ``max_rounds * 12 + 20``.
-            for _ in range(limit):
-                used += 1
-                if rounds >= max_rounds:
-                    # Script ran its course. NOTE: this cap decides how much of
-                    # the game is measured, and a cap at or below
-                    # ``DAY_MAX_ROUNDS`` (6) fires INSIDE Day 1 — before the
-                    # first Day -> Night hinge, so ``day_diary``, the last
-                    # reflection and the whole Night never run, and ``Diary``,
-                    # ``Reflection`` and ``Pointing`` go unexercised. That is
-                    # why ``main`` derives the default as ``DAY_MAX_ROUNDS + 1``
-                    # instead of the old literal 3: the gate now REQUIRES all
-                    # seven schemas exercised, so a default that cannot reach
-                    # three of them would make it unsatisfiable. Named in the
-                    # stop reason because "which schemas got exercised" is read
-                    # off this report.
-                    return (
-                        True,
-                        None,
-                        f"sampling round cap ({rounds}/{max_rounds} Day rounds "
-                        f"answered; {used}/{limit} backstop steps used)",
-                    )
-                snapshot = graph.get_state(run_config)
-                if not snapshot.next:
-                    return (
-                        True,
-                        None,
-                        f"natural game end ({rounds}/{max_rounds} Day rounds "
-                        f"answered; {used}/{limit} backstop steps used)",
-                    )
-                iv = _collect_interrupt(graph, run_config)
-                if iv is None:
-                    answered["advance"] += 1
-                    _drive(graph, run_config, None)
-                    continue
-                kind = iv.get("kind")
-                if kind == "day_turn":
-                    resume: str = HUMAN_LINES[line_idx % len(HUMAN_LINES)]
-                    line_idx += 1
-                    rounds += 1
-                elif kind == "vote":
-                    resume = "no"  # keep the game alive across rounds
-                elif kind == "point":
-                    options = iv.get("options") or []  # defensive; human is law-abiding
-                    resume = options[0]["id"] if options else ""
-                else:
-                    return False, f"unexpected interrupt {kind!r}", "unexpected interrupt"
-                answered[kind] += 1
-                _drive(graph, run_config, Command(resume=resume))
-            return (
-                False,
-                (
-                    f"interrupt budget exhausted after {used} steps: "
-                    f"{budget.describe()}"
-                    + ("" if budget_override is None else f", forced to {limit}")
-                    + f". Observed: {answered['day_turn']}/{max_rounds} Day "
-                    f"rounds answered, {answered['vote']} ballots, "
-                    f"{answered['point']} night points, "
-                    f"{answered['advance']} non-interrupt advances. The game "
-                    "neither reached the sampling round cap nor ended "
-                    "naturally, so read this as a wedged graph first and a "
-                    "budget too small second — the budget tracks the lineup."
-                ),
-                "backstop budget exhausted",
+        completed, error, stop_reason = _drive_script(
+            graph, run_config, config, max_rounds, budget_override
+        )
+        # Inside the tempdir context on purpose: the probe reads the game's
+        # final state off THIS thread's checkpoint, which vanishes with the
+        # directory.
+        if stats is None:
+            probe = "not run — no stats map was supplied to count into"
+        elif not completed:
+            probe = (
+                "not run — the scripted game did not complete, so the run is "
+                "already UNRELIABLE and a probe would only add model time"
             )
-        except Exception as exc:
-            return False, f"{type(exc).__name__}: {exc}", "exception"
+        else:
+            probe = _probe_ballot_if_unexercised(graph, run_config, config, stats)
+        return ScriptedGameOutcome(completed, error, stop_reason, probe)
 
 
 def _schema_rows(
@@ -870,15 +1107,18 @@ def _smoke_one_pair(
     set_sink(census)
     started = time.monotonic()
     try:
-        (
-            report.game_completed,
-            report.game_error,
-            report.stop_reason,
-        ) = _run_scripted_game(max_rounds, seed)
+        # ``stats`` is handed down so the ballot probe can ask whether the game
+        # reached a vote and, if it did not, book its own attempt into the SAME
+        # counted map the table and the verdict read.
+        outcome = _run_scripted_game(max_rounds, seed, stats=stats)
     finally:
         reset_sink()
         report.duration_seconds = time.monotonic() - started
         report.substitutions = census.as_report()
+    report.game_completed = outcome.completed
+    report.game_error = outcome.error
+    report.stop_reason = outcome.stop_reason
+    report.ballot_probe = outcome.ballot_probe
 
     # Computed twice, on purpose. ``_judge`` is the decision function and must
     # be the one production calls — a verdict derived here from a local variable
@@ -921,6 +1161,11 @@ def _print_pair_report(report: PairReport, threshold: float) -> None:
         # Its own line: the backstop-exhaustion message is a paragraph, and
         # squeezing it onto the summary line is what made it unreadable before.
         print(f"    {report.game_error}")
+    # Lower-cased label on purpose: ``test_the_printed_table_and_the_json_
+    # record_name_the_same_schemas`` reads a data row as "first token is a
+    # schema name", so a line opening with ``Ballot`` would be parsed as a
+    # table row.
+    print(f"  ballot probe: {report.ballot_probe or 'not recorded'}")
     method = report.structured_output_method
     print(
         f"  structured-output method: {method or 'not observed'}"
@@ -970,6 +1215,10 @@ def _json_payload(reports: list[PairReport], args: argparse.Namespace) -> dict:
                 "game_completed": r.game_completed,
                 "game_error": r.game_error,
                 "stop_reason": r.stop_reason,
+                # Whether this record's ``Ballot`` row is in-game evidence or a
+                # probe's single out-of-game decode — a distinction a machine
+                # reader needs as much as the screen does.
+                "ballot_probe": r.ballot_probe,
                 "duration_seconds": round(r.duration_seconds, 2),
                 "verdict": r.verdict,
                 "verdict_reasons": list(r.verdict_reasons),
@@ -1119,6 +1368,13 @@ def main(argv: list[str] | None = None) -> int:
         f"  verdict requires all {len(SCHEMA_NAMES)} schemas exercised "
         f"({', '.join(SCHEMA_NAMES)}) with zero failures, method "
         f"{EXPECTED_STRUCTURED_OUTPUT_METHOD}, and a zero substitution census."
+    )
+    print(
+        f"  {BALLOT_SCHEMA_NAME} has no guaranteed path through a scripted "
+        "game — the human may be killed on Night 1 (no turns left to script) "
+        "and no AI may ever call a vote — so when the game initiates none, "
+        "ONE direct decode is made off the final state. Which of the two "
+        "happened is on the 'ballot probe:' line."
     )
 
     reports: list[PairReport] = []
