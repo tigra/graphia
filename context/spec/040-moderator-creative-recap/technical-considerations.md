@@ -99,13 +99,19 @@ A separate clamp in `nodes/endgame.py`: normalise line endings; split on runs of
 
 **Truncate at a paragraph boundary**, not a character cut. This is a difference in kind: a diary cut mid-word is read only by a model and a maintainer; **the story is the last thing the player reads**, and a mid-sentence cut reads as a bug.
 
-| Constant | Value | Reasoning |
-| --- | --- | --- |
-| `STORY_PARAGRAPH_BOUND` | 4 | The number **stated** in the prompt, interpolated once — 039's `DIARY_SENTENCE_BOUND` discipline |
-| `STORY_MAX_PARAGRAPHS` | 4 | The enforcement half, satisfying "applied when the story is taken in" |
-| `STORY_MAX_CHARS` | ~1800 | Defensive backstop. **Keep under ~2500:** `llm:_OLLAMA_MAX_TOKENS = 1024` caps output, so a longer cap means the Ollama path truncates mid-sentence *before* the clamp sees it, and the clamp then cuts at a paragraph boundary and silently drops the ending |
+> **AMENDED 2026-09-09 BY TASK 5.2, which owns this table.** The `STORY_MAX_CHARS` row cited a constant that no longer exists under that name (reported by Tasks 4.1 and 4.2, both of which correctly left it here); the table also named three constants without saying where each lives, and the two paragraph numbers are now **derived rather than restated**. Homes and the derivation are recorded below because the split is the decision, not a detail.
 
-Module constants, not config — the functional spec fixes the length, and ADR 011 asks for a flag, not a tunable (verbatim 039's argument for `DIARY_WINDOW`).
+| Constant | Value | Home | Reasoning |
+| --- | --- | --- | --- |
+| `STORY_PARAGRAPH_BOUND` | 4 | `prompts.py` | The number **stated** in the prompt, interpolated once — 039's `DIARY_SENTENCE_BOUND` discipline. Created early by Task 4.1, because move 7 interpolates it |
+| `STORY_MAX_PARAGRAPHS` | `= STORY_PARAGRAPH_BOUND` | `nodes/endgame.py` | The enforcement half, satisfying "applied when the story is taken in". **Derived, not restated** — see below |
+| `STORY_MAX_CHARS` | 1800 | `nodes/endgame.py` | Defensive backstop, and **independent** of the paragraph cap: a second dimension, exactly 039's `DIARY_MAX_CHARS` shape. **Keep under ~2500:** `llm:_OLLAMA_NUM_PREDICT = 1024` caps local output (renamed from `_OLLAMA_MAX_TOKENS` by spec 041 / ADR 013, value unchanged), which at the project's own conservative `day:_CHARS_PER_TOKEN = 3` proxy is ~3000 characters of JSON response. A cap near that is reached by an Ollama **truncation** rather than by a long story: the provider stops mid-sentence, the clamp then cuts at the last whole paragraph, and the ending silently loses its final sentence |
+
+**Placement follows 039's precedent, which is SPLIT rather than uniform** (verified: `DIARY_SENTENCE_BOUND` in `prompts.py` beside the prompt that interpolates it, `DIARY_MAX_CHARS` in `nodes/day.py` beside `_clamp_diary_entry`, its only reader). The number a prompt *states* belongs with the prompt; the numbers a clamp *enforces* belong with the clamp. `prompts.py` is also a leaf module whose job is prompt text, so a number no prompt interpolates has no reader there.
+
+**Why `STORY_MAX_PARAGRAPHS` is derived, and why that departs from 039 correctly.** 039's two numbers are in different *dimensions* (six sentences stated, nine hundred characters enforced), so they cannot silently disagree and independence is right there. This pair is the same number in the same dimension in two modules — a drift risk 039 does not carry, flagged for Task 5.2 by Task 4.1 at `prompts:STORY_PARAGRAPH_BOUND`. Equality is also the *only* correct relationship: enforcing fewer paragraphs than the prompt requests clips a compliant story, enforcing more does not enforce the stated bound. Derivation makes that structural; a pinning test can only report a disagreement after one has shipped. No import cycle — `prompts` is a leaf and `nodes/endgame.py` already imports from it.
+
+Module constants, not config — the functional spec fixes the length, and ADR 011 asks for a flag, not a tunable (verbatim 039's argument for `DIARY_WINDOW`). Deliberately **not** `GraphiaConfig` fields and not threaded through the graph builders: that is what Task 3.5 did for `story_context_window` / `story_token_budget`, which are provider-capability knobs, and a bound on the prose is not one.
 
 **Marking a clipped story (author-approved).** When the cap actually fires, the story message carries a second machine flag and the transcript element renders `<story truncated="true">`. Without it a reviewer judging the prose attributes a story that stops early to the storyteller rather than the cap — exactly the wrong conclusion when the point of preserving it is to judge it. **Deliberately NOT added to `_ATTR_NAMES`**, following spec 038's ratified treatment of `human="true"`: a machine flag is not a detail a reviewer reads, so it stays part of the tag's punctuation.
 

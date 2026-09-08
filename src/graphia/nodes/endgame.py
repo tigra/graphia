@@ -116,6 +116,10 @@ from graphia.prompts import (
     ENDGAME_WINNER_LAW,
     ENDGAME_WINNER_MAFIA,
     ENDGAME_WINNER_RUNAWAY,
+    # The paragraph bound the prompt STATES. Imported so
+    # ``STORY_MAX_PARAGRAPHS`` — the number this module ENFORCES — is derived
+    # from it rather than restated; see that constant for the argument.
+    STORY_PARAGRAPH_BOUND,
     STORY_SYSTEM,
     STORY_USER_TEMPLATE,
 )
@@ -784,6 +788,87 @@ def _story_private_block(
     if not sections:
         return STORY_PRIVATE_EMPTY
     return "\n\n".join([STORY_PRIVATE_LEGEND, *sections])
+
+
+# ==========================================================================
+# THE LENGTH BOUND, ENFORCEMENT HALF (spec 040 §2.5, Task 5.2)
+# ==========================================================================
+#
+# PLACEMENT IS A DECISION, AND THE 039 PRECEDENT IT RESTS ON IS SPLIT
+# --------------------------------------------------------------------------
+# Verified rather than assumed: ``DIARY_SENTENCE_BOUND = 6`` lives in
+# ``prompts.py`` beside the prompt that interpolates it, while
+# ``DIARY_MAX_CHARS = 900`` lives in ``nodes/day.py`` beside
+# ``_clamp_diary_entry``, its only reader. That split is spec 039's discipline
+# rather than an accident — the number a prompt STATES is part of the prompt,
+# and the number a clamp ENFORCES is part of the clamp — so this pair follows
+# it: both constants live here, next to :func:`_clamp_story`, and only
+# ``STORY_PARAGRAPH_BOUND`` (the number the prompt states) stays in
+# ``prompts.py``.
+#
+# Two things settle it beyond the precedent. ``prompts.py`` is a LEAF module
+# whose whole job is prompt text, and a number that no prompt interpolates has
+# no reader there; and these two have exactly ONE reader in the codebase,
+# :func:`_clamp_story` twenty lines below, so co-location is what a maintainer
+# changing the bound actually needs.
+#
+# MODULE CONSTANTS, NOT CONFIG. The functional spec fixes the length, and
+# ADR 011 asks for a feature flag rather than a tunable — verbatim spec 039's
+# argument for ``DIARY_WINDOW``. Deliberately NOT ``GraphiaConfig`` fields and
+# deliberately NOT threaded through the graph builders' ``partial`` binds: that
+# is what Task 3.5 did for ``story_context_window`` / ``story_token_budget``,
+# which are PROVIDER-CAPABILITY knobs (they exist so a smaller local model can
+# be fitted), and a length bound on the prose is not one.
+
+# The enforced paragraph cap, DERIVED from the stated one rather than restated.
+#
+# WHY DERIVED, WHICH IS A DEPARTURE FROM 039 AND DELIBERATELY SO. Spec 039's
+# two numbers are in different DIMENSIONS — six sentences stated, nine hundred
+# characters enforced — so they cannot silently disagree and independence is
+# correct there. This pair is the SAME number in the SAME dimension in two
+# modules, which is a drift risk 039 does not carry (flagged for this task at
+# ``prompts:STORY_PARAGRAPH_BOUND``). Equality is also the only correct
+# relationship: enforcing fewer paragraphs than the prompt requests would clip
+# a compliant story, and enforcing more would not enforce the stated bound at
+# all. Making it structural beats pinning it with a test, which can only report
+# a disagreement after someone has shipped one. No import cycle: ``prompts`` is
+# a leaf (its only import is ``__future__.annotations``) and this module
+# already imports from it.
+#
+# The separate NAME is still worth having: it is the enforcement role, it is
+# what :func:`_clamp_story` reads, and it is the seam if the clamp should ever
+# need slack over the request.
+STORY_MAX_PARAGRAPHS = STORY_PARAGRAPH_BOUND
+
+# The character backstop. INDEPENDENT of the paragraph cap on purpose — a
+# second dimension, which is exactly the shape of 039's ``DIARY_MAX_CHARS``:
+# four paragraphs of any length still bound nothing.
+#
+# WHY 1800, AND WHY THERE IS A CEILING ON IT. Two live stories measured 843 and
+# 911 characters over three paragraphs each (spec 040 Task 2.3), so 1800 is
+# roughly double the observed size — it is a runaway guard, not a target, and
+# real stories are not expected to reach it (which is why Task 5.4's evidence
+# is necessarily constructed input).
+#
+# The CEILING is the local path's own output cap: ``llm._OLLAMA_NUM_PREDICT``
+# is 1024 tokens, sent as ``options.num_predict`` on every native
+# ``/api/chat`` request — renamed from ``_OLLAMA_MAX_TOKENS`` by spec 041 /
+# ADR 013 at an unchanged value, so cite the live name. At the project's own
+# conservative ``day._CHARS_PER_TOKEN = 3`` proxy that is about 3000
+# characters of response, and the response is JSON (``{"text": …}``) whose
+# wrapper and escapes come out of the same allowance. So a cap set anywhere
+# near that number would be reached by an Ollama TRUNCATION rather than by a
+# long story: the provider would stop mid-sentence, this clamp would then cut
+# at the last whole paragraph boundary, and the ending would silently lose its
+# final sentence with nothing to distinguish that from a story the model chose
+# to end there. §2.5's "keep under ~2500" is the margin under that ceiling;
+# 1800 sits well inside it.
+#
+# NOT derived from ``_OLLAMA_NUM_PREDICT``. It is a different dimension
+# (characters against tokens) bridged only by a heuristic ratio, so an
+# expression would be fake precision — and the constant is private to
+# ``llm.py``. The relationship is a citation, which is what 039 does too.
+STORY_MAX_CHARS = 1800
 
 
 def _ai_story(

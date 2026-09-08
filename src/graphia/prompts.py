@@ -678,13 +678,19 @@ keeping within the sentence limit you were given.
 # a note — is what Task 5.2's line warns against in so many words, since a
 # "temporary" literal with no owner is how one becomes permanent.
 #
-# A DRIFT RISK THE 039 PRECEDENT DOES NOT CARRY, flagged for Task 5.2 rather
-# than pre-empted here: 039's two numbers are in different DIMENSIONS (6
-# sentences stated, 900 characters enforced), so neither can silently disagree
-# with the other. Here ``STORY_PARAGRAPH_BOUND`` and Task 5.2's
+# A DRIFT RISK THE 039 PRECEDENT DOES NOT CARRY, flagged here by Task 4.1 and
+# CLOSED BY DERIVATION IN TASK 5.2: 039's two numbers are in different
+# DIMENSIONS (6 sentences stated, 900 characters enforced), so neither can
+# silently disagree with the other. Here ``STORY_PARAGRAPH_BOUND`` and
 # ``STORY_MAX_PARAGRAPHS`` are the SAME number in the SAME dimension in two
-# modules. Whoever writes the enforcement half should either derive it from
-# this constant or pin their equality with a test.
+# modules. Of the two options this note offered — derive, or pin the equality
+# with a test — Task 5.2 took the first: ``endgame:STORY_MAX_PARAGRAPHS`` is
+# ``= STORY_PARAGRAPH_BOUND``, imported, so the two cannot disagree at all
+# rather than being caught disagreeing afterwards. **So this constant now has
+# a second reader in another module**: changing the number here changes what
+# ``endgame:_clamp_story`` enforces, which is the intent — enforcing fewer
+# paragraphs than the prompt requests would clip a compliant story, and
+# enforcing more would not enforce the stated bound.
 #
 # The STATED bound is only a request — the functional spec requires the length
 # to hold for the story actually returned, which is Slice 5's clamp, not this
