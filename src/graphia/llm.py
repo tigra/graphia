@@ -915,12 +915,57 @@ class DayAction(BaseModel):
         return self
 
 
+class Story(BaseModel):
+    """The Moderator's closing story, told once at the very end (spec 040).
+
+    Kept deliberately flat with one primitive field — the same **Bedrock
+    Converse** constraint that shapes ``Roster`` / ``Pointing`` / ``Ballot`` /
+    ``DayAction`` / ``Reflection`` / ``Diary`` (no nested or discriminated
+    shapes). That constraint belongs to that transport, not to structured
+    output in general; the schema stays shared across providers regardless —
+    see the flatness note above ``Roster``. ``text`` is the whole story: a few
+    paragraphs separated by blank lines, written by the Moderator once the
+    game is over, for the one person at the table.
+
+    **The eighth schema of the family, and the ONLY one deliberately absent
+    from** :data:`GAMEPLAY_SCHEMAS`. That omission is the decision, not an
+    oversight; the three reasons are argued at the tuple itself, and a reader
+    who wants to "finish the job" by appending it should read them first.
+
+    **Two things this schema does NOT have, unlike every sibling above:**
+
+    - **No fallback text** (spec 040 §2.8). Every other model-answered feature
+      in the game returns a deterministic stand-in when the call comes back
+      unusable; this one returns *nothing*. A placeholder story **is** the
+      half-rendered ending the functional spec forbids — an apology in all but
+      name — and absence-on-failure is what makes the measurement cheap: with
+      no stand-in, **presence is the signal**.
+    - **No substitution kind**, which follows from the first rather than being
+      a second decision. ``graphia.substitution``'s vocabulary names the seven
+      answer kinds that *have* a substitution branch to count; this one has no
+      such branch, so there is nothing for an eighth kind to book.
+
+    **No state channel either, deliberately.** The story lives only in
+    ``messages``, as a ``SystemMessage`` in the Moderator's voice (never an
+    ``AIMessage`` — spec 040 §2.6 records why that distinction is load-bearing
+    for the ledger). Worth stating because every sibling private-material
+    feature *does* have a channel, so a reader will go looking for a
+    ``story_text`` in :mod:`graphia.state` and should know there is none.
+    """
+
+    text: str
+
+
 # ---------------------------------------------------------------------------
 # The gameplay schema vocabulary, declared ONCE.
 #
-# Every schema the game binds through ``with_structured_output``: setup
-# (``Roster``, ``Persona``), Night (``Pointing``), Day (``Ballot``,
-# ``DayAction``), and the two private channels (``Reflection``, ``Diary``).
+# The schemas the game binds through ``with_structured_output`` **on a
+# per-player, in-play surface**: setup (``Roster``, ``Persona``), Night
+# (``Pointing``), Day (``Ballot``, ``DayAction``), and the two private
+# channels (``Reflection``, ``Diary``). It is no longer "every schema the game
+# binds" — spec 040's ``Story`` is bound by ``nodes/endgame.py`` and is
+# deliberately NOT a member; the sentence is qualified rather than left to
+# quietly become false.
 #
 # **Declared once because it was previously declared twice, short both times.**
 # ``tools/ollama_smoke.py``'s hand-typed ``SCHEMA_NAMES`` listed four of the
@@ -949,6 +994,67 @@ class DayAction(BaseModel):
 #   ``Roster``, which is the small tier) three times over: the queue map, the
 #   per-schema call counter, and the unknown-schema error text.
 #
+# ``Story`` (spec 040) IS DELIBERATELY NOT A MEMBER — the omission is the
+# decision, not an oversight
+# ------------------------------------------------------------------------
+# Stated at length because this tuple's own name promises that every schema is
+# in it, so the next reader's default assumption is wrong here. Three
+# independent reasons, each sufficient on its own:
+#
+# 1. **The live gate would become unsatisfiable — spec 041's "fifth hole",
+#    re-created.** ``tools/ollama_smoke.py`` derives its ``SCHEMA_NAMES`` from
+#    this tuple and requires ``attempts > 0`` for EVERY member, failing closed
+#    with the un-exercised ones named. Checked against that harness rather
+#    than assumed: its scripted game does **not** reliably reach
+#    ``end_screen``. ``--max-rounds`` defaults to ``DAY_MAX_ROUNDS + 1`` (7)
+#    and ``_drive_script`` returns on that sampling cap the moment the
+#    scripted human has answered seven Day turns — which lands inside **Day
+#    2**, with the game unfinished and the ending never reached. The loop
+#    plays to a natural end only when the Mafia's LLM-chosen Night-1 target is
+#    the scripted human, leaving no human turns left to script; that harness's
+#    own docstring records both shapes, measured over four live runs. So
+#    membership would fail the gate on its COMMON path, for a reason that says
+#    nothing about the transport the gate exists to measure — and a gate that
+#    cannot pass when everything is fine is the defect spec 041 fixed, not a
+#    stricter version of it.
+# 2. **It would force the fallback spec 040 forbids.**
+#    ``substitution.SubstitutionKind`` is held 1:1 with this tuple in **set and
+#    in order**, by test rather than by derivation (see that module's
+#    docstring for why, and
+#    ``tests/test_substitution_counts.py::test_the_kind_vocabulary_covers_GAMEPLAY_SCHEMAS_exactly``
+#    for the assertion). Membership would therefore demand a ``STORY`` kind —
+#    and a kind exists to count a substitution branch. Spec 040 §2.8 has **no
+#    substitution path at all**: a failed story is *absent*, never stood in
+#    for, precisely because absence is what makes presence the measurement
+#    signal. The coupling would drag back the placeholder the spec was written
+#    to refuse.
+# 3. Two offline tests pin the count at seven as an absolute literal
+#    (``test_gameplay_schemas_carries_the_seven_the_adr_counted``,
+#    ``test_the_vocabulary_holds_exactly_seven_kinds``), and two more pin the
+#    vocabulary against the call sites actually driven and the canned answers
+#    feeding them (``test_the_recorded_schema_set_is_exactly_GAMEPLAY_SCHEMAS``,
+#    ``test_the_canned_answers_cover_exactly_GAMEPLAY_SCHEMAS``). All four are
+#    deliberate "an eighth schema should cost a considered edit here" gates.
+#    They are the prompt to think, and reasons 1 and 2 are the answer.
+#
+# **The consequence, stated because it is a real gap rather than a tidy
+# outcome:** the story path gets NO coverage from the live Ollama gate. Its
+# designed instrument is instead the ``quality.story_missing_rate`` trio in
+# ``tools/blunder_eval.py`` (spec 040 Slice 9), which takes a census of
+# presence across the games in a measured run that actually reached the
+# ending — the right question for a once-per-game call, and the reason absence
+# in a post-040 record is unambiguous.
+#
+# What would make membership CORRECT later, so this is revisitable rather than
+# closed: a gate whose scripted game drives to a natural end (a
+# ``--max-rounds`` default past the win condition), or a story probe on the
+# model of ``ollama_smoke._probe_ballot_if_unexercised`` — which exists
+# because ``Ballot`` had this same reachability problem and was solved by
+# SUPPLYING the missing attempt rather than by shortening the vocabulary.
+# Either one would also need reason 2 answered, which means a ``STORY``
+# substitution kind, which means a fallback: so that revisit is a spec
+# decision, not a refactor.
+#
 # Placed after the class definitions purely because a tuple cannot reference
 # them earlier. It is a local reference and imports nothing new.
 # ---------------------------------------------------------------------------
@@ -960,4 +1066,9 @@ GAMEPLAY_SCHEMAS: tuple[type[BaseModel], ...] = (
     DayAction,
     Reflection,
     Diary,
+    # NOT ``Story`` (spec 040), deliberately — see the block above. Appending
+    # it here makes ``tools/ollama_smoke.py``'s all-schemas gate unsatisfiable
+    # on its common path AND forces a ``SubstitutionKind.STORY``, hence a
+    # fallback story, which spec 040 §2.8 exists to forbid. Read that before
+    # adding an eighth member.
 )
