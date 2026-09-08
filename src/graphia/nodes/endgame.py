@@ -340,9 +340,15 @@ def end_screen(
 # SLICE 3 HAS NOW LANDED, so the material below is the real material: the
 # shared cursor walk (Task 3.1), the third-party private renderer (Task 3.2),
 # and the five-slot assembly with its budget ordering and its whisper exclusion
-# (Task 3.3). Two later slices still grow this: Slice 4 writes the real system
-# prompt (``STORY_SYSTEM``'s seven moves — none of them is present yet) and
-# Slice 5 adds the paragraph-preserving clamp and its truncation flag.
+# (Task 3.3). SLICE 4 TASK 4.1 HAS ALSO LANDED: ``STORY_SYSTEM``'s seven moves
+# are now present — this comment used to read "none of them is present yet" and
+# was corrected when they arrived rather than left contradicting the prompt it
+# describes. Read them at ``prompts.py``, above ``STORY_PARAGRAPH_BOUND``, which
+# is where the STATED paragraph bound now lives (the 039 split: the bound the
+# prompt states sits with the prompt). STILL OUTSTANDING HERE: Task 4.2's
+# runaway wording, and Slice 5's paragraph-preserving clamp with its truncation
+# flag — whose ``STORY_MAX_PARAGRAPHS`` / ``STORY_MAX_CHARS`` are the
+# ENFORCEMENT half and belong in this module, beside that clamp.
 # ---------------------------------------------------------------------------
 
 # The human seat's marker, and it is the deliverable of Task 3.3 rather than a

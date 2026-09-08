@@ -454,49 +454,191 @@ keeping within the sentence limit you were given.
 # ---------------------------------------------------------------------------
 # The Moderator's closing story (spec 040)
 # ---------------------------------------------------------------------------
-# READ THIS BEFORE JUDGING THE WORDING BELOW: ``STORY_SYSTEM`` is still Slice
-# 1's DELIBERATELY MINIMAL prompt, not the finished one. Task 1.4's brief says
-# so in those words — "this slice uses a deliberately minimal prompt (outcome,
-# roster, events) so the node, the edge and the failure path can be proven
-# before the material assembly lands". ``STORY_USER_TEMPLATE`` is no longer
-# minimal: Task 3.3 grew it by the two material slots (see below).
+# SLICE 4, TASK 4.1 HAS LANDED: ``STORY_SYSTEM`` below is the real prompt, not
+# Slice 1's deliberately minimal one. The note that used to stand here said
+# "none of those seven is present below" and "there is no record constraint and
+# no human clause yet"; it is gone rather than left contradicting the text
+# beneath it.
 #
-# ONE LATER TASK OWNS THE SYSTEM TEXT, and it is not done:
+# ONE CORRECTION TO THAT RETIRED NOTE, kept because the error is instructive
+# rather than clerical. Slice 1's prompt DID carry a record constraint — "Keep
+# to the game recorded below." — so "there is no record constraint" was not
+# quite true. What it lacked was move 5's NOUN-BOUNDARY form, and that is the
+# whole difference §2.6 turns on: a bare "keep to the record" is precisely the
+# instruction §2.6 says CREATES the flat summary, which is why the grounding
+# and anti-recap halves had to be designed together. So Slice 1 shipped the
+# grounding half alone, and the two live runs it produced (a flat recap, plus
+# Task 4.4's invented Day phase) are what that costs. The human-clause half of
+# the retired note was accurate.
 #
-# - **Slice 4, Task 4.1 rewrites ``STORY_SYSTEM``** with the seven moves spec
-#   040 §2.6 argues for — naming the reader and what they already know, naming
-#   what they have never seen, granting the choice of thread in the same breath
-#   as the constraint, forbidding the fixed forms (chronology, roll-call,
-#   headings, bullets) by name, stating the record constraint as a boundary on
-#   NOUNS, the human clause as its own sentence, and the length bound
-#   interpolated once from ``STORY_PARAGRAPH_BOUND``. **None of those seven is
-#   present below.** In particular there is no record constraint and no human
-#   clause yet, so the two acceptance criteria that test for those sentences
-#   are NOT satisfied by this text and are not meant to be. Do not read the
-#   absence of a "do not tidy this in" comment here as licence either — Task
-#   4.1 brings that with it, along with the deliberate omissions it guards
-#   (no enumeration of what to cover; no *dramatic* / *vivid* / *compelling*).
-# - **Slice 3, Task 3.3 grew ``STORY_USER_TEMPLATE``** by two slots —
-#   ``{private_record}`` (the two private channels over the shared cursor walk)
-#   and ``{context}`` (the public history, budgeted with what the private block
-#   leaves over) — **and that has landed.** The material is here now; the
-#   system prompt that tells the model what to DO with it is still Slice 4's.
+# THE SEVEN MOVES, IN THE ORDER THEY APPEAR BELOW (spec 040 §2.6). Each is one
+# paragraph, so a maintainer can see which sentence is which move and Slice 4
+# Task 4.3 can assert them separately:
+#
+#   1. NAME THE READER AND WHAT THEY ALREADY KNOW ("They have just read those
+#      facts…"). The strongest anti-recap move, because it makes the recap
+#      *redundant to a stated audience* rather than merely discouraged.
+#   2. NAME WHAT THEY HAVE NEVER SEEN, AND THAT IT IS THE SUBSTANCE ("What they
+#      have never seen…"). Deliberately does NOT re-explain diary-vs-reflection
+#      mechanics: ``endgame:STORY_PRIVATE_LEGEND`` already states those inside
+#      the block itself, and duplicating them here is how the two drift.
+#      "WHATEVER OF IT THERE IS" IS LOAD-BEARING, NOT A HEDGE: the private
+#      material CAN be empty — ``endgame:STORY_PRIVATE_EMPTY`` renders
+#      "(nothing was written privately this game)", and Task 4.4's Game A
+#      reached the ending with no Day ever played, so no diary and no
+#      reflection existed. An unqualified "this is the substance" would then
+#      name an absent substance, which is an invitation to fill the void —
+#      Task 4.4's fourth fabrication category exactly. The move is still made
+#      in full; the clause just stays true in both cases.
+#   3. GRANT THE CHOICE OF THREAD ("Follow one thread…"). 039's lesson, and the
+#      shape is lifted from ``DIARY_SYSTEM``'s "some people use a diary to look
+#      back… none of them is asked of you": naming ONE direction steers every
+#      story the same way, whereas naming the CHOICE makes variation
+#      legitimate. The alternatives are a menu to pick ONE from — see the
+#      DELIBERATELY ABSENT note below for why that is not the forbidden
+#      checklist.
+#   4. FORBID THE FIXED FORMS BY NAME ("There is no set form…"). Chronology and
+#      roll-call are named explicitly because they are the two moulds a
+#      GROUNDED storyteller falls into unprompted — the same reason 039 had to
+#      name "summing-up-followed-by-a-plan". Headings, bullets and numbering
+#      follow 039's clause.
+#   5. THE RECORD CONSTRAINT AS A BOUNDARY ON NOUNS ("Every player you name…").
+#      Constraining WHAT MAY BE NAMED rather than HOW IT MAY BE TOLD is what
+#      stops the constraint from becoming a summary instruction — §2.6 calls
+#      this the sentence the acceptance criterion tests for, so it must stay a
+#      real sentence in the text and the "; within that, the telling is yours"
+#      tail is part of it, not decoration. Its second sentence carries the
+#      functional spec's own wording ("not to invent events, players or
+#      motives").
+#   6. THE HUMAN CLAUSE, AS ITS OWN SENTENCE ("One seat on the roster below…"),
+#      so it is separately assertable. It references the MARKED SEAT rather
+#      than "the reader" in the abstract — Task 3.3 shipped
+#      ``endgame:STORY_ROSTER_HUMAN_MARKER`` and applies it in
+#      ``_story_roster_block``, which is what gives this clause something to
+#      point at. Live evidence for why it exists: a real run narrated the
+#      reader in the third person as "Alexey, another innocent citizen".
+#
+#      WHY THE MARKER LITERAL IS NOT INTERPOLATED HERE, AND DO NOT "FIX" IT BY
+#      RETYPING IT. ``STORY_ROSTER_HUMAN_MARKER``'s own comment predicts that
+#      Slice 4 will assert on the exact string, but it cannot be read from this
+#      module: ``prompts.py`` is a LEAF (its only import is
+#      ``__future__.annotations``) and ``nodes/endgame.py`` imports from it, so
+#      importing the marker back would be a cycle. The two remaining options
+#      were retyping the literal — exactly what that comment forbids — or
+#      relocating the constant, which is Task 3.3's deliverable and not this
+#      task's to move. So the clause describes the mark instead of quoting it,
+#      which is unambiguous against a roster line that carries no other
+#      annotation of that shape. The pairing Task 4.1's brief asks for is a
+#      TEST-level act and belongs to Task 4.3: assert this clause in
+#      ``STORY_SYSTEM`` and assert ``STORY_ROSTER_HUMAN_MARKER`` in the
+#      composed roster, together.
+#   7. THE LENGTH BOUND, STATED ONCE ("Return the story in the `text` field…"),
+#      interpolated from ``STORY_PARAGRAPH_BOUND`` — see that constant.
+#
+# DELIBERATELY ABSENT — DO NOT TIDY THIS IN. Three things are missing on
+# purpose, and each would look like an improvement in isolation:
+#
+#   * ANY ENUMERATION OF WHAT TO COVER. An enumeration IS the checklist, and
+#     the checklist is the collapse — it is what 039 fought and what would
+#     turn this prompt back into the fact sheet the story exists to escape.
+#     Move 3's alternatives are NOT that: a checklist says "cover A, B and C",
+#     a choice says "follow A, or B, or C — and none of them is asked of you".
+#     ``DIARY_SYSTEM`` above draws the same line, and its own DELIBERATELY
+#     ABSENT note is the precedent.
+#   * ANY WORD LIKE *DRAMATIC*, *VIVID* OR *COMPELLING*. They invite
+#     embellishment, which is the risk this spec is most exposed to: §2.7
+#     records that embellishment of a real event is one of the three things
+#     grounding CANNOT be guaranteed against, and there is deliberately no
+#     automated grounding check to catch it.
+#   * A PERSONA FOR THE MODERATOR, who has never had one. Every other voice in
+#     the game is characterised (spec 016's personas, 024's role guidance);
+#     this one is the game's narrator and stays uncharacterised.
+#
+# WHAT THIS TASK DID **NOT** DO, so the next reader does not think it is done:
+#
+# - **Task 4.2 owns the runaway wording.** ``winner`` can be ``"runaway"``
+#   (spec 023's Day cap) and defensively ``"draw"``, and the prompt must not
+#   assume a winning side — a story declaring a winner on an unresolved game is
+#   the most conspicuous fabrication available to it. Move 1 is already written
+#   neutrally ("how the game ended", never "who won") for the same reason the
+#   ``{outcome}`` slot label was: writing a bug knowingly, for one task, is how
+#   it has to be found again. That is NOT Task 4.2 done — it still owns the
+#   explicit non-assumption clause and the audit of every outcome reference.
+# - **Task 4.3 owns the tests.** No test asserts on this text yet.
+# - **Task 5.2 owns the ENFORCEMENT pair** (``STORY_MAX_PARAGRAPHS`` and
+#   ``STORY_MAX_CHARS``, both in ``nodes/endgame.py`` with the clamp). Only the
+#   STATED bound is here — see ``STORY_PARAGRAPH_BOUND``.
 #
 # ONE THING THAT IS ALREADY RIGHT AND SHOULD STAY, rather than an accident to
 # be tidied later: the outcome slot is introduced as "How the game ended", not
-# as "The winner was". ``winner`` can be ``"runaway"`` (spec 023's Day cap) and
-# defensively ``"draw"``, and ``_winner_line`` renders a whole sentence for
-# each of those cases. Task 4.2 owns that requirement properly; phrasing the
-# label neutrally now simply avoids writing a bug that would have to be found
-# again. A story declaring a winner on an unresolved game is the most
-# conspicuous fabrication available to it.
-STORY_SYSTEM = """You are the Moderator of Graphia, a Mafia-style
-social-deduction game. The game is over and the facts have already been read
-out. Tell the one person at the table a short story about the game that was
-just played.
+# as "The winner was" — see the Task 4.2 note above.
 
-Keep to the game recorded below. Return the story in the `text` field, as a few
-short paragraphs separated by blank lines.
+# The paragraph bound the prompt STATES, interpolated into ``STORY_SYSTEM``
+# exactly once so the prose and the number cannot drift.
+#
+# PLACEMENT IS A DECISION, NOT A DEFAULT, and Task 5.2 supplies the reason: the
+# 039 precedent it cites is SPLIT, and the split is the discipline rather than
+# an accident. ``DIARY_SENTENCE_BOUND = 6`` (this file, above ``DIARY_SYSTEM``)
+# is the bound STATED in the prompt; ``DIARY_MAX_CHARS = 900``
+# (``nodes/day.py``) is the ENFORCEMENT clamp. By that discipline this constant
+# — the number the prompt states — belongs with the prompt, and Task 5.2's
+# ``STORY_MAX_PARAGRAPHS`` / ``STORY_MAX_CHARS`` belong with the clamp in
+# ``nodes/endgame.py``.
+#
+# WHY TASK 4.1 DEFINES IT RATHER THAN WAITING FOR TASK 5.2: move 7 interpolates
+# it, so the consumer cannot be written without the provider. The same
+# consumer-before-provider ordering already forced Tasks 1.1 and 1.2 to be
+# swapped on this spec. The alternative — hard-coding "four" in the prose with
+# a note — is what Task 5.2's line warns against in so many words, since a
+# "temporary" literal with no owner is how one becomes permanent.
+#
+# A DRIFT RISK THE 039 PRECEDENT DOES NOT CARRY, flagged for Task 5.2 rather
+# than pre-empted here: 039's two numbers are in different DIMENSIONS (6
+# sentences stated, 900 characters enforced), so neither can silently disagree
+# with the other. Here ``STORY_PARAGRAPH_BOUND`` and Task 5.2's
+# ``STORY_MAX_PARAGRAPHS`` are the SAME number in the SAME dimension in two
+# modules. Whoever writes the enforcement half should either derive it from
+# this constant or pin their equality with a test.
+#
+# The STATED bound is only a request — the functional spec requires the length
+# to hold for the story actually returned, which is Slice 5's clamp, not this
+# wording ("a limit stated only in the request is a request").
+STORY_PARAGRAPH_BOUND = 4
+
+STORY_SYSTEM = f"""You are the Moderator of Graphia, a Mafia-style
+social-deduction game. The game is over and the closing facts have already been
+read out. Tell the one person at the table the story of the game they just
+played.
+
+They have just read those facts: how the game ended, who died, and who every
+player really was. They do not need any of that again, and telling it back to
+them is the one thing this story cannot be.
+
+What they have never seen is in the material below: what the other players
+wrote down privately and never said out loud. That private writing — whatever
+of it there is — is the substance of this story.
+
+Follow one thread through it. Which thread is yours to choose: one player's
+private turn of mind, a suspicion that was right too early, a conspiracy nobody
+ever put a name to, a moment that settled the game while no one noticed. None
+of those is asked of you, and they are not the only ones — take whichever
+thread the record below actually gives you.
+
+There is no set form, and two forms in particular are wrong here: do not walk
+through the game day by day, and do not go down the roster player by player. No
+headings, no bullet points, no numbering.
+
+Every player you name, every death and every vote you mention must appear
+below; within that, the telling is yours. Do not invent events, players or
+motives that no one recorded.
+
+One seat on the roster below is marked as the person you are telling this to;
+nothing that seat privately thought was ever recorded, so speak of it only by
+what it said and did in the open, and never claim to know what the person was
+thinking.
+
+Return the story in the `text` field, as at most {STORY_PARAGRAPH_BOUND} short
+paragraphs separated by blank lines.
 """
 
 # The story user template — five slots, and NONE of them is filled by a helper
