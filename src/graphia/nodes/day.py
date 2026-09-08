@@ -467,6 +467,162 @@ DIARY_LINE_MARKER = "[Diary — end of Day"
 DIARY_WINDOW = 3
 
 
+# The two kinds of entry a merged private record can hold — the ``kind`` slot of
+# a :data:`PrivateRecordEntry` tuple (spec 040 §2.3). A prefix family of bare
+# ``str`` constants rather than an ``Enum``: this project's precedent is prefix
+# families (``KIND_*`` in ``career_events``; the ``DIARY_*`` family spanning this
+# module and ``prompts``), and every read is an ``==`` against a tuple slot.
+#
+# IMPORT THEM, NEVER COPY THE LITERAL — the rule spec 039 paid for. The second
+# consumer is spec 040's third-party renderer in ``nodes/endgame.py``, so a
+# copied ``"diary"`` that drifted there would attribute a whole-Day diary as a
+# Day-round thought, with nothing to raise.
+PRIVATE_RECORD_KIND_THOUGHT = "thought"
+PRIVATE_RECORD_KIND_DIARY = "diary"
+
+# What a diary entry's Day shows as when the record carries no usable one. A
+# record with no ``day`` still holds an entry worth showing, so the Day degrades
+# to this placeholder rather than the line being dropped — the same reasoning
+# ``eval_transcript._diary_day_attr`` uses to omit the transcript attribute and
+# still render the element.
+DIARY_DAY_UNKNOWN = "?"
+
+# ONE ordered entry of a player's merged private record: ``(kind, day, text)``.
+#
+# ``kind`` is one of the two constants above. ``day`` is the Day the entry
+# belongs to — an ``int`` for a well-formed diary, :data:`DIARY_DAY_UNKNOWN` (or
+# whatever unusable value the record carried, interpolated) for a malformed one,
+# and ``None`` for a THOUGHT, which has no Day at all. That last is an honest
+# "this channel has no Day" rather than a missing value:
+# :class:`graphia.state.ThoughtRecord` deliberately carries no ``day`` field,
+# because a thought is written per Day *round* and the transcript renders it
+# inside its ``<round>``, so the round is positional there. A renderer
+# attributing a thought must therefore do it without a Day.
+PrivateRecordEntry = tuple[str, int | str | None, str]
+
+
+def _walk_private_record(
+    thoughts: list[ThoughtEntry],
+    diaries: list[DiaryRecord] | None,
+) -> list[PrivateRecordEntry]:
+    """Merge ONE player's thoughts and diaries into ONE ordered event sequence.
+
+    THE CURSOR WALK — the load-bearing correctness rule of spec 039 (Per-AI
+    Private Diaries)'s two-channel private record, extracted here (spec 040 —
+    The Moderator's Closing Story, §2.3) so its two renderers SHARE it instead
+    of each carrying a copy.
+
+    Spec 028 (AI Private Thoughts)'s channel carries NO ORDERING METADATA by
+    design and spec 039 must not touch it, so all the ordering information lives
+    on the diary side: each :class:`graphia.state.DiaryRecord` records how many
+    thoughts that player had written when it was set down (``thoughts_before``).
+    Walk the diaries in order; before diary *i*, emit every not-yet-emitted
+    thought at index ``< thoughts_before`` of that entry; after the last diary,
+    emit the remainder. A stable two-way merge, NOT a sort — the cursors are
+    non-decreasing because thoughts only ever accumulate and the two writing
+    nodes never share a super-step.
+
+    SHARED RATHER THAN DUPLICATED — THE OPPOSITE CALL FROM 039's OWN
+    ``_merge_private_*`` REDUCERS, and the difference is the failure mode. Those
+    two are deliberately duplicated so a diary change can never reach 028's
+    channel (see :func:`graphia.state._merge_private_diaries`); they
+    *concatenate*, so a copy that drifts shows up as a missing or doubled entry.
+    This walk decides ORDER, and getting order wrong produces perfectly
+    well-formed output: the Moderator's closing story then tells the game's
+    events in the wrong order and NOTHING RAISES. One place to be correct is
+    worth more here than ownership isolation.
+
+    IT NEVER WINDOWS, AND THAT IS THE SAFETY CONSTRAINT rather than an omission
+    (spec 040 §2.3). Whatever diary list it is handed is exactly what it walks:
+    already windowed to :data:`DIARY_WINDOW` by :func:`_private_record_block`
+    (what a *player* reasons from), or the FULL list by spec 040's endgame
+    renderer (the Moderator is the one reader for whom the whole diary is the
+    point), or ``None`` / ``[]`` for none at all. 039 applies its window BEFORE
+    the merge deliberately: thoughts are indexed independently of diaries, so
+    dropping the oldest diary removes only its own line and the surviving
+    cursors still partition the thought list exactly as before. Windowing INSIDE
+    this walk would silently impose a player's three-entry limit on every
+    consumer; windowing AFTER it would have to decide what to do with the
+    thoughts a dropped entry's cursor was gating.
+
+    Returns :data:`PrivateRecordEntry` tuples carrying no framing, no label and
+    no bullet, so each caller owns its own presentation:
+    :func:`_private_record_block` renders bullets under a second-person label
+    addressed to the writer, and spec 040's endgame renderer per-author
+    attribution for a third party.
+
+    FLAG-FREE ON PURPOSE: the ADR-011 ``GRAPHIA_PRIVATE_THOUGHTS`` /
+    ``GRAPHIA_PRIVATE_DIARIES`` ablation seams stay with the prompt block that
+    owns them. A caller suppresses a channel by passing an empty list, which is
+    exactly what :func:`_private_record_block` does.
+
+    Only ever passed ONE player's own thoughts and own diaries, keyed at the call
+    site on that player's id — the privacy invariant is the caller's, and this
+    function has no way to check it.
+
+    PURE, in the strong sense both callers need: no state read beyond the two
+    arguments, no RNG, no LLM, no clock, no ``set`` iteration, and NEITHER
+    ARGUMENT IS MUTATED (the thoughts are copied before slicing; the diaries are
+    only iterated), so ``tests/test_dual_mode_smoke.py``'s byte-equality is
+    unaffected and a caller may hand over a live state list.
+
+    Defensive over both channels' shapes, inherited verbatim from the code this
+    was extracted from: ``DiaryRecord`` is ``total=False``, so every field is
+    read through ``.get`` with a default — a nonsensical cursor degrades to 0
+    rather than raising inside a prompt build, and a record with no usable
+    ``day`` still yields its entry, carrying :data:`DIARY_DAY_UNKNOWN`. Each
+    thought is read through :func:`graphia.state.thought_text`, so a bare ``str``
+    (a resumed pre-041 checkpoint, and most of the offline suite), a
+    :class:`graphia.state.ThoughtRecord`, and a list mixing the two all walk
+    identically; a malformed element costs one empty ``text`` rather than a
+    ``{'text': …}`` dict repr reaching a model.
+
+    The ``substituted`` marking on either channel is deliberately NOT surfaced —
+    a prompt-visible mark would change what a player reasons from (see
+    :func:`_private_thoughts_block`). The eval transcript and the ledger viewer
+    are where a substitution is marked.
+    """
+    # Copied, not aliased: a caller may hand over a live state list, and the
+    # slices below must read a stable snapshot.
+    notes = list(thoughts)
+    entries: list[PrivateRecordEntry] = []
+    emitted = 0
+    for record in diaries or ():
+        cursor = record.get("thoughts_before", 0)
+        if isinstance(cursor, bool) or not isinstance(cursor, int):
+            cursor = 0
+        # ``max(emitted, …)`` keeps the walk monotone even if a cursor went
+        # backwards; ``min(…, len(notes))`` covers a cursor pointing past the
+        # notes actually in hand (a diary written with thoughts ON, read back
+        # with thoughts OFF).
+        stop = max(emitted, min(cursor, len(notes)))
+        entries.extend(
+            (PRIVATE_RECORD_KIND_THOUGHT, None, thought_text(note))
+            for note in notes[emitted:stop]
+        )
+        emitted = stop
+        # ``day`` and ``text`` pass through EXACTLY as the pre-extraction
+        # renderer interpolated them, which is what keeps the rendered block's
+        # bytes unchanged for a MALFORMED record too: a usable ``int`` day stays
+        # an ``int``, and anything else (a missing key, ``None``, a ``str``, a
+        # ``bool``) gets the same ``f"{…}"`` the caller used to apply, one step
+        # earlier. Normalising further — mapping every non-``int`` day to the
+        # placeholder — would have been tidier and would have changed what a
+        # player sees for such a record, so it was not done here.
+        day = record.get("day", DIARY_DAY_UNKNOWN)
+        if not isinstance(day, int) or isinstance(day, bool):
+            day = f"{day}"
+        text = record.get("text", "")
+        if not isinstance(text, str):
+            text = f"{text}"
+        entries.append((PRIVATE_RECORD_KIND_DIARY, day, text))
+    entries.extend(
+        (PRIVATE_RECORD_KIND_THOUGHT, None, thought_text(note))
+        for note in notes[emitted:]
+    )
+    return entries
+
+
 def _private_record_block(
     thoughts: list[ThoughtEntry],
     diaries: list[DiaryRecord] | None = None,
@@ -507,79 +663,70 @@ def _private_record_block(
     From spec 039 on, reproducing PRE-028 prompt bytes needs BOTH flags off,
     because the two features share one slot.
 
-    THE MERGE RULE (the ``thoughts_before`` cursor — see :class:`DiaryRecord`).
-    028's channel carries NO ORDERING METADATA and spec 039 must not touch it,
-    so all the ordering information lives on the diary side: each entry records
-    how many thoughts that player had written when it was set down.
-    (CORRECTED, spec 041 Slice 9: this paragraph said "holds bare strings" until
-    that slice reshaped the element to :class:`graphia.state.ThoughtRecord`. The
-    element's SHAPE was never what the merge rule rested on — the absence of an
-    ordering FIELD on it was, and that is still true: ``ThoughtRecord``
-    deliberately carries no ``day`` and no counterpart cursor, so a second
-    independently-drifting source of order for the same merge does not exist.)
+    THE MERGE RULE IS SHARED, NOT IMPLEMENTED HERE (spec 040 — The Moderator's
+    Closing Story, §2.3). The ``thoughts_before`` cursor walk lives in
+    :func:`_walk_private_record`, whose docstring carries the rule, the reason
+    028's channel can carry no counterpart to it, and the argument for sharing
+    rather than duplicating it. What stays here is PRESENTATION alone: the 028
+    label, the ``- `` bullets, the ``DIARY_LINE_MARKER`` tag on the diary lines
+    only, and the framing newlines. A second copy of that walk would fail
+    SILENTLY — well-formed output in the wrong order — which is why it is called
+    rather than repeated.
 
-    Walk the diaries in order; before diary *i*, emit every not-yet-emitted
-    thought at index ``< thoughts_before`` of that entry; after the last diary,
-    emit the remainder. A stable two-way merge, not a sort — the
-    cursors are non-decreasing because thoughts only ever accumulate and the two
-    writing nodes never share a super-step.
-
-    THE WINDOW IS APPLIED BEFORE THE MERGE, and that ordering is correct rather
-    than incidental: thoughts are indexed independently of diaries, so dropping
-    the oldest diary removes only its own line and the surviving cursors still
-    partition the thought list exactly as before. Merging first and then trying
-    to drop a diary line would have to decide what to do with the thoughts that
-    entry's cursor was gating. Note the asymmetry this leaves, inherited from
-    028 and deliberately NOT fixed here: thoughts are unwindowed, so the merged
-    block stays unbounded in that dimension (spec 025's ``context_window`` /
+    THE WINDOW IS APPLIED HERE, BEFORE THE MERGE, and both halves of that are
+    correct rather than incidental. *Before*: thoughts are indexed independently
+    of diaries, so dropping the oldest diary removes only its own line and the
+    surviving cursors still partition the thought list exactly as before.
+    Merging first and then trying to drop a diary line would have to decide what
+    to do with the thoughts that entry's cursor was gating. *Here*:
+    :data:`DIARY_WINDOW` is what a *player* reasons from, and the shared walk
+    deliberately never windows, so spec 040's third-party endgame renderer can
+    hand it the FULL diary — the Moderator is the one reader for whom the whole
+    diary is the point. Note the asymmetry this leaves, inherited from 028 and
+    deliberately NOT fixed here: thoughts are unwindowed, so the merged block
+    stays unbounded in that dimension (spec 025's ``context_window`` /
     ``context_token_budget`` govern only ``_render_context``).
 
     Only ever passed ONE player's own thoughts and own diaries, keyed at the
     call site on the acting player's id — a player never receives another
     player's private record. PURE: no state read beyond the two passed lists, no
     RNG, no LLM, no ``set`` iteration, so the dual-mode byte-equal smoke is
-    unaffected. Defensive over the channel's shape the way
-    ``eval_transcript._append_diaries`` is: ``DiaryRecord`` is
-    ``total=False``, so every field is read through ``.get`` with a default and
-    a nonsensical cursor degrades to 0 rather than raising inside a prompt
-    build. Spec 041 Slice 9 extends the same posture ONE LEVEL DOWN, to the
-    thought elements: each is read through
-    :func:`graphia.state.thought_text`, so a ``str``, a
-    :class:`graphia.state.ThoughtRecord` and a list mixing the two all render
-    the same ``- `` bullets, and a malformed element costs one blank bullet
-    rather than a ``{'text': …}`` dict repr in the model's context. The
+    unaffected. The defensive reads over the two channels' shapes — a
+    ``total=False`` ``DiaryRecord`` field-by-field through ``.get`` the way
+    ``eval_transcript._append_diaries`` does it, a nonsensical cursor degrading
+    to 0 rather than raising inside a prompt build, and every thought element
+    read through :func:`graphia.state.thought_text` so a ``str``, a
+    :class:`graphia.state.ThoughtRecord` and a list mixing the two all render the
+    same ``- `` bullets — moved WITH the walk into
+    :func:`_walk_private_record`, which is where they guard something. Their one
+    presentation consequence stays here: a malformed element costs one blank
+    bullet rather than a ``{'text': …}`` dict repr in the model's context. The
     substituted marking is NOT rendered here, matching how a substituted
     ``DiaryRecord`` renders — see :func:`_private_thoughts_block`.
     """
-    # The window, before the merge. ``diaries_enabled`` off collapses to the
-    # empty window, which is the same "nothing to show" case as no entries yet
-    # — one branch, so the two byte-identity cells cannot diverge.
+    # The window, before the merge — and applied HERE rather than inside
+    # :func:`_walk_private_record`, which never windows (see that function's
+    # safety constraint). ``diaries_enabled`` off collapses to the empty window,
+    # which is the same "nothing to show" case as no entries yet — one branch,
+    # so the two byte-identity cells cannot diverge.
     window = diaries[-DIARY_WINDOW:] if diaries_enabled and diaries else []
     if not window:
         return _private_thoughts_block(thoughts, enabled=thoughts_enabled)
 
-    notes = list(thoughts) if thoughts_enabled else []
-    lines: list[str] = []
-    emitted = 0
-    for record in window:
-        cursor = record.get("thoughts_before", 0)
-        if isinstance(cursor, bool) or not isinstance(cursor, int):
-            cursor = 0
-        # ``max(emitted, …)`` keeps the walk monotone even if a cursor went
-        # backwards; ``min(…, len(notes))`` covers a cursor pointing past the
-        # notes actually in hand (a diary written with thoughts ON, read back
-        # with thoughts OFF).
-        stop = max(emitted, min(cursor, len(notes)))
-        lines.extend(f"- {thought_text(note)}" for note in notes[emitted:stop])
-        emitted = stop
-        # A record with no usable ``day`` still carries an entry worth showing,
-        # so the tag renders with a placeholder rather than the line being
-        # dropped — the same reasoning ``_diary_day_attr`` uses to omit the
-        # transcript attribute and still render the element.
-        day = record.get("day", "?")
-        text = record.get("text", "")
-        lines.append(f"- {DIARY_LINE_MARKER} {day}] {text}".rstrip())
-    lines.extend(f"- {thought_text(note)}" for note in notes[emitted:])
+    # The ORDER is the shared walk's; only the presentation is this function's.
+    # A suppressed thoughts channel is expressed as an empty list rather than as
+    # a flag on the walk, so the walk stays free of ADR-011 seams.
+    lines = [
+        f"- {text}"
+        if kind == PRIVATE_RECORD_KIND_THOUGHT
+        # ONLY the diary line is ``.rstrip()``ed, and that asymmetry is pinned by
+        # ``tests/test_slice39_diary_interleave.py``: a blank thought renders as
+        # a bare ``"- "``, trailing space and all.
+        else f"- {DIARY_LINE_MARKER} {day}] {text}".rstrip()
+        for kind, day, text in _walk_private_record(
+            thoughts if thoughts_enabled else [], window
+        )
+    ]
 
     bullets = "\n".join(lines)
     return f"\n{PRIVATE_THOUGHTS_LABEL}\n{bullets}\n"
