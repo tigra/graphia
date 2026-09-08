@@ -364,8 +364,22 @@ def _ai_story(state: GameState) -> str | None:
     is up. So the line would reach ``logging.lastResort`` and be invisible in
     the one mode this node runs in most. The designed instrument is Slice 9's
     ``quality.story_missing_rate`` census over a measured run, which is exactly
-    the right shape for a once-per-game call. If a handler ever lands, revisit
-    this rather than assuming the omission was an oversight.
+    the right shape for a once-per-game call.
+
+    THE ONE COUNTER-ARGUMENT TO THAT WAS CHECKED RATHER THAN ASSUMED (Task
+    1.5). A measured eval run is not a TUI session, so it could have had a
+    handler — and a log line would then have had a real reader on the one path
+    where a failed story actually costs somebody a measurement. It does not.
+    ``graphia.tools.blunder_eval`` never imports ``logging`` at all: it
+    ``print``s every harness diagnostic to stderr, and states why beside the
+    diary-instrument disagreement warning — "``blunder_eval`` installs no
+    logging handler (Task 6.5 established that), so a ``logger.warning`` would
+    reach ``logging.lastResort`` — visible, but by accident, and silent the
+    moment anything configures logging." The only ``addHandler`` in ``src/``
+    is ``runtime/observability.py``'s, on the AgentCore side. So spec 041's
+    finding holds on the measured path too, and the census really is the only
+    instrument this failure has. If a handler ever lands, revisit this rather
+    than assuming the omission was an oversight.
     """
     try:
         players = state.get("players", {})
@@ -393,6 +407,73 @@ def _ai_story(state: GameState) -> str | None:
             # away and why that clamp must not be reused here.
             return result.text.strip()
         return None
+    # =====================================================================
+    # NO FALLBACK TEXT. Both ``return None``s above and the one below are
+    # the whole failure vocabulary, and this is the one place a reader will
+    # "fix" that back: §2.8 predicts in as many words that "a reader will
+    # otherwise add one to match the pattern". Hence the argument here
+    # rather than in a spec nobody re-reads. Three legs; the third is the
+    # one that costs real money if it is lost.
+    #
+    # 1. A PLACEHOLDER STORY IS THE THING THE FUNCTIONAL SPEC FORBIDS, not
+    #    a mitigation of it. Under "A game whose story cannot be told still
+    #    ends properly" the criteria are that "no error and no apology about
+    #    a missing story is shown", and that "nothing shown during the wait
+    #    remains in it" — no leftover text. A deterministic sentence in the
+    #    story's place is an apology in all but name, and it is precisely a
+    #    leftover: it occupies the ending without being the story. Absence
+    #    satisfies both criteria trivially and a placeholder satisfies
+    #    neither. "That section is simply absent" is the spec's own wording
+    #    for the GOOD outcome, not for a degraded one.
+    #
+    # 2. THE ASYMMETRY FROM SPEC 028 (Per-AI Day-Round Private Thoughts)
+    #    AND SPEC 039 (Per-AI Private Diaries) IS DELIBERATE, AND THIS IS
+    #    THE INCONSISTENCY THAT IS CORRECT. ``_REFLECTION_FALLBACK`` and
+    #    ``_DIARY_FALLBACK`` exist for a reason this node does not share,
+    #    and both say so at their definitions: "so one model hiccup never
+    #    blanks that player's channel". Those channels are READ BACK — by
+    #    the writing player, into a later prompt — so a hole in one changes
+    #    play, and a deterministic stand-in is cheaper than a gap. Nothing
+    #    in the game reads the story: it is the last content produced, no
+    #    prompt is built from it, no decision turns on it, no later node
+    #    consumes it. Their second stated reason ("the tests stay
+    #    non-flaky") does not transfer either — absence here is
+    #    deterministic and Task 1.8 asserts it directly. So the reason the
+    #    siblings carry a constant is absent, and the reason not to carry
+    #    one (leg 1) is present. Matching the pattern would import the cost
+    #    without the benefit.
+    #
+    # 3. SLICE 9's MEASUREMENT DEPENDS ON THE ABSENCE, AND THE COUPLING IT
+    #    AVOIDS HAS ALREADY BEEN PAID FOR ONCE — go and look at it before
+    #    changing this. 039's instrument had to be the fallback TEXT,
+    #    because ``day_diary`` accumulates one ``DiaryRecord`` per surviving
+    #    AI writer whether the model answered or not, so a failed diary is
+    #    indistinguishable from a real one BY PRESENCE. The bill, all of it
+    #    live in ``graphia.tools.blunder_eval`` today:
+    #    ``_diary_fallback_text()`` reaches LAZILY into the module-PRIVATE
+    #    ``graphia.nodes.day._DIARY_FALLBACK`` behind a ``try/except ->
+    #    None``, under fifteen docstring lines justifying it; and
+    #    ``score_diary_fallback`` then has to match that sentence EXACTLY
+    #    and admits the false positive in its own docstring — a model that
+    #    writes the placeholder unprompted is counted as a failure, which
+    #    spec 041 Task 7.1 went on to demonstrate live (a scripted answer of
+    #    ``_DIARY_FALLBACK``'s own text recorded ``diary_fallback_rate:
+    #    1.0`` beside ``substitutions.diary`` at 0.0).
+    #
+    #    040 pays none of that, and only because the story is ABSENT on
+    #    failure: ``story_missing_rate`` counts endings carrying no message
+    #    flagged with the PUBLIC ``CLOSING_STORY_KWARG``, so PRESENCE IS THE
+    #    SIGNAL — no private reach-in, no text match, no false positive.
+    #    §2.10 states the reversal plainly: "if a placeholder story is ever
+    #    added, this evaporates and 040 inherits 039's whole coupling
+    #    problem." §2.12's no-ablation-flag decision sharpens it further —
+    #    with no off arm, absence in a post-040 record is UNAMBIGUOUS, it
+    #    means failure — which makes the signal more valuable, not less.
+    #    And there is no second instrument to fall back on: ``Story`` is
+    #    deliberately outside ``GAMEPLAY_SCHEMAS`` (Task 1.1), so there is
+    #    no ``SubstitutionKind.STORY`` and the substitution sink cannot see
+    #    this call at all.
+    # =====================================================================
     except Exception:
         return None
 
@@ -466,6 +547,10 @@ def moderator_story(state: GameState) -> dict:
     try:
         text = _ai_story(state)
         if text is None:
+            # The OTHER place a placeholder would be injected (``text =
+            # _STORY_FALLBACK`` here, instead of in the helper). It must not
+            # be, for the three reasons argued at :func:`_ai_story`'s
+            # ``except``. An ending with no story is the designed outcome.
             return {}
         story_msg = SystemMessage(
             content=text,
