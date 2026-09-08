@@ -3879,6 +3879,17 @@ def run_eval(
     substitution_totals: dict[str, dict[str, int]] = {}
 
     for game_index in range(args.games):
+        # Spec 041, Task 12.2a: ONE 1-based number, used by every human-facing
+        # line in this loop. ``game_index`` stays 0-based because it feeds
+        # ``_seed_game`` (an offset added to the base seed) and
+        # ``_play_one_game``'s temp-dir prefix, neither of which may shift — a
+        # renumbered seed would silently change what a re-run reproduces. But
+        # transcripts are written as ``game-NN.txt`` from 1, so a diagnostic
+        # printed with the 0-based index sends anyone correlating a failure to
+        # its transcript to the WRONG FILE: ``"game 1: FAILED"`` was game-02.
+        # That misdirection cost real time while diagnosing this very task, and
+        # deriving both from one name here is what keeps the two agreeing.
+        game_number = game_index + 1
         result.games_attempted += 1
         # PER-GAME ISOLATION, and this loop is the only place that can own it:
         # ``substitution.set_sink`` is process-global by design (``substitution``
@@ -3903,7 +3914,7 @@ def run_eval(
         except Exception as exc:  # noqa: BLE001 - record and continue the batch
             result.games_failed_early += 1
             print(
-                f"  game {game_index}: FAILED ({type(exc).__name__}: {exc})",
+                f"  game {game_number}: FAILED ({type(exc).__name__}: {exc})",
                 file=sys.stderr,
             )
             continue
@@ -3921,16 +3932,16 @@ def run_eval(
             text = render_transcript(
                 cap.events,
                 cap.players,
-                game_index=game_index + 1,
+                game_index=game_number,
                 run_meta=run_meta,
             )
             write_transcript(
-                text, transcripts_base, transcript_run_id, game_index + 1, pad=pad
+                text, transcripts_base, transcript_run_id, game_number, pad=pad
             )
             wrote_any_transcript = True
         except Exception as exc:  # noqa: BLE001 - never fail the run on a transcript
             print(
-                f"  game {game_index}: transcript write FAILED "
+                f"  game {game_number}: transcript write FAILED "
                 f"({type(exc).__name__}: {exc})",
                 file=sys.stderr,
             )
@@ -4016,7 +4027,7 @@ def run_eval(
                         )
             except Exception as exc:  # noqa: BLE001 - optional metric, never fatal
                 print(
-                    f"  game {game_index}: persona_sem_mean/persona_sem_peak "
+                    f"  game {game_number}: persona_sem_mean/persona_sem_peak "
                     f"scoring FAILED ({type(exc).__name__}: {exc}) — skipping "
                     "this game's semantic contribution",
                     file=sys.stderr,
@@ -4069,7 +4080,7 @@ def run_eval(
                 or sink_diary_attempted != diary_facets["denominator"]
             ):
                 print(
-                    f"  game {game_index}: the two diary instruments DISAGREE — "
+                    f"  game {game_number}: the two diary instruments DISAGREE — "
                     f"the substitution sink counted {sink_diary}/"
                     f"{sink_diary_attempted} (substituted/attempted at the "
                     f"source), score_diary_fallback counted "
@@ -4110,7 +4121,7 @@ def run_eval(
                 # explanation. Reported, not repaired: the harness does not get
                 # to launder a broken instrument into a plausible number.
                 print(
-                    f"  game {game_index}: substitutions.{kind.value} booked "
+                    f"  game {game_number}: substitutions.{kind.value} booked "
                     f"{substituted} substitution(s) over {attempted} attempt(s) "
                     "— a substitution outside any attempt; the counting wiring "
                     "in graphia/nodes is defective",

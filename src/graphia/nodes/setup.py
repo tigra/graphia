@@ -7,6 +7,7 @@ import difflib
 import random
 import uuid
 
+from langchain_core.exceptions import OutputParserException
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.types import interrupt
@@ -235,11 +236,14 @@ def _coerce_to_count(roster: Roster | None, count: int) -> Roster:
       table cannot tell apart by name break the deduction the game is built on.
 
     On the production parse path this branch is unreachable anyway: the same
-    rule lives in ``Roster``'s validator, so a case-variant response raises
-    :class:`~pydantic.ValidationError` and :func:`_generate_names` issues its
-    corrective retry instead of silently padding. The dedup here is the
-    defensive restatement that keeps the invariant unconditional for a roster
-    that never went through the validator.
+    rule lives in ``Roster``'s validator, so a case-variant response fails to
+    parse and :func:`_generate_names` issues its corrective retry instead of
+    silently padding. *Which* exception that is depends on the provider —
+    :class:`~pydantic.ValidationError` on Bedrock's tool-use parser,
+    :class:`~langchain_core.exceptions.OutputParserException` on the local
+    grammar path — and both are named in :data:`_UNUSABLE_ANSWER_ERRORS`. The
+    dedup here is the defensive restatement that keeps the invariant
+    unconditional for a roster that never went through the validator.
     """
     names = list(roster.names) if roster is not None else []
     # De-dup defensively (case-insensitive) while preserving order; the schema
@@ -264,15 +268,57 @@ def _coerce_to_count(roster: Roster | None, count: int) -> Roster:
     return Roster(names=distinct)
 
 
+# The exceptions that mean "the model ANSWERED, and the answer is unusable" —
+# the recover-and-coerce category :func:`_generate_names` distinguishes from a
+# broken transport. There are two because the exception raised at the parse
+# boundary is a fact about the TRANSPORT, and Graphia ships two:
+#
+# - :class:`pydantic.ValidationError` — the two Bedrock providers. They request
+#   no structured-output method, so LangChain binds its tool-use default and
+#   reads the reply with ``PydanticToolsParser``, which constructs the schema
+#   and lets the model's own ``ValidationError`` escape.
+# - :class:`~langchain_core.exceptions.OutputParserException` — the local Ollama
+#   provider (ADR 013). ``method="json_schema"`` binds ``PydanticOutputParser``,
+#   which catches that same ``ValidationError`` and re-raises it as its own
+#   type. ``issubclass(OutputParserException, ValidationError)`` is **False**
+#   (its MRO is ``OutputParserException -> ValueError -> LangChainException``),
+#   so naming only the Pydantic type caught NOTHING on the shipped local path:
+#   a grammar-perfect roster with a repeated name — ``Roster``'s distinctness is
+#   a ``@field_validator`` JSON Schema cannot express — propagated out of the
+#   node and ended the game. Measured at 1 of 20 trials on ``qwen2.5:3b``
+#   (spec 041, Task 12.2a), which is roughly half a game per ten-game eval arm.
+#
+# **Why this pair and not ``except Exception``.** Both members are raised by a
+# parser, which by construction runs only AFTER a reply arrived — so the pair
+# names exactly the content category and cannot widen into the transport one.
+# A throttle, a refused connection or a dead endpoint raises from the bound
+# client one step earlier (``botocore`` / ``httpx`` / ``ollama`` types) and
+# still propagates to the error banner, which is the distinction the docstring
+# below rests on. A blanket ``except Exception`` would erase it twice over: it
+# would hand the player an all-``Player-N`` table for a server that was never
+# up, and it would book that server outage as a ``ROSTER`` substitution in the
+# spec-041 census — poisoning the numerator with failures that were never the
+# model's answer.
+#
+# ONE tuple used by BOTH clauses on purpose. Two hand-written clauses is how
+# this defect survived: a reader correcting one would not necessarily correct
+# the other, and the retry path needs the same rule as the first attempt.
+_UNUSABLE_ANSWER_ERRORS: tuple[type[Exception], ...] = (
+    ValidationError,
+    OutputParserException,
+)
+
+
 def _generate_names(count: int) -> Roster:
     """Return exactly ``count`` distinct AI names.
 
     Validation-retry-then-coerce: invoke the small model for ``count`` names;
-    if it parses to exactly ``count``, return it. On a :class:`ValidationError`
-    or a wrong count, do one corrective retry naming the exact count. If that
-    still fails or is the wrong count, :func:`_coerce_to_count` trims/pads to a
-    guaranteed ``count`` distinct names — the result is *always* exactly
-    ``count`` (never an ``IndexError`` in :func:`assign_roles`).
+    if it parses to exactly ``count``, return it. On an unusable answer (one of
+    :data:`_UNUSABLE_ANSWER_ERRORS`) or a wrong count, do one corrective retry
+    naming the exact count. If that still fails or is the wrong count,
+    :func:`_coerce_to_count` trims/pads to a guaranteed ``count`` distinct
+    names — the result is *always* exactly ``count`` (never an ``IndexError``
+    in :func:`assign_roles`).
 
     **Two consecutive validation failures give an ALL-placeholder roster, and
     that is accepted behaviour (spec 042, Task 7.1 — reviewed and KEPT).** The
@@ -302,12 +348,23 @@ def _generate_names(count: int) -> Roster:
       model-named one, so do not read the bullet above as "no consequences at
       any lineup".
     - It is the consistent treatment of the failure this function already
-      distinguishes. Only :class:`ValidationError` is caught, so a broken model
-      or transport (throttling, a dead endpoint) propagates and surfaces as an
-      error banner. Two validation failures mean the model *answered* twice
-      with something unparseable — the recover-and-coerce category — so
-      crashing on the second would contradict how the same function treats the
-      first.
+      distinguishes. Only :data:`_UNUSABLE_ANSWER_ERRORS` is caught — the two
+      types a *parser* raises, and a parser runs only after a reply arrived —
+      so a broken model or transport (throttling, a dead endpoint) raises one
+      step earlier, propagates, and surfaces as an error banner. Two parse
+      failures mean the model *answered* twice with something unparseable —
+      the recover-and-coerce category — so crashing on the second would
+      contradict how the same function treats the first.
+
+      **Spec 041, Task 12.2a: that distinction was live in this prose and dead
+      in the code for the whole of ADR 013's transport swap.** The clauses
+      named ``ValidationError`` alone, which is what tool-use decoding raised;
+      grammar-constrained decoding raises ``OutputParserException`` instead, so
+      on the shipped local provider "the model answered badly" was silently
+      reclassified as "the transport is broken" and a repeated name ended the
+      game. Both types are named now, at one shared tuple. The reclassification
+      is also why the three tests covering this path stayed green: each stubbed
+      the exception *type* rather than driving the real parser.
 
     What is genuinely missing is a **proactive** signal, and every mechanism
     for one lies outside this file: the JSONL trace and the AgentCore
@@ -338,7 +395,7 @@ def _generate_names(count: int) -> Roster:
         roster = llm.invoke(messages)
         if len(roster.names) == count:
             return roster
-    except ValidationError:
+    except _UNUSABLE_ANSWER_ERRORS:
         roster = None
 
     retry_messages = [
@@ -354,12 +411,16 @@ def _generate_names(count: int) -> Roster:
         if len(retried.names) == count:
             return retried
         roster = retried
-    except ValidationError:
+    except _UNUSABLE_ANSWER_ERRORS:
         pass
-    # The one substitution branch. Every route to it — a ValidationError on
-    # either invocation, or a parsed roster of the wrong length on either
-    # (which does NOT raise) — converges on this return, which is why the
-    # notification sits here and not in the ``except`` clauses.
+    # The one substitution branch. Every route to it — an unusable answer on
+    # either invocation (see ``_UNUSABLE_ANSWER_ERRORS``), or a parsed roster of
+    # the wrong length on either (which does NOT raise) — converges on this
+    # return, which is why the notification sits here and not in the ``except``
+    # clauses. Reaching it at all is what Task 12.2a restored on the local
+    # transport: before the widening, the grammar path's parse failure left the
+    # node by exception and this line was unreachable for it, so the census
+    # could not see the substitution and the player lost the game.
     note_substitution(SubstitutionKind.ROSTER)
     return _coerce_to_count(roster, count)
 

@@ -37,13 +37,34 @@ success half ``random.choice`` is pinned to EXPLODE instead, which is the
 ``tests/test_slice30_night_roster.py`` convention and turns "no substitution was
 booked" into "the substituting branch was never even entered".
 
-``ROSTER`` cannot be forced with a generic exception: ``_generate_names``
-catches only :class:`~pydantic.ValidationError`, so a ``RuntimeError`` from a
-fake propagates out of the helper — booking an attempt, no substitution, and no
-return value at all. That behaviour is pinned deliberately in
-:func:`test_a_roster_transport_failure_propagates_and_books_no_substitution`,
-and the sweep forces ``ROSTER`` with a real ``ValidationError`` harvested from
+``ROSTER`` cannot be forced with a generic exception. ``_generate_names`` is
+the one helper of the seven that does not catch broadly: it catches
+``setup._UNUSABLE_ANSWER_ERRORS`` — the two types a structured-output *parser*
+raises, :class:`~pydantic.ValidationError` on Bedrock's tool-use binding and
+:class:`~langchain_core.exceptions.OutputParserException` on the local
+grammar binding. A ``RuntimeError`` therefore still propagates out of the
+helper, booking an attempt, no substitution and no return value at all, and
+that is pinned deliberately in
+:func:`test_a_roster_transport_failure_propagates_and_books_no_substitution`;
+the sweep forces ``ROSTER`` with a real ``ValidationError`` harvested from
 ``Roster``'s own distinctness validator instead.
+
+**Spec 041, Task 12.2a — why that paragraph used to read "catches only
+``ValidationError``", and what it cost.** ADR 013 swapped the local transport
+from tool use to grammar-constrained decoding, which swapped the parser and
+therefore the exception: ``PydanticToolsParser`` raises the model's own
+``ValidationError``, whereas ``PydanticOutputParser`` catches that and
+re-raises its own ``OutputParserException``, of which
+``issubclass(OutputParserException, ValidationError)`` is **False**. So on the
+shipped local provider the narrow clauses caught nothing, the substitution
+branch became unreachable, and a grammar-perfect roster with a repeated name
+ended the game — measured at 1 of 20 trials on ``qwen2.5:3b``. **This module
+was green throughout, because every test here stubbed the exception TYPE
+rather than driving the real parser.** That is corrected below:
+:class:`_GrammarConstrainedFake` now hands its payload to the parser of the
+*real* bound runnable of the *real* provider client, and the two negative
+controls run once per :data:`_PARSE_BOUNDARIES` entry, so neither type can be
+dropped from the production tuple without a red test.
 
 ``ROSTER``'s known fallback is ``Player-1 … Player-N`` only when NOTHING usable
 came back. A parsed-but-short reply yields a mixed roster, pinned separately in
@@ -86,6 +107,7 @@ substitution channel — Slice 6 changes no state shape.
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 from collections.abc import Iterator
@@ -94,6 +116,8 @@ from typing import Any, Callable
 
 import jsonschema
 import pytest
+from langchain_core.exceptions import OutputParserException
+from langchain_core.messages import AIMessage
 from pydantic import BaseModel, ValidationError
 
 import graphia.nodes.day as day_nodes
@@ -102,8 +126,10 @@ import graphia.nodes.setup as setup_nodes
 from graphia.llm import (
     GAMEPLAY_SCHEMAS,
     Ballot,
+    BedrockProvider,
     DayAction,
     Diary,
+    OllamaProvider,
     Persona,
     Pointing,
     Reflection,
@@ -290,13 +316,21 @@ def _roster_validation_error() -> ValidationError:
     """A real ``ValidationError`` from ``Roster``'s own distinctness validator.
 
     ``_generate_names`` is the ONE of the seven helpers that does not catch
-    broadly: its two ``except`` clauses name ``ValidationError`` only. A
-    hand-rolled ``RuntimeError`` therefore propagates straight out of it (pinned
-    in :func:`test_a_roster_transport_failure_propagates_and_books_no_substitution`),
-    so the sweep needs the genuine article. Harvested from a construction that
-    the validator rejects rather than assembled through
+    broadly: its two ``except`` clauses share ``setup._UNUSABLE_ANSWER_ERRORS``,
+    which names the two parse-boundary types and nothing else. A hand-rolled
+    ``RuntimeError`` therefore propagates straight out of it (pinned in
+    :func:`test_a_roster_transport_failure_propagates_and_books_no_substitution`),
+    so the sweep needs a genuine member of that tuple. Harvested from a
+    construction that the validator rejects rather than assembled through
     ``ValidationError.from_exception_data``, which would let the test keep
     passing after the validator itself was removed.
+
+    This is the **cloud** boundary's exception, and using it here is faithful:
+    Bedrock's tool-use parser lets the model's own ``ValidationError`` escape
+    from ``invoke``, which is exactly where :class:`_FailingModel` raises it.
+    The local grammar boundary's ``OutputParserException`` is not exercised by
+    the sweep — it has the two parametrized negative controls below instead,
+    which reach it through the real parser rather than by naming it.
     """
     try:
         Roster(names=["Duplicate", "duplicate"])
@@ -883,7 +917,7 @@ def test_persona_flag_off_books_one_event_per_player(
 def test_a_roster_transport_failure_propagates_and_books_no_substitution(
     sink: _RecordingSink, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """``_generate_names`` catches only ``ValidationError`` — pinned, not lamented.
+    """A broken TRANSPORT propagates — pinned, and now paired with its twin.
 
     The other six helpers catch broadly, so a ``RuntimeError`` is a fine way to
     force them. Here it propagates: an attempt is booked, no substitution is,
@@ -895,11 +929,33 @@ def test_a_roster_transport_failure_propagates_and_books_no_substitution(
 
     It is also the sharpest illustration of why ``note_attempt`` sits BEFORE the
     ``try``: the attempt survives an exception that the helper never catches.
+
+    **Spec 041, Task 12.2a — this test used to be half a contract, and the
+    missing half was the defect.** It pinned "an exception the clauses do not
+    name propagates" and stopped there, so it was equally satisfied by a
+    version of ``_generate_names`` that named the *wrong* content type and
+    propagated every failure the local transport could produce — which is what
+    shipped, and what ended a measured game. The half that closes it is
+    :func:`test_a_grammar_valid_roster_with_a_case_variant_books_exactly_one`,
+    now run once per real parse boundary: content recovers, transport
+    propagates, and neither half can pass alone.
+
+    The ``assert not isinstance(...)`` line states the *reason* rather than
+    re-observing the outcome. Without it this test says only "a RuntimeError
+    escapes"; with it, it says "a RuntimeError escapes BECAUSE it is not a
+    parse-boundary failure" — and it turns red if somebody widens the
+    production tuple to ``Exception``, which would fix the symptom this task
+    fixed by destroying the distinction instead.
     """
+    broken_transport = RuntimeError("bedrock throttled")
     monkeypatch.setattr(
         "graphia.nodes.setup.get_small",
-        lambda: _FailingModel(RuntimeError("bedrock throttled")),
+        lambda: _FailingModel(broken_transport),
     )
+
+    # The reason, stated at the boundary that decides: this is not a parser's
+    # exception, so it is not the model answering badly.
+    assert not isinstance(broken_transport, setup_nodes._UNUSABLE_ANSWER_ERRORS)
 
     with pytest.raises(RuntimeError, match="bedrock throttled"):
         setup_nodes._generate_names(_ROSTER_COUNT)
@@ -1017,30 +1073,46 @@ def test_a_scripted_success_leaves_no_substitution_warning(
 # whole argument — a comment reading "the grammar would allow this" is exactly
 # the claim under test, so a comment cannot be the evidence for it.
 #
-# **Delivery: raw payload through a fake that PARSES, not an instance.**
+# **Delivery: raw payload through a fake that hands it to the REAL PARSER.**
 # ``DayAction(kind="vote")`` and ``Roster(names=["Ava", "ava"])`` each raise
 # ``ValidationError`` at CONSTRUCTION, so neither control can be handed in as
 # an object at all — which is the point rather than an obstacle.
-# :class:`_GrammarConstrainedFake` therefore holds the raw dict and calls
-# ``schema.model_validate`` inside ``invoke``, which is what the real
-# structured-output runnable does with the document the grammar emitted: the
-# ``ValidationError`` escapes ``invoke`` at exactly the boundary a provider
-# raises it. ``model_construct`` — the other route Task 6.4 allows — bypasses
-# validation and hands the helper an object no provider could have produced,
-# so it lands somewhere ELSE. That difference is worth pinning rather than
-# picking one and forgetting the other, so it has its own test below.
+# :class:`_GrammarConstrainedFake` therefore holds the raw dict and, inside
+# ``invoke``, feeds it to the parser of the *real* bound runnable of the *real*
+# provider tier client (``.last`` of what ``with_structured_output`` returns —
+# the same accessor ``tests/test_structured_output_method.py`` reads). So the
+# exception escapes ``invoke`` at exactly the boundary a provider raises it
+# from, and it is the exception that provider genuinely produces rather than
+# one the test chose. ``model_construct`` — the other route Task 6.4 allows —
+# bypasses validation and hands the helper an object no provider could have
+# produced, so it lands somewhere ELSE. That difference is worth pinning rather
+# than picking one and forgetting the other, so it has its own test below.
+#
+# **Spec 041, Task 12.2a: the fake used to call ``schema.model_validate``
+# itself, and that one shortcut is why this module could not see the defect.**
+# ``model_validate`` raises ``ValidationError``, which is what the RETIRED
+# tool-use transport raised. The shipped local transport binds
+# ``PydanticOutputParser``, which catches that and re-raises
+# ``OutputParserException`` — a type ``_generate_names`` did not name, so the
+# roster control's "this RETURNS, therefore the narrow clause caught it"
+# reasoning was true of a transport the project no longer runs. The fake now
+# takes a :class:`_ParseBoundary`, and both controls run once per boundary.
+# Slice 3's Task 3.5 deliberate-break check could not have caught this either:
+# it broke the *method kwarg*, not the *exception type at the parse boundary*.
 #
 # **Where each control lands, because it is not where a reader would guess:**
 #
 # - ``DayAction``'s lands in ``_ai_day_action``'s ``except Exception``, NOT in
 #   ``_accept``. ``_accept`` never sees it — parsing failed before any
 #   acceptance check could run, so no ``DayAction`` object ever existed. Pinned
-#   by ``fake.parsed == []``.
+#   by ``fake.parsed == []``. Being broad, that clause catches either boundary's
+#   exception, which is exactly why ``DayAction`` never broke.
 # - ``Roster``'s is caught by ``_generate_names``' NARROWER
-#   ``except ValidationError`` — the one clause among the seven helpers that
-#   does not catch broadly. That this control RETURNS at all, where
+#   ``except setup._UNUSABLE_ANSWER_ERRORS`` — the one clause among the seven
+#   helpers that does not catch broadly. That this control RETURNS at all, where
 #   :func:`test_a_roster_transport_failure_propagates_and_books_no_substitution`
-#   propagates, is itself the proof of which clause caught it.
+#   propagates, is itself the proof of which clause caught it — and running it
+#   on BOTH boundaries is what makes that proof cover the transport in use.
 #
 # Both still book exactly one substitution, through the fallback ``return``
 # where Task 6.2 put the notification — and both assert the count AND the
@@ -1066,6 +1138,17 @@ class _GapCase:
     payload: dict[str, Any]
     expected_required: tuple[str, ...]
     validator_message: str
+    tier: str
+    """Which capability tier the production call site binds this schema on.
+
+    Carried so :class:`_GrammarConstrainedFake` builds its parser from the same
+    tier client the game would — ``get_small`` for ``Roster``, ``get_large`` for
+    ``DayAction``. The parser is in fact tier-independent (the two tiers differ
+    only in model id and temperature), so this buys faithfulness rather than
+    behaviour; naming it is cheaper than a comment explaining why a mismatch
+    would not matter, and it stops mattering silently if a provider ever varies
+    its binding by tier.
+    """
 
 
 _GAP_CASES = (
@@ -1078,6 +1161,7 @@ _GAP_CASES = (
         payload={"kind": "vote"},
         expected_required=("kind",),
         validator_message="vote requires non-empty target_id",
+        tier="large",
     ),
     _GapCase(
         label="roster",
@@ -1089,21 +1173,139 @@ _GAP_CASES = (
         payload={"names": ["Ava", "ava"]},
         expected_required=("names",),
         validator_message="names must be distinct (case-insensitive)",
+        tier="small",
     ),
 )
 
 
+def _local_grammar_reply(
+    schema: type[BaseModel], payload: dict[str, Any]
+) -> AIMessage:
+    """What ADR 013's grammar-constrained decoder hands back: a JSON document.
+
+    ``PydanticOutputParser`` reads the message *content*, so the payload is
+    serialised into it. This is the only faithful shape for that boundary — a
+    tool call would be parsed by nothing on this path.
+    """
+    return AIMessage(content=json.dumps(payload))
+
+
+def _cloud_tool_use_reply(
+    schema: type[BaseModel], payload: dict[str, Any]
+) -> AIMessage:
+    """What Bedrock Converse's tool-use binding hands back: a tool call.
+
+    ``PydanticToolsParser`` reads ``AIMessage.tool_calls`` and matches on the
+    tool NAME, which LangChain derives from the schema class name — so the name
+    is taken from ``schema`` rather than written down, and a schema rename
+    cannot leave this fake matching a tool nobody declared.
+    """
+    return AIMessage(
+        content="",
+        tool_calls=[
+            {
+                "name": schema.__name__,
+                "args": payload,
+                "id": "call-1",
+                "type": "tool_call",
+            }
+        ],
+    )
+
+
+@dataclass(frozen=True)
+class _ParseBoundary:
+    """One provider's REAL structured-output parse boundary.
+
+    Spec 041, Task 12.2a. The parse boundary is a fact about the TRANSPORT, and
+    Graphia ships two: the local Ollama provider pins ``method="json_schema"``
+    (ADR 013) and binds ``PydanticOutputParser``; the Bedrock providers request
+    no method and get LangChain's tool-use default, ``PydanticToolsParser``.
+    Those two parsers raise **different, unrelated** exception types, and that
+    is the entire content of the defect this dataclass exists to keep visible.
+
+    ``provider`` is the real production provider class, not a stand-in:
+    :class:`_GrammarConstrainedFake` asks it for a tier client and takes the
+    parser off the runnable ``with_structured_output`` actually returns, so the
+    exception under test is produced by shipped code rather than named by the
+    test. Both constructions are strictly offline — ``ChatOllama`` has
+    ``validate_model_on_init=False`` and ``ChatBedrockConverse.__init__``
+    performs no call and needs no credentials (both pinned in
+    ``tests/test_llm_provider_construction.py``).
+
+    ``raises`` is the CLAIM, and it is the one thing here that is written down
+    rather than derived — deliberately, because "whatever the parser raises is
+    what we expect" would be unfalsifiable. It is checked against the real
+    parser's real exception in every case below, and
+    :func:`test_the_two_parse_boundaries_raise_unrelated_types_and_both_are_caught`
+    checks the pair against the production tuple.
+    """
+
+    label: str
+    provider: Callable[[], Any]
+    reply: Callable[[type[BaseModel], dict[str, Any]], AIMessage]
+    raises: type[Exception]
+
+
+_PARSE_BOUNDARIES = (
+    _ParseBoundary(
+        label="local_grammar",
+        provider=OllamaProvider,
+        reply=_local_grammar_reply,
+        raises=OutputParserException,
+    ),
+    _ParseBoundary(
+        label="cloud_tool_use",
+        provider=BedrockProvider,
+        reply=_cloud_tool_use_reply,
+        raises=ValidationError,
+    ),
+)
+
+_boundary_sweep = pytest.mark.parametrize(
+    "boundary", _PARSE_BOUNDARIES, ids=lambda b: b.label
+)
+
+
+def _gap_case(label: str) -> _GapCase:
+    """The :data:`_GAP_CASES` entry named ``label`` — one declaration, three readers.
+
+    The two controls each drive ONE case, while
+    :func:`test_the_grammar_accepts_the_payload_the_validator_rejects` sweeps
+    both. Looking the case up rather than re-typing its payload is what keeps
+    the grammar proof and the substitution proof talking about the same
+    document: a payload edited in ``_GAP_CASES`` alone would otherwise leave a
+    control quietly exercising a different one.
+    """
+    for case in _GAP_CASES:
+        if case.label == label:
+            return case
+    raise AssertionError(  # pragma: no cover - a test-suite defect
+        f"no _GapCase labelled {label!r}; _GAP_CASES has "
+        f"{[c.label for c in _GAP_CASES]}."
+    )
+
+
 class _GrammarConstrainedFake:
-    """A tier stand-in that returns a raw grammar-valid payload and PARSES it.
+    """A tier stand-in that returns a raw grammar-valid payload to the REAL parser.
 
     The delivery mechanism these controls need, and the reason they cannot be
     written with an instance. It models the real path one step at a time:
     grammar-constrained decoding emits a JSON document that satisfies
     ``model_json_schema()``; the structured-output runnable then hands that
-    document to the Pydantic model; and the model's validators — which the
-    grammar could not express — reject it. So ``model_validate`` is called
-    INSIDE :meth:`invoke`, and the ``ValidationError`` escapes from exactly the
+    document to the parser the provider bound; and the model's validators —
+    which the grammar could not express — reject it. So the real parser is
+    invoked INSIDE :meth:`invoke`, and its exception escapes from exactly the
     boundary a provider raises it from.
+
+    **The parser is obtained, never chosen** (spec 041, Task 12.2a). The fake
+    asks ``boundary.provider()`` for the case's tier client, calls the
+    production ``with_structured_output`` on it — so the provider merges in its
+    own defaults, ``method="json_schema"`` locally and nothing on Bedrock — and
+    keeps ``.last``, the parser step of the returned sequence. Before this, the
+    fake called ``schema.model_validate`` itself, which raises the exception the
+    *retired* tool-use transport raised, and that is precisely how a fatal
+    regression on the shipped transport left this module green.
 
     Every invocation replays the same payload, for :class:`_FailingModel`'s
     reason: ``_ai_day_action`` and ``_generate_names`` each invoke twice for one
@@ -1113,12 +1315,17 @@ class _GrammarConstrainedFake:
     model object ever existed, which is how the control proves ``_accept`` was
     never consulted; ``raised`` says what kind of exception the helper's
     ``except`` clause actually had to catch, which is what separates
-    ``_generate_names``' ``except ValidationError`` from a broad one.
+    ``_generate_names``' narrow clause from a broad one.
     """
 
-    def __init__(self, payload: dict[str, Any]) -> None:
+    def __init__(
+        self, payload: dict[str, Any], boundary: _ParseBoundary, tier: str
+    ) -> None:
         self._payload = payload
+        self._boundary = boundary
+        self._tier = tier
         self._schema: type[BaseModel] | None = None
+        self._parser: Any = None
         self.invocations = 0
         self.bound_schemas: list[type] = []
         self.parsed: list[Any] = []
@@ -1129,19 +1336,26 @@ class _GrammarConstrainedFake:
     ) -> "_GrammarConstrainedFake":
         self.bound_schemas.append(schema)
         self._schema = schema
+        # The production binding, on the production client, with the caller's
+        # own kwargs passed through — so the provider's structured-output
+        # defaults are merged exactly as they are in a game. ``.last`` is the
+        # parser step (``.first`` is the client that would have made the call).
+        tier_client = getattr(self._boundary.provider(), self._tier)()
+        self._parser = tier_client.with_structured_output(schema, **kwargs).last
         return self
 
     def invoke(self, messages: Any) -> Any:
         self.invocations += 1
-        if self._schema is None:  # pragma: no cover - defensive
+        if self._schema is None or self._parser is None:  # pragma: no cover
             pytest.fail(
                 "_GrammarConstrainedFake.invoke was reached without a bound "
-                "schema, so there is nothing to parse the payload with.",
+                "schema, so there is no real parser to hand the payload to.",
                 pytrace=False,
             )
+        reply = self._boundary.reply(self._schema, self._payload)
         try:
-            value = self._schema.model_validate(self._payload)
-        except ValidationError as exc:
+            value = self._parser.invoke(reply)
+        except Exception as exc:
             self.raised.append(exc)
             raise
         self.parsed.append(value)
@@ -1226,7 +1440,9 @@ def test_the_grammar_accepts_the_payload_the_validator_rejects(
     assert case.validator_message in str(excinfo.value)
 
 
+@_boundary_sweep
 def test_a_grammar_valid_day_action_with_no_target_books_exactly_one(
+    boundary: _ParseBoundary,
     chaining_sink: _ChainingSink,
     caplog: pytest.LogCaptureFixture,
     monkeypatch: pytest.MonkeyPatch,
@@ -1234,21 +1450,28 @@ def test_a_grammar_valid_day_action_with_no_target_books_exactly_one(
     """Control one: ``{"kind": "vote"}`` substitutes once, and says so once.
 
     The route is the part worth reading. ``_accept`` — the function that exists
-    to reject an unusable vote — is never consulted, because
-    ``model_validate`` raised before any object existed for it to inspect
-    (``fake.parsed == []``, ``fake.raised`` two ``ValidationError``s). The
-    payload lands in ``_ai_day_action``'s broad ``except Exception`` instead,
-    on both invocations, and converges on the single fallback ``return``.
+    to reject an unusable vote — is never consulted, because the parser raised
+    before any object existed for it to inspect (``fake.parsed == []``,
+    ``fake.raised`` two of the boundary's exception). The payload lands in
+    ``_ai_day_action``'s broad ``except Exception`` instead, on both
+    invocations, and converges on the single fallback ``return``.
 
     So a reader auditing this class of failure by reading ``_accept`` would
     find nothing, and would conclude the path is unreachable under a grammar.
     It is reachable; this is the test that says so.
 
+    Run once per :data:`_PARSE_BOUNDARIES` entry, and here that is anti-vacuity
+    rather than caution: ``_ai_day_action`` catches broadly, so it survives
+    either exception, and the value of the second case is that it proves the
+    two boundaries genuinely differ under the *same* payload. That is the
+    control for ``ROSTER``'s twin below, where the difference was fatal.
+
     Four assertions, Task 6.3's pairing: exactly one substitution, exactly one
     attempt, the known fallback value, and the model genuinely reached twice.
     Plus the log line, because the chaining sink keeps it.
     """
-    fake = _GrammarConstrainedFake({"kind": "vote"})
+    case = _gap_case("day_action")
+    fake = _GrammarConstrainedFake(case.payload, boundary, case.tier)
     monkeypatch.setattr("graphia.nodes.day.get_large", lambda: fake)
     state = _state()
     speaker = state["players"]["p-ava"]
@@ -1262,9 +1485,10 @@ def test_a_grammar_valid_day_action_with_no_target_books_exactly_one(
     assert fake.invocations == 2
     assert fake.bound_schemas == [DayAction]
 
-    # The route: parsing failed, so ``_accept`` had nothing to accept.
+    # The route: parsing failed, so ``_accept`` had nothing to accept — and the
+    # exception is the one THIS transport's real parser produced.
     assert fake.parsed == []
-    assert [type(exc) for exc in fake.raised] == [ValidationError, ValidationError]
+    assert [type(exc) for exc in fake.raised] == [boundary.raises] * 2
 
     records = _substitution_records(caplog)
     assert len(records) == 1
@@ -1272,7 +1496,9 @@ def test_a_grammar_valid_day_action_with_no_target_books_exactly_one(
     assert "day_action" in records[0].getMessage()
 
 
+@_boundary_sweep
 def test_a_grammar_valid_roster_with_a_case_variant_books_exactly_one(
+    boundary: _ParseBoundary,
     chaining_sink: _ChainingSink,
     caplog: pytest.LogCaptureFixture,
     monkeypatch: pytest.MonkeyPatch,
@@ -1285,11 +1511,21 @@ def test_a_grammar_valid_roster_with_a_case_variant_books_exactly_one(
     places a Pydantic rule can hide from JSON Schema.
 
     The route is the narrow one. ``_generate_names`` is the single helper of the
-    seven whose ``except`` clauses name ``ValidationError`` rather than
-    ``Exception``, so this control returning AT ALL — where
+    seven whose ``except`` clauses name specific types rather than ``Exception``,
+    so this control returning AT ALL — where
     :func:`test_a_roster_transport_failure_propagates_and_books_no_substitution`
     propagates a ``RuntimeError`` straight out — is itself the evidence that the
     narrow clause is what caught it.
+
+    **This is the test the defect was hiding from** (spec 041, Task 12.2a). It
+    exists in one shape per parse boundary now, and the ``local_grammar`` case
+    is the one that was red before the production fix: on the shipped local
+    transport the real parser raises ``OutputParserException``, the narrow
+    clauses named only ``ValidationError``, and the exception left the node —
+    no substitution booked, no roster returned, the game over. Measured at 1 of
+    20 trials on ``qwen2.5:3b``. The ``cloud_tool_use`` case is what the old
+    single-shape test was really asserting, and keeping it is what stops a
+    future edit from dropping ``ValidationError`` while fixing the other half.
 
     The value is the clean all-placeholder end of the two-shape fallback: both
     invocations raised, so the first ``except`` cleared ``roster`` to ``None``
@@ -1297,7 +1533,8 @@ def test_a_grammar_valid_roster_with_a_case_variant_books_exactly_one(
     to fill every seat. The mixed shape has its own test above; naming which of
     the two this is keeps the expectation honest.
     """
-    fake = _GrammarConstrainedFake({"names": ["Ava", "ava"]})
+    case = _gap_case("roster")
+    fake = _GrammarConstrainedFake(case.payload, boundary, case.tier)
     monkeypatch.setattr("graphia.nodes.setup.get_small", lambda: fake)
 
     with caplog.at_level(logging.WARNING, logger="graphia.substitution"):
@@ -1309,16 +1546,71 @@ def test_a_grammar_valid_roster_with_a_case_variant_books_exactly_one(
     assert fake.invocations == 2
     assert fake.bound_schemas == [Roster]
 
-    # The route: a ValidationError on each invocation, caught by the one
-    # narrow ``except`` in the seven — which is why this returns rather than
-    # propagating.
+    # The route: the real parser's own exception on each invocation, caught by
+    # the one narrow ``except`` in the seven — which is why this returns rather
+    # than propagating. The second assertion is the anti-drift one: whatever
+    # this transport's parser raises must be a member of the production tuple,
+    # so a transport swap that changes the type cannot pass here again.
     assert fake.parsed == []
-    assert [type(exc) for exc in fake.raised] == [ValidationError, ValidationError]
+    assert [type(exc) for exc in fake.raised] == [boundary.raises] * 2
+    assert all(
+        isinstance(exc, setup_nodes._UNUSABLE_ANSWER_ERRORS) for exc in fake.raised
+    )
 
     records = _substitution_records(caplog)
     assert len(records) == 1
     assert records[0].levelno == logging.WARNING
     assert "roster" in records[0].getMessage()
+
+
+def test_the_two_parse_boundaries_raise_unrelated_types_and_both_are_caught() -> None:
+    """The one fact whose absence ended a measured game, asserted directly.
+
+    Spec 041, Task 12.2a. Three claims, in the order they matter:
+
+    1. **The two shipped transports raise DIFFERENT exception types** from their
+       parse boundaries, produced here by the real provider clients' real
+       parsers rather than named. If a future LangChain release collapses them,
+       this goes red at a test whose name says what changed.
+    2. **Neither type is a subclass of the other.** This is the load-bearing
+       one: ``OutputParserException``'s MRO is ``OutputParserException ->
+       ValueError -> LangChainException -> Exception``, so
+       ``except ValidationError`` catches nothing on the local transport. The
+       whole defect is contained in that sentence, and it was true and unstated
+       for the entire life of ADR 013's swap.
+    3. **``setup._UNUSABLE_ANSWER_ERRORS`` names both**, so ``_generate_names``
+       recovers on either. Asserted against the exceptions the parsers actually
+       raised, not against the tuple's contents — a tuple-equality assertion
+       would keep passing after a transport swap changed what gets raised, which
+       is exactly the failure mode being closed.
+
+    Strictly offline: two vendor clients are constructed and neither is called.
+    """
+    raised: dict[str, Exception] = {}
+    for boundary in _PARSE_BOUNDARIES:
+        tier_client = boundary.provider().small()
+        parser = tier_client.with_structured_output(Roster).last
+        # Deliberately broad: the exception TYPE is the subject of this test,
+        # so naming it in the ``raises`` would assert it before measuring it.
+        with pytest.raises(Exception) as excinfo:  # noqa: BLE001
+            parser.invoke(boundary.reply(Roster, {"names": ["Ava", "ava"]}))
+        raised[boundary.label] = excinfo.value
+
+    local = raised["local_grammar"]
+    cloud = raised["cloud_tool_use"]
+
+    # 1. Different types, from the real parsers.
+    assert type(local) is not type(cloud)
+    assert type(local) is OutputParserException
+    assert type(cloud) is ValidationError
+
+    # 2. Unrelated: neither clause would have caught the other's exception.
+    assert not isinstance(local, ValidationError)
+    assert not isinstance(cloud, OutputParserException)
+
+    # 3. Both are in the production tuple, so both recover.
+    assert isinstance(local, setup_nodes._UNUSABLE_ANSWER_ERRORS)
+    assert isinstance(cloud, setup_nodes._UNUSABLE_ANSWER_ERRORS)
 
 
 def test_a_validation_bypassed_day_action_lands_in_accept_and_still_books_one(

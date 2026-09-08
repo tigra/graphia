@@ -9,7 +9,8 @@ All tests here are pure / node-level and reach **no** model or network:
 - **coerce** : :func:`graphia.nodes.setup._coerce_to_count` is the pure
   last-resort guarantee — exactly ``count`` distinct names every time.
 - **generate-names** : :func:`graphia.nodes.setup._generate_names` retries once
-  on a wrong-count response, retries once on a :class:`ValidationError` and
+  on a wrong-count response, retries once on an unusable answer (a member of
+  ``setup._UNUSABLE_ANSWER_ERRORS`` — see the adjacent-pinned note below) and
   returns the recovered roster verbatim, and otherwise coerces to exactly
   ``count`` (driven by the ``fake_small`` scripted-queue fixture). Every test in
   this block passes ``count`` **explicitly**, which is why it is the right home
@@ -26,12 +27,22 @@ All tests here are pure / node-level and reach **no** model or network:
 - **adjacent-pinned** (spec 042, Task 7.1) : three behaviours that predate this
   spec and had no coverage. Two consecutive validation failures leave EVERY AI
   seat a ``Player-N`` placeholder, and case-variant names (``Ivy`` / ``IVY``)
-  are a validation failure on parse and a collapse-then-pad in the defensive
-  coercer — both reviewed and pinned as **accepted**, with the reasoning on the
-  production functions' own docstrings so it outlives this module. The third,
-  a ``players``-map / role-deck size mismatch, was **fixed**: ``assign_roles``
+  are a parse failure and a collapse-then-pad in the defensive coercer — both
+  reviewed and pinned as **accepted**, with the reasoning on the production
+  functions' own docstrings so it outlives this module. The third, a
+  ``players``-map / role-deck size mismatch, was **fixed**: ``assign_roles``
   now fails loudly naming both sizes instead of silently dropping the surplus
   cards.
+
+  **Spec 041, Task 12.2a corrected what "a parse failure" means here.** Which
+  exception a case-variant roster produces is a fact about the TRANSPORT, not
+  about the schema: Bedrock's tool-use parser lets ``Roster``'s own
+  ``ValidationError`` escape, while the local grammar path (ADR 013) binds
+  ``PydanticOutputParser``, which re-raises it as ``OutputParserException``.
+  This module used to assert the former as if it were the whole truth, which
+  was false for the shipped local provider and let a fatal regression through.
+  :func:`test_roster_schema_rejects_case_variants_so_the_parse_path_retries`
+  now drives BOTH real parsers instead of naming one.
 
 ``assign_roles`` shuffles the deck via the module-global ``random``; tests that
 make order-sensitive assertions seed it first so the deal is reproducible.
@@ -39,15 +50,19 @@ make order-sensitive assertions seed it first so the deal is reproducible.
 
 from __future__ import annotations
 
+import json
 import random
 import uuid
 
 import pytest
+from langchain_core.exceptions import OutputParserException
+from langchain_core.messages import AIMessage
 from pydantic import ValidationError
 
 from graphia.config import load_config
-from graphia.llm import Roster
+from graphia.llm import BedrockProvider, OllamaProvider, Roster
 from graphia.nodes.setup import (
+    _UNUSABLE_ANSWER_ERRORS,
     _coerce_to_count,
     _generate_names,
     ai_name_count,
@@ -467,10 +482,20 @@ def test_generate_names_two_validation_failures_yield_all_placeholders(
     is on ``_generate_names``' docstring; in short, this is what the never-block
     guarantee means at its limit, the degradation is cosmetic rather than
     mechanical (``Player-N`` names are distinct, prefix-free and resolve
-    through the vote matcher), and only ``ValidationError`` is caught — so
-    raising on the second parse failure would contradict how the same function
-    treats the first. What is missing is a proactive *signal*, and every
-    mechanism for one sits outside this module's file.
+    through the vote matcher), and only the parse-boundary exceptions are
+    caught (``setup._UNUSABLE_ANSWER_ERRORS``) — so raising on the second parse
+    failure would contradict how the same function treats the first. What is
+    missing is a proactive *signal*, and every mechanism for one sits outside
+    this module's file.
+
+    The two ``ValidationError`` objects this test feeds in are the **cloud**
+    boundary's exception, and that is faithful rather than convenient:
+    Bedrock's tool-use parser lets the model's own error escape from ``invoke``,
+    which is where ``fake_small`` raises it. The local grammar boundary's
+    ``OutputParserException`` is covered by
+    :func:`test_roster_schema_rejects_case_variants_so_the_parse_path_retries`
+    below and, end to end through the node, by
+    ``tests/test_substitution_counts.py``'s parametrized negative controls.
 
     The assertion is **full equality against the exact placeholder list**, and
     that is load-bearing in two directions. A length check would pass over a
@@ -493,21 +518,39 @@ def test_generate_names_two_validation_failures_yield_all_placeholders(
 
 
 def test_roster_schema_rejects_case_variants_so_the_parse_path_retries() -> None:
-    """``Ivy`` + ``IVY`` is a VALIDATION failure on parse, not a silent pad.
+    """``Ivy`` + ``IVY`` is a PARSE failure, not a silent pad — on both transports.
 
-    Two levels, and conflating them is easy — which is why this test states
-    both in one place:
+    Three levels, and conflating them is easy — which is why this test states
+    all three in one place:
 
     - :class:`graphia.llm.Roster`'s validator enforces case-insensitive
       distinctness, so a model returning ``Ivy`` and ``IVY`` never parses.
-      Production reaches the schema through
-      ``get_small().with_structured_output(Roster)``, so what actually happens
-      on that path is a :class:`~pydantic.ValidationError` and
-      ``_generate_names``' corrective retry.
+    - **Which exception that becomes depends on the provider**, because it is
+      raised by the parser LangChain bound and the two transports bind
+      different parsers. Production reaches the schema through
+      ``get_small().with_structured_output(Roster)``: on Bedrock that is a
+      tool-use binding whose parser lets ``Roster``'s own
+      :class:`~pydantic.ValidationError` escape, and on the local Ollama
+      provider it is ``method="json_schema"`` (ADR 013) whose parser catches
+      that and re-raises
+      :class:`~langchain_core.exceptions.OutputParserException`. Both are named
+      in ``setup._UNUSABLE_ANSWER_ERRORS``, so both take ``_generate_names``'
+      corrective retry.
     - :func:`graphia.nodes.setup._coerce_to_count` restates the same rule
       defensively, collapsing the pair and padding the freed seat. That branch
       is reachable only with a roster that never went through the validator —
       hence the post-construction mutation below.
+
+    **Spec 041, Task 12.2a rewrote the middle level, which was false.** It read
+    "what actually happens on that path is a ``ValidationError``" — true of the
+    transport ADR 013 retired, and asserted as prose rather than exercised, so
+    nothing here noticed when the shipped path started raising a type
+    ``_generate_names`` did not catch. A grammar-perfect roster with a repeated
+    name then ended the game, 1 of 20 trials on ``qwen2.5:3b``. The claim is now
+    made by **driving both real parsers** rather than by naming one: the parsers
+    come off the real providers' real bound runnables (``.last`` of what
+    ``with_structured_output`` returns), so a transport swap that changes the
+    exception cannot leave this passing.
 
     **Pinned as accepted, not fixed** (spec 042, Task 7.1). Case-insensitive
     distinctness is required rather than overzealous: the human's vote command
@@ -517,13 +560,52 @@ def test_roster_schema_rejects_case_variants_so_the_parse_path_retries() -> None
     a harder break than a padded seat, and the same class of collision Task 3.3
     removed from the roster fixture. The full argument is on
     ``_coerce_to_count``'s docstring.
-    """
-    with pytest.raises(ValidationError, match="distinct"):
-        Roster(names=["Ivy", "IVY", "Marco"])
 
-    # The defensive branch, reached only with an unvalidated roster. Equality
-    # against the exact result is what discriminates: a case-SENSITIVE dedup
-    # would keep all three names and return them untouched.
+    Strictly offline, like every test in this module: two vendor clients are
+    constructed (``ChatOllama`` with ``validate_model_on_init=False``,
+    ``ChatBedrockConverse`` which needs no credentials to construct) and
+    neither is ever called — only the parser steps are.
+    """
+    payload = {"names": ["Ivy", "IVY", "Marco"]}
+
+    # Level 1 — the schema's own rule.
+    with pytest.raises(ValidationError, match="distinct"):
+        Roster(**payload)
+
+    # Level 2 — what each shipped transport's REAL parser raises for it, and
+    # that ``_generate_names`` catches both. The reply shape differs because
+    # the parsers read different parts of the message: a grammar-constrained
+    # decoder returns a JSON document, a tool-use binding returns a tool call.
+    local_parser = OllamaProvider().small().with_structured_output(Roster).last
+    with pytest.raises(OutputParserException) as local:
+        local_parser.invoke(AIMessage(content=json.dumps(payload)))
+
+    cloud_parser = BedrockProvider().small().with_structured_output(Roster).last
+    with pytest.raises(ValidationError) as cloud:
+        cloud_parser.invoke(
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": Roster.__name__,
+                        "args": payload,
+                        "id": "call-1",
+                        "type": "tool_call",
+                    }
+                ],
+            )
+        )
+
+    # Unrelated types — neither clause alone would cover both transports — and
+    # both inside the tuple ``_generate_names`` retries on.
+    assert not isinstance(local.value, ValidationError)
+    assert not isinstance(cloud.value, OutputParserException)
+    assert isinstance(local.value, _UNUSABLE_ANSWER_ERRORS)
+    assert isinstance(cloud.value, _UNUSABLE_ANSWER_ERRORS)
+
+    # Level 3 — the defensive branch, reached only with an unvalidated roster.
+    # Equality against the exact result is what discriminates: a case-SENSITIVE
+    # dedup would keep all three names and return them untouched.
     roster = Roster(names=["Ivy", "Marco"])
     roster.names = ["Ivy", "IVY", "Marco"]
     assert _coerce_to_count(roster, 3).names == ["Ivy", "Marco", "Player-1"]
