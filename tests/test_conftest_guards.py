@@ -65,6 +65,7 @@ from typing import Any, Callable, Iterator
 import pytest
 
 import conftest
+import graphia.nodes.endgame
 from conftest import (
     STRUCTURED_OUTPUT_KWARG_ALLOWLIST,
     UNSCRIPTED_DEFAULTS,
@@ -79,7 +80,15 @@ from conftest import (
     _TargetHumanPointing,
     drain_structured_output_violations,
 )
-from graphia.llm import Ballot, DayAction, Diary, Persona, Pointing, Reflection
+from graphia.llm import (
+    Ballot,
+    DayAction,
+    Diary,
+    Persona,
+    Pointing,
+    Reflection,
+    Story,
+)
 from graphia.nodes.day import (
     _DIARY_FALLBACK,
     _REFLECTION_FALLBACK,
@@ -250,7 +259,7 @@ def test_a_never_primed_diary_queue_serves_the_recognisable_default(
 
 @pytest.mark.parametrize(
     "schema",
-    [DayAction, Ballot, Pointing, Persona, Reflection, Diary],
+    [DayAction, Ballot, Pointing, Persona, Reflection, Diary, Story],
     ids=lambda s: s.__name__,
 )
 def test_a_never_primed_queue_serves_the_singleton_itself(schema: type) -> None:
@@ -289,7 +298,7 @@ def test_the_unscripted_default_is_recognisable_on_both_axes() -> None:
       :data:`EXPECTED_DIARY_DEFAULT_TEXT` above cannot drift away from the
       table it mirrors;
     * every text-carrying default carries :data:`conftest.UNSCRIPTED_MARKER`,
-      swept over the table rather than spot-checked, so a seventh entry added
+      swept over the table rather than spot-checked, so an eighth entry added
       without the marker is red here;
     * no production fallback carries the marker. That is the half that makes
       the primary test's discriminator sound: if ``_DIARY_FALLBACK`` ever
@@ -298,7 +307,7 @@ def test_the_unscripted_default_is_recognisable_on_both_axes() -> None:
     """
     assert UNSCRIPTED_DEFAULTS[Diary].entry == EXPECTED_DIARY_DEFAULT_TEXT
 
-    # Keyed over the WHOLE table, so a seventh entry added without a marker is
+    # Keyed over the WHOLE table, so an eighth entry added without a marker is
     # red here — but naming the fields explicitly rather than sweeping every
     # string on the model, because two strings legitimately carry no marker:
     # ``DayAction.kind`` is a discriminator ("speak"), and
@@ -311,6 +320,11 @@ def test_the_unscripted_default_is_recognisable_on_both_axes() -> None:
         Persona: ("personality", "manner", "public_backstory"),
         Reflection: ("thought",),
         Diary: ("entry",),
+        # Spec 040. ``Story.text`` is the whole payload, and the marker matters
+        # more here than anywhere else in this table: spec 040 ships NO
+        # fallback story (§2.8), so a story that reads as prose can only have
+        # come from a scripted queue or the model — never from a stand-in.
+        Story: ("text",),
     }
     assert set(marker_bearing) == set(UNSCRIPTED_DEFAULTS)
     for schema, fields in marker_bearing.items():
@@ -340,7 +354,7 @@ def test_the_unscripted_default_is_recognisable_on_both_axes() -> None:
 # constructor's own arguments stay visible here.
 #
 # ``_LoudFailureLLM`` IS IN THE SWEEP, and the decision is deliberate. It is not
-# a fake — it is the autouse net ``safe_llm`` installs on all five tier bindings
+# a fake — it is the autouse net ``safe_llm`` installs on all six tier bindings
 # — but it binds schemas through exactly the same
 # ``_record_structured_output_call`` contract, and it is the binder that the
 # largest number of tests in the suite actually reach (every test that installs
@@ -442,6 +456,117 @@ def test_the_loud_failure_net_is_still_loud_at_invoke() -> None:
     with pytest.raises(RuntimeError, match="Unstubbed LLM call"):
         bound.invoke([])
     assert net.structured_calls == [(Diary, {"method": "json_schema"})]
+    assert drain_structured_output_violations() == []
+
+
+# ==========================================================================
+# THE CALL-SITE NET (spec 040 Task 1.2) — the endgame binding, netted one task
+# before the node that calls it.
+#
+# ``nodes/endgame.py`` imported no model at all until spec 040; the story call
+# arrives in Task 1.4. Task 1.2 lands the ``get_large`` import, the ``safe_llm``
+# net over it and the fake's ``Story`` queue TOGETHER, one task early, and these
+# three tests are what make "the net is present" into "the net catches a call".
+#
+# **Mutation-verified before being committed** (2026-09-08, from 36 green in
+# this file), because a net that is present but not wired is exactly what this
+# task exists to prevent and a test asserting its presence would not notice:
+#
+# * ``safe_llm``'s endgame patch deleted — **1 failed**,
+#   :func:`test_safe_llm_nets_the_endgame_large_binding` alone.
+# * ``fake_large``'s endgame re-patch deleted — **2 failed**, the other two.
+# * the ``Story`` queue entry deleted — **3 failed, 3 errors**: those two plus
+#   ``test_a_never_primed_queue_serves_the_singleton_itself[Story]``, each
+#   through ``pytest.fail`` AND a teardown tripwire naming ``Story``.
+#
+# Separately, and the check the net actually exists for: a ``get_large()`` call
+# was temporarily added to ``end_screen`` and the suite's three direct
+# ``end_screen`` callers (``tests/test_node_emissions.py`` ×2,
+# ``test_slice9_polish.py::test_runaway_end_screen_contains_kill_log_and_roster``)
+# went red in 0.25s with ``Unstubbed LLM call through
+# graphia.nodes.endgame.get_large`` — a loud double, not a boto3 retry hang.
+# With the Layer 1 patch then also removed, the same call was caught by Layer
+# 2's provider backstop instead; see that patch's comment in ``conftest.py``
+# for the correction to spec 040 §3 that follows from it.
+# ==========================================================================
+
+
+def test_safe_llm_nets_the_endgame_large_binding() -> None:
+    """The autouse net covers ``graphia.nodes.endgame.get_large``, by NAME.
+
+    The name matters as much as the failure: ``_LoudFailureLLM`` carries the
+    binding it was installed at, and that string is the whole diagnostic a
+    developer gets. Asserting it distinguishes Layer 1 (this patch) from Layer
+    2's provider backstop, whose message names ``graphia.llm.get_large`` and
+    tells the reader to add a new binding — advice that would be wrong here,
+    since the binding exists.
+
+    Read through the MODULE attribute rather than an imported name, because
+    that is what a node body does: ``endgame`` binds ``get_large`` at import,
+    so only ``graphia.nodes.endgame.get_large`` can be re-pointed at it.
+    """
+    model = graphia.nodes.endgame.get_large()
+
+    bound = model.with_structured_output(Story)
+    with pytest.raises(RuntimeError) as excinfo:
+        bound.invoke([])
+
+    assert "graphia.nodes.endgame.get_large" in str(excinfo.value)
+    assert drain_structured_output_violations() == []
+
+
+def test_fake_large_re_points_the_endgame_binding_at_the_unified_fake(
+    fake_large: Callable[..., FakeLargeUnified],
+) -> None:
+    """One ``fake_large(stories=[...])`` serves the ending as well as the game.
+
+    The other half of the net: ``safe_llm`` makes an unscripted endgame call
+    loud, and this makes a scripted one *possible*. Without it the loud-failure
+    object stays installed at the endgame site even under ``fake_large``, and
+    ``moderator_story``'s ``try/except`` (Task 1.4) would turn that into an
+    ending with no story — which spec 040 §2.8 makes a legitimate outcome, so
+    nothing would look wrong.
+    """
+    fake = fake_large(stories=[Story(text="It began with a baker.")])
+
+    answer = (
+        graphia.nodes.endgame.get_large()
+        .with_structured_output(Story)
+        .invoke([])
+    )
+
+    assert answer.text == "It began with a baker."
+    assert fake.calls_by_schema[Story] == 1
+    assert drain_structured_output_violations() == []
+
+
+def test_the_story_counter_separates_a_raising_queue_from_an_unreached_fake(
+    fake_large: Callable[..., FakeLargeUnified],
+) -> None:
+    """``calls_by_schema[Story]`` is the ONLY way to tell the two apart.
+
+    Spec 040 is the one feature in the game whose *absence* is a correct
+    outcome: a failed story is simply not told, with no fallback text (§2.8).
+    So "the call was made and failed" and "the call was never made" produce the
+    same ending, and every story test that asserts on absence has to say which
+    of the two it measured — which is what Task 1.8 asserts this counter for.
+
+    Both halves in one test, because the claim is a *distinction* and either
+    number alone proves nothing: a raising queue books the call (the counter is
+    incremented before the queue is popped), and a fake nobody asked for a
+    story books none.
+    """
+    raising = fake_large(stories=[RuntimeError("the provider fell over")])
+
+    bound = graphia.nodes.endgame.get_large().with_structured_output(Story)
+    with pytest.raises(RuntimeError, match="fell over"):
+        bound.invoke([])
+
+    assert raising.calls_by_schema[Story] == 1
+
+    unreached = fake_large()
+    assert unreached.calls_by_schema[Story] == 0
+    assert Story not in unreached.unscripted_defaults_served
     assert drain_structured_output_violations() == []
 
 

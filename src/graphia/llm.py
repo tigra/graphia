@@ -990,9 +990,18 @@ class Story(BaseModel):
 #   ``_schema_types()`` (name -> class) each list the same four, so the live
 #   Claude spike claims "every flat schema" while probing four of seven. It
 #   cannot be derived mechanically: each entry needs its own prompt.
-# - ``tests/conftest.py`` — ``FakeLargeUnified`` enumerates six (all but
-#   ``Roster``, which is the small tier) three times over: the queue map, the
-#   per-schema call counter, and the unknown-schema error text.
+# - ``tests/conftest.py`` — ``FakeLargeUnified``'s queue map hand-types the
+#   schemas it can serve. **Two corrections to what this bullet used to claim,
+#   found while netting the endgame call site (spec 040 Task 1.2).** It said
+#   "six ... three times over: the queue map, the per-schema call counter, and
+#   the unknown-schema error text" — but spec 041 Task 5.1 derived the counter
+#   AND the error text FROM the queue map, so there is exactly ONE hand-typed
+#   listing there, not three. And the count is now **seven**, not six: ``Story``
+#   has a queue (it must, or the fake is silently unable to serve the endgame's
+#   call) even though it is deliberately not in this tuple. So that map is this
+#   tuple minus ``Roster`` (the small tier's schema, served by ``FakeSmall``)
+#   PLUS ``Story`` — neither a subset nor a superset of it, which is a second
+#   reason it cannot be derived from here even in principle.
 #
 # ``Story`` (spec 040) IS DELIBERATELY NOT A MEMBER — the omission is the
 # decision, not an oversight

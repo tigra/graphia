@@ -22,6 +22,24 @@ from graphia.career_events import (
     CareerEvent,
     CareerEventEmitter,
 )
+# Spec 040 Task 1.2 — THE PATCH TARGET, landed one task ahead of its consumer.
+#
+# Nothing in this module calls ``get_large`` yet: ``moderator_story`` (Task 1.4)
+# is what will, and the import is here first ON PURPOSE. ``monkeypatch.setattr``
+# raises on a missing attribute, so ``tests/conftest.py``'s autouse ``safe_llm``
+# net cannot cover ``graphia.nodes.endgame.get_large`` until the name exists
+# here — and the net has to exist BEFORE any model reaches this module, per
+# CLAUDE.md's standing convention ("if you add a new module that calls an LLM,
+# extend ``safe_llm`` to patch it too, otherwise a forgotten stub falls through
+# to real boto3 and hangs pytest teardown"). This import is the whole of what
+# makes that possible; the corresponding patch, and one correction to spec 040
+# §3's account of what an unnetted call would actually do, are at that fixture.
+#
+# The alternative was ``monkeypatch.setattr(..., raising=False)`` in the
+# fixture, needing no production change — rejected because it nets nothing
+# until this import lands anyway, so the net could not be shown to catch a call
+# today, which is exactly the failure mode this ordering exists to prevent.
+from graphia.llm import get_large
 from graphia.prompts import (
     ENDGAME_HEADER_KILLS,
     ENDGAME_HEADER_ROSTER,

@@ -21,6 +21,7 @@ from graphia.llm import (
     Pointing,
     Reflection,
     Roster,
+    Story,
 )
 from graphia.nodes.day import DAY_MAX_ROUNDS, DAY_MAX_VOTES
 from graphia.nodes.setup import ai_name_count
@@ -242,12 +243,13 @@ _PROVIDER_BACKSTOP_HINT = (
 class _LoudFailureProvider(LLMProvider):
     """Provider-level twin of :class:`_LoudFailureLLM`, installed by ``safe_llm``.
 
-    **Why a second layer of net.** The five ``monkeypatch.setattr`` calls in
+    **Why a second layer of net.** The six ``monkeypatch.setattr`` calls in
     ``safe_llm`` patch *call-site bindings* — the ``get_large`` /
     ``get_small`` / ``get_persona_model`` names as imported into
-    ``nodes/setup.py``, ``nodes/night.py`` and ``nodes/day.py``. A binding can
-    only be patched once someone knows it exists, so the net is exactly as
-    complete as this fixture's list, and a new module that does
+    ``nodes/setup.py``, ``nodes/night.py``, ``nodes/day.py`` and (spec 040)
+    ``nodes/endgame.py``. A binding can only be patched once someone knows it
+    exists, so the net is exactly as complete as this fixture's list, and a new
+    module that does
     ``from graphia.llm import get_large`` arrives **unnetted**: with
     ``_active_provider`` unresolved, ``_resolve_provider()`` reads
     ``GRAPHIA_LLM_PROVIDER`` from config, builds a real
@@ -444,7 +446,7 @@ def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     Two layers, because a call-site list can only net the call sites someone
     has already thought of.
 
-    **Layer 1 — the FIVE tier bindings**, each patched with a
+    **Layer 1 — the SIX tier bindings**, each patched with a
     :class:`_LoudFailureLLM`:
 
     - ``graphia.nodes.setup.get_small`` — roster name generation.
@@ -453,6 +455,9 @@ def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
       hotter path (flag-on default).
     - ``graphia.nodes.night.get_large`` — Night pointing.
     - ``graphia.nodes.day.get_large`` — Day speech / reflection / ballot / diary.
+    - ``graphia.nodes.endgame.get_large`` — spec 040's closing story, netted in
+      Task 1.2 **before** Task 1.4 gave the module a caller. See that patch's
+      own comment for why the order is that way round.
 
     **Layer 2 — the provider seam** (spec 041 §3.4): a
     :class:`_LoudFailureProvider` on ``graphia.llm._active_provider``, with the
@@ -471,9 +476,9 @@ def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     it is always Bedrock Titan, independent of ``GRAPHIA_LLM_PROVIDER``, so the
     persona-similarity metric stays a comparable measuring stick across
     providers (see :func:`graphia.llm.get_embeddings`). A test module that
-    re-points the five tier bindings at the real factories must therefore leave
-    this sixth patch alone; re-pointing it would send the offline suite at real
-    Bedrock embeddings.
+    re-points the six tier bindings at the real factories must therefore leave
+    this seventh patch alone; re-pointing it would send the offline suite at
+    real Bedrock embeddings.
 
     Explicit per-test fixtures (``fake_small``, ``fake_large``,
     ``fake_large_pointing``, ``fake_large_day``, ``dynamic_night_pointing``,
@@ -510,6 +515,38 @@ def safe_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "graphia.nodes.day.get_large",
         lambda: _LoudFailureLLM("graphia.nodes.day.get_large"),
+    )
+    # Spec 040 Task 1.2: ``nodes/endgame.py`` acquires a ``get_large`` binding
+    # for the Moderator's closing story. Netted HERE, in the same change that
+    # created the binding and one task BEFORE ``moderator_story`` calls it —
+    # the ordering is the point (see the import's own comment in that module).
+    #
+    # **A correction to spec 040 §3, measured rather than inherited.** That
+    # section says an unnetted ``get_large`` in ``endgame`` "reaches real
+    # Bedrock from the offline suite" and hangs pytest teardown on boto3's
+    # retry loop. That was true when it was written and is NOT true now: spec
+    # 041 §3.4 added Layer 2 below for exactly this route, so an unnetted
+    # module-level ``from graphia.llm import get_large`` resolves the already-
+    # installed :class:`_LoudFailureProvider` and fails loudly at ``invoke``.
+    # Two reasons this Layer 1 binding is still required rather than
+    # belt-and-braces:
+    #
+    # * It is the surface a per-test fake replaces. ``endgame`` binds
+    #   ``get_large`` at import, so patching ``graphia.llm.get_large`` later
+    #   cannot reach it — only this name can. Without it ``fake_large`` cannot
+    #   script the story call at all, which is what
+    #   ``calls_by_schema[Story]`` is asserted against.
+    # * Layer 2 is legitimately switched OFF by the modules that reset
+    #   ``graphia.llm._active_provider`` to ``None`` to exercise real
+    #   config-driven construction (``test_llm_provider_construction.py``,
+    #   ``test_llm_provider_config.py``). Inside those, Layer 1 is the only
+    #   net there is.
+    #
+    # It also gives the accurate hint: this call site's name, rather than
+    # Layer 2's "you have a new unnetted module" text.
+    monkeypatch.setattr(
+        "graphia.nodes.endgame.get_large",
+        lambda: _LoudFailureLLM("graphia.nodes.endgame.get_large"),
     )
     # Spec 033: ``blunder_eval.run_eval`` resolves the semantic-persona embeddings
     # client via the module-level ``get_embeddings`` binding. Patch it here with a
@@ -1542,6 +1579,17 @@ UNSCRIPTED_DEFAULTS: dict[type, Any] = {
     ),
     Reflection: Reflection(thought=_unscripted_text("Reflection")),
     Diary: Diary(entry=_unscripted_text("Diary")),
+    # Spec 040 Task 1.2. Needs no special-casing of its own — but note what it
+    # means for the feature, because spec 040 is the one schema whose ABSENCE
+    # is also a correct outcome (§2.8: a failed story is simply not told, with
+    # no fallback text). So an unprimed story queue serving a marker-bearing
+    # default is exactly right: it keeps "the fake was never reached" (no
+    # ``calls_by_schema[Story]``) distinct from "the fake answered" (a default,
+    # recorded in ``unscripted_defaults_served``) and from "the call failed"
+    # (a scripted ``Exception``, which still books the call). A test that wants
+    # the no-story path scripts ``stories=[RuntimeError(...)]``; it must never
+    # get there by leaving the queue empty.
+    Story: Story(text=_unscripted_text("Story")),
 }
 
 
@@ -1654,6 +1702,7 @@ class FakeLargeUnified:
         personas: Sequence[Persona | Exception] | None = None,
         reflections: Sequence[Reflection | Exception] | None = None,
         diaries: Sequence[Diary | Exception] | None = None,
+        stories: Sequence[Story | Exception] | None = None,
     ) -> None:
         # The queue map is the ONE of this class's three schema listings that is
         # NOT derived from ``graphia.llm.GAMEPLAY_SCHEMAS`` (spec 041 §3.4 asked;
@@ -1696,6 +1745,34 @@ class FakeLargeUnified:
             # proving nothing (tech-spec 039 §3; regression test in
             # ``tests/test_slice39_diary_fake_coverage.py``).
             Diary: list(diaries) if diaries else [],
+            # Spec 040: ``moderator_story`` binds ``Story`` on a ``get_large()``
+            # reference of its OWN, in ``nodes/endgame.py`` — the sixth tier
+            # binding ``safe_llm`` nets and the one :func:`fake_large` patches
+            # last. Added in Task 1.2, one task before the node exists, and in
+            # the SAME change as that call site's net.
+            #
+            # **A correction to spec 040 §3, which spec 040 could not have
+            # known.** It says a missing queue entry here is a *silent* failure
+            # — the calling node's ``try/except Exception`` swallowing this
+            # fake's unknown-schema complaint into "no story", which is ALSO
+            # the spec's correct failure outcome (§2.8), so a story test would
+            # measure the no-story path and pass green. That was true of the
+            # ``AssertionError`` this class used to raise; spec 041 Task 5.1
+            # replaced it with ``pytest.fail(..., pytrace=False)`` **plus** a
+            # booked violation, and ``Failed`` derives from ``BaseException``,
+            # so it walks straight through the node's ``except``. Verified by
+            # mutation: deleting this line makes the story guards in
+            # ``tests/test_conftest_guards.py`` fail loudly, naming ``Story``.
+            #
+            # The queue is still REQUIRED — a loud failure is a red suite, and
+            # scripting the story call is the only way to exercise the real
+            # path — and ``calls_by_schema[Story]`` is still what separates
+            # "the call failed" from "the call was never made" (Task 1.8).
+            # What is no longer true is that forgetting it would be quiet.
+            #
+            # Replays its last value once drained, like the others, though the
+            # story is told exactly once per game.
+            Story: list(stories) if stories else [],
         }
         self._last: dict[type, Any] = {}
         self.call_count = 0
@@ -1926,16 +2003,25 @@ def fake_large(
                               public_backstory="the baker")],
             reflections=[Reflection(thought="I should watch the baker.")],
             diaries=[Diary(entry="Day one is done. The baker talks too much.")],
+            stories=[Story(text="It began with a baker who talked too much.")],
         )
 
-    Patches ``graphia.nodes.day.get_large``, ``graphia.nodes.night.get_large``
-    AND ``graphia.nodes.setup.get_large`` with the same instance so calls
-    routed through any call site go through one queue-set. This is required
-    for Slice 7/8 tests where a single run touches ``DayAction`` (speaking),
-    ``Ballot`` (voting), ``Pointing`` (next night), (Spec 016) ``Persona``
-    (setup-time generation), (Spec 028) ``Reflection`` (per-AI end-of-round
-    private thought), and (Spec 039) ``Diary`` (per-AI before-Night private
-    diary entry) on the same large-model binding.
+    Patches ``graphia.nodes.day.get_large``, ``graphia.nodes.night.get_large``,
+    ``graphia.nodes.setup.get_large`` AND ``graphia.nodes.endgame.get_large``
+    with the same instance so calls routed through any call site go through one
+    queue-set. This is required for Slice 7/8 tests where a single run touches
+    ``DayAction`` (speaking), ``Ballot`` (voting), ``Pointing`` (next night),
+    (Spec 016) ``Persona`` (setup-time generation), (Spec 028) ``Reflection``
+    (per-AI end-of-round private thought), (Spec 039) ``Diary`` (per-AI
+    before-Night private diary entry), and (Spec 040) ``Story`` (the Moderator's
+    closing story) on the same large-model binding.
+
+    Script ``stories=`` whenever the assertion depends on the closing story —
+    including the *failure* assertions, which pass an ``Exception`` rather than
+    leaving the queue empty. Spec 040 has no fallback text (§2.8), so an absent
+    story is a legitimate outcome and "the queue raised" is indistinguishable
+    from "the fake was never reached" by looking at the ending; check
+    ``calls_by_schema[Story]`` to tell them apart.
 
     Script ``diaries=`` whenever the assertion depends on WHAT the diary node
     wrote. Leaving it unscripted is not an error — the queue serves its
@@ -1954,6 +2040,7 @@ def fake_large(
         personas: Sequence[Persona | Exception] | None = None,
         reflections: Sequence[Reflection | Exception] | None = None,
         diaries: Sequence[Diary | Exception] | None = None,
+        stories: Sequence[Story | Exception] | None = None,
     ) -> FakeLargeUnified:
         fake = FakeLargeUnified(
             day_actions=day_actions,
@@ -1962,6 +2049,7 @@ def fake_large(
             personas=personas,
             reflections=reflections,
             diaries=diaries,
+            stories=stories,
         )
         monkeypatch.setattr("graphia.nodes.day.get_large", lambda: fake)
         monkeypatch.setattr("graphia.nodes.night.get_large", lambda: fake)
@@ -1978,6 +2066,20 @@ def fake_large(
         monkeypatch.setattr(
             "graphia.nodes.setup.get_persona_model", lambda temperature: fake
         )
+        # Spec 040 Task 1.2: ``nodes/endgame.py``'s own ``get_large`` binding,
+        # for the closing story. Re-pointed at the SAME unified fake, so one
+        # ``fake_large(stories=[...])`` covers the ending as well as the game
+        # and the story call goes through the same ``calls_by_schema`` ledger
+        # every other schema is counted in. Added in the same change as
+        # ``safe_llm``'s net for that binding and one task before the node that
+        # calls it — without this, ``safe_llm``'s ``_LoudFailureLLM`` would stay
+        # installed at the endgame site even under ``fake_large``. And THIS
+        # omission genuinely is silent, unlike a missing queue entry (see the
+        # ``Story`` queue's comment): the net raises ``RuntimeError``, an
+        # ordinary ``Exception``, so ``moderator_story``'s broad ``except``
+        # swallows it into an ending with no story — a legitimate spec-040
+        # outcome (§2.8), so nothing would look wrong.
+        monkeypatch.setattr("graphia.nodes.endgame.get_large", lambda: fake)
         return fake
 
     return _install
