@@ -454,14 +454,14 @@ keeping within the sentence limit you were given.
 # ---------------------------------------------------------------------------
 # The Moderator's closing story (spec 040)
 # ---------------------------------------------------------------------------
-# READ THIS BEFORE JUDGING THE WORDING BELOW: what is here now is Slice 1's
-# DELIBERATELY MINIMAL prompt, not the finished one. Task 1.4's brief says so in
-# those words — "this slice uses a deliberately minimal prompt (outcome, roster,
-# events) so the node, the edge and the failure path can be proven before the
-# material assembly lands". It exists to exercise a live path end to end, and it
-# is the thinnest thing that can.
+# READ THIS BEFORE JUDGING THE WORDING BELOW: ``STORY_SYSTEM`` is still Slice
+# 1's DELIBERATELY MINIMAL prompt, not the finished one. Task 1.4's brief says
+# so in those words — "this slice uses a deliberately minimal prompt (outcome,
+# roster, events) so the node, the edge and the failure path can be proven
+# before the material assembly lands". ``STORY_USER_TEMPLATE`` is no longer
+# minimal: Task 3.3 grew it by the two material slots (see below).
 #
-# TWO LATER TASKS OWN THIS TEXT, and neither is done:
+# ONE LATER TASK OWNS THE SYSTEM TEXT, and it is not done:
 #
 # - **Slice 4, Task 4.1 rewrites ``STORY_SYSTEM``** with the seven moves spec
 #   040 §2.6 argues for — naming the reader and what they already know, naming
@@ -476,12 +476,11 @@ keeping within the sentence limit you were given.
 #   absence of a "do not tidy this in" comment here as licence either — Task
 #   4.1 brings that with it, along with the deliberate omissions it guards
 #   (no enumeration of what to cover; no *dramatic* / *vivid* / *compelling*).
-# - **Slice 3, Task 3.3 grows ``STORY_USER_TEMPLATE``** by two slots:
+# - **Slice 3, Task 3.3 grew ``STORY_USER_TEMPLATE``** by two slots —
 #   ``{private_record}`` (the two private channels over the shared cursor walk)
 #   and ``{context}`` (the public history, budgeted with what the private block
-#   leaves over). The private material is the whole point of the feature and
-#   there is NONE of it below — which is exactly why Slice 1 verifies offline
-#   only and claims nothing about story quality.
+#   leaves over) — **and that has landed.** The material is here now; the
+#   system prompt that tells the model what to DO with it is still Slice 4's.
 #
 # ONE THING THAT IS ALREADY RIGHT AND SHOULD STAY, rather than an accident to
 # be tidied later: the outcome slot is introduced as "How the game ended", not
@@ -500,12 +499,43 @@ Keep to the game recorded below. Return the story in the `text` field, as a few
 short paragraphs separated by blank lines.
 """
 
-# The story user template. Its slot vocabulary is the whole of Slice 1's
-# material: the outcome sentence (``endgame:_winner_line``, REUSED so the
-# story's outcome and the facts message's cannot drift), a minimal roster, and
-# the events as ``endgame:_format_kill_line`` already renders them for the
-# facts message. Nothing here is populated by a helper written for this prompt
-# alone; see ``nodes/endgame.py:_ai_story`` for the three call sites.
+# The story user template — five slots, and NONE of them is filled by a helper
+# written for this prompt alone (spec 040 §2.2):
+#
+#   ``{outcome}``        ``endgame:_winner_line``, REUSED so the story's outcome
+#                        and the facts message's cannot drift.
+#   ``{roster}``         ``endgame:_story_roster_block`` — name, side, fate, the
+#                        ``(the person playing)`` marker on the human seat, and
+#                        each AI's persona read through ``_persona_field``.
+#   ``{events}``         ``endgame:_format_kill_line`` per ``kill_log`` record,
+#                        REUSED, so a death reads the same in both messages.
+#   ``{context}``        ``nodes.day:_render_context`` over the public history,
+#                        called with a ``speaker_id`` matching no player so
+#                        EVERY whisper is dropped (a privacy requirement — the
+#                        human's role reveal and the Mafia intros must never
+#                        enter a prompt whose output the player reads).
+#   ``{private_record}`` ``endgame:_story_private_block`` over the shared cursor
+#                        walk — the two channels no player has ever seen.
+#
+# THE SLOT ORDER IS DELIBERATE AND IT IS NOT §2.2'S TABLE ORDER. The private
+# material goes LAST, immediately before the instruction, because it is the
+# thing the story is meant to be built from ("the story earns its place from the
+# private material") and the tail of a prompt is the part a model weighs most.
+# The public history sits in the middle for the same reason inverted: it is the
+# largest block, the only one that gets trimmed, and it is there to be checked
+# against rather than retold. Do not reorder these to match the table.
+#
+# THE TWO SLOT LABELS ARE THIS TEMPLATE'S, NOT THE BLOCKS' OWN. The private
+# block's first line is ``endgame:STORY_PRIVATE_LEGEND``, which states the two
+# things the material cannot claim (no cross-player order; a reflection carries
+# no Day) — the label above it says only what the section IS, so the legend is
+# not duplicated. The label still has to exist, because the empty case renders
+# ``STORY_PRIVATE_EMPTY`` with no legend at all and a bare bullet under nothing
+# would be unattributed.
+#
+# ONE THING THAT IS ALREADY RIGHT AND SHOULD STAY: the outcome slot is
+# introduced as "How the game ended", not as "The winner was" — see the note
+# above ``STORY_SYSTEM``.
 STORY_USER_TEMPLATE = """How the game ended: {outcome}
 
 The players:
@@ -513,6 +543,12 @@ The players:
 
 What happened:
 {events}
+
+What was said out loud, oldest first:
+{context}
+
+What no one else ever saw:
+{private_record}
 
 Tell the story of this game.
 """

@@ -73,11 +73,20 @@ from graphia.llm import Story, get_large
 # Import direction: ``nodes/day.py`` imports nothing from this module, so this
 # is not a cycle — ``nodes/night.py`` already reaches into ``nodes/day.py`` the
 # same way for ``_private_record_block``.
+# ``_estimate_tokens`` and ``_render_context`` are Task 3.3's additions to this
+# import, and they are the SAME two functions the Day and diary prompts use —
+# imported rather than re-derived, so the story's public-history rendering
+# (labels, the whisper filter, the oldest-first trim) cannot drift from what
+# every other prompt in the game shows. §2.2 names both by their ``nodes.day``
+# path for exactly that reason. What the story does NOT inherit is the Day's
+# ``context_window`` value; see ``STORY_CONTEXT_WINDOW``.
 from graphia.nodes.day import (
     DIARY_DAY_UNKNOWN,
     PRIVATE_RECORD_KIND_DIARY,
     PRIVATE_RECORD_KIND_THOUGHT,
     PrivateRecordEntry,
+    _estimate_tokens,
+    _render_context,
     _walk_private_record,
 )
 from graphia.prompts import (
@@ -311,37 +320,163 @@ def end_screen(
 # from the facts; and with a second super-step the facts are already on screen
 # while the call is in flight.
 #
-# EVERYTHING BELOW IS SLICE 1's. Three later slices grow it and none has run:
-# Slice 3 assembles the private material (the shared cursor walk, the
-# third-party renderer, the token budgeting, the whisper exclusion), Slice 4
-# writes the real prompt, and Slice 5 adds the paragraph-preserving clamp and
-# its truncation flag. What is here is the thinnest thing that proves the node,
-# the edge and the failure path.
+# SLICE 3 HAS NOW LANDED, so the material below is the real material: the
+# shared cursor walk (Task 3.1), the third-party private renderer (Task 3.2),
+# and the five-slot assembly with its budget ordering and its whisper exclusion
+# (Task 3.3). Two later slices still grow this: Slice 4 writes the real system
+# prompt (``STORY_SYSTEM``'s seven moves — none of them is present yet) and
+# Slice 5 adds the paragraph-preserving clamp and its truncation flag.
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# The two endgame size governors — PROVISIONAL, and Task 3.5 is what makes them
+# config (spec 040 §2.2 / tasks.md Task 3.5).
+#
+# WHY THEY ARE CONSTANTS FOR ONE TASK RATHER THAN CONFIG NOW. Task 3.3 needs a
+# budget to subtract the private block from; Task 3.5 owns turning both numbers
+# into ``GraphiaConfig`` fields threaded through BOTH graph builders on spec
+# 025's ``context_token_budget`` precedent (its env parsing, its bounds checks,
+# the ``partial`` binds in ``build_graph`` AND ``build_runtime_graph``, and the
+# recorded trade-off). Landing the consumer one task ahead of the provider is
+# the same ordering this module already used for its ``get_large`` import, and
+# for the same reason: the value is needed where it is consumed before the
+# plumbing that supplies it exists, and a hard-coded number with no note is how
+# a "temporary" default becomes permanent. **Task 3.5 should replace these two
+# reads with bound keyword arguments and delete this block, not keep both.**
+#
+# WHY NOT THE DAY'S ``context_window`` (150) — §2.2, and it is deliberate: that
+# number expresses "the recent discussion", and a retrospective often needs Day
+# 1. The story gets its own, larger window.
+#
+# The ~12000-token budget is a PROVIDER-CAPABILITY knob, not an ablation arm
+# (§2.12): Ollama is the binding constraint rather than cost, because at a large
+# table over five Days the public history alone is 15k-45k tokens against
+# typical locally-served context of 8k-32k, so an ungoverned prompt fails EVERY
+# game there. An operator on an 8k model must be able to lower it, which is
+# exactly why Task 3.5 exists.
+#
+# WHAT THE BUDGET COVERS, and it is why 12000 is LOWER than the Day's 20000
+# rather than an oversight to be raised to match. ``config``'s Day figure is
+# derived as ``(32768 - ~2500) * 0.75`` for ONE block — the discussion history —
+# with everything else assembled outside it. Here the number bounds the private
+# block AND the public history TOGETHER, because the public history's own budget
+# is this figure MINUS the measured private block; the outcome sentence, the
+# roster and the events then sit outside it, as the Day's role/objective block
+# does. So the same 32k context has to hold strictly more kinds of material at
+# the ending than during a Day, and the lower ceiling is the headroom for that.
+STORY_CONTEXT_WINDOW = 400
+STORY_TOKEN_BUDGET = 12000
+# ---------------------------------------------------------------------------
+
+# The human seat's marker, and it is the deliverable of Task 3.3 rather than a
+# flourish: Slice 1's roster emitted name / role / alive-or-dead only, and a
+# live run (Task 2.3) had the story narrate the reader in the third person as
+# "Alexey, another innocent citizen". Slice 4's human clause ("never claims to
+# know what the person was thinking") can be asserted as PROMPT TEXT without
+# this, but cannot be shown to DO anything until the seat is marked.
+#
+# A constant rather than an inline literal because two later tasks assert on the
+# exact string (Slice 4's pairing of move 6 with the marker, and Slice 3's own
+# material tests), and a retyped literal is how those drift apart.
+STORY_ROSTER_HUMAN_MARKER = "(the person playing)"
+
+
+def _story_persona_tail(player: PlayerState) -> str:
+    """The persona half of one roster line; ``""`` when there is none to show.
+
+    **:func:`_persona_field` IS MANDATORY HERE, NOT STYLISTIC** (spec 040 §2.2).
+    Its docstring records why: after a checkpoint round-trip the LangGraph serde
+    hands a :class:`~graphia.state.PlayerPersona` back as a plain ``dict``,
+    ``end_screen`` is the FIRST reader of persona fields out of checkpointed
+    state, and ``moderator_story`` is the SECOND — so a bare ``persona.manner``
+    here would ``AttributeError`` on a resumed game and take the whole story
+    with it (silently, into ``_ai_story``'s ``except``, as a missing ending).
+    Every read below goes through it.
+
+    WHY :func:`_persona_reveal_line` IS NOT REUSED, though it renders the same
+    four fields. It exists for the FACTS message and its two templates
+    (``ENDGAME_PERSONA_CITIZEN_TEMPLATE`` / ``ENDGAME_PERSONA_MAFIA_TEMPLATE``)
+    open with ``"• {name} ({role_label}) — "`` — the name and the side, which
+    the roster line already carries and would then carry twice, in two
+    different spellings, in one prompt. Reuse of the *field accessor* is the
+    requirement; reuse of the player-facing reveal prose would be a
+    duplication. It is also player-facing text the facts message showed the
+    reader a super-step ago, and §2.2 excludes the rendered facts prose from
+    this prompt precisely because passing it invites paraphrase.
+
+    A Mafioso's ``true_self`` is shown; a Citizen's is not, because §2.2 lists
+    it as excluded "empty by construction" (:class:`PlayerPersona` documents
+    the same). It degrades to nothing if a fallback-path Mafioso has none.
+    """
+    persona = player.persona
+    if persona is None:
+        # The human seat (personas are generated for AI players only), or a
+        # fallback-path player whose persona never materialised.
+        return ""
+    personality = _persona_field(persona, "personality")
+    manner = _persona_field(persona, "manner")
+    public_persona = _persona_field(persona, "public_persona")
+    # "; " rather than the facts templates' bare space. Both fields arrive as
+    # unpunctuated phrases ("coldly calculating" / "speaks in short, flat
+    # sentences"), so a space-join reads as one run-on phrase and ``manner``
+    # frequently contains commas of its own. The facts message's space-join is
+    # a player-visible byte and stays exactly as it is; this block is the
+    # story's own presentation, and the separator is where the two differ.
+    shown = "; ".join(part for part in (personality, manner) if part).strip()
+    fragments: list[str] = []
+    if public_persona:
+        fragments.append(f"showed the table {public_persona}")
+    if shown:
+        fragments.append(f"({shown})" if public_persona else shown)
+    if player.role == "mafia":
+        true_self = _persona_field(persona, "true_self")
+        if true_self:
+            fragments.append(f"but was really {true_self}")
+    return " ".join(fragments).strip()
 
 
 def _story_roster_block(players: dict[str, PlayerState]) -> str:
-    """One line per player: name, side, and whether they lived to the end.
+    """One line per player: name, side, fate, the human's seat, the persona.
 
-    DELIBERATELY MINIMAL — Slice 1's roster, not the finished one. Spec 040
-    §2.2 specifies the eventual block as name, side, alive-or-dead, ``(the
-    person playing)`` for the human seat, and each AI's persona read through
-    :func:`_persona_field`; **Task 3.3 owns all of that**, including the
-    ``_persona_field`` requirement, which is mandatory rather than stylistic
-    (that function's docstring records why: after a checkpoint round-trip the
-    serde hands back a ``PlayerPersona`` as a plain ``dict``, and
-    ``moderator_story`` is the second reader of persona fields out of
-    checkpointed state, so a bare attribute access would ``AttributeError``).
-    What is here is the three fields a story cannot do without.
+    THE FOUR FIELDS SPEC 040 §2.2 SPECIFIES, all of them present now (Task
+    3.3): name, side, alive-or-dead, :data:`STORY_ROSTER_HUMAN_MARKER` on the
+    human seat, and each AI's persona through :func:`_story_persona_tail` (which
+    carries the mandatory :func:`_persona_field` reads and the argument for
+    them).
+
+    **THE HUMAN MARKER IS WHAT MAKES SLICE 4's HUMAN CLAUSE MEAN ANYTHING.**
+    Slice 1's roster emitted the first three fields only, and a live run
+    narrated the reader in the third person as one more citizen at the table.
+    The marker is the *only* thing in the whole prompt that identifies which
+    seat is the person being told the story — the private block cannot do it,
+    because the human's absence from that block is structural (both writers
+    skip ``is_human``) and an absence is not an identification.
+
+    ``is_human`` IS TESTED HERE AND DELIBERATELY NOT IN
+    :func:`_story_private_block` — the two are not inconsistent. There, a test
+    would convert a structural guarantee into a filter a reader has to trust.
+    Here there is no structural fact to lean on: the seat has to be named, so
+    the flag is read directly, once, in the one place a reader will look for it.
 
     :func:`_role_label` is reused rather than re-spelled, so the side names the
     story reads are the ones the facts message just showed the player.
+
+    Authors come out in ``players`` insertion order, the same order
+    :func:`_story_private_block` groups by, so the two blocks read as one
+    roster.
     """
-    lines = [
-        f"• {p.name} — {_role_label(p.role)} — "
-        f"{'alive at the end' if p.is_alive else 'dead'}"
-        for p in players.values()
-    ]
+    lines: list[str] = []
+    for p in players.values():
+        line = (
+            f"• {p.name} — {_role_label(p.role)} — "
+            f"{'alive at the end' if p.is_alive else 'dead'}"
+        )
+        if p.is_human:
+            line = f"{line} — {STORY_ROSTER_HUMAN_MARKER}"
+        tail = _story_persona_tail(p)
+        if tail:
+            line = f"{line} — {tail}"
+        lines.append(line)
     return "\n".join(lines) if lines else "• (no players)"
 
 
@@ -374,12 +509,12 @@ def _story_events_block(
 # ``STORY_SYSTEM``'s prose is Slice 4 Task 4.1's; what is below is this block's
 # own presentation.
 #
-# NOTHING CALLS THIS YET, AND THAT IS THE TASK BOUNDARY, not an oversight:
-# Task 3.3 assembles the prompt slots (and owns the assembly ORDER, which is
-# load-bearing — private block first, measured, then the public history gets
-# what is left of ``story_token_budget``). The same ordering that put this
-# module's ``get_large`` import one task ahead of its consumer, for the reason
-# recorded at that import.
+# ``_ai_story`` NOW CALLS THIS (Task 3.3), and the assembly ORDER there is
+# load-bearing: this block is rendered FIRST and measured, and the public
+# history gets what is left of ``STORY_TOKEN_BUDGET``. The tense here is
+# corrected rather than deleted because the boundary explains the shape: for
+# one task this renderer existed with nothing calling it, on purpose, so it
+# could be proven as a pure function before any prompt depended on it.
 # ---------------------------------------------------------------------------
 
 # The block's own legend, and it is a FABRICATION GUARD rather than decoration —
@@ -644,8 +779,48 @@ def _story_private_block(
 def _ai_story(state: GameState) -> str | None:
     """Ask the large tier for the closing story; ``None`` when there is none.
 
+    THE ASSEMBLY ORDER IS LOAD-BEARING, AND IT IS THE POINT OF TASK 3.3
+    -------------------------------------------------------------------
+
+    The private block is rendered FIRST and measured with
+    :func:`~graphia.nodes.day._estimate_tokens`; the public history is then
+    rendered with ``STORY_TOKEN_BUDGET - private_tokens`` as ITS budget. So the
+    private material is structurally protected and the public history is what
+    gets cut — which is the spec's own rationale (§2.2): the story "earns its
+    place from the private material". **Reversing this starves the thing the
+    feature exists for, and it fails silently** — a well-formed prompt, a
+    well-formed story, and nothing in it the player had not already read. That
+    is why a test pins the direction rather than the docstring alone.
+
+    ``_render_context``'s trim is oldest-first, so a very long game loses early
+    public *dialogue* while keeping every early *diary* (§2.2's accepted
+    trade-off; a head-and-tail keep was considered and rejected because it needs
+    a second trimming implementation plus an elision marker the model may
+    narrate as an event — a fabrication risk introduced to solve a completeness
+    problem).
+
+    ONLY THE PUBLIC HISTORY IS BUDGETED. The outcome sentence, the roster and
+    the events block are O(table size) and O(deaths) — a handful of lines each,
+    bounded by the game's own shape — so §2.2 budgets neither, and neither does
+    this. Should a future table make the roster large enough to matter, it is
+    the roster that would need a bound, not this ordering.
+
+    **``speaker_id=""`` IS A PRIVACY REQUIREMENT, NOT A CONVENIENCE** (§2.2,
+    Task 3.4 owns the assertion). ``_render_context``'s filter is ``if
+    private_to and private_to != speaker_id: continue``, so an id matching no
+    player drops EVERY whisper: the human's private role reveal and the Mafia
+    teammate intros cannot enter a prompt whose output is shown to the player.
+    The Moderator gets the conspiracy from the Mafiosos' *diaries* instead,
+    which is the whole point of the feature.
+
+    ``state["players"]`` IS PASSED TO THE PRIVATE BLOCK, and no spec section
+    says it needs the roster (found by Task 3.2): the two channels are keyed on
+    ``player.id`` while the heading shows ``player.name``, and the per-author
+    grouping order comes from ``players`` insertion order. It is the same object
+    :func:`_story_roster_block` reads, so the two blocks agree by construction.
+
     TOTAL BY CONSTRUCTION (spec 040 §2.8). The whole body — the state reads,
-    the three material blocks, the prompt build, the ``invoke`` and the
+    the four material blocks, the prompt build, the ``invoke`` and the
     validation of what comes back — sits inside one broad
     ``except Exception: return None``. ``None`` is the entire failure
     vocabulary: there is no fallback text and no substitution branch, which is
@@ -692,6 +867,31 @@ def _ai_story(state: GameState) -> str | None:
     try:
         players = state.get("players", {})
         kill_log = list(state.get("kill_log", []))
+        # ORDER: the private block first, and measured, so the budget the
+        # public history is given is what the private material LEAVES OVER.
+        # Both channels, dead and surviving writers alike, and the full diary —
+        # never windowed (see ``_story_private_block``).
+        private_record = _story_private_block(
+            players,
+            state.get("private_thoughts"),
+            state.get("private_diaries"),
+        )
+        private_tokens = _estimate_tokens(private_record)
+        # ``max(0, …)`` only so a reader never sees a negative "budget": a
+        # private block bigger than the whole budget leaves nothing for the
+        # public history, and ``_render_context``'s own ``len(lines) > 1``
+        # guard then keeps exactly the newest line, which is strictly better
+        # than an empty history. The private material is NOT trimmed to fit —
+        # that is the protection this ordering exists to give it.
+        context_budget = max(0, STORY_TOKEN_BUDGET - private_tokens)
+        context = _render_context(
+            state.get("messages", []),
+            # An id matching NO player: every whisper is dropped. A privacy
+            # requirement — see the docstring.
+            "",
+            window=STORY_CONTEXT_WINDOW,
+            token_budget=context_budget,
+        )
         llm = get_large().with_structured_output(Story)
         messages: list = [
             SystemMessage(content=STORY_SYSTEM),
@@ -703,6 +903,8 @@ def _ai_story(state: GameState) -> str | None:
                     outcome=_winner_line(state.get("winner")),
                     roster=_story_roster_block(players),
                     events=_story_events_block(kill_log, players),
+                    context=context,
+                    private_record=private_record,
                 )
             ),
         ]
