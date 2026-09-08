@@ -30,6 +30,8 @@ in ``tests/test_spec040_story_topology.py``.
 
 from __future__ import annotations
 
+import re
+
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from graphia.career_events import (
@@ -870,6 +872,122 @@ STORY_MAX_PARAGRAPHS = STORY_PARAGRAPH_BOUND
 # ``llm.py``. The relationship is a citation, which is what 039 does too.
 STORY_MAX_CHARS = 1800
 
+# What the clamp rejoins with, and what ``STORY_SYSTEM``'s move 7 asks the
+# model for in the same words: "separated by blank lines".
+_STORY_PARAGRAPH_SEPARATOR = "\n\n"
+
+# ONE BLANK LINE — a newline, then anything blank, then a newline. §2.5 words
+# the split as "runs of two-or-more newlines" and this is deliberately WIDER,
+# by exactly the whitespace a run can carry between its newlines: ``\s``
+# includes ``\n``, so this collapses ``"\n\n\n\n"`` to a single break the way
+# ``\n{2,}`` would, and ALSO breaks on ``"\n \n"`` and ``"\n\t\n"``, which
+# ``\n{2,}`` reads as a paragraph's interior.
+#
+# WHY THE WIDENING RATHER THAN THE LITERAL WORDING. A trailing space before a
+# newline is invisible in the model's own output and common in generated prose,
+# and under ``\n{2,}`` one of them anywhere in the answer silently merges two
+# paragraphs into one: the paragraph cap then measures too few paragraphs and
+# the fold below runs the two together into a wall of text. So the narrow form
+# fails in the direction of NOT enforcing the bound while destroying the
+# structure this clamp exists to keep. The widening cannot over-split — it
+# still requires two newlines — so it is a superset with no new failure mode.
+_STORY_PARAGRAPH_BREAK = re.compile(r"\n\s*\n")
+
+
+def _clamp_story(text: str) -> tuple[str, bool]:
+    """Bound the story to whole paragraphs; return it and whether any were cut.
+
+    Returns ``(story, clipped)``. ``clipped`` is ``True`` iff at least one
+    whole paragraph was dropped — the fact Task 5.3 needs to mark the message,
+    and one only this function can know, because it is the difference between
+    the paragraphs the answer contained and the paragraphs kept.
+
+    NOT 039's ``_clamp_diary_entry``, AND THE DIFFERENCE IS THE POINT (§2.5).
+    That one is ``" ".join(text.split())[:DIARY_MAX_CHARS].rstrip()``: it folds
+    ALL whitespace, ``\\n\\n`` included. Correct there, because a ``<diary>`` is
+    an inline transcript element and its own docstring records the measurement
+    behind that (zero multi-line inline elements across the committed corpus).
+    Wrong here, because **paragraphs are the story's structure** — reusing it
+    would deliver one wall of text and nothing would raise.
+    ``test_spec040_story_node``'s ``"\\n\\n" in story.content`` is the standing
+    witness against that substitution, and it stays green by design here.
+
+    TRUNCATION IS AT A PARAGRAPH BOUNDARY, NEVER A CHARACTER CUT, and §2.5
+    calls that a difference in kind rather than degree. A diary cut mid-word is
+    read by a model and a maintainer; **the story is the last thing the player
+    reads**, and a sentence that stops mid-clause reads as a bug in the game
+    rather than as a long answer that was trimmed. That is also why the char
+    bound accumulates WHOLE paragraphs instead of slicing: the only two honest
+    answers for a paragraph that will not fit are "keep it" and "drop it", and
+    this drops it.
+
+    THE ORDER, and each step is load-bearing:
+
+    1. **Normalise line endings** first, so a ``\\r\\n`` answer is not one
+       paragraph whose interior happens to contain carriage returns.
+    2. **Split on blank lines** — see ``_STORY_PARAGRAPH_BREAK`` for why the
+       pattern is one step wider than §2.5's wording.
+    3. **Fold each paragraph's own whitespace to single spaces and strip.**
+       Within a paragraph a line wrap carries no meaning, and folding here is
+       what lets step 5 measure the text as it will actually be rendered.
+    4. **Drop empties**, so leading, trailing or doubled breaks cannot produce
+       a paragraph that is nothing, or spend a slot in the cap on one.
+    5. **Bound in two dimensions** — at most ``STORY_MAX_PARAGRAPHS``, and
+       accumulate while the joined length stays within ``STORY_MAX_CHARS``.
+       The separators are counted, because they are part of what is stored and
+       rendered.
+
+    THE FIRST PARAGRAPH IS EXEMPT FROM THE CHARACTER BOUND, and this asymmetry
+    is deliberate — it is the one place a naive reading of §2.5 produces a real
+    bug. A single paragraph longer than ``STORY_MAX_CHARS`` cannot be shortened
+    at a paragraph boundary at all, so "accumulate while the length fits" would
+    accumulate NOTHING and return ``""``. That would then travel as absence
+    (:func:`_ai_story` returns ``None`` on an unusable answer), and absence is
+    a signal this feature spends real care on: §2.10's ``story_missing_rate``
+    counts endings with no flagged message and, with no ablation arm, reads
+    absence as **failure**. A model that answered perfectly well in one long
+    block would be recorded as a failed call. So the char bound is a runaway
+    guard that yields to the paragraph contract, not the reverse — the
+    functional criterion is stated in paragraphs, and one paragraph satisfies
+    it. Nothing is dropped in that case, so ``clipped`` is correctly ``False``.
+
+    There is no matching floor under the PARAGRAPH cap: it is derived from
+    ``STORY_PARAGRAPH_BOUND`` and cannot be zero without someone deliberately
+    setting the number the prompt states to zero, which already means "no
+    story".
+
+    PURE: no state, no RNG, no clock, so replay and the dual-mode byte-equal
+    smoke are unaffected — the same property 039's clamp records.
+    """
+    paragraphs = [
+        # Fold the paragraph's OWN whitespace. ``str.split()`` with no
+        # argument splits on any run of whitespace and discards the empties,
+        # so this both folds the interior and strips the ends.
+        " ".join(paragraph.split())
+        for paragraph in _STORY_PARAGRAPH_BREAK.split(
+            text.replace("\r\n", "\n").replace("\r", "\n")
+        )
+    ]
+    paragraphs = [paragraph for paragraph in paragraphs if paragraph]
+    kept: list[str] = []
+    length = 0
+    for paragraph in paragraphs:
+        if len(kept) >= STORY_MAX_PARAGRAPHS:
+            break
+        # The length the story WOULD have with this paragraph joined on,
+        # separator included — measured on the rendered form, not the sum of
+        # the parts.
+        grown = length + len(paragraph)
+        if kept:
+            grown += len(_STORY_PARAGRAPH_SEPARATOR)
+            if grown > STORY_MAX_CHARS:
+                break
+        kept.append(paragraph)
+        length = grown
+    # ``clipped`` compares COUNTS, so it is true for a drop by either bound and
+    # false when the first-paragraph exemption above kept an over-long one.
+    return _STORY_PARAGRAPH_SEPARATOR.join(kept), len(kept) < len(paragraphs)
+
 
 def _ai_story(
     state: GameState,
@@ -1143,12 +1261,31 @@ def _ai_story(
         ]
         result = llm.invoke(messages)
         if isinstance(result, Story) and result.text.strip():
-            # Slice 5 replaces this ``strip`` with the paragraph-preserving
-            # clamp. A plain strip is the forward-compatible placeholder: it
-            # leaves the internal blank lines that ARE the story's structure,
-            # which is precisely what 039's ``_clamp_diary_entry`` would fold
-            # away and why that clamp must not be reused here.
-            return result.text.strip()
+            # Slice 1's placeholder ``.strip()`` replaced by Slice 5's
+            # paragraph-preserving clamp (Task 5.1). The truthiness test above
+            # is UNCHANGED and stays the single gate on an unusable answer:
+            # ``test_an_unusable_answer_yields_no_story_at_all`` parametrises
+            # ``""``, ``"   "`` and ``"\n\n\t "``, and its docstring warns in
+            # as many words that a clamp returning ``""`` with that guard
+            # dropped would emit an EMPTY story message — a blank section in
+            # the ending, which the functional spec forbids.
+            #
+            # No second guard on the clamp's output, deliberately: it cannot
+            # empty a non-empty answer. A truthy ``strip()`` means at least one
+            # non-whitespace character, which lands in some paragraph, which
+            # survives the fold, and the clamp's first-paragraph exemption
+            # keeps it whatever its length. An ``if not story: return None``
+            # here would be unreachable — untestable, so Task 5.4 could not
+            # witness it and a later refactor could delete it silently, which
+            # is the vacuous-guard trap Task 10.1 recorded. The invariant is
+            # worth a test; a dead branch is not.
+            #
+            # TASK 5.3 STARTS HERE. ``_clipped`` is the fact it needs and the
+            # only place it is knowable; this helper's ``str | None`` contract
+            # is what stops it being forwarded today. See the note at
+            # :func:`moderator_story`'s call for the two plumbing shapes.
+            story, _clipped = _clamp_story(result.text)
+            return story
         return None
     # =====================================================================
     # NO FALLBACK TEXT. Both ``return None``s above and the one below are
@@ -1299,7 +1436,13 @@ def moderator_story(
       which is a different failure than the one §2.8 named, and a live one.
     - Slice 5's truncation-flag computation lands here too, on the story that
       comes back (§2.5), so this catch grows in coverage while the inner one
-      does not.
+      does not. **Half-true as written, corrected by Task 5.1:** the clamp
+      that COMPUTES the flag went inside :func:`_ai_story`, so it sits under
+      the INNER layer and this catch gained nothing from it. What will land
+      out here is Task 5.3's plumbing — reading the flag and putting it on
+      ``additional_kwargs`` — which is beside the ``SystemMessage``
+      construction and therefore genuinely only this layer's to catch. The
+      prediction is right about the layer and wrong about which half arrives.
 
     "The node never raises" is a property the graph and the UI depend on, and
     it must not be one that a later refactor of a private helper can quietly
@@ -1325,6 +1468,32 @@ def moderator_story(
     both layers.
     """
     try:
+        # TASK 5.3's PLUMBING DECISION, left here rather than pre-empted by
+        # Task 5.1 (which owns the clamp, not the flag). ``_clamp_story``
+        # already returns ``(story, clipped)``; what it does NOT do is get the
+        # second element out of :func:`_ai_story`, whose ``str | None``
+        # contract is deliberate and directly tested
+        # (``test_a_helper_that_breaks_its_contract_yields_no_story_rather_``
+        # ``than_a_raise`` feeds it an ``int``, a ``dict`` and a bare
+        # ``object``). Two shapes, and neither is free:
+        #
+        # 1. Widen the helper to ``tuple[str, bool] | None`` and unpack here.
+        #    Cheapest — the clamp's return travels unchanged and the flag is
+        #    in scope exactly where the message is built. Costs a re-read of
+        #    that contract test, because a non-tuple return then fails at the
+        #    unpack rather than at the ``SystemMessage`` construction; the
+        #    outer catch still holds, so the property survives, but the test's
+        #    stated mechanism changes and it says so in its docstring.
+        # 2. Leave the helper alone and have it record the flag out of band.
+        #    Keeps the contract and the test verbatim, at the price of state
+        #    that is neither returned nor a parameter — which this module has
+        #    none of, and which the whole node is written to avoid.
+        #
+        # Shape 1 is the one the clamp's signature was built for. Whichever is
+        # taken, the flag must be read from the CLAMP and never re-derived by
+        # measuring the story afterwards: a story that is exactly four
+        # paragraphs long is indistinguishable from a five-paragraph one that
+        # lost its last, which is the entire reason §2.5 wants it marked.
         text = _ai_story(
             state,
             story_context_window=story_context_window,
