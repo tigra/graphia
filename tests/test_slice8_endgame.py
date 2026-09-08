@@ -14,16 +14,28 @@ Textual) mirroring the pattern used in ``test_slice7_vote.py``:
    to ``end_screen``.
 
 3. ``test_endgame_message_contains_kill_log_and_roster`` — piggybacks on
-   the Law-abiding win to assert the final Moderator message includes the
+   the Law-abiding win to assert the endgame facts message includes the
    kill-log (chronological) AND the full roster reveal with roles.
 
 4. ``test_endgame_recap_omits_diaries_while_diaries_are_really_written``
    (spec 042 Slice 3, Task 3.1) — pins BOTH halves of the recap/diary
    boundary as it stands today: real scripted diary entries reach
-   ``private_diaries``, and none of that text reaches the recap.
+   ``private_diaries``, and none of that text reaches the facts message.
 
 Plus a single Textual-pilot smoke test asserting the "Game over." marker
 renders in ``#public-log`` and any keypress exits the app.
+
+Why tests 1-4 select the endgame message on CONTENT (spec 040, Task 1.7)
+------------------------------------------------------------------------
+
+All four read what used to be *the* final Moderator message. Spec 040 ("The
+Moderator's Closing Story") wired ``end_screen -> moderator_story -> END``, so
+a finished game now ends with TWO Moderator ``SystemMessage``s and the last one
+is the model-written story. Each of these four therefore goes through
+``conftest.endgame_facts_message``, which finds the facts by their roster
+header rather than by position — spec 040 §3's instruction, and the durable
+form: an index is a claim about how many messages the ending emits, and that is
+the claim that just broke.
 
 All LLM calls go through the unified ``fake_large`` fixture (DayAction,
 Ballot, Pointing, Persona and Diary served from one fake keyed on schema),
@@ -55,7 +67,7 @@ import pytest
 from langchain_core.messages import SystemMessage
 from langgraph.types import Command
 
-from conftest import drive_until_public_log_contains
+from conftest import drive_until_public_log_contains, endgame_facts_message
 from graphia.config import load_config
 from graphia.graph import build_graph, make_run_config
 from graphia.llm import Ballot, DayAction, Diary, Persona, Pointing
@@ -296,12 +308,14 @@ def test_law_abiding_wins_when_all_mafia_executed(
         f"{graph.get_state(run_config).next!r}"
     )
 
-    # Final Moderator message is a single SystemMessage containing all
-    # end-screen content.
-    system_msgs = [
-        m for m in state.get("messages", []) if isinstance(m, SystemMessage)
-    ]
-    final = system_msgs[-1].content
+    # The endgame FACTS are a single SystemMessage containing the winner line,
+    # the kill log, the roster reveal and the persona reveal.
+    # Spec 040 Task 1.7 — the facts message is selected on CONTENT, never by
+    # index. ``moderator_story`` appends the closing story as its own
+    # super-step after ``end_screen``, so the LAST ``SystemMessage`` of a
+    # finished game is the story; ``conftest.endgame_facts_message`` records
+    # why a content match beats ``[-2]`` here.
+    final = endgame_facts_message(state.get("messages", [])).content
     assert ENDGAME_WINNER_LAW in final, (
         f"final message missing winner line; got:\n{final!r}"
     )
@@ -457,10 +471,12 @@ def test_mafia_wins_when_parity_reached(
     )
     assert graph.get_state(run_config).next == ()
 
-    system_msgs = [
-        m for m in state.get("messages", []) if isinstance(m, SystemMessage)
-    ]
-    final = system_msgs[-1].content
+    # Spec 040 Task 1.7 — the facts message is selected on CONTENT, never by
+    # index. ``moderator_story`` appends the closing story as its own
+    # super-step after ``end_screen``, so the LAST ``SystemMessage`` of a
+    # finished game is the story; ``conftest.endgame_facts_message`` records
+    # why a content match beats ``[-2]`` here.
+    final = endgame_facts_message(state.get("messages", [])).content
     assert ENDGAME_WINNER_MAFIA in final
     assert ENDGAME_HEADER_KILLS in final
     assert ENDGAME_HEADER_ROSTER in final
@@ -567,10 +583,12 @@ def test_endgame_message_contains_kill_log_and_roster(
     state = graph.get_state(run_config).values
     assert state.get("winner") == "law_abiding"
 
-    system_msgs = [
-        m for m in state.get("messages", []) if isinstance(m, SystemMessage)
-    ]
-    final = system_msgs[-1].content
+    # Spec 040 Task 1.7 — the facts message is selected on CONTENT, never by
+    # index. ``moderator_story`` appends the closing story as its own
+    # super-step after ``end_screen``, so the LAST ``SystemMessage`` of a
+    # finished game is the story; ``conftest.endgame_facts_message`` records
+    # why a content match beats ``[-2]`` here.
+    final = endgame_facts_message(state.get("messages", [])).content
 
     # Kill-log section header + every record's name AND cycle reference.
     assert ENDGAME_HEADER_KILLS in final
@@ -817,10 +835,12 @@ def test_endgame_recap_omits_diaries_while_diaries_are_really_written(
     # Claim 2 (part a): the recap's actual content, pinned.
     # ------------------------------------------------------------------
 
-    system_msgs = [
-        m for m in state.get("messages", []) if isinstance(m, SystemMessage)
-    ]
-    final = system_msgs[-1].content
+    # Spec 040 Task 1.7 — the facts message is selected on CONTENT, never by
+    # index. ``moderator_story`` appends the closing story as its own
+    # super-step after ``end_screen``, so the LAST ``SystemMessage`` of a
+    # finished game is the story; ``conftest.endgame_facts_message`` records
+    # why a content match beats ``[-2]`` here.
+    final = endgame_facts_message(state.get("messages", [])).content
 
     # The winner line.
     assert ENDGAME_WINNER_LAW in final, (
@@ -877,29 +897,41 @@ def test_endgame_recap_omits_diaries_while_diaries_are_really_written(
         )
 
     # ------------------------------------------------------------------
-    # Claim 2 (part b): THE BOUNDARY. Today's recap reads no diaries.
+    # Claim 2 (part b): THE BOUNDARY. The FACTS message reads no diaries.
     #
-    # >>> SPEC 040 (Moderator Creative Recap) MUST INVERT THIS. <<<
+    # >>> SPEC 040 (Moderator Creative Recap) DOES NOT INVERT THIS, AND THE
+    # >>> REASON IS THE WHOLE POINT OF ITS §2.1. <<<
     #
-    # When the recap learns to read the private diaries, these two
-    # assertions become the wrong way round — flip them to assert the
-    # diary text IS present. Do not delete them, and do not touch Claim 1
-    # above: without a positive check that real, scripted entries exist,
-    # an absence assertion here passes in a world where the diaries were
-    # never written or were the deterministic fallback, which is exactly
-    # the vacuity this test was created to remove.
+    # The instruction that stood here — "when the recap learns to read the
+    # private diaries, flip these to assert the diary text IS present" —
+    # assumed spec 040 would teach ONE message to read the diaries. It did
+    # not: it added a SECOND message. ``end_screen`` stays a pure
+    # deterministic string builder (§2.1 reason 3) and the private material
+    # reaches the model-written story instead, which is a different
+    # ``SystemMessage`` — the one ``CLOSING_STORY_KWARG`` flags.
+    #
+    # ``final`` is now pinned to the FACTS message by content (Task 1.7), so
+    # these two assertions keep meaning exactly what they meant before the
+    # edge was wired, and they must STAY absence assertions. Inverting them
+    # would assert that the deterministic recap quotes a diary, which nothing
+    # in spec 040 makes true. The positive "the diaries are real" checks of
+    # Claim 1 above are still what stops this pair being vacuous.
+    #
+    # The story's own grounding in the diaries is Slice 3's claim, asserted
+    # on the story message, and it does not belong to this test.
     # ------------------------------------------------------------------
 
     assert SCRIPTED_DIARY_ENTRY not in final, (
-        "the endgame recap contains a private diary entry verbatim. If this "
-        "is spec 040 landing, invert this assertion (and keep the entries-are-"
-        f"real assertions above). Recap was:\n{final!r}"
+        "the endgame FACTS message contains a private diary entry verbatim. "
+        "This is not spec 040 landing — 040 puts the private material in the "
+        "separate story message, not in this one. Facts message was:\n"
+        f"{final!r}"
     )
     assert DIARY_SENTINEL_TOKEN not in final, (
-        "the endgame recap contains diary text (matched on the sentinel "
-        "token, so a paraphrased or truncated quotation is caught too). If "
-        "this is spec 040 landing, invert this assertion. Recap was:\n"
-        f"{final!r}"
+        "the endgame facts message contains diary text (matched on the "
+        "sentinel token, so a paraphrased or truncated quotation is caught "
+        "too). Spec 040's story is a separate message and does not relax "
+        f"this. Facts message was:\n{final!r}"
     )
 
 

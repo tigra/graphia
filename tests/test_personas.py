@@ -36,6 +36,7 @@ from langchain_core.messages import SystemMessage
 from langgraph.types import Command
 
 import graphia.nodes.day as day_nodes
+from conftest import endgame_facts_message
 from graphia.config import load_config
 from graphia.graph import build_graph, make_checkpoint_serde, make_run_config
 from graphia.llm import Ballot, DayAction, Persona, Pointing
@@ -572,7 +573,13 @@ def test_end_screen_reveals_personas_and_is_end_only(
     players = state.get("players", {})
     messages = state.get("messages", [])
     system_msgs = [m for m in messages if isinstance(m, SystemMessage)]
-    final = system_msgs[-1].content
+
+    # Spec 040 Task 1.7 — the reveal is selected on CONTENT, never by index.
+    # ``moderator_story`` appends the closing story after ``end_screen``, so
+    # ``system_msgs[-1]`` is the story and BOTH halves of this test read the
+    # wrong message without this (see the end-only invariant below).
+    facts_msg = endgame_facts_message(messages)
+    final = facts_msg.content
 
     # The reveal section header is present, end-screen carries the winner line.
     assert ENDGAME_WINNER_LAW in final
@@ -606,9 +613,49 @@ def test_end_screen_reveals_personas_and_is_end_only(
             f"Mafioso {maf.name!r} legend missing from reveal"
         )
 
-    # End-only invariant: the reveal header appears ONLY in the final message,
-    # and no persona prose leaks into any earlier in-play message.
-    earlier_contents = [m.content for m in system_msgs[:-1]]
+    # End-only invariant: the reveal header appears ONLY in the endgame facts
+    # message, and no persona prose leaks into any earlier in-play message.
+    #
+    # SPEC 040 §3 SINGLED THIS OUT AS FAILING "TWICE OVER" — read why before
+    # touching it. It used to be ``system_msgs[:-1]``: "the header appears in
+    # no message but the last". Task 1.6 made the last message the STORY, so
+    # that slice silently started INCLUDING the reveal, and the assertion
+    # became "the reveal does not contain the reveal header". It went red,
+    # which is the good outcome. The BAD outcome available to a careless port
+    # is the other one: an inverted assertion re-based on a set that is empty
+    # or differently shaped passes while asserting nothing at all, and a
+    # vacuous test is worse than a red one. Two guards, both required:
+    #
+    # 1. The POSITIVE half, which relies on no slice at all: exactly ONE
+    #    system message in the whole game carries the reveal header, and it is
+    #    the facts message. ``== 1`` cannot be satisfied by an empty set nor by
+    #    a leak, so this half is structurally non-vacuous — it is the end-only
+    #    claim stated directly rather than as the complement of a slice.
+    # 2. The NEGATIVE half below runs over the messages emitted strictly
+    #    BEFORE the facts message, located by IDENTITY rather than by index
+    #    arithmetic, and that list is asserted non-empty first — so an
+    #    off-by-one collapsing it to ``[]`` fails loudly instead of passing.
+    header_carriers = [
+        m
+        for m in system_msgs
+        if isinstance(m.content, str) and ENDGAME_PERSONA_HEADER in m.content
+    ]
+    assert len(header_carriers) == 1, (
+        "the persona reveal header must appear in exactly ONE message of the "
+        f"whole game; found {len(header_carriers)} among "
+        f"{len(system_msgs)} SystemMessages"
+    )
+    assert header_carriers[0] is facts_msg, (
+        "the persona reveal header is carried by a message other than the "
+        "endgame facts message"
+    )
+
+    facts_index = next(i for i, m in enumerate(system_msgs) if m is facts_msg)
+    earlier_contents = [m.content for m in system_msgs[:facts_index]]
+    assert earlier_contents, (
+        "no in-play Moderator messages were captured before the endgame, so "
+        "the two no-leak assertions below would be vacuous"
+    )
     for content in earlier_contents:
         assert ENDGAME_PERSONA_HEADER not in content, (
             "persona reveal header leaked into a pre-end message:\n"
@@ -668,9 +715,13 @@ def test_default_game_runs_to_completion_with_persona_node(
 
     # Even on the fallback path, the end-screen reveal still lists personas
     # (fallback personas are valid PlayerPersonas).
-    final = [
-        m for m in state.get("messages", []) if isinstance(m, SystemMessage)
-    ][-1].content
+    #
+    # Spec 040 Task 1.7 — selected on CONTENT, never by index. THIS is the
+    # site the tech spec's "four tests to port" count missed: it read the
+    # final message as an inline comprehension rather than through a
+    # ``system_msgs[-1]`` local, so a grep for the variable name found five
+    # sites and not six. Grep for the PATTERN, never for the name.
+    final = endgame_facts_message(state.get("messages", [])).content
     assert ENDGAME_PERSONA_HEADER in final
 
 

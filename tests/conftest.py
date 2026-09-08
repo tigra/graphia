@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterator, Sequence
 
 import pytest
+from langchain_core.messages import SystemMessage
 from rich.text import Text
 from textual.widget import Widget
 from textual.widgets import Input
@@ -25,6 +26,11 @@ from graphia.llm import (
 )
 from graphia.nodes.day import DAY_MAX_ROUNDS, DAY_MAX_VOTES
 from graphia.nodes.setup import ai_name_count
+
+# Spec 040 Task 1.7: the discriminator :func:`endgame_facts_message` selects
+# on. Imported, never copied as a literal — the 039 rule, so a reword of the
+# production header breaks the selector loudly instead of drifting it.
+from graphia.prompts import ENDGAME_HEADER_ROSTER
 
 # Spec 041 Slice 6/7: the substitution sink's reset, for the autouse teardown
 # below. ``graphia.substitution`` is a stdlib-only leaf (``logging`` / ``enum``
@@ -1260,6 +1266,60 @@ def plain_text(widget: Widget) -> str:
     if isinstance(rendered, Text):
         return rendered.plain
     return Text.from_markup(str(rendered)).plain
+
+
+# --------------------------------------------------------------------------
+# Selecting the endgame FACTS message (spec 040, Task 1.7)
+# --------------------------------------------------------------------------
+
+
+def endgame_facts_message(messages: Sequence[Any]) -> SystemMessage:
+    """Return ``end_screen``'s facts message, selected on CONTENT not position.
+
+    Spec 040 ("The Moderator's Closing Story") added a SECOND Moderator
+    ``SystemMessage`` to the end of every finished game: ``moderator_story``
+    runs as its own super-step after ``end_screen``, so the closing story — not
+    the winner/kill-log/roster/persona reveal — is now the **last**
+    ``SystemMessage`` in a completed game's state.
+
+    Six tests across ``tests/test_slice8_endgame.py`` and
+    ``tests/test_personas.py`` read the facts as ``system_msgs[-1]`` and went
+    red the moment that edge was wired (spec 040 Task 1.6). They are ported
+    through this helper rather than through ``system_msgs[-2]``, on the tech
+    spec's own instruction (§3): **select on content, never on index.** An
+    index encodes a claim about how many messages the ending emits, which is
+    precisely the claim that just broke — and it would break again at Slice 5's
+    truncation marking or anything else that lands another message on the
+    ending. The roster header encodes a claim about WHICH message is the
+    factual reveal, which is what these six tests actually mean.
+
+    ``ENDGAME_HEADER_ROSTER`` is the discriminator because ``end_screen`` is its
+    only writer (``src/graphia/nodes/endgame.py``) and it is a real production
+    constant imported here rather than a copied literal, so a reword breaks
+    this selector loudly in the offline suite instead of drifting it.
+
+    **EXACTLY ONE match is required, and that requirement is an anti-vacuity
+    guard, not defensiveness.** A selector that returned the first of several
+    matches, or that could return ``None`` / an empty list, would let a
+    caller's assertions run against a message the test did not mean — and
+    ``test_personas.py``'s *inverted* assertion ("the persona header appears in
+    no earlier message") is exactly the shape that can then pass while
+    asserting nothing at all. Failing the selection outright is the only
+    outcome that cannot be mistaken for a pass.
+    """
+    system_msgs = [m for m in messages if isinstance(m, SystemMessage)]
+    facts = [
+        m
+        for m in system_msgs
+        if isinstance(m.content, str) and ENDGAME_HEADER_ROSTER in m.content
+    ]
+    assert len(facts) == 1, (
+        "expected exactly ONE endgame facts message (a SystemMessage carrying "
+        f"{ENDGAME_HEADER_ROSTER!r}); found {len(facts)} among "
+        f"{len(system_msgs)} SystemMessages. Contents were:\n"
+        f"{[m.content for m in system_msgs]!r}"
+    )
+    return facts[0]
 
 
 # --------------------------------------------------------------------------
