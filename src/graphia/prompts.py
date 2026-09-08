@@ -449,3 +449,70 @@ Recent public discussion:
 Write today's diary entry, in your own voice. Return only the `entry` field,
 keeping within the sentence limit you were given.
 """
+
+
+# ---------------------------------------------------------------------------
+# The Moderator's closing story (spec 040)
+# ---------------------------------------------------------------------------
+# READ THIS BEFORE JUDGING THE WORDING BELOW: what is here now is Slice 1's
+# DELIBERATELY MINIMAL prompt, not the finished one. Task 1.4's brief says so in
+# those words — "this slice uses a deliberately minimal prompt (outcome, roster,
+# events) so the node, the edge and the failure path can be proven before the
+# material assembly lands". It exists to exercise a live path end to end, and it
+# is the thinnest thing that can.
+#
+# TWO LATER TASKS OWN THIS TEXT, and neither is done:
+#
+# - **Slice 4, Task 4.1 rewrites ``STORY_SYSTEM``** with the seven moves spec
+#   040 §2.6 argues for — naming the reader and what they already know, naming
+#   what they have never seen, granting the choice of thread in the same breath
+#   as the constraint, forbidding the fixed forms (chronology, roll-call,
+#   headings, bullets) by name, stating the record constraint as a boundary on
+#   NOUNS, the human clause as its own sentence, and the length bound
+#   interpolated once from ``STORY_PARAGRAPH_BOUND``. **None of those seven is
+#   present below.** In particular there is no record constraint and no human
+#   clause yet, so the two acceptance criteria that test for those sentences
+#   are NOT satisfied by this text and are not meant to be. Do not read the
+#   absence of a "do not tidy this in" comment here as licence either — Task
+#   4.1 brings that with it, along with the deliberate omissions it guards
+#   (no enumeration of what to cover; no *dramatic* / *vivid* / *compelling*).
+# - **Slice 3, Task 3.3 grows ``STORY_USER_TEMPLATE``** by two slots:
+#   ``{private_record}`` (the two private channels over the shared cursor walk)
+#   and ``{context}`` (the public history, budgeted with what the private block
+#   leaves over). The private material is the whole point of the feature and
+#   there is NONE of it below — which is exactly why Slice 1 verifies offline
+#   only and claims nothing about story quality.
+#
+# ONE THING THAT IS ALREADY RIGHT AND SHOULD STAY, rather than an accident to
+# be tidied later: the outcome slot is introduced as "How the game ended", not
+# as "The winner was". ``winner`` can be ``"runaway"`` (spec 023's Day cap) and
+# defensively ``"draw"``, and ``_winner_line`` renders a whole sentence for
+# each of those cases. Task 4.2 owns that requirement properly; phrasing the
+# label neutrally now simply avoids writing a bug that would have to be found
+# again. A story declaring a winner on an unresolved game is the most
+# conspicuous fabrication available to it.
+STORY_SYSTEM = """You are the Moderator of Graphia, a Mafia-style
+social-deduction game. The game is over and the facts have already been read
+out. Tell the one person at the table a short story about the game that was
+just played.
+
+Keep to the game recorded below. Return the story in the `text` field, as a few
+short paragraphs separated by blank lines.
+"""
+
+# The story user template. Its slot vocabulary is the whole of Slice 1's
+# material: the outcome sentence (``endgame:_winner_line``, REUSED so the
+# story's outcome and the facts message's cannot drift), a minimal roster, and
+# the events as ``endgame:_format_kill_line`` already renders them for the
+# facts message. Nothing here is populated by a helper written for this prompt
+# alone; see ``nodes/endgame.py:_ai_story`` for the three call sites.
+STORY_USER_TEMPLATE = """How the game ended: {outcome}
+
+The players:
+{roster}
+
+What happened:
+{events}
+
+Tell the story of this game.
+"""

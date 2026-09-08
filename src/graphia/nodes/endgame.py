@@ -10,12 +10,22 @@ Topology contract (Slice 8):
   fan-out can differ per site.
 - ``end_screen`` composes a single Moderator SystemMessage containing the
   winner announcement, the chronological kill log, and a full roster reveal.
-  It also sets ``phase="end"``. After this node, the graph reaches END.
+  It also sets ``phase="end"``.
+- ``moderator_story`` (spec 040) then tells one short closing story from the
+  model, as its OWN super-step, and after it the graph reaches END. It is
+  TOTAL — it returns a story message or nothing at all, and never raises — and
+  it does not touch ``phase``, which ``end_screen`` has already set.
+
+Note the ORDER in which spec 040 lands that second bullet: this module gains
+the node in Task 1.4 and ``graph.py`` gains the ``end_screen`` ->
+``moderator_story`` -> END edge in Task 1.6. Between those two tasks the node
+exists and is importable but is UNREACHABLE from any graph, which is why the
+tests written for it drive it directly rather than through a game.
 """
 
 from __future__ import annotations
 
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 
 from graphia.career_events import (
     KIND_GAME_ENDED,
@@ -24,11 +34,13 @@ from graphia.career_events import (
 )
 # Spec 040 Task 1.2 — THE PATCH TARGET, landed one task ahead of its consumer.
 #
-# Nothing in this module calls ``get_large`` yet: ``moderator_story`` (Task 1.4)
-# is what will, and the import is here first ON PURPOSE. ``monkeypatch.setattr``
+# **The consumer has since landed (Task 1.4): ``_ai_story`` below is what calls
+# ``get_large``.** This note is kept, and its tense corrected rather than
+# deleted, because the ORDERING is the part worth remembering. The import stood
+# here for one task with nothing calling it, ON PURPOSE. ``monkeypatch.setattr``
 # raises on a missing attribute, so ``tests/conftest.py``'s autouse ``safe_llm``
 # net cannot cover ``graphia.nodes.endgame.get_large`` until the name exists
-# here — and the net has to exist BEFORE any model reaches this module, per
+# here — and the net had to exist BEFORE any model reached this module, per
 # CLAUDE.md's standing convention ("if you add a new module that calls an LLM,
 # extend ``safe_llm`` to patch it too, otherwise a forgotten stub falls through
 # to real boto3 and hangs pytest teardown"). This import is the whole of what
@@ -39,7 +51,7 @@ from graphia.career_events import (
 # fixture, needing no production change — rejected because it nets nothing
 # until this import lands anyway, so the net could not be shown to catch a call
 # today, which is exactly the failure mode this ordering exists to prevent.
-from graphia.llm import get_large
+from graphia.llm import Story, get_large
 from graphia.prompts import (
     ENDGAME_HEADER_KILLS,
     ENDGAME_HEADER_ROSTER,
@@ -50,8 +62,15 @@ from graphia.prompts import (
     ENDGAME_WINNER_LAW,
     ENDGAME_WINNER_MAFIA,
     ENDGAME_WINNER_RUNAWAY,
+    STORY_SYSTEM,
+    STORY_USER_TEMPLATE,
 )
-from graphia.state import GameState, KillRecord, PlayerState
+from graphia.state import (
+    CLOSING_STORY_KWARG,
+    GameState,
+    KillRecord,
+    PlayerState,
+)
 
 # Mirrors graphia.ui.app.GraphiaApp._OUTCOME_BY_WINNER. The end-of-game event
 # carries the same outcome string the local-mode summary uses, so consumer
@@ -249,6 +268,212 @@ def end_screen(
             )
 
     return {"messages": [final_msg], "phase": "end"}
+
+
+# ---------------------------------------------------------------------------
+# The Moderator's closing story (spec 040)
+#
+# One extra super-step after ``end_screen``, and NOT a fold into it (§2.1):
+# ``end_screen`` stays a pure deterministic string builder that has already
+# committed and checkpointed the end-of-game career event, so the 5-15s
+# non-deterministic call below cannot stand between "the winner is known" and
+# "the career event is emitted"; the transcript can label the story separately
+# from the facts; and with a second super-step the facts are already on screen
+# while the call is in flight.
+#
+# EVERYTHING BELOW IS SLICE 1's. Three later slices grow it and none has run:
+# Slice 3 assembles the private material (the shared cursor walk, the
+# third-party renderer, the token budgeting, the whisper exclusion), Slice 4
+# writes the real prompt, and Slice 5 adds the paragraph-preserving clamp and
+# its truncation flag. What is here is the thinnest thing that proves the node,
+# the edge and the failure path.
+# ---------------------------------------------------------------------------
+
+
+def _story_roster_block(players: dict[str, PlayerState]) -> str:
+    """One line per player: name, side, and whether they lived to the end.
+
+    DELIBERATELY MINIMAL — Slice 1's roster, not the finished one. Spec 040
+    §2.2 specifies the eventual block as name, side, alive-or-dead, ``(the
+    person playing)`` for the human seat, and each AI's persona read through
+    :func:`_persona_field`; **Task 3.3 owns all of that**, including the
+    ``_persona_field`` requirement, which is mandatory rather than stylistic
+    (that function's docstring records why: after a checkpoint round-trip the
+    serde hands back a ``PlayerPersona`` as a plain ``dict``, and
+    ``moderator_story`` is the second reader of persona fields out of
+    checkpointed state, so a bare attribute access would ``AttributeError``).
+    What is here is the three fields a story cannot do without.
+
+    :func:`_role_label` is reused rather than re-spelled, so the side names the
+    story reads are the ones the facts message just showed the player.
+    """
+    lines = [
+        f"• {p.name} — {_role_label(p.role)} — "
+        f"{'alive at the end' if p.is_alive else 'dead'}"
+        for p in players.values()
+    ]
+    return "\n".join(lines) if lines else "• (no players)"
+
+
+def _story_events_block(
+    kill_log: list[KillRecord], players: dict[str, PlayerState]
+) -> str:
+    """The game's deaths, rendered exactly as the facts message renders them.
+
+    :func:`_format_kill_line` is REUSED per record (spec 040 §2.2) rather than
+    re-implemented, so the story and the facts describe the same events in the
+    same words and a later change to how a death reads lands in both at once.
+
+    The empty case says so in words instead of rendering nothing: a blank
+    section invites a model to read an omission it should fill, which is the
+    one fabrication route this block can open on its own.
+    """
+    if not kill_log:
+        return "• (no one died this game)"
+    return "\n".join(_format_kill_line(record, players) for record in kill_log)
+
+
+def _ai_story(state: GameState) -> str | None:
+    """Ask the large tier for the closing story; ``None`` when there is none.
+
+    TOTAL BY CONSTRUCTION (spec 040 §2.8). The whole body — the state reads,
+    the three material blocks, the prompt build, the ``invoke`` and the
+    validation of what comes back — sits inside one broad
+    ``except Exception: return None``. ``None`` is the entire failure
+    vocabulary: there is no fallback text and no substitution branch, which is
+    a deliberate asymmetry from every sibling model-answered feature in the
+    game (Task 1.5 records the argument at the failure site, and
+    :class:`graphia.llm.Story` records why the schema is therefore absent from
+    ``GAMEPLAY_SCHEMAS``).
+
+    **Empty or whitespace-only counts as failure**, so a model that answers
+    with a valid ``Story`` carrying nothing usable produces exactly the same
+    absent ending a raised call does — which is the point, because absence is a
+    legitimate outcome here and presence is what Slice 9 measures.
+
+    ``get_large`` per architecture §4, which already names "the end-of-game
+    creative recap (Phase 6)" as a use of the primary heavyweight tier, and
+    ``with_structured_output`` rather than ``bind_tools`` — the ninth such call
+    site in the game, and the first outside setup / Night / Day.
+
+    NOTHING IS LOGGED ON FAILURE, deliberately. The obvious move is
+    ``_ai_diary``'s ``logger.exception``, and spec 041 Task 6.5 established
+    what that is actually worth here: nothing in the local game path installs a
+    ``logging`` handler, ``GRAPHIA_LOG_FILE`` is the graph-stream JSONL rather
+    than a ``logging`` destination, and Textual redirects stderr while the TUI
+    is up. So the line would reach ``logging.lastResort`` and be invisible in
+    the one mode this node runs in most. The designed instrument is Slice 9's
+    ``quality.story_missing_rate`` census over a measured run, which is exactly
+    the right shape for a once-per-game call. If a handler ever lands, revisit
+    this rather than assuming the omission was an oversight.
+    """
+    try:
+        players = state.get("players", {})
+        kill_log = list(state.get("kill_log", []))
+        llm = get_large().with_structured_output(Story)
+        messages: list = [
+            SystemMessage(content=STORY_SYSTEM),
+            HumanMessage(
+                content=STORY_USER_TEMPLATE.format(
+                    # ``_winner_line`` is REUSED (§2.2) so the story's outcome
+                    # and the facts message's cannot drift, and it already
+                    # renders a whole sentence for the runaway and draw cases.
+                    outcome=_winner_line(state.get("winner")),
+                    roster=_story_roster_block(players),
+                    events=_story_events_block(kill_log, players),
+                )
+            ),
+        ]
+        result = llm.invoke(messages)
+        if isinstance(result, Story) and result.text.strip():
+            # Slice 5 replaces this ``strip`` with the paragraph-preserving
+            # clamp. A plain strip is the forward-compatible placeholder: it
+            # leaves the internal blank lines that ARE the story's structure,
+            # which is precisely what 039's ``_clamp_diary_entry`` would fold
+            # away and why that clamp must not be reused here.
+            return result.text.strip()
+        return None
+    except Exception:
+        return None
+
+
+def moderator_story(state: GameState) -> dict:
+    """Tell the Moderator's closing story, or say nothing at all.
+
+    Returns ``{"messages": [story_msg]}`` or ``{}``, and **never raises**.
+
+    IT DOES NOT RETURN ``phase``. ``end_screen`` set it one super-step ago;
+    returning it again would re-assert a value this node has no opinion about.
+
+    THE MESSAGE IS A ``SystemMessage`` WITH NO ``name``, AND THAT IS A
+    LEDGER-CORRUPTION GUARD RATHER THAN A STYLE CHOICE (§2.6, verified).
+    ``blunder_eval._ai_lines_with_names`` and ``_ai_lines_with_speakers`` both
+    admit a message only when ``isinstance(m, AIMessage)`` **and** its ``name``
+    is a non-human player's, so an ``AIMessage`` named after a player would
+    drop several hundred words of Moderator prose into the repetition pool and
+    corrupt an append-only quality ledger. A ``SystemMessage`` fails the first
+    test and no ``name`` fails the second, so the guard is doubly redundant on
+    purpose. The story is the Moderator's voice in any case, which is why the
+    correct type and the safe type happen to agree.
+
+    ``additional_kwargs={CLOSING_STORY_KWARG: True}`` is how every downstream
+    reader identifies it: spec 040 §2.9 discriminates on the MESSAGE, never on
+    the node or the position, and the constant lives in ``graphia.state``
+    precisely so ``eval_transcript`` and ``blunder_eval`` can import it instead
+    of reaching into a private ``nodes`` constant the way 039 had to.
+
+    WHY THERE ARE TWO GUARD LAYERS, and what each catches that the other
+    cannot — because the second looks redundant and §2.8's stated reason for it
+    does not survive checking. §2.8 calls this one "belt-and-braces for a
+    malformed ``players`` map or a persona shape surprise", but both of those
+    are read INSIDE :func:`_ai_story`'s own ``try``, so that is not what this
+    catch adds. What it adds is SCOPE — every line beside the call, which
+    ``_ai_story`` cannot reach:
+
+    - **Measured, not argued:** feed :func:`_ai_story` a return that breaks its
+      ``str | None`` contract (an ``int``, a ``dict``, a bare ``object``) and
+      the ``SystemMessage`` construction two lines below raises Pydantic
+      validation. Only this catch is between that and the graph. So the outer
+      layer's real job is guarding against the HELPER, not against the model —
+      which is a different failure than the one §2.8 named, and a live one.
+    - Slice 5's truncation-flag computation lands here too, on the story that
+      comes back (§2.5), so this catch grows in coverage while the inner one
+      does not.
+
+    "The node never raises" is a property the graph and the UI depend on, and
+    it must not be one that a later refactor of a private helper can quietly
+    revoke. Neither layer is broadened past that: both catch ``Exception``, not
+    ``BaseException``, so ``KeyboardInterrupt`` and the suite's
+    ``pytest.fail`` still travel.
+
+    TWO CAREER PATHS DEPEND ON THAT, not one, and the second is the likelier
+    way the data is actually lost (§2.8). The in-graph ``career_emitter`` emit
+    is already safe by node separation. But ``GraphiaApp._record_career`` sits
+    INSIDE ``_drive``'s ``try``, after ``await drive_graph(...)``, so a raising
+    story node would drop the UI-side career fold too and show an error banner
+    where the ending should be. Do not weaken either layer.
+
+    ONE COST OF TOTALITY, worth knowing rather than fixing: ``conftest``'s
+    ``_LoudFailureLLM`` raises ``RuntimeError``, an ordinary ``Exception``, so a
+    test that forgets ``fake_large``'s re-patch is swallowed here into a
+    perfectly legitimate no-story ending. That is why the story tests assert
+    ``calls_by_schema[Story]`` — it separates "the call failed" from "the call
+    was never made", which no inspection of the ending can. The queue's own
+    unknown-schema failure is NOT affected: spec 041 made it ``pytest.fail``,
+    whose ``Failed`` derives from ``BaseException`` and walks straight through
+    both layers.
+    """
+    try:
+        text = _ai_story(state)
+        if text is None:
+            return {}
+        story_msg = SystemMessage(
+            content=text,
+            additional_kwargs={CLOSING_STORY_KWARG: True},
+        )
+        return {"messages": [story_msg]}
+    except Exception:
+        return {}
 
 
 def route_after_win_night(state: GameState) -> str:

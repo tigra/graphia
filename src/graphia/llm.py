@@ -39,8 +39,11 @@ Bedrock providers, so the local method can never leak onto
 ``ChatBedrockConverse`` (whose own default is ``function_calling``). Two
 consequences worth stating up front: a future provider **cannot forget to
 wrap**, because the only thing a subclass writes is vendor construction; and
-all eight ``with_structured_output`` call sites are **unchanged** — they bind a
-schema and know nothing about which method is requested.
+all nine ``with_structured_output`` call sites are **unchanged** — they bind a
+schema and know nothing about which method is requested. (Eight when that
+sentence was written; spec 040 Task 1.4 added the ninth, ``nodes/endgame.py``'s
+``Story`` call for the Moderator's closing story, and changed nothing about the
+seam — which is the claim the count is here to keep honest.)
 
 Three module-level names carry the module's public contract, and all three are
 read by consumers outside it: :class:`StructuredModel` — the one capability
@@ -140,10 +143,11 @@ class StructuredModel(Protocol):
     naming a vendor class cannot survive that; one naming a *capability* can.
 
     **Why exactly one method, and not more.** Swept across ``src/graphia/``:
-    all eight structured-output call sites — four in ``nodes/day.py``
+    all nine structured-output call sites — four in ``nodes/day.py``
     (``DayAction`` / ``Reflection`` / ``Ballot`` / ``Diary``), one in
     ``nodes/night.py`` (``Pointing``), two in ``nodes/setup.py`` (``Roster`` /
-    ``Persona``) and one in ``tools/claude_spike.py`` — call
+    ``Persona``), one in ``nodes/endgame.py`` (spec 040's ``Story``) and one in
+    ``tools/claude_spike.py`` — call
     ``with_structured_output`` and nothing else. No ``.invoke``, ``.bind`` or
     ``.stream`` is ever called on a tier client directly; only on the runnable
     it hands back. Widening this Protocol would invent a contract no caller
@@ -197,7 +201,11 @@ class StructuredMethodModel:
     ``Ballot`` has no business knowing whether the answer is constrained by a
     grammar or requested via tool use. Branching at eight call sites would put
     a provider conditional inside game logic — precisely the coupling ADR-009's
-    seam exists to prevent — and would need re-doing at the ninth.
+    seam exists to prevent — and would need re-doing at the ninth. **The ninth
+    has since arrived** (spec 040 Task 1.4: ``nodes/endgame.py`` binds
+    ``Story`` for the Moderator's closing story) and cost this module a docstring
+    count and nothing else, which is the argument above discharged rather than
+    merely asserted.
     """
 
     def __init__(self, inner: BaseChatModel, defaults: Mapping[str, Any]) -> None:

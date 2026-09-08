@@ -21,6 +21,7 @@ from graphia.nodes.day import (
 from graphia.nodes.endgame import (
     check_win_condition,
     end_screen,
+    moderator_story,
     route_after_win_day,
     route_after_win_night,
 )
@@ -62,6 +63,7 @@ __all__ = [
     "introduce_roster",
     "mafia_point",
     "mafia_round_start",
+    "moderator_story",
     "night_close",
     "night_open",
     "resolve_night_kill",
