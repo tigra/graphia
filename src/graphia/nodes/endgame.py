@@ -57,6 +57,29 @@ from graphia.career_events import (
 # until this import lands anyway, so the net could not be shown to catch a call
 # today, which is exactly the failure mode this ordering exists to prevent.
 from graphia.llm import Story, get_large
+
+# THE WALK'S VOCABULARY IS IMPORTED, NEVER RETYPED (spec 040 — The Moderator's
+# Closing Story, Task 3.2; the rule spec 039 — Per-AI Private Diaries paid for).
+# ``_story_private_block`` below is the SECOND consumer of the shared cursor
+# walk, and the whole reason the two kind constants exist as constants: a copied
+# ``"diary"`` in this module that drifted from ``nodes/day.py``'s would attribute
+# a whole-Day diary as a Day-round reflection, in well-formed output, with
+# NOTHING RAISING. Two names on the forbidden list are deliberately absent from
+# this import and must stay absent (§2.3): ``DIARY_WINDOW``, because the
+# Moderator is the one reader for whom the FULL diary is the point, and
+# ``_private_record_block``, because it windows and renders under a
+# second-person label addressed to the writer.
+#
+# Import direction: ``nodes/day.py`` imports nothing from this module, so this
+# is not a cycle — ``nodes/night.py`` already reaches into ``nodes/day.py`` the
+# same way for ``_private_record_block``.
+from graphia.nodes.day import (
+    DIARY_DAY_UNKNOWN,
+    PRIVATE_RECORD_KIND_DIARY,
+    PRIVATE_RECORD_KIND_THOUGHT,
+    PrivateRecordEntry,
+    _walk_private_record,
+)
 from graphia.prompts import (
     ENDGAME_HEADER_KILLS,
     ENDGAME_HEADER_ROSTER,
@@ -72,9 +95,11 @@ from graphia.prompts import (
 )
 from graphia.state import (
     CLOSING_STORY_KWARG,
+    DiaryRecord,
     GameState,
     KillRecord,
     PlayerState,
+    ThoughtEntry,
 )
 
 # Mirrors graphia.ui.app.GraphiaApp._OUTCOME_BY_WINNER. The end-of-game event
@@ -336,6 +361,284 @@ def _story_events_block(
     if not kill_log:
         return "• (no one died this game)"
     return "\n".join(_format_kill_line(record, players) for record in kill_log)
+
+
+# ---------------------------------------------------------------------------
+# The third-party private record — the ``{private_record}`` slot (Task 3.2)
+#
+# WHY THE RENDERING VOCABULARY LIVES HERE rather than in ``prompts.py``: the
+# closest precedent is ``nodes/day.py``'s ``PRIVATE_THOUGHTS_LABEL`` and
+# ``DIARY_LINE_MARKER``, which are prompt-visible and still sit with the
+# renderer that owns them, while ``prompts.py`` holds the whole-prompt
+# templates. ``STORY_USER_TEMPLATE``'s slot LABEL is Task 3.3's and
+# ``STORY_SYSTEM``'s prose is Slice 4 Task 4.1's; what is below is this block's
+# own presentation.
+#
+# NOTHING CALLS THIS YET, AND THAT IS THE TASK BOUNDARY, not an oversight:
+# Task 3.3 assembles the prompt slots (and owns the assembly ORDER, which is
+# load-bearing — private block first, measured, then the public history gets
+# what is left of ``story_token_budget``). The same ordering that put this
+# module's ``get_large`` import one task ahead of its consumer, for the reason
+# recorded at that import.
+# ---------------------------------------------------------------------------
+
+# The block's own legend, and it is a FABRICATION GUARD rather than decoration —
+# it states the two facts the Day-attribution decision below rests on, so do not
+# delete it as duplication of Task 3.3's slot label without moving those two
+# facts somewhere the model still reads them:
+#
+# 1. Grouping is PER AUTHOR and carries no cross-player order. The cursor walk
+#    orders ONE player's two channels against each other and gives NO ordering
+#    across players — there is no cross-player cursor, and thought *indices*
+#    cannot substitute because ``day_round_reflect`` reflects only SURVIVING
+#    players, so index *i* in a dead player's list is a different round from
+#    index *i* in a survivor's. The public history carries the game-wide
+#    chronology; this block must not read as one game-wide timeline.
+# 2. A reflection carries NO DAY AT ALL, stated in words, because the model is
+#    about to read dated diary entries beside undated reflections and would
+#    otherwise be free to date the reflections itself.
+STORY_PRIVATE_LEGEND = (
+    "What each player wrote privately, grouped by author, in the order that "
+    "player wrote it; entries by different players are not ordered against "
+    "each other. A diary entry sums up a whole Day. A reflection was written "
+    "during a Day, at the close of one round — the game does not record which "
+    "Day, so none is given."
+)
+
+# One author's heading. Third-person and past-tense: this block is read by the
+# Moderator ABOUT the players, which is the whole difference from
+# ``_private_record_block``'s ``PRIVATE_THOUGHTS_LABEL`` ("Your private notes so
+# far (yours alone):"), a second-person label addressed to the writer.
+STORY_PRIVATE_AUTHOR_TEMPLATE = "{name} wrote:"
+
+# The two attribution tags. Deliberately NOT ``nodes/day.py``'s
+# ``DIARY_LINE_MARKER``, and the reason is the same one that keeps
+# ``_private_record_block`` out of this module: that marker is the PLAYER's, its
+# docstring ties its exact prefix shape to spec 039's flag-off assertions, and
+# sharing it would make a change to what a player sees silently rewrite the
+# story's prompt. Two readers, two vocabularies, deliberately.
+#
+# BOTH ARE INVARIANT PREFIXES, NOT ``"…{day}]"`` TEMPLATES — the lesson recorded
+# at ``DIARY_LINE_MARKER``. A template constant would make the negative
+# assertion ``MARKER not in prompt`` VACUOUSLY true, because a literal ``{day}``
+# never appears in a rendered prompt. As prefixes they are present in every line
+# of their kind and absent whenever no line of that kind is shown. They are also
+# textually distinct from the player marker at a glance (``[diary of Day`` vs
+# ``[Diary — end of Day``), so an ``in`` assertion cannot confuse the two.
+STORY_PRIVATE_DIARY_MARKER = "[diary of Day"
+STORY_PRIVATE_THOUGHT_MARKER = "[reflection]"
+
+# Said in words rather than rendered blank, on ``_story_events_block``'s
+# reasoning: a blank section invites a model to read an omission it should fill.
+# NOT a hypothetical case — a game won on the first Night ends before any
+# reflection or diary is written, so this is the real ending of a short game.
+STORY_PRIVATE_EMPTY = "• (nothing was written privately this game)"
+
+
+def _story_private_day(day: object) -> str:
+    """Render one diary entry's Day for a third-party reader.
+
+    ONLY an ``int`` is a Day. Anything else degrades to
+    :data:`~graphia.nodes.day.DIARY_DAY_UNKNOWN`, and that includes the values
+    the walk hands over already interpolated: a ``DiaryRecord`` is
+    ``total=False``, so a MISSING ``day`` arrives as the placeholder itself and a
+    present-but-unusable one (``None``, a ``bool``, a container) arrives as its
+    ``f"{…}"`` rendering.
+
+    THIS IS A DELIBERATE, NARROW DIVERGENCE FROM WHAT A PLAYER SEES, not a
+    tidy-up that leaked (Task 3.2). ``_walk_private_record`` documents the
+    inherited oddity it preserved: because the ``"?"`` placeholder fires only on
+    a MISSING key, a record carrying an explicit ``"day": None`` renders
+    ``[Diary — end of Day None]`` in the player's block. Task 3.1 pinned that
+    as-is rather than move a player-visible byte, and it stays pinned — this
+    function changes only the STORY's rendering, where ``Day None`` would be a
+    meaningless date handed to a model that will try to make sense of it,
+    against a ``?`` that reads as "unknown" on sight.
+
+    The type test cannot be recovered after the walk (a stringified ``None`` is
+    indistinguishable from a genuine ``"None"``), so "not an ``int``" is the only
+    honest reading available here — and it costs nothing real, because the
+    channel's only writer, ``nodes.day.day_diary``, writes ``state["cycle"]``,
+    an ``int``. A digit-bearing ``str`` day is not producible by any live writer.
+    ``bool`` is excluded explicitly because ``True`` is an ``int`` in Python and
+    ``Day True`` would be nonsense — the same guard
+    ``eval_transcript._diary_day_attr`` carries, for the same reason it gives:
+    "inventing one would mislead a reviewer about which Day an entry sums up".
+    """
+    if isinstance(day, bool) or not isinstance(day, int):
+        return DIARY_DAY_UNKNOWN
+    return f"{day}"
+
+
+def _story_private_line(entry: PrivateRecordEntry) -> str:
+    """Render ONE walk entry as one attributed line; ``""`` to drop it.
+
+    THE DAY-ATTRIBUTION DECISION LIVES HERE, and it was a choice between two
+    named options rather than an improvisation (Task 3.2). Task 3.2's brief asks
+    for "per-author attribution carrying kind and Day", and Task 3.1 measured
+    that HALF OF THAT IS UNACHIEVABLE: a :class:`graphia.state.DiaryRecord`
+    carries ``day``, but a :class:`graphia.state.ThoughtRecord`'s keys are
+    exactly ``text`` and ``substituted``, because a thought is written per Day
+    *round* and the eval transcript renders it positionally inside its
+    ``<round>``. So the walk returns ``None`` for a thought's Day honestly,
+    not as a lost value. The two options were **attribute by kind alone** or
+    **infer** the Day from the flanking diary Days (before the first diary →
+    Day 1; between ``day=d`` and ``day=d+1`` → Day ``d+1``; after the last →
+    ``d+1``).
+
+    **CHOSEN: KIND ALONE.** A reflection is tagged
+    :data:`STORY_PRIVATE_THOUGHT_MARKER` and carries no Day, and
+    :data:`STORY_PRIVATE_LEGEND` says in words that the game does not record
+    one. Three reasons, the first decisive on its own:
+
+    1. **FABRICATION IS THIS SPEC'S OVERRIDING RISK, and an inferred Day is
+       indistinguishable from a recorded one inside a prompt.** The model reads
+       both as ground truth, so a wrong inferred Day comes back as a confidently
+       misdated event in the story — a small fabrication, and a strictly worse
+       failure than an honest absence, which costs only precision. The project
+       already settled this exact trade-off once, in
+       ``eval_transcript._diary_day_attr``: it omits the ``day`` attribute
+       rather than guess, because "inventing one would mislead a reviewer about
+       which Day an entry sums up".
+    2. **THE INFERENCE HAS NO FLANK EXACTLY WHERE THIS SLICE SAYS THE MATERIAL
+       MATTERS MOST.** Slice 3's preamble: the whole-Day diaries are absent for
+       the Day the game is WON, because a winning move ends the game before that
+       day's diaries are written, and that is the day a story most wants to land
+       its reveal on — the reflections are the only private material there. A
+       player who died during Day 1 likewise has reflections and NO DIARY AT
+       ALL, so there is nothing to interpolate between.
+    3. **AND WHERE IT HAS NO FLANK IT DOES NOT DEGRADE GRACEFULLY, IT MISDATES
+       WHOLESALE.** With ``GRAPHIA_PRIVATE_DIARIES=0`` (ADR 011) the diary
+       channel is empty by construction — ``day_diary`` returns ``{}`` before
+       writing anything, so nothing reaches ``private_diaries`` — while
+       ``private_thoughts`` fills up as usual. The "before the first diary →
+       Day 1" limb would then date a whole five-Day record to Day 1, in
+       well-formed output, produced by a config flag, with nothing raising.
+       A ``DIARY_DAY_UNKNOWN`` day defeats the arithmetic outright as well:
+       ``d + 1`` has no meaning over ``"?"``.
+
+    THE THREE-WAY BRANCH IS THE MISATTRIBUTION GUARD. An
+    ``if diary … else thought`` would be exactly how a third kind added to the
+    walk one day becomes silently attributed as a reflection; an unrecognised
+    kind instead renders under its own name, so it arrives in the prompt
+    visibly unfinished rather than wrong.
+
+    A BLANK ENTRY IS DROPPED, and this is a considered divergence from the
+    player's block, which renders a malformed element as a bare ``"- "`` bullet
+    (whose trailing space spec 039's suite pins). A tag with nothing after it is
+    an omission a model can read as something to fill in — the same reasoning
+    :func:`_story_events_block` gives for naming its empty case in words. The
+    entry is dropped, never replaced by a placeholder.
+
+    Both kinds are ``rstrip``ed uniformly. The player block's asymmetry (only
+    the diary line is stripped) is a byte-identity obligation to spec 028 that
+    this reader does not carry.
+    """
+    kind, day, text = entry
+    body = (text if isinstance(text, str) else f"{text}").strip()
+    if not body:
+        return ""
+    if kind == PRIVATE_RECORD_KIND_DIARY:
+        tag = f"{STORY_PRIVATE_DIARY_MARKER} {_story_private_day(day)}]"
+    elif kind == PRIVATE_RECORD_KIND_THOUGHT:
+        tag = STORY_PRIVATE_THOUGHT_MARKER
+    else:
+        # Neither of the two known kinds. Rendered under its own name rather
+        # than folded into one of them, so a future third channel shows up as
+        # unhandled instead of misattributed.
+        tag = f"[{kind}]"
+    return f"  • {tag} {body}".rstrip()
+
+
+def _story_private_block(
+    players: dict[str, PlayerState],
+    private_thoughts: dict[str, list[ThoughtEntry]] | None,
+    private_diaries: dict[str, list[DiaryRecord]] | None,
+) -> str:
+    """Render every player's private writing for the ``{private_record}`` slot.
+
+    THE THIRD-PARTY COUNTERPART OF ``nodes.day:_private_record_block``, and the
+    two must not be confused (spec 040 §2.3). That one renders what ONE player
+    reasons from: their own record, windowed to :data:`DIARY_WINDOW`, under a
+    second-person label addressed to them. This one renders what the MODERATOR
+    knows about EVERYONE: every player's full record, grouped and attributed by
+    author for a reader who wrote none of it. Neither is a template for the
+    other, and this function must never call that one.
+
+    **THE FULL DIARY, NEVER WINDOWED (§2.3).** ``DIARY_WINDOW`` is deliberately
+    not imported into this module: it exists so a *player* reasons from three
+    entries, and the Moderator is the one reader for whom the WHOLE diary is the
+    point. That is exactly why ``_walk_private_record`` never windows — it walks
+    whatever list it is handed — so passing the state list through is the whole
+    of it.
+
+    **THE ORDER IS THE SHARED WALK'S; ONLY THE PRESENTATION IS HERE.** The
+    ``thoughts_before`` cursor walk is the load-bearing correctness rule of the
+    two-channel design and its failure mode is silent — well-formed output in
+    the wrong order — so it is CALLED, not repeated (its docstring carries the
+    rule and the argument for sharing it).
+
+    **GROUPED PER AUTHOR, NOT AS ONE GAME-WIDE TIMELINE**, and that is a limit
+    on what this material can honestly claim rather than a layout preference —
+    see :data:`STORY_PRIVATE_LEGEND` reason 1 for why no cross-player order
+    exists to render. Authors come out in ``players`` insertion order, the same
+    order :func:`_story_roster_block` uses, so the two blocks read as one roster.
+
+    **A PLAYER WITH NOTHING GETS NO HEADING**, which is what leaves THE HUMAN
+    out of this block entirely. That absence is structural rather than filtered:
+    ``day_round_reflect`` and ``day_diary`` both skip ``is_human``, so neither
+    channel ever holds a key for the human seat, and §2.2 calls that "the
+    strongest guarantee in the spec" for the functional criterion that the story
+    "never claims to know what the person was thinking". **No ``is_human`` test
+    is made here, deliberately**: adding one would move that guarantee from a
+    structural fact to a filter a reader has to trust, and would make a
+    block-level test of it pass whether the writers still skip the human or not.
+    A future spec that gives the human a private channel of their own must
+    revisit this paragraph rather than assume the omission was an oversight.
+
+    **NOTHING FILTERS BY SURVIVAL.** A dead player's writing is precisely what
+    the Moderator holds and the living never saw. A player killed on the very
+    first Night simply wrote nothing, so there is nothing to filter.
+
+    The ``substituted`` marking on either channel is NOT surfaced, matching both
+    the player's block and the walk: the eval transcript and the ledger viewer
+    are where a substitution is marked.
+
+    PURE, and it does not mutate its arguments: the walk copies the thoughts
+    before slicing and only iterates the diaries, so a live state list may be
+    handed straight over. No RNG, no LLM, no clock, and no ``set`` iteration, so
+    ``tests/test_dual_mode_smoke.py``'s byte-equality is unaffected.
+    """
+    thoughts_by_player = private_thoughts or {}
+    diaries_by_player = private_diaries or {}
+    sections: list[str] = []
+    for player in players.values():
+        lines = [
+            line
+            for line in (
+                _story_private_line(entry)
+                for entry in _walk_private_record(
+                    thoughts_by_player.get(player.id, []),
+                    # The FULL list. No window, by design — see above.
+                    diaries_by_player.get(player.id),
+                )
+            )
+            if line
+        ]
+        if not lines:
+            continue
+        heading = STORY_PRIVATE_AUTHOR_TEMPLATE.format(
+            # ``name`` is the key every other block identifies a player by, and
+            # the roster block beside this one carries their side and fate, so
+            # repeating those here would only give them a second place to drift.
+            # The id is a defensive fallback for a nameless seat, never seen in
+            # a real game.
+            name=player.name or player.id
+        )
+        sections.append("\n".join([heading, *lines]))
+    if not sections:
+        return STORY_PRIVATE_EMPTY
+    return "\n\n".join([STORY_PRIVATE_LEGEND, *sections])
 
 
 def _ai_story(state: GameState) -> str | None:
