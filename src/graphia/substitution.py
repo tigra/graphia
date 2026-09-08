@@ -134,9 +134,10 @@ NOTHING in the local game path (or in ``blunder_eval``) installs a
 AgentCore side. So today these records reach ``logging.lastResort`` on stderr,
 which Textual redirects while the TUI is running. Task 6.5 asks for the log
 line to be confirmed in the game's log file; that will need a handler wired up
-first, and the same caveat already applies to ``_ai_diary``'s two existing
-lines despite the comment there describing them as "diagnostic under the game's
-log file".
+first (Task 6.5 read the records by putting a ``sitecustomize.py`` on
+``PYTHONPATH``, harness-side). The same caveat applies to ``_ai_diary``'s two
+existing lines, and its own comment now records it — Task 12.1 corrected the
+"diagnostic under the game's log file" reading it used to carry.
 
 Purity
 ------

@@ -1341,14 +1341,33 @@ class TranscriptScreen(Screen):
        the range of AUTHORED bodies, which never carry the marking. The bound is
        structural for the whole family; no later rule owes a length check, and
        none should be weakened on this basis.
-       **Slice 8's Task 8.6 is where that gets answered** — `make view-ledger`
-       against a transcript carrying a deliberately-substituted entry, on both
-       the light and the dark theme. If it does not read there, the cheapest
-       retreat is to drop the inherited `underline` from THIS rule only (leaving
-       `italic strike`, which keeps the family colour and the void reading and
-       gives up only the "on the record" half that a struck entry arguably should
-       not be claiming anyway) — recorded here so that decision is made once,
-       with the reasoning to hand, rather than re-derived under a rendering bug.
+
+       **THAT QUESTION IS ANSWERED AND CLOSED — do not reopen it by dropping
+       `underline`.** Slice 8's Task 8.6 looked (`make view-ledger` against a
+       transcript carrying a marked entry beside an honest one, on all three
+       themes, judged from the real SGR wire rather than a rasterised SVG — the
+       exporter emits one `text-decoration:` per flag and the later declaration
+       wins, so an SVG shows you the *retreat* while you believe you are judging
+       this rule) and did NOT apply the retreat. It reads: the underline sits
+       below the baseline and the strike crosses at mid x-height, so the two
+       rules never merge; the marked body is bounded to one or two rows; and
+       under `textual-ansi` the inherited `underline` is the only thing left
+       saying "this is a *diary*" at all, so giving it up would move a marked
+       entry into a *thought*'s register.
+
+       **And since Slice 9 the retreat is not merely declined, it is blocked by
+       test.** Dropping `underline` here leaves `italic strike` on `$text-muted`
+       — which is EXACTLY `thought-substituted` (see the next rule): same
+       colour, same flags, and byte-identical in style under `textual-ansi`,
+       where the colour collapses for both. `underline` is the whole of what
+       separates the two marked kinds, and two committed tests say so —
+       `test_the_substituted_diary_style_is_the_diarys_rule_plus_strike` and
+       `test_the_substituted_thought_style_is_the_thoughts_rule_plus_strike`,
+       each asserting `diary_substituted.underline is True` and each
+       parametrised over all three themes. So the retreat costs **6 red cases
+       across 2 test functions**, not a nuance about the "on the record" half.
+       A future rendering complaint has to find a different answer than this
+       one; that is what this paragraph is here to say.
 
        TWO AXES, and this rule is only ONE of them — the same belt-and-braces
        `attr` and `thought` use, and here it is what makes the marking survive a

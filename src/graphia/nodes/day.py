@@ -2215,8 +2215,17 @@ def _ai_diary(
         # Was ``pass``. The bare swallow is why the spec-039 campaign's 50%
         # ollama fallback rate left NO trace to diagnose: "the call raised" and
         # "the model answered without the tool" were indistinguishable after
-        # the fact. ``blunder_eval`` installs no logging handler, so this is
-        # silent under the harness and diagnostic under the game's log file.
+        # the fact. Be precise about where the record goes, because the obvious
+        # reading is wrong and cost spec 041's Task 6.5 real time: NOTHING in
+        # the local game path (or in ``blunder_eval``) installs a ``logging``
+        # handler — only ``runtime/observability.py`` does, on the AgentCore
+        # side — and ``GRAPHIA_LOG_FILE`` is ``StreamTraceLogger``'s JSONL of
+        # graph-stream deltas, not a ``logging`` destination. So this reaches
+        # ``logging.lastResort`` on stderr, which Textual redirects while the
+        # TUI is up; Task 6.5 had to put a ``sitecustomize.py`` on
+        # ``PYTHONPATH`` to read it at all. The line is still worth logging (a
+        # handler is one config call away, and the AgentCore side has one), but
+        # do not read it as "diagnostic under the game's log file".
         logger.exception(
             "diary: model call failed for %s; using the deterministic fallback",
             speaker.id,

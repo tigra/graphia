@@ -501,10 +501,13 @@ repetition-experiment:
 # ablation flags gate two of the seven schemas and this is a transport gate,
 # not an ablation measurement.
 # NOT a mocked unit test: needs a running `ollama serve` with the models
-# pulled; burns local model time, no AWS. Start the server with a fuller
-# context window so spec-025's multi-day window is delivered (Ollama's 4096
-# default silently truncates the oldest tokens — the player's role/instructions):
-#   OLLAMA_CONTEXT_LENGTH=32768 ollama serve
+# pulled; burns local model time, no AWS. A PLAIN `ollama serve` is enough —
+# spec 041 sends the context length on every request (`num_ctx`, sized by
+# GRAPHIA_OLLAMA_NUM_CTX, default 32768), so spec-025's multi-day window is
+# delivered without the server-side OLLAMA_CONTEXT_LENGTH export this comment
+# used to require (and which the game no longer depends on; Ollama's 4096
+# default would otherwise truncate the oldest tokens — the role/instructions):
+#   ollama serve
 #   make ollama-smoke
 #   make ollama-smoke ARGS="--models qwen2.5:7b,qwen2.5:3b --json smoke.json"
 ollama-smoke:

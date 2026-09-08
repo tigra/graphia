@@ -128,10 +128,12 @@ def _fetch_model_context_length(
     Returns the ``model_info["<arch>.context_length"]`` value (the model's
     declared context, e.g. ``llama.context_length`` / ``qwen3.context_length``)
     when discoverable, else ``None``. This is the only context signal Ollama's
-    HTTP surface exposes per loaded model; the server's *effective* ``num_ctx``
-    (set via ``OLLAMA_CONTEXT_LENGTH``) is not separately reported, so this is a
-    conservative proxy — paired with the never-overflow token-budget cap, a
-    best-effort signal is all the startup check needs.
+    HTTP surface exposes per loaded model; the *effective* ``num_ctx`` a request
+    actually gets is not separately reported, so this is a conservative proxy —
+    paired with the never-overflow token-budget cap, a best-effort signal is all
+    the startup check needs. It is also the signal that still matters after spec
+    041: Graphia now sends ``options.num_ctx`` on every native request, and the
+    number read here is the ceiling that request is asking against.
 
     Swallows everything (network, JSON, shape): a context check must never break
     the boot (spec 025 "never raises"). Returns ``None`` on any difficulty so
@@ -162,14 +164,21 @@ def warn_if_ollama_context_too_small(
 ) -> None:
     """Log a warning if the Ollama large model's context is below the budget.
 
-    Route-A belt-and-braces (spec 025 §2): the fuller window is delivered by the
-    operator's server-side ``OLLAMA_CONTEXT_LENGTH``; a fresh/forgetful server
-    reverting to Ollama's tiny ~4K default would silently fail to deliver it.
-    This check reads the large model's declared context (``/api/show``) and logs
-    a warning when it is below ``config.context_token_budget``, pointing the
-    operator at ``OLLAMA_CONTEXT_LENGTH``. It NEVER raises — the token-budget cap
-    already guarantees the prompt can't overflow, so a too-small context is a
-    "fuller window not delivered" condition, not a truncated-instructions one.
+    Belt-and-braces, and the reason it OUTLIVED the thing it was written for
+    (spec 025 §2 → spec 041 §2.2). It began as Route-A cover for an operator who
+    forgot the server-side ``OLLAMA_CONTEXT_LENGTH`` export and got Ollama's tiny
+    ~4K default. Spec 041 removed that dependency — the provider now sends
+    ``options.num_ctx`` (``GRAPHIA_OLLAMA_NUM_CTX``, default 32768) on every
+    native request — but a per-request ``num_ctx`` only **asks**: a model whose
+    own declared context is smaller cannot serve more than it declares. So this
+    check keeps reading the large model's declared context (``/api/show``) and
+    logging a warning when it is below ``config.context_token_budget``; what
+    changed is only the remedy it names. The fix is a larger-context model or a
+    smaller ``GRAPHIA_CONTEXT_WINDOW`` — **not** the server-side env var, which
+    would send an operator off configuring something the game no longer reads.
+    It NEVER raises — the token-budget cap already guarantees the prompt can't
+    overflow, so a too-small context is a "fuller window not delivered"
+    condition, not a truncated-instructions one.
 
     No-op for Bedrock / remote (whose context far exceeds the window) and a
     silent no-op when the signal can't be read.
@@ -185,14 +194,19 @@ def warn_if_ollama_context_too_small(
         return
     if context_length < config.context_token_budget:
         logger.warning(
-            "Ollama large model %r reports a context length of %d tokens, "
-            "below the configured discussion-window budget of %d. The fuller "
+            "Ollama large model %r declares a context length of %d tokens, "
+            "below the configured discussion-window budget of %d. Graphia asks "
+            "for %d tokens on every request (GRAPHIA_OLLAMA_NUM_CTX), but a "
+            "model cannot serve more context than it declares, so the fuller "
             "multi-day window may not be fully delivered (the oldest history is "
-            "trimmed to fit). Set OLLAMA_CONTEXT_LENGTH=32768 before "
-            "`ollama serve` to give the model the full window.",
+            "trimmed to fit). Exporting OLLAMA_CONTEXT_LENGTH before "
+            "`ollama serve` will NOT fix this — the context is sent per request "
+            "now. Use a larger-context model, or lower GRAPHIA_CONTEXT_WINDOW "
+            "to fit this one.",
             config.ollama_large_model,
             context_length,
             config.context_token_budget,
+            config.ollama_num_ctx,
         )
 
 
