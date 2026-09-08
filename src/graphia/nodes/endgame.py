@@ -416,15 +416,23 @@ def _ai_story(state: GameState) -> str | None:
     # one that costs real money if it is lost.
     #
     # 1. A PLACEHOLDER STORY IS THE THING THE FUNCTIONAL SPEC FORBIDS, not
-    #    a mitigation of it. Under "A game whose story cannot be told still
-    #    ends properly" the criteria are that "no error and no apology about
-    #    a missing story is shown", and that "nothing shown during the wait
-    #    remains in it" — no leftover text. A deterministic sentence in the
-    #    story's place is an apology in all but name, and it is precisely a
-    #    leftover: it occupies the ending without being the story. Absence
-    #    satisfies both criteria trivially and a placeholder satisfies
-    #    neither. "That section is simply absent" is the spec's own wording
-    #    for the GOOD outcome, not for a degraded one.
+    #    a mitigation of it. Two criteria, and they sit under two DIFFERENT
+    #    headings — worth knowing, because only the first is about failure
+    #    and it is the decisive one on its own. "A game whose story cannot
+    #    be told still ends properly" requires that "no error and no apology
+    #    about a missing story is shown", and says what the good outcome is:
+    #    "that section is simply absent" and "everything else about the
+    #    ending appears exactly as it does today". A deterministic sentence
+    #    in the story's place is an apology in all but name and it is not
+    #    "simply absent" — it ADDS a section, so the ending stops reading as
+    #    it does today. Under the waiting-beat heading ("While the story is
+    #    being produced, the person can see that something is coming") the
+    #    ending is enumerated as "the facts, the story and the career
+    #    summary", with its third criterion carrying that through to the
+    #    no-story case explicitly. That clause is about leftover WAITING
+    #    text, so read it as corroborating rather than as the finding: a
+    #    placeholder would be a fourth thing in a three-thing ending, and
+    #    not one of the three.
     #
     # 2. THE ASYMMETRY FROM SPEC 028 (Per-AI Day-Round Private Thoughts)
     #    AND SPEC 039 (Per-AI Private Diaries) IS DELIBERATE, AND THIS IS
@@ -459,6 +467,19 @@ def _ai_story(state: GameState) -> str | None:
     #    spec 041 Task 7.1 went on to demonstrate live (a scripted answer of
     #    ``_DIARY_FALLBACK``'s own text recorded ``diary_fallback_rate:
     #    1.0`` beside ``substitutions.diary`` at 0.0).
+    #
+    #    ONE NUANCE, CHECKED, AND IT CUTS THIS WAY: §2.10 gives 039's
+    #    reason in the present tense, but spec 041 Slice 8 added
+    #    ``DiaryRecord["substituted"]``, so a substituted diary IS
+    #    distinguishable today — ``_diary_fallback_text``'s own docstring
+    #    says the old argument "HAS BEEN OVERTAKEN — read it as history,
+    #    not as guidance". The reach-in nevertheless survives, because a
+    #    player who WRITES the placeholder sentence has not substituted and
+    #    the two cases cannot be told apart post-hoc. So the honest reading
+    #    is not "039 was stuck" but "once placeholder TEXT exists, you own
+    #    it for good": a text instrument, a state-shape flag, and a warning
+    #    reconciling the two. That is the road a placeholder story puts 040
+    #    on, from a standing start.
     #
     #    040 pays none of that, and only because the story is ABSENT on
     #    failure: ``story_missing_rate`` counts endings carrying no message
