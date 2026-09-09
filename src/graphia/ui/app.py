@@ -101,6 +101,16 @@ class GraphiaApp(App[None]):
     BINDINGS = [
         Binding("escape", "request_quit", "Quit", show=True, priority=True),
         Binding("ctrl+c", "abort", "Abort", show=False, priority=True),
+        # Spec 040 Slice 6: the named leaving key for a finished game. NOT
+        # `priority=True` — a priority binding would steal `q` from the
+        # docked Input and no player could type a name or a speech
+        # containing the letter. With the default priority the focused
+        # Input consumes printable keys first, and the binding is only ever
+        # reached when focus is on a pane, which is where a finished game
+        # leaves it. `show` is irrelevant either way: there is no Footer in
+        # this app, so nothing renders BINDINGS (the affordance is
+        # `#public-log`'s border subtitle — Task 6.4).
+        Binding("q", "leave", "Leave", show=False),
     ]
 
     config: GraphiaConfig
@@ -141,9 +151,10 @@ class GraphiaApp(App[None]):
         # print it at most once per Day. None until the first observation.
         self._vote_hint_shown_for_cycle: int | None = None
         # Flips to True once the graph has reached END (either a winner was
-        # announced or an unrecoverable error was caught). While False the
-        # on_key handler is a no-op so normal in-game bindings (q, ctrl+c)
-        # still work. Once True, any keypress exits.
+        # announced or an unrecoverable error was caught). It is the gate on
+        # `action_leave`: while False, `q` is passed back to Textual's
+        # binding chain, so it stays an ordinary character the player can
+        # type into their name or their speech. Once True, `q` leaves.
         self._game_over: bool = False
         # Flips to True once this game has been folded into the career — by
         # either the normal-end path (_record_career) or the abandoned-quit
@@ -507,6 +518,56 @@ class GraphiaApp(App[None]):
             raise SkipAction()
         self.push_screen(QuitModal(), self._on_quit_decision)
 
+    def action_leave(self) -> None:
+        """``q``: leave a FINISHED game, and only a finished game.
+
+        Spec 040 (The Moderator's Closing Story), Slice 6 — the exit
+        contract. It replaces :meth:`on_key`, which exited on *any* key once
+        the game was over and so made the ending unreadable: measured, a
+        ``pageup`` at game-over exits the app instead of scrolling, with
+        ``is_running`` False straight after the press.
+
+        **The leaving key has to be named positively.** The obvious
+        alternative — keep ``on_key`` and let the scroll keys through — is
+        not expressible, because ``App.on_key`` still fires for keys the
+        focused widget's own binding already consumed. Measured on Textual
+        8.2.4: with ``#public-log`` focused, ``pageup`` moved ``scroll_y``
+        114 -> 104 **and** ``App.on_key`` saw ``'pageup'``. There is no
+        "was this handled?" flag on the event to test.
+
+        ``on_key`` is **deleted** rather than narrowed, so there is exactly
+        one dispatch path for one intent; two would resolve in whatever
+        order the installed Textual version happens to use.
+
+        Three keys leave, and the other two were already advertised, so this
+        adds a key rather than replacing a contract: ``q`` (here), ``escape``
+        (:meth:`action_request_quit` — via the confirmation modal) and
+        ``ctrl+c`` (:meth:`action_abort`). ``enter`` is deliberately **not**
+        one of them: it is the submit key for every Day turn, so the
+        player's last act before the ending is an ``enter``, and a stray
+        second one would throw the ending away.
+
+        Two guards, and both earn their place:
+
+        - ``ModalScreen`` -> :class:`SkipAction`, mirroring
+          :meth:`action_request_quit`. Without it ``q`` fires from *under*
+          :class:`~graphia.ui.failure_modal.FailureModal`, whose whole job
+          is to hand the player the CloudWatch coordinates for a remote
+          crash — the only pointer they have to the server-side log.
+        - ``not _game_over`` -> :class:`SkipAction`, so ``q`` mid-game is
+          given back to the binding chain instead of being swallowed.
+          :class:`SkipAction` rather than a bare ``return`` for the reason
+          :meth:`action_request_quit` records: the dispatcher reads a
+          ``return`` as "handled".
+        """
+        from textual.actions import SkipAction
+
+        if isinstance(self.screen, ModalScreen):
+            raise SkipAction()
+        if not self._game_over:
+            raise SkipAction()
+        self.exit()
+
     def _arm_hard_exit_fallback(self, delay: float = 0.5) -> None:
         """Arm a daemon ``threading.Timer`` that ``os._exit(0)``s after ``delay`` seconds.
 
@@ -609,17 +670,6 @@ class GraphiaApp(App[None]):
         # would block waiting for it. The daemon Timer guarantees process
         # death within ~0.5s regardless. See _arm_hard_exit_fallback.
         self._arm_hard_exit_fallback()
-
-    def on_key(self, event: Any) -> None:
-        """Exit on any keypress once the game has ended.
-
-        While ``_game_over`` is False this is a no-op, so the normal Textual
-        bindings (q to quit, ctrl+c to quit) continue to work during play.
-        Once the graph has reached END (or errored out), any key dismisses
-        the final screen and cleanly exits back to the shell.
-        """
-        if self._game_over:
-            self.exit()
 
     def _enter_endgame(self, log: RichLog) -> None:
         """Put ``#public-log`` into its post-game reading state.
