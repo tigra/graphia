@@ -26,7 +26,7 @@ from graphia.config import GraphiaConfig, load_config
 from graphia.driver import drive_graph
 from graphia.graph import build_graph, make_run_config
 from graphia.logging import StreamTraceLogger, setup_logger
-from graphia.state import CLOSING_STORY_KWARG
+from graphia.state import CLOSING_STORY_KWARG, ENDGAME_FACTS_KWARG
 from graphia.stats_store import (
     StatsStore,
     make_stats_store,
@@ -53,6 +53,24 @@ unchanged across the assignment).
 
 Public and importable on purpose: a test that copies this literal would keep
 passing after a reword and silently stop measuring the shipped affordance.
+"""
+
+
+STORY_WAIT_HINT = "The Moderator is writing the closing story…"
+"""The waiting beat, shown on ``#public-log``'s frame while the story is written.
+
+Spec 040 (The Moderator's Closing Story), Slice 7. It occupies the SAME slot as
+:data:`EXIT_HINT` — ``#public-log.border_subtitle`` — and that is not a
+collision to be avoided but the reason the whole beat needs no teardown of its
+own: :meth:`GraphiaApp._enter_endgame` assigns that slot on every ending path
+and runs strictly after ``drive_graph`` returns, so an armed beat is replaced by
+the exit hint whether the story arrived, failed, or the graph crashed.
+
+Public and importable for the same reason ``EXIT_HINT`` is: a test that retyped
+the literal would keep passing after a reword and stop measuring the shipped
+copy. The trailing character is a real ellipsis (U+2026); the app reconfigures
+the streams to UTF-8 at startup, and ``Input(placeholder="…")`` already relies
+on it.
 """
 
 
@@ -330,6 +348,84 @@ class GraphiaApp(App[None]):
             return
         log.write(Text.assemble((label, style), (body, "")))
 
+    def _track_story_wait(self, msg: BaseMessage) -> None:
+        """Arm the "story is coming" beat on the facts; clear it on the story.
+
+        Spec 040 (The Moderator's Closing Story), Slice 7 — *the wait is
+        visible, and leaves nothing behind*. The story takes 5-15s to write and
+        that moment sits at the very end of a game, where no sign of activity
+        reads as a hang; a person who gives up and quits there loses the story
+        entirely.
+
+        **``stream_mode="updates"`` is what makes this expressible at all.** A
+        chunk arrives only after a node returns, and §2.1 made the story its OWN
+        super-step rather than folding it into ``end_screen``, so the facts
+        message reaches this method — and the screen — while the ``Story`` call
+        is still in flight. Measured order on a driven win game: the facts
+        write, then the story write, then :meth:`_record_career`, then
+        :meth:`_enter_endgame`.
+
+        **A ``border_subtitle``, NOT a log row, and that is a hard constraint
+        rather than a preference (§2.11).** ``RichLog`` has no per-line removal,
+        only ``clear()``, so a "one moment…" ROW could never be taken back: it
+        would sit between the reveal and the story in the finished ending
+        forever — precisely what the functional spec's *nothing shown during the
+        wait remains in the ending* exists to rule out. The subtitle costs zero
+        rows (measured on Textual 8.2.4: ``len(RichLog.lines)`` unchanged across
+        the assignment) because it is painted on the widget's frame by the
+        compositor. **Worth knowing before writing a test:** it therefore does
+        **not** appear in ``RichLog.lines`` at all, so grepping the rows for the
+        hint proves nothing on its own — that assertion passes against a build
+        with no beat, and needs the positive half (the hint IS reachable through
+        ``border_subtitle`` while the call is in flight) beside it.
+
+        **``widget.loading`` is rejected**: it replaces the widget's content
+        with a spinner, which would hide the facts the person is meant to be
+        reading in exactly the window where reading them is the point.
+        Token-level streaming is the right eventual answer and belongs with the
+        Phase-6a ``astream`` switch, not here.
+
+        **Cleared to ``None``, which is the measured pre-arm value.**
+        ``#public-log`` carries no ``border_subtitle`` for the whole game
+        (probed: ``None`` from mount until :meth:`_enter_endgame`), so ``None``
+        restores the frame exactly rather than leaving an empty caption behind.
+
+        **The no-story path needs no branch here, and that is structural rather
+        than lucky.** :meth:`_enter_endgame` assigns ``border_subtitle`` on all
+        three ending paths — a side wins or the game draws, the Day-cap runaway,
+        and :meth:`_drive`'s ``except`` — and it runs strictly AFTER
+        ``drive_graph`` returns, with no ``await`` between the return and the
+        assignment. So a beat left armed by a story that never came is
+        overwritten by the exit hint with no help from this method: verified by
+        driving a game whose ``Story`` queue raises, where the facts arrive, no
+        story write happens, and the ending's subtitle is the exit hint.
+
+        What the story branch buys is the EARLIER clear. The story write is
+        dispatched from the driver's ``await`` loop, so frames render between it
+        and ``_enter_endgame``; without the branch one of them would say "the
+        Moderator is writing the closing story" with the story already on screen
+        above it.
+
+        **Selected on the kwargs flags, never on type or position.** Both the
+        facts and ``nodes.day``'s Day-round recap are plain public
+        ``SystemMessage``s, so "any public ``SystemMessage``" would arm the beat
+        several times a game, mid-Day, on a story that is not coming; and an
+        index encodes a claim about how many messages the ending emits — the
+        claim Task 1.7 had to repair across six tests. The rejected third
+        option, arming on something in :meth:`_drive`, is not available at all:
+        ``_game_over`` flips inside ``_enter_endgame``, i.e. after the wait is
+        already over. ``graphia.state`` carries the full argument, including why
+        a content sniff for ``ENDGAME_HEADER_ROSTER`` is the wrong kind of
+        coupling for this pane.
+        """
+        extra = getattr(msg, "additional_kwargs", {}) or {}
+        if extra.get(ENDGAME_FACTS_KWARG):
+            log = self.query_one("#public-log", RichLog)
+            log.border_subtitle = f" {STORY_WAIT_HINT} "
+        elif extra.get(CLOSING_STORY_KWARG):
+            log = self.query_one("#public-log", RichLog)
+            log.border_subtitle = None
+
     def _check_spectator_transition(self) -> None:
         """Detect the human's death from the streamed-state mirror.
 
@@ -383,6 +479,11 @@ class GraphiaApp(App[None]):
             # Silently drop messages addressed to a different player.
             return
         self._write_public(msg)
+        # AFTER the write, not before: the beat's whole premise is that the
+        # facts are already on screen while the story call is in flight, so
+        # arming it before the row exists would be a claim this call site could
+        # not honour. Spec 040 Slice 7.
+        self._track_story_wait(msg)
 
     async def _prompt_via_input(self, placeholder: str) -> str:
         """Enable the docked Input, await one submission, disable again."""
@@ -762,6 +863,18 @@ class GraphiaApp(App[None]):
         today, so ``show=True`` on a binding renders nowhere, and docking one
         would cost a permanent row for the whole game to advertise a key that
         only matters on the last screen.
+
+        **That one assignment is now load-bearing TWICE, and the second job is
+        easy to remove by accident.** Slice 7 arms a waiting beat in the same
+        slot (:data:`STORY_WAIT_HINT`, set by :meth:`_track_story_wait` when the
+        facts land), and the ONLY thing that guarantees it leaves nothing behind
+        when the story never arrives is this line running unconditionally on
+        every ending path. Making the assignment conditional — on
+        ``_career_recorded``, on a winner, on "only if not already set" — would
+        strand "the Moderator is writing the closing story" on the frame of a
+        finished game, which is the exact failure the functional spec's *nothing
+        shown during the wait remains in the ending* forbids. Keep it
+        unconditional.
 
         Nothing else is needed for the scrolling itself. ``RichLog`` is a
         ``ScrollView`` with ``overflow-y: scroll`` and ``can_focus = True``,

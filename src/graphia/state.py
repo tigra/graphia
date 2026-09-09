@@ -72,10 +72,13 @@ from langgraph.graph.message import add_messages
 #
 # THE SIBLING FLAG HAS LANDED (Task 5.3) AND IT IS DECLARED BELOW, at the name
 # and in the place this comment reserved for it. No container was built to hold
-# the pair — not a ``dict``, not an ``Enum``, not a namespace class — because
+# the family — not a ``dict``, not an ``Enum``, not a namespace class — because
 # every read is ``extra.get(KEY)`` against ``additional_kwargs``, where a bare
 # ``str`` is exactly the right shape, and a container would buy an indirection
-# at every call site above in exchange for holding two strings. This project's
+# at every call site above in exchange for holding a handful of short strings.
+# (This clause said "the pair" and "two strings" until Slice 7 declared a third,
+# ``ENDGAME_FACTS_KWARG``; the reasoning is per-flag and unaffected by the
+# count, which is why the count is no longer written into it.) This project's
 # precedent is prefix families, never containers: ``KIND_*`` in
 # ``career_events``, and the ``DIARY_*`` family that spans two modules
 # (``DIARY_LINE_MARKER`` / ``DIARY_WINDOW`` / ``DIARY_MAX_CHARS`` in
@@ -127,6 +130,52 @@ CLOSING_STORY_KWARG = "closing_story"
 # attribute cannot precede its element, so Task 5.3 shipped the message flag
 # and handed ``<story truncated="true">`` to Slice 8.
 CLOSING_STORY_TRUNCATED_KWARG = "closing_story_truncated"
+
+# The THIRD member of the family, and the only one that rides on ``end_screen``'s
+# message rather than on the story's: this marks the FACTS message — the winner
+# line, the kill log, the roster reveal and the persona reveal that
+# ``nodes.endgame.end_screen`` emits as one public ``SystemMessage`` (spec 040
+# §2.11, Task 5 -> Slice 7).
+#
+# WHY A MARKER AT ALL, rather than recognising the facts some other way. The UI
+# has to know the facts have landed, because that is the instant the closing
+# story's call goes in flight and the "one moment…" beat must arm (Slice 7).
+# ``GraphiaApp._track_story_wait`` is the reader. Three candidates were on the
+# table and only this one is both precise and decoupled:
+#
+# 1. "Any public ``SystemMessage``" — NOT SPECIFIC ENOUGH, and measurably so:
+#    ``nodes.day``'s Day-round recap is also a plain public ``SystemMessage``,
+#    so the beat would arm several times a game, mid-Day, on a story that is
+#    not coming.
+# 2. Sniffing ``prompts.ENDGAME_HEADER_ROSTER`` out of the content — works
+#    today, and couples the UI pane to the facts message's PROSE. A reword of a
+#    display string would then silently disarm a behaviour that has nothing to
+#    do with wording. (This is exactly the coupling ``CLOSING_STORY_KWARG``
+#    exists to avoid one message later; the tests may select on content —
+#    ``conftest.endgame_facts_message`` does — because a test asserting about
+#    the reveal legitimately means "the message a person reads the reveal in".)
+# 3. Arming on something in ``GraphiaApp._drive`` instead of on the message —
+#    NOT AVAILABLE: ``_game_over`` flips inside ``_enter_endgame``, which runs
+#    AFTER ``drive_graph`` returns, i.e. after the story has already arrived or
+#    failed. There is nothing to arm on there but the end of the wait.
+#
+# A SECOND READER IS EXPECTED AND HAS ITS HOOK HERE (Task 4.4's recommended
+# follow-up, logged for Slice 10): ``_ai_story`` should probably EXCLUDE the
+# facts message from its ``{context}`` slot, because ``_render_context`` hands
+# the whole fact sheet to the model under the heading "What was said out loud,
+# oldest first" — text never said out loud — while the system prompt is telling
+# it the reader needs none of that again. Task 4.4 named this flag's shape as
+# how that filter would be written. **Slice 7 deliberately did NOT implement
+# it**: ``tests/test_spec040_story_assembly.py``'s
+# ``test_the_facts_message_reaches_the_public_history_slot`` is the standing
+# witness for the present behaviour and goes red on purpose when someone does.
+#
+# NOT AN ``eval_transcript`` DISCRIMINATOR, and Slice 8 should not make it one.
+# Task 8.2 partitions the endgame delta on ``CLOSING_STORY_KWARG`` — the story's
+# own flag — which already yields ``(facts, story)`` from one test, and reading
+# both flags would make a message with neither ambiguous instead of simply
+# "the facts".
+ENDGAME_FACTS_KWARG = "endgame_facts"
 
 
 def _merge_private_thoughts(

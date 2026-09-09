@@ -129,6 +129,7 @@ from graphia.state import (
     CLOSING_STORY_KWARG,
     CLOSING_STORY_TRUNCATED_KWARG,
     DiaryRecord,
+    ENDGAME_FACTS_KWARG,
     GameState,
     KillRecord,
     PlayerState,
@@ -314,7 +315,25 @@ def end_screen(
         lines.append(ENDGAME_PERSONA_HEADER)
         lines.extend(persona_lines)
 
-    final_msg = SystemMessage(content="\n".join(lines))
+    # MARKED AS THE FACTS (spec 040 §2.11, Slice 7). ``ENDGAME_FACTS_KWARG``
+    # exists so a reader can recognise this message without knowing what it
+    # SAYS: ``GraphiaApp._track_story_wait`` arms the "the Moderator is writing"
+    # beat the instant it lands, because a chunk under ``stream_mode="updates"``
+    # arrives only after a node returns and ``moderator_story`` is its own
+    # super-step (§2.1) — so this message is on screen for the whole of the
+    # story call. See ``graphia.state`` for why the three rejected alternatives
+    # (any public ``SystemMessage``, a content sniff for
+    # ``ENDGAME_HEADER_ROSTER``, arming in the driver) are each worse.
+    #
+    # The flag is machine-only and changes nothing a person sees: every reader
+    # in the codebase selects on a NAMED key (``private_to``, ``speaker``,
+    # ``substituted``, ``closing_story``), never on "has any kwargs", so
+    # ``_render_context`` still labels this ``Moderator`` and the transcript
+    # renderer still renders it as ``<endgame>``.
+    final_msg = SystemMessage(
+        content="\n".join(lines),
+        additional_kwargs={ENDGAME_FACTS_KWARG: True},
+    )
 
     if career_emitter is not None and game_id is not None and isinstance(winner, str):
         outcome = _OUTCOME_BY_WINNER.get(winner)
