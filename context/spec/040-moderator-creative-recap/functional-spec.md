@@ -89,7 +89,7 @@ This change gives the Moderator the last word. After the facts, they tell a **sh
   - **Acceptance Criteria:**
     - [ ] Given a finished game whose ending is longer than the screen, when the person scrolls up, then they can read the earlier parts of it — the winner, the deaths, the roster and the characters reveal.
     - [ ] Given a finished game, when the person presses the **advertised** leaving key, then the game closes.
-    - [ ] Given a finished game, when the person presses one of the keys that **already** left the game before this change, then it still leaves — this adds an advertised key, it does not withdraw the ones people know.
+    - [ ] Given a finished game, when the person presses **`escape`** or **`ctrl+c`**, then it still leaves — this adds an advertised key, it does not withdraw the ones people know. *(Wording corrected 2026-09-09, Slice 6: this criterion previously said "one of the keys that **already** left the game before this change", which is **unsatisfiable as written** alongside the two criteria below — every key left before this change, via `on_key`. The two keys people actually know are named instead. Note for whoever verifies it: `escape` at game-over leaves in **two** keystrokes, not one — it pushes `QuitModal` and `y` then exits.)*
     - [ ] Given a finished game, when the person presses an ordinary letter key, then the game stays open and they remain able to read the ending.
     - [ ] Given a finished game, when the person presses **the space bar**, then the game stays open — space is named explicitly because it exits today and is what people press to page through text.
     - [ ] Given a finished game, when the person scrolls with the **mouse wheel**, then the ending scrolls and the game stays open.
