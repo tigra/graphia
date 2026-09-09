@@ -695,7 +695,25 @@ keeping within the sentence limit you were given.
 # The STATED bound is only a request — the functional spec requires the length
 # to hold for the story actually returned, which is Slice 5's clamp, not this
 # wording ("a limit stated only in the request is a request").
-STORY_PARAGRAPH_BOUND = 4
+# RAISED 4 -> 5 (2026-09-09, at the author's request "make it longer"), and
+# the ceiling on this number is not taste — it is the local path's output
+# allowance. ``llm._OLLAMA_NUM_PREDICT`` is 1024 tokens, sent as
+# ``options.num_predict`` on every native request; at the project's own
+# conservative ``day._CHARS_PER_TOKEN = 3`` proxy that is about 3000 characters
+# of JSON RESPONSE, wrapper and escapes included, so §2.5's margin is "keep
+# under ~2500" — which is where ``endgame:STORY_MAX_CHARS`` now sits.
+#
+# FIVE IS THAT BUDGET DIVIDED BY THE PARAGRAPH LENGTH REAL STORIES COME IN AT,
+# not a round number. The one story measured live ran 474 + 487 + 419
+# characters, ~460 each (spec 040 record 45), and 2500 / 460 = 5.4. Six would
+# put the CHARACTER backstop back in charge of a bound this prompt states in
+# PARAGRAPHS — which is exactly the miscalibration Task 10.4 found in the old
+# 4/1800 pair, where a fourth ~460-character paragraph was refused by 1800
+# while the stated cap of four had not been reached. Raising this past 5 means
+# raising the story call's own output allowance first, and that is a separate
+# change: ``_OLLAMA_NUM_PREDICT`` is one constant shared by all three client
+# builds, so there is no per-purpose seam to widen today.
+STORY_PARAGRAPH_BOUND = 5
 
 STORY_SYSTEM = f"""You are the Moderator of Graphia, a Mafia-style
 social-deduction game. The game is over and the closing facts have already been

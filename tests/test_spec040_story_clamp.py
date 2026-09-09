@@ -25,10 +25,22 @@ as it is:
 
 EVERY FIXTURE HERE IS CONSTRUCTED INPUT, AND THAT IS NOT A SHORTCUT. Task 2.3
 measured two live stories at 843 and 911 characters over three paragraphs
-each, against ``STORY_PARAGRAPH_BOUND = 4`` and ``STORY_MAX_CHARS = 1800`` —
-the clamp would not have fired on either. Real stories do not reach the cap,
-so no live run can exercise this and Task 10.4 should label this evidence
-**constructed** rather than implying a natural instance.
+each, against the then-current ``STORY_PARAGRAPH_BOUND = 4`` and
+``STORY_MAX_CHARS = 1800`` — the clamp would not have fired on either. Real
+stories do not reach the cap, so no live run can exercise this and Task 10.4
+should label this evidence **constructed** rather than implying a natural
+instance.
+
+**AND THEN ONE DID, WHICH IS WHY BOTH NUMBERS HAVE SINCE MOVED (2026-09-09).**
+The first measured story after those two — record 45 — came in at three
+paragraphs of 474 + 487 + 419 and *was* clamped, but by the CHARACTER backstop
+rather than by the stated paragraph cap: a fourth ~460-character paragraph
+would have crossed 1800 while four paragraphs had not been reached. The bound
+is now 5 and the backstop 2500, so the paragraph cap governs again and the
+backstop is a runaway guard once more. **Every assertion in this file is
+derived from the two constants**, which is why the raise touched only this
+prose and one absolute-literal pin in
+``tests/test_spec040_story_instruction.py``.
 
 THE FIXTURE TRAP THIS FILE'S OWN TASK LINE SETS. Task 5.4 says "a
 four-paragraph story is untouched", which holds only if those four paragraphs

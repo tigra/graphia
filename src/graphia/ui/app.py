@@ -74,6 +74,41 @@ on it.
 """
 
 
+STORY_LABEL_STYLE = "bold yellow"
+"""The closing story's label style in ``#public-log`` — its own colour.
+
+Added 2026-09-09 at the author's request ("colour the creative recap in the UI
+distinctively"). The story arrives as a Moderator ``SystemMessage`` like the
+winner line and the facts do, so on message type alone it renders in the same
+``bold cyan`` as the mechanical announcements it must not be mistaken for: one
+is the record, the other is a told story built from writing the person has
+never seen. The discriminator is the message's own ``CLOSING_STORY_KWARG``
+flag, the same marker :meth:`GraphiaApp._track_story_wait` reads — never the
+message type, and never the position in the pane.
+
+WHY YELLOW. Every other style in this pane is taken and means something else:
+``bold cyan`` is the Moderator's factual voice, plain ``bold`` is a player
+speaking, ``bold green`` is the "Game over." banner and ``bold red`` the error
+banner; ``bold magenta`` is the Moderator in the whispers pane. Yellow's only
+other use in this file is the spectator notice, which is written to
+``#private-log`` — a different pane, and never on screen beside the ending.
+"""
+
+
+STORY_BODY_STYLE = "italic yellow"
+"""The closing story's BODY style — the half that makes it unmistakable.
+
+Every other body in this pane is written unstyled (``(body, "")``), so body
+styling at all is already distinctive; the italic says *narration* on top of
+that, and this is the one place in the game where several paragraphs of prose
+arrive at once.
+
+Both constants are public and importable for the reason :data:`EXIT_HINT` is: a
+test that retyped the literal would keep passing after a restyle and silently
+stop measuring what ships.
+"""
+
+
 def _content_to_text(content: Any) -> str:
     """Normalise a message `content` (str | list[block]) to a flat string."""
     if isinstance(content, str):
@@ -341,8 +376,21 @@ class GraphiaApp(App[None]):
             # several-paragraph model-written body is by far the largest string
             # this pane has ever taken, and the fallback keeps the ending whole
             # by giving up the styling rather than the story.
+            #
+            # THE STYLING IT WOULD GIVE UP IS NOW THE STORY'S OWN (2026-09-09):
+            # :data:`STORY_LABEL_STYLE` and :data:`STORY_BODY_STYLE`, rather
+            # than the ``bold cyan`` label and unstyled body every other
+            # Moderator message takes. The ``label`` computed above is still
+            # the one that ships — only the styles differ — so the row's plain
+            # text is byte-identical to before, and every test that reads rows
+            # as text (the ordering and beat assertions included) measures
+            # exactly what it measured before.
             try:
-                log.write(Text.assemble((label, style), (body, "")))
+                log.write(
+                    Text.assemble(
+                        (label, STORY_LABEL_STYLE), (body, STORY_BODY_STYLE)
+                    )
+                )
             except Exception:  # noqa: BLE001
                 log.write(Text(f"{label}{body}"))
             return

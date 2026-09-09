@@ -179,7 +179,7 @@ positive control, in the same test:
 correction to Task 4.2's handover instruction.** ``STORY_SYSTEM`` is hard
 wrapped at ~78 columns, so *every* sentence worth asserting spans a newline:
 ``must appear\\nbelow``, ``players or\\nmotives``, ``is not\\nyours to
-settle``, ``None\\nof those is asked of you``, ``at most 4 short\\nparagraphs``.
+settle``, ``None\\nof those is asked of you``, ``at most 5 short\\nparagraphs``.
 Task 4.2 asked for its sentence "retyped as a literal … present exactly once"
 — retyped flat, it is **not** a substring of the prompt. Every match here
 therefore goes through :func:`_flat`, which collapses whitespace runs. That is
@@ -649,8 +649,15 @@ def test_move_6_is_its_own_sentence_and_the_roster_marks_the_seat_it_points_at(
 # ==========================================================================
 
 
-def test_story_paragraph_bound_is_four() -> None:
-    """``STORY_PARAGRAPH_BOUND`` is 4 — pinned as an ABSOLUTE literal.
+def test_story_paragraph_bound_is_five() -> None:
+    """``STORY_PARAGRAPH_BOUND`` is 5 — pinned as an ABSOLUTE literal.
+
+    **RAISED FROM 4 (2026-09-09), and this test is what made the raise a
+    two-file change rather than a one-line one** — which is the point of
+    pinning an absolute literal at all. The number moved at the author's
+    request ("make it longer"), together with ``STORY_MAX_CHARS`` (1800 ->
+    2500); the reasoning for *five* specifically, and the local output
+    allowance that caps it, is at the constant.
 
     039's ``test_diary_sentence_bound_is_six`` and its reason, which transfers
     unchanged: the relation tests below necessarily READ the constant, so they
@@ -663,7 +670,7 @@ def test_story_paragraph_bound_is_four() -> None:
     constant or pins their equality — and this assertion is what makes a
     silent divergence visible from the prompt side.
     """
-    assert STORY_PARAGRAPH_BOUND == 4
+    assert STORY_PARAGRAPH_BOUND == 5
 
 
 def test_move_7_states_the_length_bound_once(

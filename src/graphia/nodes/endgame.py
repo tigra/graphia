@@ -866,11 +866,21 @@ STORY_MAX_PARAGRAPHS = STORY_PARAGRAPH_BOUND
 # second dimension, which is exactly the shape of 039's ``DIARY_MAX_CHARS``:
 # four paragraphs of any length still bound nothing.
 #
-# WHY 1800, AND WHY THERE IS A CEILING ON IT. Two live stories measured 843 and
-# 911 characters over three paragraphs each (spec 040 Task 2.3), so 1800 is
-# roughly double the observed size — it is a runaway guard, not a target, and
-# real stories are not expected to reach it (which is why Task 5.4's evidence
-# is necessarily constructed input).
+# WHY 2500, AND WHY THERE IS A CEILING ON IT. RAISED FROM 1800 (2026-09-09, at
+# the author's request "make it longer"), together with the stated paragraph
+# bound it works with. 1800 was set as roughly double two live stories of 843
+# and 911 characters over three paragraphs each (spec 040 Task 2.3) — a runaway
+# guard, not a target, and Task 5.4's line predicted real stories would never
+# reach it.
+#
+# THEY REACHED IT ON THE FIRST MEASURED RUN, and that is why this number moved.
+# Record 45's story came in at three paragraphs of 474 + 487 + 419 and was
+# clamped BY THIS CONSTANT: a fourth ~460-character paragraph would have
+# crossed 1800 while the stated cap of four paragraphs had not been reached, so
+# the backstop was silently governing a bound the prompt states in paragraphs
+# (spec 040 Task 10.4, contradiction 3). 2500 restores the intended division of
+# labour — the paragraph bound governs, this catches runaways — and it is the
+# top of §2.5's own documented margin rather than a fresh guess.
 #
 # The CEILING is the local path's own output cap: ``llm._OLLAMA_NUM_PREDICT``
 # is 1024 tokens, sent as ``options.num_predict`` on every native
@@ -883,14 +893,16 @@ STORY_MAX_PARAGRAPHS = STORY_PARAGRAPH_BOUND
 # long story: the provider would stop mid-sentence, this clamp would then cut
 # at the last whole paragraph boundary, and the ending would silently lose its
 # final sentence with nothing to distinguish that from a story the model chose
-# to end there. §2.5's "keep under ~2500" is the margin under that ceiling;
-# 1800 sits well inside it.
+# to end there. §2.5's "keep under ~2500" is the margin under that ceiling, and
+# 2500 now USES that margin in full rather than sitting well inside it — so
+# this is the largest this constant can go without first widening the story
+# call's own ``num_predict``, which no per-purpose seam exists for today.
 #
 # NOT derived from ``_OLLAMA_NUM_PREDICT``. It is a different dimension
 # (characters against tokens) bridged only by a heuristic ratio, so an
 # expression would be fake precision — and the constant is private to
 # ``llm.py``. The relationship is a citation, which is what 039 does too.
-STORY_MAX_CHARS = 1800
+STORY_MAX_CHARS = 2500
 
 # What the clamp rejoins with, and what ``STORY_SYSTEM``'s move 7 asks the
 # model for in the same words: "separated by blank lines".
