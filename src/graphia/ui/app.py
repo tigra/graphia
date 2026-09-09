@@ -688,14 +688,32 @@ class GraphiaApp(App[None]):
         self._arm_hard_exit_fallback()
 
     def _enter_endgame(self, log: RichLog) -> None:
-        """Put ``#public-log`` into its post-game reading state.
+        """Declare the game over and put ``#public-log`` into reading state.
 
-        Spec 040 (The Moderator's Closing Story), Slice 6. **The one place
-        every ending path funnels through**, so no ending variant can end up
-        with a different contract than another: the normal win/draw ending,
-        the Day-cap runaway ending (same code path — it just has no career
-        panel, because ``_OUTCOME_BY_WINNER`` deliberately omits
-        ``"runaway"``), and :meth:`_drive`'s ``except``.
+        Spec 040 (The Moderator's Closing Story), Slice 6. **The one place a
+        game becomes over, and the one place the reading affordances are set —
+        deliberately the same place** (Task 6.7). ``_game_over`` is the gate
+        on :meth:`action_leave`, so a path that flipped it without calling
+        this would advertise no leaving key and freeze nothing, and the
+        divergence would be invisible until someone played that particular
+        ending. Folding the flip in makes the parity structural instead of a
+        convention two call sites have to keep.
+
+        **Three ending variants, two call sites, and the mismatch is worth
+        naming** so nobody goes looking for a third branch:
+
+        - a side wins or the game draws — ``drive_graph`` returns and
+          :meth:`_record_career` writes the career panel;
+        - the Day-cap runaway (spec 023) — the **same** call site. It needs no
+          branch of its own: ``_OUTCOME_BY_WINNER`` deliberately omits
+          ``"runaway"``, so ``_record_career`` computes ``outcome=None`` and
+          returns having written nothing, which is why the story is the last
+          content before the banner on this path;
+        - an unhandled exception — :meth:`_drive`'s ``except``, the third
+          no-panel path. It gets the border subtitle and the frozen pane too,
+          on purpose: a crashed ending is also something a person may want to
+          scroll back through, and the remote variant has a CloudWatch log
+          group in it that they may want to read twice.
 
         **Focus is the load-bearing line, and it is not decoration.** By the
         time a game ends the docked ``Input`` has been disabled again by
@@ -758,6 +776,7 @@ class GraphiaApp(App[None]):
         the ending below the fold. Real play cannot hit it (hundreds of
         refreshes precede the ending); a pilot test that never pauses can.
         """
+        self._game_over = True
         log.auto_scroll = False
         log.border_subtitle = f" {EXIT_HINT} "
         log.focus()
@@ -787,8 +806,11 @@ class GraphiaApp(App[None]):
                 config=self.config,
                 on_state=self._on_graph_state,
             )
+            # Covers BOTH non-crash endings: a real outcome (career panel
+            # written) and the Day-cap runaway (`_record_career` returns
+            # without writing, so the story is the last content before the
+            # banner). One path, so one exit contract.
             self._record_career(log)
-            self._game_over = True
             log.write(
                 Text.from_markup(f"[bold green]Game over.[/] {EXIT_HINT}")
             )
@@ -797,7 +819,6 @@ class GraphiaApp(App[None]):
             self.logger.record(
                 {"error": repr(exc), "traceback": traceback.format_exc()}
             )
-            self._game_over = True
             if self.config.remote_mode:
                 # Remote crash: the graph ran in the deployed Runtime, so the
                 # local JSONL log only has the client-side stack. Hand the
