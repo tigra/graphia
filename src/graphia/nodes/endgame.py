@@ -1469,7 +1469,13 @@ def moderator_story(
     longer one that lost its last look identical), so it is read from the clamp
     and plumbed, never measured off the story. The transcript attribute it
     feeds, ``<story truncated="true">``, belongs to **Slice 8**, which is the
-    slice that builds the element; today the flag has one writer and no reader.
+    slice that builds the element. **THE READER NOW EXISTS (Task 8.7,
+    2026-09-09) and this paragraph's last clause said "today the flag has one
+    writer and no reader" until then** — true when Task 5.3 wrote it, and
+    nearly permanent, because Slice 8 built the element (Task 8.3) with no task
+    line for the attribute. The reader is
+    ``tools.eval_transcript._split_endgame_texts``, which lifts this flag off
+    the story message in the same pass that partitions the endgame delta.
 
     WHY THERE ARE TWO GUARD LAYERS, and what each catches that the other
     cannot — because the second looks redundant and §2.8's stated reason for it

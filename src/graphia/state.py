@@ -27,11 +27,14 @@ from langgraph.graph.message import add_messages
 #   failure costs more than itself in a narrow markup guard (§2.11) — live,
 #   and today the ONLY reader. Slice 2 added it after this list was written,
 #   which is how it came to be missing from it.
-# - ``tools.eval_transcript`` WILL read it to partition an endgame delta's
-#   ``SystemMessage``s into ``(facts, story)`` and render the ``<story>``
-#   block — **Slice 8** (Task 8.3 builds ``_render_story``, Task 8.5
-#   registers the tag). Verified 2026-09-09: that module contains zero
-#   occurrences of "story", case-insensitive.
+# - ``tools.eval_transcript`` READS it in ``_split_endgame_texts`` to partition
+#   an endgame delta's ``SystemMessage``s and render the ``<story>`` block —
+#   **live since Slice 8** (Tasks 8.1-8.5). **This bullet said "WILL read it"
+#   and offered a zero-occurrences measurement as proof, and Task 8.7 corrects
+#   it rather than restating it:** the measurement was true when Task 5.3 wrote
+#   it and false three commits later, because the slice that landed the reader
+#   did not come back to the inventory it satisfied. Present tense means live,
+#   and this is the second time that promise has needed enforcing.
 # - ``tools.blunder_eval`` WILL read it to decide whether a game produced a
 #   story at all — the ledger's ``quality.story_missing_*`` signal, **Slice 9,
 #   Task 9.1**. Verified: zero occurrences there too.
@@ -119,16 +122,28 @@ CLOSING_STORY_KWARG = "closing_story"
 # the flag they draw exactly the wrong conclusion about the one thing the whole
 # feature exists to be judged on.
 #
-# DELIBERATELY NOT IN ``eval_transcript``'s ``_ATTR_NAMES``, following spec
-# 038's ratified treatment of ``human="true"``: a machine flag is not a detail
-# a reviewer reads, so it stays part of the tag's punctuation. Task 8.5 says
-# the same thing independently — the two lines agreed before they met.
+# DELIBERATELY NOT IN ``eval_ledger``'s ``_ATTR_NAMES`` — **the module name in
+# this clause was wrong (it said ``eval_transcript``) and Task 8.7 fixes it
+# where Task 5.3 fixed only the tech spec's copy of the same error.** Following
+# spec 038's ratified treatment of ``human="true"``: a machine flag is not a
+# detail a reviewer reads, so it stays part of the tag's punctuation. Task 8.5
+# says the same thing independently — the two lines agreed before they met, and
+# Task 8.7 MEASURED the consequence rather than trusting it: with ``truncated``
+# absent from that tuple, ``eval_ledger.tokenize_transcript`` yields
+# ``<story truncated="true">`` as ONE ``KIND_MARKER`` span.
 #
-# ZERO READERS TODAY, and that is a resequencing rather than dead weight. The
-# transcript element that carries the attribute does not exist yet: Task 8.3
-# builds ``_render_story``, Task 8.5 registers the tag, Task 8.6 tests it. An
-# attribute cannot precede its element, so Task 5.3 shipped the message flag
-# and handed ``<story truncated="true">`` to Slice 8.
+# ONE READER, AND THE RESEQUENCING IS CLOSED (Task 8.7, 2026-09-09). This
+# comment read "ZERO READERS TODAY … an attribute cannot precede its element,
+# so Task 5.3 shipped the message flag and handed ``<story truncated="true">``
+# to Slice 8" — correct when written, and the hand-off it describes was where
+# the flag nearly died: Slice 8 had no task line for the attribute, so the
+# element was built (Task 8.3) and the writer stayed readerless. The reader is
+# ``tools.eval_transcript._split_endgame_texts``, which lifts the flag off the
+# story message in the same pass that partitions the delta and hands it to
+# ``_render_story`` as ``truncated=``; that renderer emits
+# ``eval_transcript._TRUNCATED_ATTR`` on the opening tag, and only then.
+# Read as ``extra.get(KEY)``, so the "absent, never ``False``" rule above is
+# exactly what the reader expects.
 CLOSING_STORY_TRUNCATED_KWARG = "closing_story_truncated"
 
 # The THIRD member of the family, and the only one that rides on ``end_screen``'s

@@ -69,6 +69,7 @@ from langchain_core.messages import AIMessage, SystemMessage
 
 from graphia.state import (
     CLOSING_STORY_KWARG,
+    CLOSING_STORY_TRUNCATED_KWARG,
     PlayerPersona,
     PlayerState,
     thought_text,
@@ -102,6 +103,41 @@ _ROLE_LABELS: dict[str, str] = {
 # own span: a machine flag is not a detail a reviewer reads, so it stays part of
 # the tag's punctuation (``graphia.eval_ledger._ATTR_NAMES``).
 _HUMAN_ATTR = 'human="true"'
+
+# The clipped story's marker, written onto the ``<story>`` tag by
+# :func:`_render_story` (spec 040 §2.5, Task 8.7) when — and only when —
+# ``nodes.endgame._clamp_story`` actually dropped a whole paragraph.
+#
+# WHAT IT IS FOR (§2.5): a reviewer judging a story that stops early must
+# attribute the stop to the CAP rather than to the storyteller. Without the
+# marker they draw exactly the wrong conclusion about the one thing this whole
+# feature exists to be judged on. And it cannot be recomputed here — a story of
+# exactly ``STORY_MAX_PARAGRAPHS`` paragraphs is indistinguishable from a longer
+# one that lost its last — so the fact rides in on the message
+# (``state.CLOSING_STORY_TRUNCATED_KWARG``) or it is lost.
+#
+# ABSENT, NEVER ``truncated="false"`` — the conditional-attribute idiom of
+# :data:`_HUMAN_ATTR` and :func:`_substituted_attr`, and for the sharper of
+# their reasons: an unclipped story's element must be byte-for-byte the plain
+# ``<story>`` this format already emits, so the marking cannot creep in as an
+# always-present field a reader learns to ignore.
+#
+# Deliberately NOT one of ``graphia.eval_ledger._ATTR_NAMES``, following spec
+# 038's ratified treatment of ``human="true"``: a machine flag is not a detail
+# a reviewer reads, so it stays inside the tag's punctuation. MEASURED rather
+# than asserted (Task 8.7): with ``truncated`` absent from that tuple,
+# ``tokenize_transcript`` yields ``<story truncated="true">`` as ONE
+# :data:`~graphia.eval_ledger.KIND_MARKER` span, in the block form and in the
+# single-paragraph inline form alike.
+#
+# A BARE LITERAL WITH NOTHING TO IMPORT, unlike :func:`_substituted_attr`'s
+# ``substituted``: that attribute name IS in ``_ATTR_NAMES`` and IS read back
+# by ``eval_ledger._is_substituted``, so writer and reader have to agree on one
+# spelling. This one has no reader anywhere — that is what "part of the
+# punctuation" means — so there is no second spelling for it to drift from. The
+# ``additional_kwargs`` key (``closing_story_truncated``) is a different name
+# for a different layer and is deliberately not reused as the attribute name.
+_TRUNCATED_ATTR = 'truncated="true"'
 
 # --- Moderator-line shapes the renderer must recognise to restructure them ---
 # These mirror the engine templates in ``graphia.prompts`` (kept as anchored
@@ -669,10 +705,10 @@ def _render_phases(
                 # "no endgame recorded" should use an empty ``end_screen``
                 # delta, which is the shape that has always produced it.
                 flush()
-                facts, story = _split_endgame_texts(delta)
+                facts, story, clipped = _split_endgame_texts(delta)
                 if facts or not story:
                     out.append(_render_endgame(delta, names))
-                story_block = _render_story(story)
+                story_block = _render_story(story, truncated=clipped)
                 if story_block is not None:
                     out.append(story_block)
                 continue
@@ -983,8 +1019,10 @@ class _VoteAssembler:
 # ---------------------------------------------------------------------------
 
 
-def _split_endgame_texts(delta: dict[str, Any]) -> tuple[list[str], list[str]]:
-    """Partition an ending delta's Moderator texts into ``(facts, story)``.
+def _split_endgame_texts(
+    delta: dict[str, Any],
+) -> tuple[list[str], list[str], bool]:
+    """Partition an ending delta's Moderator texts into ``(facts, story, clipped)``.
 
     The ending speaks in two voices and they need different blocks: ``<endgame>``
     is the record of what *happened* (the winner line, the kill log, the roster
@@ -1022,12 +1060,42 @@ def _split_endgame_texts(delta: dict[str, Any]) -> tuple[list[str], list[str]]:
 
     Order-preserving within each half; non-``SystemMessage`` entries, non-string
     content and empty content are skipped, exactly as :func:`_system_texts` does.
+
+    **THE THIRD ELEMENT IS TASK 8.7's, AND IT MEANS §2.9's SYMBOL TABLE NO
+    LONGER DESCRIBES THIS FUNCTION — the section is amended rather than left
+    quietly false.** §2.9 pins the return as ``(facts, story)`` *as text*, which
+    was the right shape until the ``<story truncated="true">`` attribute needed
+    a route here: the truncation fact lives on the message
+    (``state.CLOSING_STORY_TRUNCATED_KWARG``, set by
+    ``nodes.endgame.moderator_story`` only when ``_clamp_story`` dropped a
+    paragraph) and is **not recoverable from the text**, so it either travels
+    with the text or it does not arrive at all.
+
+    **Why widened here rather than answered by a second scanner.** The obvious
+    shape-preserving alternative — a ``_story_truncated(delta) -> bool`` beside
+    this function, leaving ``(facts, story)`` untouched — was rejected because it
+    would answer "which of these messages is the story" a **second** time, in a
+    second place, and the two answers would have to agree for ever. That is the
+    drift :func:`_substituted_attr`'s own docstring refuses in this very module
+    ("Three copies could drift; one cannot"), and here it is not hypothetical:
+    this loop skips a flagged message whose content is empty, so a naive second
+    scanner would report ``True`` for a truncation flag on text that never
+    reached the block. Reading the flag off the SAME ``additional_kwargs`` dict
+    in the SAME pass makes that disagreement unrepresentable. The cost is two
+    private in-module call sites updated (:func:`_render_endgame` and
+    :func:`_render_phases`) and one spec section amended; there are no other
+    callers and no test calls it.
+
+    ``clipped`` is ``True`` iff at least one message that **contributed text to
+    the story half** carried the truncation flag — a claim about the block that
+    gets rendered, never about the delta at large.
     """
     facts: list[str] = []
     story: list[str] = []
+    truncated = False
     messages = delta.get("messages")
     if not isinstance(messages, (list, tuple)):
-        return facts, story
+        return facts, story, truncated
     for msg in messages:
         if not isinstance(msg, SystemMessage):
             continue
@@ -1037,9 +1105,22 @@ def _split_endgame_texts(delta: dict[str, Any]) -> tuple[list[str], list[str]]:
         # Read defensively: ``additional_kwargs`` is a plain dict on every real
         # message, but the renderer never raises on a thin stand-in.
         extra = getattr(msg, "additional_kwargs", None)
-        flagged = isinstance(extra, dict) and bool(extra.get(CLOSING_STORY_KWARG))
+        if not isinstance(extra, dict):
+            extra = {}
+        flagged = bool(extra.get(CLOSING_STORY_KWARG))
         (story if flagged else facts).append(text)
-    return facts, story
+        # ``flagged and`` IS LOAD-BEARING, not belt-and-braces: the attribute is
+        # a claim about the prose inside THIS ``<story>`` block, so only a
+        # message that actually contributed to it may raise the claim. Drop the
+        # guard and a facts message carrying the truncation key alone would mark
+        # a story it is no part of. The engine always writes the two keys
+        # together (``nodes.endgame.moderator_story``), so the shape is
+        # hand-built-capture territory — but this is a read boundary, and the
+        # honest answer for "the facts were clipped" is that this format has
+        # nowhere to say it.
+        if flagged and extra.get(CLOSING_STORY_TRUNCATED_KWARG):
+            truncated = True
+    return facts, story, truncated
 
 
 def _render_endgame(delta: dict[str, Any], names: dict[str, str]) -> str:
@@ -1060,13 +1141,16 @@ def _render_endgame(delta: dict[str, Any], names: dict[str, str]) -> str:
     precisely so ``(delta, names) -> str`` is unchanged and every existing
     caller and test is untouched. For any delta with no flagged message the two
     are identical, which is the contract-stability claim the whole slice rests
-    on.
+    on. **Task 8.7 widened that helper's return to three elements and this
+    signature still did not move**, which is the point of having narrowed the
+    input here rather than at the call site: the facts block is indifferent to
+    everything the story half learns about itself.
 
     ``(no endgame recorded)`` is kept verbatim: it is the placeholder a capture
     with nothing to show has produced since spec 022, and a reworded
     placeholder would be a format change dressed up as a refactor.
     """
-    facts, _story = _split_endgame_texts(delta)
+    facts, _story, _clipped = _split_endgame_texts(delta)
     body: list[str] = []
     for text in facts:
         body.extend(text.split("\n"))
@@ -1075,7 +1159,7 @@ def _render_endgame(delta: dict[str, Any], names: dict[str, str]) -> str:
     return _wrap("endgame", body)
 
 
-def _render_story(story: list[str]) -> str | None:
+def _render_story(story: list[str], *, truncated: bool) -> str | None:
     """Render the Moderator's closing story as one ``<story>`` block, or ``None``.
 
     Spec 040 §2.9. A **top-level block, sibling of** ``<endgame>`` and emitted
@@ -1129,6 +1213,30 @@ def _render_story(story: list[str]) -> str | None:
     Returns ``None`` when there is nothing usable to render, so the caller emits
     no element at all rather than an empty ``<story></story>`` — absence, never
     a misleading empty block.
+
+    **``truncated`` IS THE CAP'S MARK, AND IT IS TASK 8.7's WHOLE DELIVERABLE**
+    (§2.5, and §2.9 is amended to match — see :func:`_split_endgame_texts` for
+    why the shape it pinned had to move). ``True`` renders
+    ``<story truncated="true">`` via :func:`_wrap_attr`; ``False`` renders the
+    plain ``<story>`` via :func:`_wrap`. See :data:`_TRUNCATED_ATTR` for why the
+    attribute is absent rather than ``"false"`` on an unclipped story, and why
+    it deliberately stays out of ``eval_ledger._ATTR_NAMES``.
+
+    **KEYWORD-ONLY AND WITH NO DEFAULT, on purpose.** A ``truncated: bool =
+    False`` default would make "the caller forgot" and "the cap did not fire"
+    the same call, and this is precisely the fact §2.5 says a reviewer draws the
+    wrong conclusion without. Every caller states its arm, which is also what
+    keeps a witness for the unflagged arm from being vacuous.
+
+    **THE UNFLAGGED ARM CALLS ``_wrap``, NOT ``_wrap_attr("story", "", …)``, and
+    the equivalence is real but not a contract.** Those two happen to agree
+    today for an empty attribute run, so one line would do — but the whole
+    slice's byte-identity claim (a capture with no flagged message renders
+    exactly as it did) then rests on a property of :func:`_wrap_attr`'s
+    *implementation*, and a later "always emit the space" tidy there would shift
+    every unclipped story in the corpus. Routing the unflagged path through the
+    same :func:`_wrap` every other block uses makes that claim independent of
+    the attribute-bearing branch.
     """
     lines: list[str] = []
     for text in story:
@@ -1155,6 +1263,8 @@ def _render_story(story: list[str]) -> str | None:
         lines.pop()
     if not lines:
         return None
+    if truncated:
+        return _wrap_attr("story", _TRUNCATED_ATTR, lines)
     return _wrap("story", lines)
 
 
