@@ -67,7 +67,12 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, SystemMessage
 
-from graphia.state import PlayerPersona, PlayerState, thought_text
+from graphia.state import (
+    CLOSING_STORY_KWARG,
+    PlayerPersona,
+    PlayerState,
+    thought_text,
+)
 
 __all__ = ["render_transcript"]
 
@@ -884,8 +889,67 @@ class _VoteAssembler:
 # ---------------------------------------------------------------------------
 
 
+def _split_endgame_texts(delta: dict[str, Any]) -> tuple[list[str], list[str]]:
+    """Partition an ending delta's Moderator texts into ``(facts, story)``.
+
+    The ending speaks in two voices and they need different blocks: ``<endgame>``
+    is the record of what *happened* (the winner line, the kill log, the roster
+    and the persona reveal — ``nodes.endgame.end_screen``'s one public
+    ``SystemMessage``), and the closing story is a *retelling* of it
+    (``nodes.endgame.moderator_story``'s, spec 040).
+
+    **DISCRIMINATE ON THE MESSAGE, never on the node and never on the position**
+    (spec 040 §2.9). The story message is a public ``SystemMessage`` carrying
+    ``additional_kwargs={CLOSING_STORY_KWARG: True}``, with the constant in
+    ``graphia.state``, and that flag is the whole test. Three reasons the two
+    alternatives were rejected:
+
+    - **the node** is not available to a renderer that only ever sees one
+      delta's contents, and threading it in would couple the split to the
+      graph's topology — the very thing spec 040 §2.1 has already changed once;
+    - **the position** ("the last ``SystemMessage`` is the story") is the
+      pattern tech-spec §3 had to port four existing tests away from, because a
+      message appended after it silently re-points the whole answer;
+    - a **content sniff** (the ``ENDGAME_HEADER_ROSTER`` prose) would couple the
+      transcript's structure to a display string, so rewording a header would
+      silently move a story into the facts block.
+
+    IMPORT THE FLAG, NEVER COPY THE LITERAL — 039's rule. A copied
+    ``"closing_story"`` here would keep filing stories under ``<endgame>`` for
+    ever after a reword, with no red anywhere.
+
+    **The two halves never both arrive.** ``end_screen`` and ``moderator_story``
+    are separate super-steps (:data:`_ENDGAME_NODES`), so every real call sees
+    one populated half and one empty one — the story-only delta is the NORMAL
+    path here, not an edge case. The function is written as a partition anyway
+    because it costs nothing and because a synthetic capture (a test, an older
+    hand-built log) can hand it both at once, and silently dropping half of such
+    a delta would be worse than rendering it.
+
+    Order-preserving within each half; non-``SystemMessage`` entries, non-string
+    content and empty content are skipped, exactly as :func:`_system_texts` does.
+    """
+    facts: list[str] = []
+    story: list[str] = []
+    messages = delta.get("messages")
+    if not isinstance(messages, (list, tuple)):
+        return facts, story
+    for msg in messages:
+        if not isinstance(msg, SystemMessage):
+            continue
+        text = _message_text(msg)
+        if not text:
+            continue
+        # Read defensively: ``additional_kwargs`` is a plain dict on every real
+        # message, but the renderer never raises on a thin stand-in.
+        extra = getattr(msg, "additional_kwargs", None)
+        flagged = isinstance(extra, dict) and bool(extra.get(CLOSING_STORY_KWARG))
+        (story if flagged else facts).append(text)
+    return facts, story
+
+
 def _render_endgame(delta: dict[str, Any], names: dict[str, str]) -> str:
-    """Render the ``end_screen`` delta as one ``<endgame>`` block (spec 022).
+    """Render an ending delta's FACTS as one ``<endgame>`` block (spec 022).
 
     ``end_screen`` emits a single Moderator ``SystemMessage`` whose content holds
     the winner line, the events list, the full roster, and the persona reveal —
@@ -893,10 +957,24 @@ def _render_endgame(delta: dict[str, Any], names: dict[str, str]) -> str:
     block (flush-left, content reproduced as-is), so the reader/parser locates
     the game's outcome as one self-contained labeled block rather than a
     Moderator line buried in the last Night.
+
+    **Spec 040 narrows the input to the facts, and leaves the signature alone.**
+    ``<endgame>`` records what happened; the closing story retells it, and
+    belongs in its own sibling block (§2.9). So the body is
+    :func:`_split_endgame_texts`' facts half rather than every
+    ``SystemMessage`` in the delta — the split happens inside this function
+    precisely so ``(delta, names) -> str`` is unchanged and every existing
+    caller and test is untouched. For any delta with no flagged message the two
+    are identical, which is the contract-stability claim the whole slice rests
+    on.
+
+    ``(no endgame recorded)`` is kept verbatim: it is the placeholder a capture
+    with nothing to show has produced since spec 022, and a reworded
+    placeholder would be a format change dressed up as a refactor.
     """
-    texts = _system_texts(delta)
+    facts, _story = _split_endgame_texts(delta)
     body: list[str] = []
-    for text in texts:
+    for text in facts:
         body.extend(text.split("\n"))
     if not body:
         body = ["(no endgame recorded)"]
@@ -911,9 +989,16 @@ def _render_endgame(delta: dict[str, Any], names: dict[str, str]) -> str:
 def _system_texts(delta: dict[str, Any]) -> list[str]:
     """The stripped string content of each ``SystemMessage`` this delta added.
 
-    Used by the vote assembler and endgame renderer, which only ever care about
-    the Moderator (``SystemMessage``) voice. Order-preserving; non-string /
-    empty content is skipped.
+    Used by the vote assembler, which only ever cares about the Moderator
+    (``SystemMessage``) voice. Order-preserving; non-string / empty content is
+    skipped.
+
+    **The ending no longer reads through here** — spec 040 needs the Moderator's
+    two ending voices told apart, which is one question further than "is this
+    the Moderator?", so :func:`_split_endgame_texts` asks it instead. The two
+    functions apply the same three skips (type, non-string content, empty
+    content) and deliberately were not folded into one: a vote has no second
+    voice to partition and would have to discard a half on every call.
     """
     out: list[str] = []
     messages = delta.get("messages")
