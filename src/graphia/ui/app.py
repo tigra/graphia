@@ -751,10 +751,19 @@ class GraphiaApp(App[None]):
         only matters on the last screen.
 
         Nothing else is needed for the scrolling itself. ``RichLog`` is a
-        ``ScrollView`` with ``overflow-y: scroll`` and ``can_focus = True``;
-        probed at 120 rows in an 11-row viewport it reported
-        ``max_scroll_y=114`` and responded to ``up`` / ``pageup`` / ``home``
-        / ``end``.
+        ``ScrollView`` with ``overflow-y: scroll`` and ``can_focus = True``,
+        and once focused it answers ``up`` / ``pageup`` / ``home`` / ``end`` —
+        verified on all three ending paths by driving real games. Under
+        ``App.run_test()``'s default 80x24 this pane settles at 76 content
+        columns and a 10-11 row viewport, and ``max_scroll_y`` is just the row
+        count less that: 120 rows reported 109, a 40-row win ending 30, a
+        59-row runaway ending 49.
+
+        The **mouse wheel** needs none of this: scroll events route to the
+        widget under the pointer, so ``#public-log`` scrolls unfocused
+        (measured 109 -> 103), and a wheel event never reaches ``on_key`` —
+        which is why the wheel was the one way to read back through an ending
+        even before Task 6.3 named a leaving key.
 
         Called **after** the final banner write rather than at the moment
         ``_game_over`` flips, so the pane freezes at the true bottom without
