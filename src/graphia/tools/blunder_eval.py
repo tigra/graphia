@@ -404,6 +404,34 @@ class EvalResult:
     # :func:`score_diary_fallback`'s section banner for that argument and for
     # why it carries no Wilson band. Additive ⇒ NO ``METRICS_VERSION`` bump.
     diary_fallback: dict[str, int] = field(default_factory=dict)
+    # --- Spec-040 §2.10 closing-story run health (Slice 9, Task 9.1) ---
+    # ``{"count": <ending games with NO story>, "denominator": <games that
+    # reached the ending>}`` summed over the run's completed games, or EMPTY when
+    # no game reached the ending at all — in which case ``render_record`` omits
+    # the ``quality.story_*`` keys entirely. ABSENT, never a misleading zero,
+    # exactly like the diary pair above: ``story_missing_rate: 0.0`` on a run
+    # whose games never got to ``end_screen`` would assert a clean measurement of
+    # a node that never ran.
+    #
+    # NAMED FOR THE PATHOLOGY (``missing``), so a high number is visibly bad and
+    # nobody has to remember which direction is good — the same reason 039 counts
+    # ``diary_fallback`` entries rather than real ones.
+    #
+    # THE DENOMINATOR IS **NOT** ``games_completed``, and the difference is the
+    # informative part. ``games_completed`` counts games ``_play_one_game``
+    # returned a capture for; this counts games whose event log actually holds an
+    # ``end_screen`` delta. A game that exhausted ``_play_one_game``'s anti-hang
+    # backstop (``max_days * 60 + 40`` super-steps) returns a perfectly good
+    # capture and is COMPLETED, yet never reached the ending, so it offered the
+    # story node no opportunity and must not sit in this denominator. Any
+    # divergence between the two is itself a finding about the batch — which is
+    # why both numbers are on the record and neither is derived from the other.
+    #
+    # ``render_record`` derives the rate from this pair (one definition of it, and
+    # it can never be written without its denominator beside it). Additive and
+    # conditional ⇒ NO ``METRICS_VERSION`` bump, and every committed record
+    # renders byte-identically because none of them can satisfy the gate.
+    story_missing: dict[str, int] = field(default_factory=dict)
     # --- Spec-041 substitution census (§2.5, Slice 7) ---
     # ``{"<kind>": {"count": <substituted>, "attempted": <asked of the model>}}``
     # per :class:`~graphia.substitution.SubstitutionKind`, summed over the run's
@@ -2518,6 +2546,12 @@ def render_record(result: EvalResult, run_date: str) -> str:
           diary_fallback_rate: <float>      # placeholder entries / entries attempted
           diary_fallback_entries: <int>     # entries that are graphia.nodes.day._DIARY_FALLBACK
           diary_entries_attempted: <int>    # the denominator — the rate is never written alone
+          # spec 040 §2.10 — RUN HEALTH, not a metric. All three OMITTED together when
+          # no game reached the ending — absent, never a 0.0. NEVER backfilled onto a
+          # pre-040 record: that build had no story path, so it has no denominator.
+          story_missing_rate: <float>       # games with no story / games that reached the ending
+          story_missing_games: <int>        # endings carrying no CLOSING_STORY_KWARG message
+          story_ending_games: <int>         # THE DENOMINATOR — games whose log holds an end_screen delta
           # spec 041 — the substitution census, one entry per ATTEMPTED answer kind
           # (enum order). A kind with no opportunity is OMITTED, never rate: 0.0.
           # No Wilson band on any of them: a census, not a sample.
@@ -2784,6 +2818,37 @@ def render_record(result: EvalResult, run_date: str) -> str:
         quality_block["diary_fallback_rate"] = diary_placeholders / diary_attempted
         quality_block["diary_fallback_entries"] = diary_placeholders
         quality_block["diary_entries_attempted"] = diary_attempted
+    # Spec 040 §2.10 — the CLOSING-STORY MISSING share, so a run whose story call
+    # failed most of the time says so in its own record instead of reading like a
+    # clean one. 039's argument transferred verbatim (a smoke run measured the
+    # diary placeholder 9 times in 11 and nothing said so — not the ledger, not
+    # the transcript, not the log, because this harness installs no logging
+    # handler), and it is sharper here: with no ablation flag (§2.12) there is no
+    # off arm, so absence in a post-040 record is UNAMBIGUOUS — it means failure.
+    #
+    # THREE FLAT SCALARS, matching ``quality``'s existing shape and deliberately
+    # NOT ``metrics``' nested ``{rate, count, denominator}`` facet: this is a
+    # run-health census, not a scored metric, and it must not read as one. The
+    # rate is derived HERE (the result carries only the pair) so there is one
+    # definition of it, and it is never emitted without its denominator beside
+    # it. NO WILSON BAND — ``quality`` is a census of ONE RUN, not a sample of a
+    # population, so there is no sampling uncertainty for an interval to express;
+    # ``games_attempted`` / ``games_completed`` / ``games_failed_early`` carry
+    # none either, for the same reason. Additive, with no changed detection rule
+    # and no changed denominator ⇒ no ``METRICS_VERSION`` bump.
+    #
+    # THE GATE IS THE DENOMINATOR, never truthiness. ``story_ending_games > 0``
+    # is the only condition: ``story_missing_games: 0`` over a real denominator is
+    # the GOOD result and the whole point of the signal, so gating on the
+    # numerator would hide exactly what a clean run has to report. And a run
+    # where no game reached ``end_screen`` records nothing here rather than a
+    # ``0.0`` asserting a clean measurement of a node that never ran.
+    story_endings = int(result.story_missing.get("denominator", 0))
+    if story_endings > 0:
+        stories_missing = int(result.story_missing.get("count", 0))
+        quality_block["story_missing_rate"] = stories_missing / story_endings
+        quality_block["story_missing_games"] = stories_missing
+        quality_block["story_ending_games"] = story_endings
     lines += _yaml_block(quality_block, indent=1)
 
     # ``quality.substitutions`` (spec 041 §2.5) — the per-answer-kind census: how
