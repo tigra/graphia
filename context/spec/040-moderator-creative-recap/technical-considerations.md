@@ -7,7 +7,7 @@ made self-validating — and the two pre-existing faults it forces us to fix.
 # Technical Specification: The Moderator's Closing Story
 
 - **Functional Specification:** [040 — The Moderator's Closing Story](./functional-spec.md)
-- **Status:** Draft
+- **Status:** Completed *(2026-09-09 — §2.5, §2.7 and §2.9 carry mid-implementation amendment notes where measurement contradicted the plan. **§4 "Testing Strategy" was never amended** and still carries four claims later measurement found false or stale — the raising-queue message count, the corpus file count, the exit keys, and the suite count — each itemised in `tasks.md` under Task 10.4.)*
 - **Author(s):** Alexey Tigarev
 
 > **This spec cannot be implemented until spec 039 lands on `main`.** It reads `GameState["private_diaries"]` and the `DiaryRecord` shape, neither of which exists on `main` — 039 is on branch `spec-039-ai-private-diaries`. It also builds on 039's `FakeLargeUnified` per-schema queue, its `day_trailer` restructuring of `_render_phases`, and its key-by-key `quality` block. Spec 028's `private_thoughts` is on `main` already, so the reflections half is available regardless.

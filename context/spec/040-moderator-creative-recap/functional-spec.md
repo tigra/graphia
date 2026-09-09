@@ -1,7 +1,7 @@
 # Functional Specification: The Moderator's Closing Story
 
 - **Roadmap Item:** Phase 6a — **End-of-Game Payoff → Moderator Creative Recap**. The first item of that group; the three **Asynchronous Day Chat** items in the same phase are separate and out of scope.
-- **Status:** Draft
+- **Status:** Completed *(verified 2026-09-09 — all **35** acceptance criteria met; suite green at **2845 passed / 1 skipped**. Two criteria hold by construction with nothing in the suite to witness them, and are logged in `context/product/backlog.md` rather than counted as coverage: `ctrl+c` at game-over has no test anywhere (coverage is mid-game only, and the tech spec's §4 line omits the key the criterion names), and no forced-path test asserts the career panel on an ending whose story failed. The three criteria about **a game whose story cannot be told** are satisfied by a **forced** failure rather than a natural instance — this spec's own design makes the real failure rare (record 45: `story_missing_rate: 0.0`). And the one live clamp fired on the **character backstop**, not on the paragraph bound the criterion states, so the stated limit remains witnessed only by constructed input, exactly as Task 5.4 predicted.)*
 - **Author:** Alexey Tigarev
 
 > **This is the payoff spec 039 deliberately withheld.** **039 (Per-AI Private Diaries)** built the private diaries this story reads, and shows the person playing **nothing** at end-of-game — the author's explicit decision at the time, taken because the story that consumes them is this separate item. Spec 039 is complete; its diaries are written before each Night and have never once been shown to a player.

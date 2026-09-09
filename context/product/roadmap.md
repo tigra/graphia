@@ -104,8 +104,8 @@ _The richer "feels-alive" Day experience and the end-of-game payoff — split ou
   - [ ] **Concurrent Human Typing with Live Display:** Render AI messages token-by-token in the terminal while the human can type their own message at the same time, without lines colliding or corrupting each other.
   - [ ] **Vote-Opens-Lock-Chat Handoff:** When any player calls a vote mid-conversation, cleanly freeze the chat mid-stream and transition all players (human and AI) into voting mode until the ballot resolves.
 
-- [ ] **End-of-Game Payoff**
-  - [ ] **Moderator Creative Recap:** When a win condition triggers, feed the Moderator the dead players' diaries, the day-chat logs, and the night-kill vote logs, and have them deliver a short creative story that reveals hidden twists the human couldn't see during play. (At this phase the Moderator reads the inputs directly; the structured tool-call surface for the same data is a Phase 7 further-improvement item.)
+- [x] **End-of-Game Payoff**
+  - [x] **Moderator Creative Recap:** When a win condition triggers, feed the Moderator the dead players' diaries, the day-chat logs, and the night-kill vote logs, and have them deliver a short creative story that reveals hidden twists the human couldn't see during play. (At this phase the Moderator reads the inputs directly; the structured tool-call surface for the same data is a Phase 7 further-improvement item.)
 
 ---
 

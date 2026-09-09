@@ -1,15 +1,23 @@
-"""Quit-confirmation modal: guards Esc/q against accidental exits.
+"""Quit-confirmation modal: guards Esc against accidental exits.
 
 Graphia is a single-player console game with no save/resume — once the
-process dies, the current game is gone. To keep an accidental Esc or q
-from throwing the session away, the App pushes :class:`QuitModal` on
-those keys and only honours the exit when the player explicitly answers
-``y`` (or clicks **Yes**). Answering ``n``, hitting Esc, or clicking
-**No** dismisses the modal and drops the player back where they were.
+process dies, the current game is gone. To keep an accidental Esc from
+throwing the session away, the App pushes :class:`QuitModal` on that key
+and only honours the exit when the player explicitly answers ``y`` (or
+clicks **Yes**). Answering ``n``, hitting Esc, or clicking **No**
+dismisses the modal and drops the player back where they were.
+
+``q`` does **not** reach this modal, and this docstring claimed it did
+until 2026-09-09. Spec 003 (Reliable Game Exit) removed the original
+``Binding("q", "quit", …)``; spec 040 (The Moderator's Closing Story)
+then bound ``q`` to :meth:`graphia.ui.app.GraphiaApp.action_leave`,
+which exits the **finished** game directly — no confirmation, because
+there is no game left to lose. Mid-game, ``q`` is an ordinary character
+and goes to the input line.
 
 The modal returns a ``bool`` via :py:meth:`textual.screen.Screen.dismiss`
-— ``True`` means "quit", ``False`` means "stay". The caller (wired in
-the next sub-task) decides what to do with that value.
+— ``True`` means "quit", ``False`` means "stay". The caller is
+:meth:`graphia.ui.app.GraphiaApp._on_quit_decision`.
 """
 
 from __future__ import annotations
