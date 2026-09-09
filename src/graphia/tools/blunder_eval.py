@@ -2030,6 +2030,68 @@ def score_diary_fallback(
     return {"count": count, "denominator": denominator}
 
 
+# ===========================================================================
+# SPEC 040 §2.10 — THE CLOSING-STORY MISSING SHARE: did this run actually
+# produce the endings it claims to, or did the story call quietly fail?
+#
+# WHERE IT SITS, AND WHY NOT IN ``metrics``. Under ``quality.``, beside
+# ``games_failed_early`` and the diary trio: it is RUN HEALTH — "did this run
+# measure the thing it claims to?" — not an AI-quality metric. No model is
+# judged well or badly by a story that failed to arrive; a failed structured
+# call is a plumbing fact. So the trio takes:
+#
+# - **no ``metrics:`` entry** — it is not a scored behaviour of the AI;
+# - **no ``eval_ledger.METRIC_ORDER`` change**, and therefore
+# - **no viewer table column** — the table's columns ARE ``METRIC_ORDER``, and
+#   every one of them is a paired A/B-comparable rate. NOTHING HERE IS PAIRED:
+#   §2.12 ships the story with no ``GRAPHIA_*`` ablation flag, so there is no
+#   off arm to put beside an on arm and no comparison for a column to serve.
+# - **no ``METRICS_VERSION`` bump.** Purely additive record shape, no changed
+#   detection rule and no changed denominator, so rates measured under one rule
+#   set stay comparable across the whole ledger — exactly the ``outcomes`` /
+#   ``vote_activity`` / ``ci_low`` precedent, and the same reasoning 039's diary
+#   trio and 041's substitution census each recorded in turn.
+#
+# AND NOTHING BEYOND THE TRIO, deliberately. A story-QUALITY rate would have to
+# invent the judge this spec explicitly disowns — there is no scorer for "was
+# that a good story", and inventing a proxy for one inside a measurement tool is
+# how a made-up number acquires the authority of a committed record. A length
+# statistic is the first step down the same road: it looks objective, it would
+# immediately be read as quality (longer = richer), and it would be wrong. What
+# the record answers is the one question that has a factual answer: was there a
+# story at all?
+#
+# NO WILSON BAND — see the argument at :func:`score_diary_fallback`'s banner,
+# which applies verbatim: ``quality`` is a CENSUS of one run, not a sample of a
+# population, so 2-of-18 missing stories is not an ESTIMATE of an underlying
+# missing rate, it is the complete and exact composition of this run's endings,
+# and there is no sampling uncertainty for an interval to express. What the
+# ledger's rate convention actually protects against is honoured — the rate is
+# never written without its denominator beside it.
+#
+# THE TRIO MUST NEVER BE BACKFILLED ONTO AN OLDER RECORD, and this is the one
+# rule here that a future maintainer could break in good faith while tidying the
+# ledger. The ledger is APPEND-ONLY (``evals/README.md``): a pre-040 record was
+# played by a build that had no ``moderator_story`` node at all, so it does not
+# have a denominator of zero — **it has no denominator, and ABSENCE IS A THIRD
+# CASE, NOT A FALSY ONE.** Writing ``story_missing_rate: 0.0`` onto such a
+# record would state that a run measured the story path cleanly when that path
+# did not exist to be measured; writing ``story_ending_games: 0`` would state
+# that none of its games reached an ending, which is false for every one of
+# them. Neither figure is recoverable from a committed record either, because
+# the trio is scored off the live event log and nothing pre-040 preserved
+# whether a story arrived. So: no backfill script, no default, no zero-fill in
+# the reader — an older record simply omits the keys, exactly as it omits
+# ``run.transcript_dir`` and the diary trio.
+#
+# ABSENT, NEVER A MISLEADING ZERO, on the write side too. The keys are emitted
+# only when at least one game reached the ending. The gate is on the DATA
+# (denominator > 0), never on truthiness and never on the numerator:
+# ``story_missing_games: 0`` over a real denominator is the GOOD result and the
+# whole point of the signal.
+# ===========================================================================
+
+
 # The graph node whose run IS the definition of "this game reached the ending"
 # (spec 040 §2.10's denominator). A LITERAL, unavoidably: ``graphia.graph``
 # registers its nodes by string (``builder.add_node("end_screen", ...)``) and
