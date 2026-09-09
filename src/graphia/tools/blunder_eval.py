@@ -99,7 +99,7 @@ from graphia.prompts import (
 # of drifting a measurement. Cheap and unconditional here, unlike 039's lazy
 # private reach-in: ``graphia.state`` is already imported on this line and the
 # constant lives there precisely so ``eval_transcript`` and this module can read
-# it without touching ``graphia.nodes`` (spec 040 §2.6).
+# it without touching ``graphia.nodes`` (spec 040 §2.9).
 from graphia.state import CLOSING_STORY_KWARG, DiaryRecord, PlayerState
 
 # Spec 041 Slice 6/7: the substitution vocabulary + the injectable sink. THIS
@@ -2041,11 +2041,15 @@ def score_diary_fallback(
 # call is a plumbing fact. So the trio takes:
 #
 # - **no ``metrics:`` entry** — it is not a scored behaviour of the AI;
-# - **no ``eval_ledger.METRIC_ORDER`` change**, and therefore
-# - **no viewer table column** — the table's columns ARE ``METRIC_ORDER``, and
-#   every one of them is a paired A/B-comparable rate. NOTHING HERE IS PAIRED:
-#   §2.12 ships the story with no ``GRAPHIA_*`` ablation flag, so there is no
-#   off arm to put beside an on arm and no comparison for a column to serve.
+# - **no ``eval_ledger.METRIC_ORDER`` change**, so no metric column;
+# - **and no hand-added column either — which is the honest way to put it.**
+#   ``METRIC_ORDER`` supplies only the viewer table's metric TAIL; the table
+#   also carries quality/settings-derived HEAD columns (``Diaries``,
+#   ``Subst (worst)``), so a ``Stories`` column was mechanically available and
+#   is DECLINED rather than unreachable. A column exists to be compared ACROSS
+#   records, and NOTHING HERE IS PAIRED: §2.12 ships the story with no
+#   ``GRAPHIA_*`` ablation flag, so there is no off arm to put beside an on arm
+#   and no comparison for a column to serve.
 # - **no ``METRICS_VERSION`` bump.** Purely additive record shape, no changed
 #   detection rule and no changed denominator, so rates measured under one rule
 #   set stay comparable across the whole ledger — exactly the ``outcomes`` /
@@ -2156,6 +2160,19 @@ def score_story_missing(events: Sequence[dict[str, Any]]) -> dict[str, int]:
     a measured batch; the ``isinstance(delta, dict)`` guard below is the same one
     ``eval_transcript._render_phases`` relies on, and it is load-bearing rather
     than defensive.
+
+    AND IT IS LOAD-BEARING TWICE OVER, which the paragraph above missed. The
+    same driven capture shows a SECOND non-dict delta in every log, story or no
+    story: ``{"__interrupt__": (Interrupt(...),)}`` — LangGraph's own dunder
+    channel, whose value is a TUPLE, and which ``eval_dialogue._drive`` pushes to
+    its ``on_update`` sink unfiltered, so it is in every ``_GameCapture.events``
+    list this scorer is ever handed. ``tuple.get`` raises too. Worth separating
+    because the two shapes have different coverage: removing the guard turns
+    **five** existing driven tests in ``tests/test_substitution_ledger.py`` red
+    on the ``__interrupt__`` tuple, while the ``None`` story delta has no test
+    of its own — those games answer ``Story`` from
+    ``conftest.UNSCRIPTED_DEFAULTS`` and so record ``story_missing_rate: 0.0``,
+    never the failure path.
 
     Defensive over the log's shape beyond that — a non-dict event, a non-list
     ``messages`` value, a message with no ``additional_kwargs`` — is skipped
