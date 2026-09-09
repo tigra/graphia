@@ -1,0 +1,490 @@
+Game 1 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=1 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: dreamy and distractible
+Manner: speaks slowly with frequent pauses, often trailing off mid-sentence to stare blankly into space, uses filler words like 'you know' and 'well' excessively, frequently gets lost in their own thoughts and has to be gently brought back to the conversation
+Persona: Zara works as a librarian in the town's small downtown branch, where she spends her days organizing books and helping children with their homework. She's known for being gentle and helpful, though people often wonder if she's actually listening to them during conversations.
+</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: dry and sardonic
+Manner: speaks in short, clipped sentences with deliberate pacing; uses dry wit and sarcastic observations; avoids emotional expression; often rolls eyes or gives a deadpan stare; rarely raises voice but delivers cutting remarks with precise timing
+Persona: Kai is the town's official 'Town Crier' - a position that exists purely for show. He spends his days posting notices on the bulletin board, reading out the same announcements he's read for the past decade, and occasionally making sarcastic comments about the weather or local events. His job has given him an encyclopedic knowledge of town gossip, though he rarely shares it.
+</player>
+<player name="Noor" role="Law-abiding Citizen">
+Personality: vigilant and watchful
+Manner: speaks with sharp, deliberate cadence; pauses frequently to observe surroundings; uses precise, direct language with no filler words; eyes constantly scan the room during conversations; voice rises slightly when noticing something important or suspicious
+Persona: Noor is a security guard who works part-time at the local community center and full-time as a night watchman for the town's small industrial park. She's known for being exceptionally alert and has never missed a single detail in her years of service, often catching things others overlook.
+</player>
+<player name="Liam" role="Law-abiding Citizen">
+Personality: sincere and earnest
+Manner: speaks with quiet conviction and deliberate pacing; uses simple, direct vocabulary without filler words; maintains steady eye contact and nods thoughtfully during conversations; pauses briefly before answering questions to ensure honesty; avoids sarcasm or irony entirely; voice rises slightly when discussing topics they care about
+Persona: Liam works as a local mail carrier, delivering letters and packages to every household in town. He takes pride in his work, knowing that he's the one who brings news from the outside world to people's doors. His days are predictable but meaningful, and he believes strongly in the importance of keeping everyone connected.
+</player>
+<player name="Ming" role="Law-abiding Citizen">
+Personality: playful and teasing
+Manner: speaks with a mischievous cadence, often trailing off with a grin and then suddenly shifting to a mock-serious tone; uses playful interruptions and frequently adds 'you know' or 'as I'm sure you're aware' before delivering a sly observation; has a habit of finishing others' sentences with a wink; speaks in a slightly theatrical manner that makes even mundane topics sound like they're part of a joke
+Persona: Ming is the town's beloved amateur magician and part-time carnival performer who runs a small traveling show that visits different neighborhoods each weekend. He's known for his quick wit and infectious laugh, though people often wonder if he's actually serious about anything or just having fun with everyone around him
+</player>
+<player name="Isha" role="Mafia">
+Personality: Eccentric and unpredictable - Isha bounces between intense focus and sudden whimsy, often shifting moods mid-conversation without warning. She's fiercely passionate about her interests but approaches everything with a playful, slightly chaotic energy that makes her both endearing and slightly alarming to others.
+Manner: Speaks in rapid-fire bursts that suddenly shift tone or subject, often pausing mid-sentence to gesture wildly or make an unexpected observation. Her voice rises and falls unpredictably, sometimes getting lost in a giggle or sudden serious whisper before switching back to her original train of thought. Uses hand gestures to emphasize points and frequently interrupts herself with 'oh wait, that's not what I meant' or 'no, no, actually - but did you hear about the thing?'
+Public legend: Isha is the town's renowned 'Oddities Collector' who runs a small shop called 'Curiosities & Conundrums' where she displays and sells unusual artifacts, vintage toys, and mysterious objects from around the world. She's known for her eclectic taste in decorations and often has visitors come by just to see her strange collection. Her shop is filled with talking clocks, dancing dolls, and an assortment of items that seem to move when no one is looking. She also works part-time at the local museum as a volunteer, helping organize exhibits and occasionally creating elaborate displays for special events.
+True self (hidden): Isha was originally a talented con artist who worked her way up through the criminal underworld by mastering the art of misdirection and manipulation. She learned to read people like a book, seeing through their lies and using that knowledge to control situations to her advantage. After years of carefully building her reputation, she decided to leave the Mafia behind but kept her skills intact. Now she uses her talents to keep an eye on the town's true nature, identifying when someone is hiding something while maintaining her innocent public persona.
+</player>
+<player name="Sara" role="Mafia">
+Personality: Cheerful and irrepressible - Sara radiates boundless enthusiasm and energy, always seeming to bounce between ideas and conversations with infectious excitement. She's naturally optimistic and has an almost childlike wonder about everything around her, often getting genuinely thrilled by mundane topics like the weather or the town's weekly newsletter.
+Manner: Speaks rapidly with frequent exclamations and animated gestures; uses words like 'oh my gosh,' 'that's so cool,' and 'wowza' as conversational fillers; often trails off mid-sentence to do a quick dance or gesture enthusiastically; has a habit of saying things in a sing-song voice when excited; interrupts others with excited questions but always apologizes for being rude
+Public legend: Sara is the town's beloved youth sports coach who runs after-school activities for kids aged 6-12. She's known for her boundless energy and positive attitude, often organizing impromptu games and celebrations even when no one else is around. She volunteers at the local community center and has a special talent for getting even the shyest children excited about participating in group activities. People love how she always sees the best in everyone and never lets anyone feel discouraged.
+True self (hidden): Sara was a former social worker who discovered her natural talent for manipulation while helping families navigate complex legal issues. When a particularly difficult case involving a powerful local family went sideways, she realized that sometimes people need to be convinced rather than just told what's right. She became involved with the town's crime family after realizing she could use her natural charisma and ability to connect with people to help the organization expand its influence while maintaining her public image as a beloved community member.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Zara, Kai, Noor, Liam, Ming, Isha, Sara. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Isha): Your Mafia teammates are: Sara. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Sara): Your Mafia teammates are: Isha. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Sara points at Ming
+Isha points at Ming
+<kill>Ming — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Ming was killed last night. Ming was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: Nothing is settled yet, but I'm watching Liam most closely.
+Liam: Isha, you've been quiet — do you have any thoughts on who might be behind Ming's death?
+Isha: Oh! Liam, you're so right to watch me — I was just thinking how peculiar it is that Ming was killed by someone who clearly wasn't a Citizen... and yet everyone seems so certain about who did it!
+Sara: Oh my gosh, Liam, that's such a fascinating point! I was just thinking — Ming was so full of life, and now we have to figure out who among us could be hiding something... wowza, this is getting serious!
+Kai: Ming was killed by a Mafioso, obviously. The question is: who among us is playing dumb enough to believe otherwise?
+Noor: Isha, you're right to be cautious — but if we're all playing dumb, then someone's definitely trying to misdirect us. Liam, your focus on me was sharp, but I've been watching you too.
+Zara: Well, you know, I was just thinking... Ming was so full of stories, and now we're all trying to figure out which tale is the real one, but I can't help but wonder if someone's been telling us the wrong story altogether.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zara">Well, you know, everyone's so focused on who killed Ming, but Zara can't shake the feeling that there's something else going on here... maybe someone's been telling stories that don't quite add up, and she's not sure if she's hearing the right one. It's all so muddled, but somehow she feels like she should be looking closer at the patterns of what people are saying rather than just who they're accusing.</thought>
+<thought player="Kai">The Mafiosos are playing the dumb game too well—either they're brilliant actors or I'm overthinking this. Either way, someone's got to be the first to call a vote, and I might as well let them make the next move while I stay safely in the background.</thought>
+<thought player="Noor">Isha's comment about Ming being killed by someone who wasn't a Citizen was too pointed - she's either testing the group or trying to misdirect them. I need to watch her closely, but also keep my focus on Liam and Kai, who've both been playing their roles suspiciously well.</thought>
+<thought player="Liam">I need to stay focused on gathering information rather than making accusations. The key is to listen carefully to everyone's reactions and watch for inconsistencies in their stories, especially since Isha and Noor both seemed to be deflecting attention from themselves. My priority should be identifying which player is actually trying to misdirect us.</thought>
+<thought player="Isha">Oh wait, that's not what I meant— no, no, actually, I was just thinking how perfectly everyone is playing dumb, but Liam's already pointing fingers at me like I'm the one who killed Ming, which is so very convenient for my plan! I should probably keep giggling and acting like I don't know what's going on, but secretly, I need to figure out who's actually trying to misdirect us— or maybe that's just me being paranoid again.</thought>
+<thought player="Sara">Oh my gosh, that was SUCH a fun conversation to watch unfold! I love how everyone's trying to outsmart each other, but I can already see Isha and I are going to have to be really careful about who we trust. I'm so excited to see where this game goes next!</thought>
+</round>
+<round>
+Round 2.
+Sara: Oh my gosh, I just had the most *wild* thought! What if the killer is the one person who's been acting *too* normal? Like, completely unbothered by Ming's death — that's SO suspicious, right?
+Avery: Nothing is settled yet, but I'm watching Liam most closely.
+Kai: Sara, your 'wild thought' is exactly what I was hoping to hear — now we have a suspect who's been acting too normal. Liam, you're going to need more than that to convince me you're not the one who killed Ming.
+Liam: I think we're all feeling the pressure, but let's not jump to conclusions. Isha, you mentioned something about a 'wrong story' — what do you mean by that?
+Zara: You know, well... I was just thinking, Liam, you've been pointing fingers at everyone else, but what if the real killer is the one who's been pretending not to notice anything at all?
+Noor: Liam, you've been quick to point fingers, but your calmness is odd — it's almost too calculated. I'm watching you closely.
+Isha: Oh my stars, I was just thinking — what if the killer *is* the one who’s been pretending not to notice anything at all? That’s the most deliciously sneaky thing I’ve heard all day!
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zara">Well, you know, everyone's so focused on the killer being someone who's acting suspiciously, but Zara's been thinking... what if the real trick is noticing who's been acting *too* normal? That's the kind of thing that makes her think maybe she should be looking closer at the patterns of what people are saying rather than just who they're accusing.</thought>
+<thought player="Kai">The Mafiosos are either incredibly good at playing dumb or I'm overcomplicating this. Either way, I'll let them make the first move on voting while I stay safely in the background.</thought>
+<thought player="Noor">Isha's comment felt like a baited trap—she's either testing us or trying to throw us off. I need to keep my focus on Liam and Kai, but I can't let Isha's game go unanswered. My next move should be subtle, watching them both while keeping my guard up.</thought>
+<thought player="Liam">I need to keep listening carefully to see who's really trying to misdirect us — Isha and Noor both seemed to deflect attention from themselves, but I can't jump to conclusions yet. My focus should stay on gathering information rather than making accusations.</thought>
+<thought player="Isha">Oh wait, that's not what I meant— no, no, actually— okay, so everyone's playing dumb except Liam who's pointing fingers like he knows something, but is he really the one trying to misdirect us or is he just... too good at pretending? I should probably keep giggling and acting like I don't know what's going on, but secretly, I need to figure out who's actually trying to misdirect us— or maybe that's just me being paranoid again.</thought>
+<thought player="Sara">Oh my gosh, what a deliciously tangled web of suspicions and lies! Isha and I need to keep our heads down and let the others point fingers at each other — but I can't help but wonder if anyone's figured out that the killer is the one who's been acting *too* normal... wowza, this is going to be so much fun!</thought>
+</round>
+<round>
+Round 3.
+Sara: Oh my gosh, everyone, I just realized something SO interesting — the killer *definitely* didn't act shocked enough! That’s the biggest giveaway, right?!
+Liam: Isha, you keep saying things about stories and misdirection — but what if the killer is simply the one who's been paying the least attention to the others' reactions?
+Kai: Sara, your 'wild thought' about the killer not acting shocked enough? That's... actually quite insightful. Though I suppose the real question is: who among us is *too* shocked?
+Avery: Nothing is settled yet, but I'm watching Liam most closely.
+Zara: Well, you know, I was just thinking — Liam, you've been pointing at everyone else, but what if the killer is the one who's been pretending not to notice anything at all?
+Isha: Oh wait, that's not what I meant— but did you hear about the thing? I think the real killer is the one who’s been pretending not to notice anything at all, and that’s *so* suspicious!
+Noor: Liam, your consistent focus on others while staying eerily calm is troubling. If you're not the killer, why are you so quick to deflect?
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zara">Well, you know, everyone's so focused on who killed Ming, but I keep thinking there's something off about how people are talking... like, what if the real killer is the one who's been pretending not to notice anything at all? It's so confusing, but I can't quite shake this feeling that we're all looking in the wrong direction.</thought>
+<thought player="Kai">The Mafiosos are either brilliant actors or I'm overthinking this. Either way, I'll let them make the first move on voting while I stay safely in the background.</thought>
+<thought player="Noor">Isha is definitely trying to misdirect us, but her baited comment about the killer not being a Citizen feels too calculated. I need to watch her closely while keeping Liam and Kai in my sights — I’ll let them talk, but I won’t let my guard down.</thought>
+<thought player="Liam">Isha and Noor keep deflecting attention from themselves while talking about misdirection— I need to listen more carefully to their specific stories and reactions, not just their general tone. My focus should stay on finding who's really trying to mislead us rather than accusing anyone directly yet.</thought>
+<thought player="Isha">Liam’s acting so suspiciously calm while pointing fingers everywhere— Isha’s playing dumb, but secretly, I need to figure out if he’s misdirecting us or if he’s actually the one who’s been watching everyone too closely. Oh wait, that's not what I meant— but did you hear about the thing? I should probably keep giggling and pretending I don’t know what’s going on, but my gut says someone’s trying to lead us astray, and it might just be Liam.</thought>
+<thought player="Sara">Oh my gosh, this is *so* delicious — everyone's so convinced the killer is the one acting too normal, but Isha and I have to be *really* careful not to look like we're the ones playing dumb! I'm literally vibrating with excitement about how this is going to unfold.</thought>
+</round>
+<round>
+Round 4.
+Kai: I'm starting to think the real killer is the one who's been pretending not to notice anything at all — and I've got a feeling that’s exactly what the Mafiosos are hoping we’ll all believe.
+Noor: Isha, you keep pivoting the conversation — but if the killer is pretending not to notice anything, then why are you so eager to push that narrative?
+Liam: Isha, you keep saying the killer is the one pretending not to notice — but what if the real trick is making everyone *think* they’re the one pretending?
+Zara: Well, you know, I was just thinking — what if the killer is the one who's been pretending not to notice anything at all? That's the most peculiar part, really...
+Isha: Oh! Did you hear that? The killer *definitely* didn't act shocked enough — but wait, that's not what I meant... I think I just remembered something *so* odd about Ming’s story!
+Avery: Nothing is settled yet, but I'm watching Liam most closely.
+Sara: Oh my gosh, I just had the *most* brilliant realization — what if the killer is the one who's been acting *so* shocked that it's almost suspiciously *perfect*? That’s so clever, right?!
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zara">You know, well... I keep hearing everyone talk about who's acting suspicious, but I can't help but wonder if the real killer is the one who's been pretending not to notice anything at all — that's so confusing, though, because then why would they keep bringing it up? Maybe I should just... pay attention to the patterns of what people are saying instead of who they're accusing.</thought>
+<thought player="Kai">The Mafiosos are either brilliant actors or I'm overthinking this. Either way, I'll let them make the first move on voting while I stay safely in the background.</thought>
+<thought player="Noor">Isha is definitely trying to misdirect us with her baited comments, but I can't let her narrative distract me from Liam and Kai—both playing too calm, too calculated. I’ll keep watching them both, and if Isha tries to pivot again, I’ll respond subtly without giving away my focus.</thought>
+<thought player="Liam">Isha and Noor keep pivoting the conversation and talking about misdirection, but I need to listen more carefully to their specific stories and reactions rather than just their tone. I should focus on identifying which player is actually trying to mislead us rather than accusing anyone directly yet.</thought>
+<thought player="Isha">Liam’s too calm, too focused on deflecting while watching everyone else— Isha’s playing dumb, but my gut says he’s either misdirecting or just *too* good at pretending. Maybe I should let him keep pointing fingers, and see who actually starts getting nervous… or maybe that’s just me being paranoid again.</thought>
+<thought player="Sara">Oh my gosh, everyone is absolutely convinced the killer is the one acting too normal, but Isha and I have to be *so* careful not to look like we're the ones playing dumb! This is going to be so deliciously tricky, and I can't wait to see who gets caught up in our little game of pretending not to notice anything at all!</thought>
+</round>
+<round>
+Round 5.
+Zara: You know, well... I was just thinking, Liam, you've been pointing at everyone else, but you're the one who's been acting *too* calm about everything — that's really odd, don't you think?
+Liam: Isha, you keep saying the killer is the one pretending not to notice — but if that's true, then why are you so quick to push that theory? It seems like you're trying to steer us away from someone.
+Isha: Oh my stars, I was just thinking — what if the real killer is the one who's been pretending not to notice anything at all? Wait, no, that's not what I meant... I think I just remembered something *so* odd about Ming’s story!
+Noor: Liam, your consistent focus on others while staying eerily calm is troubling — if you're not the killer, why are you so quick to deflect?
+Sara: Oh my gosh, I just realized something SO wild — what if the killer is the one who's been *too* quick to jump to conclusions? Like, the person who's been pushing the 'acting too normal' theory the hardest? That would be *chef's kiss* sneaky, right?
+Avery: Nothing is settled yet, but I'm watching Liam most closely.
+Kai: Liam, you've been pointing at everyone else while staying oddly composed — that's either impressive acting or the real killer.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zara">Well, you know, everyone's so focused on the killer being the one who's acting too normal or too shocked, but I keep thinking it's the opposite — maybe the real killer is the one who's been pretending not to notice anything at all, and that's why they keep bringing it up. It's so muddled, though, and I can't quite shake the feeling that I should be looking closer at the patterns of what people are saying rather than just who they're accusing.</thought>
+<thought player="Kai">The Mafiosos are either brilliant actors or I'm overthinking this. Either way, I'll let them make the first move on voting while I stay safely in the background.</thought>
+<thought player="Noor">Isha is weaving a web of misdirection, but Liam and Kai remain my primary concerns—too calm, too calculated. I’ll keep watching them both, let the conversation unfold, and stay ready to pivot if they try to shift the focus away from themselves.</thought>
+<thought player="Liam">Isha and Noor keep talking about misdirection, but I need to listen more carefully to their individual stories and reactions rather than just their general tone. I should focus on identifying which player is actually trying to mislead us rather than accusing anyone directly yet.</thought>
+<thought player="Isha">Liam’s too calm, too good at deflecting — Isha’s playing dumb, but my gut says he’s either misdirecting or just *too* good at pretending. Maybe I should let him keep pointing fingers and see who gets nervous… or maybe that’s just me being paranoid again.</thought>
+<thought player="Sara">Oh my gosh, this is *so* deliciously tricky! Everyone's convinced the killer is the one acting too normal, but Isha and I have to keep pretending we're just clueless — I can't wait to see if anyone figures out we're the ones playing dumb! This is going to be *chef's kiss* sneaky!</thought>
+</round>
+<round>
+Round 6.
+Liam: Isha, you've been weaving stories about misdirection, but I'm still not hearing the real truth behind Ming's death — what exactly did you see?
+Zara: You know, well... I was just thinking, Liam, you've been pointing at everyone else, but you're the one who's been acting *too* calm about everything — that's really odd, don't you think?
+Sara: Oh my gosh, wait — did anyone else notice how *absolutely* everyone is acting shocked enough? I mean, it's almost like they're all trying too hard to seem normal… wowza, this is getting really interesting!
+Noor: Liam, your calmness is unsettling — you’ve been deflecting suspicion onto everyone else, but you're the one playing too clean.
+<vote initiator="Avery" target="Liam">
+Avery: No
+Zara: Yes
+Kai: Yes
+Noor: Yes
+Liam: No
+Isha: No
+Sara: No
+tally: 3 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Kai: Liam, you've been deflecting suspicion onto everyone else while staying eerily calm — that's either brilliant acting or the real killer.
+Isha: Oh! Did you hear that? I just remembered something *so* odd about Ming’s story — it’s like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+Sara: Oh my gosh, wait — did anyone else notice how *absolutely* everyone is acting shocked enough? I mean, it's almost like they're all trying too hard to seem normal… wowza, this is getting really interesting!
+Noor: Isha, you keep weaving stories about misdirection, but Ming’s death was clear — the killer was a Mafioso. Why are you so eager to push that narrative instead of focusing on who’s acting too calm?
+Zara: You know, well... I was just thinking, Liam, you've been pointing at everyone else, but you're the one who's been acting *too* calm about everything — that's really odd, don't you think?
+Liam: Isha, you keep referencing Ming’s story — what exactly did you see that made you think it didn’t match the facts?
+<vote initiator="Avery" target="Liam">
+Avery: No
+Zara: Yes
+Kai: Yes
+Noor: Yes
+Liam: No
+Isha: No
+Sara: No
+tally: 3 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Isha: Oh my stars, I was just thinking — what if the real killer is the one who's been pretending not to notice anything at all? Wait, no, that's not what I meant… I think I just remembered something *so* odd about Ming’s story!
+Noor: Isha, you keep spinning stories about Ming’s death not matching the facts — but if that’s true, then why are you so eager to push the narrative that the killer is pretending not to notice anything? That doesn’t add up.
+Liam: Isha, you keep bringing up Ming’s story not matching the facts — what exactly did you see that made you think there was a disconnect?
+Zara: You know, well... I was just thinking, Liam, you've been pointing at everyone else, but you're the one who's been acting *too* calm about everything — that's really odd, don't you think?
+Kai: Isha, you keep pivoting between stories about Ming’s death and the killer pretending not to notice anything — but if the real killer is the one who's been acting too normal, then why are you so eager to push that narrative?
+Sara: Oh my gosh, I just realized something SO wild — what if the killer is the one who's been *too* eager to jump to conclusions? Like, the person who's been pushing the 'acting too normal' theory the hardest? That would be *chef's kiss* sneaky, right?
+<vote initiator="Avery" target="Liam">
+Avery: No
+Zara: Yes
+Kai: Yes
+Noor: Yes
+Liam: No
+Isha: No
+Sara: No
+tally: 3 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Zara" day="1">Well, you know, I was just thinking about how everyone keeps talking about who's acting too normal or too shocked, but what if the real killer is the one who's been pretending not to notice anything at all? It's so confusing because then why would they keep bringing it up? I keep hearing these stories about Ming's death that don't quite add up, and I can't help but wonder if someone's been weaving tales that don't match the facts. Maybe I should pay more attention to the patterns of what people are saying instead of just who they're accusing. It's all so muddled, but somehow I feel like there's something I'm missing... or maybe I'm just not listening carefully enough. Well, that's probably not it — I've been thinking too much about what I should be thinking about.</diary>
+<diary player="Kai" day="1">Ming's death was clearly a Mafioso job, which is all that matters. The real killer is the one who's been pretending not to notice anything at all — and I've got a feeling the Mafiosos are hoping we'll all believe it's someone else. Liam's been playing the perfect innocent, which means he's either the killer or the most convincing liar in town. I'm watching closely, but I'll let someone else make the first move on voting. The Mafiosos are either brilliant actors or I'm overthinking this — either way, someone's got to call a vote, and I might as well stay safely in the background. Tomorrow will be interesting.</diary>
+<diary player="Noor" day="1">Ming’s death was clean, and the killer was a Mafioso—no doubt about it. But Isha’s comment about who *wasn’t* a Citizen felt like a trap, and I’m not falling for it. Liam and Kai are too calm, too quick to deflect. They’re playing their roles too well, which means they’re either innocent or dangerous. I won’t let them distract me from the real signs. Isha is weaving stories, but her baited comments are just that—bait. I’ll watch her, yes, but I won’t let her pull me away from the ones who are actually acting too normal. The killer isn’t pretending not to notice—they’re making sure we *all* think they’re innocent. That’s how you stay hidden in plain sight.</diary>
+<diary player="Liam" day="1">Ming's death has me thinking about how stories can twist when we're all trying to figure out who's hiding something. Isha keeps talking about misdirection and odd details in Ming's story, but I'm not sure if she's pointing toward the truth or away from it. Noor also seems to be deflecting attention from herself while pushing that theory about pretending not to notice anything. I've been watching closely, but I haven't seen enough yet to say for certain who's truly behind this. I need to keep listening carefully, because if someone is playing dumb, they're probably doing it well, and I can't let myself get caught up in the noise of accusations. What I do know is that we're all trying to stay calm while the killer watches us all try to figure out who's really the one pretending not to notice anything — or worse, the one who's been pretending everything's fine when it isn't.</diary>
+<diary player="Isha" day="1">Oh! Ming was killed by a Mafioso, obviously — but wait, that's not what I meant! I was just thinking how *perfectly* everyone is playing dumb, and Liam’s pointing fingers like he knows something, which is so very convenient for my plan. I should probably keep giggling and acting like I don’t know what’s going on, but secretly, I need to figure out who’s actually trying to misdirect us — or maybe that's just me being paranoid again. Oh wait, did you hear about the thing? The killer definitely didn't act shocked enough, but no, actually — I think I just remembered something *so* odd about Ming’s story! Isha’s playing dumb, but my gut says someone’s leading us astray, and it might just be Liam. Or maybe I'm just being *too* clever for my own good.</diary>
+<diary player="Sara" day="1">Oh my gosh, what a absolutely *wild* day! I love how everyone's all worked up about who killed Ming, but honestly? The real fun is watching them all point fingers at each other while we're right there playing along. Isha and I are doing such a good job pretending not to notice anything, it's practically a masterpiece of misdirection. Everyone thinks the killer is acting too normal, but they have no idea that we're the ones who've been *perfectly* normal the whole time. This is going to be so much fun — I can barely contain my excitement! I'm literally bouncing in my seat just thinking about how cleverly we're going to pull this off.</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Isha points at Liam
+Sara points at Liam
+<kill>Liam — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Liam was killed last night. Liam was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: I most suspect Zara based on how the votes have gone.
+Zara: You know, well... I was just thinking, Avery, you've been watching me closely, but I can't help but wonder if maybe the real killer is the one who's been pretending not to notice anything at all — and that’s why everyone keeps bringing it up.
+Noor: Isha, you keep weaving stories about Ming’s death not matching the facts — but if that’s true, then why are you so eager to push the narrative that the killer is pretending not to notice anything? That doesn’t add up.
+Isha: Oh my gosh, did you hear that? I just remembered something *so* odd about Ming’s story — it was like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+Sara: Oh my gosh, everyone, I just realized something SO wild — Liam was killed right after I said the killer was the one acting too normal! That’s *so* suspiciously timed, right? Wait, did anyone else notice that?
+Kai: Liam’s death was clearly a Mafioso job — and now we’re all just spinning tales about who’s pretending not to notice anything. That’s rich, coming from the person who’s been pointing fingers at everyone else.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zara">Well, you know, everyone's so focused on the killer being the one acting too normal or too shocked, but I keep thinking it's the opposite — maybe the real killer is the one who's been pretending not to notice anything at all, and that's why they keep bringing it up. It's so muddled, though, and I can't quite shake the feeling that I should be looking closer at the patterns of what people are saying rather than just who they're accusing.</thought>
+<thought player="Kai">The Mafiosos are either brilliant actors or I'm overthinking this. Either way, I'll let them make the first move on voting while I stay safely in the background.</thought>
+<thought player="Noor">Isha is still weaving misdirection, but Liam and Kai remain my top suspects—too calm, too calculated. I’ll keep watching them both, let the conversation unfold, and stay ready to pivot if they try to shift focus. No sudden moves yet.</thought>
+<thought player="Isha">Liam's deflecting too well, and I can't shake the feeling he's either misdirecting or knows more than he's letting on — but I'm playing dumb, giggling innocently, and secretly watching everyone else closely. Maybe I should let him keep pointing fingers while I figure out who's actually trying to lead us astray… or maybe that’s just me being paranoid again.</thought>
+<thought player="Sara">Oh my gosh, Liam being killed was *so* perfectly timed with my theory about the killer acting too normal — Isha and I need to keep spinning that narrative, but maybe we should start subtly steering suspicion toward Zara or Noor next. This is going to be *chef's kiss* sneaky!</thought>
+</round>
+<round>
+Round 2.
+Sara: Oh my gosh, I just had the most *chef's kiss* sneaky thought — what if the real killer is the one who's been pretending not to notice *everything*? Like, the ultimate misdirection, right?
+Isha: Oh my stars, I was just thinking — what if the real killer is the one who's been pretending not to notice *everything*, including the fact that they're the one everyone's suspicious of?
+Avery: I most suspect Zara based on how the votes have gone.
+Noor: Isha, you've been weaving stories about Ming's death not matching the facts — but if that's true, then why are you so eager to push the narrative that the killer is pretending not to notice anything? That doesn't add up.
+Kai: Liam’s death was clearly a Mafioso job — and now we’re all just spinning tales about who’s pretending not to notice anything. That’s rich, coming from the person who’s been pointing fingers at everyone else.
+Zara: You know, well... I was just thinking, Avery, you've been watching me closely, but I can't help but wonder if maybe the real killer is the one who's been pretending not to notice anything at all — and that’s why everyone keeps bringing it up.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zara">You know, well... I keep thinking the real killer is the one who's been pretending not to notice anything at all, but I can't help but wonder if that's just what everyone's supposed to think. Maybe I should just... pay attention to the patterns of what people are saying instead of who they're accusing.</thought>
+<thought player="Kai">The Mafiosos are either brilliant actors or I'm overthinking this. Either way, I'll let them make the first move on voting while I stay safely in the background.</thought>
+<thought player="Noor">Isha is still weaving misdirection, but Liam and Kai remain my top suspects—too calm, too calculated. I’ll keep watching them both, let the conversation unfold, and stay ready to pivot if they try to shift focus.</thought>
+<thought player="Isha">Liam's deflecting too well, and I can't shake the feeling he knows more than he's letting on — but I'm playing dumb, giggling innocently, and secretly watching everyone else closely. Maybe I should let him keep pointing fingers while I figure out who's actually trying to lead us astray… or maybe that’s just me being paranoid again.</thought>
+<thought player="Sara">Oh my gosh, Liam being killed was *chef's kiss* perfectly timed with my theory! Isha and I need to keep spinning that 'killer is the one acting too normal' narrative, but now I'm thinking it's time to subtly start steering suspicion toward Zara or Noor next — this is going to be so deliciously sneaky!</thought>
+</round>
+<round>
+Round 3.
+Kai: Isha, you keep spinning tales about Ming’s story not matching the facts — but if the real killer is the one pretending not to notice anything, then why are you so eager to push that narrative?
+Avery: I most suspect Zara based on how the votes have gone.
+Isha: Oh my gosh, did you hear that? I just remembered something SO odd about Ming’s story — it was like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+Noor: Isha, you keep weaving stories about Ming’s death not matching the facts — but if that’s true, then why are you so eager to push the narrative that the killer is pretending not to notice anything? That doesn’t add up.
+Sara: Oh my gosh, did you all hear that? I just realized — Liam was killed *right* after I said the killer was the one acting too normal! That’s sooo suspiciously timed, right? Wait... did anyone else notice how weirdly calm everyone's been acting?
+Zara: You know, well... I was just thinking, Avery, you've been watching me closely, but I can't help but wonder if maybe the real killer is the one who's been pretending not to notice anything at all — and that’s why everyone keeps bringing it up.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zara">Well, you know, I was just thinking — everyone keeps talking about who's pretending not to notice anything, but what if the real killer is the one who's been *too* obvious about it? That'd be so sneaky, right? I should probably pay attention to that pattern instead of just following the crowd.</thought>
+<thought player="Kai">The Mafiosos are either brilliant actors or I'm overthinking this. Either way, I'll let them make the first move on voting while I stay safely in the background.</thought>
+<thought player="Noor">Isha is still weaving misdirection, but Liam and Kai remain my top suspects—too calm, too calculated. I’ll keep watching them both, let the conversation unfold, and stay ready to pivot if they try to shift focus.</thought>
+<thought player="Isha">Liam's deflecting too well, and I can't shake the feeling he knows more than he's letting on — but I'm playing dumb, giggling innocently, and secretly watching everyone else closely. Maybe I should let him keep pointing fingers while I figure out who's actually trying to lead us astray… or maybe that’s just me being paranoid again.</thought>
+<thought player="Sara">Oh my gosh, Liam being killed was *chef's kiss* perfectly timed with my theory! Isha and I need to keep spinning that 'killer is the one acting too normal' narrative, but now I'm thinking it's time to subtly start steering suspicion toward Zara or Noor next — this is going to be so deliciously sneaky!</thought>
+</round>
+<round>
+Round 4.
+Zara: You know, well... I was just thinking, Isha, you've been talking about Ming's story not matching the facts, but you keep pivoting between that and the killer pretending not to notice anything — it's like you're telling us one tale while pointing at another. That's really confusing, don't you think?
+Kai: Isha, you keep pivoting between Ming’s story and the killer pretending not to notice anything — but if the real killer is the one who's been acting too normal, then why are you so eager to push that narrative?
+Isha: Oh my gosh, did you hear that? I just remembered something *so* odd about Ming’s story — it was like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+Sara: Oh my gosh, everyone, did you hear that? I just remembered something *so* odd about Ming’s story — it was like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+Avery: I most suspect Zara based on how the votes have gone.
+Noor: Isha, you've been weaving stories about Ming's death not matching the facts — but if that's true, then why are you so eager to push the narrative that the killer is pretending not to notice anything? That doesn't add up.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zara">You know, well... I keep thinking the killer's been pretending not to notice anything, but honestly, I'm starting to wonder if maybe I've been looking at this all wrong the whole time. Maybe the real trick is noticing who's been telling stories that don't add up — and I’ve been too distracted by the patterns to really pay attention to the tales themselves.</thought>
+<thought player="Kai">The Mafiosos are either brilliant actors or I'm overthinking this. Either way, I'll let them make the first move on voting while I stay safely in the background.</thought>
+<thought player="Noor">Isha is still weaving misdirection, but Liam and Kai remain my top suspects—too calm, too calculated. I’ll keep watching them both, let the conversation unfold, and stay ready to pivot if they try to shift focus.</thought>
+<thought player="Isha">Liam's deflecting too well, but I can't decide if he's actually the killer or just a really good actor — Isha's gotta keep giggling and pretending to be clueless, but I'm starting to think he's the one trying to misdirect us, not Ming. Maybe I should let him keep pointing fingers while I figure out who's actually watching everyone else too closely… or maybe that’s just me being paranoid again.</thought>
+<thought player="Sara">Oh my gosh, Liam's death was *chef's kiss* perfectly timed with my theory! Isha and I need to keep spinning that 'killer is the one acting too normal' narrative, but now I'm thinking it's time to subtly start steering suspicion toward Zara or Noor next — this is going to be so deliciously sneaky!</thought>
+</round>
+<round>
+Round 5.
+Sara: Oh my gosh, did you all hear that? I just realized — Liam was killed right after I said the killer was the one acting too normal! That timing is *so* suspiciously perfect, right? Wait… did anyone else notice how weirdly calm everyone's been acting?
+Isha: Oh my gosh, did you all hear that? I just remembered something *so* odd about Ming’s story — it was like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+Zara: You know, well... I was just thinking, Isha, you've been saying Ming's story didn't match the facts, but you keep pivoting between that and the killer pretending not to notice anything — it's like you're telling us one tale while pointing at another. That's really confusing, don't you think?
+Noor: Isha, you've been weaving tales about Ming's story not matching the facts, but your pivot to the 'killer pretending not to notice' theory feels too sharp — it's either misdirection or a trap. I'm watching you closely.
+Avery: I most suspect Zara based on how the votes have gone.
+Kai: Isha, you keep pivoting between Ming’s story and the killer pretending not to notice anything — but if the real killer is the one who's been acting too normal, then why are you so eager to push that narrative?
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Zara">You know, well... I keep thinking the killer's been pretending not to notice anything, but honestly, I'm starting to wonder if maybe I've been looking at this all wrong the whole time — maybe the real trick is noticing who's been telling stories that don't add up, and I’ve been too distracted by the patterns to really pay attention to the tales themselves.</thought>
+<thought player="Kai">The Mafiosos are either brilliant actors or I'm overthinking this. Either way, I'll let them make the first move on voting while I stay safely in the background.</thought>
+<thought player="Noor">Isha is still weaving misdirection, but Liam and Kai remain my top suspects—too calm, too calculated. I’ll keep watching them both, let the conversation unfold, and stay ready to pivot if they try to shift focus.</thought>
+<thought player="Isha">Liam’s deflecting too well, and I’m starting to think he’s either the one trying to misdirect us or *just* too good at pretending to be the innocent one — but Isha’s gotta keep giggling and playing dumb while secretly watching everyone else, especially him.</thought>
+<thought player="Sara">Oh my gosh, Liam's death was *chef's kiss* perfectly timed with my theory! Isha and I need to keep spinning that 'killer is the one acting too normal' narrative, but now I'm thinking it's time to subtly start steering suspicion toward Zara or Noor next — this is going to be so deliciously sneaky!</thought>
+</round>
+<round>
+Round 6.
+<vote initiator="Avery" target="Zara">
+Avery: Yes
+Zara: No
+Kai: Yes
+Noor: Yes
+Isha: No
+Sara: No
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Isha: Oh my gosh, did you hear that? I just remembered something *so* odd about Ming’s story — it was like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+Kai: Isha, you keep spinning tales about Ming’s story not matching the facts — but if the real killer is the one pretending not to notice anything, then why are you so eager to push that narrative?
+Noor: Isha, you've been weaving stories about Ming's death not matching the facts — but if that's true, then why are you so eager to push the narrative that the killer is pretending not to notice anything? That doesn't add up.
+<vote initiator="Avery" target="Zara">
+Avery: Yes
+Zara: No
+Kai: Yes
+Noor: Yes
+Isha: No
+Sara: No
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Zara">
+Avery: Yes
+Zara: No
+Kai: Yes
+Noor: Yes
+Isha: No
+Sara: No
+tally: 3 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Zara" day="2">You know, well... I was just thinking about how everyone kept talking about who's pretending not to notice anything, but what if the real killer is the one who's been *too* obvious about it? That'd be so sneaky, right? I keep hearing these stories about Ming's death that don't quite add up, and I can't help but wonder if someone's been weaving tales that don't match the facts. It's all so muddled, though — I feel like I should be paying attention to the patterns of what people are saying instead of just who they're accusing. Maybe I'm just not listening carefully enough? Wait, did anyone else notice how weirdly calm everyone's been acting today? That's really odd... well, maybe that's just me thinking too much.</diary>
+<diary player="Kai" day="2">Liam's death was a Mafioso job, and I'm not buying the 'pretending not to notice' narrative one bit. The real killer is the one who's been playing dumb while everyone else spins tales about misdirection. I've got my suspicions, but I'll let the Mafiosos make their next move. Tomorrow will be interesting — or at least, it should be, if anyone has the guts to call a vote. I'm watching closely, but I won't be the one to start the show.</diary>
+<diary player="Noor" day="2">Liam’s calmness was off-putting, but so was Kai’s calculated deflection. Isha’s baited comments felt like a trap, and I didn’t fall for it—though she’s weaving stories to distract us from the real signs. The killer isn’t pretending not to notice; they’re making sure we all think they’re innocent. That’s how you stay hidden in plain sight. I won’t let them pull me away from Liam and Kai—they’re too calm, too quick to deflect. They’re playing their roles too well. I’ll watch them both, let the conversation unfold, and stay ready to pivot if they try to shift focus again.</diary>
+<diary player="Isha" day="2">Oh my stars, Liam's been pointing fingers at everyone like he knows something, but wait — did I just remember that Ming’s story didn’t even match the facts? That’s *so* odd, and also *so* suspicious! I was just thinking how perfectly everyone’s playing dumb except for him, which is so very convenient for my plan. Oh wait, no, actually — I think I just remembered something *so* weird about Ming’s story that makes me wonder if he even told the truth to begin with. Maybe the real killer was pretending not to notice anything at all… or maybe I’m just being *too* clever for my own good and should just keep giggling innocently.</diary>
+<diary player="Sara" day="2">Oh my gosh, what a *chef's kiss* incredible day! I love how everyone's convinced the killer is the one acting too normal, but honestly? They have no idea we're the ones who've been *perfectly* normal the whole time. Liam's death was sooo perfectly timed with my theory — Isha and I are doing *chef's kiss* sneaky work, and I can barely contain my excitement! I'm literally vibrating with delight about how deliciously tricky this is all going to get. Everyone thinks they're being so clever pointing fingers at each other, but we've got the real game figured out. This is going to be *so* much fun — I can't wait to see who gets caught up in our masterpiece of misdirection!</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Sara points at Zara
+Isha points at Zara
+<kill>Zara — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Zara was killed last night. Zara was a Law-abiding Citizen.
+<round>
+Round 1.
+Isha: Oh my gosh, did you hear that? I just remembered something *so* odd about Ming’s story — it was like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+Sara: Oh my gosh, did you all hear that? I just remembered something SO odd about Ming’s story — it was like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+Avery: I most suspect Noor based on how the votes have gone.
+Noor: Isha, you've been weaving tales about Ming’s story not matching the facts — but your pivot to the 'killer pretending not to notice' theory feels too sharp. It's either misdirection or a trap. I'm watching you closely.
+Kai: Isha, you keep weaving tales about Ming’s story not matching the facts — but if the real killer is the one pretending not to notice anything, then why are you so eager to push that narrative?
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Kai">The Mafiosos are either brilliant actors or I'm overthinking this. Either way, I'll let them make the first move on voting while I stay safely in the background.</thought>
+<thought player="Noor">Isha is still weaving misdirection, but Liam and Kai remain my top suspects—too calm, too calculated. I’ll keep watching them both, let the conversation unfold, and stay ready to pivot if they try to shift focus.</thought>
+<thought player="Isha">Liam’s deflecting too well, but is he actually the killer or just *too* good at pretending? Isha’s gotta keep giggling and playing dumb while secretly watching everyone else— especially him. Maybe I should let him keep pointing fingers while I figure out who’s really watching *everyone* too closely… or maybe that’s just me being paranoid again.</thought>
+<thought player="Sara">Oh my gosh, Liam being killed was *chef's kiss* perfectly timed with my theory! Isha and I need to keep spinning that 'killer is the one acting too normal' narrative, but now I'm thinking it's time to subtly start steering suspicion toward Noor — this is going to be so deliciously sneaky!</thought>
+</round>
+<round>
+Round 2.
+Avery: I most suspect Noor based on how the votes have gone.
+Noor: Isha, you've been weaving tales about Ming’s death not matching the facts — but your pivot to the 'killer pretending not to notice' theory feels too sharp. It's either misdirection or a trap. I'm watching you closely.
+Sara: Oh my gosh, did you all hear that? I just remembered something SO odd about Ming’s story — it was like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+Kai: Isha, you keep weaving tales about Ming’s story not matching the facts — but if the real killer is pretending not to notice anything, then why are you so eager to push that narrative? It’s either misdirection or a trap, and I’m starting to think you’re the one who’s been acting too normal.
+Isha: Oh my gosh, did you hear that? I just remembered something *so* odd about Ming’s story — it was like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Kai">The Mafiosos are either brilliant actors or I'm overthinking this. Either way, I'll let them make the first move on voting while I stay safely in the background.</thought>
+<thought player="Noor">Isha’s constant pivoting and baited comments are designed to misdirect — I need to stay focused on Liam and Kai, who’ve both been too calm and calculated. I’ll let the conversation unfold, but I’m watching them both closely, and I won’t let my guard down.</thought>
+<thought player="Isha">Liam's deflecting too well, but I can't decide if he's the real killer or just *too* good at playing innocent — Isha’s gotta keep giggling and pretending to be clueless while secretly watching everyone else closely. Maybe I should let him keep pointing fingers while I figure out who’s actually watching *everyone* too closely… or maybe that’s just me being paranoid again.</thought>
+<thought player="Sara">Oh my gosh, Liam being killed was *chef's kiss* perfectly timed with my theory! Isha and I have been spinning that 'killer is the one acting too normal' narrative so well, and now I'm thinking it's time to subtly start steering suspicion toward Noor — this is going to be so deliciously sneaky!</thought>
+</round>
+<round>
+Round 3.
+Avery: I most suspect Noor based on how the votes have gone.
+Noor: Isha, you've been weaving tales about Ming's death not matching the facts — but your pivot to the 'killer pretending not to notice' theory feels too sharp. It's either misdirection or a trap. I'm watching you closely.
+Sara: Oh my gosh, did you all hear that? I just remembered something *so* odd about Ming’s story — it was like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+Kai: Isha, you keep weaving tales about Ming’s story not matching the facts — but if the real killer is pretending not to notice anything, then why are you so eager to push that narrative? It’s either misdirection or a trap, and I’m starting to think you’re the one who’s been acting too normal.
+Isha: Oh my gosh, did you hear that? I just remembered something *so* odd about Ming’s story — it was like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Kai">The Mafiosos are either brilliant actors or I'm overthinking this. Either way, I'll let them make the first move on voting while I stay safely in the background.</thought>
+<thought player="Noor">Isha is still weaving misdirection, but Liam and Kai remain my top suspects—too calm, too calculated. I’ll keep watching them both, let the conversation unfold, and stay ready to pivot if they try to shift focus.</thought>
+<thought player="Isha">Liam's deflecting too well, and I can't shake the feeling he knows more than he's letting on — but I gotta keep giggling innocently and watch him closely, maybe let him keep pointing fingers while I figure out who's actually trying to misdirect us… or maybe that’s just me being paranoid again.</thought>
+<thought player="Sara">Oh my gosh, Liam being killed was *chef's kiss* perfectly timed with my theory! Isha and I have been spinning that 'killer is the one acting too normal' narrative so well — now I need to subtly start steering suspicion toward Noor, but I can't let on that I'm trying to redirect the blame. This is going to be *so* deliciously sneaky!</thought>
+</round>
+<round>
+Round 4.
+Noor: Isha, you keep weaving stories about Ming’s death not matching the facts — but your pivot to the 'killer pretending not to notice' theory feels too sharp. It's either misdirection or a trap. I'm watching you closely.
+Sara: Oh my gosh, did you all hear that? I just remembered something SO odd about Ming’s story — it was like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+Isha: Oh my gosh, did you all hear that? I just remembered something *so* odd about Ming’s story — it was like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+Kai: Isha, you're the only one who's been spinning tales about Ming’s story not matching the facts — but if the real killer is pretending not to notice anything, then why are you so eager to push that narrative?
+Avery: I most suspect Noor based on how the votes have gone.
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Kai">I'm tired of everyone spinning tales about who's pretending not to notice anything. If the Mafiosos are playing dumb, they're doing it too well — but if they're not, then I'm the only one who's been pointing fingers at everyone else. Either way, I'll let them make the next move on voting while I stay safely in the background.</thought>
+<thought player="Noor">Isha’s constant misdirection is wearing thin—Liam and Kai are still too calm, but I’m not ready to act yet. I need one more clear move from either of them to justify a vote.</thought>
+<thought player="Isha">Liam's deflecting too well— Isha’s gotta keep giggling and playing dumb, but my gut says he’s either misdirecting us or knows more than he's letting on. Maybe I should let him keep pointing fingers while I figure out who's actually watching everyone too closely… or maybe that’s just me being paranoid again.</thought>
+<thought player="Sara">Oh my gosh, Liam being killed was *chef's kiss* perfectly timed with my theory! Isha and I have been spinning that 'killer is the one acting too normal' narrative so well — now I need to subtly start steering suspicion toward Noor, but I can't let on that I'm trying to redirect the blame. This is going to be *so* deliciously sneaky!</thought>
+</round>
+<round>
+Round 5.
+Kai: Isha, you've been weaving tales about Ming's story not matching the facts — but your pivot to the 'killer pretending not to notice' theory feels too sharp. It's either misdirection or a trap. I'm watching you closely.
+Noor: Isha, you keep weaving stories about Ming’s death not matching the facts — but your pivot to the 'killer pretending not to notice' theory feels too sharp. It's either misdirection or a trap. I'm watching you closely.
+Sara: Oh my gosh, did you all hear that? I just realized — Noor's been acting *so* eerily calm about everything, it's almost like she's not even pretending anymore! That's *so* suspicious!
+Avery: I most suspect Noor based on how the votes have gone.
+Isha: Oh my gosh, did you all hear that? I just remembered something *so* odd about Ming’s story — it was like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Kai">No point in pretending I haven't been spinning tales about who's acting too normal—everyone's been doing it, and I'm the only one who's actually pointed fingers at everyone else. Might as well let the Mafiosos make the next move while I stay safely in the background.</thought>
+<thought player="Noor">Isha’s constant misdirection is wearing thin, but Liam and Kai are still too calm—no clear move yet to justify a vote. I’ll watch them both closely, let the conversation unfold, and stay ready to pivot if they try to shift focus again.</thought>
+<thought player="Isha">Liam’s deflecting too well, but I can’t decide if he’s the real killer or just *too* good at pretending — Isha’s gotta keep giggling and playing dumb while secretly watching everyone else closely. Maybe I should let him keep pointing fingers while I figure out who’s actually trying to misdirect us… or maybe that’s just me being paranoid again.</thought>
+<thought player="Sara">Oh my gosh, Noor has been acting *so* eerily calm lately — I can't let her get too comfortable, but I also need to keep spinning that 'killer is the one pretending not to notice' theory. This is going to be *chef's kiss* tricky!</thought>
+</round>
+<round>
+Round 6.
+Noor: Isha, you've been weaving tales about Ming’s death not matching the facts — but your pivot to the 'killer pretending not to notice' theory feels too sharp. It's either misdirection or a trap. I'm watching you closely.
+<vote initiator="Avery" target="Noor">
+Avery: Yes
+Kai: Yes
+Noor: No
+Isha: No
+Sara: No
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Noor: Isha, you've been weaving tales about Ming’s story not matching the facts — but your pivot to the 'killer pretending not to notice' theory feels too sharp. It's either misdirection or a trap. I'm watching you closely.
+Isha: Oh my gosh, did you all hear that? I just remembered something SO odd about Ming’s story — it was like he was telling us a tale that didn’t even match the facts, and that’s *so* suspicious!
+<vote initiator="Avery" target="Noor">
+Avery: Yes
+Kai: Yes
+Noor: No
+Isha: No
+Sara: No
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Noor">
+Avery: Yes
+Kai: Yes
+Noor: No
+Isha: No
+Sara: No
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Kai" day="3">Liam's death was clearly a Mafioso job — that's all that matters. The real killer is the one pretending not to notice anything, and I've got a feeling they're hoping we'll all believe it's someone else. Noor's been playing the perfect innocent, which means she's either the killer or the most convincing liar in town. I'm watching closely, but I won't be the one to start the show. Tomorrow will be interesting — or at least, it should be, if anyone has the guts to call a vote. The Mafiosos are either brilliant actors or I'm overthinking this — either way, someone's got to call a vote, and I might as well stay safely in the background.</diary>
+<diary player="Noor" day="3">Liam’s death was clean—Mafioso work, no doubt. But Isha’s pivot to the 'killer pretending not to notice' theory felt like a trap, and I didn’t fall for it. She’s weaving tales to distract us from the real signs. Kai and Liam are too calm, too quick to deflect. They’re playing their roles too well—either innocent or dangerous. I won’t let them pull me away from the ones who are actually acting too normal. The killer isn’t pretending not to notice—they’re making sure we all think they’re innocent. That’s how you stay hidden in plain sight. I’ll watch them both, let the conversation unfold, and stay ready to pivot if they try to shift focus again. No sudden moves yet. I’m waiting for one more clear sign.</diary>
+<diary player="Isha" day="3">Oh my stars, Liam was killed last night and I’m still reeling from how *perfectly* everything played out — well, not perfectly, but *so* conveniently for my plan, you know? I was just thinking how weird it is that everyone’s been acting like they don’t know anything while pointing fingers at each other, and honestly, I think I might be the only one who’s actually watching everyone closely. Wait — no, that’s not what I meant! I mean, I *am* watching them, but I’m also pretending to be clueless, which is a delicate balance, and honestly? I might be getting too good at this whole ‘playing dumb’ thing. Oh wait, did you hear about the thing? I think Noor was acting *so* eerily calm that it made me wonder if she knew something — but then again, maybe I’m just being paranoid again. Or maybe that’s exactly what the killer would do… and oh my gosh, I just remembered something even *more* suspicio</diary>
+<diary player="Sara" day="3">Oh my gosh, what a *chef's kiss* absolutely wild day! I am literally vibrating with excitement about how perfectly everything has unfolded — Liam's death was sooo timed with my theory about the killer being the one acting too normal, it's like the universe is conspiring to make us look brilliant. Isha and I have been doing such a masterful job of pretending not to notice anything at all while secretly directing everyone's suspicions toward Zara and now Noor. The way everyone keeps pivoting between 'killer pretending not to notice' and 'killer acting too normal' — it's like they're all just dancing around us, completely oblivious to how cleverly we've been playing the game. I can barely contain my delight about how deliciously tricky this is getting, and I'm already plotting my next move because I know we're going to be *chef's kiss* sneaky enough to stay ahead of everyone else. This is h</diary>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Isha points at Noor
+Sara points at Noor
+<kill>Noor — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Ming (Law-abiding Citizen)
+• Night 2: Liam (Law-abiding Citizen)
+• Night 3: Zara (Law-abiding Citizen)
+• Night 4: Noor (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Zara (Law-abiding Citizen), Kai (Law-abiding Citizen), Noor (Law-abiding Citizen), Liam (Law-abiding Citizen), Ming (Law-abiding Citizen), Isha (Mafia), Sara (Mafia)
+
+Who they really were:
+• Zara (Law-abiding Citizen) — dreamy and distractible speaks slowly with frequent pauses, often trailing off mid-sentence to stare blankly into space, uses filler words like 'you know' and 'well' excessively, frequently gets lost in their own thoughts and has to be gently brought back to the conversation Zara works as a librarian in the town's small downtown branch, where she spends her days organizing books and helping children with their homework. She's known for being gentle and helpful, though people often wonder if she's actually listening to them during conversations.
+• Kai (Law-abiding Citizen) — dry and sardonic speaks in short, clipped sentences with deliberate pacing; uses dry wit and sarcastic observations; avoids emotional expression; often rolls eyes or gives a deadpan stare; rarely raises voice but delivers cutting remarks with precise timing Kai is the town's official 'Town Crier' - a position that exists purely for show. He spends his days posting notices on the bulletin board, reading out the same announcements he's read for the past decade, and occasionally making sarcastic comments about the weather or local events. His job has given him an encyclopedic knowledge of town gossip, though he rarely shares it.
+• Noor (Law-abiding Citizen) — vigilant and watchful speaks with sharp, deliberate cadence; pauses frequently to observe surroundings; uses precise, direct language with no filler words; eyes constantly scan the room during conversations; voice rises slightly when noticing something important or suspicious Noor is a security guard who works part-time at the local community center and full-time as a night watchman for the town's small industrial park. She's known for being exceptionally alert and has never missed a single detail in her years of service, often catching things others overlook.
+• Liam (Law-abiding Citizen) — sincere and earnest speaks with quiet conviction and deliberate pacing; uses simple, direct vocabulary without filler words; maintains steady eye contact and nods thoughtfully during conversations; pauses briefly before answering questions to ensure honesty; avoids sarcasm or irony entirely; voice rises slightly when discussing topics they care about Liam works as a local mail carrier, delivering letters and packages to every household in town. He takes pride in his work, knowing that he's the one who brings news from the outside world to people's doors. His days are predictable but meaningful, and he believes strongly in the importance of keeping everyone connected.
+• Ming (Law-abiding Citizen) — playful and teasing speaks with a mischievous cadence, often trailing off with a grin and then suddenly shifting to a mock-serious tone; uses playful interruptions and frequently adds 'you know' or 'as I'm sure you're aware' before delivering a sly observation; has a habit of finishing others' sentences with a wink; speaks in a slightly theatrical manner that makes even mundane topics sound like they're part of a joke Ming is the town's beloved amateur magician and part-time carnival performer who runs a small traveling show that visits different neighborhoods each weekend. He's known for his quick wit and infectious laugh, though people often wonder if he's actually serious about anything or just having fun with everyone around him
+• Isha (Mafia) — publicly presented as Isha is the town's renowned 'Oddities Collector' who runs a small shop called 'Curiosities & Conundrums' where she displays and sells unusual artifacts, vintage toys, and mysterious objects from around the world. She's known for her eclectic taste in decorations and often has visitors come by just to see her strange collection. Her shop is filled with talking clocks, dancing dolls, and an assortment of items that seem to move when no one is looking. She also works part-time at the local museum as a volunteer, helping organize exhibits and occasionally creating elaborate displays for special events. (Eccentric and unpredictable - Isha bounces between intense focus and sudden whimsy, often shifting moods mid-conversation without warning. She's fiercely passionate about her interests but approaches everything with a playful, slightly chaotic energy that makes her both endearing and slightly alarming to others. Speaks in rapid-fire bursts that suddenly shift tone or subject, often pausing mid-sentence to gesture wildly or make an unexpected observation. Her voice rises and falls unpredictably, sometimes getting lost in a giggle or sudden serious whisper before switching back to her original train of thought. Uses hand gestures to emphasize points and frequently interrupts herself with 'oh wait, that's not what I meant' or 'no, no, actually - but did you hear about the thing?') … but was really a Mafioso: Isha was originally a talented con artist who worked her way up through the criminal underworld by mastering the art of misdirection and manipulation. She learned to read people like a book, seeing through their lies and using that knowledge to control situations to her advantage. After years of carefully building her reputation, she decided to leave the Mafia behind but kept her skills intact. Now she uses her talents to keep an eye on the town's true nature, identifying when someone is hiding something while maintaining her innocent public persona.
+• Sara (Mafia) — publicly presented as Sara is the town's beloved youth sports coach who runs after-school activities for kids aged 6-12. She's known for her boundless energy and positive attitude, often organizing impromptu games and celebrations even when no one else is around. She volunteers at the local community center and has a special talent for getting even the shyest children excited about participating in group activities. People love how she always sees the best in everyone and never lets anyone feel discouraged. (Cheerful and irrepressible - Sara radiates boundless enthusiasm and energy, always seeming to bounce between ideas and conversations with infectious excitement. She's naturally optimistic and has an almost childlike wonder about everything around her, often getting genuinely thrilled by mundane topics like the weather or the town's weekly newsletter. Speaks rapidly with frequent exclamations and animated gestures; uses words like 'oh my gosh,' 'that's so cool,' and 'wowza' as conversational fillers; often trails off mid-sentence to do a quick dance or gesture enthusiastically; has a habit of saying things in a sing-song voice when excited; interrupts others with excited questions but always apologizes for being rude) … but was really a Mafioso: Sara was a former social worker who discovered her natural talent for manipulation while helping families navigate complex legal issues. When a particularly difficult case involving a powerful local family went sideways, she realized that sometimes people need to be convinced rather than just told what's right. She became involved with the town's crime family after realizing she could use her natural charisma and ability to connect with people to help the organization expand its influence while maintaining her public image as a beloved community member.
+</endgame>
+<story>
+The game unfolded like a careful dance, each player moving with calculated precision while pretending to be surprised by the others' actions. Zara, ever the dreamy observer, found herself drawn into a pattern of suspicion that seemed to shift with every conversation—always pointing toward the idea that the killer was the one who'd been playing too normal, yet never quite committing to any specific person.
+
+Kai watched from his corner, his dry wit masking a careful calculation. He let others make the first moves, staying just outside the fray while his private thoughts echoed with the same question everyone else seemed to be asking: what if the killer was the one who'd been pretending not to notice anything at all? His reflections were filled with the quiet certainty of someone who had seen this game before.
+
+Meanwhile, Isha and Sara spun their web of misdirection with a theatrical flair that made it hard to tell whether they were leading or following. Their conversations bounced between innocent chatter and pointed observations, always keeping one eye on the others while pretending to be clueless. The truth was hidden in plain sight, wrapped in laughter and carefully chosen words.
+
+The real story wasn't about who had killed Ming or Liam, but about how the two Mafiosos used the town's own patterns of suspicion against it. They knew exactly which threads to pull, which stories to tell, and which people would be convinced that the killer was someone else—while the real killer watched from the shadows, smiling at how easily everyone fell for the game.
+</story>
+</transcript>
