@@ -1435,6 +1435,13 @@ _STRUCTURAL_TAGS: tuple[tuple[str, str, list[tuple[str, str]]], ...] = (
     ("day", "<day>", [("<day>", "marker")]),
     ("round", "<round>", [("<round>", "marker")]),
     ("endgame", "<endgame>", [("<endgame>", "marker")]),
+    # Spec 040's `<story>` — the Moderator's closing story, a top-level block
+    # and sibling of `<endgame>`. Attribute-free in its representative form,
+    # which is also its only form: `_render_story` calls `_wrap`, not
+    # `_wrap_attr`. It joins the FIRST group (the section delimiters) rather
+    # than the attribute carriers, so the attribute-free count moves for the
+    # first time since Slice 2 — from nine to ten.
+    ("story", "<story>", [("<story>", "marker")]),
     ("kill", "<kill>", [("<kill>", "marker")]),
     (
         "player",
@@ -1545,29 +1552,31 @@ _ATTRIBUTE_FREE_TAG_CASES = [
 
 
 def test_the_swept_tag_vocabulary_matches_the_tokenizers_whitelist() -> None:
-    """The fourteen tags below are exactly the ones the tokenizer recognises.
+    """The fifteen tags below are exactly the ones the tokenizer recognises.
 
     A ROT GUARD, in the same spirit as ``test_ledger_viewer``'s
     ``_DETAIL_KEYS_SWEPT`` check against ``DetailScreen.BINDINGS``: without it a
     fourteenth tag could be added to the tokenizer and never swept by the case
     tables below, and the "each recognised marker" coverage this task owes would
     quietly become "each marker somebody remembered". It has fired twice for
-    real now — spec 039's ``<diary>`` is the thirteenth and spec 041 Slice 10's
-    ``<speech>`` the fourteenth, and this is where both slices' authors were
-    sent.
+    real now — spec 039's ``<diary>`` is the thirteenth, spec 041 Slice 10's
+    ``<speech>`` the fourteenth and spec 040's ``<story>`` the fifteenth, and
+    this is where all three slices' authors were sent.
 
     Reaches for the module-private ``_MARKER_TAGS`` deliberately — it is the
     whitelist itself, and there is no public projection of it. The count is
     pinned absolutely as well, because a set comparison against a table derived
     from the same source could not catch both sides shrinking together.
 
-    The 9 / 5 split is pinned too (Slice 2, widened by spec 039 and again by
-    spec 041 Slice 10): the derived ``_ATTRIBUTE_FREE_TAG_CASES`` is what the
-    "still a single marker span" test sweeps, so a table edit that quietly
-    emptied it would make that test vacuous rather than failing. Note which half
-    ``<diary>`` and ``<speech>`` joined — the attribute carriers, both of them —
-    so the attribute-free count has never moved from nine, and a table edit that
-    put one in the wrong half fails on the count rather than on the spans.
+    The 10 / 5 split is pinned too (Slice 2, widened by spec 039, again by
+    spec 041 Slice 10 and again by spec 040): the derived
+    ``_ATTRIBUTE_FREE_TAG_CASES`` is what the "still a single marker span" test
+    sweeps, so a table edit that quietly emptied it would make that test vacuous
+    rather than failing. Note which half each new tag joined — ``<diary>`` and
+    ``<speech>`` are attribute carriers, so the attribute-free count sat at nine
+    for three specs, and spec 040's ``<story>`` is the first addition since
+    Slice 2 to move it, to ten. A table edit that puts a tag in the wrong half
+    fails on the count rather than on the spans.
     """
     whitelist = getattr(eval_ledger, "_MARKER_TAGS", None)
     assert whitelist is not None, (
@@ -1576,13 +1585,13 @@ def test_the_swept_tag_vocabulary_matches_the_tokenizers_whitelist() -> None:
     )
     swept = {name for name, _, _ in _STRUCTURAL_TAGS}
     assert swept == set(whitelist)
-    assert len(_STRUCTURAL_TAGS) == 14, (
+    assert len(_STRUCTURAL_TAGS) == 15, (
         "spec 038 ratified twelve tags (tasks.md, Slice 1 header note), spec "
-        "039 added `diary`, the thirteenth, and spec 041's Slice 10 added "
-        "`speech`, the fourteenth"
+        "039 added `diary`, the thirteenth, spec 041's Slice 10 added `speech`, "
+        "the fourteenth, and spec 040's Slice 8 added `story`, the fifteenth"
     )
-    assert len(_ATTRIBUTE_FREE_TAG_CASES) == 9, (
-        "nine of the fourteen tags carry no attribute; five do "
+    assert len(_ATTRIBUTE_FREE_TAG_CASES) == 10, (
+        "ten of the fifteen tags carry no attribute; five do "
         "(<player>, <vote>, <thought>, <diary>, <speech>)"
     )
     # ...and the tag the `plain` fallback's unrecognised-tag case is written

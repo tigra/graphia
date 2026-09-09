@@ -1515,6 +1515,41 @@ _ROLE_SIDES: dict[str, str] = {
 # and this lookup cannot consult the cast list, so a hand-written unflagged
 # ``<speech>`` would read achromatic where the bare line it imitates reads
 # tinted. Plain is the honest answer for a body nothing produces.
+
+# **AND SPEC 040 ADDS ``story``, the fifteenth — required, on one line, and on
+# one line only.** ``graphia.tools.eval_transcript._render_story`` emits the
+# Moderator's closing story as a top-level block, sibling of ``<endgame>`` and
+# last inside ``<transcript>``. Without the name here the delimiters degrade to
+# :data:`KIND_PLAIN` and **read as prose** — which is the one failure that would
+# make the functional spec's "clearly marked" false, because the marking IS the
+# tag. So this entry is not a nicety; it is the requirement.
+#
+# **It takes nothing else, and each omission has a reason rather than an
+# oversight** — the discipline the ``diary`` / ``speech`` paragraphs above ask a
+# later slice for:
+#
+# - **No :data:`_INLINE_CONTENT_KINDS` entry.** That table fires only on the
+#   same-line path, and a story renders inline when it is one paragraph and as a
+#   block when it is several (``_wrap``'s own rule, the same one ``<night>`` and
+#   ``<preamble>`` follow). An entry would therefore claim a one-paragraph
+#   story's body and *not* a multi-paragraph one — the same content kinded two
+#   ways depending on how many paragraphs the model happened to write, which is
+#   worse than no kind at all. So ``<story>``'s body is ``plain``, exactly like
+#   ``<endgame>``'s: the format's own precedent for a Moderator-voice block
+#   whose body is unstyled and whose marker is the landmark.
+# - **No new ``KIND_*`` and no :data:`TRANSCRIPT_KINDS` entry** — there is no
+#   new body kind to name, for the reason above.
+# - **No :data:`_ATTR_NAMES` change**, and no ``uu`` (``Style.underline2``)
+#   either. The story has a unique once-per-file position, its own delimiters
+#   and no competitor within a hundred lines, so position plus marker beats any
+#   remaining style axis — and with ``strike`` now spent by spec 041's Slice 9,
+#   ``uu`` is the only genuinely live one left, which makes protecting it more
+#   important rather than less.
+#
+# **Zero corpus impact, measured rather than argued, and the measurement is the
+# whole licence for adding a name to a whitelist**: ``<story`` occurs **0 times**
+# across all 393 committed transcripts (29 run dirs, measured 2026-09-09), so no
+# committed line can tokenize differently for this entry existing.
 _MARKER_TAGS: frozenset[str] = frozenset(
     {
         "transcript",
@@ -1524,6 +1559,7 @@ _MARKER_TAGS: frozenset[str] = frozenset(
         "day",
         "round",
         "endgame",
+        "story",
         "kill",
         "player",
         "vote",
