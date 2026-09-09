@@ -118,13 +118,26 @@ class GraphiaApp(App[None]):
         Binding("escape", "request_quit", "Quit", show=True, priority=True),
         Binding("ctrl+c", "abort", "Abort", show=False, priority=True),
         # Spec 040 Slice 6: the named leaving key for a finished game. NOT
-        # `priority=True` — a priority binding would steal `q` from the
-        # docked Input and no player could type a name or a speech
-        # containing the letter. With the default priority the focused
-        # Input consumes printable keys first, and the binding is only ever
-        # reached when focus is on a pane, which is where a finished game
-        # leaves it. `show` is irrelevant either way: there is no Footer in
-        # this app, so nothing renders BINDINGS (the affordance is
+        # `priority=True` — but NOT for the reason first written here, which
+        # was measured FALSE (Task 6.6, 2026-09-09). The claim was that a
+        # priority binding "would steal `q` from the docked Input and no
+        # player could type a name or a speech containing the letter". It
+        # would not: `action_leave` fires first, raises `SkipAction` because
+        # the game is not over, and the keystroke is handed BACK to the
+        # binding chain, so the focused Input inserts it (`prompt.value ==
+        # 'quq'`). Setting the flag turns NOTHING red — verified against the
+        # whole suite, which types names and speeches everywhere.
+        #
+        # So the flag is UNOBSERVABLE while both guards in `action_leave`
+        # stand, and the real argument for leaving it off is that it makes
+        # the guards load-bearing for typing rather than merely for intent:
+        # `priority=True` PLUS a dropped guard is what actually breaks, and
+        # `test_spec040_exit_contract.py` is red on exactly that pair. With
+        # the default priority the focused Input consumes printable keys
+        # first and the binding is only ever reached when focus is on a
+        # pane, which is where a finished game leaves it — one mechanism
+        # instead of two. `show` is irrelevant either way: there is no
+        # Footer in this app, so nothing renders BINDINGS (the affordance is
         # `#public-log`'s border subtitle — Task 6.4).
         Binding("q", "leave", "Leave", show=False),
     ]
