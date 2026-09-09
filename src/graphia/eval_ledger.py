@@ -3341,7 +3341,12 @@ def render_detail(record: RawRecord) -> str:
       ``diary_entries_attempted``) between ``games_failed_early`` and
       ``duration_seconds``. Omitted together when no entry was attempted, so
       absence reads as "no opportunity", never as a clean ``0.0``. Plus — spec
-      041, only for the answer kinds the run **attempted** — a
+      040, only when a game reached the ending — the three flat ``story_*``
+      run-health keys (``story_missing_rate``, ``story_missing_games``,
+      ``story_ending_games``) directly after the diary trio, on the same
+      absent-not-zero rule: a pre-040 record has no denominator at all and gains
+      no line, while a clean run's ``story_missing_rate: 0.0`` is shown. Plus —
+      spec 041, only for the answer kinds the run **attempted** — a
       ``substitutions`` sub-block (``<kind>`` → ``rate``/``count``/
       ``attempted``, in schema order), gated per kind on that kind's own
       denominator, so a kind with no opportunity is absent rather than a
@@ -3645,15 +3650,45 @@ _DIARY_QUALITY_FIELDS: tuple[str, ...] = (
 _DIARY_QUALITY_GATE = "quality.diary_entries_attempted"
 
 
+# The three flat ``quality.story_*`` keys (spec 040 §2.10), in the order
+# ``render_record`` inserts them — rate, then the count, then the denominator it
+# was taken over. Same one-tuple-not-three-call-sites shape as
+# :data:`_DIARY_QUALITY_FIELDS`, and for the same reason: the writer's key list
+# and the reader's field list are one contract, so a rename breaks in one place.
+#
+# The **rate is read, never recomputed** — ``render_record`` derives it once from
+# the count/denominator pair, and a second derivation here would render a
+# self-contradicting record as though it agreed.
+_STORY_QUALITY_FIELDS: tuple[str, ...] = (
+    "story_missing_rate",
+    "story_missing_games",
+    "story_ending_games",
+)
+
+# The key the whole ``story_*`` trio is gated on — the DENOMINATOR, mirroring the
+# writer's own gate (``render_record`` emits all three only when a game reached
+# the ending). **ABSENCE IS A THIRD CASE, NOT A FALSY ONE** (spec 040, Task 9.3):
+# a pre-040 record was played by a build with no story path, so it carries no
+# denominator at all and must render *nothing* — whereas
+# ``story_missing_rate: 0.0`` over a real denominator is the single most
+# informative result this trio can carry (every ending told its story) and must
+# be shown. Gating on the numerator, or on truthiness of the group, would hide
+# exactly that reading and make a clean run indistinguishable from a build that
+# never had a story to tell.
+_STORY_QUALITY_GATE = "quality.story_ending_games"
+
+
 def _render_quality_section(record: RawRecord) -> str:
     """The ``quality`` block — run-health counts, or one ``—`` line.
 
     A whole **absent** ``quality`` block collapses to a single ``—`` line. The
     four original counts render unconditionally; spec 039's three flat
-    ``diary_*`` keys render **only when the run attempted a diary entry**,
-    positioned between ``games_failed_early`` — the other "did this run measure
-    anything?" count — and ``duration_seconds``, matching the record's own key
-    order.
+    ``diary_*`` keys render **only when the run attempted a diary entry**, and
+    spec 040's three flat ``story_*`` keys **only when a game reached the
+    ending**, both positioned between ``games_failed_early`` — the other "did
+    this run measure anything?" count — and ``duration_seconds``, matching the
+    record's own key order (``render_record`` emits the story trio directly
+    after the diary trio and before the ``substitutions`` census).
 
     **They are run health, not an AI-quality metric**, which is why they live here
     and not in ``metrics``: ``quality`` is a *census of one run* rather than a
@@ -3678,6 +3713,17 @@ def _render_quality_section(record: RawRecord) -> str:
     trio is therefore gated on the **denominator** (:data:`_DIARY_QUALITY_GATE`),
     never on the rate: a genuine ``0.0`` is the *clean* reading and must stay
     distinct from absence.
+
+    **The story trio (spec 040 §2.10) is the same shape and the same rule**, with
+    one justification that only half-transfers: the census argument holds, so no
+    Wilson band, but 039's *clustering* argument does not, because there is
+    exactly one story call per game. Gated on its own denominator
+    (:data:`_STORY_QUALITY_GATE`), so a pre-040 record — played by a build with
+    no story path, carrying no denominator at all — renders nothing, while a
+    clean run's ``story_missing_rate: 0.0`` renders. Absence is a **third case,
+    not a falsy one**, and this renderer is where that distinction becomes
+    visible to an operator who would otherwise have to read raw YAML to learn
+    that a run produced no stories at all.
     """
     quality = _dig(record, "quality")
     if not isinstance(quality, dict):
@@ -3691,6 +3737,16 @@ def _render_quality_section(record: RawRecord) -> str:
         lines += [
             _field(name, _dig(record, f"quality.{name}"))
             for name in _DIARY_QUALITY_FIELDS
+        ]
+    # Spec 040 §2.10, Task 9.6: the story trio, in the writer's own position —
+    # after the diary trio, before the ``substitutions`` census. Without this
+    # branch the trio was written to every 040-era record and readable only in
+    # raw YAML, which is the same non-iterating-renderer gap that hid
+    # ``run.kind``, the whole ``generation`` block and 039's own diary trio.
+    if _dig(record, _STORY_QUALITY_GATE, _MISSING) is not _MISSING:
+        lines += [
+            _field(name, _dig(record, f"quality.{name}"))
+            for name in _STORY_QUALITY_FIELDS
         ]
     lines += _substitution_lines(record)
     lines.append(_field("duration_seconds", _dig(record, "quality.duration_seconds")))
