@@ -1961,12 +1961,18 @@ def test_a_story_bearing_delta_from_an_unrecognised_node_yields_no_preamble() ->
         "to the generic preamble branch after `end_screen`'s `flush()` reset "
         f"`section_kind`. Document:\n{doc}"
     )
-    # The story's PRESENCE is deliberately not asserted here, and the reason is
-    # a sequencing fact rather than an oversight. Task 8.2 narrows
-    # `_render_endgame` to the facts half, so between that commit and Task 8.3's
-    # `_render_story` the story's words are in no block at all — a one-commit
-    # gap the plan's task order makes unavoidable, since 8.2 must land before
-    # the element 8.3 builds. Presence is pinned by the `<story>` tests instead.
+    # Restored by Task 8.3, which is the commit that gave the story a block of
+    # its own to be present IN. (It was dropped for exactly one commit: Task
+    # 8.2 narrowed `_render_endgame` to the facts half before `_render_story`
+    # existed, so the story's words were briefly in no block at all. The gap is
+    # forced by the plan's task order, not by a choice here.) It is worth
+    # keeping: without it this test passes for a renderer that simply throws the
+    # `moderator_story` delta away, which is a worse outcome than the mis-label
+    # the count above catches.
+    assert _STORY_PARAGRAPHS[0] in doc, (
+        "the story's words vanished from the transcript entirely — a worse "
+        "outcome than the mis-label this test exists to catch"
+    )
     preamble = _block(doc, "preamble")
     assert _STORY_PARAGRAPHS[0] not in preamble, (
         "the story's words are inside the <preamble> block:\n" + preamble

@@ -571,16 +571,63 @@ def _render_phases(
 
             if node in _ENDGAME_NODES:
                 # The ending is its own labeled block, never folded into the
-                # last Night/Day. Close whatever is open, then emit <endgame>.
+                # last Night/Day. Close whatever is open, then emit the ending's
+                # two SIBLING blocks in order: ``<endgame>`` (what happened) and
+                # ``<story>`` (the Moderator's retelling of it, spec 040 §2.9).
                 #
-                # ``moderator_story`` joins ``end_screen`` here (spec 040 §2.9)
-                # so a story-bearing delta can never fall through to the
-                # ``preamble`` branch below — see :data:`_ENDGAME_NODES` for the
-                # mechanism that made it. Tasks 8.2/8.3 split the two voices
-                # apart into ``<endgame>`` and ``<story>``; this branch's job is
-                # only to keep the ending's deltas out of the preamble.
+                # ``moderator_story`` joins ``end_screen`` in
+                # :data:`_ENDGAME_NODES` so a story-bearing delta can never fall
+                # through to the ``preamble`` branch below — see that constant
+                # for the mechanism.
+                #
+                # ``<endgame>`` iff ``facts or not story``. The clause reads
+                # oddly and each half earns its place:
+                #
+                # - ``facts`` — the ordinary case, a delta with a fact sheet.
+                # - ``not story`` — an ALL-EMPTY delta still gets today's
+                #   ``<endgame>(no endgame recorded)</endgame>`` placeholder,
+                #   which is what keeps a sparse or pre-040 capture rendering
+                #   byte-for-byte as it always has.
+                #
+                # And the combination is what suppresses the PHANTOM block: a
+                # story-only delta has no facts and does have a story, so it
+                # emits no ``<endgame>`` at all rather than a second one saying
+                # "(no endgame recorded)" about a game whose endgame is right
+                # above it. **On the real engine that story-only delta is the
+                # NORMAL path, not an edge case** — ``end_screen`` and
+                # ``moderator_story`` are separate super-steps, verified on a
+                # driven capture — so this is the branch every real story takes.
+                #
+                # AND THE FAILURE PATH IS ALREADY SAFE, which is worth writing
+                # down because the rule above looks like it would break it.
+                # ``nodes.endgame.moderator_story`` returns a bare ``{}`` when
+                # the story call fails (§2.8 — no fallback text), and a delta
+                # with no facts and no story satisfies ``not story``, so the
+                # rule reads as though every failed story appended a phantom
+                # "(no endgame recorded)" block right under the real one.
+                # Measured on a driven capture whose ``Story`` call raises:
+                # LangGraph streams that super-step as ``{"moderator_story":
+                # None}`` — the delta is ``None``, not ``{}`` — and the
+                # ``isinstance(delta, dict)`` guard at the top of this loop
+                # drops it before this branch is reached. The transcript of a
+                # failed story therefore ends at ``</endgame>``, byte-identical
+                # to a pre-040 capture's.
+                #
+                # A synthetic ``{"moderator_story": {"messages": []}}`` WOULD
+                # produce that phantom, and no guard was added for it: the
+                # engine cannot emit that shape, and this codebase's own rule
+                # (``nodes.endgame``'s Task 10.1 finding) is that a branch no
+                # production path can enter is worse than the hole it closes.
+                # Recorded rather than defended — a hand-built capture wanting
+                # "no endgame recorded" should use an empty ``end_screen``
+                # delta, which is the shape that has always produced it.
                 flush()
-                out.append(_render_endgame(delta, names))
+                facts, story = _split_endgame_texts(delta)
+                if facts or not story:
+                    out.append(_render_endgame(delta, names))
+                story_block = _render_story(story)
+                if story_block is not None:
+                    out.append(story_block)
                 continue
 
             if node == "night_open":
@@ -979,6 +1026,73 @@ def _render_endgame(delta: dict[str, Any], names: dict[str, str]) -> str:
     if not body:
         body = ["(no endgame recorded)"]
     return _wrap("endgame", body)
+
+
+def _render_story(story: list[str]) -> str | None:
+    """Render the Moderator's closing story as one ``<story>`` block, or ``None``.
+
+    Spec 040 §2.9. A **top-level block, sibling of** ``<endgame>`` and emitted
+    immediately after it, so it is the last thing inside ``<transcript>`` —
+    **not** an extension of :func:`_render_endgame`. Three reasons, all worth
+    keeping where the code is:
+
+    1. Two existing tests pin ``<endgame>`` as one labelled top-level block
+       (``test_eval_transcript.test_endgame_is_one_labeled_block_with_winner_roster_and_reveal``
+       and ``…_block_is_top_level_not_folded_into_the_last_night``) and stay
+       green **unchanged** under a sibling.
+    2. ``<endgame>`` is the record of *facts*; the story *retells* them. Folding
+       would rest "clearly marked" on an inner label inside a block a reviewer
+       reads as the factual reveal — and the whole point of preserving the story
+       is that a reviewer can judge the prose as prose.
+    3. ``</endgame>`` … ``<story>`` makes the functional spec's "at the end,
+       after the final events" **structural rather than conventional**: the
+       position is enforced by the document's shape, not by a habit.
+
+    **A BLOCK, NOT AN INLINE ELEMENT — and the tokenizer's invariants decided
+    it, not taste.** An inline element whose content spans lines would need a
+    claimed multi-line body span to be marked at all, which spec 038 forbids for
+    a *styled* span; and if left unclaimed it still breaks, because the final
+    line (``para2</story>``) fails the tag-head match at position 0 and the whole
+    line — closing marker included — becomes one plain span. Degradation rather
+    than a crash, but the file is then ambiguous.
+
+    **Two traps this function exists to avoid**, both properties of
+    :func:`_wrap`:
+
+    - ``_wrap`` counts non-empty *entries* to decide its single-line collapse,
+      so handing it ONE entry that happens to hold ``\n`` collapses a
+      multi-paragraph story into an "inline" element spanning five physical
+      lines — exactly the shape the paragraph above rules out. Hence the split
+      on ``"\n"``: the caller must never hand ``_wrap`` an entry with newlines
+      in it.
+    - Blank entries at the ends are trimmed, so a body is never opened or closed
+      by an empty line. ``_message_text`` already strips the message content, so
+      on the real engine there are none; the trim is for a synthetic or
+      hand-built capture. Interior blanks are left exactly as they are — they
+      are the paragraph separators ``nodes.endgame._clamp_story`` rejoins with
+      ``"\n\n"``, and spec 022's "the renderer never rewrites the wording"
+      covers the shape of the prose as well as its words.
+
+    **ONE ELEGANT CONSEQUENCE, SO NOBODY "FIXES" IT:** a single-paragraph story
+    renders inline (``<story>one paragraph</story>``) and a multi-paragraph one
+    as a block — which is precisely how ``<night>``, ``<day>`` and
+    ``<preamble>`` have always behaved. The two forms are not an inconsistency;
+    they are the format's own rule applied to a body whose length varies.
+
+    Returns ``None`` when there is nothing usable to render, so the caller emits
+    no element at all rather than an empty ``<story></story>`` — absence, never
+    a misleading empty block.
+    """
+    lines: list[str] = []
+    for text in story:
+        lines.extend(text.split("\n"))
+    while lines and lines[0] == "":
+        lines.pop(0)
+    while lines and lines[-1] == "":
+        lines.pop()
+    if not lines:
+        return None
+    return _wrap("story", lines)
 
 
 # ---------------------------------------------------------------------------
