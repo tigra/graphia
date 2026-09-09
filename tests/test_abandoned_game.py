@@ -340,10 +340,34 @@ async def test_esc_confirm_after_game_over_records_nothing(
 ) -> None:
     """With ``_game_over`` True, an Esc-confirm records no abandoned game.
 
-    Note: ``on_key`` exits on *any* key once ``_game_over`` is True, so a real
-    Esc keypress would exit before the modal even opens. We therefore invoke
-    the dismiss callback directly with ``confirm=True`` — the precise way to
-    exercise the ``not self._game_over`` guard in ``_on_quit_decision``.
+    Driven with a REAL ``escape`` keypress, which is a correction (spec 040,
+    Task 6.5). This test used to call ``app._on_quit_decision(True)`` directly
+    behind a note claiming that ``on_key`` exited on any key once
+    ``_game_over`` was True, so "a real Esc keypress would exit before the
+    modal even opens". **That claim was inverted on this Textual version.**
+    ``escape`` is bound on :class:`~graphia.ui.app.GraphiaApp` with
+    ``priority=True``, and a priority App binding is dispatched *before*
+    ``App.on_key`` ever runs — so ``escape`` was consumed by
+    ``action_request_quit`` and ``on_key`` never saw it. The modal opened on a
+    real keypress then too, and the direct-callback workaround was never
+    needed. Measured by restoring the deleted ``on_key`` and pressing
+    ``escape`` at ``_game_over``: the :class:`QuitModal` appears, and the
+    ``x`` in the same probe exits — so the restored handler was live and
+    ``escape`` still bypassed it.
+
+    Spec 040 Task 6.3 then deleted ``on_key`` outright, so the point is moot
+    for the future as well; the keypress path is used here because it is the
+    one a player actually takes to reach ``_on_quit_decision``, and the direct
+    call could not have caught a broken ``escape`` binding.
+
+    Anti-vacuity: "nothing was recorded" would also hold if the gesture never
+    reached ``_on_quit_decision`` at all, so both halves of the journey are
+    asserted positively first — the modal really opened (``escape`` was
+    dispatched) and the app really exited (the confirm branch really ran,
+    since ``_on_quit_decision``'s only exit is past the record guard).
+    ``test_esc_confirm_in_progress_records_abandoned`` above is the paired
+    control: the same two keystrokes, with ``_game_over`` False, record one
+    abandoned game.
     """
     app = booted_app
     async with app.run_test() as pilot:
@@ -352,8 +376,19 @@ async def test_esc_confirm_after_game_over_records_nothing(
         # Simulate the post-END state the normal-end path would leave behind.
         app._game_over = True
 
-        await app._on_quit_decision(True)
-        await pilot.pause(0.1)
+        await pilot.press("escape")
+        modal = await _wait_for_quit_modal(app, pilot)
+        assert isinstance(modal, QuitModal), (
+            "a real `escape` keypress must open the QuitModal even at "
+            "_game_over — the App binding is priority=True"
+        )
+
+        await pilot.press("y")
+        await _wait_for(pilot, lambda: app.is_running is False, timeout=2.0)
+        assert app.is_running is False, (
+            "confirming the quit modal must exit the app — otherwise the "
+            "'recorded nothing' assertion below never ran the guard"
+        )
 
     assert capturing_store.recorded == [], (
         f"Esc-confirm after game over must record nothing; "

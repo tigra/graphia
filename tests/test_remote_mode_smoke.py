@@ -390,10 +390,25 @@ async def _run_full_game(
             pilot, log_text=lambda: _public_log_text(app)
         )
 
-        # Press any key to exit the post-game screen.
+        # Spec 040 ("The Moderator's Closing Story"), Task 6.5. Was
+        # ``press("x")`` under the comment "Press any key to exit the
+        # post-game screen.", with ``assert app.is_running is False``
+        # OUTSIDE the ``run_test()`` block — after the pilot had already shut
+        # the app down, so the assertion held for any key and survived Task
+        # 6.3's narrowing of the contract to ``q``. Repointed inside.
+        assert app._game_over is True, (
+            "the ending must have run before the exit contract is asserted"
+        )
         await pilot.press("x")
+        assert app.is_running is True, (
+            "`x` must not exit a finished game — the ending has to stay "
+            "readable after a remote-mode game too"
+        )
+        await pilot.press("q")
+        assert app.is_running is False, (
+            "`q` must leave a finished game (GraphiaApp.action_leave)"
+        )
 
-    assert app.is_running is False
     return rendered
 
 
@@ -1337,6 +1352,20 @@ async def test_remote_mode_private_whisper_renders_in_private_pane(
             f"got {app._human_id!r}"
         )
 
+        # Spec 040 ("The Moderator's Closing Story"), Task 6.5 — the fifth
+        # of the five hollow sites, and the one no earlier count included.
+        # It is a genuine end-of-game press (``_game_over`` is asserted
+        # above, before the private/public pane checks), so the ``q``-only
+        # contract applies here exactly as it does on the locally-driven
+        # paths; the ``assert app.is_running is False`` that used to follow
+        # this press sat outside the ``run_test()`` block and measured
+        # nothing.
         await pilot.press("x")
-
-    assert app.is_running is False
+        assert app.is_running is True, (
+            "`x` must not exit a finished game — the ending has to stay "
+            "readable after a scripted remote run too"
+        )
+        await pilot.press("q")
+        assert app.is_running is False, (
+            "`q` must leave a finished game (GraphiaApp.action_leave)"
+        )

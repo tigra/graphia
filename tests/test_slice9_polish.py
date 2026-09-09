@@ -328,8 +328,10 @@ async def test_ctrl_c_shows_aborted_banner(
         await pilot.press("enter")
 
         # Let the graph advance at least one super-step past the name
-        # interrupt so ``_game_over`` is still False (the on_key handler
-        # is a no-op; we rely on the ``ctrl+c`` binding instead).
+        # interrupt so ``_game_over`` is still False. (The parenthetical here
+        # used to point at "the on_key handler"; spec 040 Task 6.3 deleted
+        # ``GraphiaApp.on_key`` entirely, so there is no handler to be a
+        # no-op — this test has always relied on the ``ctrl+c`` binding.)
         await pilot.pause(0.2)
 
         assert app._game_over is False, (

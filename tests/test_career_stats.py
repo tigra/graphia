@@ -712,8 +712,32 @@ async def test_ui_greeting_appears_on_launch(
 
         assert FIRST_RUN_MARKER in _rich_log_text(log)
 
+        # Spec 040 ("The Moderator's Closing Story"), Task 6.5 — a SIXTH
+        # hollow site, not in the five the task enumerates, found while
+        # repointing them. This was ``press("q")`` plus
+        # ``assert app.is_running is False`` outside the ``run_test()``
+        # block. It is not merely vacuous, it is FALSE: the game here is
+        # mid-setup (the greeting has landed, no ending has run) and ``q``
+        # does not exit — so the app is still up when that line claimed it
+        # was gone. Moved inside and pointed at the truth.
+        #
+        # Measured, so the comment does not overclaim which mechanism holds
+        # here: at this moment ``#player-input`` is focused and enabled, so
+        # the ``Input`` consumes ``q`` as a CHARACTER and the App binding is
+        # never reached — removing ``action_leave``'s ``not _game_over``
+        # guard leaves this test green. The guard's own witness needs focus
+        # off the input and lives in
+        # ``tests/test_spec040_exit_contract.py``; the positive control that
+        # ``q`` is a live key at all is the game-over press in
+        # ``test_ui_panel_written_then_second_app_greets_cumulative`` below.
+        assert app._game_over is False, (
+            "precondition: this game has not ended, so `q` must not leave"
+        )
         await pilot.press("q")
-    assert app.is_running is False
+        assert app.is_running is True, (
+            "`q` must NOT exit a game in progress — spec 003 unbound `q` "
+            "from quitting because it is a character players type"
+        )
 
 
 # --------------------------------------------------------------------------
@@ -846,8 +870,25 @@ async def test_ui_panel_written_then_second_app_greets_cumulative(
             f"{rendered}"
         )
         assert app1._game_over is True
+        # Spec 040 ("The Moderator's Closing Story"), Task 6.5. This was
+        # ``press("x")`` plus ``assert app1.is_running is False`` OUTSIDE the
+        # ``run_test()`` block — vacuous, because the context manager had
+        # already stopped the app before the assertion ran, so it passed for
+        # any key at all (measured: it stayed green after Task 6.3 narrowed
+        # the contract from "any key" to ``q``).
+        #
+        # ``x`` must now leave the app running; ``q`` is the positive control
+        # that a keypress can still exit here, and has to come second because
+        # it ends the app.
         await pilot.press("x")
-    assert app1.is_running is False
+        assert app1.is_running is True, (
+            "`x` must not exit a finished game — the ending has to stay "
+            "readable"
+        )
+        await pilot.press("q")
+        assert app1.is_running is False, (
+            "`q` must leave a finished game (GraphiaApp.action_leave)"
+        )
 
     # The folded aggregate must have been persisted to the shared path.
     persisted = LocalFileStatsStore(store_path).load()
@@ -873,8 +914,23 @@ async def test_ui_panel_written_then_second_app_greets_cumulative(
             f"{greeting_text}"
         )
 
+        # Spec 040, Task 6.5 — the SEVENTH hollow site (see the sixth, in
+        # ``test_ui_first_run_greeting_visible_in_public_log``). ``app2``
+        # only ever shows its greeting, so it is mid-setup here too: ``q``
+        # does not exit and the assertion that used to sit outside this
+        # block asserted the opposite of the truth. Same measured caveat as
+        # the sixth site — the focused, enabled ``Input`` eats the ``q``, so
+        # this is not a witness for ``action_leave``'s ``_game_over`` guard.
+        # The positive control is the game-over ``q`` press earlier in this
+        # same test, on ``app1``.
+        assert app2._game_over is False, (
+            "precondition: app2 has not ended a game, so `q` must not leave"
+        )
         await pilot.press("q")
-    assert app2.is_running is False
+        assert app2.is_running is True, (
+            "`q` must NOT exit a game in progress — spec 003 unbound `q` "
+            "from quitting because it is a character players type"
+        )
 
 
 # --------------------------------------------------------------------------

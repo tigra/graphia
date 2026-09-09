@@ -23,7 +23,10 @@ Textual) mirroring the pattern used in ``test_slice7_vote.py``:
    ``private_diaries``, and none of that text reaches the facts message.
 
 Plus a single Textual-pilot smoke test asserting the "Game over." marker
-renders in ``#public-log`` and any keypress exits the app.
+renders in ``#public-log``, that a stray ``x`` does **not** exit the finished
+game, and that ``q`` does (spec 040 Task 6.3 replaced the exit-on-any-key
+``on_key`` with a named leaving key; Task 6.5 repointed this file's assertion,
+which had been sitting outside the ``run_test()`` block and measuring nothing).
 
 Why tests 1-4 select the endgame message on CONTENT (spec 040, Task 1.7)
 ------------------------------------------------------------------------
@@ -949,7 +952,7 @@ def test_endgame_recap_omits_diaries_while_diaries_are_really_written(
 
 
 # --------------------------------------------------------------------------
-# Test 5: Textual pilot — end screen renders and any keypress exits.
+# Test 5: Textual pilot — end screen renders; `x` stays, `q` leaves.
 # --------------------------------------------------------------------------
 
 
@@ -959,7 +962,7 @@ async def test_end_screen_visible_in_ui(
     fake_large,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Pilot smoke test: end screen lands in #public-log; any key exits.
+    """Pilot smoke test: end screen lands in #public-log; `x` stays, `q` leaves.
 
     Pins the human as Law-abiding via ``GRAPHIA_ROLE`` so the test never
     has to respond to a ``kind="point"`` modal interrupt. AIs always
@@ -977,8 +980,10 @@ async def test_end_screen_visible_in_ui(
       - Night 3: AI Mafia kills Law-abiding #3 → 2M, 2L (Mafia parity!).
       - ``check_win_night`` routes to ``end_screen`` → Mafia win.
 
-    After ``end_screen`` runs the driver posts ``"Game over."`` and any
-    keypress exits the app.
+    After ``end_screen`` runs the driver posts ``"Game over."`` and puts
+    ``#public-log`` into reading state; ``q`` is then the key that leaves
+    (spec 040, Task 6.3 — ``on_key``'s exit-on-any-key was deleted so the
+    ending can be scrolled back through).
     """
     from rich.text import Text
     from textual.widgets import Input, RichLog
@@ -1083,7 +1088,29 @@ async def test_end_screen_visible_in_ui(
         assert "Game over." in rendered
 
         assert app._game_over is True
-        # Any keypress exits the app.
+        # Spec 040 ("The Moderator's Closing Story"), Task 6.5 — the exit
+        # contract, asserted where it can still be observed.
+        #
+        # This used to be a bare ``await pilot.press("x")`` with
+        # ``assert app.is_running is False`` OUTSIDE the ``run_test()``
+        # block, under the comment "Any keypress exits the app." That
+        # assertion measured nothing: by the time it ran the async context
+        # manager had already shut the app down, so ``is_running`` was False
+        # whatever the key did. Proof it was hollow: Task 6.3 narrowed the
+        # contract from "any key" to ``q`` — the exact behaviour this line
+        # claimed to pin — and the test stayed green.
+        #
+        # Now: ``x`` must leave the app RUNNING (the ending has to survive a
+        # stray keypress to be readable), and ``q`` is the positive control
+        # proving this app really can be exited by a keypress at this moment
+        # — without it, "x did not exit" would also pass on an app that no
+        # key can exit. The control comes second because it is destructive.
         await pilot.press("x")
-
-    assert app.is_running is False
+        assert app.is_running is True, (
+            "`x` must not exit a finished game — the ending has to stay on "
+            "screen so the player can read back through it"
+        )
+        await pilot.press("q")
+        assert app.is_running is False, (
+            "`q` must leave a finished game (GraphiaApp.action_leave)"
+        )

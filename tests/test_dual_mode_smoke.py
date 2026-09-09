@@ -238,9 +238,30 @@ async def _run_full_game_collecting(
         winner = final_state.get("winner")
         thread_id = (rc.get("configurable") or {}).get("thread_id")
 
+        # Spec 040 ("The Moderator's Closing Story"), Task 6.5. Was
+        # ``press("x")`` with ``assert app.is_running is False`` OUTSIDE the
+        # ``run_test()`` block, where the pilot has already stopped the app —
+        # so it passed for any key, including after Task 6.3 narrowed the
+        # contract to ``q``. Repointed to the real contract, inside the block.
+        #
+        # This helper runs TWICE (once local, once remote) and its two public
+        # logs are compared byte-for-byte by the caller, so both halves of
+        # the contract are asserted per mode: a divergence in the exit
+        # affordance between local and remote play fails here, in the mode
+        # that broke, rather than as an unexplained diff downstream.
+        assert app._game_over is True, (
+            "the ending must have run before the exit contract is asserted"
+        )
         await pilot.press("x")
+        assert app.is_running is True, (
+            "`x` must not exit a finished game — the ending has to stay "
+            "readable in BOTH local and remote mode"
+        )
+        await pilot.press("q")
+        assert app.is_running is False, (
+            "`q` must leave a finished game (GraphiaApp.action_leave)"
+        )
 
-    assert app.is_running is False
     return {
         "public_log": rendered,
         "kill_log": kill_log,
