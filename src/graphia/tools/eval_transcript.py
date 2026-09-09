@@ -164,6 +164,53 @@ _RECAP_RE = re.compile(r"^Day \d+, .+ status: ")
 # renderer stays defensive about it only because a synthetic capture can.
 _ENDGAME_NODES: frozenset[str] = frozenset({"end_screen", "moderator_story"})
 
+# The ``<story>`` block's OWN delimiters, as a line of model prose could spell
+# them: an opening tag with or without an attribute run, or the closing tag
+# (spec 040 §3, Slice 8 Task 8.4). Mirrors ``eval_ledger._TAG_HEAD_RE``'s
+# attribute shape (``\s[^>]*`` — a run introduced by whitespace and holding no
+# ``>``) so this recognises exactly what the reader's tokenizer would.
+#
+# WHY THE RENDERER TOUCHES THE PROSE AT ALL, given spec 022's "the renderer
+# never rewrites the wording". A body line emitting a literal ``</story>``
+# breaks the block boundary for a future Phase-7 judge parser: the reader
+# degrades gracefully (the line fails the tag-head match at position 0 and the
+# whole line becomes one plain span, so the round-trip still holds and nothing
+# raises) but the FILE is then ambiguous — a parser scanning for the closing
+# delimiter finds one in the middle of the story, and cannot tell which of the
+# two ends the block. A closing marker that might not be the close is worse
+# than a missing one.
+#
+# **STRUCTURE ONLY, WORDING UNTOUCHED — and that is what keeps spec 022's rule
+# true rather than merely bent.** This removes tag-shaped punctuation and
+# nothing else: no whitespace folding, no truncation, no substitution, not a
+# single word altered. It is deliberately much narrower than 039's
+# ``_clamp_diary_entry``, which folds all whitespace and cuts at a character
+# bound. One consequence, left alone on purpose: a line like
+# ``para two </story>`` keeps its trailing space, because a trailing space is
+# neither structure nor wording and removing it would be a second rule. Another,
+# for the same reason: a model that wrote ``</story>`` as its OWN paragraph
+# leaves two consecutive blank lines behind when that line is dropped, so the
+# gap there renders wider than the model wrote. Cosmetic, unambiguous and
+# round-trip clean — and collapsing it would need a blank-run rule that could
+# not tell the model's own double blank from this one. **Do not add one:** the
+# whole instruction on this change is "narrower than 039's clamp", and a second
+# structural rule to tidy whitespace is exactly the drift that warns against.
+#
+# **WIDER THAN THE TASK LINE'S LETTER, deliberately.** Task 8.4 names
+# ``</story>`` alone; this pattern also eats an OPENING ``<story>`` and an
+# attributed ``<story …>``. Both are worse ambiguities than the closing tag, not
+# lesser ones: an opening delimiter at position 0 of a body line is matched by
+# ``eval_ledger._TAG_HEAD_RE`` and — once Task 8.5 whitelists the name — read as
+# a marker, i.e. as the START of a block, inside a block. And the attributed
+# form is a real delimiter shape rather than a hypothetical one: spec 040 §2.5
+# hands ``<story truncated="true">`` to this slice.
+#
+# Zero corpus impact, and it is a measurement rather than an argument: ``<story``
+# occurs **0 times** across all 393 committed transcripts, so no committed byte
+# can change for this existing. It also cannot reach any other tag — the pattern
+# names ``story`` and only ``story``.
+_STORY_TAG_RE = re.compile(r"</?story(?:\s[^>]*)?>")
+
 
 def render_transcript(
     events: list[dict[str, Any]],
@@ -1086,6 +1133,22 @@ def _render_story(story: list[str]) -> str | None:
     lines: list[str] = []
     for text in story:
         lines.extend(text.split("\n"))
+    # Task 8.4 — the single choke point at which a tag-shaped line of model
+    # prose is neutralised. See :data:`_STORY_TAG_RE` for why this is not a
+    # breach of "the renderer never rewrites the wording".
+    #
+    # A line that was NOTHING BUT delimiters is dropped rather than left behind
+    # as an empty string: an empty line is a paragraph break in this format, so
+    # keeping it would insert a break the model never wrote — a structural edit
+    # smuggled in by a structural fix. A line that still has prose in it keeps
+    # its place, its order and its every word.
+    cleaned: list[str] = []
+    for line in lines:
+        neutralised = _STORY_TAG_RE.sub("", line)
+        if line.strip() and not neutralised.strip():
+            continue
+        cleaned.append(neutralised)
+    lines = cleaned
     while lines and lines[0] == "":
         lines.pop(0)
     while lines and lines[-1] == "":
