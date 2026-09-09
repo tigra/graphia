@@ -4451,3 +4451,143 @@ metrics:
     peak: 0.053169734151329244
     denominator: 21
 notes: 'spec 040 Task 10.2 smoke: confirm the story block in the transcript, the quality story trio in the record, and a story from a real game'
+---
+run:
+  date: '2026-09-09'
+  duration_seconds: 1994.643
+  metrics_version: 1
+  transcript_dir: '2026-09-09T15-17-40'
+code:
+  commit: '8dc8a3593d7e0275c83ce9b8ef2c8c8961cb21e9'
+  branch: 'main'
+  dirty: true
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  structured_output: 'json_schema'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.32.14'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 1
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 1
+  games_completed: 1
+  games_failed_early: 0
+  diary_fallback_rate: 0.0
+  diary_fallback_entries: 0
+  diary_entries_attempted: 15
+  story_missing_rate: 0.0
+  story_missing_games: 0
+  story_ending_games: 1
+  substitutions:
+    roster:
+      rate: 0.0
+      count: 0
+      attempted: 1
+    persona:
+      rate: 0.0
+      count: 0
+      attempted: 7
+    pointing:
+      rate: 0.0
+      count: 0
+      attempted: 8
+    ballot:
+      rate: 0.0
+      count: 0
+      attempted: 45
+    day_action:
+      rate: 0.0
+      count: 0
+      attempted: 97
+    reflection:
+      rate: 0.0
+      count: 0
+      attempted: 75
+    diary:
+      rate: 0.0
+      count: 0
+      attempted: 15
+  duration_seconds: 1994.643
+outcomes:
+  games: 1
+  law_abiding:
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+  mafia:
+    wins: 1
+    rate: 1.0
+    ci_low: 0.20654329147389294
+    ci_high: 1.0
+  scripted_side:
+    side: 'law_abiding'
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against an active rule-based scripted human (deterministic, no model call; when Law-abiding it supplies the vote a correct town majority needs) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 0
+    mafia: 0
+  by_day: {}
+metrics:
+  repetition:
+    rate: 0.6082474226804123
+    count: 59
+    denominator: 97
+    ci_low: 0.5087587667538369
+    ci_high: 0.6994886232122088
+  third_person_self_talk:
+    rate: 0.0
+    count: 0
+    denominator: 97
+    ci_low: 0.0
+    ci_high: 0.03809538920445529
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 9
+    ci_low: 0.0
+    ci_high: 0.2991527535509594
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 21
+    ci_low: 0.0
+    ci_high: 0.15464382326420195
+  persona_lex_mean:
+    mean: 0.031842869642572776
+    denominator: 21
+  persona_lex_peak:
+    peak: 0.0626118067978533
+    denominator: 21
+  persona_sem_mean:
+    mean: 0.2799216473521445
+    denominator: 21
+  persona_sem_peak:
+    peak: 0.45414113487370567
+    denominator: 21
+notes: 'manual recap smoke'
