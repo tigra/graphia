@@ -125,6 +125,40 @@ _NIGHT_KILL_RE = re.compile(r"^During the night, (?P<name>.+?) was killed\.$")
 # spec-018/020 end-of-round recap (the only Moderator line carrying " status:").
 _RECAP_RE = re.compile(r"^Day \d+, .+ status: ")
 
+# The nodes whose deltas belong to the game's ENDING rather than to a Night or a
+# Day — the whitelist that ``_render_phases`` dispatches on (spec 040 §2.9,
+# Slice 8 Task 8.1). A frozenset, exactly like :data:`_VOTE_NODES`, because both
+# are "is this node one of the phase's own?" tests and neither is ordered.
+#
+# **THIS IS THE FIX FOR THE STRAY-``<preamble>`` TRAP, and the trap is a LABEL
+# bug rather than a missing-content bug** — the distinction matters because the
+# obvious reading of "the story is invisible in the transcript" is false and
+# sends a reader looking for the wrong defect. Before this set existed the walk
+# tested ``node == "end_screen"`` alone. ``end_screen``'s branch calls
+# ``flush()``, which resets ``section_kind`` to ``None``; the very next delta —
+# ``moderator_story``'s, and ``stream_mode="updates"`` guarantees it is a
+# SEPARATE super-step (see below) — therefore fell into ``if section_kind is
+# None: section_kind = "preamble"`` and was appended by the generic ``else:  #
+# preamble`` branch. Measured on a driven capture before the fix: the closing
+# story reached the transcript as a second ``<preamble>`` element after
+# ``</endgame>``, carrying ``_append_messages``' ``Moderator: `` prefix and
+# collapsed INLINE across five physical lines (``_wrap`` counts non-empty
+# entries, and the whole story is one entry holding ``\n``) — under a tag whose
+# documented meaning is "streamed before any phase boundary — the setup
+# messages". Nothing raised, and every existing test stayed green, which is
+# exactly why tech-spec §3 asks for this branch's test explicitly.
+#
+# **THE TWO NODES NEVER SHARE A DELTA, and the whole of Slice 8 leans on it.**
+# Spec 040 §2.1 made the closing story its own node (``end_screen`` ->
+# ``moderator_story`` -> END), and ``graph.stream(stream_mode="updates")``
+# yields one chunk per node return. So the facts and the story arrive in two
+# chunks, always — verified on a driven capture, where they are events 13 and
+# 14 of 15 and each carries exactly one flagged ``SystemMessage``. Every
+# ``_split_endgame_texts`` call therefore sees one populated half and one empty
+# one; "both halves in one delta" is a shape the engine cannot produce, and the
+# renderer stays defensive about it only because a synthetic capture can.
+_ENDGAME_NODES: frozenset[str] = frozenset({"end_screen", "moderator_story"})
+
 
 def render_transcript(
     events: list[dict[str, Any]],
@@ -382,13 +416,15 @@ def _render_phases(
 
     Phase boundaries are the engine's own markers: a ``night_open`` delta opens
     a fresh ``<night>`` (it resets the per-Night pointing channels, so each one
-    starts a new Night); a ``day_open`` delta opens a fresh ``<day>``; the
-    ``end_screen`` delta closes whatever section is open and emits the single
-    ``<endgame>`` block (so the endgame is its own labeled block, never folded
-    into the last Night/Day). Every other delta's content (messages, picks,
-    kills, ballots) accrues into the currently-open section. Anything streamed
-    before the first boundary (the setup messages) is captured into a small
-    preamble section so nothing is silently dropped.
+    starts a new Night); a ``day_open`` delta opens a fresh ``<day>``; a delta
+    from either of :data:`_ENDGAME_NODES` closes whatever section is open and
+    emits the ending's block (so the ending is its own labeled block, never
+    folded into the last Night/Day). Every other delta's content (messages,
+    picks, kills, ballots) accrues into the currently-open section. Anything
+    streamed before the first boundary (the setup messages) is captured into a
+    small preamble section so nothing is silently dropped — and a story-bearing
+    ``moderator_story`` delta is emphatically NOT such content, which is what
+    :data:`_ENDGAME_NODES` exists to guarantee.
 
     Inside a ``<day>`` the body is split into one ``<round>`` per speaking round
     (spec 021), keyed to the engine's own ``day_rounds`` counter so the
@@ -528,9 +564,16 @@ def _render_phases(
             if not isinstance(delta, dict):
                 continue
 
-            if node == "end_screen":
-                # The endgame is its own labeled block, never folded into the
+            if node in _ENDGAME_NODES:
+                # The ending is its own labeled block, never folded into the
                 # last Night/Day. Close whatever is open, then emit <endgame>.
+                #
+                # ``moderator_story`` joins ``end_screen`` here (spec 040 §2.9)
+                # so a story-bearing delta can never fall through to the
+                # ``preamble`` branch below — see :data:`_ENDGAME_NODES` for the
+                # mechanism that made it. Tasks 8.2/8.3 split the two voices
+                # apart into ``<endgame>`` and ``<story>``; this branch's job is
+                # only to keep the ending's deltas out of the preamble.
                 flush()
                 out.append(_render_endgame(delta, names))
                 continue

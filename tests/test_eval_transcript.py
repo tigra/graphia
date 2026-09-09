@@ -42,7 +42,8 @@ from langchain_core.messages import AIMessage, SystemMessage
 # (spec 041 Slice 8) and cannot drift from it. An import only — no node is
 # ever called from this module, and no model is ever reached.
 from graphia.nodes.day import _DIARY_FALLBACK
-from graphia.state import PlayerPersona, PlayerState
+from graphia.state import CLOSING_STORY_KWARG, PlayerPersona, PlayerState
+from graphia.tools import eval_transcript
 from graphia.tools.eval_transcript import render_transcript
 
 # The deterministic DAY-SPEECH stand-in (spec 041 Slice 10) — written out as a
@@ -1872,3 +1873,119 @@ def test_render_marks_only_one_seat_even_if_the_roster_claims_two() -> None:
     assert doc.count(_HUMAN_ATTR_TEXT) == 2
     assert '<player name="Avery" role="Mafia" human="true">' in doc
     assert '<player name="Bo" role="Law-abiding Citizen" human="true">' in doc
+
+
+# ===========================================================================
+# Spec 040 Slice 8 — the closing story's delta is the ENDING's, not a preamble.
+# ===========================================================================
+#
+# `_ENDGAME_NODES` (Task 8.1) is the fix for the stray-`<preamble>` trap, and
+# tech-spec §3 asks for its test explicitly because the defect is SILENT: the
+# story was already reaching the transcript, correctly POSITIONED after
+# `</endgame>` and wrongly LABELLED `<preamble>`, so nothing raised and every
+# existing test in this module stayed green. A branch whose absence costs no red
+# needs a test written against the branch itself.
+#
+# The mechanism, measured on a driven capture before the fix: `end_screen`'s
+# branch calls `flush()`, which resets `section_kind` to `None`, so the NEXT
+# delta lands in `if section_kind is None: section_kind = "preamble"` and its
+# messages are appended by the generic preamble branch. `moderator_story`'s
+# delta is always that next delta — spec 040 §2.1 made the story its own node
+# and `stream_mode="updates"` yields one chunk per node return, so the facts and
+# the story can never share a delta.
+#
+# The story text below is deliberately MULTI-PARAGRAPH: that is what the real
+# node produces (`nodes.endgame._clamp_story` rejoins paragraphs with `"\n\n"`),
+# and it is also the shape that made the old rendering worst — one `buf` entry
+# holding `\n`, which `_wrap` collapses to an INLINE element spanning five
+# physical lines.
+
+_STORY_PARAGRAPHS = (
+    "The baker had been counting the wrong things all along.",
+    "Mira knew it by the second night, and said nothing.",
+    "The harbour was quiet by morning.",
+)
+_STORY_TEXT = "\n\n".join(_STORY_PARAGRAPHS)
+
+
+def _story_event() -> dict[str, Any]:
+    """One ``moderator_story`` super-step carrying the closing story.
+
+    Shaped exactly as ``nodes.endgame.moderator_story`` returns it: a single
+    public ``SystemMessage`` with **no** ``name``, whose ``additional_kwargs``
+    carry ``CLOSING_STORY_KWARG``. The flag is imported from ``graphia.state``
+    rather than spelled as a literal — 039's "import the thing, never copy it",
+    so a reword breaks loudly here instead of silently drifting the renderer.
+    """
+    return {
+        "moderator_story": {
+            "messages": [
+                SystemMessage(
+                    content=_STORY_TEXT,
+                    additional_kwargs={CLOSING_STORY_KWARG: True},
+                )
+            ]
+        }
+    }
+
+
+def _render_game_with_story() -> str:
+    """The full block-exercising game, plus the closing story's own super-step."""
+    return render_transcript(
+        [*_full_game_events(), _story_event()],
+        _final_players(),
+        game_index=1,
+        run_meta=None,
+    )
+
+
+def test_a_story_bearing_delta_from_an_unrecognised_node_yields_no_preamble() -> None:
+    """``moderator_story``'s delta must never be filed as a ``<preamble>``.
+
+    THE regression test for the stray-`<preamble>` trap (tech-spec §3). The
+    assertion is on the count rather than on absence, because a real game has a
+    genuine preamble — the setup messages streamed before the first phase
+    boundary — so "no `<preamble>` in the document" would be false for the wrong
+    reason. What must not happen is a SECOND one.
+
+    Two further assertions pin the two things the count alone cannot see: the
+    story's own words are still in the document (the branch must not silently
+    drop the delta it now claims), and they are not sitting inside a
+    ``<preamble>`` element under some other spelling.
+    """
+    doc = _render_game_with_story()
+
+    assert doc.count("<preamble>") == 1, (
+        "the closing story was filed as a second <preamble> — `_ENDGAME_NODES` "
+        "is not claiming the `moderator_story` node, so its delta falls through "
+        "to the generic preamble branch after `end_screen`'s `flush()` reset "
+        f"`section_kind`. Document:\n{doc}"
+    )
+    assert _STORY_PARAGRAPHS[0] in doc, (
+        "the story's words vanished from the transcript entirely — a worse "
+        "outcome than the mis-label this test exists to catch"
+    )
+    preamble = _block(doc, "preamble")
+    assert _STORY_PARAGRAPHS[0] not in preamble, (
+        "the story's words are inside the <preamble> block:\n" + preamble
+    )
+
+
+def test_the_endgame_nodes_whitelist_names_both_ending_super_steps() -> None:
+    """``_ENDGAME_NODES`` is exactly the two nodes the ending streams from.
+
+    A rot guard on the whitelist itself, in the spirit of
+    ``test_transcript_highlight``'s ``_MARKER_TAGS`` check: the behavioural test
+    above passes for a whitelist that is ``{"moderator_story"}`` alone (the
+    facts would then be the stray preamble, and nothing above looks at
+    ``<endgame>``), so the set is pinned as well as its effect. Reaches for the
+    module-private name deliberately — it is the whitelist itself, and there is
+    no public projection of it.
+    """
+    assert eval_transcript._ENDGAME_NODES == frozenset(
+        {"end_screen", "moderator_story"}
+    ), (
+        "the ending streams from exactly two nodes — `end_screen` (the facts) "
+        "and `moderator_story` (the closing story, spec 040 §2.1); found "
+        f"{sorted(eval_transcript._ENDGAME_NODES)}"
+    )
