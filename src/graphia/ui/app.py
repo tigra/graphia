@@ -621,6 +621,37 @@ class GraphiaApp(App[None]):
         if self._game_over:
             self.exit()
 
+    def _enter_endgame(self, log: RichLog) -> None:
+        """Put ``#public-log`` into its post-game reading state.
+
+        Spec 040 (The Moderator's Closing Story), Slice 6. **The one place
+        every ending path funnels through**, so no ending variant can end up
+        with a different contract than another: the normal win/draw ending,
+        the Day-cap runaway ending (same code path — it just has no career
+        panel, because ``_OUTCOME_BY_WINNER`` deliberately omits
+        ``"runaway"``), and :meth:`_drive`'s ``except``.
+
+        **Focus is the load-bearing line, and it is not decoration.** By the
+        time a game ends the docked ``Input`` has been disabled again by
+        :meth:`_prompt_via_input`'s ``finally``, and Textual then moves focus
+        to the next focusable widget **in DOM order** — which is
+        ``#private-log``, the six-row whispers pane, not the pane carrying the
+        ending. Measured on Textual 8.2.4 with this app's real ``compose()``:
+        ``screen.focus_chain`` is ``[#private-log, #public-log,
+        #player-input]``, and disabling the focused ``Input`` lands focus on
+        ``#private-log``. ``CornerBadge.can_focus`` is ``False`` and the
+        header is a ``Static``, so neither is a candidate.
+
+        Without this call PgUp scrolls the whispers pane while the ending
+        stays pinned, and **nothing visibly happens** — every scrolling
+        criterion in this slice would pass its code path and fail the person.
+
+        Called **after** the final banner write rather than at the moment
+        ``_game_over`` flips, so the banner is the last thing auto-scroll
+        brings into view before the pane is frozen (Task 6.2).
+        """
+        log.focus()
+
     async def _drive(self) -> None:
         log = self.query_one("#public-log", RichLog)
         try:
@@ -651,6 +682,7 @@ class GraphiaApp(App[None]):
             log.write(
                 Text.from_markup("[bold green]Game over.[/] Press any key to exit.")
             )
+            self._enter_endgame(log)
         except Exception as exc:  # noqa: BLE001
             self.logger.record(
                 {"error": repr(exc), "traceback": traceback.format_exc()}
@@ -669,6 +701,10 @@ class GraphiaApp(App[None]):
                         "Press any key to exit."
                     )
                 )
+                # Focus the ending pane BEFORE the modal goes up, so
+                # dismissing the modal hands focus back to `#public-log`
+                # rather than to the whispers pane.
+                self._enter_endgame(log)
                 self._show_failure_modal(exc)
             else:
                 # Local mode: unchanged — banner + JSONL log-file pointer.
@@ -678,6 +714,7 @@ class GraphiaApp(App[None]):
                         "Press any key to exit."
                     )
                 )
+                self._enter_endgame(log)
 
     _OUTCOME_BY_WINNER: dict[str, str] = {
         "law_abiding": "law_abiding_win",
