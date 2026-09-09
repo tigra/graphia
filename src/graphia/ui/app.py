@@ -40,6 +40,22 @@ from graphia.ui.quit_modal import QuitModal
 from graphia.ui.widgets import PointingModal, VoteModal
 
 
+EXIT_HINT = "Press q to leave."
+"""The leaving affordance, in one place so it cannot drift.
+
+Spec 040 (The Moderator's Closing Story), Slice 6. Used by all three
+game-over banners AND by ``#public-log``'s border subtitle, which is the copy
+that matters: a banner is a log row, so it scrolls out of view the moment the
+person scrolls up — precisely when they need to know how to get out. A border
+subtitle is painted on the widget frame, so it stays put for as long as they
+read, and it costs **zero** log lines (measured: ``len(RichLog.lines)``
+unchanged across the assignment).
+
+Public and importable on purpose: a test that copies this literal would keep
+passing after a reword and silently stop measuring the shipped affordance.
+"""
+
+
 def _content_to_text(content: Any) -> str:
     """Normalise a message `content` (str | list[block]) to a flat string."""
     if isinstance(content, str):
@@ -706,6 +722,16 @@ class GraphiaApp(App[None]):
         rows of an ending are the winner line and the roster reveal, i.e.
         exactly what a cap would push out of reach.
 
+        **The affordance is pinned to the frame, not written into the log.**
+        ``#public-log`` already carries a ``round`` border, so setting
+        ``border_subtitle`` paints :data:`EXIT_HINT` on it — where it survives
+        every scroll, unlike the banner row, which leaves the viewport the
+        moment the person scrolls up. Measured to add **zero** rows to
+        ``RichLog.lines``. No ``Footer`` is added: there is none in this app
+        today, so ``show=True`` on a binding renders nowhere, and docking one
+        would cost a permanent row for the whole game to advertise a key that
+        only matters on the last screen.
+
         Nothing else is needed for the scrolling itself. ``RichLog`` is a
         ``ScrollView`` with ``overflow-y: scroll`` and ``can_focus = True``;
         probed at 120 rows in an 11-row viewport it reported
@@ -733,6 +759,7 @@ class GraphiaApp(App[None]):
         refreshes precede the ending); a pilot test that never pauses can.
         """
         log.auto_scroll = False
+        log.border_subtitle = f" {EXIT_HINT} "
         log.focus()
 
     async def _drive(self) -> None:
@@ -763,7 +790,7 @@ class GraphiaApp(App[None]):
             self._record_career(log)
             self._game_over = True
             log.write(
-                Text.from_markup("[bold green]Game over.[/] Press any key to exit.")
+                Text.from_markup(f"[bold green]Game over.[/] {EXIT_HINT}")
             )
             self._enter_endgame(log)
         except Exception as exc:  # noqa: BLE001
@@ -780,8 +807,7 @@ class GraphiaApp(App[None]):
                 # still reads as an error state after dismissal.
                 log.write(
                     Text.from_markup(
-                        "[bold red]Remote game error.[/] "
-                        "Press any key to exit."
+                        f"[bold red]Remote game error.[/] {EXIT_HINT}"
                     )
                 )
                 # Focus the ending pane BEFORE the modal goes up, so
@@ -790,11 +816,24 @@ class GraphiaApp(App[None]):
                 self._enter_endgame(log)
                 self._show_failure_modal(exc)
             else:
-                # Local mode: unchanged — banner + JSONL log-file pointer.
+                # Local mode: banner + JSONL log-file pointer.
+                #
+                # STYLED SPANS, not markup — the fault Task 2.1 fixed for
+                # message bodies, at the one site it deliberately left for
+                # this task rather than colliding with it. The path comes
+                # from ``GRAPHIA_LOG_FILE``, so it is neither model nor
+                # player content, which is why Task 2.1 scoped it out; but it
+                # is still a value this call site does not author, and Rich
+                # eats a lowercase bracket segment in it silently
+                # (``/tmp/[run]/graphia.jsonl`` renders as ``/tmp//graphia.jsonl``)
+                # or raises ``MarkupError`` on a ``[/...]`` one — inside the
+                # handler whose entire job is to tell the player where the log
+                # is. ``Text.assemble`` styles a character range instead of
+                # parsing the text, so the path renders exactly as configured.
                 log.write(
-                    Text.from_markup(
-                        f"[bold red]Error — see {self.config.log_file}[/] "
-                        "Press any key to exit."
+                    Text.assemble(
+                        (f"Error — see {self.config.log_file}", "bold red"),
+                        (f" {EXIT_HINT}", ""),
                     )
                 )
                 self._enter_endgame(log)

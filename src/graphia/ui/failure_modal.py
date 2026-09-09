@@ -16,6 +16,29 @@ UI was mid-stream when the crash hit.
 
 Local-mode crashes do NOT use this modal — they keep the existing banner
 + JSONL log-file pointer, since there is no CloudWatch log group involved.
+
+THE TWO VALUES THIS MODULE DOES NOT AUTHOR GO THROUGH ``Content``, not
+through ``Static``'s ``markup=True`` default (spec 040 — The Moderator's
+Closing Story, Task 6.4; the same rule Task 2.1 applied in ``ui/app.py`` and
+Task 2.2a applied in ``ui/widgets.py``). ``error_summary`` is built from a
+caught exception's own ``str()`` and ``log_group`` from ``GRAPHIA_LOG_GROUP``
+— neither is a literal written here, and Textual's ``Content.from_markup``
+deletes a bracket segment silently and **raises** ``MarkupError`` on a
+closing one. The raise is the expensive half on this path specifically: the
+parse is lazy, happening in ``Static.visual`` during the app's own render
+cycle rather than in ``compose``, so Textual treats it as a fatal app error
+and tears the app down — and the one thing this modal exists to deliver, the
+CloudWatch coordinates for a crash whose real cause is server-side, is
+exactly what the player loses. Unlike Rich's parser, Textual's is
+case-INSENSITIVE, so ``[Sic]`` is eaten here too.
+
+The filter expression needs no such treatment, and that is a fact rather
+than an oversight: ``graph.build_graph`` derives ``thread_id`` from
+``datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")``, so it is digits
+and one ``T``, and the fallback is ``"<unknown>"``. Neither can contain a
+square bracket. The three headings, the intro and the degraded-log-group
+note are this module's own literals and stay on the markup path, per Task
+2.1's rule.
 """
 
 from __future__ import annotations
@@ -23,6 +46,7 @@ from __future__ import annotations
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
+from textual.content import Content
 from textual.screen import ModalScreen
 from textual.widgets import Button, Label, Static
 
@@ -48,8 +72,10 @@ class FailureModal(ModalScreen[None]):
     The modal dismisses with ``None`` via the "Dismiss" button or the
     ``escape`` / ``enter`` keys. The caller (``GraphiaApp``) treats the
     game as over once this modal is shown, so dismissal just clears the
-    overlay; the underlying screen already carries the exit-on-keypress
-    behaviour.
+    overlay and hands focus back to ``#public-log``, where ``q`` leaves
+    (spec 040 Task 6.3 — the app no longer exits on any key, so this modal
+    can be read at leisure and ``q`` pressed under it is deliberately
+    inert).
     """
 
     DEFAULT_CSS = """
@@ -133,7 +159,7 @@ class FailureModal(ModalScreen[None]):
                 id="failure-title",
             )
             if self._error_summary is not None:
-                yield Static(self._error_summary, id="failure-summary")
+                yield Static(Content(self._error_summary), id="failure-summary")
             yield Static(
                 "This game ran in the deployed AgentCore Runtime. To "
                 "investigate, open CloudWatch Logs and use the coordinates "
@@ -143,7 +169,9 @@ class FailureModal(ModalScreen[None]):
 
             yield Label("CloudWatch log group:", classes="failure-field-label")
             if self._log_group is not None:
-                yield Static(self._log_group, classes="failure-field-value")
+                yield Static(
+                    Content(self._log_group), classes="failure-field-value"
+                )
             else:
                 # Degrade gracefully: GRAPHIA_LOG_GROUP was unset. Never
                 # render the literal "None" — point the player at the
