@@ -646,10 +646,43 @@ class GraphiaApp(App[None]):
         stays pinned, and **nothing visibly happens** — every scrolling
         criterion in this slice would pass its code path and fail the person.
 
+        **Auto-scroll is then switched off, and ``max_lines`` is left
+        alone.** ``RichLog.auto_scroll`` defaults to ``True`` (probed), which
+        is right for the whole game and wrong the instant the person starts
+        reading back: any later write jumps the view to the bottom, yanking
+        them out of the roster mid-sentence. Measured on this pane —
+        ``scroll_y`` 91 -> 107 on one write. ``max_lines`` stays unset on
+        purpose: capping it would discard the oldest rows, and the oldest
+        rows of an ending are the winner line and the roster reveal, i.e.
+        exactly what a cap would push out of reach.
+
+        Nothing else is needed for the scrolling itself. ``RichLog`` is a
+        ``ScrollView`` with ``overflow-y: scroll`` and ``can_focus = True``;
+        probed at 120 rows in an 11-row viewport it reported
+        ``max_scroll_y=114`` and responded to ``up`` / ``pageup`` / ``home``
+        / ``end``.
+
         Called **after** the final banner write rather than at the moment
-        ``_game_over`` flips, so the banner is the last thing auto-scroll
-        brings into view before the pane is frozen (Task 6.2).
+        ``_game_over`` flips, so the pane freezes at the true bottom without
+        depending on anything arriving later. **The stronger claim that the
+        earlier placement would hide the banner is NOT true, and was measured
+        rather than assumed**: freezing between the career panel and the
+        banner still leaves the banner on the last visible row, because
+        ``RichLog.write``'s ``scroll_end(immediate=False)`` defers to after
+        the next refresh and re-reads ``max_scroll_y`` *then* — by which time
+        the banner is in ``lines``. The ordering here is the one that does not
+        rely on that.
+
+        One measured trap for anyone testing this, because it looks like a
+        bug in this method: ``RichLog`` defers **all** writes until its first
+        ``Resize`` (``_size_known``), and a deferred write replays through
+        ``write()`` again, re-reading ``auto_scroll`` at *replay* time. So if
+        a whole game is driven before the pane has ever been sized, every row
+        replays with auto-scroll already off and the pane sits at row 0 with
+        the ending below the fold. Real play cannot hit it (hundreds of
+        refreshes precede the ending); a pilot test that never pauses can.
         """
+        log.auto_scroll = False
         log.focus()
 
     async def _drive(self) -> None:
