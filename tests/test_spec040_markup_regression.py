@@ -92,6 +92,17 @@ today ("Usage: /vote <name>", "No such player. Try again.") and no test here
 issues a malformed vote command. Task 2.1 converted it anyway, on the grounds
 that the call site cannot see where the string came from — recorded as
 uncovered rather than asserted vacuously.
+
+**Re-measured at WHOLE-SUITE scope by Task 10.1 (2026-09-09), which nominated
+this site as a candidate for its mutation list.** Restoring it to
+``Text.from_markup`` leaves the entire suite green — **2844 passed, 1
+skipped** — not just this file's four. And no graph-reachable input can change
+that: ``nodes/day.py`` assigns ``day_turn_error`` exactly two bracket-free
+literals and ``None``, so the two renderings are byte-identical for every state
+the engine can reach, and a killing test would have to hand
+``_request_resume`` a payload the graph cannot emit. The site stays uncovered
+on that measurement rather than on this file's narrower one. The full
+cross-file Slice-10 record is in ``test_spec040_story_node``'s docstring.
 """
 
 from __future__ import annotations

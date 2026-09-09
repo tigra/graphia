@@ -130,6 +130,79 @@ probe are NOT committed, each for a stated reason:
   there is no mutation that can make the assertion fail. An unmutatable test
   is worse than no test — it reads as coverage it does not provide.
 
+SLICE 10's CROSS-FILE MUTATION RECORD (Task 10.1, measured 2026-09-09)
+----------------------------------------------------------------------
+
+The ledger above is this file's own. Task 10.1 required five named mutations
+spanning **four** production files, and the consolidated result is recorded
+here — the spec's central node-contract module — rather than split across four
+docstrings that each see one row and none of which sees the whole. Every
+mutation below was applied to ``src/`` for real and reverted; the named test is
+the one whose failure is the KILL, not merely a collateral casualty. Suite
+baseline under which every row was measured: **2844 passed, 1 skipped**.
+
+* **``_ENDGAME_NODES`` narrowed to ``frozenset({"end_screen"})``**
+  (``tools/eval_transcript.py``) — kills
+  ``test_eval_transcript::test_a_story_bearing_delta_from_an_unrecognised_node_yields_no_preamble``
+  on ``doc.count("<preamble>") == 1``. 2 failed; the second is the structural
+  ``test_the_endgame_nodes_whitelist_names_both_ending_super_steps``.
+* **039's whitespace-folding clamp early-returned from ``_clamp_story``**
+  (``nodes/endgame.py``) — kills
+  :func:`test_the_node_returns_a_message_and_nothing_else` here. **23 failed**
+  across this file and ``test_spec040_story_clamp``. AND A CORRECTION TO
+  TASK 10.1's OWN LINE, which names ``"\\n\\n" in story.content`` as the
+  witness: that assertion is never REACHED under this mutation.
+  :func:`_assert_story_message_shape` runs first and its
+  ``story.content == SCRIPTED_STORY.text`` fails first, so the diagnostic
+  a maintainer sees is "must reach the message verbatim" — which is what the
+  Slice-1 bullet above already recorded ("**4 failed** on the verbatim-content
+  assertion"). Since ``SCRIPTED_STORY.text`` contains ``"\\n\\n"``, the
+  equality assertion strictly subsumes the paragraph one, so nothing is
+  uncovered and the assertions were deliberately NOT reordered — the committed
+  Slice-1 measurement is the accurate one. The genuinely non-subsumed
+  paragraph witnesses live at the clamp's own level
+  (``test_spec040_story_clamp``'s
+  ``test_an_internally_wrapped_paragraph_is_folded_but_blank_lines_survive``
+  and ``test_leading_trailing_and_doubled_breaks_never_spend_a_paragraph_slot``),
+  and both go red.
+* **the story emitted as an ``AIMessage`` named after a living AI player**
+  (``nodes/endgame.py``) — kills
+  :func:`test_the_story_is_excluded_from_the_repetition_pool` on the pooling
+  assertion itself ("the closing story must not enter the repetition pool"),
+  not on a shape assertion. 5 failed here.
+* **the ledger trio gated on the NUMERATOR** (``if stories_missing:`` in place
+  of ``if story_endings > 0:``, ``tools/blunder_eval.py``) — kills
+  ``test_spec040_story_run_health::test_a_clean_run_records_a_zero_rate_over_its_real_denominator``
+  with ``KeyError: 'story_missing_rate'``. 6 failed, and one of them —
+  ``test_no_ending_in_the_whole_run_writes_no_story_keys[a_zero_denominator_with_a_count]``
+  — fails with ``ZeroDivisionError``, which is the second thing the denominator
+  gate buys and was not part of the plan's reasoning for it.
+* **``_write_public`` restored to its pre-Task-2.1 body verbatim** (one
+  ``from_markup``, no story branch, no guard, ``ui/app.py``) — kills **all
+  four** of ``test_spec040_markup_regression``, both halves (silent deletion
+  and ``MarkupError``) on both paths (the story and the player's own name),
+  exactly as row 2 of that file's per-site table predicts.
+
+AND TWO MEASURED EXCLUSIONS, both re-measured here rather than inherited:
+
+* **``_ai_story``'s ``isinstance(result, Story)`` guard** — deleting it leaves
+  **85 passed** across this file, ``test_spec040_story_clamp``,
+  ``test_spec040_story_assembly`` and ``test_spec040_story_run_health``.
+  Unmutatable, exactly as the "wrong-TYPE answer" bullet below records. No test
+  was added.
+* **``_request_resume``'s ``day_turn_error`` write** — Task 2.2 recorded it as
+  covered by nothing in its OWN file, and Task 10.1 nominated it as a candidate
+  for this list. Restoring it to ``Text.from_markup`` was therefore measured
+  against the **WHOLE SUITE** rather than one file: **2844 passed, 1 skipped**.
+  It kills nothing anywhere — and no graph-reachable input CAN kill it, which
+  is the part that settles the question rather than merely reporting it:
+  ``nodes/day.py`` assigns ``day_turn_error`` exactly two bracket-free literals
+  ("Usage: /vote <name>", "No such player. Try again.") and ``None``, so the
+  two renderings are byte-identical for every state the engine can reach. A
+  killing test would have to hand ``_request_resume`` a payload the graph
+  cannot emit. Left uncovered, now on a whole-suite measurement instead of a
+  per-file one.
+
 All model calls go through ``fake_large`` / ``fake_small``; nothing here
 touches real Bedrock, and nothing here touches the quality ledger.
 """
