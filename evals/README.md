@@ -65,6 +65,47 @@ evals/transcripts/<run-id>/game-NN.txt
 - Each transcript is a plain, readable file with `<transcript>` / `<setup>` /
   `<night>` / `<day>` / `<round>` structural markers; open it directly, or
   browse it in the viewer (`make view-ledger` → drill into the run).
+- The ending is **two sibling top-level blocks** — `<endgame>` (what happened)
+  followed by `<story>` (the Moderator's closing retelling of it, spec 040). A
+  `<story truncated="true">` opening tag means the length cap dropped at least
+  one whole paragraph, so a story that stops early is attributable to the cap
+  rather than to the storyteller. A game whose story call failed carries **no
+  `<story>` block at all** — there is no placeholder text — and the run's
+  record says how often that happened (`quality.story_missing_rate`).
+
+### Reading a closing story against its sources
+
+A reviewer judging the Moderator's closing story (spec 040) needs the material
+the story was told *from*, and the good news is that it is all in the same
+file: the `<story>` block sits directly after `<endgame>`, and the private
+layers it drew on — each AI's per-round `<thought player="…">` reflections and
+their end-of-Day `<diary player="…" day="N">` entries — are already inline in
+the `<night>` / `<day>` blocks above it. **No second file, no state dump, no
+cross-run join.** So "is this story grounded in what actually happened, or did
+the model invent it?" is answerable by reading one transcript top to bottom.
+
+**One gap, and it is exactly where a reviewer will look first.** A story wants
+to land its reveal on the Day the game was won — and **that Day has no
+`<diary>` entries for any player.** The diary node runs between `day_close`
+and `night_open`, so a Day that ends the game (an execution that hits the win
+condition) routes straight to the ending and skips it. Measured across the
+committed corpus (2026-09-09, 393 files): of the 55 diary-bearing transcripts,
+the **15** whose game was decided on a Day have no diary in their final
+`<day>`, and all **40** that ran on into a Night do — a clean 15/15 and 40/40
+split, so this is the rule rather than a tendency. (The counts are a dated
+observation; the mechanism is in `graphia/graph.py`'s edges and does not move
+with the corpus.)
+
+**What to read instead.** The final Day's `<thought player="…">` elements,
+which *are* present — one per AI per speaking round, right where the reasoning
+that produced the climax happened. (Both layers are behind default-on ADR-011
+flags, so a run measuring the `private_thoughts` or `private_diaries` **off**
+arm has neither; check `settings.private_diaries_enabled` on the record and the
+`diaries=on|off` part in the transcript header.) Nothing in the file signals
+any of this, which is why it is written down here: a reviewer who checks only
+the `<diary>` entries will conclude the story's climax is ungrounded when the
+grounding is one element type away. For a Night-decided or runaway ending the
+last Day's diaries *are* there, so the gap is specific to the Day-win path.
 
 ### Ledger link
 
@@ -167,6 +208,12 @@ quality:                        # so a degenerate run cannot masquerade as a cle
   diary_fallback_rate: 0.045    # placeholder entries / entries attempted (derived once, at write time)
   diary_fallback_entries: 2     # diary entries that came out as the node's deterministic placeholder
   diary_entries_attempted: 44   # THE DENOMINATOR — the rate is never written without it
+  # spec 040 — RUN HEALTH, not an AI-quality metric, and no Wilson band (see the `quality` bullet).
+  # All three are OMITTED TOGETHER when no game reached the ending — absent, never a 0.0 —
+  # and are NEVER backfilled onto a pre-040 record, which has no denominator at all.
+  story_missing_rate: 0.111     # endings with no closing story / games that reached an ending
+  story_missing_games: 2        # endings carrying no story — the story call failed, there is no placeholder
+  story_ending_games: 18        # THE DENOMINATOR — games whose event log holds an `end_screen` delta
   # spec 041 — the SUBSTITUTION CENSUS: per answer kind, how much of this run was the
   # model's answer and how much a deterministic stand-in. One entry per kind the run
   # ATTEMPTED, in schema order; a kind with no opportunity is OMITTED, never rate: 0.0.
@@ -369,6 +416,48 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
     label: an off-arm run that somehow *did* write entries (an ADR-011 parity
     break) is counted rather than hidden, and an on-arm run that had no
     opportunity records nothing rather than a flattering `0.0`.
+
+  A run in which **at least one game reached the ending** additionally carries
+  three flat spec-040 keys, after the diary trio: **`story_missing_rate`**,
+  **`story_missing_games`** and **`story_ending_games`**.
+
+  - **What they are for.** Spec 040 chose **absence on failure** — a story call
+    that fails writes *nothing*, with no placeholder text — so a 20-game run
+    whose story call failed 18 times would produce a record
+    **indistinguishable from a clean one**. That is the diary trio's failure
+    mode transferred, though not verbatim: the ledger said nothing and the log
+    this harness never configures said nothing, but the **transcript does** show
+    it — a game with no story carries no `<story>` block — one game at a time,
+    so a 20-game run's story-failure rate would still have to be reconstructed
+    by opening twenty files. The trio is the aggregate, on the record, next to
+    the numbers it invalidates. It is also **unambiguous** here
+    in a way the diary signal is not: the story ships with no ablation flag, so
+    there is no off arm, and absence in a post-040 record **means failure**.
+  - **The denominator is not `games_completed`.** It is the games whose event
+    log actually holds an `end_screen` delta, computed from the capture. A game
+    that exhausts the harness's anti-hang super-step backstop is `completed` —
+    it produced speech and votes, and every other metric scored it — yet never
+    reached an ending, so it never gave the story node a chance and must not sit
+    in this denominator. When the two numbers disagree, the harness prints the
+    difference; **read them side by side**, because the divergence is itself a
+    finding about the batch.
+  - **Run health, not a metric — so no Wilson band, and no table column.**
+    Flat scalars in `quality`, `METRIC_ORDER` untouched, `METRICS_VERSION`
+    unchanged. `quality` is a **census of one run**: 2-of-18 missing stories is
+    not an *estimate* of an underlying rate, it is the complete composition of
+    this run's endings, so there is no sampling uncertainty for an interval to
+    express. There is no column because **nothing is paired** — with no ablation
+    arm there is no comparison for one to serve. And there is deliberately no
+    story-*quality* rate and no length statistic: the first would invent a judge
+    this spec disowns, and the second would immediately be read as the first.
+  - **Absent, never a misleading zero — and never backfilled.** All three are
+    **omitted together** when no game reached the ending; the gate is the
+    **denominator**, so `story_missing_games: 0` over a real denominator stays
+    visible, because that is the *good* result and the whole point of the
+    signal. A record written **before spec 040** does not have a denominator of
+    zero — **it has no denominator**, because that build had no story node, and
+    **absence is a third case, not a falsy one**. The ledger is append-only:
+    these keys are never added to an older record, by script or by hand.
 
   A run that attempted **any** structured answer additionally carries the nested
   **`substitutions`** sub-map (spec 041) — the same question as the diary trio,
