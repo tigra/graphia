@@ -35,6 +35,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
 from langchain_core.messages import AIMessage, SystemMessage
 
 # The deterministic diary stand-in, imported rather than copied so the
@@ -42,7 +43,12 @@ from langchain_core.messages import AIMessage, SystemMessage
 # (spec 041 Slice 8) and cannot drift from it. An import only — no node is
 # ever called from this module, and no model is ever reached.
 from graphia.nodes.day import _DIARY_FALLBACK
-from graphia.state import CLOSING_STORY_KWARG, PlayerPersona, PlayerState
+from graphia.state import (
+    CLOSING_STORY_KWARG,
+    CLOSING_STORY_TRUNCATED_KWARG,
+    PlayerPersona,
+    PlayerState,
+)
 from graphia.tools import eval_transcript
 from graphia.tools.eval_transcript import render_transcript
 
@@ -1908,7 +1914,12 @@ _STORY_PARAGRAPHS = (
 _STORY_TEXT = "\n\n".join(_STORY_PARAGRAPHS)
 
 
-def _story_event() -> dict[str, Any]:
+def _story_event(
+    *,
+    text: str = _STORY_TEXT,
+    flagged: bool = True,
+    truncated: bool = False,
+) -> dict[str, Any]:
     """One ``moderator_story`` super-step carrying the closing story.
 
     Shaped exactly as ``nodes.endgame.moderator_story`` returns it: a single
@@ -1916,15 +1927,36 @@ def _story_event() -> dict[str, Any]:
     carry ``CLOSING_STORY_KWARG``. The flag is imported from ``graphia.state``
     rather than spelled as a literal — 039's "import the thing, never copy it",
     so a reword breaks loudly here instead of silently drifting the renderer.
+
+    **The three keyword arguments are Task 8.6's, and the defaults are the
+    engine's real shape** — a flagged, unclipped, multi-paragraph story — so
+    every caller written before them is unchanged. Each names one axis the
+    renderer branches on, and each is stated at the call site rather than
+    defaulted into invisibility (the same reason ``_render_story``'s
+    ``truncated`` is keyword-only with no default: "the caller forgot" and "the
+    cap did not fire" must not be the same call):
+
+    * ``text`` — the story's prose, so the multi-paragraph, single-paragraph and
+      delimiter-bearing bodies can each be handed to the real renderer;
+    * ``flagged`` — ``False`` drops ``CLOSING_STORY_KWARG`` entirely, which is
+      the ``moderator_story`` delta the engine cannot emit but a hand-built
+      capture can, and one of the two counterexamples to the broad byte-identity
+      claim;
+    * ``truncated`` — adds ``CLOSING_STORY_TRUNCATED_KWARG``, again imported.
+      Combined with ``flagged=False`` it is the truncation key on an UNFLAGGED
+      message, which must mark nothing.
+
+    Both keys are added only when true, mirroring the writer: the engine never
+    writes ``closing_story_truncated=False``, so neither does this.
     """
+    extra: dict[str, Any] = {}
+    if flagged:
+        extra[CLOSING_STORY_KWARG] = True
+    if truncated:
+        extra[CLOSING_STORY_TRUNCATED_KWARG] = True
     return {
         "moderator_story": {
-            "messages": [
-                SystemMessage(
-                    content=_STORY_TEXT,
-                    additional_kwargs={CLOSING_STORY_KWARG: True},
-                )
-            ]
+            "messages": [SystemMessage(content=text, additional_kwargs=extra)]
         }
     }
 
@@ -1997,3 +2029,810 @@ def test_the_endgame_nodes_whitelist_names_both_ending_super_steps() -> None:
         "and `moderator_story` (the closing story, spec 040 §2.1); found "
         f"{sorted(eval_transcript._ENDGAME_NODES)}"
     )
+
+
+# ===========================================================================
+# Spec 040, Slice 8 Task 8.6 — the closing `<story>` element
+# ===========================================================================
+#
+# THE CLAIM THIS SECTION CARRIES, STATED CORRECTLY. Task 8.6's own line asks for
+# *"the contract-stability claim that carries the whole slice: for any capture
+# with no flagged message the document is byte-identical to today's"*. **That
+# wording is measurably false and is not what these tests pin.** Measured by
+# loading `47b483e`'s `eval_transcript` (the commit before Slice 8's first) beside
+# the working one and rendering the same nine captures through both: identical for
+# an `end_screen`-only delta, for no endgame delta at all, for a flagged message
+# on some *other* node, and for an all-empty `end_screen` delta — but DIVERGENT
+# for an `end_screen` + `moderator_story` pair whose story message is UNFLAGGED
+# (pre-040 filed it as a stray `<preamble>`; today it is a second `<endgame>`) and
+# for a `moderator_story` delta with an empty `messages` list (pre-040
+# `<preamble></preamble>`; today `<endgame>(no endgame recorded)</endgame>`).
+# Neither of those two carries a flagged message anywhere, so each is a
+# counterexample to the claim exactly as worded.
+#
+# **The true statement — and the half that actually protects the 393 committed
+# transcripts — turns on the `_ENDGAME_NODES` DELTAS, not on a flag:** *no
+# `moderator_story` delta, and no flagged message inside an `end_screen` delta*.
+# Every pre-040 capture satisfies both (the node did not exist and neither did
+# the flag), so no committed byte can move. The two counterexamples are pinned
+# below as behaviour, in
+# `test_the_broad_form_of_the_byte_identity_claim_is_false`, so the false version
+# cannot be re-derived from the task line; the three tests before it pin the true
+# version in three independent places.
+#
+# **WHY NOT A DIFFERENTIAL TEST, given Task 8.7 proved its half that way.** A
+# standing test that loads `47b483e:src/graphia/tools/eval_transcript.py` and
+# diffs the two renders would pin a COMMIT HASH into the suite. The first
+# legitimate post-040 change to this renderer turns it red with no defect to
+# find, and the only available remedy is to bump the hash — at which point it has
+# stopped being a statement about the pre-040 format and become a statement about
+# "whatever HEAD~n happened to do", i.e. the same species of dated artifact as
+# the three stale corpus counts this spec keeps tripping over. It would also make
+# a git checkout WITH HISTORY a hard requirement of `pytest -q` (the corpus sweep
+# in `test_transcript_highlight` deliberately skips when `evals/transcripts` is
+# absent, so the suite is expected to survive a thin tree) and it buys nothing
+# the three checks below do not already give:
+#
+# 1. **At the seam, computed rather than frozen.** `_system_texts` — the function
+#    pre-040 `_render_endgame` read through — is still live in the module (the
+#    vote assembler uses it), so the equivalence Slice 8 needs can be asserted
+#    against it directly: for any delta with no flagged message,
+#    `_split_endgame_texts(delta)[0] == _system_texts(delta)`, and the
+#    `<endgame>` block is the pre-040 formula's output character for character.
+#    Not a golden string, not a snapshot of a commit — an identity between two
+#    functions that both still run.
+# 2. **At the document, as additivity.** The story-bearing document is the
+#    storyless one with one element spliced in before `</transcript>` and nothing
+#    else moved, asserted as whole-string equality. Any drift anywhere else in
+#    the renderer breaks it, which is the durability a differential was wanted
+#    for, without the hash.
+# 3. **At the corpus,** by the two facts that make the antecedent universal:
+#    `<story` occurs 0 times in all 393 committed files, and the tokenizer
+#    round-trip sweep in `test_transcript_highlight` is green over all of them.
+#
+# Task 8.6's remaining named deliverables are below in order: multi-paragraph
+# renders as a block and single-paragraph inline; `<story>` follows `</endgame>`
+# as its own top-level block; the adversarial `</story>` is neutralised. The
+# tokenizer-side rows (`<story truncated="true">` as one marker span; an inline
+# story body staying `plain`; the round trip over a story-bearing document) are
+# in `tests/test_transcript_highlight.py`, which owns the reader.
+
+# One paragraph, for the inline arm of `_wrap`'s collapse. Deliberately a
+# different sentence from `_STORY_PARAGRAPHS[0]` so a test that renders the
+# single-paragraph story cannot accidentally pass on the multi-paragraph one.
+_ONE_PARAGRAPH_STORY = "The harbour went quiet, and stayed quiet."
+
+# Task 8.4's adversarial story: model prose that spells the block's OWN
+# delimiters. All three shapes `_STORY_TAG_RE` recognises appear, in the three
+# positions that behave differently:
+#
+# * an ATTRIBUTED opening tag as the FIRST paragraph — eaten, which leaves a
+#   leading blank entry that only the leading-blank trim removes;
+# * a closing tag as a MIDDLE paragraph — eaten, and the `continue` that DROPS
+#   the emptied line rather than keeping it as `""` is what stops a paragraph
+#   break the model never wrote from being inserted (the line is dropped, so the
+#   two blanks that surrounded it become the documented double blank, and no
+#   third one appears);
+# * a bare opening tag as the LAST paragraph — eaten, leaving a trailing blank
+#   entry that only the trailing-blank trim removes.
+#
+# Every real word survives, in order, unaltered: that is what keeps this
+# "structure only, wording untouched" rather than a second clamp.
+_ADVERSARIAL_STORY_PARAGRAPHS = (
+    '<story truncated="true">',
+    "The baker had been counting the wrong things all along.",
+    "</story>",
+    "Mira knew it by the second night, and said nothing.",
+    "<story>",
+)
+_ADVERSARIAL_STORY_TEXT = "\n\n".join(_ADVERSARIAL_STORY_PARAGRAPHS)
+
+
+def _endgame_delta(*messages: Any) -> dict[str, Any]:
+    """One `end_screen` super-step carrying exactly ``messages``."""
+    return {"end_screen": {"messages": list(messages)}}
+
+
+def _facts_message() -> SystemMessage:
+    """The `end_screen` fact sheet, shaped as `nodes.endgame.end_screen` emits it.
+
+    A public `SystemMessage` with NO `additional_kwargs` — which is the whole
+    point: the partition's answer for it is "the facts" by default, never by a
+    second flag. `state.py` forbids reading `ENDGAME_FACTS_KWARG` here for
+    exactly that reason (a two-flag test would need a third answer for a message
+    carrying neither), so a facts fixture must not carry one either.
+    """
+    return SystemMessage(content=_ENDGAME_CONTENT)
+
+
+def _pre_040_endgame_block(delta: dict[str, Any]) -> str:
+    """The `<endgame>` block the PRE-040 `_render_endgame` produced for ``delta``.
+
+    Reconstructed from the two pieces of that function still live in the module —
+    `_system_texts` (the vote assembler's, unchanged since spec 022) and `_wrap` —
+    rather than frozen as a golden string. That distinction is the point: this is
+    an identity between functions that both still run, so it keeps meaning
+    something after the next reformat, where a snapshot of today's bytes would
+    only mean "someone re-blessed it".
+
+    The formula is `47b483e`'s verbatim: flatten every `SystemMessage` text on
+    `"\\n"`, fall back to the placeholder when that is empty, `_wrap` it.
+    """
+    body: list[str] = []
+    for text in eval_transcript._system_texts(delta):
+        body.extend(text.split("\n"))
+    if not body:
+        body = ["(no endgame recorded)"]
+    return eval_transcript._wrap("endgame", body)
+
+
+# The delta shapes a PRE-040 capture can hold — i.e. every shape for which the
+# byte-identity claim is true. None carries a flagged message; the last three are
+# the near-misses that would make a careless partition answer differently.
+_UNFLAGGED_ENDGAME_DELTAS = [
+    pytest.param(
+        {"messages": [SystemMessage(content=_ENDGAME_CONTENT)]}, id="fact-sheet"
+    ),
+    pytest.param({"messages": []}, id="empty-message-list"),
+    pytest.param({}, id="no-messages-key"),
+    pytest.param({"messages": None}, id="messages-not-a-list"),
+    pytest.param(
+        {"messages": [SystemMessage(content="first."), SystemMessage(content="second.")]},
+        id="two-fact-messages",
+    ),
+    pytest.param(
+        {
+            "messages": [
+                AIMessage(content="player speech"),
+                SystemMessage(content="facts."),
+            ]
+        },
+        id="a-non-system-entry-among-them",
+    ),
+    pytest.param(
+        {"messages": [SystemMessage(content="   ")]}, id="whitespace-only-content"
+    ),
+    pytest.param(
+        {
+            "messages": [
+                SystemMessage(
+                    content="facts.",
+                    additional_kwargs={CLOSING_STORY_TRUNCATED_KWARG: True},
+                )
+            ]
+        },
+        id="truncation-key-without-the-story-flag",
+    ),
+    pytest.param(
+        {
+            "messages": [
+                SystemMessage(
+                    content="facts.", additional_kwargs={CLOSING_STORY_KWARG: False}
+                )
+            ]
+        },
+        id="story-flag-present-but-false",
+    ),
+]
+
+
+@pytest.mark.parametrize("delta", _UNFLAGGED_ENDGAME_DELTAS)
+def test_the_facts_half_is_the_pre_040_endgame_body_when_nothing_is_flagged(
+    delta: dict[str, Any],
+) -> None:
+    """THE CENTRAL FIXTURE, and it pins the TRUE claim rather than the task line's.
+
+    What is asserted here is the narrow, provable half: **for a delta carrying no
+    flagged message, `_split_endgame_texts`' facts half is exactly the list
+    pre-040's `_render_endgame` read (`_system_texts`), there is no story half at
+    all, nothing is reported clipped, and the `<endgame>` block that comes out is
+    the pre-040 formula's output character for character.** Every pre-040 capture
+    in the 393 committed transcripts is of one of these shapes, so this is the
+    statement that says no committed byte can move.
+
+    What is NOT asserted, because it is false: "for any capture with no flagged
+    message the document is byte-identical to today's". See the section header —
+    a `moderator_story` delta diverges whether its message is flagged, unflagged
+    or absent, and two of those three carry no flag. The claim's real antecedent
+    is about the DELTAS (`_ENDGAME_NODES`), not about a flag.
+
+    The three shapes at the end of the parameter list are the near-misses, and
+    each is here because a plausible partition answers it wrongly: a message
+    carrying the truncation key but not the story flag must land in the FACTS
+    (the `flagged and` guard in the split) and must not report truncation of a
+    block it is no part of; a message whose `closing_story` is explicitly `False`
+    is not a story (`bool(extra.get(...))`, not `in extra`); and whitespace-only
+    content is skipped by both functions alike.
+    """
+    facts, story, clipped = eval_transcript._split_endgame_texts(delta)
+
+    assert facts == eval_transcript._system_texts(delta), (
+        "the facts half diverged from what pre-040's `_render_endgame` rendered "
+        "for this delta — the byte-identity claim for every committed transcript "
+        "rests on these being the same list"
+    )
+    assert story == [], f"an unflagged delta produced a story half: {story!r}"
+    assert clipped is False, "an unflagged delta reported a clipped story"
+    assert eval_transcript._render_endgame(delta, {}) == _pre_040_endgame_block(delta)
+
+
+def test_a_capture_with_no_story_delta_renders_no_story_element_at_all() -> None:
+    """A pre-040 capture gets no `<story>`, not an empty one — absence, not a stub.
+
+    The `if not lines: return None` guard's witness. Delete it and every one of
+    the 393 committed transcripts would gain a `<story></story>` on re-render:
+    `_render_phases` calls `_render_story` on EVERY `_ENDGAME_NODES` delta, so an
+    `end_screen`-only capture reaches it with an empty story half on every game.
+    Nothing would raise and the round trip would still hold — the file would just
+    quietly claim the Moderator told a story and said nothing.
+    """
+    doc = _render_full_game()
+
+    assert "<story" not in doc, f"an empty `<story>` element was emitted:\n{doc}"
+    assert "</story>" not in doc
+
+
+def test_an_empty_endgame_delta_keeps_the_verbatim_placeholder() -> None:
+    """`(no endgame recorded)` is the byte string spec 022 shipped, not a paraphrase.
+
+    Inherited as a pre-existing zero-red row: nothing in the suite defended the
+    placeholder's wording, so `(no endgame recorded)` could be reworded to
+    anything with no red anywhere — and it is the one line a sparse capture's
+    whole `<endgame>` consists of. Slice 8 gave the wording a second reason to be
+    pinned: `_render_endgame`'s docstring now offers it as the thing that keeps a
+    sparse capture rendering as it always has, and Task 8.3 routed the all-empty
+    delta through the `not story` half of its gate specifically to preserve it.
+
+    Asserted as the whole element, so a placeholder that survived inside a
+    changed wrapper still fails.
+    """
+    doc = render_transcript(
+        [*_setup_events(), _endgame_delta()],
+        _final_players(),
+        game_index=1,
+        run_meta=None,
+    )
+
+    assert "<endgame>(no endgame recorded)</endgame>" in doc, (
+        "the empty-capture placeholder moved. It is spec 022's shipped bytes and "
+        f"a reword is a format change dressed up as a refactor. Document:\n{doc}"
+    )
+
+
+def test_the_closing_story_is_purely_additive_to_the_document_it_lands_in() -> None:
+    """Adding the story's super-step moves nothing else in the document, at all.
+
+    The document-level form of the contract-stability claim, and the one that
+    makes it durable without pinning a commit hash: the story-bearing render is
+    the storyless render with **one element spliced in before `</transcript>` and
+    not one other byte touched**, asserted as whole-string equality over a game
+    that exercises every block type spec 022 defines.
+
+    This is what a differential against `47b483e` was really being asked for, in
+    a form that keeps working: any drift anywhere in the renderer — a phantom
+    `(no endgame recorded)` under the real endgame (the `facts or not story` gate
+    reverted to `if True:`), the story folded into `<endgame>` instead of
+    appended, a moved header, a changed `<setup>` — breaks the equality, and
+    there is no hash to bump when it does.
+    """
+    without = _render_full_game()
+    with_story = _render_game_with_story()
+
+    tail = "\n</transcript>"
+    assert without.endswith(tail)
+    expected_block = "<story>\n" + _STORY_TEXT + "\n</story>"
+    assert with_story == without[: -len(tail)] + "\n" + expected_block + tail, (
+        "the closing story did not land as a pure addition — something else in "
+        f"the document moved.\nwithout:\n{without}\n\nwith:\n{with_story}"
+    )
+
+
+def test_the_broad_form_of_the_byte_identity_claim_is_false() -> None:
+    """The counterexamples, pinned so the false claim cannot be re-derived.
+
+    Task 8.6's line, and the `_render_endgame` docstring it was written from, both
+    say the document is byte-identical to pre-040's *"for any capture with no
+    flagged message"*. It is not, and the two counterexamples are recorded here
+    as behaviour rather than as prose because prose is what produced the wrong
+    claim in the first place. Both shapes carry NO flagged message anywhere:
+
+    * a `moderator_story` delta whose message is UNFLAGGED — pre-040 filed it
+      through the `preamble` fall-through as `<preamble>Moderator: …</preamble>`;
+      today `_ENDGAME_NODES` claims the node and the unflagged text is, correctly,
+      the facts, so it renders a SECOND `<endgame>` block;
+    * a `moderator_story` delta with an empty `messages` list — pre-040
+      `<preamble></preamble>`; today the `not story` half of the gate gives it
+      the `(no endgame recorded)` placeholder.
+
+    Neither can come off the engine (`moderator_story` emits one flagged message,
+    or `None` on failure — never an unflagged one and never an empty list), which
+    is why no guard was added for either and why this test asserts what the
+    renderer DOES rather than what it should do instead. Its job is to stop the
+    next reader from writing the broad claim as a test that passes for the wrong
+    reason, and to record that the divergence is confined to shapes no capture in
+    `evals/transcripts` can contain.
+    """
+    without = _render_full_game()
+    unflagged = render_transcript(
+        [*_full_game_events(), _story_event(flagged=False)],
+        _final_players(),
+        game_index=1,
+        run_meta=None,
+    )
+    empty = render_transcript(
+        [*_full_game_events(), {"moderator_story": {"messages": []}}],
+        _final_players(),
+        game_index=1,
+        run_meta=None,
+    )
+
+    assert unflagged != without and empty != without, (
+        "both counterexamples now render identically to a capture without the "
+        "delta — the broad claim may have become true, in which case this test "
+        "and the section header above it should be rewritten rather than deleted"
+    )
+    # ...and this is HOW each diverges, so a future change is diagnosed rather
+    # than merely reported.
+    assert unflagged.count("<endgame>") == 2, unflagged
+    assert "<story" not in unflagged
+    assert empty.count("<endgame>") == 2, empty
+    assert "<endgame>(no endgame recorded)</endgame>" in empty, empty
+    assert "<story" not in empty
+
+
+def test_the_story_is_a_top_level_block_of_its_own_after_the_endgame() -> None:
+    """`</endgame>` … `<story>` — the position is the document's shape, not a habit.
+
+    Task 8.3's structural deliverable. Four things, each of which a plausible
+    "simplification" breaks: the story is its own element (not folded into
+    `<endgame>`, which is what a `_wrap("endgame", …)` inside `_render_story`
+    would produce); it opens AFTER the endgame closes; it is the last element
+    inside `<transcript>`; and the facts block does not contain the story's words.
+
+    "Last inside `<transcript>`" is asserted on the closing tag rather than on
+    the opening one, because a story folded into the endgame would still satisfy
+    "the story's words come after the last `</night>`".
+    """
+    doc = _render_game_with_story()
+
+    endgame_close = doc.index("</endgame>")
+    story_open = doc.index("<story>")
+    assert endgame_close < story_open, (
+        "the story is not a sibling AFTER the endgame — either it opened first "
+        f"or it is inside the endgame block:\n{doc}"
+    )
+    assert doc.count("<story>") == 1 and doc.count("</story>") == 1
+    assert doc.endswith("</story>\n</transcript>"), (
+        f"the story is not the last element inside <transcript>:\n{doc[-300:]}"
+    )
+    endgame = _block(doc, "endgame")
+    for paragraph in _STORY_PARAGRAPHS:
+        assert paragraph not in endgame, (
+            f"the story's prose is inside <endgame>:\n{endgame}"
+        )
+
+
+def test_a_combined_endgame_delta_keeps_facts_and_story_as_ordered_siblings() -> None:
+    """One delta carrying BOTH voices still splits them, facts block first.
+
+    A shape the engine cannot emit — `end_screen` and `moderator_story` are
+    separate super-steps, verified on a driven capture — and the only shape in
+    which two of the slice's decisions are observable at all, which is why it is
+    tested rather than dismissed. `_split_endgame_texts` is written as a
+    partition precisely so a synthetic or hand-built capture that hands it both
+    at once is rendered rather than half-dropped.
+
+    On the two-delta path the ordering inside the `_ENDGAME_NODES` branch is
+    invisible (each delta contributes one block, and the deltas are already
+    ordered), and so is the narrowing of `_render_endgame`'s input (an
+    `end_screen` delta carries no flagged message, so the facts half and
+    `_system_texts` are the same list). Here both bite: the story must not appear
+    in `<endgame>`, and `</endgame>` must still precede `<story>`.
+    """
+    doc = render_transcript(
+        [
+            *_setup_events(),
+            _endgame_delta(
+                _facts_message(),
+                SystemMessage(
+                    content=_STORY_TEXT,
+                    additional_kwargs={CLOSING_STORY_KWARG: True},
+                ),
+            ),
+        ],
+        _final_players(),
+        game_index=1,
+        run_meta=None,
+    )
+
+    endgame = _block(doc, "endgame")
+    story = _block(doc, "story")
+
+    assert "The Mafia have won." in endgame
+    for paragraph in _STORY_PARAGRAPHS:
+        assert paragraph not in endgame, (
+            "the story's prose is in the facts block — `_render_endgame` is "
+            f"reading every SystemMessage again, not the facts half:\n{endgame}"
+        )
+        assert paragraph in story
+    assert doc.index("</endgame>") < doc.index("<story>"), (
+        f"the story block was emitted before the facts block:\n{doc}"
+    )
+
+
+def test_a_multi_paragraph_story_renders_as_a_block_with_its_breaks_intact() -> None:
+    """Three paragraphs → an opening tag on its own line and every blank kept.
+
+    Two failures this catches, and they are the two the implementation notes warn
+    about hardest:
+
+    * handing `_wrap` ONE entry that holds `"\\n"` (`lines.append(text)` instead
+      of `lines.extend(text.split("\\n"))`) — `_wrap` counts non-empty *entries*
+      for its collapse, so the whole story becomes an "inline" element spanning
+      five physical lines, which is the one shape spec 038 rules out for a
+      claimed body;
+    * `_wrap` joining its blank-filtered `content` instead of `body` — a one-word
+      "tidy" of a function whose two locals differ by exactly the blank lines,
+      which would delete every paragraph break from every multi-line block in the
+      format, `<story>` included. The element is asserted whole for that reason:
+      a per-paragraph containment check passes on both mutations.
+    """
+    story = _block(_render_game_with_story(), "story")
+
+    assert story == "<story>\n" + "\n\n".join(_STORY_PARAGRAPHS) + "\n</story>", (
+        "the multi-paragraph story is not a block with its paragraph breaks "
+        f"intact:\n{story!r}"
+    )
+    assert story.startswith("<story>\n") and story.endswith("\n</story>")
+
+
+def test_a_single_paragraph_story_renders_inline_like_any_one_line_block() -> None:
+    """One paragraph → `<story>…</story>` on one physical line, and that is correct.
+
+    The elegant consequence Task 8.3 asks nobody to "fix": `_wrap`'s single-entry
+    collapse makes a one-paragraph story inline and a multi-paragraph one a
+    block, exactly as `<night>`, `<day>` and `<preamble>` have behaved since spec
+    022. The two forms are the format's own rule applied to a body whose length
+    varies, not an inconsistency.
+
+    Also the only witness for that collapse branch anywhere in the suite —
+    inherited as a pre-existing zero-red row. Delete the `len(content) == 1`
+    branch from `_wrap` and every one-line section in the format silently becomes
+    three lines; nothing else in the suite notices.
+    """
+    doc = render_transcript(
+        [*_full_game_events(), _story_event(text=_ONE_PARAGRAPH_STORY)],
+        _final_players(),
+        game_index=1,
+        run_meta=None,
+    )
+
+    assert f"<story>{_ONE_PARAGRAPH_STORY}</story>" in doc, (
+        f"a one-paragraph story did not collapse inline:\n{doc[-300:]}"
+    )
+    assert "<story>\n" not in doc
+
+
+def test_a_tag_shaped_paragraph_in_the_story_prose_is_neutralised() -> None:
+    """Model prose spelling `<story>` / `</story>` cannot break the block boundary.
+
+    Task 8.4, asserted as the WHOLE element because every one of its four
+    failure modes leaves the real paragraphs intact and only the punctuation
+    around them wrong:
+
+    * the neutralisation loop deleted — the delimiters survive verbatim, and a
+      parser scanning for the close finds one mid-story;
+    * the delimiter-only-line `continue` deleted — the emptied line stays as
+      `""`, and an empty line IS a paragraph break in this format, so a
+      structural fix would smuggle in a break the model never wrote (here: a
+      third consecutive blank where the format's own rule gives two);
+    * the pattern narrowed to the opening forms — the closing tag survives;
+    * the pattern narrowed to bare tags — the attributed opening form survives,
+      and that shape is real rather than hypothetical: it is what this renderer
+      itself writes for a clipped story.
+
+    The trims earn their place here too, and only in a multi-paragraph body: the
+    eaten first and last paragraphs leave a leading and a trailing blank entry,
+    and without the trims the block opens and closes on empty lines. (In a
+    one-entry body they are invisible — `_wrap(["", "one para"])` collapses to
+    `<story>one para</story>` either way, which is why the fixture has two real
+    paragraphs.)
+
+    Wording untouched is asserted separately from structure: both real sentences
+    survive character for character, in order.
+    """
+    doc = render_transcript(
+        [*_full_game_events(), _story_event(text=_ADVERSARIAL_STORY_TEXT)],
+        _final_players(),
+        game_index=1,
+        run_meta=None,
+    )
+    story = _block(doc, "story")
+
+    # Exactly one opening and one closing delimiter in the whole document, and
+    # they are the renderer's own.
+    assert doc.count("<story") == 1, f"a delimiter survived in the prose:\n{story!r}"
+    assert doc.count("</story>") == 1
+    # The documented double blank where the eaten paragraph stood — two, because
+    # the format's own separators surrounded the dropped line, and NOT three,
+    # which is what keeping the emptied line as `""` would give.
+    assert story == (
+        "<story>\n"
+        + _ADVERSARIAL_STORY_PARAGRAPHS[1]
+        + "\n\n\n"
+        + _ADVERSARIAL_STORY_PARAGRAPHS[3]
+        + "\n</story>"
+    ), f"the neutralised story is not the expected shape:\n{story!r}"
+    # Structure only, wording untouched (spec 022) — stated on its own so a
+    # failure says which half broke.
+    for real in (_ADVERSARIAL_STORY_PARAGRAPHS[1], _ADVERSARIAL_STORY_PARAGRAPHS[3]):
+        assert real in story, f"a real paragraph was altered or dropped: {real!r}"
+
+
+def test_prose_sharing_its_line_with_a_delimiter_keeps_every_word() -> None:
+    """A paragraph that merely ENDS with `</story>` keeps its place and its words.
+
+    The other half of Task 8.4: the drop applies to a line that was NOTHING but
+    delimiters. A line still carrying prose is kept, in order, with only the
+    tag-shaped punctuation removed — including the trailing space left behind,
+    which is deliberately not tidied (a trailing space is neither structure nor
+    wording, and removing it would be the second structural rule that "narrower
+    than 039's clamp" exists to forbid).
+    """
+    tail = f"{_STORY_PARAGRAPHS[1]} </story>"
+    doc = render_transcript(
+        [
+            *_full_game_events(),
+            _story_event(text=f"{_STORY_PARAGRAPHS[0]}\n\n{tail}"),
+        ],
+        _final_players(),
+        game_index=1,
+        run_meta=None,
+    )
+    story = _block(doc, "story")
+
+    assert story == (
+        f"<story>\n{_STORY_PARAGRAPHS[0]}\n\n{_STORY_PARAGRAPHS[1]} \n</story>"
+    ), f"prose sharing a line with a delimiter was not preserved:\n{story!r}"
+    assert doc.count("</story>") == 1
+
+
+def test_a_story_that_is_nothing_but_delimiters_yields_no_story_element() -> None:
+    """Neutralise everything and the element is absent, never `<story></story>`.
+
+    The sharpest witness for the `if not lines: return None` guard: here the
+    story half is populated (so the `facts or not story` gate has already
+    suppressed the `<endgame>`) and only the neutralisation empties it. Without
+    the guard the document ends with an empty element asserting that a story was
+    told, under a delta that also produced no endgame block — the worst of both
+    absences.
+    """
+    doc = render_transcript(
+        [*_full_game_events(), _story_event(text="</story>")],
+        _final_players(),
+        game_index=1,
+        run_meta=None,
+    )
+
+    assert "<story" not in doc, f"an empty story element was emitted:\n{doc[-300:]}"
+    assert "</story>" not in doc
+
+
+# --- Task 8.7's attribute: `<story truncated="true">` ------------------------
+
+
+def test_a_clipped_story_renders_the_truncated_attribute_on_its_own_tag() -> None:
+    """A clipped story says so, on the opening tag, in the document.
+
+    §2.5's deliverable: a reviewer judging a story that stops early must be able
+    to attribute the stop to the CAP rather than to the storyteller, and the fact
+    cannot be recomputed from the text (a story of exactly `STORY_MAX_PARAGRAPHS`
+    paragraphs is indistinguishable from a longer one that lost its last).
+
+    **The fixture is built from the IMPORTED `CLOSING_STORY_TRUNCATED_KWARG`**,
+    not from a copied `"closing_story_truncated"` — 039's rule, and here it is
+    the assertion that kills a misspelt literal on the reader side: a renderer
+    reading the wrong key would still be handed the right one by this fixture and
+    would silently emit the plain tag.
+    """
+    doc = render_transcript(
+        [*_full_game_events(), _story_event(truncated=True)],
+        _final_players(),
+        game_index=1,
+        run_meta=None,
+    )
+
+    assert '<story truncated="true">' in doc, (
+        "a clipped story rendered no truncation marker — a reviewer would blame "
+        f"the storyteller for the cap's cut. Document tail:\n{doc[-400:]}"
+    )
+    story = _block(doc, "story")
+    assert story.startswith('<story truncated="true">\n')
+    assert story.endswith("\n</story>")
+
+
+def test_an_unclipped_story_renders_the_plain_story_tag() -> None:
+    """THE ANTI-VACUITY CONTROL, and without it the test above proves nothing.
+
+    "A clipped story renders the attribute" is satisfied by a renderer that
+    emits the attribute ALWAYS — including on the ordinary, uncut story that is
+    the overwhelming majority of games. That renderer teaches reviewers to ignore
+    the marker, which is precisely the failure `_TRUNCATED_ATTR`'s
+    "absent, never `truncated="false"`" note exists to prevent.
+
+    Also the witness for the swapped arms and for the unflagged path being routed
+    through `_wrap` rather than `_wrap_attr(…, "")`: the word `truncated` must not
+    appear in the document at all.
+    """
+    doc = _render_game_with_story()
+
+    assert "truncated" not in doc, (
+        "an unclipped story carries a truncation marker somewhere — the marker "
+        f"is conditional, never a field:\n{doc[-400:]}"
+    )
+    assert _block(doc, "story").startswith("<story>\n")
+
+
+def test_the_truncated_attribute_is_exactly_the_literal_the_reader_leaves_alone() -> None:
+    """`truncated="true"` — the literal, not a shape.
+
+    Spelled out here rather than derived from `_TRUNCATED_ATTR`, which is the
+    only way this row can say anything: a test built from the constant is green
+    for `clipped="1"` too. The exact bytes matter to two readers — the tokenizer,
+    which must find no attribute NAME it knows inside them (`truncated` is
+    deliberately absent from `eval_ledger._ATTR_NAMES`, so the whole opening tag
+    stays one marker span), and a future Phase-7 judge parser.
+    """
+    assert eval_transcript._TRUNCATED_ATTR == 'truncated="true"'
+
+
+@pytest.mark.parametrize(
+    ("story_text", "plain_open"),
+    [
+        pytest.param(_STORY_TEXT, "<story>\n", id="multi-paragraph-block"),
+        pytest.param(_ONE_PARAGRAPH_STORY, "<story>", id="single-paragraph-inline"),
+    ],
+)
+def test_the_clipped_document_differs_from_the_unclipped_one_in_the_opening_tag_only(
+    story_text: str, plain_open: str
+) -> None:
+    """Same story, clipped or not: only the opening tag moves. Both `_wrap` forms.
+
+    The differential statement of the attribute's blast radius, asserted as whole
+    documents so it covers the body, the position, the closing tag and everything
+    upstream of the story at once. Swept over both of `_wrap`'s arms, because the
+    attribute-bearing path is `_wrap_attr` and the plain path is `_wrap` — two
+    functions that agree today over an empty attribute run and are deliberately
+    NOT one call, so that the byte-identity of an unclipped story does not rest
+    on `_wrap_attr`'s implementation.
+
+    This is the row that catches a truncated arm which is correct about the
+    attribute and wrong about anything else — a body gaining a marker line, or
+    the collapse skipped so a clipped one-paragraph story becomes a block while
+    its unclipped twin stays inline.
+    """
+    def render(*, truncated: bool) -> str:
+        return render_transcript(
+            [
+                *_full_game_events(),
+                _story_event(text=story_text, truncated=truncated),
+            ],
+            _final_players(),
+            game_index=1,
+            run_meta=None,
+        )
+
+    plain = render(truncated=False)
+    clipped = render(truncated=True)
+
+    assert plain.count(plain_open) == 1
+    clipped_open = plain_open.replace("<story>", '<story truncated="true">')
+    assert plain.replace(plain_open, clipped_open, 1) == clipped, (
+        "the clipped render differs from the unclipped one somewhere other than "
+        f"the opening tag.\nplain:\n{plain[-400:]}\n\nclipped:\n{clipped[-400:]}"
+    )
+
+
+def test_the_truncation_key_on_an_unflagged_message_marks_nothing() -> None:
+    """A facts message carrying the truncation key cannot mark a story it is not in.
+
+    The `flagged and` guard's witness, on the shape that makes it load-bearing:
+    ONE delta holding a facts message with the truncation key AND a story message
+    without it. Drop the guard and the `<story>` block claims a cut that happened
+    to some other text — the attribute is a claim about the prose inside THIS
+    block, and this format has nowhere to say "the facts were clipped".
+    """
+    doc = render_transcript(
+        [
+            *_setup_events(),
+            _endgame_delta(
+                SystemMessage(
+                    content=_ENDGAME_CONTENT,
+                    additional_kwargs={CLOSING_STORY_TRUNCATED_KWARG: True},
+                ),
+                SystemMessage(
+                    content=_STORY_TEXT,
+                    additional_kwargs={CLOSING_STORY_KWARG: True},
+                ),
+            ),
+        ],
+        _final_players(),
+        game_index=1,
+        run_meta=None,
+    )
+
+    assert "truncated" not in doc, (
+        "the truncation key on the FACTS message marked the story block:\n"
+        f"{doc[-400:]}"
+    )
+    assert "<story>\n" in doc
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "expected"),
+    [
+        pytest.param({}, ([_STORY_TEXT], [], False), id="unflagged-is-facts"),
+        pytest.param(
+            {CLOSING_STORY_KWARG: True},
+            ([], [_STORY_TEXT], False),
+            id="flagged-not-clipped",
+        ),
+        pytest.param(
+            {CLOSING_STORY_KWARG: True, CLOSING_STORY_TRUNCATED_KWARG: True},
+            ([], [_STORY_TEXT], True),
+            id="flagged-and-clipped",
+        ),
+        pytest.param(
+            {CLOSING_STORY_TRUNCATED_KWARG: True},
+            ([_STORY_TEXT], [], False),
+            id="clipped-key-without-the-flag",
+        ),
+        pytest.param(
+            {CLOSING_STORY_KWARG: True, CLOSING_STORY_TRUNCATED_KWARG: False},
+            ([], [_STORY_TEXT], False),
+            id="flagged-clipped-explicitly-false",
+        ),
+    ],
+)
+def test_the_endgame_split_reports_truncation_only_for_a_flagged_and_truncated_message(
+    kwargs: dict[str, Any], expected: tuple[list[str], list[str], bool]
+) -> None:
+    """`_split_endgame_texts` is `(facts, story, clipped)`, swept over both flags.
+
+    The unit-level statement of the shape Task 8.7 widened — §2.9 pinned
+    `(facts, story)` and was amended rather than left quietly false — and the
+    reason the widening was chosen over a second `_story_truncated(delta)`
+    scanner: both answers come off the SAME `additional_kwargs` dict in the SAME
+    pass, so "which of these messages is the story" is answered once and the two
+    answers cannot drift.
+
+    Both keys are read through the imported constants, so a copied literal on
+    either axis fails here rather than filing stories under `<endgame>` for ever
+    after a reword.
+    """
+    delta = {"messages": [SystemMessage(content=_STORY_TEXT, additional_kwargs=kwargs)]}
+
+    assert eval_transcript._split_endgame_texts(delta) == expected
+
+
+def test_a_story_message_whose_additional_kwargs_is_not_a_dict_does_not_raise() -> None:
+    """A thin or malformed message degrades; the renderer never raises on a read.
+
+    `additional_kwargs` is a plain dict on every real message, and the defensive
+    `isinstance(extra, dict)` read is there for a hand-built capture or an older
+    log. Degradation, not a crash: with no readable flag the text is the FACTS,
+    which is the same default an ordinary Moderator message gets, so the words
+    still reach the transcript.
+    """
+    message = SystemMessage(content=_STORY_TEXT)
+    message.additional_kwargs = None  # type: ignore[assignment]
+
+    doc = render_transcript(
+        [*_setup_events(), _endgame_delta(message)],
+        _final_players(),
+        game_index=1,
+        run_meta=None,
+    )
+
+    assert _STORY_PARAGRAPHS[0] in doc, f"the text was dropped entirely:\n{doc}"
+    assert "<story" not in doc

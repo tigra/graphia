@@ -6788,3 +6788,248 @@ def test_no_committed_transcript_contains_a_rich_stripped_control_code() -> None
         "committed transcripts contain control codes that rich.text.Text.append "
         f"silently drops, so the viewer renders them short: {offenders}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Spec 040, Slice 8 — the closing `<story>` element, reader side
+# ---------------------------------------------------------------------------
+#
+# `story` joined `_MARKER_TAGS` in Task 8.5 and is already swept by
+# `_STRUCTURAL_TAGS` above in its plain opening, closing and attribute-free
+# forms. Three things that sweep cannot say are below, and all three are
+# decisions Task 8.5 and Task 8.7 took EXPLICITLY, which is exactly the kind of
+# decision that needs a standing witness rather than a note:
+#
+# 1. `<story truncated="true">` — the attributed form — must stay ONE marker
+#    span, because `truncated` is deliberately absent from `_ATTR_NAMES`
+#    (spec 038's ratified treatment of `human="true"`: a machine flag is
+#    punctuation, not a detail a reviewer reads). This is the §2.10 claim, and it
+#    is the standing witness against a future `_ATTR_NAMES` addition — which
+#    would silently split the writer's own tag mid-flag.
+# 2. An inline story's body must stay `plain`. Task 8.5 forbids a
+#    `("story", False)` entry in `_INLINE_CONTENT_KINDS` for a reason no other
+#    tag has: that table fires only on the SAME-LINE path, so an entry would
+#    claim a one-paragraph story's body and NOT a multi-paragraph one — the same
+#    content kinded two ways depending on how many paragraphs the model wrote.
+#    Nothing before this witnessed the absence, so the forbidden entry could be
+#    added with no red anywhere.
+# 3. A story-bearing document must round-trip. The corpus sweep at the top of
+#    this file is green over all 393 committed files, but `<story` occurs **0**
+#    times in them, so it is vacuous about this shape and will stay vacuous until
+#    a measured eval run is committed from a build that has the story. These
+#    rows are the round-trip invariant applied, synthetically, to the shape the
+#    corpus does not yet contain — including the adversarial body whose own prose
+#    spells the block's delimiters.
+
+# The writer's clipped-story marker text, spelled out here rather than imported,
+# in the same idiom as `_HUMAN_MARKER` above: the point of the row is the exact
+# bytes, and a source built from `eval_transcript._TRUNCATED_ATTR` would tokenize
+# to one span for `clipped="1"` too. The agreement between this literal and the
+# writer is asserted, not assumed.
+_TRUNCATED_MARKER = 'truncated="true"'
+
+
+def test_the_clipped_story_marker_is_the_one_the_writer_emits() -> None:
+    """This file's literal and `eval_transcript`'s constant are the same bytes.
+
+    The twin of :func:`test_the_writer_and_the_reader_agree_on_the_marker_literal`
+    above, minus its second half: `human="true"` HAS a reader
+    (`eval_ledger._HUMAN_ATTR_RE`) and so has two literals to tie together, while
+    `truncated="true"` deliberately has none — being punctuation is exactly what
+    "no reader anywhere" means, and it is why `_TRUNCATED_ATTR` is a bare literal
+    in the writer rather than an imported constant. What is left to guard is the
+    agreement between the writer and THIS FILE: the rows underneath are written
+    against a literal so they can say something about the exact form, and this is
+    what stops that literal drifting away from the writer and quietly testing a
+    form nobody emits.
+    """
+    from graphia.tools import eval_transcript
+
+    assert eval_transcript._TRUNCATED_ATTR == _TRUNCATED_MARKER
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        pytest.param(
+            f"<story {_TRUNCATED_MARKER}>",
+            [(f"<story {_TRUNCATED_MARKER}>", "marker")],
+            id="block-form-tag-alone-on-its-line",
+        ),
+        pytest.param(
+            f"<story {_TRUNCATED_MARKER}>The harbour went quiet.</story>",
+            [
+                (f"<story {_TRUNCATED_MARKER}>", "marker"),
+                ("The harbour went quiet.", "plain"),
+                ("</story>", "marker"),
+            ],
+            id="inline-form-one-paragraph",
+        ),
+    ],
+)
+def test_a_clipped_story_tag_is_one_marker_span_in_both_forms(
+    source: str, expected: list[tuple[str, str]]
+) -> None:
+    """`<story truncated="true">` is ONE marker span — block form and inline form.
+
+    Tech-spec §2.10's claim, and the standing witness against adding
+    `truncated` to `_ATTR_NAMES`. Both of `_wrap`'s arms are swept because the
+    writer emits both: a multi-paragraph story puts the tag alone on its line, a
+    one-paragraph story collapses inline, and the tag must tokenize the same way
+    either side of that collapse.
+
+    **Why the flag stays inside the punctuation.** `truncated="true"` carries no
+    specific a reviewer reads — it is machine punctuation, like Slice 5's
+    `human="true"` — so lifting its value into an `attr` span would split the
+    writer's own marker mid-flag and put a coloured `true` in the middle of a tag.
+    The mechanism is `_ATTR_VALUE_RE`'s membership test: no suffix of `truncated`
+    is one of the eight whitelisted attribute names, so the lookbehind is never
+    even reached and `_tag_head_spans` finds nothing to lift.
+
+    The inline row doubles as the body-kind row: the content span is `plain`,
+    which is the other half of Task 8.5's decision (see
+    :func:`test_an_inline_story_body_stays_plain`).
+    """
+    assert _spans(source) == expected
+
+
+def test_an_inline_story_body_stays_plain() -> None:
+    """A one-paragraph story's body is `plain`, and it must stay that way.
+
+    Task 8.5 refused a `("story", False)` entry in `_INLINE_CONTENT_KINDS`, and
+    the refusal is sharper than "the story needs no kind of its own":
+
+    * the table fires **only on the same-line path**, so an entry would claim a
+      one-paragraph story's body and leave a multi-paragraph one `plain` — the
+      same content kinded two ways depending on paragraph count, which is worse
+      than no kind at all;
+    * the table is keyed by the `(tag, substituted)` **pair**, and
+      `_is_substituted` reads only `substituted="true"`, so
+      `<story truncated="true">` resolves to the very same `("story", False)`
+      key. A later `_ATTR_NAMES` addition would NOT make the table flag-aware —
+      it would need a second reader and a widened key.
+
+    So `<story>`'s body is `plain`, exactly like `<endgame>`'s. Asserted on the
+    plain form and the clipped form together, because they share the key: an
+    entry added for either would fire on both.
+
+    The non-vacuity control is `<recap>` beside it — the tokenizer really is
+    splitting inline bodies and really does claim the ones its table names, so
+    "story is plain" is a statement about `story` and not about a tokenizer that
+    stopped splitting.
+    """
+    body = "The harbour went quiet, and stayed quiet."
+
+    for opening in ("<story>", f"<story {_TRUNCATED_MARKER}>"):
+        spans = _spans(f"{opening}{body}</story>")
+        assert spans == [
+            (opening, eval_ledger.KIND_MARKER),
+            (body, "plain"),
+            ("</story>", eval_ledger.KIND_MARKER),
+        ], f"{opening!r} body took a kind of its own: {spans}"
+
+    # The control: a tag the table DOES name claims its body, so the assertions
+    # above are about `story` rather than about a tokenizer that gave up.
+    assert _spans(f"<recap>{body}</recap>")[1] == (body, eval_ledger.KIND_RECAP)
+
+
+# The three story bodies worth round-tripping, and each is a different hazard for
+# the tokenizer rather than three spellings of one:
+#
+# * the multi-paragraph body is a `plain` span holding `\n` — the shape spec 038
+#   forbids for a STYLED span, so it must be reached by the block path and not by
+#   the inline collapse;
+# * the one-paragraph body is the inline collapse, where the whole element is one
+#   line and the body sits between two markers;
+# * the adversarial body is model prose that spells the block's own delimiters.
+#   The renderer neutralises them (`_STORY_TAG_RE`), and this is the check that
+#   what SURVIVES that neutralisation still tokenizes cleanly — the file is only
+#   unambiguous if the reader agrees.
+_STORY_ROUND_TRIP_BODIES = [
+    pytest.param(
+        "The baker had been counting the wrong things all along.\n\n"
+        "Mira knew it by the second night, and said nothing.",
+        id="multi-paragraph",
+    ),
+    pytest.param("The harbour went quiet, and stayed quiet.", id="one-paragraph"),
+    pytest.param(
+        '<story truncated="true">\n\nThe baker had been counting the wrong '
+        "things all along.\n\n</story>\n\nMira knew it by the second night.\n\n"
+        "<story>",
+        id="prose-spelling-the-delimiters",
+    ),
+]
+
+
+@pytest.mark.parametrize("body", _STORY_ROUND_TRIP_BODIES)
+@pytest.mark.parametrize("truncated", [False, True], ids=["plain", "clipped"])
+def test_a_rendered_story_document_round_trips_through_the_tokenizer(
+    body: str, truncated: bool
+) -> None:
+    """Writer to reader, on the shape the 393-file corpus cannot yet supply.
+
+    The corpus sweep at the top of this file is the real instrument for this
+    invariant and it is green over every committed transcript — but `<story`
+    occurs **0** times in all 393 of them, so it says nothing about the element
+    this slice added and will keep saying nothing until a measured eval run is
+    committed from a build that tells the story. These six rows are that sweep's
+    invariant, asserted synthetically, over documents the REAL
+    `render_transcript` produced: the spans concatenate back to the file exactly,
+    none is empty, every kind is a non-empty string, and every kind is one the
+    module publishes.
+
+    Fed through `render_transcript` rather than hand-written for the reason
+    Slice 1's own note gives about hand-built cases: the writer's exact spacing,
+    the trims, the collapse and the delimiter neutralisation are all part of what
+    the reader has to survive, and a hand-written `<story>` would test the
+    tokenizer against a shape the writer never emits.
+    """
+    from langchain_core.messages import SystemMessage
+
+    from graphia.state import (
+        CLOSING_STORY_KWARG,
+        CLOSING_STORY_TRUNCATED_KWARG,
+        PlayerState,
+    )
+    from graphia.tools.eval_transcript import render_transcript
+
+    players = {
+        "p-seat": PlayerState(
+            id="p-seat",
+            name="Avery",
+            role="mafia",
+            is_human=True,
+            is_alive=True,
+            persona=None,
+        ),
+        "p-other": PlayerState(
+            id="p-other",
+            name="Bo",
+            role="law_abiding",
+            is_human=False,
+            is_alive=False,
+            persona=None,
+        ),
+    }
+    extra: dict[str, object] = {CLOSING_STORY_KWARG: True}
+    if truncated:
+        extra[CLOSING_STORY_TRUNCATED_KWARG] = True
+    events = [
+        {"end_screen": {"messages": [SystemMessage(content="The Mafia have won.")]}},
+        {
+            "moderator_story": {
+                "messages": [SystemMessage(content=body, additional_kwargs=extra)]
+            }
+        },
+    ]
+
+    doc = render_transcript(events, players, game_index=1, run_meta=None)
+    # The premise: the writer really did emit the element these rows are about.
+    assert doc.count("<story") == 1, doc
+    assert (_TRUNCATED_MARKER in doc) is truncated, doc
+
+    spans = _spans(doc)
+    assert not _span_problems(spans), _span_problems(spans)
+    assert "".join(text for text, _ in spans) == doc, _divergence_report(doc, spans)
+    unknown = {kind for _, kind in spans} - set(eval_ledger.TRANSCRIPT_KINDS)
+    assert not unknown, f"spans carry kinds the module does not publish: {unknown}"
