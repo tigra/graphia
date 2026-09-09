@@ -92,7 +92,15 @@ from graphia.prompts import (
     VOTE_INITIATE_ANNOUNCE_TEMPLATE,
     VOTE_PER_BALLOT_TEMPLATE,
 )
-from graphia.state import DiaryRecord, PlayerState
+# ``CLOSING_STORY_KWARG`` is spec 040's PUBLIC marker on the Moderator's closing
+# story message, and :func:`score_story_missing` IMPORTS it rather than copying
+# the string — 039's rule, stated at :func:`_diary_fallback_text`: import the
+# thing, never copy it, so a reword breaks loudly in the offline suite instead
+# of drifting a measurement. Cheap and unconditional here, unlike 039's lazy
+# private reach-in: ``graphia.state`` is already imported on this line and the
+# constant lives there precisely so ``eval_transcript`` and this module can read
+# it without touching ``graphia.nodes`` (spec 040 §2.6).
+from graphia.state import CLOSING_STORY_KWARG, DiaryRecord, PlayerState
 
 # Spec 041 Slice 6/7: the substitution vocabulary + the injectable sink. THIS
 # module may import it (it already drags ``graphia.llm`` two imports above, and
@@ -2022,6 +2030,107 @@ def score_diary_fallback(
     return {"count": count, "denominator": denominator}
 
 
+# The graph node whose run IS the definition of "this game reached the ending"
+# (spec 040 §2.10's denominator). A LITERAL, unavoidably: ``graphia.graph``
+# registers its nodes by string (``builder.add_node("end_screen", ...)``) and
+# exposes no name constant to import, so there is nothing to import here —
+# unlike ``CLOSING_STORY_KWARG``, which exists as a shared constant for exactly
+# that reason and is imported above.
+#
+# THE LOUD HALF OF THE CONTRACT NEVERTHELESS EXISTS, which is why the literal is
+# acceptable: ``tests/test_spec040_story_topology.py``'s
+# ``_assert_story_closes_the_game`` asserts the streamed trajectory tail equals
+# ``["end_screen", "moderator_story"]``, so renaming either node in
+# ``graphia/graph.py`` turns the offline suite red rather than silently drifting
+# this denominator to zero.
+_STORY_ENDING_NODE = "end_screen"
+
+
+def score_story_missing(events: Sequence[dict[str, Any]]) -> dict[str, int]:
+    """Pure scorer for ONE game's closing-story run health — ``{count, denominator}``.
+
+    Over one game's ordered ``stream_mode="updates"`` event log
+    (:attr:`_GameCapture.events`), both facets are 0-or-1 because the UNIT here
+    is the GAME, not the message:
+
+    - ``denominator`` is 1 when the log holds a :data:`_STORY_ENDING_NODE`
+      delta — the game reached the ending, so the story node was given its
+      chance (``end_screen -> moderator_story`` is an unconditional edge, so
+      reaching the first IS the opportunity for the second). 0 otherwise, and
+      such a game is then absent from the record's denominator entirely.
+    - ``count`` is 1 when that game reached the ending and NO message anywhere
+      in its log carries ``CLOSING_STORY_KWARG``. A game that never reached the
+      ending is never counted as missing a story — it was never owed one.
+
+    PRESENCE IS THE SIGNAL, and that is the whole simplification over spec 039.
+    039's ``score_diary_fallback`` (directly above) has to match the node's
+    placeholder SENTENCE, because a failed diary entry writes fallback text and
+    is therefore indistinguishable from a real entry *by presence*. That forces
+    three things on it: a lazy reach-in for the module-private
+    ``graphia.nodes.day._DIARY_FALLBACK``, an exact-text comparison, and a false
+    positive it admits to in its own docstring (a model that writes the
+    placeholder unprompted is counted as a failure — spec 041 Task 7.1
+    demonstrated exactly that live). Spec 040 §2.8 chose ABSENCE on failure — no
+    fallback story, no placeholder text — so this scorer needs none of it: one
+    public constant, a boolean, and no text to drift.
+
+    **IF A PLACEHOLDER STORY IS EVER ADDED, THIS EVAPORATES AND 040 INHERITS
+    039'S WHOLE COUPLING PROBLEM** — a text instrument, a state-shape flag, and
+    a warning reconciling the two, from a standing start. That is the second
+    reason spec 040 Task 1.5 forbids one, and it is a measurement reason rather
+    than a product one, so it is written down here where the measurement lives.
+
+    IT DISCRIMINATES ON THE MESSAGE, NEVER ON THE NODE OR THE POSITION (§2.9),
+    so the flag is looked for across EVERY delta rather than only under
+    ``moderator_story``. A story that arrived from a renamed or re-parented node
+    still counts as present, which is the correct answer to "did this run
+    produce a story?".
+
+    THE FAILURE-PATH DELTA IS ``None``, NOT ``{}`` — measured on a driven
+    offline capture, not assumed. ``nodes.endgame.moderator_story`` returns a
+    bare ``{}`` when the story call fails, and LangGraph streams that super-step
+    as ``{"moderator_story": None}``. A scorer that tested for an empty
+    ``messages`` list would therefore raise ``AttributeError`` on ``None`` inside
+    a measured batch; the ``isinstance(delta, dict)`` guard below is the same one
+    ``eval_transcript._render_phases`` relies on, and it is load-bearing rather
+    than defensive.
+
+    Defensive over the log's shape beyond that — a non-dict event, a non-list
+    ``messages`` value, a message with no ``additional_kwargs`` — is skipped
+    rather than raising, because this runs inside a measured batch that must
+    finish.
+
+    DRIVER-INDEPENDENT BY DESIGN: it takes a plain list of ``{node: delta}``
+    dicts and nothing else — no state snapshot, no live model, no config — so
+    the offline tests score synthetic event logs, and a hand-built
+    ``_GameCapture`` needs no story wiring at all.
+    """
+    reached_ending = False
+    story_seen = False
+    for event in events or ():
+        if not isinstance(event, dict):
+            continue
+        for node, delta in event.items():
+            if node == _STORY_ENDING_NODE:
+                reached_ending = True
+            # The ``None``-delta guard, and the reason it is not merely
+            # defensive: see the docstring's failure-path paragraph.
+            if not isinstance(delta, dict):
+                continue
+            messages = delta.get("messages")
+            if not isinstance(messages, list):
+                continue
+            for message in messages:
+                extra = getattr(message, "additional_kwargs", None)
+                if isinstance(extra, dict) and extra.get(CLOSING_STORY_KWARG):
+                    story_seen = True
+    if not reached_ending:
+        # No opportunity in this game — it contributes to NEITHER facet, so it
+        # cannot dilute the rate in either direction.
+        return {"count": 0, "denominator": 0}
+    return {"count": 0 if story_seen else 1, "denominator": 1}
+
+
 # ===========================================================================
 # SPEC 041 §2.5 — THE SUBSTITUTION CENSUS: how much of a measured run is the
 # model's answer and how much is a deterministic stand-in, per answer kind.
@@ -3691,6 +3800,15 @@ def run_eval(
     ``config`` through the ``_diaries_arm`` sentinel, so a config that cannot
     answer records NOTHING rather than the on arm. ``main`` refuses such a run
     outright; a direct call with a thin stub config simply omits the key.
+
+    Spec 040 §2.10: each completed game's event log is scored by
+    :func:`score_story_missing` and folded into the ``quality.story_*`` trio —
+    how many of this run's ENDINGS carry no closing story, out of how many games
+    reached an ending at all. Unlike the diary sentinel it needs no instrument to
+    resolve and nothing optional to degrade, because absence is the signal. When
+    the story denominator and ``games_completed`` disagree, the difference is
+    printed: a completed game that never reached ``end_screen`` exhausted the
+    anti-hang backstop and never had a story to lose.
     """
     large_model, small_model = _resolved_model_names(config)
 
@@ -3934,6 +4052,14 @@ def run_eval(
     # rate is Σplaceholder / Σattempted and never a mean-of-rates.
     diary_fallback_total: dict[str, int] = {"count": 0, "denominator": 0}
 
+    # Spec 040 §2.10 CLOSING-STORY RUN HEALTH: Σ endings with no story and Σ
+    # games that reached the ending, across the completed games — the same
+    # per-game-then-sum pattern, so the recorded rate is Σmissing / Σendings and
+    # never a mean-of-rates. The denominator is accumulated from each game's
+    # CAPTURE (:func:`score_story_missing` reads the event log), deliberately not
+    # taken from ``games_completed``: see :attr:`EvalResult.story_missing`.
+    story_missing_total: dict[str, int] = {"count": 0, "denominator": 0}
+
     # Spec-041 §2.5 SUBSTITUTION CENSUS: Σ substituted and Σ attempted answers
     # per kind across the completed games — the same per-game-then-sum pattern,
     # so each recorded rate is Σcount / Σattempted and never a mean-of-rates.
@@ -4157,6 +4283,18 @@ def run_eval(
                     file=sys.stderr,
                 )
 
+        # Spec 040 §2.10 run health: fold this game's story-presence facets in.
+        # Scored off ``cap.events`` — the ordered stream log — rather than the
+        # final state, for the same reason the transcript renderer uses it: the
+        # log is where the ``end_screen`` super-step is observable at all, and
+        # the story message is identified by its PUBLIC flag wherever it arrived.
+        # Unconditional (no instrument to resolve, nothing optional to degrade),
+        # which is the whole dividend of absence-on-failure over 039's text
+        # sentinel.
+        story_facets = score_story_missing(cap.events)
+        story_missing_total["count"] += story_facets["count"]
+        story_missing_total["denominator"] += story_facets["denominator"]
+
         # Spec-041 §2.5: fold THIS game's per-kind counts, from the sink that was
         # installed for exactly this game's duration, into the batch totals.
         # Completed games only — the same boundary every other scorer here uses,
@@ -4215,6 +4353,33 @@ def run_eval(
     # ``render_record`` derives the rate from this pair.
     if diary_fallback_total["denominator"] > 0:
         result.diary_fallback = dict(diary_fallback_total)
+
+    # Spec 040 §2.10: the closing-story run-health pair, recorded ONLY when at
+    # least one game reached the ending — ABSENT, never a misleading zero, so a
+    # batch whose games all failed early or all ran out of super-steps records
+    # nothing here rather than a ``0.0`` asserting a clean measurement of a node
+    # that never ran. ``render_record`` derives the rate from this pair.
+    if story_missing_total["denominator"] > 0:
+        result.story_missing = dict(story_missing_total)
+
+    # THE DIVERGENCE IS THE INFORMATIVE PART, so it is reported rather than left
+    # for someone to notice by comparing two numbers on the record. A completed
+    # game that never reached ``end_screen`` exhausted ``_play_one_game``'s
+    # anti-hang backstop: it is a genuinely degenerate game that produced speech
+    # and votes (so every other metric scored it) while offering the story node
+    # no opportunity at all. Printed to stderr like every other harness
+    # diagnostic here — this module installs no logging handler, so a
+    # ``logger.warning`` would reach ``logging.lastResort`` and go silent the
+    # moment anything configures logging.
+    if result.games_completed != story_missing_total["denominator"]:
+        print(
+            f"  quality.story_ending_games: {story_missing_total['denominator']}"
+            f" of {result.games_completed} completed game(s) reached end_screen"
+            " — the rest exhausted the anti-hang super-step backstop and never "
+            "got an ending, so they are excluded from the story denominator "
+            "(they still count in games_completed and in every other metric)",
+            file=sys.stderr,
+        )
 
     # Spec-041 §2.5: the per-kind census, carried as the ``{count, attempted}``
     # pair per kind — ``render_record`` derives each rate (one definition of it)
@@ -4635,6 +4800,19 @@ def main(argv: list[str] | None = None) -> int:
             f"diary entries: {diary_placeholders}/{diary_attempted} are the "
             "deterministic fallback "
             f"(rate={diary_placeholders / diary_attempted:.2f})"
+        )
+    # Spec 040 §2.10: the closing-story missing share, printed as soon as the
+    # batch ends. Same reason as the diary line above — a run worth discarding
+    # should be visible at the console rather than having to be read back out of
+    # a file — and the same absent-not-zero rule: no ending, nothing printed.
+    story_health = result.story_missing
+    story_endings = int(story_health.get("denominator", 0))
+    if story_endings:
+        stories_missing = int(story_health.get("count", 0))
+        print(
+            f"closing stories: {stories_missing}/{story_endings} endings have "
+            "NO story "
+            f"(rate={stories_missing / story_endings:.2f})"
         )
     if rep:
         print(
