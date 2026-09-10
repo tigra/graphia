@@ -4901,3 +4901,298 @@ metrics:
     peak: 0.5734526845853342
     denominator: 210
 notes: 'CR 007 re-baseline: Claude Haiku 4.5 arm, n=10. Run under caffeinate -dimsu after an overnight attempt died to system sleep: no wake-preventing assertion existed between 21:54 and 01:19, so the machine cycled DarkWake to sleep every ~16 min and no arm made progress. Ran concurrently with the Nova arm (network-bound, ~300MB each); the local-model arm is serialized after. Post-spec-040 story on at the 5/2500 length pair, 6+2 lineup, diaries on.'
+---
+run:
+  date: '2026-09-09'
+  duration_seconds: 652.018
+  metrics_version: 1
+  transcript_dir: '2026-09-09T18-41-01'
+code:
+  commit: 'b7783adf80731c72dcb52247329eb72b84b4f857'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'bedrock'
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  structured_output: 'tool_use'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  base_url: null
+  games: 2
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 2
+  games_completed: 2
+  games_failed_early: 0
+  diary_fallback_rate: 0.0
+  diary_fallback_entries: 0
+  diary_entries_attempted: 30
+  story_missing_rate: 0.0
+  story_missing_games: 0
+  story_ending_games: 2
+  substitutions:
+    roster:
+      rate: 0.0
+      count: 0
+      attempted: 2
+    persona:
+      rate: 0.0
+      count: 0
+      attempted: 14
+    pointing:
+      rate: 0.0
+      count: 0
+      attempted: 16
+    ballot:
+      rate: 0.0
+      count: 0
+      attempted: 90
+    day_action:
+      rate: 0.0
+      count: 0
+      attempted: 175
+    reflection:
+      rate: 0.0
+      count: 0
+      attempted: 142
+    diary:
+      rate: 0.0
+      count: 0
+      attempted: 30
+  duration_seconds: 652.018
+outcomes:
+  games: 2
+  law_abiding:
+    wins: 1
+    rate: 0.5
+    ci_low: 0.09452865480086614
+    ci_high: 0.9054713451991339
+  mafia:
+    wins: 1
+    rate: 0.5
+    ci_low: 0.09452865480086614
+    ci_high: 0.9054713451991339
+  scripted_side:
+    side: 'law_abiding'
+    wins: 1
+    rate: 0.5
+    ci_low: 0.09452865480086614
+    ci_high: 0.9054713451991339
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against an active rule-based scripted human (deterministic, no model call; when Law-abiding it supplies the vote a correct town majority needs) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 6
+    mafia: 0
+  by_day:
+    day_2: 2
+    day_3: 3
+    day_4: 1
+metrics:
+  repetition:
+    rate: 0.5680473372781065
+    count: 96
+    denominator: 169
+    ci_low: 0.49267082117857536
+    ci_high: 0.6403989953470758
+  third_person_self_talk:
+    rate: 0.005917159763313609
+    count: 1
+    denominator: 169
+    ci_low: 0.0010452618665798483
+    ci_high: 0.03275215727325685
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 6
+    ci_low: 0.0
+    ci_high: 0.3903430336530645
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 18
+    ci_low: 0.0
+    ci_high: 0.1758845505823749
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 10
+    ci_low: 0.0
+    ci_high: 0.2775401687666166
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 42
+    ci_low: 0.0
+    ci_high: 0.08380161250916197
+  persona_lex_mean:
+    mean: 0.03152347087710911
+    denominator: 42
+  persona_lex_peak:
+    peak: 0.07217694994179279
+    denominator: 42
+  persona_sem_mean:
+    mean: 0.22229792003555704
+    denominator: 42
+  persona_sem_peak:
+    peak: 0.491401650523628
+    denominator: 42
+notes: 'Run off-ledger as a 2-game cost pilot, with the note "COST PILOT — throwaway, off-ledger"; PROMOTED TO THE LEDGER 2026-09-10 at the author''s request because the run completed 2/2 games and is a real measurement. Only this free-text note was composed at append time — no measured or provenance field was altered. Its purpose was to price the Bedrock arms per game from CloudWatch token metrics before sizing the paid runs to a hard 50 USD cap; the n=10 records 47 and 48 supersede its cost figures. Appended out of chronological order: it ran 2026-09-09, after record 46 and before 47.'
+---
+run:
+  date: '2026-09-09'
+  duration_seconds: 758.645
+  metrics_version: 1
+  transcript_dir: '2026-09-09T18-41-05'
+code:
+  commit: 'b7783adf80731c72dcb52247329eb72b84b4f857'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'bedrock-claude'
+  large_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  small_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  structured_output: 'tool_use'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  small_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  base_url: null
+  games: 2
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 2
+  games_completed: 2
+  games_failed_early: 0
+  diary_fallback_rate: 0.0
+  diary_fallback_entries: 0
+  diary_entries_attempted: 10
+  story_missing_rate: 0.0
+  story_missing_games: 0
+  story_ending_games: 2
+  substitutions:
+    roster:
+      rate: 0.0
+      count: 0
+      attempted: 2
+    persona:
+      rate: 0.0
+      count: 0
+      attempted: 14
+    pointing:
+      rate: 0.0
+      count: 0
+      attempted: 6
+    ballot:
+      rate: 0.0
+      count: 0
+      attempted: 38
+    day_action:
+      rate: 0.0
+      count: 0
+      attempted: 79
+    reflection:
+      rate: 0.0
+      count: 0
+      attempted: 64
+    diary:
+      rate: 0.0
+      count: 0
+      attempted: 10
+  duration_seconds: 758.645
+outcomes:
+  games: 2
+  law_abiding:
+    wins: 2
+    rate: 1.0
+    ci_low: 0.34237195288961925
+    ci_high: 1.0
+  mafia:
+    wins: 0
+    rate: 0.0
+    ci_low: 0.0
+    ci_high: 0.6576280471103807
+  scripted_side:
+    side: 'law_abiding'
+    wins: 2
+    rate: 1.0
+    ci_low: 0.34237195288961925
+    ci_high: 1.0
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against an active rule-based scripted human (deterministic, no model call; when Law-abiding it supplies the vote a correct town majority needs) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 7
+    mafia: 0
+  by_day:
+    day_1: 5
+    day_2: 2
+metrics:
+  repetition:
+    rate: 0.0
+    count: 0
+    denominator: 72
+    ci_low: 0.0
+    ci_high: 0.05065293981139638
+  third_person_self_talk:
+    rate: 0.0
+    count: 0
+    denominator: 72
+    ci_low: 0.0
+    ci_high: 0.05065293981139638
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 7
+    ci_low: 0.0
+    ci_high: 0.35433884297520657
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 7
+    ci_low: 0.0
+    ci_high: 0.35433884297520657
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 4
+    ci_low: 0.0
+    ci_high: 0.48990002040399916
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 42
+    ci_low: 0.0
+    ci_high: 0.08380161250916197
+  persona_lex_mean:
+    mean: 0.023146100788483847
+    denominator: 42
+  persona_lex_peak:
+    peak: 0.06427061310782241
+    denominator: 42
+  persona_sem_mean:
+    mean: 0.3813309026047322
+    denominator: 42
+  persona_sem_peak:
+    peak: 0.5266980453072153
+    denominator: 42
+notes: 'Run off-ledger as a 2-game cost pilot, with the note "COST PILOT — throwaway, off-ledger"; PROMOTED TO THE LEDGER 2026-09-10 at the author''s request because the run completed 2/2 games and is a real measurement. Only this free-text note was composed at append time — no measured or provenance field was altered. Its purpose was to price the Bedrock arms per game from CloudWatch token metrics before sizing the paid runs to a hard 50 USD cap; the n=10 records 47 and 48 supersede its cost figures. Appended out of chronological order: it ran 2026-09-09, after record 46 and before 47.'
