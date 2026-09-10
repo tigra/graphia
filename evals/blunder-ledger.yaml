@@ -4591,3 +4591,313 @@ metrics:
     peak: 0.45414113487370567
     denominator: 21
 notes: 'manual recap smoke'
+---
+run:
+  date: '2026-09-10'
+  duration_seconds: 2003.911
+  metrics_version: 1
+  transcript_dir: '2026-09-10T13-31-38'
+code:
+  commit: '9f66a762c3b74acc1d706865f0ad78741ac041f4'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'bedrock'
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  structured_output: 'tool_use'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  base_url: null
+  games: 10
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  diary_fallback_rate: 0.0
+  diary_fallback_entries: 0
+  diary_entries_attempted: 142
+  story_missing_rate: 0.0
+  story_missing_games: 0
+  story_ending_games: 10
+  substitutions:
+    roster:
+      rate: 0.0
+      count: 0
+      attempted: 10
+    persona:
+      rate: 0.0
+      count: 0
+      attempted: 70
+    pointing:
+      rate: 0.0
+      count: 0
+      attempted: 104
+    ballot:
+      rate: 0.0
+      count: 0
+      attempted: 302
+    day_action:
+      rate: 0.0
+      count: 0
+      attempted: 910
+    reflection:
+      rate: 0.0
+      count: 0
+      attempted: 703
+    diary:
+      rate: 0.0
+      count: 0
+      attempted: 142
+  duration_seconds: 2003.911
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 1
+    rate: 0.1
+    ci_low: 0.01787574951572113
+    ci_high: 0.4041563854975721
+  mafia:
+    wins: 9
+    rate: 0.9
+    ci_low: 0.5958436145024278
+    ci_high: 0.9821242504842788
+  scripted_side:
+    side: 'law_abiding'
+    wins: 1
+    rate: 0.1
+    ci_low: 0.01787574951572113
+    ci_high: 0.4041563854975721
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against an active rule-based scripted human (deterministic, no model call; when Law-abiding it supplies the vote a correct town majority needs) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 7
+    mafia: 1
+  by_day:
+    day_1: 1
+    day_2: 4
+    day_3: 2
+    day_4: 1
+metrics:
+  repetition:
+    rate: 0.7339246119733924
+    count: 662
+    denominator: 902
+    ci_low: 0.7041376340264924
+    ci_high: 0.7617274796975846
+  third_person_self_talk:
+    rate: 0.025498891352549888
+    count: 23
+    denominator: 902
+    ci_low: 0.017050297530255158
+    ci_high: 0.037972125816166546
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 3
+    ci_low: 0.0
+    ci_high: 0.5615060804490177
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 59
+    ci_low: 0.0
+    ci_high: 0.061131479784092065
+  peer_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 1
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 17
+    ci_low: 0.0
+    ci_high: 0.18432366037156456
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 210
+    ci_low: 0.0
+    ci_high: 0.017964699104383804
+  persona_lex_mean:
+    mean: 0.03293290152320003
+    denominator: 210
+  persona_lex_peak:
+    peak: 0.1543026706231454
+    denominator: 210
+  persona_sem_mean:
+    mean: 0.21875343822603435
+    denominator: 210
+  persona_sem_peak:
+    peak: 0.5201248932602344
+    denominator: 210
+notes: 'CR 007 re-baseline: Nova arm, n=10. Run under caffeinate -dimsu after an overnight attempt died to system sleep: no wake-preventing assertion existed between 21:54 and 01:19, so the machine cycled DarkWake to sleep every ~16 min and no arm made progress. Ran concurrently with the Claude arm (network-bound, ~300MB each); the local-model arm is serialized after. Post-spec-040 story on at the 5/2500 length pair, 6+2 lineup, diaries on.'
+---
+run:
+  date: '2026-09-10'
+  duration_seconds: 2277.027
+  metrics_version: 1
+  transcript_dir: '2026-09-10T13-31-42'
+code:
+  commit: '9f66a762c3b74acc1d706865f0ad78741ac041f4'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'bedrock-claude'
+  large_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  small_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  structured_output: 'tool_use'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  small_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  base_url: null
+  games: 10
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  diary_fallback_rate: 0.0
+  diary_fallback_entries: 0
+  diary_entries_attempted: 89
+  story_missing_rate: 0.0
+  story_missing_games: 0
+  story_ending_games: 10
+  substitutions:
+    roster:
+      rate: 0.0
+      count: 0
+      attempted: 10
+    persona:
+      rate: 0.0
+      count: 0
+      attempted: 70
+    pointing:
+      rate: 0.0
+      count: 0
+      attempted: 60
+    ballot:
+      rate: 0.0
+      count: 0
+      attempted: 201
+    day_action:
+      rate: 0.0
+      count: 0
+      attempted: 338
+    reflection:
+      rate: 0.0
+      count: 0
+      attempted: 244
+    diary:
+      rate: 0.0
+      count: 0
+      attempted: 89
+  duration_seconds: 2277.027
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 6
+    rate: 0.6
+    ci_low: 0.3126695474501864
+    ci_high: 0.8318224187964902
+  mafia:
+    wins: 4
+    rate: 0.4
+    ci_low: 0.16817758120350967
+    ci_high: 0.6873304525498135
+  scripted_side:
+    side: 'law_abiding'
+    wins: 6
+    rate: 0.6
+    ci_low: 0.3126695474501864
+    ci_high: 0.8318224187964902
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against an active rule-based scripted human (deterministic, no model call; when Law-abiding it supplies the vote a correct town majority needs) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 37
+    mafia: 1
+  by_day:
+    day_1: 16
+    day_2: 16
+    day_3: 5
+    day_4: 1
+metrics:
+  repetition:
+    rate: 0.0
+    count: 0
+    denominator: 300
+    ci_low: 0.0
+    ci_high: 0.012643429997735661
+  third_person_self_talk:
+    rate: 0.0033333333333333335
+    count: 1
+    denominator: 300
+    ci_low: 0.0005886425761407379
+    ci_high: 0.018637164554943353
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 29
+    ci_low: 0.0
+    ci_high: 0.11697359446555587
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 35
+    ci_low: 0.0
+    ci_high: 0.09890426758938868
+  peer_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 1
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 15
+    ci_low: 0.0
+    ci_high: 0.20388926630434784
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 210
+    ci_low: 0.0
+    ci_high: 0.017964699104383804
+  persona_lex_mean:
+    mean: 0.024321511735851786
+    denominator: 210
+  persona_lex_peak:
+    peak: 0.05465055176037835
+    denominator: 210
+  persona_sem_mean:
+    mean: 0.3724028472827166
+    denominator: 210
+  persona_sem_peak:
+    peak: 0.5734526845853342
+    denominator: 210
+notes: 'CR 007 re-baseline: Claude Haiku 4.5 arm, n=10. Run under caffeinate -dimsu after an overnight attempt died to system sleep: no wake-preventing assertion existed between 21:54 and 01:19, so the machine cycled DarkWake to sleep every ~16 min and no arm made progress. Ran concurrently with the Nova arm (network-bound, ~300MB each); the local-model arm is serialized after. Post-spec-040 story on at the 5/2500 length pair, 6+2 lineup, diaries on.'
