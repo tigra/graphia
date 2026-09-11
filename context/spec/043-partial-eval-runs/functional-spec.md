@@ -73,10 +73,12 @@ A measured run plays a chosen number of games against a chosen AI provider, scor
 
 - Keeping and scoring the games that finished when a measured run stops before playing all of them.
 - Marking such an entry as incomplete, carrying both the number of games asked for and the number that finished.
-- Printing the usual end-of-run summary, plus the early-stop statement, at the moment a run stops.
-- Telling the person plainly when nothing could be kept because no game finished.
-- Preserving the honesty of the "was the code unmodified" mark, for the stopped run and for the next one.
+- Bringing the entry up to date as each game finishes, so that by the time a run stops it has already been recorded.
+- Telling the person plainly, on a run that reaches its own end, when nothing could be kept because no game finished.
+- Preserving the honesty of the "was the code unmodified" mark for the stopped run.
 - Leaving complete runs, and runs with individually failing games, exactly as they behave today.
+
+> **RECONCILED with the two notes above (2026-09-11), at the author's direction.** Three bullets in this list still described the spec as it read *before* those amendments, and contradicted them. **"Printing the usual end-of-run summary, plus the early-stop statement, at the moment a run stops" is gone** — it is unimplementable under the mechanism the author chose, and the boundary it crossed now sits in Out-of-Scope as *"Catching a stop gracefully"*; what replaces it is the saving-as-you-go that reaches the same end by a different route, and survives stops no graceful handling could catch. **"Telling the person plainly when nothing could be kept" is narrowed to a run that reaches its own end**, for the same reason: a killed process prints nothing. And **the clean-code mark is protected for the stopped run only** — the author's ruling is that the *next* run reading as modified is meaningful and actionable, which Out-of-Scope already states outright. No requirement and no acceptance criterion changes; this is the scope list catching up to decisions already recorded above.
 
 ### Out-of-Scope
 
