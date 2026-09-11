@@ -8,7 +8,9 @@
 
 ## 1. High-Level Technical Approach
 
-**The run's ledger record is written after its first completed game and rewritten in place after every game thereafter.** There is no signal handling, no graceful shutdown and no scratch file: durability comes from having already written, so a stop the process cannot observe — `SIGKILL`, a power cut, a reaper — leaves the last written state standing. That is the author's ruling, and it is the whole design in one sentence.
+**The run's ledger record is written after its first completed game and updated after every game thereafter, each update being a whole-file atomic replace guarded by optimistic concurrency control.** There is no signal handling, no graceful shutdown and no scratch file: durability comes from having already written, so a stop the process cannot observe — `SIGKILL`, a power cut, a reaper — leaves the last written state standing.
+
+**Concurrent runs stay safe, and end up safer than they are today.** No lock is taken — OCC with retries instead, because a lock file is one more artifact a killed run can leave behind, and kills are this spec's whole subject. Each write hashes the ledger it read, splices its own document in as text, and replaces the whole file atomically only if the hash still matches; otherwise it retries. Today's `append_record` does two unsynced appends and can interleave between concurrent writers, so this **removes** an existing corruption window rather than opening one.
 
 Three properties make it cheap rather than invasive:
 
@@ -24,29 +26,45 @@ Three properties make it cheap rather than invasive:
 
 ## 2. Proposed Solution & Implementation Plan (The "How")
 
-### 2.1 The write: rewrite-in-place, and how it stays non-destructive
+### 2.1 The write: optimistic concurrency control over a whole-file atomic replace
 
-The ledger is a multi-document YAML file, one `---`-separated document per run, appended by `append_record` (`:3236`–`:3260`). This spec makes a run's own document mutable while the run is alive. Two facts make that safe to implement:
+**The mechanism the author chose is OCC with retries — no lock.** That is deliberate and it is the right trade for this harness: a lock file is one more thing that can be left behind by a killed run, and kills are the whole subject of this spec. OCC has nothing to leave behind.
 
-- **A run's document is always the last one in the file.** Nothing else appends during a run (concurrent runs are already told to use `--ledger-path` per arm, `:4584`), so the run can remember the file length *before* its first write and thereafter truncate to that offset and re-render its own document. Every earlier byte is preserved untouched, which is the same property a plain append has.
-- **The byte-prefix invariant is checkable and must be asserted**, not assumed: after every rewrite, the file's first *N* bytes must equal what they were before the run's first write. This is the guard that turns "rewrite in place" from a risk into a bounded operation.
+**The existing write is the thing being replaced, and it is already unsafe.** `append_record` (`:3257`–`:3259`) opens the ledger in append mode and performs **two** writes (`"---\n"`, then the document) with **no `fsync`**. A kill between them leaves a separator with no document; a kill mid-document leaves a truncated one; a power cut can leave unflushed bytes. And a multi-kilobyte buffered write is far above `PIPE_BUF`, so two runs appending to one ledger can interleave. **Concurrent runs on one ledger are not safe today** — records 47 and 48 survived only because they finished four minutes apart. This spec therefore *reduces* the corruption surface rather than enlarging it, and that framing belongs in the ADR.
 
-| step | when | what happens |
+**The write cycle.** All of it operates on the file as **text**, split on the document separator into opaque chunks. No other run's document is ever parsed or re-emitted, so hand-written `notes`, float renderings and key order survive byte-exactly — a parse-and-re-render round trip would reformat all fifty committed records on every write.
+
+| step | operation | why it is there |
 | --- | --- | --- |
-| snapshot | before the first write | copy the whole ledger to a backup outside the tracked tree (see §2.2); remember its length in bytes |
-| first write | after game 1 completes | append `---` + the rendered document, exactly as today |
-| update | after each later game | truncate to the remembered length, append the freshly rendered document |
-| final write | on normal exit from the loop | the same update, once more, from the same code path |
+| 1 | render this run's document from the in-memory result | the expensive part (scoring), done **before** the read so the read-to-replace window stays small |
+| 2 | read the ledger bytes; `sha256` them | the content hash is the OCC version token — exact, unlike mtime granularity or size |
+| 3 | split into chunks; replace this run's chunk by its id, or append it if absent | other chunks pass through untouched |
+| 4 | re-read and re-hash; if it differs from step 2, **conflict** → retry from 1 | cheap pre-check that avoids most wasted writes |
+| 5 | write to a temp file in the same directory, `fsync`, `os.replace`, `fsync` the directory | atomic: a reader or a kill sees the old complete file or the new one, never a partial |
+| 6 | read back; confirm exactly one chunk carries this run's id and it is what was written | closes the loop — this is what makes "with retries" converge |
+| 7 | on exhausted retries: **do not fail the run** | a failed ledger update must never kill a measured run; that would invert the spec's purpose |
 
-**The final write is not an optimisation to skip.** It is what keeps two existing behaviours intact: a run in which *every* game fails early still appends its (degenerate) record, which requirement five of the functional spec forbids disturbing and which no per-game write would ever produce; and a complete run's record must be byte-identical to today's.
+**The convergence argument, and the residual window — stated rather than glossed.** Two writers can both pass step 4 and then replace in sequence; the second one's file carries the first one's chunk as it was at *its* read, so the first writer's newest update is rolled back one generation. Step 6 does not catch this, because the victim's own chunk is intact — it is the *other* chunk that regressed. What repairs it is the victim's **next** write, which re-reads and re-writes its current state. So progressive updates self-heal, and the exposure is bounded to "a record is briefly one game stale".
 
-**Concurrency stays out of bounds, and more sharply than before.** Two runs sharing one ledger file already race at `append_record`; under rewrite-in-place they would corrupt each other's documents rather than merely interleave. `--ledger-path` per arm is the existing answer and must be restated in `evals/README.md` as a requirement rather than a suggestion.
+**The final write is the one that cannot self-heal**, because there is no next write to repair it. Three things protect it: the read-to-replace window is microseconds by construction (step 1 precedes step 2); the final write retries harder than a progressive one; and if it still cannot land, the run writes its rendered document to a clearly-named fallback file beside the ledger and says so loudly, so the measurement is never lost even if the ledger cannot be updated. The residual risk is a record that is stale by a game — visible, because `games_completed` would disagree with the transcript count on disk.
 
-### 2.2 The pre-run backup
+**If conflicts ever show up in practice, the escalation is `flock` on a gitignored sidecar** — which would cost one ignored file and close the window completely. Recorded as the known next step, not built now: with progressive writes every ~4 minutes on the cloud arms and ~33 minutes on the local one, the collision probability is very small and OCC's cheapness in the common case is the point.
 
-Before its first write, the run copies the ledger to a timestamped backup. **It goes outside the tracked tree** — under the project's local `.graphia/` footprint (architecture §3), not beside the ledger — for one reason: a backup inside `evals/` would be a new untracked file whose only effect is to dirty the tree, and the author's ruling is that tree-dirt should mean something actionable.
+**Concurrency is now supported rather than forbidden.** This replaces the previous draft's instruction to use `--ledger-path` per arm. That flag remains useful for throwaway runs, but it is no longer a safety requirement — which matters, because running the arms concurrently is exactly what a multi-arm baseline session does.
 
-The backup is best-effort in one direction only: if it cannot be written, the run **must not** proceed to rewrite the ledger, because the backup is the only thing standing between a bug in the truncate-and-rewrite path and the committed history. Failing the run is the correct response; silently continuing is not.
+### 2.2 Run identity: a collision-proof id on every record
+
+The write cycle needs each run to recognise its own document, and `_run_id` (`:3280`) cannot support that: it is a local timestamp to the **second**, so two runs launched in the same second produce the same id. That is not hypothetical — this project has launched pairs four seconds apart.
+
+- **`run.id`, always present, on every record from now on.** The existing sortable timestamp plus a short random suffix (e.g. `2026-09-10T13-31-38-a7f3`): still lexically chronological, still human-readable, and collision-proof in practice.
+- **It stays the same string as the transcript directory name**, so the cross-reference a reader makes by eye keeps working, and `run.transcript_dir` continues to name a real directory.
+- **Verify at implementation** whether anything parses that directory name as a bare timestamp before appending the suffix — `eval_ledger.py`'s transcript browser resolves run directories, and a strict `strptime` there would reject the new form. Existing directories keep their names; only new runs gain the suffix.
+- Older records carry no `run.id`. Nothing needs it retroactively: the field exists for a run to find its own document while it is alive, and every older record belongs to a run that ended long ago.
+- **Optional, and recommended for diagnosability:** a per-run write counter (`run.seq`) incremented on each update. It makes "which write won a conflict" answerable after the fact, which is otherwise guesswork. Additive and gated like the marker.
+
+### 2.2b The pre-run backup
+
+Before its first write, the run copies the ledger to a timestamped backup under the project's local `.graphia/` footprint (architecture §3) — **outside the tracked tree**, so it cannot dirty it. Under OCC the backup is belt-and-braces rather than the only line of defence, since step 5 never leaves a partial file; its job is to survive a *logic* bug in the chunk-splicing, which atomicity cannot protect against. If the backup cannot be written, the run must not proceed to write the ledger.
 
 ### 2.3 The record: one gated marker, and the counts that already exist
 
@@ -113,12 +131,12 @@ Re-running `:4413`–`4587` per game is *N* times the scoring work instead of on
 
 | risk | mitigation |
 | --- | --- |
-| **A bug in truncate-and-rewrite damages committed history.** This is the one risk that is not recoverable by re-running. | The pre-run backup outside the tracked tree (§2.2), a hard failure if it cannot be written, and a byte-prefix assertion after every rewrite (§2.1). |
-| **A process killed *during* a rewrite leaves a truncated final document.** The window is small but it is exactly when kills happen. | Write to a temporary file in the same directory and `os.replace` it into position — atomic on POSIX — so a kill leaves either the previous complete state or the new one, never a half-written document. The earlier records are re-written from bytes already read, so no parse-and-re-render round trip can reformat them. |
+| **A bug in the chunk-splicing damages committed history.** The one risk not recoverable by re-running, and the one atomicity cannot protect against — an atomic write of wrong content is still wrong. | The pre-run backup outside the tracked tree (§2.2b), a hard failure if it cannot be written, and a test asserting every *other* document is byte-identical across a whole run of updates (§4). |
+| **A process killed mid-write leaves a truncated document.** This is a real failure of the *current* append path, not of the new one. | Closed by construction: temp file, `fsync`, `os.replace`, `fsync` the directory. A reader or a kill sees the old complete file or the new one. Earlier records are carried across as bytes already read, so no re-render can reformat them. |
 | **Partial records get pooled with full baselines by eye.** | The gated marker first in `quality`, the §2.5 invariant, and the `4/10` viewer cell (§2.6). |
 | **Partial runs make untracked transcript dirs common.** A partial run leaves an incomplete `evals/transcripts/<run-id>/` linked from `run.transcript_dir`; that directory is what makes the *next* run stamp `dirty: true`. The mechanism does not create the hazard — a full run leaves the same dir — but partial runs will now be frequent where before they left nothing. | Per the author's ruling this is meaningful and stays: the remedy is to commit or remove. Document it in `evals/README.md` beside the existing commit-or-delete norm. |
 | **Re-scoring cost grows quadratically in pooled lines.** | Measure on a real ten-game run (§2.8); cadence fallback if needed. |
-| **Two concurrent runs on one ledger corrupt each other.** | Already the case for appends; restate `--ledger-path` per arm as a requirement in `evals/README.md`, and consider refusing to start when the ledger's tail document belongs to a run that is still alive. |
+| **Two concurrent writes race, and the loser's newest update is rolled back one generation.** The residual OCC window (§2.1): both writers pass the hash check, then replace in sequence. | Progressive updates self-heal on the victim's next write. The final write is the exposed one: it retries harder, and on persistent failure writes its document to a named fallback file beside the ledger rather than losing it. `flock` on a gitignored sidecar is the recorded escalation if conflicts are ever observed. |
 
 ---
 
@@ -137,6 +155,9 @@ Cases that must be covered, each mapping to an acceptance criterion:
 - **The marker and the invariant.** A partial record carries `ended_early: true` as the first `quality` key; a complete one omits it entirely; `games_attempted == games_completed + games_failed_early` holds in both.
 - **The all-failed full run is undisturbed.** Ten games, every one raising: one record, `games_completed: 0`, **no** `ended_early` — it attempted everything it was asked for. This is requirement five, and it is the case a `games_completed == 0` guard would silently break.
 - **Nothing finished, nothing written.** A run killed before game 1 completes leaves the ledger byte-identical.
+- **Concurrency, tested without concurrency.** The OCC cycle is testable deterministically by injecting a mutation between the read and the replace — a monkeypatched hook that writes a *second* run's document into the file at that instant. Assertions: the write detects the conflict, retries, and the resulting file contains **both** runs' documents, each intact. This is the test that would have caught the truncate-to-offset design the first draft proposed, and it needs no threads, no subprocesses and no timing.
+- **Every other document survives a whole run.** With three pre-existing records, a ten-game run's ten updates leave all three byte-identical at every step — asserted on bytes, because a parse-and-re-render round trip is exactly the failure this guards against.
+- **The run finds its own document among others.** A ledger already containing a record whose id differs only in the random suffix; the run updates its own and leaves the near-twin untouched. This is the test that earns the collision-proof id (§2.2).
 - **Backup preconditions.** The backup is written before the first ledger write; an unwritable backup location fails the run before the ledger is touched.
 - **Viewer.** `_resolved_games` / the `Games` cell renders `4/10` for a marked record and `10` otherwise; `_render_quality_section` shows the marker. Both are pure-function tests over hand-built records.
 
