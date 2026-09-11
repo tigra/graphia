@@ -46,7 +46,7 @@ import urllib.request
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import date, datetime
-from itertools import combinations
+from itertools import combinations, pairwise
 from pathlib import Path
 from collections.abc import Sequence
 from typing import Any, Callable, Literal, cast
@@ -3233,6 +3233,294 @@ def render_record(result: EvalResult, run_date: str) -> str:
     return "\n".join(lines) + "\n"
 
 
+# --- The ledger-as-text primitives: cut it at the separators, join it back.
+#
+# ADR 014 (Optimistic-Concurrency Whole-File Ledger Writes, over Strict
+# Append-Only) replaced the append with a whole-file atomic replacement, and a
+# replacement has to reconstruct the *other* runs' records from somewhere. These
+# two functions are the whole of the "cut, swap, join" that reconstruction is:
+# text in, text out, no YAML. They are deliberately the smallest thing that can
+# work, because ADR 014 §5 names a splicing bug as the one risk atomicity cannot
+# defend against — wrong content is written just as atomically as right content,
+# and this is the only long-term measurement history the project has.
+#
+# WHY A CHUNK IS NEVER PARSED. The obvious implementation — ``yaml.safe_load_all``
+# the file, swap the one dict, re-emit — is wrong here, and not marginally. The
+# 50 committed records carry hand-written ``notes``, floats rendered by
+# :func:`_yaml_scalar`'s ``repr`` shortest-form, and the top-level key order
+# :func:`render_record` fixes on purpose; none of that survives a PyYAML round
+# trip. A parse-and-re-emit writer would therefore reformat all 50 records on
+# EVERY write — ten times over a ten-game run once spec 043's progressive write
+# lands — so each single-record update would arrive as a whole-history diff. So
+# every document but this run's own is carried across as the exact bytes that
+# were read, and the only document ever rendered is the one the running process
+# produced itself. That is the property these two functions exist to guarantee,
+# and it is why they are opaque-text-only rather than convenient.
+#
+# THE SEPARATOR RULE. A boundary is a line that begins with exactly ``---`` and
+# is then either ended or followed by whitespace — YAML's own document-start
+# marker, anchored to the start of a line (``\A``, or immediately after a
+# ``\n``). Two independent reasons, and the second is the one that matters:
+#
+#   1. It is what the writer emits. :func:`append_record` writes the literal
+#      ``"---\n"``, and :func:`render_record` always ends its document with a
+#      ``"\n"``, so a separator is alone on its line by construction. Measured
+#      on the committed ledger (2026-09-11; 171,686 bytes, 50 records):
+#      ``^---$`` matches exactly 50 times, and the three-character sequence
+#      ``---`` occurs exactly 50 times in the entire file — the same 50, since
+#      every match of the strict rule is also a match of the loose one. On the
+#      real artifact the two candidate rules agree exactly, so no measurement
+#      of today's file can choose between them.
+#   2. It is what the PARSER does — which is the argument that survives a hand
+#      edit, and therefore the one the rule is actually chosen on. ``notes`` is
+#      the one human-mutable field, so it is the only place a stray ``---`` can
+#      turn up. A block-scalar note's continuation lines are INDENTED
+#      (``notes: |`` plus two-space content, per :func:`_yaml_block_scalar`),
+#      and an indented ``---`` is ordinary note content to ``yaml.safe_load_all``
+#      — so the line-anchored rule correctly declines to split there. An
+#      UNINDENTED ``---`` inside a note is not content at all: it terminates the
+#      block scalar, and ``yaml.safe_load_all`` reads it as a document break
+#      (verified 2026-09-11: a one-record text whose note carries an unindented
+#      ``---`` parses as TWO documents). Inside a multi-line quoted scalar,
+#      PyYAML refuses the file outright — ``found unexpected document
+#      separator``. So the ambiguity belongs to the YAML format, not to this
+#      splitter: matching a whole line keeps the splitter and the parser
+#      agreeing about where a record begins, which is exactly what the splice
+#      needs in order to swap a document rather than a fragment of one.
+#
+# The rejected alternative is "the bare sequence anywhere on a line". It is
+# indistinguishable from the chosen rule on the committed file, and strictly
+# worse on a hand-edited one: a note reading ``rate fell 0.4 --- 0.1`` would be
+# cut mid-line into two chunks, neither of which is a document, and the splice
+# would then write that mangled file with full atomicity and a clean read-back.
+#
+# NOTE for a future reader: all 50 committed notes are single-line quoted
+# scalars — there is no ``notes: |`` block in the ledger today. The block-scalar
+# hazard above is therefore prospective, not historical; it is guarded because
+# ``notes`` invites hand-editing (``notes: ''`` renders precisely to invite it),
+# not because it has bitten.
+
+# A document-start marker at the start of a line: ``---`` at ``\A`` or just
+# after a ``\n``, followed by end-of-text or a separation character. The trailing
+# lookahead is what keeps ``----`` (four dashes — a plain scalar in YAML, not a
+# marker) from being read as a boundary, and it is spelled as an explicit
+# character class rather than ``$`` so a ``---\r\n`` line from a Windows-edited
+# ledger is matched too (``$`` matches before the ``\n``, not before the ``\r``).
+_LEDGER_SEPARATOR_RE = re.compile(r"(?:\A|(?<=\n))---(?=[ \t\r\n]|\Z)")
+
+
+def _split_ledger(text: str) -> list[str]:
+    """Cut ledger ``text`` into ``[preamble, *documents]`` — losslessly, as opaque text.
+
+    Element ``0`` is the leading preamble: everything before the first document
+    separator, which is ``''`` for the committed ledger (it begins immediately
+    with ``---\\n``) and is the whole of ``text`` for a file that has no
+    separator at all. Elements ``1..n`` are one chunk per ``---``-separated
+    document, **each including its own separator line**. So ``len(result) - 1``
+    is the document count with no special cases, ``result[1:]`` is exactly the
+    documents, and :func:`_join_ledger` is ``''.join``.
+
+    **Total over every input string**, not just well-formed ledgers, because the
+    caller is repairing a file it did not necessarily write: the empty string
+    returns ``['']``, a file with no trailing newline keeps its last chunk
+    unterminated, and a preamble-only file returns a one-element list. Every
+    byte of ``text`` lands in exactly one chunk and in the original order, so
+    ``_join_ledger(_split_ledger(t)) == t`` holds identically rather than by
+    argument (the cut points below partition ``range(len(text))``).
+
+    **Why this decomposition and not another.** The two alternatives were a
+    ``(preamble, documents)`` tuple and a list of documents with the separators
+    stripped off. The flat list wins on the splice, which is what the callers
+    do: replacing a document is ``chunks[i] = '---\\n' + document`` and adding
+    one is ``chunks.append(...)`` — one index space, no separator bookkeeping,
+    and no arithmetic to translate a document index into a list index. Stripping
+    the separators loses worse than it looks: the join would then have to
+    *synthesise* ``'---\\n'``, which silently normalises a hand-edited
+    ``--- # record 51`` marker and makes the join stop being an inverse for any
+    file whose separators are not byte-exactly what this module writes.
+
+    Chunks are **never parsed** — no ``yaml.safe_load``, no re-render. See the
+    section comment above for why that is load-bearing rather than lazy, and for
+    the separator rule and the argument behind it.
+    """
+    # Cut points: the start of the text, the start of every separator line, and
+    # the end of the text. Consecutive pairs partition the text, so no byte is
+    # dropped and none is duplicated — the round-trip identity is a property of
+    # this partition, not of anything the join does. A ledger beginning with a
+    # separator yields a leading ``0, 0`` pair and hence an empty preamble,
+    # which is the committed ledger's case and needs no branch.
+    cuts = [0, *(m.start() for m in _LEDGER_SEPARATOR_RE.finditer(text)), len(text)]
+    return [text[start:end] for start, end in pairwise(cuts)]
+
+
+def _join_ledger(chunks: Sequence[str]) -> str:
+    """Concatenate ``chunks`` back into ledger text — the exact inverse of :func:`_split_ledger`.
+
+    Deliberately ``''.join`` and nothing else. Because :func:`_split_ledger`
+    leaves every separator line attached to the chunk it introduces, the inverse
+    needs to insert nothing, normalise nothing and decide nothing — so it cannot
+    introduce a byte the split did not see. That is the point of the chosen
+    decomposition: the round-trip identity is structural, not maintained.
+
+    It exists as a named function rather than an inlined ``''.join`` for two
+    reasons. It gives the identity a second endpoint to assert against, so the
+    round-trip test exercises the pair a caller actually uses. And it makes the
+    decomposition a single editable contract: if a future change to
+    :func:`_split_ledger` ever moved the separators out of the chunks, every
+    splice site is already routed through one place that would have to change
+    with it, instead of a scatter of ``''.join`` calls that would keep compiling
+    and start producing a ledger with no separators in it.
+    """
+    return "".join(chunks)
+
+
+# --- The write primitive: land the new bytes, or leave the old ones untouched.
+#
+# Step 5 of ADR 014's write cycle (spec 043 technical-considerations §2.1), and
+# the reason the write path is Slice 1 rather than a detail of the feature
+# slices. The failure it closes was live rather than prospective — and it
+# stopped being live inside this same slice, at **Task 1.3**, which is where
+# :func:`append_record` was rewritten to route through here. UNTIL THEN it
+# opened the ledger in append mode and performed TWO unsynced writes — the
+# ``"---\n"`` separator, then a multi-kilobyte document — so a kill between them
+# left a separator introducing nothing, a kill during the second left a
+# truncated record, and a power cut could lose bytes that were never flushed at
+# all. All of that is **history as of Task 1.3**, kept here because it is the
+# justification for this function existing and not a description of what the
+# module does now. Spec 043 then makes the harness write ten times per run
+# instead of once. Landing this primitive FIRST is what stops that increase in
+# write frequency from being an increase in corruption exposure.
+#
+# It is deliberately free of ledger semantics: a path and a string. That keeps
+# it usable by the OCC cycle, by :func:`append_record`, and by anything else
+# that needs a file to change all at once, and it keeps its own tests
+# independent of the record shape. The nearest existing precedent is
+# :meth:`graphia.stats_store.LocalFileStatsStore.record`, which does the
+# sibling-temp-file plus :func:`os.replace` half of this and neither of the
+# ``fsync``s — enough for career stats that can be rebuilt by playing again, not
+# enough for the only long-term measurement history the project has.
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    """Replace ``path``'s contents with ``text`` in one step that cannot half-happen.
+
+    A reader — or a kill, or a power cut — sees either the complete previous file
+    or the complete new one, never a mixture and never a truncation. Four steps
+    buy that, and each closes a distinct failure rather than decorating the
+    others:
+
+    **A temp file in the target's own directory.** :func:`os.replace` is atomic
+    only *within* a filesystem; across one it degrades to a copy that can be
+    interrupted, which is exactly the property being bought. A temp file under
+    ``$TMPDIR`` and a ledger in the repository are routinely on different
+    filesystems (a tmpfs ``/tmp``, a separate ``/home``, a container mount), so
+    the temp file is created in ``path.parent`` and nowhere else.
+
+    **``flush`` then :func:`os.fsync` on the file handle, before the replace.**
+    Without it the rename can reach the disk while the contents it points at
+    have not — the classic "the file is there and it is empty" outcome after a
+    power cut. Flushing alone is not enough: it only moves the bytes out of
+    Python's buffer into the kernel's.
+
+    **:func:`os.fsync` on the *directory*, after the replace.** The rename is
+    itself a directory modification and can be lost independently of the file
+    contents being durable. The directory is opened read-only purely to obtain a
+    descriptor to sync, and closed in a ``finally``.
+
+    **Unlink the temp file on any failure.** A crashed or raising write must
+    leave no litter beside a committed data file — litter beside the ledger is
+    indistinguishable, to a human and in ``git status``, from a ledger that has
+    gone wrong.
+
+    **The temp file's name** is ``<target name>.<random>.tmp`` in the target's
+    directory, via :func:`tempfile.mkstemp` — e.g.
+    ``blunder-ledger.yaml.8f3kx2p1.tmp`` beside ``blunder-ledger.yaml``. The
+    prefix is the *victim's own filename*, so a stray temp file says what it was
+    going to become, which a generic ``graphia-XXXX.tmp`` would not; the ``.tmp``
+    suffix keeps it out of any ``*.yaml`` glob, and the ad-hoc
+    ``yaml.safe_load_all`` scripts run against this ledger are exactly such a
+    glob. :func:`tempfile.mkstemp` is preferred over a hand-built
+    ``f"{path.name}.{os.getpid()}.tmp"`` for one reason: it creates with
+    ``O_CREAT | O_EXCL``, so two writers can never share a temp path. ADR 014
+    makes concurrent runs on one ledger a *supported* case rather than a
+    forbidden one, and a pid-derived name collides for two writers inside one
+    process — the one place where a replace could land another writer's
+    half-written bytes with full atomicity and a clean read-back.
+
+    **What :func:`tempfile.mkstemp` costs, and how it is paid.** It creates at
+    mode ``0600``, and :func:`os.replace` moves that inode into place — so a
+    naive version would silently tighten the ledger from ``0644`` to ``0600`` on
+    its first write, invisibly to ``git``, which records only the executable
+    bit. An existing target's permission bits are therefore carried across
+    before the replace. Special bits (setuid/setgid/sticky) deliberately are
+    not: a YAML ledger is a data file. A target that does not exist yet is left
+    at :func:`tempfile.mkstemp`'s ``0600`` rather than the umask default
+    ``open(path, "w")`` would give it — stricter rather than looser, and it
+    applies only to a ledger nobody has created yet.
+
+    The parent directory is created with ``parents=True, exist_ok=True``, which
+    is what :func:`append_record` does today, so a write into a not-yet-existing
+    ``evals/`` keeps working.
+
+    **What this does not promise.** The directory ``fsync`` is POSIX-only and is
+    skipped when :data:`os.name` is not ``"posix"`` — an explicit named guard
+    rather than a swallowed exception, because opening a directory for reading
+    fails outright on Windows. The project runs on macOS and Linux (see
+    :func:`make_run_id`), so the guard states the boundary rather than
+    supporting a platform. Both ``fsync`` calls are allowed to raise: failing to
+    make the write durable is the one thing this function exists to promise, and
+    saying so loudly beats returning as though it had happened. And nothing here
+    defends against writing *wrong* content — wrong bytes land just as
+    atomically as right ones, which is why ADR 014 §5 names a splicing bug as
+    the risk atomicity cannot cover.
+
+    :raises OSError: if the temp file cannot be created or written, if the
+        replace fails, or if either ``fsync`` fails. In every case the target is
+        left exactly as it was, and no temp file is left behind.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(
+        dir=path.parent, prefix=f"{path.name}.", suffix=".tmp"
+    )
+    tmp = Path(tmp_name)
+    try:
+        # ``newline=""`` writes ``text`` byte-for-byte with no line-ending
+        # translation, so the caller's bytes are the file's bytes — load-bearing
+        # for the ledger, whose byte-identity across this change is asserted.
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
+            fh.write(text)
+            fh.flush()
+            os.fsync(fh.fileno())
+        try:
+            os.chmod(tmp, os.stat(path).st_mode & 0o777)
+        except FileNotFoundError:
+            # First write to this path: there is no mode to carry across, so the
+            # ``0600`` :func:`tempfile.mkstemp` created it with stands.
+            pass
+        os.replace(tmp, path)
+    except BaseException:
+        # ``BaseException`` on purpose: a ``KeyboardInterrupt`` mid-write is one
+        # of the stops spec 043 is about, and it must not leave litter either.
+        # The removal is best-effort and its own failure is swallowed so that it
+        # can never mask the exception that brought us here — which is re-raised
+        # unchanged. Reached ONLY while ``tmp`` is still a separate file: once
+        # :func:`os.replace` has returned, ``tmp`` *is* the target, and
+        # unlinking it here would delete the file we just wrote.
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+    if os.name != "posix":
+        return
+    dir_fd = os.open(path.parent, os.O_RDONLY)
+    try:
+        os.fsync(dir_fd)
+    finally:
+        os.close(dir_fd)
+
+
 def append_record(
     result: EvalResult,
     run_date: str,
@@ -3240,23 +3528,97 @@ def append_record(
 ) -> Path:
     """Append one ``---``-separated record for ``result`` to the ledger; return its path.
 
-    Thin I/O wrapper over the pure :func:`render_record`: writes a ``---``
-    document-separator line, then the rendered document, in append mode — so
-    records accumulate and history is never rewritten (functional-spec 011
-    §2.3). Creates the ``evals/`` directory and the ledger file on first use.
+    Thin I/O wrapper over the pure :func:`render_record`: renders the document,
+    reads the existing ledger as opaque text, adds ``"---\\n"`` plus that
+    document as one more chunk, and replaces the **whole file** in a single step
+    that cannot half-happen (:func:`_atomic_write_text`). Creates the ``evals/``
+    directory and the ledger file on first use.
+
+    **The bytes are unchanged from the append-mode implementation this replaces,
+    for every input.** That is provable rather than hoped for: the splice is
+    ``_join_ledger(_split_ledger(t) + [chunk])``, and because
+    :func:`_split_ledger` partitions its input and :func:`_join_ledger` is
+    ``''.join``, that expression *is* ``t + chunk``. So every committed record,
+    every reader, every stored comparison and every existing test sees exactly
+    what it saw before (spec 043 Slice 1: "no change to what it writes").
+
+    **Append-only is now a property of what this function does, not of the mode
+    it opens the file in** (ADR 014 — the ledger stops being *strictly*
+    append-only so that spec 043 can update a live run's own record in place).
+    Until now the immutability of history was enforced by ``open(..., "a")``:
+    the mode made disturbing an earlier byte impossible, and the previous
+    docstring sold that as the mechanism. Two things replace it, and between
+    them the *contract* survives the mechanism's removal:
+
+    - Earlier documents are carried across as **the exact bytes that were
+      read** — never parsed, never re-rendered (the section comment above
+      :func:`_split_ledger` argues why that is load-bearing). So no committed
+      record can be reformatted by a later write, which is the thing readers
+      actually rely on when they are told "history is never rewritten".
+    - This function only ever **adds** a chunk. It has no path that replaces or
+      removes one, so what it promises is now upheld by its own semantics
+      rather than by a file flag. Spec 043's in-place update is a *different*
+      function, and the distinction is deliberate: a caller that wants to
+      rewrite a record has to say so by calling something else.
+
+    What genuinely changes is a failure mode that goes away. The old append did
+    **two** unsynced writes — ``"---\\n"``, then a multi-kilobyte document — so a
+    kill between them left a separator introducing nothing, a kill during the
+    second left a truncated record, and a power cut could lose bytes that were
+    never flushed. Those are precisely the stops spec 043 exists to survive.
+    Now a reader, a kill or a power cut sees the old complete ledger or the new
+    complete one, and nothing in between.
+
     ``ledger_path`` is injectable so a temp file can be used; it defaults to
     ``None`` and is resolved to the module-global ``LEDGER_PATH`` *at call time*
     (NOT bound as a signature default), so a ``monkeypatch.setattr(LEDGER_PATH)``
     in tests reaches even the no-arg call inside :func:`run_eval` — the early-bound
     default that silently leaked synthetic records into the real ledger is gone.
+
+    **The signature is frozen, and the second caller is why.**
+    :mod:`graphia.tools.persona_bench` imports this function and routes its own
+    single end-of-run write through it, so that one renderer keeps owning the
+    ledger's fixed key order. It needed **no change** for this rewrite and gains
+    crash-atomicity for free — which stays true only while the parameter names,
+    the ``None``-resolved default and the returned path are left exactly as they
+    are. Treat all three as public.
     """
     if ledger_path is None:
         ledger_path = LEDGER_PATH
+    # Kept even though :func:`_atomic_write_text` creates the parent too, and
+    # not out of defensiveness: this is the FIRST attribute access on
+    # ``ledger_path``, and ``test_the_injected_ledger_path_must_be_a_Path_not_a_str``
+    # pins a ``str`` argument's failure to ``AttributeError`` matching
+    # ``parent``. That crash lands after the games have been played, at the
+    # worst moment in a real run, so the message it carries is worth pinning.
+    # Remove this line and a ``str`` dies one statement later on ``.read_bytes``
+    # instead, naming the wrong thing.
     ledger_path.parent.mkdir(parents=True, exist_ok=True)
+    # Render BEFORE the read (technical-considerations §2.1, step 1): rendering
+    # is the expensive half, so keeping it outside the read-to-replace window is
+    # what keeps that window small. Immaterial to this one-shot write, which has
+    # no concurrency check to lose — but it is the ordering spec 043's OCC cycle
+    # depends on, and the two writers agreeing on it costs nothing here.
     document = render_record(result, run_date)
-    with ledger_path.open("a", encoding="utf-8") as fh:
-        fh.write("---\n")
-        fh.write(document)
+    # Read BYTES and decode, not :meth:`Path.read_text`: text mode translates
+    # ``\r\n`` to ``\n``, so a ledger with CRLF endings would have every one of
+    # its lines rewritten the first time anything appended to it.
+    # :func:`_atomic_write_text` writes with ``newline=""`` for the same reason,
+    # so the bytes that came out of the file go back in unchanged — which is
+    # what makes the byte-identity claim hold for EVERY input rather than only
+    # for the committed ledger (append mode never rewrote existing bytes at all,
+    # so matching it means not touching them either). A missing file reads as
+    # ``''``, which is also the empty-file case — both are the first-use path.
+    existing = ledger_path.read_bytes().decode("utf-8") if ledger_path.exists() else ""
+    # The splice, in the one shape every ledger write shares: cut into opaque
+    # chunks, add this run's, join. For a pure append the round trip is provably
+    # a no-op, so this is a string concatenation written the long way —
+    # deliberately. It exercises both primitives on every real write rather than
+    # only in their tests, and it stops the append path and spec 043's in-place
+    # update path drifting apart on what a separator is.
+    _atomic_write_text(
+        ledger_path, _join_ledger([*_split_ledger(existing), f"---\n{document}"])
+    )
     return ledger_path
 
 

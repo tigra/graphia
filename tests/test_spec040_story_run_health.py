@@ -59,13 +59,25 @@ WHAT THIS FILE DELIBERATELY DOES NOT TEST, recorded so the gaps read as choices:
   which is the ledger-wide guard every additive block leans on. Duplicating it
   here would add a second place to update and no coverage.
 * **"The trio is never backfilled onto an older record."** Not source-mutatable
-  at all: :func:`~graphia.tools.blunder_eval.append_record` opens the ledger
-  ``"a"``-only, so no code path can rewrite a committed record — the rule guards
+  at all: :func:`~graphia.tools.blunder_eval.append_record` only ever **adds** a
+  document, so no code path can rewrite a committed record — the rule guards
   a future hand edit or tidy-up script, not today's code, and a test can only
-  assert the append-only PROPERTY. That property already has its witness in
+  assert the append-only PROPERTY. (Until spec 043's Slice 1 — Task 1.3,
+  2026-09-11 — that was true because the function opened the ledger ``"a"``-only.
+  It now renders the document, reads the ledger as opaque text and replaces the
+  whole file atomically, so the *mechanism* is gone; the property survives it,
+  upheld by the function's own semantics instead. Earlier documents are carried
+  across as the exact bytes that were read — never parsed, never re-rendered —
+  and the function has no path that replaces or removes a chunk. Spec 043's
+  in-place update of a *live* run's own record is a different function, which is
+  the point of the distinction.) That property already has its witness in
   ``tests/test_blunder_eval_provenance.py``'s
   ``test_append_record_with_provenance_accumulates_two_docs`` (two appends, two
-  ``---``-separated docs, the first one intact). This file asserts the one
+  ``---``-separated docs, the first one intact), and since spec 043 also in
+  ``tests/test_ledger_write.py``'s
+  ``test_append_record_onto_a_copy_of_the_committed_ledger_leaves_every_document_intact``
+  (every pre-existing document byte-identical after an append). This file
+  asserts the one
   adjacent thing it can: a result carrying NO pair renders no story keys at all,
   which is the shape every pre-040 record has — so nothing this writer does can
   put a trio onto a record that lacks a denominator.

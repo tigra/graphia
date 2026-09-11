@@ -19,7 +19,7 @@ network, or a live game**. Three concerns are covered:
    the spec-009 measure is name-masked (the same short sentence with two
    different player names counts as a near-dup only when the names are supplied
    to be masked).
-3. **The hand-rendered write-only YAML ledger** — ``render_record`` emits the
+3. **The hand-rendered YAML ledger** — ``render_record`` emits the
    documented fixed key order with correctly-typed scalars (model ids carrying
    ``:`` / digits single-quoted, floats stable, ints bare, ``metrics_version``
    present), and a top-level ``notes`` free-text field rendered LAST: present-
@@ -27,6 +27,17 @@ network, or a live game**. Three concerns are covered:
    line ``--note``, and a YAML literal block scalar (``notes: |``) when multi-
    line; ``append_record`` to a ``tmp_path`` ledger twice accumulates two
    ``---``-separated documents without rewriting the first.
+
+   HOW THAT WRITE WORKS CHANGED UNDER SPEC 043, and this docstring used to say
+   "write-only". Until spec 043's Slice 1 (Task 1.3, 2026-09-11)
+   ``append_record`` opened the ledger in append mode and performed two unsynced
+   writes; it now renders the document, reads the existing file as opaque text,
+   and replaces the **whole file** atomically — so the writer does read the
+   ledger, though it still parses no record, which is what keeps the committed
+   history byte-exact. The *contract* the assertions below rest on is unchanged
+   and still true: a run adds one document and never rewrites an earlier one.
+   The write primitives themselves are pinned in ``tests/test_ledger_write.py``,
+   not here.
 
 Spec 017 (*Eval Transcript Preservation*), Slice 1 Task 4 EXTENDS this file with
 three offline, model-free concerns:
@@ -522,7 +533,11 @@ def test_score_repetition_facet_types_are_int_count_int_denominator() -> None:
 
 
 # ===========================================================================
-# 3. The hand-rendered write-only YAML ledger
+# 3. The hand-rendered YAML ledger
+#    (was "write-only" until spec 043 Slice 1, Task 1.3, 2026-09-11: the writer
+#     now reads the file as opaque text and replaces it whole, atomically. It
+#     still parses no record, and it still only ever ADDS a document — see the
+#     module docstring's item 3, and tests/test_ledger_write.py.)
 # ===========================================================================
 
 
