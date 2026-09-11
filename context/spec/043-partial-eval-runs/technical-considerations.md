@@ -1,6 +1,7 @@
 # Technical Specification: Keeping What a Stopped Measurement Run Produced
 
 - **Functional Specification:** [functional-spec.md](./functional-spec.md)
+- **Architecture Decision:** [ADR 014 — Optimistic-Concurrency Whole-File Ledger Writes, over Strict Append-Only](../../adr/014-optimistic-concurrency-ledger-writes.md) (Accepted 2026-09-11)
 - **Status:** Draft
 - **Author(s):** Alexey Tigarev
 
@@ -135,7 +136,7 @@ Re-running `:4413`–`4587` per game is *N* times the scoring work instead of on
 | **A process killed mid-write leaves a truncated document.** This is a real failure of the *current* append path, not of the new one. | Closed by construction: temp file, `fsync`, `os.replace`, `fsync` the directory. A reader or a kill sees the old complete file or the new one. Earlier records are carried across as bytes already read, so no re-render can reformat them. |
 | **Partial records get pooled with full baselines by eye.** | The gated marker first in `quality`, the §2.5 invariant, and the `4/10` viewer cell (§2.6). |
 | **Partial runs make untracked transcript dirs common.** A partial run leaves an incomplete `evals/transcripts/<run-id>/` linked from `run.transcript_dir`; that directory is what makes the *next* run stamp `dirty: true`. The mechanism does not create the hazard — a full run leaves the same dir — but partial runs will now be frequent where before they left nothing. | Per the author's ruling this is meaningful and stays: the remedy is to commit or remove. Document it in `evals/README.md` beside the existing commit-or-delete norm. |
-| **Re-scoring cost grows quadratically in pooled lines.** | Measure on a real ten-game run (§2.8); cadence fallback if needed. |
+| **Re-scoring cost, in three classes.** Cheap scalar folds and the rates/Wilson bands re-derived from them; linear passes over the accumulated per-game *lists* (`tally_outcomes(winners, scripted_sides, …)`, third-person self-talk over pooled lines); and **repetition alone superlinear**, being pairwise over accumulated lines. | Measure on a real ten-game run (§2.8) rather than assume; cadence fallback if it bites. |
 | **Two concurrent writes race, and the loser's newest update is rolled back one generation.** The residual OCC window (§2.1): both writers pass the hash check, then replace in sequence. | Progressive updates self-heal on the victim's next write. The final write is the exposed one: it retries harder, and on persistent failure writes its document to a named fallback file beside the ledger rather than losing it. `flock` on a gitignored sidecar is the recorded escalation if conflicts are ever observed. |
 
 ---
