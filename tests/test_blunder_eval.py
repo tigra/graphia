@@ -1935,6 +1935,20 @@ def _stub_run_eval_env(
     record is appended to — so neither the real ledger nor the real transcripts
     dir is written. Provenance collectors are stubbed to degraded values so no
     git/HTTP runs.
+
+    THE PRE-RUN BACKUP IS REDIRECTED TOO (spec 043 Slice 3). ``run_eval`` now
+    copies the ledger aside before game 1 (``_backup_ledger``), into the
+    module-global ``LEDGER_BACKUP_DIR`` — which resolves to the developer's real
+    ``.graphia/ledger-backups``. Every caller of this scaffold takes the
+    nothing-to-lose skip *today*, because the ledger above does not exist yet;
+    the moment any test pre-creates documents in it — which spec 043's
+    non-destructive-rewrite and near-twin cases must — the copy fires for real
+    and lands outside ``tmp_path``. Redirecting it here rather than in each test
+    makes that structurally impossible for every present and future user of the
+    scaffold, on the same grounds the ``LEDGER_PATH`` line above exists: a test
+    must never write into the developer's tree, and "remember to patch it" is
+    not a guarantee. Pinned by ``tests/test_progressive_ledger_write.py::
+    test_the_shared_scaffold_redirects_the_pre_run_backup_away_from_dot_graphia``.
     """
     monkeypatch.setattr(
         blunder_eval, "collect_code_provenance", lambda root: {
@@ -1954,6 +1968,10 @@ def _stub_run_eval_env(
     # Redirect the ledger write to a temp file (never the real one).
     ledger = tmp_path / "ledger.yaml"
     monkeypatch.setattr(blunder_eval, "LEDGER_PATH", ledger)
+    # ... and the pre-run backup copy of it, for the reason in the docstring.
+    monkeypatch.setattr(
+        blunder_eval, "LEDGER_BACKUP_DIR", tmp_path / "ledger-backups"
+    )
 
     class _Cfg:
         ollama_base_url = "http://localhost:11434"

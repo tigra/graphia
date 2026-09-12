@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import hashlib
 import json
 import math
 import os
@@ -515,6 +516,29 @@ class EvalResult:
     # Additive ⇒ NO ``METRICS_VERSION`` bump (the ``run.kind`` /
     # ``transcript_dir`` precedent): it names the run, and measures nothing.
     run_id: str = ""
+    # --- Spec-043 §2.2 write counter (Slice 3's "``run.seq`` is IN" ruling) ---
+    # HOW MANY TIMES this run has written its own record, rendered as ``run.seq``
+    # immediately after ``run.id``. :func:`upsert_record` increments it once per
+    # call — per WRITE, not per retry: it is bumped at step 1, before the single
+    # render, so every attempt inside one call carries the same number.
+    #
+    # WHY IT EXISTS: it makes the OCC cycle's one residual failure VISIBLE, and
+    # that failure is otherwise silent. Two writers can both pass the step-4 hash
+    # check and replace in sequence; the loser's newest update is rolled back a
+    # generation, its own read-back passes (its chunk is intact — the OTHER one
+    # regressed), and NOTHING is raised anywhere. Without a counter, "which write
+    # won" is unanswerable after the fact. With one, a record whose ``seq`` went
+    # BACKWARDS between two readings is a fact a reader can point at.
+    #
+    # CONDITIONAL on the ``run.id`` pattern: ``0`` ⇒ ``render_record`` omits the
+    # key entirely, so a bare synthetic ``EvalResult``, every committed record,
+    # and every record written through :func:`append_record` (``persona_bench``'s
+    # single end-of-run write, which never updates anything and so has no
+    # generation to count) render byte-identically to today. Only the progressive
+    # writer sets it, and only by writing.
+    # Additive ⇒ NO ``METRICS_VERSION`` bump (the ``run.id`` precedent): it
+    # counts writes, not games, and measures nothing about the AI.
+    seq: int = 0
     # --- Spec-017 transcript link (functional-spec §2.3, tech §2.3) ---
     # The run's transcript directory NAME (the ``<run-id>`` under
     # ``evals/transcripts/``, NOT an absolute path) — written into the record as
@@ -2865,6 +2889,24 @@ def render_record(result: EvalResult, run_date: str) -> str:
     # touched (the ``run.kind`` / ``transcript_dir`` precedent).
     if result.run_id:
         run_block["id"] = result.run_id
+    # ``seq`` (spec 043 §2.2, promoted from "optional and recommended" to
+    # required by the Slice 3 ruling) — HOW MANY TIMES this run has written its
+    # own record. Sits immediately after ``id`` because the two are one thought:
+    # ``id`` says WHICH run wrote this document, ``seq`` says WHICH WRITE of that
+    # run it is, and the pair is what makes a rolled-back update nameable after
+    # the fact (see :attr:`EvalResult.seq` for the silent failure it exposes).
+    #
+    # GATED exactly as ``id`` is: ``0`` omits the key, so every committed record,
+    # every bare synthetic ``EvalResult`` and every :func:`append_record` write
+    # (``persona_bench``) renders byte-identically to today. Only
+    # :func:`upsert_record` ever raises it above zero, and absence therefore
+    # reads as "this record was written once, by a writer that does not update"
+    # — the ``run.kind`` two-valued treatment, not a third unmeasurable case.
+    #
+    # No ``METRICS_VERSION`` bump: purely additive, no scorer and no denominator
+    # touched (the ``run.id`` / ``run.kind`` precedent).
+    if result.seq:
+        run_block["seq"] = result.seq
     # ``kind`` (spec 036 §2 Component A) — which kind of measurement this record
     # is, emitted ONLY when the run recorded one (the ``transcript_dir`` /
     # ``settings.lineup`` conditional-emission pattern: *only emitted when the
@@ -3683,6 +3725,650 @@ def append_record(
     return ledger_path
 
 
+# --- The OCC upsert: a live run rewriting its OWN record, and nobody else's.
+#
+# Step-for-step, ADR 014's write cycle (spec 043 technical-considerations §2.1),
+# and the mechanism the whole spec turns on. :func:`append_record` above is the
+# ONE-SHOT form of the same cycle — render, read as opaque text, splice, replace
+# the whole file atomically — and the two are deliberately shaped alike so a
+# reader can see that this one only adds a version check, a chunk to replace and
+# a way to fail without taking the run down with it.
+#
+# WHAT IS NEW HERE, AND WHAT IS NOT. Not new: the splice (:func:`_split_ledger`
+# / :func:`_join_ledger`), the atomic replace (:func:`_atomic_write_text`), the
+# refusal to parse anyone else's document. New: an optimistic version token (the
+# sha256 of the bytes this write was computed from), a chunk this run REPLACES
+# rather than appends, a bounded retry, and a fallback file so an unwritable
+# ledger can never kill a measured run.
+#
+# WHY OPTIMISTIC AND NOT A LOCK. ADR 014 §2 Alternative 4: a lock file is one
+# more artifact a killed run can leave behind, and kills are this spec's entire
+# subject. OCC has nothing to leave behind. Pessimistic ``flock`` on a gitignored
+# sidecar is the RECORDED ESCALATION, to be taken if a conflict is ever actually
+# observed rather than pre-emptively.
+#
+# NO BACKOFF BETWEEN RETRIES, deliberately. §2.1's cycle has none and a sleep
+# would be machinery the spec did not ask for. The window a conflicting writer
+# has to hit is the read-to-replace gap, which is microseconds by construction
+# (the expensive half — scoring and rendering — happens BEFORE the read), so a
+# second collision on the immediate retry is not a livelock risk at a cadence of
+# one write every four minutes on the cloud arms and every thirty-three on the
+# local one. If that ever stops being true, the answer is the escalation above,
+# not a sleep.
+
+# Retry budgets, and the asymmetry between them, which is the point.
+#
+# A PROGRESSIVE write self-heals: if it loses the residual race (two writers both
+# pass the hash check and replace in sequence), the run's NEXT write re-reads and
+# re-writes its current state, so the exposure is bounded to "this record is
+# briefly one game stale". Three attempts is therefore plenty, and a small budget
+# is actively wanted — a progressive write must never stall the games loop for a
+# condition the next write repairs for free.
+#
+# The FINAL write has no next write. Nothing repairs it, so it is the one place
+# where losing the race means losing the difference between the ledger's record
+# and what the run actually measured. It retries harder for that reason alone,
+# and a bigger budget costs nothing in the common case because a retry happens
+# only on an actual conflict.
+LEDGER_WRITE_ATTEMPTS_PROGRESSIVE = 3
+LEDGER_WRITE_ATTEMPTS_FINAL = 10
+
+
+def _read_ledger_text(ledger_path: Path) -> str:
+    """Read the ledger as text, byte-for-byte; a missing file reads as ``''``.
+
+    BYTES then decode, never :meth:`Path.read_text` — text mode translates
+    ``\\r\\n`` to ``\\n``, so a CRLF ledger would have every one of its lines
+    rewritten the first time anything touched it, and the "every other document
+    stays byte-identical" promise would be false on that file.
+    :func:`_atomic_write_text` writes with ``newline=""`` for the same reason, so
+    what comes out of the file goes back in unchanged. Factored out of the three
+    reads the OCC cycle makes (steps 2, 4 and 6) so they cannot drift apart on
+    that detail; :func:`append_record` keeps its own inline copy because its
+    signature and body are frozen for ``persona_bench``.
+    """
+    return ledger_path.read_bytes().decode("utf-8") if ledger_path.exists() else ""
+
+
+def _run_id_line_re(run_id: str) -> re.Pattern[str]:
+    """A pattern matching the ``run.id`` line of exactly ``run_id``'s document.
+
+    This is how a write finds its OWN chunk, and getting it wrong is how a write
+    would silently replace somebody else's — so it is exact rather than
+    convenient:
+
+    - **The rendered scalar, not the bare id.** ``render_record`` emits the id
+      through :func:`_yaml_str`, i.e. single-quoted. Matching the quotes is what
+      makes a LEGACY suffix-free id (``2026-09-12T10-00-00``) fail to match a
+      SUFFIXED one that has it as a prefix (``2026-09-12T10-00-00-9f3a1c``): the
+      closing quote terminates the match. Without the quotes the prefix relation
+      would make one run recognise the other's document as its own.
+    - **Anchored to the start of a line** (``re.MULTILINE``), with only spaces or
+      tabs before ``id:``, so the key must genuinely be a mapping key called
+      ``id`` and not the tail of some other key (``..._id:``) or text inside a
+      quoted ``notes`` scalar.
+    - **Tolerant of ``\\r`` before the line end**, for the same reason
+      :data:`_LEDGER_SEPARATOR_RE` is: a ledger hand-edited on Windows keeps
+      CRLF endings, and failing to match our own chunk there would make the
+      splice APPEND a second document for this run — one record per game, the
+      exact failure the design exists to prevent.
+
+    Matched against a whole chunk rather than a parsed record because chunks are
+    never parsed (see the section comment above :func:`_split_ledger`).
+    """
+    return re.compile(
+        rf"^[ \t]*id:[ \t]*{re.escape(_yaml_str(run_id))}[ \t\r]*$", re.MULTILINE
+    )
+
+
+def _splice_own_chunk(text: str, chunk: str, marker: re.Pattern[str]) -> str | None:
+    """Return ``text`` with this run's chunk swapped in — or appended if absent.
+
+    Step 3 of the cycle, and the one operation ADR 014 §5 names as the risk
+    atomicity cannot cover: wrong content is written just as atomically as right
+    content. It is kept to three cases and no arithmetic.
+
+    Returns ``None`` — meaning **malformed, do not write** — when the text
+    already carries MORE THAN ONE chunk for this run. That is not a conflict and
+    a retry cannot clear it: this function replaces the first match, so a second
+    would survive every attempt and the read-back would fail forever. The caller
+    takes it straight to the fallback file instead of burning the budget on a
+    condition that cannot change.
+
+    **The trailing-newline repair, decided explicitly (spec 043 Task 3.2's
+    carry-forward from Task 1.3).** A ledger whose text does not end with a
+    newline puts the next ``---`` MID-LINE, so :func:`_split_ledger`'s
+    line-anchored rule — correctly — sees one document where two were intended,
+    and ``yaml.safe_load_all`` raises ``ParserError`` on the result. The choice
+    was between repairing it here and teaching the read-back to tell *malformed*
+    from *conflicted*; **this repairs it**, adding exactly one ``\\n``, for three
+    reasons. The read-back could never succeed on such a file, so a run would
+    burn its whole retry budget on its FIRST write and fall through to the
+    fallback for a ledger one byte would have fixed. This path is already a
+    whole-file rewrite, so the byte is free — there is no append-mode invariant
+    left to protect. And the repair is CONVERGENT: after one write the file ends
+    with a newline and this branch never fires again.
+
+    It is deliberately NOT done in :func:`append_record`, whose byte-identity
+    with the pre-ADR-014 append mode is an asserted, measured property (Slice 1
+    Task 1.5's 38-case matrix includes precisely this input). The two writers
+    differ here on purpose: one is frozen against history, the other is repairing
+    a file it is about to rewrite anyway.
+    """
+    if text and not text.endswith("\n"):
+        text += "\n"
+    chunks = _split_ledger(text)
+    # Index 0 is the preamble, never a document — see :func:`_split_ledger`.
+    hits = [i for i in range(1, len(chunks)) if marker.search(chunks[i])]
+    if len(hits) > 1:
+        return None
+    if hits:
+        chunks[hits[0]] = chunk
+        return _join_ledger(chunks)
+    return _join_ledger([*chunks, chunk])
+
+
+def _fallback_record_path(ledger_path: Path, run_id: str) -> Path:
+    """Where a record goes when the ledger cannot take it.
+
+    ``<ledger name>.UNWRITTEN-<run-id>.txt``, beside the ledger — e.g.
+    ``blunder-ledger.yaml.UNWRITTEN-2026-09-12T10-00-00-9f3a1c.txt``. Every part
+    of that name is load-bearing:
+
+    - **The victim's own filename as the prefix**, exactly as
+      :func:`_atomic_write_text` names its temp file, so the file says what it
+      was going to become and sorts next to it in a directory listing.
+    - **``UNWRITTEN`` in capitals**, because this file appearing in ``evals/`` is
+      a thing a human must act on, and the name is the only part of the
+      diagnostic that survives a scrolled-away terminal.
+    - **The run id**, so one run overwrites only its OWN fallback across
+      successive failed writes (the file holds that run's latest record, not ten
+      of them) and two concurrent runs never collide.
+    - **``.txt`` and not ``.yaml``**, for the reason :func:`_atomic_write_text`
+      gives for its own ``.tmp`` suffix: the ad-hoc ``yaml.safe_load_all``
+      scripts run against this ledger glob ``evals/*.yaml``, and a rescue file
+      that matched would double-count the run it exists to rescue.
+    """
+    return ledger_path.with_name(f"{ledger_path.name}.UNWRITTEN-{run_id}.txt")
+
+
+def _write_unwritten_record(
+    ledger_path: Path, run_id: str, chunk: str, reason: str
+) -> Path:
+    """Step 7: park the rendered record beside the ledger and say so loudly.
+
+    The measurement is never lost — the file holds the document byte-for-byte,
+    separator and all, so recovering it is ``cat <file> >> <ledger>`` once the
+    cause is cleared.
+
+    Deliberately ``print(..., file=sys.stderr)`` and not ``logger.warning``: this
+    module installs no logging handler (see its module docstring's diagnostic
+    posture), so a warning would reach ``logging.lastResort`` and go silent the
+    moment anything in the process configured logging. This message is the only
+    thing standing between a failed ledger write and a developer who believes
+    their run was recorded.
+
+    Never raises, including when the fallback write itself fails — at that point
+    there is nothing left to do but say so, and a raise here would kill the very
+    run step 7 exists to protect.
+    """
+    fallback = _fallback_record_path(ledger_path, run_id or "unidentified-run")
+    print(
+        f"!! LEDGER WRITE FAILED — no record was added to {ledger_path}.\n"
+        f"!! Reason: {reason}",
+        file=sys.stderr,
+    )
+    try:
+        _atomic_write_text(fallback, chunk)
+    except OSError as exc:
+        print(
+            f"!! AND the fallback file could not be written either: {exc}\n"
+            "!! This run's record is now only in memory. Nothing further will "
+            "be attempted.",
+            file=sys.stderr,
+        )
+        return fallback
+    print(
+        f"!! This run's record was written to {fallback} instead — the complete\n"
+        "!! '---'-separated document, byte-for-byte. The measurement is NOT "
+        "lost;\n"
+        f"!! recover it with:  cat '{fallback}' >> '{ledger_path}'",
+        file=sys.stderr,
+    )
+    return fallback
+
+
+def upsert_record(
+    result: EvalResult,
+    run_date: str,
+    ledger_path: Path | None = None,
+    *,
+    attempts: int = LEDGER_WRITE_ATTEMPTS_PROGRESSIVE,
+) -> Path:
+    """Write this run's record into the ledger, REPLACING its own previous one.
+
+    The progressive writer spec 043 exists for: called after every completed game
+    so that a stop the process cannot observe — ``SIGKILL``, a reaper, a power
+    cut — leaves the last written state standing. A run therefore contributes
+    exactly ONE record however many times this is called, because every call
+    after the first swaps that record's text rather than adding another.
+
+    Returns **the path the document actually landed in** — ``ledger_path`` on
+    success, the ``UNWRITTEN`` fallback file otherwise. Compare the two if the
+    caller needs to know which happened; the loud stderr block has already said
+    so either way.
+
+    **This function never raises.** Not on a conflict it cannot win, not on a
+    disk-full ``OSError``, not on a malformed ledger. A failed ledger update
+    killing a measured run would invert the whole purpose of the spec — the run
+    would lose the games it had already played *because* the code meant to
+    preserve them failed. Every route out of here returns a path.
+
+    ---
+
+    **The cycle** (technical-considerations §2.1), in that order:
+
+    1. **Render, once, before the read.** Scoring and rendering are the expensive
+       half, so doing them first is what keeps the read-to-replace window to
+       microseconds — which is the whole basis for choosing optimistic control
+       over a lock.
+    2. **Read the ledger bytes and ``sha256`` them.** The content hash is the
+       version token: exact, unlike an mtime (coarse) or a size (collides).
+    3. **Splice** — replace the chunk carrying this run's id, or append it if
+       this is the run's first write. Every other chunk passes through as the
+       exact bytes that were read.
+    4. **Re-read and re-hash; a difference is a conflict** — somebody wrote
+       between step 2 and now, so this splice was computed from stale text.
+       Retry.
+    5. **Replace the whole file atomically** (:func:`_atomic_write_text`).
+    6. **Read back** and confirm exactly one chunk carries this run's id and it
+       is byte-for-byte what was written. This is what makes "with retries"
+       converge instead of merely repeat.
+    7. **On exhausted retries, do not fail the run** — park the document in the
+       fallback file (:func:`_write_unwritten_record`) and say so on stderr.
+
+    **Where this knowingly diverges from §2.1, and why.** §2.1's step 4 says
+    *retry from 1*; this retries from **2**, re-using the document rendered at
+    step 1 and never re-rendering. Three of ``result``'s attributes —
+    ``substitutions`` (including its inner ``{count, attempted}`` dicts),
+    ``vote_activity`` and ``ai_speeches`` — are LIVE REFERENCES into
+    ``run_eval``'s loop accumulators, so a render deferred to after a retry would
+    pick up games that finished in the meantime and produce a record disagreeing
+    with its own ``games_completed``. Rendering exactly once, up front, is the
+    property that makes the aliasing harmless (spec 043 Task 3.2 carry-forward
+    from Task 3.1). It also keeps ``run.seq`` counting WRITES rather than
+    attempts. In practice the two readings agree — a retry happens synchronously
+    inside one loop iteration, so a re-render would produce identical bytes — but
+    only one of them stays correct if that ever stops being true.
+
+    **``OSError`` is not a conflict** (§2.1 is silent on it; spec 043 Task 3.2
+    carry-forward from Task 1.2). :func:`_atomic_write_text` raises on disk-full,
+    on a permission problem and on a failed ``fsync``, and the read can raise for
+    the same reasons. Retrying cannot clear any of them and propagating would
+    kill the run, so an ``OSError`` goes STRAIGHT to the fallback file with no
+    further attempt.
+
+    **A malformed ledger is not a conflict either.** Two chunks already carrying
+    this run's id is a condition no retry can clear (the splice replaces the
+    first), so it too goes straight to the fallback rather than burning the
+    budget. A ledger with no trailing newline — the other unretryable condition —
+    is REPAIRED instead, one byte, at :func:`_splice_own_chunk`, where the choice
+    is argued.
+
+    **``attempts``, and why the final write gets more.** Defaults to
+    :data:`LEDGER_WRITE_ATTEMPTS_PROGRESSIVE` because that is the common case —
+    N-1 of a run's N writes. The post-loop call must pass
+    ``attempts=LEDGER_WRITE_ATTEMPTS_FINAL``: a progressive write that loses the
+    race is repaired by the run's next write, and the final write has no next
+    one. See the constants above for the full argument.
+
+    **The residual window, stated rather than glossed** (ADR 014 §5). Two writers
+    can both pass the step-4 hash check and then replace in sequence. The second
+    one's file carries the first one's chunk as it was at *its* read, so the first
+    writer's newest update is rolled back one generation — and step 6 does NOT
+    catch it, because the victim's own chunk is intact; it is the OTHER chunk
+    that regressed. Nothing is raised anywhere. Progressive updates self-heal on
+    the victim's next write, so the exposure is bounded to "a record is briefly
+    one game stale"; the final write is the exposed one, which is what the larger
+    budget and the fallback file are for. ``run.seq`` exists to make the rollback
+    NAMEABLE after the fact: a record whose ``seq`` went backwards between two
+    readings is a visible fact rather than guesswork.
+
+    **``run.seq`` is incremented here**, once per call, at step 1 and before the
+    render — so it counts writes, not retries, and every attempt within one call
+    ships the same number. This is the one way the function mutates ``result``,
+    and it is the only place in the module that does.
+
+    **A record with no ``run.id`` cannot be upserted at all** and is routed to the
+    fallback rather than written. Without an id there is no way to recognise this
+    run's own chunk, so every call would APPEND — one ledger record per game,
+    which is precisely the outcome the functional spec forbids. Sending it to the
+    fallback keeps the two promises that matter: nothing is raised (the run
+    survives), and nothing wrong is written (the ledger is untouched). It is a
+    programming error, it fails identically on every call, and a run's worth of
+    ``UNWRITTEN`` files is an unmissable way to say so. ``run_eval`` sets
+    ``result.run_id`` from the single ``make_run_id()`` draw it takes before game
+    1, so the precondition holds at the only real call site.
+
+    ``ledger_path`` is injectable and resolved to the module-global
+    :data:`LEDGER_PATH` **at call time**, never bound as a signature default —
+    the same contract :func:`append_record` documents, and for the same reason:
+    a ``monkeypatch.setattr(blunder_eval, "LEDGER_PATH", ...)`` must reach the
+    no-arg call inside :func:`run_eval` so the suite can never touch the
+    committed ledger.
+
+    **:func:`append_record` stays, and is not routed through this.**
+    ``persona_bench`` writes exactly once, at the end of a bench run, and never
+    needs to recognise itself; giving it an upsert would buy no mechanism and
+    would put a frozen public signature behind a version check it has no use for.
+    """
+    if ledger_path is None:
+        ledger_path = LEDGER_PATH
+    # First attribute access on ``ledger_path``, for the same reason
+    # :func:`append_record` keeps it: a ``str`` argument dies here, naming
+    # ``parent``, instead of one statement later naming the wrong thing.
+    ledger_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # --- Step 1: render ONCE, before the read, and never again on a retry.
+    result.seq += 1
+    chunk = f"---\n{render_record(result, run_date)}"
+    run_id = result.run_id
+    if not run_id:
+        return _write_unwritten_record(
+            ledger_path,
+            run_id,
+            chunk,
+            "this result carries no run.id, so its own record cannot be found "
+            "in the ledger and every write would append a NEW one "
+            "(run_eval must set EvalResult.run_id from make_run_id)",
+        )
+    marker = _run_id_line_re(run_id)
+
+    for _ in range(max(attempts, 1)):
+        try:
+            # --- Step 2: read, and hash what we are about to compute from.
+            before = _read_ledger_text(ledger_path)
+            token = hashlib.sha256(before.encode("utf-8")).hexdigest()
+
+            # --- Step 3: splice this run's chunk in, carrying every other
+            # chunk across as the exact bytes just read.
+            spliced = _splice_own_chunk(before, chunk, marker)
+            if spliced is None:
+                return _write_unwritten_record(
+                    ledger_path,
+                    run_id,
+                    chunk,
+                    f"the ledger already holds more than one document for run "
+                    f"{run_id}, which no retry can resolve — it needs a human",
+                )
+
+            # --- Step 4: re-read, re-hash. A difference means the splice above
+            # was computed from text that is no longer on disk.
+            if (
+                hashlib.sha256(
+                    _read_ledger_text(ledger_path).encode("utf-8")
+                ).hexdigest()
+                != token
+            ):
+                continue
+
+            # --- Step 5: land it, all at once or not at all.
+            _atomic_write_text(ledger_path, spliced)
+
+            # --- Step 6: read back. Exactly one chunk for this run, and it is
+            # what was written.
+            landed = [
+                c
+                for c in _split_ledger(_read_ledger_text(ledger_path))[1:]
+                if marker.search(c)
+            ]
+            if len(landed) == 1 and landed[0] == chunk:
+                return ledger_path
+            if len(landed) > 1:
+                return _write_unwritten_record(
+                    ledger_path,
+                    run_id,
+                    chunk,
+                    f"the read-back found {len(landed)} documents for run "
+                    f"{run_id} where there must be exactly one — no retry can "
+                    "resolve that; it needs a human",
+                )
+            # Zero, or one whose bytes are not ours: somebody replaced the file
+            # between our replace and our read-back, dropping or regressing our
+            # chunk. That IS a conflict, and the next attempt re-reads.
+        except OSError as exc:
+            # Disk-full, permissions, a failed fsync — not a conflict, and a
+            # retry cannot help. Straight to the fallback.
+            return _write_unwritten_record(
+                ledger_path,
+                run_id,
+                chunk,
+                f"the ledger could not be read or replaced ({exc})",
+            )
+
+    return _write_unwritten_record(
+        ledger_path,
+        run_id,
+        chunk,
+        f"{max(attempts, 1)} attempt(s) all lost a write race against another "
+        "writer on this ledger",
+    )
+
+
+# ===========================================================================
+# THE PRE-RUN BACKUP (spec 043 technical-considerations §2.2b).
+#
+# WHY THIS IS NOT REDUNDANT WITH THE ATOMIC WRITE — the question a reader
+# arrives with, and the one that gets this deleted if it is not answered here.
+# :func:`_atomic_write_text` guarantees the ledger is never TORN: a kill, a
+# reaper or a power cut leaves the old complete file or the new complete one,
+# never a mixture. It guarantees NOTHING about the bytes being RIGHT. Every
+# ledger write now splices this run's document into the file's text
+# (:func:`_splice_own_chunk`), and a defect there — a wrong boundary, the wrong
+# chunk swapped, a chunk dropped, two records joined into one — produces
+# well-formed but WRONG content, which lands just as atomically as correct
+# content would. ADR 014 §5 names that the one unrecoverable risk this design
+# carries, and §3's risk table repeats it: the one risk not recoverable by
+# re-running, and the one atomicity cannot protect against. The ledger is the
+# only long-term measurement history the project has and a measurement from
+# months ago cannot be replayed, so this copy is the only thing standing
+# between a splicing bug and fifty committed records.
+# ===========================================================================
+
+# Under the project's local ``.graphia/`` footprint (architecture §3), which
+# ``.gitignore`` excludes wholesale ("Graphia runtime artifacts") — so a backup
+# can never dirty the tracked tree, and therefore can never make a run libel
+# ITSELF as measuring modified code (the functional spec's clean-record
+# requirement; ``collect_code_provenance`` shells ``git status --porcelain``,
+# which does not list ignored paths).
+#
+# ALWAYS the repo's own ``.graphia/``, never a sibling of the ledger being
+# copied, and that is the point rather than a convenience: a backup written
+# beside the REAL ledger would land in ``evals/`` — inside the tracked tree,
+# which is exactly what §2.2b forbids.
+#
+# RETENTION: nothing prunes this directory, deliberately rather than by
+# oversight. Each backup is one copy of a file currently ~170 KB, in a directory
+# that already holds a 130 MB checkpoint store and a 2 MB trace log, so a
+# hundred runs cost ~17 MB of ignored disk. Against that, any pruning rule is
+# code whose job is to DELETE the only copies of the history this feature exists
+# to protect, and it would have to pick a cutoff (how many? how old?) that the
+# one scenario needing a backup — "a splice bug landed some runs ago and nobody
+# noticed" — is precisely the scenario that defeats. ``rm -rf`` on this
+# directory is the pruning rule, run by a human who has decided the ledger is
+# healthy. No ``make`` target is offered for it either, for the same reason
+# ``make clean-transcripts`` exists and ``make clean-backups`` does not:
+# transcripts are curated commit-or-delete and dirty the NEXT run's provenance,
+# while these are ignored and cost nothing to keep.
+LEDGER_BACKUP_DIR = _REPO_ROOT / ".graphia" / "ledger-backups"
+
+
+def _backup_ledger(
+    ledger_path: Path, run_id: str, backup_dir: Path | None = None
+) -> Path | None:
+    """Copy the ledger aside before this run's first write, or refuse to run.
+
+    Returns the backup's path, or ``None`` when there was nothing to copy.
+
+    **Call this before game 1, not before the first write.** Under spec 043 the
+    first ledger write happens after the first completed game — about four
+    minutes in on the cloud arms and about THIRTY-THREE on the local one. A
+    backup location that cannot be written is a fact about the filesystem, known
+    the moment the process starts; discovering it half an hour into a
+    five-and-a-half-hour run would waste exactly the work this spec exists to
+    stop wasting. So the check is a precondition of the run, and the run's
+    single call site sits above the games loop, above provenance collection and
+    above the ollama/bedrock preflights' successors — the earliest point at which
+    the run id it names the file after exists.
+
+    **The skip rule: only when the ledger does not exist yet.** §2.2b offers a
+    second candidate — skipping when ``--ledger-path`` points outside the repo at
+    a scratch file — and it is declined, because "outside the repo" is neither
+    robustly detectable here nor the same predicate as "disposable":
+
+    - **Its failure mode is inverted.** ``_REPO_ROOT`` is derived from this
+      file's location, so inside a git worktree (this project implements specs in
+      per-spec worktrees) it is the WORKTREE. A run there pointed at the main
+      checkout's ``evals/blunder-ledger.yaml`` — the genuinely committed, genuinely
+      irreplaceable file — would read as "outside the repo" and have its
+      protection switched off, in precisely the case that needs it most.
+      ``Path.resolve``-based containment has further ways to surprise on macOS,
+      where ``/tmp`` is a symlink to ``/private/tmp`` and ``$TMPDIR`` lives under
+      a symlinked ``/var/folders``.
+    - **The proxy is wrong in both directions.** A per-arm ledger at
+      ``evals/nova.yaml`` is inside the repo and may be uncommitted; a curated
+      ledger at ``~/ledgers/nova.yaml`` is outside it and valuable.
+    - **The costs are wildly asymmetric.** Skipping wrongly loses data that
+      cannot be replayed. Backing up needlessly costs a few hundred kilobytes in
+      an ignored directory.
+
+    What remains is the skip that needs no knowledge of the repo at all and is
+    unarguable on its own terms: a ledger that does not exist has nothing to
+    lose, and is the state in which a splicing bug can destroy nothing. It also
+    covers most scratch runs in practice, since a smoke run's ``--ledger-path``
+    usually names a fresh file.
+
+    **The name says what it is and which run made it.**
+    ``<stem>.<run-id>.pre-run<suffix>`` — e.g.
+    ``blunder-ledger.2026-09-12T14-03-11-9f3a1c.pre-run.yaml``. The run id is
+    already a sortable timestamp (:func:`make_run_id`), so the file is timestamped
+    and attributable in one field, and it names the same string as the run's
+    transcript directory and its ``run.id`` in the record — a reader holding a
+    suspect record can find the copy taken before that exact run touched the
+    file. The ``.yaml`` extension is KEPT, unlike
+    :func:`_fallback_record_path`'s deliberate ``.txt``: that file's whole
+    hazard is being swept up by an ad-hoc ``yaml.safe_load_all`` glob over
+    ``evals/*.yaml``, and this one lives in an ignored directory nowhere near
+    such a glob, where being openable as YAML is the point of having it.
+
+    **The copy is itself atomic**, temp file plus :func:`os.replace` in the
+    destination directory, for one narrow reason: a process killed mid-copy
+    would otherwise leave a TRUNCATED file that looks like a backup, and a
+    backup that lies is worse than no backup at all. It is deliberately NOT
+    routed through :func:`_atomic_write_text`, which takes ``str``: a backup must
+    be byte-exact, and a decode/encode round trip through that function would be
+    the one place in this module where the ledger's bytes could be normalised.
+    No ``fsync`` is taken, unlike the ledger write — the threat model here is a
+    logic bug discovered minutes or days later, by which time the page cache is
+    long flushed, and a power cut that loses the backup also leaves the ledger
+    it was copied from unchanged.
+
+    **Failure refuses the run**, via ``SystemExit`` — the same mechanism, and for
+    the same reason, as :func:`_require_diaries_arm`: a precondition whose
+    absence makes the run's output untrustworthy stops the run before a single
+    token is spent, with an actionable message. ``SystemExit`` rather than a
+    module exception because it derives from ``BaseException``, so neither the
+    per-game ``except Exception`` inside the loop nor any caller's broad handler
+    can swallow it, and it needs no traceback to be read. Note the deliberate
+    contrast with :func:`upsert_record`, which never raises at all: THAT is a
+    write of a measurement already made, where failing the run would destroy the
+    very games the spec exists to preserve. This is a check made before anything
+    has been measured, where there is nothing to lose by stopping and a whole
+    history to lose by continuing.
+
+    ``backup_dir`` defaults to ``None`` and is resolved to the module-global
+    :data:`LEDGER_BACKUP_DIR` *at call time*, never bound as a signature default
+    — the contract :func:`append_record` and :func:`upsert_record` document for
+    ``ledger_path``, for the same reason: a
+    ``monkeypatch.setattr(blunder_eval, "LEDGER_BACKUP_DIR", tmp_path / ...)``
+    must reach the no-arg call inside :func:`run_eval` so a test can drive a
+    pre-existing ledger without writing into the developer's ``.graphia/``.
+
+    Raises:
+        SystemExit: when the ledger exists but cannot be read, or the backup
+            cannot be created — in either case with the ledger untouched and no
+            game played.
+    """
+    if backup_dir is None:
+        backup_dir = LEDGER_BACKUP_DIR
+    # Nothing to lose: the run's first write will CREATE this file, so no splice
+    # runs against content that existed before the run. Silent, because it is the
+    # normal case for every scratch run and every test.
+    if not ledger_path.exists():
+        return None
+
+    destination = backup_dir / (
+        f"{ledger_path.stem}.{run_id}.pre-run{ledger_path.suffix}"
+    )
+    tmp: Path | None = None
+    try:
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        # BYTES, not :meth:`Path.read_text` — the same rule
+        # :func:`_read_ledger_text` documents. A backup that silently translated
+        # a CRLF ledger's line endings would restore a file that is not the file
+        # that was copied.
+        payload = ledger_path.read_bytes()
+        fd, tmp_name = tempfile.mkstemp(
+            dir=backup_dir, prefix=f"{destination.name}.", suffix=".tmp"
+        )
+        tmp = Path(tmp_name)
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(payload)
+        os.replace(tmp, destination)
+        tmp = None
+    except BaseException as exc:
+        # ``BaseException`` for the reason :func:`_atomic_write_text` gives: a
+        # ``KeyboardInterrupt`` mid-copy must not leave litter either. The
+        # removal is best-effort and its own failure is swallowed so it can never
+        # mask what brought us here. Reached only while ``tmp`` is still a
+        # separate file — after :func:`os.replace` it IS the destination.
+        if tmp is not None:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+        if not isinstance(exc, OSError):
+            raise
+        raise SystemExit(
+            "blunder-eval: the pre-run ledger backup could not be written, so "
+            "this run is refusing to play rather than start rewriting\n"
+            f"  {ledger_path}\n"
+            "with no copy of it anywhere.\n"
+            f"  wanted the copy at: {destination}\n"
+            f"  it failed because: {type(exc).__name__}: {exc}\n"
+            "Every ledger write splices this run's document into the file's "
+            "text, and a defect in that splice writes wrong content just as "
+            "atomically as right content — this copy is the only recovery path "
+            "(ADR 014 §5), so a run that cannot take one is not started. Fix the "
+            f"location (permissions and free space under {backup_dir}), or point "
+            "--ledger-path at a scratch file that does not exist yet: it has "
+            "nothing to lose and needs no backup."
+        ) from exc
+
+    # Deliberately ``print(..., file=sys.stderr)`` and not ``logger.info``: this
+    # module installs no logging handler (see the module docstring's diagnostic
+    # posture), so a log record would reach ``logging.lastResort`` and go silent
+    # the moment anything in the process configured logging. One line, once per
+    # run, saying where the recovery copy is — which is the question asked at the
+    # worst possible moment.
+    print(
+        f"Ledger backed up to {destination} ({len(payload)} bytes) before this "
+        "run's first write.",
+        file=sys.stderr,
+    )
+    return destination
+
+
 # ===========================================================================
 # Spec-017 transcript storage + one-command cleanup.
 #
@@ -4497,12 +5183,133 @@ def run_eval(
     # omits the link — never a dangling reference to an empty dir.
     wrote_any_transcript = False
 
+    # --- The pre-run ledger backup (spec 043 §2.2b), taken HERE: before game 1,
+    # before provenance collection's git subprocess and the provider block's HTTP
+    # call, and therefore long before the first ledger write — which, once Task
+    # 3.4 wires the progressive write into the loop, does not happen until the
+    # first game has finished (≈4 minutes in on the cloud arms, ≈33 on the local
+    # one). An unwritable backup location is a fact about the filesystem, known
+    # at process start; learning it half an hour into a five-and-a-half-hour run
+    # would waste exactly the work this spec exists to stop wasting. This is the
+    # earliest point it CAN be taken, because the copy is named after
+    # ``transcript_run_id`` — resolved just above — so the file says which run
+    # took it and matches that run's ``run.id`` and transcript directory.
+    #
+    # --- THE LEDGER THIS RUN WRITES, resolved EXACTLY ONCE, here (spec 043 Task
+    # 3.4). There are three consumers of this value — the backup immediately
+    # below, the progressive write at the end of the loop body, and the final
+    # write after the loop — and they must name the same file or the guarantee
+    # collapses: a backup taken of one file while the writes land in another
+    # protects nothing, and the two writes disagreeing would leave a run with two
+    # half-records in two ledgers instead of one whole record in one. Resolving
+    # it once makes that agreement structural rather than a property three
+    # separate ``getattr`` / ``None``-fallback expressions happen to share.
+    #
+    # WHAT IS RESOLVED, and why resolving it early is safe. ``--ledger-path``
+    # (spec 039 §5) redirects the whole run — a smoke run into a scratch file
+    # outside the repo, or one file per arm. Absent, it is the module-global
+    # ``LEDGER_PATH``, read HERE rather than left to :func:`upsert_record`'s
+    # call-time fallback. Those two differ only if ``LEDGER_PATH`` is rebound
+    # part-way through a run, which no real run and no test does: the suite's
+    # ``monkeypatch.setattr(blunder_eval, "LEDGER_PATH", ...)`` lands before
+    # ``run_eval`` is entered, so the committed ledger stays just as unreachable
+    # from a test as it was. :func:`upsert_record` and :func:`append_record` keep
+    # their ``None``-resolved-at-call-time contract untouched for their OTHER
+    # callers (``persona_bench``, and every test that calls them directly) — this
+    # is ``run_eval`` declining to use it, not the contract changing.
+    #
+    # ``Path(...)`` around the CLI value for the same reason the transcripts root
+    # above takes it: argparse already yields a ``Path``, and a hand-built
+    # ``argparse.Namespace`` in a test may carry a ``str``. One consequence worth
+    # stating because it is a real behaviour change: a ``str`` ledger path used
+    # to survive as far as ``append_record``'s ``.parent`` access and kill the
+    # run AFTER every game had been played; coerced here, it no longer can.
+    # ``append_record``'s own guard is unchanged for its own callers.
+    #
+    # The backup fails the run with ``SystemExit`` if the copy cannot be made,
+    # and returns ``None``, silently, when the ledger does not exist yet. See
+    # :func:`_backup_ledger` for the skip rule's argument, the retention answer,
+    # and why an atomic write is not a substitute for a copy.
+    cli_ledger_path = getattr(args, "ledger_path", None)
+    ledger_target = LEDGER_PATH if cli_ledger_path is None else Path(cli_ledger_path)
+    _backup_ledger(ledger_target, transcript_run_id)
+
     # --- Run-provenance, collected once before games start (functional-spec
     # §2.3, tech §2.4). All collectors degrade gracefully (null on failure), so
     # an unavailable source never fails the run.
+    #
+    # === THE NEXT CALL MUST STAY OUTSIDE THE GAME LOOP (spec 043 Task 3.5). ===
+    #
+    # It is one statement and it reads as incidental. It is not: its POSITION is
+    # the entire mechanism behind functional-spec 043's fourth requirement,
+    # "keeping results as the run goes must not cost a clean run its clean
+    # record", and tech §3 lists it as a dependency for exactly that reason.
+    #
+    # WHAT THE FIELD MEANS. ``code.dirty`` records whether the tracked tree was
+    # unmodified AT THE MOMENT THIS RUN STARTED, which is what makes the
+    # record's metrics attributable to ``code.commit`` and two records
+    # comparable with each other. It is a fact about the run's INPUT — the build
+    # that was measured — not about the filesystem at some arbitrary later
+    # instant.
+    #
+    # WHY RE-SAMPLING WOULD BE SELF-LIBEL, not merely wasteful. A run dirties
+    # the tracked tree with its OWN OUTPUT, by two routes, both inside the loop
+    # below:
+    #   * the progressive ledger write (spec 043 Slice 3) — ``upsert_record``
+    #     rewrites ``evals/blunder-ledger.yaml``, a TRACKED file, after every
+    #     completed game;
+    #   * the transcript directory (spec 017) — ``write_transcript`` creates
+    #     ``evals/transcripts/<run-id>/``, deliberately NOT gitignored, so
+    #     ``git status --porcelain`` reports it as untracked from game 1 on.
+    # :func:`collect_code_provenance` runs ``git status --porcelain`` with no
+    # flags and takes ``dirty = bool(porcelain)``, so EITHER route alone is
+    # enough — which matters, because ``--ledger-path`` can send the writes
+    # outside the repo but nothing sends the transcripts outside it. A run that
+    # re-read git would therefore stamp ``code.dirty: true`` from its second
+    # game onward on the strength of nothing but its own output: the record
+    # would accuse its own build of being modified, and a reader has no way to
+    # tell that libel apart from a genuinely dirty checkout. Note the transcript
+    # route PREDATES this spec — even before progressive writes existed, a
+    # re-reading run would have gone dirty on its own transcripts. Spec 043 only
+    # makes the trap quicker to spring and widens the damage from a link to the
+    # whole record.
+    #
+    # WHAT PROTECTS IT IS POSITION, AND ONLY POSITION. There is no memo, no
+    # once-flag, no guard clause and nothing anywhere that raises. The call sits
+    # here, ahead of the loop, and nothing re-runs it. The realistic regression
+    # is a hoist-by-accident: a later refactor moving provenance down beside the
+    # write it stamps ("collect it where it is used"), or a per-game record
+    # builder that gathers its own blocks. Both read as tidying, both are
+    # silent, and the only symptom is a ledger record claiming the code was
+    # modified when it was not.
+    #
+    # WHAT CATCHES A REGRESSION. Task 3.6 case (d): with
+    # :func:`collect_code_provenance` monkeypatched to a counting stub, a
+    # four-game run must call it exactly ONCE. That is the mechanical form of
+    # the requirement, and it is stronger than asserting the flag's value —
+    # which a mocked clean tree would satisfy either way.
     code = collect_code_provenance(_REPO_ROOT)
+    # NOT subject to the rule above, stated because it sits between two calls
+    # that are: this re-reads nothing. It is a pure function of the dict already
+    # collected, so it cannot disagree with the record whatever happens to it.
+    # Its own reason for being out here is only that a warning repeated once per
+    # game is noise.
     warn_if_dirty(code)  # up-front stderr warning when the tree is dirty
     base_url = config.ollama_base_url  # load_config always sets this
+    # THE SAME ONCE-ONLY RULE, for a related but distinct reason (spec 043 Task
+    # 3.5). Like ``code``, this block states what was MEASURED — the model
+    # digests and local server version behind the games this record scores.
+    # Re-sampling per game could not libel the run, but it would corrupt the
+    # record in two ways a reader could not detect afterwards. First, ITS
+    # GRACEFUL DEGRADATION IS ONE-WAY: an unreachable Ollama server yields
+    # ``None`` digests rather than raising, so a single transient hiccup at game
+    # 7 would overwrite eight games of correct fingerprints with nulls, and the
+    # run would finish reporting that it could not identify the model it had
+    # just measured. Second, a model swapped under its tag mid-run (an ``ollama
+    # pull`` in another terminal) would put the NEW digest on games played
+    # against the old weights. Sampled once, the block says what the run STARTED
+    # against — the only claim it can honestly make. It is also two HTTP
+    # round-trips, which belong nowhere near a per-game write path.
     provider_block = collect_provider_provenance(
         args.provider, large_model, small_model, base_url
     )
@@ -4580,6 +5387,20 @@ def run_eval(
     # Wall-clock start; the duration is stamped onto the result just before the
     # record is appended (monotonic delta — immune to wall-clock adjustments).
     started = time.monotonic()
+    # ``run.date``, sampled ONCE beside the monotonic start and reused by every
+    # write this run makes (spec 043 Task 3.4). A run now writes its record many
+    # times — once per completed game plus once at the end — and a ``date.today()``
+    # per write would let ``run.date`` CHANGE mid-run: a five-and-a-half-hour local
+    # run that starts at 23:50 would write ``2026-09-11`` after its first game and
+    # ``2026-09-12`` after its fourth, so two readings of one live record would
+    # disagree about when the run happened. Sampling once makes the field say what
+    # its name says — the date this run started — and puts it in agreement with the
+    # date prefix of ``run.id``, which is drawn from the same moment. The visible
+    # consequence, stated rather than buried: a run that crosses midnight now
+    # records the date it STARTED where it used to record the date it finished.
+    # ``date.today()`` (never a ``Date.now()``-style call) as this module has
+    # always used.
+    run_date = date.today().isoformat()
 
     # Accumulate AI lines across games, plus the union of AI player names so the
     # spec-009 name-masking still fires across the pooled set (a name dealt in
@@ -4715,6 +5536,223 @@ def run_eval(
     # :class:`_SubstitutionCounter` for the census/no-Wilson-band argument.
     substitution_totals: dict[str, dict[str, int]] = {}
 
+    def _finalise_result(*, final: bool) -> None:
+        """Fold the accumulators above into ``result`` — the run's whole scoring pass.
+
+        A NESTED CLOSURE rather than a module-level function, and deliberately so
+        (spec 043 Task 3.1): it reads about twenty of ``run_eval``'s locals — every
+        accumulator declared above, plus ``config``, ``started``, ``result``,
+        ``transcript_run_id`` and ``wrote_any_transcript`` — and threading those
+        through a parameter list or a carrier dataclass would be a large mechanical
+        change buying nothing. :func:`make_day_speaker_resolver`'s nested
+        ``_resolve`` is the existing precedent in this module.
+
+        THREE of the locals it reads are REBOUND by the loop — the two running
+        maxima ``persona_sim_max_run`` / ``persona_sem_max_run`` and the
+        ``wrote_any_transcript`` flag — and a closure reads a free variable at CALL
+        time, never at definition time, so every call sees the loop's latest value.
+        That is the behaviour wanted. Nothing in here assigns to an enclosing local,
+        so no ``nonlocal`` is needed and the closure cannot perturb the loop.
+
+        TOTAL OVER HOWEVER MANY GAMES HAVE BEEN SCORED, and therefore safe to call
+        more than once (technical-considerations §1) — which is what spec 043's
+        progressive write needs (Task 3.4):
+
+        - every ``result.metrics[...]`` assignment builds a **fresh** facet dict
+          (``_facets``, ``score_repetition`` / ``score_third_person_self_talk``, or
+          a dict literal), so :func:`_attach_ci` — which mutates facets IN PLACE —
+          cannot double-attach across repeated calls;
+        - every accumulator is a Σ-over-games fold or a running ``max``, so no
+          denominator shrinks, no present metric can vanish between calls, and no
+          gate that has opened can close again;
+        - ``result.duration_seconds`` re-derives from ``started`` on every call,
+          which is WANTED: a partial record's duration covers the work it did.
+
+        It makes no network call — ``embed_fn`` is resolved before the loop and used
+        only inside it — so re-scoring is pure computation with no per-game cost in
+        tokens and nothing that can fail for a credentials reason.
+
+        ``final`` says whether this is the run's LAST call. It gates the one
+        human-facing diagnostic in here (the story-denominator divergence), which
+        states a fact about the whole run and must not be printed once per game.
+        Task 3.4 wired the progressive write in, so a run now calls this once per
+        completed game with ``final=False`` and once more after the loop with
+        ``final=True`` — and the gate is what keeps the RUN's stderr output
+        exactly what it was when there was only ever one call.
+        """
+        # Spec-013 game-dynamics blocks, folded over the completed games. ``outcomes``
+        # partitions the winners (``games`` = completed games denominator); the side
+        # win-rates carry a Wilson CI, ``draw``/``no_winner`` are bare counts.
+        # ``vote_activity`` carries the explicit-zero ``by_side`` (both keys always)
+        # and the sparse ``by_day`` — already summed across games above.
+        # Spec-027: pass the parallel per-game scripted seat sides so ``outcomes``
+        # also carries the scripted stand-in's-side win rate (omitted when no game
+        # resolved a side — the absent-metric posture).
+        result.outcomes = tally_outcomes(
+            winners,
+            scripted_sides,
+            scripted_active=bool(getattr(config, "scripted_player_active", True)),
+        )
+        result.vote_activity = {"by_side": vote_by_side, "by_day": vote_by_day}
+
+        # Spec-039 (§2.10 fold-in): the diary-fallback run-health pair, recorded ONLY
+        # when at least one entry was attempted — ABSENT, never a misleading zero, so
+        # a diaries-off run (which attempts none) records nothing here rather than a
+        # ``0.0`` asserting a clean measurement of a feature that never ran.
+        # ``render_record`` derives the rate from this pair.
+        if diary_fallback_total["denominator"] > 0:
+            result.diary_fallback = dict(diary_fallback_total)
+
+        # Spec 040 §2.10: the closing-story run-health pair, recorded ONLY when at
+        # least one game reached the ending — ABSENT, never a misleading zero, so a
+        # batch whose games all failed early or all ran out of super-steps records
+        # nothing here rather than a ``0.0`` asserting a clean measurement of a node
+        # that never ran. ``render_record`` derives the rate from this pair.
+        if story_missing_total["denominator"] > 0:
+            result.story_missing = dict(story_missing_total)
+
+        # THE DIVERGENCE IS THE INFORMATIVE PART, so it is reported rather than left
+        # for someone to notice by comparing two numbers on the record. A completed
+        # game that never reached ``end_screen`` exhausted ``_play_one_game``'s
+        # anti-hang backstop: it is a genuinely degenerate game that produced speech
+        # and votes (so every other metric scored it) while offering the story node
+        # no opportunity at all. Printed to stderr like every other harness
+        # diagnostic here — this module installs no logging handler, so a
+        # ``logger.warning`` would reach ``logging.lastResort`` and go silent the
+        # moment anything configures logging.
+        # GATED ON ``final``: this reports a finding about the WHOLE run, so it
+        # must be printed once. Spec 043 Task 3.4 now calls this closure after
+        # every completed game, and an ungated print would repeat it once per
+        # game — ten lines saying the same thing on a ten-game run, each of them
+        # true only of the prefix scored so far. Gated rather than moved out so
+        # the final call still prints exactly what it printed before the
+        # progressive write existed, in the one place the reasoning behind it is
+        # written down.
+        if final and result.games_completed != story_missing_total["denominator"]:
+            print(
+                f"  quality.story_ending_games: {story_missing_total['denominator']}"
+                f" of {result.games_completed} completed game(s) reached end_screen"
+                " — the rest exhausted the anti-hang super-step backstop and never "
+                "got an ending, so they are excluded from the story denominator "
+                "(they still count in games_completed and in every other metric)",
+                file=sys.stderr,
+            )
+
+        # Spec-041 §2.5: the per-kind census, carried as the ``{count, attempted}``
+        # pair per kind — ``render_record`` derives each rate (one definition of it)
+        # and applies the per-kind absent-not-zero gate a second time on the write
+        # side. Kinds with no opportunity in ANY completed game never entered
+        # ``substitution_totals``, so a diaries-off run carries no ``diary`` entry
+        # and a run with no living Mafioso carries no ``pointing`` one.
+        result.substitutions = substitution_totals
+
+        result.ai_speeches = pooled_lines
+        # Both speech metrics share the AI-spoken-line denominator; they are computed
+        # together so one run records the full speech family (functional-spec §2.1).
+        result.metrics["repetition"] = score_repetition(pooled_lines, pooled_names)
+        result.metrics["third_person_self_talk"] = score_third_person_self_talk(
+            pooled_speaker_lines
+        )
+
+        # The four vote action metrics, in the canonical {self,peer}x{initiation,yes}
+        # family order. Each enters the record only when the batch offered at least
+        # one opportunity (total denominator > 0); a no-opportunity metric is OMITTED
+        # — reported absent, not as a misleading 0.0 (functional-spec §2.1; see
+        # ``score_vote_blunders`` / ``score_self_vote_initiation`` / ``_facets``).
+        # ``self_vote.initiation`` (the proxy-only one) completes the family in
+        # Slice 3.
+        for metric in (
+            "self_vote.initiation",
+            "self_vote.yes",
+            "peer_vote.initiation",
+            "peer_vote.yes",
+        ):
+            totals = action_totals[metric]
+            if totals["denominator"] > 0:
+                result.metrics[metric] = _facets(totals["count"], totals["denominator"])
+
+        # Spec-031 persona-distinctiveness: build the batch ``persona_near_dup`` metric
+        # from the summed pair counts via ``_facets``, recorded only when the batch
+        # offered at least one persona pair (total denominator > 0) — a roster that
+        # never had ≥2 AI personas is reported absent, not as a misleading 0.0 (the
+        # same opportunity-based omission as the action metrics). ``_attach_ci`` below
+        # then adds the Wilson band, like every other present metric.
+        if persona_total["denominator"] > 0:
+            result.metrics["persona_near_dup"] = _facets(
+                persona_total["count"], persona_total["denominator"]
+            )
+
+        # Spec-031 (additive) persona similarity MEAN: record the batch mean pairwise
+        # similarity, present only when the batch offered at least one persona pair
+        # (total pairs > 0) — the same opportunity-based omission as ``persona_near_dup``.
+        # This is a MEAN, NOT a proportion: it carries ``mean``/``denominator`` (the pair
+        # count), deliberately NO ``rate``/``count`` — so ``_attach_ci`` (which keys off
+        # ``count``) skips it and attaches no Wilson band (a mean is not a binomial rate).
+        total_persona_pairs = persona_sim_total["denominator"]
+        if total_persona_pairs > 0:
+            result.metrics["persona_lex_mean"] = {
+                "mean": persona_sim_total["sim_sum"] / total_persona_pairs,
+                "denominator": int(total_persona_pairs),
+            }
+            # Spec-032 (additive) persona similarity PEAK: the batch's most-similar-pair
+            # similarity, present under the SAME opportunity gate as the mean (≥1 pair).
+            # Like the mean it is a VALUE-type facet — ``peak``/``denominator``, NO
+            # ``rate``/``count`` — so ``_attach_ci`` (which keys off ``count``) skips it
+            # (a peak is not a binomial rate, no Wilson band).
+            result.metrics["persona_lex_peak"] = {
+                "peak": persona_sim_max_run,
+                "denominator": int(total_persona_pairs),
+            }
+
+        # Spec-033 (additive) SEMANTIC persona similarity: the batch MEAN cosine,
+        # Σcosines / Σpairs across games (a true pair-weighted mean, never a
+        # mean-of-means). Recorded ONLY when the embeddings client resolved AND the
+        # batch offered ≥1 persona pair — so it is OMITTED for an ollama run with no
+        # AWS creds (the graceful-degradation gate left ``embed_fn`` None, no pairs
+        # accumulated) exactly as it is omitted for a roster that never had ≥2 AI
+        # personas. A VALUE-type facet — ``mean``/``denominator``, deliberately NO
+        # ``rate``/``count`` — so ``_attach_ci`` (which keys off ``count``) skips it
+        # (a cosine mean is not a binomial rate, no Wilson band); the viewer's
+        # value-type render shows ``~<mean> (n=<pairs>)``, the same branch as the
+        # lexical mean/peak.
+        total_sem_pairs = persona_sem_total["denominator"]
+        if total_sem_pairs > 0:
+            result.metrics["persona_sem_mean"] = {
+                "mean": persona_sem_total["cos_sum"] / total_sem_pairs,
+                "denominator": int(total_sem_pairs),
+            }
+            # Spec-033 (additive) SEMANTIC persona similarity PEAK: the batch's
+            # most-similar-pair cosine, present under the SAME gate as the semantic
+            # mean (≥1 pair scored). Like the mean it is a VALUE-type facet —
+            # ``peak``/``denominator``, NO ``rate``/``count`` — so ``_attach_ci``
+            # (which keys off ``count``) skips it (a cosine peak is not a binomial
+            # rate, no Wilson band); the viewer's value-type render shows
+            # ``~<peak> (n=<pairs>)``, the same branch as the lexical peak.
+            result.metrics["persona_sem_peak"] = {
+                "peak": persona_sem_max_run,
+                "denominator": int(total_sem_pairs),
+            }
+
+        # Attach a Wilson 95% CI (ci_low/ci_high) to every PRESENT metric so each
+        # rate carries its own reliability band — a wide band flags a small-n rate
+        # (e.g. self_vote.yes 0.50 @ n=2) as noise, a tight one (repetition 0.45 @
+        # n=108) as solid. Derived/supplementary: reads count/denominator only, so it
+        # does not change detection and does not bump METRICS_VERSION. Absent metrics
+        # were already omitted above, so none gets a CI.
+        _attach_ci(result.metrics)
+
+        # Spec-017: record the run's transcript dir NAME on the result (the viewer
+        # derives the absolute path from the ledger's sibling ``transcripts/``), but
+        # ONLY when ≥1 transcript was actually written — a run that wrote none leaves
+        # it empty and ``render_record`` omits the ``run.transcript_dir`` key.
+        if wrote_any_transcript:
+            result.transcript_dir = transcript_run_id
+
+        # Stamp the wall-clock duration (monotonic delta) onto the run/quality
+        # block before rendering, so a degenerate (e.g. all-failed) run cannot
+        # masquerade as a clean baseline (functional-spec §2.3).
+        result.duration_seconds = round(time.monotonic() - started, 3)
+
     for game_index in range(args.games):
         # Spec 041, Task 12.2a: ONE 1-based number, used by every human-facing
         # line in this loop. ``game_index`` stays 0-based because it feeds
@@ -4743,7 +5781,13 @@ def run_eval(
         # ``finally`` rather than a trailing call, so the sink is uninstalled on
         # the failed-early path too (``continue`` still runs it) and no game's
         # counter can survive into the scoring below, into the next game, or —
-        # the ``append_record`` case — into the ledger write.
+        # the ledger-write case — into the record. Spec 043 Task 3.4 moved that
+        # write INSIDE this loop body, which makes the last of the three a live
+        # concern rather than a theoretical one: the write now happens a few
+        # statements after this ``finally``, in the same iteration. It is still
+        # safe, and structurally so — ``finally`` runs the moment the ``try``
+        # exits, long before the folds below and the write at the end of the
+        # body, so every progressive record is written with no sink installed.
         counter = _SubstitutionCounter()
         set_sink(counter)
         try:
@@ -4977,185 +6021,129 @@ def run_eval(
                     file=sys.stderr,
                 )
 
-    # Spec-013 game-dynamics blocks, folded over the completed games. ``outcomes``
-    # partitions the winners (``games`` = completed games denominator); the side
-    # win-rates carry a Wilson CI, ``draw``/``no_winner`` are bare counts.
-    # ``vote_activity`` carries the explicit-zero ``by_side`` (both keys always)
-    # and the sparse ``by_day`` — already summed across games above.
-    # Spec-027: pass the parallel per-game scripted seat sides so ``outcomes``
-    # also carries the scripted stand-in's-side win rate (omitted when no game
-    # resolved a side — the absent-metric posture).
-    result.outcomes = tally_outcomes(
-        winners,
-        scripted_sides,
-        scripted_active=bool(getattr(config, "scripted_player_active", True)),
-    )
-    result.vote_activity = {"by_side": vote_by_side, "by_day": vote_by_day}
+        # === THE PROGRESSIVE WRITE (spec 043 Task 3.4) — the statement this
+        # whole spec exists for. Score everything accumulated so far and replace
+        # this run's ledger document with it, NOW, while the run is still alive.
+        # Durability comes from having already written: there is no signal
+        # handler and no graceful shutdown anywhere in this design, so a stop the
+        # process cannot observe — ``SIGKILL``, a reaper, a power cut — simply
+        # leaves the last document written here standing. A ten-game local run is
+        # five and a half hours; before this line, being killed at hour five left
+        # nothing at all.
+        #
+        # WHY THE LAST STATEMENT OF THE LOOP BODY, and not a line either side:
+        #
+        # - Not earlier. Every fold above — the winners and vote marginals, the
+        #   four action metrics, the persona lexical and semantic pairs, the
+        #   diary and story run-health counts, the substitution census — belongs
+        #   to THIS game. Writing before any of them lands a record whose
+        #   ``games_completed`` counts this game while its metrics do not, which
+        #   is precisely the "a record that disagrees with itself" failure the
+        #   spec's own residual-risk note treats as the one visible symptom.
+        # - Not inside anything that can swallow it. The per-game
+        #   ``try``/``except Exception``s above (the transcript write, the
+        #   semantic scoring) each exist to keep one optional thing from failing a
+        #   measured run; a write nested in one would have its own diagnostics
+        #   eaten by a handler written for something else. :func:`upsert_record`
+        #   already guarantees it never raises, so it needs no guard of its own.
+        # - Not inside the ``try``/``finally`` that owns the substitution sink.
+        #   That block closed long before here, so ``reset_sink()`` has already
+        #   run and no game's counter can survive into this write — the property
+        #   that ``finally``'s own comment claims, now that the write it names is
+        #   inside the loop rather than after it.
+        # - Only on the completed-game path. The failed-early branch above
+        #   ``continue``s before reaching here, so a game that raised writes
+        #   NOTHING — which is exactly what makes "a run killed before its first
+        #   game finished leaves no record" true with no guard to write, and no
+        #   guard that could later be wrong. Do not add one.
+        # - After a terminal outcome, always. ``games_attempted`` incremented at
+        #   the top of this iteration and exactly one of ``games_completed`` /
+        #   ``games_failed_early`` has incremented by the time any write happens,
+        #   so ``games_attempted == games_completed + games_failed_early`` holds
+        #   at every write point (technical-considerations §2.4) with no code
+        #   spent on it.
+        #
+        # WHY CALLING THE FINALISE PASS AGAIN IS SAFE — the first question a
+        # reader has here, answered in full at :func:`_finalise_result` and
+        # summarised: every ``result.metrics[...]`` assignment builds a FRESH
+        # facet dict, so ``_attach_ci`` (which mutates in place) cannot
+        # double-attach; every accumulator is a Σ-over-games fold or a running
+        # ``max``, so no denominator shrinks, no present metric vanishes and no
+        # gate that has opened can close again; and ``result.duration_seconds``
+        # re-deriving on every call is WANTED, because a partial record's
+        # duration should cover the work it actually did. It makes no network
+        # call, so this costs no tokens and cannot fail for a credentials reason.
+        #
+        # ONE METRIC CAN LEGITIMATELY FREEZE WHILE THE REST MOVE, and it is not a
+        # bug. ``embed_fn`` is a gate that CLOSES: the semantic-scoring handler
+        # above sets it to ``None`` after a failure so a persistent one (expired
+        # creds, say) does not repeat per game. From that game on, the
+        # ``persona_sem_*`` totals stop growing while every other accumulator
+        # keeps folding — so successive readings of a live record can show the
+        # semantic pair standing still. That is the graceful degradation working:
+        # the measurement that could not be taken is simply not taken, and the
+        # run completes.
+        #
+        # ``final=False``: the story-denominator divergence inside the finalise
+        # pass states a fact about the WHOLE run, and an ungated print would
+        # repeat it once per completed game. The progressive write is silent on
+        # success by design — the only line a human sees about the ledger is the
+        # single "Appended one record to …" after the loop.
+        #
+        # The default ``attempts`` (``LEDGER_WRITE_ATTEMPTS_PROGRESSIVE``) is
+        # right here and deliberately smaller than the final write's: a
+        # progressive write that loses a race SELF-HEALS, because the next one
+        # re-reads and re-writes this run's current state.
+        _finalise_result(final=False)
+        upsert_record(result, run_date, ledger_path=ledger_target)
 
-    # Spec-039 (§2.10 fold-in): the diary-fallback run-health pair, recorded ONLY
-    # when at least one entry was attempted — ABSENT, never a misleading zero, so
-    # a diaries-off run (which attempts none) records nothing here rather than a
-    # ``0.0`` asserting a clean measurement of a feature that never ran.
-    # ``render_record`` derives the rate from this pair.
-    if diary_fallback_total["denominator"] > 0:
-        result.diary_fallback = dict(diary_fallback_total)
-
-    # Spec 040 §2.10: the closing-story run-health pair, recorded ONLY when at
-    # least one game reached the ending — ABSENT, never a misleading zero, so a
-    # batch whose games all failed early or all ran out of super-steps records
-    # nothing here rather than a ``0.0`` asserting a clean measurement of a node
-    # that never ran. ``render_record`` derives the rate from this pair.
-    if story_missing_total["denominator"] > 0:
-        result.story_missing = dict(story_missing_total)
-
-    # THE DIVERGENCE IS THE INFORMATIVE PART, so it is reported rather than left
-    # for someone to notice by comparing two numbers on the record. A completed
-    # game that never reached ``end_screen`` exhausted ``_play_one_game``'s
-    # anti-hang backstop: it is a genuinely degenerate game that produced speech
-    # and votes (so every other metric scored it) while offering the story node
-    # no opportunity at all. Printed to stderr like every other harness
-    # diagnostic here — this module installs no logging handler, so a
-    # ``logger.warning`` would reach ``logging.lastResort`` and go silent the
-    # moment anything configures logging.
-    if result.games_completed != story_missing_total["denominator"]:
-        print(
-            f"  quality.story_ending_games: {story_missing_total['denominator']}"
-            f" of {result.games_completed} completed game(s) reached end_screen"
-            " — the rest exhausted the anti-hang super-step backstop and never "
-            "got an ending, so they are excluded from the story denominator "
-            "(they still count in games_completed and in every other metric)",
-            file=sys.stderr,
-        )
-
-    # Spec-041 §2.5: the per-kind census, carried as the ``{count, attempted}``
-    # pair per kind — ``render_record`` derives each rate (one definition of it)
-    # and applies the per-kind absent-not-zero gate a second time on the write
-    # side. Kinds with no opportunity in ANY completed game never entered
-    # ``substitution_totals``, so a diaries-off run carries no ``diary`` entry
-    # and a run with no living Mafioso carries no ``pointing`` one.
-    result.substitutions = substitution_totals
-
-    result.ai_speeches = pooled_lines
-    # Both speech metrics share the AI-spoken-line denominator; they are computed
-    # together so one run records the full speech family (functional-spec §2.1).
-    result.metrics["repetition"] = score_repetition(pooled_lines, pooled_names)
-    result.metrics["third_person_self_talk"] = score_third_person_self_talk(
-        pooled_speaker_lines
-    )
-
-    # The four vote action metrics, in the canonical {self,peer}x{initiation,yes}
-    # family order. Each enters the record only when the batch offered at least
-    # one opportunity (total denominator > 0); a no-opportunity metric is OMITTED
-    # — reported absent, not as a misleading 0.0 (functional-spec §2.1; see
-    # ``score_vote_blunders`` / ``score_self_vote_initiation`` / ``_facets``).
-    # ``self_vote.initiation`` (the proxy-only one) completes the family in
-    # Slice 3.
-    for metric in (
-        "self_vote.initiation",
-        "self_vote.yes",
-        "peer_vote.initiation",
-        "peer_vote.yes",
-    ):
-        totals = action_totals[metric]
-        if totals["denominator"] > 0:
-            result.metrics[metric] = _facets(totals["count"], totals["denominator"])
-
-    # Spec-031 persona-distinctiveness: build the batch ``persona_near_dup`` metric
-    # from the summed pair counts via ``_facets``, recorded only when the batch
-    # offered at least one persona pair (total denominator > 0) — a roster that
-    # never had ≥2 AI personas is reported absent, not as a misleading 0.0 (the
-    # same opportunity-based omission as the action metrics). ``_attach_ci`` below
-    # then adds the Wilson band, like every other present metric.
-    if persona_total["denominator"] > 0:
-        result.metrics["persona_near_dup"] = _facets(
-            persona_total["count"], persona_total["denominator"]
-        )
-
-    # Spec-031 (additive) persona similarity MEAN: record the batch mean pairwise
-    # similarity, present only when the batch offered at least one persona pair
-    # (total pairs > 0) — the same opportunity-based omission as ``persona_near_dup``.
-    # This is a MEAN, NOT a proportion: it carries ``mean``/``denominator`` (the pair
-    # count), deliberately NO ``rate``/``count`` — so ``_attach_ci`` (which keys off
-    # ``count``) skips it and attaches no Wilson band (a mean is not a binomial rate).
-    total_persona_pairs = persona_sim_total["denominator"]
-    if total_persona_pairs > 0:
-        result.metrics["persona_lex_mean"] = {
-            "mean": persona_sim_total["sim_sum"] / total_persona_pairs,
-            "denominator": int(total_persona_pairs),
-        }
-        # Spec-032 (additive) persona similarity PEAK: the batch's most-similar-pair
-        # similarity, present under the SAME opportunity gate as the mean (≥1 pair).
-        # Like the mean it is a VALUE-type facet — ``peak``/``denominator``, NO
-        # ``rate``/``count`` — so ``_attach_ci`` (which keys off ``count``) skips it
-        # (a peak is not a binomial rate, no Wilson band).
-        result.metrics["persona_lex_peak"] = {
-            "peak": persona_sim_max_run,
-            "denominator": int(total_persona_pairs),
-        }
-
-    # Spec-033 (additive) SEMANTIC persona similarity: the batch MEAN cosine,
-    # Σcosines / Σpairs across games (a true pair-weighted mean, never a
-    # mean-of-means). Recorded ONLY when the embeddings client resolved AND the
-    # batch offered ≥1 persona pair — so it is OMITTED for an ollama run with no
-    # AWS creds (the graceful-degradation gate left ``embed_fn`` None, no pairs
-    # accumulated) exactly as it is omitted for a roster that never had ≥2 AI
-    # personas. A VALUE-type facet — ``mean``/``denominator``, deliberately NO
-    # ``rate``/``count`` — so ``_attach_ci`` (which keys off ``count``) skips it
-    # (a cosine mean is not a binomial rate, no Wilson band); the viewer's
-    # value-type render shows ``~<mean> (n=<pairs>)``, the same branch as the
-    # lexical mean/peak.
-    total_sem_pairs = persona_sem_total["denominator"]
-    if total_sem_pairs > 0:
-        result.metrics["persona_sem_mean"] = {
-            "mean": persona_sem_total["cos_sum"] / total_sem_pairs,
-            "denominator": int(total_sem_pairs),
-        }
-        # Spec-033 (additive) SEMANTIC persona similarity PEAK: the batch's
-        # most-similar-pair cosine, present under the SAME gate as the semantic
-        # mean (≥1 pair scored). Like the mean it is a VALUE-type facet —
-        # ``peak``/``denominator``, NO ``rate``/``count`` — so ``_attach_ci``
-        # (which keys off ``count``) skips it (a cosine peak is not a binomial
-        # rate, no Wilson band); the viewer's value-type render shows
-        # ``~<peak> (n=<pairs>)``, the same branch as the lexical peak.
-        result.metrics["persona_sem_peak"] = {
-            "peak": persona_sem_max_run,
-            "denominator": int(total_sem_pairs),
-        }
-
-    # Attach a Wilson 95% CI (ci_low/ci_high) to every PRESENT metric so each
-    # rate carries its own reliability band — a wide band flags a small-n rate
-    # (e.g. self_vote.yes 0.50 @ n=2) as noise, a tight one (repetition 0.45 @
-    # n=108) as solid. Derived/supplementary: reads count/denominator only, so it
-    # does not change detection and does not bump METRICS_VERSION. Absent metrics
-    # were already omitted above, so none gets a CI.
-    _attach_ci(result.metrics)
-
-    # Spec-017: record the run's transcript dir NAME on the result (the viewer
-    # derives the absolute path from the ledger's sibling ``transcripts/``), but
-    # ONLY when ≥1 transcript was actually written — a run that wrote none leaves
-    # it empty and ``render_record`` omits the ``run.transcript_dir`` key.
-    if wrote_any_transcript:
-        result.transcript_dir = transcript_run_id
-
-    # Stamp the wall-clock duration (monotonic delta) onto the run/quality
-    # block before rendering, so a degenerate (e.g. all-failed) run cannot
-    # masquerade as a clean baseline (functional-spec §2.3).
-    result.duration_seconds = round(time.monotonic() - started, 3)
+    # Spec 043 Task 3.1: the scoring/finalise pass, called once more here, after
+    # the loop — the same single pass this function has always made, now behind a
+    # name so spec 043's progressive write can make it again after every completed
+    # game (Task 3.4, the block above) without a second scoring path. This call is
+    # the run's LAST, so it is the one that carries ``final=True``.
+    _finalise_result(final=True)
 
     # Persist one ``---``-separated record to the repo-committed ledger so this
     # run becomes a tracked, comparable, history-backed datapoint (functional-
     # spec 011 §2.3). ``run_eval`` still returns the result for the CLI summary.
-    # ``date.today()`` is the run date (no forbidden ``Date.now()``-style call).
-    # ``--ledger-path`` (spec 039 §5) redirects this write — a smoke run into a
-    # scratch file outside the repo, or one file per arm so two concurrent runs
-    # never share a writer (there is no lock). Absent ⇒ ``append_record``
-    # resolves the module-global ``LEDGER_PATH`` AT CALL TIME, so the suite's
-    # ``monkeypatch.setattr(blunder_eval, "LEDGER_PATH", ...)`` still lands and
-    # the committed ledger is never touched by a test.
-    ledger = append_record(
+    # ``run_date`` was sampled once, beside the monotonic start, and is the SAME
+    # string every progressive write above used — see there for why a run's date
+    # must not move while the run is alive.
+    # ``ledger_target`` was resolved once, before the backup — see the block
+    # there for what ``--ledger-path`` redirects and why resolving it early is
+    # safe. This is the SAME file the progressive writes above landed in, and
+    # this call REPLACES the document they left rather than adding a second one:
+    # a run contributes exactly one record however many times it wrote.
+    #
+    # ``attempts=LEDGER_WRITE_ATTEMPTS_FINAL``, passed EXPLICITLY (spec 043 Task
+    # 3.4) because the default is the progressive budget and this is the one
+    # write that cannot self-heal. A progressive write that loses a race is
+    # repaired by the next one; this write has no next one, so a race lost here
+    # is a record left a game stale — or, on exhaustion, a record diverted to the
+    # ``UNWRITTEN`` fallback file. Retrying harder is the cheapest of the three
+    # protections technical-considerations §2.1 gives it.
+    #
+    # THE SECOND ONCE-PER-RUN DIAGNOSTIC lives here, and it is the pair of the
+    # story-divergence print gated inside ``_finalise_result``: the line below
+    # announces the run's ledger write to a human, so now that Task 3.4 writes
+    # after every completed game it stays on the FINAL write only — ten "Appended
+    # one record to …" lines would read as ten records where the whole point of
+    # the design is that a run contributes exactly one. It is kept here, at the
+    # single final call site, rather than pushed into the writer, so the writer
+    # stays silent-on-success for both its callers.
+    #
+    # :func:`upsert_record` NEVER RAISES, and returns the path the document
+    # actually landed in — ``ledger_target`` on success, the ``UNWRITTEN``
+    # fallback file otherwise, having already said so loudly on stderr. So the
+    # line below names the file that really holds the record, and a ledger write
+    # that failed can never kill a measured run: that would lose the games this
+    # spec exists to preserve, BECAUSE the code meant to preserve them failed.
+    ledger = upsert_record(
         result,
-        date.today().isoformat(),
-        ledger_path=getattr(args, "ledger_path", None),
+        run_date,
+        ledger_path=ledger_target,
+        attempts=LEDGER_WRITE_ATTEMPTS_FINAL,
     )
     print(f"Appended one record to {ledger}")
     return result

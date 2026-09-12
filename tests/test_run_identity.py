@@ -75,11 +75,18 @@ both are asserted — a run whose every game failed early (an id, no transcript)
 and a ``persona-bench`` record (an id, and no transcript because a bench run
 plays no game).
 
-WHAT IS DELIBERATELY NOT HERE. Nothing tests ``upsert_record``, progressive
-per-game writes, the pre-run backup or ``quality.ended_early``: those are
-Slices 3-4 and do not exist yet. The ledger write primitives are
-``test_ledger_write.py``'s. ``run.id``'s effect on the viewer is not tested
-because it has none — Slice 5 changes the ``Games`` cell, not the id.
+WHAT IS DELIBERATELY NOT HERE. Nothing tests ``quality.ended_early``: that is
+Slice 4 and does not exist yet. ``upsert_record``, the progressive per-game
+write and the pre-run backup DO now exist — Slice 3 landed them on 2026-09-12,
+after this module was written, so the sentence above used to list them among the
+not-yet-built alongside the marker. They are pinned in
+``tests/test_progressive_ledger_write.py``, including the one place this
+module's subject meets that one: the upsert recognises its own document by
+``run.id``, so a ledger holding a near-twin id is tested there rather than here
+(the id's *shape* is this module's, its *use as a match key* is that one's). The
+ledger write primitives are ``test_ledger_write.py``'s. ``run.id``'s effect on
+the viewer is not tested because it has none — Slice 5 changes the ``Games``
+cell, not the id.
 """
 
 from __future__ import annotations

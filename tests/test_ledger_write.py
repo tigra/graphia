@@ -71,12 +71,16 @@ test_append_record_creates_parent_directory``, and the ``mkdir`` line's real job
 — being the first attribute access, so a ``str`` argument dies naming
 ``parent`` — is pinned by ``tests/test_substitution_ledger.py::
 test_the_injected_ledger_path_must_be_a_Path_not_a_str``. Neither is duplicated.
-Nothing here tests ``upsert_record``, the ``ended_early`` marker, the pre-run
-backup or progressive writes: those are Slices 3-4 and do not exist yet.
-``run.id`` DOES now exist — Slice 2 landed it on 2026-09-11, after this module
-was written, so the sentence above used to list it among the not-yet-built. It
-is pinned in ``tests/test_run_identity.py`` rather than here: run identity sits
-a level above the write primitives and spans three source modules
+Nothing here tests the ``ended_early`` marker: that is Slice 4 and does not exist
+yet. ``upsert_record``, the progressive per-game write and the pre-run backup DO
+now exist — Slice 3 landed them on 2026-09-12, after this module was written, so
+the sentence above used to list them among the not-yet-built alongside the
+marker. They are pinned in ``tests/test_progressive_ledger_write.py``, which sits
+a level above these primitives for the same reason ``run.id`` does: it is about
+*when* a record is written and what a write must not disturb, not about how text
+is cut and replaced. ``run.id`` likewise arrived later — Slice 2, 2026-09-11 —
+and is pinned in ``tests/test_run_identity.py`` rather than here: run identity
+sits a level above the write primitives and spans three source modules
 (``blunder_eval``, ``persona_bench``, ``eval_ledger``).
 """
 
@@ -562,14 +566,23 @@ def test_KNOWN_BAD_appending_to_a_ledger_with_no_trailing_newline_corrupts_it(
     ``test_append_record_is_plain_concatenation_for_every_input`` covers this
     case as a byte-identity claim rather than as a defect.
 
-    **Spec 043 Task 3.2 is where it gets decided**, because the OCC cycle's
-    read-back step (*exactly one chunk carries this run's id*) can never succeed
-    on such a file, so a progressive write would burn its whole retry budget on
-    a ledger one byte would have repaired. Whichever way Task 3.2 goes —
-    normalising the missing newline before splicing, or distinguishing
-    *malformed* from *conflicted* — this test is the thing that should be
-    rewritten to say so. Its failure then reads as the deliberate change it is,
-    rather than as a surprise from an unnamed corner.
+    **Spec 043 Task 3.2 decided it, on 2026-09-12, and decided it for the OTHER
+    writer only.** The OCC cycle's read-back step (*exactly one chunk carries
+    this run's id*) can never succeed on such a file, so a progressive write
+    would have burned its whole retry budget on its first attempt and diverted a
+    good record to the fallback file, for a ledger one byte would have repaired.
+    Of the two exits — normalising the missing newline before splicing, or
+    teaching the read-back to tell *malformed* from *conflicted* — Task 3.2 took
+    the repair, and put it in ``_splice_own_chunk``: that path is already a
+    whole-file rewrite, so the byte is free, and the fix is convergent. It was
+    deliberately NOT put in ``append_record``, whose byte-identity with the
+    pre-ADR-014 append mode is the measured property Slice 1 Task 1.5 asserted
+    over a 38-case matrix that includes precisely this input. So the two writers
+    differ here on purpose — one is frozen against history, the other repairs a
+    file it is about to rewrite anyway — and this test keeps standing as the
+    frozen half's behaviour. The repaired half is pinned by
+    ``tests/test_progressive_ledger_write.py::
+    test_a_ledger_with_no_trailing_newline_is_repaired_rather_than_retried``.
     """
     ledger = tmp_path / "blunder-ledger.yaml"
     ledger.write_bytes(b"---\nrun:\n  date: 'x'")  # no trailing newline
