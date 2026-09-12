@@ -24,12 +24,14 @@ them yet.
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 from pathlib import Path
 from typing import ClassVar
 
 from rich.style import Style as RichStyle
 from rich.text import Text
 from textual import events
+from textual.actions import SkipAction
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
@@ -738,6 +740,159 @@ _TRANSCRIPT_KIND_COMPONENTS: dict[str, str] = {
 }
 
 
+class TranscriptSearchInput(Input):
+    """The transcript search bar's input, with the six scroll keys passed through.
+
+    Functional-spec §2.4 asks that the game keep scrolling while the reviewer is
+    typing: ``up``, ``down``, ``pageup``, ``pagedown``, ``home`` and ``end`` must
+    move :class:`TranscriptScreen`'s ``#transcript-scroll`` and leave the typed
+    query untouched. This subclass is the whole mechanism.
+
+    **Why the bindings live HERE and not on the screen.** Putting them on
+    :class:`TranscriptScreen` is the obvious simplification, and it is MEASURED
+    DEAD for half of them. Textual resolves a key against
+    ``screen._modal_binding_chain`` — ``focused.ancestors_with_self`` — so the
+    focused widget's own bindings are consulted BEFORE the screen's, and
+    ``Input.BINDINGS`` on the installed Textual 8.2.4 claims ``home,ctrl+a`` →
+    ``action_home`` and ``end,ctrl+e`` → ``action_end``. A screen-level
+    ``home``/``end`` binding therefore never runs while this box has focus:
+    measured ``scroll_offset.y`` ``67 → 67`` on both, no movement at all.
+
+    Subclass ``BINDINGS`` *do* beat the base class's, which is what makes this
+    placement work: ``DOMNode._merge_bindings`` walks the reversed MRO and merges
+    per KEY (``keys[key] = key_bindings``), and by then ``"home,ctrl+a"`` has
+    already been split into two separate entries — so the ``home`` declared here
+    replaces ``Input``'s while ``ctrl+a`` still reaches ``action_home`` and
+    start-of-line editing of the query survives.
+
+    **All six are declared even though ``Input`` claims only two**, and that is
+    not redundancy — the other four are dead for a *different* reason. ``Input``
+    does not bind ``up``/``down``/``pageup``/``pagedown`` at all, so they bubble
+    freely; but the scroller is this widget's SIBLING, not its ancestor (inside
+    the scroller the bar would scroll away with the text), so there is nothing up
+    the chain to catch them either. One uniform declaration here is both halves
+    of the fix. Measured with it in place: ``down 44→45``, ``pagedown 45→66``,
+    ``up 66→65``, ``pageup 65→44``, ``home 44→0``, ``end 0→1161`` — with
+    ``Input.value`` unchanged throughout.
+
+    Two consequences worth writing down, because both are things a future reader
+    would otherwise add back:
+
+    - **No ``priority=True`` anywhere.** A priority binding is checked App-down,
+      BEFORE the focused widget — which is exactly what :class:`DetailScreen`'s
+      pane arrows need, and exactly wrong here: it would hijack all six keys even
+      while the scroller itself has focus and this bar is closed, breaking plain
+      reading for someone who never presses ``/`` (functional-spec §2.10).
+    - **No ``action_home``/``action_end`` overrides.** Shadowing the *binding* is
+      enough, and it is the narrower cut: overriding the actions would also
+      strand ``ctrl+a``/``ctrl+e``, which legitimately belong to the query.
+
+    Every other key keeps its ``Input`` meaning, which is both what §2.4 asks for
+    and what keeps the screen's back-out keys from firing mid-search: ``q``,
+    ``n``, ``N`` and ``/`` are typed into the query, ``backspace`` deletes a
+    character, ``enter`` submits, and ``escape`` is claimed by neither ``Input``
+    nor this class, so it still reaches the screen.
+
+    Like :class:`SearchInput` above, this widget **announces rather than acts**:
+    it posts :class:`ScrollGame` instead of reaching for ``#transcript-scroll``
+    itself, keeping it decoupled from the scroller's id the same way
+    ``SearchInput`` is decoupled from the field selector's.
+    """
+
+    class ScrollGame(Message):
+        """Posted when one of the six scroll keys is pressed in the search bar.
+
+        The screen handles it by running :attr:`scroll_action` on
+        ``#transcript-scroll`` — it owns the id, this widget does not.
+        """
+
+        def __init__(self, scroll_action: str) -> None:
+            """Name the action to run on the game's scroller.
+
+            Args:
+                scroll_action: The action's name on the scroller itself —
+                    ``scroll_up`` / ``scroll_down`` / ``page_up`` / ``page_down``
+                    / ``scroll_home`` / ``scroll_end``, copied verbatim from
+                    ``ScrollableContainer.BINDINGS`` (so the screen's handler is
+                    a one-liner and no translation table exists to drift).
+            """
+            super().__init__()
+            self.scroll_action = scroll_action
+
+    # Each binding re-posts the scroller's OWN action for that key, so "what does
+    # pageup do in the search bar?" has the same answer as "what does pageup do
+    # in the game?" by construction rather than by a mapping someone maintains.
+    #
+    # `show=False` throughout: these are not Footer material — they restore keys
+    # the reviewer already expects to work, and the Footer's single new entry is
+    # the `/` that opens this bar in the first place.
+    BINDINGS = [
+        Binding("up", "scroll_game('scroll_up')", show=False),
+        Binding("down", "scroll_game('scroll_down')", show=False),
+        Binding("pageup", "scroll_game('page_up')", show=False),
+        Binding("pagedown", "scroll_game('page_down')", show=False),
+        Binding("home", "scroll_game('scroll_home')", show=False),
+        Binding("end", "scroll_game('scroll_end')", show=False),
+    ]
+
+    def action_scroll_game(self, scroll_action: str) -> None:
+        """Announce a scroll of the game, without touching the typed query.
+
+        Does no scrolling and no querying of its own — see the class docstring
+        for why the id stays on the screen. Leaving ``value`` alone is the other
+        half of functional-spec §2.4: scrolling mid-search must cost the reviewer
+        nothing they have already typed.
+        """
+        self.post_message(self.ScrollGame(scroll_action))
+
+
+@dataclass(slots=True)
+class SearchState:
+    """One live transcript search (spec 044) — the thing whose *existence* is asked about.
+
+    :attr:`TranscriptScreen._search` is ``None`` when no search is in progress
+    and an instance of this when one is. That presence/absence — **never**
+    "is the search bar showing" — is what :meth:`TranscriptScreen.action_close`
+    branches on, and the difference is the whole reason this class exists in
+    Slice 1 rather than in the slice that first needs a second field.
+
+    **Functional-spec §2.9 describes a THREE-state machine, and bar visibility
+    can only tell two of the states apart:**
+
+    1. **Bar open, query typed.** Esc closes the bar, drops the search, and
+       leaves the reviewer exactly where they had scrolled to (§2.9 AC1).
+    2. **Bar hidden, search still live.** The state Enter leaves behind from
+       Slice 3 onward: the prompt closes and the highlights stay. Esc here
+       clears the highlighting and the reviewer **stays in the game**; "a
+       further Esc leaves it" (§2.9 AC5).
+    3. **No search at all.** Esc leaves the game immediately, exactly as it did
+       before this feature existed (§2.9 AC3).
+
+    Branching on whether the bar is open collapses (2) into (3): the screen
+    would pop out from under a reviewer who is still looking at highlighted
+    matches, losing both the highlights and the game in one keypress. Branching
+    on ``_search is not None`` keeps all three distinct.
+
+    **Only ``query`` today, and a dataclass anyway.** Later slices extend it in
+    place — Slice 2 the match offsets, Slice 3 the ``(width, row_starts)`` wrap
+    cache, Slice 4 the current-match index — so each of those is an added field
+    rather than a reshape of every use site, which is what a bare ``str | None``
+    would have cost. Mutable (no ``frozen=True``): a search is edited keystroke
+    by keystroke and re-navigated by ``n``/``N``, so replacing the whole object
+    per character would be ceremony, not safety.
+
+    **In Slice 1 ``query`` is SEEDED but not yet kept in step with the box**, so
+    it reads ``""`` while the reviewer's typing lives only in the
+    :class:`TranscriptSearchInput`'s ``value`` — nothing consumes it until Slice
+    2 adds the ``Input.Changed`` handler that both updates it and recomputes the
+    matches. Said out loud because it is the kind of gap a reader would
+    otherwise take for a bug: the *presence* of this object is what Slice 1
+    needs, and presence is what :meth:`TranscriptScreen.action_close` reads.
+    """
+
+    query: str
+
+
 class TranscriptScreen(Screen):
     """One game's full transcript in a scrollable, read-only view (spec 017).
 
@@ -772,6 +927,19 @@ class TranscriptScreen(Screen):
     TITLE = "Graphia eval ledger"
     SUB_TITLE = "game transcript · Esc / Backspace to go back"
 
+    # PINNED, NOT INHERITED — and it has to be, before this screen grows a second
+    # focusable widget. `App.AUTO_FOCUS` is `"*"`, and `Screen._update_auto_focus`
+    # filters that query on `Widget.focusable`, which gates on `self.visible` —
+    # the `visibility` rule — and NOT on `display` (read from the installed
+    # Textual 8.2.4: `app.py`'s `AUTO_FOCUS = "*"`, `screen.py`'s
+    # `_update_auto_focus`, `widget.py`'s `focusable`). So a hidden `Input` in
+    # `compose()` would still be the first `"*"` match and would take the
+    # screen's opening focus while `display: none`, silently swallowing every
+    # keystroke into an invisible box. Naming the scroller also writes down
+    # today's behaviour, which otherwise holds only by accident of tree order;
+    # `test_scrolling_a_long_game_behaves_as_before` is its witness.
+    AUTO_FOCUS: ClassVar[str] = "#transcript-scroll"
+
     # Derived from THE map, so adding a highlighted kind stays a one-line change
     # there: a new entry brings its component class along, and only the matching
     # CSS rule below has to be written.
@@ -792,6 +960,99 @@ class TranscriptScreen(Screen):
     #transcript-body {
         padding: 0 1;
         width: 1fr;
+    }
+
+    /* ------------------------------------------------------------------
+       THE SEARCH BAR (spec 044) — a one-row prompt above the game, whose
+       RESTING STATE IS CLOSED. Three decisions here are measured requirements
+       rather than taste.
+
+       A SIBLING OF THE SCROLLER, NOT A CHILD. Inside `#transcript-scroll` the
+       bar would be part of the scrolled *content*: it would ride up off the top
+       of the screen the moment the reviewer scrolled, which is the one thing a
+       search prompt must never do. Being a sibling is also what makes
+       `TranscriptSearchInput`'s six scroll bindings necessary rather than
+       redundant — with the bar outside the scroller there is nothing up the
+       focused widget's ancestor chain to catch `up`/`down`/`pageup`/`pagedown`
+       either, so the subclass declares all six itself (see its docstring). The
+       layout fact and the routing fact are the same fact.
+
+       `display: none`, NOT `visibility: hidden`, and the difference *is*
+       functional-spec §2.10 AC2 ("nothing about searching is taking up space
+       they were using to read"). `visibility: hidden` RESERVES the cell — the
+       row would still be laid out and still a row tall, so a reviewer who never
+       presses `/` would silently pay one row of game, forever, for a box they
+       cannot see. `display: none` gives the row no region at all. Measured with
+       the bar closed: `#search-row` size `(0, 0)`, and the reading view's
+       geometry byte-identical to before this feature existed — 22 viewport
+       rows, 202 virtual, `max_scroll_y` 180, which is exactly what
+       `test_scrolling_a_long_game_behaves_as_before` pins.
+
+       A CLASS TOGGLE RATHER THAN `widget.display = …`, so both states are
+       readable *here*, beside the kind rules, instead of one of them living in
+       a Python assignment the stylesheet cannot see. `#search-row.-open` has
+       the same id as `#search-row` plus one class, so it wins on specificity
+       and the closed state stays the default without an `!important`.
+
+       No collision with `LedgerTableScreen`'s own `#search-row` (the runs-list
+       filter, a different thing on a different screen). `Screen.SCOPED_CSS` is
+       `True` on the installed Textual 8.2.4, so each screen's `DEFAULT_CSS` is
+       rewritten into its own scope — verified by measuring two screens whose
+       `DEFAULT_CSS` sets a different height on the same id, and each got its
+       own. */
+    #search-row {
+        display: none;
+        height: 1;
+    }
+
+    #search-row.-open {
+        display: block;
+    }
+
+    /* A DEFAULT `Input` IS 3 ROWS, and that is the whole reason this rule
+       exists: `Input.DEFAULT_CSS` on the installed Textual 8.2.4 sets
+       `height: 3` with `border: tall $border-blurred`. Three rows of chrome to
+       hold one row of query would cost a seventh of a 22-row reading viewport,
+       so the border goes and the height comes down to the row the text actually
+       needs. `padding: 0 1` narrows the default `0 2` to match
+       `#transcript-body`'s own padding, so the query sits on the same left
+       margin as the game beneath it.
+
+       THE `#search-row` PREFIX IS LOAD-BEARING — a bare `TranscriptSearchInput`
+       selector would LOSE. `Input.DEFAULT_CSS` carries a nested `&:focus` rule
+       restoring `border: tall $border`, and a pseudo-class outranks a type: a
+       scoped `TranscriptScreen TranscriptSearchInput` is (id 0, class 0, type 2)
+       against `Input:focus`'s (0, 1, 1), so the border — and with it the third
+       row — would come back the instant the bar took focus, moving the game
+       under a reviewer at exactly the moment functional-spec §2.1 promises it
+       will not. Naming the row buys the id, and the id beats the pseudo-class.
+       Measured: `#search-row` stays `1` row tall and `scroll_offset.y` is
+       unchanged across focusing the box.
+
+       (`Input` also ships a `-textual-compact` class doing much the same job.
+       Deliberately not used: its `border: none !important` is an `!important`
+       this stylesheet would then have to fight to say anything else about the
+       border, and the sizing is the kind of thing that belongs where the rest
+       of this screen's appearance is written down.) */
+    #search-row TranscriptSearchInput {
+        height: 1;
+        border: none;
+        padding: 0 1;
+        width: 1fr;
+    }
+
+    /* The live match count. Mounted EMPTY by this slice — Slice 2 owns what
+       goes in it — so that the row's geometry is settled and measured before
+       anything writes to it, rather than shifting the first time a count
+       appears. `width: auto` takes exactly the room its text needs and leaves
+       the rest of the row to the query box's `1fr`, so the count sits hard
+       against the right of what is typed rather than at a fixed column.
+       `$text-muted` is this module's own precedent for a secondary readout
+       (`#match-count`, `#empty-state`, `#transcript-panel-empty`). */
+    #search-count {
+        height: 1;
+        width: auto;
+        color: $text-muted;
     }
 
     /* SYNTAX HIGHLIGHTING (spec 038) — one rule per entry in
@@ -1585,14 +1846,71 @@ class TranscriptScreen(Screen):
         Binding("escape", "close", "Back", show=True),
         Binding("backspace", "close", "Back", show=True),
         Binding("q", "close", "Back", show=False),
+        # `/` opens the search bar (spec 044).
+        #
+        # `show=True` IS A DELIBERATE, AUTHOR-CHOSEN ADDITION TO THE FOOTER —
+        # DO NOT "restore parity" by hiding it later. Functional-spec §2.1 asks
+        # for the key to be advertised in as many words ("the strip of key hints
+        # already along the bottom of the screen gains a `Search` entry beside
+        # the existing `Back`"), so a reviewer who does not know the feature
+        # exists can discover it rather than having to be told. The author
+        # resolved the trade-off explicitly (tech-spec §2.9, 2026-09-12):
+        # discoverability over a pixel-identical Footer. §2.10's promise that
+        # everything else about reading a game is unchanged is about the reading
+        # AREA — the rows of game text, which this costs nothing — not about the
+        # Footer, and the Footer is the only place a key can be advertised at
+        # all.
+        #
+        # `slash`, not `"/"`: Textual names the key, and this is the spelling
+        # `LedgerTableScreen` already uses for the runs-list filter, so the
+        # module's two `/`s read the same way.
+        #
+        # Exactly ONE new Footer entry, not three: `n`/`N` (Slice 4) stay
+        # `show=False`, matching `q` above — they are follow-ups to a search the
+        # reviewer has already started, so they have somewhere else to be
+        # announced (the status line), while `/` has nowhere else.
+        Binding("slash", "open_search", "Search", show=True),
     ]
 
     def __init__(self, entry: TranscriptEntry) -> None:
         super().__init__()
         self._entry = entry
+        # THE SEARCH, OR ITS ABSENCE (spec 044). `None` until the reviewer
+        # presses `/`; see `SearchState` for why this — and not the search bar's
+        # visibility — is what `action_close` branches on.
+        #
+        # Per-instance, and that is functional-spec §2.9 AC4 ("open that game
+        # again … no search is in progress and nothing is highlighted") for
+        # free: `DetailScreen` pushes a NEW `TranscriptScreen` per game and
+        # `pop_screen` discards it, so there is no search to carry between
+        # games and nothing to reset on the way out.
+        self._search: SearchState | None = None
 
     def compose(self) -> ComposeResult:
         yield Header()
+        # The search bar (spec 044), mounted CLOSED and OUTSIDE the scroller.
+        #
+        # Both of those are load-bearing and both are argued at the `#search-row`
+        # rule above: `display: none` costs the reading view nothing (a reviewer
+        # who never presses `/` sees the same 22 rows of game they saw before
+        # this feature existed), and a sibling of `#transcript-scroll` — rather
+        # than a child of it — is what keeps the prompt on screen when the game
+        # scrolls under it.
+        #
+        # Mounting it now rather than on first `/` is the cheaper correctness:
+        # a widget that exists from `compose` has its geometry settled and
+        # measured once, where a mount mid-read would resize the scroller at the
+        # moment functional-spec §2.1 promises the text will not move. It costs
+        # nothing to carry — a `display: none` row has no region — and it is
+        # also why `AUTO_FOCUS` had to be pinned before this line could be
+        # written at all (see the note on the class attribute).
+        #
+        # The input takes no id: the screen reaches it by type, and the bar
+        # reaches the scroller by message (`ScrollGame`), so neither widget has
+        # to know the other's name.
+        with Horizontal(id="search-row"):
+            yield TranscriptSearchInput()
+            yield Static(id="search-count")
         with VerticalScroll(id="transcript-scroll"):
             # The transcript's own text, verbatim from the pure reader, with
             # per-span styles attached (spec 038) — and **markup parsing still
@@ -1692,9 +2010,199 @@ class TranscriptScreen(Screen):
             styles[kind] = resolved.without_color + RichStyle.from_color(resolved.color)
         return styles
 
+    def on_transcript_search_input_scroll_game(
+        self, message: TranscriptSearchInput.ScrollGame
+    ) -> None:
+        """Scroll the game by the action the search bar announced.
+
+        The screen half of :class:`TranscriptSearchInput`'s decoupling: the bar
+        names an action, this screen owns the id. **Without this handler the
+        subclass is inert** — its six bindings post a message nobody listens to,
+        so `up`/`down`/`pageup`/`pagedown`/`home`/`end` in the search bar all
+        silently do nothing, and functional-spec §2.4 ("the game still scrolls
+        while the reviewer is typing") quietly fails with no error to find. The
+        :class:`~TranscriptSearchInput.ScrollGame` docstring says so out loud for
+        the same reason.
+
+        ``getattr`` rather than a dispatch table, deliberately: the message
+        carries the scroller's OWN action name, copied verbatim from
+        ``ScrollableContainer.BINDINGS``, so "what does ``pagedown`` do in the
+        search bar?" resolves to the same method as "what does ``pagedown`` do
+        in the game?" by construction. A mapping here would be a second place to
+        maintain and a place to drift.
+
+        **``SkipAction`` is caught, and it is the normal path rather than
+        defensive padding.** All six actions on the installed Textual 8.2.4 open
+        with ``if not self.allow_vertical_scroll: raise SkipAction()`` (``home``
+        and ``end`` with the two-axis ``_allow_scroll``), and
+        ``allow_vertical_scroll`` is ``is_scrollable and
+        show_vertical_scrollbar`` — **false for a game that fits the viewport**,
+        which plenty of preserved games do. Textual's own action dispatcher
+        catches ``SkipAction`` and lets the key bubble; calling the method
+        directly puts the raise inside a message handler instead, where it would
+        reach the app's unhandled-exception screen. Measured: uncaught, ``down``
+        in the search bar of a short game raises. Swallowed, the key does
+        nothing — which is exactly what it already does on that same game when
+        the scroller itself holds focus.
+
+        ``value`` is never touched here, which is the other half of §2.4:
+        scrolling mid-search must cost the reviewer nothing they have typed.
+        """
+        scroller = self.query_one("#transcript-scroll", VerticalScroll)
+        try:
+            getattr(scroller, f"action_{message.scroll_action}")()
+        except SkipAction:
+            # Nothing to scroll — a game shorter than the viewport. Not an error.
+            pass
+        message.stop()
+
+    def action_open_search(self) -> None:
+        """Reveal the search bar and put the cursor in it — without moving the game.
+
+        The `/` binding. Functional-spec §2.1 is mostly a list of things this
+        method must NOT do, so they are worth stating as guarantees rather than
+        leaving as the absence of code.
+
+        **It never touches ``scroll_y``, and it cannot.** Two separate mechanisms
+        would have to move the game, and neither is reachable from here:
+
+        - *Revealing the row* costs the scroller one row of viewport (measured
+          ``scroll.size.height`` 22 → 21, ``max_scroll_y`` 1160 → 1161). A
+          shorter viewport only ever RAISES the scroll ceiling, so the clamp that
+          runs on resize can never pull ``scroll_y`` down — it stayed at 44
+          across the toggle. ``body.content_size.width`` is unchanged at 96 too,
+          because the row is a sibling above the scroller rather than anything
+          that narrows it, so the text does not rewrap either: the reviewer's
+          first visible line is still their first visible line, one row lower on
+          the screen.
+        - *Focusing the box* schedules a scroll-into-view
+          (``Screen.set_focus(scroll_visible=True)`` → ``scroll_to_center``),
+          which walks the focused widget's ANCESTOR chain. ``#transcript-scroll``
+          is not on that chain — the bar is its SIBLING, not its child (see the
+          ``#search-row`` rule for why), so the one scrollable container in this
+          screen is not something focusing the bar can reach. This is the same
+          layout fact that makes :class:`TranscriptSearchInput`'s six scroll
+          bindings necessary, read from the other side.
+
+        **It mounts nothing.** The row has existed since :meth:`compose`; opening
+        is a class toggle, so there is no mid-read mount to resize the scroller
+        at the moment §2.1 promises the text will not move. The stylesheet, not
+        this method, owns what "open" looks like.
+
+        **Opening while already open is harmless.** In practice a second `/`
+        never arrives here at all — the focused ``Input`` takes it as a literal
+        `/` typed into the query (measured in Task 1.2), which is the behaviour
+        §2.4 asks for. Should it arrive anyway (the scroller holding focus with
+        the bar already shown), ``add_class`` and ``focus`` are both no-ops on a
+        widget that already has the class / the focus, so there is nothing to
+        guard.
+
+        **It establishes :attr:`_search`**, which is the one thing here that is
+        not about leaving the game alone — see the body for why that pairing is
+        an invariant rather than a convenience.
+        """
+        # ESTABLISH THE STATE BEFORE SHOWING THE BAR, so the invariant
+        # `action_close` reads — AN OPEN BAR ALWAYS HAS A `SearchState` BEHIND
+        # IT — holds from the instant the row becomes visible rather than from
+        # whenever the first character arrives. Without this line, `/` followed
+        # immediately by Esc would find `_search is None` and LEAVE THE GAME
+        # instead of closing the bar the reviewer had just opened.
+        #
+        # CONDITIONAL, because a search can already exist with the bar hidden:
+        # from Slice 3 onward Enter closes the prompt and keeps the search alive
+        # (state 2 in `SearchState`'s docstring), and `/` there must re-open the
+        # prompt on the search the reviewer already has rather than silently
+        # throwing it away. So the fresh seed is the `None` branch only.
+        if self._search is None:
+            self._search = SearchState(query="")
+        self.query_one("#search-row", Horizontal).add_class("-open")
+        self.query_one(TranscriptSearchInput).focus()
+
     def action_close(self) -> None:
-        """Pop back to the :class:`DetailScreen` that pushed this screen."""
-        self.app.pop_screen()
+        """Clear a live search if there is one; otherwise leave the game.
+
+        **THE BRANCH IS ON SEARCH STATE, NOT ON WHETHER THE BAR IS SHOWING, and
+        "simplifying" it back to two states is the bug this docstring exists to
+        prevent.** Functional-spec §2.9 is a three-state machine and
+        :class:`SearchState` spells the three out; the short version is that
+        from Slice 3 onward Enter leaves a search *alive with the bar hidden*,
+        and an Esc there owes the reviewer a cleared highlight and a game they
+        are still in — not a pop. ``_search is not None`` is the only question
+        that separates that state from "no search at all". Asking the bar would
+        answer "closed" to both.
+
+        **Deliberate consequence, ranked and accepted rather than discovered:
+        ``backspace`` and ``q`` share this action, so they too clear a live
+        search before they leave.** Where that bites is precise, because it is
+        not everywhere:
+
+        - With the bar OPEN it never fires at all — the focused
+          :class:`TranscriptSearchInput` takes ``q`` as a character and
+          ``backspace`` as a deletion (measured in Task 1.2), so Esc is the only
+          one of the three that reaches this method.
+        - With a search live and the bar hidden, the scroller has focus and all
+          three land here, clear the search, and stay. The reviewer then presses
+          the same key again to leave.
+
+        That costs a second keypress to exit a game the reviewer has searched
+        in. Functional-spec §2.10 only promises an unchanged reading view to
+        someone who never presses ``/``, so this is compliant — but it is a
+        choice, and the alternative (routing ``q``/``backspace`` straight out
+        past a live search) was not taken because it would make the same key
+        mean "clear" or "leave" depending on invisible state.
+
+        Leaving is unchanged for everyone else: one Esc, straight back to the
+        :class:`DetailScreen` that pushed this screen (§2.9 AC3).
+        """
+        if self._search is None:
+            self.app.pop_screen()
+            return
+        self._clear_search()
+
+    def _clear_search(self) -> None:
+        """Drop the search and put the screen back the way the reviewer had it.
+
+        **The ordering is load-bearing: the state goes FIRST.** Assigning
+        ``input.value = ""`` below fires :class:`Input.Changed` — ``value`` is a
+        plain ``reactive("", init=False)`` on the installed Textual 8.2.4, so a
+        *change* to it posts, and clearing a non-empty query is exactly such a
+        change. Nothing consumes that message yet; Slice 2 adds the live
+        re-highlight handler, and that handler will be re-entered by this very
+        line unless something stops it. Dropping ``_search`` before the clear is
+        what stops it, **by construction** rather than by the handler
+        remembering to be careful: by the time the echo arrives the state is
+        already gone, so the Slice-2 guard (``if self._search is None: return``)
+        is unconditionally true and the clear cannot reach back into the code
+        that is unwinding it. *Slice 2: keep this order.* (Clearing an already
+        empty box posts nothing at all — a non-``always_update`` reactive does
+        not fire on an unchanged assignment — so the echo only exists when the
+        reviewer had actually typed something.)
+
+        **``scroll_offset.y`` is never touched, and that is the requirement, not
+        an omission.** Functional-spec §2.9 AC1 asks that the game be "still at
+        the same place on screen" after Esc, which matters precisely because
+        §2.4 invited the reviewer to scroll while typing — the place they are
+        abandoning the search from is usually not the place they opened it from,
+        and Esc abandons the search, not their reading position. The one thing
+        that can still move it is Textual's own clamp: closing the row hands a
+        viewport row back to the scroller, which lowers ``max_scroll_y`` by one,
+        so a reviewer parked on the very last row comes back one row with the
+        same last line still on screen. That is the scroller re-fitting itself,
+        not this method moving the text, and there is no scroll assignment here
+        to make it otherwise.
+
+        Focus returns to ``#transcript-scroll`` explicitly rather than being
+        left to whatever Textual does with the focus of a widget that has just
+        been hidden: the reviewer pressed a *back-out* key, so the game — the
+        only thing left to interact with — should be what their arrow keys move.
+        """
+        # STATE FIRST — see the docstring. Everything below is undoing the
+        # visible half of a search that, as far as the rest of the screen is
+        # concerned, has already ended.
+        self._search = None
+        self.query_one("#search-row", Horizontal).remove_class("-open")
+        self.query_one(TranscriptSearchInput).value = ""
+        self.query_one("#transcript-scroll", VerticalScroll).focus()
 
 
 class LedgerTableScreen(Screen):

@@ -30,7 +30,7 @@ from pathlib import Path
 import pytest
 from rich.style import Style as RichStyle
 from textual.app import ComposeResult
-from textual.containers import Vertical, VerticalScroll
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.content import Content
 from textual.screen import Screen
 from textual.widgets import (
@@ -83,6 +83,7 @@ from graphia.ui.ledger_viewer import (
     LedgerTableScreen,
     LedgerViewerApp,
     TranscriptScreen,
+    TranscriptSearchInput,
 )
 
 from conftest import plain_text
@@ -2519,6 +2520,11 @@ _DETAIL_KEYS_SWEPT = (
     "pagedown",
     "backspace",
     "q",
+    # `slash` opens the search bar on `TranscriptScreen` (spec 044). Swept here
+    # so the walk presses it on the run's figures and the table of runs as well,
+    # where it must still never reach a bare games list (functional-spec §2.10
+    # AC4). Slice 4's `n`/`N` join it here.
+    "slash",
 )
 
 
@@ -3132,6 +3138,15 @@ _HIGHLIGHT_INDENTED_LINES = ("  <round>", "  Round 1.", "  </round>")
 # The keys `TranscriptScreen` binds to back out. Named here so the parametrized
 # test below can be rot-guarded against `TranscriptScreen.BINDINGS`.
 _TRANSCRIPT_BACK_KEYS = ("escape", "backspace", "q")
+
+# The keys `TranscriptScreen` binds for searching inside the game (spec 044).
+# SPLIT FROM THE BACK-OUT KEYS ABOVE RATHER THAN FOLDED INTO THEM, because the
+# two tuples mean different things: these keys stay in the game. The rot guard
+# below asserts the screen's bindings are exactly the UNION of the two, so a
+# binding added to the screen that is declared in neither tuple still fails
+# there rather than going untested — the guard is widened, not weakened.
+# Slice 4's `n`/`N` are a one-line addition here.
+_TRANSCRIPT_SEARCH_KEYS = ("slash",)
 
 # The long-game scroll fixture, pinned as absolute geometry rather than as a
 # before/after comparison (spec 037's mutation finding: "X equals Y between two
@@ -4738,13 +4753,16 @@ async def test_each_back_out_key_pops_the_transcript_screen(
     """`escape`, `backspace` and `q` all step back out to the run's figures.
 
     B10 covers `escape` as part of the full back-out path; this sweeps all three
-    keys the screen binds, from the transcript itself, at an absolute stack depth.
-    Rot-guarded against `TranscriptScreen.BINDINGS`, so a key added to the screen
-    without being swept here fails rather than going untested.
+    back-out keys, from the transcript itself, at an absolute stack depth, with no
+    search open.
+
+    Rot-guarded against `TranscriptScreen.BINDINGS` as the UNION of the back-out
+    keys and the search keys (spec 044), so a key added to the screen that is
+    declared in neither tuple fails here rather than going untested.
     """
     assert {binding.key for binding in TranscriptScreen.BINDINGS} == set(
         _TRANSCRIPT_BACK_KEYS
-    )
+    ) | set(_TRANSCRIPT_SEARCH_KEYS)
 
     ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name=f"hl-back-{key}.yaml")
 
@@ -4765,3 +4783,588 @@ async def test_each_back_out_key_pops_the_transcript_screen(
         assert app.screen is detail
         assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
         assert app.is_running
+
+
+# ===========================================================================
+# B15. Searching inside a game (spec 044, Slice 1) — the bar opens, takes
+#      text, and the game keeps scrolling underneath it.
+#
+#      KEY ROUTING IS THE ENTIRE RISK OF THIS SLICE, which is why every test
+#      below drives REAL KEYSTROKES through `pilot.press(...)` and never
+#      assigns `Input.value`. The feature adds a second focusable widget to a
+#      screen that has only ever had one, and almost everything that can go
+#      wrong is a question about where a keypress LANDS: does `/` reach the
+#      screen or get eaten; does `home` reach the game or get claimed by the
+#      focused box; does `q` leave the game or become a character. A helper
+#      that set `value` directly — `_drive_search` (B4) is exactly such a
+#      helper, for the runs-list filter on a different screen — would make
+#      every one of these tests pass while answering none of those questions.
+#      `_type_transcript_search` below exists to keep the two apart, and says
+#      so in its own docstring so the next reader does not "consolidate" them.
+#
+#      THE CLOSED BAR IS PINNED AS ABSOLUTE GEOMETRY, not as a before/after
+#      comparison, following spec 037's mutation finding (an assertion of the
+#      form "X equals Y between two states" holds happily with both sides
+#      broken). Functional-spec §2.10 AC2 — "nothing about searching is taking
+#      up space they were using to read" — is the criterion, and the assertion
+#      that carries it is THE SCROLLER'S HEIGHT, not the bar's own size.
+#
+#      That distinction is worth writing down, because the obvious assertion is
+#      the wrong one. `#search-row` does measure `(0, 0)` while closed — but
+#      MUTATION-TESTED, `(0, 0)` DOES NOT SEPARATE `display: none` FROM
+#      `visibility: hidden`. An invisible widget is absent from the screen's
+#      widget map, so `Widget.region` catches `NoWidget` and falls back to
+#      `NULL_REGION` under either rule (Textual 8.2.4, `widget.py`). And
+#      `visibility: hidden` nonetheless RESERVES the row: measured, the
+#      scroller drops 22 rows to 21, so a reviewer who never presses `/` would
+#      silently pay a line of game forever while the bar still measured
+#      `(0, 0)`. The scroller's height is the assertion that catches that, and
+#      the `(0, 0)` beside it says the narrower thing it can say — the bar is
+#      not on screen — which is what fails when a `-open` rule leaks its
+#      `display: block` into the base selector.
+#
+#      WHAT IS DELIBERATELY NOT READ: `TranscriptScreen._search`. The state
+#      field is the implementation of the Esc machine, not its promise; what
+#      the reviewer is owed is that the first Esc closes the bar and keeps
+#      them in the game and the second one leaves, which is asserted here
+#      through screens and stack depth. Reading the private field would pin
+#      the mechanism and leave the promise untested.
+#
+#      `_LONG_GAME_BODY` IS REUSED rather than joined by a fixture of its own.
+#      B14.4 already pins its geometry absolutely (82 lines, a 22-row
+#      viewport, `max_scroll_y` 60), so the one row the open bar costs is
+#      visible as arithmetic on constants that already have a witness, and
+#      every scroll assertion below can be stated as a position in a game
+#      whose shape is already proven. Its lines are short enough never to
+#      wrap at this terminal width, which is what makes "row" and "line" the
+#      same thing here and the expected offsets readable at all.
+#
+#      B15.2 (live highlight as spans), B15.4 (the jump and the clamp),
+#      B15.5 (the subtitle status) and B15.6 (the offset→row pin) belong to
+#      Slices 2-4 and are deliberately absent — not stubbed — because none of
+#      the behaviour they would cover exists yet.
+# ===========================================================================
+
+# The search bar is one row and it comes out of the SCROLLER's height, not out
+# of the reviewer's scroll position. Both halves are asserted: the viewport
+# loses a row, `max_scroll_y` gains one, and `scroll_offset.y` does not move
+# (functional-spec §2.1 AC3).
+_SEARCH_OPEN_VIEWPORT_ROWS = _LONG_GAME_VIEWPORT_ROWS - 1
+_SEARCH_OPEN_MAX_SCROLL_Y = _LONG_GAME_LINES - _SEARCH_OPEN_VIEWPORT_ROWS
+
+# `#search-row` measured in each of its two states. Closed is `(0, 0)`: no
+# region at all — which says the bar is not on screen, and deliberately not
+# more than that (see the banner on why it cannot tell `display: none` from
+# `visibility: hidden`). Open it spans the full terminal width and is exactly
+# one row tall — a default `Input` is three, so the height override in
+# `TranscriptScreen.DEFAULT_CSS` is load-bearing and this is its witness.
+_SEARCH_ROW_CLOSED_SIZE = (0, 0)
+_SEARCH_ROW_OPEN_SIZE = (_LONG_GAME_TERMINAL_SIZE[0], 1)
+
+# The body's content width, closed and open alike. Pinned because equality
+# across the two states is what says OPENING THE SEARCH DOES NOT REWRAP THE
+# GAME: a bar that stole columns instead of a row would re-fold every line,
+# and from Slice 3 onward it would silently invalidate the offset→row map that
+# Enter jumps by. 96 rather than 98 because the overflowing game already shows
+# a vertical scrollbar, which eats two cells.
+_LONG_GAME_BODY_WIDTH = 96
+
+# Where the six scroll keys are measured from. Chosen so that all six land on
+# six DISTINCT rows, none of them clamped: `home` and `pageup` would be
+# indistinguishable from any start below one page, and `pagedown` would clamp
+# at `max_scroll_y` from any start above 40.
+_SEARCH_SCROLL_START_Y = 30
+
+# The six keys functional-spec §2.4 promises still scroll the game while the
+# reviewer is typing, each with the row it lands on from `_SEARCH_SCROLL_START_Y`
+# with the bar OPEN — so the page keys move by 21 rows, not 22.
+#
+# Stated as arithmetic on the fixture's constants rather than as bare numbers,
+# so a fixture that grows re-derives them instead of rotting into six magic
+# integers. `end` is `max_scroll_y` with the bar open, which is one MORE than
+# the reading view's own `_LONG_GAME_MAX_SCROLL_Y` — the row the bar took.
+_SEARCH_SCROLL_KEY_CASES = (
+    ("down", _SEARCH_SCROLL_START_Y + 1),
+    ("up", _SEARCH_SCROLL_START_Y - 1),
+    ("pagedown", _SEARCH_SCROLL_START_Y + _SEARCH_OPEN_VIEWPORT_ROWS),
+    ("pageup", _SEARCH_SCROLL_START_Y - _SEARCH_OPEN_VIEWPORT_ROWS),
+    ("home", 0),
+    ("end", _SEARCH_OPEN_MAX_SCROLL_Y),
+)
+
+# A game SHORTER than the viewport, and that is its whole purpose. All six of
+# the scroller's actions open with `if not self.allow_vertical_scroll: raise
+# SkipAction()`, and `allow_vertical_scroll` is false exactly when the content
+# fits — so in the search bar of a game like this one, every one of the six
+# bindings calls a method that raises. Textual's own action dispatcher catches
+# `SkipAction`; a message handler does not, which is why the screen's handler
+# catches it explicitly and why the test below is worth its 0.6 s.
+_SHORT_GAME_BODY = (
+    "<transcript>\n"
+    + "\n".join(f"Alice: line {i}" for i in range(4))
+    + "\n</transcript>"
+)
+
+# The four keys functional-spec §2.4 says are typed into the query rather than
+# acted on. `q` and `/` are the interesting ones: `q` is the screen's
+# (unadvertised) leave-the-game key and `/` is the key that opened this bar, so
+# both would be a collision if the focused chain resolved them the other way.
+# `n`/`N` are Slice 4's navigation keys, included now so the slice that binds
+# them inherits a witness that they still type here.
+_TYPED_NOT_ACTED_KEYS = "qnN/"
+
+
+async def _type_transcript_search(pilot, query: str) -> TranscriptSearchInput:
+    """Type ``query`` into the open transcript search bar, one real keystroke each.
+
+    **Deliberately NOT ``_drive_search`` (B4), and the difference is the whole
+    point of this helper existing.** That one is for
+    :class:`LedgerTableScreen`'s runs-list filter — a different surface on a
+    different screen, which functional-spec §3 explicitly puts out of this
+    spec's scope — and it works by ASSIGNING ``Input.value``. Assignment
+    bypasses the key dispatcher entirely, and the key dispatcher is exactly
+    what spec 044's Slice 1 is a bet on: whether ``/`` reaches the screen,
+    whether ``home`` reaches the game past a focused ``Input``, whether ``q``
+    types a character instead of leaving. Driven by assignment, every test
+    below would pass against a screen with no bindings at all. So the two
+    helpers stay separate and differently named; consolidating them would
+    silently delete the coverage.
+
+    Asserts the bar holds focus before typing, because the failure mode it
+    guards is quiet: with the scroller focused instead, ``q`` would pop the
+    screen and the assertion that follows would be about a widget on a screen
+    the reviewer has already left.
+
+    Returns the input so a caller can read ``value`` back — the query as the
+    key path actually built it, never as the test asked for it.
+    """
+    search_input = pilot.app.screen.query_one(TranscriptSearchInput)
+    assert pilot.app.screen.focused is search_input, (
+        "the search bar must hold focus before typing into it; focus is on "
+        f"{type(pilot.app.screen.focused).__name__}"
+    )
+    await pilot.press(*query)
+    await pilot.pause()
+    return search_input
+
+
+# ---------------------------------------------------------------------------
+# B15.1 The bar opens and closes; the reading view underneath is untouched
+# ---------------------------------------------------------------------------
+
+
+def test_the_footer_advertises_search_beside_back() -> None:
+    """`/` is the one key this feature adds to the Footer (functional-spec §2.1 AC1).
+
+    Terminal-free: the Footer renders whatever ``BINDINGS`` declares with
+    ``show=True``, so the declaration is the assertable form of "the strip of
+    key hints gains a Search entry beside the existing Back" — and asserting it
+    here costs none of the ~0.6 s a ``run_test()`` item costs.
+
+    Stated as the COMPLETE shown set rather than as "slash is in it", so the
+    other half of §2.1 AC1 is pinned too: exactly one entry is added. `q` stays
+    hidden as it always has been, and Slice 4's `n`/`N` must join it there —
+    if a later slice advertises them, this fails rather than quietly widening
+    a Footer that functional-spec §2.10 asks to stay recognisable.
+    """
+    shown = {
+        binding.key: binding.description
+        for binding in TranscriptScreen.BINDINGS
+        if binding.show
+    }
+    assert shown == {"escape": "Back", "backspace": "Back", "slash": "Search"}
+
+
+async def test_the_closed_search_row_costs_the_reading_view_nothing(
+    tmp_path: Path,
+) -> None:
+    """A reviewer who never presses `/` gets the same rows of game as before.
+
+    Functional-spec §2.10 AC1/AC2. The bar is mounted in ``compose`` on every
+    game, so "it costs nothing" is a claim about a widget that really is in the
+    tree, and two assertions carry it that are NOT interchangeable: ``(0, 0)``
+    says the bar is not on screen, while the SCROLLER's 22 rows say it is not
+    costing the reviewer a line of game. Only the second one separates
+    `display: none` from `visibility: hidden` — mutation-tested, swapping the
+    rule keeps `#search-row` at ``(0, 0)`` (an invisible widget has no region
+    at all) and takes a row off the scroller, so the bar's own size is blind to
+    exactly the regression §2.10 AC2 is about.
+
+    The reading view's geometry is re-pinned here rather than left to
+    `test_scrolling_a_long_game_behaves_as_before`, because the two failures
+    mean different things: that test would fail if the bar stole a row, this
+    one says WHICH widget did it. Both use the same symbolic constants, so a
+    fixture change moves them together.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _LONG_GAME_BODY, name="s44-closed.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        search_row = screen.query_one("#search-row", Horizontal)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", Static)
+
+        # The bar is there, and it occupies nothing.
+        assert tuple(search_row.size) == _SEARCH_ROW_CLOSED_SIZE
+        assert "-open" not in search_row.classes
+
+        # ...so the game keeps every row and every column it had.
+        assert screen.focused is scroller
+        assert scroller.size.height == _LONG_GAME_VIEWPORT_ROWS
+        assert scroller.virtual_size.height == _LONG_GAME_LINES
+        assert scroller.max_scroll_y == _LONG_GAME_MAX_SCROLL_Y
+        assert body.content_size.width == _LONG_GAME_BODY_WIDTH
+
+
+async def test_slash_opens_the_bar_focuses_it_and_leaves_the_game_where_it_was(
+    tmp_path: Path,
+) -> None:
+    """One keypress opens the search, and the text does not move (§2.1 AC2/AC3/AC4).
+
+    The reviewer is scrolled into the MIDDLE of the game first, because that is
+    where §2.1 AC3's promise is falsifiable: opening a bar that re-laid out the
+    scroller, or that focused a widget by re-running ``AUTO_FOCUS``, would jump
+    the view to the top and pass any assertion written from row 0.
+
+    ``body.content_size.width`` is the §2.1 AC4 assertion in disguise — "the
+    lines they could read before are still readable". A bar that took columns
+    rather than a row would re-fold every line of the game, so equality here is
+    the statement that the passage the reviewer was mid-way through is still
+    the same passage, laid out the same way.
+
+    The one row the bar does cost comes out of the scroller's height, and
+    `max_scroll_y` grows by exactly that row: the game did not get longer, the
+    window onto it got shorter.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _LONG_GAME_BODY, name="s44-open.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        search_row = screen.query_one("#search-row", Horizontal)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", Static)
+
+        # Read into the middle of the game with the ordinary reading keys, so
+        # the setup owes nothing to the feature under test.
+        await pilot.press(
+            "pagedown",
+            *["down"] * (_SEARCH_SCROLL_START_Y - _LONG_GAME_VIEWPORT_ROWS),
+        )
+        await pilot.pause()
+        assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+        assert body.content_size.width == _LONG_GAME_BODY_WIDTH
+
+        await pilot.press("slash")
+        await pilot.pause()
+
+        # The bar is open, one row tall, and holds the cursor.
+        assert "-open" in search_row.classes
+        assert tuple(search_row.size) == _SEARCH_ROW_OPEN_SIZE
+        assert screen.focused is screen.query_one(TranscriptSearchInput)
+
+        # The game did not move, and it did not rewrap.
+        assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+        assert body.content_size.width == _LONG_GAME_BODY_WIDTH
+
+        # The row came out of the viewport, not out of the scroll position.
+        assert scroller.size.height == _SEARCH_OPEN_VIEWPORT_ROWS
+        assert scroller.max_scroll_y == _SEARCH_OPEN_MAX_SCROLL_Y
+
+
+async def test_the_bars_own_keys_type_into_it_instead_of_leaving_the_game(
+    tmp_path: Path,
+) -> None:
+    """`q`, `n`, `N` and `/` become characters; `backspace` deletes one (§2.4).
+
+    Every one of these is a COLLISION the screen would lose if the focused
+    chain resolved the other way, and two of them would lose it destructively:
+    `q` and `backspace` are both bound on :class:`TranscriptScreen` to back out
+    of the game, so a mid-search press of either would throw the reviewer out
+    of the transcript and take the query with it. `/` is the key that opened
+    this bar, and `n`/`N` are Slice 4's.
+
+    The absolute stack depth is asserted, not just the screen type: a screen
+    that was popped and re-pushed would still be a ``TranscriptScreen``.
+
+    This is §2.4 WORKING, not a bug to be fixed later — the tech spec's §2.4
+    key table lists exactly this outcome for all five keys, and the screen's
+    ``action_close`` docstring records that with the bar open only `escape`
+    ever reaches it.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _LONG_GAME_BODY, name="s44-typed.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        await _open_the_only_game(pilot)
+        await pilot.press("slash")
+        await pilot.pause()
+
+        search_input = await _type_transcript_search(pilot, _TYPED_NOT_ACTED_KEYS)
+
+        assert search_input.value == _TYPED_NOT_ACTED_KEYS
+        assert isinstance(app.screen, TranscriptScreen)
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+
+        # ...and backspace edits the query rather than backing out of the game.
+        await pilot.press("backspace")
+        await pilot.pause()
+        assert search_input.value == _TYPED_NOT_ACTED_KEYS[:-1]
+        assert isinstance(app.screen, TranscriptScreen)
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+
+
+async def test_escape_with_no_search_leaves_the_game_in_one_press(
+    tmp_path: Path,
+) -> None:
+    """The change costs a reviewer who never searches no extra keypress (§2.9 AC3).
+
+    The regression this guards is specific and would be easy to ship: the Esc
+    machine now has three states, and an ``action_close`` that cleared
+    something unconditionally before popping — or that branched on the bar
+    rather than on the search — would turn the first Esc into a no-op and make
+    leaving a game take two presses for everyone.
+
+    Deliberately pressed from a SCROLLED position with the scroll container
+    focused, which is where a reviewer actually is when they finish reading.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _LONG_GAME_BODY, name="s44-one-esc.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        await pilot.press("pagedown")
+        await pilot.pause()
+        assert scroller.scroll_offset.y == _LONG_GAME_VIEWPORT_ROWS
+        assert screen.focused is scroller
+
+        await pilot.press("escape")
+        await pilot.pause()
+
+        assert isinstance(app.screen, DetailScreen)
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+
+
+async def test_escape_closes_the_search_first_and_leaves_the_game_next(
+    tmp_path: Path,
+) -> None:
+    """"The first Esc closes a search; the next one leaves the game" (§2.9).
+
+    The two-press sequence is the test, and asserting only the second press
+    would miss the bug entirely: a screen that popped on the FIRST Esc would
+    also end up on the :class:`DetailScreen`, just one keypress too early and
+    with the reviewer's place in the game gone.
+
+    `scroll_offset.y` is pinned across the close because §2.4 invited the
+    reviewer to scroll while searching — so the place they abandon a search
+    from is usually not the place they opened it from, and Esc abandons the
+    search, not their reading position. Measured from the MIDDLE of the game
+    rather than its last row, where Textual's own clamp legitimately moves the
+    view by one as the closing bar hands its row back to the viewport.
+
+    Focus returning to the scroller is what makes the game answer arrow keys
+    again; without it they would go to a hidden box.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _LONG_GAME_BODY, name="s44-two-esc.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        search_row = screen.query_one("#search-row", Horizontal)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        await pilot.press(
+            "pagedown",
+            *["down"] * (_SEARCH_SCROLL_START_Y - _LONG_GAME_VIEWPORT_ROWS),
+        )
+        await pilot.press("slash")
+        await pilot.pause()
+        search_input = await _type_transcript_search(pilot, "vote")
+
+        # The premise, stated rather than assumed: there really is an open bar
+        # for the first Esc to close. Without this the whole test would still
+        # pass against a bar that never opened — the closed-bar assertions
+        # below would all be trivially true.
+        assert "-open" in search_row.classes
+        assert tuple(search_row.size) == _SEARCH_ROW_OPEN_SIZE
+        assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+
+        # First Esc: the search goes, the game stays.
+        await pilot.press("escape")
+        await pilot.pause()
+
+        assert isinstance(app.screen, TranscriptScreen)
+        assert app.screen is screen
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+        assert "-open" not in search_row.classes
+        assert tuple(search_row.size) == _SEARCH_ROW_CLOSED_SIZE
+        assert search_input.value == ""
+        assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+        assert screen.focused is scroller
+        assert scroller.size.height == _LONG_GAME_VIEWPORT_ROWS
+        assert scroller.max_scroll_y == _LONG_GAME_MAX_SCROLL_Y
+
+        # Second Esc: now they leave.
+        await pilot.press("escape")
+        await pilot.pause()
+
+        assert isinstance(app.screen, DetailScreen)
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+
+
+# ---------------------------------------------------------------------------
+# B15.3 The game still scrolls while the reviewer is typing
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(("key", "expected_y"), _SEARCH_SCROLL_KEY_CASES)
+async def test_each_scroll_key_moves_the_game_and_leaves_the_query_alone(
+    tmp_path: Path, key: str, expected_y: int
+) -> None:
+    """All six scroll keys reach the game past the focused search bar (§2.4).
+
+    Swept one key per item rather than pressed in sequence, so a failure names
+    the key. The distinction matters because the six are dead for two DIFFERENT
+    reasons without :class:`TranscriptSearchInput`'s bindings: ``home`` and
+    ``end`` are claimed by ``Input.BINDINGS`` and would be swallowed by the
+    focused box, while ``up``/``down``/``pageup``/``pagedown`` are not bound by
+    ``Input`` at all but have nothing up the ancestor chain to catch them,
+    because the bar is the scroller's SIBLING rather than its child. A test
+    that pressed all six together would pass on four and be silent about which.
+
+    The landing row is absolute, not "moved by something": the page keys move
+    by 21 rows and not 22, which is the open bar's row showing up in the
+    arithmetic, and `end` lands on the open ``max_scroll_y`` — one row further
+    than the reading view can reach.
+
+    ``value`` unchanged is the other half of §2.4, and it is not a formality:
+    each of these keys arrives at a focused text box, and an implementation
+    that handled the scroll without stopping the key would also insert a
+    character or move the cursor.
+    """
+    ledger, _ = _ledger_with_body(
+        tmp_path, _LONG_GAME_BODY, name=f"s44-scroll-{key}.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        # Read into the middle of the game, then open the bar and type.
+        await pilot.press(
+            "pagedown",
+            *["down"] * (_SEARCH_SCROLL_START_Y - _LONG_GAME_VIEWPORT_ROWS),
+        )
+        await pilot.press("slash")
+        await pilot.pause()
+        search_input = await _type_transcript_search(pilot, "vote")
+
+        assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+        assert scroller.size.height == _SEARCH_OPEN_VIEWPORT_ROWS
+        assert scroller.max_scroll_y == _SEARCH_OPEN_MAX_SCROLL_Y
+
+        await pilot.press(key)
+        await pilot.pause()
+
+        assert scroller.scroll_offset.y == expected_y
+        assert search_input.value == "vote"
+        assert screen.focused is search_input
+
+
+async def test_typing_resumes_after_a_scroll_and_the_query_keeps_growing(
+    tmp_path: Path,
+) -> None:
+    """Scrolling mid-search costs the reviewer nothing they have typed (§2.4 AC5).
+
+    The sequence is the point: type part of a word, scroll a screenful, then
+    type the rest. An implementation that restored focus to the scroller after
+    handling the scroll — a plausible-looking way to make the keys "reach the
+    game" — would pass every test above and fail here, because the next
+    character would go to the game instead of the query. (It would also make
+    `e` a no-op and `s` scroll nothing, so the failure would be silent in the
+    app and loud only here.)
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _LONG_GAME_BODY, name="s44-resume.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        await pilot.press("slash")
+        await pilot.pause()
+        search_input = await _type_transcript_search(pilot, "vot")
+        assert search_input.value == "vot"
+        assert scroller.scroll_offset.y == 0
+
+        await pilot.press("pagedown")
+        await pilot.pause()
+        assert scroller.scroll_offset.y == _SEARCH_OPEN_VIEWPORT_ROWS
+        assert search_input.value == "vot"
+
+        await _type_transcript_search(pilot, "e")
+
+        assert search_input.value == "vote"
+        assert scroller.scroll_offset.y == _SEARCH_OPEN_VIEWPORT_ROWS
+
+
+async def test_the_scroll_keys_in_a_game_that_fits_do_nothing_and_raise_nothing(
+    tmp_path: Path,
+) -> None:
+    """A game with nothing to scroll must not crash the six keys (§2.4, §2.10 AC1).
+
+    **This one guards a measured crash, not a hypothetical.** All six of the
+    scroller's actions begin with ``if not self.allow_vertical_scroll: raise
+    SkipAction()``, and ``allow_vertical_scroll`` is false for exactly this
+    fixture — a game shorter than the viewport, which plenty of preserved games
+    are. Textual's own action dispatcher catches ``SkipAction`` and lets the
+    key bubble; the screen's ``ScrollGame`` handler calls the action DIRECTLY,
+    from inside a message handler, where an uncaught raise reaches the app's
+    unhandled-exception screen. Before the handler caught it, `down` in the
+    search bar of a game like this one crashed the viewer.
+
+    Pressed as one sequence rather than swept per key, because the claim is
+    about all six together: none of them raises, none of them eats the query,
+    and none of them moves a view that has nowhere to move.
+
+    The premise is asserted first and asserted again with the bar OPEN, since
+    opening it shortens the viewport by a row and a fixture that only just fit
+    would start scrolling and quietly stop testing anything.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _SHORT_GAME_BODY, name="s44-short.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        assert scroller.max_scroll_y == 0
+        assert scroller.allow_vertical_scroll is False
+
+        await pilot.press("slash")
+        await pilot.pause()
+        search_input = await _type_transcript_search(pilot, "vote")
+        assert scroller.allow_vertical_scroll is False
+
+        await pilot.press(*(key for key, _ in _SEARCH_SCROLL_KEY_CASES))
+        await pilot.pause()
+
+        assert app.is_running
+        assert isinstance(app.screen, TranscriptScreen)
+        assert app.screen is screen
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+        assert scroller.scroll_offset.y == 0
+        assert search_input.value == "vote"
+        assert screen.focused is search_input
