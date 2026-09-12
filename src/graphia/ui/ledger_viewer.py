@@ -87,10 +87,14 @@ from graphia.eval_ledger import (
     find_matches,
     list_transcripts,
     load_ledger,
+    next_match,
+    offset_for_row,
     read_transcript,
     render_detail,
+    row_for_offset,
     row_matches_field,
     tokenize_transcript,
+    wrap_row_starts,
 )
 from graphia.tools.blunder_eval import LEDGER_PATH
 
@@ -1154,13 +1158,16 @@ class SearchState:
     matches, losing both the highlights and the game in one keypress. Branching
     on ``_search is not None`` keeps all three distinct.
 
-    **Only ``query`` today, and a dataclass anyway.** Later slices extend it in
-    place — Slice 2 the match offsets, Slice 3 the ``(width, row_starts)`` wrap
-    cache, Slice 4 the current-match index — so each of those is an added field
-    rather than a reshape of every use site, which is what a bare ``str | None``
-    would have cost. Mutable (no ``frozen=True``): a search is edited keystroke
-    by keystroke and re-navigated by ``n``/``N``, so replacing the whole object
-    per character would be ceremony, not safety.
+    **Two fields now, and the dataclass is what made the second one cheap.**
+    Slice 3 added :attr:`row_map` in place; Slice 4 adds the current-match index
+    the same way — each an added field rather than a reshape of every use site,
+    which is what a bare ``str | None`` would have cost. (The match offsets are
+    deliberately *not* a field: :func:`~graphia.eval_ledger.find_matches` is
+    ~1 ms and is recomputed from :attr:`TranscriptBody.text` at each use, so
+    there is no second copy of the answer to keep in step with the query.)
+    Mutable (no ``frozen=True``): a search is edited keystroke by keystroke and
+    re-navigated by ``n``/``N``, so replacing the whole object per character
+    would be ceremony, not safety.
 
     **``query`` is kept in step with the box by
     :meth:`TranscriptScreen.on_input_changed`**, which writes it on every
@@ -1175,6 +1182,30 @@ class SearchState:
     """
 
     query: str
+
+    # THE OFFSET → RENDERED-ROW MAP, CACHED WITH THE WIDTH IT WAS BUILT AT
+    # (spec 044, Slice 3) — ``None`` until the first jump asks for one.
+    #
+    # `wrap_row_starts` is what turns a match's character offset into the screen
+    # row Enter scrolls to, and it depends on the wrap width, so the width is
+    # half the cache key rather than an afterthought. **The width is not a
+    # constant**: measured at a 100-column terminal, a game that OVERFLOWS the
+    # viewport wraps at 96 (100 − 2 scrollbar − 2 padding) while one that FITS
+    # wraps at 98, and opening the search row can flip a borderline short game
+    # between the two by costing it the row that gave it a scrollbar. A map
+    # built at the wrong width mis-wraps every line of a real game, so
+    # `TranscriptScreen._row_starts` reads `body.content_size.width` live on
+    # every jump and rebuilds when it differs from what is cached here.
+    #
+    # Lazy rebuild rather than a `Resize` handler, because the rebuild is cheap
+    # enough not to need one: the whole map for the worst committed game (88 KB,
+    # 1,182 rows) costs **7.6 ms**, paid once per width the reviewer actually
+    # jumps at. A handler would pay it on every intermediate width of a drag.
+    #
+    # The TEXT is not part of the key, and cannot be: `TranscriptBody`'s base is
+    # built once at `compose` and never changes for the life of the screen, so
+    # width is the only thing a map can go stale against.
+    row_map: tuple[int, list[int]] | None = None
 
 
 class TranscriptScreen(Screen):
@@ -2705,6 +2736,216 @@ class TranscriptScreen(Screen):
             return
         body = self.query_one("#transcript-body", TranscriptBody)
         self._repaint_matches(find_matches(body.text, search.query))
+
+    def _row_starts(self, body: TranscriptBody) -> list[int]:
+        """The offset → rendered-row map for the game, at the width it wraps to *now*.
+
+        :func:`~graphia.eval_ledger.find_matches` answers "where in the text";
+        scrolling is measured in rendered rows, and this is the only bridge
+        between the two. It is a pure function of (text, width) —
+        :func:`~graphia.eval_ledger.wrap_row_starts` mirrors Textual's wrapping
+        by calling the very function Textual calls — so all this method owns is
+        *which width*, and *when to rebuild*.
+
+        **The width is read live, every time, and hardcoding it would mis-wrap
+        every real game.** ``body.content_size.width`` is the widget's region
+        minus its gutter, and it is **96 for a game that overflows the viewport
+        and 98 for one that fits** at a 100-column terminal: the vertical
+        scrollbar an overflowing game grows takes two cells, and
+        ``#transcript-body``'s ``padding: 0 1`` takes two more. 96 and 98 wrap
+        differently on essentially every line of an 88 KB game, so a map built
+        at the wrong one puts the jump on the wrong row and stays wrong.
+        Opening the search row can even flip a *borderline* short game between
+        the two — it costs the scroller a viewport row (measured 22 → 21), and a
+        game that fitted 22 rows but not 21 acquires a scrollbar and loses two
+        columns — which is precisely why the answer is asked of the widget at
+        jump time rather than remembered from when the search opened.
+
+        **Cached on the width it was built at, and rebuilt only when that
+        differs** (:attr:`SearchState.row_map`). A full rebuild of the worst
+        committed game — 88 KB, 405 source lines, 1,182 rendered rows — is
+        **7.6 ms**, which is cheap enough that a lazy rebuild needs no
+        ``Resize`` handler behind it: the cost is paid once per width the
+        reviewer actually presses Enter at, instead of once per intermediate
+        width of a terminal drag. Worth knowing while reading this: Textual does
+        **not** remap ``scroll_y`` across a resize, so the reading view already
+        loses the reviewer's place on a resize today — this method inherits that
+        rather than introducing it, and rebuilding here restores a *correct* map
+        for wherever the view has ended up.
+
+        With no search in progress the map is simply not cached (there is
+        nowhere to put it); that path costs one rebuild and is not on any
+        keystroke's way.
+
+        Args:
+            body: The transcript body — asked for both its text and its live
+                width, so the two can never come from different moments.
+
+        Returns:
+            The offset each rendered row starts at; its length is the row count.
+        """
+        width = body.content_size.width
+        search = self._search
+        if search is not None and search.row_map is not None:
+            cached_width, cached_starts = search.row_map
+            if cached_width == width:
+                return cached_starts
+        row_starts = wrap_row_starts(body.text, width)
+        if search is not None:
+            search.row_map = (width, row_starts)
+        return row_starts
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        """Enter jumps to the first match at or below where the reviewer is (§2.5).
+
+        The whole of functional-spec §2.5, and the keypress that makes this
+        feature a navigation tool rather than a colouring one: the first match
+        **at or below** the current top row comes to rest **on** the top row, the
+        prompt closes, and the highlights stay.
+
+        **Enter is INCLUSIVE, and that is §2.5 AC2 rather than a preference.**
+        "A match already on the top line counts as *at* the current position and
+        is where Enter lands — it does not skip ahead." So the reviewer's
+        position is converted to an offset and handed to
+        :func:`~graphia.eval_ledger.next_match` with ``inclusive=True``, and
+        pressing Enter on a match you are already looking at moves nothing.
+
+        **Note the asymmetry with Slice 4's ``n``/``N``, which is deliberate and
+        must not be smoothed away.** Enter is *offset-keyed and inclusive*;
+        ``n``/``N`` are *row-keyed and exclusive* — they skip past every match
+        sharing the current row, because §2.6 requires a press to always move the
+        view. Making Enter row-keyed too would break §2.5 AC2 directly.
+
+        **Nothing typed, or nothing found, is the same easy branch.**
+        :func:`~graphia.eval_ledger.find_matches` returns ``[]`` for an empty
+        query and ``next_match`` returns ``None`` for an empty list, so §2.5 AC5
+        ("Enter with nothing typed … nothing moves and the search simply
+        closes") and §2.8 AC4 ("a word with no matches … nothing moves and no
+        error appears") are both the *absence* of a scroll rather than two cases
+        to code.
+
+        **The search survives, and only the prompt closes.** ``_search`` stays
+        non-``None`` — that is state 2 of the three :class:`SearchState`
+        documents, the one that only exists from this slice onward, and
+        :meth:`action_close` already branches on it: an Esc after this jump
+        clears the highlighting and keeps the reviewer *in the game*, and a
+        further Esc leaves (§2.9 AC5). Routing Enter through
+        :meth:`_clear_search` would dump the highlights §2.5 AC4 promises will
+        still be there — the reviewer jumped in order to read the match in
+        context, and the other matches staying lit is how they see what is
+        nearby.
+
+        One accepted consequence, uniform rather than special-cased: Enter on an
+        *empty* query also leaves a (matchless) search live, so the first Esc
+        after it clears nothing visible and the second leaves the game. That is
+        the same second keypress §2.9's back-out consequence already spends, and
+        the alternative — Enter sometimes ending the search and sometimes not,
+        depending on what is typed — would make the Esc that follows it
+        unpredictable.
+        """
+        # SCOPED BY TYPE for the same reason `on_input_changed` is: this
+        # screen's box has no id, and `LedgerTableScreen` runs an `Input` of its
+        # own whose `Submitted` means something entirely different (commit the
+        # runs-list filter and focus the table).
+        if not isinstance(event.input, TranscriptSearchInput):
+            return
+        # No search, nothing to jump to. Unreachable in practice — the box is
+        # only focusable while the bar is open, and `action_open_search`
+        # establishes the state *before* it opens the bar precisely so that
+        # invariant holds — but this method would otherwise be the one place
+        # that dereferences it without asking.
+        search = self._search
+        if search is None:
+            return
+
+        body = self.query_one("#transcript-body", TranscriptBody)
+        scroller = self.query_one("#transcript-scroll", VerticalScroll)
+
+        # ONE MATCH LIST, USED FOR BOTH THE JUMP AND (IF IT IS OWED) THE PAINT.
+        # Offsets into `body.text` — the string the widget actually renders,
+        # which is what makes them safe to hand to both the highlighter and the
+        # row map.
+        matches = find_matches(body.text, search.query)
+        # SETTLE A DEBOUNCE WINDOW THAT IS STILL OPEN, so the jump and the
+        # highlighting cannot describe two different queries. Pressing Enter
+        # within `_SEARCH_DEBOUNCE_SECONDS` of the last keystroke is the
+        # ordinary way to use this feature — type, Enter — and it is exactly the
+        # window in which the screen is still showing the *previous* query's
+        # matches. Repainting from the same list the jump is about to use makes
+        # the two agree by construction rather than by timing. Cancelling first
+        # is what stops the pending timer firing afterwards and repeating a
+        # repaint that has already happened.
+        #
+        # When no window is open there is nothing to settle: the last keystroke's
+        # repaint has already landed on this very query, so a second repaint
+        # would be up to 300 ms of work (tech-spec §2.8's worst measured query)
+        # to redraw what is already on screen.
+        if self._repaint_timer is not None:
+            self._cancel_pending_repaint()
+            self._repaint_matches(matches)
+
+        row_starts = self._row_starts(body)
+        # `scroll_offset.y` IS A ROW; `next_match` WANTS AN OFFSET. Converting
+        # through `offset_for_row` is the whole of the bridge, and it is what
+        # makes "at or below the reviewer's current position" mean the first
+        # character of the top rendered row — so a match that *begins* above the
+        # fold and merely runs onto the top row is behind the reviewer and is
+        # skipped, while one that begins on the top row is landed on.
+        found = next_match(
+            matches,
+            offset_for_row(row_starts, scroller.scroll_offset.y),
+            inclusive=True,
+        )
+        if found is not None:
+            # `wrapped` is consumed in Slice 4, which gives the screen a status
+            # channel (`Screen.sub_title`) that outlives the prompt and can say
+            # "(wrapped)" where §2.5 AC3 asks for it. The jump itself is
+            # identical either way, so the flag is deliberately dropped here
+            # rather than half-reported somewhere the reviewer cannot see.
+            index, _wrapped = found
+            target_row = row_for_offset(row_starts, matches[index][0])
+            # THE END-OF-GAME CLAMP (functional-spec §2.5, fourth bullet). A
+            # match inside the final screenful CANNOT reach the top line,
+            # because there is nothing past the end of the game to scroll into
+            # view — it comes to rest as close to the top as the game allows.
+            # `less` has exactly this limit for exactly this reason, and the
+            # author chose it over padding the view with blank rows that are not
+            # part of the game (tech-spec §2.5).
+            #
+            # `scroll_y` would clamp at `max_scroll_y` on its own; saying it
+            # here is the difference between a limit that is *stated* and one
+            # that is merely survived — and it is what makes the clamp testable
+            # as the intended landing rather than as a coincidence of Textual's.
+            #
+            # `animate=False, immediate=True`: `Widget.scroll_to` otherwise
+            # defers the actual move through `call_after_refresh`, so the
+            # landing would not be observable until a further refresh cycle.
+            # Together the two make the jump synchronous and deterministic,
+            # which every test of this behaviour depends on.
+            scroller.scroll_to(
+                y=min(target_row, scroller.max_scroll_y),
+                animate=False,
+                immediate=True,
+            )
+
+        # THE PROMPT CLOSES, THE SEARCH DOES NOT (§2.5 AC4). Two lines, and
+        # neither is `_clear_search`: `_search` survives, the box keeps what was
+        # typed (so `/` re-opens the search the reviewer already has rather than
+        # a blank one), and the amber stays on every match.
+        #
+        # AFTER the scroll, deliberately. Hiding the row hands a viewport row
+        # back to the scroller, which re-lays-out on the next refresh and lowers
+        # `max_scroll_y` by one; doing it first would mean clamping against a
+        # `max_scroll_y` that no longer matches the geometry the row map was
+        # built at. Scrolling first keeps every number in the calculation above
+        # from the same moment, and the worst the re-layout can then do is pull
+        # a reviewer parked on the very last row back by one — the same
+        # re-fitting `_clear_search` already documents.
+        self.query_one("#search-row", Horizontal).remove_class("-open")
+        # Focus goes back to the game: the reviewer is reading again, so their
+        # arrow keys must scroll — and Slice 4's `n`/`N` are *screen* bindings,
+        # which a focused `Input` would take as literal characters.
+        scroller.focus()
 
     def on_transcript_search_input_scroll_game(
         self, message: TranscriptSearchInput.ScrollGame

@@ -1,9 +1,12 @@
 """Pure, terminal-free unit tests for the transcript-search matchers (spec 044).
 
-Covers the two functions Slice 2 task 2.1 added to :mod:`graphia.eval_ledger`
-beside ``tokenize_transcript`` — :func:`search_is_case_sensitive` and
-:func:`find_matches` — and nothing else. No Textual, no ``run_test()``, no
-``App``, no widget: this module imports one production module and the stdlib.
+Covers the pure search layer of tech-spec §2.1 — the two matchers Slice 2
+task 2.1 added to :mod:`graphia.eval_ledger` beside ``tokenize_transcript``
+(:func:`search_is_case_sensitive` and :func:`find_matches`) and, from Slice 3
+task 3.7, the row arithmetic they feed (:func:`wrap_row_starts` and
+:func:`row_for_offset`) as the committed corpus exercises it. No Textual, no
+``run_test()``, no ``App``, no widget: this module imports one production module
+and the stdlib.
 
 **Why the split, in one measured number.** ``tests/test_ledger_viewer.py`` runs
 90 items in ~57 s (≈0.63 s per ``run_test()`` item); ``tests/test_transcript_
@@ -58,13 +61,30 @@ there.
 5. **The contract edges**: an empty query, non-overlap, regex metacharacters
    matched literally, and a whitespace-only query honoured as a real search.
 
+6. **The committed corpus, swept as PROPERTIES and never as counts** (task
+   3.7, tech-spec §4). One item per run directory, each with a coverage counter,
+   over all 420 committed games: every reported match round-trips through its
+   own offsets, the row starts partition ``[0, len(text))`` contiguously, every
+   match resolves to a row holding its head — straddling a fold into the
+   immediate successor row when it must — and the two preconditions the wrap
+   mirror rests on still hold (zero tabs, zero Rich-stripped control codes).
+   Golden per-file counts are deliberately absent: the corpus grew 298 → 420
+   since spec 038 and gains a directory on every eval run, so a pinned number is
+   a test that fails on a green tree.
+
 --- What is deliberately NOT here ---
 
-* **The corpus sweep.** Task 3.7 owns it, and it needs the row arithmetic
-  (``wrap_row_starts`` / ``row_for_offset``) that does not exist yet. It will
-  land in this file, properties only and never golden counts — the corpus grew
-  298 -> 420 since spec 038 and gains a directory on every eval run.
-* **Row, offset and next/previous-match arithmetic** — Slices 3 and 4.
+* **Golden match counts per game.** See item 6 for why they would rot.
+* **Sweeping more than one width over the corpus.** Rich's wrapping is Rich's
+  contract, not ours: ``tests/test_ledger_viewer.py``'s B15.6 three-legged pin
+  covers agreement with the live render, and the synthetic fixtures beside it
+  cover width variety. The corpus sweep fixes one width, **96** — the measured
+  live ``body.content_size.width`` of a game that overflows a 100-column
+  terminal.
+* **Any corpus sweep through ``run_test()``** — 420 Textual sessions is ~4.5
+  minutes (tech-spec §4). Exactly one real committed game goes through a
+  terminal, and it does so in the viewer's own suite, not here.
+* **Next/previous-match arithmetic** — Slice 4.
 * **Colour, themes, snapshots and timings** (tech-spec §4, *"what is deliberately
   not tested"*). A background-only span makes no per-theme contrast claim;
   ``snap_compare`` appears in zero test files in this repo; and there are no
@@ -75,8 +95,11 @@ there.
 ``graphia.eval_ledger`` is the pure, Textual-free, I/O-free layer, so the autouse
 ``safe_llm`` net in ``conftest.py`` is simply irrelevant here, exactly as it is
 for ``tests/test_ledger_model.py`` and ``tests/test_transcript_highlight.py``.
-Nothing below reads or writes a file: the one "transcript" is a module-level
-string. The committed corpus and ``evals/blunder-ledger.yaml`` are never touched.
+Everything above section 6 works on module-level strings. Section 6 **reads**
+the committed corpus under ``evals/transcripts/`` — read-only, through
+``Path.read_text``, never through the viewer and never through a terminal — and
+writes nothing anywhere. ``evals/blunder-ledger.yaml`` is never touched, by
+either half.
 
 The real production symbols are imported directly (never re-implemented locally),
 so a rename breaks these tests — which is the point.
@@ -84,10 +107,17 @@ so a rename breaks these tests — which is the point.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from graphia import eval_ledger
-from graphia.eval_ledger import find_matches, search_is_case_sensitive
+from graphia.eval_ledger import (
+    find_matches,
+    row_for_offset,
+    search_is_case_sensitive,
+    wrap_row_starts,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -729,3 +759,517 @@ def test_both_matchers_are_exported_from_the_module() -> None:
     assert "find_matches" in eval_ledger.__all__
     assert eval_ledger.find_matches is find_matches
     assert eval_ledger.search_is_case_sensitive is search_is_case_sensitive
+
+
+# ===========================================================================
+# 6. The committed corpus (spec 044 Slice 3, task 3.7) — properties, not counts
+# ===========================================================================
+#
+# Sections 1–5 answer "is the matcher right about a string I can read?". This one
+# answers the question those cannot: **is the matcher right about the row map, on
+# 15 MB of real model prose that nobody wrote by hand?**
+#
+# Why the corpus is the only place these four properties can be stated. The
+# synthetic fixtures above are, by construction, the inputs someone thought of.
+# The committed games are the inputs nobody thought of: 420 of them, 230,451
+# rendered rows at width 96, the longest single source line **4,269 characters**
+# (that is characters — 4,297 is its length in bytes), and one whitespace-
+# delimited token 166 characters long where a model forgot its spaces entirely.
+# That last one is the shape that folds *mid-word*, and no hand-written fixture
+# was ever going to contain it.
+#
+# **Properties, never golden counts.** `tasks.md` records this decision and the
+# reason is arithmetic: the corpus grew 298 → 420 files since spec 038 and gains
+# a run directory on every measured eval run, so `assert len(matches) == 11238`
+# is a test that goes red on a green tree the first time someone commits a
+# transcript. Everything below is a relation that holds for *any* transcript.
+
+# ---------------------------------------------------------------------------
+# Corpus discovery — DUPLICATED from tests/test_transcript_highlight.py
+# ---------------------------------------------------------------------------
+#
+# **Deliberately copied rather than imported**, and the reason is worth one
+# paragraph because "don't repeat yourself" argues the other way. Importing
+# `_TRANSCRIPTS` from a sibling test module makes that module import at *this*
+# module's collection time, couples the two files' collection order, and turns a
+# failure in one into a mysterious error in the other — a `pytest -k` selecting
+# nothing in `test_transcript_highlight.py` would still pay for its module body,
+# and a syntax error there would report as a collection failure *here*. Test
+# modules are leaves; they may share via `conftest.py` or via production code,
+# never via each other. The block is ~20 lines and its drift risk is nil: if the
+# corpus ever moves, both files fail loudly on the same day.
+#
+# Resolved from THIS FILE, never from the CWD: `pytest` may be invoked from
+# anywhere (repo root, `tests/`, an IDE runner) and this sweep must always find
+# the same corpus. `tests/` sits directly under the repo root, so `parents[1]` is
+# that root.
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_CORPUS_ROOT = _REPO_ROOT / "evals" / "transcripts"
+
+
+def _discover_transcripts() -> list[Path]:
+    """Every committed transcript, discovered — deliberately never hard-coded.
+
+    Matches ``*.txt`` at any depth under the corpus root: that is the artifact
+    form spec 017 writes (``<run-id>/game-NN.txt``) and it keeps a stray
+    ``.DS_Store`` — a live hazard on macOS — from failing the suite on an
+    undecodable read.
+    """
+    if not _CORPUS_ROOT.is_dir():
+        return []
+    return sorted(path for path in _CORPUS_ROOT.rglob("*.txt") if path.is_file())
+
+
+_TRANSCRIPTS = _discover_transcripts()
+
+# One test item per run directory, not per file: 36 items rather than 420. A run
+# dir is the unit the corpus actually grows and shrinks in (spec 017 writes one
+# per measured run, `make clean-transcripts` deletes whole ones), so "which runs
+# broke" is immediately meaningful, and growth is ~1 item per eval run rather
+# than ~20. The per-item coverage counter is what keeps that grouping honest —
+# it proves the item swept every file in its dir rather than silently none.
+_RUN_DIRS = sorted({path.parent for path in _TRANSCRIPTS})
+
+# A fresh clone can legitimately carry no transcripts: the dir is NOT gitignored
+# but its contents are curated commit-or-delete, and a shallow or partial
+# checkout may have none. Skipping keeps `pytest -q` green there instead of
+# failing on absent input data.
+#
+# Gated **per test**, never at module level: sections 1–5 above need no corpus at
+# all, and a module-level `pytest.skip(allow_module_level=True)` would take all
+# 70 of them down with the sweep on a corpus-less checkout, reporting a green run
+# that had not exercised the matcher once.
+_NO_CORPUS_REASON = (
+    f"no committed transcripts found under {_CORPUS_ROOT} — "
+    "nothing to sweep in this checkout"
+)
+
+_requires_corpus = pytest.mark.skipif(not _TRANSCRIPTS, reason=_NO_CORPUS_REASON)
+
+# The sweep's parameters: one per run dir, or a single explicitly-skipped
+# placeholder when there is no corpus. The placeholder is deliberate — an empty
+# parameter list is reported according to pytest's `empty_parameter_set_mark`
+# setting, which this repo does not pin, so the skip is spelled out here instead
+# of inherited from configuration.
+_RUN_DIR_PARAMS = [pytest.param(run_dir, id=run_dir.name) for run_dir in _RUN_DIRS] or [
+    pytest.param(None, marks=pytest.mark.skip(reason=_NO_CORPUS_REASON), id="no-corpus")
+]
+
+
+def _rel(path: Path) -> str:
+    """Path relative to the repo root, for readable failure messages."""
+    try:
+        return str(path.relative_to(_REPO_ROOT))
+    except ValueError:  # pragma: no cover - corpus always lives under the root
+        return str(path)
+
+
+# ---------------------------------------------------------------------------
+# What the sweep checks, and with which queries
+# ---------------------------------------------------------------------------
+
+# The one width the corpus is swept at. Tech-spec §2.2 measures it: at a
+# 100-column terminal a game that overflows renders at
+# `body.content_size.width == 96` (100 − 2 scrollbar − 2 padding). Sweeping more
+# widths would be testing Rich's wrapping, which is Rich's contract and not ours
+# — see this module's docstring.
+_CORPUS_WRAP_WIDTH = 96
+
+# The two queries, and they are two for a reason that is itself a finding.
+#
+# `vote` is tech-spec §4's own example and the domain's most-searched word:
+# 11,238 matches across the corpus, present in every game. It exercises the
+# round trip and the row resolution at scale.
+#
+# `" the "` is here because **a bare word can never straddle a fold.**
+# `divide_line` cuts at *word starts*, so a word too short to be folded moves to
+# the next row whole — measured, `vote` straddles a row boundary **zero** times
+# in all 420 games. A match can only span a fold if it contains the whitespace
+# the cut fell on, which is exactly what a space-bearing phrase does: `" the "`
+# straddles 2,637 times, in 407 of the 420 files and in all 36 run dirs. Without
+# it, property 3's straddle branch below would be dead code that never executed
+# and the sweep would look thorough while testing half of itself. That is the
+# whole point of `test_width_96_really_does_fold_a_match_across_a_row_boundary`.
+#
+# Both are lowercase, so both run case-INSENSITIVELY (§2.7) — which is why the
+# round-trip assertion compares `.lower()` on both sides rather than `==`.
+_SWEEP_QUERIES = ("vote", " the ")
+
+# Precondition one. `wrap_row_starts` calls `expandtabs(8)` before wrapping,
+# exactly as `Content._wrap_and_format` does, so for a line containing a tab the
+# offsets `divide_line` reports are indices into the *expanded* line and every
+# offset after the tab sits further right than the same character does in the
+# file. That is not worked around — it is pinned here, so a transcript that ever
+# grew a tab fails loudly instead of mis-jumping quietly.
+_TAB = "\t"
+
+# Precondition two. Rich's `strip_control_codes` silently removes these five
+# (BEL, BS, VT, FF, CR) and `rich.text.Text.append` runs it, so a transcript
+# containing one renders a character short of its file — and every offset after
+# it points at the wrong character on screen. `\n` and `\t` are NOT in Rich's
+# list; the tab is excluded here for the separate reason above.
+#
+# `tests/test_transcript_highlight.py` guards the same fact for the *tokenizer*.
+# Restated here because this sweep depends on it for a different reason: there,
+# a stripped code costs a character of rendered text; here it costs the
+# alignment between an offset and the row it is supposed to land on.
+_RICH_STRIPPED_CONTROL_CODES = "\x07\x08\x0b\x0c\x0d"
+
+# How many problems one failing file is allowed to print before its report is
+# truncated. A broken row map would otherwise emit tens of thousands of
+# complaints and bury the useful first one.
+_MAX_REPORTED_PROBLEMS = 10
+
+# How many failing files one run dir prints in full. A row-map bug is systematic,
+# so all ~20 games in a run break at once; the first few reports say everything
+# and the count line says how wide the damage is.
+_MAX_REPORTED_FILES = 5
+
+
+def _row_end(row_starts: list[int], row: int, length: int) -> int:
+    """Where rendered row ``row`` ends: the next row's start, or the text's end.
+
+    The half-open upper bound that makes row ``i`` exactly
+    ``text[row_starts[i] : _row_end(...)]``. Written once because the last row is
+    the only special case and getting it wrong in one of three call sites is
+    precisely the kind of drift this sweep exists to catch elsewhere.
+    """
+    return row_starts[row + 1] if row + 1 < len(row_starts) else length
+
+
+def _sweep_one_game(text: str) -> list[str]:
+    """All four properties against one game, as a list of readable problems.
+
+    Collecting rather than raising is the corpus idiom: a systematic bug breaks
+    every game in a run at once, and one file aborting the item would hide the
+    other nineteen. The list is capped at :data:`_MAX_REPORTED_PROBLEMS` — a
+    broken row map has one cause and tens of thousands of symptoms, and the
+    first ten say everything the eleven-thousandth would.
+
+    Whether the straddle branch of property 3 ever *fires* is deliberately NOT
+    answered here: ``test_width_96_really_does_fold_a_match_across_a_row_boundary``
+    runs its own census for it, so that verdict never depends on which items
+    pytest happened to select or in what order.
+    """
+    problems: list[str] = []
+    length = len(text)
+
+    # --- Property 4: the two preconditions the wrap mirror rests on ----------
+    # Checked FIRST and reported first, because both of them invalidate
+    # everything below: a tab makes the offsets indices into a different string,
+    # and a stripped control code makes the render shorter than the file. A
+    # reader who sees a hundred row-resolution failures should see the reason
+    # above them, not have to guess it.
+    if _TAB in text:
+        problems.append(
+            f"contains {text.count(_TAB)} tab character(s) — `expandtabs(8)` runs "
+            "before the wrap, so every offset after a tab indexes the EXPANDED "
+            "line and no longer points where `find_matches` says it does"
+        )
+    stripped = sorted(
+        hex(ord(char)) for char in set(_RICH_STRIPPED_CONTROL_CODES) if char in text
+    )
+    if stripped:
+        problems.append(
+            f"contains control code(s) {stripped} that `rich.text.Text.append` "
+            "silently strips — the rendered game is shorter than the file, so "
+            "every later offset lands on the wrong character"
+        )
+
+    # --- Property 2: the row starts partition [0, len(text)) contiguously ----
+    row_starts = wrap_row_starts(text, _CORPUS_WRAP_WIDTH)
+    if not row_starts:
+        # `wrap_row_starts` documents that even the empty string is one row, so
+        # an empty list is not a degenerate input — it is a broken mirror, and
+        # nothing below it can be meaningfully checked.
+        problems.append(
+            f"`wrap_row_starts` returned NO rows for {length} characters — the "
+            "list's length IS the rendered row count, so this game would be "
+            "unreachable by any jump"
+        )
+        return problems
+
+    if row_starts[0] != 0:
+        problems.append(
+            f"row 0 starts at offset {row_starts[0]}, not 0 — the first "
+            f"{row_starts[0]} character(s) of the game belong to no row"
+        )
+    for row, (this, following) in enumerate(zip(row_starts, row_starts[1:])):
+        if this >= following:
+            problems.append(
+                f"row {row} starts at {this} and row {row + 1} at {following} — "
+                "starts must STRICTLY increase, or two rows overlap (or one is "
+                "empty and every later row index is off by one)"
+            )
+            break
+    if row_starts[-1] >= length:
+        # Measured over all 420: no committed transcript ends with a newline, so
+        # the documented trailing-blank-row branch of `wrap_row_starts` (whose
+        # last start legitimately IS `len(text)`) never fires here. A start at or
+        # past the end therefore means a real arithmetic fault, not that branch.
+        problems.append(
+            f"the last row starts at {row_starts[-1]} but the game is only "
+            f"{length} characters — no committed transcript ends in a newline, "
+            "so every row start must sit strictly inside the text"
+        )
+
+    # "No gaps and no overlaps" is now established — but note what does NOT
+    # establish it, because the obvious check is a trap: concatenating
+    # `text[starts[i] : starts[i + 1]]` down the list rebuilds the text for ANY
+    # increasing starts whatever, since each row ends exactly where the next
+    # begins by construction. It would read as the strongest assertion here and
+    # assert nothing at all. Contiguity IS the three checks above; what is left
+    # to pin is that the partition falls in the RIGHT PLACES.
+    #
+    # The text's own newlines say where some of those places are. Textual splits
+    # on newlines before it wraps anything, so a newline always ends a rendered
+    # row: every `\n` must be the last character of a row, which means the offset
+    # after it is either a row start or the end of the game. This is the property
+    # a one-character drift in the offset arithmetic breaks on the very first
+    # line, while leaving the starts perfectly increasing and row 0 at 0.
+    starts_index = set(row_starts)
+    newline = text.find("\n")
+    while newline != -1:
+        if newline + 1 != length and newline + 1 not in starts_index:
+            row = row_for_offset(row_starts, newline)
+            problems.append(
+                f"the newline at offset {newline} does not end a rendered row: "
+                f"offset {newline + 1} is not a row start, so row {row} "
+                f"([{row_starts[row]}, {_row_end(row_starts, row, length)})) "
+                "runs on past the end of its source line — the row starts have "
+                "drifted off the text they are supposed to partition"
+            )
+            break
+        newline = text.find("\n", newline + 1)
+
+    # --- Properties 1 and 3: round trip, and match → row ---------------------
+    for query in _SWEEP_QUERIES:
+        if len(problems) >= _MAX_REPORTED_PROBLEMS:
+            break
+        for start, end in find_matches(text, query):
+            if len(problems) >= _MAX_REPORTED_PROBLEMS:
+                break
+
+            # Property 1. The offsets must slice the ORIGINAL text back to the
+            # query — `.lower()` on both sides because both sweep queries are
+            # all-lowercase and so match case-insensitively (§2.7).
+            found = text[start:end]
+            if found.lower() != query.lower():
+                problems.append(
+                    f"{query!r} reported a match at ({start}, {end}) but the "
+                    f"text there is {found!r} — the offsets must slice back to "
+                    "the query, which is the property the widget consumes"
+                )
+                continue
+
+            # Property 3, first half: the resolved row must HOLD the match's
+            # start. This is the assertion a jump depends on — `scroll_to(y=row)`
+            # is worth nothing if `row` is not where the match is.
+            row = row_for_offset(row_starts, start)
+            head_end = _row_end(row_starts, row, length)
+            if not row_starts[row] <= start < head_end:
+                problems.append(
+                    f"{query!r} at offset {start} resolved to row {row}, which "
+                    f"spans [{row_starts[row]}, {head_end}) — `row_for_offset` "
+                    "must return a row that CONTAINS the offset"
+                )
+                continue
+
+            if end <= head_end:
+                continue
+
+            # Property 3, second half: the match straddles a fold. Its head is on
+            # `row` (established above) and its tail must continue into the
+            # IMMEDIATE successor — asserted through `row_for_offset` again,
+            # rather than by re-deriving it from the starts, so it is the
+            # resolver being checked and not arithmetic restating itself.
+            #
+            # "Immediate" rather than merely "later" is safe here because neither
+            # sweep query contains a newline, and inside one source line every
+            # row is a full wrap width wide (`divide_line` cuts at word starts,
+            # and folds an over-long word into exact `width`-cell chunks). Only a
+            # blank source line produces a one-character row, and a query with no
+            # newline cannot span one.
+            tail_row = row_for_offset(row_starts, end - 1)
+            if tail_row != row + 1:
+                problems.append(
+                    f"{query!r} at ({start}, {end}) straddles the fold at "
+                    f"{head_end}: its head resolves to row {row} but its tail "
+                    f"resolves to row {tail_row}, not {row + 1} — a straddling "
+                    "match must continue into the immediate successor row"
+                )
+
+    return problems
+
+
+@pytest.mark.parametrize("run_dir", _RUN_DIR_PARAMS)
+def test_the_row_map_and_the_matcher_agree_on_every_committed_game(
+    run_dir: Path,
+) -> None:
+    """The four sweep properties, over one run directory of real games.
+
+    Round trip, partition, resolution and the two preconditions — stated in
+    :func:`_sweep_one_game` and reported here per run dir, with the coverage
+    counter that proves the item swept every file it was given rather than
+    quietly none of them.
+
+    No count of anything is asserted. What is asserted is that whatever this run
+    directory happens to contain, and however many games join it later, the
+    offsets `find_matches` reports and the rows `wrap_row_starts` lays out
+    describe the same text.
+    """
+    files = [path for path in _TRANSCRIPTS if path.parent == run_dir]
+    assert files, f"no transcripts discovered under {run_dir} — the sweep is vacuous"
+
+    failures: list[str] = []
+    checked = 0
+    for path in files:
+        text = path.read_text(encoding="utf-8")
+        problems = _sweep_one_game(text)
+        checked += 1
+        if not problems:
+            continue
+        reported = problems[:_MAX_REPORTED_PROBLEMS]
+        if len(problems) > len(reported):
+            reported.append(
+                f"… and {len(problems) - len(reported)} further problem(s), "
+                "not shown"
+            )
+        failures.append(
+            "\n  ".join([f"{_rel(path)} ({len(text)} characters):", *reported])
+        )
+
+    # The coverage counter. Cheap, and it is the whole justification for
+    # grouping 420 files into 36 items: without it a `files` list that had
+    # silently narrowed — a glob change, a `continue` added to the loop — would
+    # leave this item green while sweeping nothing.
+    assert checked == len(files), (
+        f"{run_dir.name}: swept {checked} of {len(files)} discovered transcripts"
+    )
+
+    shown = failures[:_MAX_REPORTED_FILES]
+    if len(failures) > len(shown):
+        shown.append(
+            f"… and {len(failures) - len(shown)} further failing transcript(s) "
+            f"in {run_dir.name}, not shown"
+        )
+    assert not failures, "\n\n".join(
+        [
+            f"{len(failures)} of {len(files)} transcripts in {run_dir.name} broke "
+            f"the offset/row contract at width {_CORPUS_WRAP_WIDTH}:",
+            *shown,
+        ]
+    )
+
+
+@_requires_corpus
+def test_the_run_dir_items_between_them_sweep_every_discovered_transcript() -> None:
+    """The coverage counters add up, and no file falls between two items.
+
+    Each item above proves it swept every file in *its own* directory. This
+    proves the directories themselves partition the corpus — that ``_RUN_DIRS``
+    loses no file and double-counts none, so the green items together mean
+    "every discovered transcript was swept" rather than "every transcript in
+    some subset of the directories was". (36 items over 420 files as this is
+    written; both grow with every committed eval run, which is why neither
+    number is asserted.)
+
+    Order-independent by construction: it recomputes the grouping from
+    ``_TRANSCRIPTS`` rather than reading a counter the other items filled in, so
+    it says the same thing under ``-k``, under ``-p no:randomly`` and under
+    ``xdist``. Reads no files, costs nothing.
+    """
+    assert _TRANSCRIPTS, f"no transcripts discovered under {_CORPUS_ROOT}"
+    assert _RUN_DIRS, "transcripts discovered but no run directories derived"
+
+    grouped = sum(
+        len([path for path in _TRANSCRIPTS if path.parent == run_dir])
+        for run_dir in _RUN_DIRS
+    )
+    assert grouped == len(_TRANSCRIPTS), (
+        f"the {len(_RUN_DIRS)} run-dir items cover {grouped} transcripts but "
+        f"{len(_TRANSCRIPTS)} were discovered — a file is being swept twice or "
+        "not at all"
+    )
+    # The other direction: no transcript sits outside every run dir, which a
+    # `grouped == len(...)` alone would tolerate if one file were counted twice
+    # while another was counted not at all.
+    swept = set(_RUN_DIRS)
+    assert all(path.parent in swept for path in _TRANSCRIPTS)
+
+
+@_requires_corpus
+def test_width_96_really_does_fold_a_match_across_a_row_boundary() -> None:
+    """NON-VACUITY: property 3's straddle branch actually fires on real games.
+
+    Without this, the sweep above could pass with its straddle half never
+    executing once, and nobody would know — which is not a hypothetical here.
+    **Measured: the tech spec's own example query ``vote`` straddles a fold zero
+    times across all 420 committed games.** `divide_line` cuts at word starts, so
+    a word short enough not to be folded moves to the next row whole and a
+    single-word query can only ever sit inside one row. Had the sweep carried
+    ``vote`` alone, half of it would have been dead code reading as coverage.
+
+    So this test says the corpus genuinely produces the case, counts how much of
+    it there is, and — the part a counter cannot give — takes one real example
+    apart to show it is a straddle and not an off-by-one: a non-empty head ending
+    exactly at the fold, a non-empty tail starting exactly there, and the two
+    concatenating back to the matched run.
+
+    Deliberately its OWN sweep rather than a total accumulated by the items
+    above. Reading a counter they filled in would make this test's verdict depend
+    on collection order, on ``-k`` and on ``xdist`` sharding; recomputing costs
+    about a second and means the same thing however the suite is invoked.
+    """
+    straddles = 0
+    files_with_one = 0
+    run_dirs_with_one: set[str] = set()
+    example: tuple[str, str, str] | None = None
+
+    for path in _TRANSCRIPTS:
+        text = path.read_text(encoding="utf-8")
+        row_starts = wrap_row_starts(text, _CORPUS_WRAP_WIDTH)
+        here = 0
+        for query in _SWEEP_QUERIES:
+            for start, end in find_matches(text, query):
+                row = row_for_offset(row_starts, start)
+                fold = _row_end(row_starts, row, len(text))
+                if end <= fold:
+                    continue
+                here += 1
+                if example is None:
+                    example = (_rel(path), text[start:fold], text[fold:end])
+        if here:
+            straddles += here
+            files_with_one += 1
+            run_dirs_with_one.add(path.parent.name)
+
+    assert straddles, (
+        f"not one match of {list(_SWEEP_QUERIES)} straddles a row boundary at "
+        f"width {_CORPUS_WRAP_WIDTH} across {len(_TRANSCRIPTS)} committed games "
+        "— the straddle half of the sweep above is passing by never firing. "
+        "Either the wrap width no longer folds these games, or a sweep query was "
+        "narrowed to something that cannot span a fold (a query with no "
+        "whitespace in it never can)."
+    )
+    # Not one freak game — which does NOT follow from the count above, and is
+    # the half worth having: if every straddle in the corpus came from a single
+    # transcript, deleting or regenerating that one file would silently take
+    # property 3's straddle branch dark again. Measured at the time of writing:
+    # 2,637 straddles across 407 of the 420 files and all 36 run dirs. Asserted
+    # as "more than one run dir", never as those numbers — they grow with the
+    # corpus.
+    assert len(run_dirs_with_one) > 1, (
+        f"every fold-straddling match in the corpus comes from {files_with_one} "
+        f"file(s) in run dir(s) {sorted(run_dirs_with_one)} — too narrow a base "
+        "for the sweep's straddle branch to rest on"
+    )
+
+    assert example is not None
+    where, head, tail = example
+    assert head, f"{where}: a straddling match must have a non-empty head"
+    assert tail, f"{where}: a straddling match must have a non-empty tail"
+    assert (head + tail).lower() in {query.lower() for query in _SWEEP_QUERIES}, (
+        f"{where}: the head {head!r} and tail {tail!r} of a straddling match "
+        "must concatenate back to the query that found it"
+    )

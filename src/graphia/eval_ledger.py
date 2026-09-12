@@ -50,12 +50,37 @@ so the enum carries the schema order for free and this module never has to see
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from bisect import bisect_left, bisect_right
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+# THE ONE PRIVATE-MODULE IMPORT IN THIS PACKAGE, AND IT IS DELIBERATE
+# (spec 044, tech-spec §2.2). ``rich._wrap.divide_line`` is the exact function
+# Textual's own wrapper calls — ``textual/content.py`` imports it by this name at
+# its module top, and ``Content._wrap_and_format`` hands it every source line.
+# :func:`wrap_row_starts` exists to answer "which rendered row is this character
+# offset on?", and the ONLY way for that answer to be right is for it to agree
+# with what Textual actually painted. Calling the same function makes that
+# agreement true **by construction** rather than by approximation — a
+# re-implementation of the word-wrap rules would be a second algorithm to keep in
+# step with a library we do not control, and it would fail *silently*, by
+# mis-jumping a few rows on some line nobody looked at.
+#
+# The cost is a dependency on a name Rich does not promise. It is priced:
+# ``rich>=15.0.0`` is a DIRECT dependency of this project (``pyproject.toml``),
+# not a transitive one, so a version that moves this name cannot arrive without a
+# deliberate bump here; Textual depends on the same name, so a removal breaks
+# Textual before it breaks us; and this is a **module-scope** import on purpose,
+# so a Rich upgrade that removes it fails at pytest **collection time** — every
+# test that imports this module errors at once — rather than at the moment a
+# reviewer presses Enter. That loud failure is the mitigation, and it is why this
+# import must never be moved inside a function to "be safe": deferring it would
+# convert the loudest available failure into the quietest.
+from rich._wrap import divide_line
 
 from graphia.substitution import SubstitutionKind
 
@@ -110,6 +135,17 @@ __all__ = [
     # tokenizer whose text they search.
     "search_is_case_sensitive",
     "find_matches",
+    # Spec 044, Slice 3: the row arithmetic that turns a match OFFSET into the
+    # rendered ROW the screen must scroll to. Exported beside the matchers
+    # because they are two halves of one answer — ``find_matches`` says where in
+    # the text, these say where on the screen.
+    "wrap_row_starts",
+    "row_for_offset",
+    "offset_for_row",
+    # …and the selector that turns those offsets into a decision: which match
+    # does this keypress go to, and did the search have to wrap around to reach
+    # it. The second half of that answer is what the reviewer is told.
+    "next_match",
 ]
 
 # One parsed ledger record: the YAML document as a plain nested mapping. Keyed by
@@ -3041,6 +3077,276 @@ def find_matches(text: str, query: str) -> list[tuple[int, int]]:
         (match.start(), match.end())
         for match in re.finditer(re.escape(query), text, flags)
     ]
+
+
+# ===========================================================================
+# Offset → rendered row (spec 044, Slice 3 — the feature's only hard problem).
+#
+# :func:`find_matches` answers "where in the text"; the screen needs "which row
+# on screen", because scrolling is measured in RENDERED rows and a preserved
+# game is *few, very long lines*. Measured on the committed corpus: the largest
+# game (``2026-09-05T17-58-24/game-01.txt``) is ~88 KB of text across **405**
+# source lines, its own longest line is **1,800** characters, and the longest
+# line anywhere in the 420 committed games is **4,269** — so at width 96 that
+# 405-line game occupies **1,182 rendered rows** and a single source line can be
+# forty of them. "Put the match on the top line" therefore cannot be served by
+# counting newlines, and the row map below is what stands between a jump and a
+# mis-jump.
+#
+# The whole design is one idea: **do not re-implement the wrapping, call it.**
+# See the ``rich._wrap`` import at the top of this module for why that import is
+# taken and what makes its risk affordable.
+# ===========================================================================
+
+# The tab width Textual expands with before wrapping: ``Content._wrap_and_format``
+# takes ``tab_size: int = 8`` and calls ``line.expand_tabs(tab_size)``, and every
+# caller in ``textual/content.py`` leaves the default in place. Named here so the
+# mirror states which constant it is mirroring rather than carrying a bare ``8``.
+_WRAP_TAB_SIZE = 8
+
+
+def wrap_row_starts(text: str, width: int) -> list[int]:
+    """The character offset each rendered row starts at, at wrap width ``width``.
+
+    The list's **length is the rendered row count**, and ``row_starts[i]`` is the
+    offset into ``text`` where row ``i`` begins — so row ``i`` is
+    ``text[row_starts[i] : row_starts[i + 1]]`` (the last row running to the end).
+    The starts therefore **partition** ``[0, len(text))`` contiguously, with no
+    gaps and no overlaps, which is the property the corpus sweep asserts.
+
+    **It mirrors Textual's own pipeline by calling the same function Textual
+    calls.** Read from the installed ``textual/content.py``
+    (``Content._wrap_and_format``), the pipeline is, per source line:
+
+    1. ``self.split("\\n", allow_blank=True)`` — split on newlines, **blank lines
+       preserved**, so an empty line still occupies a row;
+    2. ``line.expand_tabs(8)`` — **before** wrapping, not after;
+    3. ``offsets = divide_line(line.plain, width - line_pad * 2, fold=...)``;
+    4. ``content_line.content.divide(offsets)`` — which yields
+       ``len(offsets) + 1`` pieces cut at ``[0, *offsets, len(line)]``.
+
+    So the rows of one source line start at ``[0, *divide_line(...)]``, shifted by
+    that line's own offset in ``text``. ``fold=True`` and ``line_pad=0`` are the
+    right constants **today** because ``TranscriptScreen.DEFAULT_CSS`` sets
+    neither ``text-overflow`` (default ``fold``) nor ``line-pad`` (default ``0``);
+    a rule adding either would have to be reflected here.
+
+    **The three traps, each respected rather than coded around.**
+
+    *One — ``divide_line`` returns CHARACTER indices, not cell offsets*, despite
+    its own docstring saying "a list of cell offsets". Confirmed in the installed
+    ``rich/_wrap.py``: the offsets it appends come from ``re_word``'s match spans
+    and from ``start += len(line)``, both character positions, and
+    ``Content.divide`` documents its argument as "offsets (in characters)". This
+    is why accumulating a per-line character offset is correct; treating them as
+    cell offsets would drift on any double-width character.
+
+    *Two — the offsets CANNOT be recovered by summing the wrapped rows' lengths.*
+    ``_wrap_and_format`` ``rstrip()``s every divided row except the last one of a
+    source line, so ``len(Content(text).wrap(w)[i].plain)`` is short by however
+    much trailing whitespace the wrap point ate, and the running total drifts
+    further with every wrapped line. ``divide_line`` is the only source that
+    still knows where the cut actually fell.
+
+    *Three — ``expand_tabs`` runs BEFORE the wrap*, so the string being divided is
+    not the source line. The mirror expands too, which makes the ROW COUNT and
+    the row CONTENT right in all cases. The consequence to state plainly: for a
+    line containing a tab, the offsets ``divide_line`` reports are indices into
+    the *expanded* line, so every offset after the tab sits further right than the
+    same character does in ``text``. That is not worked around — it is pinned:
+    the committed corpus contains **zero** tabs (``blunder_eval`` writes none),
+    and a test asserts that precondition, so the mapping is exact today and a
+    transcript that ever grew a tab would fail loudly instead of mis-jumping
+    quietly.
+
+    **Trailing newline — the deliberate choice: YES, an extra empty row.** A
+    ``text`` ending in ``"\\n"`` produces a final **empty row**, because
+    ``split(allow_blank=True)`` keeps the blank after the last separator (its
+    ``lines.pop()`` is skipped precisely under ``allow_blank``). That row's start
+    offset is ``len(text)`` — the one entry in the returned list that is not
+    *inside* the text — and it is kept rather than trimmed because **Textual
+    renders it**: dropping it would make ``len(row_starts)`` disagree with
+    ``len(Content(text).wrap(width))`` by one, and since the list's length *is*
+    the row count, every row index from that point on would be a mis-jump and the
+    last row would be unreachable. Agreeing with the render beats tidiness.
+
+    Measured: all **420** committed transcripts end **without** a trailing
+    newline (``blunder_eval`` writes no final ``"\\n"``), so the corpus never
+    exercises this branch — which is exactly why the rule is written down here
+    rather than left to be discovered by the first transcript that does.
+
+    **The empty string is one row**, not zero — ``Content.split`` short-circuits to
+    ``[self]`` when the separator is absent, so an empty game still renders a
+    single blank line and ``wrap_row_starts("", w) == [0]``.
+
+    **``width <= 0`` degrades to one row per source line** instead of being passed
+    through. A widget can momentarily report zero width (before its first layout,
+    or while a container is being resized), and ``divide_line`` does not survive
+    it: at ``width == 0`` the fold branch calls ``chop_cells(word, width=0)``,
+    whose ``range(0, len(text), 0)`` raises ``ValueError``, and at a negative width
+    it silently emits no cuts at all. Neither is a useful answer, and a crash on a
+    transient layout state is the worst of them. Returning the unwrapped source-line
+    starts keeps every documented property of the result intact — contiguous
+    partition, row 0 at offset 0, length equal to the line count — and the screen
+    simply recomputes once a real width arrives, which it does anyway because the
+    row map is cached keyed on the width it was built for.
+
+    Pure: no I/O, no globals, no Textual import, no caching. The screen owns the
+    width and the cache; this owns the arithmetic.
+    """
+    row_starts: list[int] = []
+    offset = 0
+    # ``str.split("\n")`` is exactly ``Content.split("\n", allow_blank=True)``:
+    # both keep interior blanks, both keep the blank after a trailing newline, and
+    # both yield a single empty element for the empty string.
+    for line in text.split("\n"):
+        row_starts.append(offset)
+        if width > 0:
+            expanded = line.expandtabs(_WRAP_TAB_SIZE)
+            row_starts.extend(
+                offset + cut for cut in divide_line(expanded, width, fold=True)
+            )
+        # ``+ 1`` steps over the newline that ``split`` consumed. On the final
+        # element there is no newline, but the loop ends before the value is used.
+        offset += len(line) + 1
+    return row_starts
+
+
+def row_for_offset(row_starts: list[int], offset: int) -> int:
+    """Which rendered row holds character ``offset``.
+
+    ``bisect_right - 1`` over the sorted starts from :func:`wrap_row_starts`: the
+    row whose start is the greatest one **not after** ``offset``. Half-open rows
+    make this exact — an offset landing exactly on a row start belongs to that
+    row, not the previous one, which is what ``bisect_right`` (rather than
+    ``bisect_left``) buys.
+
+    Both ends are clamped rather than raising, because the caller is a widget
+    handing over whatever a match or a scroll position currently says: a negative
+    offset resolves to row ``0``, and an offset at or past ``len(text)`` resolves
+    to the last row. An empty ``row_starts`` (which :func:`wrap_row_starts` never
+    returns, but a caller could construct) also answers ``0``.
+
+    Note what this does **not** promise for a match that straddles a wrap: it
+    reports the row the match *starts* on, which is the row a jump should land on.
+    The tail of such a match is painted on the following row by Textual's own
+    span splitting, and needs nothing from here.
+    """
+    if not row_starts:
+        return 0
+    return max(0, bisect_right(row_starts, offset) - 1)
+
+
+def offset_for_row(row_starts: list[int], row: int) -> int:
+    """The character offset rendered row ``row`` starts at — the inverse.
+
+    Exactly ``row_starts[row]``, with the index **clamped** into range instead of
+    raising. The clamp is the point: the caller passes a live scroll position
+    (``scroll_offset.y``), which can legitimately sit outside a row map built a
+    moment earlier at a different width — during a resize, or against a cached map
+    the screen has not yet rebuilt. Answering the first or last row is right in
+    both directions (scrolled above the text ⇒ start of the text; scrolled past its
+    end ⇒ the last row) and is strictly better than a traceback out of a keypress.
+
+    ``offset_for_row(starts, row_for_offset(starts, o))`` is the start of ``o``'s
+    row, i.e. ``o`` itself only when ``o`` is already a row start — the pair is a
+    round trip on rows, not on offsets, which is what the jump needs.
+    """
+    if not row_starts:
+        return 0
+    return row_starts[min(max(row, 0), len(row_starts) - 1)]
+
+
+# ===========================================================================
+# Choosing which match a keypress goes to (spec 044, Slice 3).
+#
+# The last question in the pure layer, and the smallest: given every match in
+# the game and where the reviewer currently is, which match is next — and did
+# the search have to go round the end of the game to find it. Offsets in, an
+# index out; the screen turns that index into a row (above) and a scroll.
+# ===========================================================================
+
+
+def next_match(
+    matches: Sequence[tuple[int, int]], offset: int, *, inclusive: bool
+) -> tuple[int, bool] | None:
+    """The next match at-or-after ``offset``, and whether the search wrapped.
+
+    Returns ``(index, wrapped)`` where ``index`` is an index **into**
+    ``matches`` — not an offset, and not the pair itself. The index is what the
+    caller actually needs twice over: it is the position the status line counts
+    out (*"3/18"*, functional-spec §2.8), and it is the cursor Slice 4 steps with
+    ``current ± 1``. The offsets are one ``matches[index]`` away for whoever
+    wants them.
+
+    ``None`` means **there is nothing to jump to** — ``matches`` is empty, either
+    because nothing was typed or because what was typed appears nowhere in the
+    game. It is returned rather than a sentinel index so the caller cannot
+    accidentally scroll to match zero of none; functional-spec §2.5's last two
+    criteria both say *nothing moves and no error appears*, and ``None`` is the
+    shape that makes doing nothing the easy branch.
+
+    **Why ``inclusive`` is a parameter and not a fixed policy.** The two callers
+    want opposite answers at the very same position, and that asymmetry is
+    deliberate rather than accidental:
+
+    * **Enter searches inclusive-forward** from the current top row's offset,
+      because functional-spec §2.5 AC2 requires that a match already on the top
+      line is where Enter lands — *"it does not skip ahead"*. Pressing Enter on a
+      match you are already looking at must not move the game.
+    * **``n`` (Slice 4) wants the opposite at that position**, because
+      functional-spec §2.6 requires every press to leave the line it started on —
+      *"a press is never spent moving between two matches the reviewer can
+      already see together"*. From the same top row, ``n`` must move past the
+      match Enter would have stopped on.
+
+    One function, two callers, one flag — rather than two near-identical
+    functions that would drift apart the first time the wrap rule changed.
+
+    **The wrap, and why the flag is returned rather than hidden.** If no match
+    lies at-or-after ``offset`` (or strictly after it, when ``inclusive`` is
+    false), the answer is the **first** match in the game and ``wrapped`` is
+    ``True``; otherwise ``wrapped`` is ``False``. Functional-spec §2.5 AC3 turns
+    that flag into a message to the reviewer, so *a jump backwards is never
+    silent* — a view that leapt to the top of the game with no explanation reads
+    as a bug, and the same reviewer a second later cannot tell a wrap from a
+    mis-jump. Note the one case where the flag is the **only** evidence: with a
+    single match in the game, an exclusive step from it wraps round to that same
+    match, so nothing on screen moves at all and ``wrapped`` is the entire
+    feedback.
+
+    **Matching is keyed on each match's START offset**, so a match whose span
+    *covers* ``offset`` but *begins* before it is treated as behind the reviewer
+    and skipped. That is the correct reading of §2.5's "at or below the
+    reviewer's current position": in practice ``offset`` is the first character
+    of the top rendered row, and such a match began on the row **above** — it is
+    already partly scrolled off, and jumping to it would scroll the game
+    *backwards* while claiming to go forward.
+
+    ``matches`` is sorted and non-overlapping — that is :func:`find_matches`'
+    contract — so this is a **bisect over the start offsets**, not a scan.
+    Offsets before the first match answer index ``0`` with no wrap, which falls
+    out of the same bisect rather than needing a case of its own.
+
+    Scope note: this takes **offsets**, and knows nothing about rendered rows.
+    Slice 4's row-keyed stepping (*skip every match sharing the current row*) is
+    built **on top of** this by its caller, which resolves a row to an offset
+    with :func:`offset_for_row` first. Conflating the two here would break §2.5
+    AC2, whose whole point is that Enter is *not* row-keyed.
+    """
+    if not matches:
+        return None
+    # ``bisect_left`` answers "the first start **at or after** ``offset``" and
+    # ``bisect_right`` answers "the first start **strictly after** it" — which is
+    # precisely the inclusive/exclusive split, with no hand-rolled off-by-one.
+    # The key is applied to the elements only, never to ``offset`` itself.
+    locate = bisect_left if inclusive else bisect_right
+    index = locate(matches, offset, key=lambda match: match[0])
+    # Falling off the end is the wrap: there is nothing further down the game, so
+    # the answer is its first match and the reviewer is owed the notice.
+    if index == len(matches):
+        return 0, True
+    return index, False
 
 
 def build_table_model(records: list[RawRecord]) -> TableModel:

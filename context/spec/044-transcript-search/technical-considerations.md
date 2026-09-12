@@ -59,6 +59,7 @@ Four traps, each handled rather than coded around:
 
 - **`divide_line` returns *character* indices**, despite a docstring that says "cell offsets" — confirmed in the source. Accumulating per source line is therefore correct.
 - **You cannot derive offsets by summing `Content.wrap(...)[i].plain` lengths.** Non-last divided rows are `rstrip()`ed, so the lengths do not add up. `divide_line` is the only correct source.
+- **No committed transcript ends with a newline** (measured over all 420 in Slice 3), so the last rendered row of a real game is content, not a blank — which is what Task 3.6's row-content pin compares against. `wrap_row_starts` still emits the trailing empty row when one *is* present, because Textual renders it and dropping it would put the last row out of reach.
 - **`expand_tabs(8)` runs before wrapping.** The corpus has **zero** tabs, so the mirror is exact today; a tab would shift offsets in expanded space. Pinned by a corpus test, not worked around.
 - **The wrap width is not a constant — the biggest hazard.** At 100 columns, `body.content_size.width == 96` (100 − 2 scrollbar − 2 padding) while `region.width == 98`. A game that *fits* the viewport has no scrollbar and wraps at 98. **The screen must read the live `body.content_size.width`** and key its cached row map on it.
 
@@ -221,11 +222,11 @@ Mirrors `test_transcript_highlight.py`'s role. Covers smart case (including the 
 **Corpus sweep, properties only, never golden counts** (the corpus grew 298 → 420 since spec 038; per-file expected counts rot within a week). One item per run dir with a coverage counter, following the existing `_discover_transcripts` idiom:
 
 1. Every reported match round-trips: `text[start:end].lower() == query`.
-2. The row starts **partition** `[0, len(text))` contiguously — no gaps, no overlaps.
+2. The row starts **partition** `[0, len(text))` contiguously — no gaps, no overlaps. **Do not assert this by concatenating `text[starts[i]:starts[i+1]]`** (corrected in Slice 3): that rebuilds the text for *any* increasing sequence, because each row ends where the next begins by construction — it reads as the strongest check in the file and verifies nothing. Contiguity is carried by `starts[0] == 0`, strictly-increasing, and `starts[-1] < len(text)`; what pins the breaks in the *right places* is that **every `\n` is the last character of a row**, since Textual splits on newlines before wrapping.
 3. Every match resolves to a row containing it, or straddles a fold into its successor.
 4. Preconditions: zero tabs, zero of the five stripped control codes.
 
-Plus a **non-vacuity** assertion that at width 96 the corpus really does produce a wrap-straddling match — otherwise property 3 passes by never firing.
+Plus a **non-vacuity** assertion that at width 96 the corpus really does produce a wrap-straddling match — otherwise property 3 passes by never firing. **The query matters, and `vote` will not do it** (measured in Slice 3): `divide_line` cuts at word *starts*, so a word short enough not to be folded always moves to the next row whole, and `vote` straddles **zero** times across all 420 games. A match can only span a fold if it contains the whitespace the cut fell on, so the sweep carries `" the "` — **2,637 straddling matches across 407 files**. An earlier draft of this section named `vote` here, which would have made the straddle half of property 3 dead code reading as coverage.
 
 ### New section `B15` in `tests/test_ledger_viewer.py`
 
