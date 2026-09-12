@@ -4786,8 +4786,9 @@ async def test_each_back_out_key_pops_the_transcript_screen(
 
 
 # ===========================================================================
-# B15. Searching inside a game (spec 044, Slice 1) — the bar opens, takes
-#      text, and the game keeps scrolling underneath it.
+# B15. Searching inside a game (spec 044, Slices 1-2) — the bar opens, takes
+#      text, lights up what it finds, and the game keeps scrolling
+#      underneath it.
 #
 #      KEY ROUTING IS THE ENTIRE RISK OF THIS SLICE, which is why every test
 #      below drives REAL KEYSTROKES through `pilot.press(...)` and never
@@ -4839,10 +4840,23 @@ async def test_each_back_out_key_pops_the_transcript_screen(
 #      wrap at this terminal width, which is what makes "row" and "line" the
 #      same thing here and the expected offsets readable at all.
 #
-#      B15.2 (live highlight as spans), B15.4 (the jump and the clamp),
-#      B15.5 (the subtitle status) and B15.6 (the offset→row pin) belong to
-#      Slices 2-4 and are deliberately absent — not stubbed — because none of
-#      the behaviour they would cover exists yet.
+#      SLICE 2 ADDED B15.2, and it asks a different question from the rest of
+#      this section: not where a keypress LANDS, but what the game LOOKS LIKE
+#      once one has. Its assertions are therefore about SPANS — which character
+#      ranges carry a style, and in what ORDER — keeping B14's convention of
+#      never pinning rendered colour, with the single exception the tech spec
+#      names (a highlight has to differ from the ground it sits on or there is
+#      nothing to see). Two facts about the implementation are what make those
+#      assertions possible at all, and both are worth knowing before reading
+#      one: the match spans are APPENDED to spec 038's kind spans rather than
+#      merged with them, so a highlighted body's runs split cleanly into "what
+#      the tokenizer said" and "what the search added" (`_search_runs`), and
+#      the repaint is DEBOUNCED, so every read has to wait out
+#      `_SEARCH_SETTLE_SECONDS` first or it measures the previous keystroke.
+#
+#      B15.4 (the jump and the clamp), B15.5 (the subtitle status) and B15.6
+#      (the offset→row pin) belong to Slices 3-4 and are deliberately absent —
+#      not stubbed — because none of the behaviour they would cover exists yet.
 # ===========================================================================
 
 # The search bar is one row and it comes out of the SCROLLER's height, not out
@@ -4914,6 +4928,93 @@ _SHORT_GAME_BODY = (
 _TYPED_NOT_ACTED_KEYS = "qnN/"
 
 
+# HOW LONG A TEST WAITS BEFORE READING THE HIGHLIGHT (spec 044, Slice 2). The
+# screen coalesces `Input.Changed` through a RESTARTING single-shot timer, so
+# the spans a test asserts on do not exist at the moment the last key is
+# pressed: read straight after `pilot.press(...)` and every assertion below
+# measures the PREVIOUS query — which fails as a flake rather than as a bug,
+# and passes on a fast machine often enough to be believed.
+#
+# Derived from the viewer's own `_SEARCH_DEBOUNCE_SECONDS` rather than written
+# as a literal, following this file's idiom for reaching a module private
+# (`importlib.import_module`, as B14's tokenizer patches do). Re-tuning the
+# debounce — the constant's own docstring invites it, within the tech spec's
+# 50-120 ms band — then re-tunes this wait with it, where a hardcoded 0.1 s
+# would quietly start reading early the day someone widened the window.
+#
+# DOUBLED, because one window is the minimum and not the margin: the window
+# opens on the LAST keystroke of a burst and the repaint itself still has to
+# run on the event loop afterwards.
+_SEARCH_SETTLE_SECONDS = (
+    importlib.import_module("graphia.ui.ledger_viewer")._SEARCH_DEBOUNCE_SECONDS * 2
+)
+
+# THE GAME B15.2 SEARCHES: `_LONG_GAME_BODY`'s shape with words in it worth
+# looking for. Deliberately the same 80 prose lines between the same two
+# `<transcript>` tags, none of them long enough to wrap at 96 columns, so every
+# geometry constant above still describes it exactly — 82 virtual rows,
+# `max_scroll_y` 60 closed and 61 open, `body.content_size.width` 96 — and "the
+# game did not move" can be asserted as an ABSOLUTE row rather than as a
+# before/after difference (spec 037's mutation finding, the same reason B15.1
+# pins the closed bar absolutely).
+#
+# WHY NOT `_LONG_GAME_BODY` ITSELF. Every one of its lines is `Alice: line N`,
+# which offers nothing to narrow: functional-spec §2.2 AC2/AC3 are about a
+# query growing by a character and the highlighting getting SMALLER, then
+# widening again on Backspace, so the fixture has to contain a word that a
+# longer query matches less often. The four lines below cycle so that a quarter
+# of the game says `vote` and another quarter says `voting` — `vot` therefore
+# matches exactly twice as often as `vote`, and the narrowing is arithmetic on
+# the line count rather than two hand-counted numbers that rot if the fixture
+# grows. The two quiet lines are not padding: a highlight that painted whole
+# LINES rather than the matched characters would light them up too.
+_SEARCH_MATCH_LINES = (
+    "Alice: I vote for Cleo.",  # one `vote`, and therefore one `vot`
+    "Bo: Cleo keeps voting late.",  # one `vot`, and deliberately NOT a `vote`
+    "Cleo: nothing to add here.",  # neither
+    "Alice: quiet line.",  # neither
+)
+_SEARCH_MATCH_BODY = (
+    "<transcript>\n"
+    + "\n".join(
+        _SEARCH_MATCH_LINES[line % len(_SEARCH_MATCH_LINES)]
+        for line in range(_LONG_GAME_PROSE_LINES)
+    )
+    + "\n</transcript>"
+)
+
+# 80 lines cycling through 4 gives 20 of each. `vote` matches once per vote
+# line; `vot` matches once per vote line AND once per voting line.
+_SEARCH_VOTE_MATCHES = _LONG_GAME_PROSE_LINES // len(_SEARCH_MATCH_LINES)
+_SEARCH_VOT_MATCHES = 2 * _SEARCH_VOTE_MATCHES
+
+# A query the fixture above contains nowhere, for functional-spec §2.8 AC2.
+# Lowercase, so smart case leaves it case-INSENSITIVE and the empty result is a
+# statement about the game rather than about the casing.
+_SEARCH_NO_MATCH_QUERY = "zzz"
+
+# WHY THE §2.3 TESTS SEARCH `_HIGHLIGHT_BODY` INSTEAD, and it is not
+# convenience: §2.3 is a claim about what a match does to a line that ALREADY
+# has a colour, so the fixture has to be the one whose every kind is pinned
+# run-by-run above. `Bo` is the query because that one name lands in SIX
+# different kinds of this fixture at once — a cast-list attribute, a Mafia
+# speaker, a Law-abiding line's content, a private thought, the moderator's
+# recap and a diary owner — so a single terminal session exercises §2.3 AC1 (a
+# Mafia line still reads as Mafia), AC2 (the kinds still tell apart) and the
+# recap's measured inversion together.
+#
+# Capitalised, so smart case makes it exact — which is what keeps the count at
+# six rather than at "six plus whatever the tokenizer happens to lowercase".
+_HIGHLIGHT_SEARCH_QUERY = "Bo"
+_HIGHLIGHT_SEARCH_MATCHES = 6
+
+# The two lines of `_HIGHLIGHT_BODY` the §2.3 tests read a character out of.
+# Named rather than sliced at a literal offset, so the assertions survive the
+# fixture growing again the way it has in every slice of spec 038.
+_HIGHLIGHT_MAFIA_LINE = "Bo: Nor did I."
+_HIGHLIGHT_RECAP_TEXT = "Alive: Alice, Bo."
+
+
 async def _type_transcript_search(pilot, query: str) -> TranscriptSearchInput:
     """Type ``query`` into the open transcript search bar, one real keystroke each.
 
@@ -4946,6 +5047,63 @@ async def _type_transcript_search(pilot, query: str) -> TranscriptSearchInput:
     await pilot.press(*query)
     await pilot.pause()
     return search_input
+
+
+async def _settle_search(pilot) -> None:
+    """Let the search debounce expire, so the highlight is the one just typed.
+
+    Every B15.2 read goes through this first. The screen does not repaint on
+    the keystroke — it restarts a single-shot timer and repaints once the
+    typing stops (tech-spec §2.8: the worst measured query costs 336 ms per
+    keystroke on the 88 KB game without the coalescing) — so a test that
+    asserted straight after ``pilot.press(...)`` would be measuring the query
+    the reviewer typed one character ago. Which passes, on a fast enough
+    machine, often enough to be trusted.
+
+    Two waits, and they do different jobs: the first is the debounce window
+    itself (:data:`_SEARCH_SETTLE_SECONDS`, derived from the viewer's own
+    constant), the second lets the repaint the expiring timer posts actually
+    run on the event loop before anything reads the widget.
+
+    Kept separate from :func:`_type_transcript_search` rather than folded into
+    it, because the two are not always paired: Backspace is pressed with
+    ``pilot.press`` directly and still has to settle, and B15.1's tests type
+    without ever reading a highlight and should not pay the wait.
+    """
+    await pilot.pause(_SEARCH_SETTLE_SECONDS)
+    await pilot.pause()
+
+
+def _search_runs(content: Content) -> list[tuple[int, int, str]]:
+    """The SEARCH's spans alone — the tail `_rendered_runs` grows while one is live.
+
+    Functional-spec §2.3 asks that a highlight sit "on top of, not instead of"
+    the game's own colours, and the implementation makes that true by
+    CONSTRUCTION: ``TranscriptBody.highlight`` copies the base ``Text`` — which
+    already carries spec 038's kind spans — and ``Text.stylize`` APPENDS, so a
+    highlighted body's spans are always the tokenizer's runs followed by one
+    span per match, in that order.
+
+    Which is why this helper can exist at all, and why it asserts rather than
+    merely slicing: the split point is only meaningful if the leading slice
+    really is the tokenizer's runs untouched, so every caller gets that
+    ordering checked for free and a caller reading "the matches" can never be
+    handed a kind run that drifted into the tail. The dedicated ordering test
+    below states the same property in full and by hand, so the two are not
+    circular — this one spreads the guarantee across the section.
+
+    Returns ``(start, end, text)`` triples like :func:`_rendered_runs`, so a
+    caller can assert on the matched text and on where it sits in one read.
+    """
+    base = _tokenizer_styled_runs(content.plain)
+    runs = _rendered_runs(content)
+    assert runs[: len(base)] == base, (
+        "the rendered runs must OPEN with the tokenizer's runs, unchanged and "
+        "at their exact offsets — functional-spec §2.3's 'on top of, not "
+        "instead of' is exactly that ordering; a match span that landed among "
+        "them, or a kind span the highlight replaced, shows up here"
+    )
+    return runs[len(base) :]
 
 
 # ---------------------------------------------------------------------------
@@ -5218,6 +5376,484 @@ async def test_escape_closes_the_search_first_and_leaves_the_game_next(
 
         assert isinstance(app.screen, DetailScreen)
         assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+
+
+# ---------------------------------------------------------------------------
+# B15.2 The matches light up as the reviewer types
+# ---------------------------------------------------------------------------
+
+
+async def test_typing_narrows_the_highlight_and_backspace_widens_it(
+    tmp_path: Path,
+) -> None:
+    """`vot` → `vote` → Backspace, with the game never moving (§2.2 AC1-AC4).
+
+    The three-step sequence is the test. Asserting a single query would prove
+    only that something lights up; functional-spec §2.2 AC2/AC3 are about the
+    highlighting FOLLOWING the query in both directions, and the two failure
+    modes it guards are opposite and both silent. A repaint that stylized the
+    base ``Text`` instead of a copy would ACCUMULATE spans — `vote`'s 20
+    matches landing on top of `vot`'s 40 rather than replacing them, so the
+    narrowing step would still show 40 lit and nothing would ever stop being
+    highlighted. A repaint that never re-ran would show 40 throughout and pass
+    any test that only ever typed once.
+
+    The counts are arithmetic on the fixture (40 = 2 x 20 = half its 80 lines),
+    so they re-derive rather than rot if it grows, and the widening step is the
+    same number as the first — Backspace must land exactly back where `vot`
+    was, not merely somewhere wider.
+
+    `scroll_offset.y` is re-asserted after every step, from the MIDDLE of the
+    game, which is where §2.2 AC4 is falsifiable: there are matches above and
+    below the viewport at all three steps, so an implementation that scrolled
+    to "show" the first match would move here and could not move in a test
+    written from row 0. The row is absolute (`_SEARCH_SCROLL_START_Y`), not
+    "the same as before", so a repaint that reset the view to the top and a
+    fixture that never scrolled cannot both pass.
+    """
+    ledger, _ = _ledger_with_body(
+        tmp_path, _SEARCH_MATCH_BODY, name="s44-narrow.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", Static)
+        search_count = screen.query_one("#search-count", Static)
+
+        def assert_lit(query: str, matches: int) -> None:
+            """Exactly ``matches`` spans, each covering ``query``, and nothing moved.
+
+            Reading the matched text back out of the rendered content (rather
+            than counting spans) is what makes this an OFFSET assertion:
+            `_search_runs` slices `content.plain` at each span's own
+            boundaries, so a span one character wide of its match returns a
+            different string and fails here.
+            """
+            content = _transcript_body_content(screen)
+            assert [text for _, _, text in _search_runs(content)] == [
+                query
+            ] * matches
+            assert plain_text(search_count) == f"{matches} matches"
+            assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+            assert scroller.max_scroll_y == _SEARCH_OPEN_MAX_SCROLL_Y
+            assert body.content_size.width == _LONG_GAME_BODY_WIDTH
+
+        # Read into the middle of the game with the ordinary reading keys, so
+        # the setup owes nothing to the feature under test.
+        await pilot.press(
+            "pagedown",
+            *["down"] * (_SEARCH_SCROLL_START_Y - _LONG_GAME_VIEWPORT_ROWS),
+        )
+        await pilot.press("slash")
+        await pilot.pause()
+        assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+
+        # `vot` — every `vote` and every `voting` in the game.
+        await _type_transcript_search(pilot, "vot")
+        await _settle_search(pilot)
+        assert_lit("vot", _SEARCH_VOT_MATCHES)
+
+        # ...one more character, and the `voting` half goes dark.
+        await _type_transcript_search(pilot, "e")
+        await _settle_search(pilot)
+        assert_lit("vote", _SEARCH_VOTE_MATCHES)
+
+        # ...and Backspace brings it back, to exactly where it was.
+        await pilot.press("backspace")
+        await pilot.pause()
+        await _settle_search(pilot)
+        assert_lit("vot", _SEARCH_VOT_MATCHES)
+
+
+async def test_the_match_spans_are_a_tail_on_the_tokenizers_own_runs(
+    tmp_path: Path,
+) -> None:
+    """The rendered runs open with spec 038's and end with the search's (§2.3).
+
+    **This is the checkable form of "on top of, not instead of"**, and the
+    tech spec's §4 says so: the ordering is what makes the claim assertable at
+    all, rather than a per-kind case analysis nobody could keep current as
+    kinds keep arriving (there are twenty-four). Stated here in full and by
+    hand — the leading slice against the pure tokenizer's runs, the tail
+    against the matches — while `_search_runs` re-checks the leading half at
+    every other read in this section. The two are not circular: this test is
+    where the property is stated, that helper is where it is enforced.
+
+    Three separate things are asserted and each fails differently:
+
+    - the leading slice IS the tokenizer's runs, so no kind span was replaced,
+      shifted or dropped to make room for a highlight;
+    - the tail is exactly one span per match, in document order and
+      non-overlapping, so the highlight is neither merged nor coalesced (which
+      would destroy this assertion and, from Slice 4, the current-match step);
+    - `content.plain` is unchanged, so painting a match added no character to
+      the preserved game — the same guarantee B14.3 makes of the resting view,
+      re-made while a search is live.
+
+    `_HIGHLIGHT_BODY` is the fixture because its every run is already pinned
+    above, and `Bo` the query because it lands in six different kinds of it at
+    once.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="s44-tail.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+
+        # The reading view as spec 038 leaves it, before a search exists.
+        resting = _transcript_body_content(screen)
+        kind_runs = _tokenizer_styled_runs(resting.plain)
+        assert _rendered_runs(resting) == kind_runs
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _HIGHLIGHT_SEARCH_QUERY)
+        await _settle_search(pilot)
+
+        content = _transcript_body_content(screen)
+        runs = _rendered_runs(content)
+
+        # Not one character of the game changed...
+        assert content.plain == resting.plain
+        # ...spec 038's runs are all still there, first and untouched...
+        assert runs[: len(kind_runs)] == kind_runs
+        # ...and the search's are appended after them, one per match.
+        matches = runs[len(kind_runs) :]
+        assert len(runs) == len(kind_runs) + _HIGHLIGHT_SEARCH_MATCHES
+        assert [text for _, _, text in matches] == [
+            _HIGHLIGHT_SEARCH_QUERY
+        ] * _HIGHLIGHT_SEARCH_MATCHES
+
+        # In document order and never overlapping — `find_matches`' contract,
+        # arriving intact at the widget.
+        starts = [start for start, _, _ in matches]
+        ends = [end for _, end, _ in matches]
+        assert starts == sorted(starts)
+        assert all(end <= start for end, start in zip(ends, starts[1:]))
+
+
+async def test_a_match_takes_a_background_and_leaves_its_lines_style_alone(
+    tmp_path: Path,
+) -> None:
+    """A highlighted Mafia line still reads as a Mafia line (§2.3 AC1/AC2).
+
+    The span-level ordering test above says the kind runs SURVIVE; this one
+    says what survives them is what a reviewer actually sees, by combining the
+    spans at a single character the way the renderer does
+    (`Content.get_style_at_offset` folds every span covering an offset in
+    order) and comparing two characters of the SAME run — the `Bo` of
+    `Bo: Nor did I.`, which the search matched, and the `:` beside it, which it
+    did not.
+
+    Deliberately a within-one-state comparison rather than a before/after one
+    (spec 037's mutation finding: "X equals Y across two states" holds happily
+    with both sides broken), and the foreground is asserted to be SET as well
+    as equal, so a highlight that stripped the Mafia colour from the whole line
+    cannot pass by making both characters colourless. No RGB value is pinned —
+    B14's convention, and the palette is theme-dependent.
+
+    The six-way sweep is functional-spec §2.3 AC2 ("the reviewer can still tell
+    the three apart") stated as strongly as this fixture allows: all six
+    matches share ONE background, and all six still render as six DIFFERENT
+    combinations of colour, weight, slant and inversion — the cast-list
+    attribute is still bold, the thought still italic, the Law-abiding line
+    still blue, the recap still inverted. A highlight that replaced its line's
+    style rather than sitting on top of it would collapse those six into one.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="s44-ontop.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _HIGHLIGHT_SEARCH_QUERY)
+        await _settle_search(pilot)
+
+        content = _transcript_body_content(screen)
+        speaker = content.plain.index(_HIGHLIGHT_MAFIA_LINE)
+        matched = content.get_style_at_offset(speaker)
+        beside = content.get_style_at_offset(speaker + len(_HIGHLIGHT_SEARCH_QUERY))
+
+        # The `:` one character along is the same speaker run, unmatched: the
+        # side colour is there, and the ground is the body's own.
+        assert beside.foreground is not None
+        assert beside.background is None
+
+        # The matched `Bo` keeps that colour exactly, and gains a ground.
+        assert matched.foreground == beside.foreground
+        assert (matched.bold, matched.italic, matched.reverse) == (
+            beside.bold,
+            beside.italic,
+            beside.reverse,
+        )
+        assert matched.background is not None
+
+        # ...and across all six kinds the name lands in: one shared highlight,
+        # six still-distinguishable renderings.
+        lit = [
+            content.get_style_at_offset(start)
+            for start, _, _ in _search_runs(content)
+        ]
+        assert len(lit) == _HIGHLIGHT_SEARCH_MATCHES
+        assert len({style.background for style in lit}) == 1
+        assert (
+            len(
+                {
+                    (style.foreground, style.bold, style.italic, style.reverse)
+                    for style in lit
+                }
+            )
+            == _HIGHLIGHT_SEARCH_MATCHES
+        )
+
+
+async def test_a_match_inside_a_moderator_recap_inverts_and_only_there(
+    tmp_path: Path,
+) -> None:
+    """The one kind where the highlight comes out inside-out, and it is expected.
+
+    **A measured consequence of §2.3, written down as a test rather than
+    discovered as a bug report.** `recap` is the only kind spec 038 paints with
+    `reverse`, and `reverse` is what the terminal uses to SWAP a cell's
+    foreground and background. So a match inside the moderator's status line
+    arrives with the same amber ground every other match gets and the terminal
+    then turns it inside out: the text goes amber on a light ground rather than
+    the ground going amber. Measured at ~9.2:1 — clearly legible and clearly
+    marked, just inverted relative to everywhere else.
+
+    What is asserted is that the inversion belongs to the RECAP and not to the
+    search: the unmatched characters of the same recap run already carry
+    `reverse`, the match adds only the background, and that background is the
+    very same one a Mafia line's match gets. And the sweep across all six
+    matches says it happens in exactly one of them — "the only kind where this
+    happens" is the claim, so a future kind that quietly took `reverse` (the
+    flag ledger records it as spent, so it should not) fails here.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="s44-recap.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _HIGHLIGHT_SEARCH_QUERY)
+        await _settle_search(pilot)
+
+        content = _transcript_body_content(screen)
+        recap = content.plain.index(_HIGHLIGHT_RECAP_TEXT)
+        matched = content.get_style_at_offset(
+            recap + _HIGHLIGHT_RECAP_TEXT.index(_HIGHLIGHT_SEARCH_QUERY)
+        )
+        beside = content.get_style_at_offset(recap)
+        in_mafia_line = content.get_style_at_offset(
+            content.plain.index(_HIGHLIGHT_MAFIA_LINE)
+        )
+
+        # The flag is the recap's, not the search's: it is already on the
+        # characters the search did not match.
+        assert beside.reverse is True
+        assert beside.background is None
+        assert matched.reverse is True
+
+        # The match itself is marked identically to every other match — the
+        # swap is the terminal's doing, downstream of anything this code says.
+        # Asserted as a colour that EXISTS as well as one that is shared: two
+        # matches with no background at all would be "identical" too, and that
+        # is precisely what a highlight resolved through `_kind_styles` (which
+        # strips backgrounds by design) would leave behind.
+        assert matched.background is not None
+        assert matched.background == in_mafia_line.background
+
+        # ...and it is the only kind it happens to.
+        lit = [
+            content.get_style_at_offset(start)
+            for start, _, _ in _search_runs(content)
+        ]
+        assert [bool(style.reverse) for style in lit].count(True) == 1
+
+
+async def test_the_highlight_background_differs_from_the_body_background(
+    tmp_path: Path,
+) -> None:
+    """A match is actually visible — the one colour assertion worth making.
+
+    The tech spec's §4 rules out exact RGB values, theme sweeps and snapshots
+    (a background-only span makes no per-theme contrast claim, and this file
+    has asserted span STRUCTURE since B14 for reasons that have not changed),
+    and then names this single exception: whatever the theme resolves the rule
+    to, the highlight's ground must differ from the ground it sits on, or there
+    is nothing to see.
+
+    It guards a failure mode with no traceback and no visible symptom in any
+    structural test: `Text.stylize` opens with `if style:`, and a Rich style
+    with nothing set is falsy — so a highlight that resolved to no background
+    at all would append NO span, silently, and the reviewer would type into a
+    box that answers with a match count over a game where nothing lights up.
+    The `#search-count` readout would still be right, which is what makes it
+    worth an assertion of its own.
+
+    Both halves are stated, because only the pair says "differs": the
+    unmatched character carries no background at all — spec 038 strips it from
+    every kind style, which is what leaves this axis free — so the ground it
+    shows is the body's own, and the matched character's is a colour that is
+    neither absent nor that.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="s44-visible.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        body = screen.query_one("#transcript-body", Static)
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _HIGHLIGHT_SEARCH_QUERY)
+        await _settle_search(pilot)
+
+        content = _transcript_body_content(screen)
+        speaker = content.plain.index(_HIGHLIGHT_MAFIA_LINE)
+        matched = content.get_style_at_offset(speaker)
+        beside = content.get_style_at_offset(speaker + len(_HIGHLIGHT_SEARCH_QUERY))
+
+        # What the body paints behind every character that is not a match.
+        ground = body.background_colors[1]
+
+        assert beside.background is None
+        assert matched.background is not None
+        assert matched.background != ground
+
+
+async def test_a_query_that_matches_nothing_says_so_and_moves_nothing(
+    tmp_path: Path,
+) -> None:
+    """The no-match state: nothing lit, nothing moved, and it says so (§2.8 AC2).
+
+    Three claims in one criterion, and the interesting one is the middle:
+    "nothing is highlighted" is asserted as the rendered runs being EXACTLY the
+    tokenizer's — equality, not "no extra spans for this query" — so a stale
+    highlight left over from a previous query would fail here too. It is the
+    same strict-equality shape the two span tests in B14.2/B14.3 use to catch a
+    leaked search span in a freshly opened game, made while a search is
+    deliberately live.
+
+    The count is asserted by its literal copy rather than by importing
+    `_NO_MATCHES_MESSAGE`, following this file's convention for user-visible
+    strings (see `_EMPTY_LEDGER_MESSAGE`): what is pinned is what the reviewer
+    reads, not the name the module gives it.
+
+    Read from the middle of the game, because "the game has not moved" is only
+    falsifiable somewhere it could have moved from.
+    """
+    ledger, _ = _ledger_with_body(
+        tmp_path, _SEARCH_MATCH_BODY, name="s44-nomatch.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", Static)
+        search_count = screen.query_one("#search-count", Static)
+        resting = _transcript_body_content(screen).plain
+
+        await pilot.press(
+            "pagedown",
+            *["down"] * (_SEARCH_SCROLL_START_Y - _LONG_GAME_VIEWPORT_ROWS),
+        )
+        await pilot.press("slash")
+        await pilot.pause()
+        search_input = await _type_transcript_search(
+            pilot, _SEARCH_NO_MATCH_QUERY
+        )
+        await _settle_search(pilot)
+
+        content = _transcript_body_content(screen)
+
+        # The reviewer really did ask something...
+        assert search_input.value == _SEARCH_NO_MATCH_QUERY
+        # ...the strip says plainly that it found nothing...
+        assert plain_text(search_count) == "No matches"
+        # ...nothing at all is lit, not even the previous query's matches...
+        assert _rendered_runs(content) == _tokenizer_styled_runs(content.plain)
+        assert _search_runs(content) == []
+        # ...and the game is exactly where, and what, it was.
+        assert content.plain == resting
+        assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+        assert scroller.max_scroll_y == _SEARCH_OPEN_MAX_SCROLL_Y
+        assert body.content_size.width == _LONG_GAME_BODY_WIDTH
+
+
+async def test_the_game_is_tokenized_once_per_opening_not_once_per_keystroke(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The base `Text` is built at `compose` and reused — a structural guard.
+
+    Tech-spec §4 rules out wall-clock assertions and asks for the structural
+    guards instead; this is the one that pins the shape the whole debounce
+    rests on. `TranscriptScreen._styled_body` re-reads the file and re-runs the
+    pure tokenizer — ~2.8 ms on the 88 KB committed game, nothing at all once
+    and an absurdity per character typed — so `TranscriptBody` is handed that
+    base ONCE and copies it per update.
+
+    A regression here has no visible symptom and no failing assertion anywhere
+    else: the highlighting would be correct, the spans would be correct, and
+    the viewer would simply get slower with every keystroke on exactly the
+    biggest games a reviewer most wants to search. Counting the call is a
+    statement with a stable failure mode, where timing it would be a flake.
+
+    Patched at the UI module's own call site, the idiom B14 already uses for
+    the tokenizer. `_tokenizer_styled_runs` calls the name this test module
+    imported from `graphia.eval_ledger` instead, so the assertions below do not
+    count themselves.
+    """
+    module = importlib.import_module("graphia.ui.ledger_viewer")
+    tokenize = module.tokenize_transcript
+    calls: list[str] = []
+
+    def _counting_tokenize(text: str) -> list[tuple[str, str]]:
+        calls.append(text)
+        return tokenize(text)
+
+    monkeypatch.setattr(module, "tokenize_transcript", _counting_tokenize)
+
+    ledger, _ = _ledger_with_body(
+        tmp_path, _SEARCH_MATCH_BODY, name="s44-tokenize-once.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+
+        # Once, at `compose`, for the game that was opened.
+        assert len(calls) == 1
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, "vote")
+        await _settle_search(pilot)
+        await pilot.press("backspace")
+        await pilot.pause()
+        await _settle_search(pilot)
+
+        # Five keystrokes and two repaints later: still once.
+        assert len(calls) == 1
+        # ...and the search really did repaint, so the count above is not the
+        # count of a feature that quietly did nothing.
+        assert len(_search_runs(_transcript_body_content(screen))) == (
+            _SEARCH_VOT_MATCHES
+        )
 
 
 # ---------------------------------------------------------------------------

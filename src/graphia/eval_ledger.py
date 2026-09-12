@@ -106,6 +106,10 @@ __all__ = [
     "KIND_SPEECH_SUBSTITUTED",
     "TRANSCRIPT_KINDS",
     "tokenize_transcript",
+    # Spec 044, Slice 2: the pure transcript-search matchers, beside the
+    # tokenizer whose text they search.
+    "search_is_case_sensitive",
+    "find_matches",
 ]
 
 # One parsed ledger record: the YAML document as a plain nested mapping. Keyed by
@@ -2955,6 +2959,88 @@ def _coalesce_spans(spans: list[tuple[str, str]]) -> list[tuple[str, str]]:
         else:
             out.append((text, kind))
     return out
+
+
+# ===========================================================================
+# Transcript search matching (spec 044, Slice 2 — the pure matching layer).
+#
+# The reviewer's ``/`` search *inside* one preserved game. Two functions, both
+# pure, both answering a question the runs-list filter above deliberately does
+# not: **where** in this text does the typed phrase occur, and does its casing
+# ask to be matched exactly. Offsets in, offsets out — the screen owns the wrap
+# width, the scrolling and the colour, and this layer never sees any of them,
+# which is what lets the matching be tested with no terminal at all (the same
+# property that keeps :func:`tokenize_transcript` headless).
+# ===========================================================================
+
+
+def search_is_case_sensitive(query: str) -> bool:
+    """Does this query ask to be matched exactly? (functional-spec §2.7)
+
+    Smart case — the ``less`` / ``vim`` convention functional-spec §2.7 states in
+    prose: an all-lowercase query matches text in any casing (``mira`` finds
+    *Mira*), and **any** uppercase character **anywhere** makes the whole query
+    exact (``Mira`` finds only *Mira*).
+
+    **"Anywhere" is the decision the functional spec leaves unstated**, and it is
+    pinned here (tech-spec §2.1) rather than left to whatever the implementation
+    happened to do: ``miRa`` is **case-sensitive**, because the rule is a
+    property of the query as a whole, not of its first character. The rejected
+    alternative — only a *leading* capital counts — would make a mid-word capital
+    silently do nothing, and a reviewer who types a model-generated name like
+    ``LaTasha`` or ``McKay`` means the capital they typed. Tested explicitly.
+
+    An empty query contains no uppercase character and so reads as
+    case-*insensitive*; :func:`find_matches` returns ``[]`` for it under either
+    answer, so the verdict is never observable.
+    """
+    return any(character.isupper() for character in query)
+
+
+def find_matches(text: str, query: str) -> list[tuple[int, int]]:
+    """Locate every occurrence of ``query`` in ``text`` (functional-spec §2.2).
+
+    Returns one half-open ``(start, end)`` offset pair per match, in document
+    order, so ``text[start:end]`` *is* the matched run and the caller can both
+    highlight it and scroll to it. Matches are **non-overlapping** — ``"aa"`` in
+    ``"aaaa"`` yields offsets 0 and 2, which is what ``less`` does. An empty
+    ``query`` yields ``[]``.
+
+    A **whitespace-only query is legitimate and is honoured literally**: a single
+    space is a real search (tech-spec §2.1 measures it at 14,524 matches on the
+    88 KB game), so nothing here strips or rejects it. Only the genuinely empty
+    string short-circuits — an empty pattern would otherwise match zero-width at
+    every position and report ``len(text) + 1`` matches of nothing.
+
+    **Why ``re.finditer(re.escape(query), …)`` and never ``text.lower().find()``.**
+    ``str.lower()`` can change a string's *length*: ``'İ'`` (U+0130) lowercases
+    to two characters, so ``'İnigo says: vote'`` measures 16 but its lowercase
+    measures 17, and a naive ``text.lower().find("vote")`` answers 13 where the
+    real offset is 12 — slicing the original text at that answer returns
+    ``'ote'``. Every offset after such a character is silently shifted, and these
+    transcripts are full of exactly the model-generated proper nouns where it
+    would bite. Matching the original text with :data:`re.IGNORECASE` keeps every
+    offset an offset into the text the reviewer is actually looking at.
+    :func:`re.escape` does the second job: the query is a reviewer's plain text,
+    so a ``.``, a ``[`` or a ``*`` in it matches itself instead of becoming a
+    regex operator.
+
+    **Why :func:`row_matches_field` is not reused.** It answers a different
+    question. The runs-list filter lowercases its value, splits it on whitespace
+    and **ANDs** the resulting terms to return a boolean verdict — *does this row
+    survive?* — which is right for a list of runs and wrong here twice over: this
+    needs **positions**, not a verdict, and it needs the query to stay a literal
+    **phrase**, so ``I vote`` finds that phrase rather than every line holding
+    ``"i"`` and ``"vote"`` somewhere. Same module, same purity, different
+    question.
+    """
+    if not query:
+        return []
+    flags = 0 if search_is_case_sensitive(query) else re.IGNORECASE
+    return [
+        (match.start(), match.end())
+        for match in re.finditer(re.escape(query), text, flags)
+    ]
 
 
 def build_table_model(records: list[RawRecord]) -> TableModel:

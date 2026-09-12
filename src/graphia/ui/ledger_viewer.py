@@ -24,6 +24,7 @@ them yet.
 from __future__ import annotations
 
 import argparse
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import ClassVar
@@ -38,6 +39,7 @@ from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.coordinate import Coordinate
 from textual.message import Message
 from textual.screen import Screen
+from textual.timer import Timer
 from textual.widgets import (
     DataTable,
     Footer,
@@ -82,6 +84,7 @@ from graphia.eval_ledger import (
     TableModel,
     TranscriptEntry,
     build_table_model,
+    find_matches,
     list_transcripts,
     load_ledger,
     read_transcript,
@@ -740,6 +743,121 @@ _TRANSCRIPT_KIND_COMPONENTS: dict[str, str] = {
 }
 
 
+# ===========================================================================
+# THE SEARCH HIGHLIGHT (spec 044) — two component classes that are NOT kinds,
+# and the one style axis the ledger above leaves unspent.
+#
+# They sit BESIDE `_TRANSCRIPT_KIND_COMPONENTS` rather than inside it, because
+# they answer a different question about the same character. That map says what
+# a span *is* — a Mafioso's speech, a private thought, a section marker — and it
+# is keyed on the tokenizer's own vocabulary, which is what lets the suite
+# assert `set(mapping) == TRANSCRIPT_KINDS - {plain}` and catch a kind that
+# never got a rule. A MATCH IS NOT A KIND: any of the twenty-four can carry one,
+# the tokenizer knows nothing about it, and it appears and disappears as the
+# reviewer types. An entry in that dict would both break the completeness
+# equality and claim a semantics `tokenize_transcript` never emits.
+#
+# TWO CLASSES BECAUSE THERE ARE TWO STATES, and the second is load-bearing
+# rather than decorative: `transcript--match` is every match the reviewer can
+# see, `transcript--match-current` is the one `n`/`N` have landed on (Slice 4).
+# Inside the last screenful of a game successive jumps cannot scroll — there is
+# nothing past the end of the file to scroll into view — so the stronger mark
+# and the status count are the reviewer's only evidence that a press did
+# anything at all.
+#
+# The rules live in `TranscriptScreen.DEFAULT_CSS` (see them for why the hue is
+# forced and what it costs), and `TranscriptScreen._match_styles` — **not**
+# `_kind_styles`, which strips backgrounds by design — is what turns them into
+# Rich styles.
+_MATCH_COMPONENT = "transcript--match"
+_MATCH_CURRENT_COMPONENT = "transcript--match-current"
+_TRANSCRIPT_MATCH_COMPONENTS: tuple[str, ...] = (
+    _MATCH_COMPONENT,
+    _MATCH_CURRENT_COMPONENT,
+)
+
+# HOW LONG TYPING MUST SETTLE BEFORE THE GAME IS REPAINTED (spec 044, tech-spec
+# §2.8). Seconds, because that is the unit `MessagePump.set_timer` takes.
+#
+# The tech spec asks for 50-120 ms and leaves the choice here. 80 ms, for two
+# reasons that bound it from opposite sides:
+#
+# - FROM ABOVE, PERCEPTION. Functional-spec §2.2 says matches light up
+#   "immediately", and ~100 ms is the long-standing threshold under which a
+#   response reads as instantaneous rather than as lag. 80 ms leaves the repaint
+#   itself a little room inside that budget instead of spending all of it
+#   waiting.
+# - FROM BELOW, THE COST THIS EXISTS TO COALESCE. A repaint of the 88 KB
+#   committed game measures ~59 ms for `vote` and ~146 ms for a single `e`
+#   (`TranscriptBody`'s docstring re-measures tech-spec §2.8 against this
+#   implementation), and it runs ON THE EVENT LOOP — so every key the reviewer
+#   presses during one queues behind it and they all arrive together when the
+#   loop frees. Each restarts this timer and only the last survives, which is
+#   the whole trick; but a window shorter than that burst takes to drain would
+#   fire mid-drain and repaint a query the reviewer has already typed past.
+#   80 ms clears the drain with room to spare.
+#
+# The alternative is no debounce at all, and it is not viable: tech-spec §2.8
+# measures 336 ms PER KEYSTROKE for the worst query (a single space, 14,524
+# matches) because `Widget._render_content` re-renders all 1,182 rendered rows
+# rather than the 22-row viewport. Windowing the highlight to the viewport was
+# the other candidate and was rejected on measurement — it saves only the
+# `stylize` component (<=6 ms) and would move the 32-113 ms re-render onto every
+# scroll step, where functional-spec §2.4 promises the game stays cheap to
+# scroll while a search is live.
+#
+# A MODULE CONSTANT RATHER THAN A LITERAL so a test can wait on this window by
+# name instead of on a magic number that drifts away from the code the day
+# someone re-tunes it.
+_SEARCH_DEBOUNCE_SECONDS = 0.08
+
+# THE NO-MATCH READOUT for #search-count (spec 044, functional-spec §2.8 AC2 —
+# a query that appears nowhere in the game "says there are no matches").
+#
+# Deliberately does NOT echo the query back, where the runs list's
+# :func:`_no_match_message` does. That one is the whole of a screen-filling
+# empty state and has to say what filtered the table away; this one sits one
+# character to the right of the box still holding the query, so repeating it
+# would spend the row's width telling the reviewer what they are already
+# looking at. Same reason it carries no full stop: this is a readout beside an
+# input, in #match-count's "Showing X of N" register, not a sentence in an
+# empty pane.
+_NO_MATCHES_MESSAGE = "No matches"
+
+
+def _search_count_text(query: str, matches: int) -> str:
+    """The #search-count copy for a settled query and its match total.
+
+    Three states, and the empty one is why this is a function rather than an
+    f-string at the call site:
+
+    - **Nothing typed, nothing said.** An empty query is not a search that found
+      zero things, it is a reviewer who has not asked yet, so the strip stays
+      blank rather than reading ``0 matches`` at them.
+      :func:`~graphia.eval_ledger.find_matches` returns ``[]`` for an empty
+      query, so the count alone cannot tell those two apart — the query is what
+      separates them, which is why it is a parameter at all.
+    - **No matches**, plainly (:data:`_NO_MATCHES_MESSAGE`, functional-spec
+      §2.8 AC2).
+    - **Otherwise the total**, singular at one so the readout reads as English
+      rather than as ``1 matches``.
+
+    Pure and module-level, beside this module's other copy, so what the strip
+    says is checkable without a terminal.
+
+    This is the WHOLE of the readout for now, on purpose. Functional-spec §2.8
+    AC3 — which match of the total the reviewer is currently on — is Slice 4's,
+    and it does not belong here even then: it has to outlive the prompt, so its
+    channel is :attr:`Screen.sub_title` (tech-spec §2.7), not a Static that is
+    hidden with the bar.
+    """
+    if not query:
+        return ""
+    if matches == 0:
+        return _NO_MATCHES_MESSAGE
+    return f"{matches} match" if matches == 1 else f"{matches} matches"
+
+
 class TranscriptSearchInput(Input):
     """The transcript search bar's input, with the six scroll keys passed through.
 
@@ -846,6 +964,169 @@ class TranscriptSearchInput(Input):
         self.post_message(self.ScrollGame(scroll_action))
 
 
+class TranscriptBody(Static):
+    """The game's text, with custody of the unhighlighted base and a layout-free swap.
+
+    A plain :class:`~textual.widgets.Static` would do everything this widget does
+    except the two things spec 044's live search needs, and both are stated here
+    rather than left to the call site because both are the kind of thing a later
+    "simplification" removes without noticing anything break.
+
+    **1. THE BASE ``Text`` LIVES HERE, AND NOTHING OUTSIDE CAN REACH IT.**
+    :attr:`_base` is the styled renderable
+    :meth:`TranscriptScreen._styled_body` builds **once**, at ``compose`` — the
+    tokenized, kind-coloured game with no search highlight on it. Every update
+    works on ``self._base.copy()`` and the base itself is **never** stylized.
+
+    That is not fastidiousness, it is the difference between a search that works
+    and one that gets worse with every keystroke. ``Text.stylize`` **appends** to
+    ``_spans`` (read from the installed Rich 15.0.0) and never removes, so
+    stylizing the base would leave last keystroke's highlights on it forever:
+    typing ``v``-``o``-``t``-``e`` would paint the matches for ``v``, then those
+    *plus* the matches for ``vo``, and nothing the reviewer typed would ever stop
+    being highlighted. The copy is what makes each update a fresh statement
+    rather than an accumulation, and it is sound for the same reason — Rich's
+    ``Text.copy`` does ``copy_self._spans[:] = self._spans``, a **fresh list**
+    built by slice-assignment, so appending to the copy cannot reach the
+    original. (A shallow ``copy.copy`` would share the list and would be exactly
+    the bug this paragraph rules out.)
+
+    Making the base **private to this widget** is what turns "never stylize the
+    base" from a rule someone has to remember into one there is no handle to
+    break: the screen hands the base in at construction and never holds a way to
+    mutate what the widget kept.
+
+    **2. THE CONTENT SWAP IS LAYOUT-FREE, AND IT IS PROVABLY SAFE.**
+    ``Static.update`` defaults to ``layout=True``, which re-measures the widget.
+    On the 88 KB committed game that measurement is over **1,182 rendered rows**,
+    and it is pure waste here: a highlight update changes only which character
+    ranges carry a span — ``copy()`` copies the plain text verbatim and
+    ``stylize`` cannot touch it — so the widget's text, and therefore its height,
+    is *identical* before and after. There is nothing for a layout pass to
+    discover.
+
+    Measured per keystroke on that game (median of 8, whole path: copy +
+    stylize + swap + pump to settle), with the layout-free swap against the
+    default: ``vote`` (18 matches) **64.5 ms** vs 77.9; ``e`` (7,941 matches)
+    **207.4** vs 233.8; a single space (14,524 matches) **306.0** vs 336.6 —
+    about 15%. Re-measured against *this* implementation rather than the
+    prototype the tech spec timed, the direction and the magnitude both hold:
+    ``vote`` 58.8 ms vs 69.6, ``e`` 146.1 vs 164.9.
+
+    The second half of the win is not speed at all: it **guarantees**
+    ``virtual_size.height`` stays at 1,182 across an update, which is what Slice
+    3's offset → row map is entitled to assume when it jumps to a match.
+
+    (The remaining cost is structural and is recorded rather than fixed:
+    ``Widget._render_content`` calls ``Visual.to_strips`` with the full 1,182-row
+    height rather than the 22-row viewport, so any repaint re-renders the whole
+    body. ``refresh(region)`` buys nothing — ``_dirty_regions.clear()``. Only a
+    body with its own ``render_line(y)`` would close it; Slice 2's debounce is
+    the answer instead.)
+
+    **``markup=False`` is forced in the constructor, not passed by the caller.**
+    Spec 038's guarantee is that this widget shows the preserved game character
+    for character, and console markup is ``[…]`` — one ``[`` in model-generated
+    persona prose would, with markup on, either vanish into a style tag or raise
+    on an unclosed one. Baking the flag in means the guarantee cannot be lost by
+    a future call site that forgets the keyword.
+    """
+
+    def __init__(self, base: Text, *, id: str | None = None) -> None:
+        """Mount the game's styled text and keep it as the unhighlighted base.
+
+        Args:
+            base: The styled renderable from
+                :meth:`TranscriptScreen._styled_body` — the game with its kind
+                colours and **no** search highlight. Kept, not copied: this
+                widget is its only owner, and every highlight update copies it
+                rather than touching it.
+            id: The widget id, so the screen's ``#transcript-body`` CSS and the
+                tests' ``query_one`` keep working unchanged.
+        """
+        super().__init__(base, id=id, markup=False)
+        self._base = base
+
+    @property
+    def text(self) -> str:
+        """The game exactly as this widget renders it — what a search searches.
+
+        Read-only, and it hands out a ``str`` rather than the base
+        :class:`~rich.text.Text`, so the custody rule in the class docstring
+        survives: a caller can ask what the game *says* without acquiring a
+        handle it could ``stylize``.
+
+        **It is the RENDERED text, not the file's bytes, and that is the point
+        rather than an accident.** :func:`~graphia.eval_ledger.find_matches`
+        returns offsets, and :meth:`highlight` turns those offsets into spans on
+        this exact string — so the two have to be the same string or a match
+        lands on the wrong characters. They can differ: ``Text.append`` runs
+        Rich's ``strip_control_codes``, which drops BEL, BS, VT, FF and CR, so a
+        transcript carrying one of those five would be one character shorter
+        here than on disk and every offset after it would be shifted by a
+        re-read of the file. No committed game contains one today (pinned by
+        ``test_the_rich_text_path_drops_the_five_control_codes``), so the two
+        agree — but searching what is on screen is correct by construction
+        rather than by that corpus fact holding forever.
+
+        Free to call per update: ``Text.plain`` collapses ``_text`` to a single
+        joined string the first time and returns that same object afterwards,
+        and :meth:`highlight`'s own ``copy()`` already forces that collapse on
+        the first keystroke.
+        """
+        return self._base.plain
+
+    def highlight(
+        self, matches: Sequence[tuple[int, int]], style: RichStyle
+    ) -> None:
+        """Repaint the game with ``style`` over each of ``matches``.
+
+        The whole per-update path, and the one place a search highlight is ever
+        applied: copy the base, append one span per match, swap the content
+        without a layout pass. See the class docstring for why each of those
+        three is what it is.
+
+        **The match spans land AFTER the kind spans, and that ordering is the
+        feature.** ``copy()`` preserves spec 038's kind spans in their original
+        order and ``stylize`` *appends*, so a match's background arrives on top
+        of whatever colour, weight or slant its line already had;
+        ``Content.from_rich_text`` then preserves both and combines them.
+        Functional-spec §2.3 — "on top of, not instead of" — is therefore true
+        **by construction** rather than by a per-kind case analysis, and it is
+        directly assertable: the rendered runs' leading slice is exactly the
+        tokenizer's runs, and the tail is exactly these match spans. **Do not
+        sort, merge or coalesce them** — reordering would put a match underneath
+        its own line's colour, and merging would destroy the assertion.
+
+        An empty ``matches`` restores precisely the base: a copy with nothing
+        appended has the base's span list and no more, which is what makes
+        clearing a search (or deleting the last typed character) leave the
+        reading view byte-for-byte and span-for-span as spec 038 renders it.
+
+        Args:
+            matches: Half-open ``(start, end)`` offset pairs in document order,
+                as :func:`~graphia.eval_ledger.find_matches` returns them.
+            style: The resolved highlight, **background-only** — see
+                :meth:`TranscriptScreen._match_styles`. A style that set a
+                foreground would replace the line's own colour instead of
+                sitting on top of it.
+        """
+        highlighted = self._base.copy()
+        for start, end in matches:
+            # Appends a `Span(start, end, style)`. Note that Rich's `stylize`
+            # opens with `if style:` — a `RichStyle` with nothing set is falsy
+            # and would silently append nothing at all. That is the failure mode
+            # to look for if a theme ever resolves the highlight to no
+            # background: not a traceback, just a search that highlights
+            # nothing.
+            highlighted.stylize(style, start, end)
+        # `layout=False`, deliberately and provably — the plain text is
+        # unchanged, so there is no size to re-measure. This is the ONE call
+        # that may swap this widget's content; anything reaching for
+        # `Static.update` directly would bring the layout pass back.
+        self.update(highlighted, layout=False)
+
+
 @dataclass(slots=True)
 class SearchState:
     """One live transcript search (spec 044) — the thing whose *existence* is asked about.
@@ -881,13 +1162,16 @@ class SearchState:
     by keystroke and re-navigated by ``n``/``N``, so replacing the whole object
     per character would be ceremony, not safety.
 
-    **In Slice 1 ``query`` is SEEDED but not yet kept in step with the box**, so
-    it reads ``""`` while the reviewer's typing lives only in the
-    :class:`TranscriptSearchInput`'s ``value`` — nothing consumes it until Slice
-    2 adds the ``Input.Changed`` handler that both updates it and recomputes the
-    matches. Said out loud because it is the kind of gap a reader would
-    otherwise take for a bug: the *presence* of this object is what Slice 1
-    needs, and presence is what :meth:`TranscriptScreen.action_close` reads.
+    **``query`` is kept in step with the box by
+    :meth:`TranscriptScreen.on_input_changed`**, which writes it on every
+    keystroke — while the repaint it triggers happens later, once the typing has
+    settled. So this field is deliberately the *live* query and the highlight on
+    screen is the *settled* one, and the two differ for up to
+    :data:`_SEARCH_DEBOUNCE_SECONDS`. That is not a lag to design away: the
+    debounce's callback reads this field back rather than capturing a value when
+    the window opened, which is precisely what makes a burst of keystrokes
+    collapse into one repaint of what the reviewer ended up typing instead of
+    one repaint of what they typed first.
     """
 
     query: str
@@ -943,9 +1227,17 @@ class TranscriptScreen(Screen):
     # Derived from THE map, so adding a highlighted kind stays a one-line change
     # there: a new entry brings its component class along, and only the matching
     # CSS rule below has to be written.
+    #
+    # ...PLUS the search highlight's two (spec 044), which are unioned in rather
+    # than folded into the map for the reason `_TRANSCRIPT_MATCH_COMPONENTS`
+    # gives: a match is not a kind, and the map's keys are the tokenizer's
+    # vocabulary. Declaring them HERE is not paperwork —
+    # `get_component_rich_style` hands back a bare default for a class the
+    # screen has not declared, so an undeclared `transcript--match` would
+    # resolve to the body's own background and highlight nothing, silently.
     COMPONENT_CLASSES: ClassVar[frozenset[str]] = frozenset(
         _TRANSCRIPT_KIND_COMPONENTS.values()
-    )
+    ) | frozenset(_TRANSCRIPT_MATCH_COMPONENTS)
 
     DEFAULT_CSS = """
     TranscriptScreen {
@@ -1041,10 +1333,13 @@ class TranscriptScreen(Screen):
         width: 1fr;
     }
 
-    /* The live match count. Mounted EMPTY by this slice — Slice 2 owns what
-       goes in it — so that the row's geometry is settled and measured before
-       anything writes to it, rather than shifting the first time a count
-       appears. `width: auto` takes exactly the room its text needs and leaves
+    /* The live match count, written by `TranscriptScreen._update_search_count`
+       (its copy is `_search_count_text`'s). Mounted EMPTY, so that the row's
+       geometry is settled and measured before anything writes to it, rather
+       than shifting the first time a count appears — and empty is also the
+       resting state it returns to, since a reviewer who has typed nothing has
+       not asked anything yet.
+       `width: auto` takes exactly the room its text needs and leaves
        the rest of the row to the query box's `1fr`, so the count sits hard
        against the right of what is typed rather than at a fixed column.
        `$text-muted` is this module's own precedent for a secondary readout
@@ -1839,6 +2134,117 @@ class TranscriptScreen(Screen):
         color: $text;
         text-style: strike;
     }
+
+    /* ------------------------------------------------------------------
+       THE SEARCH HIGHLIGHT (spec 044) — `background:` AND NOTHING ELSE, on the
+       one axis the palette ledger above leaves unspent. Two rules, and they are
+       the last two in this stylesheet for the same reason every kind rule was
+       appended rather than inserted: nothing above moves.
+
+       WHY BACKGROUND — which is the whole of the colour argument, and it is an
+       exhaustion argument rather than a preference. The ledger above
+       `_TRANSCRIPT_KIND_COMPONENTS` closes both axes spec 038 used: all five
+       theme foregrounds clearing 4.5:1 on BOTH builtin themes are spent
+       (`$text`, `$text-primary`, `$text-muted`, `$text-error`,
+       `$text-secondary`), and five of the eight usable `text-style` flags are
+       spent too — including `reverse`, which is `recap`'s and is precisely what
+       `less` marks its own matches with; `overline` is measured dead at both
+       downstream hops. So a highlight could not be a colour without meaning a
+       SIDE and could not be a flag without meaning a KIND. Background is the
+       axis nothing has claimed — and `_kind_styles` has been deliberately
+       stripping it out of every kind style since spec 038 for exactly this
+       case: its docstring names "a selection highlight" as the thing it was
+       leaving room for.
+
+       IT IS ALSO WHY THE HIGHLIGHT COMPOSES RATHER THAN REPLACES. Setting only
+       the background leaves every kind's foreground and flags untouched
+       underneath it, so functional-spec §2.3 ("on top of, not instead of")
+       holds for all twenty-four kinds BY CONSTRUCTION, rather than by a case
+       analysis nobody could keep current as kinds keep arriving. A Mafioso's
+       line under a match is still `$text-error`, a thought is still italic, the
+       reviewer's own seat is still bold. `_match_styles` is the half of that
+       guarantee written in Python; these two rules are the half written here.
+
+       AMBER IS FORCED, NOT CHOSEN. `$primary-muted` / `$secondary-muted` (blue)
+       and `$error-muted` (red) are excluded on spec 038's own grounds: in this
+       view blue and red MEAN SIDE, so a highlight in either would read as an
+       allegiance claim about a line the reviewer has merely searched for.
+       `$success-muted` measures worse (2.67 worst case on dark). That leaves
+       amber — `$accent` and `$warning` are identical on both builtin themes and
+       neither is spent — which is also the universal search-hit colour, so the
+       one hue left over is the one a reviewer already expects.
+
+       THE PERCENTAGE FORM RATHER THAN `$accent-muted`: `background: $accent N%`
+       blends against the theme's OWN background, so it tracks light and dark
+       automatically, and a percentage yields TWO STEPS OUT OF ONE HUE — which a
+       named muted variable cannot, and which is what `transcript--match-current`
+       needs in order to stand out from its neighbours without introducing a
+       second meaning.
+
+       THE COST — A REAL RELAXATION OF A STANDING PROJECT RULE, WRITTEN DOWN
+       HERE RATHER THAN BURIED, because spec 038's whole design record is about
+       AA and the next reader deserves to know this was CHOSEN rather than
+       overlooked. On `textual-dark` the HIGHLIGHTED state holds a 3:1 floor,
+       not the 4.5:1 every rule above keeps. Measured against the 20% blend
+       (`#412f17`, re-measured at implementation and matching the tech spec's
+       table to the decimal): `$text` 9.68, `$text-muted` 4.89, `$text-primary`
+       4.80, `$text-error` 4.33, `$text-secondary` **3.19**. The arithmetic is
+       CLOSED, so this is not a tuning failure waiting for a better number:
+       `$text-secondary` already sits at 4.67:1 on dark with zero headroom, so
+       ANY background light enough to be seen at all pushes it under AA. There
+       is no value satisfying both, and a highlight nobody can see is not a
+       highlight.
+
+       Accepted on four grounds, all of them about the state being transient:
+       the RESTING reading view keeps its AA guarantee completely untouched (not
+       one kind rule changes); the highlight exists only while a reviewer has
+       asked for it, and is one Esc away; `$text-secondary` is only the five
+       cast-list field labels, not a channel anyone reads at length; and a match
+       is redundantly located by the status count and by the jump putting it on
+       the top row. The light theme is comfortable throughout — worst case 4.84
+       (`$text-muted` on the 20% blend `#e6d4bb`).
+
+       THE 45% STEP IS A SECOND, STEEPER RELAXATION, AND IT IS MEASURED HERE
+       RATHER THAN INFERRED FROM THE FIRST — the tech spec quotes only the 20%
+       column, and the second step is materially worse, so a reader must not
+       take 3:1 as the floor for both. Against `#7c541d` on `textual-dark`:
+       `$text` 5.06, `$text-muted` 2.56, `$text-primary` 2.51, `$text-error`
+       2.26, `$text-secondary` **1.67** — i.e. below 3:1 for four of the five,
+       so the CURRENT match is the one place in this view where legibility
+       genuinely leans on something other than contrast. What makes it bearable
+       is that it applies to exactly ONE span at a time, and to the one the
+       reviewer deliberately jumped to: it is on the top row, named by the
+       status count, and surrounded by its 20% neighbours for comparison. On
+       `textual-light` the same step is comfortable (worst case 4.33). If the
+       by-eye pass finds it illegible on dark, the lever is this rule's
+       percentage and nothing else depends on it.
+
+       VISIBILITY, the other end of the same trade — "can it be seen at all"
+       measured as the blend against the body background: dark 1.47 (20%) and
+       2.80 (45%) against `#121212`; light 1.10 and 1.23 against `#e0e0e0`.
+       The light theme is the thin one, which is what the re-tuning note below
+       is about.
+
+       ONE MEASURED CONSEQUENCE, and `recap` is the only kind where it happens:
+       a match inside a moderator recap combines to `reverse … on #412f17`, so
+       the terminal SWAPS the pair — the text goes amber on a light ground
+       instead of the ground going amber. ~9.2:1, clearly legible and clearly
+       marked, just inverted relative to every other kind. That is `reverse`
+       doing what `reverse` does, not a bug to code around.
+
+       TO RE-TUNE: light-theme separation between the two steps measures 1.12
+       here (the tech spec's 1.09 at the same two percentages), against 1.91 on
+       dark — the one figure that wants a human eye rather than an assertion
+       (Task 5.5's by-hand pass). If the current match is too hard to pick out
+       on light, widen to 15% / 50%; nothing else in this stylesheet depends on
+       either number. */
+    TranscriptScreen > .transcript--match {
+        background: $accent 20%;
+    }
+
+    TranscriptScreen > .transcript--match-current {
+        background: $accent 45%;
+    }
     """
 
     # Identical back-out idiom as DetailScreen: pop back to the transcript list.
@@ -1885,6 +2291,13 @@ class TranscriptScreen(Screen):
         # `pop_screen` discards it, so there is no search to carry between
         # games and nothing to reset on the way out.
         self._search: SearchState | None = None
+        # THE PENDING DEBOUNCED REPAINT, or `None` when none is scheduled (spec
+        # 044). There is never more than one: `_schedule_repaint` stops the open
+        # window before opening the next, which is what makes the debounce
+        # *restarting* rather than a queue of repaints that every one of them
+        # still runs. Per-instance for the same reason `_search` is — a game is
+        # one screen, so popping the screen takes the timer with it.
+        self._repaint_timer: Timer | None = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -1926,12 +2339,23 @@ class TranscriptScreen(Screen):
             # contains a `[` today. Spans sidestep markup entirely — they are
             # attached to character ranges, never parsed out of the text — and the
             # flag keeps the guarantee in place for the string path a future
-            # refactor might take.
-            yield Static(
-                self._styled_body(),
-                id="transcript-body",
-                markup=False,
-            )
+            # refactor might take. Since spec 044 the flag is forced by
+            # `TranscriptBody.__init__` rather than passed here, so it cannot be
+            # dropped by a future call site — the reasoning above is why.
+            #
+            # THE BASE IS BUILT EXACTLY ONCE, HERE (spec 044). `_styled_body`
+            # re-reads the file and re-runs `tokenize_transcript`, which is
+            # ~2.8 ms on the 88 KB committed game — nothing at all once, and an
+            # absurdity per keystroke of a live search. `TranscriptBody` keeps
+            # what it is handed and copies it per update, so the tokenizer runs
+            # once per *game opened* and never once per character typed.
+            #
+            # Per `compose` is also exactly the right lifetime for
+            # functional-spec §2.9 AC4 ("open that game again … nothing is
+            # highlighted"): `DetailScreen` pushes a fresh `TranscriptScreen`
+            # per game, so a new base is built with no highlight on it and there
+            # is nothing to reset on the way out.
+            yield TranscriptBody(self._styled_body(), id="transcript-body")
         yield Footer()
 
     def _styled_body(self) -> Text:
@@ -1944,10 +2368,23 @@ class TranscriptScreen(Screen):
         the file byte for byte: the highlighting can change how the game looks
         but not what it says.
 
+        **Called exactly ONCE per :meth:`compose`, and that is a contract rather
+        than an observation** (spec 044). It re-reads the file and re-runs the
+        tokenizer — ~2.8 ms on the 88 KB committed game — which is free once and
+        indefensible per keystroke of a live search. The result becomes
+        :class:`TranscriptBody`'s private base, which every search update
+        *copies*; nothing outside ``compose`` calls this method, and a future
+        caller that re-built the body per update would silently reintroduce the
+        tokenizer into the typing path (Task 2.7's structural guard is what
+        would catch it).
+
         A Rich :class:`~rich.text.Text` rather than Textual's native
         :class:`~textual.content.Content`: ``Static`` converts it through
         ``Content.from_rich_text``, preserving the spans, and it is the shape
-        verified working on the installed Textual (8.2).
+        verified working on the installed Textual (8.2). Spec 044 leans on that
+        conversion for more than fidelity — it is what preserves and *combines*
+        the kind spans below with the search highlight's spans appended after
+        them (see :meth:`TranscriptBody.highlight`).
 
         **Neither renderable is lossless by default, and the choice between them
         is stylistic.** ``Text.append`` runs Rich's ``strip_control_codes``,
@@ -2009,6 +2446,265 @@ class TranscriptScreen(Screen):
             resolved = self.get_component_rich_style(component)
             styles[kind] = resolved.without_color + RichStyle.from_color(resolved.color)
         return styles
+
+    def _match_styles(self) -> dict[str, RichStyle]:
+        """Resolve the two search-highlight classes to BACKGROUND-ONLY styles.
+
+        Keyed by component class (:data:`_TRANSCRIPT_MATCH_COMPONENTS`), because
+        unlike :meth:`_kind_styles` there is no kind to key on: a match is a
+        thing that happens *to* a span of any kind, not a kind of its own.
+
+        **The mirror image of :meth:`_kind_styles`, and deliberately not a
+        branch of it.** That method keeps the foreground and throws the
+        background away (``without_color + from_color(resolved.color)``);
+        running the match classes through it would discard the one property they
+        exist to set, and the highlight would paint nothing at all. This one
+        keeps the background and throws the foreground away — which is what
+        makes functional-spec §2.3 ("on top of, not instead of") true **by
+        construction**: a style setting only ``bgcolor`` composes with whatever
+        kind style is already on the span, for all twenty-four of them, with no
+        case analysis to keep current as kinds keep arriving. The CSS rules say
+        the same thing from the stylesheet's side.
+
+        **The full style, not ``partial=True``** — the same hazard
+        :meth:`_kind_styles`' docstring documents, and the reason it bites here
+        is the percentage. A partial style reports only the properties the rule
+        sets, which sounds like exactly what a per-span style wants, but it
+        reports them *unresolved*: measured on the installed Textual 8.2.4,
+        ``partial=True`` gives ``transcript--match`` a ``bgcolor`` of
+        ``#fea62b`` — the raw, un-blended ``$accent`` — where the full style
+        resolves the ``20%`` blend against the live theme background to
+        ``#412f17``. Partial would paint a solid amber block behind every match
+        instead of the tint the rule renders, on both themes.
+
+        Resolved on demand rather than cached, exactly as :meth:`_kind_styles`
+        is: a theme change re-resolves for free and there is nothing to
+        invalidate.
+        """
+        # Line for line the same shape as `_kind_styles` above, so the "mirror
+        # image" is visible in the code and not only in this docstring: same
+        # full-style resolution, opposite half kept.
+        styles: dict[str, RichStyle] = {}
+        for component in _TRANSCRIPT_MATCH_COMPONENTS:
+            resolved = self.get_component_rich_style(component)
+            styles[component] = RichStyle(bgcolor=resolved.bgcolor)
+        return styles
+
+    def _repaint_matches(self, matches: Sequence[tuple[int, int]]) -> None:
+        """Light up ``matches`` in the game — the screen's half of one update.
+
+        The seam between "what colour is a match" (this screen's, because
+        :attr:`COMPONENT_CLASSES` and the CSS rules are declared here) and "how
+        the game is repainted without re-tokenizing or re-laying-out it"
+        (:class:`TranscriptBody`'s). Everything expensive or easy to get wrong
+        is on the other side of that seam; this method resolves one style and
+        hands the offsets over.
+
+        **Two callers, and neither of them is a keystroke.**
+        :meth:`_repaint_settled_query` when the debounce window expires on the
+        query the reviewer has settled on, and :meth:`_clear_search` with no
+        matches at all, to put the unhighlighted reading view back when a search
+        ends. Both also get the count in ``#search-count`` from the same
+        argument — see :meth:`_update_search_count` for why it is written here
+        and not per keystroke.
+        **Do not call this from ``Input.Changed`` directly** — the debounce is
+        not optional at this cost: 336 ms per keystroke on the 88 KB game for
+        the worst measured query (tech-spec §2.8), because
+        ``Widget._render_content`` re-renders all 1,182 rendered rows rather
+        than the 22-row viewport.
+
+        **The style is resolved once per update, not once per match.**
+        ``get_component_rich_style`` walks the stylesheet, and there can be
+        14,524 matches (tech-spec §2.8's worst measured query, a single space);
+        resolving inside the loop would turn a 6 ms styling pass into a
+        stylesheet walk per character of the game. Resolving per *update* rather
+        than caching on the screen is the same trade
+        :meth:`_kind_styles` makes: a theme change re-resolves for free and
+        there is nothing to invalidate.
+
+        Args:
+            matches: Half-open ``(start, end)`` offset pairs in document order,
+                as :func:`~graphia.eval_ledger.find_matches` returns them. Empty
+                restores the unhighlighted reading view.
+        """
+        # `transcript--match` only. The second class,
+        # `transcript--match-current`, is resolved by the same call and left
+        # unused until Slice 4 gives `n`/`N` somewhere to land — painting a
+        # "current" match before anything can *be* current would mark a match
+        # the reviewer has not navigated to.
+        self.query_one("#transcript-body", TranscriptBody).highlight(
+            matches, self._match_styles()[_MATCH_COMPONENT]
+        )
+        # THE COUNT TRAVELS WITH THE HIGHLIGHT — functional-spec §2.8 AC1 ("it
+        # tells them how many matches there are"), counted off the same list the
+        # body was just handed.
+        #
+        # It could as easily be counted per keystroke in `on_input_changed`:
+        # `find_matches` is ~1 ms and is not what the debounce exists to
+        # coalesce (the 336 ms is the re-render). It is not, because the number
+        # and the highlighting are one statement to the reviewer. Counting early
+        # would put "18 matches" on screen while 19 are still lit from the
+        # previous query, for up to `_SEARCH_DEBOUNCE_SECONDS` of every burst —
+        # and a readout that contradicts what the reviewer can see is a worse
+        # failure than one that is briefly behind, because it is the readout
+        # they would believe. Sharing this path makes the two unable to drift:
+        # there is no second code path that can update one without the other.
+        self._update_search_count(len(matches))
+
+    def _update_search_count(self, matches: int) -> None:
+        """Write the match total — or the no-match state — into ``#search-count``.
+
+        The screen's half of :func:`_search_count_text`: that function owns the
+        copy, this one owns where the query comes from. It is read back off
+        :attr:`_search` rather than passed in, and that is what makes the
+        clearing half of the job fall out for free. :meth:`_clear_search` drops
+        the state **before** it repaints (its docstring says why that order is
+        load-bearing), so the empty repaint that puts the unhighlighted reading
+        view back arrives here with no search left to describe and blanks the
+        strip in the same breath. Functional-spec §2.9 AC1 asks for the
+        highlighting to go when the search does; a count left behind reading
+        "18 matches" over an unhighlighted game would be that same leak wearing
+        different clothes.
+
+        **Nothing here moves the game.** ``Static.update`` refreshes with
+        layout — ``width: auto`` means the strip really does resize as the
+        number's digits change — but the row it sits in is a fixed ``height: 1``
+        sibling of the scroller, so re-arranging it cannot change the scroller's
+        height, its ``max_scroll_y``, or the clamp that reads them.
+        Functional-spec §2.8 AC2 asks for exactly that of the no-match case, and
+        gets it from the layout rather than from care taken here.
+
+        Args:
+            matches: How many matches are currently lit — the length of the very
+                list :meth:`_repaint_matches` just handed the body.
+        """
+        search = self._search
+        self.query_one("#search-count", Static).update(
+            _search_count_text("" if search is None else search.query, matches)
+        )
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        """Keep the query in step with the box, and light up the matches — shortly.
+
+        The whole of functional-spec §2.2 — "every time the reviewer adds or
+        removes a character, the highlighting updates" — with the repaint itself
+        deferred by :data:`_SEARCH_DEBOUNCE_SECONDS` (see
+        :meth:`_schedule_repaint` for the shape and the constant for the
+        number). The *query* is updated here and now, so whatever runs next
+        reads what is actually in the box.
+
+        **Nothing here reads or writes ``scroll_offset``, and §2.2 asks for
+        exactly that**: "the view does not move to hunt for matches elsewhere,
+        so what lights up is what was already in front of the reviewer". The
+        repaint styles the whole document rather than the viewport, so matches
+        below the fold are already lit when the reviewer scrolls down to them
+        (§2.4 AC2) without this handler ever having to go looking for one.
+        Moving the view to a match is Enter's job (§2.5), from Slice 3.
+        """
+        # SCOPED BY TYPE, not by id, because this screen's box deliberately has
+        # no id (see `compose` — the screen reaches it by type and it reaches
+        # the screen by message). `LedgerTableScreen` runs a `#search` `Input`
+        # of its own for the runs-list filter — a different surface on a
+        # different screen, which functional-spec §3 puts out of this spec's
+        # scope — and guards its own handler the mirror-image way. The two
+        # screens cannot exchange an `Input.Changed` today, so this guard is not
+        # load-bearing against a bug that exists; it is here so that "which box
+        # is this handler about" is written down rather than inferred from a
+        # screen-tree fact a later refactor could quietly change.
+        if not isinstance(event.input, TranscriptSearchInput):
+            return
+        # THE RE-ENTRANCY GUARD (tech-spec §3's `input.value = ""` risk row),
+        # and it closes a loop rather than being defensive padding.
+        # `_clear_search` empties the box on the way out; `value` is a plain
+        # reactive, so that assignment POSTS an `Input.Changed` which arrives
+        # back here after the search has already ended. That method drops
+        # `_search` BEFORE the clear — its docstring says to keep the order —
+        # precisely so this line is unconditionally true on the echo and the
+        # clear cannot reach back into the code unwinding it. Neither half works
+        # alone: without the guard the echo repaints a search that is gone,
+        # without the ordering the guard has nothing to read. Keep both.
+        #
+        # It answers a stray `Changed` at any other search-less moment too, and
+        # the answer is the same: there is no query to update and nothing to
+        # paint.
+        if self._search is None:
+            return
+        self._search.query = event.value
+        self._schedule_repaint()
+
+    def _schedule_repaint(self) -> None:
+        """(Re)open the debounce window that ends in one repaint of the game.
+
+        **A RESTARTING SINGLE-SHOT timer** — not a periodic one, and not a
+        "repaint at most every N ms" throttle. Each keystroke stops the pending
+        window and opens a fresh one, so the repaint happens once, after the
+        typing stops, on the query the reviewer settled on. A throttle would
+        instead repaint the FIRST query of a burst, which is the one keystroke
+        whose result the reviewer is least interested in, and would still owe a
+        trailing repaint for the last.
+
+        ``set_timer`` builds a ``Timer`` with ``repeat=0`` — it fires once and
+        stops — and returns it. Keeping the handle is what makes the restart
+        possible at all, and it is also what :meth:`_cancel_pending_repaint`
+        needs so a window can be closed *without* a repaint when the search
+        ends under it.
+        """
+        self._cancel_pending_repaint()
+        self._repaint_timer = self.set_timer(
+            _SEARCH_DEBOUNCE_SECONDS, self._repaint_settled_query
+        )
+
+    def _cancel_pending_repaint(self) -> None:
+        """Close an open debounce window without letting it repaint.
+
+        Called when a window is being replaced by a newer one, and when the
+        search ends. Textual would stop the timer on its own *eventually* —
+        ``MessagePump._close_messages`` stops everything in ``self._timers`` —
+        but eventually is after the screen has gone, and the case that matters
+        is a live screen whose search has ended. So it is stopped here,
+        synchronously, at the moment the thing it serves stops existing.
+
+        ``Timer.stop`` is safe on a timer that has already fired: it cancels a
+        task that is already done, which does nothing. Dropping the handle
+        afterwards keeps "is a repaint pending?" answerable by reading the
+        field.
+        """
+        if self._repaint_timer is None:
+            return
+        self._repaint_timer.stop()
+        self._repaint_timer = None
+
+    def _repaint_settled_query(self) -> None:
+        """The debounce window expired — light up whatever is typed now.
+
+        **Reads the query back out of :attr:`_search` instead of being handed it
+        when the window opened**, which is what makes a coalesced burst paint
+        the right thing: every keystroke in the burst wrote ``query`` and
+        restarted the window, so by the time this runs the field holds what the
+        reviewer ended up with rather than what they started with.
+
+        **The state check here is a second guard doing a different job** from
+        :meth:`on_input_changed`'s. That one stops a repaint being *scheduled*
+        after a search has ended; this one stops a scheduled repaint *landing*
+        if the search ends between the last keystroke and the window expiring —
+        Esc within :data:`_SEARCH_DEBOUNCE_SECONDS` of a keystroke, which is an
+        ordinary thing for a reviewer to do. :meth:`_cancel_pending_repaint`
+        already makes it unreachable; it is kept because of what the failure
+        would look like if either lock were ever removed — amber text under no
+        search, with nothing on screen to explain it and no traceback to find.
+
+        Matches are found in :attr:`TranscriptBody.text` — the string the widget
+        renders — so the offsets are offsets into the very text the spans are
+        applied to. See that property for why a fresh read of the file is not
+        guaranteed to be the same string.
+        """
+        # The window has fired; the handle is spent whatever happens next.
+        self._repaint_timer = None
+        search = self._search
+        if search is None:
+            return
+        body = self.query_one("#transcript-body", TranscriptBody)
+        self._repaint_matches(find_matches(body.text, search.query))
 
     def on_transcript_search_input_scroll_game(
         self, message: TranscriptSearchInput.ScrollGame
@@ -2173,7 +2869,8 @@ class TranscriptScreen(Screen):
         remembering to be careful: by the time the echo arrives the state is
         already gone, so the Slice-2 guard (``if self._search is None: return``)
         is unconditionally true and the clear cannot reach back into the code
-        that is unwinding it. *Slice 2: keep this order.* (Clearing an already
+        that is unwinding it. *That guard now exists — keep this order.*
+        (Clearing an already
         empty box posts nothing at all — a non-``always_update`` reactive does
         not fire on an unchanged assignment — so the echo only exists when the
         reviewer had actually typed something.)
@@ -2200,6 +2897,34 @@ class TranscriptScreen(Screen):
         # visible half of a search that, as far as the rest of the screen is
         # concerned, has already ended.
         self._search = None
+        # ...AND THE PENDING REPAINT WITH IT. Esc within
+        # `_SEARCH_DEBOUNCE_SECONDS` of the last keystroke is an ordinary thing
+        # to do, and a window left open across this point would fire and paint
+        # matches for a search the reviewer has just abandoned. Its callback
+        # guards on `_search` as well, so this is the second of two locks — it
+        # is here because "stop the timer when the thing it serves ends" is the
+        # honest statement of the lifetime, not "rely on the callback noticing".
+        self._cancel_pending_repaint()
+        # THE HIGHLIGHTING GOES WITH THE SEARCH — functional-spec §2.9 AC1, "the
+        # prompt closes, the highlighting is gone". An empty match list is
+        # exactly the unhighlighted reading view: `TranscriptBody.highlight`
+        # copies its base and appends nothing, so spec 038's kind colours come
+        # back at their exact offsets and no amber survives a search that has
+        # ended. (That is also what keeps the two strict-equality span tests
+        # honest, since a leaked span is the thing they fail on.)
+        #
+        # Unconditional rather than conditional on anything having been lit:
+        # the repaint costs one keypress's worth of work, where tracking
+        # whether the body is currently clean would cost a second piece of state
+        # to keep true. Slice 5 completes the rest of this state machine (the
+        # subtitle, and the bar-hidden-search-live state Enter leaves behind).
+        #
+        # AND THE COUNT GOES WITH IT, without a line here to say so:
+        # `_repaint_matches` writes `#search-count` on this same path, and it
+        # reads the query off `_search` — which the line above has already set
+        # to `None` — so the strip blanks instead of being left claiming
+        # matches over a game that no longer has any.
+        self._repaint_matches(())
         self.query_one("#search-row", Horizontal).remove_class("-open")
         self.query_one(TranscriptSearchInput).value = ""
         self.query_one("#transcript-scroll", VerticalScroll).focus()
