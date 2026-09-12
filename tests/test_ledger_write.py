@@ -71,11 +71,12 @@ test_append_record_creates_parent_directory``, and the ``mkdir`` line's real job
 — being the first attribute access, so a ``str`` argument dies naming
 ``parent`` — is pinned by ``tests/test_substitution_ledger.py::
 test_the_injected_ledger_path_must_be_a_Path_not_a_str``. Neither is duplicated.
-Nothing here tests the ``ended_early`` marker: that is Slice 4 and does not exist
-yet. ``upsert_record``, the progressive per-game write and the pre-run backup DO
-now exist — Slice 3 landed them on 2026-09-12, after this module was written, so
-the sentence above used to list them among the not-yet-built alongside the
-marker. They are pinned in ``tests/test_progressive_ledger_write.py``, which sits
+Nothing here tests the ``ended_early`` marker: that is Slice 4's, and it is
+pinned in ``tests/test_early_stop_marker.py`` — landed 2026-09-12, after this
+module was written, which is why the sentence above used to say it did not exist
+yet. ``upsert_record``, the progressive per-game write and the pre-run backup
+arrived the same way (Slice 3, 2026-09-12) and were listed among the not-yet-built
+beside it. They are pinned in ``tests/test_progressive_ledger_write.py``, which sits
 a level above these primitives for the same reason ``run.id`` does: it is about
 *when* a record is written and what a write must not disturb, not about how text
 is cut and replaced. ``run.id`` likewise arrived later — Slice 2, 2026-09-11 —

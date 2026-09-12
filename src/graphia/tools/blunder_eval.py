@@ -237,6 +237,64 @@ _NEAR_DUP_THRESHOLD = 0.85
 # ``quality.substitutions`` census — add a NEW block beside the existing ones
 # and move no denominator: the ``outcomes`` / ``vote_activity`` / ``ci_low``
 # precedent, no bump.
+#
+# SPEC 043 STAYS AT 1, AND THE REASON NEEDS SAYING OUT LOUD for the same reason
+# spec 041's does: a spec that changes WHEN and HOW OFTEN a record is written,
+# and adds a field saying the run stopped short, looks from a distance like a
+# spec that changed the measurement — and the next reader will assume a bump was
+# forgotten. It did not. Spec 043 changed the WRITE PATH (one record per run,
+# rewritten after every completed game instead of appended once at the end) and
+# the record's SHAPE; it did not touch a single scorer. Every detection rule,
+# every denominator definition and every threshold — ``_NEAR_DUP_THRESHOLD``,
+# the third-person own-name rule, the vote initiation-vs-Yes split, the
+# ``tally_outcomes`` partition, the persona value-type facets — is byte-identical
+# either side of it, so a rate measured before and a rate measured after are the
+# same quantity measured the same way. That is exactly what this constant
+# promises, and bumping it would falsely declare all 50 prior rates incomparable.
+#
+# THE ONE THING SPEC 043 CHANGES ABOUT A RECORD'S NUMBERS IS ``n``, AND ``n`` IS
+# NOT A RULE. A partial record's rates divide by a smaller denominator and its
+# Wilson bands are correspondingly wider — which is ``_attach_ci`` doing its job,
+# not a different job. ``--games`` has varied ``n`` since spec 011 and has never
+# bumped this constant; a record from a planned 4-game run and a record from a
+# run asked for 10 and stopped after 4 are scored by IDENTICAL rules over
+# identical denominator definitions, and the ledger already holds records at
+# n=1, n=2, n=10 and n=20 that are compared to one another routinely. The
+# marker's whole purpose is to let a reader WEIGH those two records differently,
+# which is a judgement about sample size — a thing the CI already annotates —
+# and not a claim that they were measured differently.
+#
+# ITS THREE NEW FIELDS ARE ADDITIVE AND CONDITIONAL: ``run.id`` (named above),
+# ``run.seq`` (the per-run write counter that makes a silent OCC rollback visible
+# after the fact) and ``quality.ended_early`` (this run stopped short of
+# ``settings.games``). None is read by any scorer, none moves a denominator, and
+# every committed record renders byte-identically without them — the
+# ``run.kind`` / ``outcomes`` / ``ci_low`` precedent exactly. Two of them measure
+# nothing at all (they NAME and ORDER the writes of a run), and the third is the
+# run's own arithmetic over counts the record already carried.
+#
+# THE FAIR COUNTER-ARGUMENT IS SELECTION, and it deserves stating rather than
+# waving away: a run is not usually stopped at random. A run stopped BECAUSE
+# something was going wrong — a provider degrading, a machine thrashing, a human
+# watching the first games and disliking them — may be an unfair sample of the
+# ten games that were planned, and pooling it with full baselines could bias the
+# picture. Three answers, in order of force. First, that is a property of the
+# SAMPLE, not of the RULES: ``METRICS_VERSION`` gates whether two rates measure
+# the same quantity the same way, and a biased sample of a quantity is still that
+# quantity — bumping the version would say the scorers disagree, which is a
+# different and false claim. Second, the games run in INDEX ORDER, so a partial
+# run's games are a PREFIX of the planned sequence (games 1–4 of 10), never a
+# subsample chosen after the fact from among the ten; nobody picks which games
+# survive, and the seed offsets that make a run reproducible are per-index, so
+# the prefix is the same prefix a ``--games 4`` run would have played. Third,
+# the instruments for the worry already exist ON THE RECORD and are exactly the
+# ones a reader should use: the ``ended_early`` marker says not to read it as a
+# planned run, ``games_attempted`` / ``games_completed`` / ``games_failed_early``
+# beside ``settings.games`` say how far short and how cleanly, and ``notes`` — the
+# one human-mutable field, rendered as ``notes: ''`` precisely to invite
+# hand-editing — is where WHY it stopped belongs. A version bump would answer the
+# selection worry by making every partial record incomparable to everything,
+# including to other partial records, which is a worse answer than labelling it.
 METRICS_VERSION = 1
 
 # Wilson score confidence-interval constants for the per-metric reliability band
@@ -367,6 +425,53 @@ class EvalResult:
     provider: Provider
     large_model: str = ""
     small_model: str = ""
+    # --- Spec-043 §2.3 early-stop marker (Slice 4) ---
+    # Whether this run STOPPED SHORT of the games it was asked for, rendered as
+    # ``quality.ended_early`` — GATED (emitted only when true) and FIRST in that
+    # block, ahead of the three counts below.
+    #
+    # NAMING HAZARD, in one sentence: ``ended_early`` describes the **run**,
+    # ``games_failed_early`` describes a **game**. The ``games_`` prefix
+    # disambiguates them, but it is the pair a reader will trip over.
+    #
+    # NO NEW COUNTS ARE NEEDED — the pair the functional spec asks for is
+    # already on the record: ``settings.games`` is how many games were ASKED FOR
+    # (and must never be rewritten to the completed count: ``settings`` is the
+    # values that let a run be repeated like-for-like), ``games_completed``
+    # below is how many FINISHED. This flag exists only to stop the three counts
+    # beneath it being read as a PLANNED run of that size — the same job
+    # ``run.kind`` does for everything under ``run.date``, which is why a
+    # conditional qualifier lands first here instead of being appended.
+    #
+    # THE VALUE IS THE RUN'S OWN ARITHMETIC: a write whose ``games_attempted``
+    # falls short of the requested ``settings.games`` is an early-stopped one.
+    # So it is true on a progressive write of a run still short of its target
+    # (4 attempted of 10) and false on the write of a run that attempted
+    # everything (10 of 10) — INCLUDING a run whose every game failed early,
+    # which attempted all it was asked to and is therefore NOT early-stopped.
+    #
+    # GATED, AND ABSENCE IS TWO-VALUED — not three. Before spec 043 there was
+    # exactly ONE route to a ledger write (falling off the end of the game
+    # loop), so every pre-043 record is provably a run that attempted everything
+    # it was asked for; verified across all 50 committed records
+    # (``games_attempted == games_completed + games_failed_early`` in all 50,
+    # and ``settings.games == games_attempted`` in all 48 carrying both).
+    # Absent therefore means "this run attempted everything" — the ``run.kind``
+    # treatment, NOT ``settings.private_diaries_enabled``'s (absent ⇒ an
+    # unmeasurable third case), because there the off-arm claim was unmakeable
+    # of an older build, and here the old code makes the reading for us.
+    # ``false`` is never written.
+    #
+    # A BOOLEAN, WITH NO ENCODED CAUSE. ``notes`` is the documented
+    # human-mutable field for *why* a run stopped, and it renders as ``notes: ''``
+    # precisely to invite hand-editing; a machine-emitted cause string would
+    # repeat the ``outcomes.note`` mistake the ledger README's own versioning
+    # section records.
+    #
+    # Additive and conditional ⇒ NO ``METRICS_VERSION`` bump: no scorer and no
+    # denominator is touched, and every committed record renders byte-identically
+    # (the ``run.kind`` / ``run.id`` precedent).
+    ended_early: bool = False
     games_attempted: int = 0
     games_completed: int = 0
     games_failed_early: int = 0
@@ -2783,6 +2888,7 @@ def render_record(result: EvalResult, run_date: str) -> str:
             regen_attempts: <int>
             temperature: <float>
         quality:
+          ended_early: true                 # spec 043 — the run stopped SHORT of settings.games; OMITTED (never false) when it attempted everything it was asked for, which every pre-043 record provably did
           games_attempted: <int>
           games_completed: <int>
           games_failed_early: <int>
@@ -3074,12 +3180,30 @@ def render_record(result: EvalResult, run_date: str) -> str:
     # because spec 039's diary-fallback keys are CONDITIONAL yet must land beside
     # ``games_failed_early`` — the other "did this run measure anything?" count —
     # rather than trailing after ``duration_seconds``. ``_yaml_block`` renders in
-    # insertion order, so the insertion sequence IS the key order.
-    quality_block: dict[str, object] = {
-        "games_attempted": result.games_attempted,
-        "games_completed": result.games_completed,
-        "games_failed_early": result.games_failed_early,
-    }
+    # insertion order, so the insertion sequence IS the key order. Spec 043's
+    # ``ended_early`` is the same shape one step further along: conditional AND
+    # ahead of the three counts, which is why the map now opens empty.
+    quality_block: dict[str, object] = {}
+    # ``ended_early`` (spec 043 §2.3) — this run stopped SHORT of the games it
+    # was asked for. FIRST key in the block, ahead of the three counts, on the
+    # ``run.kind`` precedent in ``run_block`` above: a conditional QUALIFIER that
+    # decides how everything below it reads belongs at the top rather than
+    # appended at the bottom, and this field's whole job is to stop a reader
+    # parsing the three counts beneath it as a PLANNED run of that size.
+    #
+    # GATED, and the literal ``True`` is written rather than the flag, because
+    # ``false`` is never a value this key takes — absence carries it, and absence
+    # is two-valued (absent ⇒ the run attempted everything it was asked for; see
+    # :attr:`EvalResult.ended_early` for why that reading is safe on every
+    # pre-043 record, and for the ``ended_early``-describes-a-RUN /
+    # ``games_failed_early``-describes-a-GAME naming hazard). So a complete run's
+    # record, and every one of the 50 committed records, renders byte-identically
+    # to today.
+    if result.ended_early:
+        quality_block["ended_early"] = True
+    quality_block["games_attempted"] = result.games_attempted
+    quality_block["games_completed"] = result.games_completed
+    quality_block["games_failed_early"] = result.games_failed_early
     # Spec 039 §2.10 fold-in — the DIARY FALLBACK share, so a diaries-on run that
     # actually measured the deterministic placeholder says so in its own record
     # instead of reading like a clean measurement (the 9-of-11 smoke). Emitted as
@@ -5566,7 +5690,12 @@ def run_eval(
           denominator shrinks, no present metric can vanish between calls, and no
           gate that has opened can close again;
         - ``result.duration_seconds`` re-derives from ``started`` on every call,
-          which is WANTED: a partial record's duration covers the work it did.
+          which is WANTED: a partial record's duration covers the work it did;
+        - ``result.ended_early`` (spec 043 Task 4.2) re-derives from
+          ``games_attempted < args.games`` on every call for exactly the same
+          reason, and this closure is the ONE point both write sites reach —
+          see the block beside the assignment for why the rule needs no
+          special-casing and why it is not ``games_completed``.
 
         It makes no network call — ``embed_fn`` is resolved before the loop and used
         only inside it — so re-scoring is pure computation with no per-game cost in
@@ -5752,6 +5881,57 @@ def run_eval(
         # block before rendering, so a degenerate (e.g. all-failed) run cannot
         # masquerade as a clean baseline (functional-spec §2.3).
         result.duration_seconds = round(time.monotonic() - started, 3)
+
+        # === THE EARLY-STOP MARKER (spec 043 §2.3, Task 4.2) — stamped here,
+        # beside the duration, and for the same reason: both are run-level facts
+        # about the PREFIX scored so far, re-derived on every call so a partial
+        # record describes the work it actually did rather than the work that was
+        # planned. ``duration_seconds`` is the standing precedent in this closure
+        # for a non-scoring stamp, and the pair reads as one idea.
+        #
+        # ONE POINT, NOT TWO. This closure is called exactly once immediately
+        # before each :func:`upsert_record` — ``final=False`` at the end of the
+        # loop body, ``final=True`` after the loop — with nothing in between, so
+        # this IS write time, and it is the only place both writes reach. Setting
+        # it at the two call sites instead would duplicate the rule, and a third
+        # write site added later would silently inherit a stale flag; here it
+        # cannot.
+        #
+        # NO SPECIAL-CASING, AND NONE IS NEEDED — the run's own arithmetic
+        # answers it. A progressive write happens mid-loop, where
+        # ``games_attempted`` is necessarily short of ``args.games`` (4 of 10 ⇒
+        # true); the post-loop write happens after the loop has attempted
+        # everything (10 of 10 ⇒ false, and ``render_record`` then omits the key).
+        # ``final`` is deliberately NOT consulted: it would give the same answer
+        # today only because the loop always attempts every game, and reading it
+        # would encode that coincidence as a rule.
+        #
+        # NOT ``games_completed``. A run whose every game failed early attempted
+        # all ten it was asked for and is therefore NOT early-stopped: it finished
+        # everything it set out to attempt, and its record correctly carries no
+        # marker (functional-spec requirement five). A ``games_completed``-based
+        # rule would mark that run and break that requirement.
+        #
+        # MEASURED AGAINST ``args.games`` — the number REQUESTED — which is the
+        # same value ``settings["games"]`` above carries and ``render_record``
+        # renders as ``settings.games``. Read from ``args`` rather than back out
+        # of the settings map on purpose: ``args.games`` is the request, and it
+        # cannot be edited by anything downstream, so the marker stays a true
+        # statement about what was asked for even if the map were ever tampered
+        # with. ``settings.games`` MUST keep carrying that same requested number
+        # and must never be rewritten to the completed count — ``settings`` is
+        # documented as the values that let a run be repeated LIKE-FOR-LIKE, and
+        # stamping 4 there would collapse a 4-of-10 record onto a planned 4-game
+        # run, failing the functional spec's distinguishability criterion
+        # directly. The marker and that number are the PAIR a reader judges the
+        # record's weight from; neither works without the other.
+        #
+        # THE ``--games 0`` EDGE, checked rather than assumed: ``range(0)`` runs
+        # no iterations, so ``games_attempted`` is 0 against a requested 0, and
+        # ``0 < 0`` is ``False`` — the key is absent, which is right. A run that
+        # was asked for nothing and attempted nothing did not stop short of
+        # anything.
+        result.ended_early = result.games_attempted < args.games
 
     for game_index in range(args.games):
         # Spec 041, Task 12.2a: ONE 1-based number, used by every human-facing

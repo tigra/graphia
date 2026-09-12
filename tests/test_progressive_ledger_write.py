@@ -69,8 +69,13 @@ developer's ``.graphia/ledger-backups``. Section 8 asserts the redirect is still
 in place, so it cannot quietly disappear from the shared scaffold.
 
 WHAT IS DELIBERATELY NOT HERE. ``quality.ended_early`` and the
-``settings.games``-versus-completed distinguishability pair are **Slice 4** and
-do not exist yet (Task 4.3 owns them). The write *primitives* — ``_split_ledger``
+``settings.games``-versus-completed distinguishability pair are **Slice 4**'s and
+are pinned in ``tests/test_early_stop_marker.py`` — landed 2026-09-12, after this
+module was written, which is why the sentence above used to say they did not
+exist yet. That module imports this one's ``_completed_game``,
+``_record_every_write``, ``_seed_ledger``, ``_count_splices`` and the two
+ledger-reading helpers rather than re-declaring them, so a change to how a write
+is observed lands in one place. The write *primitives* — ``_split_ledger``
 / ``_join_ledger`` / ``_atomic_write_text`` and the frozen ``append_record`` —
 are ``test_ledger_write.py``'s. ``run.id``'s shape and its single draw per run
 are ``test_run_identity.py``'s; only its use as the upsert's match key is

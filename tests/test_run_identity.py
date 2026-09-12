@@ -76,10 +76,11 @@ and a ``persona-bench`` record (an id, and no transcript because a bench run
 plays no game).
 
 WHAT IS DELIBERATELY NOT HERE. Nothing tests ``quality.ended_early``: that is
-Slice 4 and does not exist yet. ``upsert_record``, the progressive per-game
-write and the pre-run backup DO now exist — Slice 3 landed them on 2026-09-12,
-after this module was written, so the sentence above used to list them among the
-not-yet-built alongside the marker. They are pinned in
+Slice 4's, pinned in ``tests/test_early_stop_marker.py``. It landed 2026-09-12,
+after this module was written, which is why the sentence above used to say it did
+not exist yet; ``upsert_record``, the progressive per-game write and the pre-run
+backup arrived the same way (Slice 3, the same day) and were listed among the
+not-yet-built beside it. They are pinned in
 ``tests/test_progressive_ledger_write.py``, including the one place this
 module's subject meets that one: the upsert recognises its own document by
 ``run.id``, so a ledger holding a near-twin id is tested there rather than here
