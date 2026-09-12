@@ -4,9 +4,10 @@ This directory holds **`blunder-ledger.yaml`**, the repo-committed quality
 ledger written by `make blunder-eval` (spec 011, _AI Blunder Tracking_) and — on
 request, since spec 036 — by `make persona-bench --record`. It turns AI behaviour
 from an anecdote into a tracked, comparable, history-backed property of the repo:
-each measurement run appends one dated record, and a maintainer answers "Nova vs
-Ollama on behaviour X?" or "before vs after prompt change Y?" by reading the
-ledger alone. Which **kind** of measurement a record is comes from
+each measurement run **contributes** one dated record — written after its first
+completed game and brought up to date after each one thereafter, rather than
+appended once at the end (spec 043) — and a maintainer answers "Nova vs Ollama on
+behaviour X?" or "before vs after prompt change Y?" by reading the ledger alone. Which **kind** of measurement a record is comes from
 [`run.kind`](#runkind), and records compare only **within a kind** as well as
 within a provider.
 
@@ -20,7 +21,10 @@ within a provider.
   nothing else: **no run ever rewrites another run's record**, and a record
   becomes **immutable the moment the run that wrote it ends**. The file still
   reads chronologically, oldest first — a run's record stays where its first
-  write put it.
+  write put it. There is **one narrow exception** to *no run ever rewrites
+  another run's record*; it arrives with concurrency, and it is stated in full
+  below. It can make another record's **content** regress one generation — never
+  replace that record with something else, and never lose it.
 - **One `---`-separated YAML document per run.** Records are concatenated YAML
   documents, each preceded by a `---` document separator, so the file is a
   valid multi-document YAML stream.
@@ -36,11 +40,66 @@ within a provider.
   multi-line — see [`notes`](#notes--the-one-human-mutable-field) below.
 - **Merge conflicts resolve by keeping both documents.** Two runs on diverging
   branches append independently — keep both records on merge.
+- **Concurrent runs on one ledger are supported** (spec 043; ADR 014). Two runs
+  — the usual case being one provider arm each — may measure into
+  `blunder-ledger.yaml` at the same time. Every write is
+  optimistic-concurrency-controlled: it renders its document first, hashes the
+  bytes it read, splices **only its own chunk**, re-checks that hash at the last
+  instant before the rename, and retries on a conflict. `--ledger-path` is
+  therefore a **convenience for throwaway runs** — it keeps a smoke run out of
+  the committed history — and no longer a safety requirement, which matters
+  because running the arms concurrently is exactly what a multi-arm baseline
+  session does. **If a conflict is ever observed in practice**, the recorded
+  escalation is `flock` on a **gitignored sidecar** file (ADR 014, Alternative 4
+  — retained rather than built, so conflicts have a planned answer rather than
+  an improvised one).
+- **The one write that is NOT concurrency-controlled is the bench's.** The OCC
+  cycle above belongs to `blunder-eval`'s progressive writer.
+  `make persona-bench --record` writes **once**, at its end, through the older
+  one-shot appender: **atomic**, so it can never leave a partial file, but
+  carrying **no version check** — it reads the ledger, adds its document and
+  replaces the whole file, with no hash compared and no retry. Another run's
+  write landing inside *that* read-to-replace window is silently reverted rather
+  than rolled back by a generation, and the window is a render plus a read plus
+  a write rather than the ~215 µs below. A bench run opens it exactly once, and
+  a `blunder-eval` run repairs its own record on its next progressive write — so
+  the exposure is small but it is not the same guarantee. This is the one case
+  where `--ledger-path` is still worth reaching for: a bench run recording
+  alongside a live measured game run.
+
+**The one way "no run ever rewrites another run's record" can bend — and it is
+about content, not about bytes.** Concurrency is supported, not free. Two writers
+can both pass the hash check and then `os.replace` in sequence; the second one's
+file carries the first one's chunk **as it was when the second writer read it**,
+so the loser's newest update is rolled back one generation. No record is deleted,
+no document is replaced by another run's, and nothing is raised anywhere — what
+regresses is one record's *content*, by one game. Neither writer can see it: the
+winner reads back exactly what it wrote, and the victim's own chunk is intact, so
+**detection at the clobbering writer is impossible in principle** rather than
+merely unimplemented. Three things make the exposure small:
+
+- **Progressive writes self-heal.** The victim's next write re-reads and
+  re-writes its current state, so the exposure is bounded to *a record is
+  briefly one game stale*.
+- **The final write is the exposed one**, having no next write to repair it. It
+  retries with a larger budget, and on persistent failure writes its document to
+  the `UNWRITTEN` file described below rather than losing the measurement.
+- **The window was narrowed, not closed.** Spec 043 moved the last hash check
+  from before the temp-file write to immediately before the rename, taking the
+  measured median from **466 µs to 215 µs** (p90 599 → 234 µs) over a copy of
+  the committed 171,686-byte ledger. What remains is the check (~111 µs) plus
+  the rename (~90 µs) — the floor for a design with no lock. Closing it
+  altogether is what the `flock` escalation above is for.
+
+[`run.seq`](#runid-and-runseq) is what makes such a rollback **nameable after the
+fact**: a record whose `seq` went *backwards* between two readings is a visible
+fact rather than a suspicion.
 
 **A live run's record is not value-stable, and that is correct rather than
-corruption.** The narrowing above has one consequence a reader will not guess:
-while a run is alive, **every number in its record is computed over the games
-completed so far**. Rates divide by a denominator that grows and every Wilson
+corruption.** The contract's narrowing above — *a run rewrites its own record
+while it is alive* — has one consequence a reader will not guess: while a run is
+alive, **every number in its record is computed over the games completed so
+far**. Rates divide by a denominator that grows and every Wilson
 band is re-derived from that denominator, so **a diff between two readings of one
 live record is not a finding**. Two measured examples, both from spec 043's own
 verification runs, because the abstract statement does not prepare you for
@@ -134,9 +193,15 @@ Each run writes one directory under `evals/transcripts/`, named for the run:
 evals/transcripts/<run-id>/game-NN.txt
 ```
 
-- **One directory per run.** `<run-id>` is a filesystem-safe, sortable
-  timestamp generated once per run (e.g. `2026-06-18T14-32-05`), so runs sort
-  chronologically.
+- **One directory per run.** `<run-id>` is a filesystem-safe, lexically
+  sortable timestamp **plus a short random suffix**, generated once per run —
+  e.g. `2026-09-12T14-35-53-b23bb1`. The suffix is six lowercase hex characters
+  and sits *after* the full timestamp, so runs still sort chronologically, and
+  two runs launched in the same second can no longer name one directory (spec
+  043; this project has launched runs four seconds apart). **Directories created
+  before spec 043 keep their suffix-free names** — `2026-06-18T14-32-05` —
+  because nothing was renamed: both forms are live under `evals/transcripts/`
+  and a reader will see both.
 - **One `.txt` per game**, with a **zero-padded** game index — `game-01.txt`,
   `game-02.txt`, … (padded to at least two digits, widening for runs of 100+
   games) — so the game ↔ file relationship is obvious and files sort in play
@@ -223,6 +288,22 @@ the next measured run** keeps eval provenance clean. After a smoke run, the
 assistant should prompt you to delete that run's transcripts (unless they hold
 findings) and commit the full keepers.
 
+**Partial runs make an INCOMPLETE run directory ordinary (spec 043).** Before
+that spec a stopped run contributed no record at all, and its transcripts were
+the only trace it had ever run; now a stopped run leaves **both** — one record
+covering the games it finished, and an `evals/transcripts/<run-id>/` holding
+exactly those games' files, linked from `run.transcript_dir`. So a run directory
+holding three `game-NN.txt` files for a run that asked for ten is a normal thing
+to find, and the record beside it says so
+([`quality.ended_early`](#qualityended_early)). The mechanism does not *create*
+the hazard — a full run leaves the same kind of directory — it makes it
+**frequent**, because a partial run is now an ordinary outcome rather than a
+disaster. Per the author's ruling the dirty-flag behaviour **stays**: a next run
+that measures an uncommitted tree is meaningful, and the remedy is to **commit or
+remove**. The consequence to manage is therefore unchanged and merely exercised
+far more often — an uncommitted incomplete directory makes the *next* run stamp
+`code.dirty: true`, so clean-or-commit before the next measured run.
+
 ## Record shape — field legend
 
 Each record is one YAML document with a **fixed top-level key order** —
@@ -245,7 +326,7 @@ run:
   kind: 'persona-bench'         # spec 036 — WHICH KIND of measurement this is; the key is OMITTED ⇒ a played game
   duration_seconds: 412.3       # wall clock SO FAR — stamped on EVERY write (NOT null-until-finished), so it GROWS between writes and a stopped run's record carries a real one
   metrics_version: 1            # rule-set version; bumps when any detection rule or denominator changes
-  transcript_dir: '2026-06-13T14-32-05'  # spec 017 — this run's dir under evals/transcripts/ (omitted if no transcripts / older record)
+  transcript_dir: '2026-06-13T14-32-05-9f3a1c'  # spec 017 — this run's dir under evals/transcripts/ (omitted if no transcripts / older record); BYTE-IDENTICAL to run.id above on a game record
 code:
   commit: '<sha>'               # git HEAD at run time — or null if git was unavailable
   branch: 'main'                # git branch — or null if unavailable
@@ -363,7 +444,10 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   see the paragraph below it), `metrics_version` (the rule-set version — see
   the note on cross-version comparison below), and `transcript_dir` (spec 017 —
   the run's directory **name** under `evals/transcripts/`, e.g.
-  `'2026-06-18T14-32-05'`; see [Transcripts](#transcripts) below). **`transcript_dir`
+  `'2026-09-12T14-35-53-b23bb1'` — the suffixed form every run has written since
+  spec 043; directories created before it keep their suffix-free names, so both
+  forms are live in the tree (see [Layout](#layout)); see
+  [Transcripts](#transcripts) below). **`transcript_dir`
   is a new, additive field:** it is **omitted** on runs that wrote no
   transcripts and on **older records written before spec 017** — read it as
   absent there, exactly like any other pre-feature field. It also carries
@@ -1295,3 +1379,56 @@ alive, and the values are **final the moment it ends**. See
     Bumping would have declared all 41 prior rates incomparable at the moment
     they became most worth comparing. What records the generation instead is
     `provider.structured_output`.
+
+- **Records written before spec 043 lack `run.id`, `run.seq` and
+  `quality.ended_early`.** All 50 records committed before spec 043 omit all
+  three, none of the three is a gap to be backfilled, and they are absent for
+  three *different* reasons — only one of which is the familiar pre-feature-field
+  case:
+  - **`run.id`** — the run's identity. Absence means *this record predates the
+    field*, the two-valued [`run.kind`](#runkind) treatment rather than a
+    three-way carve-out. Nothing needs it retroactively, because the field
+    exists so a run can find **its own** document while it is still alive, and
+    every older record belongs to a run that ended long ago.
+  - **`run.seq`** — the per-run write counter. It is omitted whenever it would
+    be `0`, so its absence is **not a date marker at all**: a `persona-bench`
+    record written today omits it too, having been written exactly once by a
+    writer that never updates. Read absence as *this record was written once*,
+    which is true of every pre-043 record and of every bench record.
+  - **`quality.ended_early`** — the early-stop marker. Absence means **the run
+    attempted every game it was asked for**, on old records and new alike, and
+    for the older ones that reading is *earned* rather than assumed: before this
+    spec there was exactly **one** route to a ledger write, the end of the run's
+    loop, so a record written by that code is provably a run that ran to the end
+    of its plan. Verified across all 50 committed records — see
+    [`quality.ended_early`](#qualityended_early), where the classification table
+    and the two-valued absence rule live.
+
+  Their arrival **did not bump `metrics_version`**, and here the reason needs
+  saying out loud for the same reason spec 041's does: a spec that changes
+  **when** and **how often** a record is written, and adds a field saying the run
+  stopped short, looks from a distance like a spec that changed the measurement.
+  It did not. Spec 043 changed the **write path** (one record per run, rewritten
+  after every completed game instead of appended once at the end) and the
+  record's **shape**; it touched no scorer. Every detection rule, every
+  denominator definition and every threshold is byte-identical either side of it
+  — the near-duplicate threshold, the third-person own-name rule, the vote
+  initiation-vs-Yes split, the `tally_outcomes` partition, the persona
+  value-type facets — so a rate measured before and a rate measured after are
+  the same quantity measured the same way. That is exactly the `ci_low` /
+  `ci_high`, spec-013, spec-036, spec-039 and spec-041 precedent above, and
+  bumping would have falsely declared all 50 prior rates incomparable.
+
+  **The one thing spec 043 changes about a record's numbers is `n`, and `n` is
+  not a rule.** A partial record's rates divide by a smaller denominator and its
+  Wilson bands are correspondingly wider — the interval doing its job, not a
+  different job. `--games` has varied `n` since spec 011 without ever bumping the
+  version, and the ledger already holds records at n=1, n=2, n=10 and n=20 that
+  are compared to one another routinely. The fair counter-argument is
+  **selection**: a run stopped *because* something was going wrong may not be a
+  fair sample of what was planned. The answer is that this is a property of the
+  **sample**, not of the rules — games run in index order, so a partial run's
+  games are a **prefix** of the planned sequence rather than a subsample chosen
+  after the fact. The marker exists to let a reader **weigh** two such records
+  differently, which is a judgement about sample size (a thing the Wilson band
+  already annotates), not a claim that they were measured under different rules.

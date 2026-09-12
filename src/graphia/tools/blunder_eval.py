@@ -585,7 +585,10 @@ class EvalResult:
     settings: dict[str, object] = field(default_factory=dict)
     # Wall-clock run duration in seconds (``time.monotonic()`` delta), surfaced
     # on the ``run`` and ``quality`` blocks so a degenerate run cannot masquerade
-    # as a clean baseline. ``None`` until the run finishes.
+    # as a clean baseline. ``None`` only until the FIRST game finishes, NOT until
+    # the run does: since spec 043 ``_finalise_result`` re-derives it on EVERY
+    # write, so it grows between writes and a stopped run's record carries a real
+    # duration covering the work it actually did.
     duration_seconds: float | None = None
     # Free-text run annotation (tech-spec 011 §2.5): the ONE human-mutable field.
     # Populated from ``--note`` at run time or left empty so the rendered record
