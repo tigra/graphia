@@ -73,8 +73,13 @@ mutation (d) in this task's own mutation table, and the reason the helpers below
 read lines rather than parse.
 
 WHAT IS DELIBERATELY NOT HERE. The viewer's ``4/10`` ``Games`` cell and the
-drill-down's marker line are **Slice 5** (Task 5.3) and do not exist yet. The
-write cadence, the OCC cycle, the pre-run backup and the near-twin match are
+drill-down's marker line landed in **Slice 5** (Tasks 5.1-5.2) after this module
+was written — which is why the sentence here used to say they did not exist yet
+— and they are pinned in ``tests/test_partial_run_viewer.py``, including the one
+decision that spans both modules: the *writer* emits the key only when true, so
+the hand-edited ``ended_early: false`` that the table and the drill-down read
+through two different gates is a state no test here can produce. The write
+cadence, the OCC cycle, the pre-run backup and the near-twin match are
 ``test_progressive_ledger_write.py``'s; the write primitives are
 ``test_ledger_write.py``'s; the id's shape is ``test_run_identity.py``'s.
 """

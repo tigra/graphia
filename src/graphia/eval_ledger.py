@@ -325,6 +325,79 @@ def _resolved_games(record: RawRecord) -> Any:
     return _dig(record, "settings.games", default=_dig(record, "run.games", ""))
 
 
+def _games_cell(record: RawRecord) -> str:
+    """The ``Games`` table cell — the requested count, or ``4/10`` when cut short.
+
+    Spec 043 lets a run be stopped part-way and still leave a record: the games
+    it finished are scored and written, while ``settings.games`` keeps carrying
+    the number **requested** — that is the value that repeats the run
+    like-for-like, and rewriting it to the completed count would collapse a
+    4-of-10 record onto a planned 4-game run. So from spec 043 onward the number
+    this column has always shown is no longer necessarily the number the row's
+    metric cells were measured over: a run stopped after four of ten games would
+    read ``10`` in a row whose rates cover four. That cell is correct on all 50
+    records committed before this spec; **spec 043 is what makes it wrong**,
+    which is why repairing it is in scope while *presenting* partial runs
+    otherwise is not (technical-considerations 043 §2.6).
+
+    So: ``quality.games_completed`` / ``settings.games`` — ``4/10`` — on a record
+    carrying ``quality.ended_early``, and the plain requested count on every
+    other record, which is every record written before this spec plus every run
+    that finished what it asked for.
+
+    **A SECOND FUNCTION, deliberately NOT a change to** :func:`_resolved_games`.
+    That resolver has two callers — this cell and the scoped-search ``games``
+    field (:func:`_search_fields`) — and they want different things. A search for
+    ``games`` ``10`` must keep finding a run that *asked for* ten whether or not
+    it finished them: that is exactly the run a reviewer hunting the ten-game
+    baselines needs to see, and a partial one is arguably the one they most need
+    to be shown. Teaching the resolver about the marker would silently change
+    what that search matches. Anyone tempted to "simplify" these two back into
+    one is changing search behaviour, not removing a duplication.
+
+    **Defensive like every cell here, with one invariant worth stating outright:
+    the result is today's cell, or today's cell with a ``"<completed>/"``
+    prefix.** The marker, the completed count and the requested count are all
+    read through :func:`_dig`, so a record with no ``quality`` block, no
+    ``settings.games``, a hand-built shape or an outright malformed one renders
+    exactly what it renders today rather than raising. The pair is a claim about
+    **two** numbers, so it is rendered only when both halves are actually there —
+    half a claim (``1/`` or ``/3``) reads worse than the unmarked cell. Nothing
+    here can remove or alter information already on screen; it can only add the
+    numerator.
+
+    Both halves render **verbatim** through :func:`_text`, with no numeric
+    coercion — :func:`_kind_cell`'s posture, and the one this column already
+    takes on the requested half (a hand-written ``settings.games: 'ten'`` has
+    always rendered ``ten``). Coercing one half while the other stays verbatim
+    would be the inconsistency, and a count of ``0`` must survive as ``0/10``
+    rather than being mistaken for an absent one — hence the emptiness tests are
+    on the rendered **text**, where ``"0"`` is truthy, not on the raw value.
+
+    Gated on the marker's **truthiness**, not on its presence — the opposite of
+    :data:`_DIARY_QUALITY_GATE`'s presence gate, for the reason that makes that
+    gate right there and wrong here: those fields are denominators, where a
+    recorded ``0`` is a real reading that absence must stay distinct from. This
+    field *is* the claim itself. The writer emits it only when true, so presence
+    and truth coincide on every written record; a hand-edited
+    ``ended_early: false`` says the run did not end early and is read as saying
+    exactly that.
+
+    The ``⚠`` column is deliberately untouched. It means ``code.dirty``, and
+    overloading one indicator with two unrelated caveats would leave neither
+    readable — a partial run of unmodified code and a full run of modified code
+    are different warnings.
+    """
+    requested = _text(_resolved_games(record))
+    if not _dig(record, "quality.ended_early"):
+        return requested
+    completed = _text(_dig(record, "quality.games_completed"))
+    if not completed or not requested:
+        # Half a pair is not a cell: fall back to what this column shows today.
+        return requested
+    return f"{completed}/{requested}"
+
+
 def _outcomes_cell(record: RawRecord) -> str:
     """The ``Wins (LA/M)`` table cell — both side win-rates, or blank when absent.
 
@@ -2996,7 +3069,6 @@ def _row_cells(record: RawRecord) -> list[str]:
     # blob and scoped-search fields call the same ones).
     large_model = _resolved_large_model(record)
     small_model = _resolved_small_model(record)
-    games = _resolved_games(record)
 
     cells: list[str] = [
         "⚠" if dirty else "",
@@ -3013,7 +3085,12 @@ def _row_cells(record: RawRecord) -> list[str]:
         # record's own ``provider`` key order). ``—`` on every record that does
         # not state one — never blank, never a default.
         _transport_cell(record),
-        _text(games),
+        # Spec 043: the requested game count, or ``4/10`` on a run that was
+        # stopped part-way (:func:`_games_cell`). It reads ``settings.games``
+        # through the SAME :func:`_resolved_games` the scoped-search ``games``
+        # field does, and deliberately does not change it — see the cell's
+        # docstring for why the two must stay separate.
+        _games_cell(record),
         _outcomes_cell(record),
         # Spec 029: positions MUST track ``_FIXED_COLUMNS`` exactly (the
         # ``len(row) == len(columns)`` invariant) — scripted-side + unresolved next
@@ -3624,6 +3701,39 @@ def _render_settings_section(record: RawRecord) -> str:
     return _section("settings", lines)
 
 
+# The early-stop marker (spec 043 §2.3) — the key the FIRST line of the quality
+# block is gated on, and the only conditional line in that block that is not a
+# denominator. ``render_record`` writes it only when the run was stopped part-way
+# and inserts it ahead of the three counts, because its whole job is to stop a
+# reader parsing those counts as a planned run of that size; the drill-down keeps
+# that reading order for the same reason. Without this gate the marker was
+# written to every partial record and readable only in raw YAML — the same
+# non-iterating-whitelist gap that once hid ``run.kind``, the whole
+# ``generation`` block, spec 039's diary trio and spec 040's story trio, and the
+# gap technical-considerations 043 §2.6 puts in scope precisely because *this*
+# spec is what creates the ambiguity.
+#
+# **A PRESENCE gate, and here that is the opposite of** :func:`_games_cell`,
+# which gates the same field on **truthiness** — the two are read differently on
+# purpose. The cell is a *summary*: it shows one derived number, and an absent
+# marker and a hand-edited ``ended_early: false`` both mean the same thing there
+# (show the requested count), so truthiness loses nothing. This is a *field
+# dump*: absent and present-but-false are different bytes on disk, and the
+# drill-down is the one view whose job is to say which of them it found. A
+# truthiness gate here would make a hand-edited ``false`` invisible in the only
+# place a reader looks instead of opening the YAML — reintroducing the very gap
+# this line exists to close, through the gate instead of through the whitelist.
+#
+# Absence therefore renders **nothing**, never ``False``: the writer emits no
+# such value, and a rendered ``False`` would assert a claim nobody made — the
+# ``run.kind`` / ``settings.private_diaries_enabled`` rule, and the one the whole
+# block already follows. Spelled with :data:`_MISSING` rather than ``is not
+# None`` so it is presence in the strict sense the two gates below use: a
+# hand-edited ``ended_early: null`` is a key that IS there, and renders as the
+# ``—`` that means "present, no value".
+_EARLY_STOP_QUALITY_GATE = "quality.ended_early"
+
+
 # The three flat ``quality.diary_*`` keys (spec 039 §2.13), in the order
 # ``render_record`` inserts them — rate, then the count, then the denominator it
 # was taken over. One tuple rather than three call sites, following
@@ -3681,8 +3791,10 @@ _STORY_QUALITY_GATE = "quality.story_ending_games"
 def _render_quality_section(record: RawRecord) -> str:
     """The ``quality`` block — run-health counts, or one ``—`` line.
 
-    A whole **absent** ``quality`` block collapses to a single ``—`` line. The
-    four original counts render unconditionally; spec 039's three flat
+    A whole **absent** ``quality`` block collapses to a single ``—`` line. Spec
+    043's ``ended_early`` marker renders **first when the record carries it**
+    (:data:`_EARLY_STOP_QUALITY_GATE`) and not at all otherwise; the four
+    original counts render unconditionally; spec 039's three flat
     ``diary_*`` keys render **only when the run attempted a diary entry**, and
     spec 040's three flat ``story_*`` keys **only when a game reached the
     ending**, both positioned between ``games_failed_early`` — the other "did
@@ -3724,11 +3836,35 @@ def _render_quality_section(record: RawRecord) -> str:
     not a falsy one**, and this renderer is where that distinction becomes
     visible to an operator who would otherwise have to read raw YAML to learn
     that a run produced no stories at all.
+
+    **The early-stop marker (spec 043 §2.6) is the same non-iterating-whitelist
+    repair a third time, with the opposite gate.** ``ended_early`` says the run
+    was stopped part-way, so the counts beneath it are what it *finished* and
+    ``settings.games`` is what it *asked for*; it is written first for that
+    reason and read first for that reason. Unlike the two trios it is gated on
+    the key's **presence**, not on a denominator — there is no denominator, and
+    absence is two-valued rather than three: every record written before this
+    spec came from the one code path that ran the loop to its end, so an absent
+    marker means "attempted everything it asked for" rather than "unmeasurable".
+    That is why absence renders nothing at all: a ``False`` here would assert a
+    claim no writer ever made. It is also the one field this module reads with
+    two different gates on purpose — :func:`_games_cell` gates the *table* cell
+    on truthiness, because a summary cell loses nothing by treating a
+    hand-edited ``false`` as absent, while this view exists to show what the
+    record actually contains.
     """
     quality = _dig(record, "quality")
     if not isinstance(quality, dict):
         return _section("quality", [f"  {_ABSENT}"])
-    lines = [
+    lines: list[str] = []
+    # Spec 043 §2.6, Task 5.2: the early-stop marker, FIRST — the writer's own key
+    # order, and for the writer's own reason (:data:`_EARLY_STOP_QUALITY_GATE`).
+    # The three counts below it read differently once it is there, so it has to
+    # be read before them, not appended after them.
+    ended_early = _dig(record, _EARLY_STOP_QUALITY_GATE, _MISSING)
+    if ended_early is not _MISSING:
+        lines.append(_field("ended_early", ended_early))
+    lines += [
         _field("games_attempted", _dig(record, "quality.games_attempted")),
         _field("games_completed", _dig(record, "quality.games_completed")),
         _field("games_failed_early", _dig(record, "quality.games_failed_early")),
