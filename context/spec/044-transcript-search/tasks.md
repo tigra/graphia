@@ -1,0 +1,133 @@
+# Tasks: Searching Inside a Game Transcript (Spec 044)
+
+- **Functional Specification:** [`functional-spec.md`](./functional-spec.md) — 47 acceptance criteria across §2.1–§2.10
+- **Technical Considerations:** [`technical-considerations.md`](./technical-considerations.md)
+- **Status:** Not started
+
+---
+
+## How these slices are sliced
+
+Each slice leaves `make view-ledger` runnable and adds something a reviewer can actually do. The ordering front-loads risk rather than value: **Slice 1 carries the two things that would break the existing reading view** (initial focus and the closed bar's geometry), because if either is wrong nothing built on top of it is trustworthy. Matching, jumping and stepping then land in the order a reviewer would discover them.
+
+**Verification tooling.** There is no browser MCP and none is needed — this is a terminal UI, and Textual's `App.run_test()` + `Pilot` *is* the real-tool harness (it is what all 68 existing tests in `tests/test_ledger_viewer.py` use). Every slice is verified by real keystrokes through `pilot.press(...)`, never by assigning `Input.value` directly; the tech spec's §4 explains why that distinction is load-bearing here. Nothing else needs installing.
+
+**One standing rule for every slice:** `tests/test_ledger_viewer.py::test_scrolling_a_long_game_behaves_as_before` must stay **byte-identical and green**. It is functional spec §2.10's witness. If a slice makes it fail, the design is wrong, not the test.
+
+---
+
+## Slice 1 — The search bar opens, takes text, and scrolls the game under it
+
+*Runnable result: a reviewer presses `/` while reading a game, a one-row box appears, they can type into it and scroll the game at the same time, and Esc puts everything back. Nothing is highlighted yet. A reviewer who never presses `/` sees an unchanged reading view — proven, not assumed.*
+
+Covers functional spec §2.1 (all 4), §2.4 (all 5), §2.10 AC1/AC2, and the Esc-with-no-search half of §2.9.
+
+- [ ] **Slice 1: The search bar opens, takes text, and scrolls the game under it**
+  - [ ] 1.1 Pin `TranscriptScreen.AUTO_FOCUS: ClassVar[str] = "#transcript-scroll"` **before** adding any widget. `Widget.focusable` gates on `visible` (the `visibility` rule), **not** `display`, and `App.AUTO_FOCUS` is `"*"` — so an `Input` in `compose()` takes initial focus even while `display: none`, and every keystroke vanishes into an invisible box. This also makes today's implicit focus behaviour explicit. **[Agent: textual-tui]**
+  - [ ] 1.2 Add `TranscriptSearchInput(Input)` with `BINDINGS` for all six of `up`, `down`, `pageup`, `pagedown`, `home`, `end`, each scrolling `#transcript-scroll`. These belong on the **subclass, not the Screen**: screen bindings cannot deliver `home`/`end` (the focused `Input` claims them and wins — measured dead at `67 → 67`), while subclass bindings shadow the base class's. Consequently **no `priority=True` anywhere**, and no `action_home`/`action_end` overrides. **[Agent: textual-tui]**
+  - [ ] 1.3 Add the bar to `compose()` as a **sibling** of `VerticalScroll` (inside it, it would scroll away): `Horizontal(id="search-row")` holding the input plus `Static(id="search-count")`. Style it `height: 1; border: none; padding: 0 1;` — a default `Input` is 3 rows. Hide it with a CSS class toggle (`-open`) rather than `widget.display`, so both states sit in the stylesheet beside the kind rules. **[Agent: textual-tui]**
+  - [ ] 1.4 Bind `slash` → open the search, `show=True` with the description `"Search"` so the Footer reads *Search* beside the existing *Back*. Opening focuses the input and **must not touch `scroll_y`**. **[Agent: textual-tui]**
+  - [ ] 1.5 Introduce `_search: SearchState | None` on the screen and branch `action_close` on it: state present → clear it, hide the bar, refocus `#transcript-scroll`, leave `scroll_y` alone; state absent → `pop_screen()`. Branching on *bar visibility* instead would break §2.9 in Slice 4, so the state field goes in now even though it holds only a query at this point. Note the deliberate consequence: `backspace` and `q` share this action, so they clear a live search before leaving. **[Agent: textual-tui]**
+  - [ ] 1.6 Update the two rot-guards this slice breaks. In `tests/test_ledger_viewer.py`, split `_TRANSCRIPT_BACK_KEYS` and assert `TranscriptScreen.BINDINGS` equals the **union** of back-out and search keys, so a future binding still cannot be added undeclared; and add `slash` to `_DETAIL_KEYS_SWEPT` so the existing fuzz-walk presses it on the other two screens for free. **[Agent: testing]**
+  - [ ] 1.7 **Verify (real keystrokes via `run_test()`):** (a) `test_scrolling_a_long_game_behaves_as_before` still passes **unmodified** — `screen.focused is scroller`, `scroller.size.height == 22`, `virtual_size.height == 202`; (b) with the bar closed, `#search-row` measures `(0, 0)`; (c) `/` opens it, `scroll_y` is unchanged, and `body.content_size.width` is unchanged (so no rewrap); (d) with the bar focused, each of the six scroll keys moves `scroll_offset.y` and leaves `Input.value` untouched; (e) `q`, `n`, `N`, `/` are typed into the value and do **not** leave the game, while `backspace` deletes; (f) Esc with no search still leaves the game in one press. **[Agent: testing]**
+
+---
+
+## Slice 2 — Matches light up as you type
+
+*Runnable result: typing in the bar highlights every match on screen, live, and the box says how many there are or that there are none. The view still never moves while typing — which is exactly what §2.2 promises.*
+
+Covers §2.2 (all 6), §2.3 (all 3), §2.7 (all 3), §2.8 AC1/AC2/AC4.
+
+- [ ] **Slice 2: Matches light up as you type**
+  - [ ] 2.1 Add the pure matchers to `src/graphia/eval_ledger.py`, beside `tokenize_transcript` and `row_matches_field`: `search_is_case_sensitive(query)` (smart case — **any** uppercase character anywhere makes it exact) and `find_matches(text, query) -> list[tuple[int, int]]`. Implement with `re.finditer(re.escape(query), text, flags)` — **never** `text.lower().find(...)`: `str.lower()` can change length (`'İ'` → two characters), silently shifting every later offset on exactly the model-generated proper nouns these transcripts are full of. Empty query ⇒ `[]`; matches are non-overlapping. Explain in the docstring why `row_matches_field` is not reused (it ANDs whitespace-split terms and returns a verdict; this needs literal phrases and positions). **[Agent: python-backend]**
+  - [ ] 2.2 Add `transcript--match` and `transcript--match-current` to `COMPONENT_CLASSES` with **`background:`-only** rules — `$accent 20%` and `$accent 45%`. Amber is forced: blue and red *mean side* in spec 038, so a highlight in either would read as an allegiance claim, and `$success-muted` measures worse. Resolve them through a dedicated resolver keeping only the background (`RichStyle(bgcolor=resolved.bgcolor)`) — **not** through `_kind_styles`, which strips backgrounds by design. Use the full style, not `partial=True`. **[Agent: textual-tui]**
+  - [ ] 2.3 Build the styled base `Text` once and keep it; per update do `base.copy()` → `stylize(match_style, s, e)` per match → a layout-free content swap (a `Static` subclass calling `refresh(layout=False)`; the plain text is provably unchanged so the height cannot move). **Never `stylize` the base** — `Text.copy()` gives a fresh span list, while mutating the base would accumulate spans forever and old highlights would never clear. **[Agent: textual-tui]**
+  - [ ] 2.4 Coalesce `Input.Changed` through a restarting single-shot timer (~50–120 ms). Measured worst case without it is **336 ms per keystroke** on the 88 KB game, because `_render_content` re-renders all 1,182 rows rather than the 22-row viewport. Guard the handler on `_search is not None` — setting `input.value = ""` on close fires `Changed` and would otherwise re-enter it. Do **not** window highlighting to the viewport: it saves ≤6 ms and would cost 32–113 ms on every scroll step. **[Agent: textual-tui]**
+  - [ ] 2.5 Show the live count in `#search-count` — how many matches, or that there are none. A no-match query highlights nothing and does not move the view. **[Agent: textual-tui]**
+  - [ ] 2.6 Add `tests/test_transcript_search.py` (terminal-free, mirroring `test_transcript_highlight.py`'s role) covering smart case — including the `miRa` boundary the functional spec leaves unstated and the length-changing-lowercase trap — plus narrowing on a keystroke, widening on Backspace, and matching inside private thoughts and the cast list. Parametrized. **[Agent: testing]**
+  - [ ] 2.7 **Verify (`run_test()`):** (a) typing `vot` then `e` then Backspace narrows and widens the highlighted spans with no scrolling at any point; (b) the rendered runs are the tokenizer's runs **as a leading slice**, with the match spans as the tail — this ordering assertion *is* the checkable form of §2.3 "on top of, not instead of"; (c) a match inside a Mafia line still reads as a Mafia line, and a match inside a **moderator recap** inverts (the `reverse` flag swaps it, so the text goes amber on a light ground rather than the ground going amber — ~9.2:1, legible, and the only kind where this happens); (d) the highlight background differs from the body background; (e) a no-match query shows the no-match state and moves nothing. **[Agent: testing]**
+
+---
+
+## Slice 3 — Enter puts the first match at the top of the screen
+
+*Runnable result: after typing, Enter scrolls the game so the first match at or below where you are sits on the top line; the bar closes and the highlights stay. This is the slice that makes search a navigation tool rather than a colouring tool.*
+
+Covers §2.5 (all 5). This slice carries the feature's only hard problem.
+
+- [ ] **Slice 3: Enter puts the first match at the top of the screen**
+  - [ ] 3.1 Add the row arithmetic to `eval_ledger.py`: `wrap_row_starts(text, width)`, `row_for_offset(row_starts, offset)` (`bisect_right - 1`) and `offset_for_row(...)`. `wrap_row_starts` must mirror Textual's own pipeline per source line — `split(allow_blank=True)` → `expand_tabs(8)` → `divide_line(line.plain, width, fold=True)` — by **calling the same `rich._wrap.divide_line` Textual calls**, so agreement is by construction rather than approximation. Import it at module scope so a Rich upgrade that removes it fails at **collection time**. Three traps to respect rather than code around: `divide_line` returns *character* indices despite a docstring saying "cell offsets"; you cannot recover offsets by summing `Content.wrap(...)[i].plain` lengths (non-last rows are `rstrip()`ed); and `expand_tabs` runs before wrapping. **[Agent: textual-tui]**
+  - [ ] 3.2 Add `next_match(matches, offset, *, inclusive)` returning `(index, wrapped)` or `None`. The `wrapped` flag is what §2.5's "tell them it wrapped" consumes. **[Agent: python-backend]**
+  - [ ] 3.3 Wire Enter (`Input.Submitted`): resolve inclusive-forward from the current top row, scroll with `scroll_to(y=row, animate=False, immediate=True)` — `immediate=True` avoids a deferred `call_after_refresh` and removes a pause from every test — then hide the bar and keep the highlights. Enter with nothing typed moves nothing and just closes. **Read the wrap width live from `body.content_size.width`** and cache the row map keyed on it: the width is **96 when a game overflows and 98 when it fits** (the scrollbar eats two cells), so a hardcoded width mis-wraps every real game. **[Agent: textual-tui]**
+  - [ ] 3.4 Clamp the target to `min(target_row, max_scroll_y)` and make the end-of-game behaviour explicit in the code's own comment: a match inside the last screenful cannot reach the top line because there is nothing beyond the end of the game to scroll into view — the same limit `less` has. **[Agent: textual-tui]**
+  - [ ] 3.5 Rebuild the row map lazily when `content_size.width` differs rather than handling `Resize` — a full rebuild of the worst file costs **7.6 ms**. Note for the implementer: Textual does not remap `scroll_y` on resize, so the reading view already loses its place today; this spec inherits that rather than introducing it. **[Agent: textual-tui]**
+  - [ ] 3.6 Add the **three-legged pin** in a new `B15.6` section of `tests/test_ledger_viewer.py`, so a Textual upgrade that changes wrapping fails loudly instead of mis-jumping silently: (1) row **count** against `Content.get_height(body.styles, width)` **and** `body.size.height` — *not* `scroller.virtual_size.height`, which is `max(content_height, viewport_height)` and reads 22 rather than 51 for a game that fits; (2) row **content**, asserting `body.render_line(row).text.strip()` equals the mirror's slice for every row; (3) a hand-written-offsets unit test on `divide_line` so a *semantic* change fails too, not only removal. **[Agent: testing]**
+  - [ ] 3.7 Extend the corpus sweep in `tests/test_transcript_search.py` — properties only, never golden counts (the corpus grew 298 → 420 since spec 038 and grows with every eval run). One item per run dir with a coverage counter, following the existing `_discover_transcripts` idiom: every match round-trips; the row starts partition `[0, len(text))` contiguously; every match resolves to a row containing it or straddles a fold into its successor; and the preconditions hold (zero tabs, zero of the five stripped control codes). Add a **non-vacuity** assertion that width 96 really does produce a wrap-straddling match, or the straddle property passes by never firing. **[Agent: testing]**
+  - [ ] 3.8 **Verify (`run_test()`):** (a) Enter lands the first match below the current position on the top row; (b) a match already on the top row is where Enter stops — nothing moves; (c) scrolling past every match and pressing Enter wraps to the first and says so; (d) after Enter the bar is gone and the highlights remain; (e) a match inside the final screenful lands as close to the top as the game can scroll. Keep fixtures for (a)–(d) away from the tail so the clamp does not mask them. **[Agent: testing]**
+
+---
+
+## Slice 4 — `n` and `N` walk the matches, with a status that outlives the prompt
+
+*Runnable result: with the bar closed and matches still lit, `n` and `N` step forward and backward through the game, each press moving the view; the header says which match of how many, and tells you when the search wrapped.*
+
+Covers §2.6 (all 8) and §2.8 AC3.
+
+- [ ] **Slice 4: `n` and `N` walk the matches, with a status that outlives the prompt**
+  - [ ] 4.1 Add `prev_match(matches, offset, *, inclusive)` and make navigation **row-keyed**: `n`/`N` skip past every match sharing the current row and move to the next row that has one, so a press is never spent moving between two matches already visible together. Two accepted consequences to encode and document: the running count is an index among **all** matches so it can jump (4 → 7), and the second and later matches on a row are highlighted but never become current. **[Agent: python-backend]**
+  - [ ] 4.2 Implement the selection rule that satisfies §2.5 and §2.6 together, using `current: int | None`: if `current` is set **and** its row equals `scroll_offset.y`, step `current ± 1` with wrap; otherwise resolve against `offset_for_row(scroll_offset.y)` — `n` inclusive-forward, `N` exclusive-backward. Note the deliberate asymmetry with Enter, which is *not* row-keyed: a match on the top row is where Enter stops, while `n` from that same position moves past it. **[Agent: textual-tui]**
+  - [ ] 4.3 Bind `n` and `N` on the screen, `show=False` (advertised nowhere, matching how `q` is already bound), and make them **no-ops when `_search is None`**. Add them to `_DETAIL_KEYS_SWEPT` so the existing fuzz-walk covers them on the other screens. **[Agent: textual-tui]**
+  - [ ] 4.4 Paint the current match with `transcript--match-current` so it is distinguishable from its neighbours. This is **load-bearing, not decorative**: inside the final screenful successive jumps produce no scrolling, so the marker and the count are the reviewer's only feedback that anything happened. **[Agent: textual-tui]**
+  - [ ] 4.5 Carry the status on `Screen.sub_title` — reactive, rendered live in the existing `Header`, **zero extra rows** — showing the query, the position, and a wrapped notice (`"… — vote — 3/18 (wrapped)"`). It must outlive the prompt, because after Enter the bar is hidden and §2.6/§2.8 still owe the reviewer that information. Restore `SUB_TITLE` when the search clears. **[Agent: textual-tui]**
+  - [ ] 4.6 **Verify (`run_test()`):** (a) `n` advances and `N` goes back, each landing on the top row; (b) with two matches on one rendered row, `n` from the first moves to the next row that has one — the view always moves; (c) `n` past the last match wraps to the first and says so, `N` before the first wraps to the last; (d) after scrolling by hand, `n` resolves from where the reviewer now is, not from where they last jumped; (e) the current match is distinguishable from the others; (f) `n` with no search in progress does nothing and raises nothing; (g) the header shows the position and the wrap notice. Cover the row-keyed skip in the **pure** tests too — it is a statement about `next_match`, not about Textual. **[Agent: testing]**
+
+---
+
+## Slice 5 — The search clears cleanly and leaves no trace
+
+*Runnable result: Esc after a jump clears the highlighting and keeps you in the game; a further Esc leaves. Reopening a game starts clean. The reading view is provably identical to before the feature existed for anyone who never presses `/`.*
+
+Covers §2.9 (all 5), §2.10 AC3/AC4, and closes the spec.
+
+- [ ] **Slice 5: The search clears cleanly and leaves no trace**
+  - [ ] 5.1 Complete the Esc state machine against `_search`, not against bar visibility: with the bar open, Esc closes it, drops the highlighting and holds the scroll position wherever the reviewer has scrolled to; after Enter (bar already hidden, highlights showing) Esc clears the highlighting and **stays in the game**; the next Esc leaves. Restore `SUB_TITLE` on every clear. **[Agent: textual-tui]**
+  - [ ] 5.2 Ensure a freshly opened game starts with no search and nothing highlighted — the base `Text` is rebuilt per `compose` and no search state survives a `pop_screen`. **[Agent: textual-tui]**
+  - [ ] 5.3 **Verify the no-leak guarantee through the existing strict-equality tests**, which must stay green **unrelaxed**: `test_the_rendered_body_carries_a_span_per_styled_run_at_exact_offsets` and `test_a_real_committed_game_renders_as_its_exact_text` both assert the *full* span list equals the pure tokenizer's and never press `/`. They are the mechanical enforcement of §2.9 AC1/AC4 and §2.10 AC1 — the moment a search span leaks into a freshly-composed body they fail. Do not weaken them to subset assertions. **[Agent: testing]**
+  - [ ] 5.4 **Verify (`run_test()`):** (a) Esc with the bar open clears highlighting, closes the bar, and leaves the scroll position where the reviewer put it; (b) Esc after Enter clears highlighting and stays in the game; a further Esc leaves; (c) Esc with no search leaves in one press; (d) reopening a game shows no search and no highlighting; (e) the runs list and a run's figures behave exactly as before. Parametrize the back-out sweep as `(key, search_open)` over `escape`/`backspace`/`q` × open/closed — **this is the single most likely bug in the feature** and without the second dimension it ships untested. **[Agent: testing]**
+  - [ ] 5.5 Run the full suite (`uv run pytest -q`) and confirm no regression. **Take the baseline at the start of Slice 1 rather than quoting a figure from an earlier spec** — spec 043 is landing tests on `main` concurrently, so any number written here now will be stale by the time this slice runs. Then walk `make view-ledger` by hand on a real committed game and check the two things no automated test asserts: that the amber highlight is actually **visible and legible in both themes** (light-theme separation between the 20% and 45% steps measures only 1.09 — widen to 15%/50% if it is too subtle), and that the debounce feels immediate rather than laggy when typing a single common letter. **[Agent: textual-tui]**
+
+---
+
+## Coverage — every acceptance criterion has a slice
+
+| Functional spec section | ACs | Slice |
+| --- | --- | --- |
+| §2.1 One keypress opens a search, and the game does not move | 4 | 1 |
+| §2.2 Matches light up as the reviewer types | 6 | 2 |
+| §2.3 Highlighting sits on top of the game's colours | 3 | 2 |
+| §2.4 The game still scrolls while the reviewer is typing | 5 | 1 |
+| §2.5 Enter puts the first match at the top of the screen | 5 | 3 |
+| §2.6 `n` and `N` walk through the matches afterwards | 8 | 4 |
+| §2.7 Capital letters narrow the search | 3 | 2 |
+| §2.8 The reviewer always knows how the search is doing | 4 | 2 (AC1/2/4), 4 (AC3) |
+| §2.9 Leaving the search, and leaving the game | 5 | 5 (Esc-with-no-search half in 1) |
+| §2.10 Everything else about reading a game is unchanged | 4 | 1 (AC1/2), 5 (AC3/4) |
+| **Total** | **47** | |
+
+---
+
+## Notes and recommendations
+
+**No missing tooling.** Every slice is verifiable with what the repo already has: `pytest` + Textual's `run_test()`/`Pilot`. No browser MCP, no external service, no new dependency. The one manual step is Task 5.5's by-eye colour check, which is a judgement no assertion can make.
+
+**No `general-purpose` fallbacks.** Every task matched a project specialist — `textual-tui` for widget, focus, styling and wrap-geometry work; `python-backend` for the pure string and selection functions; `testing` for the suites and the rot-guard updates.
+
+**Two decisions here may outlive this spec** and would suit `/buddah:adr` rather than living only in a tech spec:
+
+| Decision | Why it outlives the spec |
+| --- | --- |
+| Depending on the **private** `rich._wrap.divide_line` | It is the only way to agree with Textual's wrapping by construction, and Textual imports it itself — but it is a vendor-coupling choice with a loud-failure canary as its mitigation, and the next person to hit a Rich upgrade will want the reasoning. |
+| A **WCAG AA exception** in the highlighted state | Spec 038's palette record is built on AA compliance across both themes. The arithmetic here is closed — `$text-secondary` sits at 4.67:1 with zero headroom, so any visible highlight drops it to ~3.19:1 on dark. Accepting a 3:1 floor for a transient, reviewer-initiated state is a real relaxation of a standing project rule. |
+
+**Spec 043 is in flight on `main`** (`blunder_eval.py`, the ledger-write path). It touches none of this spec's files — `eval_ledger.py`'s transcript functions, `ledger_viewer.py`, `test_ledger_viewer.py`, `test_transcript_highlight.py` — so the two proceed in parallel. Stage explicitly when committing.
