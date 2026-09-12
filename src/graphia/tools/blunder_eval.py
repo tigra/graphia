@@ -2849,8 +2849,9 @@ def render_record(result: EvalResult, run_date: str) -> str:
         run:
           date: '<iso date>'
           id: '<run-id>'         # spec 043 — this run's identity; == transcript_dir on a GAME run (a persona-bench run has an id and no transcript); OMITTED only on pre-043 records
+          seq: <int>             # spec 043 — how many times THIS RUN has written its own record; OMITTED when it would be 0 (written once, by a writer that never updates)
           kind: '<record kind>'  # spec 036 — e.g. 'persona-bench'; OMITTED ⇒ a played game
-          duration_seconds: <float|null>
+          duration_seconds: <float|null>   # wall clock SO FAR — stamped on EVERY write, so it GROWS between writes and a stopped run's record carries a real one
           metrics_version: <int>
           transcript_dir: '<run-id>'   # spec 017 — the run's dir under evals/transcripts/; omitted on older runs
         code:
@@ -2911,7 +2912,7 @@ def render_record(result: EvalResult, run_date: str) -> str:
               rate: <float>                 # count / attempted (derived once, at write time)
               count: <int>                  # answers replaced by the deterministic stand-in
               attempted: <int>              # THE DENOMINATOR — answers asked of the model
-          duration_seconds: <float|null>
+          duration_seconds: <float|null>   # mirrors run.duration_seconds — same every-write stamping, same growth
         outcomes:
           games: <int>
           law_abiding: {wins: <int>, rate: <float>, ci_low: <float>, ci_high: <float>}
@@ -3628,7 +3629,29 @@ def _join_ledger(chunks: Sequence[str]) -> str:
 # enough for the only long-term measurement history the project has.
 
 
-def _atomic_write_text(path: Path, text: str) -> None:
+def _unlink_quietly(path: Path) -> None:
+    """Remove ``path`` if it is there; never raise, whatever happens.
+
+    Cleanup for a write that is not going to land, on the two routes out of
+    :func:`_atomic_write_text` that leave a temp file behind: an exception
+    mid-write, and a ``verify`` hook that aborts the replace. Both swallow the
+    failure of the removal itself, for reasons that differ but agree on the
+    outcome. On the exception route, a raise here would MASK the exception that
+    brought us to it. On the abort route, a lost race is an EXPECTED outcome
+    under ADR 014's optimistic control, and escalating it into an ``OSError``
+    would send a routine conflict — which the caller repairs by retrying — to
+    the fallback file instead. The price of swallowing is a stray ``.tmp``
+    beside the ledger, which is the price the exception route has always paid.
+    """
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
+
+
+def _atomic_write_text(
+    path: Path, text: str, *, verify: Callable[[], bool] | None = None
+) -> bool:
     """Replace ``path``'s contents with ``text`` in one step that cannot half-happen.
 
     A reader — or a kill, or a power cut — sees either the complete previous file
@@ -3689,6 +3712,44 @@ def _atomic_write_text(path: Path, text: str) -> None:
     is what :func:`append_record` does today, so a write into a not-yet-existing
     ``evals/`` keeps working.
 
+    **``verify``: the last-instant abort hook** (spec 043 Task 3.8), and the
+    reason this primitive takes a callable at all. When given, it is called
+    after the temp file has been written and ``fsync``-ed and **immediately
+    before** :func:`os.replace`; returning ``False`` aborts the write — the temp
+    file is removed, the target is left exactly as it was, and this function
+    returns ``False`` instead of raising. It is ``None`` by default and the
+    default path is byte-for-byte the old one, which is what keeps
+    :func:`append_record` — a one-shot write with nothing to check — unchanged.
+
+    **Why the hook lives HERE rather than in the caller**, which is the whole
+    substance of the change. :func:`upsert_record` already re-checks its
+    optimistic version token before calling this function, but that check sits
+    *outside*, so the span between the last look at the file and the rename
+    contained an entire temp-file write plus an ``fsync``. Measured on a copy of
+    the committed 171,686-byte ledger, 40 writes per arm interleaved in one
+    process (macOS/APFS): **466 us** median from the last read to the rename
+    returning, against **215 us** with the hook — and the tail matters more than
+    the median, p90 599 us against 234 us. The rename itself is ~90 us in both
+    arms, so what the hook removes is the temp-file write and the ``fsync``. A
+    callback invoked at the last instant moves that work to *before* the check,
+    leaving the rename — and the check itself — as the only exposure.
+    The hook is deliberately free of ledger semantics, exactly as the rest of
+    this function is: it is a predicate the caller supplies, and this function
+    only decides when to ask it.
+
+    **What an aborted write is, and what it is not.** ``False`` means *the
+    caller's precondition stopped holding while we were making the new bytes
+    durable* — under ADR 014 that is a concurrent writer, i.e. a conflict, which
+    is an expected outcome and not an error. It is therefore a return value and
+    not an exception: the caller retries it exactly as it retries the earlier
+    check. An exception raised by ``verify`` itself is a different matter and is
+    **not** caught — it propagates after the temp file is cleaned up, so an
+    unreadable ledger reaches the caller as the ``OSError`` it is.
+
+    **Returns** ``True`` when the replace happened, ``False`` only when
+    ``verify`` was given and returned ``False``. With no ``verify`` the return
+    is always ``True``, so a caller that ignores it is correct.
+
     **What this does not promise.** The directory ``fsync`` is POSIX-only and is
     skipped when :data:`os.name` is not ``"posix"`` — an explicit named guard
     rather than a swallowed exception, because opening a directory for reading
@@ -3724,6 +3785,14 @@ def _atomic_write_text(path: Path, text: str) -> None:
             # First write to this path: there is no mode to carry across, so the
             # ``0600`` :func:`tempfile.mkstemp` created it with stands.
             pass
+        # THE LAST INSTANT. Everything slow is behind us and the only thing left
+        # is the rename, so this is the latest moment at which a caller can
+        # still decide not to land these bytes — and the point of asking here
+        # rather than in the caller is that the span between the answer and the
+        # rename is the rename.
+        if verify is not None and not verify():
+            _unlink_quietly(tmp)
+            return False
         os.replace(tmp, path)
     except BaseException:
         # ``BaseException`` on purpose: a ``KeyboardInterrupt`` mid-write is one
@@ -3733,19 +3802,17 @@ def _atomic_write_text(path: Path, text: str) -> None:
         # unchanged. Reached ONLY while ``tmp`` is still a separate file: once
         # :func:`os.replace` has returned, ``tmp`` *is* the target, and
         # unlinking it here would delete the file we just wrote.
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
+        _unlink_quietly(tmp)
         raise
 
     if os.name != "posix":
-        return
+        return True
     dir_fd = os.open(path.parent, os.O_RDONLY)
     try:
         os.fsync(dir_fd)
     finally:
         os.close(dir_fd)
+    return True
 
 
 def append_record(
@@ -3914,6 +3981,35 @@ def _read_ledger_text(ledger_path: Path) -> str:
     return ledger_path.read_bytes().decode("utf-8") if ledger_path.exists() else ""
 
 
+def _ledger_digest(text: str) -> str:
+    """The OCC version token for ``text``: the sha256 of the bytes it encodes to.
+
+    Step 2 of the cycle names the content hash as the version token — exact,
+    unlike an mtime (coarse) or a size (collides). Factored out because spec 043
+    Task 3.8 gives the cycle a THIRD site that must compute it the same way: the
+    ``verify`` hook that re-checks the token at the last instant before the
+    rename, alongside step 2's original and step 4's re-check. Three inline
+    copies of ``hashlib.sha256(...).hexdigest()`` is how one of them ends up
+    hashing something subtly different from the other two, and the failure that
+    produces is a check that always passes.
+
+    Takes TEXT and not a path, so step 2 can hash the bytes it already read
+    rather than reading the file twice.
+
+    **Its cost is now on the critical path, and was measured** (spec 043 Task
+    3.8a): ~111 us over the committed 171,686-byte ledger, which is more than
+    half of the 215 us residual window the ``verify`` hook leaves. The cheaper
+    equivalent predicate, if that window ever needs narrowing again, is to
+    compare the freshly-read text against the text step 2 already holds — 7 us
+    for the same ledger, because two equal ``str`` objects compare as a memcmp.
+    Recorded as a measured option rather than taken: the sha256 content hash is
+    what ADR 014 §3 and technical-considerations §2.1 step 2 name as the version
+    token, and 104 us is not a reason to diverge from the written cycle
+    unilaterally.
+    """
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
 def _run_id_line_re(run_id: str) -> re.Pattern[str]:
     """A pattern matching the ``run.id`` line of exactly ``run_id``'s document.
 
@@ -3992,6 +4088,43 @@ def _splice_own_chunk(text: str, chunk: str, marker: re.Pattern[str]) -> str | N
     return _join_ledger([*chunks, chunk])
 
 
+def _passthrough_chunks(text: str, marker: re.Pattern[str]) -> list[str]:
+    """Everything in ``text`` that a splice for ``marker``'s run must NOT touch.
+
+    The ledger's preamble plus every chunk that is not this run's, in file
+    order — the exact list that has to come out of a splice identical to the one
+    that went in. Comparing it either side of :func:`_splice_own_chunk` is what
+    turns ADR 014 §5's *"a splicing bug is the one unrecoverable risk"* from a
+    thing the pre-run backup exists to survive into a thing the writer refuses
+    to commit (spec 043 Task 3.8b).
+
+    **The preamble is in the list on purpose.** A splice has no business
+    touching it either, and index 0 is where a boundary error that swallowed the
+    first separator would show up.
+
+    Chunks are compared as the opaque strings they are — never parsed, for the
+    reason the section comment above :func:`_split_ledger` gives.
+
+    **What it costs, measured**, because it is called three times per ledger
+    write (twice at step 3b, once at step 6) and this module's write frequency
+    went up tenfold in this same spec: ~4.2 ms over the committed 171,686-byte
+    ledger, of which ~3.5 ms is :func:`_split_ledger` itself. So ~13 ms is added
+    to a write that happens once per completed game — once every ~4 minutes on
+    the cloud arms and ~33 on the local one, i.e. 0.005% of a run. None of it
+    falls inside the conflict window: step 3b runs before the temp file exists
+    and step 6 after the rename has returned.
+
+    **What it cannot catch, stated so the guarantee is not overread.** It shares
+    :func:`_split_ledger` with the splice it checks, so it compares two
+    splittings rather than an independent reading of the file. A boundary defect
+    that moved text between neighbouring chunks would still show up (the
+    pass-through chunks would differ), but one that mis-splits *both* operands
+    identically would not.
+    """
+    chunks = _split_ledger(text)
+    return [chunks[0], *(c for c in chunks[1:] if not marker.search(c))]
+
+
 def _fallback_record_path(ledger_path: Path, run_id: str) -> Path:
     """Where a record goes when the ledger cannot take it.
 
@@ -4062,6 +4195,64 @@ def _write_unwritten_record(
     return fallback
 
 
+def _warn_passthrough_changed(ledger_path: Path, run_id: str) -> None:
+    """Say, loudly, that a document this run does not own changed under the write.
+
+    Step 6's second question (spec 043 Task 3.8b), asked only once step 6's
+    first has already passed: this run's own record landed, byte-for-byte, and
+    yet some OTHER chunk of the file is not what was read a moment ago.
+
+    **It warns and returns; it does not retry and it does not write the fallback
+    file.** Both alternatives would lie. The write SUCCEEDED — this run's record
+    is in the ledger and is correct — so a fallback file, whose name and stderr
+    block mean *your measurement was not recorded*, would say the opposite of
+    what happened; and a retry would either rewrite identical bytes or, on the
+    last attempt, fall through to exactly that fallback.
+
+    **Why the condition is ambiguous, which is why it can only report.** Two
+    things produce it, and the writer cannot tell them apart. The one worth
+    catching is a defect in this module — a splice or an atomic-write bug that
+    damaged somebody else's record, ADR 014 §5's one unrecoverable risk, the one
+    atomicity cannot cover because wrong content is written just as atomically
+    as right content. The other is entirely legitimate: a concurrent run
+    replaced the file in the microseconds between this write's rename and its
+    read-back, updating its OWN record exactly as designed. Nothing in the bytes
+    distinguishes them, so the message names both and the human decides.
+
+    In practice the first is far likelier to be the cause, because
+    :func:`upsert_record` checks the splice against the same baseline BEFORE
+    writing, where the check is unambiguous and has teeth — so a splice bug
+    normally never reaches this point. What survives to here is the narrower
+    case that the pre-write check cannot see: the bytes changing between the
+    rename and the read-back.
+
+    **What this can never detect, recorded so it is not re-proposed.** It cannot
+    catch the residual rollback window ADR 014 §5 describes — a concurrent
+    writer that read this ledger before this write landed, then replaced the
+    file carrying a STALE copy of this run's chunk. Detection at the writer is
+    impossible in principle there: the clobbering writer reads back exactly what
+    it wrote and has no knowledge that its victim wrote anything newer, and the
+    victim is not looking. ``run.seq`` is the instrument for that one, after the
+    fact.
+
+    The pre-run backup under ``.graphia/`` (§2.2b) is what the recovery uses,
+    which is why the message names it.
+    """
+    print(
+        f"!! LEDGER READ-BACK WARNING — run {run_id} wrote its own record to\n"
+        f"!! {ledger_path} correctly, but a document it does NOT own changed\n"
+        "!! between the read and the read-back. Two causes are possible and\n"
+        "!! this process cannot tell them apart:\n"
+        "!!   (1) a BUG in this module's chunk splicing or atomic write, which\n"
+        "!!       would have damaged another run's record — recover it from the\n"
+        "!!       pre-run backup under .graphia/ledger-backups/ and compare;\n"
+        "!!   (2) another run writing its own record concurrently, which is\n"
+        "!!       supported and harmless (ADR 014).\n"
+        "!! Check git diff on the ledger before committing it.",
+        file=sys.stderr,
+    )
+
+
 def upsert_record(
     result: EvalResult,
     run_date: str,
@@ -4101,13 +4292,21 @@ def upsert_record(
     3. **Splice** — replace the chunk carrying this run's id, or append it if
        this is the run's first write. Every other chunk passes through as the
        exact bytes that were read.
+    3b. **Check the splice before writing it** — every chunk this run does
+       not own, and the preamble, must be byte-identical to what step 2 read
+       (:func:`_passthrough_chunks`). A failure here is a bug in this module,
+       not a race, so nothing is written at all.
     4. **Re-read and re-hash; a difference is a conflict** — somebody wrote
        between step 2 and now, so this splice was computed from stale text.
        Retry.
-    5. **Replace the whole file atomically** (:func:`_atomic_write_text`).
+    5. **Replace the whole file atomically** (:func:`_atomic_write_text`), with
+       step 4's check handed to it as a ``verify`` hook so it is asked once more
+       between the temp file's ``fsync`` and the rename. A ``False`` return is
+       the same conflict, caught later; retry.
     6. **Read back** and confirm exactly one chunk carries this run's id and it
        is byte-for-byte what was written. This is what makes "with retries"
-       converge instead of merely repeat.
+       converge instead of merely repeat. Then check the pass-through chunks
+       again and **warn** if they moved (:func:`_warn_passthrough_changed`).
     7. **On exhausted retries, do not fail the run** — park the document in the
        fallback file (:func:`_write_unwritten_record`) and say so on stderr.
 
@@ -4147,8 +4346,8 @@ def upsert_record(
     one. See the constants above for the full argument.
 
     **The residual window, stated rather than glossed** (ADR 014 §5). Two writers
-    can both pass the step-4 hash check and then replace in sequence. The second
-    one's file carries the first one's chunk as it was at *its* read, so the first
+    can both pass the last check and then replace in sequence. The second one's
+    file carries the first one's chunk as it was at *its* read, so the first
     writer's newest update is rolled back one generation — and step 6 does NOT
     catch it, because the victim's own chunk is intact; it is the OTHER chunk
     that regressed. Nothing is raised anywhere. Progressive updates self-heal on
@@ -4157,6 +4356,43 @@ def upsert_record(
     budget and the fallback file are for. ``run.seq`` exists to make the rollback
     NAMEABLE after the fact: a record whose ``seq`` went backwards between two
     readings is a visible fact rather than guesswork.
+
+    **How wide that window is, measured** (spec 043 Task 3.8a). It runs from the
+    last look at the file to the rename returning. Until Task 3.8 the last look
+    was step 4, *outside* :func:`_atomic_write_text`, so the span also contained
+    a whole temp-file write and an ``fsync``: **466 us** median (p90 599 us) on
+    a copy of the committed 171,686-byte ledger, 40 writes per arm interleaved
+    in one process on macOS/APFS. Handing the same check to
+    :func:`_atomic_write_text` as its ``verify`` hook moves it to the far side of
+    that work and leaves **215 us** median (p90 234 us) — of which ~111 us is
+    the sha256 of the ledger the check itself reads and ~90 us is the rename. The
+    window is now the check plus the rename, which is the floor for a design
+    with no lock. It is narrower, not closed: closing it needs ``flock`` on a
+    gitignored sidecar (ADR 014 §2 Alternative 4), which the author has
+    considered and declined for now. Worth recording against that ADR's stated
+    objection to locking — *"a lock file is one more artifact a killed run can
+    leave behind"* — that it does not hold for ``flock`` specifically: the kernel
+    releases the lock when the process dies, verified here by killing a holder
+    with ``SIGKILL`` and re-acquiring 0.2 ms later, the only residue being an
+    inert zero-byte file. The objection is sound for a lockfile-by-existence; it
+    is not an argument against ``flock``, and the ADR's escalation reasoning
+    should say so if it is ever revisited.
+
+    **Nobody else's bytes are allowed to move** (spec 043 Task 3.8b). Steps 3b
+    and 6 compare every chunk this run does not own — and the preamble —
+    against what step 2 read. This is **not** a clobber detector and cannot be
+    made into one: the writer that clobbers reads back exactly what it wrote and
+    has no knowledge that its victim wrote anything newer, so detection at the
+    writer is impossible in principle. What it catches is a **splice bug**
+    corrupting another run's record: ADR 014 §5's one unrecoverable risk, the
+    one atomicity cannot cover because wrong content is written just as
+    atomically as right content, and the risk that rested entirely on the
+    pre-run backup until now. The two checks differ in what they can conclude
+    and therefore in what they do: step 3b is unambiguous (both operands come
+    from one read, before anything is written) and **refuses to write**; step 6's
+    is ambiguous (a concurrent run legitimately updating its own record in the
+    microseconds between the rename and the read-back produces it too) and
+    therefore only **warns**.
 
     **``run.seq`` is incremented here**, once per call, at step 1 and before the
     render — so it counts writes, not retries, and every attempt within one call
@@ -4211,8 +4447,30 @@ def upsert_record(
     for _ in range(max(attempts, 1)):
         try:
             # --- Step 2: read, and hash what we are about to compute from.
-            before = _read_ledger_text(ledger_path)
-            token = hashlib.sha256(before.encode("utf-8")).hexdigest()
+            raw = _read_ledger_text(ledger_path)
+            token = _ledger_digest(raw)
+
+            def _token_still_holds(expected: str = token) -> bool:
+                """Step 4's question, asked again at the last possible instant.
+
+                Handed to :func:`_atomic_write_text` as its ``verify`` hook, so
+                it runs after the temp file is durable and immediately before
+                the rename. ``expected`` is a default argument rather than a
+                closure read so that the token this attempt checks is the one
+                this attempt computed, whatever a later iteration rebinds.
+                """
+                return _ledger_digest(_read_ledger_text(ledger_path)) == expected
+
+            # The trailing-newline repair, applied here as well as inside
+            # :func:`_splice_own_chunk` (which is where the choice is argued),
+            # so the splice's input and the pass-through baseline taken from it
+            # are the SAME text. The repaired byte lands in the last chunk, so a
+            # baseline taken from the unrepaired text would report that chunk as
+            # damaged on the single write that repairs the file — a false
+            # accusation of a splice bug, on the one input most likely to meet
+            # one. Idempotent: :func:`_splice_own_chunk` finds the condition
+            # already satisfied and adds nothing.
+            before = raw if not raw or raw.endswith("\n") else raw + "\n"
 
             # --- Step 3: splice this run's chunk in, carrying every other
             # chunk across as the exact bytes just read.
@@ -4226,27 +4484,47 @@ def upsert_record(
                     f"{run_id}, which no retry can resolve — it needs a human",
                 )
 
+            # --- Step 3b: nobody else's bytes moved. Everything this splice was
+            # supposed to carry through untouched is compared against what was
+            # read, BEFORE a single byte is written — so a defect in the splice
+            # costs a fallback file rather than another run's record.
+            passthrough = _passthrough_chunks(before, marker)
+            if _passthrough_chunks(spliced, marker) != passthrough:
+                return _write_unwritten_record(
+                    ledger_path,
+                    run_id,
+                    chunk,
+                    "the splice changed a document this run does not own (or "
+                    "the ledger's preamble), so nothing was written — this is a "
+                    "BUG in the splice, not a write race, and it will fail "
+                    "identically on every write until the code is fixed",
+                )
+
             # --- Step 4: re-read, re-hash. A difference means the splice above
-            # was computed from text that is no longer on disk.
-            if (
-                hashlib.sha256(
-                    _read_ledger_text(ledger_path).encode("utf-8")
-                ).hexdigest()
-                != token
+            # was computed from text that is no longer on disk. Kept even though
+            # the ``verify`` hook re-asks it: this is the CHEAP one, and skipping
+            # it would make every conflict cost a full durable temp-file write.
+            if _ledger_digest(_read_ledger_text(ledger_path)) != token:
+                continue
+
+            # --- Step 5: land it, all at once or not at all — with step 4's
+            # check repeated at the last instant (spec 043 Task 3.8a). ``False``
+            # means a writer landed while this one was making its temp file
+            # durable: the replace did not happen, the ledger is untouched, and
+            # this is the same conflict step 4 detects, caught later and treated
+            # identically.
+            if not _atomic_write_text(
+                ledger_path, spliced, verify=_token_still_holds
             ):
                 continue
 
-            # --- Step 5: land it, all at once or not at all.
-            _atomic_write_text(ledger_path, spliced)
-
             # --- Step 6: read back. Exactly one chunk for this run, and it is
             # what was written.
-            landed = [
-                c
-                for c in _split_ledger(_read_ledger_text(ledger_path))[1:]
-                if marker.search(c)
-            ]
+            landed_text = _read_ledger_text(ledger_path)
+            landed = [c for c in _split_ledger(landed_text)[1:] if marker.search(c)]
             if len(landed) == 1 and landed[0] == chunk:
+                if _passthrough_chunks(landed_text, marker) != passthrough:
+                    _warn_passthrough_changed(ledger_path, run_id)
                 return ledger_path
             if len(landed) > 1:
                 return _write_unwritten_record(

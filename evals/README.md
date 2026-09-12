@@ -12,21 +12,93 @@ within a provider.
 
 ## The ledger contract
 
-- **Append-only.** Each completed run appends **one record** to
-  `blunder-ledger.yaml`. A run never overwrites or rewrites an earlier record —
-  the file reads chronologically, oldest first.
+- **One record per run, and a run rewrites only its own.** Each run contributes
+  **exactly one record** to `blunder-ledger.yaml` — written after its first
+  completed game and brought up to date after each one thereafter, so a run that
+  is stopped has already been recorded (spec 043, _Keeping What a Stopped
+  Measurement Run Produced_; ADR 014). A run rewrites **its own** record and
+  nothing else: **no run ever rewrites another run's record**, and a record
+  becomes **immutable the moment the run that wrote it ends**. The file still
+  reads chronologically, oldest first — a run's record stays where its first
+  write put it.
 - **One `---`-separated YAML document per run.** Records are concatenated YAML
   documents, each preceded by a `---` document separator, so the file is a
   valid multi-document YAML stream.
-- **Machine-measured fields are never rewritten.** Every field except `notes`
-  (`run`, `code`, `provider`, `settings`, `quality`, `metrics`) records what a
-  given run actually measured; once written it is immutable. Diff the ledger to
-  compare runs — don't hand-edit past records.
+- **Machine-measured fields are the measuring run's to write, and nobody
+  else's.** Every field except `notes` (`run`, `code`, `provider`, `settings`,
+  `quality`, `metrics`) records what a given run actually measured. While that
+  run is alive it rewrites its own values on every update — see the
+  value-stability note below; once it has ended they are **final**, and no later
+  run and no hand edit touches them. Diff the ledger to compare runs — don't
+  hand-edit past records.
 - **`notes` is the one human-mutable field.** It alone may be set at run time
   (via `--note`) **and** edited or extended by hand afterwards, including
   multi-line — see [`notes`](#notes--the-one-human-mutable-field) below.
 - **Merge conflicts resolve by keeping both documents.** Two runs on diverging
   branches append independently — keep both records on merge.
+
+**A live run's record is not value-stable, and that is correct rather than
+corruption.** The narrowing above has one consequence a reader will not guess:
+while a run is alive, **every number in its record is computed over the games
+completed so far**. Rates divide by a denominator that grows and every Wilson
+band is re-derived from that denominator, so **a diff between two readings of one
+live record is not a finding**. Two measured examples, both from spec 043's own
+verification runs, because the abstract statement does not prepare you for
+either:
+
+- **A value moving — the record can get _shorter_.** On the two-game Nova run of
+  2026-09-12 the record was **8 bytes shorter** after game 2 than after game 1
+  (2914 → 2906): the re-derived rates and Wilson bands simply rendered shorter
+  against the larger denominator. Nothing was lost. A reader expecting a growing
+  record to grow monotonically reads that as truncation.
+- **A key vanishing — the sharper one.** Every progressive write of a run that
+  will go on to finish carries **`quality.ended_early: true`**, and it is correct
+  every time: at that moment the run really had completed fewer games than it
+  asked for. The marker then **disappears** on the write after the last game. So
+  a reader polling a live ledger watches a record announce that it ended early
+  and then un-announce it.
+
+Both are correct; both look like corruption if the contract has not said so
+first. The stable reading of any record is the one taken after its run has ended.
+
+### How a write lands, and what it can leave beside the ledger
+
+- **Every write is a whole-file atomic replace** — a temp file in the ledger's
+  own directory, `fsync`, `os.replace`, then `fsync` on the directory. A reader,
+  a kill or a power cut sees the **old complete file or the new one, never a
+  partial**. Measured rather than asserted: a 4 Hz poller armed before launch and
+  held across a real `SIGKILL` of a live run (2026-09-12) recorded exactly
+  **one** state change — absent → the complete one-game record — and never caught
+  the file mid-write.
+- **`os.replace` gives the file a new inode on every write, so `tail -f` will lie
+  to you.** Witnessed: three writes, three distinct inodes. A
+  descriptor-following reader stays attached to the file the first write
+  replaced and goes on showing that first record forever, which makes a working
+  progressive write look like a broken one. Watch a run with **`tail -F`** or a
+  loop that re-opens the path. The same caveat applies to a `make view-ledger`
+  left open across a run — it read the file once.
+- **Other runs' documents are never parsed.** A write splits the file on the
+  document separator, swaps its own chunk, and joins the rest back as **the exact
+  bytes that were read** — no `yaml.safe_load`, no re-render. That is what keeps
+  every other record's hand-written `notes`, float renderings and key order
+  byte-exact through a write it had nothing to do with.
+- **A pre-run backup is taken before the first write**, into the gitignored
+  `.graphia/ledger-backups/`, named `<stem>.<run-id>.pre-run<suffix>` — e.g.
+  `blunder-ledger.2026-09-12T14-03-11-9f3a1c.pre-run.yaml`, so it carries the
+  same string as the run's `run.id` and its transcript directory. It exists to
+  survive a *logic* bug in the splice, which atomicity cannot protect against,
+  and it is skipped only when the ledger does not exist yet (nothing to lose).
+  **Nothing prunes it** — `rm -rf` the directory when you have decided the ledger
+  is healthy.
+- **An `UNWRITTEN` file beside the ledger means a record could not land.**
+  `blunder-ledger.yaml.UNWRITTEN-<run-id>.txt` is written — loudly, to stderr —
+  when a write exhausts its retries or hits an unrecoverable write error, rather
+  than losing the measurement; the run itself never fails on it. The file holds
+  the record byte-for-byte **including its leading `---`**, so recovering it is
+  `cat evals/blunder-ledger.yaml.UNWRITTEN-<run-id>.txt >> evals/blunder-ledger.yaml`
+  — verified. It is deliberately `.txt` and not `.yaml`, so the ad-hoc
+  `yaml.safe_load_all` globs run over `evals/*.yaml` cannot double-count the run
+  it exists to rescue.
 
 ## Intentionally write-only (for now)
 
@@ -37,6 +109,13 @@ is one we only ever _write_. There is no reader/parser here on purpose: a
 console viewer or before/after comparison tool is a future increment, and _that_
 increment is the one that takes on the YAML-parser dependency this one avoids.
 For now, read the ledger with a text editor.
+
+**Since spec 043 the writer does read the file — but it still parses no record.**
+A progressive write reads the ledger as text, splits it on the document
+separator into opaque chunks, swaps the one chunk carrying its own `run.id`, and
+joins the rest back unchanged: no `yaml.safe_load`, no re-render, no record
+inspected. That is exactly what keeps the other 50 byte-exact, and why "no
+reader/parser here" remains true in the sense that matters.
 
 ## Transcripts
 
@@ -161,8 +240,10 @@ like:
 ---
 run:
   date: '2026-06-13'            # run date — for Bedrock, the only proxy for provider-side model drift
+  id: '2026-06-13T14-32-05-9f3a1c'  # spec 043 — this run's IDENTITY, on EVERY new record of BOTH kinds; == transcript_dir on a game record (dirs created before spec 043 keep their suffix-free names); OMITTED only on pre-043 records
+  seq: 3                        # spec 043 — how many times THIS RUN has written its own record; OMITTED when it would be 0 (written once, by a writer that never updates)
   kind: 'persona-bench'         # spec 036 — WHICH KIND of measurement this is; the key is OMITTED ⇒ a played game
-  duration_seconds: 412.3       # wall-clock duration of the whole run (null until finished)
+  duration_seconds: 412.3       # wall clock SO FAR — stamped on EVERY write (NOT null-until-finished), so it GROWS between writes and a stopped run's record carries a real one
   metrics_version: 1            # rule-set version; bumps when any detection rule or denominator changes
   transcript_dir: '2026-06-13T14-32-05'  # spec 017 — this run's dir under evals/transcripts/ (omitted if no transcripts / older record)
 code:
@@ -200,6 +281,7 @@ settings:                       # the EFFECTIVE resolved values, so a run can be
     regen_attempts: 2           # regeneration attempts allowed per collision
     temperature: 1.0            # persona-generation temperature
 quality:                        # so a degenerate run cannot masquerade as a clean baseline
+  ended_early: true             # spec 043 — the run stopped SHORT of settings.games; OMITTED (never false) ⇒ it attempted everything it was asked for
   games_attempted: 5            # UNIT FOLLOWS run.kind — games for a game run, ROSTERS for a persona-bench run
   games_completed: 5
   games_failed_early: 0         # games that raised mid-run and were skipped
@@ -231,7 +313,7 @@ quality:                        # so a degenerate run cannot masquerade as a cle
       rate: 0.028
       count: 3
       attempted: 108
-  duration_seconds: 412.3       # same wall-clock duration, mirrored beside the run-quality counts
+  duration_seconds: 412.3       # the same wall clock, mirrored beside the run-quality counts — same every-write stamping, same growth
 outcomes:                       # win-rate by side over the COMPLETED games — four buckets that partition the run
   games: 20                     # completed-game denominator (failed-early games excluded)
   law_abiding:                  # a SIDE: carries a win-rate + its Wilson 95% band
@@ -277,8 +359,8 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
 ### Field-by-field
 
 - **`run`** — `date` (the run date; for Bedrock it is the *only* proxy for which
-  provider-side weights answered), `duration_seconds` (whole-run wall clock,
-  `null` until the run finishes), `metrics_version` (the rule-set version — see
+  provider-side weights answered), `duration_seconds` (wall clock **so far** —
+  see the paragraph below it), `metrics_version` (the rule-set version — see
   the note on cross-version comparison below), and `transcript_dir` (spec 017 —
   the run's directory **name** under `evals/transcripts/`, e.g.
   `'2026-06-18T14-32-05'`; see [Transcripts](#transcripts) below). **`transcript_dir`
@@ -288,7 +370,23 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   **`kind`** (spec 036 — *which kind of measurement* this record is; **absent ⇒
   a played game**), the field that decides how the rest of the record reads: see
   [`run.kind`](#runkind) below, which is also where the unit of the `quality`
-  counts and the compare-only-within-a-kind rule are defined.
+  counts and the compare-only-within-a-kind rule are defined. Since spec 043 it
+  also carries **`id`** — this run's identity, present on **every** new record of
+  **both** kinds and absent only on records written before that spec — and
+  **`seq`**, how many times this run has written its own record: see [`run.id`
+  and `run.seq`](#runid-and-runseq) below.
+
+  **`duration_seconds` is the wall clock *so far*, not "`null` until finished".**
+  It is re-derived and stamped on **every** write, so it **grows between writes**
+  and a run that was stopped carries a real duration covering the work it
+  actually did: the killed three-game run of 2026-09-12 reads
+  `duration_seconds: 172.575` on a run that never reached game 3. Read as *null
+  until finished*, that number is evidence the run completed — precisely the
+  misreading [`quality.ended_early`](#qualityended_early) exists to prevent, so
+  read the two together. It is the third instance of a live record's
+  value-instability ([The ledger contract](#the-ledger-contract)) and the only
+  **monotonic** one: the other two move a value *down* or drop a key outright.
+  **`quality.duration_seconds` mirrors it** and reads exactly the same way.
 - **`code`** — `commit` and `branch` from git at run time (each `null` if git was
   unavailable or the cwd is not a repo), and `dirty`. **`dirty` is the
   load-bearing flag:** `true` means the working copy had uncommitted changes, so
@@ -369,7 +467,13 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
 - **`quality`** — run-quality counts so a degenerate run can't pass as a clean
   baseline: `games_attempted`, `games_completed`, `games_failed_early` (games
   that raised mid-run and were skipped), and `duration_seconds` (mirrored from
-  `run`). **The unit these count is defined by `run.kind`** — games for a game
+  `run` — the same wall-clock-so-far, stamped on every write and growing between
+  them, **not** `null` until the run finishes). A run that stopped **short of the
+  games it was asked for** carries **`ended_early: true`** ahead of all of them,
+  first in the block; a run that attempted everything omits the key — see
+  [`quality.ended_early`](#qualityended_early) below, which is also where the
+  two-valued absence rule and the classification table live.
+  **The unit these count is defined by `run.kind`** — games for a game
   run, **rosters** for a `persona-bench` one. The key *names* are deliberately
   reused rather than forked into a parallel set, so one renderer and one viewer
   keep serving both kinds; `run.kind` is the single field that says what is being
@@ -456,8 +560,9 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
     visible, because that is the *good* result and the whole point of the
     signal. A record written **before spec 040** does not have a denominator of
     zero — **it has no denominator**, because that build had no story node, and
-    **absence is a third case, not a falsy one**. The ledger is append-only:
-    these keys are never added to an older record, by script or by hand.
+    **absence is a third case, not a falsy one**. A record whose run has ended
+    is final: these keys are never added to an older record, by script or by
+    hand.
 
   A run that attempted **any** structured answer additionally carries the nested
   **`substitutions`** sub-map (spec 041) — the same question as the diary trio,
@@ -553,6 +658,62 @@ notes: ''                       # free-text run annotation — the one HUMAN-MUT
   no opportunity for any of the six rate metrics.
 - **`notes`** — the one human-mutable field; always last. See below.
 
+### run.id and run.seq
+
+`run.id` (spec 043, _Keeping What a Stopped Measurement Run Produced_) is the
+run's **identity**: the filesystem-safe, lexically sortable timestamp run ids
+have always used, plus a short random suffix — `'2026-09-12T14-35-53-b23bb1'`.
+`run.seq`
+beside it counts **how many times that run has written its own record**. The two
+are one thought: `id` says *which run wrote this document*, `seq` says *which
+write of that run it is*.
+
+**`run.id` is on every new record, both kinds.** A `blunder-eval` game record and
+a `persona-bench` record both carry it, and it is **absent only on records
+written before spec 043**. So absence here is **two-valued** — *this record
+predates the field* — the [`run.kind`](#runkind) treatment rather than a
+three-way carve-out, and **nothing needs backfilling**: the field exists so a run
+can find **its own** document in the ledger *while it is still alive*, and every
+older record belongs to a run that ended long ago.
+
+**On a game record it is byte-identical to `run.transcript_dir`** — the same
+string by construction rather than by coincidence, so the cross-reference a
+reader makes by eye between a record and its transcript directory keeps working.
+**On a `persona-bench` record it is not**: a bench run plays no game and writes
+no transcripts, so it carries an `id` and **no** `transcript_dir`. That is the
+one place the two fields deliberately diverge, and it is why the writer gates
+them separately — `id` is an *identity*, emitted whenever a run has one, while
+`transcript_dir` is a *link*, emitted only when there is something to link to.
+Directories created before spec 043 keep their **suffix-free** names; nothing was
+renamed, so both forms are live under `evals/transcripts/` and a reader will see
+both.
+
+**Why a random suffix at all.** The id used to be a local timestamp to the
+**second**, and this project has launched two runs four seconds apart. Two runs
+sharing an id is not a cosmetic collision: a write replaces *the chunk carrying
+this run's id*, so run B would overwrite run A's document and the read-back —
+*exactly one chunk carries this run's id* — would then find B's own chunk and
+**pass**. A's record would be gone with no exception raised and nothing in either
+run's output mentioning it. The suffix is lowercase hex only, because a
+case-insensitive filesystem (macOS's default APFS) would otherwise let two
+*distinct* ids name one transcript directory and reintroduce the same failure
+through the alphabet.
+
+**`run.seq` exists to make a silent rollback visible after the fact.** A run now
+writes its record after every completed game, and two concurrent writers can both
+pass the optimistic-concurrency check and then replace in sequence — rolling the
+loser's newest update back one generation with **nothing raised anywhere** (see
+[How a write lands](#how-a-write-lands-and-what-it-can-leave-beside-the-ledger)).
+Without a counter, "which write won" is unanswerable afterwards; with one, a
+record whose `seq` went **backwards** between two readings is a visible fact
+rather than a suspicion. It is **omitted when it would be `0`** — a record
+written exactly once by a writer that never updates (`persona-bench`, and every
+pre-043 record) carries no `seq` at all, the same two-valued absence as the id.
+On a finished game run it reads one *more* than the games completed: one
+progressive write per completed game, plus the final one. On the killed run of
+2026-09-12 it reads `1` — the single progressive write after game 1, with no
+final write, because the process never reached one.
+
 ### run.kind
 
 `run.kind` (spec 036, _Persona-Generation Measurements Join the Tracked Quality
@@ -609,7 +770,8 @@ recording the default would silently mislabel every off arm, the same trap
 `settings.persona.diversity_enabled` documents. The harness **refuses to start**
 rather than guess: a config that cannot answer fails before game 1, because a
 record without a truthful arm label is worthless and 30 minutes of tokens spent
-on an unlabelled record cannot be recovered (the ledger is append-only).
+on an unlabelled record cannot be recovered (the record is final the moment the
+run ends).
 
 **Absence is a third case, and it does not mean `false`.** The ledger already has
 two absent-means-something fields — `settings.scripted_player` (absent ⇒ read as
@@ -701,6 +863,90 @@ arrival **did not bump `metrics_version`** — it changed no detection rule and 
 denominator *definition* — and it is the precedent the later additive fields are
 written against in the code (`transcript_dir`, `scripted_player`, `run.kind`,
 `settings.persona`), which is why it is named throughout this legend.
+
+### quality.ended_early
+
+`quality.ended_early` (spec 043, _Keeping What a Stopped Measurement Run
+Produced_) is the **early-stop marker**: this run wrote its record having
+completed **fewer games than it was asked for**. It is emitted only when true and
+sits **first** in the `quality` block, ahead of the three counts, because its
+whole job is to stop a reader parsing those counts as a **planned** run of that
+size.
+
+**The naming hazard, in one sentence:** `ended_early` describes the **run**;
+`games_failed_early` describes a **game**. A run that played all ten games it
+asked for and had three of them raise mid-way carries `games_failed_early: 3` and
+**no** `ended_early` — it attempted everything it was asked for.
+
+**`settings.games` is the marker's other half, and the pair is the whole
+distinguishability criterion.** `settings.games` is the number of games
+**requested**, and it is **never rewritten to the completed count**: `settings`
+records the values that let a run be repeated *like-for-like*, so stamping `4`
+there would collapse a 4-of-10 record onto a planned four-game run. That is not a
+worry about a hypothetical — driven side by side, a 4-of-10 record and a planned-4
+record produce `quality` blocks that are **identical apart from this one line**
+(and the wall clock), differing only in `settings.games` reading `10` against `4`.
+Without the marker the two are indistinguishable in `quality` entirely; with it,
+the pair a reader needs — asked for, and finished — is on the record.
+
+**Absent means "attempted everything", and here absence is two-valued.** A record
+without this key is a run that attempted every game it was asked for. That is the
+[`run.kind`](#runkind) treatment (absent ⇒ the normal case), **not** the
+[`settings.private_diaries_enabled`](#settingsprivate_diaries_enabled) treatment
+(absent ⇒ an unmeasurable third case) — and the difference is earned rather than
+assumed. Before spec 043 there was exactly **one** route to a ledger write, the
+end of the run's loop, so every record written by that code is provably a run
+that ran to the end of its plan. The contrast with the diaries arm label is
+exact: there, "this run measured the off arm" was a claim simply unmakeable of a
+build that had no diary feature, so absence had to mean *unmeasurable*; here the
+old code makes the reading for us. Verified across all **50**
+committed records: `games_attempted == games_completed + games_failed_early`
+holds in **all 50**, and the requested count equals `games_attempted` in **all
+50** too — 48 of them spelling it `settings.games`, the two earliest
+(pre-provenance, 2026-06-13) spelling it `run.games`. The key is also **never
+written as `false`**; a `false` in the file is a hand edit, not a measurement.
+
+**A stopped run does not count the game it was in the middle of.** This is the
+opposite of what "attempted" invites, so it is written down: `games_attempted`
+increments at the **top** of a loop iteration, but the record on disk was
+rendered and written at the **end of the previous one**. Witnessed on a real
+`kill -9` (2026-09-12) — the kill landed *inside game 2*, the in-flight game's
+checkpoint directory having already been created, so `games_attempted` was `2` in
+memory while the record on disk says `1`. The balance invariant therefore
+survives a kill *in flight* for a structural reason rather than a lucky one:
+every write happens after a game reaches a terminal outcome, and an in-flight
+game contributes nothing until it does.
+
+**The classification a reader can check** — a by-eye invariant in the same
+register as the [`outcomes` partition invariant](#outcomes): if it does not hold,
+the record is suspect.
+
+| `games_attempted` vs `settings.games` | `ended_early` | reading |
+| --- | --- | --- |
+| equal | absent | full run; failures, if any, are in `games_failed_early` |
+| less | `true` | ended after `games_completed` games |
+| less | absent | **should not exist — the record is suspect** |
+
+Beside it, the **balance invariant**, which holds at every write point and in
+both kinds of record: `games_attempted == games_completed + games_failed_early`.
+
+**A live run's record carries the marker and then drops it.** Every progressive
+write of a run that will go on to finish carries `ended_early: true`, and it is
+correct every time — at that moment the run really had completed fewer games than
+it asked for — and the key **disappears** on the write after the last game. That
+is the sharpest instance of the value-instability [the ledger
+contract](#the-ledger-contract) warns about, not a corrupted record. The stable
+reading of any record is the one taken after its run has ended.
+
+**Additive, and no `METRICS_VERSION` bump.** The marker changes no detection rule
+and no denominator *definition*, and a smaller *n* is what `--games` already
+varies, so rates stay cross-comparable across the spec-043 boundary. The fair
+counter-argument is selection — a run stopped *because* something was going wrong
+may not be a fair sample of what was planned — but that is a property of the
+**sample**, not of the rules, and games run in index order, so a partial run's
+games are a **prefix** of the planned sequence rather than a subsample chosen
+after the fact. The instruments for that worry are this marker, the counts beside
+it, and the hand-written `notes`.
 
 ### quality.substitutions
 
@@ -859,6 +1105,13 @@ law_abiding.wins + mafia.wins + draw + no_winner == games
 
 always holds in a well-formed record — if it doesn't, the record is suspect.
 
+**It is not the only such check.** The `quality` block carries two more in the
+same register — the **balance invariant**
+(`games_attempted == games_completed + games_failed_early`) and the **early-stop
+classification table** that says which combinations of `games_attempted`,
+`settings.games` and `ended_early` can legitimately occur. Both live under
+[`quality.ended_early`](#qualityended_early).
+
 **Passive-scripted-human caveat (the load-bearing one).** Every eval game is
 played against the **scripted law-abiding human** who *always votes No and never
 initiates a vote*. That makes the win-rate a **consistent, comparable measure
@@ -902,7 +1155,7 @@ axes, so `sum(by_side.values()) == sum(by_day.values())` in any record.
 
 Every record ends with a top-level **`notes`** key: a free-text annotation of
 *why* the run was made or *what* was observed. It is the **single exception** to
-"never rewrite history":
+"a record is final once its run has ended":
 
 - **Set it at run time** with `--note "<free text>"` (e.g.
   `make blunder-eval ARGS="--provider bedrock --games 5 --note 'baseline before prompt change Y'"`).
@@ -921,8 +1174,10 @@ Every record ends with a top-level **`notes`** key: a free-text annotation of
   contains newlines.)
 
 Only `notes` is hand-editable; every **machine-measured** field (`run`, `code`,
-`provider`, `settings`, `quality`, `metrics`) stays **append-only and is never
-rewritten**.
+`provider`, `settings`, `quality`, `metrics`) is written by the run that measured
+it and **rewritten by nobody else** — that run updates its own record while it is
+alive, and the values are **final the moment it ends**. See
+[The ledger contract](#the-ledger-contract).
 
 ## Versioning and older records
 
@@ -944,8 +1199,8 @@ rewritten**.
   behaviour when they were written. The absence of the field means passive, as
   the field legend already states.
 
-  The seventeen notes are **left as written**, because this ledger is
-  append-only and a committed record is not edited after the fact; the
+  The seventeen notes are **left as written**, because a record is final once
+  its run has ended and a committed record is not edited after the fact; the
   correction lives here instead, and `git log` holds the original text either
   way. Fixed at the source on 2026-09-03: `outcomes.note` is now **derived**
   from the run's actual stand-in rather than restated beside it, and both

@@ -7,6 +7,18 @@ Pins the three pieces Slice 1 added to ``src/graphia/tools/blunder_eval.py`` —
 :func:`~graphia.tools.blunder_eval.append_record` that composes them. No model,
 no network, no game: every test here is a string or a file in ``tmp_path``.
 
+SLICE 3 GAVE ONE OF THOSE THREE A SECOND MODE, AND IT IS PINNED HERE TOO.
+Spec 043 Task 3.8 added ``_atomic_write_text``'s ``verify`` hook — a caller's
+predicate asked between the temp file's ``fsync`` and the ``os.replace``, whose
+``False`` aborts the write and returns ``False`` rather than raising — plus the
+:func:`~graphia.tools.blunder_eval._unlink_quietly` cleanup both of its
+non-landing routes share. Section 5b is theirs. It stays in this module rather
+than moving up to ``test_progressive_ledger_write.py`` for the same reason the
+rest of section 5 is here: the hook is a predicate the primitive knows nothing
+about, and what is asserted below is *when* it is asked and what a ``False``
+leaves behind — not what a ledger means. The OCC cycle that supplies the
+predicate is pinned one level up.
+
 WHY A NEW MODULE RATHER THAN ``tests/test_blunder_eval.py``. That file is 2200
 lines across six numbered concern sections its own docstring enumerates, all of
 them about the *harness's* surface (CLI forcing, the repetition scorer, the
@@ -100,6 +112,7 @@ from graphia.tools.blunder_eval import (
     _atomic_write_text,
     _join_ledger,
     _split_ledger,
+    _unlink_quietly,
     append_record,
     render_record,
 )
@@ -781,6 +794,228 @@ def test_atomic_write_text_writes_the_string_byte_for_byte(tmp_path: Path) -> No
     _atomic_write_text(target, text)
 
     assert target.read_bytes() == text.encode("utf-8")
+
+
+# ===========================================================================
+# 5b. ``verify``: the last-instant abort hook (spec 043 Task 3.8a).
+#
+# The hook exists to move ONE question — the caller's optimistic version
+# check — from before ``_atomic_write_text`` is entered to the instant before
+# its ``os.replace``. Everything it buys is in that relocation: with the check
+# outside, the span between the last look at the file and the rename contained
+# a whole temp-file write plus an ``fsync`` (measured at 466 us median over the
+# committed ledger); asked here it is the check plus the rename (215 us).
+#
+# SO THE ORDERING TEST BELOW IS THE ONE THAT CARRIES THE CHANGE. A test that
+# only asserted "verify was called" would pass against an implementation that
+# called it before the temp file was written — which restores the whole window
+# while every other assertion in this section stays green.
+# ===========================================================================
+
+
+def test_a_verify_that_returns_false_aborts_the_write_and_leaves_nothing_behind(
+    tmp_path: Path,
+) -> None:
+    """``False`` means: do not land these bytes. The target and the directory prove it.
+
+    Three separable claims, and each has its own way of regressing. The return
+    is ``False`` — the caller distinguishes an abort from a landed write only by
+    that value, and an abort reported as success would let the OCC cycle move on
+    to a read-back it has no business passing. The target is byte-identical —
+    an abort that had already replaced would be no abort at all. And the temp
+    file is gone — the abort route is the *second* way out of this function that
+    leaves a temp file behind, and it does not go through the ``except`` block
+    that cleans up the first.
+    """
+    ledger_dir = tmp_path / "evals"
+    ledger_dir.mkdir()
+    ledger = ledger_dir / "blunder-ledger.yaml"
+    before = b"---\nrun:\n  date: 'x'\n"
+    ledger.write_bytes(before)
+
+    landed = _atomic_write_text(ledger, "---\nrun:\n  date: 'y'\n", verify=lambda: False)
+
+    assert landed is False, "an aborted write must report itself as one"
+    assert ledger.read_bytes() == before, "an aborted write must not have landed"
+    assert [path.name for path in ledger_dir.iterdir()] == [ledger.name], (
+        "the abort route must clean its temp file up, exactly as the raise route does"
+    )
+
+
+def test_a_verify_that_returns_true_lets_the_replace_happen(tmp_path: Path) -> None:
+    """``True`` is the ordinary path: the new bytes land and ``True`` comes back.
+
+    The control for the abort test. Without it, an implementation that aborted
+    unconditionally — never calling ``os.replace`` at all — would satisfy every
+    assertion about what an abort leaves behind.
+    """
+    ledger_dir = tmp_path / "evals"
+    ledger_dir.mkdir()
+    ledger = ledger_dir / "blunder-ledger.yaml"
+    ledger.write_bytes(b"---\nrun:\n  date: 'x'\n")
+    new = "---\nrun:\n  date: 'y'\n"
+
+    landed = _atomic_write_text(ledger, new, verify=lambda: True)
+
+    assert landed is True
+    assert ledger.read_bytes() == new.encode("utf-8")
+    assert [path.name for path in ledger_dir.iterdir()] == [ledger.name]
+
+
+def test_a_write_with_no_verify_returns_true_so_ignoring_the_return_is_correct(
+    tmp_path: Path,
+) -> None:
+    """With no hook there is nothing that can abort, so the return is always ``True``.
+
+    This is what keeps ``append_record`` — a one-shot write with no version
+    token and nothing to re-check — unchanged by Task 3.8, and it is why every
+    other call site in the module may discard the return value. If this ever
+    returned ``None`` or ``False`` on the default path, a caller written against
+    the documented contract (*"a caller that ignores it is correct"*) would start
+    silently treating a successful write as a failed one.
+    """
+    target = tmp_path / "ledger.yaml"
+
+    assert _atomic_write_text(target, "---\nrun: {}\n") is True
+    assert target.read_bytes() == b"---\nrun: {}\n"
+
+
+def test_verify_runs_once_after_the_temp_files_fsync_and_before_the_replace(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """THE ORDERING. ``fsync`` → ``verify`` → ``replace``, once, with the bytes already durable.
+
+    This is the whole substance of Task 3.8a and the only test in this section
+    that can fail on it. The hook's entire value is *where* it is asked: move
+    the call one statement earlier — before the temp file is written — and the
+    function still calls ``verify``, still honours its ``False``, still cleans
+    up and still returns the right value, while the window it was added to close
+    is back to its full width. Nothing but the order says so.
+
+    Four observations, taken from inside the hook so they describe the moment it
+    runs rather than the outcome afterwards:
+
+    - the temp file's ``fsync`` has already happened (``events[:3]``);
+    - the temp file exists and holds **the new bytes in full** — so the work the
+      hook is supposed to be standing after is genuinely done, which an earlier
+      call site would show as a missing or empty temp file;
+    - the target still holds the **old** bytes, so the replace has not happened;
+    - it is asked exactly **once** per call, not once per retry-ish internal loop.
+
+    ``os.fsync`` fires twice per successful write — the temp file's, then the
+    parent directory's after the rename — which is why the assertion is on the
+    first three events rather than on the whole list.
+    """
+    ledger_dir = tmp_path / "evals"
+    ledger_dir.mkdir()
+    ledger = ledger_dir / "blunder-ledger.yaml"
+    before = b"---\nrun:\n  date: 'x'\n"
+    ledger.write_bytes(before)
+    new = "---\nrun:\n  date: 'y'\n"
+
+    events: list[str] = []
+    temps_at_verify: list[list[bytes]] = []
+    target_at_verify: list[bytes] = []
+    real_fsync, real_replace = os.fsync, os.replace
+
+    def _traced_fsync(fd: int) -> None:
+        events.append("fsync")
+        real_fsync(fd)
+
+    def _traced_replace(src: object, dst: object) -> None:
+        events.append("replace")
+        real_replace(src, dst)  # type: ignore[arg-type]
+
+    def _verify() -> bool:
+        events.append("verify")
+        temps_at_verify.append(sorted(p.read_bytes() for p in ledger_dir.glob("*.tmp")))
+        target_at_verify.append(ledger.read_bytes())
+        return True
+
+    monkeypatch.setattr(os, "fsync", _traced_fsync)
+    monkeypatch.setattr(os, "replace", _traced_replace)
+
+    assert _atomic_write_text(ledger, new, verify=_verify) is True
+
+    assert events[:3] == ["fsync", "verify", "replace"], (
+        "verify must be asked AFTER the temp file is durable and BEFORE the "
+        f"rename — the window it exists to close is the rename alone; saw {events}"
+    )
+    assert events.count("verify") == 1, "the hook is a question, not a poll"
+    assert temps_at_verify == [[new.encode("utf-8")]], (
+        "at the instant verify is asked there must be exactly one temp file and "
+        "it must already hold the complete new bytes"
+    )
+    assert target_at_verify == [before], "the replace must not have happened yet"
+    assert ledger.read_bytes() == new.encode("utf-8")
+
+
+def test_a_verify_that_raises_propagates_with_the_temp_file_cleaned_up(
+    tmp_path: Path,
+) -> None:
+    """An exception from the hook is not a conflict, and is not swallowed.
+
+    The distinction the docstring draws and the one a later edit is most likely
+    to erase by wrapping the call in a ``try``: ``False`` means *the caller's
+    precondition stopped holding*, which under ADR 014 is an expected outcome
+    and therefore a return value; an ``OSError`` means *the ledger could not be
+    read at all*, which no retry repairs and which must reach the caller as the
+    ``OSError`` it is. Caught-and-converted-to-``False`` would send an
+    unreadable ledger around the retry loop until the budget was spent.
+
+    The temp file is still cleaned up: the raise route out of this function was
+    always litter-free and the hook must not make it otherwise.
+    """
+    ledger_dir = tmp_path / "evals"
+    ledger_dir.mkdir()
+    ledger = ledger_dir / "blunder-ledger.yaml"
+    before = b"---\nrun:\n  date: 'x'\n"
+    ledger.write_bytes(before)
+
+    def _boom() -> bool:
+        raise OSError("injected: the ledger could not be re-read")
+
+    with pytest.raises(OSError, match="injected: the ledger could not be re-read"):
+        _atomic_write_text(ledger, "---\nrun:\n  date: 'y'\n", verify=_boom)
+
+    assert ledger.read_bytes() == before
+    assert [path.name for path in ledger_dir.iterdir()] == [ledger.name]
+
+
+def test_unlink_quietly_removes_what_it_can_and_never_raises(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The shared cleanup: it removes the file, and its own failure is never news.
+
+    Three arrangements, one contract. It removes an existing file — without
+    which both non-landing routes out of ``_atomic_write_text`` would leave a
+    ``.tmp`` beside the ledger, indistinguishable in ``git status`` from a
+    ledger that has gone wrong. A file that is already gone is not an error
+    (``FileNotFoundError`` is an ``OSError``). And a removal that genuinely
+    fails is swallowed, which is the property with a real argument behind it and
+    the one a later edit would remove as defensive clutter: on the raise route a
+    raise here would **mask** the exception that brought us to it, and on the
+    abort route it would escalate a routine lost race — which the caller repairs
+    by retrying — into an ``OSError`` that goes straight to the fallback file.
+    """
+    doomed = tmp_path / "blunder-ledger.yaml.xyz.tmp"
+    doomed.write_bytes(b"half a record")
+
+    _unlink_quietly(doomed)
+    assert not doomed.exists(), "the ordinary job: the temp file goes away"
+
+    _unlink_quietly(doomed)  # already gone — must not raise
+
+    def _boom(path: object) -> None:
+        raise PermissionError("injected: the directory is read-only")
+
+    survivor = tmp_path / "survivor.tmp"
+    survivor.write_bytes(b"x")
+    monkeypatch.setattr(os, "unlink", _boom)
+
+    _unlink_quietly(survivor)  # must not raise
+
+    assert survivor.exists(), "the arrangement proves nothing if the unlink worked"
 
 
 def test_append_record_still_resolves_the_module_global_at_call_time(

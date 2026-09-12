@@ -85,6 +85,7 @@ exercised here (section 7). The viewer is Slice 5's.
 from __future__ import annotations
 
 import argparse
+import os
 import re
 from collections.abc import Callable, Iterator
 from pathlib import Path
@@ -107,6 +108,8 @@ from test_blunder_eval import (
 from graphia.tools import blunder_eval
 from graphia.tools.blunder_eval import (
     EvalResult,
+    _passthrough_chunks,
+    _run_id_line_re,
     _split_ledger,
     render_record,
     run_eval,
@@ -219,9 +222,13 @@ def _record_every_write(monkeypatch: pytest.MonkeyPatch) -> list[bytes]:
     real = blunder_eval._atomic_write_text
     snapshots: list[bytes] = []
 
-    def _wrapper(path: Path, text: str) -> None:
-        real(path, text)
+    def _wrapper(path: Path, text: str, **kwargs: object) -> bool:
+        # ``**kwargs`` forwards spec 043 Task 3.8's ``verify`` hook rather than
+        # swallowing it: a double that dropped it would silently disable the
+        # last-instant conflict check for every test in this module.
+        landed = real(path, text, **kwargs)
         snapshots.append(path.read_bytes())
+        return landed
 
     monkeypatch.setattr(blunder_eval, "_atomic_write_text", _wrapper)
     return snapshots
@@ -326,6 +333,16 @@ def test_the_ledger_holds_one_growing_document_after_every_completed_game(
     appended per game would produce 1, 2, 3, 4 — ten records for a ten-game run,
     and the functional spec's "one entry for that run" broken while every
     per-game number still looked right.
+
+    THE EMPTY PREAMBLE IS ASSERTED HERE TOO (added by spec 043 Task 3.9). This
+    is the only test in the module whose ledger does not exist when the run
+    starts, which makes it the only one that can see the ``not raw`` half of
+    ``upsert_record``'s trailing-newline normalisation. Drop that half and an
+    empty ledger — which does not end with a newline, because it has no bytes at
+    all — gets one prepended, so the very first write to a fresh ledger begins
+    with a blank line. The file still parses and every count above still holds,
+    so nothing else notices; the byte simply stays there for the life of the
+    file, in the one file the project cannot regenerate.
     """
     config, ledger = _stub_run_eval_env(monkeypatch, tmp_path)
     writes = _record_every_write(monkeypatch)
@@ -344,6 +361,10 @@ def test_the_ledger_holds_one_growing_document_after_every_completed_game(
         "a run must contribute exactly ONE document, however many times it writes"
     )
     assert [_games_completed(_documents(t)[0]) for t in texts] == [1, 2, 3, 4, 4]
+    assert [_preamble(t) for t in texts] == [""] * 5, (
+        "a ledger created from nothing must start at its first separator — no "
+        "blank line prepended by the trailing-newline normalisation"
+    )
 
     # And the file left on disk is that same single document.
     final = _documents(_text(ledger))
@@ -774,10 +795,13 @@ def test_a_run_stopped_before_its_first_game_finished_creates_no_ledger_at_all(
 #    unretryable input it repairs on the way past.
 #
 # The cycle's interesting behaviour is what happens when the file changes under
-# it — between the read (step 2) and the re-read (step 4), and again between the
-# replace (step 5) and the read-back (step 6). Those are moments, but each is
-# reachable as a FUNCTION CALL, so a wrapper puts a hook exactly there. No
-# threads, no subprocesses, no timing, and the same trajectory every run.
+# it. There are THREE such windows, not two — the third arrived with spec 043
+# Task 3.8 and is section 6b's: between the read (step 2) and the re-read (step
+# 4); between step 4's re-read and the rename, which only the ``verify`` hook
+# can see; and between the replace (step 5) and the read-back (step 6). Those
+# are moments, but each is reachable as a FUNCTION CALL, so a wrapper puts a
+# hook exactly there. No threads, no subprocesses, no timing, and the same
+# trajectory every run.
 # ===========================================================================
 
 
@@ -935,20 +959,25 @@ def _clobber_after_the_replace(
 
     Wraps ``_atomic_write_text``: the real write happens, and then — before the
     caller can read it back — another writer's ``os.replace`` drops our document
-    on the floor. This is the second of the OCC cycle's two interesting moments,
-    and the only one step 6 exists for: step 4 cannot see it, because it happens
-    *after* step 4's re-hash. The step-6 comment names the condition exactly —
+    on the floor. This is the LAST of the OCC cycle's three interesting moments
+    (section 6's header comment lists them) and the only one step 6 exists for:
+    neither step 4 nor Task 3.8's ``verify`` hook can see it, because both have
+    already answered by the time it happens. The step-6 comment names it exactly —
     "somebody replaced the file between our replace and our read-back, dropping
     or regressing our chunk".
     """
     real = blunder_eval._atomic_write_text
     fired: list[int] = []
 
-    def _wrapper(path: Path, text: str) -> None:
-        real(path, text)
+    def _wrapper(path: Path, text: str, **kwargs: object) -> bool:
+        # ``**kwargs`` forwards Task 3.8's ``verify`` hook, which runs INSIDE
+        # ``real`` and before its rename — so this clobber still lands after the
+        # write, which is the moment this double exists to simulate.
+        landed = real(path, text, **kwargs)
         if not once or not fired:
             fired.append(len(text))
             path.write_bytes(replacement.encode("utf-8"))
+        return landed
 
     monkeypatch.setattr(blunder_eval, "_atomic_write_text", _wrapper)
     return fired
@@ -1025,6 +1054,506 @@ def test_retry_exhaustion_writes_the_fallback_file_and_never_raises_out_of_run_e
     assert parked.startswith("---\n"), "the parked document must carry its separator"
     assert f"  id: '{_RUN_ID}'" in parked
     assert _games_completed(parked) == 1
+
+
+# ===========================================================================
+# 6b. The last-instant check, and the two pass-through checks (spec 043 Task
+#     3.8), which are three separate mechanisms with three separate answers.
+#
+# (a) The CONFLICT window. Step 4's hash check used to be the last look at the
+#     file, and it sits OUTSIDE ``_atomic_write_text`` — so the span from it to
+#     the rename contained a whole temp-file write plus an ``fsync``. The same
+#     check is now also handed in as a ``verify`` hook and re-asked between that
+#     ``fsync`` and the rename. A conflict landing in that span was previously
+#     invisible until step 6 and cost a wasted replace; it is now caught before
+#     the rename and retried. Section 6's ``_interpose`` cannot reach this
+#     window — it fires at the read — so the injection below fires at the
+#     temp file's ``fsync`` instead, which is the one call inside the window.
+#
+# (b) Step 3b: the splice must not have moved anybody else's bytes. Both
+#     operands come from one read and nothing has been written yet, so the
+#     answer is unambiguous — a difference is a BUG in this module, and the
+#     write is REFUSED outright rather than retried.
+#
+# (c) Step 6: the same comparison after the rename, where it is ambiguous — a
+#     concurrent run legitimately updating its own record in the microseconds
+#     between our rename and our read-back produces it too. So it WARNS and
+#     does nothing else. Both alternatives would lie: this run's own record did
+#     land, so a fallback file (whose name means *your measurement was not
+#     recorded*) would say the opposite of what happened, and a retry would
+#     either rewrite identical bytes or end in exactly that fallback.
+#
+# The trailing-newline test is filed here rather than beside its sibling in
+# section 6 because what it guards is (b)'s FALSE POSITIVE, not the repair.
+# ===========================================================================
+
+
+def _count_replaces(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """Record the destination of every ``os.replace`` — i.e. every write that LANDED.
+
+    The observation that separates an abort from a wasted write. A conflict
+    caught at step 4 and one caught by the ``verify`` hook are indistinguishable
+    from the ledger's final bytes: both retry, both converge. What tells them
+    apart is whether the losing attempt renamed anything, and this is the only
+    place that can see it.
+    """
+    real = os.replace
+    destinations: list[str] = []
+
+    def _wrapper(src: object, dst: object) -> None:
+        destinations.append(str(dst))
+        real(src, dst)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(os, "replace", _wrapper)
+    return destinations
+
+
+def _conflict_during_the_temp_files_fsync(
+    monkeypatch: pytest.MonkeyPatch, ledger: Path, intruder: str, *, once: bool
+) -> list[int]:
+    """Append ``intruder`` to ``ledger`` from INSIDE the temp file's ``fsync``.
+
+    The injection point for window (a), chosen because it is the only function
+    call the OCC cycle makes between step 4's hash check and the rename. A
+    second run's document appears in the file at exactly the instant this write
+    is making its own bytes durable — which is precisely the race the ``verify``
+    hook was added to catch, and precisely the one step 4 has already passed.
+
+    ``once=True`` conflicts the first attempt only, so the write retries and
+    succeeds; ``once=False`` conflicts every attempt, driving the budget to
+    exhaustion. With ``once=False`` the hook keeps firing during the *fallback*
+    file's own write too — harmless, because it only ever appends to the
+    ledger, which by then is a file this run has given up on.
+    """
+    real = os.fsync
+    fired: list[int] = []
+
+    def _wrapper(fd: int) -> None:
+        real(fd)
+        if not once or not fired:
+            fired.append(fd)
+            ledger.write_bytes(ledger.read_bytes() + intruder.encode("utf-8"))
+
+    monkeypatch.setattr(os, "fsync", _wrapper)
+    return fired
+
+
+def _corrupt_a_foreign_chunk(monkeypatch: pytest.MonkeyPatch) -> list[int]:
+    """Make ``_splice_own_chunk`` damage a document this run does NOT own.
+
+    Stands in for the class of defect step 3b exists to catch and that nothing
+    else in this design can: a wrong boundary, the wrong chunk swapped, a chunk
+    dropped. Simulated rather than induced, because the real splice is correct —
+    what is under test is the *check*, and a check is only worth having if it
+    fires on content it was not the one to produce.
+
+    The edit lands in ``_HAND_WRITTEN_DOCUMENT``'s ``rate: 0.40``, which no
+    rendered record in this module carries, so it cannot touch this run's own
+    chunk by accident.
+    """
+    real = blunder_eval._splice_own_chunk
+    calls: list[int] = []
+
+    def _wrapper(text: str, chunk: str, marker: re.Pattern[str]) -> str | None:
+        calls.append(len(text))
+        spliced = real(text, chunk, marker)
+        if spliced is None:
+            return None
+        return spliced.replace("rate: 0.40", "rate: 0.99")
+
+    monkeypatch.setattr(blunder_eval, "_splice_own_chunk", _wrapper)
+    return calls
+
+
+def _append_after_the_replace(
+    monkeypatch: pytest.MonkeyPatch, ledger: Path, intruder: str
+) -> list[int]:
+    """Append ``intruder`` to ``ledger`` once, immediately after a write lands.
+
+    ``_clobber_after_the_replace``'s gentler sibling, and the difference is the
+    whole point: that one REPLACES the file, so this run's own chunk disappears
+    and step 6's *first* question fails. This one only appends, so the run's own
+    record is still there, byte-for-byte — step 6's first question passes and
+    its second one (the pass-through comparison) is the only thing that notices
+    anything at all. That is the exact shape of a concurrent run updating its
+    own record between our rename and our read-back.
+    """
+    real = blunder_eval._atomic_write_text
+    fired: list[int] = []
+
+    def _wrapper(path: Path, text: str, **kwargs: object) -> bool:
+        # ``**kwargs`` forwards Task 3.8's ``verify`` hook and the return value
+        # is passed through, for the reason ``_record_every_write`` gives: a
+        # double that swallowed either would silently disable the last-instant
+        # check for every test that installs it.
+        landed = real(path, text, **kwargs)
+        if landed and path == ledger and not fired:
+            fired.append(len(text))
+            ledger.write_bytes(ledger.read_bytes() + intruder.encode("utf-8"))
+        return landed
+
+    monkeypatch.setattr(blunder_eval, "_atomic_write_text", _wrapper)
+    return fired
+
+
+def test_a_conflict_during_the_temp_files_fsync_aborts_before_the_rename(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Window (a): a writer lands while we are making our temp file durable.
+
+    Step 4 has already said yes and cannot be asked again from where it sits;
+    only the ``verify`` hook, asked between the ``fsync`` and the rename, can
+    still stop this write. Two assertions carry it. The cycle made a **second**
+    attempt, so the conflict was detected at all. And ``os.replace`` ran exactly
+    **once** — the losing attempt never renamed anything, which is the
+    difference between catching this at the hook and catching it at step 6, and
+    the only way to tell from outside that the check moved.
+
+    What the intruder's survival proves is the consequence: hand the write no
+    ``verify`` and attempt 1 renames its stale splice over the top, silently
+    deleting a record this run never read. Nothing raises, nothing warns, and
+    the loss is visible only as a record that used to be in the ledger.
+    """
+    ledger = tmp_path / "ledger.yaml"
+    _seed_ledger(ledger, _HAND_WRITTEN_DOCUMENT)
+    intruder = (
+        f"---\n{render_record(_foreign_result('2026-09-12T09-59-59-b7c2d1'), '2026-09-12')}"
+    )
+
+    splices = _count_splices(monkeypatch)
+    replaces = _count_replaces(monkeypatch)
+    fired = _conflict_during_the_temp_files_fsync(
+        monkeypatch, ledger, intruder, once=True
+    )
+
+    landed = upsert_record(_foreign_result(_RUN_ID), "2026-09-12", ledger_path=ledger)
+
+    assert fired, "the injection never fired — the test proves nothing"
+    assert landed == ledger, "a conflict that resolves must not divert to the fallback"
+    assert len(splices) == _UNCONTESTED_ATTEMPTS + 1, (
+        "the late conflict must be detected and cause exactly one retry"
+    )
+    assert len(replaces) == 1, (
+        "the aborted attempt must never have reached os.replace — that span is "
+        f"the window the verify hook closes; saw renames onto {replaces}"
+    )
+
+    documents = _documents(_text(ledger))
+    assert len(documents) == 3, "the seed, the intruder and this run — all three"
+    assert documents[0] == _HAND_WRITTEN_DOCUMENT
+    assert documents[1] == intruder, "the intruder's document was not preserved intact"
+    assert sum(f"  id: '{_RUN_ID}'" in d for d in documents) == 1
+    assert sorted(p.name for p in tmp_path.iterdir()) == [ledger.name], (
+        "the aborted attempt must leave no .tmp beside the ledger"
+    )
+
+
+def test_a_late_conflict_on_every_attempt_exhausts_the_budget_into_the_fallback(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An abort is a conflict, so it spends the budget and then parks the record.
+
+    The abort route must be wired into the retry loop the same way step 4's
+    ``continue`` is — an abort treated as a hard failure would raise out of a
+    measured run, and an abort treated as success would return a ledger path
+    for a write that never landed. Neither happens: every attempt is conflicted
+    at the last instant, the budget runs out, and step 7 does what it does for
+    any exhausted budget.
+
+    ``attempts=3`` is passed explicitly rather than left to the progressive
+    default so the assertion reads as *the budget*, not as a number that would
+    quietly stop meaning anything if the constant changed.
+    """
+    ledger = tmp_path / "ledger.yaml"
+    _seed_ledger(ledger, _HAND_WRITTEN_DOCUMENT)
+    intruder = (
+        f"---\n{render_record(_foreign_result('2026-09-12T09-59-59-b7c2d1'), '2026-09-12')}"
+    )
+
+    splices = _count_splices(monkeypatch)
+    replaces = _count_replaces(monkeypatch)
+    _conflict_during_the_temp_files_fsync(monkeypatch, ledger, intruder, once=False)
+
+    landed = upsert_record(
+        _foreign_result(_RUN_ID), "2026-09-12", ledger_path=ledger, attempts=3
+    )
+
+    fallback = ledger.with_name(f"{ledger.name}.UNWRITTEN-{_RUN_ID}.txt")
+    assert landed == fallback, "an unwinnable race must park the record, not raise"
+    assert len(splices) == 3, "every attempt in the budget must have been spent"
+    assert [Path(dst).name for dst in replaces] == [fallback.name], (
+        "the ledger must never have been renamed onto — only the fallback file"
+    )
+    assert f"  id: '{_RUN_ID}'" not in _text(ledger)
+
+    parked = fallback.read_text(encoding="utf-8")
+    assert parked.startswith("---\n"), "the parked document must carry its separator"
+    assert f"  id: '{_RUN_ID}'" in parked
+    assert sorted(p.name for p in tmp_path.iterdir()) == sorted(
+        [ledger.name, fallback.name]
+    ), "three aborted attempts must leave no .tmp behind"
+
+
+def test_a_splice_that_damages_another_runs_document_refuses_to_write_at_all(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Step 3b (b): not one byte is written when the splice moved somebody else's.
+
+    ADR 014 §5 names a splicing bug as the one risk atomicity cannot cover —
+    wrong content lands just as atomically as right content — and until Task
+    3.8 the pre-run backup was the *only* thing standing between such a bug and
+    fifty committed records. Step 3b turns it into something the writer refuses
+    to commit.
+
+    Refusal, not a retry, and that is the assertion with teeth: the splice runs
+    exactly **once**. The comparison's two operands both come from the single
+    read at step 2 and nothing has been written yet, so a difference cannot be a
+    race — it is deterministic, it will reproduce on every attempt, and spending
+    the budget on it would only delay the same fallback. The measurement is not
+    lost either way: it is in the ``UNWRITTEN`` file, and the ledger is
+    byte-identical to what it was before the call.
+    """
+    ledger = tmp_path / "ledger.yaml"
+    seed = _seed_ledger(ledger, _HAND_WRITTEN_DOCUMENT)
+    splices = _corrupt_a_foreign_chunk(monkeypatch)
+
+    landed = upsert_record(_foreign_result(_RUN_ID), "2026-09-12", ledger_path=ledger)
+
+    fallback = ledger.with_name(f"{ledger.name}.UNWRITTEN-{_RUN_ID}.txt")
+    assert landed == fallback
+    assert ledger.read_bytes() == seed, (
+        "a damaged splice must not reach the ledger at all — not one byte"
+    )
+    assert len(splices) == _UNCONTESTED_ATTEMPTS, (
+        "a splice bug is deterministic; retrying it only delays the same outcome"
+    )
+    assert f"  id: '{_RUN_ID}'" in fallback.read_text(encoding="utf-8")
+    assert "BUG in the splice" in capsys.readouterr().err, (
+        "the stderr block is the only thing that tells a human this was code, "
+        "not contention"
+    )
+
+
+def test_a_ledger_with_no_trailing_newline_is_not_read_as_a_damaged_splice(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Step 3b's FALSE POSITIVE, and the normalisation that removes it.
+
+    The least obvious interaction in Task 3.8, and the one with the worst
+    failure mode. ``_splice_own_chunk`` repairs a ledger that does not end with
+    a newline by appending one byte — and that byte lands inside the **last
+    chunk**, which on a ledger like this one belongs to somebody else. So a
+    pass-through baseline taken from the *unrepaired* text reports that chunk as
+    damaged on the very write that repairs it: step 3b refuses, and every first
+    write to such a ledger routes to the fallback file. Two correct mechanisms,
+    one false accusation. The fix is that ``upsert_record`` normalises the read
+    text before both the splice and the baseline, so the two agree about what
+    they are comparing.
+
+    Nothing about this is visible from the ledger's final bytes when it works,
+    which is why it is asserted on the *absence* of the fallback file and on the
+    single splice attempt. Its sibling in section 6 pins the repair itself
+    (one attempt, convergent); this pins that the repair is not mistaken for a
+    bug — a distinction that only exists because of Task 3.8.
+    """
+    ledger = tmp_path / "ledger.yaml"
+    # The repaired byte must land in a chunk this run does NOT own, which is
+    # what makes the false positive reachable: strip the document's final
+    # newline and it becomes the file's last chunk, unterminated.
+    ledger.write_bytes((_PREAMBLE + _HAND_WRITTEN_DOCUMENT[:-1]).encode("utf-8"))
+    splices = _count_splices(monkeypatch)
+
+    landed = upsert_record(_foreign_result(_RUN_ID), "2026-09-12", ledger_path=ledger)
+
+    fallback = ledger.with_name(f"{ledger.name}.UNWRITTEN-{_RUN_ID}.txt")
+    assert not fallback.exists(), (
+        "the one-byte repair was accused of being a splice bug — every first "
+        "write to a ledger with no trailing newline now goes to the fallback"
+    )
+    assert landed == ledger
+    assert len(splices) == _UNCONTESTED_ATTEMPTS
+
+    text = _text(ledger)
+    documents = _documents(text)
+    assert len(documents) == 2
+    assert documents[0] == _HAND_WRITTEN_DOCUMENT, (
+        "the repaired newline must be the ONLY change to the foreign document"
+    )
+    assert _preamble(text) == _PREAMBLE
+    assert f"  id: '{_RUN_ID}'" in documents[1]
+    assert len(list(yaml.safe_load_all(text))) == 2, "the file must parse again"
+
+
+def test_a_document_appended_after_the_rename_is_warned_about_and_nothing_else(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Step 6 (c): it says so on stderr, and it does nothing — deliberately.
+
+    The write SUCCEEDED. This run's own record is in the ledger, byte-for-byte
+    what was rendered, and step 6's first question passes. What changed is a
+    chunk this run does not own, appearing between the rename and the read-back,
+    and the writer cannot tell a splice bug from a concurrent run updating its
+    own record — so both possible *actions* would lie about what happened. A
+    fallback file means *your measurement was not recorded*, which is false. A
+    retry would rewrite identical bytes and, on the last attempt, produce
+    exactly that fallback.
+
+    So the assertions are mostly about what must NOT have happened: one splice
+    attempt, no ``UNWRITTEN`` file, no litter, the ledger path returned as
+    normal — and the warning on stderr naming the backup a human would recover
+    from, which is the only output this condition produces.
+    """
+    ledger = tmp_path / "ledger.yaml"
+    _seed_ledger(ledger, _HAND_WRITTEN_DOCUMENT)
+    intruder = (
+        f"---\n{render_record(_foreign_result('2026-09-12T09-59-59-b7c2d1'), '2026-09-12')}"
+    )
+
+    splices = _count_splices(monkeypatch)
+    fired = _append_after_the_replace(monkeypatch, ledger, intruder)
+
+    landed = upsert_record(_foreign_result(_RUN_ID), "2026-09-12", ledger_path=ledger)
+
+    assert fired, "the injection never fired — the test proves nothing"
+    assert landed == ledger, (
+        "the write succeeded, so the return must say so — a fallback path here "
+        "would tell the run its measurement was lost when it was not"
+    )
+    assert len(splices) == _UNCONTESTED_ATTEMPTS, "a warning is not a retry"
+    fallback = ledger.with_name(f"{ledger.name}.UNWRITTEN-{_RUN_ID}.txt")
+    assert not fallback.exists(), "warning must not escalate into step 7"
+    assert sorted(p.name for p in tmp_path.iterdir()) == [ledger.name]
+
+    err = capsys.readouterr().err
+    assert "LEDGER READ-BACK WARNING" in err, "silence here is the failure"
+    assert "ledger-backups" in err, "the message must name where the recovery is"
+
+    documents = _documents(_text(ledger))
+    assert len(documents) == 3
+    assert documents[0] == _HAND_WRITTEN_DOCUMENT
+    assert f"  id: '{_RUN_ID}'" in documents[1]
+    assert documents[2] == intruder
+
+
+def test_a_clean_four_game_run_never_warns_about_a_document_it_does_not_own(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    transcripts_root: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The control for both pass-through checks: on an ordinary run they are silent.
+
+    A check that fires when nothing is wrong is worse than no check, because the
+    message it prints tells a developer to go looking in a pre-run backup for
+    damage that is not there — and after the second false alarm nobody reads it
+    again. So an ordinary run is driven across the shapes most likely to trip a
+    boundary comparison: a preamble (element 0 of every split, and the easiest
+    thing for a splice to lose), a foreign document that must pass through, and
+    **five** writes — four progressive plus the final one — each of which
+    re-takes the baseline and re-compares it twice.
+
+    Asserted on stderr rather than on a spy, because the warning's whole purpose
+    is to reach a human, and a spy would keep passing if the print were removed.
+    """
+    config, ledger = _stub_run_eval_env(monkeypatch, tmp_path)
+    _seed_ledger(ledger, _HAND_WRITTEN_DOCUMENT)
+    monkeypatch.setattr(blunder_eval, "_play_one_game", _completed_game())
+
+    run_eval(
+        config,
+        _storage_args(games=4),
+        transcripts_root=transcripts_root,
+        run_id=_RUN_ID,
+    )
+
+    err = capsys.readouterr().err
+    assert "LEDGER READ-BACK WARNING" not in err, (
+        "step 6's pass-through check fired on a run where nothing moved"
+    )
+    assert "LEDGER WRITE FAILED" not in err, (
+        "step 3b refused a correct splice, or a write was diverted to the fallback"
+    )
+
+    documents = _documents(_text(ledger))
+    assert len(documents) == 2, "one pre-existing document and this run's one record"
+    assert documents[0] == _HAND_WRITTEN_DOCUMENT
+    assert _games_completed(documents[1]) == 4
+
+
+# ===========================================================================
+# 6c. ``_passthrough_chunks`` as a pure function.
+#
+# The predicate both checks above are built from, tested directly because the
+# way it fails is by being too PERMISSIVE — and a too-permissive comparison
+# makes both of its callers into no-ops that stay green forever. A version that
+# dropped the preamble, or that excluded one chunk too many, would let exactly
+# the corruption step 3b exists to refuse straight through.
+#
+# It sits in this module rather than with the other text helpers in
+# ``test_ledger_write.py`` because its contract is stated in terms of a RUN's
+# own marker — the near-twin case below is the same distinction section 7
+# exists for, and the ids it turns on are pinned at the top of this file.
+# ===========================================================================
+
+
+def test_passthrough_chunks_keeps_the_preamble_and_every_document_but_this_runs(
+    tmp_path: Path,
+) -> None:
+    """Everything a splice must carry through untouched, in file order, preamble first.
+
+    The four claims that make it usable as a corruption check, and the degenerate
+    shapes that must not raise:
+
+    - **the preamble is element 0, always.** A splice has no business touching
+      it either, and index 0 is where a boundary error that swallowed the first
+      separator would show up. Dropping it is the most natural-looking
+      simplification available to a later edit, and it would silently stop
+      protecting the one part of the file no run owns.
+    - **this run's own chunk is excluded** — it is the one thing the splice is
+      *supposed* to rewrite, so including it would make the comparison fail on
+      every correct write.
+    - **a near-twin id is kept.** ``_TWIN_SUFFIX`` shares the whole timestamp
+      and differs only in the six random characters; it is somebody else's
+      record and must be protected as one. This is the marker's exactness seen
+      from the other side of section 7.
+    - **empty, preamble-only and only-our-own-document** all return a list
+      rather than raising: the first write of a run meets the first two, and the
+      third is the second write of a run into a ledger it is alone in.
+    """
+    marker = _run_id_line_re(_RUN_ID)
+    ours = f"---\n{render_record(_foreign_result(_RUN_ID), '2026-09-12')}"
+    twin = f"---\n{render_record(_foreign_result(_TWIN_SUFFIX), '2026-09-12')}"
+
+    assert _passthrough_chunks(_PREAMBLE + twin + ours, marker) == [_PREAMBLE, twin], (
+        "the preamble leads the list and the near-twin is somebody else's record"
+    )
+    assert _passthrough_chunks(_PREAMBLE + ours + twin, marker) == [_PREAMBLE, twin], (
+        "file order is preserved regardless of where this run's chunk sits"
+    )
+    assert _passthrough_chunks("", marker) == [""], "an absent ledger reads as empty"
+    assert _passthrough_chunks(_PREAMBLE, marker) == [_PREAMBLE], (
+        "a ledger with a header and no records yet is all preamble"
+    )
+    assert _passthrough_chunks(ours, marker) == [""], (
+        "a ledger holding only this run's own document has nothing to protect"
+    )
+
+    # And the claim the other five rest on: what comes back is the ledger's own
+    # bytes, never a re-rendering of them. Asserted against the hand-written
+    # document, because that is the one whose float renderings, key order and
+    # block scalar a parse-and-re-render round trip would silently normalise.
+    seeded = _seed_ledger(tmp_path / "ledger.yaml", _HAND_WRITTEN_DOCUMENT, ours)
+    assert _passthrough_chunks(seeded.decode("utf-8"), marker) == [
+        _PREAMBLE,
+        _HAND_WRITTEN_DOCUMENT,
+    ]
 
 
 # ===========================================================================
