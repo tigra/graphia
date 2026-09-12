@@ -37,6 +37,7 @@ import math
 import os
 import random
 import re
+import secrets
 import subprocess
 import sys
 import tempfile
@@ -209,9 +210,11 @@ _NEAR_DUP_THRESHOLD = 0.85
 # and no denominator. The derived ``ci_low``/``ci_high`` band, the spec-013
 # ``outcomes`` / ``vote_activity`` blocks, the conditional ``settings.lineup`` /
 # ``settings.scripted_player`` keys, spec 036's conditional ``run.kind``
-# record-kind label — and, spec 039, the conditional
-# ``settings.private_diaries_enabled`` arm label — all leave every scorer
-# untouched, so rates measured before and after stay directly comparable.
+# record-kind label, spec 039's conditional
+# ``settings.private_diaries_enabled`` arm label — and, spec 043, the
+# conditional ``run.id`` run identity, which NAMES the run that wrote the record
+# and measures nothing at all — all leave every scorer untouched, so rates
+# measured before and after stay directly comparable.
 # Bumping for any of them would falsely flag every prior rate as incomparable.
 # An ARM LABEL is the clearest case of the rule: no scorer reads ``settings``,
 # ``tally_outcomes`` is untouched, and the field NARROWS the comparability
@@ -483,6 +486,35 @@ class EvalResult:
     # invites hand-editing; multi-line notes render as a YAML block scalar. The
     # machine-measured fields above stay append-only/immutable.
     notes: str = ""
+    # --- Spec-043 run identity (functional-spec §2, tech-spec §2.2) ---
+    # THIS RUN'S id, written into the record as ``run.id``: the same string as
+    # ``transcript_dir`` below, by construction — ``run_eval`` sets both from the
+    # one ``make_run_id()`` draw it takes before game 1, so the by-eye
+    # cross-reference from a ledger record to ``evals/transcripts/<run-id>/``
+    # can never drift. Never call ``make_run_id`` a second time to fill this:
+    # two draws mean two different suffixes and a record pointing at a directory
+    # that is not its own.
+    #
+    # WHY IT EXISTS: spec 043's OCC upsert recognises a run's own document in
+    # the ledger BY this id, so a live run can rewrite its own record after each
+    # completed game instead of appending once at the end. That is also why it
+    # must be collision-proof — see :func:`make_run_id` for the silent-overwrite
+    # consequence that sized its random suffix.
+    #
+    # CONDITIONAL, on the ``kind``/``transcript_dir`` pattern: empty ⇒
+    # ``render_record`` omits the key entirely, so a bare synthetic
+    # ``EvalResult`` (the renderer's unit tests) renders byte-identically to a
+    # pre-043 record and nothing is backfilled. Both REAL producers of a ledger
+    # record set it: ``run_eval`` from the draw above, and (spec 043 Task 2.2b)
+    # ``persona_bench.main``, which draws one of its own and injects it into
+    # ``build_bench_record`` — so every NEW record is self-identifying, which is
+    # what technical-considerations §2.2 and ADR 014 §5 both promise. OLDER
+    # records carry no ``run.id`` and nothing needs it retroactively: the field
+    # exists for a run to find its own document WHILE IT IS ALIVE, and every
+    # older record belongs to a run that ended long ago.
+    # Additive ⇒ NO ``METRICS_VERSION`` bump (the ``run.kind`` /
+    # ``transcript_dir`` precedent): it names the run, and measures nothing.
+    run_id: str = ""
     # --- Spec-017 transcript link (functional-spec §2.3, tech §2.3) ---
     # The run's transcript directory NAME (the ``<run-id>`` under
     # ``evals/transcripts/``, NOT an absolute path) — written into the record as
@@ -2687,6 +2719,7 @@ def render_record(result: EvalResult, run_date: str) -> str:
 
         run:
           date: '<iso date>'
+          id: '<run-id>'         # spec 043 — this run's identity; == transcript_dir on a GAME run (a persona-bench run has an id and no transcript); OMITTED only on pre-043 records
           kind: '<record kind>'  # spec 036 — e.g. 'persona-bench'; OMITTED ⇒ a played game
           duration_seconds: <float|null>
           metrics_version: <int>
@@ -2800,10 +2833,38 @@ def render_record(result: EvalResult, run_date: str) -> str:
     lines: list[str] = []
 
     lines.append("run:")
-    # Built key-by-key rather than as one literal because ``kind`` is
-    # CONDITIONAL yet must land immediately after ``date``: ``_yaml_block``
-    # renders in insertion order, so the insertion sequence *is* the key order.
+    # Built key-by-key rather than as one literal because ``id`` and ``kind`` are
+    # CONDITIONAL yet must land immediately after ``date``, in that order:
+    # ``_yaml_block`` renders in insertion order, so the insertion sequence *is*
+    # the key order.
     run_block: dict[str, object] = {"date": run_date}
+    # ``id`` (spec 043 §2.2) — THIS RUN'S identity, and the string spec 043's
+    # OCC upsert matches a run's own document on. Emitted whenever the run has
+    # one; an empty ``run_id`` (a bare synthetic ``EvalResult``, anything
+    # predating spec 043) omits the key entirely, so every committed record and
+    # every synthetic-record test renders byte-identically and nothing is
+    # backfilled. Every NEW record carries one: ``run_eval`` and (spec 043 Task
+    # 2.2b) ``persona_bench.main`` each draw exactly one and set it. Older
+    # records carry no ``run.id`` and nothing needs it retroactively: the field
+    # exists for a run to find its own document WHILE IT IS ALIVE, and every
+    # older record belongs to a run that ended long ago.
+    #
+    # ITS GATE IS DELIBERATELY NOT ``transcript_dir``'s, and the two must not be
+    # collapsed into one condition however much they look alike. They carry the
+    # SAME STRING (``run_eval`` sets both from one ``make_run_id()`` draw) but
+    # answer different questions: ``transcript_dir`` is a LINK, emitted only when
+    # this run actually wrote a transcript, so it never dangles; ``id`` is an
+    # IDENTITY, emitted whenever the run has one. A run whose every game failed
+    # early wrote no transcript and still has an identity — and still needs its
+    # document findable by the upsert that rewrites it. The second instance is
+    # standing proof the two gates must stay separate: a ``persona-bench``
+    # record (spec 043 Task 2.2b) carries an ``id`` and NO ``transcript_dir``,
+    # because a bench run plays no game and so writes no transcript.
+    #
+    # No ``METRICS_VERSION`` bump: purely additive, no scorer and no denominator
+    # touched (the ``run.kind`` / ``transcript_dir`` precedent).
+    if result.run_id:
+        run_block["id"] = result.run_id
     # ``kind`` (spec 036 §2 Component A) — which kind of measurement this record
     # is, emitted ONLY when the run recorded one (the ``transcript_dir`` /
     # ``settings.lineup`` conditional-emission pattern: *only emitted when the
@@ -3629,7 +3690,9 @@ def append_record(
 # ``evals/transcripts/<run-id>/game-NN.txt`` — ONE directory per run, with a
 # zero-padded game index so a 10-game run sorts game-01 … game-10 lexically and
 # the run/game relationship is obvious from the names alone. ``<run-id>`` is a
-# filesystem-safe, sortable timestamp generated ONCE per ``run_eval``.
+# filesystem-safe, sortable timestamp plus a short random suffix, generated ONCE
+# per ``run_eval`` — see :func:`make_run_id` for the collision the suffix closes
+# and for why the directories already here keep their suffix-free names.
 #
 # The store is NOT gitignored: the rendered files are ordinary untracked files,
 # curated by the developer commit-or-delete (functional-spec §2.3). The smoke
@@ -3638,19 +3701,151 @@ def append_record(
 # ===========================================================================
 
 
-def make_run_id(now: datetime | None = None) -> str:
-    """A filesystem-safe, sortable ``<run-id>`` for one run's transcript dir.
+# ---------------------------------------------------------------------------
+# WHY THE SUFFIX CANNOT BREAK THE TRANSCRIPT BROWSER (spec 043, Task 2.3).
+#
+# Technical-considerations §2.2 left exactly one verify-at-implementation item
+# open: does anything read this id as a TIMESTAMP? A strict parser would reject
+# ``...-9f3a1c``, and the break would surface over in the transcript browser
+# rather than here. Checked 2026-09-11, and written down so it is not re-run:
+#
+# - ``strptime``: ZERO occurrences in ``src/`` or ``tests/`` (the only two hits
+#   in the whole repo are the spec documents asking for this check). And zero
+#   for every OTHER way a format could be imposed on an opaque name —
+#   ``fromisoformat``, ``dateutil``, ``to_datetime``/``parse_date``, a
+#   date-shaped ``\d{4}`` regex, a ``split("T")``, a
+#   ``split("-")``/``rsplit("-")`` (a suffix adds a field), a ``[:10]`` /
+#   ``[:19]`` slice, an ``int()`` over a fragment.
+# - The read path, end to end: ``eval_ledger.transcript_dir_for`` joins the
+#   recorded NAME onto the ledger's sibling ``transcripts/``;
+#   ``list_transcripts`` globs ``game-*.txt`` inside it and labels each entry
+#   from the FILE stem, never from the dir name; :func:`clean_transcripts`
+#   walks ``transcripts_root.iterdir()``; ``ui/ledger_viewer.py`` takes those
+#   entries pre-resolved and does no path arithmetic of its own.
+# - The date a reader SEES is never this string: the viewer's ``Date`` column,
+#   its scoped ``date`` search field and the drill-down's ``date`` line all
+#   read ``run.date``, which ``main`` stamps independently from
+#   ``date.today().isoformat()``.
+# - Outside Python, where no Python grep would have looked: ``make
+#   clean-transcripts`` shells straight into :func:`clean_transcripts`, and no
+#   shell anywhere in the repo globs or ``cut``s ``evals/transcripts/*``.
+# - Committed fixtures use ids (``run-A``, ``2026-06-13T10-00-00``) as
+#   convenient strings, not as format assertions — there is no ``fullmatch``,
+#   no regex and no ``len(run_id)`` over an id anywhere in ``tests/``.
+#
+# So the id is an OPAQUE DIRECTORY NAME to every consumer: minted here, joined
+# into a path by :func:`transcript_path`, and resolved back by name. The only
+# ordering anything relies on is LEXICAL, which the suffix preserves by sitting
+# after the complete fixed-width timestamp (argued in the docstring below).
+# That is what lets the two forms coexist — the suffix-free directories already
+# on disk are read by exactly the same code as the suffixed ones, so nothing
+# had to be renamed.
+# ---------------------------------------------------------------------------
+def make_run_id(now: datetime | None = None, *, suffix: str | None = None) -> str:
+    """A collision-proof, filesystem-safe, sortable ``<run-id>`` for one run.
 
     An ISO-ish local timestamp with the ``:`` separators (illegal in a path on
-    Windows, awkward everywhere) swapped for ``-`` — e.g. ``2026-06-18T14-32-05``.
-    Lexical sort order matches chronological order, and the form is safe on
-    macOS / Linux. Generated ONCE per ``run_eval`` (real-run-only; tests inject a
-    fixed id), so ``datetime.now()`` here is fine — this is the eval harness, not
-    the determinism-sensitive graph code (architecture §6). ``now`` is injectable
-    purely so a test can pin the timestamp.
+    Windows, awkward everywhere) swapped for ``-``, then six random lowercase
+    hex characters — e.g. ``2026-06-18T14-32-05-9f3a1c``. Safe on macOS / Linux,
+    and generated ONCE per ``run_eval`` (real-run-only; tests inject a fixed
+    id), so ``datetime.now()`` here is fine — this is the eval harness, not the
+    determinism-sensitive graph code (architecture §6).
+
+    **The collision the suffix closes, which is measured rather than feared.**
+    Before spec 043 the id was the timestamp alone: one-second resolution, no
+    uniqueness check, and :func:`write_transcript` does ``mkdir(exist_ok=True)``
+    — so two runs launched in the same second shared a directory and the second
+    overwrote the first's ``game-01.txt``. That has happened (spec 039
+    technical-considerations: three back-to-back runs produced only TWO
+    directories, and two records ended up linking one of them), and a same-second
+    launch is not an accident but the shape of a multi-arm baseline session — the
+    committed store holds two pairs four seconds apart
+    (``2026-09-09T18-41-01``/``-05``, ``2026-09-10T13-31-38``/``-42``). The
+    forward reason is sharper still, and it is why the suffix is as wide as it
+    is: spec 043's OCC upsert finds a run's OWN document in the ledger BY this
+    id, so a shared id lets one run overwrite another run's record **with no
+    error raised anywhere** — losing a measurement, not merely a transcript.
+    Walked through under *Six of them* below.
+
+    **Lexical order stays chronological, which is the constraint that decides
+    where the suffix goes.** It sits after the COMPLETE timestamp, whose fields
+    are fixed-width and zero-padded, so a string comparison between two ids from
+    different seconds is settled inside the first 19 characters and the suffix
+    never reaches it. Only ids from the SAME second are ordered by suffix, i.e.
+    arbitrarily — the right answer for two runs that started simultaneously.
+    Legacy suffix-free ids interleave correctly too: a string sorts before itself
+    plus a suffix, so a legacy id can only precede a suffixed id of its own
+    second, never an earlier one.
+
+    **Six lowercase hex characters, from :mod:`secrets`.** Each part of that is
+    a choice with a reason:
+
+    - *Lowercase hex* (``[0-9a-f]``), not a richer alphabet. macOS's default
+      APFS is **case-insensitive**, so a mixed-case suffix could make two
+      DISTINCT ids name one directory — reintroducing through the alphabet the
+      exact failure the suffix exists to close. Hex also excludes every
+      ambiguous glyph (no ``l``/``1``, ``O``/``0``, ``I``/``1``), which matters
+      because this id gets read off a ledger record by eye and typed into a
+      ``cd``; and it keeps the whole id within ``[0-9a-fT-]``, needing no
+      quoting in a shell and no escaping in a glob.
+    - *Six* of them — 24 bits, 16,777,216 values — and the width is chosen for
+      the CONSEQUENCE of a collision, not merely for its probability. **Two runs
+      sharing an id do not fail loudly, and it is worth following why, because
+      the obvious guard does not catch it.** The splice in
+      technical-considerations §2.1 step 3 replaces *the chunk carrying this
+      run's id*, so run B writes over run A's document. Step 6's read-back then
+      confirms *exactly one chunk carries this run's id* — it finds B's, and
+      **passes**. A's record is gone, no exception is raised, no fallback file is
+      written, and nothing in the run's output mentions it; the loss shows up
+      only as a record that used to be in the ledger and no longer is. That is
+      the silent destruction of a measured run, which is the precise harm this
+      whole spec exists to prevent — so the suffix is sized to put the question
+      beyond needing to be asked again: ≈ 6·10⁻⁸ per same-second pair at 24
+      bits, against ≈ 1.5·10⁻⁵ at the 16 bits a four-character tail would give.
+      Small is not the same as negligible when the failure is silent and the
+      artifact is the project's only long-term measurement history (ADR 014 §5:
+      a measurement from months ago cannot be replayed). Two extra characters
+      buy a factor of 256 and cost nothing that matters — at 26 characters the
+      id is still one glob-safe, sortable, eyeball-comparable token.
+    - :func:`secrets.token_hex` over the module-global :mod:`random`, **not for
+      unpredictability — this is not a security boundary — but to decouple run
+      identity from the determinism knob.** This module deliberately SEEDS the
+      global stream: :func:`_seed_game` calls ``random.seed(base_seed + i)`` so
+      that ``--seed`` makes game STRUCTURE reproducible. A suffix drawn from
+      that stream would be reproducible too, and two same-second runs sharing a
+      ``--seed`` — the multi-arm pattern again — would share a suffix. Today the
+      draw happens before the first :func:`_seed_game`, so it is safe by
+      ORDERING, which is exactly the kind of safety that breaks silently when
+      code moves. :mod:`secrets` reads the OS CSPRNG and cannot be seeded, so
+      the guarantee stops depending on call order.
+
+    **A deliberate divergence from the spec's illustration, recorded so it does
+    not read as drift.** Technical-considerations §2.2 shows the id as
+    ``2026-09-10T13-31-38-a7f3`` — a FOUR-character tail. That example fixes the
+    *shape* and leaves the width to implementation, and the width landed at six
+    for the silent-overwrite reason above. The spec's example is not wrong about
+    anything it was chosen to show; it is simply narrower than what is built.
+
+    **Nothing is renamed.** Only new runs gain a suffix: every directory already
+    under ``evals/transcripts/`` keeps its suffix-free name, and every older
+    ledger record keeps its suffix-free ``run.transcript_dir``. The two forms
+    coexist because nothing anywhere reads the id as a timestamp — it is made
+    here, joined into a path by :func:`transcript_path`, and resolved by
+    ``eval_ledger.transcript_dir_for`` purely as a directory NAME.
+
+    ``now`` pins the timestamp and ``suffix`` pins the whole returned string, so
+    a test can make the id fully deterministic. Both are used verbatim and
+    unvalidated: a caller who injects a ``suffix`` owns its legality as a path
+    segment, just as one who injects a ``now`` owns its timezone.
     """
     moment = now if now is not None else datetime.now()
-    return moment.strftime("%Y-%m-%dT%H-%M-%S")
+    stamp = moment.strftime("%Y-%m-%dT%H-%M-%S")
+    # ``token_hex(3)`` is three random bytes rendered as six lowercase hex
+    # digits. The ``-`` join reuses the separator the timestamp already uses
+    # between its own fields, so the suffix reads as one more field rather than
+    # as a second notation bolted on.
+    tail = suffix if suffix is not None else secrets.token_hex(3)
+    return f"{stamp}-{tail}"
 
 
 def transcript_path(
@@ -4364,6 +4559,16 @@ def run_eval(
         provider=args.provider,
         large_model=large_model,
         small_model=small_model,
+        # Spec 043 §2.2: the run's identity on the record, set from the SAME
+        # local the transcript writer uses, so ``run.id`` and
+        # ``run.transcript_dir`` are the same string BY CONSTRUCTION rather than
+        # by coincidence. Taken here, not re-drawn: a second ``make_run_id()``
+        # call would mint a second random suffix and point the record at a
+        # directory that is not its own. Unlike ``transcript_dir`` (stamped after
+        # the loop, and only if a transcript was actually written) this is set
+        # before game 1, because a run needs an identity from its first ledger
+        # write onward whether or not it ever writes a transcript.
+        run_id=transcript_run_id,
         code=code,
         provider_block=provider_block,
         settings=settings,

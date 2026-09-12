@@ -55,6 +55,7 @@ from graphia.tools.blunder_eval import (
     append_record,
     collect_code_provenance,
     collect_provider_provenance,
+    make_run_id,
     score_persona_semantic_sim,
     score_persona_sim_sum,
     warn_if_dirty,
@@ -365,6 +366,7 @@ def build_bench_record(
     *,
     code: dict[str, object] | None = None,
     provider_block: dict[str, object] | None = None,
+    run_id: str = "",
     note: str = "",
 ) -> EvalResult:
     """Map a finished :class:`BenchSummary` onto ONE ledger ``EvalResult``.
@@ -387,8 +389,28 @@ def build_bench_record(
     ``render_record`` falls back to its degraded shape, which is what keeps the
     builder unit-testable with no git and no server.
 
+    ``run_id`` (spec 043 Task 2.2b) is injected on the SAME grounds, and the
+    grounds are worth stating because an id draw looks cheaper than a subprocess
+    and is not safer to do here. It must happen **exactly once per run**, whereas
+    a mapping function carries no such promise — it is pure, so nothing stops a
+    caller or a test calling it twice, and two calls to
+    :func:`~graphia.tools.blunder_eval.make_run_id` mean two different random
+    suffixes and therefore two identities for one run. ``main`` draws it once and
+    hands it down, which is the identical discipline ``run_eval`` applies to its
+    own single draw. Omitted ⇒ empty ⇒ ``render_record`` omits ``run.id``
+    entirely, exactly as for an un-injected provenance block, so the builder
+    stays unit-testable with no clock and no entropy source.
+
     The mapping, all off the existing summary:
 
+    * ``run.id`` = the injected ``run_id`` — this run's own identity, so EVERY
+      new record in the ledger is self-identifying (technical-considerations
+      §2.2: *"always present, on every record from now on"*; ADR 014 §5: *"every
+      record gains a permanent ``run.id``"*). It buys the bench no mechanism —
+      spec 043's OCC upsert exists for a run that rewrites its own document
+      while it is alive, and a bench run writes ONCE, at its end, through
+      ``append_record`` — what it buys is that a record can be correlated to the
+      run that produced it without inference.
     * ``kind`` = :data:`RECORD_KIND` — the label that makes this record readable
       as a bench run and (per the unit-follows-kind rule) reinterprets
       ``quality.attempted``/``completed`` as ROSTERS.
@@ -441,6 +463,16 @@ def build_bench_record(
     unpopulated: a bench run plays no game, casts no vote and writes no
     transcript, and all three are ALREADY conditional in ``render_record``, so
     they omit themselves rather than rendering as hollow game blocks.
+
+    ``transcript_dir`` is the one of those three that needs saying twice, because
+    the game path documents ``run.id`` and ``run.transcript_dir`` as **the same
+    string by construction** and a reader arriving from there will expect the
+    pair here too. On the bench path they are deliberately NOT a pair: the id is
+    present and the link is absent, because a bench run writes no transcripts
+    and a link to a directory that was never created would dangle. That is the
+    divergence ``render_record`` gates the two keys separately for — ``id`` is an
+    IDENTITY, emitted whenever the run has one; ``transcript_dir`` is a LINK,
+    emitted only when there is something to link to.
     """
     if config is None:
         # Resolved at call time (not import) so a missing dependency or env
@@ -531,6 +563,10 @@ def build_bench_record(
         games_failed_early=summary.rosters_attempted - summary.rosters_completed,
         duration_seconds=round(summary.duration_seconds, 3),
         kind=RECORD_KIND,
+        # This run's identity, drawn ONCE in ``main`` and injected (see the
+        # docstring). ``transcript_dir`` stays empty beside it — the deliberate
+        # non-pair described at the end of the docstring.
+        run_id=run_id,
         settings=settings,
         # The eval's OWN provenance blocks, collected by ``main`` and injected
         # here. Empty when not supplied, in which case ``render_record`` falls
@@ -726,12 +762,28 @@ def main(argv: list[str] | None = None) -> int:
             small_model,
             getattr(config, "ollama_base_url", ""),
         )
+        # THIS RUN'S identity (spec 043 §2.2 / ADR 014 §5: every new record
+        # carries one), drawn HERE and exactly once, then injected into the pure
+        # mapping — the same treatment the two provenance blocks above get, and
+        # for the same reason: ``build_bench_record`` promises nothing about how
+        # many times it is called, and a second ``make_run_id()`` would mint a
+        # second random suffix and so a second identity for one run.
+        #
+        # NOTE the one place the bench path diverges from the eval path, because
+        # ``blunder_eval`` documents the two as identical BY CONSTRUCTION and a
+        # reader moving between them will expect that here: ``run_eval`` sets
+        # ``run.id`` and ``run.transcript_dir`` from one draw, so they are the
+        # same string. A bench run writes NO transcripts, so it sets the id and
+        # leaves ``transcript_dir`` absent — an identity with no link, rather
+        # than a link to a directory that was never created.
+        run_id = make_run_id()
         ledger = append_record(
             build_bench_record(
                 summary,
                 config,
                 code=code,
                 provider_block=provider_block,
+                run_id=run_id,
                 note=args.note,
             ),
             date.today().isoformat(),

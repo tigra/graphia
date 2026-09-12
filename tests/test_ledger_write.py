@@ -71,9 +71,13 @@ test_append_record_creates_parent_directory``, and the ``mkdir`` line's real job
 — being the first attribute access, so a ``str`` argument dies naming
 ``parent`` — is pinned by ``tests/test_substitution_ledger.py::
 test_the_injected_ledger_path_must_be_a_Path_not_a_str``. Neither is duplicated.
-Nothing here tests ``upsert_record``, ``run.id``, the ``ended_early`` marker,
-the pre-run backup or progressive writes: those are Slices 2-4 and do not exist
-yet.
+Nothing here tests ``upsert_record``, the ``ended_early`` marker, the pre-run
+backup or progressive writes: those are Slices 3-4 and do not exist yet.
+``run.id`` DOES now exist — Slice 2 landed it on 2026-09-11, after this module
+was written, so the sentence above used to list it among the not-yet-built. It
+is pinned in ``tests/test_run_identity.py`` rather than here: run identity sits
+a level above the write primitives and spans three source modules
+(``blunder_eval``, ``persona_bench``, ``eval_ledger``).
 """
 
 from __future__ import annotations
