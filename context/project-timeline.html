@@ -22,7 +22,7 @@
 </head>
 <body>
 <h1>Graphia — Project Timeline (interactive)</h1>
-<p class="subtitle">CRs, ADRs, and spec execution from 2026-04-29 → 2026-06-16.</p>
+<p class="subtitle">CRs, ADRs, and spec execution from 2026-04-29 → 2026-09-12.</p>
 <p class="note">
   Click any milestone (diamond) or slice (bar) to open its source artifact on GitHub.
   This page exists because GitHub's markdown renderer sandboxes mermaid diagrams in an iframe
@@ -35,233 +35,177 @@
 %%{init: {'theme': 'base', 'themeVariables': {'background': '#2d2d2d', 'textColor': '#e6e6e6', 'sectionBkgColor': '#3c3c3c', 'altSectionBkgColor': '#333333', 'gridColor': '#555555', 'doneTaskBkgColor': '#6aa84f', 'doneTaskBorderColor': '#38761d', 'activeTaskBkgColor': '#e69138', 'activeTaskBorderColor': '#b45f06', 'excludeBkgColor': '#7d5630', 'taskTextColor': '#e6e6e6', 'taskTextLightColor': '#ffffff', 'taskTextDarkColor': '#ffffff', 'taskTextClickableColor': '#9ecbff', 'taskTextOutsideColor': '#e6e6e6'}}}%%
 gantt
     title Graphia — CRs, ADRs, and Spec Execution
-    dateFormat YYYY-MM-DD
+    dateFormat YYYY-MM-DD HH:mm
     axisFormat %b %d
-    excludes weekends
 
     section Phase 1 (v1.0)
-    Spec 001 — Playable Skeleton · 9 slices             :milestone, done, sp1, 2026-04-29, 0d
+    Spec 001 — Playable Skeleton ✓                       :done, sp1, 2026-04-29 09:00, 2026-04-29 17:00
 
     section Rescoping & setup
-    CR 001 — AgentCore + AI tool-use into v1.1           :milestone, done, m1, 2026-05-05, 0d
-    CR 002 — Long-term Memory in; tool-use to Phase 7    :milestone, done, m2, 2026-05-06, 0d
-    ADR 001 — Hosted Runtime + local mode preserved      :milestone, done, a1, 2026-05-07, 0d
-    Spec 002 authored · terraform-aws agent hired        :milestone, done, sp2, 2026-05-10, 0d
+    CR 001 — AgentCore + AI tool-use into v1.1           :milestone, done, m1, 2026-05-05 12:00, 0d
+    CR 002 — Long-term Memory in; tool-use to Phase 7    :milestone, done, m2, 2026-05-06 12:00, 0d
+    ADR 001 — Hosted Runtime + local mode preserved      :milestone, done, a1, 2026-05-07 12:00, 0d
 
-    section Phase 2 (v1.1) — Spec 002
-    ADR 002 — Runtime-embedded Gateway tools             :milestone, crit, a2, 2026-05-12, 0d
-    ADR 003 — Bedrock Nova over Claude                   :milestone, done, a3, 2026-05-13, 0d
-    ADR 004 — Gateway IAM-auth workaround                :milestone, crit, a4, 2026-05-13, 0d
-    ADR 005 — Gateway tools via Lambda targets           :milestone, done, a5, 2026-05-14, 0d
-    CR 003 — Observability trace trees                   :milestone, done, c3, 2026-05-15, 0d
-    CR 004 — Revise launch criteria                      :milestone, done, c4, 2026-05-18, 0d
-    Slices 1-3 — Auth · Terraform · Runtime image        :done, s13, 2026-05-12, 1d
-    Slice 3 follow-on — Makefile task-runner             :done, s3f, 2026-05-12, 1d
-    Slice 4 — Full remote game · HITL over the wire      :done, s4, 2026-05-13, 1d
-    Slices 5-6 — Corner badge · AgentCore Memory diary   :done, s56, 2026-05-13, 1d
-    Slice 6 follow-on — DiaryStore factory fix           :done, s6f, 2026-05-13, 1d
-    Slice 7 — Gateway tools · ADR 002 to 005 pivot       :done, s7, 2026-05-13, 3d
-    Slice 7 follow-on — 5 remote-only bug fixes          :done, fix, 2026-05-15, 1d
-    Slice 8 — Observability + remote-mode failure modal  :done, s8, 2026-05-15, 1d
-    CR 003 follow-ons — OTEL recipe · IAM · Tx Search    :done, s8f, 2026-05-16, 1d
-    Slice 9 — local/remote equivalence tests             :done, s9, 2026-05-18, 1d
-    Slice 10 — destroy verification + README             :done, s10, 2026-05-18, 1d
-    Slice 11 — Diary round-trip · fallback · deploy hint :done, s11, 2026-05-20, 1d
-    Spec 002 verified Completed                          :milestone, done, sp2v, after s11, 0d
-    Tutorial 002 published                               :milestone, done, sp2t, after sp2v, 0d
+    section Phase 2 (v1.1) — Hosted AgentCore
+    ADR 002 — Runtime-embedded Gateway tools             :milestone, crit, a2, 2026-05-12 12:00, 0d
+    ADR 003 — Bedrock Nova over Claude                   :milestone, done, a3, 2026-05-13 12:00, 0d
+    ADR 004 — Gateway IAM-auth workaround                :milestone, crit, a4, 2026-05-13 12:00, 0d
+    ADR 005 — Gateway tools via Lambda targets           :milestone, done, a5, 2026-05-14 12:00, 0d
+    CR 003 — Observability trace trees                   :milestone, done, c3, 2026-05-15 12:00, 0d
+    CR 004 — Revise launch criteria                      :milestone, done, c4, 2026-05-18 12:00, 0d
+    Spec 002 — Hosted AgentCore Deployment ✓             :done, sp2, 2026-05-10 12:59, 2026-05-20 16:25
 
     section Polish & publish (v1.1.x)
-    Spec 003 — Reliable game exit (Esc quit modal)       :done, sp3, 2026-05-22, 1d
-    Spec 004 — Robust /vote validation + driver fix      :done, sp4, 2026-05-22, 1d
-    Tutorial 004 published                               :milestone, done, t4, after sp4, 0d
-    Published to GitHub (tigra/graphia) + README         :milestone, done, pub, 2026-05-22, 1d
+    Spec 003 — Reliable Game Exit Controls ✓             :done, sp3, 2026-05-22 14:15, 2026-05-22 16:15
+    Spec 004 — Robust /vote Input Validation ✓           :done, sp4, 2026-05-22 14:16, 2026-05-22 16:16
 
     section Spec 005 — Play-as-role + determinism posture
-    Slices 1-2 — GRAPHIA_ROLE feature + make passthrough :done, sp5s12, 2026-05-23, 1d
-    ADR 006 — Test role-pinning via GRAPHIA_ROLE         :milestone, done, a6, 2026-05-23, 0d
-    Slices 3-4 — Test-suite migration to GRAPHIA_ROLE    :done, sp5s34, 2026-05-23, 2d
-    Slice 5 — Retire GRAPHIA_SEED from production        :done, sp5s5, 2026-05-24, 1d
-    Spec 005 verified Completed                          :milestone, done, sp5v, after sp5s5, 0d
-    Tutorial 005 published                               :milestone, done, t5, after sp5v, 0d
+    ADR 006 — Test role-pinning via GRAPHIA_ROLE         :milestone, done, a6, 2026-05-23 12:00, 0d
+    Spec 005 — Play-As-Role via Environment Variable ✓   :done, sp5, 2026-05-22 14:16, 2026-05-24 19:13
 
-    section Phase 3 (v1.2) — Spec 006 cross-game career stats
-    Spec 006 — Cross-Game Career Stats drafted           :milestone, done, sp6, 2026-05-25, 0d
-    Spec 006 tech-considerations                         :milestone, done, sp6t, 2026-05-25, 0d
-    ADRs 007 + 008 initial drafts                        :milestone, done, sp6adrs0, 2026-05-25, 0d
-    Slices 1-2 — Greeting + win/loss record              :done, sp6s12, 2026-05-28, 1d
-    Slices 3-4 — Day-action + night/game counters        :done, sp6s34, 2026-05-28, 1d
-    Slice 5 — Abandoned-game on Esc-quit                 :done, sp6s5, 2026-05-28, 1d
-    ADR 007 — Two-tier long-term memory stats            :milestone, crit, a7, 2026-05-28, 0d
-    Slices 6-7 — Initial remote backend + Terraform      :done, sp6s67, 2026-05-29, 1d
-    ADR 008 — Self-managed pipeline (supersedes 007)     :milestone, done, a8, 2026-05-30, 0d
-    Slice 8.1-8.9 — Rebuilt pipeline + consumer Lambda   :done, sp6s8, 2026-05-31, 1d
-    Architecture doc + Mermaid diagrams                  :milestone, done, sp6arch, 2026-05-31, 0d
-    Live-deploy bug parade (4 failure modes)             :done, sp6bugs, 2026-05-31, 1d
-    make verify-pipeline — end-to-end harness            :milestone, done, sp6verify, 2026-05-31, 0d
+    section Phase 3 (v1.2) — Cross-game career stats
+    ADR 007 — Two-tier long-term memory stats            :milestone, crit, a7, 2026-05-28 12:00, 0d
+    ADR 008 — Self-managed pipeline (supersedes 007)     :milestone, done, a8, 2026-05-30 12:00, 0d
+    Spec 006 — Long-Term Cross-Game Memory ✓             :done, sp6, 2026-05-24 19:02, 2026-06-03 18:21
 
-    section Phase 3 close-out + Day-phase integrity (v1.2.x)
-    buddah plugin installed — ADR/CR/tutorial skills + hook :milestone, done, bud, 2026-06-03, 0d
-    Spec 006 verified Completed                          :milestone, done, sp6v, 2026-06-03, 0d
-    Tutorial 006 published                               :milestone, done, sp6tut, 2026-06-03, 0d
-    Spec 007 — Fair Day Speaking Order ✓                 :milestone, done, sp7, 2026-06-09, 0d
-    Spec 008 — Same-Round Message Visibility ✓           :milestone, done, sp8, 2026-06-09, 0d
-    Spec 009 — AI Collusion Awareness ✓ (anti-parrot)    :milestone, done, sp9, 2026-06-10, 0d
-    Dialogue-diversity experiment → anti-parrot fix      :milestone, done, divexp, 2026-06-10, 0d
-    LLM accessor rename + GraphRecursion flake fix       :milestone, done, fixday, 2026-06-09, 0d
-    Tutorials 007–009 published                          :milestone, done, tut789, 2026-06-10, 0d
+    section Day-phase integrity (v1.2.x)
+    Spec 007 — Fair Day Speaking Order ✓                 :done, sp7, 2026-06-03 20:00, 2026-06-03 22:00
+    Spec 008 — Same-Round Message Visibility ✓           :done, sp8, 2026-06-09 11:54, 2026-06-09 13:54
+    Spec 009 — AI Collusion Awareness ✓ (anti-parrot)    :done, sp9, 2026-06-09 19:53, 2026-06-10 14:32
 
     section Phase 4 (v1.3) — AI Provider Flexibility
-    Spec 010 — Local Ollama Provider (spec + tech)       :milestone, done, sp10, 2026-06-11, 0d
-    ADR 009 — Pluggable LLM provider abstraction         :milestone, done, a9, 2026-06-11, 0d
-    ADR 010 — Anthropic-compat Ollama protocol           :milestone, done, a10, 2026-06-11, 0d
-    Spec 010 implemented — 5 slices + ollama-smoke       :done, sp10impl, 2026-06-11, 1d
-    ADR-010 gate — qwen2.5 rejected, qwen3-coder verified :milestone, done, gate, 2026-06-12, 0d
-    Follow-ups — offline gate · serde allowlist · fixture rename :milestone, done, fups, 2026-06-12, 0d
-    Spec 010 verified Completed — Phase 4 closed         :milestone, done, sp10v, 2026-06-12, 0d
-    Tutorial 010 published                               :milestone, done, t10, 2026-06-12, 0d
+    ADR 009 — Pluggable LLM provider abstraction         :milestone, done, a9, 2026-06-11 12:00, 0d
+    ADR 010 — Anthropic-compat Ollama protocol           :milestone, done, a10, 2026-06-11 12:00, 0d
+    Spec 010 — Local Ollama Provider ✓                   :done, sp10, 2026-06-12 19:59, 2026-06-12 21:59
 
-    section Quality measurement (v1.3.x) — Spec 011 AI Blunder Tracking
-    Spec 011 — AI Blunder Tracking (spec + tech + tasks) :milestone, done, sp11, 2026-06-13, 0d
-    Day-context fix — Moderator label + whisper privacy  :milestone, done, dcf, 2026-06-13, 0d
-    Slices 1-6 — detectors · capture proxy · provenance · Wilson CI :done, sp11impl, 2026-06-13, 1d
-    n=20 baseline reverses the n=3 read (repetition)     :milestone, done, base11, 2026-06-13, 0d
-    Spec 011 verified Completed (23/23)                  :milestone, done, sp11v, 2026-06-13, 0d
-    Tutorial 011 published                               :milestone, done, t11, 2026-06-13, 0d
+    section Quality measurement (v1.3.x)
+    Spec 011 — AI Blunder Tracking ✓                     :done, sp11, 2026-06-12 20:22, 2026-06-13 17:18
+    Spec 012 — Eval Ledger Viewer ✓                      :done, sp12, 2026-06-13 18:30, 2026-06-16 16:25
+    Spec 013 — AI Behavioral Integrity ✓                 :done, sp13, 2026-06-15 19:36, 2026-06-16 16:25
+    CR 005 — Effort-not-results AI acceptance            :milestone, done, cr5, 2026-06-16 12:00, 0d
 
-    section Tooling (v1.3.x) — Spec 012 Eval Ledger Viewer
-    Spec 012 — Eval Ledger Viewer (spec + tech + tasks)  :milestone, done, sp12, 2026-06-13, 0d
-    Slice 1 — pyyaml + pure data layer + Textual table    :done, sp12s1, 2026-06-13, 1d
-    Slices 2-7 — search · drill-down · selector · cell cursor            :done, sp12rest, 2026-06-14, 1d
-    Spec 012 verified Completed (live walk passed)       :milestone, done, sp12v, 2026-06-14, 0d
-    Tutorial 012 published                               :milestone, done, t12, 2026-06-16, 0d
+    section Phase 5 — config + richer night
+    Spec 014 — Configurable Role Counts ✓                :done, sp14, 2026-06-16 19:47, 2026-06-16 20:02
+    Spec 015 — Multi-Round Mafia Consensus ✓             :done, sp15, 2026-06-17 20:02, 2026-06-19 19:38
 
-    section AI behaviour (v1.3.x) — Spec 013 AI Behavioral Integrity
-    Spec 013 — AI Behavioral Integrity (spec+tech+tasks) :milestone, done, sp13, 2026-06-15, 0d
-    Slice 1 — outcomes + vote_activity tracking          :done, sp13s1, 2026-06-15, 1d
-    Slice 2 — pre-fix baseline n=20/provider (clean)     :milestone, done, sp13b, 2026-06-15, 0d
-    Slice 3 — role/team grounding + passivity nudge      :done, sp13s3, 2026-06-15, 1d
-    Slice 4 — after-picture (grounding done, passivity refuted) :milestone, done, sp13a, 2026-06-16, 0d
-    CR 005 — accept effort-not-results acceptance        :milestone, done, cr5, 2026-06-16, 0d
-    Spec 013 verified Completed (under CR 005)           :milestone, done, sp13v, 2026-06-16, 0d
-    Tutorial 013 published                               :milestone, done, t13, 2026-06-16, 0d
+    section Phase 6 — personas, transcripts, recap
+    Spec 016 — AI Character Personas ✓                   :done, sp16, 2026-06-18 14:31, 2026-06-18 16:31
+    Spec 017 — Eval Transcript Preservation ✓            :done, sp17, 2026-06-19 10:56, 2026-06-19 11:58
+    Spec 018 — End-of-Round Day-Dynamics Recap ✓         :done, sp18, 2026-06-19 18:32, 2026-06-19 19:10
+    CR 006 — Reprioritize Phase 6 (Day-decisiveness)     :milestone, done, cr6, 2026-06-19 12:00, 0d
 
-    section Phase 5 (v1.4) — Spec 014 Configurable Role Counts
-    Spec 014 — Configurable Role Counts (spec+tech+tasks) :milestone, done, sp14, 2026-06-16, 0d
-    Slices 1-3 — config validation · deck+roster · eval/viewer lineup :done, sp14impl, 2026-06-16, 1d
-    Live 4+1 eval — lineup recorded · repetition lineup-independent :milestone, done, sp14eval, 2026-06-16, 0d
-    Spec 014 verified Completed — Setup Flexibility closed :milestone, done, sp14v, 2026-06-16, 0d
-    Tutorial 014 published + backlog.md                  :milestone, done, t14, 2026-06-16, 0d
+    section Phase 6 — day-decisiveness + eval-validity
+    Spec 019 — Recap-Aware AI Reasoning ✓                :done, sp19, 2026-06-20 13:51, 2026-06-20 15:20
+    Spec 020 — Game-Time in the Recap ✓                  :done, sp20, 2026-06-20 13:56, 2026-06-20 15:56
+    ADR 011 — Ablatable gameplay feature flags           :milestone, done, a11, 2026-06-20 12:00, 0d
+    Spec 021 — Browsable-Transcript Round Labels ✓       :done, sp21, 2026-06-20 14:12, 2026-06-20 14:19
+    Spec 022 — Structured Eval-Transcript Format ✓       :done, sp22, 2026-06-20 17:41, 2026-06-20 19:26
+    Spec 023 — Runaway-Only Day Cap ✓                    :done, sp23, 2026-06-20 17:50, 2026-06-20 19:13
+    Spec 024 — Role-Specific Day Guidance ✓              :done, sp24, 2026-06-20 21:00, 2026-06-23 18:13
+    Spec 025 — Fuller Multi-Day Discussion Window ✓      :done, sp25, 2026-06-20 21:05, 2026-06-23 18:13
+    Spec 026 — Active Scripted Player ✓                  :done, sp26, 2026-06-21 17:27, 2026-06-23 18:13
+    Spec 027 — Scripted-Side Win Rate in Evals ✓         :done, sp27, 2026-06-21 17:41, 2026-06-21 19:41
+    Spec 028 — Per-AI Day-Round Private Thoughts ✓       :done, sp28, 2026-06-21 20:27, 2026-06-23 18:13
+    Spec 029 — Show Newer Eval Metrics in view-ledger ✓  :done, sp29, 2026-06-21 20:05, 2026-06-21 22:05
+    Spec 030 — Randomized Night-Pointing Roster Order ✓  :done, sp30, 2026-06-21 20:13, 2026-06-23 18:13
+    Spec 031 — Distinct AI Personas Across the Roster ✓   :done, sp31, 2026-06-21 21:18, 2026-06-23 18:13
 
-    section Phase 5 (v1.4) — Spec 015 Multi-Round Mafia Consensus
-    Spec 015 — Multi-Round Mafia Consensus (spec+tech+tasks) :milestone, done, sp15, 2026-06-17, 0d
-    Slices 1-3 — per-pointer loop · AI converge · human modal :done, sp15impl, 2026-06-17, 1d
-    Point modal sizes-to-content (short-terminal fix)    :milestone, done, sp15ui, 2026-06-17, 0d
-    Live smoke — multi-round pointing + convergence display :milestone, done, sp15smoke, 2026-06-17, 0d
-    Spec 015 verified Completed — Phase 5 closed          :milestone, done, sp15v, 2026-06-17, 0d
-    Tutorial 015 published                               :milestone, done, t15, 2026-06-17, 0d
+    section Persona realism — measure, then fix
+    Spec 032 — Persona Similarity, Average + Peak ✓       :done, sp32, 2026-06-23 18:00, 2026-06-23 19:17
+    Spec 033 — Semantic Persona Similarity ✓              :done, sp33, 2026-06-23 18:00, 2026-08-29 15:51
+    Spec 034 — Diversified Persona Generation ✓           :done, sp34, 2026-06-24 10:49, 2026-08-29 20:50
 
-    section Phase 6 (v1.5) — Spec 016 AI Character Personas
-    Spec 016 — AI Character Personas (spec+tech+tasks)   :milestone, done, sp16, 2026-06-18, 0d
-    Slices 1-3 — generate+persist+reveal · Day voice · Night flavor :done, sp16impl, 2026-06-18, 1d
-    Bugs fixed — PlayerPersona serde allow-list · replace rebuilds · RNG de-flake :milestone, done, sp16fix, 2026-06-18, 0d
-    Spec 016 verified Completed — opens Phase 6          :milestone, done, sp16v, 2026-06-18, 0d
-    Tutorial 016 published                               :milestone, done, t16, 2026-06-18, 0d
+    section Phase 4 (cont.) — a third provider
+    ADR 012 — Haiku 4.5 gameplay + Opus 4.8 judge         :milestone, active, a12, 2026-06-23 12:00, 0d
+    Spec 035 — Bedrock Claude (Haiku) Provider ✓          :done, sp35, 2026-06-24 10:49, 2026-08-30 12:25
+
+    section Eval review ergonomics
+    Spec 036 — Persona Measurements Join the Ledger ✓     :done, sp36, 2026-08-29 20:50, 2026-08-31 16:58
+    Spec 037 — Transcript Side Panel ✓                    :done, sp37, 2026-08-31 12:46, 2026-08-31 19:44
+    Spec 038 — Colour-Coded Transcript Reading View ✓     :done, sp38, 2026-08-31 12:46, 2026-09-01 12:01
+
+    section Phase 6 close — per-AI private diaries
+    Spec 039 — Per-AI Private Diaries ✓                   :done, sp39, 2026-09-01 13:46, 2026-09-02 18:18
+
+    section Local-model reliability
+    ADR 013 — Native Ollama structured output             :milestone, done, a13, 2026-09-02 12:00, 0d
+    Spec 041 — Reliable Answers from the Local Model ✓    :done, sp41, 2026-09-02 20:45, 2026-09-08 09:52
+
+    section Phase 6a — end-of-game payoff
+    Spec 040 — The Moderator's Closing Story ✓            :done, sp40, 2026-09-02 16:57, 2026-09-09 16:29
+
+    section Starter-lineup rebalance
+    CR 007 — Withdraw balance claim; default 6+2          :milestone, done, cr7, 2026-09-03 12:00, 0d
+    Spec 042 — A Starter Table With Room For One Mistake ✓ :done, sp42, 2026-09-03 14:11, 2026-09-04 15:17
+
+    section Eval-run robustness
+    ADR 014 — Optimistic-concurrency ledger writes        :milestone, done, a14, 2026-09-11 12:00, 0d
+    Spec 043 — Keeping What a Stopped Run Produced        :active, sp43, 2026-09-10 18:31, 2026-09-12 14:00
 
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
     click m2 href "https://github.com/tigra/graphia/blob/main/context/change-requests/002-long-term-memory-for-cross-game-stats.md"
     click a1 href "https://github.com/tigra/graphia/blob/main/context/adr/001-hosted-agentcore-with-local-mode.md"
-    click sp2 href "https://github.com/tigra/graphia/tree/main/context/spec/002-hosted-agentcore-deployment"
     click a2 href "https://github.com/tigra/graphia/blob/main/context/adr/002-runtime-embedded-gateway-tool-handlers.md"
     click a3 href "https://github.com/tigra/graphia/blob/main/context/adr/003-bedrock-nova-over-claude.md"
     click a4 href "https://github.com/tigra/graphia/blob/main/context/adr/004-gateway-target-iam-auth-cli-workaround.md"
     click a5 href "https://github.com/tigra/graphia/blob/main/context/adr/005-gateway-tools-via-lambda-targets.md"
     click c3 href "https://github.com/tigra/graphia/blob/main/context/change-requests/003-observability-navigable-trace-trees.md"
     click c4 href "https://github.com/tigra/graphia/blob/main/context/change-requests/004-revise-launch-error-handling-criteria.md"
-    click s13 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
-    click s3f href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
-    click s4 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
-    click s56 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
-    click s6f href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
-    click s7 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
-    click fix href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
-    click s8 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
-    click s8f href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
-    click s9 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
-    click s10 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
-    click s11 href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/tasks.md"
-    click sp2v href "https://github.com/tigra/graphia/blob/main/context/spec/002-hosted-agentcore-deployment/functional-spec.md"
-    click sp2t href "https://github.com/tigra/graphia/blob/main/context/tutorials/002-hosted-agentcore-deployment/tutorial.md"
+    click sp2 href "https://github.com/tigra/graphia/tree/main/context/spec/002-hosted-agentcore-deployment"
     click sp3 href "https://github.com/tigra/graphia/tree/main/context/spec/003-reliable-game-exit"
     click sp4 href "https://github.com/tigra/graphia/tree/main/context/spec/004-robust-vote-input-validation"
-    click t4 href "https://github.com/tigra/graphia/blob/main/context/tutorials/004-robust-vote-input-validation/tutorial.md"
-    click pub href "https://github.com/tigra/graphia"
-    click sp5s12 href "https://github.com/tigra/graphia/tree/main/context/spec/005-play-as-role"
     click a6 href "https://github.com/tigra/graphia/blob/main/context/adr/006-test-role-pinning-via-graphia-role.md"
-    click sp5s34 href "https://github.com/tigra/graphia/tree/main/context/spec/005-play-as-role"
-    click sp5s5 href "https://github.com/tigra/graphia/tree/main/context/spec/005-play-as-role"
-    click sp5v href "https://github.com/tigra/graphia/blob/main/context/spec/005-play-as-role/functional-spec.md"
-    click t5 href "https://github.com/tigra/graphia/blob/main/context/tutorials/005-play-as-role/tutorial.md"
-    click sp6 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/functional-spec.md"
-    click sp6t href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/technical-considerations.md"
-    click sp6adrs0 href "https://github.com/tigra/graphia/tree/main/context/adr"
-    click sp6s12 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/tasks.md"
-    click sp6s34 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/tasks.md"
-    click sp6s5 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/tasks.md"
+    click sp5 href "https://github.com/tigra/graphia/tree/main/context/spec/005-play-as-role"
     click a7 href "https://github.com/tigra/graphia/blob/main/context/adr/007-two-tier-long-term-memory-stats.md"
-    click sp6s67 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/tasks.md"
     click a8 href "https://github.com/tigra/graphia/blob/main/context/adr/008-self-managed-memory-pipeline.md"
-    click sp6s8 href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/tasks.md"
-    click sp6arch href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/architecture.md"
-    click sp6bugs href "https://github.com/tigra/graphia/commits/main"
-    click sp6verify href "https://github.com/tigra/graphia/blob/main/tools/verify_pipeline.py"
-    click bud href "https://github.com/tigra/awos/tree/feat/buddah-plugin/plugins/buddah"
-    click sp6v href "https://github.com/tigra/graphia/blob/main/context/spec/006-cross-game-career-stats/functional-spec.md"
-    click sp6tut href "https://github.com/tigra/graphia/blob/main/context/tutorials/006-cross-game-career-stats/tutorial.md"
+    click sp6 href "https://github.com/tigra/graphia/tree/main/context/spec/006-cross-game-career-stats"
     click sp7 href "https://github.com/tigra/graphia/tree/main/context/spec/007-fair-day-speaking-order"
     click sp8 href "https://github.com/tigra/graphia/tree/main/context/spec/008-same-round-message-visibility"
     click sp9 href "https://github.com/tigra/graphia/tree/main/context/spec/009-ai-collusion-awareness"
-    click divexp href "https://github.com/tigra/graphia/blob/main/context/spec/009-ai-collusion-awareness/repetition-experiment-design.md"
-    click fixday href "https://github.com/tigra/graphia/commits/main"
-    click tut789 href "https://github.com/tigra/graphia/blob/main/context/tutorials/009-ai-collusion-awareness/tutorial.md"
-    click sp10 href "https://github.com/tigra/graphia/tree/main/context/spec/010-local-ollama-provider"
     click a9 href "https://github.com/tigra/graphia/blob/main/context/adr/009-pluggable-llm-provider-abstraction.md"
     click a10 href "https://github.com/tigra/graphia/blob/main/context/adr/010-anthropic-compatible-ollama-protocol.md"
-    click sp10impl href "https://github.com/tigra/graphia/blob/main/context/spec/010-local-ollama-provider/tasks.md"
-    click gate href "https://github.com/tigra/graphia/blob/main/context/spec/010-local-ollama-provider/tasks.md"
-    click fups href "https://github.com/tigra/graphia/blob/main/context/spec/010-local-ollama-provider/tasks.md"
-    click sp10v href "https://github.com/tigra/graphia/blob/main/context/spec/010-local-ollama-provider/functional-spec.md"
-    click t10 href "https://github.com/tigra/graphia/blob/main/context/tutorials/010-local-ollama-provider/tutorial.md"
+    click sp10 href "https://github.com/tigra/graphia/tree/main/context/spec/010-local-ollama-provider"
     click sp11 href "https://github.com/tigra/graphia/tree/main/context/spec/011-ai-blunder-tracking"
-    click sp11impl href "https://github.com/tigra/graphia/blob/main/context/spec/011-ai-blunder-tracking/tasks.md"
-    click base11 href "https://github.com/tigra/graphia/blob/main/evals/blunder-ledger.yaml"
-    click sp11v href "https://github.com/tigra/graphia/blob/main/context/spec/011-ai-blunder-tracking/functional-spec.md"
-    click t11 href "https://github.com/tigra/graphia/blob/main/context/tutorials/011-ai-blunder-tracking/tutorial.md"
     click sp12 href "https://github.com/tigra/graphia/tree/main/context/spec/012-eval-ledger-viewer"
-    click sp12s1 href "https://github.com/tigra/graphia/blob/main/context/spec/012-eval-ledger-viewer/tasks.md"
     click sp13 href "https://github.com/tigra/graphia/tree/main/context/spec/013-ai-behavioral-integrity"
-    click sp13s1 href "https://github.com/tigra/graphia/blob/main/context/spec/013-ai-behavioral-integrity/tasks.md"
-    click sp13b href "https://github.com/tigra/graphia/blob/main/evals/blunder-ledger.yaml"
-    click sp13a href "https://github.com/tigra/graphia/blob/main/evals/blunder-ledger.yaml"
     click cr5 href "https://github.com/tigra/graphia/blob/main/context/change-requests/005-ai-behaviour-acceptance-effort-not-results.md"
-    click sp13v href "https://github.com/tigra/graphia/blob/main/context/spec/013-ai-behavioral-integrity/functional-spec.md"
-    click t12 href "https://github.com/tigra/graphia/blob/main/context/tutorials/012-eval-ledger-viewer/tutorial.md"
-    click t13 href "https://github.com/tigra/graphia/blob/main/context/tutorials/013-ai-behavioral-integrity/tutorial.md"
     click sp14 href "https://github.com/tigra/graphia/tree/main/context/spec/014-configurable-role-counts"
-    click sp14impl href "https://github.com/tigra/graphia/blob/main/context/spec/014-configurable-role-counts/tasks.md"
-    click sp14eval href "https://github.com/tigra/graphia/blob/main/evals/blunder-ledger.yaml"
-    click sp14v href "https://github.com/tigra/graphia/blob/main/context/spec/014-configurable-role-counts/functional-spec.md"
-    click t14 href "https://github.com/tigra/graphia/blob/main/context/tutorials/014-configurable-role-counts/tutorial.md"
     click sp15 href "https://github.com/tigra/graphia/tree/main/context/spec/015-multi-round-mafia-consensus"
-    click sp15impl href "https://github.com/tigra/graphia/blob/main/context/spec/015-multi-round-mafia-consensus/tasks.md"
-    click sp15ui href "https://github.com/tigra/graphia/blob/main/src/graphia/ui/widgets.py"
-    click sp15v href "https://github.com/tigra/graphia/blob/main/context/spec/015-multi-round-mafia-consensus/functional-spec.md"
-    click t15 href "https://github.com/tigra/graphia/blob/main/context/tutorials/015-multi-round-mafia-consensus/tutorial.md"
     click sp16 href "https://github.com/tigra/graphia/tree/main/context/spec/016-ai-character-personas"
-    click sp16impl href "https://github.com/tigra/graphia/blob/main/context/spec/016-ai-character-personas/tasks.md"
-    click sp16fix href "https://github.com/tigra/graphia/blob/main/src/graphia/graph.py"
-    click sp16v href "https://github.com/tigra/graphia/blob/main/context/spec/016-ai-character-personas/functional-spec.md"
-    click t16 href "https://github.com/tigra/graphia/blob/main/context/tutorials/016-ai-character-personas/tutorial.md"
+    click sp17 href "https://github.com/tigra/graphia/tree/main/context/spec/017-eval-transcript-preservation"
+    click sp18 href "https://github.com/tigra/graphia/tree/main/context/spec/018-day-round-moderator-recap"
+    click cr6 href "https://github.com/tigra/graphia/blob/main/context/change-requests/006-reprioritize-phase-6-day-decisiveness.md"
+    click sp19 href "https://github.com/tigra/graphia/tree/main/context/spec/019-recap-aware-ai-reasoning"
+    click sp20 href "https://github.com/tigra/graphia/tree/main/context/spec/020-recap-game-time"
+    click a11 href "https://github.com/tigra/graphia/blob/main/context/adr/011-ablatable-gameplay-feature-flags.md"
+    click sp21 href "https://github.com/tigra/graphia/tree/main/context/spec/021-browsable-transcript-round-labels"
+    click sp22 href "https://github.com/tigra/graphia/tree/main/context/spec/022-structured-transcript-format"
+    click sp23 href "https://github.com/tigra/graphia/tree/main/context/spec/023-game-length-runaway-safeguard"
+    click sp24 href "https://github.com/tigra/graphia/tree/main/context/spec/024-role-specific-day-guidance"
+    click sp25 href "https://github.com/tigra/graphia/tree/main/context/spec/025-fuller-discussion-window"
+    click sp26 href "https://github.com/tigra/graphia/tree/main/context/spec/026-active-scripted-player"
+    click sp27 href "https://github.com/tigra/graphia/tree/main/context/spec/027-scripted-side-win-rate"
+    click sp28 href "https://github.com/tigra/graphia/tree/main/context/spec/028-ai-private-thoughts"
+    click sp29 href "https://github.com/tigra/graphia/tree/main/context/spec/029-view-ledger-table-metrics"
+    click sp30 href "https://github.com/tigra/graphia/tree/main/context/spec/030-randomized-night-roster"
+    click sp31 href "https://github.com/tigra/graphia/tree/main/context/spec/031-distinct-ai-personas"
+    click sp32 href "https://github.com/tigra/graphia/tree/main/context/spec/032-persona-mean-similarity"
+    click sp33 href "https://github.com/tigra/graphia/tree/main/context/spec/033-semantic-persona-similarity"
+    click sp34 href "https://github.com/tigra/graphia/tree/main/context/spec/034-diversified-persona-generation"
+    click a12 href "https://github.com/tigra/graphia/blob/main/context/adr/012-bedrock-haiku-profile-opus-eval-judge.md"
+    click sp35 href "https://github.com/tigra/graphia/tree/main/context/spec/035-bedrock-claude-provider"
+    click sp36 href "https://github.com/tigra/graphia/tree/main/context/spec/036-persona-measurement-history"
+    click sp37 href "https://github.com/tigra/graphia/tree/main/context/spec/037-transcript-side-panel"
+    click sp38 href "https://github.com/tigra/graphia/tree/main/context/spec/038-transcript-syntax-highlighting"
+    click sp39 href "https://github.com/tigra/graphia/tree/main/context/spec/039-ai-private-diaries"
+    click a13 href "https://github.com/tigra/graphia/blob/main/context/adr/013-native-ollama-structured-output.md"
+    click sp41 href "https://github.com/tigra/graphia/tree/main/context/spec/041-reliable-structured-decoding"
+    click sp40 href "https://github.com/tigra/graphia/tree/main/context/spec/040-moderator-creative-recap"
+    click cr7 href "https://github.com/tigra/graphia/blob/main/context/change-requests/007-starter-lineup-balance-claim-and-default.md"
+    click sp42 href "https://github.com/tigra/graphia/tree/main/context/spec/042-default-lineup-six-plus-two"
+    click a14 href "https://github.com/tigra/graphia/blob/main/context/adr/014-optimistic-concurrency-ledger-writes.md"
+    click sp43 href "https://github.com/tigra/graphia/tree/main/context/spec/043-partial-eval-runs"
 </pre>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
 <script>

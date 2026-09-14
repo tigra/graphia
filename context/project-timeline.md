@@ -3,7 +3,7 @@
 A high-level history of the project, reconstructed from `git log` and the
 `context/` artifacts: how scope changed (Change Requests), how the architecture
 was decided (Architecture Decision Records), and how the work was executed (specs
-broken into vertical slices). Covers **2026-04-29 → 2026-06-21**.
+broken into vertical slices). Covers **2026-04-29 → 2026-09-12**.
 
 Graphia is built with the **AWOS spec-driven workflow** — every increment flows
 `product → roadmap → architecture → spec → tech → tasks → implement → verify → tutorial`,
@@ -85,14 +85,46 @@ gantt
     Spec 021 — Browsable-Transcript Round Labels ✓       :done, sp21, 2026-06-20 14:12, 2026-06-20 14:19
     Spec 022 — Structured Eval-Transcript Format ✓       :done, sp22, 2026-06-20 17:41, 2026-06-20 19:26
     Spec 023 — Runaway-Only Day Cap ✓                    :done, sp23, 2026-06-20 17:50, 2026-06-20 19:13
-    Spec 024 — Role-Specific Day Guidance                :active, sp24, 2026-06-20 21:00, 2026-06-20 23:00
-    Spec 025 — Fuller Multi-Day Discussion Window        :active, sp25, 2026-06-20 21:05, 2026-06-20 23:05
-    Spec 026 — Active Scripted Player                    :active, sp26, 2026-06-21 17:27, 2026-06-21 17:59
+    Spec 024 — Role-Specific Day Guidance ✓              :done, sp24, 2026-06-20 21:00, 2026-06-23 18:13
+    Spec 025 — Fuller Multi-Day Discussion Window ✓      :done, sp25, 2026-06-20 21:05, 2026-06-23 18:13
+    Spec 026 — Active Scripted Player ✓                  :done, sp26, 2026-06-21 17:27, 2026-06-23 18:13
     Spec 027 — Scripted-Side Win Rate in Evals ✓         :done, sp27, 2026-06-21 17:41, 2026-06-21 19:41
-    Spec 028 — Per-AI Day-Round Private Thoughts         :active, sp28, 2026-06-21 20:27, 2026-06-21 22:27
+    Spec 028 — Per-AI Day-Round Private Thoughts ✓       :done, sp28, 2026-06-21 20:27, 2026-06-23 18:13
     Spec 029 — Show Newer Eval Metrics in view-ledger ✓  :done, sp29, 2026-06-21 20:05, 2026-06-21 22:05
-    Spec 030 — Randomized Night-Pointing Roster Order    :active, sp30, 2026-06-21 20:13, 2026-06-21 22:13
-    Spec 031 — Distinct AI Personas Across the Roster    :active, sp31, 2026-06-21 21:18, 2026-06-22 08:50
+    Spec 030 — Randomized Night-Pointing Roster Order ✓  :done, sp30, 2026-06-21 20:13, 2026-06-23 18:13
+    Spec 031 — Distinct AI Personas Across the Roster ✓   :done, sp31, 2026-06-21 21:18, 2026-06-23 18:13
+
+    section Persona realism — measure, then fix
+    Spec 032 — Persona Similarity, Average + Peak ✓       :done, sp32, 2026-06-23 18:00, 2026-06-23 19:17
+    Spec 033 — Semantic Persona Similarity ✓              :done, sp33, 2026-06-23 18:00, 2026-08-29 15:51
+    Spec 034 — Diversified Persona Generation ✓           :done, sp34, 2026-06-24 10:49, 2026-08-29 20:50
+
+    section Phase 4 (cont.) — a third provider
+    ADR 012 — Haiku 4.5 gameplay + Opus 4.8 judge         :milestone, active, a12, 2026-06-23 12:00, 0d
+    Spec 035 — Bedrock Claude (Haiku) Provider ✓          :done, sp35, 2026-06-24 10:49, 2026-08-30 12:25
+
+    section Eval review ergonomics
+    Spec 036 — Persona Measurements Join the Ledger ✓     :done, sp36, 2026-08-29 20:50, 2026-08-31 16:58
+    Spec 037 — Transcript Side Panel ✓                    :done, sp37, 2026-08-31 12:46, 2026-08-31 19:44
+    Spec 038 — Colour-Coded Transcript Reading View ✓     :done, sp38, 2026-08-31 12:46, 2026-09-01 12:01
+
+    section Phase 6 close — per-AI private diaries
+    Spec 039 — Per-AI Private Diaries ✓                   :done, sp39, 2026-09-01 13:46, 2026-09-02 18:18
+
+    section Local-model reliability
+    ADR 013 — Native Ollama structured output             :milestone, done, a13, 2026-09-02 12:00, 0d
+    Spec 041 — Reliable Answers from the Local Model ✓    :done, sp41, 2026-09-02 20:45, 2026-09-08 09:52
+
+    section Phase 6a — end-of-game payoff
+    Spec 040 — The Moderator's Closing Story ✓            :done, sp40, 2026-09-02 16:57, 2026-09-09 16:29
+
+    section Starter-lineup rebalance
+    CR 007 — Withdraw balance claim; default 6+2          :milestone, done, cr7, 2026-09-03 12:00, 0d
+    Spec 042 — A Starter Table With Room For One Mistake ✓ :done, sp42, 2026-09-03 14:11, 2026-09-04 15:17
+
+    section Eval-run robustness
+    ADR 014 — Optimistic-concurrency ledger writes        :milestone, done, a14, 2026-09-11 12:00, 0d
+    Spec 043 — Keeping What a Stopped Run Produced        :active, sp43, 2026-09-10 18:31, 2026-09-12 14:00
 
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
@@ -142,6 +174,22 @@ gantt
     click sp29 href "https://github.com/tigra/graphia/tree/main/context/spec/029-view-ledger-table-metrics"
     click sp30 href "https://github.com/tigra/graphia/tree/main/context/spec/030-randomized-night-roster"
     click sp31 href "https://github.com/tigra/graphia/tree/main/context/spec/031-distinct-ai-personas"
+    click sp32 href "https://github.com/tigra/graphia/tree/main/context/spec/032-persona-mean-similarity"
+    click sp33 href "https://github.com/tigra/graphia/tree/main/context/spec/033-semantic-persona-similarity"
+    click sp34 href "https://github.com/tigra/graphia/tree/main/context/spec/034-diversified-persona-generation"
+    click a12 href "https://github.com/tigra/graphia/blob/main/context/adr/012-bedrock-haiku-profile-opus-eval-judge.md"
+    click sp35 href "https://github.com/tigra/graphia/tree/main/context/spec/035-bedrock-claude-provider"
+    click sp36 href "https://github.com/tigra/graphia/tree/main/context/spec/036-persona-measurement-history"
+    click sp37 href "https://github.com/tigra/graphia/tree/main/context/spec/037-transcript-side-panel"
+    click sp38 href "https://github.com/tigra/graphia/tree/main/context/spec/038-transcript-syntax-highlighting"
+    click sp39 href "https://github.com/tigra/graphia/tree/main/context/spec/039-ai-private-diaries"
+    click a13 href "https://github.com/tigra/graphia/blob/main/context/adr/013-native-ollama-structured-output.md"
+    click sp41 href "https://github.com/tigra/graphia/tree/main/context/spec/041-reliable-structured-decoding"
+    click sp40 href "https://github.com/tigra/graphia/tree/main/context/spec/040-moderator-creative-recap"
+    click cr7 href "https://github.com/tigra/graphia/blob/main/context/change-requests/007-starter-lineup-balance-claim-and-default.md"
+    click sp42 href "https://github.com/tigra/graphia/tree/main/context/spec/042-default-lineup-six-plus-two"
+    click a14 href "https://github.com/tigra/graphia/blob/main/context/adr/014-optimistic-concurrency-ledger-writes.md"
+    click sp43 href "https://github.com/tigra/graphia/tree/main/context/spec/043-partial-eval-runs"
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:
@@ -152,9 +200,16 @@ gantt
 
 The red marks are the three superseded ADRs (002, 004, 007); the CRs are green because — even though CR 001 and 002 carried `Proposed` for a while — the scope changes were fully executed and have now been formally Accepted. The Phase 3 section now shows the full implementation arc — Slices 1-8 plus the ADR 007 → 008 mid-stream pivot plus a four-bug live-deploy parade ending at the `verify-pipeline` harness. Spec 006 has since been **verified Completed** and **Tutorial 006** published; the close-out section's three Day-phase integrity specs (007 fair order, 008 visibility, 009 collusion awareness) are now all **Completed** (green) — 009 via an experiment-chosen anti-parrot reword — alongside an LLM-accessor rename and a recursion-flake fix.
 
+Two things the axis makes visible. **There is a nine-week gap** between 2026-06-24 and
+2026-08-29 — a real hiatus, not missing bookkeeping; specs 033/034/035 were authored
+before it and verified after, which is why their bars are the long ones. And **two marks
+are orange**: **ADR 012** (the Haiku-4.5-gameplay / Opus-4.8-judge model selection) is
+still formally `Proposed` even though spec 035 shipped its gameplay half, and **spec 043**
+is the one spec still in flight.
+
 ---
 
-## What was going on — eighteen acts
+## What was going on — twenty-seven acts
 
 ### Act 1 — Phase 1: a playable skeleton (2026-04-29)
 
@@ -759,6 +814,7 @@ coverage._
 | 004 | 2026-05-18 | Revise §2.2 launch error handling and the §2.1 next-step hint      | Accepted |
 | 005 | 2026-06-16 | Reframe spec 013 acceptance: commit to effort, not results (AI)    | Accepted |
 | 006 | 2026-06-19 | Reprioritize Phase 6 toward Day-decisiveness & per-AI reasoning; split Phase 6a | Accepted |
+| 007 | 2026-09-03 | Withdraw the starter-lineup balance claim; default the table to 6+2  | Accepted |
 
 ## Architecture Decision Records
 
@@ -775,6 +831,9 @@ coverage._
 | 009 | 2026-06-11 | Pluggable LLM provider abstraction (Bedrock + Ollama)   | Accepted              |
 | 010 | 2026-06-11 | Anthropic-compatible protocol for the Ollama provider   | Accepted              |
 | 011 | 2026-06-20 | Default-on feature flags make gameplay-influencing changes ablatable | Accepted              |
+| 012 | 2026-06-23 | Bedrock model selection — Haiku 4.5 gameplay profile + Opus 4.8 eval judge | **Proposed** |
+| 013 | 2026-09-02 | Native Ollama structured output over Anthropic tool use  | Accepted              |
+| 014 | 2026-09-11 | Optimistic-concurrency whole-file ledger writes          | Accepted              |
 
 ## Specs & tutorials
 
@@ -803,14 +862,26 @@ coverage._
 | 021  | Browsable-Transcript Round Labels           | 1      | Completed |
 | 022  | Structured Eval-Transcript Format           | 1      | Completed |
 | 023  | Games Run to a Natural Conclusion (Runaway-Only Day Cap) | 1 | Completed |
-| 024  | Role-Specific Day Guidance for AI Players   | 1      | Impl-verified (eval pending) |
-| 025  | Fuller Multi-Day Discussion Window          | 1      | Impl-verified (eval pending) |
-| 026  | Active Scripted Player for Measured Runs    | 2      | Impl-verified (eval pending) |
+| 024  | Role-Specific Day Guidance for AI Players   | 1      | Completed |
+| 025  | Fuller Multi-Day Discussion Window          | 1      | Completed |
+| 026  | Active Scripted Player for Measured Runs    | 2      | Completed |
 | 027  | Scripted-Player's-Side Win Rate in Evals    | 1      | Completed |
-| 028  | Per-AI Day-Round Private Thoughts           | 2      | Impl-verified (eval pending) |
+| 028  | Per-AI Day-Round Private Thoughts           | 2      | Completed |
 | 029  | Show Newer Eval Metrics in the view-ledger List | 1  | Completed |
-| 030  | Randomized Night-Pointing Roster Order      | 1      | Impl-verified (eval pending) |
-| 031  | Distinct AI Personas Across the Roster      | 2      | Draft     |
+| 030  | Randomized Night-Pointing Roster Order      | 1      | Completed |
+| 031  | Distinct AI Personas Across the Roster      | 2      | Completed |
+| 032  | Continuous Persona Similarity (Average + Peak) | 2   | Completed |
+| 033  | Semantic (Meaning-Based) Persona Similarity | 3      | Completed |
+| 034  | Diversified Persona Generation              | 4      | Completed |
+| 035  | Bedrock Claude (Haiku) Provider             | 4      | Completed |
+| 036  | Persona Measurements Join the Quality History | 3    | Completed |
+| 037  | Transcript List as a Side Panel             | 3      | Completed |
+| 038  | Colour-Coded Transcript Reading View        | 5      | Completed |
+| 039  | Per-AI Private Diaries                      | 6      | Completed |
+| 040  | The Moderator's Closing Story               | 10     | Completed |
+| 041  | Reliable Answers from the Local Model       | 12     | Completed |
+| 042  | A Starter Table With Room For One Mistake (6+2 default) | 7 | Completed |
+| 043  | Keeping What a Stopped Measurement Run Produced | 7   | **In flight** (Slices 1-3 done, Slice 4 underway) |
 
 _Spec 006 was verified Completed on 2026-06-03 (all 32 acceptance criteria, Phase 3 roadmap bullets ticked) and Tutorial 006 published. Specs 007–009 (the Day-phase integrity trio) are now all **verified Completed**; 009's collusion nudge was revised to an **anti-parrot** reword after a real-Nova experiment showed the original wording drove a Day-dialogue repetition spiral._
 
@@ -833,6 +904,13 @@ documentation: `007` (fair speaking order), `008` (same-round visibility), and
 `009` — a methodology walkthrough of the paired real-Nova **experiment** that
 chose the anti-parrot fix (how to evaluate and fix non-deterministic LLM
 behaviour, not just the one-line prompt change).
+
+Tutorials `010`–`017` followed, and then **the tutorial pipeline stopped**. Every spec
+from **018 onward is untutorialised** — twenty-six increments' worth, including the whole
+Day-decisiveness cluster, the three-provider comparison, the persona-measurement chain
+and the two biggest specs in the project (040 at ten slices, 041 at twelve). That is the
+single largest documentation debt in the repo; it is not a sign those increments are
+unfinished (all but 043 are verified Completed), only undocumented as teaching material.
 
 ### Act 11 — AI Blunder Tracking: turning AI quality into a tracked, trustworthy number (2026-06-13)
 
@@ -1149,7 +1227,377 @@ measure the whole decisiveness cluster together rather than spec-by-spec.
 
 ---
 
+### Act 19 — Effort-not-results applied in bulk, and the persona measures get sharper (2026-06-21 → 06-24)
+
+The `[?]`-marked cluster from Act 18 was settled in one sweep. On **2026-06-23** specs
+**024, 025, 026, 028, 030** and **031** were all flipped **Completed** together, against
+the shared 2026-06-21/22 ledger runs, under **CR 005**'s effort-not-results principle —
+the measurement was the deliverable, and it did not say what was hoped. Across two n=20
+ollama arms the town won 0.15 and 0.25; Nova's own n=20 arm won **0.00**; Day-speech
+repetition sat at **0.63–0.71**. Six specs closed, and the problem they were aimed at
+stayed open.
+
+In between, **spec 031** shipped its two slices — a `persona_near_dup` metric with its
+own ledger column, then roster-aware persona generation (each character created while the
+ones already made for that game are visible, so the new one can be made deliberately
+different). And measuring it immediately exposed that the measure was too coarse.
+
+**Two specs to sharpen one measurement.** **Spec 032** added the continuous pair —
+**average and peak** word-level persona similarity — and was authored and verified the
+same day. Then a backfill across the whole recorded history reported every cast as
+*distinct*, because the generated characters carry different names, jobs and backstories,
+while reviewers kept seeing the opposite: nearly every character is the same *kind* of
+person — calm, observant, even-tempered. That sameness lives in **meaning**, not in
+wording, so a word-level measure is structurally blind to it. **Spec 033** was authored
+for the meaning-based counterpart. Alongside it the persona metric keys were **renamed
+descriptively**, `persona_sem_peak` added, the committed records **migrated**, and the six
+transcript-preserved pre-031 runs **backfilled** — the history rewritten so old and new
+records stay comparable rather than accumulating incompatible generations of metric.
+
+On **06-24** two more specs opened — **034** (diversified persona generation) and **035**
+(a Bedrock Claude provider, with **ADR 012** proposed alongside it) — and a merge fix
+reconciled the `llm.py` provider classes where the two collided. Then the repository went
+quiet.
+
+---
+
+### Act 20 — Nine weeks off, and a return that closes three specs (2026-06-24 → 08-30)
+
+There are **no commits between 2026-06-24 and 2026-08-29**. Work resumed by finishing the
+three specs left mid-flight, which is why their Gantt bars are the long ones in the chart.
+
+**Spec 033 (Semantic Persona Similarity)** verified 08-29 on real Titan embeddings, its
+backfill validated as faithful and additive. It delivered the number the lexical measures
+could not: pre-031 rosters sat at **~0.6** semantic similarity against **~0.36** for two
+genuinely-different characters. Two characters written in completely different words but
+both "a quiet, watchful townsperson who weighs their words" finally read as *similar*.
+
+**Spec 034 (Diversified Persona Generation)** verified the same day with its A/B logged
+**CONFIRMED** (n=10/arm, on both the lexical and the new semantic measures). The evidence
+it was built on was blunt: the persona model is strongly **mode-seeking** — it keeps
+reaching for the same honest, slow-talking librarian — and the transcripts held **verbatim
+copies**, one game generating a character whose entire description was another player's,
+name and all. Worse, spec 031's own "make this one different from these" prompt sometimes
+made the weak local model **echo** the character it was shown instead of diverging. The
+fix attacked both ends: randomised generation *and* regenerate-on-collision, which only
+became actionable once 031/032/033 could detect a collision at all.
+
+**Spec 035 (Bedrock Claude (Haiku) Provider)** verified 08-30: a third provider choice
+selectable exactly as the other two are, with **Nova untouched as the periodically-tested
+baseline**. The spike proved the path on live Bedrock, the deployed Runtime was verified on
+Claude behind an opt-in variable, and both paths were confirmed **from telemetry** rather
+than from the code — the runtime by its own CloudWatch logs, the local game by Bedrock
+`Invocations` metrics. A twentieth acceptance criterion was added *after* first
+verification to cover an eval promise the original nineteen had missed.
+
+---
+
+### Act 21 — Three providers on one bench, and the repetition problem dissolves (2026-08-30 → 08-31)
+
+With three engines selectable by configuration, the obvious experiment became cheap: run
+the same commit, the same 5-and-2 lineup and the same scoring rule on all three.
+
+The **n=10 three-way baseline** (08-30) produced the project's most surprising single
+number. Day-speech **repetition on `bedrock-claude` measured 0.000** over 234 AI lines,
+against **0.583** on Nova and **0.574** on ollama — the two cheap arms landing *worse* than
+their own historical 0.29–0.45 band. Repetition had been the top unsolved AI-quality item
+in the backlog since spec 011, survived spec 009's anti-parrot reword, and was untouched
+by the spec-013 grounding fix or by the lineup. A provider swap appears to erase it.
+
+The town-win column was messier, and the honest reading is that **n=10 was noise**. Claude
+came in at 2/10 — the first non-zero town-win rate on a Bedrock arm, which is how that
+commit records it — and then Nova's own n=10 arm read 3/10 and ollama's 1/10, reshuffling
+the ranking immediately. The **n=50 per-provider baselines** (08-30 → 08-31) flattened all
+three: **Nova 0.08, Claude 0.06, ollama 0.163**. Repetition, meanwhile, held exactly where
+n=10 had put it — **0.597 / 0.001 / 0.529**.
+
+So the stretch produced two findings pointing in opposite directions. Repetition looks
+like a **model-capability** property rather than a prompt-engineering one, which
+conditionally retires the project's longest-standing AI-quality problem without a single
+prompt change — while still leaving it live on the cheap arms. And the **town-coordination
+problem is not solved by a stronger model**: the near-frontier arm wins least of the three
+at n=50. Both were written into the backlog rather than into a spec, with the ledger's
+within-provider-only comparison contract attached.
+
+---
+
+### Act 22 — Making the evidence readable: a history, a side panel, and colour (2026-08-31 → 09-01)
+
+Three specs in two days, all aimed at the same thing: the measurements had outgrown the
+tools for reading them.
+
+**Spec 036** closed a gap spec 034 had deliberately opened. The fast persona check
+generates a cast without playing a game — half a minute instead of twenty minutes — and
+was built to record *nothing*, printing to the screen and exiting. 036 let those
+measurements join the tracked quality history as first-class dated records. One acceptance
+criterion **initially failed** at verification — the paid semantic path had no graceful
+degradation — and was **fixed rather than waived**.
+
+**Spec 037** deleted a screen. Reviewing a run means moving constantly between the numbers
+and the games those numbers came from, and an intermediate games-list screen sat between
+them earning nothing while hiding the figures you were just reading. The list became a
+**side panel** beside the run's details. Four claims in its tech spec proved wrong against
+the installed Textual and were corrected during implementation; one criterion was *met but
+untested* at verification — a games list longer than the panel is tall — and got a test
+rather than being taken on trust.
+
+**Spec 038** coloured the transcripts. A preserved game had been one undifferentiated wall
+of text mixing things a reviewer reads in completely different ways: the Night/Day
+skeleton, seven people speaking in turn, private thoughts nobody at the table could see,
+the Moderator's factual recaps, and the opening cast list. Five slices took it apart —
+marker/plain tokenizer, marker details and cast-list labels, speech versus private thought
+versus recap, sides coloured from the cast list, and the person's own seat in bold. It
+added **272 tests** (suite 1561). Its one contested criterion — the person's seat
+identifiable without inference — was **reworded in place** rather than waived: the marker
+satisfies it for every transcript written from then on, and the 298 already-committed ones
+resolve through a documented fallback that never guesses.
+
+---
+
+### Act 23 — Phase 6 closes on private diaries — and an honest null (2026-09-01 → 09-02)
+
+**Spec 039 (Per-AI Private Diaries)** was the last incomplete sub-item of Phase 6. An AI
+player had been reasoning in short bursts — a brief reflection at the end of each Day
+round (spec 028) — with nothing asking it to take in *a whole day* and set down where it
+stands. Six slices, 38 tasks, 36 criteria, suite green at 1809: an entry written before
+each Night, merged into that same player's own cursor walk alongside its running thoughts,
+dual-written to the memory store (retiring the synthetic placeholder entry), rendered as a
+`<diary>` element the transcript viewer styles, and the run recording which arm it was.
+
+Then the measurement, and it is a **null result** reported as one. Six runs on a single
+clean commit: no arm improved, no pair separated — **Fisher exact p = 1.000 on all three**.
+And the design limit *is* the finding: against an off arm of 2/10 the on arm would have
+needed 8/10 to reach p<0.05, so **no decrease of any size was detectable at n=10**.
+Accepted under CR 005 — the honest measurement is the deliverable.
+
+More consequentially, **one arm disqualified itself in its own record**. The ollama on-arm
+was **50% deterministic fallback** — 45 of 90 diary entries were not written by the player
+at all — so it is not a diaries result. What caught it was a **run-health signal added
+mid-spec**, and what did *not* prevent it was a warm-up call. Writing that disqualification
+into the record instead of quietly averaging it is what set up the next two acts.
+
+With 039 verified, **Phase 6 is complete**.
+
+---
+
+### Act 24 — The local model stops substituting: ADR 013 and a twelve-slice repair (2026-09-02 → 09-08)
+
+**ADR 010** had reached Ollama over its Anthropic-compatible `/v1/messages` endpoint and
+obtained structured output through Anthropic **tool use**. It logged the risk it was
+taking — structured output over that endpoint was "not yet verified with the game's
+schemas" — and rested on an explicit **verify-at-implementation gate**: if it proves
+unreliable, fall back to native `ChatOllama`. Spec 039's disqualified arm fired that gate.
+**ADR 013** took the fallback.
+
+A stopgap shipped first — recover diary prose when a provider skips the structured-output
+tool call — and was then **deliberately withdrawn** in Slice 4 once real decoding made it
+unnecessary, the suite going red on purpose in between.
+
+**Spec 041 (Reliable Answers from the Local Model)** is the project's largest spec by
+plan: **twelve slices, 67 tasks**. Its framing is the user-visible failure, not the
+protocol: on the local configuration, *about half of every AI player's private diary
+entries were not written by that player at all* — they were one identical stand-in
+sentence, substituted quietly.
+
+- **Slice 1 fixed the instrument first.** The instrumentation had been booking successes
+  as failures; nothing measured after it would have meant anything.
+- **Slice 2** swapped in `langchain-ollama` (through a commit marked *knowingly broken
+  intermediate*) and sent `num_ctx`, "turning a hope into an invariant".
+- **Slice 3** pinned the decoding method at the provider boundary in **two layers that
+  fail for different reasons**, then drove the seam through the real call sites and netted
+  the route a call-site list cannot reach.
+- **Slices 5–10** made substitution a *counted, visible* thing rather than a silent one: a
+  leaf substitution module, a seven-way sweep in both directions, counts on the ledger
+  record (**absent when unattempted**, never a misleading zero), fakes that record what
+  they were asked and cannot serve the fallback in silence, and `substituted="true"`
+  markings on diary entries, private thoughts and Day speech so no reader can mistake a
+  stand-in for a player's own words.
+- **Slice 11** closed the smoke gate, and doing so exposed the four holes that had made it
+  unsatisfiable.
+
+Measured outcome: the diary transport went **0.80 → 0.00**, the Slice 6 live check saw
+**zero substitutions over 131 attempts**, and the closing n=10 A/B (records 43 and 44)
+settled it — while also catching a defect the swap itself had introduced, `Roster`'s
+substitution path, killed and restored. Verified 2026-09-08; all 17 criteria walked, "and
+there were never 19".
+
+---
+
+### Act 25 — A starter table with room for one mistake (2026-09-03 → 09-04)
+
+**CR 007** withdrew a *claim*, not a feature. Phase 1 had described the default
+five-citizens-plus-two-Mafiosos table as "reasonably balanced toward the Law-abiding
+side"; it is not — it gives the town **no room to be wrong even once**. The CR corrected
+the record and moved the default to **six and two**.
+
+**Spec 042 (A Starter Table With Room For One Mistake)** spent most of its seven slices and
+35 tasks not on the flip but on **decoupling the test suite from the lineup**, so the
+default could move without a renumbering cascade: roster fixtures that stop caring about
+the lineup, table-size expectations **derived** rather than renumbered, the roster-pool
+extension made prefix-safe, a retry-success vacuity closed, roster cardinality asserted
+instead of mere name presence, the play-as-role player map derived from config, and the
+game-driving interrupt budgets re-derived from the lineup. Then one owner for the
+default's value, and the flip itself. Verified 09-04: eleven criteria mechanically, and
+**the twelfth by the first measured record written at the new default**.
+
+The change moves the yardstick as well as the game. Random play wins **8.3%** of games at
+five-and-two and **~22.9%** at six-and-two — so every 5+2 record becomes a **closed
+series**, and CR 007 deliberately defers a fresh per-provider baseline until both it and
+the Moderator Creative Recap have landed, rather than paying for it twice. The same
+stretch corrected four drifted claims in the architecture document.
+
+---
+
+### Act 26 — The Moderator's closing story (2026-09-02 → 09-09)
+
+A game of Graphia had been ending with the facts: who won, who died, who everyone really
+was. Complete, and a list. What it could not tell is the story — which player privately
+decided two days early that the baker was lying, which Mafioso spent a day steering
+suspicion onto someone they knew was innocent. All of it happened, all of it was written
+down, and **the person playing had never seen a word of it**, because the AI players'
+diaries and reflections are hidden throughout play by design.
+
+**Spec 040 (The Moderator's Closing Story)** is Phase 6a's **End-of-Game Payoff**: ten
+slices, 64 tasks, 36 criteria, suite green at **2845**. The story assembles from exactly
+that hidden material — through a shared cursor walk extracted out of the private-record
+block, a third-party private renderer, and a whisper exclusion — and is prompted
+deliberately as an **anti-recap**, with a rule forbidding it to name a winning side the
+record does not name. Fabrication control was **measured, not assumed**: four fabrication
+categories were tested and the fourth *survived*, which is recorded rather than smoothed
+over.
+
+The spec's own tasks turned up a cluster of neighbouring faults and fixed them: player and
+model names kept out of Textual's markup parser (spans, not markup), the ending pane frozen
+and focused, `q` bound as the leaving key with `on_key` deleted, **one** place a game ends
+so the exit contract cannot differ, seven hollow exit assertions moved where they can
+actually fail, and a false rationale in `app.py` corrected. A new run-health trio —
+`quality.story_*` — reaches the ledger and the viewer, is **never backfilled**, and is
+unambiguous by construction: on a post-040 build, absence of a story means failure.
+
+Verified 2026-09-09 — and then **amended in place after verification**, at the author's
+explicit ruling of amendment over change request: the story is coloured distinctively and
+made longer (paragraph bound 4 → 5, character backstop 1800 → 2500). A second live story
+sharpened the amendment *and corrected the finding behind it*: the specimen reached the old
+four-paragraph cap with **no** truncation, so 4/1800 had not always been mis-firing — the
+two bounds were simply within ~2% of each other, and which one stopped a story depended on
+that game's paragraph lengths. Two criteria hold by construction with nothing in the suite
+to witness them, and are **logged in the backlog rather than counted as coverage**.
+
+---
+
+### Act 27 — Costing the next baseline, and keeping what a stopped run produced (2026-09-09 → 09-12)
+
+With 042 and 040 both landed, CR 007's deferred per-provider re-baseline came due. **The
+first attempt produced no records** — and produced something more durable instead: a
+**measured** cost and throughput model, in place of estimates. The method is written down
+to be reused — a 2-game pilot per paid arm with `--ledger-path` and `--transcripts-root`
+pointed at a temp dir so nothing touches the repo, then `AWS/Bedrock` CloudWatch
+`InputTokenCount` / `OutputTokenCount` / `Invocations` summed by `ModelId` over the pilot
+window and priced. (Those two pilots were later promoted into the ledger as records 49 and
+50.)
+
+The real n=10 arms (records **47** and **48**, 2026-09-10) then superseded the pilots'
+estimates, which had run 6% and 11% high: **Nova $0.652/game** — 2,252 calls, 7.71M input
+and 110k output tokens over ten games — against **Claude Haiku 4.5 at $0.441/game** — 1,027
+calls, 3.72M input and 138k output. **Nova costs more per game despite the cheaper price
+list**, because its games run longer. Those same two records carry the first six-and-two
+reads on the paid arms: Nova's town at **0.1**, Claude's at **0.6**. One earlier finding was
+**retracted** on inspection — an apparent co-scheduling effect whose evidence turned out to
+be the machine sleeping.
+
+**Spec 043 (Keeping What a Stopped Measurement Run Produced)** is the one spec still in
+flight. Today a run that ends early — stopped, killed, crashed, power lost — contributes
+**nothing at all**, however many of its games played through to a natural finish; those
+games are gone as measurements even though they were played, scored and paid for. Getting
+there meant revisiting a promise: **ADR 014** chose **optimistic-concurrency whole-file
+writes** over the strict append-only that both `CLAUDE.md` and `evals/README.md` had
+advertised and readers had relied on.
+
+Three of seven slices are done, and the fourth is underway. **Slice 1** made the ledger
+write atomic with byte-for-byte unchanged output. **Slice 2** put a collision-proof run id
+on every new record — its final task blocked on SSO, was recorded as blocked with its slice
+header reopened rather than quietly waived, and was then verified on a real Nova game on
+09-12. **Slice 3** — *a stopped run leaves the games it finished* — closed the same day on a
+live two-game Nova run, and its verification is a good example of the project's house
+style: `run.seq` was watched going **1 → 2 → 3** with exactly one document present at every
+observation, and because `seq` increments once per write and had no gaps, the three
+observed states are provably *every* write the run made rather than a sample of them. The
+run also witnessed three documented behaviours instead of arguing them — three distinct
+inodes (so the `tail -f` caveat is now an observation, not a warning), the brand-new-file
+permission case, and a record that got **8 bytes shorter** between games, which is the
+concrete instance of "a live run's record is not value-stable".
+
+**Slice 4** — the record saying it ended early **and by how much** — is in progress. Three
+remain after it: the viewer refusing to show a partial run as a full one, the written
+contract catching up with the code, and the one number that is currently assumed getting
+measured.
+
+Alongside it: a project status line (context bar, model, git branch), and the transcript
+corpus curated **commit-or-delete** down to **36 run directories / 420 preserved games**.
+
+---
+
 ## What's next
+
+### Where things stand (2026-09-12)
+
+**Phases 1 through 6 are complete.** Phase 6a is half done — its **End-of-Game Payoff**
+group closed with spec 040, leaving **Asynchronous Day Chat** (rate-limited concurrent AI
+chatter, concurrent human typing with live display, and the vote-opens-lock-chat handoff)
+as the only open feature group before Phase 7. Phase 7 is untouched: AI tool-use,
+all-player evidence citation, the expanded role roster, and the whole-transcript
+LLM-as-Judge.
+
+**One spec is in flight:** **spec 043 (Keeping What a Stopped Measurement Run Produced)** —
+Slices 1–3 verified on live runs, Slice 4 underway, three slices after it. Everything else
+numbered 001–042 is verified Completed.
+
+**The numbers as of today:** 43 specs, 7 CRs, 14 ADRs, and 16 published tutorials (003
+deliberately skipped, plus the interim `002-v2` draft kept as a historical artifact); the
+all-mocked suite collects **2977 tests**; the quality ledger holds **50**
+provenance-stamped records and the preserved-transcript corpus **36 run directories / 420
+games**.
+
+**The standing open problems**, in rough order of weight:
+
+1. **Town coordination / Day decisiveness** — still the project's central unsolved
+   problem, and Act 21 removed the most attractive explanation for it. A near-frontier
+   model does *not* fix it: at n=50 the town wins 0.08 (Nova), 0.06 (Claude) and 0.163
+   (ollama). The 6-and-2 default also raises the **chance baseline** from 8.3% to ~22.9%,
+   which means future town-win numbers are unreadable without it — specifying that
+   chance-baseline metric is CR 007's open follow-up and the thing that makes the next
+   baseline interpretable at all.
+2. **Repetition is conditionally retired, not solved.** It measures 0.000–0.001 on
+   `bedrock-claude` and 0.53–0.73 on Nova and ollama. The open decision is whether the
+   long-planned prompt/context/temperature fix is still worth building for the cheap arms
+   now that the paid arm does not need it.
+3. **CR 007's deferred per-provider re-baseline is unblocked and priced, and needs
+   designing rather than scheduling.** 50 games on all three arms is not affordable
+   ($0.652/game Nova, $0.441/game Claude, measured); post-040 every measured game pays one
+   extra heavyweight call carrying the largest prompt in the system, with no ablation flag
+   by deliberate choice; and on the ollama arm the AI's own vote-initiation denominators
+   can collapse to zero, which omits whole blunder facets from the record. Read the
+   denominators, not just the rates.
+4. **Tutorials stop at 017** — every increment from 018 on is untutorialised, which is the
+   repo's single largest documentation debt.
+5. **ADR 012 is still `Proposed`** even though spec 035 shipped its gameplay half (the
+   Haiku 4.5 profile); its eval-judge half waits on Phase 7's LLM-as-Judge. It should be
+   accepted, split, or revised rather than left pending.
+6. **Housekeeping with teeth:** run provenance is sampled once *before game 1*, so an
+   uncommitted transcript directory stamps the **next** measured run `dirty: true` —
+   clean-or-commit before measuring. Plus the known smaller items tracked in
+   [`context/product/backlog.md`](context/product/backlog.md): a transient stats-store
+   failure still crashes the game at boot (graceful career-greeting degradation),
+   `product-definition.md` still calls the Ollama provider "future", two eval-adjacent
+   test helpers are flaky by construction, and ~70 lines across the docs still quote stale
+   committed-corpus counts.
+
+### Earlier close-out notes (2026-06-03 → 06-21)
+
+_Kept as written at the time. Superseded by the section above wherever they conflict —
+in particular, the Phase 6 "front line" described below was closed out on 2026-06-23
+(see **Act 19 — Effort-not-results applied in bulk, and the persona measures get
+sharper**)._
 
 **Phase 3 — Long-Term Cross-Game Memory & Career Stats** is now closed:
 Spec 006 is **verified Completed**, **Tutorial 006** is published, and the
