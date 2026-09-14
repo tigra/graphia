@@ -1528,7 +1528,7 @@ class TranscriptScreen(Screen):
        cannot see. `display: none` gives the row no region at all. Measured with
        the bar closed: `#search-row` size `(0, 0)`, and the reading view's
        geometry byte-identical to before this feature existed — 22 viewport
-       rows, 202 virtual, `max_scroll_y` 180, which is exactly what
+       rows, 82 virtual, `max_scroll_y` 60, which is exactly what
        `test_scrolling_a_long_game_behaves_as_before` pins.
 
        A CLASS TOGGLE RATHER THAN `widget.display = …`, so both states are
@@ -3179,13 +3179,37 @@ class TranscriptScreen(Screen):
         sharing the current row, because §2.6 requires a press to always move the
         view. Making Enter row-keyed too would break §2.5 AC2 directly.
 
-        **Nothing typed, or nothing found, is the same easy branch.**
-        :func:`~graphia.eval_ledger.find_matches` returns ``[]`` for an empty
-        query and ``next_match`` returns ``None`` for an empty list, so §2.5 AC5
-        ("Enter with nothing typed … nothing moves and the search simply
-        closes") and §2.8 AC4 ("a word with no matches … nothing moves and no
-        error appears") are both the *absence* of a scroll rather than two cases
-        to code.
+        **Nothing typed and nothing found LOOK alike and are NOT the same case**
+        (spec 044, Task 5.2a — the author's decision of 2026-09-14). Neither one
+        moves the game: :func:`~graphia.eval_ledger.find_matches` returns ``[]``
+        for an empty query and ``next_match`` returns ``None`` for an empty list,
+        so §2.5 AC5 ("Enter with nothing typed … nothing moves and the search
+        simply closes") and §2.8 AC4 ("a word with no matches … nothing moves and
+        no error appears") are both the *absence* of a scroll. What differs is
+        what the reviewer is left holding, and it is invisible from the outside —
+        which is exactly why it has to be got right here:
+
+        - **Empty — "I did not ask anything."** Nothing is lit, ``#search-count``
+          says nothing, the header is back at :attr:`SUB_TITLE`. That is
+          character-for-character the screen of a reviewer who never pressed
+          ``/``, so a live :class:`SearchState` behind it is a state they cannot
+          see — and the next Esc would be silently spent clearing it, against
+          §2.9 AC3's promise that leaving "costs them no extra keypress". So an
+          empty query is routed through :meth:`_clear_search` and the search
+          genuinely ends, matching what the screen already shows.
+        - **Typed but matching nothing — "I asked, and there was nothing."** The
+          query is real and the count says so in as many words (§2.8 AC2); the
+          reviewer is mid-search and will edit it or abandon it. That is state 2
+          of :class:`SearchState`'s three and it stays alive exactly as before:
+          the first Esc clears it, the next leaves the game (§2.9 AC5).
+
+        Collapsing the two in either direction breaks one criterion to satisfy
+        the other. And the test is ``not search.query``, **not**
+        ``not search.query.strip()``: :func:`~graphia.eval_ledger.find_matches`
+        treats whitespace as ordinary literal text — a single space has 14,524
+        matches on the 88 KB committed game — so a space is *typed*, and
+        stripping would send the most-matching query in the corpus down the "you
+        asked nothing" path.
 
         **The search survives, and only the prompt closes.** ``_search`` stays
         non-``None`` — that is state 2 of the three :class:`SearchState`
@@ -3198,13 +3222,14 @@ class TranscriptScreen(Screen):
         context, and the other matches staying lit is how they see what is
         nearby.
 
-        One accepted consequence, uniform rather than special-cased: Enter on an
-        *empty* query also leaves a (matchless) search live, so the first Esc
-        after it clears nothing visible and the second leaves the game. That is
-        the same second keypress §2.9's back-out consequence already spends, and
-        the alternative — Enter sometimes ending the search and sometimes not,
-        depending on what is typed — would make the Esc that follows it
-        unpredictable.
+        That survival is for every query the reviewer actually typed, **including
+        one with no matches** — see the two bullets above. The single exception
+        is the empty one, which ends the search instead, and it is an exception
+        precisely *because* it is not unpredictable: the rule a reviewer can
+        apply without looking is "Esc clears what you can see". A search you can
+        see (amber, or a count, or a no-match message) survives Enter and costs
+        an Esc; a search that shows nothing because you typed nothing does not
+        exist to be cleared.
         """
         # SCOPED BY TYPE for the same reason `on_input_changed` is: this
         # screen's box has no id, and `LedgerTableScreen` runs an `Input` of its
@@ -3219,6 +3244,38 @@ class TranscriptScreen(Screen):
         # that dereferences it without asking.
         search = self._search
         if search is None:
+            return
+
+        # NOTHING TYPED ENDS THE SEARCH; NOTHING FOUND DOES NOT (spec 044, Task
+        # 5.2a). The docstring above argues the distinction; the two things this
+        # branch has to get right are WHICH TEST and WHERE.
+        #
+        # WHICH TEST: `not search.query`, never `not search.query.strip()`.
+        # `find_matches` is case-smart but otherwise literal, and whitespace is
+        # literal text to it — a single space matches 14,524 times on the 88 KB
+        # committed game. A reviewer who typed a space asked a question with more
+        # answers than any other query in the corpus, so stripping here would
+        # throw away their search on the grounds that it "looked empty".
+        #
+        # WHERE: before `find_matches`, before `_row_starts`, before the body and
+        # the scroller are even looked up. `_row_starts` is the one that matters
+        # — it builds AND CACHES the whole wrap map, 1,182 rows and 7.6 ms on
+        # that same game, to answer "where is the first match at or below here?"
+        # for a query that has no matches anywhere and a state that is about to
+        # be dropped. Clearing first is not a micro-optimisation bolted onto a
+        # correctness fix; it is the same fix, since the map would be built into
+        # a `SearchState` that ceases to exist two lines later.
+        #
+        # `_clear_search` is the whole undo, and is already load-bearing
+        # elsewhere (Esc reaches it too): it drops the state first, cancels any
+        # debounce window still open, repaints the game with no matches, blanks
+        # the count, puts `SUB_TITLE` back, hides the row and returns focus to
+        # the scroller. So Enter-on-empty and Esc leave the screen in *identical*
+        # states, which is the property §2.9 AC3 actually needs — and nothing on
+        # that path assigns `scroll_offset.y`, so §2.5 AC5's "nothing moves"
+        # holds as it did before.
+        if not search.query:
+            self._clear_search()
             return
 
         body = self.query_one("#transcript-body", TranscriptBody)
@@ -3336,12 +3393,18 @@ class TranscriptScreen(Screen):
         # query's matches, this is the one you are on, and (since Task 4.5) this
         # is how you got here. It replaces the conditional settle that used to
         # sit above the jump (see there for why the condition is gone), and it
-        # runs on every Enter including the nothing-typed one — where `matches`
-        # is empty and `current` is `None`, so it repaints the unhighlighted
-        # reading view, blanks the count and puts `SUB_TITLE` back, which is
-        # exactly what §2.5 AC5 asks for. That last part is what keeps an
-        # edit-then-Enter from leaving the previous query's position standing in
-        # the header over a game that no longer has it.
+        # runs on every Enter that reaches it, including the no-match one — where
+        # `matches` is empty and `current` is `None`, so it repaints the
+        # unhighlighted reading view, writes the no-match message into the count
+        # and puts `SUB_TITLE` back, which is exactly what §2.8 AC4 asks for.
+        # That last part is what keeps an edit-then-Enter from leaving the
+        # previous query's position standing in the header over a game that no
+        # longer has it.
+        #
+        # (Task 5.2a took the *nothing-typed* Enter out from under this line: it
+        # leaves through `_clear_search` above, which does the same repaint plus
+        # the state drop. So "empty" no longer arrives here, and the empty
+        # `matches` this comment describes now means "typed, and found nothing".)
         #
         # After the scroll rather than before it for the same reason the bar is
         # hidden after: `_update_search_count` re-lays-out the count strip, and
@@ -3776,6 +3839,18 @@ class TranscriptScreen(Screen):
         left to whatever Textual does with the focus of a widget that has just
         been hidden: the reviewer pressed a *back-out* key, so the game — the
         only thing left to interact with — should be what their arrow keys move.
+
+        **Two callers now, and the second is not a back-out key** (spec 044, Task
+        5.2a): :meth:`action_close` (Esc/``backspace``/``q``, above), and
+        :meth:`on_input_submitted` when Enter arrives on an **empty** query.
+        Nothing here needed changing to take it — an Enter that ends a search the
+        reviewer never typed owes them exactly the screen an Esc would have
+        left, which is the point of routing it here rather than writing a second
+        half-undo beside it. Focus landing on the scroller is right for both:
+        the bar is being hidden either way, and the game is what is left. (An
+        Enter on a query that was *typed* does **not** come here — it keeps the
+        search alive; :meth:`on_input_submitted`'s docstring argues why the two
+        diverge.)
         """
         # STATE FIRST — see the docstring. Everything below is undoing the
         # visible half of a search that, as far as the rest of the screen is
@@ -3800,8 +3875,37 @@ class TranscriptScreen(Screen):
         # Unconditional rather than conditional on anything having been lit:
         # the repaint costs one keypress's worth of work, where tracking
         # whether the body is currently clean would cost a second piece of state
-        # to keep true. Slice 5 completes the rest of this state machine (the
-        # bar-hidden-search-live state Enter leaves behind).
+        # to keep true.
+        #
+        # SLICE 5 (Tasks 5.1/5.2) FOUND THIS STATE MACHINE ALREADY COMPLETE AND
+        # MEASURED IT RATHER THAN ADDING TO IT. This paragraph used to end with a
+        # promise that Slice 5 would finish "the bar-hidden-search-live state
+        # Enter leaves behind", and there was nothing left to finish: Slice 1
+        # branched `action_close` on `_search` for exactly that reason and Task
+        # 4.5 added the `SUB_TITLE` restore. Walked on the 88 KB committed game
+        # at 100x24 through real keystrokes, all three of `SearchState`'s states:
+        # state (i) — Esc from an open bar dropped 18 match spans back to the
+        # base 998 and HELD `scroll_offset.y` at 45, where the reviewer had
+        # scrolled to UNDER the open bar rather than the 22 they opened it at
+        # (§2.4 invited that scroll, so §2.9 AC1 owes them the place it ended,
+        # not the place it started); state (ii) — Esc after Enter and an `n`
+        # dropped the same 18 spans, held y at 204 and STAYED on the screen, with
+        # the next Esc leaving; state (iii) — Esc with no search left in one
+        # press. `backspace` and `q` answered identically wherever they reach
+        # here, and the header went back to `SUB_TITLE` on every one of those
+        # clears.
+        #
+        # WHAT MAKES THE CLEAR WHOLE-STATE RATHER THAN QUERY-ONLY, which is the
+        # half a reader is most likely to doubt: `self._search = None` above
+        # drops the `SearchState` OBJECT, so `current`, `scroll_at_landing` and
+        # the width-keyed `row_map` go with the query instead of being reset
+        # field by field. Measured across one clear: `query='vote' current=1
+        # scroll_at_landing=204 row_map=(96, 1182 rows)` → `None`, and the next
+        # `/` seeded a fresh `SearchState` with `row_map=None`. So a map keyed on
+        # a stale width, or an index into a match list that no longer exists, has
+        # no route into a later search — and that is a property of dropping the
+        # object, which is why a future "just reset the query" would be a
+        # regression rather than a tidy-up.
         #
         # AND THE COUNT AND THE HEADER GO WITH IT, without a line here to say so:
         # `_repaint_matches` writes `#search-count` AND `Screen.sub_title` on

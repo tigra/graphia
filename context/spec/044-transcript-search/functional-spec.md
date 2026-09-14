@@ -60,6 +60,7 @@ The tool that already solves this for long text is the one reviewers reach for o
 
 - Searching never takes the view hostage. With the search prompt open and text already typed, **up, down, PageUp, PageDown, Home and End all scroll the game**, and the typed search text is untouched by them. The reviewer can type a word, scroll to a part of the game they had in mind, and see the matches there — all without closing the search.
 - Typed characters and Backspace edit the search text; that is the whole of the editing the prompt offers.
+- **Re-opening onto a search that is still running starts it afresh.** Pressing `/` again after a jump — while matches are still lit — presents the previous words ready to be replaced, so the next character typed begins a new search rather than extending the old one. This is deliberate, and matches what `/` does in the tools this is modelled on; a reviewer who wants the old words back can retype them, and the search they were running is still lit until they do.
 - **Acceptance Criteria:**
   - [ ] Given the search prompt is open with `vote` typed, when the reviewer presses PageDown, then the game scrolls down by a screen and the search text still reads `vote`.
   - [ ] Given the reviewer has scrolled with PageDown while searching, when they look at the newly revealed text, then its matches are highlighted too — they did not have to retype anything.
