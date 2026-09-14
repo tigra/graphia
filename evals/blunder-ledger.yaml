@@ -5196,3 +5196,157 @@ metrics:
     peak: 0.5266980453072153
     denominator: 42
 notes: 'Run off-ledger as a 2-game cost pilot, with the note "COST PILOT — throwaway, off-ledger"; PROMOTED TO THE LEDGER 2026-09-10 at the author''s request because the run completed 2/2 games and is a real measurement. Only this free-text note was composed at append time — no measured or provenance field was altered. Its purpose was to price the Bedrock arms per game from CloudWatch token metrics before sizing the paid runs to a hard 50 USD cap; the n=10 records 47 and 48 supersede its cost figures. Appended out of chronological order: it ran 2026-09-09, after record 46 and before 47.'
+---
+run:
+  date: '2026-09-14'
+  id: '2026-09-14T13-58-16-ca5bce'
+  seq: 4
+  duration_seconds: 3774.873
+  metrics_version: 1
+  transcript_dir: '2026-09-14T13-58-16-ca5bce'
+code:
+  commit: '1eb5839c23275d94e467899bb6d88bca48b65944'
+  branch: 'main'
+  dirty: true
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  structured_output: 'json_schema'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.32.14'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 3
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 3
+  games_completed: 3
+  games_failed_early: 0
+  diary_fallback_rate: 0.0
+  diary_fallback_entries: 0
+  diary_entries_attempted: 39
+  story_missing_rate: 0.0
+  story_missing_games: 0
+  story_ending_games: 3
+  substitutions:
+    roster:
+      rate: 0.0
+      count: 0
+      attempted: 3
+    persona:
+      rate: 0.0
+      count: 0
+      attempted: 21
+    pointing:
+      rate: 0.0
+      count: 0
+      attempted: 25
+    ballot:
+      rate: 0.0
+      count: 0
+      attempted: 90
+    day_action:
+      rate: 0.0
+      count: 0
+      attempted: 264
+    reflection:
+      rate: 0.0
+      count: 0
+      attempted: 215
+    diary:
+      rate: 0.0
+      count: 0
+      attempted: 39
+  duration_seconds: 3774.873
+outcomes:
+  games: 3
+  law_abiding:
+    wins: 1
+    rate: 0.3333333333333333
+    ci_low: 0.0614903152761605
+    ci_high: 0.7923450448735121
+  mafia:
+    wins: 2
+    rate: 0.6666666666666666
+    ci_low: 0.2076549551264879
+    ci_high: 0.9385096847238394
+  scripted_side:
+    side: 'law_abiding'
+    wins: 1
+    rate: 0.3333333333333333
+    ci_low: 0.0614903152761605
+    ci_high: 0.7923450448735121
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against an active rule-based scripted human (deterministic, no model call; when Law-abiding it supplies the vote a correct town majority needs) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 0
+    mafia: 0
+  by_day: {}
+metrics:
+  repetition:
+    rate: 0.696969696969697
+    count: 184
+    denominator: 264
+    ci_low: 0.6390335848663569
+    ci_high: 0.7492556129281607
+  third_person_self_talk:
+    rate: 0.022727272727272728
+    count: 6
+    denominator: 264
+    ci_low: 0.010456628501987184
+    ci_high: 0.04868877684206691
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 2
+    ci_low: 0.0
+    ci_high: 0.6576280471103807
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 18
+    ci_low: 0.0
+    ci_high: 0.1758845505823749
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 63
+    ci_low: 0.0
+    ci_high: 0.057473190348525466
+  persona_lex_mean:
+    mean: 0.02444119675083705
+    denominator: 63
+  persona_lex_peak:
+    peak: 0.0540084388185654
+    denominator: 63
+  persona_sem_mean:
+    mean: 0.35376543891608586
+    denominator: 63
+  persona_sem_peak:
+    peak: 0.5685892587709147
+    denominator: 63
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 7
+    ci_low: 0.0
+    ci_high: 0.35433884297520657
+notes: 'spec 043 Slice 7 Task 7.3: local-arm end-to-end verification of the progressive ledger write - a record after game 1, growing per game, and a complete run carrying no ended_early marker. Also the first ollama record since the 2026-09-10 kills. code.dirty is set by two uncommitted context/project-timeline docs, not by gameplay code. CORRECTION, added by hand after the run: this note originally predicted persona_sem_* would be ABSENT because the SSO session had expired at launch. That was wrong - they are present (mean 0.354, peak 0.569 over 63 pairs). Constructing the embeddings client validates no credentials; the embed call happens at the end of each game, by which time the session had been refreshed.'

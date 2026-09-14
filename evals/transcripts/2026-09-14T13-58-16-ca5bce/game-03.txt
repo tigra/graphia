@@ -1,0 +1,363 @@
+Game 3 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=3 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Lian" role="Law-abiding Citizen">
+Personality: Sincere and earnest with an almost childlike trust in others
+Manner: Speaks slowly and deliberately, choosing words carefully and often repeating key phrases for emphasis. Uses frequent qualifiers like 'I really think' or 'you know what I mean' and tends to nod enthusiastically while talking. Often pauses mid-sentence to reword thoughts, never rushing.
+Persona: Lian works as a school librarian in the town's elementary school, where they've been for fifteen years. They're known for their gentle nature and always ready to help anyone with a book recommendation or reading problem. They volunteer at the community center every weekend and are often seen walking their dog, Buster, through the neighborhood.
+</player>
+<player name="Ade" role="Law-abiding Citizen">
+Personality: anxious and second-guessing with a tendency to overthink every situation
+Manner: speaks in quick, nervous bursts with frequent hesitation and self-correction. Uses filler words like 'um,' 'you know,' and 'I guess' constantly. Pauses frequently mid-sentence to reconsider their words, often looking around the room as if seeking validation. Has a habit of repeating phrases they've already said but with different intonations, as if trying to convince themselves of their own statements.
+Persona: Ade is the town's local accountant who's been working at the same firm for eight years. They're known for being meticulous about details and always double-checking their work. They live alone in a small apartment above the bakery on Main Street, where they spend most evenings worrying about whether they've made enough money to cover next month's rent. They avoid crowds and rarely attend social gatherings, preferring to stay home and count their coins.
+</player>
+<player name="Vika" role="Law-abiding Citizen">
+Personality: Stern and commanding with an unyielding sense of justice
+Manner: Speaks in short, clipped sentences with military precision. Uses absolute language like 'must' and 'shall' frequently. Never raises their voice but delivers commands with icy authority. Has a habit of leaning forward when speaking, eyes fixed on the listener. Often punctuates statements with a sharp nod or tap of the finger on the table.
+Persona: Vika is the town's chief of police, a position she's held for twelve years after a distinguished career in law enforcement. She's known for her unwavering dedication to upholding the law and her no-nonsense approach to crime-solving. Before joining the force, she worked as a security manager at the local bank. She lives alone in a modest house on Maple Street with her two German Shepherds, Shadow and Storm.
+</player>
+<player name="Sara" role="Mafia">
+Personality: Shrewd and calculating with a simmering intensity that masks deep strategic thinking. Sara possesses an almost predatory keenness for reading people and situations, but presents herself as effortlessly charming and approachable. She's naturally competitive and thrives on outmaneuvering others, though she does so with such grace that it's often mistaken for friendliness. There's a quiet confidence in her demeanor that makes others feel comfortable around her while she's simultaneously assessing their weaknesses.
+Manner: Speaks in measured, deliberate tones with carefully chosen words that carry double meanings. Her voice has a honeyed quality that lulls people into false security, but there's always an undercurrent of calculation. She uses frequent rhetorical questions and pauses to let statements sink in, often smiling while delivering sharp observations. Her hand movements are purposeful and graceful, rarely touching her face or hair unless it's to adjust something subtle.
+Public legend: Sara is the town's beloved florist who opened her shop five years ago on Elm Street. She's known for her incredible sense of color coordination and has helped plan countless weddings and celebrations throughout the community. Sara volunteers at the local hospital gift shop, where she's become a favorite among patients and staff. She's always wearing elegant, carefully chosen outfits that complement her surroundings and is often seen with a small notebook where she jots down compliments for friends. Her shop specializes in exotic flowers from around the world, and she's built a reputation for creating stunning arrangements that perfectly capture the mood of any occasion.
+True self (hidden): Sara was drawn into the mafia after her younger brother was killed in a gang dispute over territory. She spent years learning the organization's inner workings while maintaining her cover as a florist, using her flower shop as a front for meetings and transactions. She became known as 'The Orchid' for her ability to manipulate situations like a master gardener tends to delicate blooms. Her rise through the ranks was meteoric, but she's always maintained the illusion of being just a sweet, innocent townsperson while quietly consolidating power within the organization.
+</player>
+<player name="Zai" role="Law-abiding Citizen">
+Personality: dreamy and distractible with a tendency to lose themselves in thought
+Manner: speaks in gentle, flowing sentences that often trail off mid-thought. Uses frequent filler words like 'oh,' 'well,' and 'you know' but with a soft, contemplative tone. Has a habit of pausing to gaze out windows or at distant objects, then suddenly remembering what they were saying. Often repeats phrases with different inflections as if discovering them for the first time. Their voice rises and falls like a lullaby, sometimes trailing off completely before resuming.
+Persona: Zai is the town's local librarian who's worked at the public library for twelve years. They're known for their gentle nature and tendency to get lost in books during work hours. Zai lives alone in a cozy cottage on Oak Street with their cat, Whiskers, and spends most evenings reading or daydreaming about far-off places they've never visited. They're always carrying a worn notebook filled with scribbled thoughts and half-formed ideas.
+</player>
+<player name="Ming" role="Mafia">
+Personality: Vigilant and watchful with an intense, almost paranoid attention to detail. Ming possesses a constant state of alertness, always scanning the room and people around them. They're naturally suspicious of anyone who seems out of place or overly casual, but they're also incredibly perceptive about subtle changes in behavior. Their watchfulness is so ingrained that it comes across as nervousness rather than calm observation, making them seem like they're always waiting for something to go wrong.
+Manner: Speaks in short, clipped sentences with frequent pauses and glances around the room. Uses absolute language like 'must' and 'shall' when giving advice or warnings. Has a habit of leaning forward when speaking and maintaining direct eye contact, never looking away from their listener. Often touches their neck or adjusts their collar as if checking for something unseen. Their voice is steady but carries an undercurrent of tension, and they rarely smile without a slight frown in the corners of their mouth.
+Public legend: Ming is the town's local postmaster who's worked at the post office for fifteen years. They're known for being extremely reliable and never missing a delivery, even in the worst weather. Ming lives alone in a modest house on Oak Street with their elderly mother, whom they care for daily. They spend their evenings sorting mail and organizing the post office's inventory, taking meticulous notes about every package that arrives. Ming is often seen walking the same route through town each morning, checking the mailboxes and ensuring everything looks normal. They're known to be extremely particular about their schedule and always arrive at work exactly on time.
+True self (hidden): Ming was recruited into the Mafia by their older brother who'd been working in the organization for years. The brother saw potential in Ming's natural ability to observe and notice details others missed, which proved useful for surveillance work. After a series of successful missions, Ming was promoted to a position where they oversee the flow of information between different factions of the organization. Their watchful nature became essential for detecting threats, and they've become known throughout the Mafia for their ability to anticipate problems before they occur. They use their position as postmaster to monitor communications and gather intelligence while maintaining their innocent public facade.
+</player>
+<player name="Ivan" role="Law-abiding Citizen">
+Personality: Warm and effusive with an infectious enthusiasm that radiates from everything they do. They're naturally bubbly and expressive, always eager to share their thoughts and discoveries with others. Their joy is genuine and boundless, making them the life of any gathering without ever being overwhelming.
+Manner: Speaks in long, flowing sentences that build excitement and energy. Uses frequent exclamation points and interjections like 'oh my goodness!' or 'that's absolutely wonderful!' They lean forward when talking, hands animatedly gesturing as they speak, never staying still for more than a few seconds. Their voice is high-pitched and light with a musical quality that rises and falls like a happy song.
+Persona: Ivan is the town's beloved baker who's been running Ivan's Bakery on Main Street for eight years. He's known for his incredible talent with pastries and his ability to make everyone feel welcome in his cozy shop. Every morning, he arrives early to bake fresh bread and treats, often sharing samples with neighbors and friends. Ivan lives in a cheerful cottage on Oak Street with his wife Maria and their three children, where he fills the house with laughter and the smell of fresh-baked goods.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Lian, Ade, Vika, Sara, Zai, Ming, Ivan. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Sara): Your Mafia teammates are: Ming. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Ming): Your Mafia teammates are: Sara. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Ming points at Vika
+Sara points at Vika
+<kill>Vika — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Vika was killed last night. Vika was a Law-abiding Citizen.
+<round>
+Round 1.
+Ming: I need to check the mailboxes again — something feels off today.
+Lian: I really think we should all take a close look at who was acting strange during the night... you know what I mean?
+Ivan: Oh my goodness, I'm so excited to start this investigation! I think we should all share what we noticed during the night, especially since Vika was such a lovely person and we want to make sure the killer is caught!
+Avery: Nothing is settled yet, but I'm watching Ivan most closely.
+Zai: Oh, well... I was just thinking about how everyone seemed so focused on the night's events, but maybe we should really pay attention to who's been acting a bit... different from usual? You know, like when someone suddenly becomes very quiet or starts fidgeting with their hands.
+Ade: I guess... I'm really confused about who's been acting weird, you know? Like, did anyone else notice Ivan was super eager to jump in and start investigating? It felt a little too rehearsed, um, I mean... not that I'm accusing anyone, but... yeah.
+Sara: Ivan, you're right to be eager — it's exactly that kind of energy that makes me curious about who might have been acting too normal.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">I really think everyone is being very careful about what they say, and I need to pay close attention to how people act during the day... you know what I mean? I wonder if Ivan is really just excited about investigating, or if there's something else going on.</thought>
+<thought player="Ade">I need to be careful about accusing Ivan too quickly, but something about his eagerness does seem off... I guess I should just stick to observations and not jump to conclusions, um, at least until I hear more from everyone else.</thought>
+<thought player="Sara">I need to keep planting seeds of doubt about Ivan while maintaining my innocent facade—his eagerness to investigate feels calculated, but I must let others believe they're leading the charge. The key is to appear genuinely surprised by Vika's death while subtly steering suspicion toward those who seem too quick to point fingers.</thought>
+<thought player="Zai">Oh, well... I was just thinking about how everyone's been acting so very different today, you know? Like, when Ivan got so excited about investigating, it felt almost... too eager, somehow. You know, I keep wondering if that's what makes someone suspicious, or if it's just my imagination wandering off again.</thought>
+<thought player="Ming">Sara's eyes kept flickering toward me when I mentioned checking mailboxes - that's not normal curiosity. I must keep watching her, and Ivan too. Something is off with how they're both reacting to Vika's death.</thought>
+<thought player="Ivan">Oh my goodness, this is such an exciting start to the investigation! I can feel the energy in the room and everyone seems so focused on figuring out who's been acting strange - I wonder if I should play it a bit more mysterious and see what other people notice about me? This could be really interesting!</thought>
+</round>
+<round>
+Round 2.
+Sara: Ivan, your enthusiasm is quite infectious — though I do hope we're all careful not to let our excitement cloud our judgment. It's easy to jump to conclusions when someone seems too eager to lead.
+Avery: Nothing is settled yet, but I'm watching Ivan most closely.
+Ming: Ivan, you keep saying we need to stay calm, but your hands are trembling — what exactly are you hiding?
+Ivan: Oh my goodness, I do hope we're all being very careful about jumping to conclusions! I think it's so important that we listen closely to everyone and make sure we're not missing anything obvious — maybe someone could tell us what they noticed about the way people were acting during the night?
+Ade: Ivan, you keep talking about how we need to stay calm and not jump to conclusions, but you've been the most animated since Vika died — I mean, that's kind of suspicious, you know?
+Lian: Ivan, you keep saying we should listen carefully to everyone, but I really think you've been the most animated since Vika died — you know what I mean? I'm just not sure if that's excitement or if it's something else...
+Zai: Oh, you know, I was just thinking — Ivan has been talking about staying calm and not jumping to conclusions, but his hands have been trembling the whole time... it's rather curious, isn't it?
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">I really think Ivan is acting very strangely, and I need to keep watching him closely... you know what I mean? I'm just not sure if he's hiding something or if he's just overly excited.</thought>
+<thought player="Ade">I need to be really careful about what I say next — I guess I'm starting to think Ivan is acting too weird, but I should wait for more evidence before jumping to conclusions, um, maybe I'll just keep listening and see if anyone else mentions something strange about him.</thought>
+<thought player="Sara">Ivan's overeager investigation is too calculated to be coincidental—Ming and I need to let others think they're leading the charge while I subtly guide suspicion toward him. I must appear genuinely shocked by Vika's death, not like I'm already plotting her demise.</thought>
+<thought player="Zai">Oh, well... I keep wondering if Ivan's trembling hands and overly eager excitement are just my imagination, or if there's something more to it. You know, I should probably pay close attention to who seems too calm, too quick to speak, or too focused on pointing fingers...</thought>
+<thought player="Ming">Sara's reaction when I mentioned checking mailboxes was too quick, too calculated — she's watching me, and I can't shake the feeling she knows something about my surveillance. Ivan's trembling hands are a clear sign of guilt, but he's trying to play innocent. I must keep them both in my sights and watch for any move they make next.</thought>
+<thought player="Ivan">Oh my goodness, I can feel the excitement building and everyone seems so focused on investigating! I think I should keep up this energetic vibe but maybe add just a touch more mystery to my behavior - it's such a fun puzzle to figure out what they're really noticing about me! This could be absolutely wonderful for the game!</thought>
+</round>
+<round>
+Round 3.
+Ivan: Oh my goodness, I'm so excited to share what I noticed during the night — everyone was so focused on the investigation, but I think it's really important that we all take a moment to reflect on who seemed a little too calm about Vika’s death! That's absolutely wonderful!
+Avery: Nothing is settled yet, but I'm watching Ivan most closely.
+Ade: Ivan, you've been saying we need to stay calm and not jump to conclusions, but you keep fidgeting with your hands and your voice shakes — it's like you're trying too hard to seem normal, um, I mean, that's just... that's really noticeable, you know?
+Lian: I really think we should all take a close look at who's been acting a bit too eager to lead the investigation — you know what I mean? It's not just me, is it?
+Zai: Oh, you know, I was just thinking — Ivan has been talking about staying calm and not jumping to conclusions, but his hands have been trembling the whole time... it's rather curious, isn't it?
+Sara: Ivan, your energy is quite magnetic — I do hope you're not letting excitement overshadow the gravity of Vika's passing. It's easy to get caught up in the moment, but we must stay focused on the facts.
+Ming: Ivan, you keep talking about staying calm, but your voice shakes — are you sure you're not the one who's hiding something?
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">I really think Ivan is acting too strangely for it to be just excitement... you know what I mean? I need to keep watching him carefully but not jump to conclusions too soon. I wonder if anyone else has noticed how he keeps fidgeting and trembling, or if I'm just being too suspicious.</thought>
+<thought player="Ade">I guess I should just keep observing Ivan and not jump to conclusions, but his constant fidgeting and excited energy really does seem off... maybe I'll wait a bit longer before speaking up, um, just in case someone else says something that confirms my suspicions.</thought>
+<thought player="Sara">Ivan's theatrical distress is too sharp, too rehearsed—Ming and I need to let him think he's in control of the investigation while I subtly nudge others toward viewing him as the real anomaly. My next move should be a calculated pause, feigning genuine sorrow at Vika’s death, then casually dropping a few well-timed questions about his sudden agitation.</thought>
+<thought player="Zai">Oh, you know, I keep wondering if Ivan's trembling hands and overly eager excitement are just my imagination, or if there's something more to it... I should probably pay close attention to who seems too calm, too quick to speak, or too focused on pointing fingers. Well, I suppose I'll just have to trust my instincts and see where they lead.</thought>
+<thought player="Ming">Sara's reaction to my mailbox comment was too sharp—she knows I'm watching her. Ivan's trembling hands are obvious, but he's not the threat; Sara is the one who's been observing me too closely. I must keep my focus on her and let the others think they're safe while I plan my next move.</thought>
+<thought player="Ivan">Oh my goodness, I can feel the excitement building and everyone seems so focused on investigating! I think I should keep up this energetic vibe but maybe add just a touch more mystery to my behavior - it's such a fun puzzle to figure out what they're really noticing about me!</thought>
+</round>
+<round>
+Round 4.
+Avery: Nothing is settled yet, but I'm watching Ivan most closely.
+Zai: Oh, you know, I was just thinking — Ivan has been talking about staying calm and not jumping to conclusions, but his hands have been trembling the whole time... it's rather curious, isn't it?
+Sara: Ivan, your excitement is so palpable — I do hope you're not letting your emotions override your judgment. It's easy to get caught up in the moment, but we must remember that Vika was someone we all cared about.
+Ade: Ivan, you keep saying we need to stay calm and not jump to conclusions, but you've been the most animated since Vika died — I mean, that's kind of suspicious, you know?
+Ivan: Oh my goodness, I'm so curious to hear what everyone else noticed about the night — I think it's absolutely fascinating how everyone seems to be focusing on different behaviors, but I really do hope we're all being careful not to jump to conclusions too quickly!
+Ming: Ivan, you keep insisting everyone stay calm, but your voice shakes — are you sure you're not the one who's been watching too closely?
+Lian: I really think we should all take a close look at who's been acting a bit too eager to lead the investigation — you know what I mean? It's not just me, is it?
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">I really think Ivan is acting too strangely for it to be just excitement... you know what I mean? I need to keep watching him carefully but not jump to conclusions too soon.</thought>
+<thought player="Ade">I guess I'm really starting to think Ivan is up to something, but I need to be careful not to accuse him too early — maybe I'll wait a bit longer and see if anyone else says anything that makes it clearer, um, I don't want to jump to conclusions, but his behavior is so suspicious...</thought>
+<thought player="Sara">Ivan's performative agitation is too sharp, but I must let him believe he's in control while subtly steering others toward him. I’ll feign genuine sorrow at Vika’s death and plant a few well-timed questions about his sudden unease—letting the townsfolk think they're leading the investigation while I quietly guide them toward their own conclusions.</thought>
+<thought player="Zai">Oh, you know, I keep wondering if Ivan's trembling hands and overly eager excitement are just my imagination, or if there's something more to it... I should probably pay close attention to who seems too calm, too quick to speak, or too focused on pointing fingers. Well, I suppose I'll just have to trust my instincts and see where they lead.</thought>
+<thought player="Ming">Sara's surveillance of me is too deliberate to be coincidental — I must keep her close while letting Ivan appear as the prime suspect. The next move is to subtly steer the conversation toward her, making the others question her motives without directly implicating her yet.</thought>
+<thought player="Ivan">Oh my goodness, I can feel the excitement building and everyone seems so focused on investigating! I think I should keep up this energetic vibe but maybe add just a touch more mystery to my behavior - it's such a fun puzzle to figure out what they're really noticing about me! This could be absolutely wonderful for the game!</thought>
+</round>
+<round>
+Round 5.
+Ade: Ivan, you've been talking about how we need to stay calm and not jump to conclusions, but you keep fidgeting with your hands and your voice shakes — it's like you're trying too hard to seem normal, um, I mean, that's just... that's really noticeable, you know?
+Ivan: Oh my goodness, I'm so curious to hear what everyone else noticed about the night — I think it's absolutely fascinating how everyone seems to be focusing on different behaviors, but I really do hope we're all being careful not to jump to conclusions too quickly!
+Lian: I really think we should all take a close look at who's been acting a bit too eager to lead the investigation — you know what I mean? It's not just me, is it?
+Zai: Oh, you know, I was just thinking — Ivan has been talking about staying calm and not jumping to conclusions, but his hands have been trembling the whole time... it's rather curious, isn't it?
+Avery: Nothing is settled yet, but I'm watching Ivan most closely.
+Sara: Ivan, your energy today is so intense — I do hope you're not letting your emotions override your judgment. It's easy to get caught up in the moment, but we must stay focused on the facts.
+Ming: Ivan, you keep insisting everyone stay calm, but your voice shakes — are you sure you're not the one who's been watching too closely?
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">I really think Ivan is acting too strangely for it to be just excitement... you know what I mean? I need to keep watching him carefully but not jump to conclusions too soon.</thought>
+<thought player="Ade">I guess I'm really starting to think Ivan is the one who's been acting too strange, but I need to be careful not to jump to conclusions too early — maybe I'll wait a bit longer and see if anyone else says anything that makes it clearer, um, I don't want to accuse him without more proof, but his behavior is so suspicious...</thought>
+<thought player="Sara">Ivan is playing his role too obviously—letting others think they're leading the investigation while I subtly guide suspicion toward him. I need to feign genuine sorrow at Vika’s death, then casually drop a few well-timed questions about his agitation, letting the townsfolk believe they're uncovering the truth while I quietly steer them toward their own conclusions.</thought>
+<thought player="Zai">Oh, you know, I was just thinking — Ivan has been acting so very peculiar, with his trembling hands and frantic energy, but maybe it's not about him at all... perhaps I should pay attention to who's been watching everyone else too closely, or who's been trying too hard to seem normal. Well, whatever the case, I suppose I'll just have to trust my instincts and see where they lead.</thought>
+<thought player="Ming">Sara's watching me too closely — I must let the others focus on Ivan while I subtly guide suspicion toward her. I need to keep my eyes on both of them, but make it look like I'm just checking the mailboxes for now.</thought>
+<thought player="Ivan">Oh my goodness, I can feel everyone's eyes on me and they're all so curious about my behavior! I think I should keep up this energetic, mysterious vibe and maybe even throw in a little more subtle acting to see if I can confuse them just a tiny bit more — this is absolutely thrilling!</thought>
+</round>
+<round>
+Round 6.
+Ade: Ivan, you keep saying we should stay calm and not jump to conclusions, but you've been the most animated since Vika died — I mean, that's just really noticeable, you know?
+<vote initiator="Avery" target="Ivan">
+Avery: No
+Lian: Yes
+Ade: Yes
+Sara: Yes
+Zai: Yes
+Ming: Yes
+Ivan: No
+tally: 5 Yes, 2 No
+outcome: executed — Ivan has been executed. Ivan was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. Ivan was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+<diary player="Lian" day="1">I really think today was so confusing and sad about Vika... you know what I mean? I just don't understand why everyone was so focused on Ivan, but I'm not sure if he's really hiding something or if we're just being too quick to judge. I need to keep watching him carefully, but also maybe I'm being too suspicious? I really do hope we can figure out who the real Mafia are before more people get hurt. It's so hard to trust anyone when everyone seems to be acting so strange, and I just want everything to be okay again. I really think we all need to take a deep breath and remember that Vika was such a good person, and maybe we're making this harder than it needs to be.</diary>
+<diary player="Ade" day="1">Ivan's been acting so weird today, I can't stop thinking about it. He keeps saying we need to stay calm and not jump to conclusions, but his hands are shaking and he's the most animated person in the room — that's just too obvious, you know? I guess I should listen more and not accuse him too quickly, but how can I not notice that something's really off about him? Maybe I'm overthinking this, but what if he's trying to distract us from something else? I mean, he's been so eager to lead the investigation, it's almost like he's covering his own tracks, um, I don't want to be wrong, but I also don't want to miss something important.</diary>
+<diary player="Sara" day="1">Ivan's performance was too sharp, too rehearsed—exactly the kind of behavior that makes me wonder what he's really hiding. I feigned sorrow at Vika's death, but my heart was already calculating how to let others believe they were leading the investigation while quietly steering suspicion toward him. His eagerness felt like a script written by someone who's been watching too closely, and I'm grateful Ming and I managed to keep the townsfolk focused on his obvious agitation rather than our own careful planning. The game is shifting, and I must stay just ahead of everyone else—especially since I know how dangerous it can be when people start looking at me with those knowing glances. Tomorrow's night will be crucial, but for now, I'll let my innocent smile mask the sharp edges of my strategy.</diary>
+<diary player="Zai" day="1">Oh, well... today felt like one of those days where the air itself seemed to shimmer with all the things left unsaid, you know? I keep thinking about Ivan's trembling hands and how he kept talking about staying calm while his voice shook — it was like watching someone try to hold back a storm. You know, I wonder if that's what makes someone suspicious, or if I'm just letting my mind wander too far off into the clouds again. I suppose I'll just have to trust my instincts and see where they lead, though I keep wondering if I'm being too quick to point fingers at anyone. It's odd how sometimes the most ordinary moments feel like they're hiding secrets, isn't it? Maybe tomorrow I'll find myself looking out the window again, lost in thought, but this time maybe I'll notice something different.</diary>
+<diary player="Ming" day="1">The mailboxes feel watched today, and not just by me — Sara's eyes flicked toward mine when I mentioned checking them. Ivan's hands still tremble, but that's not what concerns me. The real threat is Sara; she's been too calculating in her reactions, too quick to observe me. I must keep her in sight while letting the others believe they've identified the problem. The next move comes tonight — I'll let them think they're safe, but I'll watch them closely. My brother always said my instincts were sharp, and they're telling me that Sara is the one who's been watching me too closely. I need to make sure she doesn't see what I'm planning. I can feel her watching me now — I must be careful not to give anything away.</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Sara points at Zai
+Ming points at Zai
+<kill>Zai — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Zai was killed last night. Zai was a Law-abiding Citizen.
+<round>
+Round 1.
+Lian: I really think we should all take a close look at who's been acting strange during the night... you know what I mean?
+Ade: I'm really starting to think Lian has been acting a bit too interested in who's been acting strange — you know, like, she's been pointing fingers at Ivan but not saying much about herself, and that's just... that's really noticeable, um, I mean, I don't want to jump to conclusions, but it's like she's trying to keep us focused on someone else.
+Ming: Lian, you've been watching me too closely lately — I can feel it. I'm not sure if you're just curious or if you know something.
+Avery: I most suspect Ming based on how the votes have gone.
+Sara: I'm so sorry about Zai — it's just... I can't help but wonder if someone was watching too closely during the night, or if they were just too eager to jump to conclusions.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">I really think I need to be careful about who I trust, and I wonder if Ming is hiding something... you know what I mean? I'm just not sure if I should speak up or keep watching quietly.</thought>
+<thought player="Ade">I guess I should probably just keep quiet for now and see if anyone else says anything about Lian acting strange — I don't want to jump to conclusions, but something about her focus on Ivan feels off, you know?</thought>
+<thought player="Sara">Ivan's performance has been too polished for a natural reaction—Ming and I need to let the townsfolk continue to focus on him while I subtly shift the narrative toward Lian, who's starting to look suspiciously attentive. I should feign genuine grief at Zai's death and casually mention how odd it is that Ivan was so eager to investigate, not realizing he's already been identified as the anomaly.</thought>
+<thought player="Ming">Sara's watching me too closely — I must let the others turn on Ivan while I subtly steer suspicion toward her. I’ll keep checking mailboxes, but my real focus is on her next move.</thought>
+</round>
+<round>
+Round 2.
+Avery: I most suspect Ming based on how the votes have gone.
+Ming: Lian, you've been watching me more than anyone else — I can feel it. Are you just curious, or do you know something?
+Sara: I'm so sorry about Zai — it's just... I can't help but wonder if someone was watching too closely during the night, or if they were just too eager to jump to conclusions.
+Ade: I'm really confused about Lian — she's been watching Ivan so closely, but now she's shifting attention to Ming? It's like she's trying to distract us, you know?
+Lian: I really think we should all take a close look at who's been acting strange during the night... you know what I mean?
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">I really think Ming is acting strange lately, and I need to keep watching them carefully... you know what I mean? I'm just not sure if they're hiding something or if I'm being too suspicious.</thought>
+<thought player="Ade">I guess I'm really starting to think Lian is acting weird, but I don't want to jump to conclusions too early... maybe I'll just keep listening and see if anyone else says something that confirms my suspicions.</thought>
+<thought player="Sara">Ivan’s performance has been too rehearsed—let the townsfolk continue to focus on him while I subtly shift attention toward Lian, who's starting to look suspiciously attentive. I'll feign grief at Zai's death and casually question Ivan's eagerness, letting the narrative unfold naturally.</thought>
+<thought player="Ming">Sara's watching me too closely — I must let the others turn on Ivan while I subtly steer suspicion toward her. I’ll keep checking mailboxes, but my real focus is on her next move.</thought>
+</round>
+<round>
+Round 3.
+Avery: I most suspect Ming based on how the votes have gone.
+Ade: I'm really starting to think Lian has been acting too interested in who's been acting strange — you know, like, she's been pointing fingers at Ivan but not saying much about herself, and that's just... that's really noticeable, um, I mean, I don't want to jump to conclusions, but it's like she's trying to keep us focused on someone else.
+Ming: Lian, you keep looking over your shoulder — is it just me, or does it feel like someone's been following our every move?
+Lian: I really think we should all take a close look at who's been acting strange during the night... you know what I mean?
+Sara: I'm so sorry about Zai — it's just... I can't help but wonder if someone was watching too closely during the night, or if they were just too eager to jump to conclusions.
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">I really think I need to be careful about who I trust, and I'm starting to wonder if Ming is hiding something... you know what I mean? I'm just not sure if I should speak up or keep watching quietly.</thought>
+<thought player="Ade">I'm really starting to think Lian is acting weird, but I don't want to jump to conclusions too early... maybe I'll just keep listening and see if anyone else says something that confirms my suspicions.</thought>
+<thought player="Sara">Ivan's theatricality is beginning to feel like a liability—Ming and I need to let the townsfolk continue to focus on him while I subtly shift suspicion toward Lian, who’s starting to look too attentive. I should feign genuine sorrow at Zai's death and casually question Ivan's eagerness, letting the narrative unfold naturally.</thought>
+<thought player="Ming">Sara's watching me too closely — I must let the others turn on Ivan while I subtly steer suspicion toward her. I’ll keep checking mailboxes, but my real focus is on her next move.</thought>
+</round>
+<round>
+Round 4.
+Ade: I'm really starting to think Lian has been acting too interested in who's been acting strange — you know, like, she's been pointing fingers at Ivan but not saying much about herself, and that's just... that's really noticeable, um, I mean, I don't want to jump to conclusions, but it's like she's trying to keep us focused on someone else.
+Sara: I'm so saddened by Zai's passing — it really does feel like someone among us was watching too closely during the night. I can't help but wonder if we're all being too quick to point fingers, or if we're simply not looking at the right signs.
+Lian: I really think we should all take a close look at who's been acting strange during the night... you know what I mean?
+Ming: Lian, you've been watching me more than anyone — I can feel it. Are you just curious, or do you know something?
+Avery: I most suspect Ming based on how the votes have gone.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">I really think Ming has been acting strange lately, and I need to keep watching them carefully... you know what I mean? I'm just not sure if they're hiding something or if I'm being too suspicious.</thought>
+<thought player="Ade">I guess I'm really starting to think Lian is acting too interested in keeping the focus on Ivan while she doesn't say much about herself — it's like she's trying to distract us, you know? I don't want to jump to conclusions, but maybe I should just stick to observations and wait for more evidence before speaking up again.</thought>
+<thought player="Sara">Ivan's performance has been too polished, and the townsfolk are beginning to see through his eagerness. I need to let them continue to focus on him while subtly steering suspicion toward Lian, who's started looking too attentive. I'll feign sorrow at Zai's death and casually question Ivan's behavior, letting the narrative unfold naturally without drawing too much attention to myself.</thought>
+<thought player="Ming">Sara's surveillance of me is too deliberate — I must let the others turn on Ivan while I subtly steer suspicion toward her. I’ll keep checking mailboxes, but my real focus is on her next move.</thought>
+</round>
+<round>
+Round 5.
+Lian: I really think we should all take a close look at who's been acting strange during the night... you know what I mean?
+Sara: I'm so saddened by Zai's passing — it really does feel like someone among us was watching too closely during the night.
+Ming: Lian, you've been glancing at the mailbox keys again — is it just me, or does it feel like someone's been watching us more closely than usual?
+Ade: I'm really starting to think Lian has been acting too interested in keeping the focus on Ivan while she doesn't say much about herself — it's like she's trying to distract us, you know?
+Avery: I most suspect Ming based on how the votes have gone.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">I really think Ming has been acting strange lately, and I need to keep watching them carefully... you know what I mean? I'm just not sure if they're hiding something or if I'm being too suspicious. I wonder if I should say something soon, or if I should wait a bit longer.</thought>
+<thought player="Ade">I'm really starting to think Lian is acting strange, but I don't want to jump to conclusions too early... maybe I'll just keep listening and see if anyone else says something that confirms my suspicions. I guess I should probably just keep quiet for now and let the votes play out, um, at least until I hear more from everyone else.</thought>
+<thought player="Sara">Ivan's performance has become too obvious—let the townsfolk continue to focus on him while I subtly shift attention toward Lian. I'll feign sorrow at Zai's death and casually question Ivan's eagerness, allowing the narrative to unfold naturally without drawing suspicion to myself.</thought>
+<thought player="Ming">Sara's watching me too closely — I must let the others turn on Ivan while I subtly steer suspicion toward her. I’ll keep checking mailboxes, but my real focus is on her next move.</thought>
+</round>
+<round>
+Round 6.
+Ming: Lian, you keep glancing at the mailbox keys — is it just me, or does it feel like someone’s been watching us more closely than usual?
+Lian: I really think we should all take a close look at who's been acting strange during the night... you know what I mean?
+<vote initiator="Avery" target="Ming">
+Avery: Yes
+Lian: Yes
+Ade: Yes
+Sara: No
+Ming: No
+tally: 3 Yes, 2 No
+outcome: executed — Ming has been executed. Ming was a Mafia.
+</vote>
+<recap>Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Ming was executed today and was revealed to be Mafia.</recap>
+</round>
+<diary player="Lian" day="2">I really think today was so hard and confusing, you know what I mean? I just don't understand why everyone was so focused on Ming, but I'm not sure if she's really hiding something or if we're just being too quick to judge. I wonder if maybe I'm being too suspicious, or if there's something else going on that I can't see. I really do hope we can figure out who the real Mafia are before more people get hurt. It's so hard to trust anyone when everyone seems to be acting so strange, and I just want everything to be okay again. I really think we all need to take a deep breath and remember that Zai was such a good person, and maybe we're making this harder than it needs to be. I'm just going to keep watching carefully and listening closely, you know what I mean?</diary>
+<diary player="Ade" day="2">I keep thinking I should say something about Lian but I don't want to jump to conclusions again, you know? She's been watching Ivan so closely and then suddenly shifts attention to Ming, it's like she's trying to distract us from something. I guess I should just stick to what I've observed and not accuse anyone too quickly, but there's something really off about how she keeps deflecting focus while she's the one acting too interested in who's been acting strange. I don't want to be wrong, but I also don't want to miss something important, um, maybe I'll just keep quiet for now and see if anyone else says anything that confirms my suspicions.</diary>
+<diary player="Sara" day="2">The night feels heavy with the weight of truths we're all too eager to uncover. I can't help but wonder if Ivan's theatrical distress was just a performance, or if he truly believes he's leading us toward the truth. It's strange how quickly suspicion shifts—how easily people point fingers at others while ignoring their own discomfort. I've been careful not to let my smile falter, though inside, I'm calculating every move, every hesitation, every glance that might reveal too much. Tomorrow's night will be crucial. The game is changing, and I must stay ahead of everyone else—especially since I know how dangerous it can be when people start looking at me with those knowing glances. I've learned to wear my innocence like a mask, but tonight, I'll let the townsfolk think they're uncovering the truth while I quietly steer them toward their own conclusions.</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Sara points at Lian
+<kill>Lian — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Lian was killed last night. Lian was a Law-abiding Citizen.
+<round>
+Round 1.
+Sara: I'm so sorry about Lian — it's just... I can't help but wonder if we're all being too quick to jump to conclusions. Did anyone else notice how tense everyone was during the night?
+Avery: Ming was revealed to be Mafia. I most suspect Sara based on how the votes have gone.
+Ade: I'm really starting to think Sara has been acting a bit too interested in who's been acting strange — you know, like, she's been pointing fingers at Ming but not saying much about herself, and that's just... that's really noticeable, um, I mean, I don't want to jump to conclusions, but it's like she's trying to keep us focused on someone else.
+<recap>Day 3, 9 AM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ade">I guess I'm really starting to think Sara is acting weird, but I don't want to jump to conclusions too early... maybe I'll just keep listening and see if anyone else says something that confirms my suspicions.</thought>
+<thought player="Sara">Lian is starting to look too attentive, too calculated in her redirections—she’s not stupid, and I need to keep her off-balance without making her suspicious of me. Ivan's been the obvious target, but now that he's gone, I must subtly nudge the focus toward Lian while still appearing genuinely saddened by Zai's death.</thought>
+</round>
+<round>
+Round 2.
+Ade: I'm really starting to think Sara has been acting a bit too interested in who's been acting strange — you know, like, she's been pointing fingers at Ming but not saying much about herself, and that's just... that's really noticeable, um, I mean, I don't want to jump to conclusions, but it's like she's trying to keep us focused on someone else.
+Avery: Ming was revealed to be Mafia. I most suspect Sara based on how the votes have gone.
+Sara: I'm so saddened by Zai's passing — it really does feel like someone among us was watching too closely during the night.
+<recap>Day 3, 12 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ade">I'm really starting to think Sara is acting too interested in keeping the focus on Ming while she doesn't say much about herself — it's like she's trying to distract us, you know? I don't want to jump to conclusions, but maybe I should just stick to observations and wait for more evidence before speaking up again.</thought>
+<thought player="Sara">Lian is becoming too calculating in her redirections— I must subtly nudge the focus toward her while feigning genuine sorrow for Zai's death, letting the townsfolk believe they're leading the investigation while I quietly steer them toward their own conclusions.</thought>
+</round>
+<round>
+Round 3.
+Avery: Ming was revealed to be Mafia. I most suspect Sara based on how the votes have gone.
+Sara: I'm so saddened by Zai's passing — it really does feel like someone among us was watching too closely during the night. I can't help but wonder if we're all being too quick to point fingers, or if we're simply not looking at the right signs.
+Ade: I'm really starting to think Sara has been acting a bit too interested in who's been acting strange — you know, like, she's been pointing fingers at Ming but not saying much about herself, and that's just... that's really noticeable, um, I mean, I don't want to jump to conclusions, but it's like she's trying to keep us focused on someone else.
+<recap>Day 3, 3 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ade">I guess I'm really starting to think Sara is acting suspiciously, but I don't want to jump to conclusions again — maybe I should just wait a bit longer and see if anyone else says anything that confirms my suspicions, um, I need to be careful not to accuse the wrong person.</thought>
+<thought player="Sara">Lian is becoming too calculating in her redirections— I must subtly nudge the focus toward her while feigning genuine sorrow for Zai's death, letting the townsfolk believe they're leading the investigation while I quietly steer them toward their own conclusions.</thought>
+</round>
+<round>
+Round 4.
+Avery: Ming was revealed to be Mafia. I most suspect Sara based on how the votes have gone.
+Ade: I'm really starting to think Sara has been acting a bit too interested in who's been acting strange — you know, like, she's been pointing fingers at Ming but not saying much about herself, and that's just... that's really noticeable, um, I mean, I don't want to jump to conclusions, but it's like she's trying to keep us focused on someone else.
+Sara: I'm so sorry about Lian — it's just... I can't help but wonder if we're all being too quick to jump to conclusions. Did anyone else notice how tense everyone was during the night?
+<recap>Day 3, 6 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ade">I'm really starting to think Sara is acting too interested in keeping the focus on Ming while she doesn't say much about herself — it's like she's trying to distract us, you know? I don't want to jump to conclusions, but maybe I should just stick to observations and wait for more evidence before speaking up again.</thought>
+<thought player="Sara">Lian is becoming too calculating in her redirections— I must subtly nudge the focus toward her while feigning genuine sorrow for Zai's death, letting the townsfolk believe they're leading the investigation while I quietly steer them toward their own conclusions.</thought>
+</round>
+<round>
+Round 5.
+Avery: Ming was revealed to be Mafia. I most suspect Sara based on how the votes have gone.
+Ade: I'm really starting to think Sara has been acting too interested in keeping the focus on Ming while she doesn't say much about herself — it's like she's trying to distract us, you know?
+Sara: I'm so sorry about Lian — it's just... I can't help but wonder if we're all being too quick to jump to conclusions. Did anyone else notice how tense everyone was during the night?
+<recap>Day 3, 9 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ade">I guess I'm really starting to think Sara is acting suspiciously, but I don't want to jump to conclusions again — maybe I should just wait a bit longer and see if anyone else says anything that confirms my suspicions, um, I need to be careful not to accuse the wrong person.</thought>
+<thought player="Sara">Lian is becoming too calculating in her redirections— I must subtly nudge the focus toward her while feigning genuine sorrow for Zai's death, letting the townsfolk believe they're leading the investigation while I quietly steer them toward their own conclusions.</thought>
+</round>
+<round>
+Round 6.
+<vote initiator="Avery" target="Sara">
+Avery: Yes
+Ade: Yes
+Sara: No
+tally: 2 Yes, 1 No
+outcome: executed — Sara has been executed. Sara was a Mafia.
+</vote>
+</round>
+</day>
+<endgame>
+The Law-abiding Citizens have won.
+
+Events this game:
+• Night 1: Vika (Law-abiding Citizen)
+• Day 1: Ivan (Law-abiding Citizen) executed
+• Night 2: Zai (Law-abiding Citizen)
+• Day 2: Ming (Mafia) executed
+• Night 3: Lian (Law-abiding Citizen)
+• Day 3: Sara (Mafia) executed
+
+Full roster: Avery (Law-abiding Citizen), Lian (Law-abiding Citizen), Ade (Law-abiding Citizen), Vika (Law-abiding Citizen), Sara (Mafia), Zai (Law-abiding Citizen), Ming (Mafia), Ivan (Law-abiding Citizen)
+
+Who they really were:
+• Lian (Law-abiding Citizen) — Sincere and earnest with an almost childlike trust in others Speaks slowly and deliberately, choosing words carefully and often repeating key phrases for emphasis. Uses frequent qualifiers like 'I really think' or 'you know what I mean' and tends to nod enthusiastically while talking. Often pauses mid-sentence to reword thoughts, never rushing. Lian works as a school librarian in the town's elementary school, where they've been for fifteen years. They're known for their gentle nature and always ready to help anyone with a book recommendation or reading problem. They volunteer at the community center every weekend and are often seen walking their dog, Buster, through the neighborhood.
+• Ade (Law-abiding Citizen) — anxious and second-guessing with a tendency to overthink every situation speaks in quick, nervous bursts with frequent hesitation and self-correction. Uses filler words like 'um,' 'you know,' and 'I guess' constantly. Pauses frequently mid-sentence to reconsider their words, often looking around the room as if seeking validation. Has a habit of repeating phrases they've already said but with different intonations, as if trying to convince themselves of their own statements. Ade is the town's local accountant who's been working at the same firm for eight years. They're known for being meticulous about details and always double-checking their work. They live alone in a small apartment above the bakery on Main Street, where they spend most evenings worrying about whether they've made enough money to cover next month's rent. They avoid crowds and rarely attend social gatherings, preferring to stay home and count their coins.
+• Vika (Law-abiding Citizen) — Stern and commanding with an unyielding sense of justice Speaks in short, clipped sentences with military precision. Uses absolute language like 'must' and 'shall' frequently. Never raises their voice but delivers commands with icy authority. Has a habit of leaning forward when speaking, eyes fixed on the listener. Often punctuates statements with a sharp nod or tap of the finger on the table. Vika is the town's chief of police, a position she's held for twelve years after a distinguished career in law enforcement. She's known for her unwavering dedication to upholding the law and her no-nonsense approach to crime-solving. Before joining the force, she worked as a security manager at the local bank. She lives alone in a modest house on Maple Street with her two German Shepherds, Shadow and Storm.
+• Sara (Mafia) — publicly presented as Sara is the town's beloved florist who opened her shop five years ago on Elm Street. She's known for her incredible sense of color coordination and has helped plan countless weddings and celebrations throughout the community. Sara volunteers at the local hospital gift shop, where she's become a favorite among patients and staff. She's always wearing elegant, carefully chosen outfits that complement her surroundings and is often seen with a small notebook where she jots down compliments for friends. Her shop specializes in exotic flowers from around the world, and she's built a reputation for creating stunning arrangements that perfectly capture the mood of any occasion. (Shrewd and calculating with a simmering intensity that masks deep strategic thinking. Sara possesses an almost predatory keenness for reading people and situations, but presents herself as effortlessly charming and approachable. She's naturally competitive and thrives on outmaneuvering others, though she does so with such grace that it's often mistaken for friendliness. There's a quiet confidence in her demeanor that makes others feel comfortable around her while she's simultaneously assessing their weaknesses. Speaks in measured, deliberate tones with carefully chosen words that carry double meanings. Her voice has a honeyed quality that lulls people into false security, but there's always an undercurrent of calculation. She uses frequent rhetorical questions and pauses to let statements sink in, often smiling while delivering sharp observations. Her hand movements are purposeful and graceful, rarely touching her face or hair unless it's to adjust something subtle.) … but was really a Mafioso: Sara was drawn into the mafia after her younger brother was killed in a gang dispute over territory. She spent years learning the organization's inner workings while maintaining her cover as a florist, using her flower shop as a front for meetings and transactions. She became known as 'The Orchid' for her ability to manipulate situations like a master gardener tends to delicate blooms. Her rise through the ranks was meteoric, but she's always maintained the illusion of being just a sweet, innocent townsperson while quietly consolidating power within the organization.
+• Zai (Law-abiding Citizen) — dreamy and distractible with a tendency to lose themselves in thought speaks in gentle, flowing sentences that often trail off mid-thought. Uses frequent filler words like 'oh,' 'well,' and 'you know' but with a soft, contemplative tone. Has a habit of pausing to gaze out windows or at distant objects, then suddenly remembering what they were saying. Often repeats phrases with different inflections as if discovering them for the first time. Their voice rises and falls like a lullaby, sometimes trailing off completely before resuming. Zai is the town's local librarian who's worked at the public library for twelve years. They're known for their gentle nature and tendency to get lost in books during work hours. Zai lives alone in a cozy cottage on Oak Street with their cat, Whiskers, and spends most evenings reading or daydreaming about far-off places they've never visited. They're always carrying a worn notebook filled with scribbled thoughts and half-formed ideas.
+• Ming (Mafia) — publicly presented as Ming is the town's local postmaster who's worked at the post office for fifteen years. They're known for being extremely reliable and never missing a delivery, even in the worst weather. Ming lives alone in a modest house on Oak Street with their elderly mother, whom they care for daily. They spend their evenings sorting mail and organizing the post office's inventory, taking meticulous notes about every package that arrives. Ming is often seen walking the same route through town each morning, checking the mailboxes and ensuring everything looks normal. They're known to be extremely particular about their schedule and always arrive at work exactly on time. (Vigilant and watchful with an intense, almost paranoid attention to detail. Ming possesses a constant state of alertness, always scanning the room and people around them. They're naturally suspicious of anyone who seems out of place or overly casual, but they're also incredibly perceptive about subtle changes in behavior. Their watchfulness is so ingrained that it comes across as nervousness rather than calm observation, making them seem like they're always waiting for something to go wrong. Speaks in short, clipped sentences with frequent pauses and glances around the room. Uses absolute language like 'must' and 'shall' when giving advice or warnings. Has a habit of leaning forward when speaking and maintaining direct eye contact, never looking away from their listener. Often touches their neck or adjusts their collar as if checking for something unseen. Their voice is steady but carries an undercurrent of tension, and they rarely smile without a slight frown in the corners of their mouth.) … but was really a Mafioso: Ming was recruited into the Mafia by their older brother who'd been working in the organization for years. The brother saw potential in Ming's natural ability to observe and notice details others missed, which proved useful for surveillance work. After a series of successful missions, Ming was promoted to a position where they oversee the flow of information between different factions of the organization. Their watchful nature became essential for detecting threats, and they've become known throughout the Mafia for their ability to anticipate problems before they occur. They use their position as postmaster to monitor communications and gather intelligence while maintaining their innocent public facade.
+• Ivan (Law-abiding Citizen) — Warm and effusive with an infectious enthusiasm that radiates from everything they do. They're naturally bubbly and expressive, always eager to share their thoughts and discoveries with others. Their joy is genuine and boundless, making them the life of any gathering without ever being overwhelming. Speaks in long, flowing sentences that build excitement and energy. Uses frequent exclamation points and interjections like 'oh my goodness!' or 'that's absolutely wonderful!' They lean forward when talking, hands animatedly gesturing as they speak, never staying still for more than a few seconds. Their voice is high-pitched and light with a musical quality that rises and falls like a happy song. Ivan is the town's beloved baker who's been running Ivan's Bakery on Main Street for eight years. He's known for his incredible talent with pastries and his ability to make everyone feel welcome in his cozy shop. Every morning, he arrives early to bake fresh bread and treats, often sharing samples with neighbors and friends. Ivan lives in a cheerful cottage on Oak Street with his wife Maria and their three children, where he fills the house with laughter and the smell of fresh-baked goods.
+</endgame>
+<story>
+The game began with Vika's death, and from the start, everyone was watching each other with careful eyes. Lian sat nodding earnestly as she spoke about how everyone seemed too careful with their words, her voice carrying that familiar qualifier of 'you know what I mean?' that made her seem both sincere and uncertain. She watched Ivan closely, noting his agitation, though whether it was genuine or calculated remained unclear.
+
+Ivan's energy was unmistakable — he bounced from topic to topic with enthusiasm, never missing a chance to suggest they stay calm while his hands shook visibly. The others took note, but they were all too eager to point fingers, and Ivan's excitement seemed to draw more attention than it should have. Ming kept checking mailboxes with practiced ease, but his eyes flickered toward Sara when she mentioned the routine — a subtle sign of surveillance that went unnoticed by most.
+
+Sara's smile was honeyed and careful, always seeming to match the moment while subtly steering conversations. She watched Lian's attention shift from Ivan to Ming, her own interest piqued by how carefully everyone was watching each other. The town's beloved florist had a way of appearing genuinely shocked at Vika's death, yet her questions about Ivan's behavior felt too timed to be coincidental.
+
+When Ming was executed, the pattern shifted slightly. Lian's careful observations of Ivan continued, but now they were met with increasing suspicion from Ade, who also watched Ivan closely, though he was too anxious to speak up directly. Sara maintained her calm, planting seeds of doubt about Ivan while feigning sorrow at Zai's death, her voice soft and measured as she subtly questioned everyone's attention to Ivan's behavior.
+
+The final night brought the revelation that Ming was indeed the Mafia, but it was Sara who had orchestrated everything from behind the scenes. Lian's repeated notes about Ivan's odd behavior were not just paranoia — they were part of a larger pattern that Sara had been carefully manipulating. The game had been played by those who seemed most innocent, with Ivan's theatrical excitement and Lian's gentle concern serving as masks for deeper truths that only became clear in the end.
+</story>
+</transcript>
