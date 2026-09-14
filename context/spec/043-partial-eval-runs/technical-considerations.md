@@ -115,7 +115,72 @@ ADR 011 requires a default-on `GRAPHIA_<FEATURE>` flag for every *gameplay-influ
 
 ### 2.8 Cost of re-scoring, and the one number to measure
 
-Re-running `:4413`–`4587` per game is *N* times the scoring work instead of once. Most of it is trivial folding, but **`score_repetition` is pairwise near-duplicate detection over all pooled AI lines**, so its cost grows with the square of accumulated lines and is paid again at every game. Record 47 pooled 902 lines over ten games; the total re-scoring work across a run is therefore on the order of the sum of squares rather than one square. This is expected to be seconds, not minutes, and is dwarfed by a 33-minute local game — but it is the one place where "just call the existing block again" could surprise, so it must be **measured on a real ten-game run and recorded**, not assumed. If it does bite, the mitigation is to re-score on a cadence (every game up to some *N*, then every *k*th) with the final write always exact.
+Re-running `:4413`–`4587` per game is *N* times the scoring work instead of once. Most of it is trivial folding, but **`score_repetition` is pairwise near-duplicate detection over all pooled AI lines**, so its cost grows with the square of accumulated lines and is paid again at every game. Record 47 pooled 902 lines over ten games; the total re-scoring work across a run is therefore on the order of the sum of squares rather than one square. The draft's prediction is kept here as written, because a prediction and its outcome are worth more together than the outcome alone:
+
+> This is expected to be seconds, not minutes, and is dwarfed by a 33-minute local game — but it is the one place where "just call the existing block again" could surprise, so it must be **measured on a real ten-game run and recorded**, not assumed.
+
+**Measured 2026-09-14: the prediction is wrong on the Nova arm, by an order of magnitude — and its own closing clause is what caught it.** Ten progressive passes over record 47's pool cost **363.5 s** on top of the **93.9 s** that a single final pass costs: minutes, not seconds, and **18.1%** added to a run that took 2003.9 s. The *model* was not the error — the sum-of-squares prediction is confirmed below to within 1%. The **yardstick** was the error. It compared against a 33-minute *local* game, when the arm that pools 902 lines finishes a game in about 200 s. What governs the share is **pooled lines per unit of wall clock**, not wall clock; so the prediction is *correct for the local arm and wrong for Nova*, and this section cannot carry one verdict for all three arms.
+
+**Method: a replay of record 47's own pool, because the instrumented run is blocked.** The ten-game Bedrock run this section demands cannot be run right now — the SSO session expired `2026-09-12T18:26:39Z` and there is no `AWS_BEARER_TOKEN_BEDROCK` fallback, so no Bedrock call can be made at all. Rather than assume, the quantity was measured a different way, on real data from the exact run this section already cites. Record 47 (`evals/blunder-ledger.yaml`, 2026-09-10, `provider: bedrock`, Nova Pro/Lite, ten games, `run.duration_seconds: 2003.911`, `metrics.repetition.denominator: 902`) has all ten of its game transcripts committed at `evals/transcripts/2026-09-10T13-31-38/`. Its pooled AI Day-speech lines were reconstructed from them — lines of the form `Name: text` inside `<day>`, excluding `Moderator:`, excluding the `human="true"` scripted seat, and **excluding the contents of `<vote>` blocks** (ballot answers are not Day speech; including them over-counts by exactly `substitutions.ballot.attempted`). `score_repetition` was then called on each of the ten cumulative prefixes the progressive write actually hits, with `ai_names` accumulated as a growing union exactly as `run_eval` does at `:6506`.
+
+**The replay is admissible because its fidelity is proven, not assumed.** It reproduces record 47's committed metrics **bit-for-bit** on every field of both pooled-line metrics:
+
+| field | replay | record 47 as committed |
+| --- | --- | --- |
+| `repetition.rate` | 0.7339246119733924 | 0.7339246119733924 |
+| `repetition.count` | 662 | 662 |
+| `repetition.denominator` | 902 | 902 |
+| `third_person_self_talk.rate` | 0.025498891352549888 | 0.025498891352549888 |
+| `third_person_self_talk.count` | 23 | 23 |
+| `third_person_self_talk.denominator` | 902 | 902 |
+
+So the pool re-scored is *the* pool that run scored, not a synthetic one of the same size. Timed on the project host (Darwin 25.3.0, Python 3.14.5, CPU otherwise idle), one sample per prefix.
+
+**What each of the ten progressive passes costs.**
+
+| after game | game's lines | pooled lines | `score_repetition` s | `score_third_person_self_talk` s |
+| --- | --- | --- | --- | --- |
+| 1 | 111 | 111 | 1.367 | 0.00023 |
+| 2 | 70 | 181 | 3.625 | 0.00030 |
+| 3 | 85 | 266 | 7.730 | 0.00043 |
+| 4 | 103 | 369 | 15.402 | 0.00058 |
+| 5 | 76 | 445 | 23.031 | 0.00071 |
+| 6 | 110 | 555 | 35.239 | 0.00085 |
+| 7 | 100 | 655 | 49.053 | 0.00099 |
+| 8 | 62 | 717 | 58.189 | 0.00108 |
+| 9 | 95 | 812 | 75.938 | 0.00124 |
+| 10 | 90 | 902 | 93.942 | 0.00144 |
+
+**The totals.**
+
+- **pre-043** — one pass at the full 902-line pool: **93.944 s**
+- **spec 043** — ten progressive passes: **363.524 s**, plus the final exact pass **93.944 s** → **457.467 s** (7.6 minutes)
+- **added by spec 043: 363.524 s — 3.87× the old cost**
+
+Two framings of the share, and both belong here because they answer different questions:
+
+- **Against what record 47 actually took** (2003.911 s): the spec-043 finalise total is **22.83%** of the run, the added cost **18.14%**. This answers "how big is this beside a run I have already seen?"
+- **Against what the same run would have taken under spec 043** — 2003.911 − 93.944 + 457.467 = **2367.4 s**: the finalise total is **19.3%** of the run, and the run is **18.1% longer** than it was. This answers "what will I actually wait?"
+
+**The sum-of-squares model is confirmed rather than asserted, which is what makes these figures extrapolate.** Predicted from the line counts alone, Σ(n_k/n₁₀)² + 1 = **4.90×** the single-pass cost; measured **4.87×**. The per-prefix ratios of measured to pure quadratic sit between **0.946** and **1.007** across the whole range, so the cost really is quadratic in pooled lines and the run total really is the sum of squares — a longer run's cost can be predicted from its line counts without measuring it. The quadratic is exact rather than a worst case because `_clusters` (`src/graphia/tools/repetition_experiment.py`) is union-find over **all** C(n,2) pairs with no early termination: 406,351 `SequenceMatcher.ratio()` calls at n = 902.
+
+**§3 Impact and Risk Analysis was right about the three cost classes, and the whole cost is the one superlinear term.** `score_third_person_self_talk` — the linear pooled-line pass — costs **1.44 ms** at 902 lines, four orders of magnitude below the pairwise term. The scalar folds and the Wilson bands re-derived from them do not register at all.
+
+**The cost is arm-dependent, and the conclusion differs per arm.** What drives the share is pooled lines per unit of wall clock, and the three arms sit far apart on it:
+
+| arm | pooled AI lines, ten games | wall clock | finalise total | share of run |
+| --- | --- | --- | --- | --- |
+| Nova (record 47, **measured**) | 902 | 2003.9 s | **457.5 s** | **19–23%** |
+| `bedrock-claude` (record 48, extrapolated) | 300 | 2277.0 s | ≈50 s (a full pass costs (300/902)² × 93.944 ≈ 10 s) | ≈2% |
+| Ollama local (records 45 and 46, one game each: 92 and 97 lines in 1670.461 s and 1994.643 s; extrapolated) | ≈950 | ≈18,000 s | ≈460 s | ≈2.5% |
+
+**Nova is the outlier because its games are talkative** — 902 AI lines over ten games against `bedrock-claude`'s 300, which is the same finding the backlog already records about cost. The local arm pools about as many lines as Nova and pays about the same seconds for them, but against a wall clock roughly **nine times longer**; that is precisely why "dwarfed by a 33-minute local game" was a true statement that did not transfer.
+
+**There is no cheap caching fix, stated here because the next reader will reach for one first.** `score_repetition` recomputes `masked = [_spec009_normalize(_spec009_mask_names(line, ai_names)) …]` (`:1243`) over the **whole** pool on every pass, and `ai_names` is the union of AI player names across games, which **grows every game** — measured on record 47: 7 names after game 1, 45 after game 10. A name dealt in game 7 masks that name in game 1's lines too, so an old line's masked text genuinely changes when the pool grows. Re-masking and re-clustering the whole pool from scratch is therefore **required for exactness**, not laziness: the obvious "cache the previous pass and cluster only the new lines" is not an exact computation and is not available.
+
+**Still outstanding: the instrumented ten-game Bedrock run**, which is the figure Task 7.1 ultimately asks for, pending an SSO refresh. The instrument is already committed (`1eb5839`) and reports `finalise-cost:` per-pass lines plus a `finalise-cost TOTAL:` summary on stderr, so confirming it is a matter of *running* the run, not of building anything. Its figures slot in **beside** the replay rather than replacing it: the two measure the same quantity by different routes — a replay of a past pool versus the live passes of a fresh run — and agreement between them is itself worth having. The replay's one exposure is that it times the scorers in isolation rather than inside `_finalise_result`, so the instrumented run is what confirms that nothing else in the finalise path is material.
+
+If it does bite, the mitigation is to re-score on a cadence (every game up to some *N*, then every *k*th) with the final write always exact. **That choice belongs to Task 7.2 (judge the result against the fallback this section names, and say which way it went), and the figures above are what it turns on** — on the Nova arm it is a decision about roughly six minutes per ten-game run; on the other two arms the measured-and-extrapolated share is about 2%.
 
 ---
 
