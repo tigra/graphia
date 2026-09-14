@@ -72,6 +72,20 @@ there.
    since spec 038 and gains a directory on every eval run, so a pinned number is
    a test that fails on a green tree.
 
+7. **Row-keyed stepping** (functional-spec §2.6, Slice 4 task 4.1). ``n`` and
+   ``N`` skip past every match sharing the row the reviewer is on and go to the
+   next row that has one — and tasks.md says where that belongs in as many
+   words: *"cover the row-keyed skip in the pure tests too — it is a statement
+   about ``next_match``, not about Textual."* So the truth table for
+   :func:`step_match_by_row` is here, in both directions, with both wraps, with
+   the two consequences the author accepted explicitly (the running count jumps
+   4 → 7; the first match on a row is the one that becomes current, whichever
+   way the reviewer arrived at it), and with the **Enter/``n`` asymmetry** stated
+   as one assertion on the two functions from a single row. The corpus then says
+   the skip is not a fixture's invention: on the largest committed game the walk
+   forward from the end visits **every** row that holds a match, exactly once,
+   in order, and wraps.
+
 --- What is deliberately NOT here ---
 
 * **Golden match counts per game.** See item 6 for why they would rot.
@@ -84,7 +98,10 @@ there.
 * **Any corpus sweep through ``run_test()``** — 420 Textual sessions is ~4.5
   minutes (tech-spec §4). Exactly one real committed game goes through a
   terminal, and it does so in the viewer's own suite, not here.
-* **Next/previous-match arithmetic** — Slice 4.
+* **Where the game SCROLLS to.** Section 7 states which match ``n`` answers;
+  turning that index into a row, clamping it at the end of the game, painting
+  the marker and writing the header are the widget's, and they are asserted in
+  ``tests/test_ledger_viewer.py``'s B15.5.
 * **Colour, themes, snapshots and timings** (tech-spec §4, *"what is deliberately
   not tested"*). A background-only span makes no per-theme contrast claim;
   ``snap_compare`` appears in zero test files in this repo; and there are no
@@ -114,8 +131,12 @@ import pytest
 from graphia import eval_ledger
 from graphia.eval_ledger import (
     find_matches,
+    next_match,
+    offset_for_row,
+    prev_match,
     row_for_offset,
     search_is_case_sensitive,
+    step_match_by_row,
     wrap_row_starts,
 )
 
@@ -1272,4 +1293,534 @@ def test_width_96_really_does_fold_a_match_across_a_row_boundary() -> None:
     assert (head + tail).lower() in {query.lower() for query in _SWEEP_QUERIES}, (
         f"{where}: the head {head!r} and tail {tail!r} of a straddling match "
         "must concatenate back to the query that found it"
+    )
+
+
+# ===========================================================================
+# 7. Row-keyed stepping (spec 044 Slice 4, task 4.1) — what `n` and `N` answer
+# ===========================================================================
+#
+# WHY THIS IS A PURE SECTION AT ALL, since `n` and `N` are keys on a screen.
+# tasks.md task 4.6 says it outright — *"cover the row-keyed skip in the pure
+# tests too — it is a statement about `next_match`, not about Textual"* — and
+# tech-spec §4 gives the rule behind it: a criterion belongs in the widget layer
+# only if removing Textual would make it UNSTATEABLE. "Which match does `n`
+# answer from row 30?" is a question about three lists of integers. "Does `n`
+# reach the screen rather than get typed into the search box?" is not, and that
+# one lives in `tests/test_ledger_viewer.py`'s B15.5.
+#
+# The split is worth about 100x per item (this file: ~0.006 s an item; a
+# `run_test()` item: ~0.63 s), and it is what lets the truth table below be
+# swept exhaustively — every row of the fixture, in both directions — rather
+# than sampled at the two or three positions a terminal test could afford.
+#
+# WHAT THE FUNCTION PROMISES, restated as the four things asserted below:
+#
+#   1. A PRESS NEVER STOPS ON THE ROW IT STARTED FROM. Several matches routinely
+#      share one rendered row, and a jump scrolls by ROW — so stepping
+#      match-by-match would spend whole presses moving between two matches the
+#      reviewer can already see side by side, with the view not moving at all.
+#      `step_match_by_row` skips every match sharing the origin row.
+#
+#   2. THE RUNNING COUNT THEREFORE JUMPS, and that is accepted rather than
+#      regretted (functional-spec §2.6/§2.8): the index is a position among ALL
+#      matches, because that is what the reviewer is counting off against the
+#      highlights they can see. The fixture below produces the spec's own
+#      example — match 4 straight to match 7.
+#
+#   3. THE FIRST MATCH ON A ROW IS THE ONE THAT BECOMES CURRENT, in BOTH
+#      directions. Forwards that falls out for free; backwards it is the one
+#      piece of real work in the function, because `prev_match` answers with the
+#      LAST match above the row, which on a row holding three is the third.
+#      Asserted as a property over every row, not only where it happens to bite.
+#
+#   4. BOTH WRAPS. Forward off the last row answers the game's first match;
+#      backward off the first row answers the first match on whichever row holds
+#      the game's last one — consequence 3 again — each with `wrapped=True`.
+#
+# AND THE ASYMMETRY WITH ENTER, which is the reason `next_match` carries an
+# `inclusive` flag at all: from one and the same row, Enter (offset-keyed,
+# inclusive) stops ON a match sitting there while `n` (row-keyed) moves past it.
+# Same inputs, opposite answers, both correct — functional-spec §2.5 AC2 against
+# §2.6's "a press never stops on the line it started from". A single assertion
+# below states the two side by side so that "tidying" one into the other is a
+# red test rather than a silent collapse of two keys into one.
+
+# ---------------------------------------------------------------------------
+# The fixture: six rendered rows carrying 0, 2, 0, 1, 3 and 1 matches
+# ---------------------------------------------------------------------------
+#
+# SHORT LINES AND A WIDE WIDTH, so no line folds and A ROW IS A LINE. That is
+# not a simplification that weakens the tests — wrapping is `wrap_row_starts`'
+# contract and is swept over 420 real games in section 6 — it is what lets the
+# truth table below be read by eye against the six strings, and what makes a
+# failure say "row 4 answered the wrong match" rather than "some offset resolved
+# somewhere".
+#
+# THE THREE ROW POPULATIONS ARE ALL PRESENT ON PURPOSE: a row with ONE match is
+# the case where skipping row-mates is a no-op, a row with TWO is where the
+# forward skip first bites, and a row with THREE is where the BACKWARD walk-back
+# to the row's first match has two matches to walk past rather than one — an
+# off-by-one that stopped at the second would pass a two-match fixture.
+#
+# Row 5 carries the game's last match and row 1 its first, so both wraps have a
+# row of their own to answer with, and neither wrap can be confused with "the
+# step ran off the end and clamped".
+_STEP_LINES = (
+    "quiet line",  # row 0 — no match: a step must pass straight over it
+    "x and x",  # row 1 — matches 0 and 1
+    "nothing here",  # row 2 — no match
+    "x alone",  # row 3 — match 2
+    "x x x",  # row 4 — matches 3, 4 and 5
+    "x last",  # row 5 — match 6
+)
+
+# One character, so a match can never straddle a fold and every match sits
+# wholly inside the row this fixture places it on. Absent from every other word
+# above (`quiet`, `line`, `nothing`, `here`, `and`, `alone`, `last`), so the
+# match count is exactly the number of `x`s written out.
+_STEP_QUERY = "x"
+
+# Wider than the longest line (12 characters), so `wrap_row_starts` returns one
+# start per line and the row indices in the comments above are the row indices
+# the assertions use.
+_STEP_WIDTH = 40
+
+_STEP_TEXT = "\n".join(_STEP_LINES)
+_STEP_ROW_STARTS = wrap_row_starts(_STEP_TEXT, _STEP_WIDTH)
+_STEP_MATCHES = find_matches(_STEP_TEXT, _STEP_QUERY)
+
+# The rendered row each match sits on, in match order — the fixture's shape
+# stated once as data so the tables below can be read against it, and asserted
+# in `test_the_fixture_really_has_rows_holding_one_two_and_three_matches` so a
+# fixture edit reports itself instead of quietly rewriting the expectations.
+_STEP_MATCH_ROWS = (1, 1, 3, 4, 4, 4, 5)
+
+# FORWARD: (origin row, the match index `n` answers, whether it wrapped).
+#
+# Every row of the fixture, because the interesting rows are not the ones a
+# sampler would choose: row 2 holds no match at all (a step from an empty row
+# must find the next populated one, not stall), and row 0 is the one place where
+# "skip the row I am on" and "find the first match in the game" give the same
+# answer — which is exactly why it cannot be the only case.
+_STEP_FORWARD_CASES = [
+    pytest.param(0, 0, False, id="empty-row-finds-the-first-match"),
+    pytest.param(1, 2, False, id="two-row-mates-are-both-skipped"),
+    pytest.param(2, 2, False, id="empty-row-finds-the-next-match"),
+    pytest.param(3, 3, False, id="one-match-row-moves-on"),
+    pytest.param(4, 6, False, id="three-row-mates-are-all-skipped"),
+    pytest.param(5, 0, True, id="off-the-last-row-wraps-to-the-first"),
+]
+
+# BACKWARD: the mirror, and the direction where consequence 3 is real work.
+#
+# From row 2 the last match above is index 1 — the SECOND of row 1's two — and
+# the answer must nonetheless be index 0, the row's first. From row 5 the last
+# match above is index 5, the THIRD of row 4's three, and the answer must be
+# index 3. Those two rows are the whole reason the backward branch has code in
+# it, and an implementation that returned `prev_match`'s raw answer passes every
+# other case here.
+_STEP_BACKWARD_CASES = [
+    pytest.param(0, 6, True, id="off-the-first-row-wraps-to-the-last"),
+    pytest.param(1, 6, True, id="own-row-mates-do-not-stop-the-wrap"),
+    pytest.param(2, 0, False, id="backs-up-to-the-first-of-two-row-mates"),
+    pytest.param(3, 0, False, id="one-match-row-below-two-row-mates"),
+    pytest.param(4, 2, False, id="one-match-row-is-answered-as-itself"),
+    pytest.param(5, 3, False, id="backs-up-to-the-first-of-three-row-mates"),
+]
+
+
+def test_the_fixture_really_has_rows_holding_one_two_and_three_matches() -> None:
+    """THE PREMISE every table below is read against (§2.6).
+
+    Stated as an assertion rather than left in a comment, because a fixture edit
+    is exactly how this section would go quietly vacuous: lengthen a line past
+    :data:`_STEP_WIDTH` and rows stop being lines; drop one `x` from row 4 and
+    the backward walk-back has only one row-mate to step over, which an
+    off-by-one survives. Both would leave every parametrized case below passing
+    against a fixture that no longer poses the question.
+
+    Three populations, all required: a row with one match (skipping is a no-op),
+    a row with two (the forward skip bites), and a row with three (the backward
+    walk-back has more than one match to walk past).
+    """
+    assert len(_STEP_ROW_STARTS) == len(_STEP_LINES), (
+        "a line of this fixture has folded — `_STEP_WIDTH` must stay wider than "
+        "the longest line, or a row is no longer a line and the tables below "
+        "are addressing rows that do not exist"
+    )
+    rows = tuple(row_for_offset(_STEP_ROW_STARTS, start) for start, _ in _STEP_MATCHES)
+    assert rows == _STEP_MATCH_ROWS
+
+    per_row = {row: rows.count(row) for row in set(rows)}
+    assert sorted(per_row.values()) == [1, 1, 2, 3], (
+        f"the fixture's rows hold {sorted(per_row.values())} matches; §2.6's "
+        "skip needs a one-match row, a two-match row and a three-match row"
+    )
+    # ...and two rows with no match at all, which is what makes "the step passes
+    # over an empty row" a case rather than an accident of the first row.
+    assert len(set(rows)) == len(_STEP_LINES) - 2
+
+
+@pytest.mark.parametrize(("row", "index", "wrapped"), _STEP_FORWARD_CASES)
+def test_n_answers_the_first_match_on_the_next_row_that_has_one(
+    row: int, index: int, wrapped: bool
+) -> None:
+    """`n`'s whole truth table, every row of the fixture (§2.6).
+
+    "A press never stops on the line it started from … `n` and `N` skip past any
+    that share the line the reviewer is already on and go to the next line that
+    has a match." Read as a function: from row ``r``, the answer is the first
+    match starting on the lowest row **above** ``r`` that holds one.
+
+    The two-row-mate and three-row-mate cases are where that costs something: an
+    implementation stepping ``current ± 1`` — which is what tech-spec §2.6 said
+    before it was corrected during Slice 4 — answers a match on the SAME row and
+    the view does not move, which is the press §2.6 exists to eliminate.
+    """
+    assert step_match_by_row(
+        _STEP_MATCHES, _STEP_ROW_STARTS, row, forward=True
+    ) == (index, wrapped)
+
+
+@pytest.mark.parametrize(("row", "index", "wrapped"), _STEP_BACKWARD_CASES)
+def test_capital_n_answers_the_first_match_on_the_previous_row_that_has_one(
+    row: int, index: int, wrapped: bool
+) -> None:
+    """`N`'s truth table — the mirror, and the direction with real work in it.
+
+    :func:`prev_match` answers with the **last** match above the row, which on a
+    row holding three is the third. §2.6's second accepted consequence says the
+    reviewer must land on the row's **first** match whichever way they arrived,
+    so the backward branch walks that answer back. The two multi-match rows here
+    are what make an implementation that skipped the walk-back fail; every
+    single-match case passes against it.
+    """
+    assert step_match_by_row(
+        _STEP_MATCHES, _STEP_ROW_STARTS, row, forward=False
+    ) == (index, wrapped)
+
+
+@pytest.mark.parametrize("forward", [True, False], ids=["n", "N"])
+def test_a_press_never_answers_a_match_on_the_row_it_started_from(
+    forward: bool,
+) -> None:
+    """§2.6's headline, as a property over every row rather than as a table.
+
+    The tables above say *which* match each row answers; this says the one thing
+    that must be true of **all** of them, in both directions, and would keep
+    being true if the fixture changed shape: the answer never sits on the origin
+    row.
+
+    The wrap is the one case where the criterion's companion clause applies —
+    "the one place a press still produces no movement is the last screenful of
+    the game" is about the *view*, not about the match — so a wrap that answers a
+    match on the origin row is still a genuine violation and is not excused here.
+    A single-match game would be the exception, which is why this fixture has
+    seven.
+    """
+    for row in range(len(_STEP_ROW_STARTS)):
+        found = step_match_by_row(_STEP_MATCHES, _STEP_ROW_STARTS, row, forward=forward)
+        assert found is not None
+        index, _ = found
+        landed = row_for_offset(_STEP_ROW_STARTS, _STEP_MATCHES[index][0])
+        assert landed != row, (
+            f"a {'forward' if forward else 'backward'} step from row {row} "
+            f"answered match {index}, which is on row {row} as well — that is "
+            "the press that moves nothing, and §2.6 forbids it"
+        )
+
+
+@pytest.mark.parametrize("forward", [True, False], ids=["n", "N"])
+def test_the_match_answered_is_always_the_first_one_on_its_row(
+    forward: bool,
+) -> None:
+    """§2.6's second accepted consequence, in both directions (tech-spec §2.6).
+
+    "The second and later matches on a line are highlighted but are never
+    themselves the current one." Stated over every row of the fixture, because
+    the direction that can break it breaks it only on rows with more than one
+    match and a table that happened to avoid those would prove nothing.
+    """
+    first_on_row: dict[int, int] = {}
+    for index, (start, _) in enumerate(_STEP_MATCHES):
+        first_on_row.setdefault(row_for_offset(_STEP_ROW_STARTS, start), index)
+
+    for row in range(len(_STEP_ROW_STARTS)):
+        found = step_match_by_row(_STEP_MATCHES, _STEP_ROW_STARTS, row, forward=forward)
+        assert found is not None
+        index, _ = found
+        landed = row_for_offset(_STEP_ROW_STARTS, _STEP_MATCHES[index][0])
+        assert index == first_on_row[landed], (
+            f"the step answered match {index} on row {landed}, but the first "
+            f"match on that row is {first_on_row[landed]} — a reviewer arriving "
+            "at a row must land on its first match whichever way they came"
+        )
+
+
+def test_the_running_count_jumps_over_the_matches_sharing_a_row() -> None:
+    """The consequence the author accepted explicitly: 4 → 7 (§2.8).
+
+    "The running count is a position among **all** matches, so where a line of
+    the screen holds several it can jump by more than one at a time." The
+    fixture produces the functional spec's own example exactly: row 3 holds match
+    3 (counted from one), row 4 holds matches 4, 5 and 6, and row 5 holds match
+    7 — so two presses from row 3 count 3 → 4 → 7.
+
+    This is asserted rather than merely documented because the plausible "fix"
+    is renumbering the status to count only reachable matches, which would make
+    the total disagree with the number of highlights on screen — the worse lie,
+    and the one this test makes expensive to ship.
+    """
+    from_row_three = step_match_by_row(
+        _STEP_MATCHES, _STEP_ROW_STARTS, 3, forward=True
+    )
+    assert from_row_three is not None
+    first, _ = from_row_three
+
+    next_row = row_for_offset(_STEP_ROW_STARTS, _STEP_MATCHES[first][0])
+    onwards = step_match_by_row(_STEP_MATCHES, _STEP_ROW_STARTS, next_row, forward=True)
+    assert onwards is not None
+    second, _ = onwards
+
+    # Counted from one, as the reviewer is told them (`3/7`, `4/7`, `7/7`).
+    assert (first + 1, second + 1) == (4, 7), (
+        "two presses out of row 3 must count 4 then 7, skipping the two "
+        "matches that share row 4 with match 4 — they are highlighted and the "
+        "reviewer can already see them"
+    )
+    # The skipped two are real, which is what makes the jump a jump.
+    assert second - first == 3
+
+
+def test_enter_and_n_answer_differently_from_the_same_row() -> None:
+    """The asymmetry that keeps Enter and `n` two keys (§2.5 AC2 vs §2.6).
+
+    From one row, with one match list: Enter stops on a match already sitting
+    there ("it does not skip ahead"), and `n` moves past it ("a press is never
+    spent moving between two matches the reviewer can already see together").
+    Both are correct, and the difference is the entire reason
+    :func:`next_match` carries an ``inclusive`` flag instead of a fixed policy.
+
+    Asserted here, on the two functions side by side, because the failure it
+    guards is a tidy-up rather than a bug: routing Enter through
+    :func:`step_match_by_row` "for consistency" reads like a simplification and
+    silently costs §2.5 AC2 — and the widget test that would catch it needs a
+    terminal, a fixture and half a second, where this needs three lines.
+
+    Row 1 is the discriminating one precisely because it holds a match; from row
+    2, which holds none, the two agree and the assertion would be vacuous — so
+    that agreement is asserted too, as the other half of the statement.
+    """
+    row_with_a_match = 1
+    enter = next_match(
+        _STEP_MATCHES,
+        offset_for_row(_STEP_ROW_STARTS, row_with_a_match),
+        inclusive=True,
+    )
+    n_key = step_match_by_row(
+        _STEP_MATCHES, _STEP_ROW_STARTS, row_with_a_match, forward=True
+    )
+    assert enter == (0, False), "Enter stops on the match already on this row"
+    assert n_key == (2, False), "`n` moves past it to the next row that has one"
+    assert enter != n_key
+
+    # ...and where the row holds nothing, the two agree — so the difference
+    # above is about the row-mate rule and not about two unrelated functions.
+    empty_row = 2
+    assert next_match(
+        _STEP_MATCHES, offset_for_row(_STEP_ROW_STARTS, empty_row), inclusive=True
+    ) == step_match_by_row(
+        _STEP_MATCHES, _STEP_ROW_STARTS, empty_row, forward=True
+    )
+
+
+@pytest.mark.parametrize("forward", [True, False], ids=["n", "N"])
+def test_stepping_with_no_matches_answers_nothing_rather_than_raising(
+    forward: bool,
+) -> None:
+    """An empty match list is ``None``, in both directions (§2.6's last criterion).
+
+    "Given no search has been made since the game was opened, when the reviewer
+    presses `n`, then nothing happens and no error appears." The screen's guard
+    on ``_search`` catches the no-search case; this is the other one — a search
+    whose query matches nothing — and ``None`` is what makes "do nothing" the
+    caller's easy branch rather than a sentinel index it could accidentally
+    scroll to.
+    """
+    assert step_match_by_row([], _STEP_ROW_STARTS, 2, forward=forward) is None
+
+
+@pytest.mark.parametrize("row", [-5, -1, 999], ids=["far-above", "above", "far-below"])
+@pytest.mark.parametrize("forward", [True, False], ids=["n", "N"])
+def test_a_row_outside_the_map_is_clamped_rather_than_raising(
+    row: int, forward: bool
+) -> None:
+    """Bounds are clamped, never raised — the same rule the row arithmetic uses.
+
+    ``row`` arrives from a live scroll position, and the map it is resolved
+    against may have been built a moment earlier at a different wrap width (the
+    reviewer resized the terminal between two presses). A traceback out of a
+    keypress is strictly worse than answering the first or the last row, so the
+    contract is to clamp — and this pins that it is a contract rather than an
+    accident of `bisect` happening not to raise.
+    """
+    found = step_match_by_row(_STEP_MATCHES, _STEP_ROW_STARTS, row, forward=forward)
+    assert found is not None
+    index, _ = found
+    assert 0 <= index < len(_STEP_MATCHES)
+
+
+# ---------------------------------------------------------------------------
+# ...and the same rules over a real game, where nobody chose the rows
+# ---------------------------------------------------------------------------
+#
+# The fixture above is, by construction, a shape someone thought of: six lines
+# with the row populations the criteria need. These two say the rules hold on
+# 88 KB of model prose whose row boundaries fall wherever Rich's wrapping puts
+# them — and the first of them is a NON-VACUITY check on the whole section, in
+# exactly the sense tech-spec §4 means it: if no real game ever put two matches
+# on one rendered row, the row-mate skip would be a rule written for a case that
+# does not occur, and every test above it would be about a fixture.
+#
+# THE LARGEST COMMITTED GAME, discovered rather than named, for the reason
+# `tests/test_ledger_viewer.py`'s `_largest_committed_transcript` gives: the
+# corpus gains a run directory on every measured eval run and loses one whenever
+# a smoke run is curated away, so a hard-coded path is a test that breaks on a
+# green tree. Width 96 is the measured live wrap width of a game that overflows
+# a 100-column terminal (tech-spec §2.2).
+#
+# THE QUERY IS `the`, AND `vote` WOULD NOT DO — measured on that game: `vote`'s
+# 18 matches sit one to a row and produce **no** row-mate anywhere, so a sweep
+# carrying it alone would find the skip never firing and report that as
+# coverage. This is the same trap, in the same corpus, that
+# `test_width_96_really_does_fold_a_match_across_a_row_boundary` records for the
+# straddle branch, and the answer is the same: carry a query common enough to
+# collide.
+
+
+def _largest_committed_game() -> tuple[str, list[int], list[tuple[int, int]]]:
+    """``(text, row starts at width 96, the matches for ``the``)`` for that game.
+
+    One read and one row map, shared by the two tests below rather than built
+    twice — the map is ~7.6 ms on this file and the read is 88 KB, which is
+    cheap but not free, and building it once means the two tests cannot
+    disagree about which game they are describing.
+    """
+    game = max(_TRANSCRIPTS, key=lambda path: (path.stat().st_size, str(path)))
+    text = game.read_text(encoding="utf-8")
+    row_starts = wrap_row_starts(text, _CORPUS_WRAP_WIDTH)
+    return text, row_starts, find_matches(text, "the")
+
+
+@_requires_corpus
+def test_the_row_mate_skip_fires_on_a_real_committed_game() -> None:
+    """NON-VACUITY: real prose really does put two matches on one rendered row.
+
+    Without this the whole section could be a rule about a fixture. Measured on
+    the largest committed game at width 96: `the` has 702 matches spread over
+    522 rows, and **154 of those rows hold more than one** — so the skip is not
+    an edge case the row-keyed design was invented for, it is what happens on
+    every other page of a real game.
+
+    The behaviour is then taken apart on one of those rows rather than left to
+    the counter: the forward step from a row holding several answers a match on
+    a **strictly later** row, and the row-mates it passed over are genuinely
+    matches the reviewer can already see — which is the justification §2.6 gives
+    for skipping them at all.
+    """
+    _, row_starts, matches = _largest_committed_game()
+    per_row: dict[int, list[int]] = {}
+    for index, (start, _) in enumerate(matches):
+        per_row.setdefault(row_for_offset(row_starts, start), []).append(index)
+
+    crowded = sorted(row for row, on_it in per_row.items() if len(on_it) > 1)
+    assert crowded, (
+        "no rendered row of the largest committed game holds two matches of "
+        "`the` at width 96 — the row-mate skip has no real case, and every "
+        "test above it is about a hand-written fixture"
+    )
+
+    row = crowded[0]
+    row_mates = per_row[row]
+    found = step_match_by_row(matches, row_starts, row, forward=True)
+    assert found is not None
+    index, wrapped = found
+    assert not wrapped
+    assert index not in row_mates, (
+        f"row {row} holds matches {row_mates}; the step answered {index}, "
+        "which is one of them — the press would not move the view"
+    )
+    assert row_for_offset(row_starts, matches[index][0]) > row
+
+
+@_requires_corpus
+def test_walking_forward_through_a_real_game_visits_every_row_with_a_match() -> None:
+    """The walk a reviewer makes, over a game nobody wrote by hand (§2.6).
+
+    Press `n` from the end of the game and keep pressing. The properties the
+    individual cases above state one at a time have to hold **together** across
+    hundreds of presses, and this is the only place that composition is checked:
+    the rows visited come out strictly increasing, every row that holds a match
+    is visited **exactly once** (so no press is wasted and no match's row is
+    unreachable), each landing is its row's first match, and the walk ends by
+    wrapping round to the game's very first match rather than stalling.
+
+    **This is the shape of the Task 4.4a defect, seen from the pure side.** The
+    bug that shipped into Slice 4 was the screen keying the step on
+    ``scroll_offset.y``, which clamps at the end of the game and so cannot
+    express a position inside the last screenful — every press re-answered the
+    same match and the wrap was unreachable. The pure step was never at fault
+    and this test says so: handed honest rows it walks the tail to the end and
+    round. The screen's half is `tests/test_ledger_viewer.py`'s B15.5, which is
+    where the clamp actually lives.
+
+    The walk starts from the LAST row so that the first step is the wrap itself —
+    the press that had no way of firing at all before Task 4.4a — and so that the
+    visit set is complete rather than missing whichever rows sit above an
+    arbitrary starting point.
+    """
+    _, row_starts, matches = _largest_committed_game()
+    rows_with_a_match = sorted(
+        {row_for_offset(row_starts, start) for start, _ in matches}
+    )
+    first_on_row: dict[int, int] = {}
+    for index, (start, _) in enumerate(matches):
+        first_on_row.setdefault(row_for_offset(row_starts, start), index)
+
+    row = len(row_starts) - 1
+    visited: list[int] = []
+    wraps = 0
+    # One press per populated row, plus the two wraps that bracket the walk, plus
+    # slack — a bound rather than a `while True`, so a step that stopped moving
+    # fails as an assertion instead of hanging the suite.
+    for _ in range(len(rows_with_a_match) + 4):
+        found = step_match_by_row(matches, row_starts, row, forward=True)
+        assert found is not None
+        index, wrapped = found
+        if wrapped:
+            wraps += 1
+            if wraps > 1:
+                break
+            assert index == 0, (
+                "the wrap must answer the game's FIRST match; anything else is "
+                "a step that ran off the end rather than round it"
+            )
+        visited.append(index)
+        row = row_for_offset(row_starts, matches[index][0])
+
+    assert wraps == 2, (
+        f"the walk wrapped {wraps} times — it should wrap once at the start "
+        "(off the last row) and once again on returning to it"
+    )
+    landed_rows = [row_for_offset(row_starts, matches[index][0]) for index in visited]
+    assert landed_rows == rows_with_a_match, (
+        f"{len(visited)} presses visited {len(set(landed_rows))} distinct rows "
+        f"of the {len(rows_with_a_match)} that hold a match — a row visited "
+        "twice is a wasted press and a row never visited is a match the "
+        "reviewer cannot reach"
+    )
+    assert all(
+        index == first_on_row[landed]
+        for index, landed in zip(visited, landed_rows)
     )

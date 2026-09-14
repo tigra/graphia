@@ -850,17 +850,143 @@ def _search_count_text(query: str, matches: int) -> str:
     Pure and module-level, beside this module's other copy, so what the strip
     says is checkable without a terminal.
 
-    This is the WHOLE of the readout for now, on purpose. Functional-spec §2.8
-    AC3 — which match of the total the reviewer is currently on — is Slice 4's,
-    and it does not belong here even then: it has to outlive the prompt, so its
-    channel is :attr:`Screen.sub_title` (tech-spec §2.7), not a Static that is
-    hidden with the bar.
+    This is the WHOLE of the readout, on purpose. Functional-spec §2.8
+    AC3 — which match of the total the reviewer is currently on — does not
+    belong here: it has to outlive the prompt, so its channel is
+    :attr:`Screen.sub_title` (tech-spec §2.7) and its copy is
+    :func:`_search_status_text`, not a Static that is hidden with the bar.
     """
     if not query:
         return ""
     if matches == 0:
         return _NO_MATCHES_MESSAGE
     return f"{matches} match" if matches == 1 else f"{matches} matches"
+
+
+# HOW MUCH OF THE QUERY THE HEADER WILL SHOW (spec 044, Task 4.5).
+#
+# The header is ONE row, `text-wrap: nowrap` with `text-overflow: ellipsis`
+# (`HeaderTitle.DEFAULT_CSS` on the installed Textual 8.2.4), and the viewer
+# name plus the " — " that `App.format_title` puts between title and sub-title
+# already spend 22 of its columns. Ellipsis cuts the END — so an unbounded query
+# would push the POSITION off the right edge, and the position is the one thing
+# functional-spec §2.8 AC3 actually owes the reviewer and the one thing they
+# cannot read anywhere else once the prompt has closed.
+#
+# So the query is the half that gives way, and it is the right half to lose:
+# `/` re-opens the prompt on the search the reviewer already has (see
+# `action_open_search`), so the full text they typed is one keypress away, where
+# the position exists nowhere but here.
+#
+# 32 is past any real search phrase and still fits the whole status on the
+# 100-column terminal the rest of this spec was measured at: 22 for the title
+# and its separator, 32 for the query, and 20 for the widest plausible
+# " · 999/999 (wrapped)" — 74 of 100.
+_SEARCH_STATUS_QUERY_MAX = 32
+
+
+def _search_status_text(
+    query: str, total: int, current: int | None, *, wrapped: bool
+) -> str | None:
+    """The header sub-title for a search the reviewer has LANDED in — or ``None``.
+
+    Functional-spec §2.8 AC3 ("they can tell which match of the total they are
+    on") and §2.6's two wrap criteria ("the reviewer is told when a wrap
+    happens") both have to be answered **after the prompt is gone**: Enter hides
+    the search row, and ``n``/``N`` exist only in the state it leaves behind. So
+    neither can be served by ``#search-count``, which is visible only while the
+    bar is open. :attr:`Screen.sub_title` is the channel (tech-spec §2.7) — a
+    ``Reactive`` that the already-composed :class:`~textual.widgets.Header`
+    watches (``Header._on_mount`` calls ``self.watch(self.screen, "sub_title",
+    …)`` on the installed Textual 8.2.4), so writing it re-renders the header
+    live and costs **zero extra rows**, which is what §2.10's promise about the
+    reading area requires.
+
+    ``None`` means "say nothing of your own" — the caller puts
+    :attr:`TranscriptScreen.SUB_TITLE` back.
+
+    **It renders :attr:`SearchState.current`, and nothing else — which is the
+    deliberate answer to "what does the header show before any jump?"** While
+    the reviewer is typing there is no landing, so this returns ``None`` and the
+    header keeps the back-out hint it has always had. That is a choice, not an
+    omission, and it rests on three things:
+
+    - **The typing half of §2.8 is already discharged, in a better place.** The
+      query is in the box under the reviewer's cursor and the count sits one
+      character to its right (:func:`_search_count_text`, §2.8 AC1/AC2).
+      Repeating both in the header would spend the row saying what is already in
+      front of them.
+    - **The header row is not free.** It is the only place the back-out keys are
+      written down, and while a search is live Esc does *not* leave the game
+      (§2.9's three states) — so overwriting the hint would buy a duplicate and
+      sell a hint at the moment it starts to matter.
+    - **A per-keystroke status would have to race the highlight.** The repaint is
+      debounced (tech-spec §2.8), so a header written from ``Input.Changed``
+      would announce a query the game is not yet showing — the drift
+      :meth:`TranscriptScreen._update_search_count` is deliberately routed
+      through one path to avoid. Rendering ``current`` keeps this on that same
+      settled path.
+
+    **The format is ``vote · 3/18`` plus ``(wrapped)``**, and three details in it
+    are decisions:
+
+    - **``·`` rather than an em dash**, though tech-spec §2.7 sketches one:
+      ``App.format_title`` already inserts ``" — "`` between the viewer name and
+      this string, so a second em dash inside it would read as a second title
+      break. ``·`` is what both of this module's ``SUB_TITLE`` constants already
+      use as their internal separator.
+    - **``3/18`` is a POSITION, never a press count**, and the slash notation is
+      what makes that legible. §2.6 has ``n`` skip every match sharing the
+      reviewer's rendered row, so this number legitimately jumps — 4 straight to
+      7 where one row holds three matches — and the author accepted that
+      explicitly. "Which of" survives a jump; anything that read as "how many
+      presses" (a step counter, ``next``/``previous`` wording) would look broken
+      the first time one happened.
+    - **``(wrapped)`` verbatim from tech-spec §2.7**, and it is sometimes the
+      *entire* feedback a press produces: inside the last screenful of a game
+      the scroll clamps at ``max_scroll_y``, so successive landings move nothing
+      at all and only this string and the stronger match marker say the key did
+      anything (functional-spec §2.5's end-of-game bullet).
+
+    Pure and module-level, beside this module's other copy, so what the header
+    says is checkable without a terminal.
+
+    **Square brackets in the query are safe**, for a different reason than
+    :class:`TranscriptBody`'s ``markup=False``: ``App.format_title`` builds
+    ``Content(sub_title)``, and a ``Content`` constructed from a plain ``str`` is
+    literal text — markup is parsed only by ``Content.from_markup``. So a
+    reviewer searching for ``[`` gets a header, not a traceback.
+
+    Args:
+        query: What the reviewer typed. Truncated at
+            :data:`_SEARCH_STATUS_QUERY_MAX` — see the constant for why the
+            query is the half that gives way.
+        total: How many matches that query has in the whole game.
+        current: Which of them the reviewer is on, or ``None`` when they are on
+            none — typing, nothing typed, nothing matched, or no search at all.
+        wrapped: Whether the jump that landed on ``current`` wrapped round the
+            end (or the start) of the game. Meaningless without a landing, and
+            unread when ``current`` is ``None``.
+
+    Returns:
+        The sub-title to show, or ``None`` when the search has nothing to say
+        that the search row is not already saying better.
+    """
+    # NO LANDING, NOTHING TO SAY. `total == 0` cannot happen with a `current`
+    # set — an edit that empties the match list drops the index in the same
+    # breath (`TranscriptScreen.on_input_changed`) — but "1/0" is a bad enough
+    # readout to be worth one `or`.
+    if current is None or total == 0:
+        return None
+    shown = (
+        query
+        if len(query) <= _SEARCH_STATUS_QUERY_MAX
+        else query[: _SEARCH_STATUS_QUERY_MAX - 1] + "…"
+    )
+    # `current` is a zero-based index and the reviewer is being told a position,
+    # so it is counted from one: the first match in the game reads "1/18".
+    status = f"{shown} · {current + 1}/{total}"
+    return f"{status} (wrapped)" if wrapped else status
 
 
 class TranscriptSearchInput(Input):
@@ -2636,7 +2762,11 @@ class TranscriptScreen(Screen):
         return styles
 
     def _repaint_matches(
-        self, matches: Sequence[tuple[int, int]], current: int | None = None
+        self,
+        matches: Sequence[tuple[int, int]],
+        current: int | None = None,
+        *,
+        wrapped: bool = False,
     ) -> None:
         """Light up ``matches`` in the game — the screen's half of one update.
 
@@ -2654,9 +2784,10 @@ class TranscriptScreen(Screen):
         and the two navigations — :meth:`on_input_submitted` (Enter) and
         :meth:`_step_match` (``n``/``N``) — which repaint not because the
         *matches* changed but because ``current`` did. All four also get the
-        count in ``#search-count`` from the same argument — see
-        :meth:`_update_search_count` for why it is written here and not per
-        keystroke.
+        count in ``#search-count`` **and the header status on
+        :attr:`Screen.sub_title`** from the same arguments — see
+        :meth:`_update_search_count` and :meth:`_update_search_subtitle` for why
+        both are written here and not per keystroke.
         **Do not call this from ``Input.Changed`` directly** — the debounce is
         not optional at this cost: 336 ms per keystroke on the 88 KB game for
         the worst measured query (tech-spec §2.8), because
@@ -2682,6 +2813,14 @@ class TranscriptScreen(Screen):
                 navigation say nothing about it rather than having to pass it.
                 Task 2.3 refused this parameter while it would have been unused;
                 Slice 4 gives it the use it was waiting for.
+            wrapped: Whether the jump that produced ``current`` wrapped round the
+                end (or the start) of the game — functional-spec §2.5 AC3 and
+                §2.6's two wrap criteria. **Only the two navigations can know
+                it**, so it defaults to ``False`` for the two that cannot; with
+                ``current`` ``None`` on both of those paths it is unread anyway.
+                Keyword-only, because ``_repaint_matches(matches, index, True)``
+                would read as a third thing about the *matches* rather than as a
+                fact about the jump that selected one of them.
         """
         # BOTH CLASSES NOW. `transcript--match-current` was resolved by this
         # same call from Slice 2 onward and deliberately left unused until
@@ -2716,6 +2855,15 @@ class TranscriptScreen(Screen):
         # they would believe. Sharing this path makes the two unable to drift:
         # there is no second code path that can update one without the other.
         self._update_search_count(len(matches))
+        # AND THE HEADER STATUS RIDES THE SAME PATH, for the same reason and one
+        # more (spec 044, Task 4.5). The same reason: what is lit, what is
+        # counted and what the header claims are one statement to the reviewer,
+        # and a shared path is the only way to make them unable to drift. The
+        # one more: this is where BOTH of its inputs already are — the match
+        # total and the index — so the alternative is a second call at each of
+        # the four sites, two of which would have to remember to say "and
+        # nothing is current now" to clear a stale position.
+        self._update_search_subtitle(len(matches), current, wrapped=wrapped)
 
     def _update_search_count(self, matches: int) -> None:
         """Write the match total — or the no-match state — into ``#search-count``.
@@ -2748,6 +2896,61 @@ class TranscriptScreen(Screen):
         self.query_one("#search-count", Static).update(
             _search_count_text("" if search is None else search.query, matches)
         )
+
+    def _update_search_subtitle(
+        self, total: int, current: int | None, *, wrapped: bool
+    ) -> None:
+        """Write the search's position into the header — or put :attr:`SUB_TITLE` back.
+
+        The screen's half of :func:`_search_status_text`, exactly as
+        :meth:`_update_search_count` is :func:`_search_count_text`'s: the
+        function owns the copy and the reasoning behind every character of it,
+        this method owns where the query comes from and what "nothing to say"
+        means on a screen.
+
+        **This is the channel that outlives the prompt** (tech-spec §2.7). After
+        Enter the search row is hidden, so ``#search-count`` is gone — yet
+        functional-spec §2.8 AC3 still owes the reviewer which match of the total
+        they are on, and §2.6 still owes them a wrap notice on every ``n``/``N``
+        that comes round the end of the game. :attr:`Screen.sub_title` is a
+        ``Reactive`` the existing :class:`~textual.widgets.Header` is already
+        watching, so this costs **zero extra rows** — which is why it is the
+        channel rather than a second ``Static``: §2.10 promises the reading area
+        is unchanged, and a widget that only exists while the bar is open would
+        answer neither criterion.
+
+        **``SUB_TITLE`` is restored from the class constant, not from a
+        remembered previous value.** The resting sub-title is a constant on this
+        screen, so there is nothing to save and nothing that can go stale;
+        ``Screen.__init__`` seeds ``sub_title`` from it the same way. This is
+        also where functional-spec §2.9 AC1's "the search is gone" reaches the
+        header: :meth:`_clear_search` drops :attr:`_search` **before** it
+        repaints (its docstring says why that order is load-bearing), so the
+        empty repaint that puts the unhighlighted reading view back arrives here
+        with no search left to describe, and the header goes back to the
+        back-out hint in the same breath as the amber leaves the game. A header
+        still counting off "3/18" over an unhighlighted game would be that same
+        leak wearing a hat.
+
+        **Nothing here can move the game.** The ``Header`` is docked, ``height:
+        1``, and outside ``#transcript-scroll`` — so however long this string
+        gets, it cannot change the scroller's height, its ``max_scroll_y``, or
+        the clamp both jumps read them for. That is what makes it safe to write
+        *inside* the jump's own repaint.
+
+        Args:
+            total: How many matches the live query has — the length of the very
+                list :meth:`_repaint_matches` just handed the body.
+            current: Which of them the reviewer is on, or ``None``.
+            wrapped: Whether the jump that landed on ``current`` wrapped.
+        """
+        search = self._search
+        status = (
+            None
+            if search is None
+            else _search_status_text(search.query, total, current, wrapped=wrapped)
+        )
+        self.sub_title = self.SUB_TITLE if status is None else status
 
     def on_input_changed(self, event: Input.Changed) -> None:
         """Keep the query in step with the box, and light up the matches — shortly.
@@ -3057,13 +3260,23 @@ class TranscriptScreen(Screen):
             offset_for_row(row_starts, scroller.scroll_offset.y),
             inclusive=True,
         )
+        # FALSE UNTIL A JUMP SAYS OTHERWISE — the no-match and nothing-typed
+        # exits fall through to the repaint below with this still unset, and
+        # there `current` is `None` so it is unread. Declared before the branch
+        # rather than inside it because the repaint is unconditional (see the
+        # comment on it), so the flag has to survive the branch not being taken.
+        wrapped = False
         if found is not None:
-            # `wrapped` is consumed in Task 4.5, which gives the screen a status
-            # channel (`Screen.sub_title`) that outlives the prompt and can say
-            # "(wrapped)" where §2.5 AC3 asks for it. The jump itself is
-            # identical either way, so the flag is deliberately dropped here
-            # rather than half-reported somewhere the reviewer cannot see.
-            index, _wrapped = found
+            # `wrapped` IS CONSUMED NOW (spec 044, Task 4.5) — it used to be
+            # dropped here with a note pointing at this task. The jump itself is
+            # identical either way, which is exactly why it needed a channel of
+            # its own: §2.5 AC3 asks that a backwards jump never be silent, and
+            # movement alone cannot say "this went round the end of the game"
+            # because a wrap to the first match looks like any other scroll. It
+            # travels to `Screen.sub_title` through the repaint at the foot of
+            # this method — the one status channel that outlives the prompt this
+            # method is about to hide.
+            index, wrapped = found
             # ENTER IS A LANDING, SO IT SETS `current` (spec 044, Slice 4).
             # §2.6's "the match the reviewer last landed on is marked more
             # strongly than the others" is about the last landing, whichever key
@@ -3119,20 +3332,24 @@ class TranscriptScreen(Screen):
             # to predict the future — measured, with the numbers, there.
             search.scroll_at_landing = scroller.scroll_offset.y
 
-        # ONE REPAINT, AFTER THE JUMP, SAYING BOTH THINGS AT ONCE: these are the
-        # query's matches, and this is the one you are on. It replaces the
-        # conditional settle that used to sit above the jump (see there for why
-        # the condition is gone), and it runs on every Enter including the
-        # nothing-typed one — where `matches` is empty and `current` is `None`,
-        # so it repaints the unhighlighted reading view and blanks the count,
-        # which is exactly what §2.5 AC5 asks for.
+        # ONE REPAINT, AFTER THE JUMP, SAYING THREE THINGS AT ONCE: these are the
+        # query's matches, this is the one you are on, and (since Task 4.5) this
+        # is how you got here. It replaces the conditional settle that used to
+        # sit above the jump (see there for why the condition is gone), and it
+        # runs on every Enter including the nothing-typed one — where `matches`
+        # is empty and `current` is `None`, so it repaints the unhighlighted
+        # reading view, blanks the count and puts `SUB_TITLE` back, which is
+        # exactly what §2.5 AC5 asks for. That last part is what keeps an
+        # edit-then-Enter from leaving the previous query's position standing in
+        # the header over a game that no longer has it.
         #
         # After the scroll rather than before it for the same reason the bar is
         # hidden after: `_update_search_count` re-lays-out the count strip, and
         # keeping every number in the jump's arithmetic from one moment is
         # cheaper to reason about than proving a `height: 1` sibling cannot
-        # change `max_scroll_y`.
-        self._repaint_matches(matches, search.current)
+        # change `max_scroll_y`. (The header status written on the same call has
+        # no such question to answer: `Header` is docked outside the scroller.)
+        self._repaint_matches(matches, search.current, wrapped=wrapped)
 
         # THE PROMPT CLOSES, THE SEARCH DOES NOT (§2.5 AC4). Two lines, and
         # neither is `_clear_search`: `_search` survives, the box keeps what was
@@ -3242,13 +3459,23 @@ class TranscriptScreen(Screen):
             # Nothing typed, or typed and matching nothing. Not an error, and
             # not a state worth announcing: the count strip already says "no
             # matches", so a press that does nothing is the honest response.
+            #
+            # NOTHING IN THE HEADER GOES STALE ON THIS EXIT either, and it does
+            # not need a line to make sure: `found is None` means the match list
+            # is empty, and an edit that empties it has already dropped
+            # `current` (`on_input_changed`) — which is the only thing
+            # `_search_status_text` renders. So there is no position left in the
+            # header for this press to contradict.
             return
 
-        # `wrapped` is Task 4.5's, for the same reason it is dropped in
-        # `on_input_submitted`: the movement is identical either way, and a wrap
-        # notice belongs in the status channel that outlives the prompt rather
-        # than half-reported somewhere the reviewer cannot see it.
-        index, _wrapped = found
+        # `wrapped` IS CONSUMED NOW (spec 044, Task 4.5) — it used to be dropped
+        # here with a note pointing at this task. It matters MORE here than on
+        # Enter: §2.6 promises both wraps are announced, and inside the last
+        # screenful of a game the clamp at `max_scroll_y` means an `n` that
+        # wraps round to the first match may not move the view at all, so this
+        # flag and the current-match marker are the whole of what tells the
+        # reviewer the key did anything.
+        index, wrapped = found
         search.current = index
         target_row = row_for_offset(row_starts, matches[index][0])
         # The same clamp, and the same reasoning, as the Enter jump above: a
@@ -3270,9 +3497,11 @@ class TranscriptScreen(Screen):
         # between this read and the next press.
         search.scroll_at_landing = scroller.scroll_offset.y
         # The marker moves with the view — one repaint, from the same match list
-        # the step resolved against, so what is lit and what is counted cannot
-        # describe two different queries.
-        self._repaint_matches(matches, index)
+        # the step resolved against, so what is lit, what is counted and what the
+        # header says cannot describe two different queries. The header's share
+        # of it is §2.8 AC3's position and §2.6's wrap notice, both of which have
+        # to reach a reviewer whose search prompt closed several keypresses ago.
+        self._repaint_matches(matches, index, wrapped=wrapped)
 
     def _step_origin_row(
         self,
@@ -3572,13 +3801,17 @@ class TranscriptScreen(Screen):
         # the repaint costs one keypress's worth of work, where tracking
         # whether the body is currently clean would cost a second piece of state
         # to keep true. Slice 5 completes the rest of this state machine (the
-        # subtitle, and the bar-hidden-search-live state Enter leaves behind).
+        # bar-hidden-search-live state Enter leaves behind).
         #
-        # AND THE COUNT GOES WITH IT, without a line here to say so:
-        # `_repaint_matches` writes `#search-count` on this same path, and it
-        # reads the query off `_search` — which the line above has already set
-        # to `None` — so the strip blanks instead of being left claiming
-        # matches over a game that no longer has any.
+        # AND THE COUNT AND THE HEADER GO WITH IT, without a line here to say so:
+        # `_repaint_matches` writes `#search-count` AND `Screen.sub_title` on
+        # this same path, and both read the search off `_search` — which the line
+        # above has already set to `None`. So the strip blanks and the header
+        # goes back to `SUB_TITLE` (spec 044, Task 4.5: "restore `SUB_TITLE` when
+        # the search clears") instead of being left claiming "18 matches" and
+        # "vote · 3/18" over a game with no amber on it. The restore is a
+        # consequence of the state-first ordering above rather than a fourth
+        # thing to remember here — which is the point of that ordering.
         self._repaint_matches(())
         self.query_one("#search-row", Horizontal).remove_class("-open")
         self.query_one(TranscriptSearchInput).value = ""
