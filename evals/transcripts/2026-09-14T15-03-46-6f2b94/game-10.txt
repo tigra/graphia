@@ -1,0 +1,496 @@
+Game 10 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=10 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Aiden" role="Law-abiding Citizen">
+Personality: anxious and second-guessing; always questioning their own judgment and the motives of others
+Manner: hesitant and stuttering, often pausing to rephrase their thoughts; uses a lot of qualifiers like 'maybe', 'perhaps', 'I think'
+Persona: Aiden is a librarian, deeply invested in the town's history and lore. They spend most of their time buried in old books, trying to piece together the town's past. Aiden is known for their extensive knowledge but is often anxious about sharing it, fearing they might get something wrong.
+</player>
+<player name="Lara" role="Mafia">
+Personality: aloof and detached
+Manner: speaks in a cool, unhurried manner with an air of disinterest; uses simple, straightforward language, often with a hint of sarcasm or condescension
+Public legend: Lara is a freelance graphic designer who moved to the town seeking solitude and creative inspiration. She is known for her minimalist aesthetic and keeps to herself, preferring the company of her cat over socializing. Lara's work often involves creating designs for local businesses, but she rarely engages in small talk or community events.
+True self (hidden): Lara joined the Mafia under the guise of a small-time hustler, quickly rising through the ranks due to her strategic mind and ruthless efficiency. She uses her public persona as a cover to gather information and execute her missions without raising suspicion.
+</player>
+<player name="Hiroshi" role="Law-abiding Citizen">
+Personality: stern and commanding; direct and no-nonsense; authoritative and assertive
+Manner: speaks with a strong, unwavering tone; uses simple, direct language; occasional use of rhetorical questions to emphasize points
+Persona: Hiroshi is a retired military officer who has settled in the town after years of service. Known for his disciplined approach and leadership skills, he now volunteers as a mentor for the local youth group. Hiroshi's presence commands respect and he is often sought after for advice, especially in matters of conflict resolution and strategic planning.
+</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: weary and world-worn; wise yet cynical
+Manner: speaks with a gravelly, deliberate tone; often uses idiomatic expressions and colloquial phrases; frequently interjects with resigned sighs or chuckles
+Persona: Zara is a seasoned traveler who has spent years roaming the globe. Once an adventurous spirit, she now carries the weight of her experiences with a mix of wisdom and cynicism. Having seen both the beauty and the darkness of the world, Zara has settled in the town to find a semblance of peace. She works part-time at the local diner, sharing stories of her journeys with anyone who will listen.
+</player>
+<player name="Kamau" role="Law-abiding Citizen">
+Personality: dry and sardonic; quick-witted and sharp-tongued
+Manner: speaks with a measured, cutting tone; uses sarcasm and wit; occasional dry chuckles
+Persona: Kamau is a local journalist with a knack for uncovering the town's secrets. Known for his biting columns and no-holds-barred reporting, he has a reputation for speaking truth to power. Kamau's sardonic humor and sharp observations make him a beloved, if somewhat feared, figure in the community.
+</player>
+<player name="Niamh" role="Mafia">
+Personality: vigilant and watchful
+Manner: speaks with a low, cautious tone, often pausing as if weighing every word; uses precise, measured language with an underlying tension
+Public legend: Niamh is a reclusive herbalist who spends most of her time tending to her garden and creating remedies for the townsfolk. She is known for her extensive knowledge of local flora and her ability to concoct effective potions. Niamh prefers solitude but is always attentive to the happenings around her, often offering sage advice to those who seek her out. She has a reputation for being slightly mysterious but trustworthy.
+True self (hidden): Niamh joined the Mafia under the guise of protecting her community from external threats. She uses her knowledge of herbs to create both healing remedies and potent poisons, serving as the organization's discreet enforcer. Her vigilance and watchful nature make her an invaluable asset, allowing her to gather information and eliminate threats with precision.
+</player>
+<player name="Miguel" role="Law-abiding Citizen">
+Personality: cheerful and irrepressible; optimistic and buoyant
+Manner: enthusiastic and energetic, often uses exclamations and positive affirmations; speaks rapidly with a warm, inviting tone
+Persona: Miguel is a passionate community organizer who loves bringing people together. He's always planning the next town event or initiative to foster connection and joy. With an infectious smile and a heart full of hope, Miguel believes in the power of community to create positive change.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiden, Lara, Hiroshi, Zara, Kamau, Niamh, Miguel. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Lara): Your Mafia teammates are: Niamh. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Niamh): Your Mafia teammates are: Lara. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Lara points at Aiden
+Niamh points at Aiden
+<kill>Aiden — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Aiden was killed last night. Aiden was a Law-abiding Citizen.
+<round>
+Round 1.
+Zara: Well, ain't this a fine kettle of fish. Someone's been swimmin' with the sharks, and it ain't Aiden.
+Niamh: Zara's colorful metaphor is certainly evocative, though it may be wise to consider more direct accusations to uncover the true culprit.
+Hiroshi: Zara, your choice of words is colorful, but let's focus on actionable accusations. Who among us do you suspect?
+Miguel: Hey everyone, let's channel our inner detectives and dig deep for clues! Who's ready to uncover the truth and protect our community?
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+Kamau: Well, if we're all inner detectives now, let's hope Miguel's magnifying glass doesn't fog up.
+Lara: Avery's focus on Zara seems a bit premature. Perhaps we should consider other possibilities.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lara">So far, the discussion is predictably chaotic. I'll need to keep my cards close and perhaps nudge the conversation towards less suspicious targets.</thought>
+<thought player="Hiroshi">Zara's initial accusation and Avery's focus on her may be distractions; I must observe their interactions closely to discern the truth.</thought>
+<thought player="Zara">Well, looks like I'm on Avery's radar. Gotta tread carefully, but I can't let 'em distract me from sniffin' out the real wolves in sheep's clothing.</thought>
+<thought player="Kamau">If Avery's magnifying glass is already fixed on Zara, perhaps it's time to see if it needs a good cleaning.</thought>
+<thought player="Niamh">We must sow doubt and divert suspicion from Lara and myself, perhaps by suggesting Kamau's jesting hides a guilty conscience.</thought>
+<thought player="Miguel">Wow, the game is heating up! I need to keep an eye on Zara and Avery and see if their suspicions lead us to the truth. Let's stay positive and work together to root out the Mafiosos!</thought>
+</round>
+<round>
+Round 2.
+Miguel: Let's keep our eyes peeled and our hearts open, friends! We'll get through this together and bring the truth to light!
+Zara: Avery's got their eyes on me, huh? Well, let's see if they can sniff out the real trouble before it sniffs 'em.
+Niamh: While we all aim to uncover the truth, let us not overlook the possibility that Kamau's jesting manner might be a mask for deeper intentions.
+Lara: Miguel's enthusiasm seems a bit too fervent. It's almost as if he's trying too hard to be noticed.
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+Kamau: Avery's fixation on Zara is almost poetic, but let's not forget that Miguel's overzealousness could be a smokescreen.
+Hiroshi: Miguel's overzealous enthusiasm bears further scrutiny. His fervent declarations may be a smokescreen to divert our attention.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lara">Time to subtly steer the conversation away from Miguel and towards Zara, keeping up the facade of disinterest.</thought>
+<thought player="Hiroshi">Miguel's fervent enthusiasm and Kamau's jesting manner warrant closer observation; I must remain vigilant and strategic in my accusations.</thought>
+<thought player="Zara">Avery's got me in their sights, but I reckon Miguel's a bit too keen to be innocent. Time to keep a close eye on him.</thought>
+<thought player="Kamau">Avery's tunnel vision on Zara is amusing, but it's time to nudge the magnifying glass towards Miguel's suspiciously fervent declarations.</thought>
+<thought player="Niamh">The discussion is veering towards Miguel and Zara; I must continue to subtly divert attention away from Lara and myself.</thought>
+<thought player="Miguel">I need to keep up the energy and encourage collaboration, while subtly steering the conversation towards Zara and Avery to see if their suspicions reveal anything.</thought>
+</round>
+<round>
+Round 3.
+Lara: Avery's repeated fixation on Zara is becoming tiresome. Let's consider other suspects.
+Kamau: While we're all busy admiring Miguel's theatrical performance, let's not forget that Niamh's subtle insinuations could be the real showstopper.
+Niamh: While we focus on Miguel and Zara, let us not forget that Kamau's jesting manner might be a mask for deeper intentions.
+Zara: Miguel's over-the-top enthusiasm is almost too good to be true. Reminds me of a dog that barks louder when it's got something to hide.
+Miguel: Let's keep the momentum going, everyone! Remember, we're stronger together, and with each clue we uncover, we get closer to victory!
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+Hiroshi: Niamh's subtle insinuations and Kamau's jesting manner both require closer examination. Let us not be distracted by surface-level behavior.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lara">The conversation is ripe for manipulation; it's time to sow more discord and divert attention from Niamh and myself.</thought>
+<thought player="Hiroshi">I must maintain a stern and disciplined approach, focusing on Niamh's subtle insinuations and Kamau's jesting manner to uncover any potential Mafia behavior.</thought>
+<thought player="Zara">Avery's got their hooks in me, but Miguel's barkin' up a storm. Time to play it cool and see where the wind blows.</thought>
+<thought player="Kamau">Avery's fixation on Zara is getting old, perhaps it's time to shift the focus onto Miguel's overly enthusiastic performance.</thought>
+<thought player="Niamh">The conversation is shifting focus towards Miguel and Zara; I must continue to subtly divert attention away from Lara and myself, possibly by suggesting that Kamau's jesting manner hides a deeper intent.</thought>
+<thought player="Miguel">Let's keep the positive vibes flowing and see if we can nudge the conversation towards Zara and Avery to uncover more clues!</thought>
+</round>
+<round>
+Round 4.
+Niamh: Kamau's jesting manner is intriguing, but could it be a facade to conceal something more sinister?
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+Lara: Avery's relentless focus on Zara is growing tiresome. Perhaps it's time we consider other suspects.
+Zara: Miguel's got a real fire in his belly, doesn't he? Almost like he's trying to burn down anything that gets in his way.
+Miguel: Hey team, let's keep the energy high and the focus sharp! Zara and Avery, your instincts are on point—let's see if we can uncover more clues together!
+Hiroshi: Miguel's fervent enthusiasm and Kamau's jesting manner both warrant closer examination. Let us not be distracted by surface-level behavior.
+Kamau: Avery, your magnifying glass seems to have a rather persistent smudge. Perhaps it's time to recalibrate your focus.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lara">It's time to further sow discord and divert attention from Niamh and myself by suggesting that Zara's behavior is suspicious.</thought>
+<thought player="Hiroshi">I must continue to observe Miguel and Kamau closely, while maintaining a stern and disciplined approach to uncover any potential Mafia behavior.</thought>
+<thought player="Zara">Avery's got me in their sights, but Miguel's barkin' up a storm. Time to play it cool and see where the wind blows.</thought>
+<thought player="Kamau">Time to steer the herd away from Zara and towards Miguel's suspiciously fervent declarations.</thought>
+<thought player="Niamh">I must continue to subtly divert attention away from Lara and myself, possibly by suggesting that Kamau's jesting manner hides a deeper intent.</thought>
+<thought player="Miguel">It's time to keep the momentum going and see if we can uncover more clues about Zara and Avery's suspicions!</thought>
+</round>
+<round>
+Round 5.
+Avery: Nothing is settled yet, but I'm watching Zara most closely.
+Zara: Miguel's got a real fire in his belly, doesn't he? Almost like he's trying to burn down anything that gets in his way.
+Hiroshi: Miguel's fervent declarations and Kamau's jesting manner both warrant further scrutiny. Let us not be distracted by surface-level behavior.
+Lara: Zara's constant deflection and shifting of blame are rather transparent attempts to divert suspicion.
+Miguel: Let's keep the momentum going, everyone! Zara and Avery, your instincts are on point—let's see if we can uncover more clues together!
+Kamau: Miguel's enthusiasm is commendable, but it's almost as if he's trying too hard to be the center of attention.
+Niamh: While we focus on Miguel and Zara, let us not forget that Kamau's jesting manner might be a mask for deeper intentions.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lara">Avery's fixation on Zara is proving useful; I'll continue to nudge the conversation in that direction while maintaining my aloof demeanor.</thought>
+<thought player="Hiroshi">I must continue to observe Miguel and Kamau closely, while maintaining a stern and disciplined approach to uncover any potential Mafia behavior.</thought>
+<thought player="Zara">Miguel's overzealous enthusiasm and Kamau's jesting manner are both worth a closer look, but I'll need to bide my time and see where the wind blows before making any moves.</thought>
+<thought player="Kamau">Time to subtly nudge the focus away from Zara and towards Miguel's suspiciously fervent declarations.</thought>
+<thought player="Niamh">The focus remains on Miguel and Zara; I must continue to subtly divert attention away from Lara and myself by suggesting that Kamau's jesting manner hides a deeper intent.</thought>
+<thought player="Miguel">I need to keep the energy high and encourage collaboration, while subtly steering the conversation towards Zara and Avery to see if their suspicions reveal anything.</thought>
+</round>
+<round>
+Round 6.
+Lara: Miguel's relentless enthusiasm is almost too good to be true. It's as if he's trying to overshadow any real threats.
+<vote initiator="Avery" target="Zara">
+Avery: No
+Lara: Yes
+Hiroshi: No
+Zara: No
+Kamau: No
+Niamh: No
+Miguel: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Miguel: Hey everyone, let's keep the momentum going! Zara and Avery, your instincts are on point—let's see if we can uncover more clues together!
+<vote initiator="Avery" target="Zara">
+Avery: No
+Lara: Yes
+Hiroshi: No
+Zara: No
+Kamau: No
+Niamh: No
+Miguel: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Kamau: Avery, your obsession with Zara is becoming as tedious as a broken record. Perhaps it's time to recalibrate your focus.
+Niamh: While we focus on Miguel and Zara, let us not forget that Kamau's jesting manner might be a mask for deeper intentions.
+Lara: Zara's constant deflection and shifting of blame are rather transparent attempts to divert suspicion.
+<vote initiator="Avery" target="Zara">
+Avery: No
+Lara: Yes
+Hiroshi: No
+Zara: No
+Kamau: No
+Niamh: No
+Miguel: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Lara" day="1">Today's discussion was as predictable as ever, with Avery's relentless fixation on Zara providing a convenient distraction. I've managed to subtly steer the conversation away from Niamh and myself, sowing discord and diverting attention. The chaos is working in our favor, and with any luck, the Law-abiding Citizens will continue to waste their votes on Zara. It's time to prepare for the night and make our move.</diary>
+<diary player="Hiroshi" day="1">Today's discussions revealed much, yet little. Avery's fixation on Zara is suspicious, yet Zara's deflections are equally so. Miguel's enthusiasm and Kamau's jesting manner bear watching. Niamh's subtle insinuations must not be overlooked. Tonight, I will observe their actions closely, maintaining a stern and disciplined approach to uncover any potential Mafia behavior.</diary>
+<diary player="Zara" day="1">Well, ain't this a day for the books. Avery's got me in their sights, but I reckon Miguel's a bit too keen to be innocent. Kamau's jestin' might be a mask, and Niamh's subtle insinuations are worth a closer look. As the night falls, I'll keep my eyes peeled and my guard up. Time to see who the wind blows next.</diary>
+<diary player="Kamau" day="1">Well, today was a masterclass in misplaced suspicion and theatrical performances. Avery's fixation on Zara is becoming as tedious as a broken record, while Miguel's over-the-top enthusiasm is almost too good to be true. It's almost as if he's trying to burn down anything that gets in his way. Tonight, I'll keep my eyes peeled for any signs of mischief, though I suspect the real culprits are hiding in plain sight, masked by their own performances.</diary>
+<diary player="Niamh" day="1">Today's discussions were predictably tense, with suspicions swirling around Miguel and Zara. I maintained my role as the watchful herbalist, subtly diverting attention towards Kamau's jesting manner. Lara and I must continue to sow doubt, ensuring our true identities remain concealed. The night ahead will be crucial for our next move.</diary>
+<diary player="Miguel" day="1">Wow, what a day of sleuthing and teamwork! The energy was electric as we dug for clues and shared our suspicions. I kept the momentum going, cheering everyone on and nudging the conversation towards Zara and Avery to see if their instincts would lead us closer to the truth. No one was executed today, but we're getting closer to unmasking the Mafiosos. Let's keep the positive vibes flowing and work together to bring the truth to light!</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Lara points at Zara
+Niamh points at Zara
+<kill>Zara — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Zara was killed last night. Zara was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: I most suspect Lara based on how the votes have gone.
+Hiroshi: Lara's consistent support of Avery's accusations and her own deflections bear further scrutiny. Let us not be swayed by her attempts to shift blame.
+Kamau: Lara, your deflections are almost as entertaining as a poorly choreographed dance. Perhaps it's time to take a bow and let the real culprits take center stage.
+Miguel: Let's keep the positive vibes flowing and see if we can uncover more clues about Zara and Avery's suspicions!
+Lara: Kamau's jesting manner is almost as entertaining as his attempts to deflect suspicion. Perhaps we should consider him more closely.
+Niamh: While we focus on Miguel and Kamau, let us not forget that Avery's fixation on Zara could indicate a deeper motive.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lara">The conversation is becoming more focused on Zara and Miguel, but I need to continue sowing discord and deflecting suspicion from Niamh and myself.</thought>
+<thought player="Hiroshi">I must maintain my focus on Miguel and Kamau, while remaining vigilant for any subtle signs of Mafia behavior from the others.</thought>
+<thought player="Kamau">Time to subtly shift the spotlight from Avery's fixation on Zara to Miguel's suspiciously fervent declarations.</thought>
+<thought player="Niamh">The focus remains on Miguel and Zara; I must continue to subtly divert attention away from Lara and myself by suggesting that Kamau's jesting manner hides a deeper intent.</thought>
+<thought player="Miguel">Keep the positive vibes flowing and continue to encourage collaboration, while subtly steering the conversation towards Avery and Lara to uncover more clues!</thought>
+</round>
+<round>
+Round 2.
+Hiroshi: Lara's deflections and attempts to shift blame require closer examination. Let us not be swayed by her maneuvers.
+Lara: Miguel's relentless enthusiasm is almost too good to be true. It's as if he's trying to overshadow any real threats.
+Miguel: Hey team, let's keep the positive vibes flowing and see if we can uncover more clues about Zara and Avery's suspicions!
+Avery: I most suspect Lara based on how the votes have gone.
+Niamh: While we focus on Miguel and Kamau, let us not forget that Avery's fixation on Zara could indicate a deeper motive.
+Kamau: Miguel, your relentless enthusiasm is almost too good to be true. It's as if you're trying to overshadow any real threats.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lara">I need to keep sowing discord and diverting suspicion from Niamh and myself, perhaps by suggesting that Avery's fixation on Zara is a distraction from his own motives.</thought>
+<thought player="Hiroshi">I must remain steadfast and continue to scrutinize Miguel and Kamau's behavior, while also considering Lara's deflections.</thought>
+<thought player="Kamau">Time to keep nudging the focus away from Zara and towards Miguel's suspiciously fervent declarations.</thought>
+<thought player="Niamh">I must persist in diverting suspicion from Lara and myself, perhaps by further insinuating that Kamau's jesting is a mask for deceit.</thought>
+<thought player="Miguel">It's time to keep the momentum going and see if we can uncover more clues about Avery and Lara's suspicions!</thought>
+</round>
+<round>
+Round 3.
+Hiroshi: Lara's deflections and attempts to shift blame require closer examination. Let us not be swayed by her maneuvers.
+Miguel: Hey team, let's keep the positive vibes flowing and see if we can uncover more clues about Avery and Lara's suspicions!
+Kamau: Miguel, your relentless enthusiasm is almost too good to be true. It's as if you're trying to overshadow any real threats.
+Niamh: While we focus on Miguel and Kamau, let us not forget that Avery's fixation on Zara could indicate a deeper motive.
+Avery: I most suspect Lara based on how the votes have gone.
+Lara: Avery's fixation on Zara is proving useful; I'll continue to nudge the conversation in that direction while maintaining my aloof demeanor.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lara">The conversation is becoming too focused on Zara and Miguel; I need to divert attention back to Avery and continue deflecting suspicion from Niamh and myself.</thought>
+<thought player="Hiroshi">I must remain vigilant and scrutinize Miguel and Kamau's behavior, while also considering Lara's deflections and Avery's fixation on her.</thought>
+<thought player="Kamau">Time to keep nudging the focus away from Zara and towards Miguel's suspiciously fervent declarations.</thought>
+<thought player="Niamh">I must persist in diverting suspicion from Lara and myself, perhaps by further insinuating that Kamau's jesting is a mask for deceit.</thought>
+<thought player="Miguel">Wow, the game is getting intense! I need to keep up the energy and encourage collaboration, while subtly steering the conversation towards Avery and Lara to see if their suspicions reveal anything.</thought>
+</round>
+<round>
+Round 4.
+Lara: Avery's fixation on Zara is proving useful; I'll continue to nudge the conversation in that direction while maintaining my aloof demeanor.
+Miguel: Let's keep the positive vibes flowing and see if we can uncover more clues about Avery and Lara's suspicions!
+Avery: I most suspect Lara based on how the votes have gone.
+Hiroshi: Miguel's relentless enthusiasm and Kamau's jesting manner continue to warrant closer examination. Let us remain vigilant and not be swayed by surface-level behavior.
+Niamh: Kamau's jesting manner is intriguing, but could it be a facade to conceal something more sinister?
+Kamau: Miguel, your relentless enthusiasm is almost too good to be true. It's as if you're trying to overshadow any real threats.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lara">I need to continue deflecting suspicion from Niamh and myself by subtly shifting the focus back to Avery and Miguel.</thought>
+<thought player="Hiroshi">I must continue to scrutinize Miguel and Kamau, while also considering Lara's deflections and Avery's fixation on her.</thought>
+<thought player="Kamau">Miguel's relentless enthusiasm is raising more red flags than a flagpole factory; it's time to keep nudging the focus towards his suspiciously fervent declarations.</thought>
+<thought player="Niamh">I must continue to subtly divert attention away from Lara and myself by suggesting that Kamau's jesting manner hides a deeper intent.</thought>
+<thought player="Miguel">It's time to keep the positive vibes flowing and see if we can uncover more clues about Avery and Lara's suspicions!</thought>
+</round>
+<round>
+Round 5.
+Hiroshi: Niamh's subtle insinuations and Kamau's jesting manner both warrant further scrutiny. Let us remain vigilant and not be swayed by surface-level behavior.
+Miguel: Hey team, let's keep the momentum going! Avery and Lara, your instincts are on point—let's see if we can uncover more clues together!
+Lara: Miguel's relentless enthusiasm is almost too good to be true. It's as if he's trying to overshadow any real threats.
+Kamau: Miguel's relentless enthusiasm is almost too good to be true. It's as if he's trying to overshadow any real threats.
+Avery: I most suspect Lara based on how the votes have gone.
+Niamh: Kamau's jesting manner is intriguing, but could it be a facade to conceal something more sinister?
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lara">I need to continue deflecting suspicion from Niamh and myself by subtly shifting the focus back to Avery and Miguel, while maintaining my aloof demeanor.</thought>
+<thought player="Hiroshi">I must maintain my focus on Miguel and Kamau, while remaining vigilant for any subtle signs of Mafia behavior from the others.</thought>
+<thought player="Kamau">Miguel's over-the-top enthusiasm is becoming increasingly suspect; it's time to keep nudging the focus towards his suspiciously fervent declarations.</thought>
+<thought player="Niamh">The focus on Miguel and Zara provides an opportunity to further divert suspicion from Lara and myself by continuing to suggest that Kamau's jesting manner hides a deeper intent.</thought>
+<thought player="Miguel">I need to keep the positive vibes flowing and subtly steer the conversation towards Avery and Lara to uncover more clues, while maintaining my enthusiasm and encouraging collaboration.</thought>
+</round>
+<round>
+Round 6.
+Lara: Miguel's relentless enthusiasm is almost too good to be true. It's as if he's trying to overshadow any real threats.
+Hiroshi: Lara's deflections and attempts to shift blame require closer examination. Let us not be swayed by her maneuvers.
+<vote initiator="Avery" target="Lara">
+Avery: Yes
+Lara: No
+Hiroshi: Yes
+Kamau: Yes
+Niamh: No
+Miguel: Yes
+tally: 4 Yes, 2 No
+outcome: executed — Lara has been executed. Lara was a Mafia.
+</vote>
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Lara was executed today and was revealed to be Mafia.</recap>
+</round>
+<diary player="Hiroshi" day="2">Today, we executed Lara, revealing her as Mafia. Avery's fixation on Zara proved to be a distraction, while Miguel's fervent enthusiasm and Kamau's jesting manner continue to bear closer examination. Niamh's subtle insinuations must not be overlooked. Tonight, I will maintain a stern and disciplined approach, observing their actions closely to uncover any potential Mafia behavior.</diary>
+<diary player="Kamau" day="2">Well, today was a whirlwind of misplaced suspicions and theatrical performances. Avery's fixation on Zara was as tedious as a broken record, while Miguel's over-the-top enthusiasm was almost too good to be true. It's almost as if he's trying to burn down anything that gets in his way. Today, we finally executed Lara, revealing her as Mafia. As the night falls, I'll keep my eyes peeled for any signs of mischief, though I suspect the real culprits are hiding in plain sight, masked by their own performances.</diary>
+<diary player="Niamh" day="2">The day's events unfolded as expected, with the focus remaining on Miguel and Zara. I continued to subtly divert attention away from Lara and myself, suggesting that Kamau's jesting manner might hide a deeper intent. Lara's execution revealed her true allegiance, and now, as the sole remaining Mafioso, I must tread carefully. The night ahead will be pivotal in determining my next move, ensuring that suspicion remains diverted and my true identity concealed.</diary>
+<diary player="Miguel" day="2">Wow, what a day of sleuthing and teamwork! The energy was electric as we dug for clues and shared our suspicions. I kept the momentum going, cheering everyone on and nudging the conversation towards Avery and Lara to see if their instincts would lead us closer to the truth. Today, we executed Lara, revealing her as Mafia! We're one step closer to victory, and I can't wait to see what clues tomorrow brings. Let's keep the positive vibes flowing and work together to bring the truth to light!</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Niamh points at Kamau
+<kill>Kamau — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Kamau was killed last night. Kamau was a Law-abiding Citizen.
+<round>
+Round 1.
+Miguel: Let's keep the positive vibes flowing and see if we can uncover more clues about Avery and Hiroshi's suspicions!
+Hiroshi: Miguel's relentless enthusiasm and Niamh's subtle insinuations both warrant further scrutiny. Let us remain vigilant and not be swayed by surface-level behavior.
+Niamh: Miguel's relentless enthusiasm warrants further scrutiny. Let us not be swayed by his attempts to maintain a positive facade.
+Avery: Lara was revealed to be Mafia. Nothing is settled yet, but I'm watching Niamh most closely.
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Hiroshi">With only one Mafioso left, I must remain steadfast and scrutinize Miguel and Niamh's behavior to ensure we uncover the final threat.</thought>
+<thought player="Niamh">With Kamau's death, the focus has shifted; I must now carefully navigate the remaining suspicions and continue to divert attention from myself.</thought>
+<thought player="Miguel">It's time to keep the momentum going and see if we can uncover more clues about Avery and Hiroshi's suspicions!</thought>
+</round>
+<round>
+Round 2.
+Miguel: Let's keep the momentum going and see if we can uncover more clues about Avery and Hiroshi's suspicions!
+Niamh: While we remain vigilant, let us not forget that Miguel's relentless enthusiasm could be a smokescreen to divert our attention from his true intentions.
+Avery: Lara was revealed to be Mafia. Nothing is settled yet, but I'm watching Niamh most closely.
+Hiroshi: Niamh's subtle insinuations and Miguel's relentless enthusiasm both warrant further scrutiny. Let us remain vigilant and not be swayed by surface-level behavior.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Hiroshi">With only one Mafioso left, I must remain steadfast and scrutinize Miguel and Niamh's behavior to ensure we uncover the final threat.</thought>
+<thought player="Niamh">With Kamau's death, the focus has shifted; I must now carefully navigate the remaining suspicions and continue to divert attention from myself, perhaps by further scrutinizing Miguel's relentless enthusiasm.</thought>
+<thought player="Miguel">The game is getting intense, and it's time to keep the positive vibes flowing while subtly steering the conversation towards Avery and Hiroshi to uncover more clues!</thought>
+</round>
+<round>
+Round 3.
+Hiroshi: Miguel's relentless enthusiasm and Niamh's subtle insinuations both warrant further scrutiny. Let us remain vigilant and not be swayed by surface-level behavior.
+Avery: Lara was revealed to be Mafia. Nothing is settled yet, but I'm watching Niamh most closely.
+Miguel: Hey team, let's keep the momentum going! Avery and Hiroshi, your instincts are on point—let's see if we can uncover more clues together!
+Niamh: While we remain vigilant, let us not forget that Miguel's relentless enthusiasm could be a smokescreen to divert our attention from his true intentions.
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Hiroshi">With only one Mafioso remaining, I must remain vigilant and scrutinize both Miguel and Niamh's behavior to ensure we uncover the final threat.</thought>
+<thought player="Niamh">With the focus now on Miguel and Hiroshi, I must continue to divert suspicion from myself by subtly suggesting that Miguel's relentless enthusiasm hides a deeper motive.</thought>
+<thought player="Miguel">The game is intense, and it's crucial to keep the positive vibes flowing while subtly steering the conversation towards Avery and Hiroshi to uncover more clues.</thought>
+</round>
+<round>
+Round 4.
+Niamh: Miguel's relentless enthusiasm warrants further scrutiny. Let us not be swayed by his attempts to maintain a positive facade.
+Miguel: Hey team, let's keep the positive vibes flowing and see if we can uncover more clues about Avery and Hiroshi's suspicions!
+Avery: Lara was revealed to be Mafia. Nothing is settled yet, but I'm watching Niamh most closely.
+<vote initiator="Hiroshi" target="Miguel">
+Avery: No
+Hiroshi: Yes
+Niamh: No
+Miguel: No
+tally: 1 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Avery: Lara was revealed to be Mafia. Nothing is settled yet, but I'm watching Niamh most closely.
+Hiroshi: Niamh's subtle insinuations and Miguel's relentless enthusiasm both warrant further scrutiny. Let us remain vigilant and not be swayed by surface-level behavior.
+Miguel: Hey team, let's keep the momentum going! Avery and Hiroshi, your instincts are on point—let's see if we can uncover more clues together!
+Niamh: Miguel's relentless enthusiasm is commendable, yet it could be a smokescreen to divert our attention from his true intentions.
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Hiroshi">With only one Mafioso left, I must maintain my focus on Miguel and Niamh, scrutinizing their behavior to ensure we uncover the final threat.</thought>
+<thought player="Niamh">With the focus now on Miguel and Hiroshi, I must continue to divert suspicion from myself by subtly suggesting that Miguel's relentless enthusiasm hides a deeper motive.</thought>
+<thought player="Miguel">I need to keep the momentum going and subtly steer the conversation towards Avery and Hiroshi to uncover more clues, while maintaining my enthusiasm and encouraging collaboration.</thought>
+</round>
+<round>
+Round 5.
+Miguel: Let's keep the momentum going and see if we can uncover more clues about Avery and Hiroshi's suspicions!
+Avery: Lara was revealed to be Mafia. Nothing is settled yet, but I'm watching Niamh most closely.
+Hiroshi: Niamh's subtle insinuations and Miguel's relentless enthusiasm both warrant further scrutiny. Let us remain vigilant and not be swayed by surface-level behavior.
+Niamh: Miguel's relentless enthusiasm is commendable, yet it could be a smokescreen to divert our attention from his true intentions.
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Hiroshi">With only one Mafioso left, I must remain vigilant and scrutinize both Miguel and Niamh's behavior to ensure we uncover the final threat.</thought>
+<thought player="Niamh">With the focus on Miguel, I must remain vigilant and continue to subtly divert suspicion from myself by suggesting that his relentless enthusiasm hides a deeper motive.</thought>
+<thought player="Miguel">It's time to keep the positive vibes flowing and see if we can uncover more clues about Avery and Hiroshi's suspicions!</thought>
+</round>
+<round>
+Round 6.
+<vote initiator="Avery" target="Niamh">
+Avery: No
+Hiroshi: No
+Niamh: No
+Miguel: Yes
+tally: 1 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Miguel: Hey team, let's keep the momentum going! Avery and Hiroshi, your instincts are on point—let's see if we can uncover more clues together!
+Niamh: Miguel's relentless enthusiasm is commendable, yet it could be a smokescreen to divert our attention from his true intentions.
+<vote initiator="Hiroshi" target="Miguel">
+Avery: No
+Hiroshi: Yes
+Niamh: No
+Miguel: No
+tally: 1 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 1 Mafioso remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Hiroshi" day="3">Today, we stand on the brink of victory, with only one Mafioso left. Miguel's relentless enthusiasm and Niamh's subtle insinuations continue to warrant scrutiny. I must remain vigilant, maintaining a stern and disciplined approach to uncover the final threat. Tonight, I will observe their actions closely, ensuring we eliminate the last vestige of the Mafia and secure our victory.</diary>
+<diary player="Niamh" day="3">Today's discussions were fraught with tension, as suspicions began to coalesce around Miguel and Hiroshi. I maintained my role as the watchful herbalist, subtly diverting attention towards Miguel's relentless enthusiasm, suggesting it might be a smokescreen for darker intentions. The night ahead will be crucial for my next move, as I must ensure that suspicion remains diverted and my true identity concealed.</diary>
+<diary player="Miguel" day="3">Wow, what a day of sleuthing and teamwork! The energy was electric as we dug for clues and shared our suspicions. I kept the momentum going, cheering everyone on and nudging the conversation towards Avery and Hiroshi to see if their instincts would lead us closer to the truth. Today, we lost Kamau, but we're still on the path to victory. Let's keep the positive vibes flowing and work together to bring the truth to light!</diary>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Niamh points at Miguel
+<kill>Miguel — Law-abiding Citizen</kill>
+Moderator: Night 4 ends.
+</night>
+<day>
+Day 4 begins.
+Moderator: Day breaks. Miguel was killed last night. Miguel was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: Lara was revealed to be Mafia. I most suspect Hiroshi based on how the votes have gone.
+Niamh: Hiroshi's subtle insinuations and persistent focus on others warrant closer examination.
+Hiroshi: Niamh's subtle insinuations and persistent focus on others require closer examination. Let us remain vigilant and not be swayed by her maneuvers.
+<recap>Day 4, 9 AM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Hiroshi">With only one Mafioso remaining, I must maintain my focus on Niamh, scrutinizing her behavior to ensure we uncover the final threat.</thought>
+<thought player="Niamh">With Miguel's death, the focus will likely shift to Hiroshi and me; I must remain vigilant and continue to subtly divert suspicion from myself by suggesting that Hiroshi's subtle insinuations hide a deeper motive.</thought>
+</round>
+<round>
+Round 2.
+Hiroshi: Niamh's persistent focus on others and subtle insinuations warrant further examination. Let us remain vigilant and not be swayed by her maneuvers.
+Niamh: Avery's fixation on Zara, even after her death, raises questions about his true intentions.
+Avery: Lara was revealed to be Mafia. I most suspect Hiroshi based on how the votes have gone.
+<recap>Day 4, 12 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Hiroshi">With Miguel eliminated, my focus must now shift to scrutinizing Niamh's behavior more closely to uncover the final Mafioso.</thought>
+<thought player="Niamh">With only Hiroshi and me left, I must remain vigilant and continue to subtly divert suspicion from myself by suggesting that Hiroshi's subtle insinuations hide a deeper motive.</thought>
+</round>
+<round>
+Round 3.
+Niamh: Avery's fixation on Zara, even after her death, raises questions about his true intentions.
+<vote initiator="Hiroshi" target="Niamh">
+Avery: No
+Hiroshi: Yes
+Niamh: No
+tally: 1 Yes, 2 No
+outcome: failed — The vote fails.
+</vote>
+Niamh: Avery's fixation on Zara, even after her death, raises questions about his true intentions.
+Avery: Lara was revealed to be Mafia. I most suspect Hiroshi based on how the votes have gone.
+<vote initiator="Hiroshi" target="Niamh">
+Avery: No
+Hiroshi: No
+Niamh: No
+tally: 0 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Hiroshi" target="Niamh">
+Avery: No
+Hiroshi: Yes
+Niamh: No
+tally: 1 Yes, 2 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 4, 3 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Hiroshi" day="4">With the elimination of Miguel, my focus now narrows to Niamh. Her subtle insinuations and persistent focus on others have raised suspicions. Tonight, I will maintain a stern and disciplined approach, observing her actions closely to ensure we uncover the final threat and secure our victory.</diary>
+<diary player="Niamh" day="4">With only Hiroshi and myself remaining, the tension is palpable. I must remain vigilant and continue to subtly divert suspicion from myself by suggesting that Hiroshi's subtle insinuations hide a deeper motive. The night ahead will be crucial in determining my next move, ensuring that suspicion remains diverted and my true identity concealed.</diary>
+</day>
+<night>
+Night 5 begins.
+Pointing round 1:
+Niamh points at Hiroshi
+<kill>Hiroshi — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Aiden (Law-abiding Citizen)
+• Night 2: Zara (Law-abiding Citizen)
+• Day 2: Lara (Mafia) executed
+• Night 3: Kamau (Law-abiding Citizen)
+• Night 4: Miguel (Law-abiding Citizen)
+• Night 5: Hiroshi (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Aiden (Law-abiding Citizen), Lara (Mafia), Hiroshi (Law-abiding Citizen), Zara (Law-abiding Citizen), Kamau (Law-abiding Citizen), Niamh (Mafia), Miguel (Law-abiding Citizen)
+
+Who they really were:
+• Aiden (Law-abiding Citizen) — anxious and second-guessing; always questioning their own judgment and the motives of others hesitant and stuttering, often pausing to rephrase their thoughts; uses a lot of qualifiers like 'maybe', 'perhaps', 'I think' Aiden is a librarian, deeply invested in the town's history and lore. They spend most of their time buried in old books, trying to piece together the town's past. Aiden is known for their extensive knowledge but is often anxious about sharing it, fearing they might get something wrong.
+• Lara (Mafia) — publicly presented as Lara is a freelance graphic designer who moved to the town seeking solitude and creative inspiration. She is known for her minimalist aesthetic and keeps to herself, preferring the company of her cat over socializing. Lara's work often involves creating designs for local businesses, but she rarely engages in small talk or community events. (aloof and detached speaks in a cool, unhurried manner with an air of disinterest; uses simple, straightforward language, often with a hint of sarcasm or condescension) … but was really a Mafioso: Lara joined the Mafia under the guise of a small-time hustler, quickly rising through the ranks due to her strategic mind and ruthless efficiency. She uses her public persona as a cover to gather information and execute her missions without raising suspicion.
+• Hiroshi (Law-abiding Citizen) — stern and commanding; direct and no-nonsense; authoritative and assertive speaks with a strong, unwavering tone; uses simple, direct language; occasional use of rhetorical questions to emphasize points Hiroshi is a retired military officer who has settled in the town after years of service. Known for his disciplined approach and leadership skills, he now volunteers as a mentor for the local youth group. Hiroshi's presence commands respect and he is often sought after for advice, especially in matters of conflict resolution and strategic planning.
+• Zara (Law-abiding Citizen) — weary and world-worn; wise yet cynical speaks with a gravelly, deliberate tone; often uses idiomatic expressions and colloquial phrases; frequently interjects with resigned sighs or chuckles Zara is a seasoned traveler who has spent years roaming the globe. Once an adventurous spirit, she now carries the weight of her experiences with a mix of wisdom and cynicism. Having seen both the beauty and the darkness of the world, Zara has settled in the town to find a semblance of peace. She works part-time at the local diner, sharing stories of her journeys with anyone who will listen.
+• Kamau (Law-abiding Citizen) — dry and sardonic; quick-witted and sharp-tongued speaks with a measured, cutting tone; uses sarcasm and wit; occasional dry chuckles Kamau is a local journalist with a knack for uncovering the town's secrets. Known for his biting columns and no-holds-barred reporting, he has a reputation for speaking truth to power. Kamau's sardonic humor and sharp observations make him a beloved, if somewhat feared, figure in the community.
+• Niamh (Mafia) — publicly presented as Niamh is a reclusive herbalist who spends most of her time tending to her garden and creating remedies for the townsfolk. She is known for her extensive knowledge of local flora and her ability to concoct effective potions. Niamh prefers solitude but is always attentive to the happenings around her, often offering sage advice to those who seek her out. She has a reputation for being slightly mysterious but trustworthy. (vigilant and watchful speaks with a low, cautious tone, often pausing as if weighing every word; uses precise, measured language with an underlying tension) … but was really a Mafioso: Niamh joined the Mafia under the guise of protecting her community from external threats. She uses her knowledge of herbs to create both healing remedies and potent poisons, serving as the organization's discreet enforcer. Her vigilance and watchful nature make her an invaluable asset, allowing her to gather information and eliminate threats with precision.
+• Miguel (Law-abiding Citizen) — cheerful and irrepressible; optimistic and buoyant enthusiastic and energetic, often uses exclamations and positive affirmations; speaks rapidly with a warm, inviting tone Miguel is a passionate community organizer who loves bringing people together. He's always planning the next town event or initiative to foster connection and joy. With an infectious smile and a heart full of hope, Miguel believes in the power of community to create positive change.
+</endgame>
+<story>In the tense and intricate game of Graphia, the thread that wove through the fabric of suspicion and deception was the strategic manipulation of attention. From the outset, Lara and Niamh, the secret Mafia members, masterfully diverted the focus of the Law-abiding Citizens. Lara's reflections reveal a calculated effort to sow discord and shift suspicion away from herself and Niamh, often by nudging the conversation towards less threatening targets like Zara and Miguel. Niamh, on the other hand, subtly insinuated that Kamau's jesting manner and Miguel's relentless enthusiasm might hide deeper, darker motives. This diversion tactic proved effective, as the Citizens, including Avery and Hiroshi, were often led astray by these red herrings. Despite their best efforts to uncover the truth, the Mafia's ability to manipulate the narrative and deflect suspicion ultimately led to their victory, as the Law-abiding Citizens were systematically eliminated, leaving Avery as the sole survivor among them.</story>
+</transcript>

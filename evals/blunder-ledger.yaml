@@ -5350,3 +5350,160 @@ metrics:
     ci_low: 0.0
     ci_high: 0.35433884297520657
 notes: 'spec 043 Slice 7 Task 7.3: local-arm end-to-end verification of the progressive ledger write - a record after game 1, growing per game, and a complete run carrying no ended_early marker. Also the first ollama record since the 2026-09-10 kills. code.dirty is set by two uncommitted context/project-timeline docs, not by gameplay code. CORRECTION, added by hand after the run: this note originally predicted persona_sem_* would be ABSENT because the SSO session had expired at launch. That was wrong - they are present (mean 0.354, peak 0.569 over 63 pairs). Constructing the embeddings client validates no credentials; the embed call happens at the end of each game, by which time the session had been refreshed.'
+---
+run:
+  date: '2026-09-14'
+  id: '2026-09-14T15-03-46-6f2b94'
+  seq: 11
+  duration_seconds: 2969.058
+  metrics_version: 1
+  transcript_dir: '2026-09-14T15-03-46-6f2b94'
+code:
+  commit: '68c43b279c530a29a179e43e77240f17f48993f3'
+  branch: 'main'
+  dirty: true
+provider:
+  name: 'bedrock'
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  structured_output: 'tool_use'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  base_url: null
+  games: 10
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 10
+  games_completed: 10
+  games_failed_early: 0
+  diary_fallback_rate: 0.0
+  diary_fallback_entries: 0
+  diary_entries_attempted: 141
+  story_missing_rate: 0.0
+  story_missing_games: 0
+  story_ending_games: 10
+  substitutions:
+    roster:
+      rate: 0.0
+      count: 0
+      attempted: 10
+    persona:
+      rate: 0.0
+      count: 0
+      attempted: 70
+    pointing:
+      rate: 0.0
+      count: 0
+      attempted: 83
+    ballot:
+      rate: 0.0
+      count: 0
+      attempted: 284
+    day_action:
+      rate: 0.0
+      count: 0
+      attempted: 837
+    reflection:
+      rate: 0.0
+      count: 0
+      attempted: 653
+    diary:
+      rate: 0.0
+      count: 0
+      attempted: 141
+  duration_seconds: 2969.058
+outcomes:
+  games: 10
+  law_abiding:
+    wins: 1
+    rate: 0.1
+    ci_low: 0.01787574951572113
+    ci_high: 0.4041563854975721
+  mafia:
+    wins: 9
+    rate: 0.9
+    ci_low: 0.5958436145024278
+    ci_high: 0.9821242504842788
+  scripted_side:
+    side: 'law_abiding'
+    wins: 1
+    rate: 0.1
+    ci_low: 0.01787574951572113
+    ci_high: 0.4041563854975721
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against an active rule-based scripted human (deterministic, no model call; when Law-abiding it supplies the vote a correct town majority needs) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 28
+    mafia: 1
+  by_day:
+    day_1: 6
+    day_2: 6
+    day_3: 13
+    day_4: 4
+metrics:
+  repetition:
+    rate: 0.7103960396039604
+    count: 574
+    denominator: 808
+    ci_low: 0.6781832570951359
+    ci_high: 0.7406176518506485
+  third_person_self_talk:
+    rate: 0.01608910891089109
+    count: 13
+    denominator: 808
+    ci_low: 0.009426219790058437
+    ci_high: 0.027331689634637217
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 26
+    ci_low: 0.0
+    ci_high: 0.12873304380462175
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 55
+    ci_low: 0.0
+    ci_high: 0.06528714378942788
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 210
+    ci_low: 0.0
+    ci_high: 0.017964699104383804
+  persona_lex_mean:
+    mean: 0.03068832645362008
+    denominator: 210
+  persona_lex_peak:
+    peak: 0.12071005917159763
+    denominator: 210
+  persona_sem_mean:
+    mean: 0.23065283116903465
+    denominator: 210
+  persona_sem_peak:
+    peak: 0.4921563601381681
+    denominator: 210
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 26
+    ci_low: 0.0
+    ci_high: 0.12873304380462175
+  peer_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 1
+    ci_low: 0.0
+    ci_high: 0.7934567085261071
+notes: 'spec 043 Slice 7 Task 7.1: the instrumented ten-game Nova measurement of the per-game re-scoring cost - the confirming run for the replay figures in technical-considerations 2.8 (Cost of re-scoring, and the one number to measure). Deliberately run on pre-mitigation code so it measures the cost that section is about. Comparable to record 47: same arm, same ten games, same current defaults. code.dirty is set by two uncommitted context/project-timeline docs, not by gameplay code.'
