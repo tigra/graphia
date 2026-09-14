@@ -29,7 +29,7 @@ The tool that already solves this for long text is the one reviewers reach for o
 ### 2.1 One keypress opens a search, and the game does not move
 
 - While reading a game, pressing **`/`** opens a small search prompt. The game stays exactly where it was scrolled to — opening a search never moves the text, and nothing is hidden behind the prompt that the reviewer was mid-way through reading.
-- **The key is advertised.** The strip of key hints already along the bottom of the screen gains a "Search" entry beside the existing "Back", so a reviewer who does not know the feature exists can discover it. The `n` and `N` keys below are not advertised there.
+- **The key is advertised.** The strip of key hints already along the bottom of the screen gains a "Search" entry beside the existing "Back", so a reviewer who does not know the feature exists can discover it. **AMENDED 2026-09-14, at the author's direction.** This bullet previously ended "The `n` and `N` keys below are not advertised there", and §2.6 now requires the opposite: they are named there too, with a description each. The original reasoning — that one new entry was enough because the running status would announce the rest — was sound only if that announcement existed, and it did not. §2.6 carries the full account.
 - **Acceptance Criteria:**
   - [ ] Given a reviewer is reading a game, when they look at the strip of key hints at the bottom of the screen, then it offers "Search" alongside the existing "Back".
   - [ ] Given a reviewer is reading a game, when they press `/`, then a search prompt appears and whatever they type goes into it.
@@ -87,6 +87,8 @@ The tool that already solves this for long text is the one reviewers reach for o
 - **A press never stops on the line it started from.** Because several matches can fall on the same line of the screen, `n` and `N` skip past any that share the line the reviewer is already on and go to the next line that has a match — so a press is never spent moving between two matches the reviewer can already see together. (The one place a press still produces no movement is the last screenful of the game, where there is nothing left to scroll into view.) The consequence is deliberate: where a line holds several matches the running count jumps (from "match 4" straight to "match 7"), and the second and later matches on a line are highlighted but are never themselves the current one.
 - Both wrap: `n` past the last match returns to the first, `N` before the first match goes to the last, and the reviewer is told when a wrap happens.
 - The match the reviewer last landed on is marked more strongly than the others, so they can see which one of the highlighted matches they are currently on.
+- **Enter does the same thing as `n` once the prompt has closed.** With a search live and matches found, pressing Enter while reading the game moves to the next match exactly as `n` does. Enter *inside* the search prompt is unchanged — it confirms what has been typed and jumps, as §2.5 describes. **ADDED 2026-09-14, at the author's direction, from the by-eye check in Task 5.5.** Reaching the following match was the first thing the author tried to do and could not: repeated Enter sat still (measured — four presses, all on row 7 of the 88 KB game), because §2.5's jump is deliberately *inclusive* of where the reviewer already is, and after a jump they are already on a match. `n` did the job correctly the whole time; nothing told them it existed. Enter is what a reviewer reaches for, so Enter is now also right.
+- **The keys say they exist.** `n` and `N` are named in the key hints at the foot of the screen, and each carries a description in the key help panel rather than a blank. **ADDED 2026-09-14, at the author's direction.** This spec previously decided to keep them out of the foot of the screen on the grounds that the running status would announce them instead — and then the status never did. A key the reviewer cannot discover is a key they do not have.
 - **Acceptance Criteria:**
   - [ ] Given the reviewer has jumped to a match with Enter, when they press `n`, then the game moves to the following match with it on the top line.
   - [ ] Given the reviewer has pressed `n` several times, when they press `N`, then the game moves back to the previous match with it on the top line.
@@ -96,6 +98,12 @@ The tool that already solves this for long text is the one reviewers reach for o
   - [ ] Given the reviewer is sitting on one match among several highlighted on screen, when they look at the screen, then they can tell which one they are currently on.
   - [ ] Given the reviewer has scrolled by hand away from the match they were on, when they press `n`, then the view moves to the first match below where they have scrolled to — `n` follows where they are, not where they last jumped from.
   - [ ] Given no search has been made since the game was opened, when the reviewer presses `n`, then nothing happens and no error appears.
+  - [ ] Given the reviewer has jumped to a match with Enter and the prompt has closed, when they press Enter again, then the view moves to the following match exactly as `n` would, and keeps moving on each further press.
+  - [ ] Given the reviewer is typing in the search prompt, when they press Enter, then it confirms the typed text and jumps as §2.5 describes — unchanged.
+  - [ ] Given a search is live whose text matches nothing in the game, when the reviewer presses Enter while reading, then nothing happens and no error appears.
+  - [ ] Given no search has been made since the game was opened, when the reviewer presses Enter while reading, then nothing happens and no error appears.
+  - [ ] Given the reviewer is reading a game, when they look at the key hints at the foot of the screen, then `n` and `N` are named there together with what each does.
+  - [ ] Given the reviewer opens the key help panel, when they look at `n` and `N`, then each carries a description of what it does rather than an empty one.
 
 ### 2.7 Capital letters narrow the search; all-lowercase matches anything
 
@@ -109,11 +117,13 @@ The tool that already solves this for long text is the one reviewers reach for o
 
 - The search prompt shows how many matches the typed text has in this game, and which one the reviewer is currently on once they have jumped. A search with no matches says so plainly.
 - The running count is a position among **all** matches, so where a line of the screen holds several it can jump by more than one at a time — the consequence of `n` always moving the view, described above.
+- **The running status names the keys that move between matches**, so the reviewer learns them at the moment they are useful rather than having to know them in advance. **ADDED 2026-09-14, at the author's direction** — this is the announcement §2.6 always assumed was happening and which was never built.
 - **Acceptance Criteria:**
   - [ ] Given the reviewer has typed a word with several matches in the game, when they look at the prompt, then it tells them how many matches there are.
   - [ ] Given the reviewer has typed something that appears nowhere in the game, when they look at the prompt, then it says there are no matches, nothing is highlighted, and the game has not moved.
   - [ ] Given the reviewer has jumped to a match and pressed `n` twice, when they look at the screen, then they can tell which match of the total they are on.
   - [ ] Given the reviewer types a word with no matches and then presses Enter, then nothing moves and no error appears.
+  - [ ] Given the reviewer has jumped to a match, when they look at the running status, then it names the keys that step to the next and to the previous match.
 
 ### 2.9 Leaving the search, and leaving the game
 

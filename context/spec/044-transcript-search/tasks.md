@@ -106,6 +106,27 @@ Covers §2.9 (all 5), §2.10 AC3/AC4, and closes the spec.
 
 ---
 
+## Slice 6 — The way to the next match is one you can find
+
+*Runnable result: `n` and `N` are named at the foot of the screen and described in the key help panel, the running status names them, and Enter steps to the next match exactly as `n` does once the prompt has closed.*
+
+**Origin: the by-eye check in Task 5.5, 2026-09-14.** The author opened the 88 KB game, searched, and could not reach the following match. Everything below was measured on that game before any of it was written:
+
+- Repeated `/` + Enter is a **no-op loop** — four consecutive presses, all resting on row 7, header fixed at `the · 1/702`. That is §2.5 AC2 working as specified: the jump is *inclusive* of where the reviewer already is, and after a jump they are already standing on a match.
+- `n` was **correct the whole time** — rows 7 → 10 → 13 → 14, header `1/702` → `2/702` → `3/702` → `4/702`.
+- Nothing advertised it. The Footer carried `escape Back`, `slash Search`, `ctrl+p palette` and nothing else, and the status line said `the · 1/702` — a position, never the keys that change it. Slice 4 hid `n`/`N` **on the explicit grounds that the status line would announce them**, and the status line never did.
+
+Covers §2.6's six new ACs and §2.8's new AC.
+
+- [x] **Slice 6: The way to the next match is one you can find**
+  - [x] 6.1 Give `n` and `N` real descriptions and show them. Both bindings are currently `Binding("n", "next_match", show=False)` with **no description at all**, which is why the key help panel renders them with a blank description column. **Note the mechanism before changing anything:** `textual/binding.py:161` computes `show=bool(binding.description and binding.show)`, so an empty description forces a binding hidden **regardless of `show=True`** — the description is load-bearing, not decorative, and flipping `show` alone would change nothing. Delete the two now-false comment blocks above them that justify `show=False` by pointing at a status-line announcement that was never built. **[Agent: textual-tui]**
+  - [x] 6.2 Name the stepping keys in the running status. `_search_status_text` currently yields `the · 1/702` and `the · 1/702 (wrapped)`. Extend it so the keys are named at the moment they are useful. **Header width is finite and already contested** — `_rendered_sub_title` exists because `HeaderTitle` is a one-row `Static` with `text-overflow: ellipsis` that silently truncates, and the status already carries the viewer name, the query (capped at `_SEARCH_STATUS_QUERY_MAX` = 32), the position and a possible `(wrapped)` suffix. Measure the rendered width at the 100-column terminal the tests use and make sure the hint is not what pushes it into the ellipsis; prefer a short form and drop the hint before dropping the position if something must give. **[Agent: textual-tui]**
+  - [x] 6.3 Enter steps to the next match once the prompt has closed. Add an `enter` binding on `TranscriptScreen` that runs the **same** action as `n` (`next_match`) when a search is live and has matches. **The bar-open case must not change and does not need to be special-cased:** `TranscriptSearchInput` is focused while the bar is open, and `App._check_bindings` walks `focused.ancestors_with_self`, so the Input's own Enter handling (`on_input_submitted`, §2.5's inclusive jump) wins over a plain screen binding — this is the same resolution order that already makes `n`/`N` type literal characters into an open bar. **Verify that claim rather than assuming it**, since it is the whole design: if a screen-level `enter` were to reach the open bar it would break §2.5. With no search live, or a search whose query matches nothing, Enter must do nothing and raise nothing — `TranscriptScreen` has no `enter` binding today, so there is no prior behaviour to preserve. **[Agent: textual-tui]**
+  - [x] 6.4 **Verify (`run_test()`):** repeated Enter with the prompt closed walks the matches exactly as `n` does — assert against the *same* rows a parallel `n` walk produces rather than hard-coding them twice, so the two can never drift; Enter inside the open prompt still confirms and jumps per §2.5 (the regression this slice most risks); Enter with no search live and Enter on a matchless query both do nothing and raise nothing; `n`/`N` appear in the Footer with their descriptions; and the status names the keys. **Assert the Footer through the rendered `FooterKey` widgets** (`key` and `description`), not through `BINDINGS` — the binding is the input to the thing under test, so asserting it would be a tautology, and `show=bool(description and show)` means only the rendered side can see the empty-description trap. **[Agent: testing]**
+
+
+---
+
 ## Coverage — every acceptance criterion has a slice
 
 | Functional spec section | ACs | Slice |

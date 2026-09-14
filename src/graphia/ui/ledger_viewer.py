@@ -878,11 +878,60 @@ def _search_count_text(query: str, matches: int) -> str:
 # `action_open_search`), so the full text they typed is one keypress away, where
 # the position exists nowhere but here.
 #
-# 32 is past any real search phrase and still fits the whole status on the
-# 100-column terminal the rest of this spec was measured at: 22 for the title
-# and its separator, 32 for the query, and 20 for the widest plausible
-# " · 999/999 (wrapped)" — 74 of 100.
+# 32 is past any real search phrase and still fits the query, the position and
+# the wrap notice together: 22 for the title and its separator, 32 for the
+# query, and 20 for the widest plausible " · 999/999 (wrapped)" — 74 columns.
+#
+# AND THE ROW IS 82 COLUMNS WIDE, NOT 100 — corrected in Task 6.2, which
+# MEASURED the row rather than deriving it from the terminal width as this note
+# originally did ("74 of 100"). `Header` docks a `HeaderIcon` (`width: 8`) on
+# the left and a `HeaderClockSpace` (`width: 10`) on the right, so `HeaderTitle`
+# gets `terminal - 18`: 82 at the tests' 100 columns, 62 at 80. 74 of 82 still
+# fits, so the cap itself was never wrong — only the headroom it was believed to
+# have, which is 8 columns, and which is why `_SEARCH_STATUS_KEY_HINT` below is
+# placed where the ellipsis reaches it first.
 _SEARCH_STATUS_QUERY_MAX = 32
+
+
+# WHAT THE STATUS CALLS THE KEYS THAT MOVE BETWEEN MATCHES (spec 044, Task 6.2).
+#
+# Functional-spec §2.8, amended 2026-09-14: "The running status names the keys
+# that move between matches, so the reviewer learns them at the moment they are
+# useful rather than having to know them in advance." Slice 4 assumed this was
+# already happening and hid `n`/`N` from the Footer on the strength of it; it
+# was not, and the author could not find the keys at all (see the note on
+# `TranscriptScreen.BINDINGS`).
+#
+# BOTH KEYS AND BOTH DIRECTIONS, not `n/N`. Naming the pair without saying which
+# way each goes leaves the reviewer to guess, and the guess costs them a press
+# in the wrong direction — the shorter form saves 2 columns and answers half the
+# criterion.
+#
+# `·` is the module's established separator (both `SUB_TITLE` constants use it,
+# and `_search_status_text` already puts one between query and position), so the
+# hint reads as one more field rather than as a different kind of thing.
+#
+# IT GOES LAST, AFTER `(wrapped)`, AND THAT IS THE WIDTH ANSWER. `HeaderTitle`
+# is `text-overflow: ellipsis`, which cuts the END — so whatever sits last is
+# what a narrow terminal spends first. The position is a §2.8 acceptance
+# criterion and exists nowhere else once the prompt has closed; the hint is a
+# convenience the Footer now also carries. Ordering the string this way is what
+# makes "drop the hint before dropping the position" a property of the layout
+# rather than a rule someone has to remember.
+#
+# MEASURED at the tests' 100-column terminal, by rendering `HeaderTitle` and
+# sweeping the query length rather than by counting characters:
+#
+# - The realistic status `the · 1/702 · n next · N prev` is 29 columns; the
+#   wrapped form is 39. The budget is 60 (82 for `HeaderTitle`, less 22 for the
+#   viewer name and `App.format_title`'s " — ").
+# - WITHOUT `(wrapped)` nothing truncates, even at the 32-character cap: the
+#   longest such status is exactly 60.
+# - WITH `(wrapped)` the tail is first cut at a 23-character query (against a
+#   three-digit position such as `702/702`; 26 against `3/18`) — and what is cut
+#   is the HINT, with the whole `… · 702/702 (wrapped) · n ne…` position intact,
+#   because the hint is last. That is the outcome this ordering was chosen for.
+_SEARCH_STATUS_KEY_HINT = "n next · N prev"
 
 
 def _search_status_text(
@@ -927,8 +976,9 @@ def _search_status_text(
       through one path to avoid. Rendering ``current`` keeps this on that same
       settled path.
 
-    **The format is ``vote · 3/18`` plus ``(wrapped)``**, and three details in it
-    are decisions:
+    **The format is ``vote · 3/18 · n next · N prev``**, with ``(wrapped)``
+    between the position and the hint when the jump came round the end. Four
+    details in it are decisions:
 
     - **``·`` rather than an em dash**, though tech-spec §2.7 sketches one:
       ``App.format_title`` already inserts ``" — "`` between the viewer name and
@@ -947,6 +997,13 @@ def _search_status_text(
       the scroll clamps at ``max_scroll_y``, so successive landings move nothing
       at all and only this string and the stronger match marker say the key did
       anything (functional-spec §2.5's end-of-game bullet).
+    - **The key hint is LAST** (:data:`_SEARCH_STATUS_KEY_HINT`, spec 044 Task
+      6.2), which is both what §2.8's amended criterion asks for — "the running
+      status names the keys that step to the next and to the previous match" —
+      and the width answer: ``HeaderTitle`` truncates with an ellipsis at the
+      END, so the last field is the first one a narrow terminal spends, and the
+      position that sits before it survives. It appears only with a landing,
+      because the ``current is None`` return above is taken first.
 
     Pure and module-level, beside this module's other copy, so what the header
     says is checkable without a terminal.
@@ -986,7 +1043,14 @@ def _search_status_text(
     # `current` is a zero-based index and the reviewer is being told a position,
     # so it is counted from one: the first match in the game reads "1/18".
     status = f"{shown} · {current + 1}/{total}"
-    return f"{status} (wrapped)" if wrapped else status
+    if wrapped:
+        status = f"{status} (wrapped)"
+    # THE KEY HINT IS LAST, AND ONLY EVER REACHED WITH A LANDING IN HAND — the
+    # early return above means this line runs only when `current` is set, which
+    # is exactly §2.8's "given the reviewer has jumped to a match". See
+    # `_SEARCH_STATUS_KEY_HINT` for the copy and for why the tail is the right
+    # place for it.
+    return f"{status} · {_SEARCH_STATUS_KEY_HINT}"
 
 
 class TranscriptSearchInput(Input):
@@ -2521,18 +2585,38 @@ class TranscriptScreen(Screen):
         # `slash`, not `"/"`: Textual names the key, and this is the spelling
         # `LedgerTableScreen` already uses for the runs-list filter, so the
         # module's two `/`s read the same way.
-        #
-        # Exactly ONE new Footer entry, not three: `n`/`N` (Slice 4) stay
-        # `show=False`, matching `q` above — they are follow-ups to a search the
-        # reviewer has already started, so they have somewhere else to be
-        # announced (the status line), while `/` has nowhere else.
         Binding("slash", "open_search", "Search", show=True),
         # `n` / `N` walk the matches once the prompt has closed (spec 044,
-        # §2.6). `show=False` for both, matching `q` above and matching what the
-        # `slash` comment promised: exactly ONE new Footer entry, not three.
-        # They are follow-ups to a search the reviewer has already started, so
-        # they have somewhere else to be announced — Task 4.5's status line —
-        # where `/` has nowhere else.
+        # §2.6), ADVERTISED — description plus `show=True` (Slice 6, Task 6.1).
+        #
+        # WHAT WAS HERE BEFORE, AND WHY IT IS GONE. Slice 4 bound both
+        # `show=False` and with no description at all, on the written grounds
+        # that they had "somewhere else to be announced — Task 4.5's status
+        # line". The status line never announced them: it was built to render a
+        # POSITION (`the · 1/702`) and never named a key. The author found this
+        # by hand on the 88 KB committed game in Task 5.5 and could not reach
+        # the following match — repeated `/`+Enter sat on row 7 four presses
+        # running (§2.5's jump is inclusive, so after a landing it is already
+        # satisfied), while `n` had been walking 7 → 10 → 13 → 14 correctly the
+        # whole time with nothing on screen to say so. Functional-spec §2.6 and
+        # §2.8 were amended on 2026-09-14 to require both halves; Task 6.2
+        # built the status half.
+        #
+        # THE DESCRIPTION IS LOAD-BEARING, NOT DECORATIVE — and this is the
+        # trap that would make a future "just flip `show`" a silent no-op.
+        # `Binding.make_bindings` (textual/binding.py, installed 8.2.4)
+        # normalises every declared binding through
+        # `show=bool(binding.description and binding.show)`, so a binding with
+        # an empty description is forced hidden NO MATTER what `show` says.
+        # That is also why the key help panel — the command palette's "Keys"
+        # entry, whose `BindingsTable` renders `binding.description` straight
+        # into a column — showed these two blank: there was nothing to render.
+        #
+        # The copy is short because the Footer is ONE row and these two make it
+        # five entries. Measured, not estimated: the five cells are `esc Back`
+        # (10), `/ Search` (10), `n Next match` (14), `N Prev match` (14) and
+        # `^p palette` (10) — 58 columns, which still fits a 60-column terminal
+        # and leaves 42 spare at the 100 the tests use.
         #
         # `"N"`, NOT `"shift+n"`. Textual names a shifted printable key by the
         # character it produces: the terminal delivers `Key(key="N",
@@ -2545,8 +2629,45 @@ class TranscriptScreen(Screen):
         # rather than a gap: the focused `TranscriptSearchInput` takes both as
         # literal characters of the query (measured in Task 1.2). They are for
         # the reading state the prompt leaves behind.
-        Binding("n", "next_match", show=False),
-        Binding("N", "previous_match", show=False),
+        Binding("n", "next_match", "Next match", show=True),
+        Binding("N", "previous_match", "Prev match", show=True),
+        # Enter steps forward exactly as `n` does, once the prompt has closed
+        # (spec 044, §2.6, Task 6.3). SAME ACTION, deliberately: Enter is not a
+        # second implementation of the step, it is a second key on the one
+        # `action_next_match` above, so the two can never drift.
+        #
+        # THE OPEN BAR IS NOT SPECIAL-CASED, AND DOES NOT NEED TO BE — verified
+        # by keystroke rather than assumed, because §2.5 rests on it.
+        # `App._check_bindings` walks `focused.ancestors_with_self`, and while
+        # the bar is open the focused node is the `TranscriptSearchInput`, whose
+        # own `Input` key handling posts `Input.Submitted` and consumes the key
+        # before this screen-level binding is ever consulted. So Enter inside
+        # the prompt still performs §2.5's INCLUSIVE jump (measured: from row
+        # 500 it lands on row 502 and a second Enter on that match moves
+        # nothing), and Task 5.2a's empty-Enter clear still clears. It is the
+        # same resolution order that already makes `n`/`N` type literal
+        # characters into an open bar.
+        #
+        # NO GUARD OF ITS OWN for "no search" or "query matches nothing":
+        # `_step_match` already returns on `self._search is None` (§2.6 AC8 —
+        # `n` on a fresh game is a documented no-op) and again when the pure
+        # step answers `None` for an empty match list. Enter inherits both for
+        # free, and adding a second copy here would be a second place for the
+        # rule to be got wrong.
+        #
+        # `show=False`, and that is not the trap above — it is a choice about a
+        # SYNONYM. `Footer.compose` groups its keys by `binding.action` and
+        # renders only the first binding of each group (which is why `escape`
+        # and `backspace` show as one `esc Back` cell today), so an
+        # `enter`/`next_match` entry could never earn a sixth column anyway: it
+        # would either be dropped as a duplicate of `n`, or — if it were
+        # declared ABOVE `n` — REPLACE `n`'s cell and quietly undo Task 6.1.
+        # Both halves measured on a throwaway app rather than reasoned from the
+        # source: two shown bindings on one action render ONE cell, and the cell
+        # takes the name of whichever was declared first. `show=False` makes
+        # that independent of declaration order instead of an accident of it,
+        # and the key this one duplicates is named on the row above.
+        Binding("enter", "next_match", show=False),
     ]
 
     def __init__(self, entry: TranscriptEntry) -> None:
@@ -3179,6 +3300,18 @@ class TranscriptScreen(Screen):
         sharing the current row, because §2.6 requires a press to always move the
         view. Making Enter row-keyed too would break §2.5 AC2 directly.
 
+        **This is the OPEN-PROMPT Enter only, and spec 044's Slice 6 gave the
+        key a second meaning that does not pass through here.** With the prompt
+        closed, `enter` is a screen binding onto ``action_next_match`` and steps
+        like `n` (§2.6, amended 2026-09-14) — because the inclusive jump above,
+        repeated, is a no-op loop: after a landing the reviewer is already
+        standing on a match, so Enter answers with the match they are on. The
+        two never collide, and the reason is focus rather than a flag: while the
+        bar is open the focused :class:`TranscriptSearchInput` consumes the key
+        and posts ``Input.Submitted``, so ``App._check_bindings`` never reaches
+        the screen's binding at all. Measured, not assumed — see the `enter`
+        entry in ``BINDINGS``.
+
         **Nothing typed and nothing found LOOK alike and are NOT the same case**
         (spec 044, Task 5.2a — the author's decision of 2026-09-14). Neither one
         moves the game: :func:`~graphia.eval_ledger.find_matches` returns ``[]``
@@ -3435,6 +3568,15 @@ class TranscriptScreen(Screen):
 
     def action_next_match(self) -> None:
         """`n` — move to the next rendered row that holds a match (§2.6).
+
+        **Two keys, one action** (spec 044, Task 6.3): `enter` is bound here
+        too, so pressing Enter with the prompt closed steps exactly as `n` does
+        and the two can never drift into separate implementations. Enter
+        *inside* the prompt never reaches this — the focused
+        :class:`TranscriptSearchInput` consumes the key and posts
+        ``Input.Submitted``, which is §2.5's inclusive jump
+        (:meth:`on_input_submitted`). See the `enter` binding for the
+        measurement behind that claim.
 
         Both directions are :meth:`_step_match`; this and
         :meth:`action_previous_match` exist so the two BINDINGS read as the two
