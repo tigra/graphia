@@ -93,6 +93,7 @@ from graphia.eval_ledger import (
     render_detail,
     row_for_offset,
     row_matches_field,
+    step_match_by_row,
     tokenize_transcript,
     wrap_row_starts,
 )
@@ -1081,7 +1082,11 @@ class TranscriptBody(Static):
         return self._base.plain
 
     def highlight(
-        self, matches: Sequence[tuple[int, int]], style: RichStyle
+        self,
+        matches: Sequence[tuple[int, int]],
+        style: RichStyle,
+        *,
+        current: tuple[int, RichStyle] | None = None,
     ) -> None:
         """Repaint the game with ``style`` over each of ``matches``.
 
@@ -1107,6 +1112,16 @@ class TranscriptBody(Static):
         clearing a search (or deleting the last typed character) leave the
         reading view byte-for-byte and span-for-span as spec 038 renders it.
 
+        **ONE SPAN PER MATCH, INCLUDING THE CURRENT ONE** (spec 044, Slice 4).
+        The match the reviewer has navigated to is painted by *substituting* its
+        style, never by appending a second span on top of it — so the tail of
+        the span list stays exactly ``len(matches)`` long however many times
+        ``n`` is pressed. That is what keeps the §2.3 ordering assertion
+        checkable (``test_the_match_spans_are_a_tail_on_the_tokenizers_own_runs``
+        counts the tail against the match count) and it is also the cheaper
+        arithmetic: one ``int`` comparison per match against a second stylize
+        pass and a span list that grows with navigation.
+
         Args:
             matches: Half-open ``(start, end)`` offset pairs in document order,
                 as :func:`~graphia.eval_ledger.find_matches` returns them.
@@ -1114,16 +1129,31 @@ class TranscriptBody(Static):
                 :meth:`TranscriptScreen._match_styles`. A style that set a
                 foreground would replace the line's own colour instead of
                 sitting on top of it.
+            current: The match the reviewer is on and the stronger style to
+                paint it with — ``(index, style)`` — or ``None`` when they have
+                not landed on one (nothing typed yet, or the query just edited).
+                **The index and the style travel as one argument on purpose**:
+                an index with no style would paint the current match like every
+                other and silently cost §2.6 its only feedback in the last
+                screenful, where successive jumps do not scroll. An index
+                outside ``matches`` simply matches nothing and paints no current
+                match, which is the harmless reading of a stale index.
         """
         highlighted = self._base.copy()
-        for start, end in matches:
+        # `-1` can never equal an `enumerate` index, so "no current match" needs
+        # no branch inside the loop — the substitution below is simply never
+        # taken. The fallback style is irrelevant for the same reason.
+        current_index, current_style = current if current is not None else (-1, style)
+        for index, (start, end) in enumerate(matches):
             # Appends a `Span(start, end, style)`. Note that Rich's `stylize`
             # opens with `if style:` — a `RichStyle` with nothing set is falsy
             # and would silently append nothing at all. That is the failure mode
             # to look for if a theme ever resolves the highlight to no
             # background: not a traceback, just a search that highlights
             # nothing.
-            highlighted.stylize(style, start, end)
+            highlighted.stylize(
+                current_style if index == current_index else style, start, end
+            )
         # `layout=False`, deliberately and provably — the plain text is
         # unchanged, so there is no size to re-measure. This is the ONE call
         # that may swap this widget's content; anything reaching for
@@ -1158,13 +1188,18 @@ class SearchState:
     matches, losing both the highlights and the game in one keypress. Branching
     on ``_search is not None`` keeps all three distinct.
 
-    **Two fields now, and the dataclass is what made the second one cheap.**
-    Slice 3 added :attr:`row_map` in place; Slice 4 adds the current-match index
-    the same way — each an added field rather than a reshape of every use site,
-    which is what a bare ``str | None`` would have cost. (The match offsets are
-    deliberately *not* a field: :func:`~graphia.eval_ledger.find_matches` is
-    ~1 ms and is recomputed from :attr:`TranscriptBody.text` at each use, so
-    there is no second copy of the answer to keep in step with the query.)
+    **Four fields now, and the dataclass is what made each one after the first
+    cheap.** Slice 3 added :attr:`row_map` in place, Slice 4 added
+    :attr:`current` the same way, and Task 4.4a added
+    :attr:`scroll_at_landing` beside it — each an added field rather than a
+    reshape of every use site, which is what a bare ``str | None`` would have
+    cost. The last of them is the clearest case for the shape: the fix it
+    belongs to is *one more thing a search remembers*, and it cost one field
+    plus the three lines that keep it in step with :attr:`current`. (The
+    match offsets are deliberately *not* a field:
+    :func:`~graphia.eval_ledger.find_matches` is ~1 ms and is recomputed from
+    :attr:`TranscriptBody.text` at each use, so there is no second copy of the
+    answer to keep in step with the query.)
     Mutable (no ``frozen=True``): a search is edited keystroke by keystroke and
     re-navigated by ``n``/``N``, so replacing the whole object per character
     would be ceremony, not safety.
@@ -1206,6 +1241,65 @@ class SearchState:
     # built once at `compose` and never changes for the life of the screen, so
     # width is the only thing a map can go stale against.
     row_map: tuple[int, list[int]] | None = None
+
+    # THE MATCH THE REVIEWER IS ON — an index into the CURRENT match list, or
+    # ``None`` when they have not landed on one yet (spec 044, Slice 4).
+    #
+    # **It is the CURSOR — the row it sits on is where the next `n`/`N` steps
+    # from, unless the reviewer has scrolled away since (Task 4.4a).** This
+    # comment used to say the opposite ("an OUTPUT, never an input to a
+    # decision"), with the step resolved from the live `scroll_offset.y` alone,
+    # and that is what dead-ended `n` at the end of every game whose query has
+    # matches inside the last screenful: the scroll clamps at `max_scroll_y`, so
+    # the viewport CANNOT express a position in that final screenful and every
+    # press re-answered the same match. `TranscriptScreen._step_origin_row`
+    # carries the measurement and owns the two-origin rule; `scroll_at_landing`
+    # below is what lets it tell the two apart.
+    #
+    # **What did NOT change, and must not be re-litigated by anyone reading the
+    # word "cursor" here:** the step stays ROW-keyed. `current ± 1` — tech-spec
+    # §2.6's first phrasing, corrected during Slice 4 — can land on a MATCH
+    # SHARING THE SAME RENDERED ROW, re-admitting exactly the press that moves
+    # nothing, which is the thing `step_match_by_row` exists to eliminate. The
+    # fix hands that function a better ROW; it does not step by match.
+    #
+    # What it IS for, both halves of §2.6's "the reviewer can tell which one
+    # they are on": `transcript--match-current` paints this one match more
+    # strongly than its neighbours, and Task 4.5's `Screen.sub_title` counts it
+    # off as "3/18". Neither is decoration — inside the last screenful of a game
+    # the clamp to `max_scroll_y` leaves nothing to scroll into view, so
+    # successive presses produce NO movement and the marker plus the count are
+    # the reviewer's only evidence that the keypress did anything at all.
+    #
+    # **Dropped whenever the match list it indexes into changes.** Editing the
+    # query re-runs `find_matches` and index 3 of the old list is nothing in the
+    # new one, so `on_input_changed` clears it; clearing the search drops the
+    # whole `SearchState` and takes it along. An index kept across an edit would
+    # paint the marker on an unrelated match — a silent lie rather than a
+    # traceback.
+    current: int | None = None
+
+    # WHERE THE VIEW WAS WHEN `current` WAS LANDED ON — the recorded fact that
+    # makes "has the reviewer scrolled since?" answerable (spec 044, Task 4.4a).
+    #
+    # Written together with `current` by both landings (:meth:`Enter
+    # <TranscriptScreen.on_input_submitted>` and
+    # :meth:`n/N <TranscriptScreen._step_match>`), read by
+    # :meth:`TranscriptScreen._step_origin_row`, and dropped together with
+    # `current` by `on_input_changed`. Both-or-neither: a landing index with no
+    # landing position is not a state the reader below knows how to answer for,
+    # and keeping the two in step is one line at each of the three sites.
+    #
+    # **Why a RECORDED position rather than a comparison against `current`'s
+    # row.** The obvious test for "they have not scrolled" — does `current`'s
+    # rendered row equal `scroll_offset.y`? — is wrong exactly where it is
+    # needed. Inside the last screenful the scroll CLAMPS at `max_scroll_y`, so
+    # a match on row 1178 of the 1,182-row committed game rests at y 1160 and
+    # the two legitimately differ. Reading that difference as "the reviewer
+    # scrolled" is what dead-ended `n` in the first place; see
+    # `TranscriptScreen._step_origin_row` for the measurement. The answer cannot
+    # be inferred from the match — it has to be remembered from the landing.
+    scroll_at_landing: int | None = None
 
 
 class TranscriptScreen(Screen):
@@ -2307,6 +2401,26 @@ class TranscriptScreen(Screen):
         # reviewer has already started, so they have somewhere else to be
         # announced (the status line), while `/` has nowhere else.
         Binding("slash", "open_search", "Search", show=True),
+        # `n` / `N` walk the matches once the prompt has closed (spec 044,
+        # §2.6). `show=False` for both, matching `q` above and matching what the
+        # `slash` comment promised: exactly ONE new Footer entry, not three.
+        # They are follow-ups to a search the reviewer has already started, so
+        # they have somewhere else to be announced — Task 4.5's status line —
+        # where `/` has nowhere else.
+        #
+        # `"N"`, NOT `"shift+n"`. Textual names a shifted printable key by the
+        # character it produces: the terminal delivers `Key(key="N",
+        # character="N")` and `_normalize_key_list` leaves a single alphanumeric
+        # character alone, so `"N"` is what the binding map is keyed on. A
+        # `"shift+n"` binding would be dead — the key event never carries that
+        # spelling — and dead silently, with no error anywhere to find.
+        #
+        # Neither is reachable while the bar is open, and that is §2.4 working
+        # rather than a gap: the focused `TranscriptSearchInput` takes both as
+        # literal characters of the query (measured in Task 1.2). They are for
+        # the reading state the prompt leaves behind.
+        Binding("n", "next_match", show=False),
+        Binding("N", "previous_match", show=False),
     ]
 
     def __init__(self, entry: TranscriptEntry) -> None:
@@ -2521,7 +2635,9 @@ class TranscriptScreen(Screen):
             styles[component] = RichStyle(bgcolor=resolved.bgcolor)
         return styles
 
-    def _repaint_matches(self, matches: Sequence[tuple[int, int]]) -> None:
+    def _repaint_matches(
+        self, matches: Sequence[tuple[int, int]], current: int | None = None
+    ) -> None:
         """Light up ``matches`` in the game — the screen's half of one update.
 
         The seam between "what colour is a match" (this screen's, because
@@ -2531,13 +2647,16 @@ class TranscriptScreen(Screen):
         is on the other side of that seam; this method resolves one style and
         hands the offsets over.
 
-        **Two callers, and neither of them is a keystroke.**
+        **Four callers, and none of them is a keystroke of the query.**
         :meth:`_repaint_settled_query` when the debounce window expires on the
-        query the reviewer has settled on, and :meth:`_clear_search` with no
-        matches at all, to put the unhighlighted reading view back when a search
-        ends. Both also get the count in ``#search-count`` from the same
-        argument — see :meth:`_update_search_count` for why it is written here
-        and not per keystroke.
+        query the reviewer has settled on; :meth:`_clear_search` with no matches
+        at all, to put the unhighlighted reading view back when a search ends;
+        and the two navigations — :meth:`on_input_submitted` (Enter) and
+        :meth:`_step_match` (``n``/``N``) — which repaint not because the
+        *matches* changed but because ``current`` did. All four also get the
+        count in ``#search-count`` from the same argument — see
+        :meth:`_update_search_count` for why it is written here and not per
+        keystroke.
         **Do not call this from ``Input.Changed`` directly** — the debounce is
         not optional at this cost: 336 ms per keystroke on the 88 KB game for
         the worst measured query (tech-spec §2.8), because
@@ -2557,14 +2676,30 @@ class TranscriptScreen(Screen):
             matches: Half-open ``(start, end)`` offset pairs in document order,
                 as :func:`~graphia.eval_ledger.find_matches` returns them. Empty
                 restores the unhighlighted reading view.
+            current: Which of ``matches`` the reviewer is on, or ``None`` when
+                they are on none of them — typing, or a search just cleared.
+                Defaults to ``None`` so the two callers that are *not* about
+                navigation say nothing about it rather than having to pass it.
+                Task 2.3 refused this parameter while it would have been unused;
+                Slice 4 gives it the use it was waiting for.
         """
-        # `transcript--match` only. The second class,
-        # `transcript--match-current`, is resolved by the same call and left
-        # unused until Slice 4 gives `n`/`N` somewhere to land — painting a
-        # "current" match before anything can *be* current would mark a match
-        # the reviewer has not navigated to.
+        # BOTH CLASSES NOW. `transcript--match-current` was resolved by this
+        # same call from Slice 2 onward and deliberately left unused until
+        # `n`/`N` existed to land on something — painting a "current" match
+        # before anything could *be* current would have marked a match the
+        # reviewer had not navigated to.
+        styles = self._match_styles()
         self.query_one("#transcript-body", TranscriptBody).highlight(
-            matches, self._match_styles()[_MATCH_COMPONENT]
+            matches,
+            styles[_MATCH_COMPONENT],
+            # The index and its style travel together (see `highlight`): the
+            # pair is built here, where both halves are in hand, so the widget
+            # cannot be handed one without the other.
+            current=(
+                None
+                if current is None
+                else (current, styles[_MATCH_CURRENT_COMPONENT])
+            ),
         )
         # THE COUNT TRAVELS WITH THE HIGHLIGHT — functional-spec §2.8 AC1 ("it
         # tells them how many matches there are"), counted off the same list the
@@ -2661,6 +2796,25 @@ class TranscriptScreen(Screen):
         if self._search is None:
             return
         self._search.query = event.value
+        # THE CURRENT MATCH DOES NOT SURVIVE AN EDIT (spec 044, Slice 4).
+        # `current` indexes into the match list of the query it was resolved
+        # against, and this keystroke has just made a different query: match 3
+        # of `vote` is not match 3 of `votes`, and is usually not even the same
+        # part of the game. Keeping it would repaint the stronger marker on an
+        # unrelated match — a readout the reviewer would believe, with nothing
+        # on screen to contradict it. Dropped here, at the one place the query
+        # changes, rather than by every reader remembering to re-derive it.
+        #
+        # `scroll_at_landing` goes with it, both-or-neither (spec 044, Task
+        # 4.4a — see `SearchState.scroll_at_landing`): it means nothing except
+        # "where the view was when `current` was landed on", so a landing
+        # position outliving the landing it describes is dead state. The
+        # behavioural consequence is the intended one — after an edit the next
+        # `n` has no landing to step from and resolves from the viewport again,
+        # which is where a reviewer who has just changed what they are looking
+        # for actually is.
+        self._search.current = None
+        self._search.scroll_at_landing = None
         self._schedule_repaint()
 
     def _schedule_repaint(self) -> None:
@@ -2735,7 +2889,13 @@ class TranscriptScreen(Screen):
         if search is None:
             return
         body = self.query_one("#transcript-body", TranscriptBody)
-        self._repaint_matches(find_matches(body.text, search.query))
+        # `search.current` is `None` on every path that reaches here —
+        # `on_input_changed` is the only scheduler of this window and it drops
+        # the index in the same breath as it writes the query. Passed rather
+        # than hardcoded so that this method states "paint whatever the search
+        # says is current" and cannot go stale if a later slice schedules a
+        # repaint from somewhere the index does survive.
+        self._repaint_matches(find_matches(body.text, search.query), search.current)
 
     def _row_starts(self, body: TranscriptBody) -> list[int]:
         """The offset → rendered-row map for the game, at the width it wraps to *now*.
@@ -2871,18 +3031,19 @@ class TranscriptScreen(Screen):
         # within `_SEARCH_DEBOUNCE_SECONDS` of the last keystroke is the
         # ordinary way to use this feature — type, Enter — and it is exactly the
         # window in which the screen is still showing the *previous* query's
-        # matches. Repainting from the same list the jump is about to use makes
-        # the two agree by construction rather than by timing. Cancelling first
-        # is what stops the pending timer firing afterwards and repeating a
-        # repaint that has already happened.
+        # matches. Cancelling here is what stops that timer firing afterwards
+        # and repeating the repaint this method ends with.
         #
-        # When no window is open there is nothing to settle: the last keystroke's
-        # repaint has already landed on this very query, so a second repaint
-        # would be up to 300 ms of work (tech-spec §2.8's worst measured query)
-        # to redraw what is already on screen.
-        if self._repaint_timer is not None:
-            self._cancel_pending_repaint()
-            self._repaint_matches(matches)
+        # Since Slice 4 the repaint itself is unconditional and lives at the end
+        # of this method rather than inside this branch: Enter now RECORDS which
+        # match it landed on, and `transcript--match-current` has to be painted
+        # for the reviewer to see it. So there is no longer a case where Enter
+        # has nothing to repaint — even an already-settled query needs the
+        # marker moved. (What was saved by skipping it is one re-render, up to
+        # 300 ms on tech-spec §2.8's worst measured query; what it now buys is
+        # the whole of §2.6's "they can tell which one they are on", so the
+        # trade is not close.)
+        self._cancel_pending_repaint()
 
         row_starts = self._row_starts(body)
         # `scroll_offset.y` IS A ROW; `next_match` WANTS AN OFFSET. Converting
@@ -2897,12 +3058,27 @@ class TranscriptScreen(Screen):
             inclusive=True,
         )
         if found is not None:
-            # `wrapped` is consumed in Slice 4, which gives the screen a status
+            # `wrapped` is consumed in Task 4.5, which gives the screen a status
             # channel (`Screen.sub_title`) that outlives the prompt and can say
             # "(wrapped)" where §2.5 AC3 asks for it. The jump itself is
             # identical either way, so the flag is deliberately dropped here
             # rather than half-reported somewhere the reviewer cannot see.
             index, _wrapped = found
+            # ENTER IS A LANDING, SO IT SETS `current` (spec 044, Slice 4).
+            # §2.6's "the match the reviewer last landed on is marked more
+            # strongly than the others" is about the last landing, whichever key
+            # made it — otherwise the marker would appear only on the first `n`
+            # after an Enter, and a reviewer who typed, jumped, and read would
+            # never see it at all.
+            #
+            # AND `n`/`N` DO READ IT BACK — corrected in Task 4.4a, because the
+            # separation this comment used to claim ("nothing later reads this
+            # back to decide where to go next") is exactly what dead-ended `n`
+            # at the end of a game. A landing is where the next step starts
+            # from unless the reviewer has moved since; `_step_origin_row` owns
+            # that question and `scroll_at_landing`, written on the next line,
+            # is what lets it be answered as a fact.
+            search.current = index
             target_row = row_for_offset(row_starts, matches[index][0])
             # THE END-OF-GAME CLAMP (functional-spec §2.5, fourth bullet). A
             # match inside the final screenful CANNOT reach the top line,
@@ -2927,6 +3103,36 @@ class TranscriptScreen(Screen):
                 animate=False,
                 immediate=True,
             )
+            # ...AND THE POSITION IT CAME TO REST AT, READ BACK OUT OF THE
+            # SCROLLER (spec 044, Task 4.4a). Read back rather than assumed
+            # equal to the `min(...)` above, because they are two different
+            # claims — one is what this method asked for, the other is what the
+            # widget accepted — and only the second is the "where were they
+            # when they landed" `_step_origin_row` needs.
+            #
+            # `immediate=True` is what makes this line legal at all: without
+            # it `scroll_to` defers the move and this would record the position
+            # the reviewer was leaving rather than the one they arrived at.
+            #
+            # It is still one row optimistic in the clamped case, and
+            # `_step_origin_row` re-clamps it live rather than this line trying
+            # to predict the future — measured, with the numbers, there.
+            search.scroll_at_landing = scroller.scroll_offset.y
+
+        # ONE REPAINT, AFTER THE JUMP, SAYING BOTH THINGS AT ONCE: these are the
+        # query's matches, and this is the one you are on. It replaces the
+        # conditional settle that used to sit above the jump (see there for why
+        # the condition is gone), and it runs on every Enter including the
+        # nothing-typed one — where `matches` is empty and `current` is `None`,
+        # so it repaints the unhighlighted reading view and blanks the count,
+        # which is exactly what §2.5 AC5 asks for.
+        #
+        # After the scroll rather than before it for the same reason the bar is
+        # hidden after: `_update_search_count` re-lays-out the count strip, and
+        # keeping every number in the jump's arithmetic from one moment is
+        # cheaper to reason about than proving a `height: 1` sibling cannot
+        # change `max_scroll_y`.
+        self._repaint_matches(matches, search.current)
 
         # THE PROMPT CLOSES, THE SEARCH DOES NOT (§2.5 AC4). Two lines, and
         # neither is `_clear_search`: `_search` survives, the box keeps what was
@@ -2946,6 +3152,214 @@ class TranscriptScreen(Screen):
         # arrow keys must scroll — and Slice 4's `n`/`N` are *screen* bindings,
         # which a focused `Input` would take as literal characters.
         scroller.focus()
+
+    def action_next_match(self) -> None:
+        """`n` — move to the next rendered row that holds a match (§2.6).
+
+        Both directions are :meth:`_step_match`; this and
+        :meth:`action_previous_match` exist so the two BINDINGS read as the two
+        things they are rather than as one action with a boolean spelled out in
+        a binding string. Textual can pass arguments through a binding
+        (`"step_match(True)"`), and the reason not to here is that the Footer,
+        the key map and every traceback would then show the caller a flag
+        instead of a direction.
+        """
+        self._step_match(forward=True)
+
+    def action_previous_match(self) -> None:
+        """`N` — move back to the previous rendered row that holds a match (§2.6)."""
+        self._step_match(forward=False)
+
+    def _step_match(self, *, forward: bool) -> None:
+        """Walk one row-with-a-match in ``forward``'s direction, and land on it.
+
+        The whole of functional-spec §2.6's movement, and the mirror of
+        :meth:`on_input_submitted`'s jump with **one deliberate difference**:
+        where Enter is offset-keyed and inclusive, this is **row-keyed**.
+
+        **Why row-keyed, restated here because this is where it is spent.**
+        Several matches routinely fall on one rendered row, and a jump scrolls
+        by *row* — so stepping match-by-match would spend whole presses moving
+        between two matches the reviewer can already see side by side, with the
+        view not moving at all. :func:`~graphia.eval_ledger.step_match_by_row`
+        therefore skips past every match sharing the current row and answers with
+        the **first** match on the next row that has one, in both directions.
+        §2.6 says it in as many words: *"a press is never spent moving between
+        two matches the reviewer can already see together"*.
+
+        **The step is row-keyed; what changed in Task 4.4a is WHICH row.** The
+        origin comes from :meth:`_step_origin_row` — the current match's row
+        when the reviewer has not scrolled since landing on it, and
+        ``scroll_offset.y`` when they have. Keying it on ``scroll_offset.y``
+        unconditionally, which is how this method was first built, dead-ends
+        every query with matches in the last screenful of a game; that method's
+        docstring carries the measurement and the reason.
+
+        Note what did **not** change, because both were the author's decisions
+        and neither is in question here: the step stays row-keyed, so row-mates
+        are still skipped (``current ± 1`` would re-admit the press that does
+        not move, which is the trap tech-spec §2.6 was corrected out of); and
+        the end of a game stays clamped rather than padded with rows that are
+        not part of the game.
+
+        **No search, no movement, no error** (§2.6's final criterion). The guard
+        is the first statement below, so `n` on a game nobody has searched is a
+        key that does nothing — which is what it was before this feature existed.
+        An empty or unmatched query takes the same exit one step later, because
+        :func:`~graphia.eval_ledger.step_match_by_row` answers ``None`` for an
+        empty match list.
+
+        Args:
+            forward: ``True`` for `n`, ``False`` for `N`. Passed straight through
+                to the pure step, which owns both wraps.
+        """
+        # §2.6: "Given no search has been made since the game was opened, when
+        # the reviewer presses `n`, then nothing happens and no error appears."
+        # Note this is the ONLY state that can reach here with no search: the
+        # keys are screen bindings, so they arrive whenever the game has focus —
+        # which is most of the time.
+        search = self._search
+        if search is None:
+            return
+
+        body = self.query_one("#transcript-body", TranscriptBody)
+        scroller = self.query_one("#transcript-scroll", VerticalScroll)
+
+        # Re-found rather than remembered, exactly as Enter re-finds them: the
+        # offsets are into `body.text`, ~1 ms to compute, and a stored copy would
+        # be a second answer to keep in step with the query (see `SearchState`).
+        matches = find_matches(body.text, search.query)
+        row_starts = self._row_starts(body)
+        found = step_match_by_row(
+            matches,
+            row_starts,
+            # NOT `scroller.scroll_offset.y` — that is the Task 4.4a defect, and
+            # `_step_origin_row` is where it is written down.
+            self._step_origin_row(search, matches, row_starts, scroller),
+            forward=forward,
+        )
+        if found is None:
+            # Nothing typed, or typed and matching nothing. Not an error, and
+            # not a state worth announcing: the count strip already says "no
+            # matches", so a press that does nothing is the honest response.
+            return
+
+        # `wrapped` is Task 4.5's, for the same reason it is dropped in
+        # `on_input_submitted`: the movement is identical either way, and a wrap
+        # notice belongs in the status channel that outlives the prompt rather
+        # than half-reported somewhere the reviewer cannot see it.
+        index, _wrapped = found
+        search.current = index
+        target_row = row_for_offset(row_starts, matches[index][0])
+        # The same clamp, and the same reasoning, as the Enter jump above: a
+        # match inside the final screenful cannot reach the top line because
+        # there is nothing past the end of the game to scroll into view. Here it
+        # is what makes the current-match marker load-bearing rather than
+        # decorative — inside that last screenful successive presses produce no
+        # scrolling at all, so the marker moving (and Task 4.5's count) is the
+        # reviewer's only evidence that the key did anything.
+        scroller.scroll_to(
+            y=min(target_row, scroller.max_scroll_y), animate=False, immediate=True
+        )
+        # THE LANDING IS RECORDED, NOT JUST MADE (spec 044, Task 4.4a) — read
+        # back off the scroller for `on_input_submitted`'s reason, and the thing
+        # that makes the NEXT press able to start from this match rather than
+        # from a viewport that may be pinned at the clamp. Nothing re-lays-out
+        # the scroller on this path (the search row is already hidden, and the
+        # count strip lives inside it), so unlike Enter's there is no re-fit
+        # between this read and the next press.
+        search.scroll_at_landing = scroller.scroll_offset.y
+        # The marker moves with the view — one repaint, from the same match list
+        # the step resolved against, so what is lit and what is counted cannot
+        # describe two different queries.
+        self._repaint_matches(matches, index)
+
+    def _step_origin_row(
+        self,
+        search: SearchState,
+        matches: Sequence[tuple[int, int]],
+        row_starts: list[int],
+        scroller: VerticalScroll,
+    ) -> int:
+        """Which rendered row ``n``/``N`` step FROM (spec 044, Task 4.4a).
+
+        Two origins, and functional-spec §2.6 needs both:
+
+        * **The current match's row**, when the reviewer has not scrolled since
+          landing on it. This is what makes the last screenful of a game
+          navigable at all — see the defect below.
+        * **``scroll_offset.y``**, when they have. §2.6: *"the reviewer has
+          scrolled by hand away from the match they were on… `n` follows where
+          they are, not where they last jumped from."*
+
+        **THE DEFECT THIS EXISTS TO FIX — measured, so that nobody simplifies
+        the cursor back into the scroll position.** ``n``/``N`` were keyed on
+        ``scroll_offset.y`` alone. But the scroll **clamps** at ``max_scroll_y``,
+        so the scroll position cannot represent any position inside the final
+        screenful — and whenever a query has matches there, every press
+        re-answers the same one. On the committed 88 KB game
+        (``evals/transcripts/2026-09-05T17-58-24/game-01.txt``, 1,182 rendered
+        rows at width 96, ``max_scroll_y`` 1160) the query ``the`` has 702
+        matches with the last on row **1178**, and from the bottom of the game
+        four consecutive ``n`` presses all answered match 692 on row 1163:
+        matches 693-701 unreachable, the wrap never firing, the view not moving,
+        and the marker frozen — so even "the marker is your feedback inside the
+        clamp" was absent. Two §2.6 criteria were unsatisfiable by construction:
+        the ``n`` wrap, and *"a press never stops on the line it started from"*.
+        Query ``vote`` (last match row 1030, below the clamp) behaved correctly
+        throughout, which is why it took a query reaching past 1160 to see it.
+
+        **Why the question is answered from a RECORDED position.** Comparing
+        ``current``'s row against ``scroll_offset.y`` looks like the same test
+        and is not: at the clamp the two legitimately differ (row 1178, scroll
+        1160), which is the defect restated. So the landings record where they
+        came to rest (:attr:`SearchState.scroll_at_landing`) and this asks
+        whether the view is still there.
+
+        **The one wrinkle, also measured: the recorded landing can be a row
+        optimistic, and only Enter's can.** Enter scrolls while the search bar
+        is still open and hides it afterwards, handing the scroller back a
+        viewport row; the re-fit lowers ``max_scroll_y`` by one and pulls a
+        reviewer parked at the clamp back with it. On that same game a tail
+        Enter records **1161** and settles at **1160**. So the recorded position
+        is re-clamped against the scroller **as it stands now** before being
+        compared — the same ``min(…, max_scroll_y)`` both landings already apply
+        to their targets, applied to the number they wrote down. Predicting the
+        post-re-fit position at landing time, or deferring the record through
+        ``call_after_refresh``, would both buy the same answer for more moving
+        parts.
+
+        With no landing (no Enter yet, or the query edited since — see
+        :meth:`on_input_changed`) the answer is simply the viewport, which is
+        both the honest one and what ``n`` did before this feature grew a
+        ``current`` at all.
+
+        Args:
+            search: The live search; its ``current`` and ``scroll_at_landing``
+                are the landing, both-or-neither.
+            matches: The current query's matches, as ``current`` indexes them.
+            row_starts: The row map at the body's live wrap width.
+            scroller: Asked for both ``scroll_offset.y`` and ``max_scroll_y``,
+                so the comparison and the clamp come from one moment.
+
+        Returns:
+            The rendered row to hand :func:`~graphia.eval_ledger.step_match_by_row`.
+        """
+        viewport_row = scroller.scroll_offset.y
+        if search.current is None or search.scroll_at_landing is None:
+            return viewport_row
+        # Unreachable today — `on_input_changed` drops `current` on every edit
+        # and the match list is a pure function of (body text, query), so the
+        # index cannot outlive the list it points into. Kept because the
+        # alternative to an unreachable branch here is an `IndexError` out of a
+        # keypress, and the pure layer clamps rather than raises for exactly
+        # that reason (`row_for_offset`, `offset_for_row`).
+        if not 0 <= search.current < len(matches):
+            return viewport_row
+        if min(search.scroll_at_landing, scroller.max_scroll_y) != viewport_row:
+            # They have scrolled. §2.6: `n` follows where they are.
+            return viewport_row
+        return row_for_offset(row_starts, matches[search.current][0])
 
     def on_transcript_search_input_scroll_game(
         self, message: TranscriptSearchInput.ScrollGame

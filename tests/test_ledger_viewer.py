@@ -2529,8 +2529,16 @@ _DETAIL_KEYS_SWEPT = (
     # `slash` opens the search bar on `TranscriptScreen` (spec 044). Swept here
     # so the walk presses it on the run's figures and the table of runs as well,
     # where it must still never reach a bare games list (functional-spec §2.10
-    # AC4). Slice 4's `n`/`N` join it here.
+    # AC4).
     "slash",
+    # `n`/`N` step through a game's matches (spec 044, Slice 4), and joined
+    # `slash` here for the same free coverage: the walk presses them on the run's
+    # figures and the table of runs, where they are bound to nothing at all and
+    # must stay inert. The rot guard below — `TranscriptScreen.BINDINGS` is a
+    # subset of this tuple — is what makes adding them here obligatory rather
+    # than optional.
+    "n",
+    "N",
 )
 
 
@@ -3151,8 +3159,10 @@ _TRANSCRIPT_BACK_KEYS = ("escape", "backspace", "q")
 # below asserts the screen's bindings are exactly the UNION of the two, so a
 # binding added to the screen that is declared in neither tuple still fails
 # there rather than going untested — the guard is widened, not weakened.
-# Slice 4's `n`/`N` are a one-line addition here.
-_TRANSCRIPT_SEARCH_KEYS = ("slash",)
+# Slice 4 spent the one line this was left open for: `n`/`N` step through the
+# matches and, like `slash`, keep the reviewer in the game rather than backing
+# out of it. They are `show=False`, so the Footer guard below is unaffected.
+_TRANSCRIPT_SEARCH_KEYS = ("slash", "n", "N")
 
 # The long-game scroll fixture, pinned as absolute geometry rather than as a
 # before/after comparison (spec 037's mutation finding: "X equals Y between two

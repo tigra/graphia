@@ -146,6 +146,14 @@ __all__ = [
     # does this keypress go to, and did the search have to wrap around to reach
     # it. The second half of that answer is what the reviewer is told.
     "next_match",
+    # Spec 044, Slice 4: the backwards half of that selector, and the row-keyed
+    # rule ``n``/``N`` are built on. ``step_match_by_row`` is the one piece of
+    # navigation that has to know about rendered rows, and it lives here rather
+    # than in the screen because "``n`` skips the matches sharing the current
+    # row" is a statement about arithmetic — provable with no terminal at all
+    # (tech-spec §4).
+    "prev_match",
+    "step_match_by_row",
 ]
 
 # One parsed ledger record: the YAML document as a plain nested mapping. Keyed by
@@ -3347,6 +3355,186 @@ def next_match(
     if index == len(matches):
         return 0, True
     return index, False
+
+
+def prev_match(
+    matches: Sequence[tuple[int, int]], offset: int, *, inclusive: bool
+) -> tuple[int, bool] | None:
+    """The previous match at-or-before ``offset``, and whether it wrapped.
+
+    The mirror of :func:`next_match`, searching **backwards**, and everything
+    that function's docstring establishes holds here reflected: the return is
+    ``(index, wrapped)`` with ``index`` an index **into** ``matches`` rather than
+    an offset; ``None`` means there is nothing to jump to at all, because
+    ``matches`` is empty; matching is keyed on each match's **start** offset; and
+    ``matches`` is sorted and non-overlapping — :func:`find_matches`' contract —
+    so this is a **bisect over the start offsets**, not a scan.
+
+    ``inclusive`` splits the same two callers, the other way round. With
+    ``inclusive=True`` a match starting exactly at ``offset`` **is** the answer;
+    with ``inclusive=False`` it is skipped and the search carries on backwards.
+    The exclusive form is what ``N`` wants, because functional-spec §2.6 requires
+    every press to leave the line it started on — the match the reviewer is
+    sitting on must not be the one ``N`` returns.
+
+    **The wrap runs the other way too.** If nothing lies at-or-before ``offset``
+    (or strictly before it, when ``inclusive`` is false), the answer is the
+    **last** match in the document and ``wrapped`` is ``True``. That is
+    functional-spec §2.6's ``N`` wrap criterion — *"Given the reviewer is on the
+    first match in the game, when they press ``N``, then the view moves to the
+    last match and a message tells them the search wrapped around."* The flag is
+    returned rather than hidden for exactly :func:`next_match`'s reason: a view
+    that leapt to the far end of the game with no explanation reads as a bug,
+    and a jump *forwards* out of ``N`` is no less startling than a jump
+    backwards out of ``n``.
+
+    One asymmetry with :func:`next_match` follows from the shared start-offset
+    rule and is worth naming rather than leaving to be re-derived: a match that
+    *covers* ``offset`` but *begins* before it is a legitimate backwards answer —
+    it lies behind the reviewer, which is the direction of travel — where going
+    forwards the same match is skipped as already passed. One rule, two readings.
+
+    Scope note, as for :func:`next_match`: this takes **offsets** and knows
+    nothing about rendered rows. :func:`step_match_by_row` is what puts the
+    row-keyed rule of §2.6 on top of the two of them.
+    """
+    if not matches:
+        return None
+    # The mirror of :func:`next_match`'s split with the two bisects exchanged.
+    # ``bisect_right`` lands one past the last start **at or before** ``offset``
+    # and ``bisect_left`` one past the last start **strictly before** it, so the
+    # same ``- 1`` finishes both and neither needs a hand-rolled off-by-one.
+    locate = bisect_right if inclusive else bisect_left
+    index = locate(matches, offset, key=lambda match: match[0]) - 1
+    # Falling off the front is the wrap: there is nothing further up the game, so
+    # the answer is its last match and the reviewer is owed the notice.
+    if index < 0:
+        return len(matches) - 1, True
+    return index, False
+
+
+def step_match_by_row(
+    matches: Sequence[tuple[int, int]],
+    row_starts: list[int],
+    row: int,
+    *,
+    forward: bool,
+) -> tuple[int, bool] | None:
+    """Where ``n`` / ``N`` go from rendered ``row`` — keyed on ROWS, not matches.
+
+    Returns ``(index, wrapped)`` or ``None``, the same shape :func:`next_match`
+    and :func:`prev_match` return, so the status line and the current-match
+    highlight cannot tell which of the three produced the answer. ``row`` is the
+    rendered row the reviewer is looking at (the screen's ``scroll_offset.y``),
+    and ``row_starts`` is :func:`wrap_row_starts`' map at the live wrap width.
+
+    **The decision this function exists to encode** (functional-spec §2.6,
+    tech-spec §2.6, resolved by the author 2026-09-12). Several matches can fall
+    on a single rendered row, and a jump scrolls by **row** — so stepping
+    match-by-match would spend whole presses moving between two matches the
+    reviewer can already see side by side, and the view would not move at all.
+    ``n`` and ``N`` therefore **skip past every match sharing ``row``** and go to
+    the next row that has one. A press is never spent on the line it started
+    from. (The one place a press still produces no visible movement is the last
+    screenful, where the caller's clamp to ``max_scroll_y`` leaves nothing to
+    scroll into view — which is precisely why §2.6's current-match marker and the
+    running count are load-bearing rather than decorative there.)
+
+    **Two consequences the author accepted explicitly. Both are deliberate, both
+    are stated in the functional spec, and neither is a defect to be fixed
+    later.**
+
+    *One — the running count can jump.* The returned ``index`` is an index among
+    **all** matches, because that is what the reviewer is counting: *"match 7 of
+    18"* means the seventh occurrence in the game. Movement is counted in rows
+    and the status is counted in matches, and on a row holding three matches the
+    two units simply differ — so the count goes straight from 4 to 7 with no
+    press in between (functional-spec §2.8: *"a position among all matches, so
+    where a line of the screen holds several it can jump by more than one at a
+    time"*). Renumbering the status to count only reachable matches would make
+    the total disagree with the number of highlights on screen, which is the
+    worse lie.
+
+    *Two — the first match on a row is always the current one.* The second and
+    later matches sharing a row are highlighted like any other but never become
+    current, in **either** direction of travel. Forwards that falls out for free:
+    the first match at-or-after a row's first character is necessarily the first
+    match starting on whatever row it lands on. Backwards it does not, and is the
+    one piece of real work below — :func:`prev_match` answers with the *last*
+    match above ``row``, which on a row holding three is the third, so the answer
+    is walked back to the row's first.
+
+    **The asymmetry with Enter is the point, not an oversight.** Enter is
+    offset-keyed and *inclusive*: functional-spec §2.5 AC2 requires that a match
+    already on the top line is where Enter lands and the game does not move. From
+    that very same position, with the very same ``matches``, ``n`` must move past
+    it. Same inputs, opposite answers — which is why :func:`next_match` carries an
+    ``inclusive`` flag and why Enter must keep calling it directly instead of
+    being routed through here for tidiness.
+
+    **Straddling matches follow the start-row convention** :func:`row_for_offset`
+    already documents. A match that *starts* on ``row`` and folds into the next
+    row shares ``row`` and is skipped by ``n``; a match that starts on the row
+    *above* and folds into ``row`` belongs to that row, so ``N`` may legitimately
+    land on it and scroll the view up a single row.
+
+    **Both wraps** are :func:`next_match`'s and :func:`prev_match`'s, unchanged:
+    forward off the last row answers the game's **first** match, backward off the
+    first row answers the **first** match on whichever row holds the game's last
+    one — consequence two again — each with ``wrapped=True``.
+
+    **A note for the caller** (tech-spec §2.6's selection rule). Once the step is
+    row-keyed, both branches of that rule ask one question — *which match is on
+    the next row that has one, counting from the row the reviewer is looking at?*
+    — so this function needs only ``row``. The screen's ``current`` index stays
+    what the status line counts out and what the current-match highlight paints;
+    it is not an input to **this** function's decision — the screen decides which row to
+    hand in, and since Task 4.4a that decision does consult ``current``: stepping
+    from the current match's row is what lets a reviewer reach matches inside the
+    final screenful, where the clamped scroll position cannot go. The ``current ± 1`` phrasing in that rule
+    predates the row-keyed resolution recorded immediately above it in the same
+    section, and following it literally would re-admit the press that does not
+    move.
+
+    Bounds are **clamped, never raised**, exactly as :func:`row_for_offset` and
+    :func:`offset_for_row` clamp: ``row`` arrives from a live scroll position that
+    can legitimately sit outside a row map built a moment earlier at a different
+    width, and a traceback out of a keypress is strictly worse than answering the
+    first or last row.
+
+    Pure: no I/O, no Textual, no rendered rows of its own — the caller supplies
+    the row map, and gets back an index it turns into a scroll.
+    """
+    if not matches:
+        return None
+    last_row = max(len(row_starts) - 1, 0)
+    row = min(max(row, 0), last_row)
+
+    if forward:
+        if row < last_row:
+            # Every match on ``row`` — including one that starts here and folds
+            # into the next row — begins before the next row's first character,
+            # so taking that character as the boundary skips the whole row by
+            # construction. Inclusive, because the boundary IS the next row's
+            # first character and a match starting exactly there is on that row.
+            return next_match(matches, row_starts[row + 1], inclusive=True)
+        # Already on the last rendered row: there is no row below to move to, so
+        # the step wraps to the game's first match — which is, trivially, the
+        # first match on its own row, so consequence two holds here too.
+        return 0, True
+
+    found = prev_match(matches, offset_for_row(row_starts, row), inclusive=False)
+    if found is None:  # Unreachable: ``matches`` is non-empty above.
+        return None
+    index, wrapped = found
+    # Consequence two, in the direction that needs the work: back up from the
+    # last match above ``row`` to the first one starting on that same row, so the
+    # current match is the row's first whichever way the reviewer arrived at it.
+    landing_row = row_for_offset(row_starts, matches[index][0])
+    first_on_row = bisect_left(
+        matches, offset_for_row(row_starts, landing_row), key=lambda match: match[0]
+    )
+    return first_on_row, wrapped
 
 
 def build_table_model(records: list[RawRecord]) -> TableModel:

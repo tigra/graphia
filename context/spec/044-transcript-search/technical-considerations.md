@@ -133,11 +133,16 @@ It also makes §2.6's current-match indicator **load-bearing rather than decorat
 
 Two consequences the author accepted explicitly, both stated in the functional spec: the running count is an index among **all** matches, so it can jump (4 → 7); and the second and later matches on a row are highlighted but never become current.
 
-**The selection rule** satisfying both §2.5 ("a match already on the top line is the one Enter lands on") and §2.6 ("`n` follows where you scrolled, not where you last jumped from") uses a `current: int | None`:
+**The selection rule** satisfying both §2.5 ("a match already on the top line is the one Enter lands on") and §2.6 ("`n` follows where you scrolled, not where you last jumped from"):
 
-- If `current` is set **and** its row equals `scroll_offset.y`, `n`/`N` step `current ± 1` with wrap.
-- Otherwise they resolve against `offset_for_row(scroll_offset.y)` — `n` inclusive-forward, `N` exclusive-backward.
-- **Enter** always resolves inclusive-forward from the current top row.
+- **`n`/`N` are keyed on the row alone** — `step_match_by_row(matches, row_starts, scroll_offset.y, forward=…)`. It moves to the next row holding a match and reports the **first** match on that row, in both directions.
+- **Enter** resolves inclusive-forward from the current top row via `next_match` directly. It must **not** be routed through the row-keyed step for tidiness — that is exactly what would break §2.5 AC2.
+- **The step's origin is the current match's row when the reviewer has not scrolled since landing**, and `scroll_offset.y` when they have. `SearchState.scroll_at_landing` records where the view came to rest, so "have they scrolled?" is a recorded fact; the recorded value is re-clamped against the live `max_scroll_y` at comparison time, because hiding the bar after Enter re-fits the viewport and pulls a clamped landing back by one row.
+- `current` is what the status line counts and what `transcript--match-current` paints — and, since Task 4.4a, the origin the step is taken from. It is still never stepped by `± 1`.
+
+*(Task 4.4a, measured. Keying the step on `scroll_offset.y` alone dead-ends: the scroll clamps at `max_scroll_y`, so it cannot represent a position inside the final screenful, and any query with matches there — `the` has 702 on the 88 KB game, the last on row 1178 against a clamp of 1160 — returns the same match forever, with the wrap unreachable and the marker frozen. The cursor and the viewport must not be the same variable.)*
+
+*(Corrected during Slice 4, before it was implemented. This rule previously read "if `current` is set and its row equals `scroll_offset.y`, step `current ± 1` with wrap; otherwise resolve against the row." That was self-contradictory: `current ± 1` can be a **row-mate**, which re-admits the press that does not move — the very thing the row-keyed resolution in the paragraph above exists to eliminate. Once the step is row-keyed, both branches collapse into one question and `current` drops out of it.)*
 
 ### 2.7 The status channel — `Screen.sub_title`
 
