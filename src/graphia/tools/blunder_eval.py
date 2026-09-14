@@ -5475,6 +5475,173 @@ def _seat_side(cap: _GameCapture) -> str | None:
     return role if isinstance(role, str) and role else None
 
 
+# ===========================================================================
+# Spec 043 Task 7.1: THE COST OF RE-SCORING PER GAME, MEASURED RATHER THAN
+# ASSUMED.
+#
+# Since Task 3.4 the finalise/scoring pass runs after EVERY completed game
+# instead of once after the loop, and technical-considerations §2.8 flags one
+# term inside it as the place that could surprise: :func:`score_repetition` is
+# pairwise near-duplicate detection over ALL pooled AI lines, so a single pass
+# is quadratic in the pool, and calling it once per game makes the RUN's total
+# scoring work grow as the sum of squares rather than as one square. §2.8
+# predicts "seconds, not minutes" and demands the real measurement; this is the
+# instrument that replaces the prediction with a number.
+#
+# THREE NUMBERS, NOT ONE, and that is the whole reason for the shape below.
+# The first §2.8 datum measured "one finalise pass + one ledger write" as a
+# single 4.102 s blob, which cannot answer the one question Task 7.2 has to
+# decide — whether the per-game overhead is the SCORING or the WRITE. So the
+# pass and the write are timed separately and reported separately; and every
+# pass carries the SIZE OF THE POOL that drives its quadratic term, because
+# cost alone shows growth while cost beside pool size shows *why*, and lets the
+# sum-of-squares model be checked instead of asserted.
+#
+# NOT A LEDGER FIELD. Stamping this onto the record would be a record-shape
+# change this spec did not ask for, and that shape is pinned by the
+# byte-identical regression ``tests/test_ledger_write.py`` established in Slice
+# 1. It is stderr diagnostics at this module's existing register —
+# ``print(..., file=sys.stderr)`` and not ``logger.info``, because this module
+# installs no logging handler, so a log record would reach
+# ``logging.lastResort`` and go silent the moment anything in the process
+# configured logging.
+#
+# PERMANENT, NOT A SCRATCH PATCH, for two reasons. The measured run has to
+# execute from a CLEAN TREE so its record stamps ``code.dirty: false``, and
+# provenance is sampled once before game 1 — so an uncommitted instrument would
+# poison the very run it exists to measure. And a future reader re-checking
+# §2.8 should be able to re-measure without rebuilding the instrument first.
+#
+# THE OVERHEAD IS TWO ``monotonic()`` CALLS AND A COUNTER PER PASS. Nothing is
+# timed per line, per cluster or per metric: an instrument that perturbed a
+# ~200 s game would be measuring itself.
+#
+# ``time.monotonic``, NEVER ``time.time``: every number here is a DURATION, and
+# a wall-clock step (NTP, DST, a manual set) would corrupt it — the same reason
+# ``run_eval``'s own ``started`` is monotonic.
+#
+# THE FORMAT IS FIXED AND BORING, because it is read off a captured 40-minute
+# run's log with ``grep``. ``finalise-cost:`` prefixes the per-pass lines and
+# ``finalise-cost TOTAL:`` the summary block — neither string is a prefix of
+# the other, so either set is selectable on its own — and the fields are
+# ``key=value`` pairs in a constant order, every seconds value to 3 dp::
+#
+#   finalise-cost: pass=3 game=3 final=no finalise_s=0.412 pool_lines=271 finalise_total_s=0.907
+#   finalise-cost TOTAL: passes=11 writes=11 finalise_s=4.812 write_s=0.041 run_s=2410.117 finalise_pct=0.200 write_pct=0.002 pool_lines=902
+# ===========================================================================
+
+
+def _percent_of_run(part_seconds: float, run_seconds: float | None) -> str:
+    """``part_seconds`` as a percentage of ``run_seconds``, or ``'n/a'``.
+
+    GUARDED RATHER THAN TRUSTED. The run's own clock is a ``round(…, 3)``
+    monotonic delta, so a run that played no games at all (``--games 0``, and
+    every mocked run in the offline suite) can legitimately report ``0.0`` — and
+    a bare division would then raise ``ZeroDivisionError`` from the one piece of
+    code in this module whose only job is to observe. A measurement must never
+    take down the thing it measures. ``None`` — the field's value before
+    ``_finalise_result`` has stamped it — reads the same way.
+
+    Returns a formatted string rather than a float so the caller has one
+    rendering of the number and one rendering of its absence.
+    """
+    if not run_seconds or run_seconds <= 0:
+        return "n/a"
+    return f"{100.0 * part_seconds / run_seconds:.3f}"
+
+
+@dataclass(slots=True)
+class _FinaliseCost:
+    """One run's re-scoring/ledger-write wall-clock account (spec 043 §2.8).
+
+    One instance per :func:`run_eval` call, and it owns its own reporting: the
+    per-pass line is printed by :meth:`record_pass` as the pass ends, so a run
+    that is STOPPED still leaves every pass it made in the captured log — which
+    is the half of the measurement a stopped run can still contribute, and this
+    spec's whole subject is runs that stop. The once-per-run summary
+    (:meth:`report`) is the half only a completed run produces.
+
+    :meth:`record_pass` is called from INSIDE ``_finalise_result`` rather than
+    at that closure's two call sites: one change instruments both, and no caller
+    can forget. :meth:`record_write` is called at the two ``upsert_record``
+    sites, which are the only two ledger writes a run makes.
+    """
+
+    # Counts and Σs, all monotonic — nothing here ever decreases, so a truncated
+    # log's last per-pass line still carries a usable running total.
+    passes: int = 0
+    writes: int = 0
+    finalise_seconds: float = 0.0
+    write_seconds: float = 0.0
+    # The LAST pass's pooled-AI-line count, i.e. the run's final pool size — the
+    # input whose square drives the cost being measured.
+    pool_lines: int = 0
+
+    def record_pass(
+        self, *, game: int, final: bool, elapsed: float, pool_lines: int
+    ) -> None:
+        """Book one finalise pass and print its line.
+
+        ``game`` is ``games_attempted`` — which game this pass FOLLOWED — and is
+        deliberately not the pass number: a game that fails early writes no
+        record and makes no pass, so the two diverge the moment a run has a
+        failure, and both are needed to line a pass up with its game.
+        """
+        self.passes += 1
+        self.finalise_seconds += elapsed
+        self.pool_lines = pool_lines
+        print(
+            f"  finalise-cost: pass={self.passes} game={game}"
+            f" final={'yes' if final else 'no'}"
+            f" finalise_s={elapsed:.3f} pool_lines={pool_lines}"
+            f" finalise_total_s={self.finalise_seconds:.3f}",
+            file=sys.stderr,
+        )
+
+    def record_write(self, elapsed: float) -> None:
+        """Book one ledger write — silent; only the total is reported.
+
+        Silent on purpose: a prior micro-measurement put the atomic write's
+        clobber window at ~215 µs, so the expectation is that the write is noise
+        and the scoring is everything. Printing a second line per game to say so
+        eleven times would be noise about noise. The total is reported beside the
+        scoring total so Task 7.2 can DECIDE that rather than assume it.
+        """
+        self.writes += 1
+        self.write_seconds += elapsed
+
+    def report(self, run_seconds: float | None) -> None:
+        """Print the once-per-run summary block, or nothing if no pass ran.
+
+        ``run_seconds`` is the run's OWN clock — ``result.duration_seconds``, the
+        value the record carries — rather than a second clock started here, so
+        the percentage below is against the number a reader can see on the
+        record. It is stamped near the end of the final finalise pass, so it
+        excludes that pass's tail and the final ledger write: sub-second terms
+        against a run measured in thousands, and stated rather than hidden.
+
+        ``passes == 0`` prints NOTHING. No pass means no measurement, and a
+        summary of nothing would read as a measured zero.
+        """
+        if self.passes == 0:
+            return
+        run_rendered = "n/a" if run_seconds is None else f"{run_seconds:.3f}"
+        print(
+            f"  finalise-cost TOTAL: passes={self.passes} writes={self.writes}"
+            f" finalise_s={self.finalise_seconds:.3f}"
+            f" write_s={self.write_seconds:.3f}"
+            f" run_s={run_rendered}"
+            f" finalise_pct={_percent_of_run(self.finalise_seconds, run_seconds)}"
+            f" write_pct={_percent_of_run(self.write_seconds, run_seconds)}"
+            f" pool_lines={self.pool_lines}\n"
+            "  finalise-cost TOTAL: finalise_s is the sum over the re-scoring "
+            "passes, write_s the sum over the ledger writes, pct fields are "
+            "percentages of run_s (the record's run.duration_seconds), "
+            "pool_lines is the final pool (spec 043 §2.8)",
+            file=sys.stderr,
+        )
+
+
 def run_eval(
     config: object,
     args: argparse.Namespace,
@@ -5941,6 +6108,16 @@ def run_eval(
     # :class:`_SubstitutionCounter` for the census/no-Wilson-band argument.
     substitution_totals: dict[str, dict[str, int]] = {}
 
+    # Spec 043 Task 7.1: this run's re-scoring/ledger-write wall-clock
+    # account. Declared HERE, beside the accumulators whose folding it
+    # prices and above the closure that does the folding, because
+    # ``_finalise_result`` reads it as a free variable (like every
+    # accumulator above) and the two ``upsert_record`` sites below book
+    # their writes into the same instance. See :class:`_FinaliseCost` for
+    # why the pass and the write are timed apart and why none of it reaches
+    # the record.
+    cost = _FinaliseCost()
+
     def _finalise_result(*, final: bool) -> None:
         """Fold the accumulators above into ``result`` — the run's whole scoring pass.
 
@@ -5989,7 +6166,17 @@ def run_eval(
         completed game with ``final=False`` and once more after the loop with
         ``final=True`` — and the gate is what keeps the RUN's stderr output
         exactly what it was when there was only ever one call.
+
+        Spec 043 Task 7.1 times the pass and reports it on stderr as the
+        pass ends — the ONE number technical-considerations §2.8 says must be
+        measured rather than assumed, now that this closure runs once per
+        completed game and its ``score_repetition`` term is pairwise over the
+        whole accumulated pool. Timed HERE and not at the two call sites so
+        both are covered by one change and no caller can forget; and the pass
+        clock is the first statement, so it prices the whole body.
         """
+        pass_started = time.monotonic()
+
         # Spec-013 game-dynamics blocks, folded over the completed games. ``outcomes``
         # partitions the winners (``games`` = completed games denominator); the side
         # win-rates carry a Wilson CI, ``draw``/``no_winner`` are bare counts.
@@ -6213,6 +6400,33 @@ def run_eval(
         # was asked for nothing and attempted nothing did not stop short of
         # anything.
         result.ended_early = result.games_attempted < args.games
+
+        # === SPEC 043 TASK 7.1: this pass's cost, booked and printed beside
+        # the size of the input that drives it. LAST statement of the closure,
+        # so the elapsed figure prices the whole body including the two stamps
+        # above — and, like ``duration_seconds``, it is a fact about the pass
+        # rather than part of the record.
+        #
+        # ``pool_lines`` is ``len(pooled_lines)`` — the exact list handed to
+        # :func:`score_repetition` a few dozen lines up, and therefore the
+        # exact ``n`` whose square the pairwise clustering pays. Read from the
+        # list rather than from ``result.metrics['repetition']['denominator']``
+        # (the same number today) so the reported size cannot drift if that
+        # metric's denominator is ever redefined: the thing being explained is
+        # the SIZE OF THE INPUT, not a metric.
+        #
+        # ``game=result.games_attempted`` — which game this pass followed. Not
+        # the loop's ``game_number``, which is a loop local: it is unbound
+        # before the first iteration (a ``--games 0`` run would raise
+        # ``NameError`` from the instrument) and stale by one at the post-loop
+        # call. ``games_attempted`` is defined at every call and is the number
+        # the transcript files are named from.
+        cost.record_pass(
+            game=result.games_attempted,
+            final=final,
+            elapsed=time.monotonic() - pass_started,
+            pool_lines=len(pooled_lines),
+        )
 
     for game_index in range(args.games):
         # Spec 041, Task 12.2a: ONE 1-based number, used by every human-facing
@@ -6556,7 +6770,15 @@ def run_eval(
         # progressive write that loses a race SELF-HEALS, because the next one
         # re-reads and re-writes this run's current state.
         _finalise_result(final=False)
+        # Spec 043 Task 7.1: the write is timed SEPARATELY from the pass
+        # above, because "one pass plus one write" as a single figure cannot
+        # answer whether the per-game overhead is the scoring or the writing —
+        # which is exactly what Task 7.2 has to decide. Two ``monotonic()``
+        # calls around a call that never raises, so no ``try``/``finally`` is
+        # needed to keep the account balanced.
+        write_started = time.monotonic()
         upsert_record(result, run_date, ledger_path=ledger_target)
+        cost.record_write(time.monotonic() - write_started)
 
     # Spec 043 Task 3.1: the scoring/finalise pass, called once more here, after
     # the loop — the same single pass this function has always made, now behind a
@@ -6600,13 +6822,34 @@ def run_eval(
     # line below names the file that really holds the record, and a ledger write
     # that failed can never kill a measured run: that would lose the games this
     # spec exists to preserve, BECAUSE the code meant to preserve them failed.
+    write_started = time.monotonic()
     ledger = upsert_record(
         result,
         run_date,
         ledger_path=ledger_target,
         attempts=LEDGER_WRITE_ATTEMPTS_FINAL,
     )
+    cost.record_write(time.monotonic() - write_started)
     print(f"Appended one record to {ledger}")
+
+    # === SPEC 043 TASK 7.1: the once-per-run cost summary, last thing before
+    # the return. AFTER the ledger line rather than before it, so the human
+    # conclusion of a run ("Appended one record to …", on stdout) is not
+    # displaced by a diagnostic; the two go to different streams anyway.
+    #
+    # ``result.duration_seconds`` is the run's OWN clock, the same value the
+    # record carries as ``run.duration_seconds`` — not a second clock started
+    # for the instrument, so the percentage is against a number a reader can
+    # see on the record rather than one only this print knows.
+    #
+    # A STOPPED RUN NEVER REACHES HERE, and that is correct rather than a gap.
+    # A ``SIGINT`` propagates a ``BaseException`` out of the games loop, so
+    # nothing after it runs — the same control flow that leaves a stopped run
+    # with a record but no "Appended one record" line. Its per-pass lines were
+    # already printed as they happened, which is the half of the measurement a
+    # stopped run can still contribute; the totals are the half that needs a
+    # run to finish.
+    cost.report(result.duration_seconds)
     return result
 
 
