@@ -2,7 +2,7 @@
 
 - **Functional Specification:** [functional-spec.md](./functional-spec.md)
 - **Architecture Decision:** [ADR 014 — Optimistic-Concurrency Whole-File Ledger Writes, over Strict Append-Only](../../adr/014-optimistic-concurrency-ledger-writes.md) (Accepted 2026-09-11)
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 ---
