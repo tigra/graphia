@@ -252,6 +252,22 @@ _NEAR_DUP_THRESHOLD = 0.85
 # same quantity measured the same way. That is exactly what this constant
 # promises, and bumping it would falsely declare all 50 prior rates incomparable.
 #
+# ONE CORRECTION TO THE PARAGRAPH ABOVE, AND IT STILL DOES NOT BUMP. Spec 043's
+# Task 7.2 *did* change a scorer's code: ``repetition_experiment._clusters`` —
+# ``score_repetition``'s clustering, imported here as ``_spec009_clusters`` — now
+# skips any pair whose ``difflib`` upper bound is already below
+# ``_NEAR_DUP_THRESHOLD``, which cannot change a verdict because
+# ``real_quick_ratio() >= quick_ratio() >= ratio()``. So the sentence to hold onto
+# is the precise one: no detection RULE, threshold or denominator definition
+# moved, and the OUTPUT is identical — proven, not asserted, in
+# ``tests/test_spec043_cluster_skip.py`` against a verbatim copy of the pre-skip
+# implementation and against the committed ``repetition.count`` of every one of
+# the 20 ledger records whose pool can be rebuilt exactly from its transcripts.
+# An implementation that computes the same function faster is the clearest
+# possible non-bump: bumping would declare 52 prior rates incomparable to numbers
+# they are provably equal to. (Why it was done, and the cadence it replaced:
+# spec 043 technical-considerations §2.8, Cost of re-scoring.)
+#
 # THE ONE THING SPEC 043 CHANGES ABOUT A RECORD'S NUMBERS IS ``n``, AND ``n`` IS
 # NOT A RULE. A partial record's rates divide by a smaller denominator and its
 # Wilson bands are correspondingly wider — which is ``_attach_ci`` doing its job,

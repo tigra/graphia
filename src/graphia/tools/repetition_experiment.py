@@ -215,6 +215,50 @@ def _mask_names(text: str, names: set[str]) -> str:
 
 
 def _clusters(texts: list[str], threshold: float) -> list[list[int]]:
+    """Union-find clustering of near-duplicate texts by ``difflib`` ratio ≥ *threshold*.
+
+    Returns one ascending index list per equivalence class, the classes ordered by
+    their smallest member. That shape is a function of the **partition alone** —
+    the groups are collected by walking ``i`` ascending, so each class's member
+    list is sorted and each class first appears at its own minimum index, whatever
+    order the unions happened in. Which is what makes the loop below safe to
+    reorder: two implementations that union the same *set* of pairs return the
+    byte-identical list.
+
+    THE UPPER-BOUND SKIP (spec 043, Task 7.2). Every pair still gets the same
+    verdict, but most pairs no longer pay for ``ratio()``. ``difflib`` documents
+    ``real_quick_ratio() >= quick_ratio() >= ratio()``, so a pair whose upper bound
+    already sits below *threshold* **cannot** reach it, and skipping it is exact
+    rather than approximate. On record 47's real 902-line pool only **2.42%**
+    (9,841 of 406,351) of pairs survive both bounds, which took this function from
+    **91.5 s to 3.9 s** — and with it spec 043's per-game re-scoring from ~17% of a
+    ten-game Nova run to ~1%. Measured figures and the decision that rejected the
+    cadence fallback in favour of this: technical-considerations §2.8 (Cost of
+    re-scoring, and the one number to measure) of spec 043.
+
+    WHY ``j`` IS THE OUTER LOOP, AND WHY THAT IS NOT COSMETIC.
+    ``SequenceMatcher.ratio()`` is **asymmetric**, so ``ratio(a, b)`` and
+    ``ratio(b, a)`` can disagree and which text is ``seq2`` is part of what this
+    function measures. Two independent causes, and the famous one is the smaller:
+    autojunk keys off the *second* sequence (above 200 elements), **and**
+    ``get_matching_blocks``'s recursive longest-match decomposition is itself not
+    symmetric at any length — 82% of random 20-to-90-character pairs measure
+    differently in the two orientations. So this is not an edge case that only long
+    pooled lines can reach. The pre-skip code built
+    ``SequenceMatcher(None, texts[i], texts[j])`` with ``i < j``: **seq1 = the
+    smaller index, seq2 = the larger**. Reusing the ``b2j`` index (built by
+    ``set_seq2``) therefore requires the *larger* index in the outer loop. Doing it
+    the other way round — ``set_seq2(texts[i])``, ``i`` outer — silently swaps every
+    pair and moved record 47's near-duplicate count from 662 to **664**: a metric
+    change hiding inside a pure speedup. ``tests/test_spec043_cluster_skip.py``
+    holds this against a verbatim copy of the pre-skip implementation for exactly
+    that reason. (The ``b2j`` reuse itself is worth almost nothing — 91.5 s → 87.2 s;
+    the skip is the whole win. It is kept because the orientation constraint above
+    makes this loop order mandatory anyway.) Both bounds *are* symmetric in their
+    two arguments — ``real_quick_ratio`` is a function of the two lengths and
+    ``quick_ratio`` of the two character multisets — so which pairs get skipped
+    does not depend on the orientation; only the surviving ``ratio()`` calls do.
+    """
     n = len(texts)
     parent = list(range(n))
 
@@ -224,9 +268,18 @@ def _clusters(texts: list[str], threshold: float) -> list[list[int]]:
             i = parent[i]
         return i
 
-    for i in range(n):
-        for j in range(i + 1, n):
-            if difflib.SequenceMatcher(None, texts[i], texts[j]).ratio() >= threshold:
+    matcher = difflib.SequenceMatcher(None)
+    for j in range(n):
+        matcher.set_seq2(texts[j])
+        for i in range(j):
+            matcher.set_seq1(texts[i])
+            # Cheapest bound first (lengths only), then the character-multiset
+            # bound, then the real thing. Each is an upper bound on the next.
+            if matcher.real_quick_ratio() < threshold:
+                continue
+            if matcher.quick_ratio() < threshold:
+                continue
+            if matcher.ratio() >= threshold:
                 parent[find(i)] = find(j)
     groups: dict[int, list[int]] = {}
     for i in range(n):
