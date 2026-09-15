@@ -50,12 +50,37 @@ so the enum carries the schema order for free and this module never has to see
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from bisect import bisect_left, bisect_right
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+# THE ONE PRIVATE-MODULE IMPORT IN THIS PACKAGE, AND IT IS DELIBERATE
+# (spec 044, tech-spec §2.2). ``rich._wrap.divide_line`` is the exact function
+# Textual's own wrapper calls — ``textual/content.py`` imports it by this name at
+# its module top, and ``Content._wrap_and_format`` hands it every source line.
+# :func:`wrap_row_starts` exists to answer "which rendered row is this character
+# offset on?", and the ONLY way for that answer to be right is for it to agree
+# with what Textual actually painted. Calling the same function makes that
+# agreement true **by construction** rather than by approximation — a
+# re-implementation of the word-wrap rules would be a second algorithm to keep in
+# step with a library we do not control, and it would fail *silently*, by
+# mis-jumping a few rows on some line nobody looked at.
+#
+# The cost is a dependency on a name Rich does not promise. It is priced:
+# ``rich>=15.0.0`` is a DIRECT dependency of this project (``pyproject.toml``),
+# not a transitive one, so a version that moves this name cannot arrive without a
+# deliberate bump here; Textual depends on the same name, so a removal breaks
+# Textual before it breaks us; and this is a **module-scope** import on purpose,
+# so a Rich upgrade that removes it fails at pytest **collection time** — every
+# test that imports this module errors at once — rather than at the moment a
+# reviewer presses Enter. That loud failure is the mitigation, and it is why this
+# import must never be moved inside a function to "be safe": deferring it would
+# convert the loudest available failure into the quietest.
+from rich._wrap import divide_line
 
 from graphia.substitution import SubstitutionKind
 
@@ -106,6 +131,29 @@ __all__ = [
     "KIND_SPEECH_SUBSTITUTED",
     "TRANSCRIPT_KINDS",
     "tokenize_transcript",
+    # Spec 044, Slice 2: the pure transcript-search matchers, beside the
+    # tokenizer whose text they search.
+    "search_is_case_sensitive",
+    "find_matches",
+    # Spec 044, Slice 3: the row arithmetic that turns a match OFFSET into the
+    # rendered ROW the screen must scroll to. Exported beside the matchers
+    # because they are two halves of one answer — ``find_matches`` says where in
+    # the text, these say where on the screen.
+    "wrap_row_starts",
+    "row_for_offset",
+    "offset_for_row",
+    # …and the selector that turns those offsets into a decision: which match
+    # does this keypress go to, and did the search have to wrap around to reach
+    # it. The second half of that answer is what the reviewer is told.
+    "next_match",
+    # Spec 044, Slice 4: the backwards half of that selector, and the row-keyed
+    # rule ``n``/``N`` are built on. ``step_match_by_row`` is the one piece of
+    # navigation that has to know about rendered rows, and it lives here rather
+    # than in the screen because "``n`` skips the matches sharing the current
+    # row" is a statement about arithmetic — provable with no terminal at all
+    # (tech-spec §4).
+    "prev_match",
+    "step_match_by_row",
 ]
 
 # One parsed ledger record: the YAML document as a plain nested mapping. Keyed by
@@ -3028,6 +3076,538 @@ def _coalesce_spans(spans: list[tuple[str, str]]) -> list[tuple[str, str]]:
         else:
             out.append((text, kind))
     return out
+
+
+# ===========================================================================
+# Transcript search matching (spec 044, Slice 2 — the pure matching layer).
+#
+# The reviewer's ``/`` search *inside* one preserved game. Two functions, both
+# pure, both answering a question the runs-list filter above deliberately does
+# not: **where** in this text does the typed phrase occur, and does its casing
+# ask to be matched exactly. Offsets in, offsets out — the screen owns the wrap
+# width, the scrolling and the colour, and this layer never sees any of them,
+# which is what lets the matching be tested with no terminal at all (the same
+# property that keeps :func:`tokenize_transcript` headless).
+# ===========================================================================
+
+
+def search_is_case_sensitive(query: str) -> bool:
+    """Does this query ask to be matched exactly? (functional-spec §2.7)
+
+    Smart case — the ``less`` / ``vim`` convention functional-spec §2.7 states in
+    prose: an all-lowercase query matches text in any casing (``mira`` finds
+    *Mira*), and **any** uppercase character **anywhere** makes the whole query
+    exact (``Mira`` finds only *Mira*).
+
+    **"Anywhere" is the decision the functional spec leaves unstated**, and it is
+    pinned here (tech-spec §2.1) rather than left to whatever the implementation
+    happened to do: ``miRa`` is **case-sensitive**, because the rule is a
+    property of the query as a whole, not of its first character. The rejected
+    alternative — only a *leading* capital counts — would make a mid-word capital
+    silently do nothing, and a reviewer who types a model-generated name like
+    ``LaTasha`` or ``McKay`` means the capital they typed. Tested explicitly.
+
+    An empty query contains no uppercase character and so reads as
+    case-*insensitive*; :func:`find_matches` returns ``[]`` for it under either
+    answer, so the verdict is never observable.
+    """
+    return any(character.isupper() for character in query)
+
+
+def find_matches(text: str, query: str) -> list[tuple[int, int]]:
+    """Locate every occurrence of ``query`` in ``text`` (functional-spec §2.2).
+
+    Returns one half-open ``(start, end)`` offset pair per match, in document
+    order, so ``text[start:end]`` *is* the matched run and the caller can both
+    highlight it and scroll to it. Matches are **non-overlapping** — ``"aa"`` in
+    ``"aaaa"`` yields offsets 0 and 2, which is what ``less`` does. An empty
+    ``query`` yields ``[]``.
+
+    A **whitespace-only query is legitimate and is honoured literally**: a single
+    space is a real search (tech-spec §2.1 measures it at 14,524 matches on the
+    88 KB game), so nothing here strips or rejects it. Only the genuinely empty
+    string short-circuits — an empty pattern would otherwise match zero-width at
+    every position and report ``len(text) + 1`` matches of nothing.
+
+    **Why ``re.finditer(re.escape(query), …)`` and never ``text.lower().find()``.**
+    ``str.lower()`` can change a string's *length*: ``'İ'`` (U+0130) lowercases
+    to two characters, so ``'İnigo says: vote'`` measures 16 but its lowercase
+    measures 17, and a naive ``text.lower().find("vote")`` answers 13 where the
+    real offset is 12 — slicing the original text at that answer returns
+    ``'ote'``. Every offset after such a character is silently shifted, and these
+    transcripts are full of exactly the model-generated proper nouns where it
+    would bite. Matching the original text with :data:`re.IGNORECASE` keeps every
+    offset an offset into the text the reviewer is actually looking at.
+    :func:`re.escape` does the second job: the query is a reviewer's plain text,
+    so a ``.``, a ``[`` or a ``*`` in it matches itself instead of becoming a
+    regex operator.
+
+    **Why :func:`row_matches_field` is not reused.** It answers a different
+    question. The runs-list filter lowercases its value, splits it on whitespace
+    and **ANDs** the resulting terms to return a boolean verdict — *does this row
+    survive?* — which is right for a list of runs and wrong here twice over: this
+    needs **positions**, not a verdict, and it needs the query to stay a literal
+    **phrase**, so ``I vote`` finds that phrase rather than every line holding
+    ``"i"`` and ``"vote"`` somewhere. Same module, same purity, different
+    question.
+    """
+    if not query:
+        return []
+    flags = 0 if search_is_case_sensitive(query) else re.IGNORECASE
+    return [
+        (match.start(), match.end())
+        for match in re.finditer(re.escape(query), text, flags)
+    ]
+
+
+# ===========================================================================
+# Offset → rendered row (spec 044, Slice 3 — the feature's only hard problem).
+#
+# :func:`find_matches` answers "where in the text"; the screen needs "which row
+# on screen", because scrolling is measured in RENDERED rows and a preserved
+# game is *few, very long lines*. Measured on the committed corpus: the largest
+# game (``2026-09-05T17-58-24/game-01.txt``) is ~88 KB of text across **405**
+# source lines, its own longest line is **1,800** characters, and the longest
+# line anywhere in the 420 committed games is **4,269** — so at width 96 that
+# 405-line game occupies **1,182 rendered rows** and a single source line can be
+# forty of them. "Put the match on the top line" therefore cannot be served by
+# counting newlines, and the row map below is what stands between a jump and a
+# mis-jump.
+#
+# The whole design is one idea: **do not re-implement the wrapping, call it.**
+# See the ``rich._wrap`` import at the top of this module for why that import is
+# taken and what makes its risk affordable.
+# ===========================================================================
+
+# The tab width Textual expands with before wrapping: ``Content._wrap_and_format``
+# takes ``tab_size: int = 8`` and calls ``line.expand_tabs(tab_size)``, and every
+# caller in ``textual/content.py`` leaves the default in place. Named here so the
+# mirror states which constant it is mirroring rather than carrying a bare ``8``.
+_WRAP_TAB_SIZE = 8
+
+
+def wrap_row_starts(text: str, width: int) -> list[int]:
+    """The character offset each rendered row starts at, at wrap width ``width``.
+
+    The list's **length is the rendered row count**, and ``row_starts[i]`` is the
+    offset into ``text`` where row ``i`` begins — so row ``i`` is
+    ``text[row_starts[i] : row_starts[i + 1]]`` (the last row running to the end).
+    The starts therefore **partition** ``[0, len(text))`` contiguously, with no
+    gaps and no overlaps, which is the property the corpus sweep asserts.
+
+    **It mirrors Textual's own pipeline by calling the same function Textual
+    calls.** Read from the installed ``textual/content.py``
+    (``Content._wrap_and_format``), the pipeline is, per source line:
+
+    1. ``self.split("\\n", allow_blank=True)`` — split on newlines, **blank lines
+       preserved**, so an empty line still occupies a row;
+    2. ``line.expand_tabs(8)`` — **before** wrapping, not after;
+    3. ``offsets = divide_line(line.plain, width - line_pad * 2, fold=...)``;
+    4. ``content_line.content.divide(offsets)`` — which yields
+       ``len(offsets) + 1`` pieces cut at ``[0, *offsets, len(line)]``.
+
+    So the rows of one source line start at ``[0, *divide_line(...)]``, shifted by
+    that line's own offset in ``text``. ``fold=True`` and ``line_pad=0`` are the
+    right constants **today** because ``TranscriptScreen.DEFAULT_CSS`` sets
+    neither ``text-overflow`` (default ``fold``) nor ``line-pad`` (default ``0``);
+    a rule adding either would have to be reflected here.
+
+    **The three traps, each respected rather than coded around.**
+
+    *One — ``divide_line`` returns CHARACTER indices, not cell offsets*, despite
+    its own docstring saying "a list of cell offsets". Confirmed in the installed
+    ``rich/_wrap.py``: the offsets it appends come from ``re_word``'s match spans
+    and from ``start += len(line)``, both character positions, and
+    ``Content.divide`` documents its argument as "offsets (in characters)". This
+    is why accumulating a per-line character offset is correct; treating them as
+    cell offsets would drift on any double-width character.
+
+    *Two — the offsets CANNOT be recovered by summing the wrapped rows' lengths.*
+    ``_wrap_and_format`` ``rstrip()``s every divided row except the last one of a
+    source line, so ``len(Content(text).wrap(w)[i].plain)`` is short by however
+    much trailing whitespace the wrap point ate, and the running total drifts
+    further with every wrapped line. ``divide_line`` is the only source that
+    still knows where the cut actually fell.
+
+    *Three — ``expand_tabs`` runs BEFORE the wrap*, so the string being divided is
+    not the source line. The mirror expands too, which makes the ROW COUNT and
+    the row CONTENT right in all cases. The consequence to state plainly: for a
+    line containing a tab, the offsets ``divide_line`` reports are indices into
+    the *expanded* line, so every offset after the tab sits further right than the
+    same character does in ``text``. That is not worked around — it is pinned:
+    the committed corpus contains **zero** tabs (``blunder_eval`` writes none),
+    and a test asserts that precondition, so the mapping is exact today and a
+    transcript that ever grew a tab would fail loudly instead of mis-jumping
+    quietly.
+
+    **Trailing newline — the deliberate choice: YES, an extra empty row.** A
+    ``text`` ending in ``"\\n"`` produces a final **empty row**, because
+    ``split(allow_blank=True)`` keeps the blank after the last separator (its
+    ``lines.pop()`` is skipped precisely under ``allow_blank``). That row's start
+    offset is ``len(text)`` — the one entry in the returned list that is not
+    *inside* the text — and it is kept rather than trimmed because **Textual
+    renders it**: dropping it would make ``len(row_starts)`` disagree with
+    ``len(Content(text).wrap(width))`` by one, and since the list's length *is*
+    the row count, every row index from that point on would be a mis-jump and the
+    last row would be unreachable. Agreeing with the render beats tidiness.
+
+    Measured: all **420** committed transcripts end **without** a trailing
+    newline (``blunder_eval`` writes no final ``"\\n"``), so the corpus never
+    exercises this branch — which is exactly why the rule is written down here
+    rather than left to be discovered by the first transcript that does.
+
+    **The empty string is one row**, not zero — ``Content.split`` short-circuits to
+    ``[self]`` when the separator is absent, so an empty game still renders a
+    single blank line and ``wrap_row_starts("", w) == [0]``.
+
+    **``width <= 0`` degrades to one row per source line** instead of being passed
+    through. A widget can momentarily report zero width (before its first layout,
+    or while a container is being resized), and ``divide_line`` does not survive
+    it: at ``width == 0`` the fold branch calls ``chop_cells(word, width=0)``,
+    whose ``range(0, len(text), 0)`` raises ``ValueError``, and at a negative width
+    it silently emits no cuts at all. Neither is a useful answer, and a crash on a
+    transient layout state is the worst of them. Returning the unwrapped source-line
+    starts keeps every documented property of the result intact — contiguous
+    partition, row 0 at offset 0, length equal to the line count — and the screen
+    simply recomputes once a real width arrives, which it does anyway because the
+    row map is cached keyed on the width it was built for.
+
+    Pure: no I/O, no globals, no Textual import, no caching. The screen owns the
+    width and the cache; this owns the arithmetic.
+    """
+    row_starts: list[int] = []
+    offset = 0
+    # ``str.split("\n")`` is exactly ``Content.split("\n", allow_blank=True)``:
+    # both keep interior blanks, both keep the blank after a trailing newline, and
+    # both yield a single empty element for the empty string.
+    for line in text.split("\n"):
+        row_starts.append(offset)
+        if width > 0:
+            expanded = line.expandtabs(_WRAP_TAB_SIZE)
+            row_starts.extend(
+                offset + cut for cut in divide_line(expanded, width, fold=True)
+            )
+        # ``+ 1`` steps over the newline that ``split`` consumed. On the final
+        # element there is no newline, but the loop ends before the value is used.
+        offset += len(line) + 1
+    return row_starts
+
+
+def row_for_offset(row_starts: list[int], offset: int) -> int:
+    """Which rendered row holds character ``offset``.
+
+    ``bisect_right - 1`` over the sorted starts from :func:`wrap_row_starts`: the
+    row whose start is the greatest one **not after** ``offset``. Half-open rows
+    make this exact — an offset landing exactly on a row start belongs to that
+    row, not the previous one, which is what ``bisect_right`` (rather than
+    ``bisect_left``) buys.
+
+    Both ends are clamped rather than raising, because the caller is a widget
+    handing over whatever a match or a scroll position currently says: a negative
+    offset resolves to row ``0``, and an offset at or past ``len(text)`` resolves
+    to the last row. An empty ``row_starts`` (which :func:`wrap_row_starts` never
+    returns, but a caller could construct) also answers ``0``.
+
+    Note what this does **not** promise for a match that straddles a wrap: it
+    reports the row the match *starts* on, which is the row a jump should land on.
+    The tail of such a match is painted on the following row by Textual's own
+    span splitting, and needs nothing from here.
+    """
+    if not row_starts:
+        return 0
+    return max(0, bisect_right(row_starts, offset) - 1)
+
+
+def offset_for_row(row_starts: list[int], row: int) -> int:
+    """The character offset rendered row ``row`` starts at — the inverse.
+
+    Exactly ``row_starts[row]``, with the index **clamped** into range instead of
+    raising. The clamp is the point: the caller passes a live scroll position
+    (``scroll_offset.y``), which can legitimately sit outside a row map built a
+    moment earlier at a different width — during a resize, or against a cached map
+    the screen has not yet rebuilt. Answering the first or last row is right in
+    both directions (scrolled above the text ⇒ start of the text; scrolled past its
+    end ⇒ the last row) and is strictly better than a traceback out of a keypress.
+
+    ``offset_for_row(starts, row_for_offset(starts, o))`` is the start of ``o``'s
+    row, i.e. ``o`` itself only when ``o`` is already a row start — the pair is a
+    round trip on rows, not on offsets, which is what the jump needs.
+    """
+    if not row_starts:
+        return 0
+    return row_starts[min(max(row, 0), len(row_starts) - 1)]
+
+
+# ===========================================================================
+# Choosing which match a keypress goes to (spec 044, Slice 3).
+#
+# The last question in the pure layer, and the smallest: given every match in
+# the game and where the reviewer currently is, which match is next — and did
+# the search have to go round the end of the game to find it. Offsets in, an
+# index out; the screen turns that index into a row (above) and a scroll.
+# ===========================================================================
+
+
+def next_match(
+    matches: Sequence[tuple[int, int]], offset: int, *, inclusive: bool
+) -> tuple[int, bool] | None:
+    """The next match at-or-after ``offset``, and whether the search wrapped.
+
+    Returns ``(index, wrapped)`` where ``index`` is an index **into**
+    ``matches`` — not an offset, and not the pair itself. The index is what the
+    caller actually needs twice over: it is the position the status line counts
+    out (*"3/18"*, functional-spec §2.8), and it is the cursor Slice 4 steps with
+    ``current ± 1``. The offsets are one ``matches[index]`` away for whoever
+    wants them.
+
+    ``None`` means **there is nothing to jump to** — ``matches`` is empty, either
+    because nothing was typed or because what was typed appears nowhere in the
+    game. It is returned rather than a sentinel index so the caller cannot
+    accidentally scroll to match zero of none; functional-spec §2.5's last two
+    criteria both say *nothing moves and no error appears*, and ``None`` is the
+    shape that makes doing nothing the easy branch.
+
+    **Why ``inclusive`` is a parameter and not a fixed policy.** The two callers
+    want opposite answers at the very same position, and that asymmetry is
+    deliberate rather than accidental:
+
+    * **Enter searches inclusive-forward** from the current top row's offset,
+      because functional-spec §2.5 AC2 requires that a match already on the top
+      line is where Enter lands — *"it does not skip ahead"*. Pressing Enter on a
+      match you are already looking at must not move the game.
+    * **``n`` (Slice 4) wants the opposite at that position**, because
+      functional-spec §2.6 requires every press to leave the line it started on —
+      *"a press is never spent moving between two matches the reviewer can
+      already see together"*. From the same top row, ``n`` must move past the
+      match Enter would have stopped on.
+
+    One function, two callers, one flag — rather than two near-identical
+    functions that would drift apart the first time the wrap rule changed.
+
+    **The wrap, and why the flag is returned rather than hidden.** If no match
+    lies at-or-after ``offset`` (or strictly after it, when ``inclusive`` is
+    false), the answer is the **first** match in the game and ``wrapped`` is
+    ``True``; otherwise ``wrapped`` is ``False``. Functional-spec §2.5 AC3 turns
+    that flag into a message to the reviewer, so *a jump backwards is never
+    silent* — a view that leapt to the top of the game with no explanation reads
+    as a bug, and the same reviewer a second later cannot tell a wrap from a
+    mis-jump. Note the one case where the flag is the **only** evidence: with a
+    single match in the game, an exclusive step from it wraps round to that same
+    match, so nothing on screen moves at all and ``wrapped`` is the entire
+    feedback.
+
+    **Matching is keyed on each match's START offset**, so a match whose span
+    *covers* ``offset`` but *begins* before it is treated as behind the reviewer
+    and skipped. That is the correct reading of §2.5's "at or below the
+    reviewer's current position": in practice ``offset`` is the first character
+    of the top rendered row, and such a match began on the row **above** — it is
+    already partly scrolled off, and jumping to it would scroll the game
+    *backwards* while claiming to go forward.
+
+    ``matches`` is sorted and non-overlapping — that is :func:`find_matches`'
+    contract — so this is a **bisect over the start offsets**, not a scan.
+    Offsets before the first match answer index ``0`` with no wrap, which falls
+    out of the same bisect rather than needing a case of its own.
+
+    Scope note: this takes **offsets**, and knows nothing about rendered rows.
+    Slice 4's row-keyed stepping (*skip every match sharing the current row*) is
+    built **on top of** this by its caller, which resolves a row to an offset
+    with :func:`offset_for_row` first. Conflating the two here would break §2.5
+    AC2, whose whole point is that Enter is *not* row-keyed.
+    """
+    if not matches:
+        return None
+    # ``bisect_left`` answers "the first start **at or after** ``offset``" and
+    # ``bisect_right`` answers "the first start **strictly after** it" — which is
+    # precisely the inclusive/exclusive split, with no hand-rolled off-by-one.
+    # The key is applied to the elements only, never to ``offset`` itself.
+    locate = bisect_left if inclusive else bisect_right
+    index = locate(matches, offset, key=lambda match: match[0])
+    # Falling off the end is the wrap: there is nothing further down the game, so
+    # the answer is its first match and the reviewer is owed the notice.
+    if index == len(matches):
+        return 0, True
+    return index, False
+
+
+def prev_match(
+    matches: Sequence[tuple[int, int]], offset: int, *, inclusive: bool
+) -> tuple[int, bool] | None:
+    """The previous match at-or-before ``offset``, and whether it wrapped.
+
+    The mirror of :func:`next_match`, searching **backwards**, and everything
+    that function's docstring establishes holds here reflected: the return is
+    ``(index, wrapped)`` with ``index`` an index **into** ``matches`` rather than
+    an offset; ``None`` means there is nothing to jump to at all, because
+    ``matches`` is empty; matching is keyed on each match's **start** offset; and
+    ``matches`` is sorted and non-overlapping — :func:`find_matches`' contract —
+    so this is a **bisect over the start offsets**, not a scan.
+
+    ``inclusive`` splits the same two callers, the other way round. With
+    ``inclusive=True`` a match starting exactly at ``offset`` **is** the answer;
+    with ``inclusive=False`` it is skipped and the search carries on backwards.
+    The exclusive form is what ``N`` wants, because functional-spec §2.6 requires
+    every press to leave the line it started on — the match the reviewer is
+    sitting on must not be the one ``N`` returns.
+
+    **The wrap runs the other way too.** If nothing lies at-or-before ``offset``
+    (or strictly before it, when ``inclusive`` is false), the answer is the
+    **last** match in the document and ``wrapped`` is ``True``. That is
+    functional-spec §2.6's ``N`` wrap criterion — *"Given the reviewer is on the
+    first match in the game, when they press ``N``, then the view moves to the
+    last match and a message tells them the search wrapped around."* The flag is
+    returned rather than hidden for exactly :func:`next_match`'s reason: a view
+    that leapt to the far end of the game with no explanation reads as a bug,
+    and a jump *forwards* out of ``N`` is no less startling than a jump
+    backwards out of ``n``.
+
+    One asymmetry with :func:`next_match` follows from the shared start-offset
+    rule and is worth naming rather than leaving to be re-derived: a match that
+    *covers* ``offset`` but *begins* before it is a legitimate backwards answer —
+    it lies behind the reviewer, which is the direction of travel — where going
+    forwards the same match is skipped as already passed. One rule, two readings.
+
+    Scope note, as for :func:`next_match`: this takes **offsets** and knows
+    nothing about rendered rows. :func:`step_match_by_row` is what puts the
+    row-keyed rule of §2.6 on top of the two of them.
+    """
+    if not matches:
+        return None
+    # The mirror of :func:`next_match`'s split with the two bisects exchanged.
+    # ``bisect_right`` lands one past the last start **at or before** ``offset``
+    # and ``bisect_left`` one past the last start **strictly before** it, so the
+    # same ``- 1`` finishes both and neither needs a hand-rolled off-by-one.
+    locate = bisect_right if inclusive else bisect_left
+    index = locate(matches, offset, key=lambda match: match[0]) - 1
+    # Falling off the front is the wrap: there is nothing further up the game, so
+    # the answer is its last match and the reviewer is owed the notice.
+    if index < 0:
+        return len(matches) - 1, True
+    return index, False
+
+
+def step_match_by_row(
+    matches: Sequence[tuple[int, int]],
+    row_starts: list[int],
+    row: int,
+    *,
+    forward: bool,
+) -> tuple[int, bool] | None:
+    """Where ``n`` / ``N`` go from rendered ``row`` — keyed on ROWS, not matches.
+
+    Returns ``(index, wrapped)`` or ``None``, the same shape :func:`next_match`
+    and :func:`prev_match` return, so the status line and the current-match
+    highlight cannot tell which of the three produced the answer. ``row`` is the
+    rendered row the reviewer is looking at (the screen's ``scroll_offset.y``),
+    and ``row_starts`` is :func:`wrap_row_starts`' map at the live wrap width.
+
+    **The decision this function exists to encode** (functional-spec §2.6,
+    tech-spec §2.6, resolved by the author 2026-09-12). Several matches can fall
+    on a single rendered row, and a jump scrolls by **row** — so stepping
+    match-by-match would spend whole presses moving between two matches the
+    reviewer can already see side by side, and the view would not move at all.
+    ``n`` and ``N`` therefore **skip past every match sharing ``row``** and go to
+    the next row that has one. A press is never spent on the line it started
+    from. (The one place a press still produces no visible movement is the last
+    screenful, where the caller's clamp to ``max_scroll_y`` leaves nothing to
+    scroll into view — which is precisely why §2.6's current-match marker and the
+    running count are load-bearing rather than decorative there.)
+
+    **Two consequences the author accepted explicitly. Both are deliberate, both
+    are stated in the functional spec, and neither is a defect to be fixed
+    later.**
+
+    *One — the running count can jump.* The returned ``index`` is an index among
+    **all** matches, because that is what the reviewer is counting: *"match 7 of
+    18"* means the seventh occurrence in the game. Movement is counted in rows
+    and the status is counted in matches, and on a row holding three matches the
+    two units simply differ — so the count goes straight from 4 to 7 with no
+    press in between (functional-spec §2.8: *"a position among all matches, so
+    where a line of the screen holds several it can jump by more than one at a
+    time"*). Renumbering the status to count only reachable matches would make
+    the total disagree with the number of highlights on screen, which is the
+    worse lie.
+
+    *Two — the first match on a row is always the current one.* The second and
+    later matches sharing a row are highlighted like any other but never become
+    current, in **either** direction of travel. Forwards that falls out for free:
+    the first match at-or-after a row's first character is necessarily the first
+    match starting on whatever row it lands on. Backwards it does not, and is the
+    one piece of real work below — :func:`prev_match` answers with the *last*
+    match above ``row``, which on a row holding three is the third, so the answer
+    is walked back to the row's first.
+
+    **The asymmetry with Enter is the point, not an oversight.** Enter is
+    offset-keyed and *inclusive*: functional-spec §2.5 AC2 requires that a match
+    already on the top line is where Enter lands and the game does not move. From
+    that very same position, with the very same ``matches``, ``n`` must move past
+    it. Same inputs, opposite answers — which is why :func:`next_match` carries an
+    ``inclusive`` flag and why Enter must keep calling it directly instead of
+    being routed through here for tidiness.
+
+    **Straddling matches follow the start-row convention** :func:`row_for_offset`
+    already documents. A match that *starts* on ``row`` and folds into the next
+    row shares ``row`` and is skipped by ``n``; a match that starts on the row
+    *above* and folds into ``row`` belongs to that row, so ``N`` may legitimately
+    land on it and scroll the view up a single row.
+
+    **Both wraps** are :func:`next_match`'s and :func:`prev_match`'s, unchanged:
+    forward off the last row answers the game's **first** match, backward off the
+    first row answers the **first** match on whichever row holds the game's last
+    one — consequence two again — each with ``wrapped=True``.
+
+    **A note for the caller** (tech-spec §2.6's selection rule). Once the step is
+    row-keyed, both branches of that rule ask one question — *which match is on
+    the next row that has one, counting from the row the reviewer is looking at?*
+    — so this function needs only ``row``. The screen's ``current`` index stays
+    what the status line counts out and what the current-match highlight paints;
+    it is not an input to **this** function's decision — the screen decides which row to
+    hand in, and since Task 4.4a that decision does consult ``current``: stepping
+    from the current match's row is what lets a reviewer reach matches inside the
+    final screenful, where the clamped scroll position cannot go. The ``current ± 1`` phrasing in that rule
+    predates the row-keyed resolution recorded immediately above it in the same
+    section, and following it literally would re-admit the press that does not
+    move.
+
+    Bounds are **clamped, never raised**, exactly as :func:`row_for_offset` and
+    :func:`offset_for_row` clamp: ``row`` arrives from a live scroll position that
+    can legitimately sit outside a row map built a moment earlier at a different
+    width, and a traceback out of a keypress is strictly worse than answering the
+    first or last row.
+
+    Pure: no I/O, no Textual, no rendered rows of its own — the caller supplies
+    the row map, and gets back an index it turns into a scroll.
+    """
+    if not matches:
+        return None
+    last_row = max(len(row_starts) - 1, 0)
+    row = min(max(row, 0), last_row)
+
+    if forward:
+        if row < last_row:
+            # Every match on ``row`` — including one that starts here and folds
+            # into the next row — begins before the next row's first character,
+            # so taking that character as the boundary skips the whole row by
+            # construction. Inclusive, because the boundary IS the next row's
+            # first character and a match starting exactly there is on that row.
+            return next_match(matches, row_starts[row + 1], inclusive=True)
+        # Already on the last rendered row: there is no row below to move to, so
+        # the step wraps to the game's first match — which is, trivially, the
+        # first match on its own row, so consequence two holds here too.
+        return 0, True
+
+    found = prev_match(matches, offset_for_row(row_starts, row), inclusive=False)
+    if found is None:  # Unreachable: ``matches`` is non-empty above.
+        return None
+    index, wrapped = found
+    # Consequence two, in the direction that needs the work: back up from the
+    # last match above ``row`` to the first one starting on that same row, so the
+    # current match is the row's first whichever way the reviewer arrived at it.
+    landing_row = row_for_offset(row_starts, matches[index][0])
+    first_on_row = bisect_left(
+        matches, offset_for_row(row_starts, landing_row), key=lambda match: match[0]
+    )
+    return first_on_row, wrapped
 
 
 def build_table_model(records: list[RawRecord]) -> TableModel:

@@ -25,12 +25,15 @@ from __future__ import annotations
 
 import importlib
 import textwrap
+from collections import Counter
 from pathlib import Path
+from typing import NamedTuple
 
 import pytest
+from rich._wrap import divide_line as rich_divide_line
 from rich.style import Style as RichStyle
 from textual.app import ComposeResult
-from textual.containers import Vertical, VerticalScroll
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.content import Content
 from textual.screen import Screen
 from textual.widgets import (
@@ -44,6 +47,15 @@ from textual.widgets import (
     Select,
     Static,
 )
+
+# The Footer's rendered cells (spec 044, Slice 6). Private module, and
+# deliberately: `textual.widgets` exports `Footer` alone, so there is no public
+# name for the widget a reviewer actually reads — and reading `BINDINGS` instead
+# is the tautology B15.8 exists to avoid, because `show=bool(description and
+# show)` means only the rendered side can see a blank description. Pinned to
+# Textual 8.2.4 like `rich._wrap.divide_line` in B15.6, and failing at COLLECTION
+# time if a Textual upgrade moves it.
+from textual.widgets._footer import FooterKey
 
 from graphia.eval_ledger import (
     KIND_ATTR,
@@ -74,15 +86,21 @@ from graphia.eval_ledger import (
     SEARCH_SCOPE_ALL,
     TRANSCRIPT_KINDS,
     build_table_model,
+    divide_line,
+    find_matches,
     list_transcripts,
     load_ledger,
+    row_for_offset,
     tokenize_transcript,
+    wrap_row_starts,
 )
 from graphia.ui.ledger_viewer import (
     DetailScreen,
     LedgerTableScreen,
     LedgerViewerApp,
+    TranscriptBody,
     TranscriptScreen,
+    TranscriptSearchInput,
 )
 
 from conftest import plain_text
@@ -2519,6 +2537,19 @@ _DETAIL_KEYS_SWEPT = (
     "pagedown",
     "backspace",
     "q",
+    # `slash` opens the search bar on `TranscriptScreen` (spec 044). Swept here
+    # so the walk presses it on the run's figures and the table of runs as well,
+    # where it must still never reach a bare games list (functional-spec §2.10
+    # AC4).
+    "slash",
+    # `n`/`N` step through a game's matches (spec 044, Slice 4), and joined
+    # `slash` here for the same free coverage: the walk presses them on the run's
+    # figures and the table of runs, where they are bound to nothing at all and
+    # must stay inert. The rot guard below — `TranscriptScreen.BINDINGS` is a
+    # subset of this tuple — is what makes adding them here obligatory rather
+    # than optional.
+    "n",
+    "N",
 )
 
 
@@ -3132,6 +3163,32 @@ _HIGHLIGHT_INDENTED_LINES = ("  <round>", "  Round 1.", "  </round>")
 # The keys `TranscriptScreen` binds to back out. Named here so the parametrized
 # test below can be rot-guarded against `TranscriptScreen.BINDINGS`.
 _TRANSCRIPT_BACK_KEYS = ("escape", "backspace", "q")
+
+# The keys `TranscriptScreen` binds for searching inside the game (spec 044).
+# SPLIT FROM THE BACK-OUT KEYS ABOVE RATHER THAN FOLDED INTO THEM, because the
+# two tuples mean different things: these keys stay in the game. The rot guard
+# below asserts the screen's bindings are exactly the UNION of the two, so a
+# binding added to the screen that is declared in neither tuple still fails
+# there rather than going untested — the guard is widened, not weakened.
+# Slice 4 spent the one line this was left open for: `n`/`N` step through the
+# matches and, like `slash`, keep the reviewer in the game rather than backing
+# out of it.
+#
+# SLICE 6 ADDED `enter`, and it belongs in THIS tuple for the tuple's own
+# reason: it keeps the reviewer in the game. It is a SYNONYM for `n` — the same
+# `next_match` action under a second key, so that repeated Enter with the prompt
+# CLOSED walks the matches instead of resting on the one the reviewer is already
+# standing on (functional-spec §2.6, amended 2026-09-14).
+#
+# `enter` sitting here says nothing about Enter INSIDE the open prompt: while
+# the bar is focused the `Input` consumes the key and posts `Input.Submitted`,
+# so §2.5's inclusive jump never reaches a screen binding at all. B15.8 drives
+# that distinction by keystroke rather than leaving it to this comment.
+#
+# `n`/`N` are `show=True` as of Slice 6 and the Footer guard below names them;
+# `enter` is `show=False`, so that guard does not see it — which is itself the
+# assertion that the synonym has not taken `n`'s Footer cell.
+_TRANSCRIPT_SEARCH_KEYS = ("slash", "n", "N", "enter")
 
 # The long-game scroll fixture, pinned as absolute geometry rather than as a
 # before/after comparison (spec 037's mutation finding: "X equals Y between two
@@ -4677,10 +4734,36 @@ async def test_scrolling_a_long_game_behaves_as_before(tmp_path: Path) -> None:
     that wrapped differently, or reported a different height, would change how far
     a game scrolls and how much of it is reachable.
 
-    Pinned as ABSOLUTE geometry — a 202-line game in a 22-row viewport is 180 rows
+    Pinned as ABSOLUTE geometry — an 82-line game in a 22-row viewport is 60 rows
     of scroll — plus the offset each key produces. `virtual_size.height` equalling
     the game's line count is the "no unexpected wrapping" claim: one wrapped line
-    would make it 203.
+    would make it 83.
+
+    (Those three figures read 202, 180 and 203 until spec 044, and no constant in
+    this file has ever produced them: `_LONG_GAME_PROSE_LINES` is 80, so the body
+    is 82 lines and `max_scroll_y` is 60. The error was harmless — every assertion
+    below reads the symbolic constants, never the prose — but it is corrected here
+    rather than left to mislead the next reader. Measured at runtime through this
+    very test: `size.height` 22, `virtual_size.height` 82, `max_scroll_y` 60.)
+
+    EVERY SCROLL KEY IS SETTLED through `_settle_scroll` before its row is read,
+    for the reason that helper's docstring sets out at length: all six scroll keys
+    animate, and the row a test wants does not exist at the moment the key is
+    released. This test is the MOST exposed to that race in the file, not the
+    least — it holds the longest travels there are, `end` running 23 → 60 and
+    `home` running 60 → 0, each over the fixed 1.0 s `scroll_end`/`scroll_home`
+    duration. That it passed on `main` with only `pilot.pause()` between press and
+    assertion is the accident `_settle_scroll` describes: `App._press_keys`'
+    incidental `wait_until_complete()` and `wait_for_idle(0)` happened to absorb
+    the animation, and `pilot.pause()` itself returns in ~22 ms, covering none of
+    it. Remove those two incidental waits — changing nothing else — and the
+    committed press-then-pause sequence reads row 9 of the `pagedown` travel, row
+    31 of the `end` travel and row 37 of the `home` travel, where the assertions
+    below say 23, 60 and 0.
+
+    No assertion is weakened, added or removed by that settle; it only makes the
+    absolute ones reliable. `escape` below keeps a plain `pilot.pause()` — it
+    pops a screen rather than scrolling, so there is no animation to settle.
 
     Then the interaction that matters most: the scroll container holds focus here,
     so `escape` has to reach the screen's binding past it.
@@ -4703,24 +4786,24 @@ async def test_scrolling_a_long_game_behaves_as_before(tmp_path: Path) -> None:
         assert scroller.scroll_offset.y == 0
 
         await pilot.press("down")
-        await pilot.pause()
+        await _settle_scroll(pilot)
         assert scroller.scroll_offset.y == 1
 
         await pilot.press("pagedown")
-        await pilot.pause()
+        await _settle_scroll(pilot)
         assert scroller.scroll_offset.y == 1 + _LONG_GAME_VIEWPORT_ROWS
 
         await pilot.press("end")
-        await pilot.pause()
+        await _settle_scroll(pilot)
         assert scroller.scroll_offset.y == _LONG_GAME_MAX_SCROLL_Y
 
         await pilot.press("home")
-        await pilot.pause()
+        await _settle_scroll(pilot)
         assert scroller.scroll_offset.y == 0
 
         # The last line of the game really is reachable, and it is the game's.
         await pilot.press("end")
-        await pilot.pause()
+        await _settle_scroll(pilot)
         assert _transcript_body_text(screen).endswith("</transcript>")
 
         # ...and backing out still works from a scrolled position, with the
@@ -4738,13 +4821,16 @@ async def test_each_back_out_key_pops_the_transcript_screen(
     """`escape`, `backspace` and `q` all step back out to the run's figures.
 
     B10 covers `escape` as part of the full back-out path; this sweeps all three
-    keys the screen binds, from the transcript itself, at an absolute stack depth.
-    Rot-guarded against `TranscriptScreen.BINDINGS`, so a key added to the screen
-    without being swept here fails rather than going untested.
+    back-out keys, from the transcript itself, at an absolute stack depth, with no
+    search open.
+
+    Rot-guarded against `TranscriptScreen.BINDINGS` as the UNION of the back-out
+    keys and the search keys (spec 044), so a key added to the screen that is
+    declared in neither tuple fails here rather than going untested.
     """
     assert {binding.key for binding in TranscriptScreen.BINDINGS} == set(
         _TRANSCRIPT_BACK_KEYS
-    )
+    ) | set(_TRANSCRIPT_SEARCH_KEYS)
 
     ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name=f"hl-back-{key}.yaml")
 
@@ -4765,3 +4851,5220 @@ async def test_each_back_out_key_pops_the_transcript_screen(
         assert app.screen is detail
         assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
         assert app.is_running
+
+
+# ===========================================================================
+# B15. Searching inside a game (spec 044, Slices 1-5) — the bar opens, takes
+#      text, lights up what it finds, the game keeps scrolling underneath
+#      it, Enter brings a match to the top row, `n`/`N` walk the rest, and
+#      the whole thing clears away without costing the reviewer their place.
+#
+#      KEY ROUTING IS THE ENTIRE RISK OF THIS SLICE, which is why every test
+#      below drives REAL KEYSTROKES through `pilot.press(...)` and never
+#      assigns `Input.value`. The feature adds a second focusable widget to a
+#      screen that has only ever had one, and almost everything that can go
+#      wrong is a question about where a keypress LANDS: does `/` reach the
+#      screen or get eaten; does `home` reach the game or get claimed by the
+#      focused box; does `q` leave the game or become a character. A helper
+#      that set `value` directly — `_drive_search` (B4) is exactly such a
+#      helper, for the runs-list filter on a different screen — would make
+#      every one of these tests pass while answering none of those questions.
+#      `_type_transcript_search` below exists to keep the two apart, and says
+#      so in its own docstring so the next reader does not "consolidate" them.
+#
+#      THE CLOSED BAR IS PINNED AS ABSOLUTE GEOMETRY, not as a before/after
+#      comparison, following spec 037's mutation finding (an assertion of the
+#      form "X equals Y between two states" holds happily with both sides
+#      broken). Functional-spec §2.10 AC2 — "nothing about searching is taking
+#      up space they were using to read" — is the criterion, and the assertion
+#      that carries it is THE SCROLLER'S HEIGHT, not the bar's own size.
+#
+#      That distinction is worth writing down, because the obvious assertion is
+#      the wrong one. `#search-row` does measure `(0, 0)` while closed — but
+#      MUTATION-TESTED, `(0, 0)` DOES NOT SEPARATE `display: none` FROM
+#      `visibility: hidden`. An invisible widget is absent from the screen's
+#      widget map, so `Widget.region` catches `NoWidget` and falls back to
+#      `NULL_REGION` under either rule (Textual 8.2.4, `widget.py`). And
+#      `visibility: hidden` nonetheless RESERVES the row: measured, the
+#      scroller drops 22 rows to 21, so a reviewer who never presses `/` would
+#      silently pay a line of game forever while the bar still measured
+#      `(0, 0)`. The scroller's height is the assertion that catches that, and
+#      the `(0, 0)` beside it says the narrower thing it can say — the bar is
+#      not on screen — which is what fails when a `-open` rule leaks its
+#      `display: block` into the base selector.
+#
+#      WHAT IS DELIBERATELY NOT READ: `TranscriptScreen._search`. The state
+#      field is the implementation of the Esc machine, not its promise; what
+#      the reviewer is owed is that the first Esc closes the bar and keeps
+#      them in the game and the second one leaves, which is asserted here
+#      through screens and stack depth. Reading the private field would pin
+#      the mechanism and leave the promise untested.
+#
+#      SLICE 5's B15.7 IS THE ONE PLACE THAT DOES READ IT, and that exception
+#      is forced rather than a change of mind. Task 5.2a's finding is that two
+#      of §2.9's states are IDENTICAL ON SCREEN — after Enter on an empty query
+#      and after Enter on a query that matched nothing, nothing is lit, the bar
+#      is hidden and the header is back at its resting hint — so the field is
+#      the only thing that separates them at the moment of the press. Every
+#      state assertion there is PAIRED with the observable consequence (how
+#      many Escs it then takes to leave), so the promise is still what is
+#      tested and the field is only what makes the two cases nameable.
+#
+#      `_LONG_GAME_BODY` IS REUSED rather than joined by a fixture of its own.
+#      B14.4 already pins its geometry absolutely (82 lines, a 22-row
+#      viewport, `max_scroll_y` 60), so the one row the open bar costs is
+#      visible as arithmetic on constants that already have a witness, and
+#      every scroll assertion below can be stated as a position in a game
+#      whose shape is already proven. Its lines are short enough never to
+#      wrap at this terminal width, which is what makes "row" and "line" the
+#      same thing here and the expected offsets readable at all.
+#
+#      SLICE 2 ADDED B15.2, and it asks a different question from the rest of
+#      this section: not where a keypress LANDS, but what the game LOOKS LIKE
+#      once one has. Its assertions are therefore about SPANS — which character
+#      ranges carry a style, and in what ORDER — keeping B14's convention of
+#      never pinning rendered colour, with the single exception the tech spec
+#      names (a highlight has to differ from the ground it sits on or there is
+#      nothing to see). Two facts about the implementation are what make those
+#      assertions possible at all, and both are worth knowing before reading
+#      one: the match spans are APPENDED to spec 038's kind spans rather than
+#      merged with them, so a highlighted body's runs split cleanly into "what
+#      the tokenizer said" and "what the search added" (`_search_runs`), and
+#      the repaint is DEBOUNCED, so every read has to wait out
+#      `_SEARCH_SETTLE_SECONDS` first or it measures the previous keystroke.
+#
+#      SLICE 3 ADDED B15.6, AND IT IS THE ONE SUB-SECTION HERE THAT IS NOT
+#      ABOUT THIS FEATURE AT ALL. Everything above asks what the viewer does;
+#      B15.6 asks whether `wrap_row_starts` still agrees with the wrapping
+#      Textual actually performs. The two agree BY CONSTRUCTION today — the
+#      mirror calls the very `rich._wrap.divide_line` that `textual/content.py`
+#      calls — and that is exactly why it needs a pin: a Rich or Textual upgrade
+#      that folds lines differently does not crash and does not look wrong. It
+#      moves every row boundary, and the only symptom is that Enter, `n` and `N`
+#      quietly land on the wrong line for the rest of the program's life. The
+#      three legs are what turn that into a red test. Its banner explains each.
+#
+#      SLICE 3 ALSO ADDED B15.4, WHICH IS WHERE THE FEATURE STOPS BEING A
+#      COLOURING TOOL AND BECOMES A NAVIGATION ONE. Its question is neither
+#      where a keypress landed nor what lit up, but WHERE THE GAME CAME TO
+#      REST — so every assertion in it is an ABSOLUTE ROW, and its fixtures
+#      exist so that those rows can be written down. Two of its tests would
+#      be vacuous without a fixture built for them: a jump has to be measured
+#      from somewhere with matches on BOTH sides of it, and the end-of-game
+#      clamp will happily produce the right-looking answer for a match in the
+#      tail however wrong the arithmetic behind it was. Its banner says which
+#      game answers which criterion.
+#
+#      SLICE 4 ADDED B15.5, AND IT ASKS THE QUESTION B15.4 COULD NOT: what
+#      happens on the presses AFTER the prompt has closed. `n` and `N` are the
+#      first keys in this feature that exist only in the state Enter leaves
+#      behind, and the header is the first thing this screen says that has to
+#      outlive a widget. So B15.5 reads two channels B15.1-B15.4 never touch —
+#      the LIVE `Header`, through `HeaderTitle.render_line(0)` rather than off
+#      the `sub_title` attribute, and WHICH match carries the stronger marker,
+#      through the combined style at its first character.
+#
+#      THE REASON IT READS BOTH IS MEASURED, not tidiness. Inside the last
+#      screenful of a game the scroll CLAMPS at `max_scroll_y`, so successive
+#      presses move the view not at all — and the marker and the count are then
+#      the whole of what tells the reviewer the key did anything. A sub-section
+#      that asserted only `scroll_offset.y` would be blind exactly where the
+#      feature is hardest, which is not hypothetical: Task 4.4a found `n`
+#      dead-ending in that screenful after Slice 4's first round of probes
+#      passed, because every one of them used the query `vote`, whose last
+#      match on the 88 KB committed game sits on row 1030 against a clamp of
+#      1160. `vote` cannot witness the clamp or the wrap. The three tests below
+#      that touch the end of a game therefore use `the` on the largest
+#      committed game, and each ASSERTS ITS FIXTURE'S PREMISE — that the last
+#      match's row is past `max_scroll_y` — before it asserts any behaviour, so
+#      that a curated corpus can never make them pass by being blind.
+#
+#      B15.5 also closes the half-criterion B15.4 left open: §2.5 AC3 asks that
+#      a wrapped jump be ANNOUNCED as well as performed, and the channel for
+#      that announcement did not exist when B15.4 was written.
+#      `test_a_wrapped_enter_announces_the_wrap_in_the_header` is that half.
+# ===========================================================================
+
+# The search bar is one row and it comes out of the SCROLLER's height, not out
+# of the reviewer's scroll position. Both halves are asserted: the viewport
+# loses a row, `max_scroll_y` gains one, and `scroll_offset.y` does not move
+# (functional-spec §2.1 AC3).
+_SEARCH_OPEN_VIEWPORT_ROWS = _LONG_GAME_VIEWPORT_ROWS - 1
+_SEARCH_OPEN_MAX_SCROLL_Y = _LONG_GAME_LINES - _SEARCH_OPEN_VIEWPORT_ROWS
+
+# `#search-row` measured in each of its two states. Closed is `(0, 0)`: no
+# region at all — which says the bar is not on screen, and deliberately not
+# more than that (see the banner on why it cannot tell `display: none` from
+# `visibility: hidden`). Open it spans the full terminal width and is exactly
+# one row tall — a default `Input` is three, so the height override in
+# `TranscriptScreen.DEFAULT_CSS` is load-bearing and this is its witness.
+_SEARCH_ROW_CLOSED_SIZE = (0, 0)
+_SEARCH_ROW_OPEN_SIZE = (_LONG_GAME_TERMINAL_SIZE[0], 1)
+
+# The body's content width, closed and open alike. Pinned because equality
+# across the two states is what says OPENING THE SEARCH DOES NOT REWRAP THE
+# GAME: a bar that stole columns instead of a row would re-fold every line,
+# and from Slice 3 onward it would silently invalidate the offset→row map that
+# Enter jumps by. 96 rather than 98 because the overflowing game already shows
+# a vertical scrollbar, which eats two cells.
+_LONG_GAME_BODY_WIDTH = 96
+
+# Where the six scroll keys are measured from. Chosen so that all six land on
+# six DISTINCT rows, none of them clamped: `home` and `pageup` would be
+# indistinguishable from any start below one page, and `pagedown` would clamp
+# at `max_scroll_y` from any start above 40.
+_SEARCH_SCROLL_START_Y = 30
+
+# The six keys functional-spec §2.4 promises still scroll the game while the
+# reviewer is typing, each with the row it lands on from `_SEARCH_SCROLL_START_Y`
+# with the bar OPEN — so the page keys move by 21 rows, not 22.
+#
+# Stated as arithmetic on the fixture's constants rather than as bare numbers,
+# so a fixture that grows re-derives them instead of rotting into six magic
+# integers. `end` is `max_scroll_y` with the bar open, which is one MORE than
+# the reading view's own `_LONG_GAME_MAX_SCROLL_Y` — the row the bar took.
+_SEARCH_SCROLL_KEY_CASES = (
+    ("down", _SEARCH_SCROLL_START_Y + 1),
+    ("up", _SEARCH_SCROLL_START_Y - 1),
+    ("pagedown", _SEARCH_SCROLL_START_Y + _SEARCH_OPEN_VIEWPORT_ROWS),
+    ("pageup", _SEARCH_SCROLL_START_Y - _SEARCH_OPEN_VIEWPORT_ROWS),
+    ("home", 0),
+    ("end", _SEARCH_OPEN_MAX_SCROLL_Y),
+)
+
+# A game SHORTER than the viewport, and that is its whole purpose. All six of
+# the scroller's actions open with `if not self.allow_vertical_scroll: raise
+# SkipAction()`, and `allow_vertical_scroll` is false exactly when the content
+# fits — so in the search bar of a game like this one, every one of the six
+# bindings calls a method that raises. Textual's own action dispatcher catches
+# `SkipAction`; a message handler does not, which is why the screen's handler
+# catches it explicitly and why the test below is worth its 0.6 s.
+_SHORT_GAME_BODY = (
+    "<transcript>\n"
+    + "\n".join(f"Alice: line {i}" for i in range(4))
+    + "\n</transcript>"
+)
+
+# The four keys functional-spec §2.4 says are typed into the query rather than
+# acted on. `q` and `/` are the interesting ones: `q` is the screen's
+# (unadvertised) leave-the-game key and `/` is the key that opened this bar, so
+# both would be a collision if the focused chain resolved them the other way.
+# `n`/`N` are Slice 4's navigation keys, included now so the slice that binds
+# them inherits a witness that they still type here.
+_TYPED_NOT_ACTED_KEYS = "qnN/"
+
+
+# HOW LONG A TEST WAITS BEFORE READING THE HIGHLIGHT (spec 044, Slice 2). The
+# screen coalesces `Input.Changed` through a RESTARTING single-shot timer, so
+# the spans a test asserts on do not exist at the moment the last key is
+# pressed: read straight after `pilot.press(...)` and every assertion below
+# measures the PREVIOUS query — which fails as a flake rather than as a bug,
+# and passes on a fast machine often enough to be believed.
+#
+# Derived from the viewer's own `_SEARCH_DEBOUNCE_SECONDS` rather than written
+# as a literal, following this file's idiom for reaching a module private
+# (`importlib.import_module`, as B14's tokenizer patches do). Re-tuning the
+# debounce — the constant's own docstring invites it, within the tech spec's
+# 50-120 ms band — then re-tunes this wait with it, where a hardcoded 0.1 s
+# would quietly start reading early the day someone widened the window.
+#
+# DOUBLED, because one window is the minimum and not the margin: the window
+# opens on the LAST keystroke of a burst and the repaint itself still has to
+# run on the event loop afterwards.
+_SEARCH_SETTLE_SECONDS = (
+    importlib.import_module("graphia.ui.ledger_viewer")._SEARCH_DEBOUNCE_SECONDS * 2
+)
+
+# THE GAME B15.2 SEARCHES: `_LONG_GAME_BODY`'s shape with words in it worth
+# looking for. Deliberately the same 80 prose lines between the same two
+# `<transcript>` tags, none of them long enough to wrap at 96 columns, so every
+# geometry constant above still describes it exactly — 82 virtual rows,
+# `max_scroll_y` 60 closed and 61 open, `body.content_size.width` 96 — and "the
+# game did not move" can be asserted as an ABSOLUTE row rather than as a
+# before/after difference (spec 037's mutation finding, the same reason B15.1
+# pins the closed bar absolutely).
+#
+# WHY NOT `_LONG_GAME_BODY` ITSELF. Every one of its lines is `Alice: line N`,
+# which offers nothing to narrow: functional-spec §2.2 AC2/AC3 are about a
+# query growing by a character and the highlighting getting SMALLER, then
+# widening again on Backspace, so the fixture has to contain a word that a
+# longer query matches less often. The four lines below cycle so that a quarter
+# of the game says `vote` and another quarter says `voting` — `vot` therefore
+# matches exactly twice as often as `vote`, and the narrowing is arithmetic on
+# the line count rather than two hand-counted numbers that rot if the fixture
+# grows. The two quiet lines are not padding: a highlight that painted whole
+# LINES rather than the matched characters would light them up too.
+_SEARCH_MATCH_LINES = (
+    "Alice: I vote for Cleo.",  # one `vote`, and therefore one `vot`
+    "Bo: Cleo keeps voting late.",  # one `vot`, and deliberately NOT a `vote`
+    "Cleo: nothing to add here.",  # neither
+    "Alice: quiet line.",  # neither
+)
+_SEARCH_MATCH_BODY = (
+    "<transcript>\n"
+    + "\n".join(
+        _SEARCH_MATCH_LINES[line % len(_SEARCH_MATCH_LINES)]
+        for line in range(_LONG_GAME_PROSE_LINES)
+    )
+    + "\n</transcript>"
+)
+
+# 80 lines cycling through 4 gives 20 of each. `vote` matches once per vote
+# line; `vot` matches once per vote line AND once per voting line.
+_SEARCH_VOTE_MATCHES = _LONG_GAME_PROSE_LINES // len(_SEARCH_MATCH_LINES)
+_SEARCH_VOT_MATCHES = 2 * _SEARCH_VOTE_MATCHES
+
+# A query the fixture above contains nowhere, for functional-spec §2.8 AC2.
+# Lowercase, so smart case leaves it case-INSENSITIVE and the empty result is a
+# statement about the game rather than about the casing.
+_SEARCH_NO_MATCH_QUERY = "zzz"
+
+# WHY THE §2.3 TESTS SEARCH `_HIGHLIGHT_BODY` INSTEAD, and it is not
+# convenience: §2.3 is a claim about what a match does to a line that ALREADY
+# has a colour, so the fixture has to be the one whose every kind is pinned
+# run-by-run above. `Bo` is the query because that one name lands in SIX
+# different kinds of this fixture at once — a cast-list attribute, a Mafia
+# speaker, a Law-abiding line's content, a private thought, the moderator's
+# recap and a diary owner — so a single terminal session exercises §2.3 AC1 (a
+# Mafia line still reads as Mafia), AC2 (the kinds still tell apart) and the
+# recap's measured inversion together.
+#
+# Capitalised, so smart case makes it exact — which is what keeps the count at
+# six rather than at "six plus whatever the tokenizer happens to lowercase".
+_HIGHLIGHT_SEARCH_QUERY = "Bo"
+_HIGHLIGHT_SEARCH_MATCHES = 6
+
+# The two lines of `_HIGHLIGHT_BODY` the §2.3 tests read a character out of.
+# Named rather than sliced at a literal offset, so the assertions survive the
+# fixture growing again the way it has in every slice of spec 038.
+_HIGHLIGHT_MAFIA_LINE = "Bo: Nor did I."
+_HIGHLIGHT_RECAP_TEXT = "Alive: Alice, Bo."
+
+# ===========================================================================
+# B15.4's FIXTURES — three games, each shaped by the one thing its criterion
+# cannot be proven without.
+#
+# WHY NOT `_SEARCH_MATCH_BODY`, which B15.2 already searches and which already
+# says `vote` twenty times. Because its matches run all the way to row 77, and
+# THE LAST SCREENFUL OF A GAME CANNOT BE BROUGHT TO THE TOP LINE: with the bar
+# open `max_scroll_y` is 61, so the matches on rows 65, 69, 73 and 77 all come
+# to rest at 61 whatever the jump computes. A test written on that fixture
+# would be asserting the CLAMP while believing it was asserting the JUMP, and
+# would keep passing with the row arithmetic deleted outright. Task 3.8 says
+# this in its own words — "keep fixtures for (a)-(d) away from the tail so the
+# clamp does not mask them" — and these games are that instruction.
+#
+# The first two keep `_LONG_GAME_BODY`'s shape exactly — 80 short prose lines
+# between the two `<transcript>` tags — so B14.4's absolute geometry still
+# describes them (82 rows, a 22-row viewport, `max_scroll_y` 60 closed and 61
+# open) and, because no line is long enough to wrap at 96 columns, ROW AND LINE
+# ARE THE SAME THING. That is what lets a match be placed ON a named row and a
+# landing be read as an absolute integer rather than as a difference from
+# wherever the reviewer happened to be. The third fixture is the one where row
+# and line part company, and it exists precisely to make them part company.
+
+# The word all of them are searched for, and TWO things about it are load-
+# bearing rather than cosmetic.
+#
+# It is ABSENT from every filler line and from the `<transcript>` tags, so the
+# match count IS the number of match rows and a landing row that does not
+# contain it is a mis-jump rather than an ambiguity.
+#
+# And it is THE FIRST THING ON ITS LINE — which is the only shape in which
+# `test_enter_stops_on_a_match_that_is_already_on_the_top_row` can tell an
+# inclusive Enter from an exclusive one, and it was found the hard way: with
+# the query mid-line (`Alice: I vote for Cleo.`) BOTH resolutions give the
+# same answer and the test passes against either. `next_match` resolves from
+# `offset_for_row(top row)`, the offset of the row's FIRST character, and
+# `inclusive` decides only what happens to a match starting exactly THERE — a
+# match nine characters into the row is strictly after it and is found by
+# `bisect_left` and `bisect_right` alike. A speaker name is the realistic
+# instance of this (searching for a player finds the start of every line they
+# spoke) as well as the discriminating one, so the fixture searches for one.
+#
+# Capitalised, so smart case makes it exact — which keeps the count at exactly
+# the match rows rather than at those plus whatever else the game happens to
+# say in another casing. Casing itself is §2.7's question, and B15.2 asks it.
+_JUMP_QUERY = "Cleo"
+_JUMP_MATCH_LINE = "Cleo: I say we vote for Bo."
+
+
+def _jump_game(match_rows: tuple[int, ...]) -> str:
+    """`_LONG_GAME_BODY`'s exact shape, carrying `_JUMP_QUERY` on named ROWS.
+
+    ``match_rows`` are RENDERED ROW indices, not source-line indices, and the
+    ``+ 1`` is the ``<transcript>`` tag that occupies row 0. Rows are the unit
+    Enter scrolls in and the unit every assertion in this sub-section is
+    written in, so the fixture is addressed in the same unit — rather than
+    leaving each test to do the conversion and one of them to get it wrong.
+    """
+    lines = [
+        _JUMP_MATCH_LINE if line + 1 in match_rows else f"Alice: line {line}"
+        for line in range(_LONG_GAME_PROSE_LINES)
+    ]
+    return "<transcript>\n" + "\n".join(lines) + "\n</transcript>"
+
+
+# THE (a)-(d) GAME. Three matches, and every row is the assertion some test has
+# to survive:
+#
+#   * row 10 sits ABOVE where (a) and (b) start reading, so an implementation
+#     that jumped to the first match in the GAME rather than the first match
+#     below the reviewer lands here and fails;
+#   * row 30 is what Enter must find from BOTH starts — from row 22 because it
+#     is the next one down, and from row 30 itself because functional-spec
+#     §2.5 AC2 says a match already on the top line is where Enter STOPS;
+#   * row 45 is where an EXCLUSIVE Enter would land from row 30. That is the
+#     single distinction between Enter and Slice 4's `n` (offset-keyed and
+#     inclusive vs row-keyed and exclusive), and this row is what makes
+#     flipping the flag a red test instead of a silent behaviour change.
+#
+# All three are clear of `_SEARCH_OPEN_MAX_SCROLL_Y` (61), so every landing
+# below is the row arithmetic's answer and never the clamp's.
+_JUMP_MATCH_ROWS = (10, 30, 45)
+_JUMP_BODY = _jump_game(_JUMP_MATCH_ROWS)
+_JUMP_MATCHES = len(_JUMP_MATCH_ROWS)
+
+# Where (a) reads from before it searches: exactly one `pagedown` out of the
+# top of the game, pressed with the bar still closed so the setup owes nothing
+# to the feature under test. Below the first match and above the second, which
+# is what makes "the first match BELOW the reviewer" falsifiable at all.
+_JUMP_START_ROW = _LONG_GAME_VIEWPORT_ROWS
+
+# THE (e) GAME. One match, inside the final screenful: row 75 is past
+# `_LONG_GAME_MAX_SCROLL_Y` (60) and past `_SEARCH_OPEN_MAX_SCROLL_Y` (61), so
+# the game runs out of scroll before the match can reach the top line. That is
+# the whole of functional-spec §2.5's fourth bullet, and this is the ONLY
+# fixture in B15.4 deliberately placed in the tail.
+_JUMP_TAIL_MATCH_ROW = 75
+_JUMP_TAIL_BODY = _jump_game((_JUMP_TAIL_MATCH_ROW,))
+
+# THE (width) GAME, and the one place in B15.4 where a row is not a line.
+#
+# Every other fixture here is short-lined on purpose, which is what makes the
+# assertions readable — and which also makes the wrap width IRRELEVANT to them:
+# a map built at 96, at 98 or at 76 puts `Alice: line 29` on row 30 either way.
+# So one game has to wrap, because the width the map is built at is a LIVE
+# reading (`body.content_size.width`) and hardcoding it is the hazard the tech
+# spec ranks highest: 96 when a game overflows, 98 when it fits, and neither of
+# those at a terminal that is not 100 columns wide.
+#
+# READ AT 80 COLUMNS RATHER THAN 100, and that is what turns a hardcoded width
+# from unjustified into wrong. Here the body wraps at 76 while every line below
+# is 176-188 characters — three rows at 76, two rows at 96 — so the single
+# match sits on row 16 as the game is really rendered and on row 11 as a map
+# built at 96 would have it, and row 11 holds ordinary filler. The test asserts
+# that disagreement BEFORE it asserts the landing, so a fixture edit that made
+# the two widths agree reports itself instead of passing vacuously.
+#
+# 80 columns is also why this cannot be tested on a game that FITS, which is
+# the other half of the 96/98 split: a game that fits has `max_scroll_y == 0`
+# and Enter has nowhere to move it to, so the 98 regime is unreachable by any
+# landing assertion and is pinned by B15.6 instead, which needs no scroll.
+_JUMP_WRAP_TERMINAL_SIZE = (80, 24)
+# 80 columns - 2 for `#transcript-body`'s `padding: 0 1` - 2 for the vertical
+# scrollbar this (overflowing) game grows.
+_JUMP_WRAP_BODY_WIDTH = 76
+_JUMP_WRAP_LINE = (
+    "Alice: I keep coming back to the same three names and I would rather "
+    "say so now than sit on it, so here is the order I saw things in and "
+    "where I think the reasoning goes wrong."
+)
+_JUMP_WRAP_MATCH_LINE = (
+    "Cleo: I say we vote for Bo, and I will say why at some length so "
+    "that this line folds exactly the way every other line in this game "
+    "folds and nothing about it renders shorter than its neighbours."
+)
+_JUMP_WRAP_LINES = 20
+_JUMP_WRAP_MATCH_LINE_INDEX = 5
+_JUMP_WRAP_BODY = (
+    "<transcript>\n"
+    + "\n".join(
+        _JUMP_WRAP_MATCH_LINE if line == _JUMP_WRAP_MATCH_LINE_INDEX
+        else _JUMP_WRAP_LINE
+        for line in range(_JUMP_WRAP_LINES)
+    )
+    + "\n</transcript>"
+)
+
+# ===========================================================================
+# B15.6's FIXTURES — two games chosen to put the offset->row map in BOTH wrap
+# regimes, plus the biggest real game in the corpus.
+#
+# THE WRAP WIDTH IS NOT A CONSTANT, and that is the whole reason there are two
+# synthetic games here rather than one. At the 100-column terminal every test
+# in this section uses, `body.content_size.width` is:
+#
+#     100 - 2 (`#transcript-body`'s `padding: 0 1`)                    = 98
+#     100 - 2 (that padding) - 2 (the vertical scrollbar)              = 96
+#
+# and which of the two a game gets depends on whether it OVERFLOWS the 22-row
+# viewport, because that is what grows the scrollbar. A pin measured only on an
+# overflowing game would leave the 98 path — every short preserved game in the
+# corpus — untested, and the two widths genuinely disagree: the fold line below
+# breaks after 96 characters at one width and after 98 at the other, so a map
+# built at the wrong one puts the jump on the wrong row and stays wrong.
+_WRAP_PIN_WIDTH_OVERFLOWING = 96
+_WRAP_PIN_WIDTH_FITTING = 98
+
+# One block of game, written so that a single block exercises every branch of
+# `divide_line` that a real transcript reaches:
+#
+#   * `_WRAP_PIN_SPEECH`   — ordinary prose, wrapped at SPACES. 208 characters,
+#     which is 3 rows at either width (cuts at 94 and 187, identical at 96 and
+#     98 because the word boundaries land in the same places).
+#   * `_WRAP_PIN_FOLD`     — a short speaker tag followed by ONE UNBROKEN TOKEN
+#     wider than either wrap width, which sends `divide_line` down its `fold`
+#     branch (`chop_cells`) instead of its word-boundary branch. Also the line
+#     that makes the two widths DISTINGUISHABLE: the token is chopped at 96 at
+#     one width and at 98 at the other, so leg 2 fails if the map is built at
+#     the wrong width rather than passing by coincidence.
+#   * `_WRAP_PIN_SHORT`    — a line that fits, so "1 source line = 1 row" is in
+#     the mix too.
+#   * `""`                 — a BLANK line, which Textual's `split(allow_blank=
+#     True)` keeps as a row of its own. A mirror that dropped blanks would be
+#     off by one from here on, which is a mis-jump of exactly the silent kind.
+#
+# 3 + 3 + 1 + 1 = 8 rendered rows per block, at both widths.
+_WRAP_PIN_SPEECH = (
+    "Alice: I have been thinking about the vote all night and I keep coming "
+    "back to the same three names, so let me lay out what I saw in the order "
+    "that I saw it and you can tell me where the reasoning goes wrong."
+)
+_WRAP_PIN_FOLD_TOKEN_CELLS = 140
+_WRAP_PIN_FOLD = "Bo: " + "x" * _WRAP_PIN_FOLD_TOKEN_CELLS
+_WRAP_PIN_SHORT = "Cleo: agreed."
+_WRAP_PIN_BLOCK = (_WRAP_PIN_SPEECH, _WRAP_PIN_FOLD, _WRAP_PIN_SHORT, "")
+_WRAP_PIN_BLOCK_ROWS = 8
+
+
+def _wrapping_game(blocks: int) -> str:
+    """A game of ``blocks`` copies of :data:`_WRAP_PIN_BLOCK`, between the tags.
+
+    Deliberately NOT `_LONG_GAME_BODY`, whose every line is `Alice: line N` and
+    therefore never wraps — the constant that section relies on, and the reason
+    "row" and "line" are the same thing there, is exactly what makes it useless
+    for pinning a wrap.
+    """
+    lines: list[str] = []
+    for _ in range(blocks):
+        lines.extend(_WRAP_PIN_BLOCK)
+    return "<transcript>\n" + "\n".join(lines) + "\n</transcript>"
+
+
+# Two block counts either side of the 22-row viewport, so one game grows a
+# scrollbar and the other does not. Stated as arithmetic on the constants
+# above rather than as 18 and 26, so a fixture edit re-derives them instead of
+# rotting into two magic numbers that no longer describe the fixture. The `+ 2`
+# is the pair of `<transcript>` tags, one row each.
+_WRAP_PIN_FITTING_BLOCKS = 2
+_WRAP_PIN_OVERFLOWING_BLOCKS = 3
+_WRAP_PIN_FITTING_ROWS = _WRAP_PIN_FITTING_BLOCKS * _WRAP_PIN_BLOCK_ROWS + 2
+_WRAP_PIN_OVERFLOWING_ROWS = _WRAP_PIN_OVERFLOWING_BLOCKS * _WRAP_PIN_BLOCK_ROWS + 2
+_WRAP_PIN_FITTING_BODY = _wrapping_game(_WRAP_PIN_FITTING_BLOCKS)
+_WRAP_PIN_OVERFLOWING_BODY = _wrapping_game(_WRAP_PIN_OVERFLOWING_BLOCKS)
+
+
+def _largest_committed_transcript() -> Path | None:
+    """The biggest preserved game in the corpus, or ``None`` if there is none.
+
+    DISCOVERED, never named, for the same reason `_one_real_transcript_per_era`
+    is: the corpus grew 298 -> 420 files since spec 038 and gains a directory on
+    every measured eval run, so a hard-coded path is a test that breaks when
+    someone curates a run away. "The biggest" is deterministic (size, then path,
+    so a tie cannot reorder) and is the file that wraps the hardest — today
+    `evals/transcripts/2026-09-05T17-58-24/game-01.txt`, 88 KB of model prose in
+    405 source lines, which Textual renders as 1,182 rows at width 96.
+
+    Its row count is deliberately NOT asserted anywhere. What B15.6 pins is the
+    AGREEMENT between the mirror and the render; a golden 1,182 would pin which
+    file happened to be biggest on the day it was written.
+    """
+    if not _CORPUS_ROOT.is_dir():
+        return None
+    games = [path for path in _CORPUS_ROOT.rglob("*.txt") if path.is_file()]
+    if not games:
+        return None
+    return max(games, key=lambda path: (path.stat().st_size, str(path)))
+
+
+class _WrapPinGame(NamedTuple):
+    """One game for B15.6, with the regime it is there to put the map in.
+
+    ``rows`` is the hand-derived row count for the synthetic games, and ``None``
+    for the discovered real one — see `_largest_committed_transcript` on why a
+    golden count would be the wrong assertion there.
+    """
+
+    text: str
+    width: int
+    rows: int | None
+
+
+_WRAP_PIN_REAL_GAME = _largest_committed_transcript()
+
+# The three games, one item each. `fits` first because it is the regime the
+# obvious assertion gets wrong (see the `virtual_size` test below), `overflow`
+# second because it is the regime every long game is actually read in, and
+# `real` last because it is the only one whose text nobody here wrote — 88 KB of
+# em-dashes, quotation marks and whatever else a model produced, which is the
+# case a synthetic fixture cannot stand in for.
+_WRAP_PIN_PARAMS = [
+    pytest.param(
+        _WrapPinGame(
+            _WRAP_PIN_FITTING_BODY, _WRAP_PIN_WIDTH_FITTING, _WRAP_PIN_FITTING_ROWS
+        ),
+        id="fits",
+    ),
+    pytest.param(
+        _WrapPinGame(
+            _WRAP_PIN_OVERFLOWING_BODY,
+            _WRAP_PIN_WIDTH_OVERFLOWING,
+            _WRAP_PIN_OVERFLOWING_ROWS,
+        ),
+        id="overflow",
+    ),
+    (
+        pytest.param(
+            _WrapPinGame(
+                _WRAP_PIN_REAL_GAME.read_text(encoding="utf-8"),
+                _WRAP_PIN_WIDTH_OVERFLOWING,
+                None,
+            ),
+            id="real",
+        )
+        if _WRAP_PIN_REAL_GAME is not None
+        else pytest.param(
+            None,
+            marks=pytest.mark.skip(
+                reason=f"no committed transcripts under {_CORPUS_ROOT}"
+            ),
+            id="real",
+        )
+    ),
+]
+
+
+
+async def _type_transcript_search(pilot, query: str) -> TranscriptSearchInput:
+    """Type ``query`` into the open transcript search bar, one real keystroke each.
+
+    **Deliberately NOT ``_drive_search`` (B4), and the difference is the whole
+    point of this helper existing.** That one is for
+    :class:`LedgerTableScreen`'s runs-list filter — a different surface on a
+    different screen, which functional-spec §3 explicitly puts out of this
+    spec's scope — and it works by ASSIGNING ``Input.value``. Assignment
+    bypasses the key dispatcher entirely, and the key dispatcher is exactly
+    what spec 044's Slice 1 is a bet on: whether ``/`` reaches the screen,
+    whether ``home`` reaches the game past a focused ``Input``, whether ``q``
+    types a character instead of leaving. Driven by assignment, every test
+    below would pass against a screen with no bindings at all. So the two
+    helpers stay separate and differently named; consolidating them would
+    silently delete the coverage.
+
+    Asserts the bar holds focus before typing, because the failure mode it
+    guards is quiet: with the scroller focused instead, ``q`` would pop the
+    screen and the assertion that follows would be about a widget on a screen
+    the reviewer has already left.
+
+    Returns the input so a caller can read ``value`` back — the query as the
+    key path actually built it, never as the test asked for it.
+    """
+    search_input = pilot.app.screen.query_one(TranscriptSearchInput)
+    assert pilot.app.screen.focused is search_input, (
+        "the search bar must hold focus before typing into it; focus is on "
+        f"{type(pilot.app.screen.focused).__name__}"
+    )
+    await pilot.press(*query)
+    await pilot.pause()
+    return search_input
+
+
+async def _settle_search(pilot) -> None:
+    """Let the search debounce expire, so the highlight is the one just typed.
+
+    Every B15.2 read goes through this first. The screen does not repaint on
+    the keystroke — it restarts a single-shot timer and repaints once the
+    typing stops (tech-spec §2.8: the worst measured query costs 336 ms per
+    keystroke on the 88 KB game without the coalescing) — so a test that
+    asserted straight after ``pilot.press(...)`` would be measuring the query
+    the reviewer typed one character ago. Which passes, on a fast enough
+    machine, often enough to be trusted.
+
+    Two waits, and they do different jobs: the first is the debounce window
+    itself (:data:`_SEARCH_SETTLE_SECONDS`, derived from the viewer's own
+    constant), the second lets the repaint the expiring timer posts actually
+    run on the event loop before anything reads the widget.
+
+    Kept separate from :func:`_type_transcript_search` rather than folded into
+    it, because the two are not always paired: Backspace is pressed with
+    ``pilot.press`` directly and still has to settle, and B15.1's tests type
+    without ever reading a highlight and should not pay the wait.
+    """
+    await pilot.pause(_SEARCH_SETTLE_SECONDS)
+    await pilot.pause()
+
+
+async def _settle_scroll(pilot) -> None:
+    """Let a scroll ANIMATION land before an absolute row is read.
+
+    **Every one of the six scroll keys animates**, which is easy to assume is
+    true only of `home`/`end` and is not: each of the scroller's actions calls
+    its ``scroll_*`` method at Textual's default ``animate=True``.
+    ``scroll_home``/``scroll_end`` pin ``duration = 1.0`` whatever the distance;
+    the other four fall through to ``speed=50`` rows a second, so a page key
+    travels its 21 rows over 0.42 s and a line key its single row over 0.02 s.
+    The row a test wants to assert on therefore does not exist at the moment the
+    key is released — the scroller is somewhere between where it was and where
+    it is going — and that is Textual behaving correctly, not a bug to fix in
+    the bindings: the reviewer sees a smooth scroll and should.
+
+    That the assertions pass at all today is an accident of two Textual
+    internals lining up. ``App._press_keys`` awaits
+    ``animator.wait_until_complete()`` after every key, and ``pilot.pause()``
+    will sit inside ``wait_for_idle`` for up to a second while the process looks
+    busy. But the animation is not registered with the animator by the keypress:
+    ``scroll_to`` defers ``_scroll_to`` through ``call_after_refresh``, and that
+    callback waits on the SCREEN — ``Screen._on_idle`` runs deferred callbacks
+    inline only when nothing needs a repaint, and otherwise hands them to the
+    screen update timer. Lose that race, which concurrent load is enough to do,
+    and ``wait_until_complete`` samples an animator holding nothing, the pause
+    finds an idle process and returns in ~20 ms, and the assertion reads a row
+    the scroll has not reached yet. `home` fails first because a full second of
+    travel out of the middle of the game is the widest gap there is between
+    where the scroller is and where the test says it should be.
+
+    So: ``pause()`` first — its trailing ``screen._on_timer_update()`` is what
+    gets the deferred callback moving — and then
+    ``pilot.wait_for_scheduled_animations()``, whose own ``_wait_for_screen``
+    drives the screen through a dispatch (flushing that callback, which starts
+    the animation and clears the animator's completion event) before it blocks
+    on that event. **Event, not clock:** nothing here sleeps for a guessed
+    duration, so a key whose animation is already over costs only the pause it
+    was paying anyway, and a slower machine waits longer by itself.
+
+    Applied to all six keys rather than to `home`/`end` alone, because all six
+    animate; settling only the two slowest would be aimed at which one happened
+    to be caught rather than at what is actually racing.
+    """
+    await pilot.pause()
+    await pilot.wait_for_scheduled_animations()
+
+
+def _search_runs(content: Content) -> list[tuple[int, int, str]]:
+    """The SEARCH's spans alone — the tail `_rendered_runs` grows while one is live.
+
+    Functional-spec §2.3 asks that a highlight sit "on top of, not instead of"
+    the game's own colours, and the implementation makes that true by
+    CONSTRUCTION: ``TranscriptBody.highlight`` copies the base ``Text`` — which
+    already carries spec 038's kind spans — and ``Text.stylize`` APPENDS, so a
+    highlighted body's spans are always the tokenizer's runs followed by one
+    span per match, in that order.
+
+    Which is why this helper can exist at all, and why it asserts rather than
+    merely slicing: the split point is only meaningful if the leading slice
+    really is the tokenizer's runs untouched, so every caller gets that
+    ordering checked for free and a caller reading "the matches" can never be
+    handed a kind run that drifted into the tail. The dedicated ordering test
+    below states the same property in full and by hand, so the two are not
+    circular — this one spreads the guarantee across the section.
+
+    Returns ``(start, end, text)`` triples like :func:`_rendered_runs`, so a
+    caller can assert on the matched text and on where it sits in one read.
+    """
+    base = _tokenizer_styled_runs(content.plain)
+    runs = _rendered_runs(content)
+    assert runs[: len(base)] == base, (
+        "the rendered runs must OPEN with the tokenizer's runs, unchanged and "
+        "at their exact offsets — functional-spec §2.3's 'on top of, not "
+        "instead of' is exactly that ordering; a match span that landed among "
+        "them, or a kind span the highlight replaced, shows up here"
+    )
+    return runs[len(base) :]
+
+
+# ---------------------------------------------------------------------------
+# B15.1 The bar opens and closes; the reading view underneath is untouched
+# ---------------------------------------------------------------------------
+
+
+def test_the_footer_advertises_search_beside_back() -> None:
+    """Every key this feature DECLARES for the Footer (§2.1 AC1, §2.6's new AC).
+
+    Terminal-free and about the DECLARATION: which bindings ask to be shown, and
+    under what description. B15.8's `test_the_footer_names_the_stepping_keys`
+    asks the other question — what the Footer actually renders — and the two are
+    not the same question, which is the whole of why Slice 6 exists. This one
+    costs none of the ~0.6 s a ``run_test()`` item costs, so it stays.
+
+    Stated as the COMPLETE shown set rather than as "slash is in it", and the
+    completeness now carries three things at once:
+
+    - §2.1 AC1 — "Search" is declared beside the existing "Back";
+    - §2.6's amended AC — `n` and `N` are declared too, each with a description
+      rather than the blank Slice 4 left. **The description is the load-bearing
+      half**: ``Binding.make_bindings`` normalises through
+      ``show=bool(description and show)``, so a binding with an empty
+      description is forced hidden no matter what ``show`` says — which is
+      exactly how Slice 4 produced two keys the reviewer could not find;
+    - and that Slice 6's `enter` did NOT ask for a cell. ``Footer.compose``
+      groups by action and renders only the first binding of each group, so a
+      shown `enter`/`next_match` entry would either be dropped as a duplicate of
+      `n` or — declared above it — REPLACE `n`'s cell and silently undo the
+      criterion above. Its absence here is the assertion that it cannot.
+
+    **This test previously said the opposite**, and the sentence is kept as
+    history rather than deleted: "`q` stays hidden as it always has been, and
+    Slice 4's `n`/`N` must join it there — if a later slice advertises them,
+    this fails rather than quietly widening a Footer that §2.10 asks to stay
+    recognisable." A later slice did advertise them, on the author's direction,
+    because the status line that was supposed to announce them instead was never
+    built. The guard did its job: it failed, and this is the deliberate answer.
+    `q` is still hidden.
+    """
+    shown = {
+        binding.key: binding.description
+        for binding in TranscriptScreen.BINDINGS
+        if binding.show
+    }
+    assert shown == {
+        "escape": "Back",
+        "backspace": "Back",
+        "slash": "Search",
+        "n": "Next match",
+        "N": "Prev match",
+    }
+
+
+async def test_the_closed_search_row_costs_the_reading_view_nothing(
+    tmp_path: Path,
+) -> None:
+    """A reviewer who never presses `/` gets the same rows of game as before.
+
+    Functional-spec §2.10 AC1/AC2. The bar is mounted in ``compose`` on every
+    game, so "it costs nothing" is a claim about a widget that really is in the
+    tree, and two assertions carry it that are NOT interchangeable: ``(0, 0)``
+    says the bar is not on screen, while the SCROLLER's 22 rows say it is not
+    costing the reviewer a line of game. Only the second one separates
+    `display: none` from `visibility: hidden` — mutation-tested, swapping the
+    rule keeps `#search-row` at ``(0, 0)`` (an invisible widget has no region
+    at all) and takes a row off the scroller, so the bar's own size is blind to
+    exactly the regression §2.10 AC2 is about.
+
+    The reading view's geometry is re-pinned here rather than left to
+    `test_scrolling_a_long_game_behaves_as_before`, because the two failures
+    mean different things: that test would fail if the bar stole a row, this
+    one says WHICH widget did it. Both use the same symbolic constants, so a
+    fixture change moves them together.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _LONG_GAME_BODY, name="s44-closed.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        search_row = screen.query_one("#search-row", Horizontal)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", Static)
+
+        # The bar is there, and it occupies nothing.
+        assert tuple(search_row.size) == _SEARCH_ROW_CLOSED_SIZE
+        assert "-open" not in search_row.classes
+
+        # ...so the game keeps every row and every column it had.
+        assert screen.focused is scroller
+        assert scroller.size.height == _LONG_GAME_VIEWPORT_ROWS
+        assert scroller.virtual_size.height == _LONG_GAME_LINES
+        assert scroller.max_scroll_y == _LONG_GAME_MAX_SCROLL_Y
+        assert body.content_size.width == _LONG_GAME_BODY_WIDTH
+
+
+async def test_slash_opens_the_bar_focuses_it_and_leaves_the_game_where_it_was(
+    tmp_path: Path,
+) -> None:
+    """One keypress opens the search, and the text does not move (§2.1 AC2/AC3/AC4).
+
+    The reviewer is scrolled into the MIDDLE of the game first, because that is
+    where §2.1 AC3's promise is falsifiable: opening a bar that re-laid out the
+    scroller, or that focused a widget by re-running ``AUTO_FOCUS``, would jump
+    the view to the top and pass any assertion written from row 0.
+
+    ``body.content_size.width`` is the §2.1 AC4 assertion in disguise — "the
+    lines they could read before are still readable". A bar that took columns
+    rather than a row would re-fold every line of the game, so equality here is
+    the statement that the passage the reviewer was mid-way through is still
+    the same passage, laid out the same way.
+
+    The one row the bar does cost comes out of the scroller's height, and
+    `max_scroll_y` grows by exactly that row: the game did not get longer, the
+    window onto it got shorter.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _LONG_GAME_BODY, name="s44-open.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        search_row = screen.query_one("#search-row", Horizontal)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", Static)
+
+        # Read into the middle of the game with the ordinary reading keys, so
+        # the setup owes nothing to the feature under test.
+        await pilot.press(
+            "pagedown",
+            *["down"] * (_SEARCH_SCROLL_START_Y - _LONG_GAME_VIEWPORT_ROWS),
+        )
+        await _settle_scroll(pilot)
+        assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+        assert body.content_size.width == _LONG_GAME_BODY_WIDTH
+
+        await pilot.press("slash")
+        await pilot.pause()
+
+        # The bar is open, one row tall, and holds the cursor.
+        assert "-open" in search_row.classes
+        assert tuple(search_row.size) == _SEARCH_ROW_OPEN_SIZE
+        assert screen.focused is screen.query_one(TranscriptSearchInput)
+
+        # The game did not move, and it did not rewrap.
+        assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+        assert body.content_size.width == _LONG_GAME_BODY_WIDTH
+
+        # The row came out of the viewport, not out of the scroll position.
+        assert scroller.size.height == _SEARCH_OPEN_VIEWPORT_ROWS
+        assert scroller.max_scroll_y == _SEARCH_OPEN_MAX_SCROLL_Y
+
+
+async def test_the_bars_own_keys_type_into_it_instead_of_leaving_the_game(
+    tmp_path: Path,
+) -> None:
+    """`q`, `n`, `N` and `/` become characters; `backspace` deletes one (§2.4).
+
+    Every one of these is a COLLISION the screen would lose if the focused
+    chain resolved the other way, and two of them would lose it destructively:
+    `q` and `backspace` are both bound on :class:`TranscriptScreen` to back out
+    of the game, so a mid-search press of either would throw the reviewer out
+    of the transcript and take the query with it. `/` is the key that opened
+    this bar, and `n`/`N` are Slice 4's.
+
+    The absolute stack depth is asserted, not just the screen type: a screen
+    that was popped and re-pushed would still be a ``TranscriptScreen``.
+
+    This is §2.4 WORKING, not a bug to be fixed later — the tech spec's §2.4
+    key table lists exactly this outcome for all five keys, and the screen's
+    ``action_close`` docstring records that with the bar open only `escape`
+    ever reaches it.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _LONG_GAME_BODY, name="s44-typed.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        await _open_the_only_game(pilot)
+        await pilot.press("slash")
+        await pilot.pause()
+
+        search_input = await _type_transcript_search(pilot, _TYPED_NOT_ACTED_KEYS)
+
+        assert search_input.value == _TYPED_NOT_ACTED_KEYS
+        assert isinstance(app.screen, TranscriptScreen)
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+
+        # ...and backspace edits the query rather than backing out of the game.
+        await pilot.press("backspace")
+        await pilot.pause()
+        assert search_input.value == _TYPED_NOT_ACTED_KEYS[:-1]
+        assert isinstance(app.screen, TranscriptScreen)
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+
+
+async def test_escape_with_no_search_leaves_the_game_in_one_press(
+    tmp_path: Path,
+) -> None:
+    """The change costs a reviewer who never searches no extra keypress (§2.9 AC3).
+
+    The regression this guards is specific and would be easy to ship: the Esc
+    machine now has three states, and an ``action_close`` that cleared
+    something unconditionally before popping — or that branched on the bar
+    rather than on the search — would turn the first Esc into a no-op and make
+    leaving a game take two presses for everyone.
+
+    Deliberately pressed from a SCROLLED position with the scroll container
+    focused, which is where a reviewer actually is when they finish reading.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _LONG_GAME_BODY, name="s44-one-esc.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        await pilot.press("pagedown")
+        await _settle_scroll(pilot)
+        assert scroller.scroll_offset.y == _LONG_GAME_VIEWPORT_ROWS
+        assert screen.focused is scroller
+
+        await pilot.press("escape")
+        await pilot.pause()
+
+        assert isinstance(app.screen, DetailScreen)
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+
+
+async def test_escape_closes_the_search_first_and_leaves_the_game_next(
+    tmp_path: Path,
+) -> None:
+    """"The first Esc closes a search; the next one leaves the game" (§2.9).
+
+    The two-press sequence is the test, and asserting only the second press
+    would miss the bug entirely: a screen that popped on the FIRST Esc would
+    also end up on the :class:`DetailScreen`, just one keypress too early and
+    with the reviewer's place in the game gone.
+
+    `scroll_offset.y` is pinned across the close because §2.4 invited the
+    reviewer to scroll while searching — so the place they abandon a search
+    from is usually not the place they opened it from, and Esc abandons the
+    search, not their reading position. Measured from the MIDDLE of the game
+    rather than its last row, where Textual's own clamp legitimately moves the
+    view by one as the closing bar hands its row back to the viewport.
+
+    Focus returning to the scroller is what makes the game answer arrow keys
+    again; without it they would go to a hidden box.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _LONG_GAME_BODY, name="s44-two-esc.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        search_row = screen.query_one("#search-row", Horizontal)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        await pilot.press(
+            "pagedown",
+            *["down"] * (_SEARCH_SCROLL_START_Y - _LONG_GAME_VIEWPORT_ROWS),
+        )
+        await _settle_scroll(pilot)
+        await pilot.press("slash")
+        await pilot.pause()
+        search_input = await _type_transcript_search(pilot, "vote")
+
+        # The premise, stated rather than assumed: there really is an open bar
+        # for the first Esc to close. Without this the whole test would still
+        # pass against a bar that never opened — the closed-bar assertions
+        # below would all be trivially true.
+        assert "-open" in search_row.classes
+        assert tuple(search_row.size) == _SEARCH_ROW_OPEN_SIZE
+        assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+
+        # First Esc: the search goes, the game stays.
+        await pilot.press("escape")
+        await pilot.pause()
+
+        assert isinstance(app.screen, TranscriptScreen)
+        assert app.screen is screen
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+        assert "-open" not in search_row.classes
+        assert tuple(search_row.size) == _SEARCH_ROW_CLOSED_SIZE
+        assert search_input.value == ""
+        assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+        assert screen.focused is scroller
+        assert scroller.size.height == _LONG_GAME_VIEWPORT_ROWS
+        assert scroller.max_scroll_y == _LONG_GAME_MAX_SCROLL_Y
+
+        # Second Esc: now they leave.
+        await pilot.press("escape")
+        await pilot.pause()
+
+        assert isinstance(app.screen, DetailScreen)
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+
+
+# ---------------------------------------------------------------------------
+# B15.2 The matches light up as the reviewer types
+# ---------------------------------------------------------------------------
+
+
+async def test_typing_narrows_the_highlight_and_backspace_widens_it(
+    tmp_path: Path,
+) -> None:
+    """`vot` → `vote` → Backspace, with the game never moving (§2.2 AC1-AC4).
+
+    The three-step sequence is the test. Asserting a single query would prove
+    only that something lights up; functional-spec §2.2 AC2/AC3 are about the
+    highlighting FOLLOWING the query in both directions, and the two failure
+    modes it guards are opposite and both silent. A repaint that stylized the
+    base ``Text`` instead of a copy would ACCUMULATE spans — `vote`'s 20
+    matches landing on top of `vot`'s 40 rather than replacing them, so the
+    narrowing step would still show 40 lit and nothing would ever stop being
+    highlighted. A repaint that never re-ran would show 40 throughout and pass
+    any test that only ever typed once.
+
+    The counts are arithmetic on the fixture (40 = 2 x 20 = half its 80 lines),
+    so they re-derive rather than rot if it grows, and the widening step is the
+    same number as the first — Backspace must land exactly back where `vot`
+    was, not merely somewhere wider.
+
+    `scroll_offset.y` is re-asserted after every step, from the MIDDLE of the
+    game, which is where §2.2 AC4 is falsifiable: there are matches above and
+    below the viewport at all three steps, so an implementation that scrolled
+    to "show" the first match would move here and could not move in a test
+    written from row 0. The row is absolute (`_SEARCH_SCROLL_START_Y`), not
+    "the same as before", so a repaint that reset the view to the top and a
+    fixture that never scrolled cannot both pass.
+    """
+    ledger, _ = _ledger_with_body(
+        tmp_path, _SEARCH_MATCH_BODY, name="s44-narrow.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", Static)
+        search_count = screen.query_one("#search-count", Static)
+
+        def assert_lit(query: str, matches: int) -> None:
+            """Exactly ``matches`` spans, each covering ``query``, and nothing moved.
+
+            Reading the matched text back out of the rendered content (rather
+            than counting spans) is what makes this an OFFSET assertion:
+            `_search_runs` slices `content.plain` at each span's own
+            boundaries, so a span one character wide of its match returns a
+            different string and fails here.
+            """
+            content = _transcript_body_content(screen)
+            assert [text for _, _, text in _search_runs(content)] == [
+                query
+            ] * matches
+            assert plain_text(search_count) == f"{matches} matches"
+            assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+            assert scroller.max_scroll_y == _SEARCH_OPEN_MAX_SCROLL_Y
+            assert body.content_size.width == _LONG_GAME_BODY_WIDTH
+
+        # Read into the middle of the game with the ordinary reading keys, so
+        # the setup owes nothing to the feature under test.
+        await pilot.press(
+            "pagedown",
+            *["down"] * (_SEARCH_SCROLL_START_Y - _LONG_GAME_VIEWPORT_ROWS),
+        )
+        await _settle_scroll(pilot)
+        await pilot.press("slash")
+        await pilot.pause()
+        assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+
+        # `vot` — every `vote` and every `voting` in the game.
+        await _type_transcript_search(pilot, "vot")
+        await _settle_search(pilot)
+        assert_lit("vot", _SEARCH_VOT_MATCHES)
+
+        # ...one more character, and the `voting` half goes dark.
+        await _type_transcript_search(pilot, "e")
+        await _settle_search(pilot)
+        assert_lit("vote", _SEARCH_VOTE_MATCHES)
+
+        # ...and Backspace brings it back, to exactly where it was.
+        await pilot.press("backspace")
+        await pilot.pause()
+        await _settle_search(pilot)
+        assert_lit("vot", _SEARCH_VOT_MATCHES)
+
+
+async def test_the_match_spans_are_a_tail_on_the_tokenizers_own_runs(
+    tmp_path: Path,
+) -> None:
+    """The rendered runs open with spec 038's and end with the search's (§2.3).
+
+    **This is the checkable form of "on top of, not instead of"**, and the
+    tech spec's §4 says so: the ordering is what makes the claim assertable at
+    all, rather than a per-kind case analysis nobody could keep current as
+    kinds keep arriving (there are twenty-four). Stated here in full and by
+    hand — the leading slice against the pure tokenizer's runs, the tail
+    against the matches — while `_search_runs` re-checks the leading half at
+    every other read in this section. The two are not circular: this test is
+    where the property is stated, that helper is where it is enforced.
+
+    Three separate things are asserted and each fails differently:
+
+    - the leading slice IS the tokenizer's runs, so no kind span was replaced,
+      shifted or dropped to make room for a highlight;
+    - the tail is exactly one span per match, in document order and
+      non-overlapping, so the highlight is neither merged nor coalesced (which
+      would destroy this assertion and, from Slice 4, the current-match step);
+    - `content.plain` is unchanged, so painting a match added no character to
+      the preserved game — the same guarantee B14.3 makes of the resting view,
+      re-made while a search is live.
+
+    `_HIGHLIGHT_BODY` is the fixture because its every run is already pinned
+    above, and `Bo` the query because it lands in six different kinds of it at
+    once.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="s44-tail.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+
+        # The reading view as spec 038 leaves it, before a search exists.
+        resting = _transcript_body_content(screen)
+        kind_runs = _tokenizer_styled_runs(resting.plain)
+        assert _rendered_runs(resting) == kind_runs
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _HIGHLIGHT_SEARCH_QUERY)
+        await _settle_search(pilot)
+
+        content = _transcript_body_content(screen)
+        runs = _rendered_runs(content)
+
+        # Not one character of the game changed...
+        assert content.plain == resting.plain
+        # ...spec 038's runs are all still there, first and untouched...
+        assert runs[: len(kind_runs)] == kind_runs
+        # ...and the search's are appended after them, one per match.
+        matches = runs[len(kind_runs) :]
+        assert len(runs) == len(kind_runs) + _HIGHLIGHT_SEARCH_MATCHES
+        assert [text for _, _, text in matches] == [
+            _HIGHLIGHT_SEARCH_QUERY
+        ] * _HIGHLIGHT_SEARCH_MATCHES
+
+        # In document order and never overlapping — `find_matches`' contract,
+        # arriving intact at the widget.
+        starts = [start for start, _, _ in matches]
+        ends = [end for _, end, _ in matches]
+        assert starts == sorted(starts)
+        assert all(end <= start for end, start in zip(ends, starts[1:]))
+
+
+async def test_a_match_takes_a_background_and_leaves_its_lines_style_alone(
+    tmp_path: Path,
+) -> None:
+    """A highlighted Mafia line still reads as a Mafia line (§2.3 AC1/AC2).
+
+    The span-level ordering test above says the kind runs SURVIVE; this one
+    says what survives them is what a reviewer actually sees, by combining the
+    spans at a single character the way the renderer does
+    (`Content.get_style_at_offset` folds every span covering an offset in
+    order) and comparing two characters of the SAME run — the `Bo` of
+    `Bo: Nor did I.`, which the search matched, and the `:` beside it, which it
+    did not.
+
+    Deliberately a within-one-state comparison rather than a before/after one
+    (spec 037's mutation finding: "X equals Y across two states" holds happily
+    with both sides broken), and the foreground is asserted to be SET as well
+    as equal, so a highlight that stripped the Mafia colour from the whole line
+    cannot pass by making both characters colourless. No RGB value is pinned —
+    B14's convention, and the palette is theme-dependent.
+
+    The six-way sweep is functional-spec §2.3 AC2 ("the reviewer can still tell
+    the three apart") stated as strongly as this fixture allows: all six
+    matches share ONE background, and all six still render as six DIFFERENT
+    combinations of colour, weight, slant and inversion — the cast-list
+    attribute is still bold, the thought still italic, the Law-abiding line
+    still blue, the recap still inverted. A highlight that replaced its line's
+    style rather than sitting on top of it would collapse those six into one.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="s44-ontop.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _HIGHLIGHT_SEARCH_QUERY)
+        await _settle_search(pilot)
+
+        content = _transcript_body_content(screen)
+        speaker = content.plain.index(_HIGHLIGHT_MAFIA_LINE)
+        matched = content.get_style_at_offset(speaker)
+        beside = content.get_style_at_offset(speaker + len(_HIGHLIGHT_SEARCH_QUERY))
+
+        # The `:` one character along is the same speaker run, unmatched: the
+        # side colour is there, and the ground is the body's own.
+        assert beside.foreground is not None
+        assert beside.background is None
+
+        # The matched `Bo` keeps that colour exactly, and gains a ground.
+        assert matched.foreground == beside.foreground
+        assert (matched.bold, matched.italic, matched.reverse) == (
+            beside.bold,
+            beside.italic,
+            beside.reverse,
+        )
+        assert matched.background is not None
+
+        # ...and across all six kinds the name lands in: one shared highlight,
+        # six still-distinguishable renderings.
+        lit = [
+            content.get_style_at_offset(start)
+            for start, _, _ in _search_runs(content)
+        ]
+        assert len(lit) == _HIGHLIGHT_SEARCH_MATCHES
+        assert len({style.background for style in lit}) == 1
+        assert (
+            len(
+                {
+                    (style.foreground, style.bold, style.italic, style.reverse)
+                    for style in lit
+                }
+            )
+            == _HIGHLIGHT_SEARCH_MATCHES
+        )
+
+
+async def test_a_match_inside_a_moderator_recap_inverts_and_only_there(
+    tmp_path: Path,
+) -> None:
+    """The one kind where the highlight comes out inside-out, and it is expected.
+
+    **A measured consequence of §2.3, written down as a test rather than
+    discovered as a bug report.** `recap` is the only kind spec 038 paints with
+    `reverse`, and `reverse` is what the terminal uses to SWAP a cell's
+    foreground and background. So a match inside the moderator's status line
+    arrives with the same amber ground every other match gets and the terminal
+    then turns it inside out: the text goes amber on a light ground rather than
+    the ground going amber. Measured at ~9.2:1 — clearly legible and clearly
+    marked, just inverted relative to everywhere else.
+
+    What is asserted is that the inversion belongs to the RECAP and not to the
+    search: the unmatched characters of the same recap run already carry
+    `reverse`, the match adds only the background, and that background is the
+    very same one a Mafia line's match gets. And the sweep across all six
+    matches says it happens in exactly one of them — "the only kind where this
+    happens" is the claim, so a future kind that quietly took `reverse` (the
+    flag ledger records it as spent, so it should not) fails here.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="s44-recap.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _HIGHLIGHT_SEARCH_QUERY)
+        await _settle_search(pilot)
+
+        content = _transcript_body_content(screen)
+        recap = content.plain.index(_HIGHLIGHT_RECAP_TEXT)
+        matched = content.get_style_at_offset(
+            recap + _HIGHLIGHT_RECAP_TEXT.index(_HIGHLIGHT_SEARCH_QUERY)
+        )
+        beside = content.get_style_at_offset(recap)
+        in_mafia_line = content.get_style_at_offset(
+            content.plain.index(_HIGHLIGHT_MAFIA_LINE)
+        )
+
+        # The flag is the recap's, not the search's: it is already on the
+        # characters the search did not match.
+        assert beside.reverse is True
+        assert beside.background is None
+        assert matched.reverse is True
+
+        # The match itself is marked identically to every other match — the
+        # swap is the terminal's doing, downstream of anything this code says.
+        # Asserted as a colour that EXISTS as well as one that is shared: two
+        # matches with no background at all would be "identical" too, and that
+        # is precisely what a highlight resolved through `_kind_styles` (which
+        # strips backgrounds by design) would leave behind.
+        assert matched.background is not None
+        assert matched.background == in_mafia_line.background
+
+        # ...and it is the only kind it happens to.
+        lit = [
+            content.get_style_at_offset(start)
+            for start, _, _ in _search_runs(content)
+        ]
+        assert [bool(style.reverse) for style in lit].count(True) == 1
+
+
+async def test_the_highlight_background_differs_from_the_body_background(
+    tmp_path: Path,
+) -> None:
+    """A match is actually visible — the one colour assertion worth making.
+
+    The tech spec's §4 rules out exact RGB values, theme sweeps and snapshots
+    (a background-only span makes no per-theme contrast claim, and this file
+    has asserted span STRUCTURE since B14 for reasons that have not changed),
+    and then names this single exception: whatever the theme resolves the rule
+    to, the highlight's ground must differ from the ground it sits on, or there
+    is nothing to see.
+
+    It guards a failure mode with no traceback and no visible symptom in any
+    structural test: `Text.stylize` opens with `if style:`, and a Rich style
+    with nothing set is falsy — so a highlight that resolved to no background
+    at all would append NO span, silently, and the reviewer would type into a
+    box that answers with a match count over a game where nothing lights up.
+    The `#search-count` readout would still be right, which is what makes it
+    worth an assertion of its own.
+
+    Both halves are stated, because only the pair says "differs": the
+    unmatched character carries no background at all — spec 038 strips it from
+    every kind style, which is what leaves this axis free — so the ground it
+    shows is the body's own, and the matched character's is a colour that is
+    neither absent nor that.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _HIGHLIGHT_BODY, name="s44-visible.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        body = screen.query_one("#transcript-body", Static)
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _HIGHLIGHT_SEARCH_QUERY)
+        await _settle_search(pilot)
+
+        content = _transcript_body_content(screen)
+        speaker = content.plain.index(_HIGHLIGHT_MAFIA_LINE)
+        matched = content.get_style_at_offset(speaker)
+        beside = content.get_style_at_offset(speaker + len(_HIGHLIGHT_SEARCH_QUERY))
+
+        # What the body paints behind every character that is not a match.
+        ground = body.background_colors[1]
+
+        assert beside.background is None
+        assert matched.background is not None
+        assert matched.background != ground
+
+
+async def test_a_query_that_matches_nothing_says_so_and_moves_nothing(
+    tmp_path: Path,
+) -> None:
+    """The no-match state: nothing lit, nothing moved, and it says so (§2.8 AC2).
+
+    Three claims in one criterion, and the interesting one is the middle:
+    "nothing is highlighted" is asserted as the rendered runs being EXACTLY the
+    tokenizer's — equality, not "no extra spans for this query" — so a stale
+    highlight left over from a previous query would fail here too. It is the
+    same strict-equality shape the two span tests in B14.2/B14.3 use to catch a
+    leaked search span in a freshly opened game, made while a search is
+    deliberately live.
+
+    The count is asserted by its literal copy rather than by importing
+    `_NO_MATCHES_MESSAGE`, following this file's convention for user-visible
+    strings (see `_EMPTY_LEDGER_MESSAGE`): what is pinned is what the reviewer
+    reads, not the name the module gives it.
+
+    Read from the middle of the game, because "the game has not moved" is only
+    falsifiable somewhere it could have moved from.
+    """
+    ledger, _ = _ledger_with_body(
+        tmp_path, _SEARCH_MATCH_BODY, name="s44-nomatch.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", Static)
+        search_count = screen.query_one("#search-count", Static)
+        resting = _transcript_body_content(screen).plain
+
+        await pilot.press(
+            "pagedown",
+            *["down"] * (_SEARCH_SCROLL_START_Y - _LONG_GAME_VIEWPORT_ROWS),
+        )
+        await _settle_scroll(pilot)
+        await pilot.press("slash")
+        await pilot.pause()
+        search_input = await _type_transcript_search(
+            pilot, _SEARCH_NO_MATCH_QUERY
+        )
+        await _settle_search(pilot)
+
+        content = _transcript_body_content(screen)
+
+        # The reviewer really did ask something...
+        assert search_input.value == _SEARCH_NO_MATCH_QUERY
+        # ...the strip says plainly that it found nothing...
+        assert plain_text(search_count) == "No matches"
+        # ...nothing at all is lit, not even the previous query's matches...
+        assert _rendered_runs(content) == _tokenizer_styled_runs(content.plain)
+        assert _search_runs(content) == []
+        # ...and the game is exactly where, and what, it was.
+        assert content.plain == resting
+        assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+        assert scroller.max_scroll_y == _SEARCH_OPEN_MAX_SCROLL_Y
+        assert body.content_size.width == _LONG_GAME_BODY_WIDTH
+
+
+async def test_the_game_is_tokenized_once_per_opening_not_once_per_keystroke(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The base `Text` is built at `compose` and reused — a structural guard.
+
+    Tech-spec §4 rules out wall-clock assertions and asks for the structural
+    guards instead; this is the one that pins the shape the whole debounce
+    rests on. `TranscriptScreen._styled_body` re-reads the file and re-runs the
+    pure tokenizer — ~2.8 ms on the 88 KB committed game, nothing at all once
+    and an absurdity per character typed — so `TranscriptBody` is handed that
+    base ONCE and copies it per update.
+
+    A regression here has no visible symptom and no failing assertion anywhere
+    else: the highlighting would be correct, the spans would be correct, and
+    the viewer would simply get slower with every keystroke on exactly the
+    biggest games a reviewer most wants to search. Counting the call is a
+    statement with a stable failure mode, where timing it would be a flake.
+
+    Patched at the UI module's own call site, the idiom B14 already uses for
+    the tokenizer. `_tokenizer_styled_runs` calls the name this test module
+    imported from `graphia.eval_ledger` instead, so the assertions below do not
+    count themselves.
+    """
+    module = importlib.import_module("graphia.ui.ledger_viewer")
+    tokenize = module.tokenize_transcript
+    calls: list[str] = []
+
+    def _counting_tokenize(text: str) -> list[tuple[str, str]]:
+        calls.append(text)
+        return tokenize(text)
+
+    monkeypatch.setattr(module, "tokenize_transcript", _counting_tokenize)
+
+    ledger, _ = _ledger_with_body(
+        tmp_path, _SEARCH_MATCH_BODY, name="s44-tokenize-once.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+
+        # Once, at `compose`, for the game that was opened.
+        assert len(calls) == 1
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, "vote")
+        await _settle_search(pilot)
+        await pilot.press("backspace")
+        await pilot.pause()
+        await _settle_search(pilot)
+
+        # Five keystrokes and two repaints later: still once.
+        assert len(calls) == 1
+        # ...and the search really did repaint, so the count above is not the
+        # count of a feature that quietly did nothing.
+        assert len(_search_runs(_transcript_body_content(screen))) == (
+            _SEARCH_VOT_MATCHES
+        )
+
+
+# ---------------------------------------------------------------------------
+# B15.3 The game still scrolls while the reviewer is typing
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(("key", "expected_y"), _SEARCH_SCROLL_KEY_CASES)
+async def test_each_scroll_key_moves_the_game_and_leaves_the_query_alone(
+    tmp_path: Path, key: str, expected_y: int
+) -> None:
+    """All six scroll keys reach the game past the focused search bar (§2.4).
+
+    Swept one key per item rather than pressed in sequence, so a failure names
+    the key. The distinction matters because the six are dead for two DIFFERENT
+    reasons without :class:`TranscriptSearchInput`'s bindings: ``home`` and
+    ``end`` are claimed by ``Input.BINDINGS`` and would be swallowed by the
+    focused box, while ``up``/``down``/``pageup``/``pagedown`` are not bound by
+    ``Input`` at all but have nothing up the ancestor chain to catch them,
+    because the bar is the scroller's SIBLING rather than its child. A test
+    that pressed all six together would pass on four and be silent about which.
+
+    The landing row is absolute, not "moved by something": the page keys move
+    by 21 rows and not 22, which is the open bar's row showing up in the
+    arithmetic, and `end` lands on the open ``max_scroll_y`` — one row further
+    than the reading view can reach.
+
+    ``value`` unchanged is the other half of §2.4, and it is not a formality:
+    each of these keys arrives at a focused text box, and an implementation
+    that handled the scroll without stopping the key would also insert a
+    character or move the cursor.
+    """
+    ledger, _ = _ledger_with_body(
+        tmp_path, _LONG_GAME_BODY, name=f"s44-scroll-{key}.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        # Read into the middle of the game, then open the bar and type.
+        await pilot.press(
+            "pagedown",
+            *["down"] * (_SEARCH_SCROLL_START_Y - _LONG_GAME_VIEWPORT_ROWS),
+        )
+        await _settle_scroll(pilot)
+        await pilot.press("slash")
+        await pilot.pause()
+        search_input = await _type_transcript_search(pilot, "vote")
+
+        assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+        assert scroller.size.height == _SEARCH_OPEN_VIEWPORT_ROWS
+        assert scroller.max_scroll_y == _SEARCH_OPEN_MAX_SCROLL_Y
+
+        await pilot.press(key)
+        await _settle_scroll(pilot)
+
+        assert scroller.scroll_offset.y == expected_y
+        assert search_input.value == "vote"
+        assert screen.focused is search_input
+
+
+async def test_typing_resumes_after_a_scroll_and_the_query_keeps_growing(
+    tmp_path: Path,
+) -> None:
+    """Scrolling mid-search costs the reviewer nothing they have typed (§2.4 AC5).
+
+    The sequence is the point: type part of a word, scroll a screenful, then
+    type the rest. An implementation that restored focus to the scroller after
+    handling the scroll — a plausible-looking way to make the keys "reach the
+    game" — would pass every test above and fail here, because the next
+    character would go to the game instead of the query. (It would also make
+    `e` a no-op and `s` scroll nothing, so the failure would be silent in the
+    app and loud only here.)
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _LONG_GAME_BODY, name="s44-resume.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        await pilot.press("slash")
+        await pilot.pause()
+        search_input = await _type_transcript_search(pilot, "vot")
+        assert search_input.value == "vot"
+        assert scroller.scroll_offset.y == 0
+
+        await pilot.press("pagedown")
+        await _settle_scroll(pilot)
+        assert scroller.scroll_offset.y == _SEARCH_OPEN_VIEWPORT_ROWS
+        assert search_input.value == "vot"
+
+        await _type_transcript_search(pilot, "e")
+
+        assert search_input.value == "vote"
+        assert scroller.scroll_offset.y == _SEARCH_OPEN_VIEWPORT_ROWS
+
+
+async def test_the_scroll_keys_in_a_game_that_fits_do_nothing_and_raise_nothing(
+    tmp_path: Path,
+) -> None:
+    """A game with nothing to scroll must not crash the six keys (§2.4, §2.10 AC1).
+
+    **This one guards a measured crash, not a hypothetical.** All six of the
+    scroller's actions begin with ``if not self.allow_vertical_scroll: raise
+    SkipAction()``, and ``allow_vertical_scroll`` is false for exactly this
+    fixture — a game shorter than the viewport, which plenty of preserved games
+    are. Textual's own action dispatcher catches ``SkipAction`` and lets the
+    key bubble; the screen's ``ScrollGame`` handler calls the action DIRECTLY,
+    from inside a message handler, where an uncaught raise reaches the app's
+    unhandled-exception screen. Before the handler caught it, `down` in the
+    search bar of a game like this one crashed the viewer.
+
+    Pressed as one sequence rather than swept per key, because the claim is
+    about all six together: none of them raises, none of them eats the query,
+    and none of them moves a view that has nowhere to move.
+
+    The premise is asserted first and asserted again with the bar OPEN, since
+    opening it shortens the viewport by a row and a fixture that only just fit
+    would start scrolling and quietly stop testing anything.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _SHORT_GAME_BODY, name="s44-short.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        assert scroller.max_scroll_y == 0
+        assert scroller.allow_vertical_scroll is False
+
+        await pilot.press("slash")
+        await pilot.pause()
+        search_input = await _type_transcript_search(pilot, "vote")
+        assert scroller.allow_vertical_scroll is False
+
+        await pilot.press(*(key for key, _ in _SEARCH_SCROLL_KEY_CASES))
+        await pilot.pause()
+
+        assert app.is_running
+        assert isinstance(app.screen, TranscriptScreen)
+        assert app.screen is screen
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+        assert scroller.scroll_offset.y == 0
+        assert search_input.value == "vote"
+        assert screen.focused is search_input
+
+
+# ---------------------------------------------------------------------------
+# B15.4 Enter puts the first match at the top of the screen
+# ---------------------------------------------------------------------------
+#
+# WHAT THIS SUB-SECTION ASKS, and it is a third question after B15.1's "where
+# did the key land" and B15.2's "what lit up": WHERE DID THE GAME COME TO REST.
+# Every assertion below is therefore an ABSOLUTE ROW — never "it moved", never
+# "it is further down than it was" — because a jump that goes to the wrong
+# place still moves, and a relative assertion holds happily with both sides
+# wrong (spec 037's mutation finding, the same reason B15.1 pins the closed bar
+# absolutely). The fixtures exist so those absolute rows can be written down:
+# every game here has its matches on rows the test names.
+#
+# THE LANDING ROW IS READ BACK OFF THE RENDER, not only off the scroller.
+# `scroll_offset.y == 30` says the view is where the arithmetic wanted it;
+# `_JUMP_QUERY in body.render_line(30).text` says row 30 is the row that holds
+# the match. The two fail for different reasons and only the second one can see
+# an offset -> row map that is internally consistent and wrong — which is
+# exactly the failure B15.6 exists to make loud, met here from the other side.
+#
+# ENTER IS OFFSET-KEYED AND INCLUSIVE. Slice 4's `n`/`N` will be row-keyed and
+# EXCLUSIVE, and §2.5 AC2 ("a match already on the top line is where Enter
+# lands") is the entire distinction between them. It is not a detail that can
+# be smoothed away later without a test noticing, which is what
+# `test_enter_stops_on_a_match_that_is_already_on_the_top_row` is for: its
+# fixture carries a further match at row 45 purely so that an exclusive Enter
+# has somewhere visibly wrong to go.
+#
+# WHAT IS NOT ASSERTED HERE, AND WHY IT IS NOT A HALF-TESTED CRITERION.
+# Functional-spec §2.5 AC3 asks for two things when a jump wraps: that the view
+# goes back to the first match, AND that the reviewer is TOLD it wrapped so a
+# backwards jump is never silent. The telling has a channel — `Screen.sub_title`
+# — which Slice 4 Task 4.5 built after this sub-section was written. So the wrap
+# test below asserts the JUMP, and the MESSAGE is asserted one sub-section down
+# by `test_a_wrapped_enter_announces_the_wrap_in_the_header` (B15.5), where the
+# header is read live off the `Header` widget. Nothing here reads that channel:
+# these tests are about where the game came to rest.
+
+
+async def test_enter_lands_the_first_match_below_the_reviewer_on_the_top_row(
+    tmp_path: Path,
+) -> None:
+    """The jump, from a position with matches on both sides of it (§2.5 AC1).
+
+    **Read into the middle of the game first, and that is the test.** From row
+    0 an implementation that scrolled to the first match in the GAME and one
+    that scrolled to the first match BELOW THE REVIEWER give the same answer,
+    so a jump written from the top of a game proves only that something moved.
+    Started from row 22 with a match at row 10 behind it, the two answers are
+    10 and 30 and only one of them passes.
+
+    Row 45 is behind the assertion too, in the other direction: an off-by-one
+    that resolved to the match *after* the right one lands there. So the single
+    equality below is fenced on both sides rather than merely satisfied.
+
+    The landing is then read back off the RENDER — the top row must actually
+    contain the word — which is the assertion that survives an offset -> row
+    map that is self-consistent and wrong. `scroll_offset.y` alone cannot see
+    that; it would report exactly the row the map asked for.
+
+    Typing is checked not to scroll on the way through (§2.2 AC4 again, from
+    the one position where it is falsifiable — there are matches above and
+    below the viewport), so the move that follows is Enter's and nothing
+    else's.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _JUMP_BODY, name="s44-jump-below.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", TranscriptBody)
+
+        # The premise the fixture is built on: a match above where the reviewer
+        # starts, the answer below it, and every match clear of the tail so the
+        # clamp cannot be what produces the landing.
+        assert _JUMP_MATCH_ROWS[0] < _JUMP_START_ROW < _JUMP_MATCH_ROWS[1]
+        assert _JUMP_MATCH_ROWS[-1] < _SEARCH_OPEN_MAX_SCROLL_Y
+
+        # Read into the game with the ordinary reading keys, bar still closed.
+        await pilot.press("pagedown")
+        await _settle_scroll(pilot)
+        assert scroller.scroll_offset.y == _JUMP_START_ROW
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _JUMP_QUERY)
+        await _settle_search(pilot)
+
+        # Typing found matches above and below without moving the game.
+        assert len(_search_runs(_transcript_body_content(screen))) == _JUMP_MATCHES
+        assert scroller.scroll_offset.y == _JUMP_START_ROW
+
+        await pilot.press("enter")
+        await pilot.pause()
+
+        assert scroller.scroll_offset.y == _JUMP_MATCH_ROWS[1], (
+            "Enter must land the first match BELOW the reviewer on the top "
+            f"row. Row {_JUMP_MATCH_ROWS[0]} means it jumped to the first "
+            "match in the game and ignored where they were reading; row "
+            f"{_JUMP_MATCH_ROWS[2]} means it skipped one"
+        )
+        assert _JUMP_QUERY in body.render_line(scroller.scroll_offset.y).text
+
+
+async def test_enter_stops_on_a_match_that_is_already_on_the_top_row(
+    tmp_path: Path,
+) -> None:
+    """Enter is INCLUSIVE, and this is the test that says so (§2.5 AC2).
+
+    "A match already on the top line counts as *at* the current position and
+    is where Enter lands — it does not skip ahead." Read as an assertion: from
+    a top row that already holds a match, **the game does not move at all**.
+
+    **This is the one criterion that separates Enter from Slice 4's `n`**, and
+    the separation is deliberate on both sides: Enter resolves inclusive-forward
+    from the current top row's offset, while `n` will be row-keyed and
+    exclusive because §2.6 requires every press of it to move the view. The
+    fixture carries a third match at row 45 for no other purpose than to give
+    an exclusive Enter somewhere visibly wrong to go, so flipping the flag
+    fails here loudly instead of changing behaviour nobody notices until the
+    two keys have quietly become the same key.
+
+    The reviewer is put on the match row by SCROLLING there with the ordinary
+    reading keys, not by pressing Enter first. Arriving by the feature under
+    test would make this test's premise depend on the test above it, and a
+    single broken jump would then fail both while naming neither.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _JUMP_BODY, name="s44-jump-onit.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", TranscriptBody)
+
+        # Scroll so the match itself is the top row, with the reading keys.
+        await pilot.press(
+            "pagedown",
+            *["down"] * (_JUMP_MATCH_ROWS[1] - _LONG_GAME_VIEWPORT_ROWS),
+        )
+        await _settle_scroll(pilot)
+
+        # The premise: the reviewer is looking AT a match, and there is another
+        # one further down for a wrong answer to land on.
+        assert scroller.scroll_offset.y == _JUMP_MATCH_ROWS[1]
+        assert _JUMP_MATCH_ROWS[2] < _SEARCH_OPEN_MAX_SCROLL_Y
+
+        # AND THE PREMISE THIS TEST IS BLIND WITHOUT: the match must begin at
+        # the FIRST CHARACTER of the top row. `next_match` resolves from
+        # `offset_for_row(top row)`, and `inclusive` decides only what happens
+        # to a match starting exactly at that offset — a match a few characters
+        # into the row is strictly after it and `bisect_left` and `bisect_right`
+        # return it alike. With the query mid-line this test therefore passes
+        # against an exclusive Enter, which is measured, not hypothetical. It is
+        # asserted here rather than left to the fixture's comment because a
+        # fixture edit is exactly how the coverage would go quietly.
+        assert _JUMP_MATCH_LINE.startswith(_JUMP_QUERY)
+        rendered_top = body.render_line(_JUMP_MATCH_ROWS[1]).text.strip()
+        assert rendered_top.startswith(_JUMP_QUERY)
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _JUMP_QUERY)
+        await _settle_search(pilot)
+
+        await pilot.press("enter")
+        await pilot.pause()
+
+        assert scroller.scroll_offset.y == _JUMP_MATCH_ROWS[1], (
+            "Enter is inclusive (§2.5 AC2): a match already on the top row is "
+            f"where it stops, so nothing may move. Landing on "
+            f"{_JUMP_MATCH_ROWS[2]} instead means the resolution has become "
+            "EXCLUSIVE — which is Slice 4's `n`, and not Enter"
+        )
+        assert _JUMP_QUERY in body.render_line(scroller.scroll_offset.y).text
+
+
+async def test_enter_past_every_match_wraps_round_to_the_first(
+    tmp_path: Path,
+) -> None:
+    """Scrolled below the last match, Enter goes back to the first (§2.5 AC3).
+
+    **Half of AC3 is asserted here and half in B15.5, deliberately.** The
+    criterion is that the view jumps back to the first match *and* that a
+    message tells the reviewer it wrapped. The jump is Slice 3's and is what
+    this test pins; the message needs a status channel that outlives the closed
+    prompt, which is `Screen.sub_title` and which **Slice 4 Task 4.5 built**.
+    `test_a_wrapped_enter_announces_the_wrap_in_the_header` (B15.5) is the
+    other half, asserted off the live `Header`. Splitting the criterion this
+    way keeps each test about one thing; writing nothing here would have left
+    the wrap itself untested for a whole slice.
+
+    Landing on row 10 rather than row 0 is what makes this a WRAP rather than a
+    scroll-to-top: the first match is ten rows into the game, so an
+    implementation that gave up and went home would fail here. The reviewer is
+    taken past every match with `end` — pressed in the open search bar, which
+    §2.4 promises still reaches the game — so "past every match" is the furthest
+    the game can be scrolled and not merely far enough.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _JUMP_BODY, name="s44-jump-wrap.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", TranscriptBody)
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _JUMP_QUERY)
+        await _settle_search(pilot)
+
+        # All the way to the end of the game, from inside the search bar.
+        await pilot.press("end")
+        await _settle_scroll(pilot)
+
+        # The premise: there is nothing left below the reviewer to find, and
+        # the first match is well clear of the top of the game so a wrap and a
+        # scroll-to-top are different answers.
+        assert scroller.scroll_offset.y == _SEARCH_OPEN_MAX_SCROLL_Y
+        assert _JUMP_MATCH_ROWS[-1] < scroller.scroll_offset.y
+        assert _JUMP_MATCH_ROWS[0] > 0
+
+        await pilot.press("enter")
+        await pilot.pause()
+
+        assert scroller.scroll_offset.y == _JUMP_MATCH_ROWS[0], (
+            "with every match behind them, Enter wraps to the FIRST match "
+            f"(row {_JUMP_MATCH_ROWS[0]}). Row 0 would be a scroll to the top "
+            "of the game rather than a wrap to a match"
+        )
+        assert _JUMP_QUERY in body.render_line(scroller.scroll_offset.y).text
+
+
+async def test_after_the_jump_the_bar_is_gone_and_every_match_is_still_lit(
+    tmp_path: Path,
+) -> None:
+    """The prompt closes, the highlighting stays, the game is readable (§2.5 AC4).
+
+    Three things end the jump and each is a separate promise. The **bar is
+    gone**, so the reviewer has their row of game back and is reading normally.
+    The **highlights remain** — all of them, not only the one jumped to —
+    because the reviewer jumped in order to read a match *in context*, and the
+    others staying lit is how they see what is nearby. And **focus is back on
+    the scroller**, which is what makes their arrow keys scroll again (and,
+    from Slice 4, what lets `n`/`N` reach the screen at all instead of being
+    typed into a focused box).
+
+    **The highlight assertion is the load-bearing one**, because the plausible
+    wrong implementation is a single line: routing Enter through
+    `_clear_search`, which closes the bar correctly and throws the highlighting
+    away with it. Every other assertion here passes against that version. This
+    one is the difference between §2.5 AC4 and a bar that merely closes.
+
+    The bar's absence is stated in both of the ways B15.1 established — the
+    `-open` class gone and the row measuring `(0, 0)` — and the scroller's
+    height is checked back at its full 22, which is the one reading that
+    separates a bar that is hidden from a bar that is merely invisible.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _JUMP_BODY, name="s44-jump-after.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        search_row = screen.query_one("#search-row", Horizontal)
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _JUMP_QUERY)
+        await _settle_search(pilot)
+
+        # The premise: the bar is open, and every match in the game is lit.
+        assert "-open" in search_row.classes
+        assert [
+            text for _, _, text in _search_runs(_transcript_body_content(screen))
+        ] == [_JUMP_QUERY] * _JUMP_MATCHES
+
+        await pilot.press("enter")
+        await pilot.pause()
+
+        # The prompt is gone, and the row it borrowed is back on the game.
+        assert "-open" not in search_row.classes
+        assert tuple(search_row.size) == _SEARCH_ROW_CLOSED_SIZE
+        assert scroller.size.height == _LONG_GAME_VIEWPORT_ROWS
+        assert scroller.max_scroll_y == _LONG_GAME_MAX_SCROLL_Y
+
+        # The reviewer is reading again: their keys move the game.
+        assert screen.focused is scroller
+
+        # ...and every match is still amber, not just the one they landed on.
+        assert [
+            text for _, _, text in _search_runs(_transcript_body_content(screen))
+        ] == [_JUMP_QUERY] * _JUMP_MATCHES, (
+            "§2.5 AC4: after the jump 'the search prompt is gone and the "
+            "matches are still highlighted'. An empty list here is Enter "
+            "having been routed through `_clear_search`, which closes the bar "
+            "correctly and drops the highlighting the criterion promises"
+        )
+
+
+async def test_a_match_in_the_last_screenful_lands_as_close_to_the_top_as_it_can(
+    tmp_path: Path,
+) -> None:
+    """The end-of-game limit, stated as the landing it produces (§2.5, 4th bullet).
+
+    A game stops scrolling when its last line is on screen, so a match inside
+    that final screenful **cannot** reach the top row — there is nothing past
+    the end of the game to scroll into view, and `less` has exactly this limit
+    for exactly this reason. The criterion asks for "as close to the top as the
+    game can scroll", and this test reads that phrase as four assertions rather
+    than one, because the single obvious one (`scroll_offset.y ==
+    max_scroll_y`) is true of any implementation that over-scrolls by any
+    amount at all, Textual clamping the result:
+
+    * the match is genuinely in the tail (row 75 against a `max_scroll_y` of
+      60), so the clamp is engaged rather than incidental — this is the premise
+      the other three mean nothing without;
+    * the game is scrolled as far as it goes, and the last row of the game is
+      the last row on screen, which is what "as far as it goes" IS;
+    * the match is nonetheless ON SCREEN, which is the whole point of having
+      jumped — the limit costs the reviewer the top line, not the match;
+    * and the top row does NOT hold the match, which is the honest statement of
+      the limit and the assertion that would fail if the view had somehow
+      scrolled further than the game allows.
+
+    `max_scroll_y` is read back as `_LONG_GAME_MAX_SCROLL_Y` (60) rather than
+    as the 61 the jump clamped against, and the difference is not a mistake:
+    the jump scrolls while the bar is still open and hides it afterwards, so
+    the scroller gets its row back and re-fits, pulling a reviewer parked on the
+    very last row back by one with the same last line still on screen. That is
+    the scroller re-fitting itself, documented in `_clear_search`, and asserting
+    the settled number is asserting what the reviewer actually ends up looking
+    at.
+
+    **What this test can and cannot see, measured rather than assumed, because
+    the answer is not the obvious one.** Mutating the jump's clamp two rows
+    tight (`max_scroll_y - 2`) fails here, so the landing really is pinned.
+    Mutating it LOOSE — `max_scroll_y + 5`, or deleting `min(...)` altogether
+    and passing the raw `target_row` — passes, and **no test can be written
+    that would fail**: `Widget.scroll_to(animate=False)` assigns through
+    `scroll_y` and `scroll_target_y`, and Textual validates *both* with
+    `clamp(value, 0, self.max_scroll_y)` (`validate_scroll_y` /
+    `validate_scroll_target_y`, Textual 8.2.4). An over-scroll and a clamped
+    scroll are therefore the same widget state, reachable by no public reading.
+    The production code says this about itself — "`scroll_y` would clamp at
+    `max_scroll_y` on its own; saying it here is the difference between a limit
+    that is *stated* and one that is merely survived" — and that is an honest
+    claim about readability, not about behaviour. So this test pins **the
+    reviewer's resting position**, which is the criterion, and leaves the
+    redundant expression to the code review that keeps it.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _JUMP_TAIL_BODY, name="s44-jump-tail.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", TranscriptBody)
+
+        # The premise, and without it every assertion below is vacuous: the
+        # match is past the furthest the game can be scrolled, in both the
+        # bar-open and the bar-closed geometry.
+        assert _JUMP_TAIL_MATCH_ROW > _SEARCH_OPEN_MAX_SCROLL_Y
+        assert _JUMP_TAIL_MATCH_ROW > _LONG_GAME_MAX_SCROLL_Y
+        assert _JUMP_QUERY in body.render_line(_JUMP_TAIL_MATCH_ROW).text
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _JUMP_QUERY)
+        await _settle_search(pilot)
+        assert scroller.scroll_offset.y == 0
+
+        await pilot.press("enter")
+        await pilot.pause()
+
+        # As far as the game goes, and no further.
+        assert scroller.scroll_offset.y == _LONG_GAME_MAX_SCROLL_Y
+        assert scroller.scroll_offset.y == scroller.max_scroll_y
+        # ...which is exactly "the last row of the game is the last row on
+        # screen" — the reason there is nothing left to scroll.
+        assert (
+            scroller.scroll_offset.y + _LONG_GAME_VIEWPORT_ROWS == _LONG_GAME_LINES
+        )
+
+        # The match is on screen, which is what the jump was for...
+        assert (
+            scroller.scroll_offset.y
+            <= _JUMP_TAIL_MATCH_ROW
+            < scroller.scroll_offset.y + _LONG_GAME_VIEWPORT_ROWS
+        )
+        # ...but not on the top row, which is the limit being stated rather
+        # than merely survived.
+        assert _JUMP_TAIL_MATCH_ROW != scroller.scroll_offset.y
+        assert _JUMP_QUERY not in body.render_line(scroller.scroll_offset.y).text
+
+
+async def test_the_jump_wraps_at_the_width_the_body_is_really_rendered_at(
+    tmp_path: Path,
+) -> None:
+    """A game that WRAPS, at a terminal that is not 100 columns (§2.5 AC1).
+
+    **Every other test in B15.4 would pass against a hardcoded wrap width**,
+    and that is not an oversight in them — their games are short-lined so that
+    a row is a line, which is what makes their landings readable as integers.
+    It does mean none of them can see the hazard the tech spec ranks highest:
+    `body.content_size.width` is **96 when a game overflows the viewport and 98
+    when it fits**, and neither at a terminal of another size, so a map built
+    at a remembered or assumed width mis-folds every line of a real transcript
+    and the jump lands somewhere plausible and wrong for the rest of the
+    program's life.
+
+    This game is read at 80 columns, where the body wraps at 76 and its
+    176-188 character lines take three rows each instead of two. The single
+    match therefore sits on row 16 as rendered and on row 11 under a
+    width-96 map — and row 11 holds ordinary filler, so the render read at the
+    end is what fails when the width is wrong, not merely an integer
+    comparison.
+
+    **The disagreement between the two widths is asserted first**, before the
+    landing, because it is the test's premise: a fixture edit that made 76 and
+    96 fold this game the same way would leave every assertion below true and
+    proving nothing, and this is the line that says so.
+
+    Only the overflowing regime can be reached this way, and the reason is
+    worth writing down rather than rediscovering: a game that FITS the viewport
+    has `max_scroll_y == 0`, so Enter has nowhere to move it and no landing
+    assertion can exist. The width-98 path is pinned by B15.6 instead, which
+    compares the map against the render and needs no scroll at all.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _JUMP_WRAP_BODY, name="s44-jump-wrap-w.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_JUMP_WRAP_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", TranscriptBody)
+
+        # The regime: a narrower terminal than the rest of this file uses, and
+        # a game whose lines really do fold.
+        assert body.content_size.width == _JUMP_WRAP_BODY_WIDTH
+        rendered = wrap_row_starts(body.text, body.content_size.width)
+        assert len(rendered) > body.text.count("\n") + 1
+
+        # Where the match is, as rendered, and where a hardcoded 96 would put
+        # it. The offset comes from the fixture's own text rather than from
+        # `find_matches`, so the two legs of this test share no production code
+        # beyond the map itself.
+        offset = body.text.index(_JUMP_QUERY)
+        landing = row_for_offset(rendered, offset)
+        hardcoded = row_for_offset(
+            wrap_row_starts(body.text, _LONG_GAME_BODY_WIDTH), offset
+        )
+
+        # THE PREMISE. Without this the landing assertion below is true of a
+        # hardcoded width too, and the test proves nothing.
+        assert landing != hardcoded, (
+            f"this game must fold differently at {_JUMP_WRAP_BODY_WIDTH} and "
+            f"at {_LONG_GAME_BODY_WIDTH} columns, or a jump built at the wrong "
+            "width lands in the right place by luck and this test is vacuous"
+        )
+        # ...and the landing must be reachable, or the clamp is what produces
+        # it rather than the row arithmetic.
+        assert landing < scroller.max_scroll_y - 1
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _JUMP_QUERY)
+        await _settle_search(pilot)
+        assert scroller.scroll_offset.y == 0
+
+        await pilot.press("enter")
+        await pilot.pause()
+
+        assert scroller.scroll_offset.y == landing
+        assert _JUMP_QUERY in body.render_line(scroller.scroll_offset.y).text, (
+            f"row {scroller.scroll_offset.y} does not hold the match. The game "
+            f"wraps at {body.content_size.width}; a map built at "
+            f"{_LONG_GAME_BODY_WIDTH} puts this match on row {hardcoded} "
+            "instead, which is what a hardcoded wrap width would produce"
+        )
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["", _SEARCH_NO_MATCH_QUERY],
+    ids=["nothing-typed", "no-match"],
+)
+async def test_enter_with_nothing_to_jump_to_moves_nothing_and_raises_nothing(
+    tmp_path: Path, query: str
+) -> None:
+    """Enter on an empty query and on a query with no matches (§2.5 AC5, §2.8 AC4).
+
+    Two criteria, one item each, because they are two criteria — but one
+    behaviour, and that is the point worth pinning: `find_matches` returns
+    ``[]`` for an empty query and `next_match` returns ``None`` for an empty
+    list, so "nothing typed" and "typed something this game does not contain"
+    are the *absence* of a scroll rather than two branches that could diverge.
+    A version that special-cased one of them is what this parametrization would
+    catch.
+
+    The reviewer is reading from the middle of the game, so "nothing moves" is
+    an absolute row with somewhere to move to in both directions — from row 0
+    an implementation that scrolled home would pass.
+
+    `app.is_running` and the screen-stack depth are the "no error appears" half:
+    an exception inside a message handler reaches the app's unhandled-exception
+    screen rather than the test's assertions, so the state of the app is what
+    has to be read, not the absence of a raise at the call site.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _JUMP_BODY, name="s44-jump-nothing.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        search_row = screen.query_one("#search-row", Horizontal)
+
+        await pilot.press(
+            "pagedown",
+            *["down"] * (_SEARCH_SCROLL_START_Y - _LONG_GAME_VIEWPORT_ROWS),
+        )
+        await _settle_scroll(pilot)
+        assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+
+        await pilot.press("slash")
+        await pilot.pause()
+        search_input = await _type_transcript_search(pilot, query)
+        await _settle_search(pilot)
+        assert search_input.value == query
+
+        # Nothing is lit, whichever of the two reasons applies.
+        assert _search_runs(_transcript_body_content(screen)) == []
+
+        await pilot.press("enter")
+        await pilot.pause()
+
+        # Nothing moved...
+        assert scroller.scroll_offset.y == _SEARCH_SCROLL_START_Y
+        # ...the prompt simply closed...
+        assert "-open" not in search_row.classes
+        assert screen.focused is scroller
+        # ...and nothing blew up on the way.
+        assert app.is_running
+        assert isinstance(app.screen, TranscriptScreen)
+        assert app.screen is screen
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+
+
+# ---------------------------------------------------------------------------
+# B15.5 `n` and `N` walk the matches, and the header says where they landed
+# ---------------------------------------------------------------------------
+#
+# THE FOURTH QUESTION IN THIS SECTION, after "where did the key land" (B15.1),
+# "what lit up" (B15.2) and "where did the game come to rest" (B15.4): WHAT DOES
+# THE REVIEWER KNOW NOW. Every test below reads at least one of the two channels
+# that answer it — the live `Header`, and which of the highlighted matches
+# carries the stronger marker — because for a whole class of presses those two
+# are the ONLY answer there is.
+#
+# THAT CLASS IS NOT AN EDGE CASE, AND THIS IS THE SUB-SECTION'S CENTRAL FACT.
+# A game stops scrolling when its last line is on screen, so `scroll_offset.y`
+# CANNOT express any position inside the final screenful. Every match in there
+# comes to rest at the same clamped row, and successive presses move the view by
+# nothing whatever. A test that asserted only where the game came to rest would
+# read "1160, 1160, 1160, 1160" and call four presses correct — which is exactly
+# what happened: Task 4.4a found `n` returning the SAME match four times in a
+# row, with nine matches unreachable and the wrap unfirable, after Slice 4's
+# first round of probes had all passed. They passed because they all used the
+# query `vote`, whose last match on the largest committed game sits on row 1030,
+# comfortably below the clamp at 1160. **`vote` cannot witness the clamp or the
+# wrap.** `the` on that same game has 702 matches with the last on row 1178, and
+# is what the three tail tests below carry.
+#
+# SO EVERY TAIL TEST ASSERTS ITS PREMISE FIRST: the last match's row is past
+# `max_scroll_y`. Not as documentation — as the line that fails when a curated
+# corpus, a different terminal size or a fixture edit quietly moves the game out
+# of the regime the test exists to cover. A test that can only pass by being
+# blind is worse than no test, and this sub-section's history is why.
+#
+# GOLDEN COUNTS ARE DERIVED, NEVER WRITTEN DOWN (tech-spec §4). 702, 1178 and
+# 1160 appear in these comments and in none of the assertions: the corpus gains
+# a run directory on every measured eval run and loses one whenever a smoke run
+# is curated away, so the largest committed game is DISCOVERED
+# (`_largest_committed_transcript`, shared with B15.6) and every number is read
+# back off the widget or computed from the match list. The header strings are
+# built the same way — `_expected_status(query, index + 1, total)` against a
+# `total` that came out of `find_matches` — so the FORMAT is pinned exactly
+# while the count is free to change.
+#
+# THAT BUILDER IS ONE FUNCTION AS OF SLICE 6, and the reason is a measurement
+# rather than tidiness: the status grew a field (the key hint, §2.8), and the
+# twelve hand-built f-strings in this sub-section became twelve identical edits
+# in ten tests that had nothing to say about that field. Twelve chances to
+# weaken one into a `startswith` while getting the suite green again. Strict
+# equality is unchanged at every call site; only the spelling moved.
+#
+# THE HEADER IS READ OFF THE WIDGET, NOT OFF THE ATTRIBUTE. `Screen.sub_title`
+# is a `Reactive` and the `Header` watches it; asserting the reactive alone
+# would pass against a header that had stopped rendering, stopped being
+# composed, or been pushed off the row by a title change. `_rendered_sub_title`
+# goes through `HeaderTitle.render_line(0)` and checks the two agree, so every
+# status assertion below is a statement about what a reviewer can actually read.
+#
+# WHICH MATCH IS CURRENT IS READ STRUCTURALLY, never as an RGB value — B14's
+# convention, restated by tech-spec §4 for this slice ("the current match's
+# background differs from the others'", and no theme sweep). `_current_match`
+# folds the spans at each match's first character the way the renderer does and
+# asks which one is the odd one out.
+#
+# WHAT IS DELIBERATELY NOT HERE: the Esc state machine (Slice 5's Task 5.4,
+# which parametrizes `(key, search_open)` over all three back-out keys). The one
+# Esc pressed below is there for Task 4.5's other half — "restore `SUB_TITLE`
+# when the search clears" — and is asserted as a header fact, not as a back-out
+# fact.
+
+
+# The resting sub-title, pinned BY VALUE as well as by attribute. Reading it off
+# `TranscriptScreen.SUB_TITLE` alone would let a rewrite of the copy pass while
+# claiming the header "goes back to the hint": the whole promise of §2.10 here
+# is that a reviewer who has finished searching sees the screen they started
+# with, and that is a string, not an attribute name.
+_TRANSCRIPT_SUB_TITLE = "game transcript · Esc / Backspace to go back"
+
+# What `App.format_title` puts between the viewer's name and the sub-title on the
+# installed Textual 8.2.4. Split on rather than assumed away, so that a status
+# string which happened to contain the separator would fail loudly here instead
+# of silently truncating the position the reviewer is owed. (It is also why
+# `_search_status_text` uses `·` internally rather than a second em dash.)
+_HEADER_TITLE_SEPARATOR = " — "
+
+# The two fields Slice 6 appended to the status, naming the keys that step
+# between matches (functional-spec §2.8's AC added 2026-09-14).
+#
+# WRITTEN OUT AS A LITERAL, NOT IMPORTED from
+# `graphia.ui.ledger_viewer._SEARCH_STATUS_KEY_HINT`. Importing it would make
+# every status assertion in B15.5 agree with the production string BY
+# CONSTRUCTION, so a rewrite of the copy to something that answers only half the
+# criterion — `n/N`, which names the keys but not which way each goes — would
+# sail through a dozen tests that read as though they pinned it. This module
+# already pins user-visible copy this way (`_EMPTY_LEDGER_MESSAGE`,
+# `_TRANSCRIPT_SUB_TITLE`), and for the same reason.
+#
+# Split into its two fields rather than kept as one string, so B15.8 can say
+# what each one is: a key name and what that key does.
+_SEARCH_STATUS_NEXT_HINT = "n next"
+_SEARCH_STATUS_PREV_HINT = "N prev"
+_SEARCH_STATUS_KEY_HINT = f"{_SEARCH_STATUS_NEXT_HINT} · {_SEARCH_STATUS_PREV_HINT}"
+
+# THE ROW-MATE GAME (criterion (b)). `_JUMP_BODY`'s exact shape, with the match
+# on row 30 replaced by a line carrying the query TWICE. Everything B15.4's
+# fixture block establishes therefore still holds — 82 rows, a 22-row viewport,
+# `max_scroll_y` 60 closed and 61 open, no line long enough to wrap at 96
+# columns, so a row is a line and a landing is an integer — and exactly one
+# thing is different: row 30 holds two matches instead of one.
+#
+# That difference is the whole criterion. §2.6: "Given two matches fall on the
+# same line of the screen and the reviewer is on the first of them, when they
+# press `n`, then the game moves on to the next line that has a match — the view
+# always moves." With matches at rows 10, 30, 30 and 45, an `n` pressed from row
+# 30 has a WRONG answer available that looks almost right (its row-mate, index
+# 2, which would leave the view exactly where it is) and a right one (index 3 on
+# row 45). A step that moved match-by-match passes every other test in this
+# sub-section and fails here.
+#
+# It also produces the running count's accepted jump — 2/4 straight to 4/4 —
+# which functional-spec §2.8 states explicitly and which is asserted below
+# rather than tolerated, because the plausible "fix" for it (renumbering the
+# status to count only reachable matches) would make the total disagree with the
+# number of highlights on screen.
+_STEP_ROWMATE_LINE = "Cleo: I say we vote for Bo, and Cleo agrees."
+_STEP_ROWMATE_ROWS = (10, 30, 45)
+_STEP_ROWMATE_CROWDED_ROW = _STEP_ROWMATE_ROWS[1]
+_STEP_ROWMATE_BODY = "<transcript>\n" + "\n".join(
+    _STEP_ROWMATE_LINE
+    if line + 1 == _STEP_ROWMATE_CROWDED_ROW
+    else _JUMP_MATCH_LINE
+    if line + 1 in _STEP_ROWMATE_ROWS
+    else f"Alice: line {line}"
+    for line in range(_LONG_GAME_PROSE_LINES)
+) + "\n</transcript>"
+# Three rows, four matches: one on row 10, TWO on row 30, one on row 45.
+_STEP_ROWMATE_MATCHES = len(_STEP_ROWMATE_ROWS) + 1
+
+# THE QUERY THE TAIL TESTS CARRY, and `vote` will not do — see the banner. It is
+# lowercase, so smart case leaves it case-INSENSITIVE, which is what makes it
+# common enough to have matches inside the final screenful of any real game.
+_TAIL_QUERY = "the"
+
+# How many presses the clamped-tail walk takes. Four, because that is the number
+# Task 4.4a measured returning the identical match four times over — and because
+# four is the fewest that reaches past the first row-mate skip in that tail, so
+# one walk witnesses both the advance and the skip.
+_TAIL_WALK_PRESSES = 4
+
+_requires_real_game = pytest.mark.skipif(
+    _WRAP_PIN_REAL_GAME is None,
+    reason=f"no committed transcripts under {_CORPUS_ROOT} — nothing to read",
+)
+
+
+def _rendered_sub_title(screen: TranscriptScreen) -> str:
+    """The sub-title AS THE HEADER IS RENDERING IT, not as the reactive holds it.
+
+    Functional-spec §2.8 AC3 and §2.6's two wrap criteria are promises about
+    something the reviewer can *read*, and `Screen.sub_title` is one watcher
+    away from that. The chain has real links in it: `Header._on_mount` calls
+    `self.watch(self.screen, "sub_title", ...)`, the watcher rebuilds through
+    `App.format_title`, and `HeaderTitle` is a one-row `Static` with
+    `text-overflow: ellipsis` that will silently cut a status too long for the
+    terminal. Asserting the reactive would pass against every one of those
+    breaking.
+
+    So this reads `HeaderTitle.render_line(0)`, splits the viewer's name off the
+    front, and asserts the two agree before returning the half the tests care
+    about — which means every caller gets the whole chain checked for free and
+    none of them has to spell the title out.
+
+    The title half is asserted too, and not as padding: it is what says the
+    status was ADDED to the header rather than having replaced what was there.
+    """
+    header = screen.query_one(Header)
+    rendered = header.query_one("HeaderTitle", Static).render_line(0).text.strip()
+    title, separator, status = rendered.partition(_HEADER_TITLE_SEPARATOR)
+    assert separator, (
+        f"the header reads {rendered!r}, with no {_HEADER_TITLE_SEPARATOR!r} in "
+        "it — the sub-title is not reaching the rendered row at all"
+    )
+    assert title == TranscriptScreen.TITLE, (
+        f"the header's title half reads {title!r}; the status must be added "
+        f"beside {TranscriptScreen.TITLE!r}, never instead of it"
+    )
+    assert status == screen.sub_title, (
+        f"the header renders {status!r} while `Screen.sub_title` holds "
+        f"{screen.sub_title!r} — the reactive is not reaching the widget, so "
+        "nothing the reviewer can read is being asserted anywhere"
+    )
+    return status
+
+
+def _expected_status(
+    query: str, position: int, total: int, *, wrapped: bool = False
+) -> str:
+    """The WHOLE status a landing must put in the header, spelled out.
+
+    ``position`` is what the reviewer reads — counted from one, as the header
+    counts it — so a call site reads the same as the string it is pinning.
+
+    **Centralised in Slice 6, and the reason is the one that just happened.**
+    Twelve assertions across ten tests each built this string by hand as
+    ``f"{query} · {i}/{total}"``. Appending one field to the status therefore
+    broke ten tests that had nothing to say about that field, and the ten
+    identical edits are ten chances to quietly weaken one of them into a
+    ``startswith`` while "fixing the build". One function is one edit, and the
+    next field the status grows costs one line here.
+
+    **This is not a relaxation, and it must not become one.** Every caller still
+    asserts STRICT EQUALITY against a fully spelled-out string; what moved is
+    where the string is spelled. The key hint is a literal in this module
+    (:data:`_SEARCH_STATUS_KEY_HINT`) rather than an import from the viewer, so
+    the copy is genuinely pinned rather than agreed with — see that constant.
+
+    **Field order is part of the assertion**, not presentation. ``HeaderTitle``
+    truncates with an ellipsis at the END, so the last field is the first one a
+    narrow terminal spends; the hint goes after ``(wrapped)`` precisely so that
+    the position — a §2.8 acceptance criterion, and readable nowhere else once
+    the prompt has closed — outlives it. A build that put the hint before the
+    position would pass a substring test and fail here, which is the point.
+
+    There is no ``current is None`` form to build: the header holds
+    :data:`_TRANSCRIPT_SUB_TITLE` then, and the call sites say so by name.
+    """
+    status = f"{query} · {position}/{total}"
+    if wrapped:
+        status = f"{status} (wrapped)"
+    return f"{status} · {_SEARCH_STATUS_KEY_HINT}"
+
+
+def _current_match(content: Content) -> int | None:
+    """Which of the search's matches carries the STRONGER marker, or ``None``.
+
+    §2.6: "The match the reviewer last landed on is marked more strongly than
+    the others, so they can see which one of the highlighted matches they are
+    currently on." Read the way B15.2 reads §2.3 — by folding the spans at a
+    single character the way the renderer does (`Content.get_style_at_offset`)
+    — and answered STRUCTURALLY: the current match is the one whose background
+    differs from every other match's. No RGB value is pinned, which is B14's
+    convention and tech-spec §4's instruction for this slice.
+
+    Returning the INDEX rather than asserting a caller-supplied one is what
+    makes a failure readable: "the screen says match 692 is current, the test
+    expected 693" says what went wrong, where `assert is_current(693)` says only
+    that something did.
+
+    ``None`` means no match is marked — every highlight shares one background,
+    which is the state before any jump and after an edit drops the landing.
+
+    Requires at least three matches to be unambiguous, and says so: with two,
+    each background occurs once and "the odd one out" has no meaning.
+    """
+    runs = _search_runs(content)
+    assert len(runs) >= 3, (
+        f"{len(runs)} matches is too few to identify a current one — with two, "
+        "both backgrounds occur once and the odd one out is undefined"
+    )
+    backgrounds = [
+        content.get_style_at_offset(start).background for start, _, _ in runs
+    ]
+    assert all(background is not None for background in backgrounds), (
+        "every match must carry a background; one without is a highlight that "
+        "resolved to nothing (tech-spec §2.8: a falsy `RichStyle` appends no "
+        "span at all) rather than a marker that moved"
+    )
+    distinct = Counter(backgrounds)
+    if len(distinct) == 1:
+        return None
+    assert len(distinct) == 2, (
+        f"the matches carry {len(distinct)} different backgrounds; there are "
+        "exactly two styles — `transcript--match` and `transcript--match-current`"
+    )
+    odd = [background for background, count in distinct.items() if count == 1]
+    assert len(odd) == 1, (
+        "two backgrounds, but neither occurs exactly once — the stronger style "
+        "is painted on more than one match, so 'which one am I on' has no answer"
+    )
+    return backgrounds.index(odd[0])
+
+
+def _match_rows(body: TranscriptBody, query: str) -> tuple[
+    list[tuple[int, int]], list[int], list[int]
+]:
+    """``(matches, row starts, the row each match sits on)`` for ``query``.
+
+    Computed off the widget's own text and its own LIVE wrap width — never off
+    the bytes on disk and never off a remembered width — for the reason
+    `TranscriptScreen._row_starts` reads the width live: it is 96 when a game
+    overflows the viewport and 98 when it fits, and neither at a terminal of
+    another size.
+
+    This is the tests' independent view of the fixture. It shares
+    `wrap_row_starts` and `find_matches` with the screen, which B15.6 and
+    `tests/test_transcript_search.py` pin from two other directions; what it
+    does NOT share is any of the selection logic under test, so an expectation
+    derived from it is a statement about §2.6 rather than a re-run of the code
+    that implements it.
+    """
+    matches = find_matches(body.text, query)
+    row_starts = wrap_row_starts(body.text, body.content_size.width)
+    rows = [row_for_offset(row_starts, start) for start, _ in matches]
+    return matches, row_starts, rows
+
+
+def _first_match_on_each_row(rows: list[int]) -> dict[int, int]:
+    """Row → the index of the FIRST match starting on it.
+
+    §2.6's second accepted consequence, written out as data: "the second and
+    later matches on a line are highlighted but are never themselves the current
+    one". Every expectation below that names a match names it through here, so
+    a test can never expect a row-mate.
+    """
+    first: dict[int, int] = {}
+    for index, row in enumerate(rows):
+        first.setdefault(row, index)
+    return first
+
+
+def _expected_walk(rows: list[int], origin_row: int, presses: int) -> list[int]:
+    """The match indices ``presses`` forward `n`s must answer, from ``origin_row``.
+
+    §2.6 restated as arithmetic over the fixture: each press goes to the lowest
+    row ABOVE the one the reviewer is on that holds a match, and lands on that
+    row's first match. Derived from the match list and the row map — never by
+    calling `step_match_by_row`, which is what is under test — so a walk that
+    matches this is a walk that matches the criterion.
+
+    Used only where a hand-written expectation is impossible: the tail of a real
+    88 KB game, whose rows nobody chose. The synthetic fixtures' expectations
+    are written out as integers instead, because there a reader can check them
+    against the game.
+    """
+    first_on_row = _first_match_on_each_row(rows)
+    populated = sorted(first_on_row)
+    walk: list[int] = []
+    row = origin_row
+    for _ in range(presses):
+        above = [candidate for candidate in populated if candidate > row]
+        assert above, (
+            f"the fixture runs out of matches after row {row} — this walk needs "
+            f"{presses} rows above the landing and the game does not have them"
+        )
+        row = above[0]
+        walk.append(first_on_row[row])
+    return walk
+
+
+async def _open_the_real_game(pilot) -> tuple[
+    TranscriptScreen, VerticalScroll, TranscriptBody
+]:
+    """Open the largest committed game and return its screen, scroller and body.
+
+    Shared by the three tail tests so they cannot disagree about which game they
+    are describing, and so the one assertion they all owe — that this game
+    really does overflow far enough for a clamp to exist — is made once.
+    """
+    screen = await _open_the_only_game(pilot)
+    scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+    body = screen.query_one("#transcript-body", TranscriptBody)
+    assert scroller.max_scroll_y > _LONG_GAME_VIEWPORT_ROWS, (
+        "the discovered game fits (or nearly fits) the viewport, so there is no "
+        "final screenful to be clamped inside and these tests cannot ask their "
+        "question"
+    )
+    return screen, scroller, body
+
+
+async def test_n_advances_and_capital_n_goes_back_each_landing_on_the_top_row(
+    tmp_path: Path,
+) -> None:
+    """The walk out and back, over matches sitting on named rows (§2.6 AC1/AC2).
+
+    Four presses out of one Enter, and the route matters as much as the
+    endpoints: `n` `n` walks 10 → 30 → 45 and `N` `N` walks it back 45 → 30 →
+    10, so the two directions are asserted to be inverses over the same three
+    rows rather than each tested from a fresh start where a single wrong answer
+    could look right.
+
+    **Every landing is asserted twice** — as an ABSOLUTE row on the scroller,
+    and as the render at that row actually containing the query. The two fail
+    for different reasons, and only the second can see an offset → row map that
+    is internally consistent and wrong (B15.4 meets the same distinction from
+    the other side; B15.6 is what makes it loud).
+
+    The header is asserted at every step as well, because it is the other half
+    of what a press produces: §2.8 AC3 says the reviewer "can tell which match
+    of the total they are on", and after Enter the search box that was saying so
+    is gone.
+
+    Every row here is clear of the clamp (`_JUMP_MATCH_ROWS` are all below
+    `_SEARCH_OPEN_MAX_SCROLL_Y`), which is deliberate: this test is about the
+    step arithmetic, and a landing that came to rest against the end of the game
+    would be the clamp's answer rather than the step's. The tail is three tests
+    below, on a fixture built for it.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _JUMP_BODY, name="s44-step-walk.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", TranscriptBody)
+
+        # The premise: three matches, none of them in the tail, so every landing
+        # below is the step's answer and never the end of the game's.
+        assert _JUMP_MATCH_ROWS[-1] < _SEARCH_OPEN_MAX_SCROLL_Y
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _JUMP_QUERY)
+        await _settle_search(pilot)
+        await pilot.press("enter")
+        await pilot.pause()
+
+        # Enter puts them on the first match; the walk starts from there.
+        assert scroller.scroll_offset.y == _JUMP_MATCH_ROWS[0]
+        assert _rendered_sub_title(screen) == _expected_status(
+            _JUMP_QUERY, 1, _JUMP_MATCHES
+        )
+
+        for step, row in enumerate(_JUMP_MATCH_ROWS[1:], start=1):
+            await pilot.press("n")
+            await pilot.pause()
+            assert scroller.scroll_offset.y == row, (
+                f"press {step} of `n` should have landed row {row} on the top "
+                f"line; it is showing row {scroller.scroll_offset.y}"
+            )
+            assert _JUMP_QUERY in body.render_line(scroller.scroll_offset.y).text
+            assert _rendered_sub_title(screen) == _expected_status(
+                _JUMP_QUERY, step + 1, _JUMP_MATCHES
+            )
+
+        # ...and `N` retraces it exactly, which is the criterion: "when they
+        # press `N`, then the game moves back to the previous match with it on
+        # the top line".
+        for step, row in reversed(list(enumerate(_JUMP_MATCH_ROWS[:-1], start=1))):
+            await pilot.press("N")
+            await pilot.pause()
+            assert scroller.scroll_offset.y == row, (
+                f"`N` should have walked back to row {row}; it is showing row "
+                f"{scroller.scroll_offset.y}"
+            )
+            assert _JUMP_QUERY in body.render_line(scroller.scroll_offset.y).text
+            assert _rendered_sub_title(screen) == _expected_status(
+                _JUMP_QUERY, step, _JUMP_MATCHES
+            )
+
+
+async def test_n_skips_the_matches_sharing_the_row_it_started_on(
+    tmp_path: Path,
+) -> None:
+    """Two matches on one row: `n` moves to the next row that has one (§2.6 AC3).
+
+    "Given two matches fall on the same line of the screen and the reviewer is
+    on the first of them, when they press `n`, then the game moves on to the
+    next line that has a match — **the view always moves**."
+
+    The fixture puts the wrong answer within reach, which is what makes this a
+    test rather than a demonstration: from row 30 a step that moved
+    match-by-match would answer this row's second match, the view would not move
+    at all, and every other assertion in this sub-section would still pass. The
+    right answer is row 45.
+
+    **The running count's jump is asserted, not tolerated** — 2/4 straight to
+    4/4. Functional-spec §2.8 states it ("a position among all matches, so where
+    a line of the screen holds several it can jump by more than one at a time")
+    and the author accepted it explicitly; the plausible "fix", renumbering the
+    status to count only reachable matches, would make the total disagree with
+    the four highlights the reviewer can see on screen. A test that asserted
+    3/4 here would be asking for that bug.
+
+    **And the skipped row-mate stays lit but never becomes current**, which is
+    the other half of the same decision: it is a match, it is highlighted, and
+    the stronger marker passes straight over it.
+    """
+    ledger, _ = _ledger_with_body(
+        tmp_path, _STEP_ROWMATE_BODY, name="s44-step-mate.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", TranscriptBody)
+
+        # THE PREMISE, and this test is vacuous without it: row 30 really does
+        # hold two matches, they really are the second and third of four, and
+        # the answer is on a row that exists and is clear of the clamp.
+        _, _, rows = _match_rows(body, _JUMP_QUERY)
+        assert len(rows) == _STEP_ROWMATE_MATCHES
+        assert rows == [
+            _STEP_ROWMATE_ROWS[0],
+            _STEP_ROWMATE_CROWDED_ROW,
+            _STEP_ROWMATE_CROWDED_ROW,
+            _STEP_ROWMATE_ROWS[2],
+        ], (
+            f"the fixture puts its matches on rows {rows}; criterion (b) needs "
+            f"two of them together on row {_STEP_ROWMATE_CROWDED_ROW}"
+        )
+        assert _STEP_ROWMATE_ROWS[-1] < _SEARCH_OPEN_MAX_SCROLL_Y
+
+        # Read down to just above the crowded row, so Enter lands ON it rather
+        # than the test scrolling there by the feature under test.
+        await pilot.press("pagedown")
+        await _settle_scroll(pilot)
+        assert scroller.scroll_offset.y == _JUMP_START_ROW
+        assert _JUMP_START_ROW < _STEP_ROWMATE_CROWDED_ROW
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _JUMP_QUERY)
+        await _settle_search(pilot)
+        await pilot.press("enter")
+        await pilot.pause()
+
+        # The reviewer is on the FIRST of the two matches on row 30.
+        assert scroller.scroll_offset.y == _STEP_ROWMATE_CROWDED_ROW
+        assert _current_match(_transcript_body_content(screen)) == 1
+        assert _rendered_sub_title(screen) == _expected_status(
+            _JUMP_QUERY, 2, _STEP_ROWMATE_MATCHES
+        )
+
+        await pilot.press("n")
+        await pilot.pause()
+
+        # THE VIEW MOVED, and it moved to the next row that has a match rather
+        # than to the match sitting beside the one they were on.
+        assert scroller.scroll_offset.y == _STEP_ROWMATE_ROWS[2], (
+            "`n` from the first of two matches on one row must go to the next "
+            f"ROW that has one (row {_STEP_ROWMATE_ROWS[2]}). Staying on row "
+            f"{_STEP_ROWMATE_CROWDED_ROW} is the press §2.6 forbids — the "
+            "reviewer can already see both of those matches"
+        )
+        assert _JUMP_QUERY in body.render_line(scroller.scroll_offset.y).text
+
+        content = _transcript_body_content(screen)
+        # The count jumped over the row-mate, by design.
+        assert _rendered_sub_title(screen) == _expected_status(
+            _JUMP_QUERY, _STEP_ROWMATE_MATCHES, _STEP_ROWMATE_MATCHES
+        )
+        assert _current_match(content) == _STEP_ROWMATE_MATCHES - 1
+        # ...and the match it skipped is still lit, like every other.
+        assert len(_search_runs(content)) == _STEP_ROWMATE_MATCHES
+
+
+@_requires_real_game
+async def test_both_wraps_move_the_view_and_announce_themselves_in_the_header(
+    tmp_path: Path,
+) -> None:
+    """`n` off the end and `N` off the start, on a real game (§2.6 AC4/AC5).
+
+    Two criteria, one session, two presses — and the game is the largest
+    committed one because **the synthetic fixtures cannot ask this question
+    honestly**. A wrap has to be seen from a position that the *scroll* cannot
+    represent: the last match of any real query sits inside the final screenful,
+    where the view clamps, and a test whose last match is comfortably above the
+    clamp proves only that a wrap works where nothing was ever in the way. That
+    is precisely how Slice 4 shipped a defect — its probes used `vote`, whose
+    last match on this game is on row 1030 against a clamp at 1160 — so the
+    premise below (**the last match's row is past `max_scroll_y`**) is asserted
+    before any behaviour, and the query is `the`.
+
+    `N` from the first match is the shortest route to the far end of the game,
+    and it is also criterion AC5 in its own right: "Given the reviewer is on the
+    first match in the game, when they press `N`, then the view moves to the
+    last match and a message tells them the search wrapped around." The `n` that
+    follows is AC4, from the position only that press can reach.
+
+    **The header is the whole of the "message" half**, and inside the clamp it
+    is very nearly the whole of the feedback: the `N` lands as far down as the
+    game can scroll and the `n` comes back, so the reviewer's evidence is the
+    position, the `(wrapped)` suffix, and the marker — all three asserted.
+
+    No count is written down anywhere here: the total comes out of
+    `find_matches` and the expected index out of the match list, so this test
+    survives the corpus gaining or losing a run directory.
+    """
+    text = _WRAP_PIN_REAL_GAME.read_text(encoding="utf-8")
+    ledger, _ = _ledger_with_body(tmp_path, text, name="s44-step-wraps.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen, scroller, body = await _open_the_real_game(pilot)
+        matches, _, rows = _match_rows(body, _TAIL_QUERY)
+        total = len(matches)
+
+        # THE PREMISE THIS TEST IS BLIND WITHOUT: the game's last match lives
+        # inside the final screenful, where the scroll position cannot follow.
+        assert rows[-1] > scroller.max_scroll_y, (
+            f"the last `{_TAIL_QUERY}` sits on row {rows[-1]} with "
+            f"`max_scroll_y` {scroller.max_scroll_y} — it is REACHABLE by "
+            "scrolling, so this game cannot witness the clamp and the wrap "
+            "below would be tested where nothing was in the way"
+        )
+        assert total >= 3
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _TAIL_QUERY)
+        await _settle_search(pilot)
+        await pilot.press("enter")
+        await pilot.pause()
+
+        # Enter, from the top of the game, lands on its first match.
+        assert scroller.scroll_offset.y == rows[0]
+        assert _rendered_sub_title(screen) == _expected_status(_TAIL_QUERY, 1, total)
+        assert _current_match(_transcript_body_content(screen)) == 0
+
+        # §2.6 AC5 — `N` from the first match wraps to the last row that has
+        # one, landing on ITS first match (the second consequence of row-keyed
+        # stepping), and says so.
+        last = _first_match_on_each_row(rows)[rows[-1]]
+        await pilot.press("N")
+        await pilot.pause()
+        assert _rendered_sub_title(screen) == _expected_status(
+            _TAIL_QUERY, last + 1, total, wrapped=True
+        ), "a backwards wrap must be announced — §2.6, 'the reviewer is told'"
+        assert _current_match(_transcript_body_content(screen)) == last
+        # As far down as the game goes, which is not as far as the match.
+        assert scroller.scroll_offset.y == scroller.max_scroll_y
+        assert scroller.scroll_offset.y < rows[last]
+
+        # §2.6 AC4 — and `n` from there comes round to the first match again,
+        # which is a move of over a thousand rows and must not be silent.
+        await pilot.press("n")
+        await pilot.pause()
+        assert scroller.scroll_offset.y == rows[0], (
+            "`n` from the last match must wrap to the FIRST match in the game; "
+            f"it is showing row {scroller.scroll_offset.y}"
+        )
+        assert _TAIL_QUERY in body.render_line(scroller.scroll_offset.y).text.lower()
+        assert _rendered_sub_title(screen) == _expected_status(
+            _TAIL_QUERY, 1, total, wrapped=True
+        )
+        assert _current_match(_transcript_body_content(screen)) == 0
+
+
+async def test_n_follows_where_the_reviewer_scrolled_not_where_they_last_jumped(
+    tmp_path: Path,
+) -> None:
+    """After scrolling by hand, `n` resolves from the viewport (§2.6 AC7).
+
+    "Given the reviewer has scrolled by hand away from the match they were on,
+    when they press `n`, then the view moves to the first match below where they
+    have scrolled to — `n` follows where they are, not where they last jumped
+    from."
+
+    **This test is load-bearing twice over, and the second time is not obvious.**
+    The first is the criterion above. The second is that it is the ONLY thing
+    stopping `TranscriptScreen._step_origin_row` from being "simplified" into
+    always preferring the current match's row — which is the shape that makes
+    every other test in this sub-section pass, including all three tail tests,
+    because in those the reviewer never scrolls between presses. Task 4.4a fixed
+    a dead-end by teaching the step to prefer `current`'s row *when the reviewer
+    has not moved since landing*; delete the second half of that sentence and
+    only this test goes red. Its fixture is built so the wrong answer is visibly
+    wrong: from row 32, preferring the landing at row 10 answers row 30, which
+    is a step BACKWARDS out of a key the reviewer pressed to go forward.
+
+    The hand scroll is one `pagedown` on the game itself with the bar already
+    closed — the ordinary reading key, not a call into the widget — and it is
+    settled through `_settle_scroll` before any absolute row is read, because
+    every one of the scroller's six keys animates (see that helper).
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _JUMP_BODY, name="s44-step-scrolled.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", TranscriptBody)
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _JUMP_QUERY)
+        await _settle_search(pilot)
+        await pilot.press("enter")
+        await pilot.pause()
+        assert scroller.scroll_offset.y == _JUMP_MATCH_ROWS[0]
+
+        # ...and now they read on by hand, past the second match.
+        await pilot.press("pagedown")
+        await _settle_scroll(pilot)
+        landed = scroller.scroll_offset.y
+
+        # THE PREMISE: they are now BELOW the second match and above the third,
+        # so "where they are" and "where they last jumped from" give different
+        # answers and only one of them is forwards.
+        assert _JUMP_MATCH_ROWS[1] < landed < _JUMP_MATCH_ROWS[2], (
+            f"one `pagedown` from row {_JUMP_MATCH_ROWS[0]} left the reviewer "
+            f"on row {landed}; this test needs them between the second and "
+            "third matches or the two candidate answers coincide"
+        )
+
+        await pilot.press("n")
+        await pilot.pause()
+
+        assert scroller.scroll_offset.y == _JUMP_MATCH_ROWS[2], (
+            "`n` must resolve from where the reviewer scrolled to (row "
+            f"{landed}), giving row {_JUMP_MATCH_ROWS[2]}. Row "
+            f"{_JUMP_MATCH_ROWS[1]} means it resolved from the LANDING instead "
+            "— a step backwards out of a forward key, and the mutation "
+            "`_step_origin_row` exists to be prevented from becoming"
+        )
+        assert _JUMP_QUERY in body.render_line(scroller.scroll_offset.y).text
+        assert _rendered_sub_title(screen) == _expected_status(
+            _JUMP_QUERY, 3, _JUMP_MATCHES
+        )
+
+
+async def test_the_match_the_reviewer_is_on_is_marked_more_strongly_than_its_neighbours(
+    tmp_path: Path,
+) -> None:
+    """Which of the highlighted matches am I on? (§2.6 AC6).
+
+    "Given the reviewer is sitting on one match among several highlighted on
+    screen, when they look at the screen, then they can tell which one they are
+    currently on." Read structurally, as tech-spec §4 instructs: the current
+    match's background differs from every other match's, and no RGB value is
+    pinned anywhere.
+
+    **Three things are asserted, and the third is the one with teeth.** That a
+    marker exists after Enter; that it MOVES with `n`; and that the marker is
+    the ONLY difference — the match that has just stopped being current goes
+    back to looking exactly like its neighbours. A `highlight` that appended a
+    second span rather than substituting the style would leave a trail of
+    ex-current matches behind it, which is the failure a "does the current one
+    look different" assertion alone would miss entirely.
+
+    The span count is checked to stay exactly one per match across both presses,
+    which is the mechanical form of the same statement and what keeps B15.2's
+    §2.3 ordering assertion checkable at all.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _JUMP_BODY, name="s44-step-marker.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _JUMP_QUERY)
+        await _settle_search(pilot)
+
+        # Before any landing there is nothing to be on, and nothing is marked.
+        typing = _transcript_body_content(screen)
+        assert len(_search_runs(typing)) == _JUMP_MATCHES
+        assert _current_match(typing) is None, (
+            "no jump has happened yet, so no match can be 'the one they are "
+            "on' — a marker here would be pointing at a match the reviewer has "
+            "not navigated to"
+        )
+
+        await pilot.press("enter")
+        await pilot.pause()
+        landed = _transcript_body_content(screen)
+        assert _current_match(landed) == 0
+        assert len(_search_runs(landed)) == _JUMP_MATCHES
+
+        await pilot.press("n")
+        await pilot.pause()
+        stepped = _transcript_body_content(screen)
+        assert _current_match(stepped) == 1, (
+            "the stronger marker must move with the view; a marker still on "
+            "match 0 is a reviewer being told they are somewhere they are not"
+        )
+        # ...and nothing accumulated: still one span per match, so the match
+        # that WAS current is back to looking like its neighbours.
+        assert len(_search_runs(stepped)) == _JUMP_MATCHES
+
+
+@pytest.mark.parametrize("key", ["n", "N"], ids=["n", "N"])
+async def test_stepping_with_no_search_in_progress_does_nothing_and_raises_nothing(
+    tmp_path: Path, key: str
+) -> None:
+    """`n` and `N` on a game nobody has searched (§2.6 AC8).
+
+    "Given no search has been made since the game was opened, when the reviewer
+    presses `n`, then nothing happens and no error appears." These are *screen*
+    bindings, so they arrive whenever the game has focus — which is most of the
+    time a reviewer is in a transcript — and the guard that makes them no-ops is
+    the first statement of `_step_match`.
+
+    Pressed from a SCROLLED position, so "nothing happens" is an absolute row
+    with somewhere to move in both directions: from row 0 a `N` that wrapped to
+    the end of the game would be caught, but an `n` that scrolled home would not.
+
+    "No error appears" is read off the app rather than off the absence of a
+    raise at the call site: an exception inside a message handler reaches
+    Textual's unhandled-exception screen, not this test's assertions, so what
+    has to be asserted is that the app is still running, still on this screen,
+    and still at the same stack depth.
+
+    The header is asserted to be untouched too — a press that wrote "0/0" or an
+    empty position into it would be a visible change out of a key that promises
+    none.
+    """
+    ledger, _ = _ledger_with_body(
+        tmp_path, _JUMP_BODY, name=f"s44-step-none-{key}.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        await pilot.press("pagedown")
+        await _settle_scroll(pilot)
+        resting = scroller.scroll_offset.y
+        assert resting == _JUMP_START_ROW
+
+        # Twice, because a first press that established some state and a second
+        # that acted on it would be a different bug from one press acting.
+        await pilot.press(key, key)
+        await pilot.pause()
+
+        assert scroller.scroll_offset.y == resting
+        assert _search_runs(_transcript_body_content(screen)) == []
+        assert _rendered_sub_title(screen) == _TRANSCRIPT_SUB_TITLE
+        assert app.is_running
+        assert app.screen is screen
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+
+
+async def test_the_header_counts_the_position_and_restores_the_hint_at_the_end(
+    tmp_path: Path,
+) -> None:
+    """The status channel over a whole search, start to finish (§2.8 AC3, Task 4.5).
+
+    Four states of the header in one session, because the promise is about a
+    channel rather than about a string: the back-out hint before anything is
+    typed; **still the hint while typing**, since the count and the query are
+    both under the reviewer's cursor in the search row and the header's one row
+    is where the back-out keys are written down; the position once they have
+    landed, and again after `n` moves it; and the hint back when the search
+    ends.
+
+    **`SUB_TITLE` is pinned by VALUE as well as by attribute** — a rewrite of
+    the copy would otherwise pass while claiming the header "goes back", and
+    what §2.10 promises a reviewer who has finished searching is the screen they
+    started on, which is a string.
+
+    The Esc pressed at the end is here for Task 4.5's own instruction ("restore
+    `SUB_TITLE` when the search clears") and is asserted as a HEADER fact: the
+    reviewer is still in the game afterwards. The Esc state machine itself is
+    Slice 5's, parametrized over all three back-out keys and both bar states;
+    nothing here anticipates it.
+    """
+    assert TranscriptScreen.SUB_TITLE == _TRANSCRIPT_SUB_TITLE
+
+    ledger, _ = _ledger_with_body(tmp_path, _JUMP_BODY, name="s44-step-header.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+
+        # 1. Before anything is typed.
+        assert _rendered_sub_title(screen) == _TRANSCRIPT_SUB_TITLE
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _JUMP_QUERY)
+        await _settle_search(pilot)
+
+        # 2. While typing: the search row is saying it better, so the header
+        # keeps the hint rather than repeating the count beside it.
+        assert _rendered_sub_title(screen) == _TRANSCRIPT_SUB_TITLE
+
+        await pilot.press("enter")
+        await pilot.pause()
+        # 3. Landed — and this is the state the search row cannot report from,
+        # because Enter has just hidden it.
+        assert _rendered_sub_title(screen) == _expected_status(
+            _JUMP_QUERY, 1, _JUMP_MATCHES
+        )
+
+        await pilot.press("n")
+        await pilot.pause()
+        assert _rendered_sub_title(screen) == _expected_status(
+            _JUMP_QUERY, 2, _JUMP_MATCHES
+        )
+
+        # 4. The search ends and the header is the reading view's again.
+        await pilot.press("escape")
+        await pilot.pause()
+        assert _rendered_sub_title(screen) == _TRANSCRIPT_SUB_TITLE, (
+            "a header still counting off a position over a game with no "
+            "highlighting on it is the §2.9 AC1 leak wearing a hat"
+        )
+        assert _search_runs(_transcript_body_content(screen)) == []
+        assert app.screen is screen
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+
+
+async def test_a_wrapped_enter_announces_the_wrap_in_the_header(
+    tmp_path: Path,
+) -> None:
+    """§2.5 AC3's other half, which B15.4 could not yet assert.
+
+    "Given the reviewer has scrolled past every match in the game, when they
+    press Enter, then the view jumps back to the first match **and a message
+    tells them the search wrapped around**." B15.4's
+    `test_enter_past_every_match_wraps_round_to_the_first` pins the jump and
+    says in its own docstring that the message needed a channel Slice 4 had not
+    built. This is that message, read off the live header.
+
+    Deliberately a separate test rather than two more lines in B15.4's: the two
+    fail for different reasons — one when the row arithmetic is wrong, one when
+    `wrapped` is dropped between `next_match` and `_search_status_text` — and a
+    single test failing for either would name neither.
+
+    The same fixture and the same route as B15.4's, so the wrap itself is
+    already proven and this test can be about the string: `end` pressed inside
+    the open search bar takes the reviewer past every match (which is §2.4
+    working), and Enter then has nowhere forward to go.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _JUMP_BODY, name="s44-step-wrapsaid.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _JUMP_QUERY)
+        await _settle_search(pilot)
+        await pilot.press("end")
+        await _settle_scroll(pilot)
+
+        # The premise: nothing left below them to find, so Enter must wrap.
+        assert _JUMP_MATCH_ROWS[-1] < scroller.scroll_offset.y
+
+        await pilot.press("enter")
+        await pilot.pause()
+
+        assert scroller.scroll_offset.y == _JUMP_MATCH_ROWS[0]
+        assert _rendered_sub_title(screen) == _expected_status(
+            _JUMP_QUERY, 1, _JUMP_MATCHES, wrapped=True
+        ), (
+            "§2.5 AC3: a jump that went round the end of the game must say so. "
+            "Without the suffix the reviewer sees the view leap a long way "
+            "backwards with no explanation, which reads as a bug"
+        )
+
+
+@_requires_real_game
+async def test_enter_into_the_clamped_tail_leaves_the_next_press_able_to_advance(
+    tmp_path: Path,
+) -> None:
+    """The live re-clamp, which is worth exactly one press (Task 4.4a).
+
+    **The narrowest test in this sub-section, and it exists because the bug it
+    catches costs nothing visible.** Enter scrolls while the search bar is still
+    open and hides the bar afterwards, which hands the scroller back a viewport
+    row and lowers `max_scroll_y` by one — so a reviewer parked at the clamp is
+    pulled back a row, and the landing position Enter *recorded* is now one
+    ahead of where the view actually is. `_step_origin_row` re-clamps the
+    recorded value against the live `max_scroll_y` before comparing; without
+    that, it reads the difference as "the reviewer has scrolled", resolves from
+    the viewport, and the first `n` after a tail Enter re-answers the match the
+    reviewer is already on.
+
+    One wasted press is invisible in a passing suite: the second `n` works, the
+    view was never going to move anyway inside the clamp, and every other
+    assertion about the walk still holds one press later. So the assertion here
+    is precisely "**the FIRST press advances**", and the expected index is
+    derived from the match list rather than written down.
+
+    Measured on this game (`the`, width 96): the tail Enter records 1161 and the
+    view settles at 1160.
+    """
+    text = _WRAP_PIN_REAL_GAME.read_text(encoding="utf-8")
+    ledger, _ = _ledger_with_body(tmp_path, text, name="s44-step-reclamp.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen, scroller, body = await _open_the_real_game(pilot)
+        matches, _, rows = _match_rows(body, _TAIL_QUERY)
+        total = len(matches)
+
+        # THE PREMISE: there are matches the scroll position cannot reach.
+        assert rows[-1] > scroller.max_scroll_y
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _TAIL_QUERY)
+        await _settle_search(pilot)
+        await pilot.press("end")
+        await _settle_scroll(pilot)
+        await pilot.press("enter")
+        await pilot.pause()
+
+        # The reviewer has landed INSIDE the clamped tail: the view is as far
+        # down as it goes, and the match they are on is further down still.
+        assert scroller.scroll_offset.y == scroller.max_scroll_y
+        landing = _current_match(_transcript_body_content(screen))
+        assert landing is not None
+        assert rows[landing] > scroller.scroll_offset.y, (
+            "this Enter did not land inside the clamped tail, so the re-clamp "
+            "it is here to exercise never runs"
+        )
+        assert landing < total - 1, "the landing must leave somewhere to advance to"
+
+        expected = _expected_walk(rows, rows[landing], 1)[0]
+
+        await pilot.press("n")
+        await pilot.pause()
+
+        assert _current_match(_transcript_body_content(screen)) == expected, (
+            f"the first `n` after a tail Enter must advance to match "
+            f"{expected}; answering {landing} again is the recorded landing "
+            "being compared UNCLAMPED against a viewport that has since "
+            "re-fitted — one press silently wasted"
+        )
+        assert _rendered_sub_title(screen) == _expected_status(
+            _TAIL_QUERY, expected + 1, total
+        )
+
+
+@_requires_real_game
+async def test_presses_inside_the_clamped_tail_advance_though_the_view_cannot_move(
+    tmp_path: Path,
+) -> None:
+    """The defect Task 4.4a found, stated as the test that would have caught it.
+
+    **Measured, not hypothetical.** Keyed on `scroll_offset.y` alone, `n` inside
+    the final screenful of a game answered the SAME match four presses running:
+    the scroll clamps at `max_scroll_y`, so the viewport cannot express any
+    position in there, and every press resolved from the same row. Nine matches
+    were unreachable, the wrap could not fire, the view did not move and the
+    marker did not move — so there was nothing on screen to notice, which is why
+    it survived a round of probes.
+
+    **The pair of assertions is the point of this test**, and neither half means
+    anything alone:
+
+    * `scroll_offset.y` is **unchanged** at the clamp after every press — the
+      view genuinely cannot move, and a test that demanded it did would be
+      asking the game to grow rows it does not have; and
+    * `current` and the marker **advance** on every press, through a row-mate
+      skip, with the header counting up.
+
+    That is the whole of what §2.6 can promise in the last screenful, and it is
+    why the current-match marker is load-bearing rather than decorative there.
+
+    The expected walk is derived from the match list and the row map by
+    `_expected_walk` — §2.6's rule written as arithmetic over the fixture, never
+    by calling the production step — so this test states the criterion rather
+    than re-running the code under test. On today's corpus the four presses it
+    makes include one row-mate skip, which is how a real query behaves in real
+    prose and is exactly what a hand-written tail fixture would have left out.
+    """
+    text = _WRAP_PIN_REAL_GAME.read_text(encoding="utf-8")
+    ledger, _ = _ledger_with_body(tmp_path, text, name="s44-step-tail.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen, scroller, body = await _open_the_real_game(pilot)
+        matches, _, rows = _match_rows(body, _TAIL_QUERY)
+        total = len(matches)
+
+        # THE PREMISE, asserted before anything else happens: this query has
+        # matches past the furthest the game can be scrolled. `vote` does not,
+        # on this same game, and that is why Slice 4's probes were blind.
+        assert rows[-1] > scroller.max_scroll_y, (
+            f"the last `{_TAIL_QUERY}` is on row {rows[-1]}, within "
+            f"`max_scroll_y` {scroller.max_scroll_y} — there is no clamped tail "
+            "in this fixture and this test proves nothing"
+        )
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _TAIL_QUERY)
+        await _settle_search(pilot)
+        await pilot.press("end")
+        await _settle_scroll(pilot)
+        await pilot.press("enter")
+        await pilot.pause()
+
+        parked = scroller.scroll_offset.y
+        assert parked == scroller.max_scroll_y
+        landing = _current_match(_transcript_body_content(screen))
+        assert landing is not None
+        assert rows[landing] > parked
+
+        walk = _expected_walk(rows, rows[landing], _TAIL_WALK_PRESSES)
+        seen = [landing]
+        for press, expected in enumerate(walk, start=1):
+            await pilot.press("n")
+            await pilot.pause()
+            current = _current_match(_transcript_body_content(screen))
+            assert current == expected, (
+                f"press {press} of `n` inside the clamped tail answered match "
+                f"{current}; §2.6 says it must reach {expected}. Re-answering "
+                f"{seen[-1]} is the Task 4.4a dead-end — the viewport used as "
+                "the cursor, where the viewport cannot go"
+            )
+            assert scroller.scroll_offset.y == parked, (
+                "the view must NOT move here: there is nothing past the end of "
+                "the game to scroll into view, and padding it with rows that "
+                "are not part of the game was rejected (tech-spec §2.5)"
+            )
+            assert _rendered_sub_title(screen) == _expected_status(
+                _TAIL_QUERY, expected + 1, total
+            )
+            seen.append(current)
+
+        # Every press reached somewhere new, which is the sentence the defect
+        # made false: "four consecutive presses all answered match 692".
+        assert len(set(seen)) == len(seen)
+        assert seen == sorted(seen)
+
+
+async def test_editing_the_query_drops_the_landing_it_no_longer_describes(
+    tmp_path: Path,
+) -> None:
+    """A changed query has no 'match 3' — so the position and the marker go (Task 4.4a).
+
+    `SearchState.current` indexes into the match list of the query it was
+    resolved against: match 2 of `vot` is not match 2 of `vote`, and is usually
+    not even the same part of the game. Keeping it across an edit would repaint
+    the stronger marker on an unrelated match and leave the header counting a
+    position into a list that no longer exists — a readout the reviewer would
+    believe, with nothing on screen to contradict it.
+    `SearchState.scroll_at_landing` is dropped in the same breath, both-or-
+    neither, so the next step resolves from the viewport again — which is where
+    a reviewer who has just changed what they are looking for actually is.
+
+    **Why the viewport half is asserted through its consequence rather than
+    directly.** There is no key path to "bar closed, search live, matches lit,
+    nothing current": the bar must be open to edit a query, and the only ways
+    out of it are Enter, which lands and sets both fields again, or Esc, which
+    ends the search outright. So `n` can never be pressed in that state, and the
+    honest assertion is the one this test makes — the landing is **gone**, which
+    is what makes the viewport the origin the moment there is one. Reading
+    `_search` directly would pin the mechanism and leave the promise untested,
+    which is the rule this whole section is written to (see B15's banner).
+
+    `_SEARCH_MATCH_BODY` is the fixture because the edit here must CHANGE the
+    match list rather than merely re-run it: `vot` has twice as many matches as
+    `vote`, so a surviving index would be pointing into a list half the length.
+
+    One measured mechanic is relied on and is worth writing down, because it is
+    surprising: re-opening the bar with `/` focuses the box and Textual's
+    `Input` **selects its whole value on focus**, so the next character typed
+    REPLACES the query rather than extending it. That is what makes `vote` the
+    thing to type here, not `e`.
+    """
+    ledger, _ = _ledger_with_body(
+        tmp_path, _SEARCH_MATCH_BODY, name="s44-step-edit.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, "vot")
+        await _settle_search(pilot)
+        await pilot.press("enter")
+        await pilot.pause()
+        await pilot.press("n")
+        await pilot.pause()
+
+        # The landing this test is about: a position in the header and a marker
+        # on the game.
+        assert _current_match(_transcript_body_content(screen)) == 1
+        assert _rendered_sub_title(screen) == _expected_status(
+            "vot", 2, _SEARCH_VOT_MATCHES
+        )
+        settled = scroller.scroll_offset.y
+
+        # Re-open on the live search and type a different query over it.
+        await pilot.press("slash")
+        await pilot.pause()
+        search_input = await _type_transcript_search(pilot, "vote")
+        await _settle_search(pilot)
+        assert search_input.value == "vote"
+
+        content = _transcript_body_content(screen)
+        # The new query's matches are lit — half as many as before...
+        assert len(_search_runs(content)) == _SEARCH_VOTE_MATCHES
+        assert _SEARCH_VOTE_MATCHES != _SEARCH_VOT_MATCHES
+        # ...nothing is marked as current...
+        assert _current_match(content) is None, (
+            "the marker must not survive an edit: index 1 of `vot` is not index "
+            "1 of `vote`, so a surviving marker would be pointing at an "
+            "unrelated match with nothing on screen to say so"
+        )
+        # ...the header has stopped counting a position that no longer exists...
+        assert _rendered_sub_title(screen) == _TRANSCRIPT_SUB_TITLE, (
+            "a header still reading `vot · 2/40` over `vote`'s twenty matches "
+            "is the stale index the drop exists to prevent, in the one place "
+            "the reviewer would read it"
+        )
+        # ...and typing moved nothing (§2.2 AC4), so the viewport really is
+        # where the reviewer is when the next navigation resolves.
+        assert scroller.scroll_offset.y == settled
+
+
+# ---------------------------------------------------------------------------
+# B15.6 The offset -> row map against the render — the three-legged pin
+# ---------------------------------------------------------------------------
+#
+# WHAT THIS SUB-SECTION IS FOR, because it is not what the rest of B15 is for.
+# `wrap_row_starts` (`graphia.eval_ledger`) answers the one question the whole
+# feature turns on: which RENDERED ROW does character N of the game fall on.
+# Enter, `n` and `N` all end in `scroll_to(y=<that row>)`, so if the answer is
+# wrong the reviewer is simply put somewhere else — no traceback, no visible
+# breakage, just a search that lands a few lines off and a reader who concludes
+# the tool is unreliable.
+#
+# The mirror is right today BY CONSTRUCTION: `textual/content.py` wraps by
+# calling `rich._wrap.divide_line`, and `wrap_row_starts` calls the same
+# function with the same arguments. "By construction" is a statement about the
+# CURRENT Textual and the CURRENT Rich, and it is the whole exposure — both are
+# ordinary upgrades away from folding lines differently, `rich._wrap` is
+# PRIVATE, and nothing in the type system or the test suite would notice.
+#
+# THE THREE LEGS, and each exists because the ones beside it cannot see what it
+# sees:
+#
+#   LEG 1 — THE ROW COUNT, against two independent Textual paths:
+#           `Content.get_height(body.styles, width)` (the measurement Textual
+#           uses to lay the widget out) and `body.size.height` (the size it
+#           ended up with). Catches a wrap that produces a different NUMBER of
+#           rows. Blind to a wrap that produces the same number in different
+#           places.
+#
+#           NOT `scroller.virtual_size.height`, which is the obvious third
+#           reading and is WRONG: it is `max(content_height, viewport_height)`,
+#           so for a game that fits the viewport it reports the VIEWPORT — 22 —
+#           whatever the game's real row count is. A pin written against it
+#           would pass while comparing 22 to 22 and would assert nothing about
+#           the map at all. `test_the_scroller_virtual_size_is_not_the_row_
+#           count_of_a_game_that_fits` states that trap as an assertion so the
+#           next person to reach for the convenient attribute finds out here.
+#
+#   LEG 2 — THE ROW CONTENT, every row, both regimes. THIS IS THE VALUABLE ONE.
+#           A wrap change that moves boundaries while preserving the count is
+#           invisible to leg 1 and is a total mis-jump: every offset resolves to
+#           a plausible row that holds the wrong text. Leg 2 is the only leg
+#           that can see it, and its failure message is written for whoever
+#           trips it — naming the row, and showing the map's answer against the
+#           render's, because that reader is debugging an upgrade and has never
+#           heard of spec 044.
+#
+#           `.strip()` on both sides is not slack, it is REQUIRED:
+#           `_wrap_and_format` `rstrip()`s every divided row except the last of
+#           a source line, so the rendered row is short by whatever whitespace
+#           the wrap point ate, while the map's slice runs to the next row's
+#           start and so includes it (and the newline, for a row that ends a
+#           source line). This is the same fact that makes summing
+#           `Content.wrap(...)[i].plain` lengths an invalid way to recover
+#           offsets, which is why `divide_line` is called at all.
+#
+#   LEG 3 — `divide_line` ITSELF, with hand-written input and hand-written
+#           offsets, and terminal-free. Legs 1 and 2 fail if the function is
+#           REMOVED (the module-scope import in `eval_ledger` fails at
+#           collection) or if its behaviour changes in a way this corpus
+#           happens to reach. Leg 3 fails if the SEMANTICS change at all —
+#           where a cut falls after a space, where the fold branch chops an
+#           unbroken token — whether or not any fixture here would have noticed.
+#
+# WHY LEG 3 LIVES HERE RATHER THAN IN `tests/test_transcript_search.py`, which
+# is where terminal-free assertions otherwise belong (tech-spec §4, the ~100x
+# per-item cost ratio): the three legs are ONE argument, and the cost rule they
+# would be split by does not apply to leg 3 — it opens no terminal and pays none
+# of the 0.63 s an item in this file usually costs. Read alone in the pure file,
+# a test asserting hand-written offsets of a private Rich function has no
+# visible reason to exist; read here, under the banner above, it is the third
+# leg of a stated argument. The argument's readability is worth more than the
+# filing.
+#
+# BOTH WIDTH REGIMES ARE SWEPT, 96 and 98 — see `_WRAP_PIN_WIDTH_OVERFLOWING`
+# for why they differ and why a pin measured at only one of them would miss half
+# the corpus.
+#
+# NO SEARCH IS OPENED ANYWHERE IN THIS SUB-SECTION, deliberately. The map is a
+# pure function of (text, width); pressing `/` first would add a debounce to
+# wait out and a highlight to hold constant, and would make a failure here
+# ambiguous between "the wrap moved" and "the search did something".
+
+
+def _wrap_pin_row_slices(text: str, row_starts: list[int]) -> list[str]:
+    """The text of every rendered row AS THE MAP SEES IT, row by row.
+
+    Row ``i`` runs from ``row_starts[i]`` to the next start, with the last row
+    running to the end of the game — which is the contract `wrap_row_starts`
+    documents (the starts partition ``[0, len(text))`` contiguously) restated as
+    the slices a reader can actually compare against a screen.
+    """
+    ends = [*row_starts[1:], len(text)]
+    return [text[start:end] for start, end in zip(row_starts, ends)]
+
+
+async def _wrap_pin_open(
+    pilot, game: _WrapPinGame
+) -> tuple[TranscriptScreen, TranscriptBody, VerticalScroll, list[int], int]:
+    """Open the game and return ``(screen, body, scroller, row_starts, width)``.
+
+    Shared by legs 1 and 2 so the two read the SAME live geometry — the width is
+    asked of the widget rather than assumed, exactly as `TranscriptScreen.
+    _row_starts` asks it at jump time, and the regime the case claims is
+    asserted here rather than in each test.
+
+    The regime assertion is a precondition, not a result: a fixture edit that
+    tipped the `fits` game over 22 rows would silently move it into the other
+    width and both legs would keep passing while testing one regime twice.
+    """
+    screen = await _open_the_only_game(pilot)
+    body = screen.query_one("#transcript-body", TranscriptBody)
+    scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+    width = body.content_size.width
+    assert width == game.width, (
+        f"this case is here to pin the width-{game.width} regime, but the body "
+        f"wrapped at {width}. The two differ by the vertical scrollbar's two "
+        f"cells, so the fixture has crossed the {_LONG_GAME_VIEWPORT_ROWS}-row "
+        "viewport and is now testing the other regime twice"
+    )
+    # Which regime a game lands in IS whether it overflows: the scrollbar is
+    # what takes the two cells. Asserted so the two facts cannot drift apart.
+    assert (scroller.max_scroll_y > 0) == (width == _WRAP_PIN_WIDTH_OVERFLOWING)
+    # The body's text is what a search would search — read from the widget, so
+    # the map and the render are built from the same string.
+    assert body.text == game.text
+    return screen, body, scroller, wrap_row_starts(body.text, width), width
+
+
+@pytest.mark.parametrize("game", _WRAP_PIN_PARAMS)
+async def test_the_row_map_is_as_long_as_the_game_textual_rendered(
+    tmp_path: Path, game: _WrapPinGame
+) -> None:
+    """Leg 1: `len(wrap_row_starts(...))` is the rendered row count.
+
+    Checked against **two independent Textual readings**, not one:
+
+    * ``Content.get_height(body.styles, width)`` — the measurement Textual makes
+      to decide how tall the widget must be, taken straight off the rendered
+      ``Content``; and
+    * ``body.size.height`` — the height the widget actually ended up with after
+      layout.
+
+    Two, because they can only agree with each other through the wrap, and
+    because either alone leaves a way for the assertion to be trivially true:
+    ``get_height`` is the same code path the mirror imitates, while
+    ``size.height`` is the end of a long chain of layout that a CSS rule could
+    change without the wrap changing at all.
+
+    The non-vacuity assertion is the third thing here and it earns its place:
+    without it, a game that never wrapped would satisfy every equality above
+    while proving only that a line is a row, which is the one case the mirror
+    cannot get wrong.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, game.text, name="s44-wrap-pin-count.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen, body, _, row_starts, width = await _wrap_pin_open(pilot, game)
+        content = _transcript_body_content(screen)
+
+        # The premise: this game really does wrap, so the count below is a
+        # statement about wrapping rather than about counting newlines.
+        source_lines = game.text.count("\n") + 1
+        assert len(row_starts) > source_lines, (
+            f"{len(row_starts)} rows for {source_lines} source lines — this "
+            "fixture no longer wraps at all, so it pins nothing"
+        )
+
+        assert len(row_starts) == content.get_height(body.styles, width)
+        assert len(row_starts) == body.size.height
+        if game.rows is not None:
+            assert len(row_starts) == game.rows
+
+
+async def test_the_scroller_virtual_size_is_not_the_row_count_of_a_game_that_fits(
+    tmp_path: Path,
+) -> None:
+    """The reading leg 1 deliberately does NOT use, stated as an assertion.
+
+    ``scroller.virtual_size.height`` is the attribute anyone writing this pin
+    reaches for first — it is right there on the scroller, and on an overflowing
+    game it *is* the row count, which is exactly what makes it dangerous. It is
+    ``max(content_height, viewport_height)``: for a game that fits the viewport
+    it reports the **viewport**, so a pin written against it would compare 22 to
+    22 and assert nothing whatever about the offset -> row map.
+
+    Measured here rather than described: this fixture renders
+    :data:`_WRAP_PIN_FITTING_ROWS` rows, the viewport is
+    :data:`_LONG_GAME_VIEWPORT_ROWS`, and ``virtual_size.height`` reports the
+    latter. The inequality between them is the assertion — if a future Textual
+    made ``virtual_size`` honest, this test failing is the notice that leg 1
+    could be simplified, which is a fine reason to fail.
+    """
+    ledger, _ = _ledger_with_body(
+        tmp_path, _WRAP_PIN_FITTING_BODY, name="s44-wrap-pin-virtual.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        body = screen.query_one("#transcript-body", TranscriptBody)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        row_starts = wrap_row_starts(body.text, body.content_size.width)
+
+        # The premise: a game that FITS, which is the only regime where the two
+        # readings part company.
+        assert scroller.size.height == _LONG_GAME_VIEWPORT_ROWS
+        assert len(row_starts) == _WRAP_PIN_FITTING_ROWS
+        assert len(row_starts) < _LONG_GAME_VIEWPORT_ROWS
+
+        # `max(content, viewport)` — the viewport wins, and the true row count
+        # is nowhere in this number.
+        assert scroller.virtual_size.height == _LONG_GAME_VIEWPORT_ROWS
+        assert scroller.virtual_size.height != len(row_starts)
+
+
+@pytest.mark.parametrize("game", _WRAP_PIN_PARAMS)
+async def test_every_rendered_row_holds_the_text_the_row_map_says_it_does(
+    tmp_path: Path, game: _WrapPinGame
+) -> None:
+    """Leg 2: row by row, the render and the map agree on WHERE the cuts fell.
+
+    The leg that catches a wrap change leg 1 cannot see. A fold rule that breaks
+    two characters earlier can easily produce the same number of rows on a given
+    game while moving every boundary inside it — and the consequence is not a
+    smaller error than a wrong count, it is a larger one: every offset still
+    resolves to a row that exists, holds plausible text, and is the wrong one.
+
+    Compared ``.strip()``-ed on both sides because Textual ``rstrip()``s every
+    divided row except the last of a source line, while the map's slice runs to
+    the next row's start and therefore keeps the whitespace the wrap point ate
+    (and the newline, where the row ends a source line). Stripping removes
+    exactly that difference and nothing else: a boundary that moved by a word,
+    or by a character of a folded token, changes the row's text and is caught.
+
+    Every row is compared, not a sample, and the mismatches are COLLECTED rather
+    than asserted one at a time — a wrap change breaks thousands of rows at
+    once, and "row 0 differs" would say far less about what happened than "1,115
+    of 1,182 rows differ, and here are the first five".
+    """
+    ledger, _ = _ledger_with_body(tmp_path, game.text, name="s44-wrap-pin-content.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        _, body, _, row_starts, width = await _wrap_pin_open(pilot, game)
+
+        expected_rows = _wrap_pin_row_slices(body.text, row_starts)
+        mismatches: list[str] = []
+        for row, expected in enumerate(expected_rows):
+            rendered = body.render_line(row).text.strip()
+            if rendered != expected.strip():
+                mismatches.append(
+                    f"  row {row} (map offsets "
+                    f"{row_starts[row]}:{row_starts[row] + len(expected)})\n"
+                    f"    wrap_row_starts says: {expected.strip()!r}\n"
+                    f"    Textual rendered:     {rendered!r}"
+                )
+
+        # The premise: a game that really does wrap, so agreement below is about
+        # wrapping and not about a file of short lines.
+        assert len(expected_rows) > game.text.count("\n") + 1
+
+        # `len(...) == 0` rather than `not mismatches`, so pytest's own
+        # rewritten line reads `assert 15 == 0` instead of dumping the whole
+        # joined list back at a reader who already has it, formatted, above.
+        assert len(mismatches) == 0, (
+            f"{len(mismatches)} of {len(expected_rows)} rendered rows disagree "
+            f"with `wrap_row_starts` at width {width}.\n\n"
+            "This is the offset -> row map drifting away from the wrapping "
+            "Textual actually performs. `graphia.eval_ledger.wrap_row_starts` "
+            "mirrors `textual.content.Content._wrap_and_format` by calling the "
+            "same `rich._wrap.divide_line`; if Textual or Rich has changed how "
+            "lines are divided, or how `_wrap_and_format` calls it, the mirror "
+            "has to be updated to match or every search jump in the transcript "
+            "viewer lands on the wrong line.\n\n"
+            "First mismatching rows:\n" + "\n".join(mismatches[:5])
+        )
+
+
+# The hand-written leg-3 cases: input, width, the offsets `divide_line` must
+# return, and the rows those offsets cut the input into. The rows are redundant
+# with the offsets on purpose — they are what makes the case readable, and a
+# reader checking the expectation by eye checks the rows, not the integers.
+#
+# Every branch of `divide_line` that `wrap_row_starts` can reach is here:
+# a word that fits the remaining space, a word that does not but fits the next
+# row, a line that needs no cut at all, the FOLD branch for a token wider than
+# the whole row (both at the very start of a line and after a word), the
+# whitespace-ownership rule (`re_word` is `\s*\S+\s*`, so a word carries its
+# trailing spaces and the cut falls AFTER them), and the empty line.
+_DIVIDE_LINE_CASES = [
+    pytest.param(
+        "aaa bbb ccc ddd", 7, [8], ["aaa bbb ", "ccc ddd"], id="cuts-at-a-space"
+    ),
+    pytest.param(
+        "Alice: I vote for Cleo today",
+        10,
+        [9, 18],
+        ["Alice: I ", "vote for ", "Cleo today"],
+        id="three-rows-of-speech",
+    ),
+    pytest.param(
+        "aaa bbb ccc ddd", 15, [], ["aaa bbb ccc ddd"], id="no-cut-when-it-fits"
+    ),
+    pytest.param(
+        "abcdefghij", 4, [4, 8], ["abcd", "efgh", "ij"], id="folds-a-long-token"
+    ),
+    pytest.param(
+        "hi abcdefghijkl",
+        6,
+        [3, 9],
+        ["hi ", "abcdef", "ghijkl"],
+        id="folds-a-long-token-after-a-word",
+    ),
+    pytest.param(
+        "one  two", 4, [5], ["one  ", "two"], id="the-cut-falls-after-the-spaces"
+    ),
+    pytest.param("", 5, [], [""], id="an-empty-line"),
+]
+
+
+@pytest.mark.parametrize(("line", "width", "cuts", "rows"), _DIVIDE_LINE_CASES)
+def test_divide_line_still_cuts_where_the_row_map_assumes(
+    line: str, width: int, cuts: list[int], rows: list[str]
+) -> None:
+    """Leg 3: the private function's SEMANTICS, by hand, with no terminal.
+
+    Legs 1 and 2 go red if `divide_line` disappears (the module-scope import in
+    `graphia.eval_ledger` fails at collection, which is the canary tech-spec
+    §2.2 asks for) or if its behaviour changes somewhere the three fixtures
+    above happen to reach. Neither is the same as pinning what the function
+    MEANS, and a fold rule can change in a corner no fixture exercises and still
+    move a real game's rows the day a transcript contains the right line.
+
+    So: seven lines written by hand, seven sets of offsets written by hand, and
+    the rows those offsets produce written out beside them so the expectation is
+    checkable by eye rather than by re-deriving `rich/_wrap.py` in one's head.
+
+    Two properties of `divide_line` that the cases encode and that are easy to
+    get backwards when reading it:
+
+    * **The offsets are CHARACTER indices, not cell offsets**, despite its own
+      docstring saying "a list of cell offsets". `wrap_row_starts` adds them to a
+      character offset, so this is load-bearing rather than pedantic.
+    * **A word owns its trailing whitespace** (`re_word` is ``\\s*\\S+\\s*``), so
+      the cut falls after the spaces and never before them — which is why the
+      rendered row has to be `rstrip()`ed before leg 2 can compare it.
+
+    ``fold=True`` throughout, because that is what `wrap_row_starts` passes and
+    what `TranscriptScreen`'s CSS leaves in force (``text-overflow`` defaults to
+    ``fold`` and the stylesheet does not set it).
+    """
+    assert divide_line(line, width, fold=True) == cuts
+
+    # The same expectation, stated as the rows a reader can check by eye.
+    divided = []
+    previous = 0
+    for cut in [*cuts, len(line)]:
+        divided.append(line[previous:cut])
+        previous = cut
+    assert divided == rows
+
+
+def test_the_row_map_folds_lines_with_rich_s_own_function() -> None:
+    """The import canary, made explicit: `eval_ledger.divide_line` IS Rich's.
+
+    Tech-spec §2.2 accepts a dependency on the **private** `rich._wrap` on one
+    ground: `textual/content.py` imports it itself, so calling the same function
+    makes the mirror agree with the render BY CONSTRUCTION. That argument holds
+    only while the name in `graphia.eval_ledger` really is the object Textual
+    uses — a local reimplementation, a vendored copy or a compatibility shim
+    introduced to "remove the private import" would keep every signature, keep
+    leg 3's hand-written offsets passing for as long as the copy stayed in step,
+    and quietly end the guarantee.
+
+    One `is` catches all of that, and costs nothing.
+    """
+    assert divide_line is rich_divide_line
+
+
+# ---------------------------------------------------------------------------
+# B15.7 Leaving the search, and leaving the game — the three-state Esc machine
+# ---------------------------------------------------------------------------
+#
+# THE FIFTH QUESTION IN THIS SECTION, after "where did the key land" (B15.1),
+# "what lit up" (B15.2), "where did the game come to rest" (B15.4) and "what
+# does the screen SAY" (B15.5): WHAT DOES A BACK-OUT KEY DO, AND IN WHICH
+# STATE. Functional-spec §2.9 is a three-state machine and the tech spec's own
+# task list calls this "the single most likely bug in the feature", so the sweep
+# below is two-dimensional on purpose — three keys against all three states.
+#
+# THE THREE STATES, named here because every test below reaches one of them:
+#
+#   (i)   BAR OPEN, SEARCH LIVE — `/` pressed, a query typed, `#search-row`
+#         carrying `-open` and the `TranscriptSearchInput` holding focus.
+#   (ii)  BAR HIDDEN, SEARCH LIVE — what Enter on a query that was actually
+#         typed leaves behind: the matches stay lit, the scroller has focus.
+#   (iii) NO SEARCH — `_search is None`, either never searched or cleared.
+#
+# THE MATRIX IS NOT UNIFORM, AND A SWEEP THAT ASSUMED IT WAS WOULD BE ASSERTING
+# THE OPPOSITE OF THE DESIGN. In state (i) the focused `Input` is in the way and
+# only `escape` ever reaches `action_close`: `backspace` DELETES A CHARACTER of
+# the query and `q` TYPES A LITERAL `q` into it, both leaving the bar open. That
+# is functional-spec §2.4 working (B15.1's
+# `test_the_bars_own_keys_type_into_it_instead_of_leaving_the_game` is the same
+# fact from the other side), and it is why the expectation below is a TABLE
+# rather than a loop — and why the two typing rows assert THE QUERY TEXT. A row
+# that asserted only "still on a `TranscriptScreen`" would pass just as happily
+# against a key that did nothing at all, which is the one outcome none of the
+# three is allowed to have.
+#
+# In states (ii) and (iii) the scroller holds focus and all three keys reach the
+# same `action_close`, where the branch is on `_search` alone: in (ii) they
+# clear the search and STAY, in (iii) they leave in one press.
+#
+# READING `TranscriptScreen._search` IS THE ONE DEPARTURE THIS SUB-SECTION MAKES
+# FROM THE SECTION BANNER ABOVE, and it is forced rather than convenient. Task
+# 5.2a's whole finding is that two of the states are IDENTICAL ON SCREEN: after
+# Enter on an empty query and after Enter on a query that matched nothing,
+# nothing is lit, the bar is hidden and the header is back at its resting hint —
+# the only difference is whether a `SearchState` is still alive behind them, and
+# the only thing a reviewer can observe about it is that the next Esc is spent
+# clearing it. So every state assertion below is PAIRED with the observable
+# consequence (how many Escs it takes to get back to the run), and neither is
+# written without the other: the field says what the screen is, the Esc count
+# says what that costs the reviewer, and a regression that broke one without the
+# other is not a regression this feature can have.
+#
+# WHAT THE EXISTING SUITE ALREADY DISCHARGES, so it is not repeated here.
+# Task 5.4's item (e) — "the runs list and a run's figures behave exactly as
+# before" — is B1-B9's whole subject (the table, the runs-list filter in B4/B6,
+# the detail pane in B9) plus B12/B13's pane-focus and round-trip walks, none of
+# which this feature touches; and §2.10 AC1's reading view is pinned by
+# `test_scrolling_a_long_game_behaves_as_before` (B14.4) and the two
+# strict-equality span tests in B14.2/B14.3, which never press `/`. Duplicating
+# any of them here would add items without adding coverage.
+
+# The query the back-out sweep searches for, on B15.2's game. Four characters,
+# so `backspace` leaves a THREE-character query that is still a live search
+# (`vot`, which that fixture also matches) rather than an empty one — the
+# deletion has to be visible as an edit, not as an accidental clear.
+_BACK_OUT_QUERY = "vote"
+
+# The three states of functional-spec §2.9, as the ids the sweep is written in.
+_STATE_BAR_OPEN = "bar-open"
+_STATE_SEARCH_LIVE = "search-live"
+_STATE_NO_SEARCH = "no-search"
+
+
+class _BackOutOutcome(NamedTuple):
+    """What one back-out key does in one of §2.9's three states.
+
+    ``query`` is what the search box holds AFTERWARDS, and it is the field that
+    makes the two typing rows falsifiable: `backspace` and `q` are asserted to
+    have changed the text in the way §2.4 says they do, not merely to have left
+    the reviewer in the game.
+
+    Unread when ``leaves`` is true — the screen is gone and there is no box.
+    """
+
+    leaves: bool
+    search_alive: bool
+    bar_open: bool
+    query: str
+
+
+# The search is gone and the reviewer is still in the game — `action_close`'s
+# first branch, reached by `escape` in state (i) and by all three keys in (ii).
+_BACK_OUT_CLEARED = _BackOutOutcome(
+    leaves=False, search_alive=False, bar_open=False, query=""
+)
+# The reviewer is back on the run — `action_close`'s second branch.
+_BACK_OUT_LEFT = _BackOutOutcome(
+    leaves=True, search_alive=False, bar_open=False, query=""
+)
+
+# THE MATRIX, written out rather than derived, because five of its nine cells
+# are the same answer and four are not — and the four that are not are the point
+# of the sweep. `backspace` and `q` in state (i) never reach `action_close` at
+# all; they edit the query under the reviewer's cursor.
+_BACK_OUT_EXPECTATIONS: dict[tuple[str, str], _BackOutOutcome] = {
+    (_STATE_BAR_OPEN, "escape"): _BACK_OUT_CLEARED,
+    (_STATE_BAR_OPEN, "backspace"): _BackOutOutcome(
+        leaves=False, search_alive=True, bar_open=True, query=_BACK_OUT_QUERY[:-1]
+    ),
+    (_STATE_BAR_OPEN, "q"): _BackOutOutcome(
+        leaves=False, search_alive=True, bar_open=True, query=_BACK_OUT_QUERY + "q"
+    ),
+    (_STATE_SEARCH_LIVE, "escape"): _BACK_OUT_CLEARED,
+    (_STATE_SEARCH_LIVE, "backspace"): _BACK_OUT_CLEARED,
+    (_STATE_SEARCH_LIVE, "q"): _BACK_OUT_CLEARED,
+    (_STATE_NO_SEARCH, "escape"): _BACK_OUT_LEFT,
+    (_STATE_NO_SEARCH, "backspace"): _BACK_OUT_LEFT,
+    (_STATE_NO_SEARCH, "q"): _BACK_OUT_LEFT,
+}
+
+# Every key crossed with every state, ids reading `<state>-<key>` so a failure
+# names the cell. Derived from `_TRANSCRIPT_BACK_KEYS` rather than from a fresh
+# tuple, so a fourth back-out key added to the screen arrives here — and in the
+# rot guard beside that constant — instead of being swept by neither.
+_BACK_OUT_PARAMS = [
+    pytest.param(key, state, id=f"{state}-{key}")
+    for state in (_STATE_BAR_OPEN, _STATE_SEARCH_LIVE, _STATE_NO_SEARCH)
+    for key in _TRANSCRIPT_BACK_KEYS
+]
+
+# What `#search-count` says for a query the game does not contain. Mirrors the
+# module's `_NO_MATCHES_MESSAGE`, asserted by value rather than imported — this
+# file's convention for user-visible copy (see `_EMPTY_LEDGER_MESSAGE`), so a
+# rewrite of the string is a decision someone makes here too.
+_NO_MATCHES_READOUT = "No matches"
+
+# A query absent from `_LONG_GAME_BODY`, for the third Enter case. Lowercase, so
+# smart case leaves it case-INSENSITIVE and the empty result is a statement
+# about the game rather than about the casing. The test asserts that absence
+# before it asserts anything about it.
+_ENTER_NO_MATCH_QUERY = "zqxjv7"
+
+
+class _EnterCase(NamedTuple):
+    """One thing a reviewer can have typed when they press Enter (§2.5 AC5, §2.8 AC4).
+
+    Three cases, and the first two are INDISTINGUISHABLE ON SCREEN from each
+    other in every respect but one — which is exactly why `survives` is asserted
+    as a field of the screen and again as a number of Escs.
+
+    ``count_readout`` is what ``#search-count`` must say afterwards, or ``None``
+    for "the fixture's own match total", which the test computes rather than
+    hard-coding a number that would rot with the fixture.
+    """
+
+    typed: str
+    survives: bool
+    survives_because: str
+    lit: bool
+    positioned: bool
+    count_readout: str | None
+    escapes: int
+    builds_the_row_map: bool
+
+
+_ENTER_CASES = [
+    pytest.param(
+        _EnterCase(
+            typed="",
+            survives=False,
+            survives_because=(
+                "an Enter on nothing typed must END the search (Task 5.2a): the "
+                "screen it leaves is character-for-character the screen of a "
+                "reviewer who never pressed `/`, so a `SearchState` behind it "
+                "is a state they cannot see and the next Esc is silently spent "
+                "clearing it — against §2.9 AC3"
+            ),
+            lit=False,
+            positioned=False,
+            count_readout="",
+            escapes=1,
+            builds_the_row_map=False,
+        ),
+        id="nothing-typed",
+    ),
+    pytest.param(
+        _EnterCase(
+            typed=" ",
+            survives=True,
+            survives_because=(
+                "WHITESPACE IS A TYPED QUERY. `find_matches` is case-smart but "
+                "otherwise literal, so a space is ordinary text to it — the "
+                "most-matching query in the whole corpus (14,524 hits on the 88 "
+                "KB committed game). The empty-Enter branch must therefore test "
+                "`not search.query` and NEVER `not search.query.strip()`: "
+                "stripping throws this reviewer's search away on the grounds "
+                "that it 'looked empty'"
+            ),
+            lit=True,
+            positioned=True,
+            count_readout=None,
+            escapes=2,
+            builds_the_row_map=True,
+        ),
+        id="a-single-space",
+    ),
+    pytest.param(
+        _EnterCase(
+            typed=_ENTER_NO_MATCH_QUERY,
+            survives=True,
+            survives_because=(
+                "a query that matched nothing is a search the reviewer is "
+                "mid-way through and will edit or abandon (§2.8 AC2, §2.9 AC5) "
+                "— 'I asked, and there was nothing' is not 'I did not ask'"
+            ),
+            lit=False,
+            positioned=False,
+            count_readout=_NO_MATCHES_READOUT,
+            escapes=2,
+            builds_the_row_map=True,
+        ),
+        id="typed-but-no-match",
+    ),
+]
+
+
+async def _reach_back_out_state(
+    pilot, screen: TranscriptScreen, state: str
+) -> TranscriptSearchInput:
+    """Put the screen in one of §2.9's three states, by real keystrokes only.
+
+    Asserts the state it claims to have reached before handing back, so a sweep
+    row can never press its key into a state the setup failed to produce — which
+    would turn nine parametrized cases into three, silently and greenly.
+
+    Returns the search box, so a caller can read the query back as the key path
+    actually built it.
+    """
+    search_input = screen.query_one(TranscriptSearchInput)
+    search_row = screen.query_one("#search-row", Horizontal)
+    scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+    if state == _STATE_NO_SEARCH:
+        assert screen._search is None
+        assert "-open" not in search_row.classes
+        assert screen.focused is scroller
+        return search_input
+
+    await pilot.press("slash")
+    await pilot.pause()
+    await _type_transcript_search(pilot, _BACK_OUT_QUERY)
+    await _settle_search(pilot)
+
+    # The premise both remaining states share: a query that is really typed and
+    # really lit, so "the highlighting is gone" afterwards is a change.
+    assert search_input.value == _BACK_OUT_QUERY
+    assert screen._search is not None
+    assert screen._search.query == _BACK_OUT_QUERY
+    assert len(_search_runs(_transcript_body_content(screen))) == _SEARCH_VOTE_MATCHES
+
+    if state == _STATE_BAR_OPEN:
+        assert "-open" in search_row.classes
+        assert screen.focused is search_input
+        return search_input
+
+    assert state == _STATE_SEARCH_LIVE, f"unknown state {state!r}"
+    # Enter closes the prompt and keeps the search — §2.5 AC4, and the state
+    # that only exists from Slice 3 onward.
+    await pilot.press("enter")
+    await pilot.pause()
+    assert "-open" not in search_row.classes
+    assert screen._search is not None
+    assert screen.focused is scroller
+    assert len(_search_runs(_transcript_body_content(screen))) == _SEARCH_VOTE_MATCHES
+    return search_input
+
+
+@pytest.mark.parametrize(("key", "state"), _BACK_OUT_PARAMS)
+async def test_a_back_out_key_answers_the_state_it_was_pressed_in(
+    tmp_path: Path, key: str, state: str
+) -> None:
+    """`escape` / `backspace` / `q` against all three of §2.9's states.
+
+    The sweep the tech spec names as the feature's likeliest bug, and the second
+    dimension is the half that matters: a one-dimensional "Esc clears then
+    leaves" test passes against a screen that branches on the search BAR rather
+    than on the search STATE, because bar visibility answers "closed" to state
+    (ii) and state (iii) alike and the reviewer is popped out from under their
+    own highlights.
+
+    **The expectation is read from `_BACK_OUT_EXPECTATIONS`, which is NOT
+    uniform.** In state (i) only `escape` reaches `action_close`; `backspace`
+    deletes a character and `q` types one, and both rows assert the resulting
+    QUERY TEXT — at the box and at `SearchState.query`, which are separately
+    capable of being wrong. Without that, a key that was swallowed entirely
+    would satisfy every other assertion in this test.
+
+    **Where the press cleared the search and stayed, the SAME key is pressed
+    again** and must leave. That is §2.9 AC5's second half — "a further Esc
+    leaves it" — asserted for all three keys rather than for Esc alone, which is
+    what `action_close`'s shared binding actually promises.
+
+    `scroll_offset.y` is pinned across every press: Esc abandons the search, not
+    the reviewer's place in the text (§2.9 AC1).
+    """
+    expected = _BACK_OUT_EXPECTATIONS[(state, key)]
+    ledger, _ = _ledger_with_body(
+        tmp_path, _SEARCH_MATCH_BODY, name="s44-back-out.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        search_row = screen.query_one("#search-row", Horizontal)
+
+        search_input = await _reach_back_out_state(pilot, screen, state)
+        resting_y = scroller.scroll_offset.y
+
+        await pilot.press(key)
+        await pilot.pause()
+
+        if expected.leaves:
+            assert isinstance(app.screen, DetailScreen), (
+                f"{key!r} in state {state!r} left the reviewer on a "
+                f"{type(app.screen).__name__}; with no search live it must go "
+                "straight back to the run (§2.9 AC3 — the change costs a "
+                "reviewer who never searches no extra keypress)"
+            )
+            assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+            return
+
+        assert isinstance(app.screen, TranscriptScreen), (
+            f"{key!r} in state {state!r} left the game; with a search live the "
+            "first press owes the reviewer a cleared search and the game they "
+            "were reading (§2.9 AC1/AC5)"
+        )
+        assert app.screen is screen
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+
+        assert (screen._search is not None) is expected.search_alive, (
+            f"{key!r} in state {state!r}: the search is "
+            f"{'alive' if screen._search is not None else 'gone'} and the "
+            f"matrix says it should be "
+            f"{'alive' if expected.search_alive else 'gone'}"
+        )
+        assert ("-open" in search_row.classes) is expected.bar_open
+        assert tuple(search_row.size) == (
+            _SEARCH_ROW_OPEN_SIZE if expected.bar_open else _SEARCH_ROW_CLOSED_SIZE
+        )
+        # THE QUERY, and for the two typing rows this is the whole assertion:
+        # §2.4 says `backspace` deletes a character and `q` adds one, so a key
+        # that was swallowed leaves `_BACK_OUT_QUERY` untouched and fails here
+        # while passing everything above.
+        assert search_input.value == expected.query, (
+            f"{key!r} in state {state!r} left {search_input.value!r} in the "
+            f"box; §2.4 says it should read {expected.query!r}"
+        )
+        assert scroller.scroll_offset.y == resting_y, (
+            "the press moved the game; Esc abandons the search, not the "
+            "reviewer's place in it (§2.9 AC1)"
+        )
+
+        if expected.search_alive:
+            # Still searching: the state tracks the box character for
+            # character, and the cursor is still in it.
+            assert screen._search.query == expected.query
+            assert screen.focused is search_input
+            return
+
+        # Cleared: the amber is gone, the header is back, the game answers the
+        # arrow keys again...
+        assert _search_runs(_transcript_body_content(screen)) == [], (
+            f"{key!r} in state {state!r} left the matches lit; §2.9 AC1 asks "
+            "for the highlighting to go with the search"
+        )
+        assert screen.sub_title == TranscriptScreen.SUB_TITLE
+        assert screen.focused is scroller
+        assert scroller.size.height == _LONG_GAME_VIEWPORT_ROWS
+
+        # ...and the SAME key again leaves (§2.9 AC5's second half).
+        await pilot.press(key)
+        await pilot.pause()
+        assert isinstance(app.screen, DetailScreen), (
+            f"a second {key!r} did not leave the game; the first one cleared "
+            "the search, so the next press has nothing left to clear"
+        )
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+
+
+async def test_escape_keeps_the_place_the_reviewer_scrolled_to_while_typing(
+    tmp_path: Path,
+) -> None:
+    """Esc hands back the place the search ENDED at, not the one it started from.
+
+    Task 5.4 item (a), and the reason it is a separate test from the sweep: the
+    sweep's state (i) never scrolls, so its `scroll_offset.y` assertion is true
+    of an implementation that remembered the row `/` was pressed at and restored
+    it on the way out. Functional-spec §2.4 invites the reviewer to scroll while
+    the bar is open — that is the whole of the "the game still scrolls while you
+    type" promise — so §2.9 AC1's "the game is still at the same place on
+    screen" is a claim about where they ENDED, and it is only falsifiable from a
+    row they scrolled to under the open bar.
+
+    So this one opens the search at one row, scrolls a page under it, types
+    another character there, and asserts Esc leaves the view at the second row.
+    The two rows are asserted to differ before the Esc, so the claim cannot be
+    satisfied by a scroll that never happened.
+
+    The narrowing on that last character (`vot` → `vote`, 40 spans → 20) is not
+    decoration either: it says the search was still live and still repainting
+    after the scroll, which is what makes the Esc that follows an abandonment of
+    something rather than of nothing.
+    """
+    ledger, _ = _ledger_with_body(
+        tmp_path, _SEARCH_MATCH_BODY, name="s44-esc-place.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        search_row = screen.query_one("#search-row", Horizontal)
+
+        # Read into the middle of the game with the ordinary reading keys, then
+        # open the search there — this is the row a "restore where it opened"
+        # bug would hand back.
+        await pilot.press("pagedown")
+        await _settle_scroll(pilot)
+        opened_at = scroller.scroll_offset.y
+        assert opened_at == _LONG_GAME_VIEWPORT_ROWS
+
+        await pilot.press("slash")
+        await pilot.pause()
+        search_input = await _type_transcript_search(pilot, "vot")
+        await _settle_search(pilot)
+        assert scroller.scroll_offset.y == opened_at
+        assert (
+            len(_search_runs(_transcript_body_content(screen))) == _SEARCH_VOT_MATCHES
+        )
+
+        # §2.4: the game scrolls under the open bar, and the query survives it.
+        await pilot.press("pagedown")
+        await _settle_scroll(pilot)
+        await pilot.press("e")
+        await _settle_search(pilot)
+
+        ended_at = scroller.scroll_offset.y
+        assert ended_at == opened_at + _SEARCH_OPEN_VIEWPORT_ROWS
+        assert ended_at != opened_at, (
+            "the page key did not move the game under the open bar, so this "
+            "test cannot tell 'where they ended' from 'where they opened'"
+        )
+        assert search_input.value == "vote"
+        assert (
+            len(_search_runs(_transcript_body_content(screen))) == _SEARCH_VOTE_MATCHES
+        )
+
+        await pilot.press("escape")
+        await pilot.pause()
+
+        # The search is gone and the bar with it...
+        assert app.screen is screen
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+        assert screen._search is None
+        assert "-open" not in search_row.classes
+        assert tuple(search_row.size) == _SEARCH_ROW_CLOSED_SIZE
+        assert search_input.value == ""
+        assert _search_runs(_transcript_body_content(screen)) == []
+        assert screen.sub_title == TranscriptScreen.SUB_TITLE
+        assert screen.focused is scroller
+
+        # ...and the reviewer is where they scrolled to, not where they opened.
+        assert scroller.scroll_offset.y == ended_at, (
+            f"Esc left the game at row {scroller.scroll_offset.y}; the reviewer "
+            f"had scrolled to {ended_at} under the open bar (they opened it at "
+            f"{opened_at}). §2.9 AC1 owes them where the search ended"
+        )
+        assert scroller.size.height == _LONG_GAME_VIEWPORT_ROWS
+        assert scroller.max_scroll_y == _LONG_GAME_MAX_SCROLL_Y
+
+
+@pytest.mark.parametrize("case", _ENTER_CASES)
+async def test_what_an_enter_leaves_behind_depends_on_what_was_typed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: _EnterCase
+) -> None:
+    """Nothing typed ends the search; nothing FOUND does not (Task 5.2a).
+
+    Three Enters that move the game not at all and look nearly identical
+    afterwards, and the differences between them are the test:
+
+    * `_search` — ``None`` for the empty one, alive for the other two. This is
+      the one place in B15 that reads the private field, and it is forced: the
+      empty case and the no-match case are the same screen (nothing lit, bar
+      hidden, header at its resting hint) and the field is the only thing that
+      separates them at the moment of the press.
+    * **The Escs it costs to get back to the run** — 1 or 2 — which is that same
+      difference stated as something the reviewer experiences. Asserted beside
+      the field, never instead of it: the field says what the screen is, the
+      count says what it costs.
+    * `#search-count` — blank, a total, or "No matches". The ONE visible
+      difference between the empty case and the no-match case, and it is on the
+      row that is about to be hidden.
+    * The header — a position only where there was something to land on.
+
+    **The single-space row is the anti-`.strip()` guard.** It is the assertion
+    that goes red for a future tidy-up that collapses the empty branch and the
+    no-match branch into one, or that "normalises" the query before testing it:
+    `find_matches` treats whitespace as ordinary literal text, so a space is a
+    real question with more answers than any other query in the corpus.
+
+    **And one assertion no state check can make: the ORDER.** A counting wrapper
+    over `TranscriptScreen._row_starts` says whether the empty Enter built the
+    offset→row map before discovering it had nothing to jump to. Every other
+    assertion here passes against a `_clear_search()` moved to after the map is
+    built and cached into a `SearchState` that ceases to exist on the next line;
+    this one does not.
+
+    `scroll_offset.y` is captured BEFORE `/` so the whole open-type-submit
+    sequence is inside the "nothing moves" claim of §2.5 AC5 / §2.8 AC4 — not
+    just the Enter.
+    """
+    ledger, _ = _ledger_with_body(
+        tmp_path, _LONG_GAME_BODY, name="s44-enter-typed.yaml"
+    )
+
+    # THE ORDERING PROBE. A wrapper rather than a stub — the real map is still
+    # built, so the two cases that legitimately need one still jump correctly
+    # and the count is the only thing added.
+    builds: list[int] = []
+    unpatched_row_starts = TranscriptScreen._row_starts
+
+    def counting_row_starts(
+        self: TranscriptScreen, body: TranscriptBody
+    ) -> list[int]:
+        builds.append(body.content_size.width)
+        return unpatched_row_starts(self, body)
+
+    monkeypatch.setattr(TranscriptScreen, "_row_starts", counting_row_starts)
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", TranscriptBody)
+        search_row = screen.query_one("#search-row", Horizontal)
+        search_count = screen.query_one("#search-count", Static)
+
+        # Read into the middle of the game before searching, with the ordinary
+        # reading keys — so "nothing moved" is a statement about a row the
+        # reviewer chose rather than about the top of the game, which an
+        # implementation that reset the view would also produce.
+        await pilot.press("pagedown")
+        await _settle_scroll(pilot)
+        reading_at = scroller.scroll_offset.y
+        assert reading_at == _LONG_GAME_VIEWPORT_ROWS
+
+        # THE FIXTURE'S PREMISES, stated before anything is asserted about the
+        # behaviour. Computed from the pure matchers against the widget's own
+        # text and its own live wrap width, which is how the rest of B15 derives
+        # an expectation without re-running the code under test.
+        matches = find_matches(body.text, case.typed) if case.typed else []
+        row_starts = wrap_row_starts(body.text, body.content_size.width)
+        # `row_starts[row]` IS `offset_for_row(row_starts, row)` — the offset of
+        # the first character of the reviewer's top rendered row, which is what
+        # Enter resolves "at or below the current position" from.
+        top_offset = row_starts[reading_at]
+        landing = None
+        if case.lit:
+            assert matches, (
+                f"{case.typed!r} matches nothing in this game, so this case "
+                "cannot ask whether a typed query survives Enter"
+            )
+            landing = next(
+                index
+                for index, (start, _) in enumerate(matches)
+                if start >= top_offset
+            )
+            # The jump has nowhere to go: the first match at or below the top
+            # row is ON the top row, so §2.5 AC2 ("a match already on the top
+            # line is where Enter lands") makes "nothing moved" a real claim
+            # here rather than a lucky one.
+            assert row_for_offset(row_starts, matches[landing][0]) == reading_at, (
+                "the first match below the reviewer is not on their top row, "
+                "so Enter will legitimately scroll and this case's "
+                "`scroll_offset.y` assertion would be testing the wrong thing"
+            )
+        elif case.typed:
+            assert matches == [], (
+                f"{case.typed!r} was chosen because this game does not contain "
+                f"it, and it has {len(matches)} matches"
+            )
+
+        await pilot.press("slash")
+        await pilot.pause()
+        search_input = await _type_transcript_search(pilot, case.typed)
+        await _settle_search(pilot)
+        assert search_input.value == case.typed
+        assert scroller.scroll_offset.y == reading_at
+
+        # Only the Enter's own map-building is being counted; the open and the
+        # typing build none, and this makes that irrelevant either way.
+        builds.clear()
+
+        await pilot.press("enter")
+        await pilot.pause()
+
+        # WHAT EVERY CASE HAS IN COMMON: the prompt is gone, the game has not
+        # moved, and the reviewer is back in the text.
+        assert app.screen is screen
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+        assert "-open" not in search_row.classes
+        assert tuple(search_row.size) == _SEARCH_ROW_CLOSED_SIZE
+        assert screen.focused is scroller
+        assert scroller.scroll_offset.y == reading_at, (
+            f"Enter on {case.typed!r} moved the game from row {reading_at} to "
+            f"{scroller.scroll_offset.y}; §2.5 AC5 and §2.8 AC4 both say "
+            "nothing moves"
+        )
+
+        # WHAT SEPARATES THEM, and the first of these is invisible on screen.
+        if case.survives:
+            assert screen._search is not None, (
+                f"Enter on {case.typed!r} ended the search — {case.survives_because}"
+            )
+            assert screen._search.query == case.typed
+        else:
+            assert screen._search is None, (
+                f"Enter on {case.typed!r} left a search alive — "
+                f"{case.survives_because}"
+            )
+
+        content = _transcript_body_content(screen)
+        lit = _search_runs(content)
+        if case.lit:
+            assert [text for _, _, text in lit] == [case.typed] * len(matches)
+        else:
+            assert lit == [], (
+                f"Enter on {case.typed!r} lit {len(lit)} spans; there is "
+                "nothing to light"
+            )
+
+        expected_readout = (
+            f"{len(matches)} matches"
+            if case.count_readout is None
+            else case.count_readout
+        )
+        assert plain_text(search_count) == expected_readout, (
+            f"`#search-count` reads {plain_text(search_count)!r} after Enter on "
+            f"{case.typed!r}; it is the only VISIBLE difference between a query "
+            "that found nothing and one that was never typed"
+        )
+
+        if case.positioned:
+            assert landing is not None
+            assert _rendered_sub_title(screen) == _expected_status(
+                case.typed, landing + 1, len(matches)
+            )
+        else:
+            assert screen.sub_title == TranscriptScreen.SUB_TITLE
+            assert _rendered_sub_title(screen) == _TRANSCRIPT_SUB_TITLE
+
+        # THE ORDERING — see the docstring. Nothing else here can see it.
+        if case.builds_the_row_map:
+            assert builds, (
+                f"Enter on {case.typed!r} never built the offset→row map, so it "
+                "cannot have resolved where to jump"
+            )
+        else:
+            assert builds == [], (
+                f"Enter on an empty query built the offset→row map {len(builds)} "
+                "time(s) before ending the search. The clear has to come FIRST "
+                "— before `find_matches`, before `_row_starts` — or the whole "
+                "wrap map (1,182 rows and 7.6 ms on the 88 KB committed game) "
+                "is built and cached into a `SearchState` that ceases to exist "
+                "two lines later. Every other assertion in this test passes "
+                "either way, which is why this one is here"
+            )
+
+        # AND THE SAME DIFFERENCE AS THE REVIEWER EXPERIENCES IT: how many Escs
+        # it takes to get back to the run. The clearing presses (if any) come
+        # first and are asserted to actually clear.
+        for _ in range(case.escapes - 1):
+            await pilot.press("escape")
+            await pilot.pause()
+            assert isinstance(app.screen, TranscriptScreen), (
+                f"the first Esc after Enter on {case.typed!r} left the game; a "
+                "search the reviewer can see costs one Esc to clear and keeps "
+                "them in the text (§2.9 AC5)"
+            )
+            assert app.screen is screen
+            assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+            assert screen._search is None
+            assert _search_runs(_transcript_body_content(screen)) == []
+            assert screen.sub_title == TranscriptScreen.SUB_TITLE
+
+        await pilot.press("escape")
+        await pilot.pause()
+        assert isinstance(app.screen, DetailScreen), (
+            f"it took more than {case.escapes} Esc(s) to leave a game after "
+            f"Enter on {case.typed!r}"
+        )
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+
+
+async def _reopen_the_only_game(pilot) -> TranscriptScreen:
+    """Open the run's single game again, from the :class:`DetailScreen`.
+
+    The second half of :func:`_open_the_only_game`, split out because a reviewer
+    coming back from a game is already on the run — there is no table row to
+    drill into a second time.
+    """
+    await _highlight_game(pilot, 0)
+    await pilot.press("enter")
+    await pilot.pause()
+    assert isinstance(pilot.app.screen, TranscriptScreen)
+    assert len(pilot.app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+    return pilot.app.screen
+
+
+async def test_reopening_a_game_starts_with_no_search_and_nothing_highlighted(
+    tmp_path: Path,
+) -> None:
+    """A game opened again is a game nobody has searched (§2.9 AC4, §2.10 AC1).
+
+    Task 5.4 item (d). **Clean by construction today** — `DetailScreen` pushes a
+    NEW `TranscriptScreen` per selection and `pop_screen` discards the old one,
+    so there is no search to carry across and nothing to reset on the way out —
+    and asserted anyway, for the reason construction is worth pinning: the
+    promise is §2.10 AC1's, the construction is one refactor (a cached screen, a
+    pooled one, a `SearchState` lifted to the app) away from being a different
+    construction, and the failure mode is a reviewer opening a fresh game onto
+    someone else's amber.
+
+    `second is not first` is asserted first, because it is the fact the rest of
+    the test rests on; if a future viewer reuses the screen instead, every
+    assertion below becomes a statement about a reset rather than about a
+    rebuild, and the reader deserves to be told which.
+
+    The body is compared to the pure tokenizer's runs with STRICT equality — the
+    same shape B14.2/B14.3 use — rather than only counting the search's tail:
+    the question here is whether the reading view is exactly what spec 038
+    renders, and a leaked span of any kind is the thing that answers no.
+    """
+    ledger, _ = _ledger_with_body(
+        tmp_path, _SEARCH_MATCH_BODY, name="s44-reopen.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        first = await _open_the_only_game(pilot)
+
+        # Search it, jump, and leave with the search still live — the state that
+        # has the most to leak.
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _BACK_OUT_QUERY)
+        await _settle_search(pilot)
+        await pilot.press("enter")
+        await pilot.pause()
+        assert first._search is not None
+        assert (
+            len(_search_runs(_transcript_body_content(first))) == _SEARCH_VOTE_MATCHES
+        )
+
+        await pilot.press("escape")
+        await pilot.pause()
+        await pilot.press("escape")
+        await pilot.pause()
+        assert isinstance(app.screen, DetailScreen)
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+
+        second = await _reopen_the_only_game(pilot)
+        assert second is not first, (
+            "the viewer handed back the same screen object; this test's "
+            "assertions are then about a search being RESET rather than about "
+            "there never having been one, which is a different guarantee"
+        )
+
+        # No search, and nothing of the last one anywhere on the screen.
+        assert second._search is None
+        search_row = second.query_one("#search-row", Horizontal)
+        assert "-open" not in search_row.classes
+        assert tuple(search_row.size) == _SEARCH_ROW_CLOSED_SIZE
+        assert second.query_one(TranscriptSearchInput).value == ""
+        assert plain_text(second.query_one("#search-count", Static)) == ""
+        assert second.sub_title == TranscriptScreen.SUB_TITLE
+        assert _rendered_sub_title(second) == _TRANSCRIPT_SUB_TITLE
+
+        content = _transcript_body_content(second)
+        assert _rendered_runs(content) == _tokenizer_styled_runs(content.plain), (
+            "the freshly opened game carries spans the tokenizer did not put "
+            "there — a search highlight survived into a game nobody has "
+            "searched (§2.9 AC4)"
+        )
+
+        # ...and it is the reading view §2.10 AC1 promises, down to the row.
+        scroller = second.query_one("#transcript-scroll", VerticalScroll)
+        assert second.focused is scroller
+        assert scroller.scroll_offset.y == 0
+        assert scroller.size.height == _LONG_GAME_VIEWPORT_ROWS
+        assert scroller.max_scroll_y == _LONG_GAME_MAX_SCROLL_Y
+
+
+# ---------------------------------------------------------------------------
+# B15.8 The way to the next match is one you can find (spec 044, Slice 6)
+# ---------------------------------------------------------------------------
+#
+# ORIGIN: the by-eye check in Task 5.5, and everything below was measured on the
+# 88 KB committed game before any of it was written. The author opened a game,
+# searched, and could not reach the following match:
+#
+#   * repeated `/` + Enter was a NO-OP LOOP — four presses, all resting on row
+#     7, header fixed at `the · 1/702`. That is functional-spec §2.5 AC2 working
+#     exactly as specified: the jump is INCLUSIVE of where the reviewer already
+#     is, and after a jump they are already standing on a match.
+#   * `n` had been correct the whole time — 7 -> 10 -> 13 -> 14, `1/702` through
+#     `4/702`.
+#   * nothing advertised it. The Footer carried `esc Back`, `/ Search` and
+#     `^p palette`; the status said `the · 1/702` — a POSITION, never a key.
+#     Slice 4 hid `n`/`N` on the explicit written grounds that the status line
+#     would announce them, and the status line never did.
+#
+# So this sub-section asks two questions the rest of B15 cannot, and they are
+# different in kind:
+#
+# 1. DOES ENTER STEP? — behaviour, driven by keystroke, and stated as an
+#    EQUIVALENCE rather than as rows. `n` is the key that was always right, so
+#    the assertion that carries §2.6's new criterion is that Enter walks the
+#    SAME rows, the same matches and the same header strings that a parallel `n`
+#    walk produces IN THE SAME TEST. Writing 7, 10, 13, 14, 15 into two lists
+#    would pass for as long as nobody edited one of them.
+# 2. CAN THE REVIEWER FIND IT? — discoverability, and the trap is that the
+#    obvious assertion cannot see it. `Binding.make_bindings` normalises through
+#    `show=bool(binding.description and binding.show)`
+#    (textual/binding.py:161, Textual 8.2.4), so a binding with `show=True` and
+#    an EMPTY DESCRIPTION is forced hidden — which is precisely the state Slice
+#    4 shipped. A test reading `TranscriptScreen.BINDINGS` is reading the INPUT
+#    to that rule and would pass against a Footer with nothing in it. The Footer
+#    test below therefore reads the rendered `FooterKey` widgets, and the status
+#    test reads `_rendered_sub_title`.
+#
+# THE REGRESSION THIS SLICE MOST RISKS is §2.5, and it has its own test. Enter
+# now means two things, and which one a press gets is decided by FOCUS rather
+# than by a flag: `App._check_bindings` walks `focused.ancestors_with_self`, so
+# while the bar is open the `TranscriptSearchInput` consumes the key and posts
+# `Input.Submitted` (the inclusive jump), and the screen-level `enter` binding
+# is never consulted. If that resolution order were ever to change, Enter in the
+# prompt would become EXCLUSIVE and row-keyed — a silent behaviour change that
+# every other test in B15.4 would survive, because they all press Enter from
+# positions where inclusive and exclusive give the same answer.
+
+
+# How many presses each walk takes past its landing. Four, matching the four
+# the author pressed by hand — and four is what reaches past the first row-mate
+# skip in this game, so one walk witnesses an ordinary advance and a skip.
+_ENTER_WALK_PRESSES = 4
+
+
+class _WalkStep(NamedTuple):
+    """Everything a reviewer can see after one press of a stepping key.
+
+    All three, because each is a different way for the two keys to agree while
+    the feature is broken: two walks that never moved share a `row`, two that
+    moved identically but marked nothing share a `match`, and two that moved and
+    marked correctly could still put different strings in the header.
+    """
+
+    row: int
+    match: int | None
+    status: str
+
+
+def _walk_step(screen: TranscriptScreen, scroller: VerticalScroll) -> _WalkStep:
+    """Read the three visible facts off the live screen."""
+    return _WalkStep(
+        row=scroller.scroll_offset.y,
+        match=_current_match(_transcript_body_content(screen)),
+        status=_rendered_sub_title(screen),
+    )
+
+
+async def _walk_from_a_landing(
+    pilot, screen: TranscriptScreen, query: str, key: str, presses: int
+) -> list[_WalkStep]:
+    """Search, land with Enter, then press ``key`` ``presses`` times and record.
+
+    The landing is element 0, so a caller comparing two walks is comparing their
+    STARTS as well as their steps — two walks that began in different places
+    would otherwise be free to disagree about everything and still line up.
+
+    Every walk begins with `home` and ends with `escape`, which is what lets two
+    of them run back-to-back in one `run_test()` session: `home` puts the
+    reviewer at the top of the game again and `escape` clears the search behind
+    them (Slice 5), so the second walk starts from the state the first one did
+    rather than from the first one's leftovers. Both are ordinary reading keys
+    pressed at the game, not the feature under test.
+
+    Driven entirely through `pilot.press(...)` — including the typing, via
+    `_type_transcript_search` — for B15's standing reason: this whole slice is a
+    question about where a keypress LANDS, and a helper that set `Input.value`
+    would answer none of it.
+    """
+    await pilot.press("home")
+    await _settle_scroll(pilot)
+    await pilot.press("slash")
+    await pilot.pause()
+    await _type_transcript_search(pilot, query)
+    await _settle_search(pilot)
+
+    # The landing is the OPEN-PROMPT Enter — §2.5's inclusive jump — whichever
+    # key the walk itself is made of. That is the state §2.6's new criterion
+    # begins from: "given the reviewer has jumped to a match with Enter and the
+    # prompt has closed".
+    await pilot.press("enter")
+    await pilot.pause()
+    scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+    walk = [_walk_step(screen, scroller)]
+
+    for _ in range(presses):
+        await pilot.press(key)
+        await pilot.pause()
+        walk.append(_walk_step(screen, scroller))
+
+    await pilot.press("escape")
+    await pilot.pause()
+    assert screen._search is None, (
+        "the walk did not clean up after itself — the next walk in this session "
+        "would start on this one's highlighting"
+    )
+    return walk
+
+
+@_requires_real_game
+async def test_repeated_enter_with_the_prompt_closed_walks_exactly_as_n_does(
+    tmp_path: Path,
+) -> None:
+    """Enter steps like `n`, and the two can never drift (§2.6's new AC).
+
+    "Given the reviewer has jumped to a match with Enter and the prompt has
+    closed, when they press Enter again, then the view moves to the following
+    match exactly as `n` would, and keeps moving on each further press."
+
+    **The expectation is the OTHER WALK, produced in this same test**, not a row
+    list. `n` is the key that was always right, so "exactly as `n` would" is
+    literally the assertion: both walks are recorded here, one after the other,
+    on the same game with the same query from the same starting row, and the two
+    lists must be equal. Writing the measured rows (7, 10, 13, 14, 15) into two
+    hand-copied lists would pass for exactly as long as nobody edited one of
+    them — which is the failure mode the criterion is about.
+
+    **Equality alone would not be enough, and this is the mutation that says
+    so.** Two walks that both did nothing are equal; so are two that both ran
+    backwards. Three further assertions close that:
+
+    - the walk MOVED — more than one distinct row among the five;
+    - it moved FORWARDS, one row-keyed step at a time, against `_expected_walk`
+      derived from the match list and the row map rather than from the stepping
+      code under test;
+    - and the header counted along with it, through `_expected_status`.
+
+    Pointing the `enter` binding at `previous_match` therefore fails on the
+    third assertion rather than surviving as "the view moved", and removing the
+    binding fails on the first.
+
+    **The real game, because the synthetic fixtures cannot ask this honestly.**
+    `_JUMP_BODY` has three matches on three rows; this game has 702 across 1,182
+    rows with row-mates among them, which is where "exactly as `n` would" has
+    something to be wrong about. No count is written down: the game is
+    discovered, the total comes out of `find_matches`, and the walk is derived.
+    """
+    text = _WRAP_PIN_REAL_GAME.read_text(encoding="utf-8")
+    ledger, _ = _ledger_with_body(tmp_path, text, name="s44-enter-walk.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen, scroller, body = await _open_the_real_game(pilot)
+        matches, _, rows = _match_rows(body, _TAIL_QUERY)
+        total = len(matches)
+
+        # The premise: enough matches above the clamp for the walk to be the
+        # STEP's answer at every press rather than the end of the game's.
+        assert total > _ENTER_WALK_PRESSES
+        assert rows[_ENTER_WALK_PRESSES] < scroller.max_scroll_y, (
+            f"the first {_ENTER_WALK_PRESSES + 1} matches of "
+            f"`{_TAIL_QUERY}` do not clear `max_scroll_y` "
+            f"{scroller.max_scroll_y} — this walk would be measuring the clamp"
+        )
+
+        by_n = await _walk_from_a_landing(
+            pilot, screen, _TAIL_QUERY, "n", _ENTER_WALK_PRESSES
+        )
+        by_enter = await _walk_from_a_landing(
+            pilot, screen, _TAIL_QUERY, "enter", _ENTER_WALK_PRESSES
+        )
+
+        assert by_enter == by_n, (
+            "Enter with the prompt closed must walk exactly as `n` does — same "
+            "rows, same current match, same header. `n` walked "
+            f"{[step.row for step in by_n]} and Enter walked "
+            f"{[step.row for step in by_enter]}"
+        )
+
+        # NON-VACUITY, in three parts — see the docstring.
+        assert len({step.row for step in by_n}) > 1, (
+            f"every press rested on row {by_n[0].row}: two walks that both did "
+            "nothing are equal, so the equality above proved nothing"
+        )
+        landing = by_n[0].match
+        assert landing is not None
+        expected = [landing] + _expected_walk(
+            rows, rows[landing], _ENTER_WALK_PRESSES
+        )
+        assert [step.match for step in by_n] == expected, (
+            "the walk is not the one §2.6 describes — each press must go to the "
+            "next ROW that has a match and land on that row's first match"
+        )
+        assert [step.status for step in by_n] == [
+            _expected_status(_TAIL_QUERY, index + 1, total) for index in expected
+        ]
+        # ...and every landing really is a row holding the query.
+        for step in by_n:
+            assert _TAIL_QUERY in body.render_line(step.row).text.lower()
+
+
+async def test_enter_inside_the_open_prompt_still_confirms_and_jumps(
+    tmp_path: Path,
+) -> None:
+    """The regression Slice 6 most risks, in the one shape that can see it.
+
+    §2.6: "Enter *inside* the search prompt is unchanged — it confirms what has
+    been typed and jumps, as §2.5 describes." Enter now has a second meaning as
+    a screen binding onto `next_match`, and which meaning a press gets is
+    decided by FOCUS, not by a flag: `App._check_bindings` walks
+    `focused.ancestors_with_self`, so the focused `TranscriptSearchInput`
+    consumes the key and posts `Input.Submitted` before the screen is consulted.
+    That claim is the whole design, so it is driven rather than assumed — and
+    the focus that makes it true is asserted immediately before the press, so a
+    failure says which of the two facts broke.
+
+    **The reviewer is put on a match row first, and that is what gives this test
+    teeth.** §2.5's jump is INCLUSIVE and `n`'s step is row-keyed and EXCLUSIVE,
+    and `_JUMP_BODY`'s third match at row 45 exists for no other purpose than to
+    be where the exclusive answer lands. From row 30 — a row that already holds
+    a match, beginning at its first character — the two meanings of Enter
+    disagree visibly: inclusive stays, exclusive moves to 45. Pressed anywhere
+    else in this game the two agree and the test proves nothing, which is why
+    the premise is asserted rather than left to the fixture.
+
+    **Both halves of the prompt's Enter are covered**, because Slice 6 put a
+    screen binding under both: the typed-query jump above, and Task 5.2a's empty
+    Enter, which must still CLEAR the search rather than step. `screen._search`
+    is read for that one — B15's banner reserves that to the case where the
+    distinction is invisible on screen, and this is exactly it: a surviving
+    `SearchState(query="")` and no search at all look identical, and differ only
+    in whether the next Esc leaves the game. So the Esc is pressed too.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _JUMP_BODY, name="s44-enter-inbar.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+        body = screen.query_one("#transcript-body", TranscriptBody)
+        search_row = screen.query_one("#search-row", Horizontal)
+
+        # Scroll onto the match at row 30 with the ordinary reading keys, so the
+        # premise owes nothing to the feature under test.
+        await pilot.press(
+            "pagedown",
+            *["down"] * (_JUMP_MATCH_ROWS[1] - _LONG_GAME_VIEWPORT_ROWS),
+        )
+        await _settle_scroll(pilot)
+
+        # THE PREMISES, all three of which this test is blind without: the
+        # reviewer is looking AT a match; that match begins at the first
+        # character of the top row (inclusive and exclusive differ only there);
+        # and there is a further match below for an exclusive Enter to reach.
+        assert scroller.scroll_offset.y == _JUMP_MATCH_ROWS[1]
+        assert body.render_line(_JUMP_MATCH_ROWS[1]).text.startswith(_JUMP_QUERY)
+        assert _JUMP_MATCH_ROWS[2] < _SEARCH_OPEN_MAX_SCROLL_Y
+
+        await pilot.press("slash")
+        await pilot.pause()
+        search_input = await _type_transcript_search(pilot, _JUMP_QUERY)
+        await _settle_search(pilot)
+
+        # The routing precondition, asserted at the moment it matters.
+        assert "-open" in search_row.classes
+        assert screen.focused is search_input, (
+            "the bar is not focused, so the Enter below is not the one this "
+            "test is about — it would reach the screen binding by default "
+            "rather than by the resolution order under test"
+        )
+
+        await pilot.press("enter")
+        await pilot.pause()
+
+        # IT JUMPED, AND IT JUMPED INCLUSIVELY (§2.5 AC2).
+        assert scroller.scroll_offset.y == _JUMP_MATCH_ROWS[1], (
+            "Enter in the open prompt must still be §2.5's INCLUSIVE jump: a "
+            "match already on the top row is where it stops. Landing on "
+            f"{_JUMP_MATCH_ROWS[2]} means the screen's `enter` binding reached "
+            "the focused bar and Enter has quietly become `n`"
+        )
+        # ...IT CONFIRMED (the prompt is gone and the reviewer is reading)...
+        assert "-open" not in search_row.classes
+        assert tuple(search_row.size) == _SEARCH_ROW_CLOSED_SIZE
+        assert screen.focused is scroller
+        # ...and the header says where they landed: the SECOND match, because
+        # the one on row 10 is above them.
+        assert _rendered_sub_title(screen) == _expected_status(
+            _JUMP_QUERY, 2, _JUMP_MATCHES
+        )
+        assert _current_match(_transcript_body_content(screen)) == 1
+
+        # --- Task 5.2a's empty Enter, which must still CLEAR ----------------
+        await pilot.press("escape")
+        await pilot.pause()
+        assert screen._search is None
+        resting = scroller.scroll_offset.y
+
+        await pilot.press("slash")
+        await pilot.pause()
+        assert "-open" in search_row.classes
+        assert screen.focused is search_input
+        assert search_input.value == ""
+
+        await pilot.press("enter")
+        await pilot.pause()
+
+        assert screen._search is None, (
+            "an Enter on nothing typed must END the search (Task 5.2a). A "
+            "`SearchState(query='')` left alive behind a hidden bar is a state "
+            "the reviewer cannot see, and the next Esc is silently spent "
+            "clearing it — against §2.9 AC3"
+        )
+        assert "-open" not in search_row.classes
+        assert scroller.scroll_offset.y == resting
+        assert _search_runs(_transcript_body_content(screen)) == []
+        assert _rendered_sub_title(screen) == _TRANSCRIPT_SUB_TITLE
+
+        # ...and it really did cost them no extra keypress: ONE Esc leaves.
+        await pilot.press("escape")
+        await pilot.pause()
+        assert isinstance(app.screen, DetailScreen)
+        assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
+
+
+@pytest.mark.parametrize("state", ["no-search", "a-query-that-matches-nothing"])
+async def test_enter_while_reading_does_nothing_when_there_is_nothing_to_step_to(
+    tmp_path: Path, state: str
+) -> None:
+    """Enter with nowhere to go is a no-op, in both of its shapes (§2.6, §2.8 AC4).
+
+    Two criteria, one body:
+
+    - "Given no search has been made since the game was opened, when the
+      reviewer presses Enter while reading, then nothing happens and no error
+      appears."
+    - "Given a search is live whose text matches nothing in the game, when the
+      reviewer presses Enter while reading, then nothing happens and no error
+      appears."
+
+    They are separate cases because they fail separately: the first is guarded
+    by `_step_match` returning on `self._search is None`, the second by the pure
+    step answering `None` for an empty match list. A `next_match` that reached
+    for `matches[0]` without the second guard passes the first case and raises
+    on the second — and an `IndexError` inside a Textual message handler does
+    not surface as a failed assertion here, it surfaces as the app swapping
+    itself for the unhandled-exception screen. Which is why "no error appears"
+    is read off the APP — still running, still this screen, still this stack
+    depth — rather than off the absence of a raise at the call site.
+
+    `TranscriptScreen` had no `enter` binding before Slice 6, so there is no
+    prior behaviour being preserved here; these assertions describe the
+    behaviour the binding must NOT introduce.
+
+    Pressed twice from a SCROLLED position, both deliberate: from row 0 an Enter
+    that scrolled home would be invisible, and a first press that established
+    some state with a second that acted on it is a different bug from one press
+    acting.
+    """
+    ledger, _ = _ledger_with_body(
+        tmp_path, _JUMP_BODY, name=f"s44-enter-noop-{state}.yaml"
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        await pilot.press("pagedown")
+        await _settle_scroll(pilot)
+        resting = scroller.scroll_offset.y
+        assert resting == _JUMP_START_ROW
+
+        if state == "a-query-that-matches-nothing":
+            await pilot.press("slash")
+            await pilot.pause()
+            await _type_transcript_search(pilot, _SEARCH_NO_MATCH_QUERY)
+            await _settle_search(pilot)
+            await pilot.press("enter")
+            await pilot.pause()
+            # The state this case is about: a search the reviewer really made,
+            # which found nothing. "I asked and there was nothing" is not "I
+            # did not ask" (§2.9 AC5), so it must still be alive.
+            assert screen._search is not None
+            assert scroller.scroll_offset.y == resting
+
+        # Both cases arrive here reading the game, which is what puts the
+        # screen's `enter` binding in the path of the next press.
+        assert screen.focused is scroller
+        assert _search_runs(_transcript_body_content(screen)) == []
+
+        await pilot.press("enter", "enter")
+        await pilot.pause()
+
+        assert scroller.scroll_offset.y == resting, (
+            f"Enter moved the game from row {resting} to "
+            f"{scroller.scroll_offset.y} with nothing to step to"
+        )
+        assert _search_runs(_transcript_body_content(screen)) == []
+        assert _rendered_sub_title(screen) == _TRANSCRIPT_SUB_TITLE, (
+            "a press that wrote a position — or `0/0` — into the header is a "
+            "visible change out of a key that promises none"
+        )
+        assert app.is_running
+        assert app.screen is screen
+        assert len(app.screen_stack) == _TRANSCRIPT_STACK_DEPTH
+
+
+async def test_the_footer_names_the_stepping_keys_with_what_each_one_does(
+    tmp_path: Path,
+) -> None:
+    """The keys say they exist, read off the RENDERED Footer (§2.6's new AC).
+
+    "Given the reviewer is reading a game, when they look at the key hints at
+    the foot of the screen, then `n` and `N` are named there together with what
+    each does."
+
+    **Asserted through the `FooterKey` widgets, and reading `BINDINGS` instead
+    would be a tautology with a blind spot.** The binding is the INPUT to the
+    thing under test: `Binding.make_bindings` normalises every declaration
+    through `show=bool(binding.description and binding.show)`
+    (textual/binding.py:161, Textual 8.2.4), so a binding declared `show=True`
+    with an empty description is forced hidden and renders no cell at all. That
+    is not a hypothetical — it is the exact state Slice 4 shipped and the reason
+    this slice exists. Only the rendered side can see it.
+
+    `key` AND `description` are both read, because the criterion is "named
+    there TOGETHER WITH WHAT EACH DOES": a cell rendering a bare `n` with a
+    blank description would satisfy "n is in the Footer" and answer none of the
+    reviewer's question. `FooterKey.render` has a branch for exactly that case.
+
+    **Stated as the COMPLETE rendered set**, which pins the other half of this
+    slice's Footer decision: `enter` is a SYNONYM for `n` on the same action, and
+    `Footer.compose` groups by action and renders only the first binding of each
+    group. A shown `enter` entry would therefore either be dropped as a
+    duplicate or — declared above `n` — REPLACE `n`'s cell with one named
+    `enter`, silently undoing the criterion. Its absence here is what says it
+    cannot. `escape` and `backspace` share a cell for the same grouping reason,
+    and `q` is hidden as it always has been.
+
+    The terminal is the tests' 100 columns, where all five cells fit: measured,
+    they are 58 columns of it.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _JUMP_BODY, name="s44-footer-keys.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+
+        footer = screen.query_one(Footer)
+        rendered = {cell.key: cell.description for cell in footer.query(FooterKey)}
+
+        assert rendered == {
+            "escape": "Back",
+            "slash": "Search",
+            "n": "Next match",
+            "N": "Prev match",
+            "ctrl+p": "palette",
+        }, (
+            "the Footer a reviewer reading a game actually sees. `n`/`N` "
+            "missing from it is Slice 4's blank-description trap — `show=True` "
+            "with no description renders nothing; an `enter` cell in it has "
+            "taken `n`'s place through `Footer.compose`'s action grouping"
+        )
+
+        # ...and every cell really is on screen, not merely composed.
+        for cell in screen.query_one(Footer).query(FooterKey):
+            assert cell.size.width > 0, (
+                f"the `{cell.key}` cell renders zero columns wide — it is in "
+                "the widget tree and not in the reviewer's Footer"
+            )
+
+
+async def test_the_running_status_names_the_keys_that_step_between_matches(
+    tmp_path: Path,
+) -> None:
+    """The announcement Slice 4 promised and never built (§2.8's new AC).
+
+    "Given the reviewer has jumped to a match, when they look at the running
+    status, then it names the keys that step to the next and to the previous
+    match."
+
+    **Read through `_rendered_sub_title`, so the whole header chain is
+    exercised** — `Screen.sub_title` is a reactive, `Header._on_mount` watches
+    it, the watcher rebuilds through `App.format_title`, and `HeaderTitle` is a
+    one-row `Static` with `text-overflow: ellipsis`. That last link is the one
+    this slice put under pressure: the hint is new text on a row that was
+    already carrying the viewer's name, the query and the position, and a hint
+    that pushed the line into the ellipsis would be a hint nobody can read. The
+    helper asserts the rendered row equals the reactive, so truncation fails
+    here rather than passing as a string comparison against a value the widget
+    never showed.
+
+    **Field order is asserted, not just membership.** The ellipsis cuts the END,
+    so the LAST field is the first one a narrow terminal spends. The position is
+    a §2.8 acceptance criterion and is readable nowhere else once the prompt has
+    closed; the hint is a convenience the Footer now also carries. A build that
+    put the hint before the position would satisfy "the status names the keys"
+    and would spend the position first on an 80-column terminal.
+
+    **And the keys it names are pressed.** A status that said `n next · N prev`
+    over a screen where `n` did nothing would be worse than saying nothing, and
+    no string comparison can tell the difference — so the two key names are
+    taken OUT of the status text and pressed, and the view is asserted to go
+    forward and then back. That is what makes this a test of an announcement
+    rather than of a spelling.
+    """
+    ledger, _ = _ledger_with_body(tmp_path, _JUMP_BODY, name="s44-status-keys.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_LONG_GAME_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_the_only_game(pilot)
+        scroller = screen.query_one("#transcript-scroll", VerticalScroll)
+
+        await pilot.press("slash")
+        await pilot.pause()
+        await _type_transcript_search(pilot, _JUMP_QUERY)
+        await _settle_search(pilot)
+        await pilot.press("enter")
+        await pilot.pause()
+
+        # The landing, and the whole status in one strict equality.
+        assert scroller.scroll_offset.y == _JUMP_MATCH_ROWS[0]
+        status = _rendered_sub_title(screen)
+        assert status == _expected_status(_JUMP_QUERY, 1, _JUMP_MATCHES)
+
+        # THE FIELDS, IN ORDER — the hint is last, after the position.
+        query_field, position_field, *hint_fields = status.split(" · ")
+        assert query_field == _JUMP_QUERY
+        assert position_field == f"1/{_JUMP_MATCHES}"
+        assert hint_fields == [
+            _SEARCH_STATUS_NEXT_HINT,
+            _SEARCH_STATUS_PREV_HINT,
+        ], (
+            f"the status reads {status!r}. §2.8 asks it to name the keys that "
+            "step to the next AND to the previous match, and the two names must "
+            "come after the position — `HeaderTitle` truncates from the end, so "
+            "whatever is last is what a narrow terminal spends first"
+        )
+
+        # THE KEYS IT NAMES ARE THE KEYS THAT DO IT. Taken out of the announced
+        # text rather than written down again, so a status naming some other key
+        # fails here instead of passing a spelling check.
+        named_next, next_does = _SEARCH_STATUS_NEXT_HINT.split()
+        named_prev, prev_does = _SEARCH_STATUS_PREV_HINT.split()
+        assert (next_does, prev_does) == ("next", "prev"), (
+            "each field must say which way its key goes; naming the pair "
+            "without the direction leaves the reviewer to guess, and the guess "
+            "costs them a press backwards"
+        )
+
+        await pilot.press(named_next)
+        await pilot.pause()
+        assert scroller.scroll_offset.y == _JUMP_MATCH_ROWS[1], (
+            f"the status advertises `{named_next}` as the key to the next "
+            "match; pressing it did not go there"
+        )
+        assert _rendered_sub_title(screen) == _expected_status(
+            _JUMP_QUERY, 2, _JUMP_MATCHES
+        )
+
+        await pilot.press(named_prev)
+        await pilot.pause()
+        assert scroller.scroll_offset.y == _JUMP_MATCH_ROWS[0], (
+            f"the status advertises `{named_prev}` as the key to the previous "
+            "match; pressing it did not go back"
+        )
+        assert _rendered_sub_title(screen) == _expected_status(
+            _JUMP_QUERY, 1, _JUMP_MATCHES
+        )
