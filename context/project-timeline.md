@@ -3,7 +3,7 @@
 A high-level history of the project, reconstructed from `git log` and the
 `context/` artifacts: how scope changed (Change Requests), how the architecture
 was decided (Architecture Decision Records), and how the work was executed (specs
-broken into vertical slices). Covers **2026-04-29 → 2026-09-12**.
+broken into vertical slices). Covers **2026-04-29 → 2026-09-15**.
 
 Graphia is built with the **AWOS spec-driven workflow** — every increment flows
 `product → roadmap → architecture → spec → tech → tasks → implement → verify → tutorial`,
@@ -124,7 +124,10 @@ gantt
 
     section Eval-run robustness
     ADR 014 — Optimistic-concurrency ledger writes        :milestone, done, a14, 2026-09-11 12:00, 0d
-    Spec 043 — Keeping What a Stopped Run Produced        :active, sp43, 2026-09-10 18:31, 2026-09-12 14:00
+    Spec 043 — Keeping What a Stopped Run Produced ✓      :done, sp43, 2026-09-10 18:31, 2026-09-14 16:52
+
+    section Eval review ergonomics (cont.)
+    Spec 044 — Searching Inside a Game Transcript ✓       :done, sp44, 2026-09-12 13:33, 2026-09-15 11:11
 
     click sp1 href "https://github.com/tigra/graphia/tree/main/context/spec/001-playable-skeleton"
     click m1 href "https://github.com/tigra/graphia/blob/main/context/change-requests/001-agentcore-and-tools-in-scope.md"
@@ -190,6 +193,7 @@ gantt
     click sp42 href "https://github.com/tigra/graphia/tree/main/context/spec/042-default-lineup-six-plus-two"
     click a14 href "https://github.com/tigra/graphia/blob/main/context/adr/014-optimistic-concurrency-ledger-writes.md"
     click sp43 href "https://github.com/tigra/graphia/tree/main/context/spec/043-partial-eval-runs"
+    click sp44 href "https://github.com/tigra/graphia/tree/main/context/spec/044-transcript-search"
 ```
 
 **How to read it.** Each visual channel encodes exactly one thing:
@@ -202,14 +206,18 @@ The red marks are the three superseded ADRs (002, 004, 007); the CRs are green b
 
 Two things the axis makes visible. **There is a nine-week gap** between 2026-06-24 and
 2026-08-29 — a real hiatus, not missing bookkeeping; specs 033/034/035 were authored
-before it and verified after, which is why their bars are the long ones. And **two marks
-are orange**: **ADR 012** (the Haiku-4.5-gameplay / Opus-4.8-judge model selection) is
-still formally `Proposed` even though spec 035 shipped its gameplay half, and **spec 043**
-is the one spec still in flight.
+before it and verified after, which is why their bars are the long ones. And **one mark is
+orange**: **ADR 012** (the Haiku-4.5-gameplay / Opus-4.8-judge model selection) is still
+formally `Proposed` even though spec 035 shipped its gameplay half. **Every spec 001–044
+is now verified Completed** — 043 closed 09-14, 044 closed 09-15 — so nothing on the
+chart is in flight. The last two bars also overlap by three days on purpose: 044 was
+developed on its own branch in a git worktree while 043 finished on `main`, and the two
+were reconciled by 044's functional spec naming 043 as a sibling in flight and drawing
+the boundary between them.
 
 ---
 
-## What was going on — twenty-seven acts
+## What was going on — twenty-eight acts
 
 ### Act 1 — Phase 1: a playable skeleton (2026-04-29)
 
@@ -881,7 +889,8 @@ coverage._
 | 040  | The Moderator's Closing Story               | 10     | Completed |
 | 041  | Reliable Answers from the Local Model       | 12     | Completed |
 | 042  | A Starter Table With Room For One Mistake (6+2 default) | 7 | Completed |
-| 043  | Keeping What a Stopped Measurement Run Produced | 7   | **In flight** (Slices 1-3 done, Slice 4 underway) |
+| 043  | Keeping What a Stopped Measurement Run Produced | 7      | Completed |
+| 044  | Searching Inside a Game Transcript          | 6      | Completed |
 
 _Spec 006 was verified Completed on 2026-06-03 (all 32 acceptance criteria, Phase 3 roadmap bullets ticked) and Tutorial 006 published. Specs 007–009 (the Day-phase integrity trio) are now all **verified Completed**; 009's collusion nudge was revised to an **anti-parrot** reword after a real-Nova experiment showed the original wording drove a Day-dialogue repetition spiral._
 
@@ -1527,19 +1536,112 @@ inodes (so the `tail -f` caveat is now an observation, not a warning), the brand
 permission case, and a record that got **8 bytes shorter** between games, which is the
 concrete instance of "a live run's record is not value-stable".
 
-**Slice 4** — the record saying it ended early **and by how much** — is in progress. Three
-remain after it: the viewer refusing to show a partial run as a full one, the written
-contract catching up with the code, and the one number that is currently assumed getting
-measured.
+**Slice 4** — the record saying it ended early **and by how much** — was in progress at the
+close of this act, with three slices behind it: the viewer refusing to show a partial run
+as a full one, the written contract catching up with the code, and the one number that was
+still assumed getting measured. Act 28 is where those land, and where the assumed number
+turns out to have been wrong.
 
 Alongside it: a project status line (context bar, model, git branch), and the transcript
 corpus curated **commit-or-delete** down to **36 run directories / 420 preserved games**.
+
+### Act 28 — A stopped run keeps its work, a search lands in the viewer, and the biggest baseline yet (2026-09-12 → 09-15)
+
+**Spec 043's remaining four slices landed, and its last one refuted its own tech spec.**
+Slice 4 gave a partial record the marker that stops it being misread — `ended_early`,
+gated so a complete record omits it entirely rather than writing `false`. Slice 5 repaired
+the display the marker would otherwise have made ambiguous: `make view-ledger`'s Games
+cell now reads `4/10` for a run stopped short and a bare `10` otherwise, with the
+scoped-search field deliberately left matching what a run **asked for**, so `games:10`
+keeps finding it. Slice 6 brought the written contract into line with the code — `evals/README.md`
+had opened with *"Append-only. A run never overwrites or rewrites an earlier record"*,
+which ADR 014 had made false — restating it as **"one record per run, and a run rewrites
+only its own"**.
+
+**Slice 7 was the one number the tech spec refused to assume, and the assumption was
+wrong by an order of magnitude.** Because the scoring pass now runs after *every*
+completed game, and its repetition term is pairwise over the whole accumulated pool, the
+run's total scoring work grows as the **sum of squares** rather than one square.
+Technical-considerations §2.8 predicted *"seconds, not minutes"* and required a real
+ten-game measurement. Measured on record 47's own committed transcripts — a replay proven
+faithful by reproducing that record's `repetition` **and** `third_person_self_talk`
+bit-for-bit — the eleven passes cost **457 s, 7.6 minutes, 22.8 % of that run**. The model
+itself was sound: predicted 4.90× the single-pass cost from line counts alone, measured
+4.87×. It was the **yardstick** that was wrong — §2.8 compared against a 33-minute *local*
+game when the arm that pools 902 lines finishes one in 200 seconds.
+
+An instrumented ten-game Nova run then paid **40.07 %**, and the gap between the two
+figures turned out to be the more interesting result. Passes 1–6 tracked the model within
+9 %; pass 7 jumped 3.17× while the pool grew 1.13×, and the final pass cost 447 s on the
+byte-identical pool a pass minutes earlier had scored in 236 s. Re-clustering that pool on
+a quiet machine took 75.0 s against the model's 75.4 s — so the data was innocent. The
+obvious suspect, heap growth and GC pressure in a long-lived process, was **refuted by
+measurement** (75.0 s then 74.7 s in one process), leaving memory pressure as the leading
+diagnosis and 17.1 % intrinsic / 40.07 % observed as two honest figures rather than one.
+
+**Slice 7's decision then went against the fallback the tech spec had named.** The cost
+bit, so *"the cadence is not needed"* was closed off — but a cadence makes the record
+**stale between passes**, which is the exact loss the spec exists to prevent, and it cannot
+touch the worst case, since the final write must always be exact and was the most
+expensive pass of the run. The honest reading was not *"re-score less often"* but *"the
+pass was needlessly expensive all along"*: `_clusters` was computing all 406,351 pairs at
+n=902 when **only 2.42 % can possibly clear the 0.85 threshold**, and `difflib` documents
+`real_quick_ratio() >= quick_ratio() >= ratio()`, so skipping the rest is exact rather than
+approximate. **23.6× faster, record 52's intrinsic share falling 17.1 % → 1.16 %**, and
+§2.8's original prediction becoming true on the arm it was wrong about. Touching a scorer
+shared by three harnesses — which §3 puts out of scope — was licensed only by proving the
+output identical: a verbatim pre-skip oracle compared on the whole **partition**, twelve
+seeded property generators, **20 committed transcript pools reproducing their records'
+`repetition` count *and* rate**, and a control confirming that removing the skip leaves the
+suite green while runtime triples. One trap nearly shipped: `SequenceMatcher.ratio()` is
+asymmetric — and not merely through autojunk, since `get_matching_blocks`' recursive
+decomposition is asymmetric at any length — so reusing difflib's index the obvious way
+silently swapped every pair's orientation and moved record 47's count 662 → 664.
+
+**Verified 09-14 on evidence the suite cannot express.** All 17 acceptance criteria, plus a
+real `SIGKILL` 47 ms after a record first appeared: the kill landed *inside game 2* while
+the record said 1, so the balance invariant held **structurally**. And the non-destructive
+invariant was asserted against real history rather than fixtures — 0 deletions across
+171,686 bytes of curated ledger after eleven whole-file rewrites.
+
+**Spec 044 (Searching Inside a Game Transcript) ran in parallel on its own branch** in a
+git worktree, from 09-12 to 09-15: `/` to search a single game's text, `n`/`N` to walk
+matches, Enter to advance, an amber background-only highlight (blue and red already *mean
+side* in spec 038, so either would read as an allegiance claim), and a header narrating
+position among matches. Six slices, **54 acceptance criteria**, merged back on 09-15 across
+a 25-commit divergence with no conflict — because its functional spec had opened by naming
+043 as a sibling in flight and drawing the boundary: *"043 never touches the reading view,
+and this spec never touches an entry."*
+
+**Then the biggest measured exercise the project has run: CR 007's re-baseline at n=50 on
+all three arms at once**, launched together under `caffeinate -dimsu`, all three
+provenance-clean. Claude Haiku repeats **0.29 %** of its AI lines; Nova repeats **74.9 %**
+— Wilson intervals nowhere near overlapping — while the local model sits at 63.5 %. Nova
+also speaks 3.5× as much (95.5 lines per game against 27.5), which is why it costs more per
+game despite the cheaper rate card. Two project figures were corrected: the local arm runs
+**16.8 min/game, not the 33** carried from two single-game records, so a 50-game local run
+is ~14 h rather than ~29 h; and co-scheduling got its first actual measurement, costing the
+paid arms 15–20 % while leaving the local arm unharmed.
+
+The run exercised spec 043 in three ways it never had. **Concurrency for real:** three live
+processes made **153 whole-file rewrites** onto one ledger, and git reported **470
+insertions / 0 deletions** — no fallback file, no retry exhaustion, no torn read, where
+before that path had only ever been tested by injecting a conflict between the read and the
+replace. **Durability that mattered:** the local arm ran 14 hours, where a stop had
+previously left nothing — which is precisely what happened on 09-09. And **graceful
+degradation under a real credential expiry:** the SSO session ended at 03:51, game 31 was
+the first to reach for Bedrock embeddings afterwards, and the handler caught it, latched the
+client off so it never retried, and played all 50 games. The cost is visible rather than
+silent — `persona_sem_mean` covers 630 pairs where `persona_lex_mean` covers 1,050, and the
+denominators say so without comment. Slice 7's skip is what made the whole exercise
+affordable: the local arm's 51 scoring passes cost ~2 % of a 14-hour run instead of the
+several hours they would have cost a day earlier.
 
 ---
 
 ## What's next
 
-### Where things stand (2026-09-12)
+### Where things stand (2026-09-15)
 
 **Phases 1 through 6 are complete.** Phase 6a is half done — its **End-of-Game Payoff**
 group closed with spec 040, leaving **Asynchronous Day Chat** (rate-limited concurrent AI
@@ -1548,15 +1650,32 @@ as the only open feature group before Phase 7. Phase 7 is untouched: AI tool-use
 all-player evidence citation, the expanded role roster, and the whole-transcript
 LLM-as-Judge.
 
-**One spec is in flight:** **spec 043 (Keeping What a Stopped Measurement Run Produced)** —
-Slices 1–3 verified on live runs, Slice 4 underway, three slices after it. Everything else
-numbered 001–042 is verified Completed.
+**No spec is in flight.** Everything numbered 001–044 is verified Completed — 043 closed
+09-14, 044 closed 09-15 — the first time the board has been clear since spec 032.
 
-**The numbers as of today:** 43 specs, 7 CRs, 14 ADRs, and 16 published tutorials (003
+**The numbers as of today:** 44 specs, 7 CRs, 14 ADRs, and 16 published tutorials (003
 deliberately skipped, plus the interim `002-v2` draft kept as a historical artifact); the
-all-mocked suite collects **2977 tests**; the quality ledger holds **50**
-provenance-stamped records and the preserved-transcript corpus **36 run directories / 420
-games**.
+all-mocked suite collects **3362 tests**; the quality ledger holds **55**
+provenance-stamped records and the preserved-transcript corpus **41 run directories / 583
+games**. The suite grew by 517 tests in three days — 296 from spec 043 and 221 from 044 —
+and the ledger's last three records are the **n=50 three-arm re-baseline**, the largest
+comparable set the project has, all provenance-clean.
+
+**The tutorial series is the one artifact now well behind.** It stops at **017
+(Eval Transcript Preservation)** while the specs run to 044, so twenty-seven increments —
+including every provider change, the whole eval-review layer, ADRs 012–014 and the
+optimistic-concurrency ledger write — have shipped without one.
+
+**Three findings are open and recorded rather than acted on.** `make view-ledger` reads the
+ledger **once at startup and has no refresh binding**, which was harmless while records
+were immutable and is not now that a run rewrites its own record per game: a reviewer
+watching an in-flight run sees denominators drift low with no signal, and spec 044's search
+gives them a reason to sit there far longer. `persona_bench` still writes through
+`append_record` — atomic, but with no hash, no retry and no read-back — the one write path
+the optimistic-concurrency guarantee does not cover, and cheap to close now that every
+bench record carries a `run.id`. And `eval_dialogue._cluster_near_dups` is a near-verbatim
+**copy** of the pre-skip clusterer rather than a caller, so `make eval-dialogue` still pays
+the 23× cost that spec 043's Slice 7 removed everywhere else.
 
 **The standing open problems**, in rough order of weight:
 
