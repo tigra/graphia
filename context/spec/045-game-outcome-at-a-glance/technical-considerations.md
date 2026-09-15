@@ -56,6 +56,17 @@ class TranscriptEntry:
 
 **Cost, measured.** Reading and deriving all 50 games of the largest run directory in the corpus (`2026-09-14T19-40-56-df63a2`, 3,361,868 bytes) takes **34 ms** — 3.2 ms of file reading and 31.4 ms of parsing, stable across three trials. It is paid once, at the single `push_screen(DetailScreen(...))` site, on the worst case that exists. So: no caching, no lazy fill, no background work, no invalidation to get wrong.
 
+> **↳ Re-measured on the finished implementation — 2026-09-16, Slice 4 Task 4.2.** The paragraph above is the **design-time prediction** and stands as written; this is what the built thing actually costs. Same directory (still the largest: 50 games, 3,361,868 bytes, of a corpus still at 583 games in 41 dirs), same decomposition, warm page cache, **median of seven trials after two warm-up passes**, on macOS 26.3.1 / arm64 / Python 3.14.3.
+>
+> | | prediction (2026-09-15) | measured (2026-09-16) | spread |
+> |---|---|---|---|
+> | file reading | 3.2 ms | **3.22 ms** | 2.94 – 3.35 |
+> | parsing | 31.4 ms | **32.93 ms** | 31.99 – 33.69 |
+> | **read + derive** | **34 ms** | **36.12 ms** | 35.95 – 36.99 |
+> | the whole `list_transcripts` call (`transcript_dir_for` + glob included) | *not predicted* | **36.74 ms** | 36.54 – 37.33 |
+>
+> **Hit — +2.1 ms, +6%.** The reading half landed on the prediction to two decimal places; the entire overshoot is in parsing, and it is one wall-clock reading on a shared dev machine, inside the band a straight re-run of the design-time measurement would itself show. The public call the viewer actually makes costs 0.6 ms more than the read-and-derive pair, which is the directory resolution and the glob. Nothing here disturbs the decision this paragraph carries: it is still one bounded cost, paid once, and there is still nothing worth caching.
+
 ### 2.2 The derivation rules, and the era evidence for each
 
 The corpus spans **three** transcript eras, not two. Spec 022 (*Structured Eval-Transcript Format*) introduced the tags; two June-2026 runs predate it entirely and a third is a middle form. Each rule below is therefore stated together with the measurement that shows it holds in **every** era.
@@ -150,6 +161,33 @@ Measured with that CSS in place, all four states:
 | Four CSS-classed `Label`s | 200 | 304.3 ms | ×1.95 |
 
 So the per-state styling costs about **+148 ms** on opening a 50-game run, on top of §2.1's 34 ms. Both are paid once per detail screen, and the baseline includes app startup, so the marginal figure is smaller than the ratio suggests. Accepted: a fifth of a second, once, to keep the winner legible on the row the reviewer is sitting on.
+
+> **↳ Re-measured on the finished implementation — 2026-09-16, Slice 4 Task 4.2.** The table above is the **design-time prediction** and stands as written. What follows is a like-for-like before/after against the **merge-base module itself** — `9489e18:src/graphia/ui/ledger_viewer.py`, loaded standalone and driven through the same harness — rather than against the numbers in that table.
+>
+> **Method.** 50 rows (the real 50-game run) in a 100×30 terminal through `run_test()`, **median of five rounds after two warm-up rounds**, with every arm **interleaved round-robin inside one process** so the machine's drift lands on all four equally. That interleaving is not fussiness: run one arm per process instead, minutes apart, and the ~10 ms a single slice contributes is swamped by the few ms the machine drifts between processes — measured that way, Slice 3 came out *faster* than Slice 2, which it is not. The `TranscriptEntry` list is built **once** by the current pure layer and shared by every arm, so §2.1's derivation is excluded and the two costs stay separate. What is timed is pushing the `DetailScreen` and draining to a completed layout (the last row asserted to have a real region) with the app already up; the same push for a run with **no** preserved games is timed beside it, which is the screen's own frame with no rows in it. Measured at each of this spec's three commits as well as at the merge base, so each slice's share is visible rather than inferred. Textual 8.2.4, Python 3.14.3, macOS 26.3.1 / arm64.
+>
+> | Arm | Widgets in the list | Push, 50 rows | Spread | Frame only (0 rows) | The rows' share | Step |
+> |---|---|---|---|---|---|---|
+> | merge base `9489e18` — one plain `Label` per row | 100 | **193.59 ms** | 192.5 – 195.2 | 124.45 ms | 69.1 ms (1.38/row) | — |
+> | Slice 1 `3916e2c` — the segmented row, no colour rules yet | 300 | **309.40 ms** | 307.0 – 316.0 | 123.07 ms | 186.3 ms (3.73/row) | **+115.81** |
+> | Slice 2 `c1295ae` — plus the eight winner / highlighted-row rules | 300 | **320.09 ms** | 319.1 – 325.5 | 123.53 ms | 196.6 ms (3.93/row) | **+10.69** |
+> | Slice 3 `cd3d657` — plus the header `Static` and the border title (**finished**) | 300 | **320.49 ms** | 316.9 – 328.2 | 123.62 ms | 196.9 ms (3.94/row) | **+0.40** |
+>
+> **Hit, on the favourable side: the finished implementation costs +126.9 ms where +148 ms was predicted — 21 ms, 14%, under.**
+>
+> **The prediction covered less than the finished thing carries, and it still holds.** The 304.3 ms figure was for the segmented row *alone*, measured during technical design before Slice 2's CSS and Slice 3's header existed. That part by itself measures **+115.8 ms** — 32 ms (22%) under the prediction. The two things the prediction did not cover add **+11.1 ms** between them, and the total stays under regardless. So this is a conservative prediction, not a missed one, and the extra scope is stated here rather than folded silently into the number.
+>
+> **Where that +11.1 ms goes is worth knowing.** Slice 2's eight rules cost **+10.69 ms** across 200 cells — the cascade re-evaluating classed segments is the price of the per-state styling this whole section argues for, and it is under a tenth of the row-shape cost. **Building** the segments is what costs; *styling* them is cheap. Slice 3's header and border title cost **+0.40 ms**, inside the spread and indistinguishable from zero: one `Static` and one attribute.
+>
+> **The widget count the prediction assumed is exactly right.** 50 `Label`s before, 200 after. The census reads **100** widgets inside the `ListView` at the merge base (50 `ListItem` + 50 `Label`) and **300** after (50 `ListItem` + 50 `Horizontal` + 200 `Label`) — every one of this run's 50 games has a recorded ending, so every row carries all four segments. The mount cost is therefore a per-*widget* cost: ~1.38 ms a row for two widgets, ~3.94 ms a row for six.
+>
+> **The empty-run floor did not move.** A `DetailScreen` for a run with no preserved games costs **124.45 ms** before and **123.62 ms** after — identical inside the spread. Everything this spec added is paid per row, by a run that has rows.
+>
+> **Startup separated, two ways, and the delta survives both.** Whole session including app construction, `run_test()` startup and the table screen, against the real 55-record ledger: **507.7 → 631.2 ms, +123.5**. The same whole session against a one-record ledger pointed at the same 50-game directory, so the table screen is trivial: **306.1 → 432.0 ms, +125.9**, with the no-detail floor at 132.6 / 133.5 ms. Three framings — push only, whole session, whole minimal session — give **+126.9 / +123.5 / +125.9 ms**.
+>
+> **The design-time absolutes are not reproducible, and are deliberately not what this is scored against.** A 155.7 ms baseline implies a far lighter harness than anything measurable here: the lightest baseline this re-measurement could construct — a whole session on a one-record ledger — is 306 ms, and the `DetailScreen`'s own frame with no rows at all is ~124 ms. The design-time probe did not survive in any recoverable scratch, so its shape cannot be reconstructed and its ×1.95 cannot be checked. What the section's claim rests on is the **delta**, and the delta is what has been re-measured. The ratio under this harness is ×1.66 on the push, ×1.41 on a whole minimal session and ×1.24 on a whole session against the real ledger — every one smaller than ×1.95, for exactly the reason the paragraph above already gives: the more the baseline includes, the more the same +126 ms is diluted.
+>
+> **The accepted figure holds.** "A fifth of a second, once" was 34 + 148 = 182 ms. Measured: 36.1 + 126.9 = **163.0 ms**. And no wall-clock assertion has been added to the suite, nor should one be: this is a shared-dev-machine measurement whose *ordering* and *deltas* reproduce and whose absolutes do not — which is the whole reason §3's risk row rules a timing test out.
 
 **One `Label` per `ListItem` is no longer true, and one thing depends on it.** `tests/test_ledger_viewer.py::_panel_labels` reads each row with `item.query_one(Label)`, which raises on more than one match. That helper must become segment-aware; the established pattern for asserting on styled sub-spans is already in that file (`_transcript_body_content` / `_rendered_runs`).
 
