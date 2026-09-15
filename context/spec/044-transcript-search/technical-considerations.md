@@ -1,6 +1,6 @@
 # Technical Specification: Searching Inside a Game Transcript
 
-- **Functional Specification:** [`functional-spec.md`](./functional-spec.md) (47 acceptance criteria across §2.1–§2.10)
+- **Functional Specification:** [`functional-spec.md`](./functional-spec.md) (54 acceptance criteria across §2.1–§2.10 — 47 at authoring, +7 added during implementation (§2.6 and §2.8))
 - **Status:** Draft
 - **Author(s):** Alexey Tigarev
 
@@ -127,6 +127,8 @@ It also makes §2.6's current-match indicator **load-bearing rather than decorat
 
 **Resize:** highlights need no recomputation (spans are offset-based and width-independent); only the cached row map is invalidated. Measured at 100→70 columns: width 96→66, rows 1182→1593, `scroll_y` held at 149, and the match that was on row 149 moved to row 197. **Textual does not remap `scroll_y` on resize — the reading view already loses its place today**, so this spec inherits that rather than introducing it. Rebuilding the whole row map on the worst file costs **7.6 ms**, so a lazy rebuild when `content_size.width` differs is enough; no `Resize` handler is needed.
 
+> **AMENDED by Task 5.2a (2026-09-14).** An **empty** Enter does not take this path at all — it routes through `_clear_search()` and ends the search. Nothing typed and nothing found look identical on screen (neither moves the game, neither lights anything), but they leave the reviewer holding different things: an empty query leaves a state they cannot see, so the next Esc is silently spent clearing it, against §2.9 AC3. A query that was *typed* and matched nothing is state (ii) and survives, because the count says so in as many words. **The test is `not query`, never `not query.strip()`** — `find_matches` is literal, so whitespace is typed text (a single space matches **14,524** times on the 88 KB game) and stripping would send the corpus's highest-yield query down the "you asked nothing" path. The clear is placed *before* `_row_starts`, so the 1,182-row wrap map is not built into a state that ceases to exist two lines later.
+
 ### 2.6 `n` and `N` step by row, not by match
 
 **Resolved by the author (2026-09-12).** Several matches can fall on one rendered row, and since `n` scrolls by row, stepping match-by-match would make some presses do nothing visible. `n`/`N` therefore **skip past every match sharing the current row** and move to the next row that has one.
@@ -149,6 +151,8 @@ Two consequences the author accepted explicitly, both stated in the functional s
 ### 2.7 The status channel — `Screen.sub_title`
 
 §2.6 and §2.8 together need a status that **outlives the prompt**: after Enter the bar is hidden, yet the reviewer must still see which match of the total they are on and be told when `n`/`N` wrapped. The cheapest correct channel, verified: `Screen.sub_title` — reactive, rendered live in the existing `Header`, **zero extra rows**. Measured `"…game transcript · Esc / Backspace to go back"` → `"… — vote — 3/18 (wrapped)"`. Restore `SUB_TITLE` when the search clears. (A second `Static` in the search row also works, but only while the row is shown.)
+
+> **EXTENDED for Slice 6 (2026-09-15).** The status now also **names the keys that move between matches** (§2.8 AC5) — `the · 1/702 · n next · N prev` — because §2.6's original decision to keep `n`/`N` out of the Footer rested on this channel announcing them, and it did not. The hint is appended **last, after any `(wrapped)` suffix**, which is a width decision rather than a stylistic one: see §2.8a mechanism 3. Budget at a 100-column terminal is **60 columns**, not 78.
 
 ### 2.8 Live re-highlighting — cost, and the debounce that makes it viable
 
@@ -174,10 +178,28 @@ The cost is not in matching or styling — it is that `Widget._render_content` c
 
 The only structural fix would be a body widget with its own `render_line(y)`, since `_render_content` is not partial. Recorded, not built.
 
+### 2.8a Discoverability — three Textual mechanisms that bite quietly (ADDED for Slice 6, 2026-09-15)
+
+**Origin: the by-eye check in Task 5.5**, the one task in this spec no test could perform. The author searched the 88 KB game and could not reach the following match. Measured: repeated `/`+Enter is a no-op loop (four presses, all resting on row 7, header fixed at `the · 1/702`) — §2.5 AC2 working exactly as specified, since the jump is *inclusive* and after a jump the reviewer is already standing on a match. `n` had been correct throughout (rows 7 → 10 → 13 → 14). Nothing advertised it. **Slice 4 hid `n`/`N` on the explicit grounds that §2.7's status channel would announce them instead, and that announcement was never built** — a promise the code made about itself and did not keep. The lesson generalises past this spec: a "it will be announced elsewhere" justification is only as good as the elsewhere, and nothing mechanical was checking.
+
+Three mechanisms, each of which fails *silently* and each of which cost measurement rather than reading:
+
+**1. An empty description forces a binding hidden, `show=True` notwithstanding.** `textual/binding.py:161` computes `show=bool(binding.description and binding.show)`. `Binding("n", "next_match", show=False)` passed **no description at all**, so flipping `show` alone would have been a no-op with nothing anywhere to explain it. The same field is what `textual/widgets/_key_panel.py` renders, which is why the key help panel showed these two with a blank description column. **The description is load-bearing, not decoration.**
+
+**2. `Footer.compose` groups by `binding.action` and renders only the first declared binding for that action.** So `Binding("enter", "next_match", ...)` can never add a Footer cell beside `n`: declared after `n` it is dropped; declared *before* `n` it **replaces** `n Next match` with `enter Next match`, silently undoing the discoverability fix that motivated the slice. `enter` is therefore deliberately `show=False` — a working synonym for a key that is named, rather than a named key that displaces the real one. (The same grouping is why `escape` + `backspace` have always rendered as a single `esc Back`.) Proved on a throwaway app and pinned by a mutation, not reasoned from source.
+
+**3. `HeaderTitle` is 82 columns at a 100-column terminal, not 100.** `HeaderIcon` (`width: 8`, docked left) and `HeaderClockSpace` (`width: 10`, docked right) take 18 off the row. the source comment on `_SEARCH_STATUS_QUERY_MAX` claiming "74 of 100" was measuring the wrong widget (corrected in place); the `_SEARCH_STATUS_QUERY_MAX` cap of 32 was never wrong, only its believed headroom (**8 columns, not 26**). Since `HeaderTitle` is a one-row `Static` with `text-overflow: ellipsis` that truncates from the end, **the key hint goes last, after any `(wrapped)` suffix** — the ellipsis then spends the hint, and the position (a §2.8 acceptance criterion, readable nowhere else once the prompt has closed) survives. Measured worst case: `… · 702/702 (wrapped) · n ne…`.
+
+**Enter needed no special case for the bar-open path, and got none.** `TranscriptSearchInput` is focused while the bar is open and `App._check_bindings` walks `focused.ancestors_with_self`, so the Input's `on_input_submitted` beats a plain screen binding — the same resolution order that already makes `n` type a literal `n` into an open bar (§2.4). Verified by keystroke rather than assumed, because a screen-level `enter` reaching the open bar would break §2.5's jump *and* Task 5.2a's empty-Enter clear together. Likewise no guard was added for the empty cases: `action_next_match` already returns on `_search is None` and on an empty match list, so Enter inherits §2.6 AC8 for free.
+
+**Testing consequence.** Assert the Footer through the rendered `FooterKey` widgets (`key`, `description`), never through `BINDINGS` — the binding is the *input* to the thing under test, so asserting it is a tautology, and mechanism 1 above is visible only on the rendered side. Measured: deleting `TranscriptScreen`'s `Footer()` turns the rendered assertion red and the declaration assertion green, which is why both exist. This costs a private import of `FooterKey` from `textual.widgets._footer` (`textual.widgets` exports only `Footer`), taken with the same loud-canary reasoning as `rich._wrap.divide_line` in §2.2.
+
 ### 2.9 Component summary
 
-- `AUTO_FOCUS = "#transcript-scroll"`; `BINDINGS += slash` (open search), `n`, `N` (no-ops when `_search is None`).
-- **Footer discoverability (resolved by the author, 2026-09-12):** `slash` is bound `show=True` with the description `"Search"`, so the Footer reads `Search` beside the existing `Back` while reading a game. `n`/`N` stay `show=False` — they are advertised nowhere, matching how `q` is already bound. This is a deliberate, visible addition to the reading view: §2.10's promise is about the reading *area*, not the Footer, and the author chose discoverability over a pixel-identical Footer.
+- `AUTO_FOCUS = "#transcript-scroll"`; `BINDINGS += slash` (open search), `n`, `N`, and **`enter`** — the last three all no-ops when `_search is None`, and `enter` runs the *same action* as `n` rather than a second implementation of it.
+- **Footer discoverability (resolved by the author 2026-09-12, REVISED by the author 2026-09-15 after Slice 6).** `slash` is bound `show=True` with the description `"Search"`, so the Footer reads `Search` beside the existing `Back` while reading a game. This is a deliberate, visible addition to the reading view: §2.10's promise is about the reading *area*, not the Footer, and the author chose discoverability over a pixel-identical Footer.
+  - **`n` and `N` are now shown too**, with the descriptions `"Next match"` and `"Prev match"`. This reverses the original ruling that they "stay `show=False` — they are advertised nowhere, matching how `q` is already bound", which rested on §2.7's status channel announcing them instead. It never did. The by-eye check found the consequence directly: the author could not reach the following match. See §2.8a.
+  - **`enter` is bound `show=False`** and cannot usefully be otherwise — `Footer.compose` groups by action and renders only the first declared binding, so a shown `enter` would either be dropped or *replace* `n`'s cell. It is a synonym for a key that is named, not a named key that displaces the real one.
 - `COMPONENT_CLASSES |= {"transcript--match", "transcript--match-current"}`, two `background:`-only rules.
 - `compose`: `Header()` → `Horizontal(id="search-row")` [`TranscriptSearchInput`, `Static(id="search-count")`] → `VerticalScroll` → `Footer()`.
 - A `Static` subclass for `#transcript-body` exposing the layout-free content swap.
@@ -220,7 +242,7 @@ Spec **043 (Keeping What a Stopped Measurement Run Produced)** is in active impl
 
 Driven by a measured cost ratio: `tests/test_ledger_viewer.py` runs **90 items in 57.1 s** (~0.63 s per `run_test()` item); the terminal-free `tests/test_transcript_highlight.py` runs **305 items in ~2 s**. ~100× per item, and it decides placement.
 
-**The split: 20 of the 47 acceptance criteria are fully provable in the pure layer; 26 need a terminal.** The rule: a criterion belongs in the widget layer only if removing Textual would make it *unstateable*. "Which text matches" and "which match is next" are not such criteria; "does `n` reach the screen rather than get typed into the box" is. The row-keyed navigation of §2.6 moves work *toward* the pure layer — "`n` skips matches sharing the current row" is a statement about `next_match`; only the resulting scroll is a widget fact.
+**The split: 20 of the (then) 47 acceptance criteria are fully provable in the pure layer; 26 need a terminal.** *(The 7 added later — §2.6 AC9–14 and §2.8 AC5 — are **all** terminal-bound: they are claims about what the Footer, the key help panel and the header actually render, and about which widget a keypress reaches. They do not move the ratio's argument, they extend its terminal half.)* The rule: a criterion belongs in the widget layer only if removing Textual would make it *unstateable*. "Which text matches" and "which match is next" are not such criteria; "does `n` reach the screen rather than get typed into the box" is. The row-keyed navigation of §2.6 moves work *toward* the pure layer — "`n` skips matches sharing the current row" is a statement about `next_match`; only the resulting scroll is a widget fact.
 
 ### New file: `tests/test_transcript_search.py` (terminal-free)
 
@@ -239,6 +261,8 @@ Plus a **non-vacuity** assertion that at width 96 the corpus really does produce
 
 Following B14's banner convention: **B15.1** opening/closing, focus, and the Esc state machine; **B15.2** live highlight as spans; **B15.3** scrolling while typing, parametrized over all six keys; **B15.4** jumping and the clamp; **B15.5** the subtitle status; **B15.6** the offset→row pin against the live render.
 
+> **AS BUILT (2026-09-15):** two further sub-sections were added during implementation, both from defects the plan could not have predicted. **B15.7** — the three-state back-out machine, parametrized `(key, state)` over `escape`/`backspace`/`q` × bar-open / search-live / no-search, plus the empty / whitespace / no-match Enter trio from Task 5.2a. **B15.8** — Slice 6: the Enter walk compared against an `n` walk recorded in the *same* session (so the two cannot drift), Enter inside the open prompt still jumping per §2.5, and the Footer and status asserted through what is *rendered*. 166 items in that file; 3,183 in the suite.
+
 **The three-legged pin** — what makes a Textual upgrade fail loudly instead of mis-jumping silently:
 
 1. Row **count** against two independent Textual paths: `Content.get_height(body.styles, width)` and `body.size.height`. *(Not `scroller.virtual_size.height` — measured to be `max(content_height, viewport_height)`, so it reads 22 rather than 51 for a game that fits.)*
@@ -252,6 +276,8 @@ Following B14's banner convention: **B15.1** opening/closing, focus, and the Esc
 **The §2.3 assertion writes itself** if search spans are appended after the kind spans: the leading slice of the rendered runs equals the tokenizer's runs exactly, and the tail is exactly the match spans. Pin that ordering explicitly — it is what makes "on top of, not instead of" checkable at all.
 
 ### Existing tests: two must change, one must not
+
+> **AS BUILT (2026-09-15): fourteen changed, not two** — and the extra twelve are the rot-guards working rather than a plan error. Slice 6 tripped, in three groups: the `TranscriptScreen.BINDINGS` union guard (3 params, needing `enter`), the Footer shown-set guard (needing `n`/`N` with their descriptions), and **ten status-string assertions** that carried the full expected subtitle and so broke on one appended field they had nothing to say about. All were updated, none weakened to a subset or substring. The ten were centralised behind one `_expected_status(...)` helper with the hint spelled out as a **literal in the test module** rather than imported from production — an import would have made all sixteen sites agree with production *by construction*, so a rewrite to `n/N` (which names the keys but not which way each goes, answering half of §2.8 AC5) would have passed every one of them.
 
 | Test | Action |
 | --- | --- |
