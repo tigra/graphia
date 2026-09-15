@@ -83,6 +83,8 @@ from graphia.eval_ledger import (
     SEARCH_SCOPE_ALL,
     TableModel,
     TranscriptEntry,
+    WINNER_LAW_ABIDING,
+    WINNER_MAFIA,
     build_table_model,
     find_matches,
     list_transcripts,
@@ -281,11 +283,26 @@ class DetailScreen(Screen):
        FIXED count, deliberately, not `auto`: the details pane must keep an
        identical width across runs that have transcripts and runs that do not,
        and a width never derived from content guarantees that by construction.
-       22 columns fits the `game-01` … `game-50` label shape with room for a
-       border. (A future matchup-titled label shape would own this number.)
 
-       The 22 is INCLUSIVE of the border below (Textual sizes border-box), so the
-       usable label area inside is ~20 columns. */
+       22 columns fits the row grid spec 045 put on every row — twelve columns of
+       number, day count and final standings:
+
+           cols   0 1 | 2 3 | 4 5 6 | 7 8 | 9 |10 |11
+           header   # |     | d a y |     | L | - | M
+           row    0 1 |     |   3 d |     | 2 | - | 2
+
+       …the number right-aligned in two columns, a two-column gap, the day count
+       right-aligned in three, another two-column gap, then the three survivor
+       columns (Law-abiding, separator, Mafia).
+
+       **22 still holds, and with room to spare.** It used to fit the `game-01` …
+       `game-50` label shape — 7 columns of content. The new row is 12, and the
+       22 is INCLUSIVE of the border below (Textual sizes border-box), so the
+       usable area inside is ~20: 12 for the grid, with 8 columns of slack that
+       absorb the vertical scrollbar a 50-game run raises (measured: the row area
+       narrows 20 → 18 when it appears, and the grid is untouched). Dropping the
+       `game-` prefix is what paid for the three new numbers — the width did not
+       have to move, which is functional-spec §2.1's last requirement. */
     #transcript-panel {
         width: 22;
         height: 1fr;
@@ -295,6 +312,16 @@ class DetailScreen(Screen):
     #transcript-panel-list {
         height: 1fr;
         width: 1fr;
+    }
+
+    /* The row's segment container (spec 045). REQUIRED, not decoration:
+       `Horizontal`'s own default is `height: 1fr`, and a `1fr` child inside a
+       `ListItem` — which `ListView` sizes `height: auto` — resolves against the
+       LIST's height rather than the row's. Measured without this rule: every
+       `ListItem` came out 22 rows tall, so five games filled a 110-line
+       scroller. A row is exactly one line; say so. */
+    #transcript-panel-list .g-row {
+        height: 1;
     }
 
     #transcript-panel-empty {
@@ -396,8 +423,12 @@ class DetailScreen(Screen):
                 # One row per transcript, in the order the pure layer sorted
                 # them (game-01 … game-NN). Empty when the run has none —
                 # on_mount then hides this and shows the message instead.
+                #
+                # Each row is a SEGMENTED `ListItem` (spec 045) — see
+                # :func:`_panel_row` for the grid and for why the segments are
+                # separate widgets rather than one styled string.
                 yield ListView(
-                    *(ListItem(Label(entry.label)) for entry in self._entries),
+                    *(_panel_row(entry) for entry in self._entries),
                     id="transcript-panel-list",
                 )
                 yield Static(_NO_TRANSCRIPTS_MESSAGE, id="transcript-panel-empty")
@@ -514,6 +545,149 @@ class DetailScreen(Screen):
 # plain message, not an error (functional-spec §2.2), mirroring the table
 # screen's #empty-state posture.
 _NO_TRANSCRIPTS_MESSAGE = "No transcripts for this run."
+
+
+# ===========================================================================
+# The transcript panel's row (spec 045) — how a game says its own shape
+# ===========================================================================
+
+# THE row grid — twelve columns, and the one place their widths live. The header
+# line above the rows aligns to this same grid:
+#
+#     cols   0 1 | 2 3 | 4 5 6 | 7 8 | 9 |10 |11
+#     header   # |     | d a y |     | L | - | M
+#     row    0 1 |     |   3 d |     | 2 | - | 2
+#
+# The number is right-aligned in two columns so `01` and `50` share a right edge,
+# and the day count right-aligned in three so `3d` and `12d` do too. The
+# two-column gaps are what keep three abutting numbers legible as three numbers.
+_ROW_NUMBER_WIDTH = 2
+_ROW_DAY_WIDTH = 3
+_ROW_GAP = "  "
+
+# The stem prefix the eval harness gives every preserved game (`game-01.txt`),
+# and the one thing a row DROPS. Functional-spec §2.1 requires the number to
+# stand alone: the word "game" on every row of a list of games is dead weight,
+# and the five columns it frees are exactly what the three new numbers spend.
+_GAME_LABEL_PREFIX = "game-"
+
+# What a row shows where the survivor counts would be when the game recorded no
+# ending at all (functional-spec §2.4). A single em dash, and deliberately NOT a
+# pair of numbers: a `0-0` there would read as genuine final standings.
+_NO_STANDINGS = "—"
+
+# The separator between the two survivor counts. A plain hyphen, so the pair
+# reads as one figure (`2-2`) rather than as two unrelated digits.
+_STANDINGS_SEPARATOR = "-"
+
+
+def _panel_row(entry: TranscriptEntry) -> ListItem:
+    """Build one game's row in the transcript panel — ``01   3d  2-2``.
+
+    Three numbers beside the game's number (spec 045): the Days it played, and
+    the Law-abiding and Mafia players still alive when it ended. Three row
+    shapes, which are three genuinely different things to say:
+
+    * **The game has a recorded ending** — number, day count, both counts:
+      ``01   3d  2-2``.
+    * **The game played Days but recorded no ending** (functional-spec §2.4) —
+      number, day count, and :data:`_NO_STANDINGS` where the counts would be:
+      ``03   2d  —``. A handful of the preserved games are like this; they hit
+      the Day cap of their era and their text simply stops.
+    * **The file yields nothing at all** (missing, unreadable, empty, truncated)
+      — the number alone. :func:`~graphia.eval_ledger.summarise_game` returns
+      ``None`` there, and :func:`~graphia.eval_ledger.read_transcript` already
+      returns ``""`` on any ``OSError``, so an unreadable file arrives here as a
+      plain ``summary is None`` with no error handling of its own.
+
+    **Why segments rather than one styled string** (tech-spec §2.3). Spec 038's
+    recipe bakes resolved Rich styles into a :class:`~rich.text.Text` at compose
+    time, and a baked span cannot know whether its row is the highlighted one —
+    Textual's ``ListItem.-highlight`` repaints the whole row in the cursor's own
+    colours, which measured the winner's colour down to 1.53:1. Segments that
+    carry CSS **classes** let the cascade give the highlighted row a different
+    treatment with no watcher and no regeneration per keypress, and they
+    re-resolve on a theme change instead of going stale. Slice 2 adds those
+    rules; **in this slice every class is unstyled**, so each segment inherits
+    the row's own colour and the whole row renders as uniform plain text.
+
+    The classes, and what each is for:
+
+    ===========  =========================================================
+    ``g-row``    the segment container; carries the row's one-line height
+    ``g-pre``    number + day count, the 9 columns before the standings
+    ``g-cell``   a survivor count (or the em dash standing in for the pair)
+    ``g-law``    that cell is the Law-abiding count **and its side won**
+    ``g-mafia``  that cell is the Mafia count **and its side won**
+    ``g-dim``    that cell's side did not win (or no side did)
+    ``g-sep``    the hyphen between the two counts
+    ===========  =========================================================
+
+    A cell carries its side class **only when that side won**, so a row states
+    the winner in exactly one place and nothing else has to be recomputed to
+    find it. A game with no winner at all — no ending recorded, a runaway Day-cap
+    hit, or the retained draw — dims both, because nothing there should look
+    highlighted.
+
+    **The ``Horizontal`` goes inside the ``ListItem``, never beside it.** The
+    panel's ``ListView`` children stay ``ListItem`` and nothing else:
+    ``ListView.watch_index`` and ``ListView.highlighted_child`` both
+    ``assert isinstance(..., ListItem)``, and ``ListView.Selected.index`` is a
+    position in ``_nodes`` — which is precisely what makes
+    :class:`DetailScreen`'s index-parallel ``_entries`` contract resolve a
+    selection back to the right game.
+    """
+    # `removeprefix` rather than a slice, and with a fallback: a label that is
+    # not in the writer's `game-NN` shape at all (or is the bare prefix) keeps
+    # its own text rather than rendering as an empty row.
+    number = entry.label.removeprefix(_GAME_LABEL_PREFIX) or entry.label
+    summary = entry.summary
+    if summary is None:
+        return ListItem(
+            Horizontal(
+                Label(number.rjust(_ROW_NUMBER_WIDTH), classes="g-pre"),
+                classes="g-row",
+            )
+        )
+
+    prefix = (
+        number.rjust(_ROW_NUMBER_WIDTH)
+        + _ROW_GAP
+        + f"{summary.days}d".rjust(_ROW_DAY_WIDTH)
+        + _ROW_GAP
+    )
+    # Both counts are absent together or present together (the pure layer's own
+    # invariant), but the check reads both: half a pair of standings is not a
+    # thing this row knows how to show.
+    if summary.law_abiding is None or summary.mafia is None:
+        return ListItem(
+            Horizontal(
+                Label(prefix, classes="g-pre"),
+                Label(_NO_STANDINGS, classes="g-cell g-dim"),
+                classes="g-row",
+            )
+        )
+
+    # Branching on the pure layer's own constants rather than re-typing
+    # `"mafia"` / `"law_abiding"` here: they are exported for exactly this.
+    law_won = summary.winner == WINNER_LAW_ABIDING
+    mafia_won = summary.winner == WINNER_MAFIA
+    return ListItem(
+        Horizontal(
+            Label(prefix, classes="g-pre"),
+            Label(
+                str(summary.law_abiding),
+                classes="g-cell g-law" if law_won else "g-cell g-dim",
+            ),
+            Label(_STANDINGS_SEPARATOR, classes="g-sep g-dim"),
+            Label(
+                str(summary.mafia),
+                classes="g-cell g-mafia" if mafia_won else "g-cell g-dim",
+            ),
+            classes="g-row",
+        )
+    )
+
 
 # ===========================================================================
 # Transcript syntax highlighting (spec 038) — THE kind → style map.

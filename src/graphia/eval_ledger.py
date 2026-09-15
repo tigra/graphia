@@ -92,6 +92,17 @@ __all__ = [
     "SEARCH_SCOPE_ALL",
     "TableModel",
     "TranscriptEntry",
+    # Spec 045, Slice 1: the per-game shape a ``TranscriptEntry`` now carries,
+    # the derivation that builds it, and the two side ids its ``winner`` names.
+    # Listed beside the entry they travel on, and listed in FULL for the reason
+    # the transcript-kind block below records: a public name a consumer imports
+    # regardless belongs here. The panel branches on ``WINNER_MAFIA`` /
+    # ``WINNER_LAW_ABIDING`` rather than re-typing ``"mafia"`` /
+    # ``"law_abiding"`` at the call site, so both are part of the contract.
+    "GameSummary",
+    "WINNER_MAFIA",
+    "WINNER_LAW_ABIDING",
+    "summarise_game",
     "TRANSCRIPTS_DIRNAME",
     "load_ledger",
     "build_table_model",
@@ -1040,7 +1051,7 @@ _TRANSCRIPT_GLOB = "game-*.txt"
 
 @dataclass(frozen=True, slots=True)
 class TranscriptEntry:
-    """One browsable game transcript — a display ``label`` and its file ``path``.
+    """One browsable game transcript — its ``label``, its file ``path``, its shape.
 
     The unit :func:`list_transcripts` returns (one per ``game-NN.txt`` in a run's
     dir, sorted). ``label`` is the file's stem (``game-01``) — the human-readable
@@ -1048,10 +1059,29 @@ class TranscriptEntry:
     so the viewer hands it straight to :func:`read_transcript` with **no path
     arithmetic of its own**. A frozen, slotted value object, matching
     :class:`TableModel`'s house style.
+
+    ``summary`` (spec 045) is that game's derived shape — the Days it played,
+    the survivors of each side, and the winning side — so a row can say which of
+    fifty games is worth opening. It is ``None`` when the file yields none of
+    that: missing, unreadable, empty or truncated. See :func:`summarise_game`
+    for the two absence levels it distinguishes.
+
+    ``summary`` is **defaulted**, and that is load-bearing rather than tidy: an
+    entry remains constructible from a label and a path alone, so the shape is
+    an *enrichment* of the listing and never a new requirement on it. Nothing
+    that built a :class:`TranscriptEntry` before spec 045 has to learn to derive
+    one to keep working.
     """
 
     label: str
     path: Path
+    # Forward reference by design: :class:`GameSummary` is defined further down,
+    # in the spec-045 section that sits AFTER this locate/list/read one. The
+    # module's ``from __future__ import annotations`` makes the annotation a
+    # string, so the ordering costs nothing and the two sections stay in the
+    # order the technical spec fixes — derivation as a *consumer* of what this
+    # layer lists, never a prerequisite of it.
+    summary: GameSummary | None = None
 
 
 def transcript_dir_for(record: RawRecord, ledger_path: Path) -> Path | None:
@@ -1082,6 +1112,30 @@ def list_transcripts(record: RawRecord, ledger_path: Path) -> list[TranscriptEnt
     lexically). Each entry carries the file's stem as its ``label`` (``game-01``)
     and the resolved ``path``, so the viewer never does path arithmetic.
 
+    **It now reads every file it lists** (spec 045). That is a real change to
+    this function's contract: from spec 017 until now it touched no file
+    *content* at all — it globbed a directory and named what it found, and
+    ``path`` was a promise the caller redeemed later with
+    :func:`read_transcript`. It now redeems that promise itself, once per file,
+    to fill each entry's ``summary`` via :func:`summarise_game` — because the
+    panel states a game's shape on its row, *before* anything is opened, so the
+    listing is the only moment at which every file is in hand. Callers should
+    expect one full read per listed transcript.
+
+    The cost is bounded and paid once, at the single call site that precedes
+    pushing the detail screen: reading and deriving the largest run directory in
+    the committed store measured 34 ms (2026-09-15). So there is no cache here,
+    no lazy fill and no background work — and therefore no invalidation to get
+    wrong.
+
+    **The defensiveness composes; it is deliberately not re-implemented here.**
+    :func:`read_transcript` already resolves any ``OSError`` to ``""``, and
+    :func:`summarise_game` resolves ``""`` to ``None`` (no Day markers). So a
+    file that vanished between glob and read, or that cannot be decoded, arrives
+    as an entry with ``summary=None`` — the bare-number row — **with no new
+    branch in this function**. A guard here would only restate a guarantee both
+    callees already give.
+
     Defensive (mirroring :func:`_dig`): returns the **empty list** when the
     ``run.transcript_dir`` field is missing, when the dir is **absent locally** (a
     run not shared/pulled), when it is not a directory, or when it holds **no
@@ -1099,7 +1153,14 @@ def list_transcripts(record: RawRecord, ledger_path: Path) -> list[TranscriptEnt
         # A permission / FS error reading the dir is treated like an absent dir —
         # the viewer shows "no transcripts" rather than crashing.
         return []
-    return [TranscriptEntry(label=path.stem, path=path) for path in files]
+    return [
+        TranscriptEntry(
+            label=path.stem,
+            path=path,
+            summary=summarise_game(read_transcript(path)),
+        )
+        for path in files
+    ]
 
 
 def read_transcript(path: Path) -> str:
@@ -1115,6 +1176,315 @@ def read_transcript(path: Path) -> str:
         return path.read_text(encoding="utf-8")
     except OSError:
         return ""
+
+
+# ===========================================================================
+# Per-game outcome derivation (spec 045, Slice 1 — pure layer).
+#
+# The transcript panel lists a run's preserved games as a column of identical
+# names, so nothing on a row says which of fifty games is worth the reviewer's
+# next twenty minutes. :func:`summarise_game` reads one preserved game's TEXT
+# and derives the three facts that separate them — how many Days it played, and
+# how many players of each side were still alive when it ended — plus which
+# side won. It is a **sibling of the locate/list/read layer above** (it consumes
+# a transcript's text, exactly what :func:`read_transcript` returns) rather than
+# part of spec 038's tokenizer below, which is display work.
+#
+# Like the whole module: **no Textual, no Rich**, plain ints and strings out;
+# **read-only**; and **defensive throughout**, mirroring :func:`_dig` — a
+# malformed roster line, an absent header, an unparsable death bullet, or
+# arithmetic that would go negative all resolve to ``None`` rather than raising
+# or rendering a nonsense count.
+#
+# **Why derive from the text at all.** Functional-spec 045 §2.5 requires every
+# game preserved so far to carry these numbers with **no measured run repeated
+# and no preserved file rewritten**, and only the committed text can supply
+# that. Recording the facts at write time would serve future runs only, and
+# would still need this parser for the ones already on disk.
+#
+# **The corpus spans three transcript eras, not two** (measured 2026-09-15 over
+# the committed store: 583 games in 41 run dirs). Spec 022 (*Structured
+# Eval-Transcript Format*) introduced the ``<day>`` / ``<endgame>`` tags; two
+# June-2026 runs predate them entirely and write every Moderator line indented
+# behind a ``Moderator: `` speaker prefix, and a third is a middle form. Each
+# rule below is therefore stated together with the measurement that shows it
+# holds in **every** era, and the two rules where era-blindness is easy to get
+# wrong — the winner sentence and the death bullet — carry their counter-example
+# rather than just a warning.
+#
+# **The in-game ``<recap>`` standings are NOT used, deliberately.** They look
+# like final standings and are not: the last recap of a game that ends on a
+# Night kill reports the *pre-kill* counts, and the June era posted its recap at
+# the END of the Day round, after that Day's execution. A cross-check of
+# roster-minus-deaths against the first recap of each Day over the whole corpus
+# gave 24 disagreements in 1,278 — all 24 the *check's* fault, not the
+# arithmetic's. Roster-minus-deaths is the only era-safe route to the standings.
+# ===========================================================================
+
+# The writer's endgame sentences and headers, held HERE as local literals so
+# this module stays independent of the game package — importing
+# ``graphia.prompts`` would drag the whole model-facing prompt stack into the
+# model-free viewer. ``tests/test_game_summary.py`` pins each literal to the
+# constant that writes it, so a rewording fails loudly instead of silently
+# blanking every row.
+#
+# Writer: ``graphia.prompts.ENDGAME_WINNER_LAW``.
+_WINNER_SENTENCE_LAW_ABIDING = "The Law-abiding Citizens have won."
+# Writer: ``graphia.prompts.ENDGAME_WINNER_MAFIA``.
+_WINNER_SENTENCE_MAFIA = "The Mafia have won."
+# Writer: ``graphia.prompts.ENDGAME_WINNER_RUNAWAY`` — the whole-game Day-cap hit
+# (spec 023). It names a NON-resolution, so it carries no winning side.
+_WINNER_SENTENCE_RUNAWAY = (
+    "The game did not resolve and was stopped at the Day cap "
+    "(runaway / unresolved game)."
+)
+# Writer: ``graphia.prompts.ENDGAME_WINNER_DRAW`` — retained for ``end_screen``'s
+# defensive ``winner == "draw"`` path. It names a resolution without a side, so
+# it carries no winning side either. Neither this sentence nor the runaway one
+# occurs anywhere in the committed corpus (0 occurrences of each, measured
+# 2026-09-15): both paths are handled but unwitnessed by real data.
+_WINNER_SENTENCE_DRAW = "The game ended in a draw at the Day cap."
+# Writer: ``graphia.prompts.ENDGAME_HEADER_ROSTER``.
+_ROSTER_HEADER = "Full roster:"
+# Writer: ``graphia.tools.eval_transcript._ROLE_LABELS`` — the two public role
+# labels the roster line and the death bullets name a player's side by. They are
+# the game's own public wording, which is why they read as prose rather than as
+# the ``mafia`` / ``law_abiding`` ids below.
+_ROLE_LABEL_MAFIA = "Mafia"
+_ROLE_LABEL_LAW_ABIDING = "Law-abiding Citizen"
+
+# The two sides :attr:`GameSummary.winner` names. The game's own vocabulary
+# (``PlayerState.role`` / ``GameState.winner``), never a display word and never a
+# colour — the UI picks the hue, exactly as it does for the transcript kinds
+# below.
+WINNER_MAFIA = "mafia"
+WINNER_LAW_ABIDING = "law_abiding"
+
+# Each winner sentence and the side it names, in match order. A table rather
+# than a chain of ``if``s so that the two side-less sentences are genuinely
+# *read* rather than merely documented: neither occurs in the corpus, so nothing
+# else would witness a rewording of them.
+_WINNER_SENTENCES: tuple[tuple[str, str | None], ...] = (
+    (_WINNER_SENTENCE_LAW_ABIDING, WINNER_LAW_ABIDING),
+    (_WINNER_SENTENCE_MAFIA, WINNER_MAFIA),
+    (_WINNER_SENTENCE_RUNAWAY, None),
+    (_WINNER_SENTENCE_DRAW, None),
+)
+
+# A Day the game actually PLAYED. Spec 022's ``<day>`` open marker sits alone on
+# its own flush-left line in every era — measured over the committed corpus
+# (2026-09-15): present in 583/583 games, and its count equals ``max(N)`` over
+# the moderator's ``Day N begins.`` announcement in 583/583, 0 mismatches.
+# Counting the marker rather than the announcement keeps the rule free of the
+# indentation the pre-022 era puts in front of every Moderator line. Trailing
+# blanks are tolerated so a stray ``\r`` cannot silently zero the count.
+_DAY_MARKER_RE = re.compile(r"(?m)^<day>[ \t\r]*$")
+
+# One player's side, read off the parenthesised role label that both the roster
+# line and the death bullets end with (``{name} ({role})`` and
+# ``{name} ({role}) executed``). Built from the label literals above so the
+# pinning test reaches this rule too.
+_ROLE_LABEL_ALTERNATION = "|".join(
+    re.escape(label) for label in (_ROLE_LABEL_MAFIA, _ROLE_LABEL_LAW_ABIDING)
+)
+_ROLE_IN_PARENS_RE = re.compile(rf"\(({_ROLE_LABEL_ALTERNATION})\)")
+
+# The endgame roster line — ``Full roster: Ada (Mafia), Bo (Law-abiding
+# Citizen), …`` — the only era-independent statement of who was in the game at
+# all, and therefore the only base the survivor arithmetic can stand on. Present
+# in 573/573 committed games that record an ending, flush-left in every one of
+# them (measured 2026-09-15); leading blanks are tolerated regardless, because
+# the pre-022 era indents its Moderator lines and no rule here should depend on
+# which era wrote the file.
+_ROSTER_LINE_RE = re.compile(
+    rf"(?m)^[ \t]*{re.escape(_ROSTER_HEADER)}[ \t]*(?P<entries>.*)$"
+)
+
+# A death bullet, discriminated by its CYCLE PREFIX. Both shapes come from one
+# writer, ``graphia.nodes.endgame._format_kill_line``: ``• Night N: Name (Role)``
+# for a Night kill and ``• Day N: Name (Role) executed`` for an execution.
+#
+# The prefix is REQUIRED, never optional, and that is the load-bearing detail of
+# this whole section: the ``Who they really were:`` persona reveal emits
+# ``• Name (Role) — …`` bullets with **no** cycle prefix, so a rule that matched
+# a bare ``• `` would count every SURVIVOR as dead and read every game ``0-0``.
+_DEATH_BULLET_RE = re.compile(r"(?m)^[ \t]*•[ \t]+(?:Night|Day)[ \t]+\d+:.*$")
+
+
+@dataclass(frozen=True, slots=True)
+class GameSummary:
+    """One preserved game's shape: how long it ran, who was left, who won.
+
+    The unit :func:`summarise_game` returns and the transcript panel puts on a
+    row — ``01  3d  2-2``. A frozen, slotted value object, matching
+    :class:`TranscriptEntry`'s and :class:`TableModel`'s house style.
+
+    ``days`` is how many Days the game **played**, and is always known (a
+    summary that could not establish it is not built at all — see
+    :func:`summarise_game`). Most games end on a Mafia Night kill, which leaves
+    them one Night longer than they are Days; such a game's ``days`` is the
+    lower number, so it matches a Day the moderator announced out loud and the
+    reviewer can go and find.
+
+    ``law_abiding`` and ``mafia`` are the players of each side **alive when the
+    game ended**, derived as roster-minus-deaths. Both are ``None`` together,
+    never one of them: a game that records no ending has no final standings to
+    report, and inventing a ``0`` there would read as a real outcome.
+
+    ``winner`` is :data:`WINNER_MAFIA`, :data:`WINNER_LAW_ABIDING`, or ``None``
+    when no side won — which covers three different situations that a row shows
+    the same way: no ending recorded at all, a runaway Day-cap hit (spec 023),
+    and the retained draw.
+    """
+
+    days: int
+    law_abiding: int | None
+    mafia: int | None
+    winner: str | None
+
+
+def summarise_game(text: str) -> GameSummary | None:
+    """Derive one preserved game's shape from its text. Pure; never raises.
+
+    Six rules, each measured against the committed corpus on 2026-09-15 (583
+    games in 41 run dirs, spanning the three transcript eras described in this
+    section's banner):
+
+    1. **Days** — the number of lines that are exactly ``<day>``. Present in
+       583/583 files, and equal to ``max(N)`` over the moderator's
+       ``Day N begins.`` announcement in 583/583, 0 mismatches.
+    2. **Roster** — the line beginning ``Full roster: ``, counting its
+       parenthesised role labels. Present in 573/573 files that record an
+       ending; the roster size equals the run's recorded
+       ``num_citizens + num_mafia`` in 568/568 games whose ledger record carries
+       a lineup (the shortfall is records predating that field, not failures).
+    3. **Deaths** — ``• Night N: Name (Role)`` and
+       ``• Day N: Name (Role) executed``, both from the one writer
+       ``graphia.nodes.endgame._format_kill_line``.
+    4. **Survivors** — roster minus deaths, by side. The win rule (a Law-abiding
+       win implies no Mafioso alive; a Mafia win implies ``mafia > 0`` and
+       ``mafia >= law_abiding``) holds in 573/573 games, 0 violations.
+    5. **Winner** — a **substring** test for the winner sentences, deliberately
+       *unanchored*. The pre-022 era writes ``  Moderator: The Mafia have won.``
+       — indented, behind a speaker prefix — while every later era writes it
+       flush-left. ``<endgame>`` is absent from exactly 20 files (the two
+       pre-022 runs) and **10 of those 20 did finish**, so a line-anchored match
+       would silently lose ten completed games. Absence of the tag tracks the
+       **era**, not the outcome.
+    6. **No winning side** — the runaway and the draw sentence both map to
+       ``winner = None``, the same answer a game with no ending gives. Neither
+       occurs anywhere in the corpus (0 occurrences of each); both are handled
+       and unwitnessed.
+
+    **Two distinct absence levels, and they are different states:**
+
+    - **``None``** when the text yields no Day markers at all — an unreadable,
+      empty or truncated file. Composes with :func:`read_transcript`, which
+      already returns ``""`` on any ``OSError``, so an unreadable file reaches
+      the caller as "nothing to say about this game" with no new branch.
+    - **A :class:`GameSummary` with ``days`` set and the other three ``None``**
+      when the game played Days but records no ending. Ten of the 583 preserved
+      games are like this, across two runs of June 2026: they hit the Day cap of
+      their era and the text simply stops, with no closing announcement and no
+      final roster. Such a game is *not* unreadable — its length is genuine —
+      so it is reported, and only its standings are withheld.
+
+    Defensive throughout, mirroring :func:`_dig`: a malformed roster line, an
+    absent header, an unparsable death bullet, or arithmetic that would go
+    negative all resolve to ``None`` standings rather than raising or reporting
+    a negative count. The negative case has never occurred — the win rule held
+    in 573/573 — so it is a guard, not a handler.
+    """
+    days = len(_DAY_MARKER_RE.findall(text))
+    if days == 0:
+        return None
+    law_abiding, mafia = _parse_survivors(text)
+    return GameSummary(
+        days=days,
+        law_abiding=law_abiding,
+        mafia=mafia,
+        winner=_parse_winner(text),
+    )
+
+
+def _parse_winner(text: str) -> str | None:
+    """The winning side named in ``text``, or ``None`` when no side won.
+
+    An **unanchored** substring test, per rule 5 of :func:`summarise_game`: the
+    pre-022 era writes the sentence behind a ``  Moderator: `` prefix, and a
+    line-anchored match would lose those games. Safe on the corpus — no
+    committed game carries more than one winner sentence anywhere in its text.
+    """
+    for sentence, side in _WINNER_SENTENCES:
+        if sentence in text:
+            return side
+    return None
+
+
+def _parse_survivors(text: str) -> tuple[int | None, int | None]:
+    """The ``(law_abiding, mafia)`` players alive at the end, or ``(None, None)``.
+
+    Roster minus deaths — never the in-game ``<recap>`` standings, for the
+    era-dependent reason in this section's banner. The two counts travel
+    together: whatever makes one unknowable makes the other unknowable too, so
+    a row never shows one real number beside an invented one.
+    """
+    roster = _parse_roster(text)
+    deaths = _parse_deaths(text)
+    if roster is None or deaths is None:
+        return (None, None)
+    law_abiding = roster[0] - deaths[0]
+    mafia = roster[1] - deaths[1]
+    if law_abiding < 0 or mafia < 0:
+        # More deaths than players. Impossible from a well-formed transcript
+        # (0 occurrences in the corpus) and a sign the text is not what this
+        # parser thinks it is, so it withholds rather than renders a negative.
+        return (None, None)
+    return (law_abiding, mafia)
+
+
+def _parse_roster(text: str) -> tuple[int, int] | None:
+    """The roster's ``(law_abiding, mafia)`` sizes, or ``None`` when unreadable.
+
+    ``None`` covers both an **absent** ``Full roster:`` header — which is what a
+    game with no recorded ending looks like — and a **malformed** one whose
+    entries carry no recognisable role label.
+    """
+    match = _ROSTER_LINE_RE.search(text)
+    if match is None:
+        return None
+    labels = _ROLE_IN_PARENS_RE.findall(match.group("entries"))
+    if not labels:
+        return None
+    return (
+        labels.count(_ROLE_LABEL_LAW_ABIDING),
+        labels.count(_ROLE_LABEL_MAFIA),
+    )
+
+
+def _parse_deaths(text: str) -> tuple[int, int] | None:
+    """The game's ``(law_abiding, mafia)`` deaths, or ``None`` when unreadable.
+
+    A bullet carrying the ``Night N:`` / ``Day N:`` cycle prefix but **no**
+    readable role label cannot be attributed to a side, and one death of unknown
+    side makes the whole arithmetic untrustworthy — so it resolves the standings
+    to ``None`` rather than being quietly skipped, which would inflate the
+    survivors of whichever side actually lost that player.
+
+    The role label is read from the **last** parenthesised group on the line,
+    which is where both writer shapes put it.
+    """
+    law_abiding = 0
+    mafia = 0
+    for bullet in _DEATH_BULLET_RE.findall(text):
+        labels = _ROLE_IN_PARENS_RE.findall(bullet)
+        if not labels:
+            return None
+        if labels[-1] == _ROLE_LABEL_MAFIA:
+            mafia += 1
+        else:
+            law_abiding += 1
+    return (law_abiding, mafia)
 
 
 # ===========================================================================

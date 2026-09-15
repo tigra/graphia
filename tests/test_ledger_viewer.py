@@ -1367,7 +1367,7 @@ async def test_t_on_detail_focuses_the_panel_listing_the_runs_games(
         assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
 
         # The list carries one ListItem per game, sorted game-01 before game-02.
-        assert _panel_labels(screen) == ["game-01", "game-02"]
+        assert _panel_labels(screen) == ["01", "02"]
         # The list is shown; the "no transcripts" message is hidden.
         assert listing.display is True
         assert screen.query_one("#transcript-panel-empty", Static).display is False
@@ -1408,7 +1408,7 @@ async def test_selecting_a_game_shows_its_transcript_text(
     async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
         await pilot.pause()
         screen = await _open_detail_for_first_row(pilot)
-        assert _panel_labels(screen) == ["game-01", "game-02", "game-03"]
+        assert _panel_labels(screen) == ["01", "02", "03"]
 
         # Highlight the game under test via the real key path, then select it.
         await _highlight_game(pilot, picked)
@@ -1737,10 +1737,65 @@ _EXPECTED_PANE_GEOMETRY = {
 }
 
 
-def _panel_labels(screen: DetailScreen) -> list[str]:
-    """The panel list's row labels, read through the widget API."""
+def _segment_text(label: Label) -> str:
+    """One row segment's text, read off its renderable — NOT through markup.
+
+    The shared ``plain_text`` helper ends in ``Text.from_markup(str(rendered))``,
+    which is the wrong route for a row segment twice over: console markup is
+    ``[…]``, and — the reason it actually matters here — the prefix segment pads
+    its column grid with **trailing spaces**, which is exactly what a round trip
+    through ``str()`` and back is free to lose. Reading the renderable directly
+    is the same route ``_transcript_body_content`` (B14) takes, for the same
+    reason.
+
+    Asserts the renderable's type, which pins a measured fact about the
+    installed Textual (8.2.4): a ``Label``'s ``render()`` hands back Textual's
+    own ``Content``. If a future Textual returned something else, the ``.plain``
+    read below would silently be measuring something else.
+    """
+    rendered = label.render()
+    assert isinstance(rendered, Content), (
+        f"a row segment rendered a {type(rendered).__name__}, expected Content"
+    )
+    return rendered.plain
+
+
+def _panel_row_segments(screen: DetailScreen) -> list[list[str]]:
+    """Every panel row's segments, in column order — the rows' STRUCTURE.
+
+    Spec 045 rebuilt each row as a ``Horizontal`` of up to four class-carrying
+    ``Label``s (``01   3d  `` / ``2`` / ``-`` / ``2``), so a row is no longer
+    one label and the old ``item.query_one(Label)`` is no longer a reading of
+    it. Measured on the installed Textual (8.2.4), ``query_one`` does **not**
+    raise on several matches — ``query_exactly_one`` is the method that does —
+    so it quietly returned the **first** segment and every row read as its
+    number alone. A helper that merely stopped a crash would have been the
+    wrong fix; there was no crash.
+
+    Segments come back in DOM order, which is column order, because that is the
+    order :func:`~graphia.ui.ledger_viewer._panel_row` composes them in.
+    """
     listing = screen.query_one("#transcript-panel-list", ListView)
-    return [plain_text(item.query_one(Label)) for item in listing.query(ListItem)]
+    return [
+        [_segment_text(label) for label in item.query(Label)]
+        for item in listing.query(ListItem)
+    ]
+
+
+def _panel_labels(screen: DetailScreen) -> list[str]:
+    """The panel list's rows, **one string per row**, read through the widget API.
+
+    One item per ROW, never one per segment, so that everything counting rows
+    through this helper keeps counting rows — ``len(_panel_labels(screen)) ==
+    len(transcript_files)`` in the fixed-width geometry test below is a fixture
+    sanity check whose meaning depends on it, and a four-segment row would have
+    turned it into a segment count that happened to be a multiple.
+
+    The segments are joined with nothing between them: the prefix segment
+    already carries the grid's gaps as its own trailing spaces, so the join is
+    the row exactly as it reads on screen — ``01   3d  2-2``.
+    """
+    return ["".join(segments) for segments in _panel_row_segments(screen)]
 
 
 async def _open_detail_for_row(pilot, row: int) -> DetailScreen:
@@ -1807,7 +1862,7 @@ async def test_opening_a_run_shows_both_panes_with_nothing_pressed(
             screen.query_one("#detail-body", Static)
         )
         # ...and this run's games in the right one, in the pure layer's order.
-        assert _panel_labels(screen) == ["game-01", "game-02"]
+        assert _panel_labels(screen) == ["01", "02"]
         assert screen.query_one("#transcript-panel-list", ListView).display is True
         assert screen.query_one("#transcript-panel-empty", Static).display is False
 
@@ -1889,7 +1944,7 @@ async def test_details_pane_width_is_identical_with_and_without_transcripts(
 
         # The run WITH games.
         screen = await _open_detail_for_row(pilot, 0)
-        assert _panel_labels(screen) == ["game-01", "game-02"]
+        assert _panel_labels(screen) == ["01", "02"]
         with_transcripts = _pane_geometry(screen)
 
         # Back out to the table, then open the run WITHOUT games.
@@ -2648,7 +2703,7 @@ async def test_returning_from_a_game_leaves_the_same_entry_highlighted(
     async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
         await pilot.pause()
         screen = await _open_detail_for_row(pilot, 0)
-        assert _panel_labels(screen) == ["game-01", "game-02", "game-03", "game-04"]
+        assert _panel_labels(screen) == ["01", "02", "03", "04"]
 
         # Highlight game-03 (index 2) with real keystrokes — `_highlight_game`
         # asserts the highlight started at 0 and arrived at 2, so the index below
@@ -2668,7 +2723,7 @@ async def test_returning_from_a_game_leaves_the_same_entry_highlighted(
         assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
         assert screen.query_one("#transcript-panel-list", ListView) is listing
         # ...with its rows untouched...
-        assert _panel_labels(screen) == ["game-01", "game-02", "game-03", "game-04"]
+        assert _panel_labels(screen) == ["01", "02", "03", "04"]
         # ...and game-03 STILL highlighted (2, not the 0 or None a rebuilt list
         # would report).
         assert listing.index == 2
@@ -10067,4 +10122,435 @@ async def test_the_running_status_names_the_keys_that_step_between_matches(
         )
         assert _rendered_sub_title(screen) == _expected_status(
             _JUMP_QUERY, 1, _JUMP_MATCHES
+        )
+
+
+# ===========================================================================
+# B16. Every row says how long its game ran and who was left (spec 045,
+#      Slice 1) — the panel's rows stopped being names and became a row of
+#      NUMBERS: the game's number with the writer's `game-` prefix dropped,
+#      the Days the game played, and the two survivor counts, Law-abiding
+#      first.
+#
+#      WHAT IS ASSERTED HERE, AND WHAT DELIBERATELY IS NOT. The derivation
+#      itself — which Days count, which bullets are deaths, which era writes
+#      its winner sentence indented behind a `Moderator: ` prefix — is already
+#      covered, terminal-free, by `tests/test_game_summary.py` at ~0.007 s an
+#      item. A `run_test()` item in THIS file costs ~0.63 s, so nothing below
+#      re-checks a parsing rule. What is genuinely screen-shaped, and
+#      therefore lives here, is the ROW: that the derived numbers reach it, in
+#      the stated order, on the stated columns, and that the three row SHAPES
+#      (a recorded ending, a game with none, a file that yields nothing) are
+#      three visibly different things.
+#
+#      THE FIXTURES ARE BUILT TO A STATED OUTCOME, never copied out of the
+#      committed corpus. Functional-spec §2.1's second criterion is a golden
+#      read off one real 50-game run, but a test that read that run would be a
+#      test of `evals/transcripts/` rather than of the panel: it would have to
+#      skip wherever the corpus was absent, and it would go red the day
+#      somebody curated that run away. `_game_with_outcome` below reproduces
+#      the run's SHAPE instead, so the golden runs everywhere.
+#
+#      WHY EVERY OTHER PANEL TEST IN THIS FILE NOW READS BARE NUMBERS.
+#      `_TRANSCRIPT_BODY` (B10) carries `<setup>` and `<night>` but no `<day>`
+#      marker at all, so `summarise_game` withholds everything and those rows
+#      are the third shape — the number alone. That is why B11-B13 assert
+#      `["01", "02"]` and not `["01   3d  2-2"]`.
+#
+#      NO COLOUR, NO WEIGHT, NO HEADER. Slice 1 puts the classes on the
+#      segments and styles none of them, so the row is uniform plain text; the
+#      winner-marking assertions belong to Slice 2 and the column header and
+#      the panel's border title to Slice 3.
+# ===========================================================================
+
+# The run these fixtures hang off, and therefore the sibling
+# `transcripts/<run-id>/` dir they are written into, entirely under `tmp_path`.
+_ROW_RUN_ID = "run-row-shape"
+
+# The two winner sentences a finished game ends on, written out the way
+# `tests/test_game_summary.py`'s own era fixtures write them. THAT module holds
+# the pin that keeps them honest — each literal against the
+# `graphia.prompts.ENDGAME_*` constant that emits it — so a UI test can state
+# them plainly instead of dragging the model-facing prompt stack into itself.
+_WINNER_LINE_MAFIA = "The Mafia have won."
+_WINNER_LINE_LAW_ABIDING = "The Law-abiding Citizens have won."
+
+# The two public role labels the roster line and the death bullets name a side
+# by (writer: `graphia.tools.eval_transcript._ROLE_LABELS`).
+_ROLE_LABEL_LAW_ABIDING = "Law-abiding Citizen"
+_ROLE_LABEL_MAFIA = "Mafia"
+
+# Players the builder deals from — a pool per side, so a roster line never has
+# to disambiguate and a reader can tell at a glance which side a name is on.
+_LAW_ABIDING_NAMES = ("Avery", "Mira", "Nadia", "Leif", "Hiroshi", "Rosa")
+_MAFIA_NAMES = ("Amara", "Kenzo", "Dario")
+
+
+def _day_blocks(days: int) -> str:
+    """``days`` flush-left ``<day>`` blocks — the marker the day count counts."""
+    return "".join(f"<day>\nDay {n} begins.\n</day>\n" for n in range(1, days + 1))
+
+
+def _game_with_outcome(
+    game: int,
+    *,
+    days: int,
+    law_alive: int,
+    mafia_alive: int,
+    law_killed: int = 0,
+    mafia_executed: int = 0,
+) -> str:
+    """A synthetic preserved game whose row is the outcome the caller states.
+
+    Written in the modern (post-spec-022) transcript era, which is the era the
+    run this spec's golden comes from is in: flush-left ``<day>`` markers, an
+    ``<endgame>`` block, a flush-left winner sentence, the ``Events this game:``
+    death bullets, and the ``Full roster:`` line the survivor arithmetic stands
+    on.
+
+    The caller states the ENDING — how many of each side lived, and how many
+    died which way — and the roster is derived from it (``alive + killed`` per
+    side) rather than stated separately, so a fixture cannot quietly disagree
+    with the row it is supposed to produce. Law-abiding players die at Night
+    and Mafiosos are executed by Day, which is both the common shape and the
+    only one that exercises both of the writer's two bullet forms.
+
+    The winner is not a third knob either: it is the game's own win condition,
+    so a fixture that leaves a Mafioso standing cannot claim the town won.
+
+    Every player is revealed in the ``Who they really were:`` section, which is
+    what the writer does — and it is the trap the death rule has to survive.
+    Those bullets carry no ``Night N:`` / ``Day N:`` cycle prefix, and a rule
+    that matched a bare ``• `` would count the whole roster as dead, drive the
+    arithmetic negative, and blank every row.
+    """
+    # The roster is DERIVED from the ending the caller stated, never stated
+    # beside it, so a fixture cannot disagree with the row it is meant to
+    # produce. The two guards catch the one way this builder can be misused: a
+    # case asking for more players of a side than there are names to deal.
+    law_roster = law_alive + law_killed
+    mafia_roster = mafia_alive + mafia_executed
+    law = _LAW_ABIDING_NAMES[:law_roster]
+    mafia = _MAFIA_NAMES[:mafia_roster]
+    assert len(law) == law_roster, "the Law-abiding name pool is too small"
+    assert len(mafia) == mafia_roster, "the Mafia name pool is too small"
+
+    roster = [(name, _ROLE_LABEL_LAW_ABIDING) for name in law]
+    roster += [(name, _ROLE_LABEL_MAFIA) for name in mafia]
+    deaths = [
+        f"• Night {n}: {law[n - 1]} ({_ROLE_LABEL_LAW_ABIDING})"
+        for n in range(1, law_killed + 1)
+    ] + [
+        f"• Day {n}: {mafia[n - 1]} ({_ROLE_LABEL_MAFIA}) executed"
+        for n in range(1, mafia_executed + 1)
+    ]
+    winner = _WINNER_LINE_MAFIA if mafia_alive else _WINNER_LINE_LAW_ABIDING
+
+    setup = "".join(f'<player name="{n}" role="{r}" />\n' for n, r in roster)
+    events = "".join(f"{line}\n" for line in deaths)
+    full_roster = ", ".join(f"{name} ({role})" for name, role in roster)
+    personas = "".join(
+        f"• {name} ({role}) — a persona, recorded after the fact.\n"
+        for name, role in roster
+    )
+    return (
+        f"{_numbered_transcript_marker(game)}\n"
+        "\n"
+        "<transcript>\n"
+        "<setup>\n"
+        f"{setup}"
+        "</setup>\n"
+        f"{_day_blocks(days)}"
+        "<endgame>\n"
+        f"{winner}\n"
+        "\n"
+        "Events this game:\n"
+        f"{events}"
+        "\n"
+        f"Full roster: {full_roster}\n"
+        "\n"
+        "Who they really were:\n"
+        f"{personas}"
+        "</endgame>\n"
+        "</transcript>\n"
+    )
+
+
+def _game_with_no_ending(game: int, *, days: int) -> str:
+    """A game that played Days and then simply stops — functional-spec §2.4.
+
+    No winner sentence, no roster, no closing tag: the shape a handful of the
+    preserved games really have, having hit the Day cap of their era. The
+    derivation keeps the one number it can genuinely read and withholds the
+    rest, so the row shows its day count and a dash.
+    """
+    marker = _numbered_transcript_marker(game)
+    return f"{marker}\n\n<transcript>\n{_day_blocks(days)}"
+
+
+def _row_ledger(tmp_path: Path, games: dict[str, str], *, name: str) -> Path:
+    """A one-run ledger whose run holds exactly ``games``, all under ``tmp_path``."""
+    ledger = _write_ledger(
+        tmp_path,
+        _doc_with_transcript_dir("2026-09-14", _ROW_RUN_ID),
+        name=name,
+    )
+    _write_run_transcripts(ledger, _ROW_RUN_ID, games)
+    return ledger
+
+
+def _panel_row_columns(screen: DetailScreen) -> list[list[int]]:
+    """Each row's segments as the COLUMN each one starts in.
+
+    Measured from the row's own left edge, so the answer is about the grid the
+    segments sit on rather than about where the panel happens to be on screen.
+    """
+    listing = screen.query_one("#transcript-panel-list", ListView)
+    return [
+        [label.region.x - item.content_region.x for label in item.query(Label)]
+        for item in listing.query(ListItem)
+    ]
+
+
+# ---------------------------------------------------------------------------
+# B16.1 The three numbers reach the row, Law-abiding count first
+# ---------------------------------------------------------------------------
+
+
+async def test_a_row_carries_its_day_count_and_both_survivor_counts(
+    tmp_path: Path,
+) -> None:
+    """One row, read segment by segment: ``05   2d  4-0``.
+
+    Functional-spec §2.1's first, third and fifth criteria in one mount. The
+    game is shaped like the real game 5 the spec picks out — 2 Days, ending
+    with four Law-abiding Citizens alive and no Mafiosos — *because* that is
+    the one outcome whose two counts are different numbers, so "Law-abiding
+    first, Mafia second" is a claim this row can actually fail. A `2-2` row
+    would satisfy either order.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            "game-05.txt": _game_with_outcome(
+                5,
+                days=2,
+                law_alive=4,
+                mafia_alive=0,
+                law_killed=1,
+                mafia_executed=2,
+            )
+        },
+        name="row-content.yaml",
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_first_row(pilot)
+
+        # The four segments, in column order: the number and the day count, the
+        # Law-abiding survivors, the separator, the Mafia survivors.
+        assert _panel_row_segments(screen) == [["05   2d  ", "4", "-", "0"]], (
+            "§2.1: the row must carry the game's number, the Days it played "
+            "and both survivor counts — Law-abiding FIRST, Mafia second, so a "
+            "reviewer learns the order once and reads every row after that "
+            "without a label"
+        )
+        # ...which is what the reviewer reads, as one row.
+        assert _panel_labels(screen) == ["05   2d  4-0"]
+
+        # §2.1's fifth criterion: the number stands alone. The word "game" on
+        # every row of a list of games is what paid for the three new numbers.
+        assert "game" not in _panel_labels(screen)[0]
+
+
+# ---------------------------------------------------------------------------
+# B16.2 The row sits on the twelve-column grid
+# ---------------------------------------------------------------------------
+
+
+async def test_every_row_puts_its_numbers_in_the_same_columns(
+    tmp_path: Path,
+) -> None:
+    """The grid tech-spec §2.4 fixes, asserted on the two extremes it must fit.
+
+    ::
+
+        cols   0 1 | 2 3 | 4 5 6 | 7 8 | 9 |10 |11
+        row    0 1 |     |   3 d |     | 2 | - | 2
+        row    5 0 |     | 1 2 d |     | 2 | - | 2
+
+    One mount, two rows chosen to be the narrowest and the widest thing each
+    field can hold: the lowest game number a run has against the highest a
+    50-game run reaches, and a one-digit day count against a two-digit one.
+    Left-aligned padding would put ``50 12d`` and ``01 3d`` in different
+    columns; right alignment is what makes the three numbers read as three
+    columns rather than as a ragged sentence.
+
+    Asserted twice over, and deliberately: the segment COLUMNS come from the
+    laid-out widgets (so this is the grid Textual actually produced), while the
+    joined text pins the alignment INSIDE the prefix segment, which is one
+    widget and therefore has no column of its own to measure.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            "game-01.txt": _game_with_outcome(
+                1, days=3, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+            "game-50.txt": _game_with_outcome(
+                50, days=12, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+        },
+        name="row-grid.yaml",
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_first_row(pilot)
+
+        # The three survivor columns are 9, 10 and 11 on BOTH rows — the prefix
+        # occupies 0-8 whatever it happens to say.
+        assert _panel_row_columns(screen) == [[0, 9, 10, 11], [0, 9, 10, 11]]
+
+        # And inside the prefix: the number right-aligned in columns 0-1 (so
+        # `01` and `50` share a right edge) and the day count right-aligned in
+        # 4-6 (so the `d` of `3d` and of `12d` both land in column 6).
+        assert _panel_labels(screen) == ["01   3d  2-2", "50  12d  2-2"]
+
+
+# ---------------------------------------------------------------------------
+# B16.3 The six-row golden
+# ---------------------------------------------------------------------------
+
+# Functional-spec §2.1's second criterion, as the six games' SHAPES: the first
+# six games of the 50-game local run of 2026-09-14 — `3` days `2-2`, `2` days
+# `2-2`, `3` days `2-2`, `3` days `2-2`, `2` days `4-0`, `3` days `2-2`.
+#
+# Game 5 is the point of the criterion and of the whole spec: in a run where
+# every other game ends at the parity the Mafia win on, it is the one the town
+# actually won, and a reviewer scanning the list should go straight to it. It
+# is therefore the row that makes this golden non-vacuous — six identical rows
+# would pass against almost any bug.
+_GOLDEN_GAMES = (
+    # days, law alive, mafia alive, law killed at Night, mafia executed by Day
+    (3, 2, 2, 2, 0),
+    (2, 2, 2, 2, 0),
+    (3, 2, 2, 2, 0),
+    (3, 2, 2, 2, 0),
+    (2, 4, 0, 1, 2),
+    (3, 2, 2, 2, 0),
+)
+
+_GOLDEN_ROWS = [
+    "01   3d  2-2",
+    "02   2d  2-2",
+    "03   3d  2-2",
+    "04   3d  2-2",
+    "05   2d  4-0",
+    "06   3d  2-2",
+]
+
+
+async def test_the_first_six_rows_read_as_the_spec_says_they_do(
+    tmp_path: Path,
+) -> None:
+    """The golden: six rows, in order, exactly as functional-spec §2.1 states.
+
+    Against a fixture reproducing that run's shape rather than the run itself,
+    so the golden runs wherever the suite does and cannot be broken by curating
+    a transcript dir away.
+
+    One equality carries it — every row at once, in order — so a failure names
+    the row that moved rather than merely reporting that a count was wrong.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            f"game-{number:02d}.txt": _game_with_outcome(
+                number,
+                days=days,
+                law_alive=law_alive,
+                mafia_alive=mafia_alive,
+                law_killed=law_killed,
+                mafia_executed=mafia_executed,
+            )
+            for number, (
+                days,
+                law_alive,
+                mafia_alive,
+                law_killed,
+                mafia_executed,
+            ) in enumerate(_GOLDEN_GAMES, start=1)
+        },
+        name="row-golden.yaml",
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_first_row(pilot)
+
+        assert _panel_labels(screen) == _GOLDEN_ROWS
+
+        # §2.1's fifth criterion over the whole list rather than over one row:
+        # no row contains the word "game".
+        assert [row for row in _panel_labels(screen) if "game" in row] == []
+
+
+# ---------------------------------------------------------------------------
+# B16.4 The three row shapes are three different things
+# ---------------------------------------------------------------------------
+
+
+async def test_a_game_with_no_recorded_ending_shows_a_dash_not_a_pair(
+    tmp_path: Path,
+) -> None:
+    """Functional-spec §2.4, beside the two shapes it has to stay distinct from.
+
+    One run, three games, one of each shape — a recorded ending, Days but no
+    ending, and a file the derivation can read nothing out of. Asserted
+    together in one mount **because the claim is that they differ**: a ``2d  —``
+    row means nothing unless the row beside it is showing real standings, and a
+    dash that had quietly replaced every row's counts would pass a test that
+    looked only at the game with no ending.
+
+    The third game's body is ``_TRANSCRIPT_BODY``, which carries no ``<day>``
+    marker at all — the same reason every other panel test in this file reads
+    its rows as bare numbers.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            "game-01.txt": _game_with_outcome(
+                1, days=3, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+            "game-02.txt": _game_with_no_ending(2, days=2),
+            "game-03.txt": _TRANSCRIPT_BODY,
+        },
+        name="row-shapes.yaml",
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_first_row(pilot)
+
+        assert _panel_row_segments(screen) == [
+            ["01   3d  ", "2", "-", "2"],
+            ["02   2d  ", "—"],
+            ["03"],
+        ]
+
+        # §2.4, said as the thing it is about rather than as a repeat of the
+        # equality above: the row keeps the day count it can genuinely read,
+        # and what follows it is NOT a pair of survivor numbers. A `0-0` there
+        # would read as real final standings.
+        prefix, *standings = _panel_row_segments(screen)[1]
+        assert prefix == "02   2d  "
+        assert standings == ["—"]
+        assert not any(char.isdigit() for part in standings for char in part), (
+            "a game with no recorded ending must show no survivor number at all"
         )
