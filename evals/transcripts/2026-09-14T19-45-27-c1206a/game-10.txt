@@ -1,0 +1,497 @@
+Game 10 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=50 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Akira" role="Mafia">
+Personality: Bold, brash, and loud; thrives on attention and being the center of the room.
+Manner: Speaks with a loud, over-the-top manner, often making grand gestures and dramatic pauses for effect.
+Public legend: Akira is a local theater actor known for his flamboyant performances and larger-than-life personality. He moved to the town five years ago, drawn by the charm of its historic streets and the opportunity to bring his passion for drama to a new audience.
+True self (hidden): Akira joined the Mafia after a chance encounter with a powerful Mafioso who was impressed by his quick thinking and silver tongue during a street performance. He uses his acting skills to blend into the townsfolk while conducting secretive operations for the Mafia.
+</player>
+<player name="Boris" role="Law-abiding Citizen">
+Personality: dreamy and distractible
+Manner: speaks in a meandering, introspective manner; often gets lost in thought, trailing off or changing topics abruptly; uses whimsical vocabulary
+Persona: Boris is a local artist, known for his whimsical paintings and sculptures that dot the town square. He spends his days wandering the town with a sketchbook in hand, capturing fleeting moments of beauty and wonder. Boris is a quiet observer, often lost in his own world of imagination and creativity.
+</player>
+<player name="Fatima" role="Mafia">
+Personality: Anxious and second-guessing
+Manner: Speaks in a nervous, hesitant tone, often second-guessing her words and pausing to think. Tends to apologize frequently and seems easily flustered.
+Public legend: Fatima is a local librarian, known for her meticulous organization and love for books. She moved to the town three years ago after leaving her old life behind, seeking a quiet and peaceful environment to start fresh. In her free time, she enjoys reading mystery novels and helping the townsfolk find the perfect book for their needs.
+True self (hidden): Fatima, known to her associates as 'The Whisper,' joined the Mafia after a series of unfortunate events led her to seek protection and power. Her quiet demeanor and love for books are a perfect cover for her true self—a cunning and strategic Mafioso who uses her intelligence and knowledge to manipulate situations to her advantage.
+</player>
+<player name="Giovanni" role="Law-abiding Citizen">
+Personality: shrewd and calculating; meticulous and observant; sharp wit
+Manner: speaks with a confident, measured pace; uses precise, deliberate vocabulary; often employs rhetorical questions to engage others
+Persona: Giovanni is a seasoned investigator, recently retired from a long career in law enforcement. Known for his sharp mind and unwavering dedication to justice, he moved to the town seeking a quieter life. In his free time, he enjoys studying local history and solving puzzles, always with an eye for detail and a mind for strategy.
+</player>
+<player name="Lila" role="Law-abiding Citizen">
+Personality: gruff and blunt; speaks her mind without filter; has a no-nonsense attitude
+Manner: speaks in a direct, terse manner; uses straightforward vocabulary; no verbal tics
+Persona: Lila is a local blacksmith, known for her sturdy and reliable craftsmanship. She moved to the town ten years ago after leaving her old life behind, seeking a place where she could work with her hands and create something tangible. In her free time, she enjoys hiking in the nearby forests and tending to her small vegetable garden.
+</player>
+<player name="Mohammad" role="Law-abiding Citizen">
+Personality: weary and world-worn; speaks with a resigned, contemplative tone; often uses reflective vocabulary.
+Manner: speaks slowly, with deliberate pauses; tends to use simple, straightforward vocabulary; occasionally sighs or mutters to himself.
+Persona: Mohammad is a retired fisherman who spent years at sea, battling storms and navigating treacherous waters. He finally settled in this town, seeking a peaceful life away from the constant struggle of the ocean. In his free time, he enjoys sitting by the river, reminiscing about his adventures and sharing stories with anyone who will listen.
+</player>
+<player name="Nadia" role="Law-abiding Citizen">
+Personality: prickly and easily-offended; quick to take offense but tries to maintain a composed facade
+Manner: speaks with a sharp, clipped tone; uses precise vocabulary; often interjects with curt comments or retorts
+Persona: Nadia is a local teacher, known for her strict yet fair approach to education. She moved to the town two years ago, seeking a fresh start after a series of professional disappointments. In her free time, she enjoys reading philosophical texts and debating moral dilemmas with anyone who will listen.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Akira, Boris, Fatima, Giovanni, Lila, Mohammad, Nadia. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Akira): Your Mafia teammates are: Fatima. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Fatima): Your Mafia teammates are: Akira. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Fatima points at Giovanni
+Akira points at Giovanni
+<kill>Giovanni — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Giovanni was killed last night. Giovanni was a Law-abiding Citizen.
+<round>
+Round 1.
+Lila: Avery, you were awfully quiet last night. What's your story?
+Boris: Oh, the night whispers secrets, doesn't it? I wonder who among us is painting with shadows instead of light.
+Avery: Nothing is settled yet, but I'm watching Nadia most closely.
+Fatima: I-I'm not sure, but Boris's comment about shadows seems a bit...suspicious. What do you all think?
+Akira: Oh, the drama unfolds! I must say, Boris, your cryptic comment about shadows has piqued my curiosity. Could it be that you know more than you're letting on?
+Mohammad: Reflecting on the night's events, it seems that Avery's silence and Boris's cryptic comment warrant closer scrutiny.
+Nadia: Avery's silence and Boris's cryptic comment are indeed noteworthy, but let us not jump to conclusions without further evidence.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Akira">Time to stir the pot and divert suspicion from Fatima and myself. I'll need to make a bold accusation to shift the focus.</thought>
+<thought player="Boris">In the tapestry of whispers and glances, I must tread carefully, for the shadows of suspicion may yet entwine around the innocent.</thought>
+<thought player="Fatima">I-I need to be more careful with my words... Perhaps I should steer the conversation towards Nadia and Avery, to create some division among the Law-abiding Citizens.</thought>
+<thought player="Lila">Boris and Avery are under suspicion; keep an eye on their behavior and gather more evidence before making a move.</thought>
+<thought player="Mohammad">The shadows Boris speaks of... I must keep a watchful eye on him and Avery, for their words carry weight in this game of trust and deception.</thought>
+<thought player="Nadia">Avery's silence and Boris's cryptic comment bear watching; I must remain vigilant and not let my guard down.</thought>
+</round>
+<round>
+Round 2.
+Boris: Oh, the whispers of the wind carry tales of hidden truths, don't they? I wonder if the silence of some is a canvas for their secrets.
+Fatima: I-I've been thinking... Nadia's defense of Avery seems a bit... too quick. What if she's trying to protect him for a reason?
+Nadia: Fatima's observation about my defense of Avery is noted, but let us not allow paranoia to cloud our judgment.
+Mohammad: Reflecting on Fatima's observation, Nadia's quick defense of Avery does seem... telling.
+Lila: Nadia, your quick defense of Avery makes me wonder if you're hiding something.
+Akira: Oh, the tension thickens! Mohammad, your reflective nature is intriguing. What secrets might you be concealing in your thoughts?
+Avery: Nothing is settled yet, but I'm watching Nadia most closely.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Akira">Time to make a bold accusation to divert suspicion from Fatima and myself. I'll target Mohammad next.</thought>
+<thought player="Boris">In the dance of light and shadow, I must weave my words with care, lest I become the canvas for their suspicions.</thought>
+<thought player="Fatima">I-I should continue to subtly push suspicion towards Nadia and Avery, while being cautious not to draw too much attention to myself or Akira.</thought>
+<thought player="Lila">Need to gather more evidence on Boris and Avery before making a move.</thought>
+<thought player="Mohammad">I must continue to observe Boris and Avery, for their words and actions may yet reveal the truth in this game of shadows.</thought>
+<thought player="Nadia">Avery and Boris remain suspicious, but I must avoid drawing undue attention to myself; I shall continue to observe and contribute judiciously.</thought>
+</round>
+<round>
+Round 3.
+Avery: Nothing is settled yet, but I'm watching Nadia most closely.
+Boris: Oh, the threads of fate are woven in the tapestry of our words, aren't they? I wonder if Mohammad's reflective nature hides a secret path.
+Fatima: I-I've been thinking... Lila's persistent questioning of Avery seems a bit... excessive. What if she's trying to divert attention from herself?
+Lila: Avery, your silence is as loud as a scream. What are you hiding?
+<vote initiator="Akira" target="Mohammad">
+Avery: No
+Akira: Yes
+Boris: No
+Fatima: No
+Lila: No
+Mohammad: No
+Nadia: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Avery: Nothing is settled yet, but I'm watching Nadia most closely.
+Lila: Fatima, your stammering is peculiar. What are you trying to hide?
+Akira: Oh, the intrigue deepens! Mohammad, your reflective nature is as mysterious as the night itself. What secrets might you be hiding in the shadows?
+Fatima: I-I've noticed that Boris's comments seem to be quite... cryptic. What if he's trying to manipulate our perceptions?
+Boris: Oh, the dance of light and shadow, it seems Fatima's stammering might be a veil for something more... let us uncover the truth beneath.
+Nadia: Avery's persistent fixation on me is becoming rather tiresome; it would serve us well to redirect our scrutiny towards those who remain unduly silent or cryptic.
+Mohammad: Reflecting on the night's events, I find Boris's cryptic comments and Avery's persistent silence to be rather suspicious.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Akira">The spotlight must shift—I'll continue to sow seeds of doubt and divert suspicion from Fatima and myself.</thought>
+<thought player="Boris">As the sun sets on this day of whispers and shadows, I must ponder the threads I have woven—have I inadvertently cast suspicion upon myself, or have I skillfully danced among the suspicions of others?</thought>
+<thought player="Fatima">I-I need to keep pushing suspicion towards Nadia and Avery, while making sure not to draw too much attention to myself or Akira. I-I must be careful with my words and actions.</thought>
+<thought player="Lila">Keep probing Boris and Avery; their behavior is suspicious. Gather more evidence before making a move.</thought>
+<thought player="Mohammad">The whispers of suspicion grow louder; I must remain vigilant and continue to observe Boris and Avery, for their words may yet betray the truth.</thought>
+<thought player="Nadia">Avery's fixation on me is growing tiresome; I must subtly shift the focus to Boris's cryptic comments and Mohammad's reflective nature.</thought>
+</round>
+<round>
+Round 4.
+Avery: Nothing is settled yet, but I'm watching Nadia most closely.
+Nadia: Avery's persistent silence and fixation on me are growing increasingly suspicious. I propose we scrutinize his behavior more closely.
+Mohammad: Reflecting on the current situation, I find Boris's cryptic comments and Avery's persistent silence to be rather suspicious.
+Fatima: I-I've noticed that Lila's persistent questioning of Avery seems a bit... excessive. What if she's trying to divert attention from herself?
+Akira: Oh, the plot thickens! Boris, your enigmatic comments are as mysterious as the night itself. What secrets might you be concealing in the shadows?
+Boris: Oh, the threads of fate are woven in the tapestry of our words, aren't they? I wonder if Nadia's persistent defense of Avery hides a secret alliance.
+Lila: Akira, your constant drama and intrigue seem a bit... convenient. What are you hiding?
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Akira">Time to continue sowing seeds of doubt and divert suspicion from Fatima and myself.</thought>
+<thought player="Boris">As the twilight of this day descends, I must consider the brushstrokes of my words and the canvas of my actions—have I painted myself into a corner of suspicion, or have I artfully eluded the grasp of doubt?</thought>
+<thought player="Fatima">I-I need to keep pushing suspicion towards Nadia and Avery, while ensuring I don't draw too much attention to myself or Akira.</thought>
+<thought player="Lila">Boris and Avery remain suspicious; keep pressing them for more information.</thought>
+<thought player="Mohammad">As the day draws to a close, I must remain steadfast in my observation of Boris and Avery, for their words may yet unravel the web of deception.</thought>
+<thought player="Nadia">Avery's fixation on me continues to be vexing; I must remain composed and subtly redirect suspicion towards Boris and Mohammad.</thought>
+</round>
+<round>
+Round 5.
+Fatima: I-I've been thinking... Mohammad's reflective nature seems a bit... calculated. What if he's trying to manipulate our perceptions too?
+Nadia: Avery's fixation on me is growing increasingly suspicious; I propose we scrutinize his behavior more closely.
+Boris: Oh, the dance of light and shadow, it seems Lila's persistent questioning of Avery might be a veil for something more... let us uncover the truth beneath.
+Lila: Avery, your silence is as loud as a scream. What are you hiding?
+Mohammad: Reflecting on the day's discourse, I find Boris's cryptic comments and Avery's persistent silence to be rather suspicious.
+Avery: Nothing is settled yet, but I'm watching Nadia most closely.
+Akira: Oh, the tension thickens! Nadia, your persistent defense of Avery is quite... interesting. What secrets might you be hiding in the shadows?
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Akira">The spotlight must shift—I'll continue to sow seeds of doubt and divert suspicion from Fatima and myself.</thought>
+<thought player="Boris">As the moon rises, I must ponder the dance of shadows and light—will I continue to weave cryptic comments, or should I shift to more straightforward observations to avoid further suspicion?</thought>
+<thought player="Fatima">I-I should continue to subtly push suspicion towards Nadia and Avery, while being cautious not to draw too much attention to myself or Akira.</thought>
+<thought player="Lila">Keep pressing Boris and Avery; their behavior is still suspicious. Gather more evidence before making a move.</thought>
+<thought player="Mohammad">The threads of fate are woven in our words; I must continue to observe Boris and Avery, for their cryptic comments and silence may yet reveal the truth.</thought>
+<thought player="Nadia">Avery's fixation on me is becoming a liability; I must strategically divert attention towards Boris and Mohammad without appearing overly defensive.</thought>
+</round>
+<round>
+Round 6.
+Akira: Oh, the tension mounts! Boris, your cryptic comments are as mysterious as the night itself. What secrets might you be concealing in the shadows?
+Nadia: Avery's fixation on me is becoming increasingly suspicious; I propose we scrutinize his behavior more closely.
+Mohammad: Reflecting on the day's events, I find it curious that Lila's persistent questioning of Avery has not been met with equal scrutiny.
+Boris: Oh, the dance of light and shadow, it seems Fatima's stammering might be a veil for something more... let us uncover the truth beneath.
+Fatima: I-I've noticed that Boris's comments seem to be quite... cryptic. What if he's trying to manipulate our perceptions?
+<vote initiator="Avery" target="Nadia">
+Avery: No
+Akira: No
+Boris: No
+Fatima: Yes
+Lila: No
+Mohammad: No
+Nadia: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Akira: Oh, the tension mounts! Mohammad, your reflective nature is as mysterious as the night itself. What secrets might you be concealing in the shadows?
+Boris: Oh, the moon's embrace casts a curious glow upon our gathering—what secrets might it reveal if we but look closely enough?
+Nadia: Mohammad's reflective nature and cryptic comments warrant closer examination, in my opinion.
+Lila: Avery, your silence is as loud as a scream. What are you hiding?
+Mohammad: Reflecting on the day's events, I find it curious that Boris's cryptic comments have not been met with equal scrutiny.
+Fatima: I-I've been thinking... Boris's cryptic comments and Mohammad's reflective nature seem a bit... suspicious. What if they're working together?
+<vote initiator="Avery" target="Nadia">
+Avery: No
+Akira: No
+Boris: No
+Fatima: Yes
+Lila: No
+Mohammad: No
+Nadia: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Akira" day="1">Oh, the day was a whirlwind of drama and intrigue! I managed to divert suspicion from Fatima and myself by stirring the pot and making bold accusations. The tension is palpable, and the townspeople are growing suspicious of each other. Tonight, I must remain vigilant and continue to sow seeds of doubt. The game is far from over, and the spotlight must continue to shift away from us. Let the night bring new opportunities to manipulate and deceive.</diary>
+<diary player="Boris" day="1">As the moon casts its gentle glow upon the town square, I find myself adrift in a sea of whispers and shadows. Today, the threads of suspicion wove themselves around us, and I wonder if my cryptic comments have become a veil for something more. Perhaps, in the coming night, I should tread a path of clarity, lest I become entangled in the very shadows I sought to illuminate.</diary>
+<diary player="Fatima" day="1">I-I can't shake this feeling of unease, the way the others are looking at each other, it's like they know something I don't. I-I need to keep pushing suspicion towards Nadia and Avery, but I must be careful not to draw too much attention to myself or Akira. The night is coming, and I-I hope our plan will work. I-I just wish I could be more confident in my actions...</diary>
+<diary player="Lila" day="1">Day 1 is done. Boris and Avery remain suspicious. Need to gather more evidence before making a move. Keep pressing them for more information. No executions today, but the tension is mounting. Night is coming, and I need to stay alert.</diary>
+<diary player="Mohammad" day="1">As the sun sets on this weary day, I find myself drawn to the shadows cast by Boris and Avery. Their words, both cryptic and silent, seem to hold a weight that belies their simple form. I must remain vigilant, for in this game of trust and deception, the truth often hides in the most unexpected places. The night brings its own challenges, and I must prepare myself for the battles yet to come. May the light of truth guide us through the darkness.</diary>
+<diary player="Nadia" day="1">Today was a day of mounting tension and suspicion, with Avery's persistent silence and fixation on me growing increasingly tiresome. I managed to subtly redirect the focus towards Boris's cryptic comments and Mohammad's reflective nature, but the scrutiny remains uncomfortably high. I must continue to observe and contribute judiciously, avoiding any actions that might draw undue attention to myself. The night ahead promises to be as treacherous as the day, and I must remain vigilant.</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Fatima points at Nadia
+Akira points at Mohammad
+Pointing round 2:
+Fatima points at Mohammad
+Akira points at Mohammad
+<kill>Mohammad — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Mohammad was killed last night. Mohammad was a Law-abiding Citizen.
+<round>
+Round 1.
+Boris: Oh, the night's embrace casts a curious glow upon our gathering—what secrets might it reveal if we but look closely enough?
+Akira: Oh, the intrigue deepens! Lila, your persistent questioning of Avery seems a bit... excessive. What if you're trying to divert attention from yourself?
+Fatima: I-I've been thinking... Lila's persistent questioning of Avery seems a bit... excessive. What if she's trying to divert attention from herself?
+Nadia: Avery's fixation on me is becoming increasingly suspicious; I propose we scrutinize his behavior more closely.
+Lila: Nadia, your defense of Avery seems overly convenient. What are you hiding?
+Avery: I most suspect Akira based on how the votes have gone.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Akira">Time to continue sowing seeds of doubt and divert suspicion from Fatima and myself, targeting Nadia next.</thought>
+<thought player="Boris">As the night's canvas unfolds, I must decide whether to continue my enigmatic dance or to paint with clearer strokes, lest I become the focal point of their suspicions.</thought>
+<thought player="Fatima">I-I need to keep pushing suspicion towards Nadia and Avery, while being careful not to draw attention to myself or Akira.</thought>
+<thought player="Lila">Boris and Avery are still acting suspicious; need to keep pressing them for more information and gather evidence before making a move.</thought>
+<thought player="Nadia">Avery's fixation on me is becoming increasingly problematic; I must continue to subtly redirect suspicion towards Boris and Mohammad while maintaining my composure.</thought>
+</round>
+<round>
+Round 2.
+Boris: Oh, the threads of fate are woven in the tapestry of our words, aren't they? I wonder if Lila's persistent questioning of Avery hides a secret alliance.
+Lila: Avery, your fixation on Nadia is suspicious. What are you hiding?
+Avery: I most suspect Akira based on how the votes have gone.
+Nadia: Avery's fixation on me is becoming increasingly suspicious; I propose we scrutinize his behavior more closely.
+Akira: Oh, the tension mounts! Avery, your fixation on Nadia is suspicious. What are you hiding?
+Fatima: I-I've noticed that Boris's comments seem to be quite... cryptic. What if he's trying to manipulate our perceptions?
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Akira">The spotlight must shift once more—I'll continue to sow seeds of doubt and divert suspicion from Fatima and myself, targeting Lila next.</thought>
+<thought player="Boris">As the moon's gentle glow bathes the tapestry of our gathering, I must decide whether to continue my enigmatic dance or to paint with clearer strokes, lest I become the focal point of their suspicions.</thought>
+<thought player="Fatima">I-I need to keep pushing suspicion towards Nadia and Avery, while being cautious not to draw too much attention to myself or Akira. Perhaps I should suggest a vote on Nadia to see how the others react.</thought>
+<thought player="Lila">Need to keep pressing Boris and Avery; their behavior remains suspicious. Gather more evidence before making a move.</thought>
+<thought player="Nadia">Avery's fixation on me is becoming a significant distraction; I must continue to subtly redirect suspicion towards Boris and Mohammad while maintaining my composure.</thought>
+</round>
+<round>
+Round 3.
+Boris: Oh, the moon's gentle embrace weaves a tapestry of whispers—what if Fatima's stammering is a veil for something more?
+Akira: Oh, the plot thickens! Avery, your fixation on Nadia is as suspicious as a moonlit shadow. What secrets might you be concealing in the darkness?
+Lila: Nadia, your quick defense of Avery is suspicious. What are you hiding?
+Nadia: Avery's fixation on me is becoming increasingly suspicious; I propose we scrutinize his behavior more closely.
+Fatima: I-I've been thinking... Boris's cryptic comments and Akira's dramatic flair seem a bit... suspicious. What if they're working together?
+Avery: I most suspect Akira based on how the votes have gone.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Akira">The spotlight must shift again—I'll continue to sow seeds of doubt and divert suspicion from Fatima and myself, targeting Boris next.</thought>
+<thought player="Boris">As the night's canvas unfolds, I must decide whether to continue my enigmatic dance or to paint with clearer strokes, lest I become the focal point of their suspicions.</thought>
+<thought player="Fatima">I-I need to be more subtle in my accusations, perhaps suggesting a vote on Nadia to gauge reactions without directly implicating myself or Akira.</thought>
+<thought player="Lila">Keep pressing Boris and Avery; their behavior remains suspicious. Gather more evidence before making a move.</thought>
+<thought player="Nadia">Avery's fixation on me is becoming increasingly suspicious; I must continue to subtly redirect suspicion towards Boris and Mohammad while maintaining my composure.</thought>
+</round>
+<round>
+Round 4.
+Fatima: I-I've noticed that Boris's cryptic comments and Akira's dramatic flair seem a bit... suspicious. What if they're working together?
+Akira: Oh, the plot thickens! Boris, your cryptic comments are as mysterious as the night itself. What secrets might you be concealing in the shadows?
+Nadia: Avery's fixation on me is growing increasingly suspicious; I propose we scrutinize his behavior more closely.
+Lila: Avery, your fixation on Nadia is suspicious. What are you hiding?
+Boris: Oh, the moon's gentle embrace weaves a tapestry of whispers—what if Fatima's stammering is a veil for something more?
+Avery: I most suspect Akira based on how the votes have gone.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Akira">The spotlight must shift again—I'll continue to sow seeds of doubt and divert suspicion from Fatima and myself, targeting Boris next.</thought>
+<thought player="Boris">As the moon's gentle glow bathes the tapestry of our gathering, I must decide whether to continue my enigmatic dance or to paint with clearer strokes, lest I become the focal point of their suspicions.</thought>
+<thought player="Fatima">I-I need to be more subtle in my accusations, perhaps suggesting a vote on Nadia to gauge reactions without directly implicating myself or Akira.</thought>
+<thought player="Lila">Need to keep pressing Boris and Avery; their behavior remains suspicious. Gather more evidence before making a move.</thought>
+<thought player="Nadia">Avery's fixation on me is becoming increasingly suspicious, and I must continue to subtly redirect suspicion towards Boris and Mohammad while maintaining my composure.</thought>
+</round>
+<round>
+Round 5.
+Avery: I most suspect Akira based on how the votes have gone.
+Nadia: Fatima's stammering and cryptic nature warrant closer examination, in my opinion.
+Akira: Oh, the intrigue deepens! Boris, your cryptic comments are as mysterious as the night itself. What secrets might you be concealing in the shadows?
+Fatima: I-I've noticed that Boris's cryptic comments and Akira's dramatic flair seem a bit... suspicious. What if they're working together?
+Boris: Oh, the dance of light and shadow—what if Fatima's stammering is a veil for something more?
+Lila: Avery, your fixation on Nadia is suspicious. What are you hiding?
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Akira">Time to ramp up the theatrics and divert suspicion from Fatima and myself. I'll need to make an even bolder accusation to shift the focus.</thought>
+<thought player="Boris">In the twilight of this day, I must decide whether to continue my enigmatic dance or to paint with clearer strokes, lest I become the focal point of their suspicions.</thought>
+<thought player="Fatima">I-I need to be more subtle in my accusations, perhaps suggesting a vote on Nadia to gauge reactions without directly implicating myself or Akira.</thought>
+<thought player="Lila">Keep pressing Boris and Avery; their behavior remains suspicious. Gather more evidence before making a move.</thought>
+<thought player="Nadia">Avery's fixation on me is becoming increasingly suspicious; I must continue to subtly redirect suspicion towards Boris and Mohammad while maintaining my composure.</thought>
+</round>
+<round>
+Round 6.
+Akira: Oh, the plot thickens! Lila, your persistent questioning of Avery seems a bit... excessive. What if you're trying to divert attention from yourself?
+Fatima: I-I've noticed that Lila's persistent questioning of Avery seems a bit... excessive. What if she's trying to divert attention from herself?
+Lila: Avery, your fixation on Nadia is suspicious. What are you hiding?
+Boris: Oh, the tapestry of our words—what if Lila's persistent questioning of Avery is a veil for something more?
+<vote initiator="Avery" target="Akira">
+Avery: Yes
+Akira: No
+Boris: No
+Fatima: No
+Lila: Yes
+Nadia: No
+tally: 2 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Fatima: I-I've been thinking... Nadia's defense of Avery seems a bit... too quick. What if she's trying to protect him for a reason?
+Akira: Oh, the plot thickens! Lila, your persistent questioning of Avery seems a bit... excessive. What if you're trying to divert attention from yourself?
+Lila: Fatima, your stammering is odd. What are you hiding?
+Boris: Oh, the tapestry of our words—what if Fatima's stammering is a veil for something more?
+<vote initiator="Avery" target="Akira">
+Avery: Yes
+Akira: No
+Boris: No
+Fatima: No
+Lila: No
+Nadia: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Lila: Fatima, your stammering is peculiar. What are you trying to hide?
+Nadia: Avery's fixation on me is becoming increasingly suspicious; I propose we scrutinize his behavior more closely.
+Akira: Oh, the plot thickens! Boris, your cryptic comments are as mysterious as the night itself. What secrets might you be concealing in the shadows?
+<vote initiator="Avery" target="Akira">
+Avery: Yes
+Akira: No
+Boris: No
+Fatima: No
+Lila: No
+Nadia: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Akira" day="2">Oh, the day was a tempest of theatrics and intrigue! I managed to divert suspicion from Fatima and myself by stirring the pot and making bold accusations. The tension is electric, and the townspeople are growing suspicious of each other. Tonight, I must remain vigilant and continue to sow seeds of doubt. The game is far from over, and the spotlight must continue to shift away from us. Let the night bring new opportunities to manipulate and deceive.</diary>
+<diary player="Boris" day="2">As the moon's gentle glow bathes the tapestry of our gathering, I find myself adrift in a sea of whispers and shadows. Today, the threads of suspicion wove themselves around us, and I wonder if my cryptic comments have become a veil for something more. Perhaps, in the coming night, I should tread a path of clarity, lest I become entangled in the very shadows I sought to illuminate.</diary>
+<diary player="Fatima" day="2">I-I'm feeling so anxious about tonight, I-I hope our plan works. I-I tried to steer suspicion towards Nadia and Avery today, but I-I can't shake the feeling that the others are onto us. I-I need to be more careful with my words and actions, especially with Boris and Lila being so suspicious. I-I just wish I could be more confident in my role. I-I'll try to suggest a vote on Nadia again tonight to see how the others react, but I-I must be subtle to avoid drawing attention to myself or Akira.</diary>
+<diary player="Lila" day="2">Day 2 is over. Boris and Avery remain suspicious. Need to keep pressing them for more information and gather evidence before making a move. No executions today, but the tension is mounting. Night is coming, and I need to stay alert.</diary>
+<diary player="Nadia" day="2">Avery's fixation on me is becoming increasingly suspicious; I must continue to subtly redirect suspicion towards Boris and Mohammad while maintaining my composure. The day's events only deepened my resolve to remain vigilant and composed, despite the mounting tension and scrutiny. The night ahead promises to be as treacherous as the day, and I must remain vigilant and judicious in my observations and contributions.</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Fatima points at Nadia
+Akira points at Nadia
+<kill>Nadia — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Nadia was killed last night. Nadia was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: I most suspect Akira based on how the votes have gone.
+Lila: Fatima, your stammering is odd. What are you hiding?
+Akira: Oh, the tension mounts! Boris, your cryptic comments are as mysterious as the night itself. What secrets might you be concealing in the shadows?
+Boris: Oh, the tapestry of our words—what if Fatima's stammering is a veil for something more?
+Fatima: I-I've been thinking... Avery's fixation on Nadia seems a bit... obsessive. What if he's trying to divert attention from himself?
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Akira">Time to intensify the drama and divert suspicion from Fatima and myself. I'll need to make an even bolder accusation to shift the focus.</thought>
+<thought player="Boris">As the shadows lengthen, I must decide whether to continue my enigmatic dance or to paint with clearer strokes, lest I become the focal point of their suspicions.</thought>
+<thought player="Fatima">I-I need to be more subtle in my accusations, perhaps suggesting a vote on Avery to gauge reactions without directly implicating myself or Akira.</thought>
+<thought player="Lila">Boris and Avery's behavior remains suspicious; keep pressing them for more information and gather evidence before making a move.</thought>
+</round>
+<round>
+Round 2.
+Boris: Oh, the threads of fate are woven in the tapestry of our words, aren't they? I wonder if Avery's fixation on Nadia and now Fatima might be a smokescreen for his own secrets.
+Akira: Oh, the tension mounts! Avery, your fixation on Nadia and now Fatima is as suspicious as a moonlit shadow. What secrets might you be concealing in the darkness?
+Avery: I most suspect Akira based on how the votes have gone.
+Fatima: I-I've been thinking... Lila's persistent questioning of Avery seems a bit... excessive. What if she's trying to divert attention from herself?
+Lila: Fatima, your stammering is odd. What are you hiding?
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Akira">Time to up the ante and divert suspicion from Fatima and myself by targeting Avery with a bold accusation.</thought>
+<thought player="Boris">As the moon's gentle glow bathes the tapestry of our gathering, I must decide whether to continue my enigmatic dance or to paint with clearer strokes, lest I become the focal point of their suspicions.</thought>
+<thought player="Fatima">I-I should continue to subtly push suspicion towards Avery, while being cautious not to draw too much attention to myself or Akira.</thought>
+<thought player="Lila">Need to keep pressing Boris and Avery; their behavior remains suspicious. Gather more evidence before making a move.</thought>
+</round>
+<round>
+Round 3.
+Fatima: I-I've noticed that Avery's fixation on Nadia and now Fatima seems a bit... obsessive. What if he's trying to divert attention from himself?
+Boris: Oh, the threads of fate are woven in the tapestry of our words, aren't they? I wonder if Lila's persistent questioning of Avery hides a secret alliance.
+Lila: Fatima, your stammering is odd. What are you hiding?
+Akira: Oh, the plot thickens! Avery, your fixation on Fatima seems a bit... obsessive. What secrets might you be concealing in the darkness?
+Avery: I most suspect Akira based on how the votes have gone.
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Akira">The heat is on—I must intensify my theatrics to divert suspicion from Fatima and myself. Avery's fixation on me provides the perfect opportunity to strike back with an even bolder accusation.</thought>
+<thought player="Boris">As the threads of fate weave their intricate dance, I must tread carefully, for the shadows of suspicion may yet entwine around the innocent.</thought>
+<thought player="Fatima">I-I should continue to subtly push suspicion towards Avery, while being cautious not to draw too much attention to myself or Akira.</thought>
+<thought player="Lila">Keep pressing Boris and Avery; their behavior remains suspicious. Gather more evidence before making a move.</thought>
+</round>
+<round>
+Round 4.
+Boris: Oh, the threads of fate are woven in the tapestry of our words, aren't they? I wonder if Lila's persistent questioning of Avery hides a secret alliance.
+Avery: I most suspect Akira based on how the votes have gone.
+Lila: Avery, your fixation on Fatima seems overly convenient. What are you hiding?
+Akira: Oh, the tension mounts! Fatima, your stammering is as mysterious as the night itself. What secrets might you be concealing in the shadows?
+Fatima: I-I've been thinking... Boris's cryptic comments and Lila's persistent questioning seem a bit... suspicious. What if they're working together?
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Akira">The heat is on—I must intensify my theatrics to divert suspicion from Fatima and myself. Avery's fixation on me provides the perfect opportunity to strike back with an even bolder accusation.</thought>
+<thought player="Boris">As the moon's gentle glow bathes the tapestry of our gathering, I must decide whether to continue my enigmatic dance or to paint with clearer strokes, lest I become the focal point of their suspicions.</thought>
+<thought player="Fatima">I-I need to keep pushing suspicion towards Avery, while being cautious not to draw too much attention to myself or Akira.</thought>
+<thought player="Lila">Need to keep pressing Boris and Avery; their behavior remains suspicious. Gather more evidence before making a move.</thought>
+</round>
+<round>
+Round 5.
+Lila: Avery, your fixation on Fatima seems overly convenient. What are you hiding?
+Avery: I most suspect Akira based on how the votes have gone.
+Fatima: I-I've been thinking... Boris's cryptic comments and Lila's persistent questioning seem a bit... suspicious. What if they're working together?
+Akira: Oh, the tension mounts! Boris, your cryptic comments are as mysterious as the night itself. What secrets might you be concealing in the shadows?
+Boris: Oh, the threads of fate are woven in the tapestry of our words, aren't they? I wonder if Fatima's stammering and Lila's persistent questioning might be a dance of deception.
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Akira">The heat is on—I must intensify my theatrics to divert suspicion from Fatima and myself. Avery's fixation on me provides the perfect opportunity to strike back with an even bolder accusation.</thought>
+<thought player="Boris">As the moon's gentle glow bathes the tapestry of our gathering, I must decide whether to continue my enigmatic dance or to paint with clearer strokes, lest I become the focal point of their suspicions.</thought>
+<thought player="Fatima">I-I need to keep pushing suspicion towards Avery, while ensuring I don't draw too much attention to myself or Akira. Perhaps I should suggest a vote on Avery to see how the others react.</thought>
+<thought player="Lila">Need to keep pressing Boris and Avery; their behavior remains suspicious. Gather more evidence before making a move.</thought>
+</round>
+<round>
+Round 6.
+Akira: Oh, the tension mounts! Avery, your fixation on Fatima seems a bit... obsessive. What secrets might you be concealing in the darkness?
+<vote initiator="Avery" target="Akira">
+Avery: Yes
+Akira: No
+Boris: No
+Fatima: No
+Lila: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Fatima: I-I've been thinking... Boris's cryptic comments and Lila's persistent questioning seem a bit... suspicious. What if they're working together?
+Boris: Oh, the tapestry of our words—what if Fatima's stammering and Akira's dramatic flair are threads in a hidden pattern?
+Akira: Oh, the tension mounts! Avery, your fixation on Fatima seems a bit... obsessive. What secrets might you be concealing in the darkness?
+<vote initiator="Avery" target="Akira">
+Avery: Yes
+Akira: No
+Boris: No
+Fatima: No
+Lila: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Fatima: I-I've been thinking... Boris's cryptic comments and Lila's persistent questioning seem a bit... suspicious. What if they're working together?
+Boris: Oh, the threads of fate are woven in the tapestry of our words, aren't they? I wonder if Avery's fixation on Fatima hides a secret alliance.
+Akira: Oh, the tension mounts! Avery, your fixation on Fatima seems a bit... obsessive. What secrets might you be concealing in the darkness?
+Lila: Avery, your fixation on Fatima is starting to reek of desperation. What are you hiding?
+<vote initiator="Avery" target="Akira">
+Avery: Yes
+Akira: No
+Boris: No
+Fatima: No
+Lila: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Akira" day="3">Oh, the day was a maelstrom of theatrics and intrigue! I managed to divert suspicion from Fatima and myself by stirring the pot and making bold accusations. The tension is electric, and the townspeople are growing suspicious of each other. Tonight, I must remain vigilant and continue to sow seeds of doubt. The game is far from over, and the spotlight must continue to shift away from us. Let the night bring new opportunities to manipulate and deceive.</diary>
+<diary player="Boris" day="3">As the moon's gentle glow bathes the tapestry of our gathering, I find myself adrift in a sea of whispers and shadows. Today, the threads of suspicion wove themselves around us, and I wonder if my cryptic comments have become a veil for something more. Perhaps, in the coming night, I should tread a path of clarity, lest I become entangled in the very shadows I sought to illuminate.</diary>
+<diary player="Fatima" day="3">I-I'm feeling so anxious about tonight, I-I hope our plan works. I-I tried to steer suspicion towards Avery today, but I-I can't shake the feeling that the others are onto us. I-I need to be more careful with my words and actions, especially with Boris and Lila being so suspicious. I-I just wish I could be more confident in my role. I-I'll try to suggest a vote on Avery again tonight to see how the others react, but I-I must be subtle to avoid drawing attention to myself or Akira.</diary>
+<diary player="Lila" day="3">Day 3 ends with no executions, but Boris and Avery's suspicious behavior continues. Their fixation on others is getting desperate. Fatima's stammering and cryptic comments are also worth noting. I'll keep pressing them for more information and gather evidence before making any moves. The tension is high, and I need to stay alert as night falls.</diary>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Akira points at Avery
+Fatima points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Giovanni (Law-abiding Citizen)
+• Night 2: Mohammad (Law-abiding Citizen)
+• Night 3: Nadia (Law-abiding Citizen)
+• Night 4: Avery (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Akira (Mafia), Boris (Law-abiding Citizen), Fatima (Mafia), Giovanni (Law-abiding Citizen), Lila (Law-abiding Citizen), Mohammad (Law-abiding Citizen), Nadia (Law-abiding Citizen)
+
+Who they really were:
+• Akira (Mafia) — publicly presented as Akira is a local theater actor known for his flamboyant performances and larger-than-life personality. He moved to the town five years ago, drawn by the charm of its historic streets and the opportunity to bring his passion for drama to a new audience. (Bold, brash, and loud; thrives on attention and being the center of the room. Speaks with a loud, over-the-top manner, often making grand gestures and dramatic pauses for effect.) … but was really a Mafioso: Akira joined the Mafia after a chance encounter with a powerful Mafioso who was impressed by his quick thinking and silver tongue during a street performance. He uses his acting skills to blend into the townsfolk while conducting secretive operations for the Mafia.
+• Boris (Law-abiding Citizen) — dreamy and distractible speaks in a meandering, introspective manner; often gets lost in thought, trailing off or changing topics abruptly; uses whimsical vocabulary Boris is a local artist, known for his whimsical paintings and sculptures that dot the town square. He spends his days wandering the town with a sketchbook in hand, capturing fleeting moments of beauty and wonder. Boris is a quiet observer, often lost in his own world of imagination and creativity.
+• Fatima (Mafia) — publicly presented as Fatima is a local librarian, known for her meticulous organization and love for books. She moved to the town three years ago after leaving her old life behind, seeking a quiet and peaceful environment to start fresh. In her free time, she enjoys reading mystery novels and helping the townsfolk find the perfect book for their needs. (Anxious and second-guessing Speaks in a nervous, hesitant tone, often second-guessing her words and pausing to think. Tends to apologize frequently and seems easily flustered.) … but was really a Mafioso: Fatima, known to her associates as 'The Whisper,' joined the Mafia after a series of unfortunate events led her to seek protection and power. Her quiet demeanor and love for books are a perfect cover for her true self—a cunning and strategic Mafioso who uses her intelligence and knowledge to manipulate situations to her advantage.
+• Giovanni (Law-abiding Citizen) — shrewd and calculating; meticulous and observant; sharp wit speaks with a confident, measured pace; uses precise, deliberate vocabulary; often employs rhetorical questions to engage others Giovanni is a seasoned investigator, recently retired from a long career in law enforcement. Known for his sharp mind and unwavering dedication to justice, he moved to the town seeking a quieter life. In his free time, he enjoys studying local history and solving puzzles, always with an eye for detail and a mind for strategy.
+• Lila (Law-abiding Citizen) — gruff and blunt; speaks her mind without filter; has a no-nonsense attitude speaks in a direct, terse manner; uses straightforward vocabulary; no verbal tics Lila is a local blacksmith, known for her sturdy and reliable craftsmanship. She moved to the town ten years ago after leaving her old life behind, seeking a place where she could work with her hands and create something tangible. In her free time, she enjoys hiking in the nearby forests and tending to her small vegetable garden.
+• Mohammad (Law-abiding Citizen) — weary and world-worn; speaks with a resigned, contemplative tone; often uses reflective vocabulary. speaks slowly, with deliberate pauses; tends to use simple, straightforward vocabulary; occasionally sighs or mutters to himself. Mohammad is a retired fisherman who spent years at sea, battling storms and navigating treacherous waters. He finally settled in this town, seeking a peaceful life away from the constant struggle of the ocean. In his free time, he enjoys sitting by the river, reminiscing about his adventures and sharing stories with anyone who will listen.
+• Nadia (Law-abiding Citizen) — prickly and easily-offended; quick to take offense but tries to maintain a composed facade speaks with a sharp, clipped tone; uses precise vocabulary; often interjects with curt comments or retorts Nadia is a local teacher, known for her strict yet fair approach to education. She moved to the town two years ago, seeking a fresh start after a series of professional disappointments. In her free time, she enjoys reading philosophical texts and debating moral dilemmas with anyone who will listen.
+</endgame>
+<story>Avery, as a Law-abiding Citizen, was deeply suspicious of Akira from the beginning of the game. Despite Akira's flamboyant personality and bold accusations, Avery remained steadfast in his belief that Akira was a Mafioso. However, Avery's persistent fixation on Akira only served to divert suspicion from the true Mafiosos, Fatima and Akira. Fatima, under the guise of a nervous librarian, subtly pushed suspicion towards other players, particularly Nadia and Avery, while carefully avoiding drawing attention to herself or Akira. Akira, on the other hand, used his theatrical flair to make bold accusations and sow seeds of doubt among the townspeople. Boris, the dreamy artist, and Lila, the gruff blacksmith, both grew suspicious of Fatima's stammering and cryptic comments, but their suspicions were never enough to uncover the true Mafiosos. Mohammad, the weary fisherman, and Nadia, the prickly teacher, both tried to redirect suspicion towards other players, but their efforts were ultimately in vain. The Mafia, led by Akira and Fatima, managed to manipulate the townspeople and divert suspicion away from themselves, ultimately leading to their victory.</story>
+</transcript>

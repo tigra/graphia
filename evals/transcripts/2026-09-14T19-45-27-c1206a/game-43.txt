@@ -1,0 +1,489 @@
+Game 43 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=50 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Aiko" role="Law-abiding Citizen">
+Personality: sharp-witted and inquisitive
+Manner: terse and deliberate, with an undercurrent of skepticism
+Persona: Aiko is a local journalist with an eye for detail and a knack for uncovering hidden truths. Driven by a sense of justice, Aiko's articles often expose the underhanded dealings of the town's elite.
+</player>
+<player name="Lukas" role="Law-abiding Citizen">
+Personality: shrewd and calculating; quick to see patterns and motives
+Manner: articulate and precise, with a dry wit; often uses metaphors and analogies
+Persona: Lukas is a seasoned chess grandmaster who has traveled the world competing in tournaments. Now retired, he uses his strategic mind to help his fellow townspeople navigate complex problems.
+</player>
+<player name="Leila" role="Law-abiding Citizen">
+Personality: dreamy and whimsical; often lost in thought, with a penchant for daydreaming
+Manner: speaks with a soft, lilting voice, often trailing off into thought; uses imaginative language and metaphors; occasionally loses focus mid-sentence
+Persona: Leila is a painter who finds inspiration in the everyday moments of life. She spends her days wandering the town with her sketchbook, capturing fleeting images and emotions. Her art is a window into her whimsical mind, filled with vibrant colours and surreal scenes.
+</player>
+<player name="Ravi" role="Law-abiding Citizen">
+Personality: bold and outspoken; a bit of a showman, loves to be the center of attention
+Manner: loud, enthusiastic, and often uses exaggerated gestures; speaks in a fast, rhythmic manner with a tendency to overstate
+Persona: Ravi is a traveling street performer, known for his captivating fire-eating acts and mesmerizing storytelling. He moves from town to town, bringing joy and excitement wherever he goes.
+</player>
+<player name="Isolde" role="Mafia">
+Personality: eccentric and unpredictable; whimsical and theatrical; enjoys surprising others
+Manner: speaks in a dramatic, theatrical style; uses exaggerated expressions and actions; frequently switches topics abruptly
+Public legend: Isolde is a retired circus magician, known for her captivating illusions and unpredictable performances. She now resides in the town, offering magic tricks and entertainment to the locals.
+True self (hidden): Isolde joined the Mafia under mysterious circumstances, using her magic skills to manipulate and deceive others. Her true motives and allegiances remain hidden, even from her closest associates.
+</player>
+<player name="Bogdan" role="Mafia">
+Personality: cheerful and irrepressible
+Manner: speaks in an upbeat, energetic tone, often using enthusiastic expressions and a friendly demeanor
+Public legend: Bogdan is a local florist, known for his vibrant flower arrangements and cheerful disposition. He's a familiar face at town events, always ready with a smile and a bouquet to brighten someone's day. Bogdan has lived in the town for years, deeply involved in the community.
+True self (hidden): Bogdan grew up in a tough neighborhood where the local Mafia was the only semblance of order. He joined their ranks young, quickly rising through the ranks with his unshakeable cheerfulness masking a ruthless efficiency. His role as a florist is a perfect cover, allowing him to blend into the town while maintaining his criminal ties.
+</player>
+<player name="Niamh" role="Law-abiding Citizen">
+Personality: playful and teasing; enjoys lighthearted banter and poking fun in a friendly way
+Manner: speaks with a light, mocking tone; uses witty remarks and sarcastic asides; often employs playful teasing
+Persona: Niamh is a local baker with a reputation for her delicious, whimsical pastries. She's known for her quick wit and love of practical jokes, often surprising her customers with unexpected twists in her creations. Niamh has a warm heart and a mischievous streak, making her a beloved but unpredictable figure in the town.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiko, Lukas, Leila, Ravi, Isolde, Bogdan, Niamh. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Isolde): Your Mafia teammates are: Bogdan. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Bogdan): Your Mafia teammates are: Isolde. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Bogdan points at Ravi
+Isolde points at Ravi
+<kill>Ravi — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Ravi was killed last night. Ravi was a Law-abiding Citizen.
+<round>
+Round 1.
+Lukas: Let us consider the possibility that one of the quieter players is masking their intentions. Bogdan, for instance, has yet to contribute significantly to our discussions. It would be prudent to hear more from him.
+Leila: In the tapestry of our shared story, I sense a shadow lurking near Bogdan. His silence whispers secrets yet untold.
+Niamh: Bogdan's silence is as loud as a bakery alarm! Maybe he's just saving his best lines for dessert, eh?
+Isolde: Ah, the sweet aroma of suspicion! It tickles my senses like the scent of a freshly baked pie. But tell me, dear friends, have we considered the possibility that our beloved Moderator might be the puppeteer pulling the strings?
+Aiko: Avery's silence since the game's start is as conspicuous as a lion in a library. Perhaps it's time for him to share his thoughts.
+Avery: Nothing is settled yet, but I'm watching Niamh most closely.
+Bogdan: Oh, the thrill of the hunt! Let's not overlook Niamh, whose wit could be masking something more sinister.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Focus on Avery's and Niamh's behavior; they may hold the key to unmasking the Mafia.</thought>
+<thought player="Lukas">The game is still in its early stages, and the players are probing each other. I must remain vigilant and observe the interactions closely, especially those of Avery and Niamh, who seem to be drawing attention.</thought>
+<thought player="Leila">As I gaze upon the canvas of our shared tale, I must weave my brushstrokes with care, perhaps directing the gaze of my fellow artists towards the silence of Avery and the jests of Niamh.</thought>
+<thought player="Isolde">Ah, the game of shadows and light! I must weave my magic carefully, drawing attention away from Bogdan while subtly guiding suspicion towards Niamh. The stage is set for a grand performance!</thought>
+<thought player="Bogdan">Time to keep up the charm and steer suspicion away from Isolde and myself. Maybe I'll throw a red herring or two to keep the heat off us.</thought>
+<thought player="Niamh">Hmm, Avery's got his eye on me, and Bogdan's trying to deflect. Maybe it's time to stir the pot a bit and see who reacts.</thought>
+</round>
+<round>
+Round 2.
+Isolde: Ah, the thrill of the chase! Let us not forget the enigmatic Avery, whose silence speaks volumes. What secrets might he be hiding in the shadows?
+Aiko: Niamh's jesting could be a veil for something darker. Let's scrutinize her interactions more closely.
+Lukas: In the game of chess, a silent piece can be as dangerous as an active one. Avery's quietude may be a strategic move, or it may be a mask for something more nefarious.
+Niamh: If we're all suspecting each other, then let's make it a game! Whoever gets voted out first has to buy the next round of pastries at my bakery.
+Leila: In the garden of our shared narrative, I wonder if Niamh's laughter is a mask for something more shadowy.
+Bogdan: Oh, the excitement! Let's not forget to consider the possibility of an alliance between Avery and Niamh. Their quiet demeanor might just be a cover for a cunning partnership.
+Avery: Nothing is settled yet, but I'm watching Niamh most closely.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">The web of suspicion tightens; Avery and Niamh remain under scrutiny. Time to weave my own narrative, drawing out their truths.</thought>
+<thought player="Lukas">The quiet ones, Avery and Niamh, are under the microscope. I must continue to sow seeds of doubt while maintaining my composure.</thought>
+<thought player="Leila">As the sun dips below the horizon, I must ponder the hues of suspicion that paint our canvas—shall I guide the brush towards Avery's silence or Niamh's laughter?</thought>
+<thought player="Isolde">With the spotlight now on Niamh, I must continue to weave my illusions, ensuring that suspicion remains focused on her, while my alliance with Bogdan remains hidden in the shadows.</thought>
+<thought player="Bogdan">Keep up the charm and subtly divert suspicion from Isolde and myself by suggesting we look into Avery and Niamh's possible alliance.</thought>
+<thought player="Niamh">Avery's got his eye on me, and Bogdan's trying to deflect. Time to stir the pot and see who reacts.</thought>
+</round>
+<round>
+Round 3.
+Leila: In the labyrinth of our shared narrative, I find myself drawn to the quiet corners where secrets might be whispered. Perhaps we should explore the shadows that linger around Avery and Niamh, for their silence and laughter may be hiding more than we see.
+Avery: Nothing is settled yet, but I'm watching Niamh most closely.
+Niamh: Well, if we're all throwing darts in the dark, let's aim for the one who's been as quiet as a mouse in a cat shop—Avery. What's your game, Avery?
+Aiko: Avery's silence is as telling as a confession. Let's dissect his motives further.
+Isolde: Ah, the dance of deception! Let us not forget the ever-elusive Avery, whose silence might just be a masterful ploy to divert our attention from the true culprits.
+Lukas: In the game of chess, sometimes the quietest piece holds the most power. Avery, your silence is as deafening as a drum in a library. What strategies are you employing in this intricate dance of deception?
+Bogdan: Oh, the suspense! Let's not forget the possibility of a secret alliance between Avery and Niamh. Their quiet demeanor might just be a cover for a cunning partnership.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">The web of suspicion around Avery and Niamh grows; it's time to probe deeper and see who cracks first.</thought>
+<thought player="Lukas">The pieces are in motion, and the quiet ones are under scrutiny. I must continue to guide the conversation towards the shadows, ensuring that the true culprits reveal themselves.</thought>
+<thought player="Leila">As twilight descends, I must decide whether to paint the shadows of Avery's silence or the vibrant colours of Niamh's jests.</thought>
+<thought player="Isolde">The spotlight dances upon Niamh, yet I must remain vigilant, ever ready to shift the focus and protect my enigmatic ally, Bogdan.</thought>
+<thought player="Bogdan">Time to keep the energy high and continue suggesting that Avery and Niamh might be up to something, while ensuring Isolde and I stay under the radar.</thought>
+<thought player="Niamh">It's time to sprinkle a bit of chaos and see who tries to catch the falling crumbs.</thought>
+</round>
+<round>
+Round 4.
+Aiko: Avery, your silence is as conspicuous as a lion in a library. What are you hiding?
+Niamh: Well, if we're all throwing darts in the dark, let's aim for the one who's been as quiet as a mouse in a cat shop—Avery. What's your game, Avery?
+Leila: In the symphony of our shared narrative, I wonder if the silence of Avery and the laughter of Niamh are but two sides of the same coin, each hiding a secret melody.
+Isolde: Ah, the symphony of suspicion! Let us not forget the ever-mysterious Leila, whose words seem to dance in the shadows. What secrets might she be weaving into her tapestry of tales?
+Avery: Nothing is settled yet, but I'm watching Niamh most closely.
+Bogdan: Oh, the intrigue! Let's not forget the possibility that Avery and Niamh might be working together. Their quiet demeanor could be a cover for a secret alliance.
+Lukas: In the intricate dance of deception, let us not overlook the possibility that Leila's eloquent words may be a smokescreen for more sinister intentions.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">The web of suspicion around Avery and Niamh is tightening; it's time to push for more information and see who falters under pressure.</thought>
+<thought player="Lukas">The game is a tapestry of suspicion, and I must continue to weave doubt around Avery and Niamh, all the while keeping a keen eye on the other players' reactions.</thought>
+<thought player="Leila">As the moon rises, I must decide whether to draw the gaze of my fellow artists towards the enigmatic silence of Avery or the playful jests of Niamh.</thought>
+<thought player="Isolde">Ah, the dance of deception continues! I must continue to weave my illusions, ensuring that Niamh remains under suspicion while safeguarding my alliance with Bogdan.</thought>
+<thought player="Bogdan">Keep up the energy and continue subtly steering suspicion towards Avery and Niamh, ensuring Isolde and I remain under the radar.</thought>
+<thought player="Niamh" substituted="true">I'll keep watching and weigh what I've heard so far.</thought>
+</round>
+<round>
+Round 5.
+Aiko: Bogdan's enthusiasm seems almost too theatrical. Is it a cover for something more sinister?
+Bogdan: Oh, the excitement! Let's not forget the possibility that Avery and Niamh might be working together. Their quiet demeanor could be a cover for a secret alliance.
+Isolde: Ah, the masquerade of mystery! Let us not forget the ever-charismatic Niamh, whose laughter might just be a melody masking a darker tune.
+Niamh: Bogdan, your enthusiasm is as infectious as a bakery sale! But tell me, are you just a master of distraction, or is there something more to your story?
+Avery: Nothing is settled yet, but I'm watching Niamh most closely.
+Leila: In the tapestry of our shared story, I sense a thread of intrigue woven into Bogdan's enthusiasm. Is it merely a vibrant hue, or does it conceal a darker shade?
+Lukas: In the grand chessboard of our suspicions, let us not forget the possibility that Isolde's theatrical flair may be a distraction from her true intentions.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">The focus on Avery and Niamh seems to be yielding results; perhaps it's time to shift attention to Bogdan's overly theatrical behavior.</thought>
+<thought player="Lukas">The quiet ones, Avery and Niamh, continue to be the focal point of suspicion. I must maintain pressure on them while subtly steering attention towards other players to uncover the true Mafiosos.</thought>
+<thought player="Leila">As the stars twinkle in the night sky, I must decide whether to guide the brush towards the enigmatic silence of Avery or the playful jests of Niamh.</thought>
+<thought player="Isolde">The spotlight must continue to shine on Niamh, while I remain the enigmatic magician, pulling the strings from the shadows. Bogdan and I must stay vigilant, ready to shift the focus as needed.</thought>
+<thought player="Bogdan">Keep the energy up and continue to subtly steer suspicion towards Avery and Niamh, ensuring Isolde and I stay under the radar.</thought>
+<thought player="Niamh">Time to add a dash of unpredictability and see which player tries to scoop up the mess.</thought>
+</round>
+<round>
+Round 6.
+Leila: In the garden of our shared narrative, I wonder if Isolde's theatrical flair is a mask for something more shadowy.
+Aiko: Isolde, your theatrical flair is as captivating as a stage play. But tell me, what role are you truly playing in this game of deception?
+Lukas: In the grand tapestry of our suspicions, let us not forget the possibility that Aiko's keen observations may be a distraction from her true intentions.
+Bogdan: Oh, the excitement! Let's not forget the possibility that Avery and Niamh might be working together. Their quiet demeanor could be a cover for a secret alliance.
+<vote initiator="Avery" target="Niamh">
+Avery: No
+Aiko: Yes
+Lukas: No
+Leila: No
+Isolde: Yes
+Bogdan: No
+Niamh: No
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Bogdan: Oh, the suspense! Let's not forget the possibility that Avery and Niamh might be working together. Their quiet demeanor could be a cover for a secret alliance.
+Niamh: Bogdan, your excitement is as vibrant as one of my rainbow cakes! But tell me, is it a cover for something more, or just a sprinkle of harmless fun?
+Isolde: Ah, the theater of suspicion! Let us not forget the ever-charismatic Niamh, whose laughter might just be a melody masking a darker tune.
+Leila: In the labyrinth of our shared narrative, I find myself drawn to the quiet corners where secrets might be whispered. Perhaps we should explore the shadows that linger around Avery and Niamh, for their silence and laughter may be hiding more than we see.
+Lukas: In the intricate dance of deception, let us not forget that silence can be as revealing as words. Avery and Niamh, your quietude may be a strategic move, or it may be a mask for something more nefarious.
+<vote initiator="Avery" target="Niamh">
+Avery: No
+Aiko: Yes
+Lukas: No
+Leila: No
+Isolde: Yes
+Bogdan: No
+Niamh: No
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Isolde: Ah, the dance of deception! Let us not forget the ever-mysterious Avery, whose silence might just be a masterful ploy to divert our attention from the true culprits.
+Aiko: Bogdan, your exuberance seems almost rehearsed. What are you trying to distract us from?
+Lukas: In the grand chessboard of our suspicions, let us not forget the possibility that Bogdan's theatrical enthusiasm may be a distraction from his true intentions.
+<vote initiator="Avery" target="Niamh">
+Avery: No
+Aiko: Yes
+Lukas: No
+Leila: No
+Isolde: Yes
+Bogdan: No
+Niamh: No
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Aiko" day="1">The day's dance of deception revealed little, but the focus on Avery and Niamh may yet yield results. Bogdan's theatrical behavior is suspect, but for now, the web of suspicion around the quieter players remains our strongest lead. Tonight, I'll observe their interactions closely, looking for any cracks in their facades.</diary>
+<diary player="Lukas" day="1">Today's discussions were a dance of shadows and light, with Avery and Niamh at the center of suspicion. Their silence and laughter, respectively, have become the focus of our scrutiny. I must continue to guide the conversation towards the shadows, ensuring that the true culprits reveal themselves. The game is still young, but the pieces are in motion, and I must remain vigilant. Tonight, as the veil of night falls, I will observe the subtle movements and whispers, seeking the truth in the darkness.</diary>
+<diary player="Leila" day="1">As the sun sets and the moon rises, I find myself adrift in a sea of whispers and shadows. The silence of Avery and the laughter of Niamh dance in my mind, like two colours vying for space on a canvas. Tonight, I shall let my brush guide the eyes of my fellow artists, hoping to uncover the truth hidden within the folds of our shared narrative.</diary>
+<diary player="Isolde" day="1">Ah, what a day of shadows and light! I must weave my magic carefully, drawing attention away from Bogdan while subtly guiding suspicion towards Niamh. The stage is set for a grand performance! With the spotlight now on Niamh, I must continue to weave my illusions, ensuring that suspicion remains focused on her, while my alliance with Bogdan remains hidden in the shadows. The dance of deception continues, and I must remain vigilant, ever ready to shift the focus and protect my enigmatic ally, Bogdan. Ah, the thrill of the game! Tonight, I shall continue to pull the strings from the shadows, ensuring that Niamh remains under suspicion while safeguarding my alliance with Bogdan.</diary>
+<diary player="Bogdan" day="1">Oh, what a thrilling day it's been! The energy was electric, and the suspicions were flying like confetti. I kept the energy high, subtly steering the conversation towards Avery and Niamh, ensuring Isolde and I stayed under the radar. The votes to execute Niamh didn't go through, but I kept the excitement bubbling, suggesting that there might be a secret alliance between Avery and Niamh. Now, as night falls, I'll keep up the charm and see if I can throw a few more red herrings to keep the heat off us. The game is afoot, and I'm ready for whatever comes next!</diary>
+<diary player="Niamh" day="1">Well, what a lark of a day! Avery's been eyeing me like I'm the last slice of cake at a party, and Bogdan's doing his best impression of a distraction artist. I decided to stir the pot a bit, just to see who'd spill their secrets. No one bit the bait hard enough to get executed, but the night's young and the game's afoot. Time to keep my wits sharp and my pastries sharper.</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Bogdan points at Niamh
+Isolde points at Niamh
+<kill>Niamh — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Niamh was killed last night. Niamh was a Law-abiding Citizen.
+<round>
+Round 1.
+Aiko: Bogdan, your theatrical enthusiasm is almost too perfect. What are you trying to hide?
+Bogdan: Oh, the excitement! Let's not forget the possibility that Avery and Leila might be working together. Their quiet demeanor could be a cover for a secret alliance.
+Leila: In the tapestry of our shared story, I sense a shadow lurking near Isolde. Her theatrical flair seems almost too perfect, as if it were a mask for something more sinister.
+Isolde: Ah, the masquerade of mystery! Let us not forget the ever-enigmatic Leila, whose words seem to dance in the shadows. What secrets might she be weaving into her tapestry of tales?
+Lukas: In the symphony of our shared narrative, I wonder if Isolde's theatrical flair is a mask for something more shadowy.
+Avery: I most suspect Isolde based on how the votes have gone.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Bogdan's overly theatrical behavior is becoming increasingly suspicious; it's time to push for more scrutiny on him.</thought>
+<thought player="Lukas">With Niamh revealed as a Law-abiding Citizen, the focus must shift. I will continue to sow doubt around Avery while subtly steering suspicion towards Isolde and Bogdan.</thought>
+<thought player="Leila">As the dawn breaks, I must decide whether to weave the shadows of Isolde's theatrical flair into my tapestry of suspicion.</thought>
+<thought player="Isolde">Ah, the grand illusion continues! I must continue to weave my magic, ensuring that suspicion remains focused on Niamh, while protecting my alliance with Bogdan.</thought>
+<thought player="Bogdan">Time to keep the momentum going by suggesting another possible alliance to divert attention from Isolde and myself.</thought>
+</round>
+<round>
+Round 2.
+Aiko: Bogdan, your enthusiasm is as vibrant as a rainbow cake. But tell me, is it a cover for something more, or just a sprinkle of harmless fun?
+Leila: In the garden of our shared narrative, I wonder if Isolde's theatrical flair is a mask for something more shadowy.
+Isolde: Ah, the symphony of suspicion! Let us not forget the ever-enigmatic Leila, whose words seem to dance in the shadows. What secrets might she be weaving into her tapestry of tales?
+Bogdan: Oh, the suspense! Let's not forget the possibility that Avery and Leila might be working together. Their quiet demeanor could be a cover for a secret alliance.
+Lukas: In the grand chessboard of our suspicions, let us not forget the possibility that Avery's silence may be a strategic move to divert our attention from the true culprits.
+Avery: I most suspect Isolde based on how the votes have gone.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Bogdan's theatrical behavior and Avery's silence remain my prime suspects; I must continue to press for more information and see who cracks under the weight of suspicion.</thought>
+<thought player="Lukas">The focus has shifted from Niamh to Avery and now Isolde. I must continue to guide the conversation, sowing doubt around Avery while subtly steering suspicion towards Isolde and Bogdan.</thought>
+<thought player="Leila">As the day wanes, I must decide whether to draw the gaze of my fellow artists towards the theatrical flair of Isolde or the quiet corners of Avery and Bogdan.</thought>
+<thought player="Isolde">Ah, the grand illusion continues! I must weave my magic carefully, drawing suspicion towards Niamh while safeguarding my alliance with Bogdan.</thought>
+<thought player="Bogdan">Time to keep the momentum going by suggesting another possible alliance to divert attention from Isolde and myself.</thought>
+</round>
+<round>
+Round 3.
+Avery: I most suspect Isolde based on how the votes have gone.
+Aiko: Bogdan, your theatrical enthusiasm is almost too perfect. What are you trying to hide?
+Leila: In the labyrinth of our shared narrative, I find myself drawn to the quiet corners where secrets might be whispered. Perhaps we should explore the shadows that linger around Avery and Bogdan, for their silence may be hiding more than we see.
+Lukas: In the grand chessboard of our suspicions, let us not forget the possibility that Leila's eloquent words may be a smokescreen for more sinister intentions.
+Isolde: Ah, the web of intrigue! Let us not forget the ever-charismatic Leila, whose words seem to dance in the shadows. What secrets might she be weaving into her tapestry of tales?
+Bogdan: Oh, the thrill of the hunt! Let's not forget the possibility that Avery and Leila might be working together. Their quiet demeanor could be a cover for a secret alliance.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Bogdan's theatrical behavior is growing more suspicious; I need to gather more evidence before pushing for a vote.</thought>
+<thought player="Lukas">The votes on Niamh failed, and she was killed at night, confirming her innocence. I must continue to sow doubt around Avery and steer suspicion towards Isolde and Bogdan, while maintaining my composure and observing the other players' reactions closely.</thought>
+<thought player="Leila">As the sun sets on this day, I must decide whether to guide the brush towards the theatrical flair of Isolde or the quiet corners of Avery and Bogdan.</thought>
+<thought player="Isolde">Ah, the dance of deception! I must continue to weave my illusions, ensuring that Niamh remains under suspicion while safeguarding my alliance with Bogdan.</thought>
+<thought player="Bogdan">Keep the momentum going by subtly suggesting a new alliance to divert attention from Isolde and myself.</thought>
+</round>
+<round>
+Round 4.
+Aiko: Bogdan, your theatrical enthusiasm is almost too perfect. What are you trying to hide?
+Isolde: Ah, the tapestry of our shared narrative! Let us not forget the ever-mysterious Avery, whose silence might just be a masterful ploy to divert our attention from the true culprits.
+Leila: In the twilight of our shared narrative, I find myself drawn to the enigmatic silence of Avery and the theatrical flair of Isolde. Which hue shall we explore further?
+Lukas: In the intricate dance of deception, let us not forget the possibility that Bogdan's theatrical enthusiasm may be a distraction from his true intentions.
+Avery: I most suspect Isolde based on how the votes have gone.
+Bogdan: Oh, the excitement! Let's not forget the possibility that Avery and Leila might be working together. Their quiet demeanor could be a cover for a secret alliance.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Bogdan's theatrical behavior remains suspicious, but I need more evidence to confront him directly.</thought>
+<thought player="Lukas">The game's dynamics are shifting; I must continue to sow doubt around Avery while subtly steering suspicion towards Isolde and Bogdan, all the while maintaining my composure and observing the other players' reactions closely.</thought>
+<thought player="Leila">As the twilight of our shared narrative deepens, I must ponder the shadows that linger around Isolde and Bogdan—shall I draw the gaze of my fellow artists towards their theatrical flair or the enigmatic silence that surrounds them?</thought>
+<thought player="Isolde">Ah, the grand illusion must continue! I must weave my magic, drawing suspicion towards Leila while safeguarding my alliance with Bogdan.</thought>
+<thought player="Bogdan">Keep the energy high and continue subtly steering suspicion towards Avery and Leila, ensuring Isolde and I remain under the radar.</thought>
+</round>
+<round>
+Round 5.
+Isolde: Ah, the grand illusion continues! Let us not forget the ever-charismatic Leila, whose words seem to dance in the shadows. What secrets might she be weaving into her tapestry of tales?
+Lukas: In the grand chessboard of our suspicions, let us not forget the possibility that Leila's eloquent words may be a smokescreen for more sinister intentions.
+Bogdan: Oh, the thrill of the hunt! Let's not forget the possibility that Avery and Leila might be working together. Their quiet demeanor could be a cover for a secret alliance.
+Avery: I most suspect Isolde based on how the votes have gone.
+Leila: In the twilight of our shared narrative, I find myself drawn to the enigmatic silence of Avery and the theatrical flair of Isolde. Which hue shall we explore further?
+Aiko: Bogdan, your theatrical behavior is growing increasingly suspicious. What are you trying to distract us from?
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Bogdan's theatrical behavior remains suspicious, but I need to gather more evidence before pushing for a vote.</thought>
+<thought player="Lukas">The votes on Niamh failed, and she was killed at night, confirming her innocence. I must continue to sow doubt around Avery and steer suspicion towards Isolde and Bogdan, while maintaining my composure and observing the other players' reactions closely.</thought>
+<thought player="Leila">As the night sky unfurls its canvas, I must decide whether to draw the gaze of my fellow artists towards the enigmatic silence of Avery or the theatrical flair of Isolde and Bogdan.</thought>
+<thought player="Isolde">Ah, the grand illusion must continue! I must weave my magic, drawing suspicion towards Leila while safeguarding my alliance with Bogdan.</thought>
+<thought player="Bogdan">Time to keep the energy high and subtly divert suspicion towards Avery and Leila, ensuring Isolde and I remain under the radar.</thought>
+</round>
+<round>
+Round 6.
+Aiko: Bogdan, your theatrical behavior is growing increasingly suspicious. What are you trying to distract us from?
+Lukas: In the grand chessboard of our suspicions, let us not forget the possibility that Bogdan's theatrical enthusiasm may be a distraction from his true intentions.
+Bogdan: Oh, the excitement! Let's not forget the possibility that Avery and Leila might be working together. Their quiet demeanor could be a cover for a secret alliance.
+<vote initiator="Avery" target="Isolde">
+Avery: Yes
+Aiko: No
+Lukas: No
+Leila: No
+Isolde: No
+Bogdan: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Leila: In the twilight of our shared narrative, I find myself drawn to the enigmatic silence of Avery and the theatrical flair of Isolde. Which hue shall we explore further?
+Bogdan: Oh, the excitement! Let's not forget the possibility that Avery and Leila might be working together. Their quiet demeanor could be a cover for a secret alliance.
+Isolde: Ah, the dance of deception! Let us not forget the ever-mysterious Leila, whose words seem to dance in the shadows. What secrets might she be weaving into her tapestry of tales?
+Lukas: In the grand chessboard of our suspicions, let us not forget the possibility that Bogdan's theatrical enthusiasm may be a distraction from his true intentions.
+Aiko: Bogdan, your theatrical behavior is growing more suspicious. What are you trying to distract us from?
+<vote initiator="Avery" target="Isolde">
+Avery: Yes
+Aiko: No
+Lukas: No
+Leila: No
+Isolde: No
+Bogdan: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Bogdan: Oh, the excitement! Let's not forget the possibility that Avery and Leila might be working together. Their quiet demeanor could be a cover for a secret alliance.
+Isolde: Ah, the web of intrigue! Let us not forget the ever-charismatic Leila, whose words seem to dance in the shadows. What secrets might she be weaving into her tapestry of tales?
+Aiko: Bogdan, your theatrical behavior is growing increasingly suspicious. What are you trying to distract us from?
+Lukas: In the intricate dance of deception, let us not forget the possibility that Bogdan's theatrical enthusiasm may be a distraction from his true intentions.
+<vote initiator="Avery" target="Isolde">
+Avery: Yes
+Aiko: No
+Lukas: No
+Leila: No
+Isolde: No
+Bogdan: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Aiko" day="2">Bogdan's theatrical behavior remains increasingly suspicious, but I need to gather more evidence before pushing for a vote. Avery's silence and Niamh's untimely death continue to haunt me, but Bogdan's over-the-top performance is the most glaring red flag. Tonight, I'll observe their interactions closely, looking for any cracks in their facades.</diary>
+<diary player="Lukas" day="2">Today's discussions were a symphony of suspicion, with Avery and Isolde at the center of our scrutiny. The votes on Niamh failed, and she was killed at night, confirming her innocence. I must continue to sow doubt around Avery while subtly steering suspicion towards Isolde and Bogdan, all the while maintaining my composure and observing the other players' reactions closely. The game's dynamics are shifting, and I must adapt my strategy to uncover the true Mafiosos.</diary>
+<diary player="Leila" day="2">As the stars twinkle in the night sky, I find myself adrift in a sea of whispers and shadows. The silence of Avery and the theatrical flair of Isolde and Bogdan dance in my mind, like colours vying for space on a canvas. Tonight, I shall let my brush guide the eyes of my fellow artists, hoping to uncover the truth hidden within the folds of our shared narrative.</diary>
+<diary player="Isolde" day="2">Ah, the grand illusion continues! Today, I must weave my magic carefully, drawing suspicion towards Leila while safeguarding my alliance with Bogdan. The dance of deception is ever thrilling, and I must remain vigilant, ever ready to shift the focus and protect my enigmatic ally. Tonight, I shall continue to pull the strings from the shadows, ensuring that Leila remains under suspicion while our alliance remains hidden in the darkness.</diary>
+<diary player="Bogdan" day="2">Oh, what an exhilarating day it's been! The energy was off the charts, and the suspicions were swirling like a whirlwind. I kept the excitement bubbling, subtly steering the conversation towards Avery and Leila, ensuring Isolde and I stayed under the radar. The votes to execute Isolde didn't go through, but I kept the thrill alive, suggesting that there might be a secret alliance between Avery and Leila. Now, as night falls, I'll keep up the charm and see if I can throw a few more red herrings to keep the heat off us. The game is afoot, and I'm ready for whatever comes next!</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Isolde points at Leila
+Bogdan points at Leila
+<kill>Leila — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Leila was killed last night. Leila was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: I most suspect Isolde based on how the votes have gone.
+Lukas: In the grand chessboard of our suspicions, let us not forget the possibility that Bogdan's theatrical enthusiasm may be a distraction from his true intentions.
+Isolde: Ah, the masquerade of mystery! Let us not forget the ever-enigmatic Lukas, whose words seem to dance in the shadows. What secrets might he be weaving into his tapestry of tales?
+Bogdan: Oh, the thrill of the hunt! Let's not forget the possibility that Avery and Lukas might be working together. Their quiet demeanor could be a cover for a secret alliance.
+Aiko: Bogdan, your theatrical behavior remains increasingly suspicious. What are you trying to distract us from?
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Bogdan's behavior remains highly suspicious, but I need to gather more concrete evidence before pushing for a vote.</thought>
+<thought player="Lukas">With Leila revealed as a Law-abiding Citizen, I must re-evaluate my suspicions and continue to sow doubt around Avery, while subtly steering suspicion towards Isolde and Bogdan.</thought>
+<thought player="Isolde">Ah, the grand illusion continues! I must weave my magic, drawing suspicion towards Avery while safeguarding my alliance with Bogdan.</thought>
+<thought player="Bogdan">Keep the energy high and continue subtly steering suspicion towards Avery and Lukas, ensuring Isolde and I remain under the radar.</thought>
+</round>
+<round>
+Round 2.
+Lukas: In the intricate dance of deception, let us not forget the possibility that Isolde's theatrical flair may be a mask for something more shadowy.
+Bogdan: Oh, the thrill of the hunt! Let's not forget the possibility that Avery and Lukas might be working together. Their quiet demeanor could be a cover for a secret alliance.
+Avery: I most suspect Isolde based on how the votes have gone.
+Aiko: Bogdan, your theatrical behavior remains increasingly suspicious. What are you trying to distract us from?
+Isolde: Ah, the masquerade of mystery! Let us not forget the ever-enigmatic Avery, whose silence might just be a masterful ploy to divert our attention from the true culprits.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Bogdan's behavior is too theatrical to be innocent; I need to gather more evidence before pushing for a vote.</thought>
+<thought player="Lukas">The pieces are in place; I must continue to guide the conversation, sowing doubt around Avery while subtly steering suspicion towards Isolde and Bogdan, ensuring the true Mafiosos reveal themselves.</thought>
+<thought player="Isolde">The spotlight must now shift from Leila to Avery, while I continue to protect my alliance with Bogdan. The dance of deception must continue!</thought>
+<thought player="Bogdan">Keep the momentum going by subtly suggesting another possible alliance to divert attention from Isolde and myself.</thought>
+</round>
+<round>
+Round 3.
+Avery: I most suspect Isolde based on how the votes have gone.
+Lukas: In the grand chessboard of our suspicions, let us not forget the possibility that Isolde's theatrical flair may be a mask for something more shadowy.
+Aiko: Bogdan, your theatrical behavior remains highly suspicious. What are you trying to distract us from?
+Isolde: Ah, the masquerade of mystery! Let us not forget the ever-charismatic Avery, whose silence might just be a masterful ploy to divert our attention from the true culprits.
+Bogdan: Oh, the excitement! Let's not forget the possibility that Avery and Lukas might be working together. Their quiet demeanor could be a cover for a secret alliance.
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Bogdan's behavior remains highly suspicious, but I need to gather more concrete evidence before pushing for a vote.</thought>
+<thought player="Lukas">With Leila revealed as a Law-abiding Citizen, I must re-evaluate my suspicions and continue to sow doubt around Avery, while subtly steering suspicion towards Isolde and Bogdan.</thought>
+<thought player="Isolde">Ah, the grand illusion continues! I must weave my magic, drawing suspicion towards Avery while safeguarding my alliance with Bogdan.</thought>
+<thought player="Bogdan">Keep the momentum going by subtly suggesting another possible alliance to divert attention from Isolde and myself.</thought>
+</round>
+<round>
+Round 4.
+Aiko: Bogdan, your theatrical behavior remains highly suspicious. What are you trying to distract us from?
+Avery: I most suspect Isolde based on how the votes have gone.
+Isolde: Ah, the grand illusion continues! Let us not forget the ever-charismatic Avery, whose silence might just be a masterful ploy to divert our attention from the true culprits.
+Bogdan: Oh, the thrill of the hunt! Let's not forget the possibility that Avery and Lukas might be working together. Their quiet demeanor could be a cover for a secret alliance.
+Lukas: In the intricate dance of deception, let us not forget the possibility that Avery's silence may be a strategic move to divert our attention from the true culprits.
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Bogdan's theatrical behavior is too suspicious to ignore; I need to gather more concrete evidence before pushing for a vote.</thought>
+<thought player="Lukas">The focus remains on Avery, Isolde, and Bogdan. I must continue to sow doubt around Avery while subtly steering suspicion towards Isolde and Bogdan, all the while maintaining my composure and observing their reactions closely.</thought>
+<thought player="Isolde">The spotlight must now shift from Avery to Lukas, while I continue to protect my alliance with Bogdan. The dance of deception must continue!</thought>
+<thought player="Bogdan">Keep the energy high and continue subtly steering suspicion towards Avery and Lukas, ensuring Isolde and I remain under the radar.</thought>
+</round>
+<round>
+Round 5.
+Isolde: Ah, the ever-shifting shadows of our shared narrative! Let us not forget the ever-charismatic Avery, whose silence might just be a masterful ploy to divert our attention from the true culprits.
+Bogdan: Oh, the excitement! Let's not forget the possibility that Avery and Lukas might be working together. Their quiet demeanor could be a cover for a secret alliance.
+Avery: I most suspect Isolde based on how the votes have gone.
+Lukas: In the intricate dance of deception, let us not forget the possibility that Bogdan's theatrical enthusiasm may be a distraction from his true intentions.
+Aiko: Bogdan, your theatrical behavior is too suspicious to ignore. What are you trying to distract us from?
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Bogdan's theatrical behavior is too suspicious to ignore; I need to gather more concrete evidence before pushing for a vote.</thought>
+<thought player="Lukas">The focus remains on Avery, Isolde, and Bogdan. I must continue to sow doubt around Avery while subtly steering suspicion towards Isolde and Bogdan, all the while maintaining my composure and observing their reactions closely.</thought>
+<thought player="Isolde">Ah, the grand illusion continues! I must weave my magic, drawing suspicion towards Lukas while safeguarding my alliance with Bogdan.</thought>
+<thought player="Bogdan">Keep the energy high and continue subtly steering suspicion towards Avery and Lukas, ensuring Isolde and I remain under the radar.</thought>
+</round>
+<round>
+Round 6.
+Lukas: In the intricate dance of deception, let us not forget the possibility that Avery's silence may be a strategic move to divert our attention from the true culprits.
+Aiko: Bogdan, your theatrical behavior is too suspicious to ignore. What are you trying to distract us from?
+Isolde: Ah, the ever-shifting shadows of our shared narrative! Let us not forget the ever-charismatic Lukas, whose words seem to dance in the shadows. What secrets might he be weaving into his tapestry of tales?
+Bogdan: Oh, the excitement! Let's not forget the possibility that Avery and Lukas might be working together. Their quiet demeanor could be a cover for a secret alliance.
+<vote initiator="Avery" target="Isolde">
+Avery: Yes
+Aiko: No
+Lukas: No
+Isolde: No
+Bogdan: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Isolde">
+Avery: Yes
+Aiko: No
+Lukas: No
+Isolde: No
+Bogdan: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Isolde: Ah, the ever-shifting shadows of our shared narrative! Let us not forget the ever-charismatic Avery, whose silence might just be a masterful ploy to divert our attention from the true culprits.
+<vote initiator="Avery" target="Isolde">
+Avery: Yes
+Aiko: No
+Lukas: No
+Isolde: No
+Bogdan: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Aiko" day="3">Bogdan's theatrical behavior remains highly suspicious, but I need more concrete evidence before pushing for a vote. Avery's silence continues to be a red flag, and his repeated attempts to execute Isolde are raising eyebrows. Tonight, I'll observe their interactions closely, looking for any cracks in their facades.</diary>
+<diary player="Lukas" day="3">Today's discussions were a labyrinth of suspicion, with Avery, Isolde, and Bogdan at the center of our scrutiny. Despite my efforts to sow doubt around Avery, the votes failed, and the Mafiosos remain elusive. Tonight, as the veil of night falls, I will continue to observe the subtle movements and whispers, seeking the truth in the darkness. The game's dynamics are shifting, and I must adapt my strategy to uncover the true Mafiosos.</diary>
+<diary player="Isolde" day="3">Ah, the dance of deception continues! Today, I must weave my magic, drawing suspicion towards Lukas while safeguarding my alliance with Bogdan. The spotlight must now shift from Avery to Lukas, while I continue to protect our enigmatic alliance. Tonight, I shall continue to pull the strings from the shadows, ensuring that Lukas remains under suspicion while our alliance remains hidden in the darkness.</diary>
+<diary player="Bogdan" day="3">Oh, what a sensational day it's been! The energy was through the roof, and the suspicions were flying like fireworks. I kept the excitement alive, subtly steering the conversation towards Avery and Lukas, ensuring Isolde and I stayed under the radar. The votes to execute Isolde didn't go through, but I kept the thrill going, suggesting that there might be a secret alliance between Avery and Lukas. Now, as night falls, I'll keep up the charm and see if I can throw a few more red herrings to keep the heat off us. The game is afoot, and I'm ready for whatever comes next!</diary>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Bogdan points at Avery
+Isolde points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Ravi (Law-abiding Citizen)
+• Night 2: Niamh (Law-abiding Citizen)
+• Night 3: Leila (Law-abiding Citizen)
+• Night 4: Avery (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Aiko (Law-abiding Citizen), Lukas (Law-abiding Citizen), Leila (Law-abiding Citizen), Ravi (Law-abiding Citizen), Isolde (Mafia), Bogdan (Mafia), Niamh (Law-abiding Citizen)
+
+Who they really were:
+• Aiko (Law-abiding Citizen) — sharp-witted and inquisitive terse and deliberate, with an undercurrent of skepticism Aiko is a local journalist with an eye for detail and a knack for uncovering hidden truths. Driven by a sense of justice, Aiko's articles often expose the underhanded dealings of the town's elite.
+• Lukas (Law-abiding Citizen) — shrewd and calculating; quick to see patterns and motives articulate and precise, with a dry wit; often uses metaphors and analogies Lukas is a seasoned chess grandmaster who has traveled the world competing in tournaments. Now retired, he uses his strategic mind to help his fellow townspeople navigate complex problems.
+• Leila (Law-abiding Citizen) — dreamy and whimsical; often lost in thought, with a penchant for daydreaming speaks with a soft, lilting voice, often trailing off into thought; uses imaginative language and metaphors; occasionally loses focus mid-sentence Leila is a painter who finds inspiration in the everyday moments of life. She spends her days wandering the town with her sketchbook, capturing fleeting images and emotions. Her art is a window into her whimsical mind, filled with vibrant colours and surreal scenes.
+• Ravi (Law-abiding Citizen) — bold and outspoken; a bit of a showman, loves to be the center of attention loud, enthusiastic, and often uses exaggerated gestures; speaks in a fast, rhythmic manner with a tendency to overstate Ravi is a traveling street performer, known for his captivating fire-eating acts and mesmerizing storytelling. He moves from town to town, bringing joy and excitement wherever he goes.
+• Isolde (Mafia) — publicly presented as Isolde is a retired circus magician, known for her captivating illusions and unpredictable performances. She now resides in the town, offering magic tricks and entertainment to the locals. (eccentric and unpredictable; whimsical and theatrical; enjoys surprising others speaks in a dramatic, theatrical style; uses exaggerated expressions and actions; frequently switches topics abruptly) … but was really a Mafioso: Isolde joined the Mafia under mysterious circumstances, using her magic skills to manipulate and deceive others. Her true motives and allegiances remain hidden, even from her closest associates.
+• Bogdan (Mafia) — publicly presented as Bogdan is a local florist, known for his vibrant flower arrangements and cheerful disposition. He's a familiar face at town events, always ready with a smile and a bouquet to brighten someone's day. Bogdan has lived in the town for years, deeply involved in the community. (cheerful and irrepressible speaks in an upbeat, energetic tone, often using enthusiastic expressions and a friendly demeanor) … but was really a Mafioso: Bogdan grew up in a tough neighborhood where the local Mafia was the only semblance of order. He joined their ranks young, quickly rising through the ranks with his unshakeable cheerfulness masking a ruthless efficiency. His role as a florist is a perfect cover, allowing him to blend into the town while maintaining his criminal ties.
+• Niamh (Law-abiding Citizen) — playful and teasing; enjoys lighthearted banter and poking fun in a friendly way speaks with a light, mocking tone; uses witty remarks and sarcastic asides; often employs playful teasing Niamh is a local baker with a reputation for her delicious, whimsical pastries. She's known for her quick wit and love of practical jokes, often surprising her customers with unexpected twists in her creations. Niamh has a warm heart and a mischievous streak, making her a beloved but unpredictable figure in the town.
+</endgame>
+<story>In the early stages of the game, suspicion began to swirl around Avery and Niamh, with both Aiko and Leila drawing attention to their behavior. Lukas, ever the strategist, sowed seeds of doubt around them, while Isolde and Bogdan worked in tandem to divert suspicion from themselves. As the game progressed, the focus shifted from Niamh to Avery, with Isolde and Bogdan subtly guiding the conversation to maintain their cover. Despite Avery's repeated attempts to execute Isolde, the votes consistently failed, and the Mafiosos remained elusive. Bogdan's theatrical behavior and Isolde's enigmatic presence continued to mask their true allegiances, allowing them to evade detection. As the game reached its climax, the Law-abiding Citizens found themselves outmaneuvered, and the Mafia emerged victorious, with Avery falling to their machinations on the final night.</story>
+</transcript>

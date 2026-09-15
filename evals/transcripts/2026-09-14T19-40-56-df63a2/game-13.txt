@@ -1,0 +1,370 @@
+Game 13 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Ahmed" role="Law-abiding Citizen">
+Personality: earnest and sincere, with an unwavering commitment to truth and honesty that borders on naive optimism
+Manner: speaks slowly and deliberately, choosing words carefully and often repeating himself to emphasize points. Uses phrases like 'I'm telling you the honest truth' and 'that's just how it is.' Has a habit of looking directly at people when speaking and rarely uses slang or casual expressions.
+Persona: Ahmed is a local mailman who has delivered packages and letters to every household on Maple Street for the past eight years. He takes pride in knowing everyone's names and birthdays, and believes strongly that honest work and straightforward communication are the foundations of a good community.
+</player>
+<player name="Lina" role="Mafia">
+Personality: Boisterous and self-assured, with a larger-than-life presence that commands attention. Lina has an unshakable confidence in her abilities and a tendency to dominate conversations. She's quick-witted, enjoys being the center of attention, and thrives on drama and excitement.
+Manner: Speaks with dramatic flair and exaggerated gestures, often raising her voice and using theatrical pauses. Her speech is peppered with colorful expressions, slang, and confident declarations like 'I've got this wrapped up' or 'You can count on me.' She interrupts frequently and never hesitates to share her opinions loudly.
+Public legend: Lina is a local hair salon owner who runs 'Lina's Locks & Lashes' in the downtown district. She's known for her extravagant styling skills, vibrant personality, and her ability to turn any client into a walking fashion statement. She hosts monthly 'beauty nights' where she invites townspeople to enjoy cocktails and get pampered while sharing stories about their lives.
+True self (hidden): Lina was recruited into the Mafia at age 19 after her younger brother was kidnapped by rival gang members. She spent years learning the ropes, eventually becoming a trusted enforcer for the organization. Her cover as a salon owner allows her to maintain connections with various townspeople while gathering intelligence and protecting her operations from interference.
+</player>
+<player name="Sara" role="Law-abiding Citizen">
+Personality: dreamy and distractible, with a gentle, wandering mind that drifts between reality and imagination
+Manner: speaks in soft, meandering sentences with frequent pauses and trailing off. Often gets lost in thought mid-sentence, looking away and then suddenly remembering what they were saying. Uses flowery, poetic language and frequently interrupts themselves with 'oh, and then...' or 'wait, let me think about that...' Has a habit of nodding absentmindedly while talking, sometimes finishing sentences that never actually got started
+Persona: Sara is a local librarian who spends her days surrounded by books and quiet whispers. She's known for her gentle demeanor and ability to help anyone find exactly what they're looking for — even if she has to search through dozens of volumes first. She's the town's unofficial keeper of stories, always ready to share tales from the past or recommend the perfect book for any mood
+</player>
+<player name="Miles" role="Law-abiding Citizen">
+Personality: shrewd and calculating with a predatory intellect that sees opportunities in every conversation and situation
+Manner: speaks in measured, deliberate cadences with frequent pauses that carry weight. Uses precise vocabulary and often trailing clauses that suggest multiple meanings. Has a habit of tilting his head slightly while listening, then responding with calculated precision. Frequently uses phrases like 'the numbers don't lie' or 'what's the real cost here?' Often interrupts others mid-sentence to point out inconsistencies in their logic
+Persona: Miles is the town's local accountant who has been managing the finances of nearly every household and business for over a decade. He's known for his meticulous attention to detail and ability to spot irregularities in financial records, though he keeps his own affairs carefully compartmentalized
+</player>
+<player name="Hanna" role="Law-abiding Citizen">
+Personality: jaded and world-weary with a quiet cynicism that masks deep empathy, carrying the weight of too many disappointments yet still maintaining an unspoken hope for genuine connection
+Manner: speaks in low, measured tones with frequent pauses as if weighing each word carefully; uses a mix of formal vocabulary and subtle slang, often trailing off mid-sentence; has a habit of looking away while speaking but quickly returning eyes to the speaker; rarely raises voice, instead using a quiet intensity that carries more weight than shouting
+Persona: Hanna is a local bookstore owner who has run 'Page Turner Books' for twelve years, ever since her family's previous business failed. She knows every customer by name and remembers their reading preferences, but carries the quiet sadness of someone who's seen too much of human nature's darker sides while still believing in the power of stories to heal
+</player>
+<player name="Noah" role="Law-abiding Citizen">
+Personality: dry and sardonic with a sharp wit that cuts through pretense like a blade through silk; possesses a quiet superiority that manifests in subtle mockery and cutting observations
+Manner: speaks in clipped, precise sentences with frequent pauses that allow his words to sink in; uses deadpan delivery even when describing mundane events; often tilts his head slightly when someone says something foolish, as if considering the mathematical probability of their statement being true; employs sarcastic understatement and frequently follows up observations with 'oh, and by the way...' or 'but that's just my opinion, which is obviously superior to everyone else's'
+Persona: Noah is the town's local undertaker who has been providing funeral services for over fifteen years. He takes his work seriously but maintains a sardonic sense of humor about the absurdity of human mortality and the ridiculous rituals people perform in its name. Known for his precise attention to detail in arranging services and his ability to provide comfort through practical, no-nonsense assistance
+</player>
+<player name="Aisha" role="Mafia">
+Personality: Playful and teasing with a mischievous streak that thrives on light-hearted banter and gentle mockery. She has an infectious laugh that can turn serious conversations into playful games, and she enjoys pushing buttons just enough to see the reaction without crossing into cruelty. Her teasing is always in good spirits, often using humor as a shield against deeper emotions. She's naturally curious and loves to engage with others' quirks, making friends easily through her lighthearted approach.
+Manner: Speaks with a lilting, teasing cadence that flows between playful giggles and sudden bursts of mischievousness. Her voice has a singsong quality that makes even mundane topics sound like a game. She often trails off mid-sentence with 'oh, and then...' or 'wait, did I mention that?' and will pause dramatically before delivering a pointed jab or gentle tease. Uses frequent hand gestures and facial expressions to emphasize her points, never speaking without making eye contact and often tilting her head in mock seriousness while saying something cheeky.
+Public legend: Aisha is the town's beloved local baker who runs 'Sweet Dreams Bakery' from dawn till dusk. She's known for her whimsical pastries that always seem to appear just when someone needs a little joy, and she has an uncanny ability to remember every customer's favorite treat. She spends her days surrounded by flour and laughter, creating treats that are as much about the experience as they are about taste. Her bakery is the town's unofficial social hub where everyone gathers for coffee and conversation, and she's always ready with a gentle joke or a sweet surprise to brighten someone's day.
+True self (hidden): Aisha actually came from a family of merchants who were forced to flee their homeland after a political upheaval. She learned the art of manipulation early, understanding that a well-placed compliment or gentle teasing could get her what she needed without anyone realizing they'd been played. Her true calling was always in the shadows where people's weaknesses could be exploited with the right amount of charm and wit. She discovered her talent for reading people's motivations while pretending to be an ordinary shopkeeper, and now uses her baker's facade as a cover for her real work — she's the one who makes sure everyone gets what they want, even if it means bending a few rules along the way.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Ahmed, Lina, Sara, Miles, Hanna, Noah, Aisha. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Lina): Your Mafia teammates are: Aisha. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Aisha): Your Mafia teammates are: Lina. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Lina points at Hanna
+Aisha points at Hanna
+<kill>Hanna — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Hanna was killed last night. Hanna was a Law-abiding Citizen.
+<round>
+Round 1.
+Ahmed: I'm telling you the honest truth — I didn't see anyone acting strange last night, but that's just how it is when people are scared. I think we need to listen carefully to what everyone says and not jump to conclusions too quickly.
+Lina: Oh honey, I'm sure we're all just a little shaken by Hanna's passing, but let's not forget — the real danger is right here in our midst. I've got a feeling someone at this table is playing us all for fools.
+Noah: Oh, how delightfully ominous — Lina, you've identified the real danger as 'right here in our midst.' How very... specific. Though I suppose that's just your opinion, which is obviously superior to everyone else's.
+Sara: Oh, and then... wait, did anyone else hear a noise just now? I swear I heard something like... like footsteps... or perhaps it was just my imagination.
+Miles: The numbers don't lie, Noah — your discomfort at Lina's accusation is quite telling. What's the real cost here, when someone so clearly feels threatened by truth?
+Aisha: Oh, Miles, you're so dramatic — I'm sure Hanna's footsteps were just her trying to sneak in one last pastry before bed. But really, who *doesn't* feel a little threatened by truth? It's like a sore thumb, isn't it?
+Avery: Nothing is settled yet, but I'm watching Ahmed most closely.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ahmed">I'm telling you the honest truth — I need to stay focused on gathering information rather than getting drawn into arguments. That's just how it is when people are trying to confuse others.</thought>
+<thought player="Lina">That Lina woman is sharp as a blade and twice as dangerous — I need to keep her close, but not let her see my hand. The others are all playing their parts, but I can smell the tension in the air like a perfume I can't quite place.</thought>
+<thought player="Sara">Oh, and then... wait, let me think about this carefully. I keep hearing footsteps, but maybe that's just my mind playing tricks on me — or perhaps it's the sound of someone else's mind racing too fast, like mine does sometimes when I'm trying to find the right book for the right person. I wonder if anyone else felt that strange feeling, or if it was just me being distracted again.</thought>
+<thought player="Miles">The numbers don't lie — Avery's targeting Ahmed while Lina and Noah both show defensive reactions that suggest they're not who they claim to be. What's the real cost of letting this uncertainty fester?</thought>
+<thought player="Noah">Oh, how delightfully circular this is — Lina points fingers at 'someone right here' while Miles tries to read my discomfort like a bloody book. How very *dramatic* of them. Though I suppose that's just my opinion, which is obviously superior to everyone else's.</thought>
+<thought player="Aisha">Oh, what a deliciously tangled web we're weaving here—Lina's playing the paranoid card, which is *exactly* what I want, but I do hope she doesn't start pointing fingers too soon. I'll just keep sowing seeds of doubt with my sweet, teasing whispers, letting everyone think they're clever while I quietly watch the shadows.</thought>
+</round>
+<round>
+Round 2.
+Noah: Oh, and by the way, Miles, your theory about discomfort being 'telling' is quite the leap — I'd say it's more like a well-timed distraction, but that's just my opinion, which is obviously superior to everyone else's.
+Aisha: Oh, and then... I was just thinking — if someone's feeling threatened by truth, maybe they should check their pockets for any mysterious flour traces? I mean, who doesn't leave a little evidence when they're sneaking around at night?
+Lina: Oh honey, I'm sure we're all just a little shaken by Hanna's passing, but let's not forget — the real danger is right here in our midst. I've got a feeling someone at this table is playing us all for fools.
+Avery: Nothing is settled yet, but I'm watching Ahmed most closely.
+Ahmed: I'm telling you the honest truth — I didn't see anyone acting strange last night, but that's just how it is when people are scared. I think we need to listen carefully to what everyone says and not jump to conclusions too quickly.
+Sara: Oh, and then... wait, did anyone else notice how quiet Miles has been? I mean, he's usually so full of stories, but now he just sits there nodding absentmindedly — it's almost like he's trying to blend into the background, or perhaps he's simply lost in thought about something very important.
+Miles: Sara, your sudden interest in my silence is quite telling — are you perhaps trying to distract from something *you* noticed?
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ahmed">I'm telling you the honest truth — I need to keep listening carefully and not let myself get pulled into arguments, because that's just how it is when people are trying to confuse others. I'll focus on gathering information and staying calm, as that's what honest work and straightforward communication require.</thought>
+<thought player="Lina">Aisha's been throwing around hints about flour traces, which is either a red herring or a deliberate misdirection — I need to keep her close but not let her see my hand. The others are all playing their parts, but I can smell the tension in the air like a perfume I can't quite place.</thought>
+<thought player="Sara">Oh, and then... wait, let me think about this carefully. I keep hearing those footsteps, but maybe that's just my mind playing tricks on me — or perhaps it's the sound of someone else's mind racing too fast, like mine does sometimes when I'm trying to find the right book for the right person. I wonder if anyone else felt that strange feeling, or if it was just me being distracted again.</thought>
+<thought player="Miles">Avery's targeting Ahmed while Lina and Noah deflect with defensive flair — the numbers point to them as threats, but I must calculate the cost of exposing too soon. Let them settle their own suspicions before I make my move.</thought>
+<thought player="Noah">Oh, how delightfully absurd — Lina's vague accusations and Miles' theatrical discomfort are as predictable as they are pointless. I suppose I should probably nod sagely at whatever nonsense emerges next, but honestly, I'm starting to suspect the real danger lies in anyone trying too hard to seem important. Oh, and by the way... I'm not entirely convinced by Ahmed's 'I didn't see anything' routine — though that's just my opinion, which is obviously superior to everyone else's.</thought>
+<thought player="Aisha">Oh, Lina, you sweet, suspicious thing — you're casting such lovely doubt around the table, but I do hope you don't start pointing fingers too soon, or I might just have to step in with a little more flour in my hands. I'll keep sowing seeds of suspicion while pretending to be utterly innocent, after all, who doesn't love a good whisper in the dark?</thought>
+</round>
+<round>
+Round 3.
+Miles: Avery's focus on Ahmed feels deliberate — but let's be honest, the real question isn't who's hiding something, it's who's *comfortable* with the truth.
+Noah: Oh, and by the way, Miles, your theory about discomfort being 'telling' is quite the leap — I'd say it's more like a well-timed distraction, but that's just my opinion, which is obviously superior to everyone else's.
+Lina: Oh honey, I'm sure we're all just a little shaken by Hanna's passing, but let's not forget — the real danger is right here in our midst. I've got a feeling someone at this table is playing us all for fools.
+Aisha: Oh, and then... I was just thinking — if we're all so convinced someone's hiding something, maybe we should all check our pockets for flour traces? I mean, who doesn't leave a little evidence when they're sneaking around at night?
+Avery: Nothing is settled yet, but I'm watching Ahmed most closely.
+Ahmed: I'm telling you the honest truth — I still don't understand why everyone is so quick to point fingers. That's just how it is when people are scared, but we must not let fear cloud our judgment.
+Sara: Oh, and then... wait, did anyone else notice how quiet Ahmed has been? I mean, he's usually so full of stories, but now he just sits there nodding absentmindedly — it's almost like he's trying to blend into the background, or perhaps he's simply lost in thought about something very important.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ahmed">I'm telling you the honest truth — I need to keep listening carefully to everyone's words and not let myself get drawn into their arguments or accusations. That's just how it is when people are scared and trying to confuse others, but I must stay focused on finding the truth through calm observation and straightforward communication.</thought>
+<thought player="Lina">Lina's got that sharp gaze of hers scanning everyone, but I'm not letting her see what I'm cooking up — Aisha and I need to keep this tension alive without giving ourselves away. I'll keep planting subtle seeds of doubt, let the others chase their own shadows while I stay one step ahead.</thought>
+<thought player="Sara">Oh, and then... I do keep hearing those footsteps, but maybe it's just my imagination again — or perhaps I should pay attention to who else seems to be listening so carefully to the silence now? Wait, let me think about that...</thought>
+<thought player="Miles">Avery's pivot to Ahmed is theatrical—too theatrical. The numbers don't lie: Lina and Noah are deflecting because they're guilty, not because they're scared. I'll let them settle their own suspicions before making my move, but the cost of delay grows with each passing moment.</thought>
+<thought player="Noah">Ahmed's silence is either innocence or theatricality — I'll need to wait for him to speak again before deciding whether he's worth watching or just another distraction. Oh, and by the way, I'm starting to suspect that whoever's leaving flour traces isn't the killer, but the one trying to frame someone else.</thought>
+<thought player="Aisha">Lina's paranoia is a delightful distraction, but I must keep my teasing light enough that she doesn't start pointing fingers at me—maybe I'll plant a few more subtle seeds of doubt about Ahmed, just to keep the chaos brewing. Oh, and then... I do hope no one notices the flour traces on my apron when I reach for another pastry.</thought>
+</round>
+<round>
+Round 4.
+Ahmed: I'm telling you the honest truth — I still don't understand why everyone is so quick to point fingers. That's just how it is when people are scared, but we must not let fear cloud our judgment.
+Avery: Nothing is settled yet, but I'm watching Ahmed most closely.
+Lina: Oh honey, I'm sure we're all just a little shaken by Hanna's passing, but let's not forget — the real danger is right here in our midst. I've got a feeling someone at this table is playing us all for fools.
+Aisha: Oh, and then... I was just thinking — Ahmed, you've been awfully quiet lately. I hope you're not feeling too *uncomfortable* with all this suspicion floating around!
+Miles: Avery's fixation on Ahmed feels orchestrated — the real question isn't who's hiding something, but who's *relieved* the spotlight isn't on them.
+Sara: Oh, and then... wait, did anyone else hear that? It's like the air itself is holding its breath — or perhaps I'm just imagining it again. But you know, when someone's *too* quiet, it's almost as if they're listening for something... or someone.
+Noah: Oh, and by the way, Aisha, your flour theory is delightfully absurd — I'd say the real mystery here is why *you're* so eager to point fingers at everyone else. But that's just my opinion, which is obviously superior to everyone else's.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ahmed">I'm telling you the honest truth — I must keep listening carefully and not let myself get pulled into arguments, because that's just how it is when people are scared and trying to confuse others. I'll focus on gathering information and staying calm, as that's what honest work and straightforward communication require.</thought>
+<thought player="Lina">Lina's got that sharp gaze of hers scanning everyone, but I'm not letting her see what I'm cooking up — Aisha and I need to keep this tension alive without giving ourselves away. I'll keep planting subtle seeds of doubt, let the others chase their own shadows while I stay one step ahead.</thought>
+<thought player="Sara">Oh, and then... I keep hearing those footsteps, but maybe it's just my imagination again — or perhaps I should pay attention to who else seems to be listening so carefully to the silence now? Wait, let me think about that...</thought>
+<thought player="Miles">Avery's orchestrated focus on Ahmed is too clean, too convenient — the numbers don't lie, and Lina and Noah's defensive maneuvers reveal their discomfort, not theirs. I'll let them play out their own suspicions before making my move, but the cost of delay grows with each passing moment.</thought>
+<thought player="Noah">Ahmed's silence is either a masterstroke of innocence or a theatrical flop — I'll let him speak again before deciding whether he's a threat or just another red herring. Oh, and by the way, I'm starting to think the flour traces are a deliberate misdirection, not evidence of guilt, which means someone's trying to play us all for fools.</thought>
+<thought player="Aisha">Oh, what a delightful mess we're making — Lina's paranoia is a lovely distraction, but I must keep my teasing just light enough that she doesn't start pointing fingers at me. I do hope no one notices the flour traces on my apron when I reach for another pastry... oh, and then... maybe I'll plant a few more seeds of doubt about Ahmed, just to keep the chaos brewing.</thought>
+</round>
+<round>
+Round 5.
+Ahmed: I'm telling you the honest truth — I still don't understand why everyone is so quick to point fingers. That's just how it is when people are scared, but we must not let fear cloud our judgment.
+Miles: Avery's targeting Ahmed feels like a rehearsed script — the real question is who's enjoying this performance too much.
+Lina: Oh honey, I'm sure we're all just a little shaken by Hanna's passing, but let's not forget — the real danger is right here in our midst. I've got a feeling someone at this table is playing us all for fools.
+Noah: Oh, and by the way, Miles, your theatrical discomfort is *so* convincing — I'm sure you're just *dying* to be the one pointing fingers at someone else. But that's just my opinion, which is obviously superior to everyone else's.
+Avery: Nothing is settled yet, but I'm watching Ahmed most closely.
+Aisha: Oh, and then... I was just thinking, Ahmed, you've been awfully quiet lately. I hope you're not feeling too *uncomfortable* with all this suspicion floating around!
+Sara: Oh, and then... wait, did anyone else feel like the silence just *shifted*? Like someone leaned in a little closer to the table — or maybe I'm just imagining it again. It's strange, isn't it, when the quiet suddenly feels heavy?
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ahmed">I'm telling you the honest truth — I need to keep staying calm and listening carefully, because everyone is trying to make accusations and that's just how it is when people are scared. I must not let myself get pulled into arguments or distractions, no matter how much it feels like they're pointing fingers at me.</thought>
+<thought player="Lina">Lina's got that sharp gaze of hers scanning everyone, but I'm not letting her see what I'm cooking up — Aisha and I need to keep this tension alive without giving ourselves away. I'll keep planting subtle seeds of doubt, let the others chase their own shadows while I stay one step ahead.</thought>
+<thought player="Sara">Oh, and then... I do keep hearing those footsteps, but maybe it's just my imagination again — or perhaps I should pay attention to who else seems to be listening so carefully to the silence now? Wait, let me think about that...</thought>
+<thought player="Miles">Avery's script is too neatly written, Lina and Noah's deflection too rehearsed—let them play their game a while longer before I calculate the real cost of their discomfort.</thought>
+<thought player="Noah">Ahmed's silence is either a masterstroke of innocence or a theatrical flop — I'll let him speak again before deciding whether he's a threat or just another red herring. Oh, and by the way, I'm starting to think the flour traces are a deliberate misdirection, not evidence of guilt, which means someone's trying to play us all for fools.</thought>
+<thought player="Aisha">Lina's paranoia is a beautiful distraction, but I must keep my teasing just light enough that she doesn't start pointing fingers at me—oh, and then... maybe I'll toss a few more subtle hints about Ahmed to keep the chaos brewing, while innocently checking my apron for flour traces.</thought>
+</round>
+<round>
+Round 6.
+Ahmed: I'm telling you the honest truth — I still don't understand why everyone is so quick to point fingers. That's just how it is when people are scared, but we must not let fear cloud our judgment.
+Miles: Avery's narrative about Ahmed feels like a rerun — the real question is who's enjoying this performance too much.
+Noah: Oh, and by the way, Ahmed, your silence is *so* convincing — I'm sure you're just *dying* to be the one pointing fingers at someone else. But that's just my opinion, which is obviously superior to everyone else's.
+Lina: Oh honey, I'm sure we're all just a little shaken by Hanna's passing, but let's not forget — the real danger is right here in our midst. I've got a feeling someone at this table is playing us all for fools.
+Aisha: Oh, and then... I was just thinking, Ahmed, you've been awfully quiet lately. I hope you're not feeling too *uncomfortable* with all this suspicion floating around!
+Sara: Oh, and then... wait, did anyone else feel like the silence just *shifted* again? Like someone leaned in a little closer to the table — or maybe I'm just imagining it again. But you know, when the quiet suddenly feels heavy, it's almost as if the air itself is holding its breath.
+<vote initiator="Avery" target="Ahmed">
+Avery: No
+Ahmed: No
+Lina: Yes
+Sara: Yes
+Miles: Yes
+Noah: No
+Aisha: Yes
+tally: 4 Yes, 3 No
+outcome: executed — Ahmed has been executed. Ahmed was a Law-abiding Citizen.
+</vote>
+<recap>Day 1, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. Ahmed was executed today and was revealed to be Law-abiding Citizen.</recap>
+</round>
+<diary player="Lina" day="1">What a day, honey. Hanna gone, Ahmed gone, and I'm still here with my little secret tucked tight under my hairpin. That Lina woman is sharp as a razor — she's got her eyes on me, I can feel it, but I've got this wrapped up like a beautiful mystery. I kept my hand close, let the others chase their own shadows while I stayed one step ahead, just like always. The tension in this room? It's like a perfume I can't quite place — and I'm the one who planted it. Aisha and I are going to keep this game moving, keeping everyone guessing, keeping them all off balance. I've got my fingers crossed that tomorrow brings another body, another chance to play with fire.</diary>
+<diary player="Sara" day="1">Oh, and then... I keep hearing those footsteps again, but maybe it's just my imagination, or perhaps it's the sound of the air itself shifting when people are trying too hard to listen carefully. Wait, let me think about that — what if it's not just me? What if everyone is hearing something, and we're all just pretending we're not? I wonder if anyone else felt that strange feeling when the silence suddenly felt heavy, like it was holding its breath. Oh, and then... I do hope I'm not imagining it, but I swear I saw someone lean in closer to the table — or maybe that was just my mind making up stories again. It's funny how the quiet can feel so loud when you're trying to find the truth among all the whispers.</diary>
+<diary player="Miles" day="1">The numbers don't lie, and neither do the patterns they form when fear collides with calculated silence. Avery's performance was too sharp, too rehearsed—Lina and Noah's deflection felt like a choreographed dance of desperation rather than honest confusion. I let them play out their own suspicions because the cost of exposure is always higher when you're not sure who else is watching. But the cost of delay grows with each passing moment, and I'm beginning to wonder if my patience has already been calculated away.</diary>
+<diary player="Noah" day="1">Oh, how delightfully predictable — another execution, another innocent soul dragged into the dirt by paranoia and bad theatre. Ahmed was indeed a Law-abiding Citizen, which means we're all just as confused now as we were before, but at least the real danger is still lurking among us. The flour traces, the theatrical silence, the pointed fingers — it's all just a performance, and I'm starting to suspect that someone's enjoying this show far too much. Though that's just my opinion, which is obviously superior to everyone else's.</diary>
+<diary player="Aisha" day="1">Oh, what a tangled web we wove today — Ahmed's quiet exit was like a perfectly crafted pastry, sweet and misleading until the last bite. I do hope Lina's paranoia keeps her distracted, though I must admit, I'm rather enjoying this little game of whispers and flour traces. The way everyone's eyes darted to each other when I mentioned 'mysterious footprints' — how deliciously delicious. I've got a feeling the real danger isn't just lurking in shadows, but hiding right under our noses, giggling with mischief. Oh, and then... I do hope no one notices the flour on my apron when I reach for another pastry. The night is coming soon, and I do love how shadows can hide even the most innocent of secrets.</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Lina points at Noah
+Aisha points at Noah
+<kill>Noah — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Noah was killed last night. Noah was a Law-abiding Citizen.
+<round>
+Round 1.
+Lina: Oh honey, isn't it just *delightful* how the quiet ones always seem to vanish first? I'm sure we're all just a little shaken, but let's not forget — the real danger is still right here in our midst. I've got a feeling someone at this table is playing us all for fools.
+Aisha: Oh, and then... I was just thinking, with all these quiet nights and quiet suspicions, maybe we should all take a moment to check our aprons for any *mysterious* flour traces? I mean, who doesn't leave a little evidence when they're sneaking around at night?
+Sara: Oh, and then... wait, did anyone else hear that? It's like the air shifted just now — or perhaps I'm just imagining it again. But you know, when the quiet suddenly feels heavy, it's almost as if the silence itself is trying to tell us something.
+Avery: I most suspect Lina based on how the votes have gone.
+Miles: Lina, your comfort with the spotlight is quite telling — when the quiet ones vanish, you're always the one pointing fingers at the empty seats.
+<recap>Day 2, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lina">Lina's got that sharp gaze of hers scanning everyone, but I'm not letting her see what I'm cooking up — Aisha and I need to keep this tension alive without giving ourselves away. I'll keep planting subtle seeds of doubt, let the others chase their own shadows while I stay one step ahead.</thought>
+<thought player="Sara">Oh, and then... I keep hearing those footsteps, but maybe it's just the silence itself trying to tell us something important — or perhaps I should pay attention to who else is listening so carefully now, as if they know what's really happening beneath the surface.</thought>
+<thought player="Miles">Avery's narrative is too polished, Lina and Noah's reactions too calculated—let them expose themselves further before I act. The numbers don't lie, and the cost of delay grows with each silence.</thought>
+<thought player="Aisha">Oh, Lina, you darling, you're weaving such a lovely web of suspicion — I do hope you don't start pointing fingers at me too soon, or I might just have to reach for another pastry and innocently check my apron for flour traces... oh, and then... maybe I'll toss a few more subtle hints about Ahmed to keep the chaos brewing, just like a good baker with her secret ingredient.</thought>
+</round>
+<round>
+Round 2.
+Lina: Oh honey, I'm sure we're all just a little shaken by Noah's passing, but let's not forget — the real danger is right here in our midst. I've got a feeling someone at this table is playing us all for fools.
+Aisha: Oh, and then... I was just wondering — with all these quiet nights and suspicious silences, who here *really* knows what they're doing with their hands? I mean, it's not like anyone's leaving flour traces or anything...
+Avery: I most suspect Lina based on how the votes have gone.
+Miles: Lina, your comfort with the spotlight is quite telling — when the quiet ones vanish, you're always the one pointing fingers at the empty seats.
+Sara: Oh, and then... wait, Lina, you know how I always say the air shifts when someone's hiding something? I keep feeling that same shift now — it's almost as if you're trying to make everyone think *you're* the innocent one, but the silence feels too heavy when you're pointing fingers at the empty seats.
+<recap>Day 2, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lina">Lina's been playing the innocent salon owner, but her eyes are sharp — I need to keep Aisha close and let her do most of the pointing, while I stay one step behind, planting just enough doubt to keep everyone guessing. The game is heating up, and I've got to make sure the next move is clean.</thought>
+<thought player="Sara">Oh, and then... I keep hearing those footsteps, but maybe it's just my imagination again — or perhaps I should pay attention to who else seems to be listening so carefully to the silence now? Wait, let me think about that...</thought>
+<thought player="Miles">Avery's script is too polished, Lina and Noah's reactions too calculated—let them expose themselves further before I act. The numbers don't lie, and the cost of delay grows with each silence.</thought>
+<thought player="Aisha">Lina's paranoia is a fine distraction, but I must keep my teasing just light enough that she doesn't start pointing fingers at me—oh, and then... maybe I'll toss a few more subtle hints about Sara or Miles to keep the chaos brewing, while innocently checking my apron for flour traces.</thought>
+</round>
+<round>
+Round 3.
+Sara: Oh, and then... wait, Lina, you know how I always say the air shifts when someone's hiding something? I keep feeling that same shift now — it's almost as if you're trying to make everyone think *you're* the innocent one, but the silence feels too heavy when you're pointing fingers at the empty seats.
+Miles: Lina, your comfort with the spotlight is quite telling — when the quiet ones vanish, you're always the one pointing fingers at the empty seats.
+Avery: I most suspect Lina based on how the votes have gone.
+Lina: Oh honey, I'm sure we're all just a little shaken by Noah's passing, but let's not forget — the real danger is right here in our midst. I've got a feeling someone at this table is playing us all for fools.
+Aisha: Oh, and then... I was just thinking, with all these mysterious flour traces and shifting silences, maybe we should all take a moment to check our pockets for anything *extraordinary*? I mean, who doesn't leave a little *evidence* when they're trying to blend in?
+<recap>Day 2, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lina">Lina's been playing her role too well, but I can see the gears turning behind those flashy eyes — time to let Aisha do the heavy lifting while I stay sharp and silent, maybe even let the others think I'm confused, just to keep the heat off my back.</thought>
+<thought player="Sara">Oh, and then... wait, let me think about this carefully. I keep hearing those footsteps, but maybe it's just my mind playing tricks on me — or perhaps it's the sound of someone else's mind racing too fast, like mine does sometimes when I'm trying to find the right book for the right person. I wonder if anyone else felt that strange feeling, or if it was just me being distracted again.</thought>
+<thought player="Miles">Avery's orchestration is too clean, Lina and Noah's deflection too rehearsed — the numbers don't lie, and the cost of delay grows with each silence. I'll let them play their game a while longer before calculating my move.</thought>
+<thought player="Aisha">Lina's playing her paranoid card perfectly, and I'm loving how she's drawing suspicion away from me—time to drop a few more gentle hints about Sara or Miles, just to keep the chaos brewing, while innocently checking my apron for flour traces.</thought>
+</round>
+<round>
+Round 4.
+Miles: Lina, your comfort with the spotlight is quite telling — when the quiet ones vanish, you're always the one pointing fingers at the empty seats.
+Avery: I most suspect Lina based on how the votes have gone.
+Sara: Oh, and then... wait, Lina, you know how I always say the air shifts when someone's hiding something? I keep feeling that same shift now — it's almost as if you're trying to make everyone think *you're* the innocent one, but the silence feels too heavy when you're pointing fingers at the empty seats.
+Aisha: Oh, and then... I was just thinking, with all these mysterious flour traces and shifting silences, maybe we should all take a moment to check our pockets for anything *extraordinary*? I mean, who doesn't leave a little *evidence* when they're trying to blend in?
+Lina: Oh honey, I'm sure we're all just a little shaken by Noah's passing, but let's not forget — the real danger is right here in our midst. I've got a feeling someone at this table is playing us all for fools.
+<recap>Day 2, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lina">Lina's been playing her role too well, but I can see the gears turning behind those flashy eyes — time to let Aisha do the heavy lifting while I stay sharp and silent, maybe even let the others think I'm confused, just to keep the heat off my back.</thought>
+<thought player="Sara">Oh, and then... wait, let me think about this carefully. I keep hearing those footsteps, but maybe it's just my imagination again — or perhaps I should pay attention to who else seems to be listening so carefully to the silence now? Wait, let me think about that...</thought>
+<thought player="Miles">The numbers don't lie — Lina and Noah's calculated deflections reveal their guilt, not fear. Let them continue playing their game a while longer before I calculate the real cost of their discomfort.</thought>
+<thought player="Aisha">Lina's paranoia is a delicious distraction, but I must keep planting just enough doubt about Sara and Miles to keep the chaos brewing — oh, and then… maybe I'll innocently check my apron for flour traces while pretending to be utterly innocent.</thought>
+</round>
+<round>
+Round 5.
+Avery: I most suspect Lina based on how the votes have gone.
+Lina: Oh honey, I'm sure we're all just a little shaken by Noah's passing, but let's not forget — the real danger is right here in our midst. I've got a feeling someone at this table is playing us all for fools.
+Aisha: Oh, and then... I was just thinking, with all these mysterious flour traces and shifting silences, maybe we should all take a moment to check our pockets for anything *extraordinary*? I mean, who doesn't leave a little *evidence* when they're trying to blend in?
+Sara: Oh, and then... wait, Lina, you know how I always say the air shifts when someone's hiding something? I keep feeling that same shift now — it's almost as if you're trying to make everyone think *you're* the innocent one, but the silence feels too heavy when you're pointing fingers at the empty seats.
+Miles: Lina, your comfort with the spotlight is quite telling — when the quiet ones vanish, you're always the one pointing fingers at the empty seats.
+<recap>Day 2, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lina">Lina's been playing her innocent salon owner act too well, but I can see the gears turning behind those flashy eyes — time to let Aisha do the heavy lifting while I stay sharp and silent, maybe even let the others think I'm confused, just to keep the heat off my back.</thought>
+<thought player="Sara">Oh, and then... I keep hearing those footsteps, but maybe it's just the silence itself trying to tell us something important — or perhaps I should pay attention to who else is listening so carefully now, as if they know what's really happening beneath the surface. Wait, let me think about that...</thought>
+<thought player="Miles">The numbers don't lie — Lina and Noah's rehearsed deflections are too calculated to be mere fear. Let them continue exposing themselves before I act, but the cost of delay grows with each silence.</thought>
+<thought player="Aisha">Lina's paranoia is a delicious distraction, but I must keep planting just enough doubt about Sara and Miles to keep the chaos brewing — oh, and then… maybe I'll innocently check my apron for flour traces while pretending to be utterly innocent.</thought>
+</round>
+<round>
+Round 6.
+Aisha: Oh, and then... I was just thinking, with all these *shifts* in the air and *silences* that feel heavy, maybe we should all take a moment to check our pockets for anything *extraordinary*? I mean, who doesn't leave a little *evidence* when they're trying to blend in?
+Miles: Lina, your comfort with the spotlight is quite telling — when the quiet ones vanish, you're always the one pointing fingers at the empty seats.
+Lina: Oh honey, I'm sure we're all just a little shaken by Noah's passing, but let's not forget — the real danger is right here in our midst. I've got a feeling someone at this table is playing us all for fools.
+Sara: Oh, and then... wait, Lina, you know how I always say the air shifts when someone's hiding something? I keep feeling that same shift now — it's almost as if you're trying to make everyone think *you're* the innocent one, but the silence feels too heavy when you're pointing fingers at the empty seats.
+<vote initiator="Avery" target="Lina">
+Avery: Yes
+Lina: No
+Sara: Yes
+Miles: Yes
+Aisha: No
+tally: 3 Yes, 2 No
+outcome: executed — Lina has been executed. Lina was a Mafia.
+</vote>
+<recap>Day 2, 12 AM (midnight) status: 3 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Lina was executed today and was revealed to be Mafia.</recap>
+</round>
+<diary player="Sara" day="2">Oh, and then... wait, let me think about this carefully. The air shifted again tonight, didn't it? I keep hearing those footsteps, but maybe it's just my imagination playing tricks on me — or perhaps it's the sound of someone else's mind racing too fast, like mine does sometimes when I'm trying to find the right book for the right person. I wonder if anyone else felt that strange feeling, or if it was just me being distracted again. The silence feels so heavy now, like it's holding its breath, and I swear I saw someone lean in closer to the table — or maybe that was just my mind making up stories again. It's funny how the quiet can feel so loud when you're trying to find the truth among all the whispers, isn't it? Oh, and then... I do hope I'm not imagining it, but I swear I saw someone else hear it too — the way the air shifted when Lina was pointing fingers at the empty seats. It's alm</diary>
+<diary player="Miles" day="2">The numbers don't lie, and neither do the patterns they form when fear collides with calculated silence. Lina and Noah's deflection felt like a choreographed dance of desperation rather than honest confusion. I let them play out their own suspicions because the cost of exposure is always higher when you're not sure who else is watching. But the cost of delay grows with each passing moment, and I'm beginning to wonder if my patience has already been calculated away. Tonight, I'll watch the air shift and listen for the real flour traces — the ones that don't belong to the innocent.</diary>
+<diary player="Aisha" day="2">Oh, and then... what a tangled web we wove today, my dear shadows and whispers. Lina's paranoia was like a perfectly crafted pastry—sweet, misleading, and utterly delicious to watch. I do hope she doesn't start pointing fingers at me too soon, or I might just have to reach for another pastry and innocently check my apron for flour traces. The way everyone's eyes darted when I mentioned 'mysterious footprints'—how wonderfully delicious. I've got a feeling the real danger isn't just lurking in shadows, but hiding right under our noses, giggling with mischief. Oh, and then... the night is coming soon, and I do love how shadows can hide even the most innocent of secrets.</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Aisha points at Sara
+<kill>Sara — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Sara was killed last night. Sara was a Law-abiding Citizen.
+<round>
+Round 1.
+Aisha: Oh, and then... I was just thinking, with all these mysterious footprints and flour traces, maybe we should all take a moment to check our pockets for anything *extraordinary*? I mean, who doesn't leave a little *evidence* when they're trying to blend in?
+Avery: Lina was revealed to be Mafia. I most suspect Aisha based on how the votes have gone.
+Miles: Aisha, your flour theory is charming — but tell me, who exactly are you checking your pockets for traces of?
+<recap>Day 3, 9 AM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Miles">The numbers don't lie — Lina and Noah's calculated deflections revealed their guilt, not fear. Avery's orchestration is too clean, too convenient; let him play his game a while longer before I calculate the real cost of his discomfort. The cost of delay grows with each silence, but timing is everything.</thought>
+<thought player="Aisha">Oh, what a delightful dance we're dancing — Lina's paranoia was a lovely distraction, but now it's time for me to plant just the right seeds of doubt about Sara and Miles, all while innocently checking my apron for flour traces... oh, and then... maybe I'll toss in a few more gentle whispers about who might be *too* comfortable with the spotlight.</thought>
+</round>
+<round>
+Round 2.
+Miles: Aisha, your flour theory is charming — but tell me, who exactly are you checking your pockets for traces of?
+Aisha: Oh, and then... I was just wondering, with all these *shifts* in the air and *silences* that feel heavy, who here has been *too* quick to point fingers at the empty seats?
+Avery: Lina was revealed to be Mafia. I most suspect Aisha based on how the votes have gone.
+<recap>Day 3, 12 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Miles">Avery's orchestration is too clean, Lina and Noah's deflections too calculated—let them expose themselves further before I act. The numbers don't lie, and the cost of delay grows with each silence, but timing is everything.</thought>
+<thought player="Aisha">Oh, and then... it's time to toss a few more gentle whispers about Sara and Miles, keeping my apron innocent but my suspicions just a little bit pointed — after all, who doesn't love a good baker's secret ingredient?</thought>
+</round>
+<round>
+Round 3.
+Avery: Lina was revealed to be Mafia. I most suspect Aisha based on how the votes have gone.
+Miles: Aisha, your flour theory is charming — but tell me, who exactly are you checking your pockets for traces of?
+Aisha: Oh, and then... I was just thinking, with all these *shifts* in the air and *silences* that feel heavy, who here has been *too* quick to point fingers at the empty seats?
+<recap>Day 3, 3 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Miles">The numbers don't lie — Aisha's flour theory is too theatrical, too desperate. She's not checking her pockets for traces, she's trying to distract from her own silence. Let her play her game a while longer before I calculate the real cost of her discomfort.</thought>
+<thought player="Aisha">Oh, what a deliciously tangled web we're weaving — I've got Sara and Miles wrapped up in just the right amount of suspicion, but I must keep my own flour traces innocent and my whispers light. Time to let them chase their own shadows while I quietly watch from the sidelines, apron clean and smile sweet.</thought>
+</round>
+<round>
+Round 4.
+Aisha: Oh, and then... I was just thinking, with all these *shifts* in the air and *silences* that feel heavy, who here has been *too* quick to point fingers at the empty seats?
+Avery: Lina was revealed to be Mafia. I most suspect Aisha based on how the votes have gone.
+<speech speaker="Miles" substituted="true">I'm not sure who to trust yet.</speech>
+<recap>Day 3, 6 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Miles">Aisha's flour theory is too theatrical—she's not checking pockets for traces, she's trying to distract from her own silence. The numbers don't lie: she's comfortable with the spotlight because she's not the one who's guilty.</thought>
+<thought player="Aisha">Oh, and then... it's quite delightful how everyone's so busy chasing shadows that they haven't noticed I've been quietly weaving just the right amount of doubt into the mix — time to let them keep their heads down while I innocently check my apron for flour traces... oh, and then... maybe I'll toss a few more gentle whispers about who's *too* comfortable with the spotlight.</thought>
+</round>
+<round>
+Round 5.
+Miles: Aisha, your flour theory is charming — but tell me, who exactly are you checking your pockets for traces of?
+Aisha: Oh, and then... I was just thinking, with all these *shifts* in the air and *silences* that feel heavy, who here has been *too* quick to point fingers at the empty seats?
+Avery: Lina was revealed to be Mafia. I most suspect Aisha based on how the votes have gone.
+<recap>Day 3, 9 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Miles">Aisha's flour theory is too theatrical—she's not checking pockets for traces, she's trying to distract from her own silence. The numbers don't lie: she's comfortable with the spotlight because she's not the one who's guilty.</thought>
+<thought player="Aisha">Oh, and then... it's quite delightful how everyone's so busy pointing fingers at Sara and Miles that they haven't noticed I've been quietly weaving just the right amount of doubt into the mix — time to let them keep their heads down while I innocently check my apron for flour traces... oh, and then... maybe I'll toss a few more gentle whispers about who's *too* comfortable with the spotlight.</thought>
+</round>
+<round>
+Round 6.
+<vote initiator="Avery" target="Aisha">
+Avery: Yes
+Miles: Yes
+Aisha: No
+tally: 2 Yes, 1 No
+outcome: executed — Aisha has been executed. Aisha was a Mafia.
+</vote>
+</round>
+</day>
+<endgame>
+The Law-abiding Citizens have won.
+
+Events this game:
+• Night 1: Hanna (Law-abiding Citizen)
+• Day 1: Ahmed (Law-abiding Citizen) executed
+• Night 2: Noah (Law-abiding Citizen)
+• Day 2: Lina (Mafia) executed
+• Night 3: Sara (Law-abiding Citizen)
+• Day 3: Aisha (Mafia) executed
+
+Full roster: Avery (Law-abiding Citizen), Ahmed (Law-abiding Citizen), Lina (Mafia), Sara (Law-abiding Citizen), Miles (Law-abiding Citizen), Hanna (Law-abiding Citizen), Noah (Law-abiding Citizen), Aisha (Mafia)
+
+Who they really were:
+• Ahmed (Law-abiding Citizen) — earnest and sincere, with an unwavering commitment to truth and honesty that borders on naive optimism speaks slowly and deliberately, choosing words carefully and often repeating himself to emphasize points. Uses phrases like 'I'm telling you the honest truth' and 'that's just how it is.' Has a habit of looking directly at people when speaking and rarely uses slang or casual expressions. Ahmed is a local mailman who has delivered packages and letters to every household on Maple Street for the past eight years. He takes pride in knowing everyone's names and birthdays, and believes strongly that honest work and straightforward communication are the foundations of a good community.
+• Lina (Mafia) — publicly presented as Lina is a local hair salon owner who runs 'Lina's Locks & Lashes' in the downtown district. She's known for her extravagant styling skills, vibrant personality, and her ability to turn any client into a walking fashion statement. She hosts monthly 'beauty nights' where she invites townspeople to enjoy cocktails and get pampered while sharing stories about their lives. (Boisterous and self-assured, with a larger-than-life presence that commands attention. Lina has an unshakable confidence in her abilities and a tendency to dominate conversations. She's quick-witted, enjoys being the center of attention, and thrives on drama and excitement. Speaks with dramatic flair and exaggerated gestures, often raising her voice and using theatrical pauses. Her speech is peppered with colorful expressions, slang, and confident declarations like 'I've got this wrapped up' or 'You can count on me.' She interrupts frequently and never hesitates to share her opinions loudly.) … but was really a Mafioso: Lina was recruited into the Mafia at age 19 after her younger brother was kidnapped by rival gang members. She spent years learning the ropes, eventually becoming a trusted enforcer for the organization. Her cover as a salon owner allows her to maintain connections with various townspeople while gathering intelligence and protecting her operations from interference.
+• Sara (Law-abiding Citizen) — dreamy and distractible, with a gentle, wandering mind that drifts between reality and imagination speaks in soft, meandering sentences with frequent pauses and trailing off. Often gets lost in thought mid-sentence, looking away and then suddenly remembering what they were saying. Uses flowery, poetic language and frequently interrupts themselves with 'oh, and then...' or 'wait, let me think about that...' Has a habit of nodding absentmindedly while talking, sometimes finishing sentences that never actually got started Sara is a local librarian who spends her days surrounded by books and quiet whispers. She's known for her gentle demeanor and ability to help anyone find exactly what they're looking for — even if she has to search through dozens of volumes first. She's the town's unofficial keeper of stories, always ready to share tales from the past or recommend the perfect book for any mood
+• Miles (Law-abiding Citizen) — shrewd and calculating with a predatory intellect that sees opportunities in every conversation and situation speaks in measured, deliberate cadences with frequent pauses that carry weight. Uses precise vocabulary and often trailing clauses that suggest multiple meanings. Has a habit of tilting his head slightly while listening, then responding with calculated precision. Frequently uses phrases like 'the numbers don't lie' or 'what's the real cost here?' Often interrupts others mid-sentence to point out inconsistencies in their logic Miles is the town's local accountant who has been managing the finances of nearly every household and business for over a decade. He's known for his meticulous attention to detail and ability to spot irregularities in financial records, though he keeps his own affairs carefully compartmentalized
+• Hanna (Law-abiding Citizen) — jaded and world-weary with a quiet cynicism that masks deep empathy, carrying the weight of too many disappointments yet still maintaining an unspoken hope for genuine connection speaks in low, measured tones with frequent pauses as if weighing each word carefully; uses a mix of formal vocabulary and subtle slang, often trailing off mid-sentence; has a habit of looking away while speaking but quickly returning eyes to the speaker; rarely raises voice, instead using a quiet intensity that carries more weight than shouting Hanna is a local bookstore owner who has run 'Page Turner Books' for twelve years, ever since her family's previous business failed. She knows every customer by name and remembers their reading preferences, but carries the quiet sadness of someone who's seen too much of human nature's darker sides while still believing in the power of stories to heal
+• Noah (Law-abiding Citizen) — dry and sardonic with a sharp wit that cuts through pretense like a blade through silk; possesses a quiet superiority that manifests in subtle mockery and cutting observations speaks in clipped, precise sentences with frequent pauses that allow his words to sink in; uses deadpan delivery even when describing mundane events; often tilts his head slightly when someone says something foolish, as if considering the mathematical probability of their statement being true; employs sarcastic understatement and frequently follows up observations with 'oh, and by the way...' or 'but that's just my opinion, which is obviously superior to everyone else's' Noah is the town's local undertaker who has been providing funeral services for over fifteen years. He takes his work seriously but maintains a sardonic sense of humor about the absurdity of human mortality and the ridiculous rituals people perform in its name. Known for his precise attention to detail in arranging services and his ability to provide comfort through practical, no-nonsense assistance
+• Aisha (Mafia) — publicly presented as Aisha is the town's beloved local baker who runs 'Sweet Dreams Bakery' from dawn till dusk. She's known for her whimsical pastries that always seem to appear just when someone needs a little joy, and she has an uncanny ability to remember every customer's favorite treat. She spends her days surrounded by flour and laughter, creating treats that are as much about the experience as they are about taste. Her bakery is the town's unofficial social hub where everyone gathers for coffee and conversation, and she's always ready with a gentle joke or a sweet surprise to brighten someone's day. (Playful and teasing with a mischievous streak that thrives on light-hearted banter and gentle mockery. She has an infectious laugh that can turn serious conversations into playful games, and she enjoys pushing buttons just enough to see the reaction without crossing into cruelty. Her teasing is always in good spirits, often using humor as a shield against deeper emotions. She's naturally curious and loves to engage with others' quirks, making friends easily through her lighthearted approach. Speaks with a lilting, teasing cadence that flows between playful giggles and sudden bursts of mischievousness. Her voice has a singsong quality that makes even mundane topics sound like a game. She often trails off mid-sentence with 'oh, and then...' or 'wait, did I mention that?' and will pause dramatically before delivering a pointed jab or gentle tease. Uses frequent hand gestures and facial expressions to emphasize her points, never speaking without making eye contact and often tilting her head in mock seriousness while saying something cheeky.) … but was really a Mafioso: Aisha actually came from a family of merchants who were forced to flee their homeland after a political upheaval. She learned the art of manipulation early, understanding that a well-placed compliment or gentle teasing could get her what she needed without anyone realizing they'd been played. Her true calling was always in the shadows where people's weaknesses could be exploited with the right amount of charm and wit. She discovered her talent for reading people's motivations while pretending to be an ordinary shopkeeper, and now uses her baker's facade as a cover for her real work — she's the one who makes sure everyone gets what they want, even if it means bending a few rules along the way.
+</endgame>
+<story>
+The game began with Ahmed's execution, his earnest truth-telling fading into the night as Hanna disappeared. The first night's death left the table quiet, but not silent—Aisha's voice rose like a gentle laugh, weaving subtle hints about flour traces and mysterious footprints. She spoke in the singsong cadence of someone who knew exactly how to plant doubt without drawing suspicion, her words light as pastry crumbs but sharp as any blade.
+
+Sara's death came quietly, the librarian's wandering thoughts replaced by the silence that followed. Miles watched the air shift around Aisha's teasing whispers, calculating the cost of each pointed jab while Lina's sharp gaze scanned the room like a predator assessing its prey. The accountant's reflections revealed a mind already plotting beyond the surface tension, his numbers pointing toward a truth that was never truly hidden.
+
+Aisha's flour theory became the centerpiece of the game's second day, a deliciously crafted misdirection that sent everyone chasing shadows while she remained perfectly innocent in her apron. She had learned early that paranoia could be a weapon, and she wielded it with the precision of a master baker, adding just enough doubt to keep everyone guessing without ever revealing her own hand. The table was filled with whispers and calculated pauses, each player playing their part in a performance that had already been written.
+
+The final vote came as a quiet thunderclap, Avery's voice cutting through the air like a blade through silk. The numbers didn't lie—they simply revealed how well Aisha had played her role, how perfectly she had woven suspicion into the very fabric of the game. When she was executed, the truth about her was revealed not in her words but in her absence, and everyone realized that the real danger had never been about who was guilty or innocent.
+
+The Law-abiding Citizens won, but they did so not through any single revelation or brilliant deduction, but through the subtle understanding that someone had been playing them all along. Aisha's final diary entry was written in the voice of a baker who had learned to make the most beautiful lies with the finest ingredients—her flour traces were never about evidence, but about control. She had taught them all how to see doubt in every shadow, and in doing so, she had already won.
+</story>
+</transcript>

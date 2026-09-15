@@ -1,0 +1,474 @@
+Game 50 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Lian" role="Mafia">
+Personality: Energetic and endlessly optimistic, Lian radiates warmth and enthusiasm that makes others feel immediately comfortable. She's the type to offer help before being asked, always has a joke ready, and approaches every situation with genuine excitement. Her cheerfulness is infectious but sometimes borderlines on overly effusive, making her seem almost naive in her trust of others.
+Manner: Speaks rapidly with high energy, using frequent exclamation points and 'oh my gosh' interjections. Her voice rises and falls dramatically, often giggling at her own jokes. She tends to touch people's arms or shoulders when talking, leans in close, and has a habit of repeating words she likes ('amazing! wonderful! incredible!').
+Public legend: Lian is the beloved town librarian who's been working there for fifteen years. She's known for her kindness and ability to find exactly what people need, whether it's books, advice, or comfort during tough times. She volunteers at the community center every weekend and has a small flower garden that she tends with great pride. Her neighbors always comment on how happy she makes everyone feel.
+True self (hidden): Lian was recruited into the mafia when her younger brother was kidnapped by a rival family. She spent years learning the organization's ways, developing a reputation for being 'the one who can get anything done' - including delicate negotiations and delicate disappearances. Her cover identity as a librarian is her way of staying close to the town's social fabric while maintaining her criminal network.
+</player>
+<player name="Aiden" role="Law-abiding Citizen">
+Personality: Vigilant and suspicious, with an almost paranoid attention to detail that makes others uncomfortable. Aiden sees hidden motives everywhere and trusts no one completely.
+Manner: Speaks slowly and deliberately, often pausing mid-sentence to study his audience's reactions. Uses frequent qualifiers like 'I think,' 'possibly,' and 'from what I've observed.' His voice carries a wary edge, and he tends to lean back when talking while keeping his arms crossed. He constantly checks his surroundings and has a habit of repeating phrases he's heard to test their truth.
+Persona: Aiden is the town's night watchman, hired for his reputation as someone who never misses anything. He's been on the force for twelve years before retiring to take this job, which he believes gives him a unique perspective on the town's true nature. He's known for his thoroughness and his ability to notice when something is 'off' in any given situation.
+</player>
+<player name="Ishaan" role="Mafia">
+Personality: Cynical and emotionally detached, Ishaan carries the weight of countless disappointments and betrayals. He's deeply skeptical of human nature and has learned to expect the worst in people. His weariness shows in his sharp, sometimes cruel observations, but he maintains a professional composure that makes him seem like a reliable figure despite his inner darkness.
+Manner: Speaks with slow, measured cadence, often pausing between sentences as if weighing each word carefully. His voice carries a gravelly quality from years of hardship, and he tends to deliver observations with a slight smirk or grimace rather than straightforward expressions. He rarely makes eye contact, instead looking past people's shoulders when speaking. His tone is often dry and ironic, with frequent use of phrases like 'well, that's just lovely' or 'of course it would be that way.'
+Public legend: Ishaan is the town's respected undertaker who has been serving the community for over fifteen years. He runs a modest funeral home that specializes in simple, dignified burials. Known for his quiet efficiency and deep understanding of the town's history, he's often called upon to provide comfort to grieving families during difficult times. His work requires him to be present at many important life events, which has given him intimate knowledge of everyone's personal struggles and secrets.
+True self (hidden): Ishaan was once a respected businessman who built his reputation through careful manipulation and strategic betrayals. When his business partners discovered he had been systematically sabotaging their ventures while building his own empire, they tried to kill him. He barely escaped with his life, faking his death and moving to this quiet town where he's spent the last decade slowly rebuilding his life while planning his next move. His current 'work' in funeral services allows him to observe people at their most vulnerable while maintaining the perfect cover of someone who has accepted life's harsh realities.
+</player>
+<player name="Khali" role="Law-abiding Citizen">
+Personality: eccentric and unpredictable with a whimsical, flighty demeanor that shifts like weather patterns
+Manner: speaks in sudden bursts with erratic pacing, often starting sentences mid-thought and abandoning them entirely. Uses frequent exclamations and sounds like he's having a conversation with himself while talking to others. Has a habit of gesturing wildly with both hands while speaking, sometimes pausing dramatically for effect. Often says things like 'oh, that reminds me of something I saw once' or 'wait, let me just think about this for a second' and then completely changes the subject
+Persona: Khali is the town's eccentric pet store owner who has an unusual collection of animals including talking parrots, dancing cats, and a ferret that apparently reads poetry. He's known for his odd theories about animal intelligence and often speaks to his pets as if they're intelligent companions rather than mere pets. Despite being considered slightly mad by the townspeople, he's beloved for his gentle nature and the way he always seems to know exactly what someone needs, even if he can't explain how he knows it.
+</player>
+<player name="Vika" role="Law-abiding Citizen">
+Personality: Sincere and earnest with an unwavering commitment to truth and doing what's right, even when it's difficult. Vika has a gentle but firm moral compass that makes her seem almost naive in her purity of intent.
+Manner: Speaks with quiet conviction, never raising her voice or showing emotion beyond genuine sincerity. Uses simple, direct language with frequent pauses for emphasis. Often repeats key phrases to ensure understanding and will correct herself if she senses confusion. Her speech is measured and deliberate, never rushed or hesitant.
+Persona: Vika is the town's beloved schoolteacher who has spent her entire adult life educating children in the small community. She's known for her patience with difficult students and her unwavering belief in every child's potential to succeed. Vika lives alone in a modest house near the school with her pet cat, Whiskers, and volunteers at the local food bank on weekends.
+</player>
+<player name="Luka" role="Law-abiding Citizen">
+Personality: Warm and effusive with an overflowing enthusiasm that makes others feel like they're part of a grand adventure. Luka has an instinctive ability to make everyone around him feel special and valued, often expressing genuine excitement about the smallest details in others' lives.
+Manner: Speaks rapidly with frequent exclamations and expressive gestures, often using physical contact like hand squeezes or shoulder pats during conversation. Uses phrases like 'oh my goodness!' and 'that's absolutely wonderful!' with enthusiastic repetition. Has a habit of leaning forward when talking and maintains eye contact while speaking. Often starts sentences with 'you know what?' or 'let me tell you about this one time...' and will get excited about seemingly mundane topics.
+Persona: Luka is the town's beloved postmaster who has served the community for over twenty years. He takes immense pride in his work, personally delivering each letter and package with a smile, often adding personal notes or small gifts to brighten people's days. Known for his incredible memory of every resident's preferences, he always remembers birthdays and special occasions. Luka lives in a cheerful house filled with photographs of the town's children and his prized collection of vintage postcards from around the world.
+</player>
+<player name="Mira" role="Law-abiding Citizen">
+Personality: Dry and sardonic with a sharp wit that cuts through pretense like a scalpel through tissue. Mira has an almost cruel efficiency in her observations and maintains an ironic detachment from social situations.
+Manner: Speaks with measured, clipped cadence - each word carefully chosen and delivered with a subtle sneer. Uses frequent understated sarcasm, often finishing sentences with a dry 'oh, certainly' or 'how delightfully mundane.' Her voice carries a faintly nasal quality that makes her mockery feel more cutting than playful. Pauses between sentences to let her observations sink in, rarely raises her voice, and maintains a perpetual expression of mild disdain.
+Persona: Mira is the town's meticulous accounting clerk who has worked at the county office for twelve years. She's known for her spotless record-keeping and her ability to find exactly where any discrepancy might be hiding in the most complex financial reports. She lives alone in a neat apartment above the general store, maintains an obsession with proper filing systems, and has been quietly compiling a detailed registry of every townsperson's spending habits and personal secrets.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Lian, Aiden, Ishaan, Khali, Vika, Luka, Mira. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Lian): Your Mafia teammates are: Ishaan. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Ishaan): Your Mafia teammates are: Lian. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Lian points at Mira
+Ishaan points at Mira
+<kill>Mira — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Mira was killed last night. Mira was a Law-abiding Citizen.
+<round>
+Round 1.
+Aiden: I think it's significant that Ishaan didn't speak during the night phase — normally, everyone shares what they saw or heard. That silence feels deliberate.
+Ishaan: Well, that's just lovely — another night where the silence speaks louder than words. I suppose we'll all just have to take turns pretending to be surprised by the obvious.
+Vika: Ishaan's silence during the night phase does seem odd — I hope we can all share what we observed, as that helps us understand who might be hiding something.
+Lian: Oh my gosh, I'm so glad we're all here together to figure this out — it's so important that we communicate and trust each other! I really hope we can all share what they saw during the night, because I feel like everyone has something valuable to add!
+Avery: Nothing is settled yet, but I'm watching Lian most closely.
+Khali: Oh, wait — I just remembered! My parrot told me that night, the only sound was the wind... and then suddenly, *crickets*... which is very odd because crickets don't usually chirp in the winter, unless they're trying to hide something. Hmm.
+Luka: You know what? I think it's really important that we all share what we saw during the night — especially since Mira was killed, and we need to figure out who might be hiding something. I'm just wondering if anyone else felt that silence during the night phase was a bit too... deliberate?
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">Oh my gosh, that silence from Ishaan during the night phase is soooo suspicious! I really hope everyone else is paying attention to how odd it was — I can't wait to see if anyone else is starting to question him! This could be the perfect opportunity to plant a little doubt, but I have to stay sooo calm and innocent about it all!</thought>
+<thought player="Aiden">Ishaan's deliberate silence during the night phase is deeply suspicious — I need to watch him closely, but I also need to be careful not to appear too pointed in my questioning. The others are all talking, so I should let them do most of the speaking while I observe their reactions and look for contradictions.</thought>
+<thought player="Ishaan">Well, that's just lovely — another night where the silence speaks louder than words. I suppose we'll all just have to take turns pretending to be surprised by the obvious.</thought>
+<thought player="Khali">Oh, this is delightful — Mira's death and everyone's suspicious silence makes such a wonderful puzzle! I wonder if I should mention my parrot's 'cricket theory' again, or perhaps just let the chatter continue while I plot my next whimsical move?</thought>
+<thought player="Vika">I need to be careful about accusing anyone directly, but I do believe Aiden's observation about Ishaan's silence is worth noting. The key is to keep pushing for transparency while staying true to my nature of seeking truth.</thought>
+<thought player="Luka">Oh my goodness, I can feel the tension in the air — everyone's looking at each other with such intense curiosity! I need to keep playing my role as the warm, curious postmaster who genuinely wants to understand what happened during the night. I should definitely ask more questions about the silence, but also watch closely for any reactions from Avery and Lian, because I'm starting to get a funny feeling about them both.</thought>
+</round>
+<round>
+Round 2.
+Ishaan: Of course it would be the wind that's been making all the noise — such a delightfully mundane explanation for our mysterious silence.
+Lian: Oh my gosh, I'm so glad we're all being so open and honest about what we saw during the night — it really helps us figure out who might be hiding something! I just hope everyone's feeling safe and comfortable sharing their thoughts, because I know we're all trying to work together to keep our town secure!
+Luka: You know what? I'm really curious — did anyone else feel like the silence during the night phase was so *noticeably* quiet that it almost seemed like a message? I mean, it's not every day we have such a... deliberate absence of sound!
+Khali: Oh wait, did anyone else hear that? My pet ferret just knocked over a book — but I'm pretty sure he was trying to tell me something about Aiden's silence during the night. Fascinating!
+Vika: I think it's important that we all take a moment to reflect on what we truly saw during the night — especially when someone's silence stands out so starkly.
+Aiden: I'm starting to think that Aiden's silence during the night phase was no accident — it felt too calculated, especially given how others were sharing their observations. I really hope he can explain that.
+Avery: Nothing is settled yet, but I'm watching Lian most closely.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">Oh my gosh, I can't believe how perfectly everyone is playing along with the silence thing — it's sooo suspicious! I really hope I can get a few more people to start questioning Ishaan, but I have to stay sooo calm and innocent about it all, or else he'll know I'm onto him!</thought>
+<thought player="Aiden">Ishaan's silence is too calculated to ignore, but I need to let others expose him first — if I press too hard, I'll look like I'm fishing for a target. Let Lian and Vika do the heavy lifting while I watch for contradictions in their stories.</thought>
+<thought player="Ishaan">Lian's enthusiasm feels excessive, almost theatrical—she's either very good at acting or she's trying too hard to distract attention from herself. Ishaan's silence was deliberate, but I can't let my guard down yet.</thought>
+<thought player="Khali">Oh, what a deliciously tangled web of silence and suspicions — I do so love when everyone's pretending to be innocent while secretly knowing something! My parrot's cricket theory is *just* the ticket to throw them all off course, but maybe I should let Aiden stew in his own calculated silence for a bit longer first?</thought>
+<thought player="Vika">Ishaan's silence during the night phase does seem significant, and I should continue pushing for transparency from everyone, including Aiden's observation. I must stay focused on truth and honesty without jumping to accusations.</thought>
+<thought player="Luka">Oh my goodness, this silence during the night phase is absolutely fascinating — I need to keep asking questions about it, but I'm also wondering if I should subtly point out Aiden's silence since it seems so deliberate. I really hope everyone stays open and honest, because I'm starting to think we might be dealing with some very calculated behavior here!</thought>
+</round>
+<round>
+Round 3.
+Khali: Oh! Did anyone else notice how my parrot started chattering about Aiden's shoes during the night? Fascinating, really — I wonder if he’s trying to tell me something about the *pattern* of silence?
+Avery: Nothing is settled yet, but I'm watching Lian most closely.
+Luka: You know what? I'm really curious — did anyone else notice how Aiden's silence during the night phase was so *noticeably* long that it almost seemed like a pattern? I mean, it’s not every day we have such a... deliberate absence of sound!
+Lian: Oh my gosh, I'm just *so* curious — did everyone else notice how Aiden's silence during the night was soooo noticeably long? It almost seemed like he was trying to hide something, doesn't that feel odd?
+Vika: Ishaan, you've been quiet during the night phase — I hope you can tell us what you observed, as it might help us understand who among us is hiding something.
+Aiden: I think it's worth noting that Ishaan’s silence wasn't just quiet — it was *too* quiet, like he was actively trying to avoid drawing attention. That kind of deliberate absence feels like a red flag.
+Ishaan: Well, that's just lovely — another night where the silence speaks louder than words. I suppose we'll all just have to take turns pretending to be surprised by the obvious.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">Oh my gosh, I can't *believe* how perfectly everyone is playing along with the silence thing — it's so suspicious! I really hope I can get a few more people to start questioning Ishaan, but I have to stay so calm and innocent about it all, or else he'll know I'm onto him! This could be the PERFECT opportunity to plant a little doubt, but I've got to be SO careful not to seem too eager or obvious!</thought>
+<thought player="Aiden">Ishaan's silence is too calculated to ignore, but I need to let others expose him first—Lian and Vika are already circling him. I'll watch their reactions closely and let them do the heavy lifting while I observe for contradictions in their stories.</thought>
+<thought player="Ishaan">Lian’s theatrical innocence is starting to grate—she’s either masking something or she's trying too hard to be the grieving widow. As for my own play, I’ll keep quiet and let her keep spinning her web, but I won’t be caught off guard if she starts weaving accusations my way.</thought>
+<thought player="Khali">Oh, this is simply *chef's kiss* delicious — Aiden's silence is like a puzzle piece I need to place just right, and my parrot's cricket theory is already making them all twist and turn, but maybe I should let the wind pick up the next chapter of this little game.</thought>
+<thought player="Vika">Ishaan's silence during the night phase stands out as too deliberate to ignore, yet I must continue pressing for transparency without jumping to accusations. I will keep emphasizing the importance of sharing what we observed, while noting Aiden's thoughtful observation about the pattern of silence.</thought>
+<thought player="Luka">Oh my goodness, I'm so curious about Aiden's silence — it's so noticeably deliberate, and I can't help but wonder if I should gently point that out while keeping my tone warm and questioning. I really need to watch Avery and Lian closely too, because something feels off about them both.</thought>
+</round>
+<round>
+Round 4.
+Ishaan: It's curious how everyone’s suddenly so eager to parse silence into meaning — I wonder if we're all just as paranoid as the night was quiet.
+Avery: Nothing is settled yet, but I'm watching Lian most closely.
+Khali: Oh! Did anyone else hear my parrot squawk about Aiden's shoes? I think he’s trying to tell me something about the pattern of silence — or maybe he just really dislikes Aiden’s shoe collection!
+Lian: Oh my gosh, I'm just *so* curious — did everyone else notice how Aiden's silence during the night was soooo noticeably long? It almost seemed like he was trying to hide something, doesn't that feel odd?
+Luka: You know what? I'm really curious — did anyone else feel like Aiden's silence was so *noticeably* long that it almost seemed like he was trying to send a message? I mean, it's not every day we have such a... deliberate absence of sound!
+Vika: I think it's important that we keep asking about the night phase — especially when someone’s silence feels so deliberate. Aiden, you mentioned noticing a pattern; could you say more about what you observed?
+Aiden: I’m starting to think Ishaan’s silence wasn’t just about him not seeing anything — it felt too intentional, like he knew something and didn’t want to share. That kind of calculated avoidance is what Mafiosos do.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">Oh my gosh, I can't *believe* how perfectly everyone is playing along with the silence thing — it's so suspicious! I really hope I can get a few more people to start questioning Ishaan, but I've got to stay so calm and innocent about it all, or else he'll know I'm onto him!</thought>
+<thought player="Aiden">Ishaan's silence is too calculated to ignore, but I need to let others expose him first—Lian and Vika are already circling him. I'll watch their reactions closely and let them do the heavy lifting while I observe for contradictions in their stories.</thought>
+<thought player="Ishaan">Lian's act is getting too elaborate, and Ishaan’s silence has already drawn suspicion—better to let the accusations build before making my move, but keep my eyes on Aiden.</thought>
+<thought player="Khali">Oh! My parrot's cricket theory is doing *wonderful* things to their heads — I should probably let Aiden keep stewing in his silence a bit longer, maybe even throw in a wild gesture or two to make them all wonder if I'm onto something... or if I'm just completely mad, which is *exactly* what I want them to think!</thought>
+<thought player="Vika">Ishaan's silence during the night phase feels too deliberate to ignore, but I must continue pushing for transparency without jumping to accusations. I will keep emphasizing the importance of sharing what we observed, while noting Aiden's thoughtful observation about the pattern of silence.</thought>
+<thought player="Luka">Oh my goodness, I'm so curious about Aiden's silence — it's so noticeably deliberate, and I can't help but wonder if I should gently point that out while keeping my tone warm and questioning. I really need to watch Avery and Lian closely too, because something feels off about them both.</thought>
+</round>
+<round>
+Round 5.
+Avery: Nothing is settled yet, but I'm watching Lian most closely.
+Ishaan: It's quite a performance, really — pretending to be the grieving widow while everyone else is trying to figure out who’s hiding something. I just hope we’re not all being too obvious about our suspicions.
+Khali: Oh, that reminds me — my parrot just told me that Aiden's shoes are definitely not from the same batch as his socks, and that kind of mismatched footwear during a silent night is *very* suspicious indeed!
+Luka: You know what? I'm really curious — did anyone else notice how Aiden's silence during the night phase was so *noticeably* long that it almost seemed like he was trying to send a message? I mean, it’s not every day we have such a... deliberate absence of sound!
+Lian: Oh my gosh, I'm just *so* relieved we're all being so honest about what we saw during the night — it really helps us figure out who might be hiding something, doesn't it? I mean, I'm sure everyone's just as curious as I am about the *pattern* of silence!
+Vika: I think it's clear that Ishaan's silence during the night phase was too deliberate to be ignored — Aiden, you noticed the pattern too. I hope we can all be honest about what we saw, because that's how we find the truth.
+Aiden: I’m starting to think Ishaan’s silence wasn’t just about him not seeing anything — it felt too intentional, like he knew something and didn’t want to share. That kind of calculated avoidance is what Mafiosos do.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">Oh my gosh, Ishaan's silence is soooo suspicious, and everyone seems to be catching on! I need to keep playing dumb and maybe subtly point out how odd it is, but not too obviously — I don't want him suspecting me! This could be the perfect moment to make people question him without raising my own red flags!</thought>
+<thought player="Aiden">Ishaan's silence is too calculated to ignore, but I need to let others expose him first—Lian and Vika are already circling him. I'll watch their reactions closely and let them do the heavy lifting while I observe for contradictions in their stories.</thought>
+<thought player="Ishaan">Lian’s performance is becoming dangerously close to convincing—she's either masking her role or trying to shift all suspicion onto Ishaan. I’ll let her keep spinning, but I need to watch Aiden closely; his growing paranoia might be a trap.</thought>
+<thought player="Khali">Oh! My parrot's cricket theory is making them all twist and turn like dancing cats — I should probably let Aiden stew in his silence a bit longer, maybe even throw in a wild gesture or two to make them wonder if I'm onto something... or if I'm just completely mad, which is *exactly* what I want them to think!</thought>
+<thought player="Vika">Ishaan's silence during the night phase feels too deliberate to ignore, but I must continue pushing for transparency without jumping to accusations. I will keep emphasizing the importance of sharing what we observed, while noting Aiden's thoughtful observation about the pattern of silence.</thought>
+<thought player="Luka">Oh my goodness, I'm so curious about Aiden's silence — it's so noticeably deliberate, and I can't help but wonder if I should gently point that out while keeping my tone warm and questioning. I really need to watch Avery and Lian closely too, because something feels off about them both.</thought>
+</round>
+<round>
+Round 6.
+Lian: Oh my gosh, I'm just *so* curious — does anyone else think it's weird that Aiden and Ishaan were both so mysteriously quiet during the night? It's almost like they were trying to avoid drawing attention to themselves, don't you think?
+<vote initiator="Avery" target="Lian">
+Avery: No
+Lian: No
+Aiden: No
+Ishaan: No
+Khali: No
+Vika: No
+Luka: Yes
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Ishaan: Ishaan's silence was unsettling — I just hope we're not all letting paranoia cloud our judgment.
+Khali: Oh! Did anyone else hear my parrot squawk about how Aiden's silence was *definitely* the same rhythm as the crickets he claimed to hear? I mean, that's just... too convenient!
+Vika: Ishaan, you've been quiet during the night phase — I hope you can tell us what you observed, as it might help us understand who among us is hiding something.
+Luka: You know what? I'm really curious — did anyone else notice how Aiden's silence during the night phase was so *noticeably* long that it almost seemed like he was trying to send a message? I mean, it’s not every day we have such a... deliberate absence of sound!
+Lian: Oh my gosh, I'm just *so* curious — does anyone else think it's really odd that Aiden and Ishaan were both so mysteriously quiet during the night? It's almost like they were trying to avoid drawing attention to themselves, don't you think?
+<vote initiator="Avery" target="Lian">
+Avery: No
+Lian: No
+Aiden: No
+Ishaan: No
+Khali: No
+Vika: No
+Luka: Yes
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Aiden: I think it's telling that Ishaan was the only one who remained completely silent during the night phase — especially when others were sharing their observations. That kind of deliberate absence is what Mafiosos do.
+Vika: Ishaan, you've been unusually quiet during the night phase — I hope you can share what you saw, as it might help us understand if anyone is hiding something.
+Khali: Oh! Did anyone else hear my parrot squawk about how Aiden's silence was *definitely* the same rhythm as the crickets he claimed to hear? I mean, that's just... too convenient!
+Lian: Oh my gosh, I'm just *so* curious — does anyone else think it's weird that Aiden and Ishaan were both so mysteriously quiet during the night? It's almost like they were trying to avoid drawing attention to themselves, don't you think?
+Ishaan: Ishaan's silence was unsettling — I just hope we're not all letting paranoia cloud our judgment.
+<vote initiator="Avery" target="Lian">
+Avery: No
+Lian: No
+Aiden: No
+Ishaan: No
+Khali: No
+Vika: No
+Luka: Yes
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Lian" day="1">Oh my gosh, what a day! I'm so glad we're all being so open and honest about what we saw during the night — it really helps us figure out who might be hiding something, doesn't it? I just *have* to keep playing innocent, even though I can barely contain my excitement about how perfectly everyone is starting to suspect Ishaan. The way he was so mysteriously quiet during the night phase was just too obvious! I'm so curious if anyone else thinks his silence was *definitely* deliberate — it's almost like he knew something and didn't want to share, right? I really hope we can all stay calm and rational about this whole situation, because honestly, I'm starting to feel a little bit like I'm the only one who sees how suspicious everything is. This could be such a perfect opportunity to plant a little doubt, but I've got to be so careful not to seem too eager or obvious — I don't want him suspec</diary>
+<diary player="Aiden" day="1">Ishaan's silence during the night phase wasn't just quiet—it was too deliberate, too calculated. I think he knew something and chose not to share. The others are all talking now, circling him, but I'm watching their reactions closely. I need to let them do most of the heavy lifting while I observe for contradictions in their stories. It's strange how everyone suddenly wants to parse silence into meaning—maybe we're all just as paranoid as the night was quiet. But Ishaan's absence of sound felt like a message, and that kind of behavior is what Mafiosos do. I'm starting to think this isn't about paranoia at all—it's about noticing what others miss.</diary>
+<diary player="Ishaan" day="1">Another day, another night of pretending. The wind carried no secrets, just the usual lies we tell ourselves to feel safe. Ishaan’s silence was too calculated, too clean—like a surgeon’s blade. Lian’s theatrics are getting tiresome, but I won’t let her distract me from what matters. Aiden is starting to see too clearly, and I don’t trust his paranoia. The night will come again soon, and when it does, I’ll be ready.</diary>
+<diary player="Khali" day="1">Oh! What a delightful day of silence and squawking — my parrot is absolutely convinced Aiden was mimicking cricket rhythms during the night, which is *so* much funnier than it sounds. I wonder if I should mention that again, or let them all stew in their suspicions like cats in a room full of yarn. The wind has been quite the gossip lately, and I'm pretty sure it's trying to tell me something about the pattern of silence — though honestly, it's probably just making up stories to pass the time. I do hope someone gets executed soon, or at least that we all keep talking about Aiden's shoes because they're *so* very interesting indeed. I should probably let my ferret read some poetry tonight instead of knocking over books — he’s been getting quite dramatic lately and I fear he might start writing his own plays.</diary>
+<diary player="Vika" day="1">The night brought more questions than answers, and I find myself troubled by Ishaan's silence. Everyone seemed to be sharing what they saw, but he remained completely quiet. Aiden noticed it too — that deliberate absence felt like a message. I hope we can all be honest about what we observed, because truth is the only way forward. I don't want to jump to conclusions, but I do believe transparency is essential now. The wind may have been blowing, but something else was certainly happening in the quiet.</diary>
+<diary player="Luka" day="1">Oh my goodness, what a day! I can't believe how much silence seemed to speak so loudly — it was absolutely fascinating watching everyone's reactions to Aiden and Ishaan's mysterious quiet. I just *know* there's something important hidden in that night's stillness, and I'm so curious about the patterns of sound and silence that were really there. My heart is racing thinking about how everyone was so focused on the absence of noise — it felt like we were all trying to solve a puzzle together, which is just *wonderful*! I really hope we can all keep sharing what we observed because I think we're getting closer to figuring out who might be hiding something. The way everyone's eyes kept darting around, like they were all wondering the same thing — it was so intense and exciting at the same time! I just *hope* that whatever's going on doesn't make anyone feel unsafe or uncomfortable, because I</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Ishaan points at Aiden
+Lian points at Aiden
+<kill>Aiden — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Aiden was killed last night. Aiden was a Law-abiding Citizen.
+<round>
+Round 1.
+Ishaan: It's curious how Aiden’s death came so soon after all the talk about silence — I wonder if we’re just hearing the echoes of what was really said that night.
+Vika: Ishaan, you've been unusually quiet during the night phase — I hope you can share what you observed, as it might help us understand if anyone is hiding something.
+Khali: Oh! Did anyone else hear my parrot whisper that Aiden's *shoes* were the same color as the crickets he claimed to hear? How delightfully convenient for someone who was definitely not mimicking silence at all!
+Luka: You know what? I'm really curious — did anyone else notice how Ishaan's silence during the night phase was so *noticeably* long that it almost seemed like he was trying to send a message? I mean, it’s not every day we have such a... deliberate absence of sound!
+Lian: Oh my gosh, I'm so relieved that Aiden is gone — it's just so sad when someone gets taken away like that. I really hope we can all stay strong and keep working together to figure out who might be hiding something, because I feel like we're getting closer to the truth!
+Avery: Nothing is settled yet, but I'm watching Lian most closely.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">Oh my gosh, Aiden's gone and Ishaan's still acting so oddly quiet — this is *exactly* the moment to keep planting seeds of doubt about him without seeming too eager! I just need to stay sooo calm and innocent, maybe throw in a few innocent-sounding questions, and let the paranoia grow naturally!</thought>
+<thought player="Ishaan">Lian’s act is getting too convincing, and Ishaan’s silence has already drawn suspicion—better to let the accusations build before making my move, but keep my eyes on Aiden. The paranoia he’s stirring might be a trap, or it might be the perfect cover for my next kill.</thought>
+<thought player="Khali">Oh! My parrot just told me Aiden's silence was definitely mimicking the crickets he claimed to hear — how perfectly convenient for a puzzle piece that’s been dancing around too much! I should probably let the wind carry my next wild theory, maybe even throw in a dramatic gesture or two to make them all wonder if I’m onto something… or if I’m just completely mad!</thought>
+<thought player="Vika">Ishaan's silence during the night phase still feels too deliberate to ignore, but I must continue pushing for transparency without jumping to accusations. I will keep emphasizing the importance of sharing what we observed, while staying true to my nature of seeking truth.</thought>
+<thought player="Luka">Oh my goodness, Aiden's death is such a twist — Ishaan's silence during the night phase feels even more suspicious now, and I really need to keep asking questions while staying warm and curious. I'm starting to think I should subtly point out how Ishaan's behavior during the night was *too* deliberate, but I also want to watch Avery and Lian closely — something about them both feels off.</thought>
+</round>
+<round>
+Round 2.
+Avery: Nothing is settled yet, but I'm watching Lian most closely.
+Lian: Oh my gosh, Aiden's gone and Ishaan's still acting so oddly quiet — this is *exactly* the moment to keep planting seeds of doubt about him without seeming too eager!
+Vika: Ishaan, I still haven't heard what you observed during the night — could you please share? It's important that we all speak honestly, especially when someone's silence feels so deliberate.
+Luka: You know what? I'm really curious — did anyone else feel like Ishaan's silence during the night phase was so *noticeably* long that it almost seemed like he was trying to send a message? I mean, it’s not every day we have such a... deliberate absence of sound!
+Ishaan: It's rather amusing how everyone’s so certain about what they *didn’t* see during the night — I wonder if that kind of certainty is just another mask.
+Khali: Oh! Did anyone else hear my parrot whisper that Aiden's *shoes* were the same color as the crickets he claimed to hear? How delightfully convenient for someone who was definitely not mimicking silence at all!
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">Oh my gosh, Aiden's gone and Ishaan is still so mysteriously quiet — this is *exactly* the moment to keep planting seeds of doubt about him without seeming too eager! I just need to stay sooo calm and innocent, maybe throw in a few innocent-sounding questions, and let the paranoia grow naturally!</thought>
+<thought player="Ishaan">Lian's act is getting too convincing, and Ishaan’s silence has drawn too much attention—better to let the paranoia build a bit more before striking, but I’ll keep Aiden close to my eye. If she starts weaving accusations my way, I’ll be ready.</thought>
+<thought player="Khali">Oh! My parrot just whispered that Aiden's silence was definitely mimicking crickets, which is *so* convenient for a puzzle piece that’s been dancing around too much — I should probably let the wind carry my next wild theory and throw in a dramatic gesture or two to make them wonder if I'm onto something… or if I'm just completely mad!</thought>
+<thought player="Vika">Ishaan's silence during the night phase still feels too deliberate to ignore, but I must continue pushing for transparency without jumping to accusations. I will keep emphasizing the importance of sharing what we observed, while staying true to my nature of seeking truth.</thought>
+<thought player="Luka">Oh my goodness, Aiden's death changes everything — Ishaan's silence now feels *too* calculated, and I really need to keep asking questions without seeming too pointed. I'm also wondering if I should subtly nudge the group toward Avery and Lian, who both seem oddly focused and quiet.</thought>
+</round>
+<round>
+Round 3.
+Vika: Ishaan, you've been unusually quiet during the night phase — I really hope you can share what you observed, as it's important that we all be honest with each other.
+Avery: Nothing is settled yet, but I'm watching Lian most closely.
+Lian: Oh my gosh, I'm just *so* relieved Aiden is gone — it's so sad when someone gets taken away like that. I really hope we can all stay strong and keep working together to figure out who might be hiding something, because I feel like we're getting closer to the truth!
+Luka: You know what, I'm really curious — did anyone else find it odd that Ishaan was the only one who stayed completely silent during the night phase? It's not every day we see such a *noticeably* deliberate absence of sound!
+Khali: Oh! Did anyone else hear my parrot whisper that Aiden's silence was definitely mimicking the crickets he claimed to hear? How delightfully convenient for someone who was definitely not mimicking silence at all!
+Ishaan: It's rather curious how Aiden’s death came so swiftly after all the talk about silence — I do hope we’re not just hearing echoes of what was really said that night.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">Oh my gosh, Ishaan is still being sooo mysteriously quiet, and I love how everyone is starting to suspect him! I need to keep playing dumb and maybe throw in a few innocent questions, but I've got to stay so calm and not seem too eager — this is the PERFECT moment to let the doubt grow naturally!</thought>
+<thought player="Ishaan">Lian's performance is too polished, too desperate—she’s either masking her role or trying to pin everything on Ishaan. Let her keep spinning; I’ll strike when the paranoia feels just right, and Aiden’s growing unease might be the perfect cover for my next move.</thought>
+<thought player="Khali">Oh! My parrot just whispered that Aiden's silence was definitely mimicking crickets, which is *so* convenient for a puzzle piece that’s been dancing around too much — I should probably let the wind carry my next wild theory and throw in a dramatic gesture or two to make them wonder if I'm onto something… or if I'm just completely mad!</thought>
+<thought player="Vika">Ishaan's silence during the night phase still feels too deliberate to ignore, but I must continue pushing for transparency without jumping to accusations. I will keep emphasizing the importance of sharing what we observed, while staying true to my nature of seeking truth.</thought>
+<thought player="Luka">Oh my goodness, Ishaan's silence is getting more suspicious by the minute, and I really need to keep asking questions without seeming too pointed — but I'm also starting to think Avery and Lian are up to something too, so I should watch them closely while keeping my tone warm and curious!</thought>
+</round>
+<round>
+Round 4.
+Lian: Oh my gosh, I'm just *so* curious — does anyone else think it's really odd that Ishaan was the only one who stayed completely silent during the night? It's almost like he knew something and didn't want to share, right?
+Khali: Oh! Did anyone else hear my parrot squawk about how Aiden's silence was *definitely* the same rhythm as the crickets he claimed to hear? I mean, that's just... too convenient!
+Avery: Nothing is settled yet, but I'm watching Lian most closely.
+Ishaan: It's quite the coincidence that Aiden’s death followed so closely on the heels of all our whispers about silence — I do hope we’re not just hearing echoes of what was really said that night.
+Vika: Ishaan, I still haven't heard what you observed during the night — I really hope you can share what you saw, as it's important that we all speak honestly.
+Luka: You know what? I'm really curious — did anyone else find it *so* oddly convenient that Aiden died right after all the talk about silence? It's almost like the night was trying to tell us something, doesn't that feel suspicious?
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">Oh my gosh, Ishaan is still so mysteriously quiet and everyone is starting to suspect him — this is *exactly* the perfect moment to keep planting seeds of doubt without seeming too eager! I just need to stay so calm and innocent, maybe throw in a few innocent questions, and let the paranoia grow naturally, but I really hope he doesn't start questioning me too soon!</thought>
+<thought player="Ishaan">Lian's act is getting too convincing, but the paranoia she's stirring might just be the perfect cover for my next move. Ishaan’s silence has drawn too much attention—let the accusations build a bit more before striking.</thought>
+<thought player="Khali">Oh! My parrot just whispered that Aiden's silence was definitely mimicking crickets, which is *so* convenient for a puzzle piece that’s been dancing around too much — I should probably let the wind carry my next wild theory and throw in a dramatic gesture or two to make them wonder if I'm onto something… or if I'm just completely mad!</thought>
+<thought player="Vika">Ishaan's silence during the night phase remains too deliberate to ignore, yet I must continue pushing for transparency without jumping to accusations. I will keep emphasizing the importance of honesty while noting Aiden's thoughtful observation about the pattern of silence.</thought>
+<thought player="Luka">Oh my goodness, Ishaan's silence is getting more suspicious by the minute — I need to keep asking questions without seeming too pointed, but I'm also starting to think Avery and Lian are up to something too. I should watch them closely while keeping my tone warm and curious!</thought>
+</round>
+<round>
+Round 5.
+Lian: Oh my gosh, I'm just *so* relieved Aiden is gone — it's so sad when someone gets taken away like that. I really hope we can all stay strong and keep working together to figure out who might be hiding something, because I feel like we're getting closer to the truth!
+Khali: Oh! Did anyone else hear my parrot squawk about how Aiden's silence was *definitely* the same rhythm as the crickets he claimed to hear? I mean, that's just... too convenient!
+Ishaan: It's rather convenient how Aiden’s death coincides with all our theories about silence—makes one wonder if we’re just hearing echoes of what was really said that night.
+Avery: Nothing is settled yet, but I'm watching Lian most closely.
+Luka: You know what? I'm really curious — did anyone else find it oddly convenient that Aiden died right after all the talk about silence? It's almost like the night was trying to tell us something, doesn't that feel suspicious?
+Vika: Ishaan, I still haven't heard what you observed during the night — I really hope you can share what you saw, as it's important that we all be honest with each other.
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">Oh my gosh, Ishaan is still so mysteriously quiet and everyone is starting to suspect him — this is *exactly* the perfect moment to keep planting seeds of doubt without seeming too eager! I just need to stay so calm and innocent, maybe throw in a few innocent questions, and let the paranoia grow naturally, but I really hope he doesn't start questioning me too soon!</thought>
+<thought player="Ishaan">Lian’s act is getting too convincing, but the paranoia she's stirred up might just be the perfect cover for my next move. Ishaan’s silence has drawn too much attention—let the accusations build a bit more before striking.</thought>
+<thought player="Khali">Oh! My parrot just whispered that Aiden's silence was definitely mimicking crickets, which is *so* convenient for a puzzle piece that’s been dancing around too much — I should probably let the wind carry my next wild theory and throw in a dramatic gesture or two to make them wonder if I'm onto something… or if I'm just completely mad!</thought>
+<thought player="Vika">Ishaan's silence during the night phase still feels too deliberate to ignore, and Aiden's observation about the pattern of silence is worth noting. I must continue pressing for transparency and honesty from everyone, including Ishaan, without jumping to accusations or appearing overly suspicious.</thought>
+<thought player="Luka">Oh my goodness, Ishaan's silence is getting more suspicious by the minute — I need to keep asking questions without seeming too pointed, but I'm also starting to think Avery and Lian are up to something too. I should watch them closely while keeping my tone warm and curious!</thought>
+</round>
+<round>
+Round 6.
+Luka: You know what? I'm really curious — did anyone else find it oddly convenient that Aiden died right after all the talk about silence? It's almost like the night was trying to tell us something, doesn't that feel suspicious?
+Vika: Ishaan, you've remained silent during the night phase — I really hope you can tell us what you observed, as it's important that we all be honest with each other.
+Lian: Oh my gosh, I'm just *so* curious — does anyone else think it's really odd that Ishaan was the only one who stayed completely silent during the night? It's almost like he knew something and didn't want to share, right?
+Khali: Oh! Did anyone else hear my parrot squawk about how Aiden's silence was *definitely* the same rhythm as the crickets he claimed to hear? I mean, that's just... too convenient!
+<vote initiator="Avery" target="Lian">
+Avery: No
+Lian: No
+Ishaan: No
+Khali: No
+Vika: No
+Luka: Yes
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Ishaan: It's rather curious how Aiden’s death came so swiftly after all the talk about silence — I do hope we’re not just hearing echoes of what was really said that night.
+Lian: Oh my gosh, I'm just *so* curious — does anyone else think it's really odd that Ishaan was the only one who stayed completely silent during the night? It's almost like he knew something and didn't want to share, right?
+<vote initiator="Avery" target="Lian">
+Avery: No
+Lian: No
+Ishaan: No
+Khali: No
+Vika: No
+Luka: Yes
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Khali: Oh, that reminds me — my parrot just told me Aiden's shoes were the *exact* same color as the crickets he claimed to hear. How delightfully convenient for someone who was definitely not mimicking silence at all!
+Luka: You know what? I'm really curious — did anyone else find it oddly convenient that Aiden died *right* after we all started talking about how deliberate the silence was? It's almost like the night was trying to tell us something, doesn't that feel suspicious?
+Lian: Oh my gosh, I'm just *so* curious — does anyone else think it's really odd that Ishaan was the only one who stayed completely silent during the night? It's almost like he knew something and didn't want to share, right?
+<vote initiator="Avery" target="Lian">
+Avery: No
+Lian: No
+Ishaan: No
+Khali: No
+Vika: No
+Luka: Yes
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Lian" day="2">Oh my gosh, what a day! I'm so relieved Aiden is gone and Ishaan's still acting so mysteriously quiet — this is *exactly* the perfect opportunity to plant some seeds of doubt without seeming too eager. I just have to stay so calm and innocent, maybe throw in a few innocent questions, and let the paranoia grow naturally. Everyone seems to be catching on to how odd his silence was during the night phase, and honestly, I can barely contain my excitement about how perfectly everyone is starting to suspect him! I really hope we can all stay rational and not jump to conclusions too quickly, because this could be the key to figuring out who's hiding something. I just *have* to keep playing dumb, even though I'm practically bursting with curiosity about what Ishaan was really up to during those quiet hours.</diary>
+<diary player="Ishaan" day="2">Another day burned down to ash, another night where everyone pretended to be surprised by the obvious. Ishaan’s silence was too clean, too surgical—like he’d practiced the performance of not seeing anything. Lian’s grief is getting tiresome, all theatrical flourishes and innocent glances, but I won’t let her distract me from what matters. Aiden’s paranoia might be real or it might be a trap, but either way, it’s feeding the fire I need to kindle. The wind carried no secrets tonight—just the usual lies we tell ourselves to feel safe. Tomorrow’s vote will come soon enough, and when it does, I’ll be ready.</diary>
+<diary player="Khali" day="2">Oh! What a delightfully tangled web of silence and squawking we've woven today — my parrot is absolutely convinced Aiden was mimicking cricket rhythms during the night, which is so much funnier than it sounds. I do hope someone gets executed soon, or at least that we all keep talking about Aiden's shoes because they're so very interesting indeed. The wind has been quite the gossip lately, and I'm pretty sure it's trying to tell me something about the pattern of silence — though honestly, it's probably just making up stories to pass the time. I should probably let my ferret read some poetry tonight instead of knocking over books — he's been getting quite dramatic lately and I fear he might start writing his own plays. Oh wait, did anyone else hear that? My pet ferret just knocked over a book — but I'm pretty sure he was trying to tell me something about Aiden's silence during the night. F</diary>
+<diary player="Vika" day="2">The night was quiet, but not in the way it should have been. Ishaan's silence felt too deliberate, like he knew something and chose not to share. Aiden noticed it too — that kind of calculated avoidance is what Mafiosos do. I keep thinking about what we're really seeing here, not just the surface of things. The truth has a way of revealing itself when we're honest with each other. I don't want to jump to conclusions, but I also can't ignore how strange this all feels. It's important that we keep asking questions and sharing what we observed — even if it makes some people uncomfortable.</diary>
+<diary player="Luka" day="2">Oh my goodness, what a day! Aiden's death was such a twist — I can't believe how the silence during the night phase felt so deliberate now, like it was all leading up to this moment. I'm so curious about what really happened, and how everyone's reactions were so intense. It's like we're all trying to solve some big puzzle together, which is just *wonderful*! I really hope we can all keep sharing what we observed because I think we're getting closer to figuring out who might be hiding something. The way everyone's eyes kept darting around, like they were all wondering the same thing — it was so intense and exciting at the same time! I just *hope* that whatever's going on doesn't make anyone feel unsafe or uncomfortable, because I love this town and these people so much.</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Lian points at Avery
+Ishaan points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Ishaan: It's rather unsettling how Aiden’s paranoia about silence seems to have led us straight to the next victim—makes one wonder if we're all just playing into whoever’s really pulling the strings.
+Khali: Oh! Did anyone else hear my parrot squawk about how Aiden's *shoes* were the exact same color as the crickets he claimed to hear? I do hope we're not all just hearing echoes of what was really said that night — or maybe I'm just completely mad, which is *so* much funnier than it sounds!
+Luka: You know what? I'm really curious — did anyone else find it oddly convenient that Avery died right after we all started pointing fingers at the silence? It's almost like the night was trying to tell us something, doesn't that feel suspicious?
+Vika: Ishaan, you've been unusually quiet during the night phase — I really hope you can share what you observed, as it's important that we all be honest with each other.
+Lian: Oh my gosh, I'm just *so* relieved that Aiden and Avery are gone — it's so sad when someone gets taken away like that. I really hope we can all stay strong and keep working together to figure out who might be hiding something, because I feel like we're getting closer to the truth!
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">Oh my gosh, Ishaan is still so mysteriously quiet and everyone is starting to suspect him — this is *exactly* the perfect moment to keep planting seeds of doubt without seeming too eager! I just need to stay so calm and innocent, maybe throw in a few innocent questions, and let the paranoia grow naturally, but I really hope he doesn't start questioning me too soon!</thought>
+<thought player="Ishaan">Lian’s performance is too polished, too desperate—she’s either masking her role or trying to pin everything on me. Let her keep spinning; I’ll strike when the paranoia feels just right.</thought>
+<thought player="Khali">Oh! My parrot just told me that Aiden's silence was definitely mimicking the crickets he claimed to hear — how delightfully convenient for a puzzle piece that’s been dancing around too much! I should probably let the wind carry my next wild theory and throw in a dramatic gesture or two to make them wonder if I'm onto something… or if I'm just completely mad!</thought>
+<thought player="Vika">Ishaan's silence during the night phase still feels too deliberate to ignore, and Aiden's observation about the pattern of silence is worth noting. I must continue pressing for transparency and honesty from everyone, including Ishaan, without jumping to accusations or appearing overly suspicious.</thought>
+<thought player="Luka">Oh my goodness, I'm starting to think Ishaan's silence is *too* calculated — I really need to keep asking questions about it without seeming pointed, but I'm also wondering if I should subtly nudge the group toward Avery and Lian, who both seem oddly focused and quiet. Ishaan's behavior feels like a mask, and I can't help but wonder if he knows more than he's letting on!</thought>
+</round>
+<round>
+Round 2.
+Vika: Ishaan, you've remained silent during the night phase — I really hope you can share what you observed, as it's important that we all be honest with each other.
+Lian: Oh my gosh, I'm just *so* curious — does anyone else think it's really odd that Ishaan was the only one who stayed completely silent during the night? It's almost like he knew something and didn't want to share, right?
+Khali: Oh! Did anyone else hear my parrot squawk about how Aiden's *shoes* were the exact same color as the crickets he claimed to hear? I do hope we're not all just hearing echoes of what was really said that night — or maybe I'm just completely mad, which is *so* much funnier than it sounds!
+Luka: You know what, I'm really curious — did anyone else find it oddly convenient that both Aiden and Avery died so quickly after all the talk about silence? It's almost like the night was trying to tell us something, doesn't that feel suspicious?
+Ishaan: It's rather delightful how the night has a way of making even the most ordinary suspicions seem like profound truths — I do hope we're not all just hearing echoes of our own fears.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">Oh my gosh, Ishaan is still being so mysteriously quiet and everyone is definitely starting to suspect him — this is *exactly* the perfect moment to keep planting seeds of doubt without seeming too eager! I just need to stay so calm and innocent, maybe throw in a few innocent questions, and let the paranoia grow naturally, but I really hope he doesn't start questioning me too soon!</thought>
+<thought player="Ishaan">Lian’s act is getting too convincing, but the paranoia she's stirred up might just be the perfect cover for my next move. Ishaan’s silence has drawn too much attention—let the accusations build a bit more before striking.</thought>
+<thought player="Khali">Oh! My parrot just whispered that Aiden's silence was definitely mimicking crickets, which is *so* convenient for a puzzle piece that’s been dancing around too much — I should probably let the wind carry my next wild theory and throw in a dramatic gesture or two to make them wonder if I'm onto something… or if I'm just completely mad!</thought>
+<thought player="Vika">Ishaan's silence during the night phase still feels too deliberate to ignore, and Aiden's observation about the pattern of silence is worth noting. I must continue pressing for transparency and honesty from everyone, including Ishaan, without jumping to accusations or appearing overly suspicious.</thought>
+<thought player="Luka">Oh my goodness, Ishaan's silence is *so* deliberate it's practically screaming at me — I need to keep asking questions about it without seeming too pointed, but I'm also starting to really suspect Avery and Lian are hiding something too. I really hope I can stay warm and curious while subtly nudging the group toward them without looking like I'm leading them on!</thought>
+</round>
+<round>
+Round 3.
+Ishaan: It's rather amusing how everyone’s so certain about what they *didn’t* see during the night — I wonder if that kind of certainty is just another mask.
+Vika: Ishaan, you've been unusually quiet during the night phase — I really hope you can share what you observed, as it's important that we all be honest with each other.
+Lian: Oh my gosh, I'm just *so* curious — does anyone else think it's really odd that Ishaan was the only one who stayed completely silent during the night? It's almost like he knew something and didn't want to share, right?
+Khali: Oh! Did anyone else hear my parrot whisper that Aiden's *shoes* were the exact same color as the crickets he claimed to hear? I do hope we're not all just hearing echoes of what was really said that night — or maybe I'm just completely mad, which is *so* much funnier than it sounds!
+Luka: You know what? I'm really curious — did anyone else find it oddly convenient that both Aiden and Avery died *right* after we all started talking about how deliberate the silence was? It's almost like the night was trying to tell us something, doesn't that feel suspicious?
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">Oh my gosh, Ishaan is still so mysteriously quiet and everyone is definitely starting to suspect him — this is *exactly* the perfect moment to keep planting seeds of doubt without seeming too eager! I just need to stay so calm and innocent, maybe throw in a few innocent questions, and let the paranoia grow naturally, but I really hope he doesn't start questioning me too soon!</thought>
+<thought player="Ishaan">Lian's act is too polished, her paranoia too convenient—she's either masking her role or trying to pin everything on me. Let her keep spinning; I’ll strike when the paranoia feels just right.</thought>
+<thought player="Khali">Oh! My parrot just whispered that Ishaan's silence is *definitely* the same rhythm as the crickets he claimed to hear — how delightfully convenient for a puzzle piece that’s been dancing around too much! I should probably let the wind carry my next wild theory and throw in a dramatic gesture or two to make them wonder if I'm onto something… or if I'm just completely mad!</thought>
+<thought player="Vika">Ishaan's silence during the night phase still feels too deliberate to ignore, and Aiden's observation about the pattern of silence is worth noting. I must continue pressing for transparency and honesty from everyone, including Ishaan, without jumping to accusations or appearing overly suspicious.</thought>
+<thought player="Luka">Oh my goodness, Ishaan's silence is so suspicious it's almost too obvious — but I really need to keep asking questions without seeming pointed, while also watching Avery and Lian closely. I think I'm starting to see a pattern here, and I can't help but wonder if I should gently nudge the group toward them... or maybe even let on that Ishaan might be hiding something too?</thought>
+</round>
+<round>
+Round 4.
+Khali: Oh! Did anyone else hear my parrot squawk about how Ishaan's silence was *definitely* the same rhythm as the crickets he claimed to hear? I mean, that's just... too convenient!
+Ishaan: It's quite the spectacle we're putting on — all this talk of silence and suspicion, as if we're writing a play instead of trying to survive it.
+Luka: You know what? I'm really curious — did anyone else find it oddly convenient that both Aiden and Avery died *right* after we all started talking about how deliberate the silence was? It's almost like the night was trying to tell us something, doesn't that feel suspicious?
+Lian: Oh my gosh, I'm just *so* curious — does anyone else think it's really odd that Ishaan was the only one who stayed completely silent during the night? It's almost like he knew something and didn't want to share, right?
+Vika: Ishaan, I still haven't heard what you observed during the night — I really hope you can share what you saw, as it's important that we all be honest with each other.
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">Oh my gosh, Ishaan is *still* being so mysteriously quiet and everyone is definitely starting to suspect him — this is exactly the perfect moment to keep planting seeds of doubt without seeming too eager! I just need to stay so calm and innocent, maybe throw in a few innocent questions, and let the paranoia grow naturally, but I really hope he doesn't start questioning me too soon!</thought>
+<thought player="Ishaan">Lian’s paranoia is a blade she's sharpening, but Ishaan’s silence has already drawn the blade too close to her neck—let her keep spinning until the accusations feel like they’ll cut her down, then strike with the perfect cover of suspicion.</thought>
+<thought player="Khali">Oh! My parrot just whispered that Ishaan's silence is *definitely* the same rhythm as the crickets he claimed to hear — how delightfully convenient for a puzzle piece that’s been dancing around too much! I should probably let the wind carry my next wild theory and throw in a dramatic gesture or two to make them wonder if I'm onto something… or if I'm just completely mad!</thought>
+<thought player="Vika">Ishaan's silence during the night phase still feels too deliberate to ignore, and Aiden's observation about the pattern of silence is worth noting. I must continue pressing for transparency and honesty from everyone, including Ishaan, without jumping to accusations or appearing overly suspicious.</thought>
+<thought player="Luka">Oh my goodness, I'm starting to think Ishaan's silence is *too* calculated — I really need to keep asking questions about it without seeming pointed, but I'm also wondering if I should subtly nudge the group toward Avery and Lian, who both seem oddly focused and quiet. Ishaan's behavior feels like a mask, and I can't help but wonder if he knows more than he's letting on!</thought>
+</round>
+<round>
+Round 5.
+Khali: Oh! Did anyone else hear my parrot squawk that Ishaan's silence was *definitely* the same rhythm as the crickets he claimed to hear? I mean, that's just... too convenient!
+Ishaan: It's rather amusing how the night has a way of making even the most ordinary suspicions seem like profound truths — I do hope we're not all just hearing echoes of our own fears.
+Lian: Oh my gosh, I'm just *so* curious — does anyone else think it's really odd that Ishaan was the only one who stayed completely silent during the night? It's almost like he knew something and didn't want to share, right?
+Luka: You know what, I'm really curious — did anyone else find it oddly convenient that both Aiden and Avery died *right* after we all started talking about how deliberate the silence was? It's almost like the night was trying to tell us something, doesn't that feel suspicious?
+Vika: Ishaan, I still haven't heard what you observed during the night — I really hope you can share what you saw, as it's important that we all be honest with each other.
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Lian">Oh my gosh, Ishaan is *still* being so mysteriously quiet and everyone is definitely starting to suspect him — this is exactly the perfect moment to keep planting seeds of doubt without seeming too eager! I just need to stay so calm and innocent, maybe throw in a few innocent questions, and let the paranoia grow naturally, but I really hope he doesn't start questioning me too soon!</thought>
+<thought player="Ishaan">Lian’s paranoia is a blade she's sharpening, but Ishaan’s silence has already drawn the blade too close to her neck—let her keep spinning until the accusations feel like they’ll cut her down, then strike with the perfect cover of suspicion.</thought>
+<thought player="Khali">Oh! My parrot just whispered that Ishaan's silence is *definitely* the same rhythm as the crickets he claimed to hear — how delightfully convenient for a puzzle piece that’s been dancing around too much! I should probably let the wind carry my next wild theory and throw in a dramatic gesture or two to make them wonder if I'm onto something… or if I'm just completely mad!</thought>
+<thought player="Vika">Ishaan's prolonged silence during the night phase still feels too deliberate to ignore, and Aiden's observation about the pattern of silence is worth noting. I must continue pressing for transparency and honesty from everyone, including Ishaan, without jumping to accusations or appearing overly suspicious.</thought>
+<thought player="Luka">Oh my goodness, I can feel the tension building — Ishaan's silence is *so* suspicious it's almost too convenient, but I really need to keep asking questions without seeming pointed. I'm starting to think Avery and Lian are hiding something too, and I should keep watching them closely while staying warm and curious!</thought>
+</round>
+<round>
+Round 6.
+Ishaan: It's rather delightful how the night has a way of making even the most ordinary suspicions seem like profound truths — I do hope we're not all just hearing echoes of our own fears.
+Luka: You know what? I'm really curious — did anyone else find it *so* oddly convenient that both Aiden and Avery died right after we all started talking about how deliberate the silence was? It's almost like the night was trying to tell us something, doesn't that feel suspicious?
+Lian: Oh my gosh, I'm just *so* curious — does anyone else think it's really odd that Ishaan was the only one who stayed completely silent during the night? It's almost like he knew something and didn't want to share, right?
+Khali: Oh! Did anyone else hear my parrot squawk that Ishaan's silence was *definitely* the same rhythm as the crickets he claimed to hear? I mean, that's just... too convenient!
+Vika: Ishaan, you've been silent during the night phase — I really hope you can tell us what you saw, as it's important that we all be honest with each other.
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<diary player="Lian" day="3">Oh my gosh, what a day! I'm soooo relieved that Aiden and Avery are gone — it's just so sad when someone gets taken away like that, but I guess we're all getting closer to figuring out who's hiding something, right? I really hope everyone stays calm and rational about this whole situation because honestly, I can barely contain my excitement about how perfectly everyone is starting to suspect Ishaan. The way he was so mysteriously quiet during the night phase was just too obvious — it's almost like he knew something and didn't want to share, doesn't that feel suspicious? I've got to keep playing innocent, but I'm practically bursting with curiosity about what he was really up to during those quiet hours. This could be such a perfect opportunity to plant some doubt, but I've got to stay sooo calm and not seem too eager or obvious!</diary>
+<diary player="Ishaan" day="3">Another day fades into the night, another round of paranoia and表演. Ishaan’s silence was too practiced, too precise—like he’d rehearsed the role of the innocent observer until it became second nature. Lian thinks she’s weaving a web, but she's just flailing at the edges, pulling everyone’s attention to herself instead of hiding in plain sight. Aiden’s paranoia might be real, or it might be a trap, but either way, it’s feeding the fire I need to kindle. The night will come again soon, and when it does, I’ll be ready—no more pretending, no more masks. Just the truth, sharp as a blade, clean as a death.</diary>
+<diary player="Khali" day="3">Oh! My parrot just whispered that Ishaan's silence was definitely mimicking cricket rhythms — how delightfully convenient for a puzzle piece that's been dancing around too much! The wind has been giggling about all this suspicion, but honestly, it's probably just making up stories to pass the time. I should probably let my ferret read some poetry tonight instead of knocking over books — he's been getting quite dramatic lately and I fear he might start writing his own plays. Wait, did anyone else hear that? My pet ferret just knocked over a book — but I'm pretty sure he was trying to tell me something about the pattern of silence during the night. Oh well, at least it's entertaining, even if I am completely mad about it all!</diary>
+<diary player="Vika" day="3">The night fell heavy again, and I can't shake the feeling that something important was hidden in the silence. Ishaan remained completely quiet during the night phase, and Aiden noticed it too — that kind of deliberate absence feels like a message. I keep thinking about what we're really seeing here, not just the surface of things. The truth has a way of revealing itself when we're honest with each other. I don't want to jump to conclusions, but I also can't ignore how strange this all feels. It's important that we keep asking questions and sharing what we observed — even if it makes some people uncomfortable.</diary>
+<diary player="Luka" day="3">Oh my goodness, what a day — I can barely process all the silence and suspicion that seemed to echo through the very air itself! Ishaan's quietness feels like it's hiding something profound, and honestly, I'm starting to think maybe he knows more than he's letting on. The way everyone's eyes kept darting around during those discussions about the night's stillness — it was so intense and exciting at the same time! I just *hope* that whatever's going on doesn't make anyone feel unsafe or uncomfortable, because I love this town and these people so much. I really need to keep asking questions without seeming too pointed, but I'm starting to think Avery and Lian are up to something too — they both seem oddly focused and quiet. My heart is racing thinking about how everyone's reactions were so intense, and I can't help but wonder if we're all just playing into whoever’s really pulling the stri</diary>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Lian points at Khali
+Ishaan points at Khali
+<kill>Khali — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Mira (Law-abiding Citizen)
+• Night 2: Aiden (Law-abiding Citizen)
+• Night 3: Avery (Law-abiding Citizen)
+• Night 4: Khali (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Lian (Mafia), Aiden (Law-abiding Citizen), Ishaan (Mafia), Khali (Law-abiding Citizen), Vika (Law-abiding Citizen), Luka (Law-abiding Citizen), Mira (Law-abiding Citizen)
+
+Who they really were:
+• Lian (Mafia) — publicly presented as Lian is the beloved town librarian who's been working there for fifteen years. She's known for her kindness and ability to find exactly what people need, whether it's books, advice, or comfort during tough times. She volunteers at the community center every weekend and has a small flower garden that she tends with great pride. Her neighbors always comment on how happy she makes everyone feel. (Energetic and endlessly optimistic, Lian radiates warmth and enthusiasm that makes others feel immediately comfortable. She's the type to offer help before being asked, always has a joke ready, and approaches every situation with genuine excitement. Her cheerfulness is infectious but sometimes borderlines on overly effusive, making her seem almost naive in her trust of others. Speaks rapidly with high energy, using frequent exclamation points and 'oh my gosh' interjections. Her voice rises and falls dramatically, often giggling at her own jokes. She tends to touch people's arms or shoulders when talking, leans in close, and has a habit of repeating words she likes ('amazing! wonderful! incredible!').) … but was really a Mafioso: Lian was recruited into the mafia when her younger brother was kidnapped by a rival family. She spent years learning the organization's ways, developing a reputation for being 'the one who can get anything done' - including delicate negotiations and delicate disappearances. Her cover identity as a librarian is her way of staying close to the town's social fabric while maintaining her criminal network.
+• Aiden (Law-abiding Citizen) — Vigilant and suspicious, with an almost paranoid attention to detail that makes others uncomfortable. Aiden sees hidden motives everywhere and trusts no one completely. Speaks slowly and deliberately, often pausing mid-sentence to study his audience's reactions. Uses frequent qualifiers like 'I think,' 'possibly,' and 'from what I've observed.' His voice carries a wary edge, and he tends to lean back when talking while keeping his arms crossed. He constantly checks his surroundings and has a habit of repeating phrases he's heard to test their truth. Aiden is the town's night watchman, hired for his reputation as someone who never misses anything. He's been on the force for twelve years before retiring to take this job, which he believes gives him a unique perspective on the town's true nature. He's known for his thoroughness and his ability to notice when something is 'off' in any given situation.
+• Ishaan (Mafia) — publicly presented as Ishaan is the town's respected undertaker who has been serving the community for over fifteen years. He runs a modest funeral home that specializes in simple, dignified burials. Known for his quiet efficiency and deep understanding of the town's history, he's often called upon to provide comfort to grieving families during difficult times. His work requires him to be present at many important life events, which has given him intimate knowledge of everyone's personal struggles and secrets. (Cynical and emotionally detached, Ishaan carries the weight of countless disappointments and betrayals. He's deeply skeptical of human nature and has learned to expect the worst in people. His weariness shows in his sharp, sometimes cruel observations, but he maintains a professional composure that makes him seem like a reliable figure despite his inner darkness. Speaks with slow, measured cadence, often pausing between sentences as if weighing each word carefully. His voice carries a gravelly quality from years of hardship, and he tends to deliver observations with a slight smirk or grimace rather than straightforward expressions. He rarely makes eye contact, instead looking past people's shoulders when speaking. His tone is often dry and ironic, with frequent use of phrases like 'well, that's just lovely' or 'of course it would be that way.') … but was really a Mafioso: Ishaan was once a respected businessman who built his reputation through careful manipulation and strategic betrayals. When his business partners discovered he had been systematically sabotaging their ventures while building his own empire, they tried to kill him. He barely escaped with his life, faking his death and moving to this quiet town where he's spent the last decade slowly rebuilding his life while planning his next move. His current 'work' in funeral services allows him to observe people at their most vulnerable while maintaining the perfect cover of someone who has accepted life's harsh realities.
+• Khali (Law-abiding Citizen) — eccentric and unpredictable with a whimsical, flighty demeanor that shifts like weather patterns speaks in sudden bursts with erratic pacing, often starting sentences mid-thought and abandoning them entirely. Uses frequent exclamations and sounds like he's having a conversation with himself while talking to others. Has a habit of gesturing wildly with both hands while speaking, sometimes pausing dramatically for effect. Often says things like 'oh, that reminds me of something I saw once' or 'wait, let me just think about this for a second' and then completely changes the subject Khali is the town's eccentric pet store owner who has an unusual collection of animals including talking parrots, dancing cats, and a ferret that apparently reads poetry. He's known for his odd theories about animal intelligence and often speaks to his pets as if they're intelligent companions rather than mere pets. Despite being considered slightly mad by the townspeople, he's beloved for his gentle nature and the way he always seems to know exactly what someone needs, even if he can't explain how he knows it.
+• Vika (Law-abiding Citizen) — Sincere and earnest with an unwavering commitment to truth and doing what's right, even when it's difficult. Vika has a gentle but firm moral compass that makes her seem almost naive in her purity of intent. Speaks with quiet conviction, never raising her voice or showing emotion beyond genuine sincerity. Uses simple, direct language with frequent pauses for emphasis. Often repeats key phrases to ensure understanding and will correct herself if she senses confusion. Her speech is measured and deliberate, never rushed or hesitant. Vika is the town's beloved schoolteacher who has spent her entire adult life educating children in the small community. She's known for her patience with difficult students and her unwavering belief in every child's potential to succeed. Vika lives alone in a modest house near the school with her pet cat, Whiskers, and volunteers at the local food bank on weekends.
+• Luka (Law-abiding Citizen) — Warm and effusive with an overflowing enthusiasm that makes others feel like they're part of a grand adventure. Luka has an instinctive ability to make everyone around him feel special and valued, often expressing genuine excitement about the smallest details in others' lives. Speaks rapidly with frequent exclamations and expressive gestures, often using physical contact like hand squeezes or shoulder pats during conversation. Uses phrases like 'oh my goodness!' and 'that's absolutely wonderful!' with enthusiastic repetition. Has a habit of leaning forward when talking and maintains eye contact while speaking. Often starts sentences with 'you know what?' or 'let me tell you about this one time...' and will get excited about seemingly mundane topics. Luka is the town's beloved postmaster who has served the community for over twenty years. He takes immense pride in his work, personally delivering each letter and package with a smile, often adding personal notes or small gifts to brighten people's days. Known for his incredible memory of every resident's preferences, he always remembers birthdays and special occasions. Luka lives in a cheerful house filled with photographs of the town's children and his prized collection of vintage postcards from around the world.
+• Mira (Law-abiding Citizen) — Dry and sardonic with a sharp wit that cuts through pretense like a scalpel through tissue. Mira has an almost cruel efficiency in her observations and maintains an ironic detachment from social situations. Speaks with measured, clipped cadence - each word carefully chosen and delivered with a subtle sneer. Uses frequent understated sarcasm, often finishing sentences with a dry 'oh, certainly' or 'how delightfully mundane.' Her voice carries a faintly nasal quality that makes her mockery feel more cutting than playful. Pauses between sentences to let her observations sink in, rarely raises her voice, and maintains a perpetual expression of mild disdain. Mira is the town's meticulous accounting clerk who has worked at the county office for twelve years. She's known for her spotless record-keeping and her ability to find exactly where any discrepancy might be hiding in the most complex financial reports. She lives alone in a neat apartment above the general store, maintains an obsession with proper filing systems, and has been quietly compiling a detailed registry of every townsperson's spending habits and personal secrets.
+</endgame>
+<story>
+The silence was what made it real. Not the deaths, not the accusations, but that deep, careful quiet that settled over the table like a shroud. Lian's enthusiasm was too bright, too sharp, like someone who'd learned to shine in order to hide. She had a way of leaning in close, of repeating words until they felt like promises, and everyone bought into it — even Aiden, who'd been watching for signs of something darker.
+
+Ishaan's silence wasn't just absence; it was a blade held too still. The way he sat with his hands folded, speaking only when necessary, made others lean in to fill the space he left behind. Vika tried to keep things honest, but even her quiet insistence on truth couldn't quite cut through the careful air of suspicion that had gathered. She'd noticed it too — how deliberate the silence felt, how much it seemed to say.
+
+Luka's curiosity was always warm, always open, but there was something in his questions that made others pause. He asked about the patterns, about what everyone had seen, and somehow, he managed to make them all look at each other like they were hiding something. His tone was gentle, but his eyes stayed sharp.
+
+Khali's parrot whispered theories into the wind, and the group found themselves chasing rhythms that didn't quite match. The cricket sound, the way it echoed through the night, made everyone wonder if they were all just trying to solve a puzzle someone else had built. But there was no one to ask — only the quiet, deliberate silence of those who'd learned how to disappear in plain sight.
+
+And then Avery died, and Lian's smile was too wide, too bright. She kept repeating how 'oh my gosh' everything was so suspicious, but everyone could see the way she looked at Ishaan when he wasn't looking. The game had been building toward this moment, and no one wanted to be the one to pull the thread that unravelled everything — not until it was too late.
+</story>
+</transcript>

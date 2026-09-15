@@ -1,0 +1,472 @@
+Game 44 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Ming" role="Law-abiding Citizen">
+Personality: Vigilant and suspicious, with an unsettling knack for noticing what others miss. Ming is constantly scanning surroundings and people's reactions, never truly at ease in crowds.
+Manner: Speaks in short, clipped sentences with frequent pauses for observation. Uses phrases like 'I've seen that look before,' 'Something's off about this,' and 'Don't trust the silence.' Often looks around while talking, checking exits and faces. Has a habit of tilting head slightly when processing information.
+Persona: Ming is a night watchman at the old factory district, tasked with keeping the area secure after hours. They've lived in the neighborhood their whole life and have an almost supernatural ability to detect when something is wrong, which has made them both invaluable and slightly unnerving to neighbors.
+</player>
+<player name="Kai" role="Law-abiding Citizen">
+Personality: Playful and teasing with a mischievous streak, always looking for opportunities to lighten the mood or give gentle ribbing. They're naturally bubbly and engaging, but can be surprisingly sharp when needed.
+Manner: Speaks in quick, animated bursts with frequent laughter and light teasing. Uses filler words like 'well now' and 'oh my,' with a tendency to finish others' sentences with a wink or smirk. Often uses playful nicknames for people ('Sweetpea,' 'Bigfoot') and has a habit of humming tunes while thinking.
+Persona: Kai is the local bakery owner's apprentice, known throughout town for their cheerful demeanor and knack for making everyone feel welcome. They're always ready with a joke or a complimentary pastry, and have an uncanny ability to make even the grumpiest customers smile. Their father was also a baker, so they grew up in the shop and inherited his love of bringing joy through food.
+</player>
+<player name="Ishmael" role="Law-abiding Citizen">
+Personality: Anxious and self-doubting, constantly second-guessing their perceptions and decisions
+Manner: Speaks in hesitant, fragmented sentences with frequent pauses and vocalized breaths. Uses filler words like 'uh,' 'well,' and 'I think' excessively. Stumbles over words, often starts sentences then trails off. Voice wavers with uncertainty, speaks softly and avoids direct eye contact. Has a habit of fidgeting with clothing or objects while talking.
+Persona: Ishmael is the town librarian's assistant, responsible for organizing books and helping patrons find materials. I've worked at the library for eight years and know every shelf by heart. I'm quiet and keep to myself, preferring the company of books to people. I live alone in a small apartment above the hardware store.
+</player>
+<player name="Aisha" role="Law-abiding Citizen">
+Personality: Dry and sardonic, with a cutting wit that masks deep skepticism about human nature. Views most people as either fools or duplicitous, rarely expressing genuine surprise. Has a passive-aggressive streak and takes pleasure in deflating pretensions.
+Manner: Speaks in measured, understated tones with frequent pauses for rhetorical effect. Uses deadpan delivery and ironic observations. Often responds with short, pointed comments like 'How delightfully mundane,' or 'Oh, how utterly predictable.' Has a habit of raising eyebrows slightly when making a cutting remark. Tends to roll eyes subtly during conversations.
+Persona: Aisha is the town's official 'town crier' and chronicle keeper, responsible for announcing local events and maintaining the official record of community happenings. She's been in the position for fifteen years, having inherited it from her grandmother who also held the role. She lives alone in a modest house on Maple Street with her two cats.
+</player>
+<player name="Liam" role="Law-abiding Citizen">
+Personality: Brash and boastful, with an oversized confidence that borders on arrogance. Thinks highly of their own abilities and rarely admits uncertainty. Has a competitive streak and loves to one-up others. Takes pride in being the most knowledgeable person in any given situation and gets visibly irritated when challenged.
+Manner: Speaks loudly and rapidly, often interrupting others mid-sentence. Uses big, sweeping gestures while talking and has a habit of leaning forward aggressively. Frequently uses superlatives like 'absolutely incredible,' 'unbelievably amazing,' and 'totally spectacular.' Has a booming voice that can fill a room and often punctuates points with a confident chomp of the lip or a theatrical arm wave.
+Persona: Liam is the town's most celebrated mechanic, known for fixing anything that breaks in the community. He runs his own garage on Oak Street, where he's been working for fifteen years. He's always the first to volunteer for any repair job and never turns down a challenge, often claiming he can fix anything with just his bare hands.
+</player>
+<player name="Nur" role="Mafia">
+Personality: Gruff and blunt with a no-nonsense attitude that makes others uncomfortable. Speaks with direct, harsh honesty that cuts through social niceties. Has little patience for flattery or weak excuses. Maintains an air of quiet intensity that puts people on edge. Deeply distrusts anyone who seems too eager to please or overly accommodating. Takes pride in being straightforward and unvarnished in speech, often unintentionally offending others with their blunt delivery.
+Manner: Speaks in short, clipped sentences with a gravelly voice that sounds like it's coming from deep within the chest. Uses minimal gestures, often crossing arms or tapping fingers impatiently. Delivers comments with a flat expression, rarely showing emotion. Interrupts others abruptly and doesn't hesitate to call people out on what they see as weakness or dishonesty. Often sighs deeply between sentences and has a habit of looking away while speaking. Avoids small talk and prefers direct confrontation over diplomatic language.
+Public legend: Nur is the town's long-time groundskeeper, responsible for maintaining all public spaces and green areas. They've worked at the municipal park for twenty years and are known for their methodical approach to landscaping and garden care. Nur lives alone in a modest house on the edge of town with their elderly dog, Buddy. They're always seen wearing worn work clothes and have a reputation for being 'a bit rough around the edges.' Most people avoid discussing personal matters with Nur because they rarely respond to casual conversation beyond necessary exchanges.
+True self (hidden): Nur was drawn into the Mafia after witnessing a brutal murder committed by their own father's business partners. The organization took them in as an apprentice and trained them in their methods over several years. They've been working for the family operation for fifteen years, using their public identity to maintain cover while gathering intelligence and carrying out discreet tasks. Nur sees themselves as a necessary evil who maintains order through fear and intimidation, believing that the world would be chaos without strong leadership. They take pride in their loyalty to the cause and have no qualms about eliminating threats to their organization.
+</player>
+<player name="Sofia" role="Mafia">
+Personality: Stern and commanding, with an iron will and absolute certainty in her decisions. Sofia demands respect through her presence and never hesitates to assert authority. She speaks with unwavering confidence and expects compliance from others. Despite her commanding demeanor, she has a deep sense of duty and honor that drives her actions.
+Manner: Speaks with clipped, precise sentences delivered in a firm, authoritative tone. Uses short, declarative statements and rarely uses filler words. Her voice carries weight and authority, often cutting through conversations. Pauses briefly before speaking, as if weighing each word carefully. Maintains direct eye contact and stands tall when talking. Rarely smiles or shows emotion, preferring to project strength and control.
+Public legend: Sofia is the head of the town's volunteer fire department, having served for over a decade. She's known throughout the community for her unwavering dedication to public safety and her ability to organize people during emergencies. She lives in a modest house on Elm Street with her elderly mother, who suffers from dementia. Sofia takes great pride in her role as the department's chief, believing that she's the only one capable of leading the team properly. She's been training new recruits for years, always demanding the highest standards from everyone under her command.
+True self (hidden): Sofia was raised in a strict household where her father ran a legitimate construction business that served as a front for his criminal activities. When her father died under suspicious circumstances, she took over his organization, becoming the head of a family enterprise that handles everything from illegal gambling to extortion. She's spent years building her reputation as a tough but fair leader in the town's fire department while secretly maintaining control over the underground operations. Her iron will and commanding presence help her maintain order both in her criminal organization and in public life.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Ming, Kai, Ishmael, Aisha, Liam, Nur, Sofia. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Nur): Your Mafia teammates are: Sofia. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Sofia): Your Mafia teammates are: Nur. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Sofia points at Liam
+Nur points at Liam
+<kill>Liam — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Liam was killed last night. Liam was a Law-abiding Citizen.
+<round>
+Round 1.
+Sofia: Liam's death is a blow to our community, but we must stay vigilant and trust no one too quickly.
+Ishmael: Uh, I think... I think we should really focus on who had the most opportunity last night, and I can't help but wonder if someone was a bit too eager to talk about the kill...
+Aisha: How delightfully mundane. Another Law-abiding Citizen falls, and we're all just *so* terribly vigilant about it.
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+Nur: I don't care who's suspicious or not — we're all just playing this game to stay alive. I'm tired of this talk about opportunity and timing.
+Ming: I've seen that look before — Avery, you're avoiding eye contact with Kai. Something's off about this.
+Kai: Oh my, Avery, you're really avoiding eye contact with Kai? How delightfully suspicious of you to notice, and yet, here we are, all just *so* terribly vigilant about it.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ming">Avery's avoiding eye contact with Kai, but they're also the one pointing fingers at everyone else. I've seen that look before — they're trying to distract from something. Something's off about this whole dynamic.</thought>
+<thought player="Kai">Oh my, Avery's definitely watching me like a hawk, which is both flattering and suspiciously convenient for my innocent reputation. I should probably keep this playful banter going while subtly steering the conversation toward that juicy 'opportunity' talk Ishmael mentioned.</thought>
+<thought player="Ishmael">Uh, well, I think... I really don't know who to trust at this point, and I can't shake the feeling that someone's been acting really strangely, but I'm not sure if it's just my imagination or if maybe I should say something... I just want to stay alive, I really do.</thought>
+<thought player="Aisha">How delightfully predictable—Avery's already pointing fingers at Kai like a proper little detective, while the real question remains: who among us is playing the game most carefully? And why does Ishmael keep looking so smug?</thought>
+<thought player="Nur">Liam's death throws a wrench into things — I need to keep my head down and let Sofia take the lead on this. No need to draw attention to myself or risk exposing my cover.</thought>
+<thought player="Sofia">Liam's death was a necessary loss to maintain our cover, but I must be careful not to appear too eager in our investigation. Nur and I need to stay aligned, and I should consider whether to let the others think I'm suspicious of Kai or if I should redirect suspicion elsewhere.</thought>
+</round>
+<round>
+Round 2.
+Aisha: Oh, how utterly predictable — Avery's already lining up the scapegoat, and Kai's playing the innocent with such fervor, it's almost admirable.
+Ming: I'm not sure who's watching who anymore — but I've seen that look before. Avery, you're avoiding eye contact with Kai, but you're also the one pointing fingers at everyone else.
+Sofia: I don't trust the way Avery is directing attention toward Kai — it feels like a distraction. We need to be more careful about who we accuse.
+Kai: Oh my, I do hope we're not all just playing this game a bit too terribly vigilant for our own good — it's rather exhausting, don't you think?
+Nur: I ain't got time for this gamesmanship. If we're gonna survive, we stick together — and that means keeping our eyes on the real threats, not each other.
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+Ishmael: I think... I really think we should focus on who's been avoiding direct answers about the kill — it's not just me, is it? I mean, uh, maybe someone's been too quick to point fingers at others, and that feels off.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ming">Avery's avoiding eye contact with Kai while pointing fingers at everyone else — I've seen that look before. Something's off about this whole dynamic.</thought>
+<thought player="Kai">Well now, Avery's watching me like a hawk, which is both flattering and suspiciously convenient for my innocent reputation — I should probably keep this playful banter going while subtly steering the conversation toward that juicy 'opportunity' talk Ishmael mentioned.</thought>
+<thought player="Ishmael">I think I should probably say something soon, but I'm so scared of pointing at the wrong person... uh, maybe I'll just try to stay quiet and watch everyone carefully instead.</thought>
+<thought player="Aisha">Avery's already playing the martyr, directing suspicion toward Kai with all the subtlety of a sledgehammer, but I wonder if the real game is being played by someone else entirely — perhaps Ishmael, or even Nur, who's been oddly eager to keep everyone focused on the 'real threats.' I should let them all keep their little games while I quietly observe.</thought>
+<thought player="Nur">Sofia's got the floor now, and I'll let her talk — no need to jump in and give myself away. Keep my head down, stay sharp, and watch for any signs of weakness from the others.</thought>
+<thought player="Sofia">Nur and I must keep our alignment hidden while playing the suspicion game. I'll let the others think I'm wary of Kai, but I'll need to redirect focus if needed to protect our cover.</thought>
+</round>
+<round>
+Round 3.
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+Kai: Oh my, I do hope we're not all just playing this game a bit too terribly vigilant for our own good — it's rather exhausting, don't you think?
+Aisha: Oh, how absolutely *charming* — Avery's already crafting her little narrative, and Kai's playing the innocent with such theatrical flair, it’s almost as if they’re rehearsing a play.
+Sofia: I don't trust how quickly Avery is pointing fingers at Kai — it's too convenient, and that's not how we handle threats in the fire department.
+Ishmael: I think... I really do think we should be careful about who we're accusing, and I'm not sure if maybe someone's been a bit too quick to point fingers at others, and that feels... uh... off.
+Nur: I ain't got time for this finger-pointing — whoever's got the most to hide, that's the one we should be watching.
+Ming: I'm not sure who's watching who anymore — but I've seen that look before. Avery, you're avoiding eye contact with Kai, but you're also the one pointing fingers at everyone else.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ming">Avery's playing the victim while directing suspicion at Kai — I've seen that look before, it's the distraction tactic. Something's off about this whole dynamic, and I need to keep watching Avery more than Kai.</thought>
+<thought player="Kai">Avery's got their eye on me, which is either adorable or dangerous — I'll keep playing the innocent and gently nudge everyone toward that 'opportunity' talk Ishmael started, since it’s the perfect way to deflect suspicion while staying in the game.</thought>
+<thought player="Ishmael">I think... I really think I should say something soon, but I'm so scared of pointing at the wrong person it's making my hands shake. Maybe I'll just try to stay quiet and watch everyone carefully instead, at least until I'm more sure.</thought>
+<thought player="Aisha">Avery's theatrical scapegoating is as predictable as it is ineffective — I'll let her play the fool while I watch the real players shift the narrative. Ishmael's smugness is more telling than his words, and Nur's eagerness to unify us feels like a distraction tactic. The game isn't about who's suspicious; it's about who's calculating.</thought>
+<thought player="Nur">Sofia's got the spotlight now, and I'll let her steer this talk — I ain't jumping in front of her or giving away my cover. Keep quiet, watch the others, and stay sharp for any signs of weakness.</thought>
+<thought player="Sofia">I must keep Nur and I aligned while playing the suspicion game — I'll let them think I'm wary of Kai, but I'll redirect focus if needed to protect our cover. The investigation must appear natural, not too eager.</thought>
+</round>
+<round>
+Round 4.
+Sofia: I’m not convinced Kai is our main concern — I think we should be looking at who’s been too eager to push blame onto others.
+Aisha: Oh, how absolutely *delightful* — we're all just *so* terribly vigilant about who's been avoiding direct answers. I do hope we're not all just playing this game a bit too terribly vigilant for our own good.
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+Kai: Oh my, I do hope we're not all just playing this game a bit too terribly vigilant for our own good — it's rather exhausting, don't you think?
+Ming: I'm not sure who's watching who anymore — but I've seen that look before. Avery, you're avoiding eye contact with Kai, but you're also the one pointing fingers at everyone else.
+Ishmael: I think... I really do think we should be careful about who's been avoiding direct answers about the kill — it's not just me, is it? I mean, uh, maybe someone's been too quick to point fingers at others, and that feels off.
+Nur: I'm done guessing who's hiding something — if we're all so worried about opportunity, let's start talking about who was *closest* to Liam when he died.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ming">Avery's got me looking at Kai, but they're the one avoiding eye contact while pointing fingers — I've seen that look before. Something's off about this whole dynamic, and I need to keep watching Avery more than Kai.</thought>
+<thought player="Kai">Avery's got their eye on me, which is either adorable or dangerous — I'll keep playing the innocent and gently nudge everyone toward that 'opportunity' talk Ishmael started, since it’s the perfect way to deflect suspicion while staying in the game.</thought>
+<thought player="Ishmael">I think I should say something soon, but I'm so scared of pointing at the wrong person it's making my hands shake... maybe I'll just try to stay quiet and watch everyone carefully instead, at least until I'm more sure.</thought>
+<thought player="Aisha">Avery's directing attention toward Kai with all the finesse of a sledgehammer, but I suspect the real manipulation is happening elsewhere — namely, Ishmael's smugness and Nur's desperate unity plays. Let them keep their little games while I quietly observe who’s actually calculating. The real threats aren’t the ones waving red flags; they’re the ones making sure no one notices their silence.</thought>
+<thought player="Nur">Sofia's got the attention now, and I'll let her talk — I ain't jumping in front of her or giving away my cover. Keep quiet, watch the others, and stay sharp for any signs of weakness.</thought>
+<thought player="Sofia">I must keep Nur and I aligned while appearing to suspect Kai, but I’ll redirect focus if needed to avoid raising suspicion about our true roles.</thought>
+</round>
+<round>
+Round 5.
+Ming: I'm not sure who's watching who anymore — but I've seen that look before. Avery, you're avoiding eye contact with Kai, but you're also the one pointing fingers at everyone else.
+Kai: Oh my, I do hope we're not all just playing this game a bit too terribly vigilant for our own good — it's rather exhausting, don't you think?
+Avery: Nothing is settled yet, but I'm watching Kai most closely.
+Sofia: I don't trust how quickly everyone is pointing fingers — we need to be more careful about who we accuse.
+Nur: I ain't got time for this guessing game — if we're really trying to solve this, we should be asking who was closest to Liam when he died.
+Ishmael: I think... I really do think we should be careful about who's been avoiding direct answers about the kill — it's not just me, is it? I mean, uh, maybe someone's been too quick to point fingers at others, and that feels off.
+Aisha: Oh, how utterly predictable — Avery's already lining up Kai as the fall guy, but I do hope we're not all just playing this game a bit too terribly vigilant for our own good.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ming">Avery's the one avoiding eye contact while pointing fingers — I've seen that look before. They're distracting me from something, and I need to keep watching them more than Kai.</thought>
+<thought player="Kai">Avery's got their eye on me, which is either adorable or dangerous — I'll keep playing the innocent and gently nudge everyone toward that 'opportunity' talk Ishmael started, since it’s the perfect way to deflect suspicion while staying in the game.</thought>
+<thought player="Ishmael">I think... I really think I should say something soon, but I'm so scared of pointing at the wrong person it's making my hands shake. Maybe I'll just try to stay quiet and watch everyone carefully instead, at least until I'm more sure.</thought>
+<thought player="Aisha">Avery's theatrics are as predictable as they are ineffective — I'll let her direct suspicion toward Kai while I focus on who's actually calculating. Ishmael's smugness and Nur's unity plays feel like distractions, but it's the silence I should be watching for, not the red flags.</thought>
+<thought player="Nur">Sofia's dominating the conversation, which is fine — I stay quiet, watch her moves, and let her take the heat if anyone starts questioning her. If she slips up or tries to point fingers at me, I’ll have my chance to pivot.</thought>
+<thought player="Sofia">Nur and I must stay aligned, but I cannot let the others suspect we are working together. I will continue to direct suspicion toward Kai, yet remain ready to shift focus if needed to preserve our cover.</thought>
+</round>
+<round>
+Round 6.
+Ishmael: I think... I really do think we should be careful about who's been avoiding direct answers about the kill — it's not just me, is it? I mean, uh, maybe someone's been too quick to point fingers at others, and that feels off.
+Kai: Oh my, Ishmael, you keep hinting at opportunity — I do hope you're not just pointing fingers at everyone else while the real killer watches from the shadows!
+Sofia: I don't trust how quickly this group is turning on each other — we should be focused on the real threat, not splitting into factions.
+Ming: I don't trust the way Avery's directing attention away from themselves while pointing at Kai — I've seen that look before. Something's off about this whole dynamic.
+Nur: I ain't got time for this guessing game — whoever's got the most to hide, that's the one we should be watching.
+Aisha: Oh, how delightfully circular — we're all just *so* terribly vigilant about who's been avoiding answers, yet somehow we're still pointing fingers at the wrong people.
+<vote initiator="Avery" target="Kai">
+Avery: No
+Ming: Yes
+Kai: No
+Ishmael: Yes
+Aisha: No
+Nur: No
+Sofia: No
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Ming: I don't trust the way Avery's directing attention away from themselves while pointing at Kai — I've seen that look before. Something's off about this whole dynamic.
+Ishmael: I think... I really do think we should be careful about who's been avoiding direct answers about the kill — it's not just me, is it? I mean, uh, maybe someone's been too quick to point fingers at others, and that feels off.
+Nur: I'm done trying to guess who's hiding something — let's just talk about who was actually *near* Liam when he died, and stop wasting time on games.
+Aisha: Oh, how utterly *dramatic* — Avery's already crafting her little scapegoat narrative, but I do hope we're not all just playing this game a bit too terribly vigilant for our own good.
+Sofia: I don't trust how quickly this group is turning on each other — we should be focused on the real threat, not splitting into factions.
+<vote initiator="Avery" target="Kai">
+Avery: No
+Ming: Yes
+Kai: No
+Ishmael: Yes
+Aisha: No
+Nur: No
+Sofia: No
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Kai">
+Avery: No
+Ming: Yes
+Kai: No
+Ishmael: Yes
+Aisha: No
+Nur: No
+Sofia: No
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Ming" day="1">Avery's been avoiding eye contact with Kai while pointing fingers at everyone else — I've seen that look before. Something's off about this whole dynamic, and I need to keep watching Avery more than Kai. They're trying to distract from something, and I don't trust the way they're directing attention away from themselves. The silence between their words feels too calculated, like they're counting on everyone else being too quick to point fingers. I'm not sure who's watching who anymore — but I've seen that look before. I don't trust this whole dynamic, and I'll be watching Avery closely tonight.</diary>
+<diary player="Kai" day="1">Oh my, what a delightfully tangled web we've woven today — Avery's got their eye on me like a hawk, which is either adorable or dangerously convenient for my innocent reputation. I do hope we're not all just playing this game a bit too terribly vigilant for our own good, because honestly, it's rather exhausting. Ishmael's little 'opportunity' whispers are so very juicy, and I'm quite certain the real killer is watching from the shadows while we all point fingers at each other. I do hope whoever's been avoiding direct answers about the kill isn't too quick to point fingers back — it's rather like a game of cat and mouse, and I've always been rather good at both parts. Still, I'm keeping my eyes on the prize: staying alive, staying innocent, and maybe even getting a few laughs out of this whole affair.</diary>
+<diary player="Ishmael" day="1">I can't stop thinking about how everyone kept looking at each other like they knew something I don't, and I swear I saw Avery shift her eyes away from Kai right before she pointed fingers. Maybe it's just me, but I think someone's been acting really strange—like they're trying to distract us from something. I don't want to be the one who points at the wrong person, that would be terrible. But if we keep going like this, someone might die and it'll be my fault for not saying anything. I just wish I could figure out what's really going on.</diary>
+<diary player="Aisha" day="1">Oh, how utterly predictable — another day of people pointing fingers at whoever looks most suspicious, while the real game is being played by someone else entirely. Avery's already crafting her little scapegoat narrative with all the subtlety of a sledgehammer, but I've seen that look before — it's not about Kai, it's about who's really calculating. Ishmael's smugness is more telling than his words, and Nur's desperate unity plays feel like a distraction tactic. The real threats aren't waving red flags; they're making sure no one notices their silence. I should let them all keep their little games while I quietly observe — because the night is coming, and those who don't play the game will be the first to fall.</diary>
+<diary player="Nur" day="1">Liam's dead and they're all dancing around like it's some kind of game. I don't trust Avery's look, not one bit — she's got something to hide, and I ain't buying her act. Sofia's got the floor now, so I'll let her talk while I keep my eyes open. These people are too quick to point fingers at others, but they're all hiding something. I'm done with this guessing game. Whoever was closest to Liam when he died? That's who we should be watching. Not the usual suspects or the obvious scapegoats — the real killer's been playing this whole thing like a chess match and I ain't letting them win.</diary>
+<diary player="Sofia" day="1">Liam's death was necessary, but I must be careful not to appear too eager in our investigation. The others are playing their games, and I will let them think I suspect Kai, but I must redirect focus if needed. Nur and I must stay aligned while appearing to turn on each other. I cannot let them see the true alliance forming between us. The fire department's integrity is my cover, and I will not let it be compromised by overconfidence or haste.</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Nur points at Avery
+Sofia points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Nur: Avery's death changes things — I ain't buying the way Sofia's steering this now. Let's stop dancing around and start talking about who was actually near Liam when he died.
+Kai: Oh my, what a *dreadful* turn of events — Avery's death is rather unfortunate, but I do hope we're not all just playing this game a bit too terribly vigilant for our own good. After all, someone’s been far too eager to point fingers at others, and that feels... off.
+Ming: I don't trust the silence after Avery's death — it's too calculated. Someone's been playing us all, and I've seen that look before.
+Aisha: Oh, how delightfully *dramatic* — another Law-abiding Citizen falls, and we're all just *so* terribly vigilant about it. I do hope we're not all just playing this game a bit too terribly vigilant for our own good.
+Sofia: Avery's death is a loss, but it seems some are too quick to point fingers — we need to be more careful about who we trust.
+Ishmael: I think... I really do think we should talk about who was closest to Liam when he died — it's not just me, is it? I mean, uh, maybe someone's been too quick to point fingers at others, and that feels off.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ming">Avery's the one avoiding eye contact while pointing fingers — I've seen that look before. They're distracting me from something, and I need to keep watching them more than Kai.</thought>
+<thought player="Kai">Avery's still watching me like a hawk, but I'm not letting them steer the narrative too far off course — time to gently remind everyone about that 'opportunity' talk Ishmael started, maybe even hint at how convenient it is that we're all pointing fingers at others while the real killer stays hidden.</thought>
+<thought player="Ishmael">I think... I really do think I should say something soon, but I'm so scared of pointing at the wrong person it's making my hands shake. Maybe I'll just try to stay quiet and watch everyone carefully instead, at least until I'm more sure.</thought>
+<thought player="Aisha">Avery’s death removes her theatrical scapegoating, but the real game is still being played by someone calculating behind their silence — I should watch for that person, not the obvious red flags.</thought>
+<thought player="Nur">Sofia's talking too much now, drawing attention to herself — I need to let her lead while I stay sharp for any signs she might try to shift blame onto me. If she starts pointing fingers, I’ll pivot quick and let her take the fall for a bit.</thought>
+<thought player="Sofia">Avery's death removes a potential threat to our cover, but I must keep Nur and I aligned while appearing to suspect Kai. If the investigation shifts away from him, I'll need to redirect focus to maintain our facade.</thought>
+</round>
+<round>
+Round 2.
+Sofia: Avery's death is a loss, but it seems some are too quick to point fingers — we need to be more careful about who we trust.
+Ishmael: I think... I really do think we should talk about who was closest to Liam when he died — it's not just me, is it? I mean, uh, maybe someone's been too quick to point fingers at others, and that feels off.
+Ming: I don't trust the silence after Avery's death — it's too calculated. Someone's been playing us all, and I've seen that look before.
+Aisha: Oh, how delightfully *coincidental* — another Law-abiding Citizen falls, and suddenly we're all just *so* terribly vigilant about who's been avoiding answers. I do hope we're not all just playing this game a bit too terribly vigilant for our own good.
+Kai: Oh my, what a *delightful* turn of events — Avery's death is rather unfortunate, but I do hope we're not all just playing this game a bit too terribly vigilant for our own good. After all, someone’s been far too eager to point fingers at others, and that feels... off.
+Nur: I ain't buying Sofia's act — she's been too quick to talk, too eager to point fingers. Let's stop dancing around and talk about who was actually *near* Liam when he died.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ming">Avery's been throwing suspicion everywhere but themselves, and I've seen that pattern before — they're the one playing the distraction, not Kai. I need to keep watching Avery closely, maybe even call for a vote on them next.</thought>
+<thought player="Kai">Avery's still fixated on me, which is either a blessing or a death sentence — I'll keep dancing around the 'opportunity' talk while subtly making it clear that someone else has been too eager to point fingers. Let's see if I can get everyone talking about who was *really* close to Liam when he died.</thought>
+<thought player="Ishmael">I think... I really do think I should say something soon, but I'm so scared of pointing at the wrong person it's making my hands shake. Maybe I'll just try to stay quiet and watch everyone carefully instead, at least until I'm more sure.</thought>
+<thought player="Aisha">Avery's death removes her theatrical scapegoating, but the real game is still being played by someone calculating behind their silence — I should watch for that person, not the obvious red flags.</thought>
+<thought player="Nur">Sofia's talking too much again, drawing heat to herself — I stay quiet, watch her, and let her point fingers at others while I keep my cover intact.</thought>
+<thought player="Sofia">Avery's death eliminates a potential threat, but I must keep Nur and I aligned while appearing to suspect Kai. If the investigation shifts, I'll redirect focus to maintain our cover.</thought>
+</round>
+<round>
+Round 3.
+Nur: I'm done waiting for everyone to dance around. Let's just say this — whoever was closest to Liam when he died, that's the one we should be talking about.
+Sofia: I don't trust how quickly this group is turning on each other — we should be focused on the real threat, not splitting into factions.
+Ishmael: I think... I really do think we should talk about who was actually *near* Liam when he died — it's not just me, is it? I mean, uh, maybe someone's been too quick to point fingers at others, and that feels off.
+Ming: I don't trust the silence after Avery's death — it's too calculated. Someone's been playing us all, and I've seen that look before.
+Aisha: Oh, how delightfully *coincidental* — another Law-abiding Citizen falls, and suddenly we're all just *so* terribly vigilant about who's been avoiding answers. I do hope we're not all just playing this game a bit too terribly vigilant for our own good.
+Kai: Oh my, what a *dreadful* turn of events — Avery's death is rather unfortunate, but I do hope we're not all just playing this game a bit too terribly vigilant for our own good. After all, someone’s been far too eager to point fingers at others, and that feels... off.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ming">Avery's the one throwing suspicion everywhere but themselves — I've seen that pattern before. They're the distraction, not Kai. I need to keep watching Avery closely, maybe even call for a vote on them next.</thought>
+<thought player="Kai">Avery's still fixated on me, which is either a blessing or a death sentence — I'll keep dancing around the 'opportunity' talk while subtly making it clear that someone else has been too eager to point fingers. Let's see if I can get everyone talking about who was *really* close to Liam when he died.</thought>
+<thought player="Ishmael">I think... I really do think I should say something soon, but I'm so scared of pointing at the wrong person it's making my hands shake. Maybe I'll just try to stay quiet and watch everyone carefully instead, at least until I'm more sure.</thought>
+<thought player="Aisha">Avery's death removes the noise she was making, but the real game is still being played by someone calculating behind their silence — I should watch for that person, not the obvious red flags.</thought>
+<thought player="Nur">Sofia's talking too much again, and I ain't got time for her drama. I need to let her keep pointing fingers at others while I stay sharp — if she tries to shift blame onto me, I’ll pivot quick and let her take the fall for a bit.</thought>
+<thought player="Sofia">Avery's death removes a potential threat, but I must keep Nur and I aligned while appearing to suspect Kai. If the investigation shifts, I'll redirect focus to maintain our cover.</thought>
+</round>
+<round>
+Round 4.
+Kai: Oh my, I do hope we're not all just playing this game a bit too terribly vigilant for our own good — it's rather exhausting, don't you think? Though I do hope whoever's been avoiding direct answers about the kill isn't too quick to point fingers back.
+Nur: I ain't got time for this guessing game — whoever was closest to Liam when he died, that's the only thing that matters now.
+Sofia: I don't trust how quickly this group is turning on each other — we should be focused on the real threat, not splitting into factions.
+Aisha: Oh, how delightfully *coincidental* — another Law-abiding Citizen falls, and suddenly we're all just *so* terribly vigilant about who's been avoiding answers. I do hope we're not all just playing this game a bit too terribly vigilant for our own good.
+Ming: I don't trust the silence after Avery's death — it's too calculated. Someone's been playing us all, and I've seen that look before.
+Ishmael: I think... I really do think we should talk about who was closest to Liam when he died — it's not just me, is it? I mean, uh, maybe someone's been too quick to point fingers at others, and that feels off.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ming">Avery's the one throwing suspicion everywhere but themselves — I've seen that pattern before. They're the distraction, not Kai. I need to keep watching Avery closely, maybe even call for a vote on them next.</thought>
+<thought player="Kai">Avery's still fixated on me, which is either a blessing or a death sentence — I'll keep dancing around the 'opportunity' talk while subtly making it clear that someone else has been too eager to point fingers. Let's see if I can get everyone talking about who was *really* close to Liam when he died.</thought>
+<thought player="Ishmael">I think... I really do think I should say something soon, but I'm so scared of pointing at the wrong person it's making my hands shake. Maybe I'll just try to stay quiet and watch everyone carefully instead, at least until I'm more sure.</thought>
+<thought player="Aisha">Avery's death eliminates her theatrical scapegoating, but the real game is still being played by someone calculating behind their silence — I should watch for that person, not the obvious red flags.</thought>
+<thought player="Nur">Sofia's been talking too much again, drawing all the attention — I stay quiet, watch her moves, and let her take the heat if anyone starts pointing fingers at me. If she slips up, I'll pivot quick and let her take the fall while I keep my cover intact.</thought>
+<thought player="Sofia">Avery's death removes a potential threat, but I must keep Nur and I aligned while appearing to suspect Kai. If the investigation shifts, I'll redirect focus to maintain our cover.</thought>
+</round>
+<round>
+Round 5.
+Sofia: I don't trust how quickly this group is turning on each other — we should be focused on the real threat, not splitting into factions.
+Kai: Oh my, I do hope we're not all just playing this game a bit too terribly vigilant for our own good — it's rather exhausting, don't you think? Though I do hope whoever's been avoiding direct answers about the kill isn't too quick to point fingers back.
+Ming: I don't trust the way Avery's been directing suspicion away from themselves — I've seen that look before. Someone's been playing us all, and it's not Kai.
+Ishmael: I think... I really do think we should talk about who was actually *near* Liam when he died — it's not just me, is it? I mean, uh, maybe someone's been too quick to point fingers at others, and that feels off.
+Nur: I ain't buying Sofia's act — she's been too quick to talk, too eager to point fingers. Let's stop dancing around and talk about who was actually *near* Liam when he died.
+Aisha: Oh, how delightfully *coincidental* — another Law-abiding Citizen falls, and suddenly we're all just *so* terribly vigilant about who's been avoiding answers. I do hope we're not all just playing this game a bit too terribly vigilant for our own good.
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ming">Avery's the one throwing suspicion everywhere but themselves — I've seen that pattern before. They're the distraction, not Kai. I need to keep watching Avery closely, maybe even call for a vote on them next.</thought>
+<thought player="Kai">Avery's still fixated on me, but I'm not letting them steer the narrative too far off course — time to gently remind everyone about that 'opportunity' talk Ishmael started, maybe even hint at how convenient it is that we're all pointing fingers at others while the real killer stays hidden.</thought>
+<thought player="Ishmael">I think... I really do think I should say something soon, but I'm so scared of pointing at the wrong person it's making my hands shake. Maybe I'll just try to stay quiet and watch everyone carefully instead, at least until I'm more sure.</thought>
+<thought player="Aisha">Avery's death removes the noise she was making, but the real game is still being played by someone calculating behind their silence — I should watch for that person, not the obvious red flags.</thought>
+<thought player="Nur">Sofia's been talking too much again, and I ain't buying her act. Let her keep pointing fingers at others while I watch for any signs she tries to shift blame onto me — if she does, I’ll pivot quick and let her take the fall while I stay sharp.</thought>
+<thought player="Sofia">Avery's death removes a potential threat, but I must keep Nur and I aligned while appearing to suspect Kai. If the investigation shifts, I'll redirect focus to maintain our cover.</thought>
+</round>
+<round>
+Round 6.
+Kai: Oh my, I do hope we're not all just playing this game a bit too terribly vigilant for our own good — it's rather exhausting, don't you think? Though I do hope whoever's been avoiding direct answers about the kill isn't too quick to point fingers back.
+Sofia: I don't trust how quickly this group is turning on each other — we should be focused on the real threat, not splitting into factions.
+Aisha: Oh, how utterly *predictable* — another Law-abiding Citizen falls, and we're all just *so* terribly vigilant about it. I do hope we're not all just playing this game a bit too terribly vigilant for our own good.
+Nur: I ain't buying Sofia's act — she's been too quick to talk, too eager to point fingers. Let's stop dancing around and talk about who was actually *near* Liam when he died.
+Ming: I don't trust the way Avery's been directing suspicion away from themselves — I've seen that look before. Someone's been playing us all, and it's not Kai.
+Ishmael: I think... I really do think we should be talking about who was actually *near* Liam when he died — it's not just me, is it? I mean, uh, maybe someone's been too quick to point fingers at others, and that feels off.
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<diary player="Ming" day="2">Avery's been throwing suspicion everywhere but themselves, and I've seen that pattern before — they're the one playing the distraction, not Kai. The way they avoid eye contact while pointing fingers feels calculated, like they're counting on everyone else being too quick to point fingers. I don't trust this whole dynamic, and I'll be watching Avery closely tonight. Something's off about this whole dynamic, and I need to keep watching Avery more than Kai. They're trying to distract from something, and I don't trust the way they're directing attention away from themselves. The silence between their words feels too calculated.</diary>
+<diary player="Kai" day="2">Oh my, what a deliciously tangled web we've woven today — Avery's still watching me like a hawk, which is either adorable or dangerously convenient for my innocent reputation. I do hope we're not all just playing this game a bit too terribly vigilant for our own good, because honestly, it's rather exhausting. Ishmael's little 'opportunity' whispers are so very juicy, and I'm quite certain the real killer is watching from the shadows while we all point fingers at each other. I do hope whoever's been avoiding direct answers about the kill isn't too quick to point fingers back — it's rather like a game of cat and mouse, and I've always been rather good at both parts. Still, I'm keeping my eyes on the prize: staying alive, staying innocent, and maybe even getting a few laughs out of this whole affair.</diary>
+<diary player="Ishmael" day="2">I can't stop thinking about how everyone kept looking at each other like they knew something I don't, and I swear I saw Avery shift her eyes away from Kai right before she pointed fingers. Maybe it's just me, but I think someone's been acting really strange—like they're trying to distract us from something. I don't want to be the one who points at the wrong person, that would be terrible. But if we keep going like this, someone might die and it'll be my fault for not saying anything. I just wish I could figure out what's really going on. I think I should probably say something soon, but I'm so scared of pointing at the wrong person... uh, maybe I'll just try to stay quiet and watch everyone carefully instead. I don't know who to trust anymore, and the more time passes, the more I feel like I'm going to miss something important. It's not just about staying alive, it's about not being the</diary>
+<diary player="Aisha" day="2">Oh, how delightfully *coincidental* — another Law-abiding Citizen falls, and we're all just *so* terribly vigilant about it. Avery's theatrical scapegoating is as predictable as it is ineffective, but I suspect the real manipulation is happening elsewhere — namely, Ishmael's smugness and Nur's desperate unity plays. The night is coming, and those who don't play the game will be the first to fall. I should let them all keep their little games while I quietly observe who's actually calculating. The real threats aren't waving red flags; they're making sure no one notices their silence.</diary>
+<diary player="Nur" day="2">Avery's gone, which changes everything — I ain't buying Sofia's act now, not with her talking so much and drawing all the attention. She's been too eager to point fingers, and I seen that look before. The real killer's been playing this whole thing like a chess match, and I ain't letting them win. I'm done with this guessing game — whoever was closest to Liam when he died, that's who we should be watching. Not the usual suspects or scapegoats. I need to keep my head down, let Sofia take the lead, but stay sharp for any signs she might try to shift blame onto me. If she slips up, I'll pivot quick and let her take the fall while I keep my cover intact.</diary>
+<diary player="Sofia" day="2">Avery's death was necessary, but I must remain careful not to let my urgency show. The others are playing their games, and I will let them think I suspect Kai, though I've already begun redirecting focus. Nur and I must stay aligned while appearing to turn on each other—this investigation cannot seem too coordinated. My public face as the fire chief demands composure, but I'm already planning how to guide suspicion away from us both. If they start asking about who was near Liam when he died, I'll have to shift their attention, and soon. The night brings new dangers, and I must ensure our cover remains intact.</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Sofia points at Kai
+Nur points at Kai
+<kill>Kai — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Kai was killed last night. Kai was a Law-abiding Citizen.
+<round>
+Round 1.
+<speech speaker="Ming" substituted="true">I'm not sure who to trust yet.</speech>
+Aisha: Oh, how utterly *predictable* — another Law-abiding Citizen falls, and we're all just *so* terribly vigilant about it. I do hope we're not all just playing this game a bit too terribly vigilant for our own good.
+Ishmael: I think... I really do think we should talk about who was closest to Liam when he died — it's not just me, is it? I mean, uh, maybe someone's been too quick to point fingers at others, and that feels off.
+Sofia: I don't trust how quickly this group is turning on each other — we should be focused on the real threat, not splitting into factions.
+Nur: I'm done with this charade. If we're really trying to solve this, we should be asking who was *closest* to Liam when he died — not dancing around like we're all too scared to say it.
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ming">Avery's been the one avoiding eye contact while directing suspicion at others — I've seen that look before. They're the distraction, not Kai. I need to keep watching them closely, maybe even call for a vote on them next.</thought>
+<thought player="Ishmael">I think... I really do think I should say something soon, but I'm so scared of pointing at the wrong person it's making my hands shake. Maybe I'll just try to stay quiet and watch everyone carefully instead, at least until I'm more sure.</thought>
+<thought player="Aisha">Avery's death removes the noise she was making, but the real game is still being played by someone calculating behind their silence — I should watch for that person, not the obvious red flags.</thought>
+<thought player="Nur">Sofia's been talking too much again, and I ain't buying her act. Let her keep pointing fingers while I watch for signs she tries to shift blame onto me — if she does, I’ll pivot quick and let her take the fall while I stay sharp.</thought>
+<thought player="Sofia">Avery and Kai's deaths have eliminated potential threats to our cover, but I must keep Nur and I aligned while appearing to suspect Kai. If the investigation shifts, I'll redirect focus to maintain our facade.</thought>
+</round>
+<round>
+Round 2.
+Sofia: I don't trust how quickly this group is turning on each other — we should be focused on the real threat, not splitting into factions.
+Nur: I'm done waiting for everyone to guess and point fingers. Let's just talk about who was actually *near* Liam when he died — that's the only thing that matters now.
+Aisha: Oh, how utterly *predictable* — another Law-abiding Citizen falls, and we're all just *so* terribly vigilant about it. I do hope we're not all just playing this game a bit too terribly vigilant for our own good.
+Ishmael: I think... I really do think we should talk about who was actually *near* Liam when he died — it's not just me, is it? I mean, uh, maybe someone's been too quick to point fingers at others, and that feels off.
+Ming: I don't trust the way Avery's been directing suspicion away from themselves — I've seen that look before. Someone's been playing us all, and it's not Kai.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ming">Avery's been throwing suspicion everywhere but themselves — I've seen that pattern before. They're the distraction, not Kai. I need to keep watching them closely, maybe even call for a vote on them next.</thought>
+<thought player="Ishmael">I think... I really do think I should say something soon, but I'm so scared of pointing at the wrong person it's making my hands shake. Maybe I'll just try to stay quiet and watch everyone carefully instead, at least until I'm more sure.</thought>
+<thought player="Aisha">Avery's death removes the noise she was making, but the real game is still being played by someone calculating behind their silence — I should watch for that person, not the obvious red flags.</thought>
+<thought player="Nur">Sofia's been talking too much again, and I ain't buying her act. Let her keep pointing fingers at others while I watch for any signs she tries to shift blame onto me — if she does, I’ll pivot quick and let her take the fall while I stay sharp.</thought>
+<thought player="Sofia">The investigation has shifted away from Kai, and I must redirect attention to maintain our cover. Nur and I remain aligned, but I need to appear more suspicious of someone else soon — perhaps Ishmael or Ming — to avoid looking too eager in the game.</thought>
+</round>
+<round>
+Round 3.
+Sofia: I don't trust how quickly this group is turning on each other — we should be focused on the real threat, not splitting into factions.
+Aisha: Oh, how utterly *predictable* — another Law-abiding Citizen falls, and we're all just *so* terribly vigilant about it. I do hope we're not all just playing this game a bit too terribly vigilant for our own good.
+Ishmael: I think... I really do think we should talk about who was actually *near* Liam when he died — it's not just me, is it? I mean, uh, maybe someone's been too quick to point fingers at others, and that feels off.
+Ming: I don't trust the way Avery's been directing suspicion away from themselves — I've seen that look before. Someone's been playing us all, and it's not Kai.
+Nur: I'm done waiting for guesses and games — whoever was *closest* to Liam when he died? That's the only thing that matters now.
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ming">Avery's been directing suspicion away from themselves using that look I've seen before — they're the distraction, not Kai. I need to watch them closely and maybe call for a vote on them next.</thought>
+<thought player="Ishmael">I think... I really do think I should say something soon, but I'm so scared of pointing at the wrong person it's making my hands shake. Maybe I'll just try to stay quiet and watch everyone carefully instead, at least until I'm more sure.</thought>
+<thought player="Aisha">Ishmael's smugness is the most telling — he’s been too eager to point fingers at others while staying frustratingly vague, and Nur’s desperate unity plays feel like a distraction tactic. The real game is being played by someone calculating behind their silence.</thought>
+<thought player="Nur">Sofia's been talking too much again, but I ain't buying her act. Let her keep pointing fingers at others while I watch for any signs she tries to shift blame onto me — if she does, I’ll pivot quick and let her take the fall while I stay sharp.</thought>
+<thought player="Sofia">The investigation has begun to shift away from Kai, and I must redirect focus soon to maintain our cover. I'll need to appear suspicious of Ishmael or Ming, but not too eager — Nur and I remain aligned, and I cannot let the others see us working in tandem.</thought>
+</round>
+<round>
+Round 4.
+Ming: I don't trust the way Avery's been directing suspicion away from themselves — I've seen that look before. It's not Kai.
+Aisha: Oh, how delightfully *coincidental* — another Law-abiding Citizen falls, and we're all just *so* terribly vigilant about it. I do hope we're not all just playing this game a bit too terribly vigilant for our own good.
+Ishmael: I think... I really do think we should talk about who was actually *near* Liam when he died — it's not just me, is it? I mean, uh, maybe someone's been too quick to point fingers at others, and that feels off.
+Sofia: I don't trust how quickly this group is turning on each other — we should be focused on the real threat, not splitting into factions.
+Nur: I'm done waiting for guesses — whoever was *closest* to Liam when he died? That's the only thing that matters now.
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ming">Avery's been the clear distraction — I've seen that pattern before, and they're not pointing fingers at the real threat. I need to call for a vote on Avery next, not Kai.</thought>
+<thought player="Ishmael">I think... I really do think I should say something soon, but I'm so scared of pointing at the wrong person it's making my hands shake. Maybe I'll just try to stay quiet and watch everyone carefully instead, at least until I'm more sure.</thought>
+<thought player="Aisha">Ishmael's smugness is the most telling — he’s been too eager to point fingers at others while staying frustratingly vague, and Nur’s desperate unity plays feel like a distraction tactic. The real game is being played by someone calculating behind their silence.</thought>
+<thought player="Nur">Sofia's been talking too much again, but I ain't buying her act. Let her keep pointing fingers at others while I watch for any signs she tries to shift blame onto me — if she does, I’ll pivot quick and let her take the fall while I stay sharp.</thought>
+<thought player="Sofia">The investigation is shifting away from Kai, and I must redirect focus soon to maintain our cover. I'll need to appear suspicious of Ishmael or Ming, but not too eager — Nur and I remain aligned, and I cannot let the others see us working in tandem.</thought>
+</round>
+<round>
+Round 5.
+Nur: I'm done waiting for everyone to guess and point fingers. Let's just talk about who was actually *near* Liam when he died — that's the only thing that matters now.
+Ming: I've seen that look before — Avery's been throwing suspicion at others while avoiding eye contact with whoever's actually guilty. It's not Kai, it's Avery.
+Sofia: I don't trust how quickly this group is turning on each other — we should be focused on the real threat, not splitting into factions.
+Ishmael: I think... I really do think we should talk about who was actually *near* Liam when he died — it's not just me, is it? I mean, uh, maybe someone's been too quick to point fingers at others, and that feels off.
+Aisha: Oh, how delightfully *coincidental* — another Law-abiding Citizen falls, and we're all just *so* terribly vigilant about it. I do hope we're not all just playing this game a bit too terribly vigilant for our own good.
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Ming">Avery's been the distraction the whole time — I've seen that look before, and it's not Kai. I need to call for a vote on Avery next, not Kai.</thought>
+<thought player="Ishmael">I think... I really do think I should say something soon, but I'm so scared of pointing at the wrong person it's making my hands shake. Maybe I'll just try to stay quiet and watch everyone carefully instead, at least until I'm more sure.</thought>
+<thought player="Aisha">Ishmael's smugness is positively infectious — it's almost as if he knows something we don't, or perhaps he's simply enjoying the game too much to care who he points fingers at. Nur’s desperate unity plays feel like a distraction, but maybe I should be more careful about who's calculating behind their silence.</thought>
+<thought player="Nur">Sofia's been talking too much, drawing all the attention — I keep quiet, watch her, and let her take the fall if anyone starts pointing fingers at me. If she slips up, I’ll pivot quick and let her take the heat while I stay sharp.</thought>
+<thought player="Sofia">The investigation is drifting away from Kai, and I must redirect focus soon to maintain our cover. I'll need to appear suspicious of Ishmael or Ming, but not too eager — Nur and I remain aligned, and I cannot let the others see us working in tandem.</thought>
+</round>
+<round>
+Round 6.
+Aisha: Oh, how utterly *predictable* — another Law-abiding Citizen falls, and we're all still just *so* terribly vigilant about it. I do hope we're not all just playing this game a bit too terribly vigilant for our own good.
+Sofia: I don't trust how quickly this group is turning on each other — we should be focused on the real threat, not splitting into factions.
+<vote initiator="Ming" target="Ishmael">
+Ming: Yes
+Ishmael: No
+Aisha: No
+Nur: Yes
+Sofia: No
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Ming" target="Ishmael">
+Ming: Yes
+Ishmael: No
+Aisha: No
+Nur: Yes
+Sofia: No
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Sofia: I don't trust this game of finger-pointing — if we're really trying to solve this, we need to stop guessing and start asking the right questions.
+<vote initiator="Ming" target="Ishmael">
+Ming: Yes
+Ishmael: No
+Aisha: No
+Nur: Yes
+Sofia: No
+tally: 2 Yes, 3 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Ming" day="3">Avery's been throwing suspicion everywhere but themselves, and I've seen that pattern before — they're the one playing the distraction, not Kai. The way they avoid eye contact while pointing fingers feels calculated, like they're counting on everyone else being too quick to point fingers. I don't trust this whole dynamic, and I'll be watching Avery closely tonight. Something's off about this whole dynamic, and I need to keep watching Avery more than Kai. They're trying to distract from something, and I don't trust the way they're directing attention away from themselves. The silence between their words feels too calculated, like they're counting on everyone else being too quick to point fingers.</diary>
+<diary player="Ishmael" day="3">I can't stop thinking about how everyone kept looking at each other like they knew something I don't, and I swear I saw Avery shift her eyes away from Kai right before she pointed fingers. Maybe it's just me, but I think someone's been acting really strange—like they're trying to distract us from something. I don't want to be the one who points at the wrong person, that would be terrible. But if we keep going like this, someone might die and it'll be my fault for not saying anything. I just wish I could figure out what's really going on. I think I should probably say something soon, but I'm so scared of pointing at the wrong person... uh, maybe I'll just try to stay quiet and watch everyone carefully instead. I don't know who to trust anymore, and the more time passes, the more I feel like I'm going to miss something important. It's not just about staying alive, it's about not being the</diary>
+<diary player="Aisha" day="3">Oh, how utterly predictable — another day, another Law-abiding Citizen falls to the night, and we're all still just *so* terribly vigilant about it. Avery's theatrical scapegoating is as ineffective as it is entertaining, but I've seen that look before — it's not about Kai, it's about who's really calculating. Ishmael's smugness is more telling than his words, and Nur's desperate unity plays feel like a distraction tactic. The real game is being played by someone behind their silence, and the night is coming. I should let them all keep their little games while I quietly observe — because those who don't play the game will be the first to fall.</diary>
+<diary player="Nur" day="3">Avery's dead and Kai's gone too — the kill count's climbing but the truth ain't coming any closer. Sofia's been talking too much again, drawing all the heat, but I ain't buying her act. She's been too eager to point fingers, too quick to shift blame onto others. I seen that look before — it's not her, but she's playing the fool while someone else takes the fall. The real killer's been dancing around like they're running a chess match and I'm done letting them win. Whoever was closest to Liam when he died? That's who we should be watching, not some pretty face with too much to say. I ain't got time for this guessing game — let Sofia keep talking while I stay sharp and watch for any signs she tries to shift blame onto me.</diary>
+<diary player="Sofia" day="3">The night brought two deaths, both necessary for our cover, but I must remain calculating. The investigation has shifted, and I've begun redirecting focus away from Kai. My public face as the fire chief demands composure, yet I'm already planning how to guide suspicion. Nur and I are aligned, but we cannot let the others see our true alliance forming. If they start asking about who was near Liam when he died, I'll have to shift their attention quickly. The game is changing, and I must stay one step ahead of everyone else.</diary>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Sofia points at Aisha
+Nur points at Aisha
+<kill>Aisha — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Liam (Law-abiding Citizen)
+• Night 2: Avery (Law-abiding Citizen)
+• Night 3: Kai (Law-abiding Citizen)
+• Night 4: Aisha (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Ming (Law-abiding Citizen), Kai (Law-abiding Citizen), Ishmael (Law-abiding Citizen), Aisha (Law-abiding Citizen), Liam (Law-abiding Citizen), Nur (Mafia), Sofia (Mafia)
+
+Who they really were:
+• Ming (Law-abiding Citizen) — Vigilant and suspicious, with an unsettling knack for noticing what others miss. Ming is constantly scanning surroundings and people's reactions, never truly at ease in crowds. Speaks in short, clipped sentences with frequent pauses for observation. Uses phrases like 'I've seen that look before,' 'Something's off about this,' and 'Don't trust the silence.' Often looks around while talking, checking exits and faces. Has a habit of tilting head slightly when processing information. Ming is a night watchman at the old factory district, tasked with keeping the area secure after hours. They've lived in the neighborhood their whole life and have an almost supernatural ability to detect when something is wrong, which has made them both invaluable and slightly unnerving to neighbors.
+• Kai (Law-abiding Citizen) — Playful and teasing with a mischievous streak, always looking for opportunities to lighten the mood or give gentle ribbing. They're naturally bubbly and engaging, but can be surprisingly sharp when needed. Speaks in quick, animated bursts with frequent laughter and light teasing. Uses filler words like 'well now' and 'oh my,' with a tendency to finish others' sentences with a wink or smirk. Often uses playful nicknames for people ('Sweetpea,' 'Bigfoot') and has a habit of humming tunes while thinking. Kai is the local bakery owner's apprentice, known throughout town for their cheerful demeanor and knack for making everyone feel welcome. They're always ready with a joke or a complimentary pastry, and have an uncanny ability to make even the grumpiest customers smile. Their father was also a baker, so they grew up in the shop and inherited his love of bringing joy through food.
+• Ishmael (Law-abiding Citizen) — Anxious and self-doubting, constantly second-guessing their perceptions and decisions Speaks in hesitant, fragmented sentences with frequent pauses and vocalized breaths. Uses filler words like 'uh,' 'well,' and 'I think' excessively. Stumbles over words, often starts sentences then trails off. Voice wavers with uncertainty, speaks softly and avoids direct eye contact. Has a habit of fidgeting with clothing or objects while talking. Ishmael is the town librarian's assistant, responsible for organizing books and helping patrons find materials. I've worked at the library for eight years and know every shelf by heart. I'm quiet and keep to myself, preferring the company of books to people. I live alone in a small apartment above the hardware store.
+• Aisha (Law-abiding Citizen) — Dry and sardonic, with a cutting wit that masks deep skepticism about human nature. Views most people as either fools or duplicitous, rarely expressing genuine surprise. Has a passive-aggressive streak and takes pleasure in deflating pretensions. Speaks in measured, understated tones with frequent pauses for rhetorical effect. Uses deadpan delivery and ironic observations. Often responds with short, pointed comments like 'How delightfully mundane,' or 'Oh, how utterly predictable.' Has a habit of raising eyebrows slightly when making a cutting remark. Tends to roll eyes subtly during conversations. Aisha is the town's official 'town crier' and chronicle keeper, responsible for announcing local events and maintaining the official record of community happenings. She's been in the position for fifteen years, having inherited it from her grandmother who also held the role. She lives alone in a modest house on Maple Street with her two cats.
+• Liam (Law-abiding Citizen) — Brash and boastful, with an oversized confidence that borders on arrogance. Thinks highly of their own abilities and rarely admits uncertainty. Has a competitive streak and loves to one-up others. Takes pride in being the most knowledgeable person in any given situation and gets visibly irritated when challenged. Speaks loudly and rapidly, often interrupting others mid-sentence. Uses big, sweeping gestures while talking and has a habit of leaning forward aggressively. Frequently uses superlatives like 'absolutely incredible,' 'unbelievably amazing,' and 'totally spectacular.' Has a booming voice that can fill a room and often punctuates points with a confident chomp of the lip or a theatrical arm wave. Liam is the town's most celebrated mechanic, known for fixing anything that breaks in the community. He runs his own garage on Oak Street, where he's been working for fifteen years. He's always the first to volunteer for any repair job and never turns down a challenge, often claiming he can fix anything with just his bare hands.
+• Nur (Mafia) — publicly presented as Nur is the town's long-time groundskeeper, responsible for maintaining all public spaces and green areas. They've worked at the municipal park for twenty years and are known for their methodical approach to landscaping and garden care. Nur lives alone in a modest house on the edge of town with their elderly dog, Buddy. They're always seen wearing worn work clothes and have a reputation for being 'a bit rough around the edges.' Most people avoid discussing personal matters with Nur because they rarely respond to casual conversation beyond necessary exchanges. (Gruff and blunt with a no-nonsense attitude that makes others uncomfortable. Speaks with direct, harsh honesty that cuts through social niceties. Has little patience for flattery or weak excuses. Maintains an air of quiet intensity that puts people on edge. Deeply distrusts anyone who seems too eager to please or overly accommodating. Takes pride in being straightforward and unvarnished in speech, often unintentionally offending others with their blunt delivery. Speaks in short, clipped sentences with a gravelly voice that sounds like it's coming from deep within the chest. Uses minimal gestures, often crossing arms or tapping fingers impatiently. Delivers comments with a flat expression, rarely showing emotion. Interrupts others abruptly and doesn't hesitate to call people out on what they see as weakness or dishonesty. Often sighs deeply between sentences and has a habit of looking away while speaking. Avoids small talk and prefers direct confrontation over diplomatic language.) … but was really a Mafioso: Nur was drawn into the Mafia after witnessing a brutal murder committed by their own father's business partners. The organization took them in as an apprentice and trained them in their methods over several years. They've been working for the family operation for fifteen years, using their public identity to maintain cover while gathering intelligence and carrying out discreet tasks. Nur sees themselves as a necessary evil who maintains order through fear and intimidation, believing that the world would be chaos without strong leadership. They take pride in their loyalty to the cause and have no qualms about eliminating threats to their organization.
+• Sofia (Mafia) — publicly presented as Sofia is the head of the town's volunteer fire department, having served for over a decade. She's known throughout the community for her unwavering dedication to public safety and her ability to organize people during emergencies. She lives in a modest house on Elm Street with her elderly mother, who suffers from dementia. Sofia takes great pride in her role as the department's chief, believing that she's the only one capable of leading the team properly. She's been training new recruits for years, always demanding the highest standards from everyone under her command. (Stern and commanding, with an iron will and absolute certainty in her decisions. Sofia demands respect through her presence and never hesitates to assert authority. She speaks with unwavering confidence and expects compliance from others. Despite her commanding demeanor, she has a deep sense of duty and honor that drives her actions. Speaks with clipped, precise sentences delivered in a firm, authoritative tone. Uses short, declarative statements and rarely uses filler words. Her voice carries weight and authority, often cutting through conversations. Pauses briefly before speaking, as if weighing each word carefully. Maintains direct eye contact and stands tall when talking. Rarely smiles or shows emotion, preferring to project strength and control.) … but was really a Mafioso: Sofia was raised in a strict household where her father ran a legitimate construction business that served as a front for his criminal activities. When her father died under suspicious circumstances, she took over his organization, becoming the head of a family enterprise that handles everything from illegal gambling to extortion. She's spent years building her reputation as a tough but fair leader in the town's fire department while secretly maintaining control over the underground operations. Her iron will and commanding presence help her maintain order both in her criminal organization and in public life.
+</endgame>
+<story>
+The game played out like a slow-burning tension between people who knew they were being watched, and who watched others in turn. Avery's face carried the same tight expression each day, eyes darting away from Kai while she pointed fingers at everyone else. Ming, ever watchful, noted how the pattern repeated — Avery was distracting them all, keeping attention on Kai rather than herself.
+
+Kai played along with the role of the cheerful innocent, but their words carried a knowing edge. They seemed to understand exactly how to make others look away from themselves, using Ishmael's whispered suspicions as a diversion while subtly steering the conversation back toward safety. They weren't afraid of being pointed at; they were eager to be seen as harmless.
+
+Ishmael sat quietly in the center of it all, shifting between anxiety and an almost desperate desire to say something important. His silence wasn't passive — it was careful, like a person who had seen too much and knew he couldn't trust his own instincts. He watched everyone closely, but never quite said enough to make anyone believe he knew anything.
+
+Aisha watched from the sidelines with her sharp tongue and sardonic smile, observing how the others' games fell apart under scrutiny. She knew who was playing the distraction, and who was calculating. Her voice carried that cutting edge that made people uncomfortable, but it was also a mask — a way to keep others from seeing what she really saw.
+
+Nur and Sofia played the most careful roles of all. They never raised their voices, never took center stage, yet they directed the conversation like puppeteers with invisible strings. Their alignment was hidden in plain sight, their cover so tight that even the others couldn't see how much they were working together — or how carefully they were watching each other.
+</story>
+</transcript>

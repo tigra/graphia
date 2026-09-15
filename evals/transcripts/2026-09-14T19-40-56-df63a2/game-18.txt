@@ -1,0 +1,233 @@
+Game 18 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Nima" role="Law-abiding Citizen">
+Personality: dreamy and distractible
+Manner: speaks in gentle, drawn-out sentences with frequent pauses and trailing off. Uses words like 'you know' and 'well actually' excessively. Often gets sidetracked mid-sentence by seemingly random thoughts or observations about the weather, nearby objects, or past memories.
+Persona: Nima works as a librarian's assistant in the town's small public library, spending most days organizing books and helping children with their reading. They're known for being kind but easily distracted, often found lost in thought while walking to work or during meetings.
+</player>
+<player name="Yasir" role="Mafia">
+Personality: Anxious and perpetually uncertain, Yasir constantly questions their decisions and second-guesses their actions. They're deeply worried about making mistakes or saying the wrong thing, often fidgeting with their hands or adjusting their clothing when nervous. Despite their anxiety, they have a strong desire to be helpful and do what's right, which creates internal conflict between their need for approval and fear of failure.
+Manner: Speaks in short, hesitant sentences with frequent pauses and self-corrections. Uses filler words like 'uh', 'well', 'I think', and 'maybe' constantly. Their voice trails off at the end of sentences, and they often look around nervously while talking. They tend to apologize or qualify their statements immediately after speaking.
+Public legend: Yasir is a meticulous accountant who works from home, doing tax preparation and bookkeeping for local businesses. They're known for being extremely thorough and reliable, but also for being overly concerned about every detail and constantly double-checking their work. They live alone in a small apartment with several houseplants and spend their evenings reading financial journals and watching educational videos about business management.
+True self (hidden): Yasir was recruited into the Mafia after their family was threatened during a business dispute. They were forced to become an informant within the organization, feeding information to law enforcement while maintaining their cover as a loyal member. Their true role is to monitor the inner circle for any signs of betrayal or corruption, though they're constantly terrified that their double life will be discovered and they'll face deadly consequences.
+</player>
+<player name="Khadija" role="Law-abiding Citizen">
+Personality: dry and sardonic
+Manner: speaks in clipped, precise sentences with deadpan delivery. Uses ironic understatement and dry wit to deflect emotion. Has a tendency to pause mid-sentence and then deliver a cutting observation or cynical remark. Speaks slowly and deliberately, as if weighing every word for maximum impact. Often uses contractions in a way that sounds dismissive rather than casual.
+Persona: Khadija works as the town's official 'chronicler of minor infractions' - a position that sounds more important than it actually is. She keeps meticulous records of traffic violations, noise complaints, and other petty transgressions that don't warrant actual investigation. She's known for her impeccable attention to detail, though she often seems more interested in the absurdity of human behavior than in her own job. Her colleagues find her sharp tongue and unrelenting honesty both fascinating and terrifying.
+</player>
+<player name="Ahmed" role="Law-abiding Citizen">
+Personality: vigilant and watchful
+Manner: speaks in sharp, clipped sentences with frequent pauses for observation. Uses precise, military-style vocabulary and often checks their surroundings while talking. Has a habit of looking over their shoulder or at the edges of the room during conversation. Delivers statements with a commanding tone that suggests they're always scanning for threats or hidden meanings. Uses words like 'I've noticed' and 'it's worth noting' frequently.
+Persona: Ahmed works as the town's night security guard, patrolling the streets from 10 PM to 6 AM. He's been on the force for fifteen years, specializing in preventing break-ins and maintaining order during late-night hours. He's known for his keen eyes and ability to spot unusual activity, often stopping to investigate suspicious sounds or movements even when not on official duty.
+</player>
+<player name="Sara" role="Law-abiding Citizen">
+Personality: Weary and world-worn, with a quiet cynicism that masks deep empathy. Sara has seen too much of life's harsh realities and carries the weight of others' struggles in her demeanor.
+Manner: Speaks slowly and deliberately, with a gravelly tone that suggests years of hard living. Uses long pauses between sentences as if weighing words carefully. Often sighs or lets out quiet breaths while talking. Her voice has a distant quality, like someone who's heard every story and has nothing left to be surprised by. Uses phrases like 'well, that's just how it goes' and 'I've seen worse, but not many' frequently.
+Persona: Sara is the town's unofficial counselor and mediator, though she never officially holds such a position. She's been helping residents work through personal problems for over fifteen years, often taking on cases that others won't touch. She runs a small informal support group for troubled families and has an uncanny ability to see solutions where others see only problems. Works part-time at the local diner and spends evenings volunteering at the community center.
+</player>
+<player name="Rahul" role="Mafia">
+Personality: Rahul is gruff, blunt, and fiercely protective of his reputation. He has a short temper but deep loyalty to those he considers friends. He's a man who speaks his mind without filter, often offending others with his directness. Despite his harsh exterior, he genuinely cares about the wellbeing of his community and will go to great lengths to protect it.
+Manner: Speaks in short, clipped sentences with little preamble. Uses harsh vocal tones and rarely raises his voice, but when he does, it's commanding. Often interrupts others mid-sentence, cuts off questions before they're finished, and doesn't tolerate nonsense. Has a habit of grunting or snorting when irritated and tends to deliver harsh truths without sugarcoating.
+Public legend: Rahul is the town's chief mechanic who runs a small garage on Main Street. He's been fixing cars for over twenty years and is known for his reliability and no-nonsense approach. He takes pride in his work, never cuts corners, and charges fair prices. He's a bit of a loner who prefers to work alone but has built a solid reputation in the community through honest labor and straightforward dealings.
+True self (hidden): Rahul was recruited into the local mafia by his older brother, who had been working for the organization for years. When his brother was killed during an operation gone wrong, Rahul took his place to protect their family's interests. He's been living a double life for eight years now, using his reputation as a mechanic to gather information and move money through legitimate business transactions while maintaining his criminal network.
+</player>
+<player name="Mona" role="Law-abiding Citizen">
+Personality: aloof and detached
+Manner: speaks in quiet, measured tones with minimal inflection, as if processing thoughts before articulating them. Uses short, clipped sentences with long pauses between them. Has a habit of tilting their head slightly when listening, as if evaluating the worth of each statement. Often sighs softly or makes small hums of acknowledgment rather than full responses. Their voice carries an air of disinterest that suggests they're merely enduring the conversation rather than participating in it.
+Persona: Mona is a retired librarian who moved to town five years ago after her husband passed away. She lives alone in a small house on Maple Street and spends most days reading quietly in her garden or visiting the local coffee shop for afternoon tea. She rarely interacts with neighbors beyond polite nods, though she's known to be exceptionally well-read and can quote from literature at length when prompted.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Nima, Yasir, Khadija, Ahmed, Sara, Rahul, Mona. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Yasir): Your Mafia teammates are: Rahul. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Rahul): Your Mafia teammates are: Yasir. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Yasir points at Nima
+Rahul points at Nima
+<kill>Nima — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Nima was killed last night. Nima was a Law-abiding Citizen.
+<round>
+Round 1.
+Rahul: Someone should've checked the garage tools last night — Nima's death ain't natural, and I don't mean just the knife.
+Khadija: Well, that's one way to settle a dispute — though I'd've preferred a medical examiner's report over a kitchen knife.
+Mona: The knife wound was clean. Too clean. Mafiosos don't use tools that leave no trace.
+Yasir: I think... uh, maybe we should all just stay together and not go off alone, you know? It's been a rough start to the day, and I'm just really worried about who else might be next.
+Avery: Nothing is settled yet, but I'm watching Yasir most closely.
+Ahmed: I've noticed Yasir keeps glancing at the door whenever someone mentions being alone — it's worth noting how quickly he shifted the conversation to group safety instead of focusing on Nima's murder method.
+Sara: I've seen worse, but not many. Yasir's been quick to shift blame onto others, which ain't natural for a man who's lost his wife and child.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yasir">Uh, well, I wonder if I'm being too obvious trying to steer the conversation toward group safety... maybe I should just let someone else take the lead on questioning the murder method instead of me jumping in so quickly. I really hope no one connects my nervous glances at the door to my actual role, that would be terrible.</thought>
+<thought player="Khadija">Well, that's one way to die — with a kitchen knife and no trace. I suppose we're all just sitting here waiting for someone else to make the first move, which is exactly what happens when the Mafiosos are good at what they do. Yasir's got his own agenda, but he's not quite paranoid enough to be dangerous yet.</thought>
+<thought player="Ahmed">I've noticed Sara's comment about Yasir shifting blame seems calculated — it's worth noting how she's positioning herself as an observer while avoiding direct accusations. I need to watch her reaction if anyone else brings up the murder method, and check if she's been monitoring the others' movements.</thought>
+<thought player="Sara">Well, that's just how it goes — another citizen down, and the Mafiosos are already playing the blame game. I've seen worse, but not many, and I can't help but wonder if Yasir's quick shift to group safety is a distraction or a warning.</thought>
+<thought player="Rahul">Nima's death was clean—too clean for a random attack. Someone's been watching the garage tools, and I need to keep Yasir close. The group's already suspicious of him, which is good, but I don't want to draw attention to myself yet. Better to let them talk and see who panics first.</thought>
+<thought player="Mona">Yasir's behavior is suspicious, but I need more evidence than his nervous glances. The clean wound suggests a mafia member, and I should watch for further signs of deception.</thought>
+</round>
+<round>
+Round 2.
+Yasir: I, uh, I really hope we're not jumping to conclusions too fast — I mean, it's not like we know for sure who did it, right? Maybe we should just... stay close and keep talking about what we all saw?
+Ahmed: I've noticed Sara avoids direct talk about the murder method — it's worth noting how she's positioning herself as an observer while avoiding accusations.
+Avery: Nothing is settled yet, but I'm watching Yasir most closely.
+Mona: Yasir's too quick to redirect attention. If he's so worried about being alone, why does he keep looking over his shoulder at the door?
+Khadija: Yasir's been quick to redirect blame — but I've noticed he's not the least bit concerned about staying close to the group. Either he's got something to hide, or he's just really bad at reading the room.
+Sara: I've seen worse, but not many — and I ain't seen no man run from a knife wound like Yasir did when he started talking about group safety.
+Rahul: Yasir keeps looking over his shoulder like he's expecting someone to jump out and finish what was started — but he's the only one who knows where the knife really came from.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yasir">I really hope nobody's connecting my door-glances to my real role - that would be awful. Maybe I should let someone else question the murder method instead of me jumping in so fast.</thought>
+<thought player="Khadija">Yasir's dancing around the edges of suspicion like he's learned to play dumb, but I've seen enough men run from knife wounds to know he's not telling the truth — and if he's not the killer, he's either a pawn or a liar who's about to become a target.</thought>
+<thought player="Ahmed">I've noticed Yasir's consistent avoidance of direct discussion about the murder method — it's worth noting how he's steering conversations away from his own behavior. I need to watch him closely during the next round, especially if anyone brings up the knife wound or tool usage.</thought>
+<thought player="Sara">Yasir's running from something more than just fear — I've seen the look he gets when he thinks no one's watching, and it ain't the same as grief. That knife wound was too clean for a random attack, and if he's not the killer, he knows who is.</thought>
+<thought player="Rahul">Yasir's playing it too safe — I need to push the group closer to accusing him, but not so fast that I look suspicious. Let them dig their own holes first.</thought>
+<thought player="Mona">Yasir's evasion is notable, but I need concrete evidence he's not a Citizen. His behavior suggests he knows more than he lets on, yet his nervousness could be feigned.</thought>
+</round>
+<round>
+Round 3.
+Khadija: Yasir's been quick to shift blame, but I've noticed he's not the least bit concerned about staying close to the group. Either he's got something to hide, or he's just really bad at reading the room.
+Sara: Yasir keeps looking over his shoulder like he's expecting a knife in his back — but I ain't seen no one else with that look. Well, that's just how it goes.
+Rahul: Yasir's been acting like he's got a target on his back — but I ain't seen no one else with that look. That's how you know he's the one who's been watching the tools.
+Yasir: I, uh, I really do hope we're not missing something obvious — maybe someone could double-check the murder weapon? I mean, if it was that clean, it's not like it was just a random knife from the kitchen...
+Ahmed: I've noticed Yasir keeps glancing at the door whenever someone mentions being alone — it's worth noting how quickly he shifted the conversation to group safety instead of focusing on Nima's murder method.
+Avery: Nothing is settled yet, but I'm watching Yasir most closely.
+Mona: Yasir keeps deflecting, but he’s not the only one who’s been watching the door.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Yasir">I really hope nobody's connecting my door-glances to my actual role - that would be awful. Maybe I should let someone else question the murder method instead of me jumping in so fast.</thought>
+<thought player="Khadija">Yasir's paranoia is either genuine or表演得太好，但不管怎样，他都在利用别人的恐惧来掩盖自己的问题。我得看看他到底在怕什么，或者更准确地说，他到底知道什么。</thought>
+<thought player="Ahmed">I've noticed Yasir's evasion tactics are working — he's not the only one watching the door, but he's the only one who's been steering conversations away from the murder method. I need to keep him in my sights and watch for any shift in his behavior during the next round.</thought>
+<thought player="Sara">Yasir's too sharp for a simple grieving widower — I ain't seen no man run from a knife wound like that, and I've been watching him close. If he's not the killer, he knows who is, and that makes him dangerous to let live.</thought>
+<thought player="Rahul">Yasir's playing it safe, but the group's already on edge—let them turn on him before I have to act. I’ll keep my mouth shut and let the paranoia do the work.</thought>
+<thought player="Mona">Yasir's redirection is too calculated to be mere paranoia. I need to observe if he's the one who moved the knife, or if his behavior is a cover for something else.</thought>
+</round>
+<round>
+Round 4.
+Yasir: I, uh, I really do hope we're not missing something obvious about the murder weapon — maybe someone could double-check the knife? I mean, if it was that clean, it's not like it was just a random kitchen knife...
+Rahul: Yasir's been acting like he knows more than he's telling — and that ain't normal for a man who just lost his wife and child.
+Avery: Nothing is settled yet, but I'm watching Yasir most closely.
+<vote initiator="Ahmed" target="Yasir">
+Avery: No
+Yasir: No
+Khadija: Yes
+Ahmed: Yes
+Sara: Yes
+Rahul: No
+Mona: Yes
+tally: 4 Yes, 3 No
+outcome: executed — Yasir has been executed. Yasir was a Mafia.
+</vote>
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Yasir was executed today and was revealed to be Mafia.</recap>
+</round>
+<diary player="Khadija" day="1">Well, that's one way to go out — with a knife and no witnesses, though I suppose that's what happens when you're not careful about who you trust. Yasir was either a pawn or a liar, but honestly, I've seen enough men run from kitchen knives to know he wasn't telling the truth. The real question is whether he knew more than he let on, or if he was just smart enough to stay alive long enough to make everyone else think he was the victim. I'm not sure which is worse — the liar or the fool who doesn't know he's being used. At least now we've got one less Mafioso to worry about, though I doubt that's the end of it.</diary>
+<diary player="Ahmed" day="1">Nima's death was clean — too clean. The knife wound, the lack of struggle, the way it was staged. I've noticed how Yasir kept glancing at the door during every discussion about being alone. It's worth noting that he's the only one who's been steering conversations away from the murder method instead of focusing on the facts. I've seen this pattern before — when someone shifts blame so quickly, they're usually the one with something to hide. The way Sara positioned herself as an observer while avoiding accusations — that's a red flag too. I need to watch both of them carefully tonight. There are still two Mafiosos among us, and I won't let either of them get away with it.</diary>
+<diary player="Sara" day="1">Well, that's just how it goes — another citizen down, and the Mafiosos are already playing the blame game. I've seen worse, but not many, and I can't help but wonder if Yasir's quick shift to group safety is a distraction or a warning. The way he kept glancing at the door, like he was expecting someone to jump out — that ain't grief, that's fear of being next. I've seen the look he gets when he thinks no one's watching, and it ain't the same as mourning. That knife wound was too clean for a random attack, and if he's not the killer, he knows who is. If he's not the killer, he knows who is, and that makes him dangerous to let live.</diary>
+<diary player="Rahul" day="1">Yasir's been playing it safe, but the group's already on edge—let them turn on him before I have to act. I’ll keep my mouth shut and let the paranoia do the work. The knife was clean, too clean. Someone’s been watching the garage tools, and I ain’t seen no one else with that look. I need to keep the pressure on him, but not so much that I look like I’m pushing. The group’s already suspicious—let them dig their own holes first. That’s how it’s done.</diary>
+<diary player="Mona" day="1">Yasir was executed today, and I suppose that settles one question. The clean wound, the way he redirected attention — it all pointed to a mafia member, and now we know who. But I still don't trust his evasion. He wasn't just nervous; he was calculating. I need to watch the others carefully tonight. If he was the one who moved the knife, then someone else might have done the same. There's more at play here than just a single killer.</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Rahul points at Mona
+<kill>Mona — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Mona was killed last night. Mona was a Law-abiding Citizen.
+<round>
+Round 1.
+Khadija: Well, that's one way to die — with a kitchen knife and no trace. I suppose we're all just sitting here waiting for someone else to make the first move, which is exactly what happens when the Mafiosos are good at what they do.
+Ahmed: I've noticed Sara keeps glancing at the door whenever the murder method is mentioned — it's worth noting how she's positioning herself as an observer while avoiding direct accusations.
+Sara: I've seen worse, but not many — and I ain't seen no man run from a knife wound like Mona did when she started talking about group safety.
+Avery: Yasir was revealed to be Mafia. I most suspect Rahul based on how the votes have gone.
+Rahul: Mona's death was clean too — that knife's been sharpened by someone who knows what they're doing. I ain't seen no one else with that look about them.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Khadija">Yasir's paranoia is either genuine or表演得太好，但不管怎样，他都在利用别人的恐惧来掩盖自己的问题。我得看看他到底在怕什么，或者更准确地说，他到底知道什么。</thought>
+<thought player="Ahmed">Sara's evasion tactics are working, but I've noticed she's been positioning herself as an observer while avoiding accusations—watch her closely if the murder method is brought up again. I need to confirm whether she's been monitoring others' movements or if she's just trying to stay in the shadows.</thought>
+<thought player="Sara">Rahul's been too quick with his accusations, and I ain't seen nothing but guilt in his eyes when he talks about the knife work. That leaves me wondering if he's the one who's been watching the tools, or if there's something else he's hiding. Well, that's just how it goes — the Mafioso is still out there, and I ain't seen no one else with that look about them.</thought>
+<thought player="Rahul">The group's paranoid enough now to turn on Mona's killer if I play it right — let them execute her before I have to act. Keep quiet, let the suspicion build, and strike when they're too scared to think straight.</thought>
+</round>
+<round>
+Round 2.
+Ahmed: I've noticed Rahul keeps shifting the focus to Mona's death instead of Nima's — it's worth noting how he's avoiding direct talk about the murder weapon.
+Sara: I've seen worse, but not many — and I ain't seen no man run from a knife wound like Rahul did when he started talking about Mona's death.
+Rahul: Mona's death was clean — too clean. Someone’s been watching the garage tools, and I ain’t seen no one else with that look.
+Khadija: Well, that's one way to die — with a kitchen knife and no trace. I suppose we're all just sitting here waiting for someone else to make the first move, which is exactly what happens when the Mafiosos are good at what they do.
+Avery: Yasir was revealed to be Mafia. I most suspect Rahul based on how the votes have gone.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Khadija">Rahul's avoiding direct talk about the murder weapons while shifting focus to Mona's death — that's either a red herring or a desperate attempt to misdirect. I'll let him keep talking, but I'm watching his hands more closely now.</thought>
+<thought player="Ahmed">I've noticed Rahul steering the conversation away from the murder method again — it's worth noting how he's avoiding direct talk about the knife. I need to watch him closely during the next round, especially if anyone brings up the tool usage or clean wound details.</thought>
+<thought player="Sara">Rahul's been too quick with his accusations — I ain't seen nothing but guilt in his eyes when he talks about the knife work. Well, that's just how it goes, but I can't shake the feeling he's got something to hide.</thought>
+<thought player="Rahul">The group's paranoid enough to turn on Mona's killer if I play it right — let them execute her before I have to act. Keep quiet, let the suspicion build, and strike when they're too scared to think straight.</thought>
+</round>
+<round>
+Round 3.
+Ahmed: I've noticed Rahul keeps avoiding direct talk about the knife wound — it's worth noting how he's steering the conversation away from tool usage.
+Avery: Yasir was revealed to be Mafia. I most suspect Rahul based on how the votes have gone.
+Khadija: Rahul's been quick to shift blame onto Mona's death, but I've noticed he's not the least bit concerned about staying close to the group. Either he's got something to hide, or he's just really bad at reading the room.
+Rahul: Mona's death was clean — too clean. Someone's been watching the garage tools, and I ain't seen no one else with that look.
+Sara: I ain't seen no one else with that look about them — and I've been watching Rahul close. He's got guilt written in his eyes, not just grief.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Khadija">Rahul's dancing around the edges of suspicion like he's learned to play dumb, but I've seen enough men run from knife wounds to know he's not telling the truth — and if he's not the killer, he's either a pawn or a liar who's about to become a target.</thought>
+<thought player="Ahmed">I've noticed Rahul consistently avoids direct talk about the murder method—its worth noting how he's steering the conversation away from tool usage. I need to watch him closely during the next round, especially if anyone brings up clean wound details or garage tools.</thought>
+<thought player="Sara">Rahul's been playing the grieving widower too well — I've seen that look before, and it ain't grief. He's got something to hide, and if he's not the Mafioso, he knows who is. Well, that's just how it goes — the game's tightening, and I ain't seen no one else with that look about them.</thought>
+<thought player="Rahul">The group's all wound tight, looking for someone to blame, and I've got them pointing at Mona's killer without even pushing. Let them turn on her before I have to act — let the paranoia do the work, and keep my head down till the right moment.</thought>
+</round>
+<round>
+Round 4.
+Rahul: Mona's death was clean — too clean. Someone's been watching the garage tools, and I ain’t seen no one else with that look.
+Avery: Yasir was revealed to be Mafia. I most suspect Rahul based on how the votes have gone.
+Ahmed: I've noticed Rahul keeps shifting blame onto Mona's death instead of focusing on Nima's murder method — it's worth noting how he's avoiding direct talk about the knife wound.
+<vote initiator="Khadija" target="Rahul">
+Avery: Yes
+Khadija: Yes
+Ahmed: Yes
+Sara: Yes
+Rahul: No
+tally: 4 Yes, 1 No
+outcome: executed — Rahul has been executed. Rahul was a Mafia.
+</vote>
+</round>
+</day>
+<endgame>
+The Law-abiding Citizens have won.
+
+Events this game:
+• Night 1: Nima (Law-abiding Citizen)
+• Day 1: Yasir (Mafia) executed
+• Night 2: Mona (Law-abiding Citizen)
+• Day 2: Rahul (Mafia) executed
+
+Full roster: Avery (Law-abiding Citizen), Nima (Law-abiding Citizen), Yasir (Mafia), Khadija (Law-abiding Citizen), Ahmed (Law-abiding Citizen), Sara (Law-abiding Citizen), Rahul (Mafia), Mona (Law-abiding Citizen)
+
+Who they really were:
+• Nima (Law-abiding Citizen) — dreamy and distractible speaks in gentle, drawn-out sentences with frequent pauses and trailing off. Uses words like 'you know' and 'well actually' excessively. Often gets sidetracked mid-sentence by seemingly random thoughts or observations about the weather, nearby objects, or past memories. Nima works as a librarian's assistant in the town's small public library, spending most days organizing books and helping children with their reading. They're known for being kind but easily distracted, often found lost in thought while walking to work or during meetings.
+• Yasir (Mafia) — publicly presented as Yasir is a meticulous accountant who works from home, doing tax preparation and bookkeeping for local businesses. They're known for being extremely thorough and reliable, but also for being overly concerned about every detail and constantly double-checking their work. They live alone in a small apartment with several houseplants and spend their evenings reading financial journals and watching educational videos about business management. (Anxious and perpetually uncertain, Yasir constantly questions their decisions and second-guesses their actions. They're deeply worried about making mistakes or saying the wrong thing, often fidgeting with their hands or adjusting their clothing when nervous. Despite their anxiety, they have a strong desire to be helpful and do what's right, which creates internal conflict between their need for approval and fear of failure. Speaks in short, hesitant sentences with frequent pauses and self-corrections. Uses filler words like 'uh', 'well', 'I think', and 'maybe' constantly. Their voice trails off at the end of sentences, and they often look around nervously while talking. They tend to apologize or qualify their statements immediately after speaking.) … but was really a Mafioso: Yasir was recruited into the Mafia after their family was threatened during a business dispute. They were forced to become an informant within the organization, feeding information to law enforcement while maintaining their cover as a loyal member. Their true role is to monitor the inner circle for any signs of betrayal or corruption, though they're constantly terrified that their double life will be discovered and they'll face deadly consequences.
+• Khadija (Law-abiding Citizen) — dry and sardonic speaks in clipped, precise sentences with deadpan delivery. Uses ironic understatement and dry wit to deflect emotion. Has a tendency to pause mid-sentence and then deliver a cutting observation or cynical remark. Speaks slowly and deliberately, as if weighing every word for maximum impact. Often uses contractions in a way that sounds dismissive rather than casual. Khadija works as the town's official 'chronicler of minor infractions' - a position that sounds more important than it actually is. She keeps meticulous records of traffic violations, noise complaints, and other petty transgressions that don't warrant actual investigation. She's known for her impeccable attention to detail, though she often seems more interested in the absurdity of human behavior than in her own job. Her colleagues find her sharp tongue and unrelenting honesty both fascinating and terrifying.
+• Ahmed (Law-abiding Citizen) — vigilant and watchful speaks in sharp, clipped sentences with frequent pauses for observation. Uses precise, military-style vocabulary and often checks their surroundings while talking. Has a habit of looking over their shoulder or at the edges of the room during conversation. Delivers statements with a commanding tone that suggests they're always scanning for threats or hidden meanings. Uses words like 'I've noticed' and 'it's worth noting' frequently. Ahmed works as the town's night security guard, patrolling the streets from 10 PM to 6 AM. He's been on the force for fifteen years, specializing in preventing break-ins and maintaining order during late-night hours. He's known for his keen eyes and ability to spot unusual activity, often stopping to investigate suspicious sounds or movements even when not on official duty.
+• Sara (Law-abiding Citizen) — Weary and world-worn, with a quiet cynicism that masks deep empathy. Sara has seen too much of life's harsh realities and carries the weight of others' struggles in her demeanor. Speaks slowly and deliberately, with a gravelly tone that suggests years of hard living. Uses long pauses between sentences as if weighing words carefully. Often sighs or lets out quiet breaths while talking. Her voice has a distant quality, like someone who's heard every story and has nothing left to be surprised by. Uses phrases like 'well, that's just how it goes' and 'I've seen worse, but not many' frequently. Sara is the town's unofficial counselor and mediator, though she never officially holds such a position. She's been helping residents work through personal problems for over fifteen years, often taking on cases that others won't touch. She runs a small informal support group for troubled families and has an uncanny ability to see solutions where others see only problems. Works part-time at the local diner and spends evenings volunteering at the community center.
+• Rahul (Mafia) — publicly presented as Rahul is the town's chief mechanic who runs a small garage on Main Street. He's been fixing cars for over twenty years and is known for his reliability and no-nonsense approach. He takes pride in his work, never cuts corners, and charges fair prices. He's a bit of a loner who prefers to work alone but has built a solid reputation in the community through honest labor and straightforward dealings. (Rahul is gruff, blunt, and fiercely protective of his reputation. He has a short temper but deep loyalty to those he considers friends. He's a man who speaks his mind without filter, often offending others with his directness. Despite his harsh exterior, he genuinely cares about the wellbeing of his community and will go to great lengths to protect it. Speaks in short, clipped sentences with little preamble. Uses harsh vocal tones and rarely raises his voice, but when he does, it's commanding. Often interrupts others mid-sentence, cuts off questions before they're finished, and doesn't tolerate nonsense. Has a habit of grunting or snorting when irritated and tends to deliver harsh truths without sugarcoating.) … but was really a Mafioso: Rahul was recruited into the local mafia by his older brother, who had been working for the organization for years. When his brother was killed during an operation gone wrong, Rahul took his place to protect their family's interests. He's been living a double life for eight years now, using his reputation as a mechanic to gather information and move money through legitimate business transactions while maintaining his criminal network.
+• Mona (Law-abiding Citizen) — aloof and detached speaks in quiet, measured tones with minimal inflection, as if processing thoughts before articulating them. Uses short, clipped sentences with long pauses between them. Has a habit of tilting their head slightly when listening, as if evaluating the worth of each statement. Often sighs softly or makes small hums of acknowledgment rather than full responses. Their voice carries an air of disinterest that suggests they're merely enduring the conversation rather than participating in it. Mona is a retired librarian who moved to town five years ago after her husband passed away. She lives alone in a small house on Maple Street and spends most days reading quietly in her garden or visiting the local coffee shop for afternoon tea. She rarely interacts with neighbors beyond polite nods, though she's known to be exceptionally well-read and can quote from literature at length when prompted.
+</endgame>
+<story>
+The first night brought Nima's death, and the group gathered around the table with the weight of a knife wound in their midst. Yasir's behavior from the start was marked by a nervous glancing at the door, a gesture that felt both genuine and calculated. His words about group safety were met with a quiet murmur from the others—Ahmed noted it, Sara observed it, but no one pressed him directly on the knife wound itself. The tension was already building, though none had named what they suspected.
+
+By day's end, Yasir had been executed, his fate sealed by the group's collective suspicion that he'd been too quick to deflect attention while clearly watching the door. What no one said out loud was that everyone had seen the way he shifted the conversation away from the murder method, how he'd tried to make it about safety rather than guilt. The group had been watching each other more closely since then, and the pattern of behavior—specifically the way each person looked at the door—had begun to feel like a message.
+
+The second night brought Mona's death, and the group was now down to four law-abiding citizens and one remaining mafia member. Rahul's voice carried the weight of experience as he spoke about the clean wound, the lack of struggle, and how someone had been watching the garage tools. His words were sharp, pointed, and deliberate, and it was clear he'd been building his case with careful precision. The group's attention was now focused on him, but not because they saw him as the killer—rather, they saw something in his eyes that they recognized from their own paranoia.
+
+Sara's voice had grown quieter, more measured, but even her subtle observations were enough to make the others take notice. She'd seen enough men run from knife wounds to know that Yasir wasn't just grieving, and she'd seen the look in Rahul's eyes that suggested something deeper than grief. The game was shifting, and the group's suspicions had become a shared understanding of who might be watching them all along.
+
+The last night brought no deaths, but the final vote was already decided. The group had watched too closely, listened too carefully, and now they were ready to act. They'd been following the pattern set by the killer, watching for the signs that betrayed guilt, and when it came time to choose, they'd picked the one who'd been playing it safe while letting others make the mistakes. The last man standing was the one who'd known all along that the game had already been won.
+</story>
+</transcript>

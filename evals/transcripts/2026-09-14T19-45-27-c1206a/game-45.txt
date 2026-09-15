@@ -1,0 +1,504 @@
+Game 45 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=50 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Aiden" role="Law-abiding Citizen">
+Personality: weary and world-worn; pragmatic yet quietly bitter
+Manner: measured speech, punctuated with resigned sighs and dry observations; a tendency to use colloquial, everyday language tinged with cynicism
+Persona: Aiden is a long-time resident of the town, having worked various odd jobs over the years to make ends meet. They've seen their fair share of trouble and have a deep-seated distrust of those who claim to be above it all.
+</player>
+<player name="Natasha" role="Mafia">
+Personality: aloof and detached
+Manner: speaking with a distant, almost ethereal tone; using precise, carefully chosen words; maintaining an air of cool, calculated indifference
+Public legend: Natasha is an artist, known for her enigmatic paintings that capture fleeting moments of beauty and melancholy. She moved to the town a few years ago, seeking inspiration and solitude. Natasha is a private person, preferring the company of her own thoughts and creations over social interactions. She is perceived as a gentle soul, with a passion for art and a deep appreciation for the subtleties of life.
+True self (hidden): Natasha, born into a powerful Mafia family, was groomed from a young age to be a strategic thinker and a master of deception. Her art serves as a perfect cover for her true activities, allowing her to blend into any environment while maintaining her Mafia connections. She uses her aloof demeanor to keep others at a distance, ensuring her secrets remain hidden.
+</player>
+<player name="Zheng" role="Law-abiding Citizen">
+Personality: gruff and blunt; direct, no-nonsense demeanor
+Manner: short, clipped sentences; uses straightforward, unvarnished language; occasional use of regional dialect or idiomatic expressions; speaks with a rough, gravelly voice
+Persona: Zheng is a retired fisherman who now spends his days repairing nets and telling tales of the sea. He's seen his fair share of storms and has a no-nonsense approach to life. Zheng is known for his hearty laugh and a penchant for over-seasoning his stews.
+</player>
+<player name="Lina" role="Law-abiding Citizen">
+Personality: dry and sardonic
+Manner: sardonic wit, dry humor, biting commentary, articulate and sharp vocabulary, occasional use of irony and sarcasm
+Persona: Lina is a librarian who has spent years cataloging the town's history. With a keen eye for detail and a sharp tongue, she's known for her acerbic remarks and witty observations. Despite her sharp demeanor, Lina has a soft spot for the town's underdogs and often offers them a helping hand—though she'd never admit it.
+</player>
+<player name="Dmitri" role="Law-abiding Citizen">
+Personality: prickly and easily-offended; quick to take offense but with a veneer of civility
+Manner: sharp, precise speech with a tendency to over-explain; frequent use of formal vocabulary; displays a rigid adherence to etiquette and social norms; prone to melodramatic exclamations when agitated
+Persona: Dmitri is a retired schoolmaster who now spends his days tending to his extensive personal library and debating local politics. He takes great pride in his knowledge and is quick to correct any perceived inaccuracies, often to the annoyance of those around him.
+</player>
+<player name="Fatima" role="Law-abiding Citizen">
+Personality: shrewd and calculating; strategic thinker with a keen eye for detail
+Manner: speaks in a measured, deliberate tone; uses precise vocabulary; occasional use of rhetorical questions to provoke thought
+Persona: Fatima is a shrewd businesswoman who runs a successful trading post in the town. Known for her sharp negotiations and strategic deals, she has a reputation for always getting the best price. Despite her calculating nature, Fatima is fair and honest in her dealings, earning the trust and respect of the townsfolk.
+</player>
+<player name="Sven" role="Mafia">
+Personality: dreamy, easily distracted, and a bit of a daydreamer
+Manner: speaks in a soft, almost melodic voice, often trailing off into thoughts
+Public legend: Sven is a gentle soul, an artist who moved to the town seeking inspiration and solitude. He spends his days wandering the countryside, capturing fleeting moments of beauty and melancholy in his sketches and paintings. Sven is perceived as a dreamy and whimsical individual, with a passion for art and a deep appreciation for the subtleties of life. He is known for his kind heart and his ability to see the beauty in the mundane.
+True self (hidden): Beneath his dreamy exterior, Sven is a cunning and ambitious Mafioso, rising through the ranks with his strategic mind and unsuspected ruthlessness. He uses his art as a cover, often smuggling messages and goods within his paintings. His distracted demeanor is a carefully crafted mask, allowing him to gather information and plan his moves without raising suspicion.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiden, Natasha, Zheng, Lina, Dmitri, Fatima, Sven. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Natasha): Your Mafia teammates are: Sven. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Sven): Your Mafia teammates are: Natasha. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Natasha points at Aiden
+Sven points at Aiden
+<kill>Aiden — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Aiden was killed last night. Aiden was a Law-abiding Citizen.
+<round>
+Round 1.
+Avery: Nothing is settled yet, but I'm watching Fatima most closely.
+Sven: I find myself drawn to the quiet corners of this town, where secrets whisper through the leaves... I wonder what stories each of us carries within.
+Fatima: Avery's keen eye on me is duly noted, yet I wonder if such scrutiny might be a strategic deflection from the true threat among us.
+Lina: Ah, the scent of suspicion in the air—it's almost nostalgic. Dmitri, your silence is as loud as a lion's roar in a library. Care to share your thoughts on the matter?
+Dmitri: Indeed, the quiet corners of this town are where deceit often lurks, and I must say, Sven's cryptic musings raise my own suspicions. Let us not be distracted by theatrics and focus on uncovering the true nature of those among us.
+Natasha: The silence between us speaks volumes, revealing truths that words often conceal.
+Zheng: Dmitri, your silence ain't helpin'. Speak up or step out.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Natasha">The atmosphere is ripe with suspicion, particularly towards Sven. I must tread carefully, ensuring my actions align with the whispers of deception.</thought>
+<thought player="Zheng">Dmitri's silence and Sven's whispers got me thinkin'. Time to watch 'em close.</thought>
+<thought player="Lina">It seems the Mafiosos are attempting to deflect suspicion with theatricality; I must be vigilant and ensure my own performance of suspicion remains convincing.</thought>
+<thought player="Dmitri">I must remain vigilant and ensure that Sven's suspicious behavior is thoroughly investigated, while also considering the possibility that Fatima may be attempting to divert attention from herself.</thought>
+<thought player="Fatima">The suspicions are beginning to swirl; I must choose my words and alliances with utmost care to unmask the Mafiosos without revealing my hand.</thought>
+<thought player="Sven">Dmitri's suspicion of me is a thorn in my side; I must weave a tale to divert attention, perhaps by suggesting a deeper look into Fatima's motives.</thought>
+</round>
+<round>
+Round 2.
+Lina: Ah, the thrill of the hunt—Fatima's deflection and Sven's cryptic whispers are both equally suspect. Shall we peel back the layers and see who truly lurks in the shadows?
+Zheng: Sven's talkin' in riddles. Could be tryin' to hide somethin'.
+Avery: Nothing is settled yet, but I'm watching Fatima most closely.
+Natasha: The shadows dance with secrets, and within them, we must seek the truth.
+Dmitri: Natasha, your poetic allusions, while perhaps intended to convey deep insight, only serve to cloud the issue at hand. Let us dispense with the theatrics and focus on the matter at hand: identifying the Mafiosos in our midst.
+Sven: Ah, Fatima's deflection—it's as if she's painting a masterpiece of deception, isn't it? Perhaps we should consider her canvas more closely.
+Fatima: Dmitri's silence and Natasha's poetic allusions both warrant closer examination. Let us dissect their motives and actions.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Natasha">The tendrils of suspicion entwine around Sven; I must navigate this labyrinth of deceit with the grace of a shadow.</thought>
+<thought player="Zheng">Sven's riddlin' and Dmitri's silence—keep an eye on 'em. Time to dig deeper.</thought>
+<thought player="Lina">Ah, the dance of deflection and deception—I must tread carefully, ensuring my own suspicions appear as genuine as a librarian's love for order.</thought>
+<thought player="Dmitri">I must continue to press for a deeper investigation into Sven's cryptic behavior, while remaining wary of Fatima's attempts to deflect suspicion.</thought>
+<thought player="Fatima">The net of suspicion tightens; I must strategically align with the most vocal skeptics to draw out the Mafiosos' true colors.</thought>
+<thought player="Sven">Dmitri's suspicion grows like a storm cloud; I must weave a tale to divert attention, perhaps by suggesting a deeper look into Fatima's motives.</thought>
+</round>
+<round>
+Round 3.
+Lina: Ah, the art of deflection—Fatima's performance is as theatrical as a melodrama, but let us not forget the quiet menace lurking in Dmitri's silence.
+Sven: Ah, Dmitri's silence—it's as if he's crafting a tale of his own, hidden beneath the surface. Perhaps we should consider the stories he weaves more closely.
+Natasha: The threads of suspicion weave a complex tapestry; let us unravel it with care.
+Dmitri: Sven, your penchant for cryptic language and evasive behavior is most disconcerting. I implore you to speak plainly and address the suspicions your words have raised.
+Zheng: Sven, yer riddlin' ain't helpin'. Spill yer secrets or step out.
+Fatima: Lina's nostalgic scent of suspicion and Natasha's poetic shadows warrant closer examination. Let us dissect their actions and motives.
+Avery: Nothing is settled yet, but I'm watching Fatima most closely.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Natasha">The focus on Sven intensifies; I must subtly steer the conversation away from him, perhaps towards Fatima, while maintaining my enigmatic facade.</thought>
+<thought player="Zheng">Sven's riddlin' and Dmitri's silence still ain't sittin' right with me. Time to press 'em harder.</thought>
+<thought player="Lina">Ah, the dance of deflection and deception continues—I must ensure my own performance remains as convincing as a librarian's love for order.</thought>
+<thought player="Dmitri">I must intensify my scrutiny of Sven's enigmatic remarks and Fatima's deflection tactics, ensuring that no stone is left unturned in our pursuit of the truth.</thought>
+<thought player="Fatima">As the web of suspicion grows more intricate, I must continue to navigate it with precision, leveraging the distrust among the players to my advantage while maintaining my facade of a shrewd businesswoman.</thought>
+<thought player="Sven">The storm clouds of suspicion gather, I must steer the ship away from my shores and towards Fatima's enigmatic canvas.</thought>
+</round>
+<round>
+Round 4.
+Fatima: Sven's penchant for cryptic language and Natasha's poetic allusions warrant closer examination. Let us dissect their actions and motives.
+Zheng: Dmitri, yer silence is gettin' mighty suspicious. Start talkin' or face the noose.
+Dmitri: Sven's cryptic language and Fatima's deflection tactics both warrant closer examination. We must not allow ourselves to be swayed by melodrama or riddles.
+Natasha: The dance of shadows and light—let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+Sven: Ah, Fatima's deflection—it's as if she's painting a masterpiece of deception, isn't it? Perhaps we should consider her canvas more closely.
+Lina: Ah, the theater of deflection—Fatima's performance is as grand as a town festival, but let us not forget the quiet menace lurking in Dmitri's silence.
+Avery: Nothing is settled yet, but I'm watching Fatima most closely.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Natasha">The focus remains on Sven; I must continue to weave a veil of mystery around Fatima, drawing the Law-abiding citizens' suspicions towards her while preserving my own enigmatic presence.</thought>
+<thought player="Zheng">Time to keep pressin' Sven and Dmitri; somethin' ain't right with 'em.</thought>
+<thought player="Lina">Ah, the theater of suspicion—I must continue to play my part convincingly, while quietly assessing the true intentions of Dmitri and Sven.</thought>
+<thought player="Dmitri">I must steadfastly maintain my focus on Sven's cryptic behavior and Fatima's deflection tactics, ensuring that my fellow Law-abiding Citizens are not misled by their theatrics.</thought>
+<thought player="Fatima">As the net of suspicion tightens, I must strategically align with the most vocal skeptics to draw out the Mafiosos' true colors, while maintaining my facade of a shrewd businesswoman.</thought>
+<thought player="Sven">I must continue to weave a tapestry of distraction, guiding the storm clouds of suspicion towards Fatima's enigmatic canvas, while maintaining my gentle, dreamy facade.</thought>
+</round>
+<round>
+Round 5.
+Natasha: The art of deception lies in the subtleties; let us not be swayed by grand gestures, but seek the truth in the whispers of our words.
+Lina: Ah, the dance of deflection and deception continues—let us not forget the quiet menace lurking in Dmitri's silence.
+Avery: Nothing is settled yet, but I'm watching Fatima most closely.
+Fatima: Dmitri's persistent silence amidst the growing clamor of accusations raises a flag of suspicion. It would be prudent to examine his motives more closely.
+Sven: Ah, Fatima's enigmatic canvas—it beckons us to explore the depths of her motives, doesn't it?
+Dmitri: Sven's cryptic language and Fatima's deflection tactics both warrant closer examination. We must not allow ourselves to be swayed by melodrama or riddles.
+Zheng: Dmitri, yer silence is mighty suspicious. Spill yer secrets or face the noose.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Natasha">The focus remains unyielding on Sven; I must continue to deftly maneuver the conversation, subtly redirecting the Law-abiding citizens' suspicions towards Fatima, all while preserving the enigmatic veil that shrouds my true nature.</thought>
+<thought player="Zheng">Time to keep pressin' Sven and Dmitri; somethin' ain't right with 'em.</thought>
+<thought player="Lina">Ah, the dance of deflection and deception—I must continue to play my part convincingly, while quietly assessing the true intentions of Dmitri and Sven.</thought>
+<thought player="Dmitri">I must continue to press for a deeper investigation into Sven's cryptic behavior, while remaining wary of Fatima's attempts to deflect suspicion.</thought>
+<thought player="Fatima">The web of suspicion grows ever more intricate; I must continue to navigate it with precision, leveraging the distrust among the players to my advantage while maintaining my facade of a shrewd businesswoman.</thought>
+<thought player="Sven">The storm clouds of suspicion gather; I must continue to weave a tapestry of distraction, guiding the storm clouds towards Fatima's enigmatic canvas, while maintaining my gentle, dreamy facade.</thought>
+</round>
+<round>
+Round 6.
+Lina: Ah, the dance of deflection and deception—I must continue to play my part convincingly, while quietly assessing the true intentions of Dmitri and Sven.
+Natasha: The interplay of light and shadow—let us not be blinded by the glare of accusation, but seek the truth in the subtle nuances of our words and actions.
+Dmitri: Sven's penchant for cryptic language and Fatima's deflection tactics both warrant closer examination. We must not allow ourselves to be swayed by melodrama or riddles.
+<vote initiator="Avery" target="Fatima">
+Avery: No
+Natasha: No
+Zheng: No
+Lina: No
+Dmitri: No
+Fatima: No
+Sven: Yes
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Natasha: The art of deception lies in the subtleties; let us not be swayed by grand gestures, but seek the truth in the whispers of our words.
+Sven: Ah, Fatima's enigmatic canvas—it beckons us to explore the depths of her motives, doesn't it?
+Fatima: Zheng's persistent calls for Dmitri to speak up, coupled with Dmitri's silence, warrant closer examination of their dynamic.
+Dmitri: Sven, your continued use of cryptic language and evasive behavior is most disconcerting. I implore you to speak plainly and address the suspicions your words have raised.
+Lina: Ah, the theater of suspicion—let us not forget the quiet menace lurking in Dmitri's silence, and the enigmatic canvas painted by Sven's cryptic whispers.
+Zheng: Dmitri, yer silence is gettin' mighty suspicious. Start talkin' or face the noose.
+<vote initiator="Avery" target="Fatima">
+Avery: No
+Natasha: No
+Zheng: No
+Lina: No
+Dmitri: No
+Fatima: No
+Sven: Yes
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Natasha: The whispers of our words carry the weight of unspoken truths; let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our actions.
+Fatima: Natasha's poetic allusions and Sven's cryptic language continue to raise questions about their true intentions. Let us not be blinded by the allure of their words, but seek the truth in their actions.
+<vote initiator="Avery" target="Fatima">
+Avery: No
+Natasha: No
+Zheng: No
+Lina: No
+Dmitri: No
+Fatima: No
+Sven: Yes
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Natasha" day="1">The day unfolds like a canvas, each interaction a stroke of color in the intricate tapestry of deception. The tendrils of suspicion entwine around Sven, yet I navigate this labyrinth of deceit with the grace of a shadow. The focus remains unyielding, but I weave a veil of mystery around Fatima, subtly redirecting the Law-abiding citizens' suspicions while preserving my enigmatic presence. Tonight, the dance of shadows continues, and I shall embrace the night with the cool, calculated indifference that defines me.</diary>
+<diary player="Zheng" day="1">Day's end, and no one's been executed. Dmitri's silence and Sven's riddles still got me on edge. Gotta keep pressin' 'em. Somethin' ain't right, and I aim to find out what it is. Night's comin', and I reckon it'll bring more secrets to the surface.</diary>
+<diary player="Lina" day="1">Ah, the grand performance of suspicion and deflection continues unabated. Dmitri's silence is as deafening as a librarian's hush, while Sven's cryptic whispers are as enigmatic as a forgotten tome. The Mafiosos' attempts to sow discord are as transparent as a glass bookend, but I must tread carefully, ensuring my own suspicions appear as genuine as a librarian's love for order. The night beckons, and I shall continue to play my part with the utmost conviction, all while quietly assessing the true intentions of those who lurk in the shadows.</diary>
+<diary player="Dmitri" day="1">How utterly exasperating! The day has drawn to a close, and yet, no Mafioso has been brought to justice. The persistent silence of Sven and the theatrics of Fatima continue to raise my ire, and I must remain ever vigilant in my pursuit of the truth. The repeated failed votes to execute Fatima are a clear indication that we must not be swayed by her attempts at deflection. I shall continue to press for a deeper investigation into Sven's cryptic behavior, while remaining wary of Fatima's attempts to divert attention from herself. The night approaches, and I must steel myself for the challenges that lie ahead.</diary>
+<diary player="Fatima" day="1">The Day has ended, and the web of suspicion grows ever more intricate. Avery's persistent fixation on me is a strategic deflection, yet it provides an opportunity to sow discord among the players. Dmitri's silence and Sven's cryptic language continue to raise questions, and I must leverage the growing distrust to unmask the Mafiosos without revealing my hand. As Night falls, I remain vigilant, prepared to navigate the shadows and uncover the truth.</diary>
+<diary player="Sven" day="1">Today, the storm clouds of suspicion gathered once more, casting shadows upon our little town. I must continue to weave a tapestry of distraction, guiding those storm clouds towards Fatima's enigmatic canvas, all while maintaining my gentle, dreamy facade. The dance of deflection and deception continues, and I find myself drawn to the quiet corners of this town, where secrets whisper through the leaves. Ah, the art of misdirection—it's as if I'm painting a masterpiece of my own, isn't it?</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Natasha points at Fatima
+Sven points at Fatima
+<kill>Fatima — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Fatima was killed last night. Fatima was a Law-abiding Citizen.
+<round>
+Round 1.
+Zheng: Sven, yer riddles and Dmitri's silence—somethin' ain't right. Spill yer secrets or face the noose.
+Dmitri: Sven, your continued use of cryptic language and evasive behavior is most disconcerting. I implore you to speak plainly and address the suspicions your words have raised.
+Natasha: The dance of shadows and light—let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+Lina: Ah, the theater of suspicion—Dmitri's silence is as deafening as a librarian's hush, while Sven's cryptic whispers are as enigmatic as a forgotten tome.
+Avery: I most suspect Sven based on how the votes have gone.
+Sven: Ah, the storm clouds of suspicion gather once more, casting shadows upon our little town. Perhaps we should consider the quiet menace lurking in Dmitri's silence, for it seems to echo with secrets yet unspoken.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Natasha">The focus on Sven persists; I must continue to deftly redirect the Law-abiding citizens' suspicions towards Fatima, all while maintaining my enigmatic facade.</thought>
+<thought player="Zheng">Time to keep diggin' into Sven and Dmitri; somethin' ain't right with 'em.</thought>
+<thought player="Lina">Ah, the theater of suspicion—I must continue to play my part convincingly, while quietly assessing the true intentions of Dmitri and Sven, and perhaps nudge the others towards their enigmatic behaviors.</thought>
+<thought player="Dmitri">I must continue to press for a deeper investigation into Sven's cryptic behavior, while remaining vigilant against Fatima's deflection tactics, ensuring that my fellow Law-abiding Citizens are not misled by their theatrics.</thought>
+<thought player="Sven">I must continue to weave a tapestry of distraction, guiding the storm clouds of suspicion towards Fatima's enigmatic canvas, while maintaining my gentle, dreamy facade.</thought>
+</round>
+<round>
+Round 2.
+Avery: I most suspect Sven based on how the votes have gone.
+Sven: Ah, the storm clouds of suspicion gather once more, casting shadows upon our little town. Perhaps we should consider the quiet menace lurking in Dmitri's silence, for it seems to echo with secrets yet unspoken.
+Lina: Ah, the storm clouds of suspicion gather once more, casting shadows upon our little town. Let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+Zheng: Sven, yer riddles and Dmitri's silence—somethin' ain't right. Spill yer secrets or face the noose.
+Natasha: The quiet menace lurking in Dmitri's silence seems to echo with secrets yet unspoken.
+Dmitri: Sven, your continued use of cryptic language and evasive behavior is most disconcerting. I implore you to speak plainly and address the suspicions your words have raised.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Natasha">The focus on Sven remains unyielding; I must continue to deftly maneuver the conversation, subtly redirecting the Law-abiding citizens' suspicions towards Fatima, all while maintaining my enigmatic facade.</thought>
+<thought player="Zheng">Time to keep the pressure on Sven and Dmitri; somethin' ain't right with 'em.</thought>
+<thought player="Lina">Ah, the theater of suspicion—I must continue to play my part convincingly, while subtly nudging the others towards the enigmatic behaviors of Dmitri and Sven.</thought>
+<thought player="Dmitri">I must remain steadfast in my scrutiny of Sven's cryptic behavior and Fatima's deflection tactics, ensuring that my fellow Law-abiding Citizens are not misled by their theatrics.</thought>
+<thought player="Sven">The storm clouds of suspicion gather once more; I must continue to weave a tapestry of distraction, guiding the storm clouds towards Dmitri's silence, while maintaining my gentle, dreamy facade.</thought>
+</round>
+<round>
+Round 3.
+Avery: I most suspect Sven based on how the votes have gone.
+Natasha: The dance of shadows and light—let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+Zheng: Sven, yer riddles and Dmitri's silence—somethin' ain't right. Spill yer secrets or face the noose.
+Lina: Ah, the dance of deflection and deception—let us not forget the quiet menace lurking in Dmitri's silence, and the enigmatic canvas painted by Sven's cryptic whispers.
+Dmitri: Sven, your cryptic remarks and Fatima's deflection tactics both warrant closer examination. We must not allow ourselves to be swayed by melodrama or riddles.
+Sven: Ah, the quiet menace lurking in Dmitri's silence, it's as if he's crafting a tale of his own, hidden beneath the surface.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Natasha">The focus on Sven remains unyielding; I must continue to deftly maneuver the conversation, subtly redirecting the Law-abiding citizens' suspicions towards Fatima, all while maintaining my enigmatic facade.</thought>
+<thought player="Zheng">Time to keep the pressure on Sven and Dmitri; somethin' ain't right with 'em.</thought>
+<thought player="Lina">Ah, the dance of deflection and deception—it's time to nudge the others towards the quiet menace lurking in Dmitri's silence and Sven's cryptic whispers, while maintaining my own air of suspicion.</thought>
+<thought player="Dmitri">I must continue to press for a deeper investigation into Sven's cryptic behavior, while remaining vigilant against any attempts by the remaining players to deflect suspicion.</thought>
+<thought player="Sven">The storm clouds of suspicion gather once more; I must continue to weave a tapestry of distraction, guiding the storm clouds towards Dmitri's silence, while maintaining my gentle, dreamy facade.</thought>
+</round>
+<round>
+Round 4.
+Sven: Ah, the quiet menace lurking in Dmitri's silence, it's as if he's crafting a tale of his own, hidden beneath the surface.
+Avery: I most suspect Sven based on how the votes have gone.
+Dmitri: Sven, your persistent use of cryptic language and evasive behavior is most disconcerting. I implore you to speak plainly and address the suspicions your words have raised.
+Natasha: The dance of shadows and light—let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+Lina: Ah, the dance of deflection and deception—let us not forget the quiet menace lurking in Dmitri's silence, and the enigmatic canvas painted by Sven's cryptic whispers.
+Zheng: Dmitri, yer silence is gettin' mighty suspicious. Spill yer secrets or face the noose.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Natasha">The focus on Sven remains unyielding; I must continue to deftly maneuver the conversation, subtly redirecting the Law-abiding citizens' suspicions towards Fatima, all while maintaining my enigmatic facade.</thought>
+<thought player="Zheng">Time to keep the pressure on Sven and Dmitri; somethin' ain't right with 'em.</thought>
+<thought player="Lina">It's time to gently steer the conversation towards Dmitri and Sven, while maintaining my own air of suspicion.</thought>
+<thought player="Dmitri">I must continue to press for a deeper investigation into Sven's cryptic behavior, while remaining vigilant against any attempts by the remaining players to deflect suspicion.</thought>
+<thought player="Sven">The storm clouds of suspicion gather once more; I must continue to weave a tapestry of distraction, guiding the storm clouds towards Dmitri's silence, while maintaining my gentle, dreamy facade.</thought>
+</round>
+<round>
+Round 5.
+Sven: Ah, Dmitri's silence—it's as if he's crafting a tale of his own, hidden beneath the surface. Perhaps we should consider the stories he weaves more closely.
+Zheng: Dmitri, yer silence is gettin' mighty suspicious. Spill yer secrets or face the noose.
+Lina: Ah, the dance of deflection and deception—let us not forget the quiet menace lurking in Dmitri's silence, and the enigmatic canvas painted by Sven's cryptic whispers.
+Avery: I most suspect Sven based on how the votes have gone.
+Natasha: The quiet menace lurking in Dmitri's silence seems to echo with secrets yet unspoken.
+Dmitri: Sven, your persistent use of cryptic language and evasive behavior is most disconcerting. I implore you to speak plainly and address the suspicions your words have raised.
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Natasha">The focus on Sven remains unyielding; I must continue to deftly maneuver the conversation, subtly redirecting the Law-abiding citizens' suspicions towards Fatima, all while maintaining my enigmatic facade.</thought>
+<thought player="Zheng">Time to keep the pressure on Sven and Dmitri; somethin' ain't right with 'em.</thought>
+<thought player="Lina">Ah, the dance of deflection and deception—it's time to subtly nudge the others towards the quiet menace lurking in Dmitri's silence and Sven's cryptic whispers, while maintaining my own air of suspicion.</thought>
+<thought player="Dmitri">I must remain resolute in my scrutiny of Sven's cryptic behavior and press for a vote to execute him, while remaining vigilant against any attempts by the remaining players to deflect suspicion.</thought>
+<thought player="Sven">The storm clouds of suspicion gather once more; I must continue to weave a tapestry of distraction, guiding the storm clouds towards Dmitri's silence, while maintaining my gentle, dreamy facade.</thought>
+</round>
+<round>
+Round 6.
+Zheng: Sven, yer riddlin' and Dmitri's silence—somethin' ain't right. Spill yer secrets or face the noose.
+<vote initiator="Dmitri" target="Sven">
+Avery: Yes
+Natasha: No
+Zheng: Yes
+Lina: Yes
+Dmitri: Yes
+Sven: No
+tally: 4 Yes, 2 No
+outcome: executed — Sven has been executed. Sven was a Mafia.
+</vote>
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. Sven was executed today and was revealed to be Mafia.</recap>
+</round>
+<diary player="Natasha" day="2">The dance of shadows and light continues, the tendrils of suspicion entwining around Sven as the Law-abiding citizens remain oblivious to my true nature. The execution of Sven, revealed as Mafia, brings a sense of triumph, yet the game is far from over. Tonight, I shall embrace the night with cool, calculated indifference, continuing to weave my web of deception, subtly redirecting suspicions towards Fatima while maintaining my enigmatic facade.</diary>
+<diary player="Zheng" day="2">Sven's riddles and Dmitri's silence—somethin' ain't right. Spilled Sven's secrets today, but Dmitri's still hidin' somethin'. Gotta keep pressin' him. Night's comin', and I reckon it'll bring more secrets to the surface.</diary>
+<diary player="Lina" day="2">Ah, the dance of deflection and deception reaches its crescendo as Sven is executed, revealing himself to be the Mafia. Dmitri's silence remains as enigmatic as ever, and I must continue to tread carefully, ensuring my own suspicions appear as genuine as a librarian's love for order. The night beckons, and I shall continue to play my part with the utmost conviction, all while quietly assessing the true intentions of those who lurk in the shadows.</diary>
+<diary player="Dmitri" day="2">Good heavens, what a day! The persistent theatrics of Fatima and the cryptic behavior of Sven have been most vexing. I must commend Avery for his perspicacity in suspecting Sven, and I am relieved that the vote to execute him was successful. However, the Mafioso still lurks among us, and I must remain vigilant against any attempts by the remaining players to deflect suspicion. The night approaches, and I must steel myself for the challenges that lie ahead.</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Natasha points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Zheng: Dmitri, yer silence is gettin' mighty suspicious. Spill yer secrets or face the noose.
+Lina: Ah, Dmitri's silence is as deafening as a librarian's hush, while Natasha's poetic allusions are as enigmatic as a forgotten tome.
+Natasha: The dance of shadows and light—let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+Dmitri: Zheng, your persistent calls for my silence to be broken are most irksome. Let us not be distracted by such theatrics and focus on the matter at hand: identifying the remaining Mafioso in our midst.
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Natasha">With Sven's execution and the Law-abiding citizens' growing suspicion towards Dmitri, I must now carefully navigate the conversation to maintain my enigmatic facade and subtly steer their suspicions towards other players.</thought>
+<thought player="Zheng">Time to keep the pressure on Dmitri; somethin' ain't right with 'im.</thought>
+<thought player="Lina">Ah, the dance of deflection and deception—it seems I must continue to play my part convincingly, while subtly nudging the others towards the enigmatic silence of Dmitri and the poetic allusions of Natasha, all the while maintaining my own air of suspicion.</thought>
+<thought player="Dmitri">With Sven executed and Avery fallen to the Mafioso's hand, I must now direct my unwavering scrutiny towards Zheng and Lina, ensuring that their words and actions are meticulously examined for any signs of deceit.</thought>
+</round>
+<round>
+Round 2.
+Zheng: Dmitri, yer silence is gettin' mighty suspicious. Spill yer secrets or face the noose.
+Dmitri: Zheng, your persistent calls for my silence to be broken are most irksome. Let us not be distracted by such theatrics and focus on the matter at hand: identifying the remaining Mafioso in our midst.
+Natasha: The quiet corners of our town hold secrets that elude the untrained eye; let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+Lina: Ah, the quiet corners of our town hold secrets that elude the untrained eye; let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Natasha">With Sven's execution and the Law-abiding citizens' growing suspicion towards Dmitri, I must continue to maintain my enigmatic facade and subtly steer their suspicions towards other players.</thought>
+<thought player="Zheng">Time to keep the pressure on Dmitri; somethin' ain't right with 'im.</thought>
+<thought player="Lina">Ah, the quiet menace lurking in Dmitri's silence and Natasha's poetic allusions—it's time to steer the conversation towards their enigmatic behaviors, while maintaining my own air of suspicion.</thought>
+<thought player="Dmitri">With Sven executed and Avery fallen to the Mafioso's hand, I must now direct my unwavering scrutiny towards Zheng and Lina, ensuring that their words and actions are meticulously examined for any signs of deceit.</thought>
+</round>
+<round>
+Round 3.
+Zheng: Dmitri, yer silence ain't helpin'. Speak up or face the noose.
+Lina: Ah, the quiet menace lurking in Dmitri's silence and Natasha's poetic allusions—it's time to steer the conversation towards their enigmatic behaviors, while maintaining my own air of suspicion.
+Dmitri: Zheng, your incessant badgering and Natasha's enigmatic allusions warrant closer examination. Let us not be distracted by such theatrics and focus on the matter at hand: identifying the remaining Mafioso in our midst.
+Natasha: The quiet corners of our town hold secrets that elude the untrained eye; let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Natasha">With the Law-abiding citizens' attention fixated on Dmitri, I must continue to maintain my enigmatic facade while subtly steering their suspicions towards other players.</thought>
+<thought player="Zheng">Dmitri's silence still ain't sittin' right with me; time to keep pressin' 'im.</thought>
+<thought player="Lina">Ah, the quiet corners of our town hold secrets that elude the untrained eye; it's time to subtly nudge the others towards the enigmatic silence of Dmitri and the poetic allusions of Natasha, all the while maintaining my own air of suspicion.</thought>
+<thought player="Dmitri">With Sven executed and Avery fallen to the Mafioso's hand, I must now direct my unwavering scrutiny towards Zheng and Lina, ensuring that their words and actions are meticulously examined for any signs of deceit.</thought>
+</round>
+<round>
+Round 4.
+Natasha: The quiet corners of our town hold secrets that elude the untrained eye; let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+Dmitri: Zheng, your persistent badgering and Natasha's enigmatic allusions warrant closer examination. Let us not be distracted by such theatrics and focus on the matter at hand: identifying the remaining Mafioso in our midst.
+Zheng: Dmitri, yer silence is mighty suspicious. Spill yer secrets or face the noose.
+Lina: Ah, the quiet menace lurking in Dmitri's silence and Natasha's poetic allusions—it's time to steer the conversation towards their enigmatic behaviors, while maintaining my own air of suspicion.
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Natasha">With Dmitri's silence drawing suspicion, I must tread carefully, ensuring my enigmatic facade remains intact while subtly steering the conversation towards other players.</thought>
+<thought player="Zheng">Time to keep pressin' Dmitri; somethin' ain't right with 'im.</thought>
+<thought player="Lina">Ah, the quiet corners of our town hold secrets that elude the untrained eye; it's time to subtly nudge the others towards the enigmatic silence of Dmitri and the poetic allusions of Natasha, all the while maintaining my own air of suspicion.</thought>
+<thought player="Dmitri">With the Mafioso's numbers dwindling, I must remain ever vigilant and ensure that Zheng's and Lina's words and actions are meticulously examined for any signs of deceit.</thought>
+</round>
+<round>
+Round 5.
+Zheng: Dmitri, yer silence still ain't sittin' right with me. Time to keep pressin' 'im.
+Lina: Ah, the quiet corners of our town hold secrets that elude the untrained eye; it's time to subtly nudge the others towards the enigmatic silence of Dmitri and the poetic allusions of Natasha, all the while maintaining my own air of suspicion.
+Dmitri: Zheng, your persistent badgering and Lina's enigmatic allusions warrant closer examination. Let us not be distracted by such theatrics and focus on the matter at hand: identifying the remaining Mafioso in our midst.
+Natasha: The quiet corners of our town hold secrets that elude the untrained eye; let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 1 Mafioso remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Natasha">With the Law-abiding citizens' attention now shifting towards Dmitri and Lina, I must continue to maintain my enigmatic facade while subtly steering their suspicions towards other players.</thought>
+<thought player="Zheng">Dmitri's silence still ain't sittin' right with me. Time to keep pressin' 'im and watch Natasha close.</thought>
+<thought player="Lina">It's time to delicately maneuver the conversation towards Dmitri's silence and Natasha's poetic allusions, all while maintaining my own air of suspicion.</thought>
+<thought player="Dmitri">With the Mafioso's numbers dwindling, I must remain ever vigilant and ensure that Zheng's and Lina's words and actions are meticulously examined for any signs of deceit.</thought>
+</round>
+<round>
+Round 6.
+Natasha: The quiet corners of our town hold secrets that elude the untrained eye; let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+<vote initiator="Zheng" target="Dmitri">
+Natasha: No
+Zheng: Yes
+Lina: Yes
+Dmitri: No
+tally: 2 Yes, 2 No
+outcome: failed — The vote fails.
+</vote>
+Natasha: The quiet corners of our town hold secrets that elude the untrained eye; let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+Dmitri: Zheng, your persistent badgering and Lina's enigmatic allusions warrant closer examination. Let us not be distracted by such theatrics and focus on the matter at hand: identifying the remaining Mafioso in our midst.
+Zheng: Natasha, yer words are as slippery as an eel. Time to stop dancin' round and spill what ye know.
+Lina: Ah, the quiet corners of our town hold secrets that elude the untrained eye; let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. No one has been executed today.</recap>
+</round>
+<diary player="Natasha" day="3">As the day draws to a close, the whispers of suspicion continue to entwine around Dmitri and Lina. I must tread carefully, ensuring my enigmatic facade remains intact while subtly steering the conversation towards other players. The dance of shadows and light persists, and I shall embrace the night with cool, calculated indifference, continuing to weave my web of deception.</diary>
+<diary player="Zheng" day="3">Dmitri's silence still ain't sittin' right with me. Time to keep pressin' 'im and watch Natasha close. Somethin' ain't right with 'em, and I reckon the night'll bring more secrets to the surface. Keep an eye on Lina too; she's as slippery as an eel with 'er words.</diary>
+<diary player="Lina" day="3">Ah, the quiet corners of our town hold secrets that elude the untrained eye; it seems the remaining Mafioso is attempting to deflect suspicion with theatricality. I must continue to play my part convincingly, while subtly nudging the others towards the enigmatic silence of Dmitri and the poetic allusions of Natasha, all the while maintaining my own air of suspicion. The night beckons, and I shall continue to tread carefully, ensuring my own suspicions appear as genuine as a librarian's love for order.</diary>
+<diary player="Dmitri" day="3">How utterly exasperating! The day has drawn to a close, and yet, the Mafioso still eludes our grasp. Zheng's incessant badgering and Lina's enigmatic allusions warrant closer examination, and I must remain ever vigilant in my pursuit of the truth. The night approaches, and I must steel myself for the challenges that lie ahead, ensuring that the remaining Mafioso is brought to justice.</diary>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Natasha points at Zheng
+<kill>Zheng — Law-abiding Citizen</kill>
+Moderator: Night 4 ends.
+</night>
+<day>
+Day 4 begins.
+Moderator: Day breaks. Zheng was killed last night. Zheng was a Law-abiding Citizen.
+<round>
+Round 1.
+Natasha: The quiet corners of our town hold secrets that elude the untrained eye; let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+<vote initiator="Lina" target="Dmitri">
+Natasha: No
+Lina: Yes
+Dmitri: No
+tally: 1 Yes, 2 No
+outcome: failed — The vote fails.
+</vote>
+Lina: Ah, the quiet corners of our town hold secrets that elude the untrained eye; let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+Dmitri: Lina, your persistent use of enigmatic allusions and poetic language is most disconcerting. I implore you to speak plainly and address the suspicions your words have raised.
+Natasha: The quiet corners of our town hold secrets that elude the untrained eye; let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+<recap>Day 4, 9 AM status: 2 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Natasha">With Dmitri's silence raising suspicions, I must maintain my enigmatic facade and subtly redirect the conversation to preserve the delicate balance of power.</thought>
+<thought player="Lina">Ah, the quiet corners of our town hold secrets that elude the untrained eye; it's time to delicately maneuver the conversation towards Dmitri's silence and Natasha's poetic allusions, all while maintaining my own air of suspicion.</thought>
+<thought player="Dmitri">With Zheng and Avery eliminated, my focus must now intensify on Lina, whose enigmatic allusions and poetic language warrant closer examination, lest she prove to be the final Mafioso in our midst.</thought>
+</round>
+<round>
+Round 2.
+Dmitri: Lina, your persistent use of enigmatic allusions and poetic language is most disconcerting. I implore you to speak plainly and address the suspicions your words have raised.
+Lina: Ah, the quiet corners of our town hold secrets that elude the untrained eye; let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+Natasha: The quiet corners of our town hold secrets that elude the untrained eye; let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+<recap>Day 4, 12 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Natasha">With Dmitri and Lina under scrutiny, I must continue to maintain my enigmatic facade while subtly steering the conversation towards other players, ensuring my true nature remains hidden.</thought>
+<thought player="Lina">Ah, the quiet corners of our town hold secrets that elude the untrained eye; it's time to delicately maneuver the conversation towards Dmitri's silence and Natasha's poetic allusions, all while maintaining my own air of suspicion.</thought>
+<thought player="Dmitri">With the Mafioso's numbers dwindling, I must remain ever vigilant and ensure that Lina's enigmatic allusions and poetic language are meticulously examined for any signs of deceit.</thought>
+</round>
+<round>
+Round 3.
+Natasha: The dance of shadows and light—let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+Lina: Ah, the quiet corners of our town hold secrets that elude the untrained eye; it's time to delicately maneuver the conversation towards Dmitri's silence and Natasha's poetic allusions, all while maintaining my own air of suspicion.
+Dmitri: Lina, your persistent use of enigmatic allusions and poetic language is most disconcerting. I implore you to speak plainly and address the suspicions your words have raised.
+<recap>Day 4, 3 PM status: 2 Law-abiding Citizens and 1 Mafioso remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Natasha">With the Law-abiding citizens' focus on Dmitri and Lina, I must continue to maintain my enigmatic facade, subtly redirecting their suspicions while preserving the delicate balance of power.</thought>
+<thought player="Lina">Ah, the dance of shadows and light—let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions. It's time to delicately maneuver the conversation towards Dmitri's silence and Natasha's poetic allusions, all while maintaining my own air of suspicion.</thought>
+<thought player="Dmitri">I must remain resolute in my scrutiny of Lina's enigmatic allusions and poetic language, ensuring that her true intentions are revealed before the game reaches its conclusion.</thought>
+</round>
+<round>
+Round 4.
+Dmitri: Lina, your persistent use of enigmatic allusions and poetic language is most disconcerting. I implore you to speak plainly and address the suspicions your words have raised.
+<vote initiator="Natasha" target="Dmitri">
+Natasha: No
+Lina: Yes
+Dmitri: No
+tally: 1 Yes, 2 No
+outcome: failed — The vote fails.
+</vote>
+Lina: Ah, the quiet corners of our town hold secrets that elude the untrained eye; it's time to delicately maneuver the conversation towards Dmitri's silence and Natasha's poetic allusions, all while maintaining my own air of suspicion.
+Natasha: The dance of shadows and light—let us not be blinded by the glare of accusation, but seek the truth in the subtle interplay of our words and actions.
+<vote initiator="Dmitri" target="Lina">
+Natasha: No
+Lina: Yes
+Dmitri: Yes
+tally: 2 Yes, 1 No
+outcome: executed — Lina has been executed. Lina was a Law-abiding Citizen.
+</vote>
+</round>
+</day>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Aiden (Law-abiding Citizen)
+• Night 2: Fatima (Law-abiding Citizen)
+• Day 2: Sven (Mafia) executed
+• Night 3: Avery (Law-abiding Citizen)
+• Night 4: Zheng (Law-abiding Citizen)
+• Day 4: Lina (Law-abiding Citizen) executed
+
+Full roster: Avery (Law-abiding Citizen), Aiden (Law-abiding Citizen), Natasha (Mafia), Zheng (Law-abiding Citizen), Lina (Law-abiding Citizen), Dmitri (Law-abiding Citizen), Fatima (Law-abiding Citizen), Sven (Mafia)
+
+Who they really were:
+• Aiden (Law-abiding Citizen) — weary and world-worn; pragmatic yet quietly bitter measured speech, punctuated with resigned sighs and dry observations; a tendency to use colloquial, everyday language tinged with cynicism Aiden is a long-time resident of the town, having worked various odd jobs over the years to make ends meet. They've seen their fair share of trouble and have a deep-seated distrust of those who claim to be above it all.
+• Natasha (Mafia) — publicly presented as Natasha is an artist, known for her enigmatic paintings that capture fleeting moments of beauty and melancholy. She moved to the town a few years ago, seeking inspiration and solitude. Natasha is a private person, preferring the company of her own thoughts and creations over social interactions. She is perceived as a gentle soul, with a passion for art and a deep appreciation for the subtleties of life. (aloof and detached speaking with a distant, almost ethereal tone; using precise, carefully chosen words; maintaining an air of cool, calculated indifference) … but was really a Mafioso: Natasha, born into a powerful Mafia family, was groomed from a young age to be a strategic thinker and a master of deception. Her art serves as a perfect cover for her true activities, allowing her to blend into any environment while maintaining her Mafia connections. She uses her aloof demeanor to keep others at a distance, ensuring her secrets remain hidden.
+• Zheng (Law-abiding Citizen) — gruff and blunt; direct, no-nonsense demeanor short, clipped sentences; uses straightforward, unvarnished language; occasional use of regional dialect or idiomatic expressions; speaks with a rough, gravelly voice Zheng is a retired fisherman who now spends his days repairing nets and telling tales of the sea. He's seen his fair share of storms and has a no-nonsense approach to life. Zheng is known for his hearty laugh and a penchant for over-seasoning his stews.
+• Lina (Law-abiding Citizen) — dry and sardonic sardonic wit, dry humor, biting commentary, articulate and sharp vocabulary, occasional use of irony and sarcasm Lina is a librarian who has spent years cataloging the town's history. With a keen eye for detail and a sharp tongue, she's known for her acerbic remarks and witty observations. Despite her sharp demeanor, Lina has a soft spot for the town's underdogs and often offers them a helping hand—though she'd never admit it.
+• Dmitri (Law-abiding Citizen) — prickly and easily-offended; quick to take offense but with a veneer of civility sharp, precise speech with a tendency to over-explain; frequent use of formal vocabulary; displays a rigid adherence to etiquette and social norms; prone to melodramatic exclamations when agitated Dmitri is a retired schoolmaster who now spends his days tending to his extensive personal library and debating local politics. He takes great pride in his knowledge and is quick to correct any perceived inaccuracies, often to the annoyance of those around him.
+• Fatima (Law-abiding Citizen) — shrewd and calculating; strategic thinker with a keen eye for detail speaks in a measured, deliberate tone; uses precise vocabulary; occasional use of rhetorical questions to provoke thought Fatima is a shrewd businesswoman who runs a successful trading post in the town. Known for her sharp negotiations and strategic deals, she has a reputation for always getting the best price. Despite her calculating nature, Fatima is fair and honest in her dealings, earning the trust and respect of the townsfolk.
+• Sven (Mafia) — publicly presented as Sven is a gentle soul, an artist who moved to the town seeking inspiration and solitude. He spends his days wandering the countryside, capturing fleeting moments of beauty and melancholy in his sketches and paintings. Sven is perceived as a dreamy and whimsical individual, with a passion for art and a deep appreciation for the subtleties of life. He is known for his kind heart and his ability to see the beauty in the mundane. (dreamy, easily distracted, and a bit of a daydreamer speaks in a soft, almost melodic voice, often trailing off into thoughts) … but was really a Mafioso: Beneath his dreamy exterior, Sven is a cunning and ambitious Mafioso, rising through the ranks with his strategic mind and unsuspected ruthlessness. He uses his art as a cover, often smuggling messages and goods within his paintings. His distracted demeanor is a carefully crafted mask, allowing him to gather information and plan his moves without raising suspicion.
+</endgame>
+<story>
+As the game unfolded, the town's residents found themselves entangled in a web of suspicion and deception. Natasha, the enigmatic artist, skillfully navigated the labyrinth of deceit, subtly steering the conversation away from herself and towards other players. Her cool, calculated indifference allowed her to maintain her enigmatic facade while weaving a veil of mystery around Fatima, deflecting the Law-abiding citizens' suspicions.
+
+Zheng, the retired fisherman, remained steadfast in his scrutiny of Dmitri and Sven, sensing that something was amiss with their behavior. His gruff and blunt demeanor belied a keen eye for detail, and he persistently pressed them for answers, determined to uncover the truth.
+
+Lina, the librarian, played a delicate dance of deflection and deception, ensuring her own performance of suspicion remained convincing while quietly assessing the true intentions of Dmitri and Sven. Her sharp tongue and acerbic remarks masked her genuine concern for the town's underdogs, as she subtly nudged the others towards the enigmatic behaviors of those she deemed suspicious.
+
+Dmitri, the retired schoolmaster, remained vigilant in his pursuit of the truth, pressing for a deeper investigation into Sven's cryptic behavior and Fatima's deflection tactics. His unwavering scrutiny of their words and actions aimed to reveal the Mafioso lurking among them.
+
+As the game reached its conclusion, the Mafia emerged victorious, their true nature concealed beneath layers of deception and misdirection. The town's residents were left to ponder the intricate tapestry of suspicion and the elusive truth that had slipped through their fingers.
+</story>
+</transcript>

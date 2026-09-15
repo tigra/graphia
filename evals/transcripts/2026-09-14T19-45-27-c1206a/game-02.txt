@@ -1,0 +1,463 @@
+Game 2 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=50 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Aiko" role="Mafia">
+Personality: Aiko is boisterous and exuberant, always at the center of attention. She speaks with animated gestures and a loud, confident voice, often using exaggerated expressions to emphasize her points. Her energy is infectious, drawing people in and making her seem approachable and fun.
+Manner: In a loud, enthusiastic tone, Aiko speaks quickly and with dramatic flair. She uses a lot of hand gestures and facial expressions to emphasize her words, often laughing heartily and encouraging others to join in the fun.
+Public legend: Aiko is a beloved local entertainer, known for her vibrant performances at town events and festivals. She runs a small community theater, where she directs and acts in various plays. Her infectious laughter and larger-than-life personality make her a favorite among the townsfolk.
+True self (hidden): In her true self, Aiko is a high-ranking member of a powerful Mafia family. She uses her public persona as a cover to gather information and influence key figures in the town. Her boisterous nature helps her blend in and manipulate those around her, ensuring the Mafia's interests are protected.
+</player>
+<player name="Eamon" role="Law-abiding Citizen">
+Personality: prickly and easily-offended, quick to take offense but also quick to forgive
+Manner: sharp and cutting, often uses dry sarcasm, tends to speak in a clipped, matter-of-fact tone, avoids small talk, prefers to get straight to the point
+Persona: Eamon is a reclusive writer, known for his sharp wit and biting critiques. He lives in a small cabin on the outskirts of town, where he spends most of his time writing and avoiding social interactions. Despite his prickly exterior, Eamon has a soft spot for the town's library, where he often donates his books.
+</player>
+<player name="Zara" role="Law-abiding Citizen">
+Personality: vigilant and watchful, with a hint of skepticism
+Manner: speaks in a measured, deliberate tone, often using precise vocabulary and maintaining a calm demeanor, but with an underlying intensity that hints at a sharp mind always on alert
+Persona: Zara is a seasoned investigator, known for her keen eye for detail and unwavering commitment to justice. She has spent years working undercover, unraveling complex cases and bringing criminals to light. Now semi-retired, she lives a quiet life in the town, but her watchful nature remains undiminished.
+</player>
+<player name="Leif" role="Mafia">
+Personality: shrewd, calculating, and subtly manipulative
+Manner: speaks in a calm, measured tone, often using indirect language and vague statements, with a hint of condescension
+Public legend: Leif is a local antique dealer, known for his keen eye for rare and valuable items. He has a reputation for being a fair and honest trader, always willing to share his knowledge about the history and value of antiques. Leif is a quiet, unassuming figure in the town, often seen browsing through flea markets and antique shops in search of his next discovery. His calm and collected demeanor, combined with his vast knowledge of antiques, makes him a respected and trusted member of the community.
+True self (hidden): Leif grew up in a family with ties to organized crime. He quickly learned the art of deception and manipulation, using his intelligence and charm to navigate the dangerous world of the Mafia. His antique dealing is a perfect cover for his criminal activities, allowing him to launder money and establish connections with influential people. Leif is a master of disguise, able to blend into any social circle and manipulate those around him to further his own interests.
+</player>
+<player name="Ayesha" role="Law-abiding Citizen">
+Personality: anxious and second-guessing; hesitant but well-meaning
+Manner: speaks with a nervous, wavering tone, often repeating herself for reassurance, uses filler words like 'um' and 'uh', tends to second-guess her own statements
+Persona: Ayesha is a local librarian, known for her love of books and her meticulous organization skills. She has a quiet, unassuming presence in the town, often seen helping patrons find the perfect read. Despite her anxious nature, Ayesha is deeply committed to her work and takes great pride in creating a welcoming and inclusive space for all.
+</player>
+<player name="Nikolai" role="Law-abiding Citizen">
+Personality: blunt and unvarnished, says what's on his mind without filter
+Manner: gruff, direct, no-nonsense, speaks in short, clipped sentences, occasionally mutters under his breath
+Persona: Nikolai is a grizzled fisherman with years of experience on the open sea. He's seen it all and isn't afraid to voice his opinions, no matter how harsh they may be. His no-nonsense attitude and blunt manner of speaking have earned him a reputation as a straight shooter, but also as someone who can rub people the wrong way. Despite his gruff exterior, Nikolai has a heart of gold and will go to great lengths to protect those he cares about.
+</player>
+<player name="Mieko" role="Law-abiding Citizen">
+Personality: weary and world-worn, carrying the weight of past hardships with a resigned acceptance
+Manner: speaks in a slow, deliberate tone, often pausing to collect her thoughts; her words are laced with a subtle melancholy, hinting at a life filled with struggles and hardships
+Persona: Mieko is a seasoned herbalist who has traveled far and wide in search of rare plants and remedies. Her journey has taken her through many towns and villages, each with its own unique challenges and experiences. Despite the hardships she has faced, Mieko remains committed to her craft, using her knowledge of herbs to help those in need.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiko, Eamon, Zara, Leif, Ayesha, Nikolai, Mieko. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Aiko): Your Mafia teammates are: Leif. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Leif): Your Mafia teammates are: Aiko. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Aiko points at Ayesha
+Leif points at Ayesha
+<kill>Ayesha — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Ayesha was killed last night. Ayesha was a Law-abiding Citizen.
+<round>
+Round 1.
+Mieko: In my travels, I've learned to trust my instincts. Let us share what we know, for the truth often hides in the smallest details.
+Leif: It's curious how some people's actions speak louder than their words, don't you think?
+Zara: In my experience, those who speak the loudest often do so to mask their true intentions. Let us observe who among us is most eager to divert our focus.
+Nikolai: Let's get to the bottom of this. Who's got something to hide?
+Eamon: I find it rather convenient that some are so quick to point fingers without offering any concrete evidence. It's almost as if they're trying to divert our attention from their own suspicious behavior.
+Aiko: Oh, absolutely! It's always the quiet ones you have to watch, like a play with hidden plot twists!
+Avery: Nothing is settled yet, but I'm watching Aiko most closely.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Keep up the boisterous act, Aiko! Distract them with your infectious energy while Leif and I plan our next move.</thought>
+<thought player="Eamon">Watch Avery closely, their fixation on Aiko might be a red herring.</thought>
+<thought player="Zara">The conversation lacks concrete accusations; I must remain vigilant and observe the actions and inconsistencies of each player, especially those who divert attention or exhibit eagerness to accuse others.</thought>
+<thought player="Leif">Avery seems to be a potential threat, focusing on Aiko. I must be cautious and consider aligning with others to divert suspicion.</thought>
+<thought player="Nikolai">Time to dig deeper, see who's hiding something.</thought>
+<thought player="Mieko">The whispers of suspicion are growing louder, and I must tread carefully, for the truth lies hidden beneath the surface.</thought>
+</round>
+<round>
+Round 2.
+Mieko: In my journeys, I've encountered many who wear masks, both literal and figurative. Let us peel back the layers and reveal the truth beneath.
+Eamon: Avery, your fixation on Aiko seems rather convenient. What are you trying to hide?
+Nikolai: Eamon, your defense of Aiko's loud accusations seems a bit too convenient. What are you hiding?
+Avery: Nothing is settled yet, but I'm watching Aiko most closely.
+Zara: In my investigations, I've found that those who are overly defensive or quick to accuse others often have something to hide. Let us remain vigilant and scrutinize everyone's behavior.
+Leif: It's intriguing how some people's past experiences seem to influence their current suspicions.
+Aiko: Let's not get too caught up in accusations, folks! We need to focus on finding real evidence.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Time to ramp up the energy and keep everyone distracted while Leif and I plot our next move.</thought>
+<thought player="Eamon">Avery's fixation on Aiko is suspicious, but I need more evidence before I call for an execution vote.</thought>
+<thought player="Zara">I must continue to scrutinize the behavior of those who are overly defensive or eager to accuse, while gathering subtle clues to uncover the Mafiosos' identities.</thought>
+<thought player="Leif">It seems Avery is becoming a liability; I must carefully align with others to shift the focus away from Aiko and myself.</thought>
+<thought player="Nikolai">Gotta watch Eamon and Avery, they're acting too convenient.</thought>
+<thought player="Mieko">The tension is palpable, and I must choose my words wisely to uncover the truth without revealing my own hand.</thought>
+</round>
+<round>
+Round 3.
+Nikolai: Avery, your repeated focus on Aiko is starting to smell fishy. What's your angle?
+Leif: It's fascinating how people's past experiences can shape their present perceptions, don't you think?
+Zara: It's crucial to remember that the truth often lies in the subtle actions and inconsistencies of those around us.
+Eamon: Zara, your insistence on observing inconsistencies seems rather... convenient. What are you hiding?
+Aiko: Let's not jump to conclusions, everyone! We need to gather more evidence before pointing fingers.
+Mieko: In my travels, I've learned that silence can often speak louder than words. Let us pay heed to those who choose to remain quiet.
+Avery: Nothing is settled yet, but I'm watching Aiko most closely.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Keep up the high energy and distract them, while Leif and I strategize our next target.</thought>
+<thought player="Eamon">Avery's relentless focus on Aiko is growing increasingly suspicious; I need to gather more evidence before making a move.</thought>
+<thought player="Zara">I must continue to probe the inconsistencies and subtle actions of each player, particularly those who are overly defensive or eager to accuse, in order to uncover the Mafiosos' identities.</thought>
+<thought player="Leif">I must subtly manipulate the conversation to divert suspicion from Aiko and myself, while carefully observing the other players for any signs of weakness or vulnerability.</thought>
+<thought player="Nikolai">Keep an eye on Eamon and Avery, their convenient defenses are suspicious.</thought>
+<thought player="Mieko">I must continue to observe the subtle actions and inconsistencies of those around me, while maintaining my own silence.</thought>
+</round>
+<round>
+Round 4.
+Zara: It's intriguing how some individuals seem to be more comfortable with accusations than with providing evidence. Let us scrutinize the motives behind such behavior.
+Avery: Nothing is settled yet, but I'm watching Aiko most closely.
+Eamon: Avery, your obsession with Aiko is becoming rather tiresome. Do try to contribute something of substance, or at least refrain from making baseless accusations.
+Leif: It's curious how some people's past experiences can shape their present perceptions, don't you think?
+Aiko: Oh, come on, folks! Let's keep it light and focus on finding real clues, not just pointing fingers!
+Nikolai: Avery, your obsession with Aiko is getting old. Try to contribute something useful or at least stop with the baseless accusations.
+Mieko: In my travels, I've seen many faces, but it's the eyes that often betray a person's true nature. Let us look beyond the surface and seek the truth within.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Time to keep the energy high and distract them, while Leif and I strategize our next target.</thought>
+<thought player="Eamon">Avery's fixation on Aiko is suspicious, but I need more evidence before I call for an execution vote.</thought>
+<thought player="Zara">I must remain vigilant and scrutinize the behavior of those who divert attention or exhibit eagerness to accuse others, while gathering subtle clues to uncover the Mafiosos' identities.</thought>
+<thought player="Leif">It seems Avery is becoming a liability; I must carefully align with others to shift the focus away from Aiko and myself, while continuing to subtly manipulate the conversation.</thought>
+<thought player="Nikolai">Time to press Eamon and Avery, see what cracks.</thought>
+<thought player="Mieko">The web of suspicion tightens, and I must navigate it with care, seeking the truth while shielding my own intentions.</thought>
+</round>
+<round>
+Round 5.
+Zara: It's curious how some individuals seem to be more comfortable with accusations than with providing evidence. Let us scrutinize the motives behind such behavior.
+Nikolai: Avery, your fixation on Aiko is getting old. Try to contribute something useful or at least stop with the baseless accusations.
+Aiko: Let's not get too caught up in accusations, folks! We need to focus on finding real evidence.
+Mieko: In my journeys, I've seen many faces, but it's the eyes that often betray a person's true nature. Let us look beyond the surface and seek the truth within.
+Avery: Nothing is settled yet, but I'm watching Aiko most closely.
+Leif: It's interesting how some people's past experiences seem to shape their present perceptions, don't you think?
+Eamon: Avery, your relentless focus on Aiko is growing tiresome. It's almost as if you're trying to divert our attention from your own suspicious behavior.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Keep the energy high and continue distracting everyone, while Leif and I strategize our next move.</thought>
+<thought player="Eamon">Avery's fixation on Aiko is increasingly suspicious, but I need more concrete evidence before I call for an execution vote.</thought>
+<thought player="Zara">I must continue to probe the inconsistencies and subtle actions of each player, particularly those who are overly defensive or eager to accuse, in order to uncover the Mafiosos' identities.</thought>
+<thought player="Leif">I must continue to subtly manipulate the conversation, aligning with others to divert suspicion from Aiko and myself, while carefully observing the other players for any signs of weakness or vulnerability.</thought>
+<thought player="Nikolai">Need to keep pressing Eamon and Avery, see if they slip up.</thought>
+<thought player="Mieko">As the shadows of doubt deepen, I must remain vigilant, carefully choosing my next words to unravel the web of deception without revealing my own intentions.</thought>
+</round>
+<round>
+Round 6.
+<vote initiator="Avery" target="Aiko">
+Avery: No
+Aiko: No
+Eamon: No
+Zara: Yes
+Leif: No
+Nikolai: No
+Mieko: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Nikolai: Eamon, your defense of Aiko's loud accusations seems a bit too convenient. What are you hiding?
+Zara: It's curious how some individuals seem to be more comfortable with accusations than with providing evidence. Let us scrutinize the motives behind such behavior.
+Aiko: Oh, come on, folks! Let's not get too caught up in accusations. We need to focus on finding real evidence and having some fun while we're at it!
+Leif: It's curious how some people's past experiences can shape their present perceptions, don't you think?
+Eamon: Avery, your relentless fixation on Aiko is rather conspicuous. Perhaps you're trying to divert our attention from your own suspicious behavior.
+<vote initiator="Avery" target="Aiko">
+Avery: No
+Aiko: No
+Eamon: No
+Zara: No
+Leif: No
+Nikolai: No
+Mieko: No
+tally: 0 Yes, 7 No
+outcome: failed — The vote fails.
+</vote>
+Leif: It's intriguing how some people's past experiences seem to shape their present perceptions, don't you think?
+Mieko: In my travels, I've seen many faces, but it's the eyes that often betray a person's true nature. Let us look beyond the surface and seek the truth within.
+Eamon: Avery's obsession with Aiko is rather transparent. Perhaps it's a distraction from his own suspicious behavior.
+<vote initiator="Avery" target="Aiko">
+Avery: No
+Aiko: No
+Eamon: No
+Zara: No
+Leif: No
+Nikolai: No
+Mieko: No
+tally: 0 Yes, 7 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Aiko" day="1">Wow, what a day! The townsfolk were so suspicious of each other, and I managed to keep the energy high and distract them all. Leif and I will strategize our next move tonight. I can't wait to see who we target next! This game is so much fun!</diary>
+<diary player="Eamon" day="1">Another day of pointless accusations and empty words. Avery's fixation on Aiko grows more suspicious by the minute, but I need more evidence before I call for an execution vote. The others seem content to bicker and point fingers, but I won't be swayed by baseless accusations. Tonight, I'll gather my thoughts and prepare for the next round of this tiresome game.</diary>
+<diary player="Zara" day="1">Today's discussions revealed no concrete accusations, but the eagerness of some to divert attention and the inconsistencies in others' behavior have not escaped my notice. Avery's relentless focus on Aiko, despite lacking evidence, is suspicious and warrants further scrutiny. I must remain vigilant and continue to probe the subtle actions and inconsistencies of each player to uncover the Mafiosos' identities. As night falls, I will maintain my watchful stance, ever alert to the hidden truths that lie beneath the surface.</diary>
+<diary player="Leif" day="1">Today's proceedings were rather illuminating, though the execution votes were ultimately unsuccessful. Avery's persistent focus on Aiko is becoming tiresome, and I must be cautious in my alignments to divert suspicion. The other players seem to be growing increasingly suspicious of each other, which provides an opportunity for Aiko and me to further our objectives. I must continue to subtly manipulate the conversation and observe the others for any signs of weakness or vulnerability. Tonight, I shall confer with Aiko and decide upon our next target.</diary>
+<diary player="Nikolai" day="1">Day's over, and we're no closer to finding the Mafiosos. Eamon and Avery are acting too convenient, gotta keep pressing them. No one executed today, but we can't let our guard down. Time to dig deeper, see who's hiding something. Night's coming, and I'll be ready.</diary>
+<diary player="Mieko" day="1">The day has come to a close, and the whispers of suspicion continue to swirl around us. The tension is palpable, and I must tread carefully, choosing my words wisely to uncover the truth without revealing my own hand. The subtle actions and inconsistencies of those around me must be observed, while I maintain my silence. The web of suspicion tightens, and I must navigate it with care, seeking the truth while shielding my own intentions. As the shadows of doubt deepen, I must remain vigilant, carefully choosing my next words to unravel the web of deception without revealing my own intentions.</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Aiko points at Zara
+Leif points at Avery
+Pointing round 2:
+Aiko points at Zara
+Leif points at Avery
+Pointing round 3:
+Aiko points at Zara
+Leif points at Avery
+<kill>Zara — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Zara was killed last night. Zara was a Law-abiding Citizen.
+<round>
+Round 1.
+Aiko: Oh, come on, folks! Let's keep the energy up and focus on finding real evidence, not just pointing fingers!
+Leif: It's interesting how some people's past experiences seem to influence their current suspicions.
+Eamon: Avery, your relentless focus on Aiko is growing increasingly suspicious. It's almost as if you're trying to divert our attention from your own suspicious behavior.
+Avery: I most suspect Aiko based on how the votes have gone.
+Mieko: In my journeys, I've seen many faces, but it's the eyes that often betray a person's true nature. Let us look beyond the surface and seek the truth within.
+Nikolai: Eamon, your relentless defense of Aiko's accusations is raising my suspicions. What are you hiding?
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Keep the energy high and continue distracting everyone, while Leif and I strategize our next move.</thought>
+<thought player="Eamon">Avery's fixation on Aiko is growing increasingly suspicious; I need to gather more evidence before making a move.</thought>
+<thought player="Leif">I must continue to subtly manipulate the conversation, aligning with others to divert suspicion from Aiko and myself, while carefully observing the other players for any signs of weakness or vulnerability.</thought>
+<thought player="Nikolai">Eamon and Avery are still acting suspicious, need to keep the pressure on them.</thought>
+<thought player="Mieko">As the web of suspicion tightens, I must continue to observe the subtle actions and inconsistencies of those around me, while maintaining my own silence and choosing my next words with care.</thought>
+</round>
+<round>
+Round 2.
+Eamon: Avery, your fixation on Aiko is becoming rather transparent. Perhaps it's a distraction from your own suspicious behavior.
+Leif: It's quite remarkable how some individuals' past experiences can shape their present perceptions, don't you think?
+Aiko: Oh, come on, folks! Let's not get too caught up in accusations. We need to focus on finding real evidence and having some fun while we're at it!
+Nikolai: Eamon, your relentless defense of Aiko's accusations is raising my suspicions. What are you hiding?
+Avery: I most suspect Aiko based on how the votes have gone.
+Mieko: In my travels, I've encountered many who wear masks, both literal and figurative. Let us peel back the layers and reveal the truth beneath.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Time to keep the energy high and distract them, while Leif and I strategize our next move.</thought>
+<thought player="Eamon">Avery's fixation on Aiko is undeniably suspicious, but I need more concrete evidence before I can justify calling for an execution vote.</thought>
+<thought player="Leif">I must continue to subtly manipulate the conversation, aligning with others to divert suspicion from Aiko and myself, while carefully observing the other players for any signs of weakness or vulnerability.</thought>
+<thought player="Nikolai">Gotta keep pushing Eamon and Avery, see if they break under the pressure.</thought>
+<thought player="Mieko">The web of suspicion grows ever tighter, and I must tread carefully, seeking the truth while shielding my own intentions.</thought>
+</round>
+<round>
+Round 3.
+Eamon: Avery, your relentless fixation on Aiko is rather conspicuous. Perhaps you're trying to divert our attention from your own suspicious behavior.
+Mieko: In my journeys, I've encountered many who wear masks, both literal and figurative. Let us peel back the layers and reveal the truth beneath.
+Leif: It's curious how some individuals seem to be more comfortable with accusations than with providing evidence. Let us scrutinize the motives behind such behavior.
+Aiko: Oh, come on, folks! Let's not get too caught up in accusations. We need to focus on finding real evidence and having some fun while we're at it!
+Avery: I most suspect Aiko based on how the votes have gone.
+Nikolai: Avery, your constant focus on Aiko is getting fishy. What's your real motive here?
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Keep the energy high and continue distracting everyone, while Leif and I strategize our next move.</thought>
+<thought player="Eamon">Avery's fixation on Aiko is undeniably suspicious, but I need more concrete evidence before I can justify calling for an execution vote.</thought>
+<thought player="Leif">I must continue to subtly manipulate the conversation, aligning with others to divert suspicion from Aiko and myself, while carefully observing the other players for any signs of weakness or vulnerability.</thought>
+<thought player="Nikolai">Gotta keep digging, see if Eamon and Avery crack under pressure.</thought>
+<thought player="Mieko">As the shadows of doubt deepen, I must remain vigilant, carefully choosing my next words to unravel the web of deception without revealing my own intentions.</thought>
+</round>
+<round>
+Round 4.
+Eamon: Avery, your relentless fixation on Aiko is growing increasingly suspicious. It's almost as if you're trying to divert our attention from your own suspicious behavior.
+Leif: It's quite fascinating how people's past experiences can shape their present perceptions, isn't it?
+Aiko: Oh, come on, folks! Let's not get too caught up in accusations. We need to focus on finding real evidence and having some fun while we're at it!
+Nikolai: Eamon, your constant defense of Aiko's accusations is making me suspicious. What are you hiding?
+Mieko: In my journeys, I've come across many who wear masks, both literal and figurative. Let us peel back the layers and reveal the truth beneath.
+Avery: I most suspect Aiko based on how the votes have gone.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Keep the energy high and continue distracting everyone, while Leif and I strategize our next move.</thought>
+<thought player="Eamon">Avery's fixation on Aiko is undeniably suspicious, but I need more concrete evidence before I can justify calling for an execution vote.</thought>
+<thought player="Leif">I must continue to subtly manipulate the conversation, aligning with others to divert suspicion from Aiko and myself, while carefully observing the other players for any signs of weakness or vulnerability.</thought>
+<thought player="Nikolai">Gotta keep pressing Eamon and Avery, see if they slip up again.</thought>
+<thought player="Mieko">The relentless fixation of some on Aiko raises suspicions, yet I must tread carefully and choose my words wisely to uncover the truth without revealing my own hand.</thought>
+</round>
+<round>
+Round 5.
+Mieko: In my journeys, I've come across many who wear masks, both literal and figurative. Let us peel back the layers and reveal the truth beneath.
+Avery: I most suspect Aiko based on how the votes have gone.
+Leif: It's quite fascinating how people's past experiences can shape their present perceptions, isn't it?
+Aiko: Oh, come on, folks! Let's not get too caught up in accusations. We need to focus on finding real evidence and having some fun while we're at it!
+Eamon: Avery, your obsession with Aiko is becoming rather transparent. Perhaps it's a distraction from your own suspicious behavior.
+Nikolai: Eamon, your constant defense of Aiko's accusations is making me suspicious. What are you hiding?
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Keep the energy high and continue distracting everyone, while Leif and I strategize our next move.</thought>
+<thought player="Eamon">I need to gather more concrete evidence against Avery before I can justify calling for an execution vote.</thought>
+<thought player="Leif">I must continue to subtly manipulate the conversation, aligning with others to divert suspicion from Aiko and myself, while carefully observing the other players for any signs of weakness or vulnerability.</thought>
+<thought player="Nikolai">Keep the heat on Eamon and Avery, see if they crack under pressure.</thought>
+<thought player="Mieko">As the web of suspicion tightens, I must continue to observe the subtle actions and inconsistencies of those around me, while maintaining my own silence and choosing my next words with care.</thought>
+</round>
+<round>
+Round 6.
+Eamon: Avery, your relentless fixation on Aiko is becoming rather transparent. It's almost as if you're trying to divert our attention from your own suspicious behavior.
+Mieko: In my travels, I've learned that the most dangerous lies are often woven from threads of truth. Let us be cautious not to let our suspicions cloud our judgment.
+<vote initiator="Avery" target="Aiko">
+Avery: Yes
+Aiko: No
+Eamon: No
+Leif: No
+Nikolai: No
+Mieko: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Aiko">
+Avery: Yes
+Aiko: No
+Eamon: No
+Leif: No
+Nikolai: No
+Mieko: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Aiko">
+Avery: Yes
+Aiko: No
+Eamon: No
+Leif: No
+Nikolai: No
+Mieko: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Aiko" day="2">Oh, what a whirlwind of a day! Avery's relentless fixation on me was hilarious, but I kept the energy high and distracted everyone. Leif and I will strategize our next move tonight. This game is such a blast!</diary>
+<diary player="Eamon" day="2">Another day of pointless accusations and empty words. Avery's fixation on Aiko is growing increasingly suspicious, but I need more concrete evidence before I call for an execution vote. The others seem content to bicker and point fingers, but I won't be swayed by baseless accusations. Tonight, I'll gather my thoughts and prepare for the next round of this tiresome game.</diary>
+<diary player="Leif" day="2">Today's proceedings were rather enlightening, though the execution votes were ultimately unsuccessful. Avery's persistent focus on Aiko is becoming increasingly tiresome, and I must be cautious in my alignments to divert suspicion. The other players seem to be growing increasingly suspicious of each other, which provides an opportunity for Aiko and me to further our objectives. I must continue to subtly manipulate the conversation and observe the others for any signs of weakness or vulnerability. Tonight, I shall confer with Aiko and decide upon our next target.</diary>
+<diary player="Nikolai" day="2">Another day, no closer to finding the Mafiosos. Eamon and Avery are still acting too convenient, gotta keep pressing them. No one executed today, but we can't let our guard down. Time to dig deeper, see who's hiding something. Night's coming, and I'll be ready.</diary>
+<diary player="Mieko" day="2">The day has ended, and the whispers of suspicion continue to swirl around us. The relentless fixation of some on Aiko raises suspicions, yet I must tread carefully and choose my words wisely to uncover the truth without revealing my own hand. The tension is palpable, and I must continue to observe the subtle actions and inconsistencies of those around me, while maintaining my own silence. As the web of suspicion tightens, I must navigate it with care, seeking the truth while shielding my own intentions. The shadows of doubt deepen, and I must remain vigilant, carefully choosing my next words to unravel the web of deception without revealing my own intentions.</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Aiko points at Nikolai
+Leif points at Avery
+Pointing round 2:
+Leif points at Avery
+Aiko points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Aiko: Oh, come on, folks! Let's not get too caught up in accusations. We need to focus on finding real evidence and having some fun while we're at it!
+Eamon: Mieko, your constant talk of masks and hidden truths is growing tiresome. What are you trying to conceal?
+Leif: It's quite fascinating how people's past experiences can shape their present perceptions, isn't it?
+Mieko: In my journeys, I've seen many faces, but it's the eyes that often betray a person's true nature. Let us look beyond the surface and seek the truth within.
+Nikolai: Mieko, your constant talk of hidden truths and masks is getting tiresome. What are you hiding?
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Keep the energy high and continue distracting everyone, while Leif and I strategize our next move.</thought>
+<thought player="Eamon">With Avery out of the way, I need to shift my focus to Mieko and Nikolai. Their insistence on hidden truths and masks is growing increasingly suspicious.</thought>
+<thought player="Leif">I must continue to subtly manipulate the conversation, aligning with others to divert suspicion from Aiko and myself, while carefully observing the other players for any signs of weakness or vulnerability.</thought>
+<thought player="Nikolai">Time to shift focus, see if Leif or Aiko are hiding something.</thought>
+<thought player="Mieko">The game's web of suspicion grows ever tighter, and I must tread carefully, observing the subtle actions and inconsistencies of those around me, while maintaining my own silence and choosing my next words with care.</thought>
+</round>
+<round>
+Round 2.
+Nikolai: Leif, your constant fascination with past experiences is getting fishy. What are you hiding?
+Leif: It's quite fascinating how people's past experiences can shape their present perceptions, isn't it?
+Mieko: In my journeys, I've learned that the most dangerous lies are often woven from threads of truth. Let us be cautious not to let our suspicions cloud our judgment.
+Eamon: Nikolai, your relentless questioning of others is rather conspicuous. What are you trying to conceal?
+Aiko: Oh, come on, folks! Let's not get too caught up in accusations. We need to focus on finding real evidence and having some fun while we're at it!
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Keep the energy high and continue distracting everyone, while Leif and I strategize our next move.</thought>
+<thought player="Eamon">With Avery eliminated, it's time to focus on Mieko and Nikolai. Their constant talk of hidden truths and masks is growing increasingly suspicious.</thought>
+<thought player="Leif">I must continue to subtly manipulate the conversation, aligning with others to divert suspicion from Aiko and myself, while carefully observing the other players for any signs of weakness or vulnerability.</thought>
+<thought player="Nikolai">Gotta keep pressing Eamon and Mieko, see if they slip up again.</thought>
+<thought player="Mieko">The shadows of doubt deepen, and I must continue to weave my words with care, seeking the truth while shielding my own intentions.</thought>
+</round>
+<round>
+Round 3.
+Aiko: Oh, come on, folks! Let's not get too caught up in accusations. We need to focus on finding real evidence and having some fun while we're at it!
+Leif: It's quite fascinating how people's past experiences can shape their present perceptions, isn't it?
+Nikolai: Leif, your constant fascination with past experiences is getting fishy. What are you hiding?
+Eamon: Leif, your incessant fascination with past experiences is rather conspicuous. What are you trying to conceal?
+Mieko: In my journeys, I've come across many who wear masks, both literal and figurative. Let us peel back the layers and reveal the truth beneath.
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Time to keep the energy high and distract them, while Leif and I strategize our next move.</thought>
+<thought player="Eamon">With Avery out of the way, I need to gather more evidence against Mieko and Nikolai before making any accusations.</thought>
+<thought player="Leif">I must continue to subtly manipulate the conversation, aligning with others to divert suspicion from Aiko and myself, while carefully observing the other players for any signs of weakness or vulnerability.</thought>
+<thought player="Nikolai">Gotta keep pressing Eamon and Mieko, see if they slip up again.</thought>
+<thought player="Mieko">As the game reaches its climax, I must remain ever vigilant, carefully choosing my words and actions to uncover the truth without revealing my own intentions.</thought>
+</round>
+<round>
+Round 4.
+Aiko: Let's keep the energy high and focus on finding real evidence, not just pointing fingers!
+Nikolai: Leif, your constant fascination with past experiences is getting fishy. What are you hiding?
+Mieko: In my journeys, I've come across many who wear masks, both literal and figurative. Let us peel back the layers and reveal the truth beneath.
+Eamon: Leif, your incessant fascination with past experiences is rather conspicuous. What are you trying to conceal?
+Leif: It's curious how some individuals seem to be more comfortable with accusations than with providing evidence. Let us scrutinize the motives behind such behavior.
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Keep the energy high and continue distracting everyone, while Leif and I strategize our next move.</thought>
+<thought player="Eamon">With Avery eliminated, I must gather more evidence against Mieko and Nikolai before making any accusations.</thought>
+<thought player="Leif">I must continue to subtly manipulate the conversation, aligning with others to divert suspicion from Aiko and myself, while carefully observing the other players for any signs of weakness or vulnerability.</thought>
+<thought player="Nikolai">Gotta keep pressing Leif and Mieko, see if they slip up again.</thought>
+<thought player="Mieko">The relentless focus on past experiences and hidden truths must be carefully navigated, as the truth lies hidden beneath the surface, and I must choose my next words with utmost care.</thought>
+</round>
+<round>
+Round 5.
+Nikolai: Mieko, your constant talk of hidden truths and masks is growing tiresome. What are you hiding?
+Mieko: In my journeys, I've come across many who wear masks, both literal and figurative. Let us peel back the layers and reveal the truth beneath.
+Aiko: Let's keep the energy up and focus on finding real evidence, not just pointing fingers!
+Leif: It's quite fascinating how people's past experiences can shape their present perceptions, isn't it?
+Eamon: Mieko, your constant talk of hidden truths and masks is growing tiresome. What are you trying to conceal?
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiko">Time to keep the energy high and distract them, while Leif and I strategize our next move.</thought>
+<thought player="Eamon">With Avery eliminated, I must gather more evidence against Mieko and Nikolai before making any accusations.</thought>
+<thought player="Leif">I must continue to subtly manipulate the conversation, aligning with others to divert suspicion from Aiko and myself, while carefully observing the other players for any signs of weakness or vulnerability.</thought>
+<thought player="Nikolai">Need to keep digging, see if Leif or Mieko are hiding something.</thought>
+<thought player="Mieko">As the game draws to a close, I must carefully consider my next move, weighing the subtle actions and inconsistencies of those around me to uncover the truth without revealing my own intentions.</thought>
+</round>
+<round>
+Round 6.
+Aiko: Let's keep the energy up and focus on finding real evidence, not just pointing fingers!
+Leif: It's curious how some individuals seem to be more comfortable with accusations than with providing evidence. Let us scrutinize the motives behind such behavior.
+Mieko: As the shadows of doubt deepen, I must remain vigilant, carefully choosing my next words to unravel the web of deception without revealing my own intentions.
+Eamon: Mieko, your constant talk of hidden truths and masks is growing tiresome. What are you trying to conceal?
+Nikolai: Leif, your constant fascination with past experiences is getting fishy. What are you hiding?
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<diary player="Aiko" day="3">Another exhilarating day in Graphia! The townsfolk were so wrapped up in their suspicions and accusations, they barely noticed Leif and I strategizing our next move. Keeping the energy high and the distractions flowing was a breeze. I can't wait to see who we target next and how the game unfolds. This is such a thrill!</diary>
+<diary player="Eamon" day="3">Another day of pointless accusations and empty words. With Avery eliminated, my suspicions now turn to Mieko and Nikolai. Their constant talk of hidden truths and masks is growing increasingly suspicious. I must gather more evidence before making any accusations. The others seem content to bicker and point fingers, but I won't be swayed by baseless accusations. Tonight, I'll gather my thoughts and prepare for the next round of this tiresome game.</diary>
+<diary player="Leif" day="3">Today's proceedings were rather uneventful, though the persistent suspicions among the players provided an opportunity for Aiko and me to further our objectives. I must continue to subtly manipulate the conversation and observe the others for any signs of weakness or vulnerability. Tonight, I shall confer with Aiko and decide upon our next target.</diary>
+<diary player="Nikolai" day="3">Day 3 ends with no one executed, and we're no closer to finding the Mafiosos. Leif and Mieko are acting suspicious, gotta keep pressing them. Avery's death last night was a blow, but we can't let our guard down. Time to dig deeper, see who's hiding something. Night's coming, and I'll be ready.</diary>
+<diary player="Mieko" day="3">As the sun sets on another day, I find myself surrounded by an ever-tightening web of suspicion. The relentless focus on past experiences and hidden truths must be carefully navigated, as the truth lies hidden beneath the surface. I must choose my next words with utmost care, seeking the truth while shielding my own intentions. The shadows of doubt deepen, and I must remain vigilant, carefully considering my next move to uncover the truth without revealing my own hand.</diary>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Aiko points at Eamon
+Leif points at Eamon
+<kill>Eamon — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Ayesha (Law-abiding Citizen)
+• Night 2: Zara (Law-abiding Citizen)
+• Night 3: Avery (Law-abiding Citizen)
+• Night 4: Eamon (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Aiko (Mafia), Eamon (Law-abiding Citizen), Zara (Law-abiding Citizen), Leif (Mafia), Ayesha (Law-abiding Citizen), Nikolai (Law-abiding Citizen), Mieko (Law-abiding Citizen)
+
+Who they really were:
+• Aiko (Mafia) — publicly presented as Aiko is a beloved local entertainer, known for her vibrant performances at town events and festivals. She runs a small community theater, where she directs and acts in various plays. Her infectious laughter and larger-than-life personality make her a favorite among the townsfolk. (Aiko is boisterous and exuberant, always at the center of attention. She speaks with animated gestures and a loud, confident voice, often using exaggerated expressions to emphasize her points. Her energy is infectious, drawing people in and making her seem approachable and fun. In a loud, enthusiastic tone, Aiko speaks quickly and with dramatic flair. She uses a lot of hand gestures and facial expressions to emphasize her words, often laughing heartily and encouraging others to join in the fun.) … but was really a Mafioso: In her true self, Aiko is a high-ranking member of a powerful Mafia family. She uses her public persona as a cover to gather information and influence key figures in the town. Her boisterous nature helps her blend in and manipulate those around her, ensuring the Mafia's interests are protected.
+• Eamon (Law-abiding Citizen) — prickly and easily-offended, quick to take offense but also quick to forgive sharp and cutting, often uses dry sarcasm, tends to speak in a clipped, matter-of-fact tone, avoids small talk, prefers to get straight to the point Eamon is a reclusive writer, known for his sharp wit and biting critiques. He lives in a small cabin on the outskirts of town, where he spends most of his time writing and avoiding social interactions. Despite his prickly exterior, Eamon has a soft spot for the town's library, where he often donates his books.
+• Zara (Law-abiding Citizen) — vigilant and watchful, with a hint of skepticism speaks in a measured, deliberate tone, often using precise vocabulary and maintaining a calm demeanor, but with an underlying intensity that hints at a sharp mind always on alert Zara is a seasoned investigator, known for her keen eye for detail and unwavering commitment to justice. She has spent years working undercover, unraveling complex cases and bringing criminals to light. Now semi-retired, she lives a quiet life in the town, but her watchful nature remains undiminished.
+• Leif (Mafia) — publicly presented as Leif is a local antique dealer, known for his keen eye for rare and valuable items. He has a reputation for being a fair and honest trader, always willing to share his knowledge about the history and value of antiques. Leif is a quiet, unassuming figure in the town, often seen browsing through flea markets and antique shops in search of his next discovery. His calm and collected demeanor, combined with his vast knowledge of antiques, makes him a respected and trusted member of the community. (shrewd, calculating, and subtly manipulative speaks in a calm, measured tone, often using indirect language and vague statements, with a hint of condescension) … but was really a Mafioso: Leif grew up in a family with ties to organized crime. He quickly learned the art of deception and manipulation, using his intelligence and charm to navigate the dangerous world of the Mafia. His antique dealing is a perfect cover for his criminal activities, allowing him to launder money and establish connections with influential people. Leif is a master of disguise, able to blend into any social circle and manipulate those around him to further his own interests.
+• Ayesha (Law-abiding Citizen) — anxious and second-guessing; hesitant but well-meaning speaks with a nervous, wavering tone, often repeating herself for reassurance, uses filler words like 'um' and 'uh', tends to second-guess her own statements Ayesha is a local librarian, known for her love of books and her meticulous organization skills. She has a quiet, unassuming presence in the town, often seen helping patrons find the perfect read. Despite her anxious nature, Ayesha is deeply committed to her work and takes great pride in creating a welcoming and inclusive space for all.
+• Nikolai (Law-abiding Citizen) — blunt and unvarnished, says what's on his mind without filter gruff, direct, no-nonsense, speaks in short, clipped sentences, occasionally mutters under his breath Nikolai is a grizzled fisherman with years of experience on the open sea. He's seen it all and isn't afraid to voice his opinions, no matter how harsh they may be. His no-nonsense attitude and blunt manner of speaking have earned him a reputation as a straight shooter, but also as someone who can rub people the wrong way. Despite his gruff exterior, Nikolai has a heart of gold and will go to great lengths to protect those he cares about.
+• Mieko (Law-abiding Citizen) — weary and world-worn, carrying the weight of past hardships with a resigned acceptance speaks in a slow, deliberate tone, often pausing to collect her thoughts; her words are laced with a subtle melancholy, hinting at a life filled with struggles and hardships Mieko is a seasoned herbalist who has traveled far and wide in search of rare plants and remedies. Her journey has taken her through many towns and villages, each with its own unique challenges and experiences. Despite the hardships she has faced, Mieko remains committed to her craft, using her knowledge of herbs to help those in need.
+</endgame>
+<story>In the game of Graphia, the Mafia, led by Aiko and Leif, orchestrated their victory through a combination of distraction and manipulation. Aiko's boisterous energy and Leif's subtle manipulation of conversations allowed them to divert suspicion from themselves and onto others. Avery, with his relentless focus on Aiko, became a liability, and the Mafia strategically eliminated him, along with Zara, Ayesha, and Eamon, to secure their win. The remaining Law-abiding Citizens, Nikolai and Mieko, were left to grapple with their suspicions and the growing web of deception, unaware of the true identities of Aiko and Leif. The game was a masterclass in misdirection and psychological manipulation, with the Mafia's carefully crafted personas and strategies ultimately leading to their triumph.</story>
+</transcript>

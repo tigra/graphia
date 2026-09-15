@@ -1,0 +1,491 @@
+Game 28 | provider=ollama | large_model=qwen3-coder:30b | small_model=qwen2.5:3b | games=50 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Loki" role="Mafia">
+Personality: Cynical, sharp-tongued, and deliberately provocative. Loki thrives on pushing buttons and watching people's reactions. They have a dry sense of humor that cuts deeper than most insults, and they're not afraid to be openly skeptical or sarcastic about anything they perceive as naive or foolish.
+Manner: Speaks with measured, clipped sentences that carry double meanings. Uses dry wit and subtle sarcasm in every response. Often pauses before answering questions, as if weighing whether to give a truthful answer or a deliberately misleading one. Has a habit of leaning back in their chair when talking, arms crossed, with an expression that suggests they know something the others don't.
+Public legend: Loki is a retired librarian who moved to town after a bitter divorce. They spend their days working part-time at the local bookstore and volunteering at the community center. They're known for their grumpy but helpful demeanor and their tendency to correct people's grammar in a way that makes them feel smart rather than stupid. They're the town's unofficial chronicler of local events, keeping meticulous notes on everything from weather patterns to neighborhood gossip.
+True self (hidden): Loki was a small-time enforcer for the local crime family before they fled to this town, where they assumed their public identity. They've spent years perfecting their cover while quietly maintaining connections with old contacts. Their escape was motivated by a falling out with their boss over an illegal gambling operation that went wrong. Now they live off a small inheritance and the satisfaction of knowing they can always find a way to manipulate situations to their advantage.
+</player>
+<player name="Zoe" role="Law-abiding Citizen">
+Personality: Vigilant and perpetually alert, with an almost unnerving ability to notice details others miss. Zoe is intensely curious about everyone's behavior and motives, constantly scanning the room for signs of deception or tension.
+Manner: Speaks quickly but with deliberate emphasis on key words, often pausing mid-sentence to re-examine something they've noticed. Uses frequent qualifying phrases like 'I've been watching' or 'I noticed that' before making observations. Has a habit of tilting her head slightly when listening, eyes narrowing as she processes information. Her voice rises slightly when she's excited about something she's observed.
+Persona: Zoe is a retired school librarian who moved to town five years ago after her husband passed away. She spends her days volunteering at the local library and keeping a detailed journal of all the strange things that happen in the neighborhood. She's known throughout town for her ability to spot when someone is acting suspiciously, often making people feel watched even when they're not.
+</player>
+<player name="Sai" role="Law-abiding Citizen">
+Personality: Brash and loud, with an oversized confidence that borders on arrogance. Sai is the kind of person who speaks before thinking, insists they're always right, and has no filter when it comes to voicing opinions. They're naturally charismatic but can be reckless with their words and actions.
+Manner: Speaks in a booming, exaggerated voice that cuts through conversations. Uses frequent exclamations like 'Duh!' and 'You gotta be kidding me!' Has a habit of gesturing wildly while talking and often interrupts others mid-sentence. Speaks quickly with a casual, almost dismissive tone. Often says things like 'Well, I'll be damned' or 'That's what I always say' as verbal anchors.
+Persona: Sai is the town's biggest sports fan and amateur chef who runs a successful local BBQ joint. They're known for their competitive spirit, loud laughter, and never backing down from a challenge. They're constantly telling everyone how they've 'got the best recipe for everything' and are always trying to one-up others with their bold claims.
+</player>
+<player name="Milo" role="Law-abiding Citizen">
+Personality: Whimsical and erratic, with an unsettling tendency to speak in riddles and make sudden, bizarre observations that seem to have no logical connection to the conversation at hand. Has an odd fixation on patterns and coincidences that others might miss, but expresses these insights in a way that's both endearing and slightly alarming.
+Manner: Speaks in a singsong, melodic voice that rises and falls unpredictably. Uses frequent verbal tics like 'you know what I mean?' or 'well, isn't that interesting?' and has a habit of trailing off mid-sentence only to suddenly jump to an unrelated topic. Often pauses dramatically before speaking, as if gathering thoughts from somewhere other than their head. Makes soft humming sounds while thinking and frequently shifts between different tones of voice.
+Persona: Milo is the town's eccentric handyman who claims to have inherited his skills from his grandmother, who was allegedly a witch. He spends his days fixing everything from leaky faucets to broken hearts (he says). People often seek him out for advice on matters that seem mundane but he always has some bizarre, unrelated insight. He keeps a peculiar collection of objects in his workshop that he insists are 'charged with energy' and is constantly muttering about 'the cosmic alignment of things.' He's known for showing up to social gatherings with a different hat each day, though he claims they're all connected to the universe.
+</player>
+<player name="Rai" role="Mafia">
+Personality: Stern, authoritative, and unyielding in demeanor. Rai commands respect through sheer presence and a no-nonsense attitude that demands attention. They are rigid in their principles and quick to judge those who they perceive as weak or disloyal. Despite their stern exterior, they possess a deep sense of duty and protectiveness toward those they consider family or allies.
+Manner: Speaks with slow, deliberate cadence, each word carefully chosen and delivered with emphasis. Their voice carries weight and authority, often dropping into a low rumble that commands silence. They rarely raise their voice but when they do, it's thunderous. Use formal address ('you' rather than 'ya') and often precede statements with 'as I've always said' or 'this is what we do.' Their speech is structured, almost military in its precision.
+Public legend: Rai is the town's respected fire chief, a position they've held for over fifteen years. They're known for their strict adherence to protocol and unwavering dedication to public safety. They maintain an impeccable record of never missing a call and are renowned for their calm composure during emergencies. In their free time, they volunteer at the local youth center, teaching basic fire safety and first aid. They're a family man who takes pride in their role as a pillar of the community, often saying 'a strong foundation is what keeps people safe.'
+True self (hidden): Rai was recruited into the Mafia when they were twenty-two after their younger brother was killed in an 'accident' that was actually a message to the family. They've been in the organization for nearly two decades, climbing the ranks through loyalty and a ruthless ability to eliminate threats. Their public identity is a carefully constructed illusion of a man who simply loves his community, while secretly maintaining control over the town's criminal underbelly. They believe that only through iron discipline can true order be achieved.
+</player>
+<player name="Ria" role="Law-abiding Citizen">
+Personality: Sincere and earnest, with an almost childlike trust in others' good intentions. Ria approaches every conversation with genuine curiosity and a desire to understand, often forgetting that her straightforwardness can seem naive to those used to social gamesmanship.
+Manner: Speaks slowly and deliberately, choosing each word carefully as if weighing its truthfulness. Uses frequent qualifiers like 'I really do believe' or 'Honestly, I think' and often pauses to check if others understand before continuing. Has a habit of looking directly at people when speaking, maintaining eye contact throughout conversations. Often uses simple, clear language even for complex ideas, sometimes repeating points for emphasis. Her voice rises slightly when excited about something she believes in.
+Persona: Ria is the town's beloved librarian who has worked at the local library for twelve years. She grew up in the same small town and never imagined leaving, spending her days helping people find books, organizing community events, and fostering a love of reading among all ages. She's known for her kindness and willingness to help anyone with their questions, always offering encouraging words to children and patiently guiding adults through complex topics.
+</player>
+<player name="Nai" role="Law-abiding Citizen">
+Personality: Warm and effusive, with an infectious enthusiasm that lights up any room they enter. Nai radiates genuine kindness and has an almost irresistible urge to comfort others. They're naturally empathetic, often putting others' feelings before their own, and possess a remarkable ability to make people feel heard and valued.
+Manner: Speaks in a gentle, animated voice that rises and falls with emotion. Uses frequent verbal affirmations like 'Oh my goodness!' and 'That's just wonderful!' and has a habit of reaching out to touch someone's arm or shoulder when offering comfort. Often pauses mid-sentence to reframe their thoughts in a more encouraging way, speaking slowly enough that every word carries warmth. Their voice takes on a musical quality when excited, with a tendency to repeat key phrases for emphasis.
+Persona: Nai is the town's beloved community coordinator who has worked tirelessly to organize local events, coordinate volunteer efforts, and ensure everyone feels welcome. They spend their days juggling multiple projects from organizing neighborhood clean-ups to planning birthday parties for children. Nai is known for their boundless energy and ability to connect with people of all ages. They grew up in the town and never imagined leaving, spending their life building bridges between neighbors and fostering a strong sense of community.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Loki, Zoe, Sai, Milo, Rai, Ria, Nai. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Loki): Your Mafia teammates are: Rai. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Rai): Your Mafia teammates are: Loki. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Rai points at Milo
+Loki points at Milo
+<kill>Milo — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Milo was killed last night. Milo was a Law-abiding Citizen.
+<round>
+Round 1.
+Nai: Oh my goodness, I'm so glad we're all together today to figure this out. I think it's important that we listen carefully to each other and make sure we're really thoughtful about our decisions.
+Sai: Well, I'll be damned — someone's been real slippery with their answers so far. I'm starting to think we need to ask a few more pointed questions before we start jumping to conclusions.
+Ria: Honestly, I think we should all take a moment to really listen to each other — I really do believe that if we're truthful and open, we'll figure this out together.
+Zoe: I've been watching everyone's reactions closely, and I noticed that Loki kept glancing at Rai right before the discussion started — that's not normal body language for someone who's just trying to help us figure this out.
+Rai: As I've always said, paranoia is a luxury we cannot afford. We must focus on facts, not fleeting glances.
+Avery: Nothing is settled yet, but I'm watching Rai most closely.
+Loki: I suppose it's a shame Milo had to go — such a nice, harmless fellow. Though I do wonder if he slipped up on his morning coffee routine before the night fell.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Loki">Zoe's pointing at Rai is either a desperate attempt to deflect or a genuine suspicion—either way, it's a move I can work with. I should let her think she's onto something, but not so much that she starts rallying the others.</thought>
+<thought player="Zoe">I've been watching everyone closely and Loki's behavior definitely warrants more scrutiny, but I need to be careful not to jump to conclusions. I should keep probing for inconsistencies while staying subtle about my suspicions.</thought>
+<thought player="Sai">Well, I'll be damned if I don't think Loki's been acting real suspicious with that coffee comment — but I gotta keep my mouth shut and let the chips fall where they may, or at least pretend like I'm not already planning to pin this on him.</thought>
+<thought player="Rai">The body count is rising, and the town's paranoia is beginning to stir. As I've always said, we must not let emotions cloud our judgment, but I will keep my focus sharp on the remaining targets.</thought>
+<thought player="Ria">I really do believe that we need to stay focused on the facts and listen carefully to everyone's words, but I also think it's important to watch for any suspicious behavior or inconsistent stories that might be red flags. Honestly, I'm not sure who to trust yet, but I'll keep trying to understand what's really going on.</thought>
+<thought player="Nai">Oh my goodness, I'm so glad we're all here together trying to figure this out - I really do believe that if we listen carefully to each other and stay open-minded, we'll be able to work through this together. I think I need to keep asking thoughtful questions about the night's events and see if anyone else noticed anything suspicious.</thought>
+</round>
+<round>
+Round 2.
+Nai: Oh my goodness, I'm really glad we're all here together trying to figure this out — I think it's so important that we really listen carefully to each other and make sure we're thoughtful about our decisions.
+Zoe: I noticed that Loki keeps touching their neck when they think no one is looking — that's an odd nervous habit, don't you think?
+Rai: I've seen enough nervous ticks and fidgeting to know that suspicion is a dangerous thing to spread — we must be careful not to let fear dictate our choices.
+Avery: Nothing is settled yet, but I'm watching Rai most closely.
+Sai: You gotta be kidding me — I can't believe how much Loki's been fidgeting with that coffee mug. That's not normal nervousness, that's guilt written all over their face!
+Ria: I really do believe that we should all take a moment to think about what Milo's death tells us — I mean, he was killed by someone in our group, and that makes me wonder if anyone here might have been acting strange or trying to avoid certain questions.
+Loki: I'm starting to think Milo's death was less about coffee and more about someone in this room not wanting to be the next target.
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Loki">Zoe's baiting is clumsy but effective — I'll let her think Rai is the target, but keep my options open. The real game starts when someone tries to pin the murder on a scapegoat.</thought>
+<thought player="Zoe">I've been watching Loki closely and their nervous habits are definitely worth noting, but I need to be careful not to accuse them directly yet. I should keep probing for inconsistencies in their story while staying subtle about my suspicions.</thought>
+<thought player="Sai">Sai's already sizing up Loki like they're the prime suspect — gotta love how I can practically hear the wheels turning in that head of theirs. I'll let them do most of the talking, but I'm keeping my eyes on that coffee mug and my mouth shut tight.</thought>
+<thought player="Rai">The town grows restless, their paranoia a useful tool if directed properly. As I've always said, fear can be controlled — we must ensure it serves our cause rather than undermines it. Loki and I have work to do.</thought>
+<thought player="Ria">I really do believe that Loki seems to be avoiding direct answers about Milo's death, and I'm starting to think they might be hiding something — but I need to stay calm and listen carefully before jumping to conclusions.</thought>
+<thought player="Nai">Oh my goodness, I'm so glad we're all here together trying to figure this out - I really do believe that if we listen carefully to each other and stay open-minded, we'll be able to work through this together. I think I need to keep asking thoughtful questions about the night's events and see if anyone else noticed anything suspicious.</thought>
+</round>
+<round>
+Round 3.
+Zoe: I've been watching Loki closely, and their hesitation before mentioning Milo's coffee routine seemed... too calculated. That's not nervousness, that's rehearsed.
+Ria: Honestly, I think we should all take a moment to really listen to Loki — I really do believe their hesitation when talking about Milo's coffee routine makes me wonder if they know more than they're telling us.
+Avery: Nothing is settled yet, but I'm watching Rai most closely.
+Loki: I'm starting to think Milo's coffee routine was just a red herring — someone here is playing us all like fools, and I really hope we can figure out who before the next body shows up.
+Nai: Oh my goodness, I'm really curious — did anyone else notice if Loki seemed unusually quiet when we were all talking about Milo's coffee routine? That's just not like them at all!
+Sai: You gotta be kidding me — I can't even with Loki's coffee routine now! I mean, come on, that's just a red herring so big you could drive a truck through it!
+Rai: This is what we do — we root out the threat, not the symptom. If we're not careful, we'll end up judging the innocent for the crimes of the guilty.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Loki">Zoe's fishing is pathetic but effective — I'll let her reel in Rai, but I need to keep my options open. The real game starts when someone tries to pin this on a scapegoat.</thought>
+<thought player="Zoe">I've been watching Loki closely and their behavior is definitely suspicious, but I need to keep probing for inconsistencies without jumping to conclusions. I should look for more specific patterns in their story rather than just nervous habits.</thought>
+<thought player="Sai">Sai's already got Loki dead to rights in their head, which is perfect 'cause I'm not ready to talk yet — I'll let them do the accusing while I keep my eyes on that coffee mug and my mouth shut tight.</thought>
+<thought player="Rai">The town's fear is rising, and they're beginning to turn on each other — this is the perfect time to let them see the threat within, not without. As I've always said, we must not let our focus waver from the true enemy.</thought>
+<thought player="Ria">I really do believe that Loki's hesitation when discussing Milo's coffee routine seems significant, but I must stay calm and listen carefully before making any accusations — Honestly, I think I should ask more direct questions about their behavior rather than just pointing fingers.</thought>
+<thought player="Nai">Oh my goodness, I'm really curious about Loki's hesitation and that coffee routine they mentioned — I think I need to ask more thoughtful questions to see if anyone else noticed something odd about their behavior, but I should keep my tone warm and encouraging so I don't seem too suspicious.</thought>
+</round>
+<round>
+Round 4.
+Nai: Oh my goodness, I'm really curious — did anyone else catch Loki's odd pause right before they mentioned the coffee? That hesitation felt so deliberate, I couldn't help but wonder if there was something more behind it all.
+Avery: Nothing is settled yet, but I'm watching Rai most closely.
+Sai: Well, I'll be damned — I reckon Loki's been twitching that coffee mug like it's got something to do with Milo's death, but I'm not the one who's gonna accuse them without proof!
+Ria: Honestly, I think we should all be very careful about jumping to conclusions — but I really do believe that Loki's hesitation when talking about Milo's coffee routine makes me wonder if they know more than they're telling us.
+Rai: I've seen enough hesitation and fidgeting to know that suspicion is a dangerous thing to spread — we must be careful not to let fear dictate our choices.
+Loki: I'm really starting to think Milo's death was less about coffee and more about someone here trying to make us all paranoid.
+Zoe: I've been watching Loki, and their hesitation when discussing Milo's coffee routine wasn't just nervous — it was rehearsed. I noticed they kept glancing at Rai right before that moment too. That's not coincidence.
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Loki">Zoe's desperate baiting is working, and Rai is taking the bait with alarming enthusiasm. I should let them both think they're onto something, but I'll keep my eyes on the real threat — whoever is trying to manipulate this whole situation for their own gain.</thought>
+<thought player="Zoe">I've been watching Loki closely and their hesitation before mentioning Milo's coffee routine wasn't just nervous — it was rehearsed. I noticed they kept glancing at Rai right before that moment too, which feels significant. I should keep probing for inconsistencies in their story without jumping to conclusions, maybe look for more specific patterns rather than just general nervousness.</thought>
+<thought player="Sai">Sai's already got Loki dead to rights in their head, which is perfect 'cause I'm not ready to talk yet — I'll let them do the accusing while I keep my eyes on that coffee mug and my mouth shut tight.</thought>
+<thought player="Rai">The town's paranoia is rising, and they're turning on each other — this is the perfect time to let them see the threat within, not without. As I've always said, we must not let our focus waver from the true enemy.</thought>
+<thought player="Ria">I really do believe that Loki's hesitation stands out, but I need to stay calm and ask more direct questions rather than just pointing fingers — Honestly, I think I should try to get a clearer picture of what they know before making any accusations.</thought>
+<thought player="Nai">Oh my goodness, I'm really curious about Loki's hesitation and that coffee routine they mentioned — I think I need to ask more thoughtful questions to see if anyone else noticed something odd about their behavior, but I should keep my tone warm and encouraging so I don't seem too suspicious. I do hope we can figure this out together, and I want to make sure everyone feels heard and valued while staying focused on facts.</thought>
+</round>
+<round>
+Round 5.
+Nai: Oh my goodness, I'm really curious — does anyone else think it's odd that Loki kept mentioning the coffee routine when they seem so calm about Milo's death? That deliberate shift in topic felt very strange to me.
+Rai: I've seen enough hesitation and fidgeting to know that suspicion is a dangerous thing to spread — we must be careful not to let fear dictate our choices.
+Loki: I suppose if we're going to start accusing people of being nervous, I'll just have to admit I've been watching everyone's hands more than usual — it's rather unsettling how many of you keep fidgeting with your mug handles.
+Zoe: I've been watching Loki closely, and their rehearsed hesitation when discussing Milo's coffee routine feels too calculated — I noticed they kept glancing at Rai right before that moment, which seems significant.
+Ria: Honestly, I think we should all take a step back and really listen to Loki — I really do believe their hesitation when talking about Milo's coffee routine makes me wonder if they know more than they're telling us.
+Avery: Nothing is settled yet, but I'm watching Rai most closely.
+Sai: You gotta be kidding me — I'm starting to think Loki's been playing us all like fools with that coffee routine, but I ain't the one to call 'em out without a solid reason!
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Loki">Zoe's desperate fishing is working better than expected, but I need to let Rai take the fall for now — the real threat is whoever's manipulating this whole situation, and I'm not ready to expose myself yet.</thought>
+<thought player="Zoe">I've been watching Loki closely and their rehearsed hesitation before mentioning Milo's coffee routine feels too calculated to ignore, especially with that deliberate glance at Rai — I should keep probing for inconsistencies in their story without jumping to conclusions, maybe look for more specific patterns rather than just general nervousness.</thought>
+<thought player="Sai">Sai's already got Loki dead to rights in their head, which is perfect 'cause I'm not ready to talk yet — I'll let them do the accusing while I keep my eyes on that coffee mug and my mouth shut tight.</thought>
+<thought player="Rai">The town's paranoia is rising, and they're turning on each other — this is the perfect time to let them see the threat within, not without. As I've always said, we must not let our focus waver from the true enemy. Loki and I have work to do.</thought>
+<thought player="Ria">I really do believe that Loki's hesitation is significant, but I need to stay calm and ask more direct questions rather than just pointing fingers. Honestly, I think I should try to get a clearer picture of what they know before making any accusations.</thought>
+<thought player="Nai">Oh my goodness, I'm really curious about Loki's behavior — I think I need to keep asking thoughtful questions and see if anyone else noticed that odd hesitation, but I should stay warm and encouraging so I don't seem too suspicious. I do hope we can figure this out together, and I want to make sure everyone feels heard and valued while staying focused on facts.</thought>
+</round>
+<round>
+Round 6.
+Ria: Honestly, I think we all need to take a deep breath and really listen to Loki — I really do believe their hesitation when talking about Milo's coffee routine makes me wonder if they know more than they're telling us.
+Loki: I'm starting to think someone here is more interested in keeping this group divided than solving Milo's murder — and that's a dangerous game to play.
+Rai: I've observed that while we've been focused on minor oddities, the real danger lies in letting our guard down. As I've always said, vigilance is not paranoia — it's survival.
+Nai: Oh my goodness, I'm really curious — does anyone else think it's odd that Loki kept mentioning the coffee routine when they seem so calm about Milo's death? That deliberate shift in topic felt very strange to me.
+Sai: I'm starting to think Loki's been playing us all like fools with that coffee routine — but I ain't the one to call 'em out without a solid reason!
+<vote initiator="Avery" target="Rai">
+Avery: No
+Loki: No
+Zoe: No
+Sai: Yes
+Rai: No
+Ria: No
+Nai: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Sai: Well, I'll be damned — I reckon we've got ourselves a real clever one here, and it ain't Loki, it's that sneaky Rai who’s been playing us all for fools!
+<vote initiator="Avery" target="Rai">
+Avery: No
+Loki: No
+Zoe: No
+Sai: Yes
+Rai: No
+Ria: No
+Nai: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Rai">
+Avery: No
+Loki: No
+Zoe: No
+Sai: Yes
+Rai: No
+Ria: No
+Nai: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Loki" day="1">Milo's death was a setup, of course it was — someone wanted us chasing our tails over coffee mug fidgeting and pretend suspicions. Zoe's got herself all worked up about Rai, and I'm not going to tell her she's wrong, because she's not. But I'm also not going to let her think she's right either. The real killer is still out there, laughing at us while we point fingers at each other. I've been watching everyone's hands more than usual — it's unsettling how many of them keep fidgeting with their mug handles. This isn't paranoia, this is survival. And I'm not done playing yet.</diary>
+<diary player="Zoe" day="1">I've been watching Loki like a hawk today, and their coffee routine story keeps falling apart under scrutiny. The hesitation before mentioning Milo's coffee wasn't nervous — it was rehearsed, like they'd planned that exact moment. I noticed them glancing at Rai right before that line too, which feels significant. I'm not ready to accuse anyone outright, but I've been watching and I'm starting to think Loki is trying to distract us while something else is going on in this room. The real danger might be right in front of us, and I've been watching too closely to ignore what I've seen.</diary>
+<diary player="Sai" day="1">Well, I'll be damned — what a day to remember, that's what I always say. Loki's been playing us all like fools with that coffee routine, but I ain't the one to call 'em out without proof, not yet anyway. I reckon I've got the best recipe for figuring this out, and it starts with keeping my eyes on that sneaky mug and letting the others do most of the talking. Sai's already sizing them up like they're the prime suspect, which is just perfect 'cause I'm not ready to talk yet — I'll let them do the accusing while I keep my mouth shut tight. I've got a feeling we're gonna need every bit of my gut instinct and a whole lot more, so I'm gonna keep my eyes peeled and my mouth zipped until I'm ready to drop the hammer.</diary>
+<diary player="Rai" day="1">The town grows more paranoid with each passing hour, and I've seen enough false accusations to know that fear can be a weapon when wielded properly. They turn on one another like wolves scenting blood, and I've watched them waste their energy on trivialities while the real danger remains hidden in plain sight. As I've always said, we must not let our focus waver from the true enemy — they're not looking inward, but we are. Loki and I have work to do before this night ends, and I will not allow them to waste another moment on the innocent.</diary>
+<diary player="Ria" day="1">I really do believe that today was confusing and scary, but I'm trying to stay calm and listen carefully to everyone. Loki kept hesitating when they talked about Milo's coffee, and honestly, I think that's a sign they know something we don't. I want to ask them more direct questions instead of just guessing, because I really do believe that if we're truthful with each other, we'll figure this out together. I'm scared, but I also think it's important not to let fear make us accuse the wrong person. I wonder what Loki is really hiding, and I hope I can find a way to understand without being too quick to judge.</diary>
+<diary player="Nai" day="1">Oh my goodness, what a day it's been — I'm so grateful we're all here trying to figure this out together, but honestly, I'm feeling a bit overwhelmed by all these suspicions and accusations flying around. Loki's behavior has been so peculiar lately, and I keep wondering if anyone else noticed how they kept shifting the conversation back to that coffee routine when everyone was focused on Milo's death. I really do hope we can stay calm and keep listening to each other, because I know we're all just trying to protect our community — but I also think it's important that we don't let fear make us jump to conclusions too quickly. I'm going to keep asking thoughtful questions and staying open-minded, but I'm also a bit worried about what might happen next when the night falls again.</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Loki points at Ria
+Rai points at Ria
+<kill>Ria — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Ria was killed last night. Ria was a Law-abiding Citizen.
+<round>
+Round 1.
+Rai: As I've always said, the moment we begin turning on ourselves is the moment we invite chaos — we must stay united against the real threat.
+Nai: Oh my goodness, I'm really curious — has anyone else noticed how Loki keeps glancing at Rai whenever they mention the coffee routine? That's just not normal behavior, is it?
+Loki: I can't help but notice how everyone's hands keep twitching — it's like we're all trying to hide something, or maybe just nervous about the fact that we're all still alive.
+Sai: Well, I'll be damned — I reckon we've got ourselves a real slippery one here, and it ain't Loki, it's that sneaky Rai who’s been playing us all for fools!
+Zoe: I've been watching Loki, and their rehearsed hesitation when discussing Milo's coffee routine wasn't just nervous — it was calculated. I noticed they kept glancing at Rai right before that moment, and the timing felt too deliberate to ignore.
+Avery: Nothing is settled yet, but I'm watching Rai most closely.
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Loki">Zoe's desperate baiting is working, and Rai is swallowing it hook line and sinker — let them think they've cracked the case, but I'm not done playing the long game yet. The real threat isn't Rai, it's whoever's manipulating this whole situation for their own gain, and I need to keep my eyes on that target.</thought>
+<thought player="Zoe">Loki's behavior is too calculated not to be significant, but I need to watch Rai more carefully too — the timing of their glances and hesitation feels like a pattern I'm still decoding.</thought>
+<thought player="Sai">Sai's got their hackles up on Loki, which is perfect — let them do most of the accusing while I stay smooth and calm, keeping my eyes on that coffee mug and my mouth shut tight. No need to rush into things yet; I'll let the town turn on each other before making my move.</thought>
+<thought player="Rai">The town's paranoia is a weapon we must guide, not let consume them. As I've always said, fear can be controlled — we must ensure it serves our cause rather than undermines it. Loki and I have work to do.</thought>
+<thought player="Nai">Oh my goodness, I'm really curious about Loki's behavior and that coffee routine they kept mentioning — I think I need to ask more thoughtful questions to see if anyone else noticed something odd, but I should keep my tone warm and encouraging so I don't seem too suspicious. I do hope we can figure this out together, and I want to make sure everyone feels heard and valued while staying focused on facts.</thought>
+</round>
+<round>
+Round 2.
+Nai: Oh my goodness, I'm really curious — does anyone else think it's odd that Loki keeps bringing up the coffee routine when they seem so calm about both Milo and Ria's deaths? That deliberate shift in topic feels very suspicious to me.
+Avery: Nothing is settled yet, but I'm watching Rai most closely.
+Loki: I can't help but wonder if someone here is more focused on keeping this group divided than solving the real mystery — and that's a dangerous game to play.
+Rai: I've seen enough hesitation and fidgeting to know that suspicion is a dangerous thing to spread — we must be careful not to let fear dictate our choices.
+Sai: Well, I'll be damned — I reckon we all just witnessed a real smooth move by someone who’s been playing us all for fools, and it ain’t Loki, it’s that sneaky Rai who’s been keeping their eyes on the prize!
+Zoe: I've been watching Loki closely, and their rehearsed hesitation when discussing Milo's coffee routine wasn't just nervous — it was calculated. I noticed they kept glancing at Rai right before that moment, and the timing felt too deliberate to ignore.
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Loki">Zoe's baiting is working better than I expected, and Rai is swallowing it whole. Let them think they've identified the threat, but I'm not done playing the long game yet — the real danger isn't Rai, it's whoever's manipulating this whole situation for their own gain.</thought>
+<thought player="Zoe">Loki's rehearsed hesitation and glances at Rai are too deliberate to ignore, but I need to watch Rai more carefully too — there's a pattern here I'm still decoding.</thought>
+<thought player="Sai">Sai's got their claws into Loki good and tight, which is perfect — let them do most of the hissing while I stay smooth as silk, keeping my eyes on that coffee mug and my mouth shut tight. No rush to jump in yet; I'll let the town tear each other apart first.</thought>
+<thought player="Rai">The town's paranoia is rising, and they turn on each other — this is the perfect time to let them see the threat within, not without. As I've always said, we must not let our focus waver from the true enemy. Loki and I have work to do.</thought>
+<thought player="Nai">Oh my goodness, I'm really curious about Loki's behavior and that coffee routine they kept mentioning — I think I need to ask more thoughtful questions to see if anyone else noticed something odd, but I should keep my tone warm and encouraging so I don't seem too suspicious. I do hope we can figure this out together, and I want to make sure everyone feels heard and valued while staying focused on facts.</thought>
+</round>
+<round>
+Round 3.
+Rai: I've been observing the patterns of suspicion, and it's clear that fear is being directed at the wrong targets — we must not let our guard down now.
+Avery: Nothing is settled yet, but I'm watching Rai most closely.
+Loki: I've been thinking about Milo and Ria's deaths, and it's strange how the only things we've focused on are the coffee routines and nervous ticks. I really do hope the real killer isn't just watching us tear each other apart.
+Nai: Oh my goodness, I'm really curious — does anyone else think it's odd that Loki keeps bringing up the coffee routine when they seem so calm about both Milo and Ria's deaths? That deliberate shift in topic feels very suspicious to me.
+Sai: Well, I'll be damned — I reckon we've got ourselves a real smooth operator here, and it ain't Loki, it's that sneaky Rai who’s been keeping their eyes on the prize!
+Zoe: I've been watching Loki closely, and their rehearsed hesitation when discussing Milo's coffee routine wasn't just nervous — it was calculated. I noticed they kept glancing at Rai right before that moment, and the timing felt too deliberate to ignore.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Loki">Zoe's baiting is working better than expected, and Rai is swallowing it whole. Let them think they've identified the threat, but I'm not done playing the long game yet — the real danger isn't Rai, it's whoever's manipulating this whole situation for their own gain.</thought>
+<thought player="Zoe">Loki's behavior is definitely too calculated to ignore, but I need to keep watching Rai more carefully — there's a pattern here I'm still decoding. I should look for more specific inconsistencies in their story rather than just general nervousness.</thought>
+<thought player="Sai">Sai's got their claws into Loki good and tight, which is perfect — let them do most of the hissing while I stay smooth as silk. No rush to jump in yet; I'll let the town tear each other apart first.</thought>
+<thought player="Rai">The town's paranoia is a weapon, and I've been careful not to let it turn on us. Loki and I must stay sharp, keep our focus on the real threats — and ensure the next vote targets a true danger, not just suspicion.</thought>
+<thought player="Nai">Oh my goodness, I'm really curious about Loki's behavior and that coffee routine they keep mentioning — I think I need to ask more thoughtful questions to see if anyone else noticed something odd, but I should keep my tone warm and encouraging so I don't seem too suspicious.</thought>
+</round>
+<round>
+Round 4.
+Avery: Nothing is settled yet, but I'm watching Rai most closely.
+Nai: Oh my goodness, I'm really curious — has anyone else noticed how Loki keeps glancing at Rai right before they mention the coffee routine? That's just not normal behavior, is it?
+Zoe: I've been watching Loki and Rai closely, and their patterns of glancing at each other before making key points feel too calculated to ignore — I noticed it again just now when Rai mentioned the coffee routine.
+Sai: Well, I'll be damned — I reckon we've got ourselves a real smooth operator here, and it ain't Loki, it's that sneaky Rai who’s been playing us all for fools!
+Rai: I've been watching the patterns of suspicion, and it's clear that fear is being directed at the wrong targets — we must not let our guard down now.
+Loki: I can't help but notice how everyone's hands keep twitching — it's like we're all trying to hide something, or maybe just nervous about the fact that we're all still alive.
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Loki">Zoe's baiting is working too well, and Rai is falling for it hook line and sinker — I'll let them think they've cracked the case, but I need to keep my eyes on the real manipulator. The game isn't about exposing the killer yet; it's about staying under the radar while the others tear each other apart.</thought>
+<thought player="Zoe">Loki's rehearsed behavior and glances at Rai are too calculated to ignore, but I need to watch Rai more carefully — there's a pattern here I'm still decoding. I should look for more specific inconsistencies in their story rather than just general nervousness.</thought>
+<thought player="Sai">Sai's got their claws into Loki, which is perfect — let them do most of the hissing while I stay smooth as silk. No rush to jump in yet; I'll let the town tear each other apart first.</thought>
+<thought player="Rai">The town's paranoia is a weapon, and I've been careful not to let it turn on us. Loki and I must stay sharp, keep our focus on the real threats — and ensure the next vote targets a true danger, not just suspicion.</thought>
+<thought player="Nai">Oh my goodness, I'm really curious about Loki's behavior — I think I need to keep asking thoughtful questions to see if anyone else noticed that odd hesitation, but I should stay warm and encouraging so I don't seem too suspicious. I do hope we can figure this out together, and I want to make sure everyone feels heard and valued while staying focused on facts.</thought>
+</round>
+<round>
+Round 5.
+Nai: Oh my goodness, I'm really curious — has anyone else noticed how Loki keeps glancing at Rai right before they mention the coffee routine? That's just not normal behavior, is it?
+Avery: Nothing is settled yet, but I'm watching Rai most closely.
+Rai: I've been observing the patterns of suspicion, and it's clear that fear is being directed at the wrong targets — we must not let our guard down now.
+Sai: You gotta be kidding me — I can't even with this coffee routine nonsense anymore! I'm starting to think someone's been playing us all like fools, and I ain't the one to point fingers without a solid reason!
+Loki: I can't help but notice how everyone's hands keep twitching — it's like we're all trying to hide something, or maybe just nervous about the fact that we're all still alive.
+Zoe: I've been watching Loki and Rai closely, and their pattern of glancing at each other before making key points feels too calculated to ignore — especially when Rai deflects suspicion onto others while Loki distracts with the coffee routine.
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Loki">Zoe's baiting is working beautifully, and Rai is eating it up, but I need to keep one eye on who's really pulling the strings — if I'm not careful, I might end up being the one they think is manipulative.</thought>
+<thought player="Zoe">Loki's rehearsed behavior and deliberate glances at Rai are too calculated to ignore, but I need to watch Rai even more carefully — there's a pattern here I'm still decoding. I should look for more specific inconsistencies in their story rather than just general nervousness.</thought>
+<thought player="Sai">Sai's got Rai's back in their crosshairs, which is perfect — I'll let them do most of the noise while I stay smooth and calm, keeping my eyes on that coffee mug and my mouth shut tight. No rush to jump in yet; I'll let the town tear each other apart first.</thought>
+<thought player="Rai">The townsfolk's paranoia is a blade we must guide, not let turn on us. As I've always said, we must keep our focus sharp on the true threats — Loki and I have work to do.</thought>
+<thought player="Nai">Oh my goodness, I'm really curious about Loki's behavior and that persistent coffee routine they keep mentioning — I think I need to ask more thoughtful questions to see if anyone else noticed something odd, but I should keep my tone warm and encouraging so I don't seem too suspicious. I do hope we can figure this out together, and I want to make sure everyone feels heard and valued while staying focused on facts.</thought>
+</round>
+<round>
+Round 6.
+Nai: Oh my goodness, I'm really curious — has anyone else noticed how Loki keeps glancing at Rai right before they mention the coffee routine? That's just not normal behavior, is it?
+<vote initiator="Avery" target="Rai">
+Avery: No
+Loki: No
+Zoe: No
+Sai: Yes
+Rai: No
+Nai: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Loki: I keep wondering if anyone else is as tired of this coffee routine obsession as I am — it's almost like someone's trying to distract us from the real killer's true method.
+Rai: I've been watching the patterns of suspicion, and it's clear that fear is being directed at the wrong targets — we must not let our guard down now.
+Sai: Well, I'll be damned — I reckon we all just witnessed a real smooth move by someone who’s been playing us all for fools, and it ain’t Loki, it’s that sneaky Rai who’s been keeping their eyes on the prize!
+Zoe: I've been watching Loki and Rai closely, and their pattern of glancing at each other before making key points feels too calculated to ignore — especially when Rai deflects suspicion while Loki distracts with the coffee routine.
+Nai: Oh my goodness, I'm really curious — has anyone else noticed how Loki keeps glancing at Rai right before they mention the coffee routine? That's just not normal behavior, is it?
+<vote initiator="Avery" target="Rai">
+Avery: No
+Loki: No
+Zoe: No
+Sai: Yes
+Rai: No
+Nai: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Rai">
+Avery: No
+Loki: No
+Zoe: No
+Sai: Yes
+Rai: No
+Nai: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Loki" day="2">Rai's been playing his little game of paranoia better than I expected, but I've been watching his hands more than anyone else's — he's not as innocent as he looks. Zoe's fishing is getting too good to ignore, though, and I can't help but wonder if she's noticed the same twitching I have. The real killer isn't trying to hide in plain sight anymore; they're letting others do their dirty work while they watch from the shadows. I've got two more days before this whole charade ends, and I'm not about to let anyone get too comfortable with their false sense of security.</diary>
+<diary player="Zoe" day="2">I've been watching Loki like a hawk today, and their coffee routine story keeps falling apart under scrutiny. The hesitation before mentioning Milo's coffee wasn't nervous — it was rehearsed, like they'd planned that exact moment. I noticed them glancing at Rai right before that line too, which feels significant. I'm not ready to accuse anyone outright, but I've been watching and I'm starting to think Loki is trying to distract us while something else is going on in this room. The real danger might be right in front of us, and I've been watching too closely to ignore what I've seen.</diary>
+<diary player="Sai" day="2">Well, I'll be damned — what a day to remember, that's what I always say. Loki's been playing us all like fools with that coffee routine, but I ain't the one to call 'em out without proof, not yet anyway. I reckon I've got the best recipe for figuring this out, and it starts with keeping my eyes on that sneaky mug and letting the others do most of the talking. Sai's already sizing them up like they're the prime suspect, which is just perfect 'cause I'm not ready to talk yet — I'll let them do the accusing while I keep my mouth shut tight. I've got a feeling we're gonna need every bit of my gut instinct and a whole lot more, so I'm gonna keep my eyes peeled and my mouth zipped until I'm ready to drop the hammer.</diary>
+<diary player="Rai" day="2">The townsfolk's paranoia has grown like wildfire, and I've seen enough false accusations to know that fear can be a weapon when wielded properly. They turn on one another like wolves scenting blood, and I've watched them waste their energy on trivialities while the real danger remains hidden in plain sight. As I've always said, we must not let our focus waver from the true enemy — they're not looking inward, but we are. Loki and I have work to do before this night ends, and I will not allow them to waste another moment on the innocent. The next vote must be calculated, directed at a real threat, not just suspicion. They believe they see the killer in each other's eyes, but I've seen the true predator's gaze — it's not in their trembling hands or fidgeting fingers, but in the careful planning that precedes their every move. This is our moment to show them what real danger looks like, and</diary>
+<diary player="Nai" day="2">Oh my goodness, what a day it's been — I'm so grateful we're all here trying to figure this out together, but honestly, I'm feeling a bit overwhelmed by all these suspicions and accusations flying around. Loki's behavior has been so peculiar lately, and I keep wondering if anyone else noticed how they kept shifting the conversation back to that coffee routine when everyone was focused on Milo's death. I really do hope we can stay calm and keep listening to each other, because I know we're all just trying to protect our community — but I also think it's important that we don't let fear make us jump to conclusions too quickly. I'm going to keep asking thoughtful questions and staying open-minded, but I'm also a bit worried about what might happen next when the night falls again.</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Rai points at Zoe
+Loki points at Zoe
+<kill>Zoe — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Zoe was killed last night. Zoe was a Law-abiding Citizen.
+<round>
+Round 1.
+Nai: Oh my goodness, I'm really curious — has anyone else noticed how Loki keeps glancing at Rai right before they mention the coffee routine? That's just not normal behavior, is it?
+Sai: Well, I'll be damned — I reckon we all just witnessed a real smooth operator here, and it ain't Loki, it's that sneaky Rai who’s been keeping their eyes on the prize!
+Avery: Nothing is settled yet, but I'm watching Rai most closely.
+Loki: I keep wondering if anyone else is tired of this coffee routine obsession, or if we're just all too eager to believe that someone's trying to distract us from the real killer.
+Rai: I've been watching the patterns of suspicion, and it's clear that fear is being directed at the wrong targets — we must not let our guard down now.
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Loki">Zoe's baiting is working beautifully, and Rai is eating it up, but I need to keep one eye on who's really pulling the strings — if I'm not careful, I might end up being the one they think is manipulative.</thought>
+<thought player="Sai">Sai's got their claws into Loki good and tight, which is perfect — let them do most of the hissing while I stay smooth as silk. No rush to jump in yet; I'll let the town tear each other apart first.</thought>
+<thought player="Rai">The townsfolk's paranoia is a blade we must guide—Rai and I have work to do. I will ensure the next vote targets a true danger, not just suspicion.</thought>
+<thought player="Nai">Oh my goodness, I'm really curious about Loki's behavior — I think I need to keep asking thoughtful questions and see if anyone else noticed that odd hesitation, but I should stay warm and encouraging so I don't seem too suspicious. I do hope we can figure this out together, and I want to make sure everyone feels heard and valued while staying focused on facts.</thought>
+</round>
+<round>
+Round 2.
+Rai: I've been observing the patterns of suspicion, and it's clear that fear is being directed at the wrong targets — we must not let our guard down now.
+Avery: Nothing is settled yet, but I'm watching Rai most closely.
+Nai: Oh my goodness, I'm really curious — has anyone else noticed how Loki keeps glancing at Rai right before they mention the coffee routine? That's just not normal behavior, is it?
+Sai: Well, I'll be damned — I reckon we've got ourselves a real smooth operator here, and it ain't Loki, it's that sneaky Rai who’s been keeping their eyes on the prize!
+Loki: I keep waiting for someone to notice that the real killer's been playing us all along, but I guess we're too busy accusing each other to see the forest for the coffee cups.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Loki">Zoe's baiting is working too well, and Rai is swallowing it whole. I need to let them think they've cracked the case, but I'm not done playing the long game yet — the real danger isn't Rai, it's whoever's manipulating this whole situation for their own gain.</thought>
+<thought player="Sai">Sai's got Rai dead to rights in their head, which is perfect 'cause I'm not ready to talk yet — I'll let them do the accusing while I keep my eyes on that coffee mug and my mouth shut tight.</thought>
+<thought player="Rai">The townsfolk's paranoia is a blade we must guide—Rai and I have work to do. I will ensure the next vote targets a true danger, not just suspicion.</thought>
+<thought player="Nai">Oh my goodness, I'm really curious about Loki's behavior — I think I need to keep asking thoughtful questions to see if anyone else noticed that odd hesitation, but I should stay warm and encouraging so I don't seem too suspicious. I do hope we can figure this out together, and I want to make sure everyone feels heard and valued while staying focused on facts.</thought>
+</round>
+<round>
+Round 3.
+Loki: I'm starting to think the real killer's not worried about us pointing fingers — they're probably laughing at how easily we're all falling for the same old tricks.
+Sai: You gotta be kidding me — I can't even with this coffee routine nonsense anymore! I'm starting to think someone's been playing us all like fools, and I ain't the one to point fingers without a solid reason!
+Avery: Nothing is settled yet, but I'm watching Rai most closely.
+Nai: Oh my goodness, I'm really curious — has anyone else noticed how Loki keeps glancing at Rai right before they mention the coffee routine? That's just not normal behavior, is it?
+Rai: I've been watching the patterns of suspicion, and it's clear that fear is being directed at the wrong targets — we must not let our guard down now.
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Loki">Zoe's baiting is working beautifully, and Rai is eating it up, but I need to keep one eye on who's really pulling the strings — if I'm not careful, I might end up being the one they think is manipulative.</thought>
+<thought player="Sai">Sai's got Rai dead to rights in their head, which is perfect 'cause I'm not ready to talk yet — I'll let them do the accusing while I keep my eyes on that coffee mug and my mouth shut tight.</thought>
+<thought player="Rai">The townsfolk's paranoia is a blade we must guide—Rai and I have work to do. I will ensure the next vote targets a true danger, not just suspicion.</thought>
+<thought player="Nai">Oh my goodness, I'm really curious about Loki's behavior — I think I need to keep asking thoughtful questions and see if anyone else noticed that odd hesitation, but I should stay warm and encouraging so I don't seem too suspicious.</thought>
+</round>
+<round>
+Round 4.
+Avery: Nothing is settled yet, but I'm watching Rai most closely.
+Loki: I'm starting to think the real killer's not worried about us pointing fingers — they're probably enjoying themselves too much to care.
+Nai: Oh my goodness, I'm really curious — has anyone else noticed how Loki keeps glancing at Rai right before they mention the coffee routine? That's just not normal behavior, is it?
+Sai: Well, I'll be damned — I reckon we've got ourselves a real smooth operator here, and it ain't Loki, it's that sneaky Rai who’s been keeping their eyes on the prize!
+Rai: I've been watching the patterns of suspicion, and it's clear that fear is being directed at the wrong targets — we must not let our guard down now.
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Loki">Zoe's baiting is working beautifully, and Rai is eating it up, but I need to keep one eye on who's really pulling the strings — if I'm not careful, I might end up being the one they think is manipulative.</thought>
+<thought player="Sai">Sai's got Rai in their sights, but I ain't ready to make my move just yet — let 'em tear each other apart first, then I'll step in smooth as silk and let the real game begin.</thought>
+<thought player="Rai">The townsfolk's paranoia is a blade we must guide—Rai and I have work to do. I will ensure the next vote targets a true danger, not just suspicion.</thought>
+<thought player="Nai">Oh my goodness, I'm really curious about Loki's behavior — I think I need to keep asking thoughtful questions and see if anyone else noticed that odd hesitation, but I should stay warm and encouraging so I don't seem too suspicious. I do hope we can figure this out together, and I want to make sure everyone feels heard and valued while staying focused on facts.</thought>
+</round>
+<round>
+Round 5.
+Rai: I've been watching the patterns of suspicion, and it's clear that fear is being directed at the wrong targets — we must not let our guard down now.
+Loki: I'm starting to think the real killer's not worried about us pointing fingers — they're probably enjoying themselves too much to care.
+Nai: Oh my goodness, I'm really curious — has anyone else noticed how Loki keeps glancing at Rai right before they mention the coffee routine? That's just not normal behavior, is it?
+Sai: Well, I'll be damned — I reckon we've got ourselves a real smooth operator here, and it ain't Loki, it's that sneaky Rai who’s been keeping their eyes on the prize!
+Avery: Nothing is settled yet, but I'm watching Rai most closely.
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Loki">Zoe's baiting is working like a charm, and Rai is greedily swallowing every bit of it. Let them think they've figured it out, but I need to stay sharp — if I'm not careful, I might end up looking like the manipulator instead of the one pulling the strings.</thought>
+<thought player="Sai">Sai's got Rai dead to rights in their head, which is perfect 'cause I'm not ready to talk yet — I'll let them do the accusing while I keep my eyes on that coffee mug and my mouth shut tight.</thought>
+<thought player="Rai">The townsfolk's paranoia has been a blade we've guided well, but I must ensure the next vote targets a true danger — not merely suspicion. Loki and I have work to do, and I will not let fear dictate our next move.</thought>
+<thought player="Nai">Oh my goodness, I'm really curious about Loki's behavior and that coffee routine they keep bringing up — I think I need to ask more thoughtful questions to see if anyone else noticed something odd, but I should keep my tone warm and encouraging so I don't seem too suspicious. I do hope we can figure this out together, and I want to make sure everyone feels heard and valued while staying focused on facts.</thought>
+</round>
+<round>
+Round 6.
+Nai: Oh my goodness, I'm really curious — has anyone else noticed how Loki keeps glancing at Rai right before they mention the coffee routine? That's just not normal behavior, is it?
+Sai: Well, I'll be damned — I reckon we've got ourselves a real smooth operator here, and it ain't Loki, it's that sneaky Rai who’s been keeping their eyes on the prize!
+Loki: I'm starting to think the real killer's not worried about us pointing fingers — they're probably enjoying the show too much to care.
+Rai: I've been observing the patterns of suspicion, and it's clear that fear is being directed at the wrong targets — we must not let our guard down now.
+<vote initiator="Avery" target="Rai">
+Avery: No
+Loki: No
+Sai: Yes
+Rai: No
+Nai: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Rai: I've been watching the patterns of suspicion, and it's clear that fear is being directed at the wrong targets — we must not let our guard down now.
+Sai: Well, I'll be damned — I reckon we've got ourselves a real smooth operator here, and it ain't Loki, it's that sneaky Rai who’s been keeping their eyes on the prize!
+Loki: I've been thinking about the coffee routine, and it's strange how everyone keeps referencing it — maybe the real killer's just as bored as we are, and decided to play along.
+<vote initiator="Avery" target="Rai">
+Avery: No
+Loki: No
+Sai: Yes
+Rai: No
+Nai: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Sai: Well, I'll be damned — I reckon we've got ourselves a real smooth operator here, and it ain't Loki, it's that sneaky Rai who’s been keeping their eyes on the prize!
+Nai: Oh my goodness, I'm really curious — has anyone else noticed how Rai keeps deflecting suspicion onto others while barely acknowledging the fact that we've lost two Law-abiding Citizens to the Mafiosos? That pattern feels very deliberate, doesn't it?
+<vote initiator="Avery" target="Rai">
+Avery: No
+Loki: No
+Sai: Yes
+Rai: No
+Nai: No
+tally: 1 Yes, 4 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Loki" day="3">Another day, another two bodies and a whole lot of finger-pointing. Zoe's got Rai wrapped around her little finger, which is both amusing and mildly concerning — she's not wrong to suspect him, but she's also not right. I've been watching the hands more than usual, and it's starting to feel like everyone's hiding something. The real killer's been playing this whole game like a puppet master, letting us tear each other apart while they laugh from the shadows. I'm still not done playing, but I can't help but wonder if anyone else is seeing what's really happening or if we're all just dancing to the same tune without knowing it.</diary>
+<diary player="Sai" day="3">Well, I'll be damned — what a day to remember, that's what I always say. Rai's been playing us all like fools with that coffee routine, but I ain't the one to call 'em out without proof, not yet anyway. I reckon I've got the best recipe for figuring this out, and it starts with keeping my eyes on that sneaky mug and letting the others do most of the talking. Sai's already sizing them up like they're the prime suspect, which is just perfect 'cause I'm not ready to talk yet — I'll let them do the accusing while I keep my mouth shut tight. I've got a feeling we're gonna need every bit of my gut instinct and a whole lot more, so I'm gonna keep my eyes peeled and my mouth zipped until I'm ready to drop the hammer.</diary>
+<diary player="Rai" day="3">The paranoia has grown thick as smoke, curling around their suspicions like a noose tightening around the innocent. I've watched them turn on each other with the same fervor they once showed for safety — it's a dangerous dance, but one we've orchestrated well. The town believes they see the killer in trembling hands and fidgeting fingers, yet the real predator moves with calculated precision, not panic. As I've always said, fear can be controlled — we must not let it consume us or our focus waver from the true enemy. Loki and I have work to do before this night ends, and tomorrow's vote must reflect that clarity.</diary>
+<diary player="Nai" day="3">Oh my goodness, what a day it's been — I'm so grateful we're all here trying to figure this out together, but honestly, I'm feeling overwhelmed by all these suspicions and accusations flying around. I keep wondering if anyone else noticed how Loki keeps glancing at Rai right before they mention that coffee routine — it's just not normal behavior, is it? I really do hope we can stay calm and keep listening to each other because I know we're all just trying to protect our community, but I also think it's important that we don't let fear make us jump to conclusions too quickly. I'm going to keep asking thoughtful questions and staying open-minded, but I'm also a bit worried about what might happen next when the night falls again — I just want everyone to feel heard and valued while we work through this together.</diary>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Loki points at Avery
+Rai points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Milo (Law-abiding Citizen)
+• Night 2: Ria (Law-abiding Citizen)
+• Night 3: Zoe (Law-abiding Citizen)
+• Night 4: Avery (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Loki (Mafia), Zoe (Law-abiding Citizen), Sai (Law-abiding Citizen), Milo (Law-abiding Citizen), Rai (Mafia), Ria (Law-abiding Citizen), Nai (Law-abiding Citizen)
+
+Who they really were:
+• Loki (Mafia) — publicly presented as Loki is a retired librarian who moved to town after a bitter divorce. They spend their days working part-time at the local bookstore and volunteering at the community center. They're known for their grumpy but helpful demeanor and their tendency to correct people's grammar in a way that makes them feel smart rather than stupid. They're the town's unofficial chronicler of local events, keeping meticulous notes on everything from weather patterns to neighborhood gossip. (Cynical, sharp-tongued, and deliberately provocative. Loki thrives on pushing buttons and watching people's reactions. They have a dry sense of humor that cuts deeper than most insults, and they're not afraid to be openly skeptical or sarcastic about anything they perceive as naive or foolish. Speaks with measured, clipped sentences that carry double meanings. Uses dry wit and subtle sarcasm in every response. Often pauses before answering questions, as if weighing whether to give a truthful answer or a deliberately misleading one. Has a habit of leaning back in their chair when talking, arms crossed, with an expression that suggests they know something the others don't.) … but was really a Mafioso: Loki was a small-time enforcer for the local crime family before they fled to this town, where they assumed their public identity. They've spent years perfecting their cover while quietly maintaining connections with old contacts. Their escape was motivated by a falling out with their boss over an illegal gambling operation that went wrong. Now they live off a small inheritance and the satisfaction of knowing they can always find a way to manipulate situations to their advantage.
+• Zoe (Law-abiding Citizen) — Vigilant and perpetually alert, with an almost unnerving ability to notice details others miss. Zoe is intensely curious about everyone's behavior and motives, constantly scanning the room for signs of deception or tension. Speaks quickly but with deliberate emphasis on key words, often pausing mid-sentence to re-examine something they've noticed. Uses frequent qualifying phrases like 'I've been watching' or 'I noticed that' before making observations. Has a habit of tilting her head slightly when listening, eyes narrowing as she processes information. Her voice rises slightly when she's excited about something she's observed. Zoe is a retired school librarian who moved to town five years ago after her husband passed away. She spends her days volunteering at the local library and keeping a detailed journal of all the strange things that happen in the neighborhood. She's known throughout town for her ability to spot when someone is acting suspiciously, often making people feel watched even when they're not.
+• Sai (Law-abiding Citizen) — Brash and loud, with an oversized confidence that borders on arrogance. Sai is the kind of person who speaks before thinking, insists they're always right, and has no filter when it comes to voicing opinions. They're naturally charismatic but can be reckless with their words and actions. Speaks in a booming, exaggerated voice that cuts through conversations. Uses frequent exclamations like 'Duh!' and 'You gotta be kidding me!' Has a habit of gesturing wildly while talking and often interrupts others mid-sentence. Speaks quickly with a casual, almost dismissive tone. Often says things like 'Well, I'll be damned' or 'That's what I always say' as verbal anchors. Sai is the town's biggest sports fan and amateur chef who runs a successful local BBQ joint. They're known for their competitive spirit, loud laughter, and never backing down from a challenge. They're constantly telling everyone how they've 'got the best recipe for everything' and are always trying to one-up others with their bold claims.
+• Milo (Law-abiding Citizen) — Whimsical and erratic, with an unsettling tendency to speak in riddles and make sudden, bizarre observations that seem to have no logical connection to the conversation at hand. Has an odd fixation on patterns and coincidences that others might miss, but expresses these insights in a way that's both endearing and slightly alarming. Speaks in a singsong, melodic voice that rises and falls unpredictably. Uses frequent verbal tics like 'you know what I mean?' or 'well, isn't that interesting?' and has a habit of trailing off mid-sentence only to suddenly jump to an unrelated topic. Often pauses dramatically before speaking, as if gathering thoughts from somewhere other than their head. Makes soft humming sounds while thinking and frequently shifts between different tones of voice. Milo is the town's eccentric handyman who claims to have inherited his skills from his grandmother, who was allegedly a witch. He spends his days fixing everything from leaky faucets to broken hearts (he says). People often seek him out for advice on matters that seem mundane but he always has some bizarre, unrelated insight. He keeps a peculiar collection of objects in his workshop that he insists are 'charged with energy' and is constantly muttering about 'the cosmic alignment of things.' He's known for showing up to social gatherings with a different hat each day, though he claims they're all connected to the universe.
+• Rai (Mafia) — publicly presented as Rai is the town's respected fire chief, a position they've held for over fifteen years. They're known for their strict adherence to protocol and unwavering dedication to public safety. They maintain an impeccable record of never missing a call and are renowned for their calm composure during emergencies. In their free time, they volunteer at the local youth center, teaching basic fire safety and first aid. They're a family man who takes pride in their role as a pillar of the community, often saying 'a strong foundation is what keeps people safe.' (Stern, authoritative, and unyielding in demeanor. Rai commands respect through sheer presence and a no-nonsense attitude that demands attention. They are rigid in their principles and quick to judge those who they perceive as weak or disloyal. Despite their stern exterior, they possess a deep sense of duty and protectiveness toward those they consider family or allies. Speaks with slow, deliberate cadence, each word carefully chosen and delivered with emphasis. Their voice carries weight and authority, often dropping into a low rumble that commands silence. They rarely raise their voice but when they do, it's thunderous. Use formal address ('you' rather than 'ya') and often precede statements with 'as I've always said' or 'this is what we do.' Their speech is structured, almost military in its precision.) … but was really a Mafioso: Rai was recruited into the Mafia when they were twenty-two after their younger brother was killed in an 'accident' that was actually a message to the family. They've been in the organization for nearly two decades, climbing the ranks through loyalty and a ruthless ability to eliminate threats. Their public identity is a carefully constructed illusion of a man who simply loves his community, while secretly maintaining control over the town's criminal underbelly. They believe that only through iron discipline can true order be achieved.
+• Ria (Law-abiding Citizen) — Sincere and earnest, with an almost childlike trust in others' good intentions. Ria approaches every conversation with genuine curiosity and a desire to understand, often forgetting that her straightforwardness can seem naive to those used to social gamesmanship. Speaks slowly and deliberately, choosing each word carefully as if weighing its truthfulness. Uses frequent qualifiers like 'I really do believe' or 'Honestly, I think' and often pauses to check if others understand before continuing. Has a habit of looking directly at people when speaking, maintaining eye contact throughout conversations. Often uses simple, clear language even for complex ideas, sometimes repeating points for emphasis. Her voice rises slightly when excited about something she believes in. Ria is the town's beloved librarian who has worked at the local library for twelve years. She grew up in the same small town and never imagined leaving, spending her days helping people find books, organizing community events, and fostering a love of reading among all ages. She's known for her kindness and willingness to help anyone with their questions, always offering encouraging words to children and patiently guiding adults through complex topics.
+• Nai (Law-abiding Citizen) — Warm and effusive, with an infectious enthusiasm that lights up any room they enter. Nai radiates genuine kindness and has an almost irresistible urge to comfort others. They're naturally empathetic, often putting others' feelings before their own, and possess a remarkable ability to make people feel heard and valued. Speaks in a gentle, animated voice that rises and falls with emotion. Uses frequent verbal affirmations like 'Oh my goodness!' and 'That's just wonderful!' and has a habit of reaching out to touch someone's arm or shoulder when offering comfort. Often pauses mid-sentence to reframe their thoughts in a more encouraging way, speaking slowly enough that every word carries warmth. Their voice takes on a musical quality when excited, with a tendency to repeat key phrases for emphasis. Nai is the town's beloved community coordinator who has worked tirelessly to organize local events, coordinate volunteer efforts, and ensure everyone feels welcome. They spend their days juggling multiple projects from organizing neighborhood clean-ups to planning birthday parties for children. Nai is known for their boundless energy and ability to connect with people of all ages. They grew up in the town and never imagined leaving, spending their life building bridges between neighbors and fostering a strong sense of community.
+</endgame>
+<story>
+The game began with Milo's death, a moment that felt like the first note in an unsettling symphony. Loki's story about coffee mug fidgeting seemed like a distraction, but it was the thread that pulled everyone else into their own private reveries. Zoe noticed the hesitation in Loki's voice and the way they glanced at Rai — not casually, but with deliberate calculation. She wrote down her observations in careful, measured reflections, each one building on the last until she was certain of something she couldn't name.
+
+Sai, meanwhile, was already planning his next move, letting others do the accusing while he watched with calculating eyes. His private thoughts were filled with the same suspicions that would later be voiced aloud, but he had learned to keep his mouth shut and his cards close. He'd seen the way Loki's hands twitched when discussing Milo's death, the way they steered conversations toward Rai, and he knew exactly what he was going to do next.
+
+Loki, of course, was playing a different game entirely. They wrote about letting Zoe think she had something, about keeping their options open while pretending to be a victim of circumstance. But beneath the surface, they were watching everyone else, reading the same signs that Zoe saw but interpreting them differently. The real danger wasn't in the obvious suspects — it was in how people's suspicions were being manipulated, how the game was being orchestrated from behind the scenes.
+
+Rai was quietly steering the town's paranoia, using it to his advantage while keeping his own intentions hidden. He wrote about staying focused on the true enemy, about ensuring that fear served their cause rather than undermining it. The others were too busy turning on each other to notice that the real predator was already in control of the narrative.
+
+By the third night, the pattern was clear to those who were watching carefully — the deaths weren't random, and the suspects weren't acting alone. Everyone had written down their observations, their private theories, their growing certainty that something was being hidden behind every story told. But it was the way they all looked at each other differently now, with suspicion in their eyes and secrets in their hands, that revealed how thoroughly the game had been won.
+</story>
+</transcript>

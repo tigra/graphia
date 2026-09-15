@@ -1,0 +1,466 @@
+Game 28 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=50 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Aiden" role="Law-abiding Citizen">
+Personality: dry and sardonic
+Manner: pacing is slow and measured, uses ironic understatement, frequent dry witticisms
+Persona: Aiden is a seasoned librarian with a penchant for dark humour. He spends his days surrounded by dusty tomes and lost causes, which has given him a unique perspective on the world. Despite his sardonic exterior, he cares deeply about the town and its people.
+</player>
+<player name="Luka" role="Law-abiding Citizen">
+Personality: weary and world-worn
+Manner: speaks with a gravelly voice, often intersperses conversations with long pauses, uses colloquial language with a hint of bitterness
+Persona: Luka is a grizzled fisherman who has spent decades battling the tempestuous seas. His hands are calloused, his face lined with the salt of the ocean. He's seen his fair share of storms and knows the value of trust and camaraderie. Now retired, he spends his days mending nets and sharing tales of the sea with anyone who will listen.
+</player>
+<player name="Sara" role="Law-abiding Citizen">
+Personality: vigilant and watchful
+Manner: speaks in a brisk, clipped manner, often interjects with quick, sharp observations, uses straightforward and no-nonsense vocabulary
+Persona: Sara is a retired nurse who has spent her life caring for others. With a keen eye for detail and a sharp mind, she has an uncanny ability to notice even the smallest changes in people's behavior. In her spare time, she volunteers at the local community center, where she keeps a watchful eye on the comings and goings of the townsfolk.
+</player>
+<player name="Miguel" role="Mafia">
+Personality: cheerful and irrepressible
+Manner: enthusiastic and quick-paced, often uses uplifting metaphors and exclamations
+Public legend: Miguel is a beloved local baker known for his infectious smile and boundless energy. He has a knack for turning ordinary bread into works of art, delighting the townsfolk with his innovative recipes and warm hospitality. Born and raised in the town, Miguel has a deep love for his community and a talent for bringing people together over a shared loaf of bread. In his spare time, he loves to experiment with new flavors and techniques, always seeking to bring a little extra joy to his customers.
+True self (hidden): Miguel joined the Mafia as a young man, drawn in by the promise of excitement and power. His natural charm and quick thinking made him a valuable asset to the organization, and he quickly rose through the ranks. Despite his public persona as a simple baker, Miguel operates as a key informant for the Mafia, using his position to gather information and maintain connections within the town. His cheerful demeanor is a carefully crafted mask, hiding the calculating mind of a seasoned Mafioso.
+</player>
+<player name="Yuki" role="Law-abiding Citizen">
+Personality: shrewd and calculating
+Manner: measured, precise; deliberate pauses for effect, articulate language with occasional rhetorical questions
+Persona: Yuki is a retired detective with a sharp mind and an eye for detail. Having spent years solving the most complex cases, Yuki now enjoys a quiet life, though he can't resist lending his expertise when the need arises. He spends his days tending to his garden and practicing the art of bonsai, where he finds a new form of mental stimulation. Always observant, Yuki has a knack for piecing together information that others might overlook.
+</player>
+<player name="Ammara" role="Law-abiding Citizen">
+Personality: playful and teasing; loves to poke fun in a good-natured way
+Manner: speaks with a light-hearted, almost sing-song rhythm; often uses playful metaphors and gentle taunts
+Persona: Ammara is the town's resident artist, known for her vibrant murals and quirky sense of humor. She believes in adding a splash of color to everyday life and often teases her friends with whimsical nicknames. In her studio, she creates magical worlds on canvas, inviting everyone to see the beauty in the ordinary. When she's not painting, Ammara loves to organize community art projects, bringing people together through the power of creativity.
+</player>
+<player name="Leif" role="Mafia">
+Personality: gruff and blunt
+Manner: speaks in a straightforward, no-nonsense tone, uses curt and direct language, often sounds dismissive
+Public legend: Leif is a burly blacksmith known for his exceptional craftsmanship and no-nonsense attitude. He arrived in town a few years ago, drawn by the reputation of its skilled artisans. With strong hands and a keen eye for detail, Leif quickly established himself as a valuable member of the community. Despite his gruff exterior, he has a soft spot for the town's children, often crafting small trinkets and toys for them. In his downtime, he enjoys tending to his garden, where he grows a variety of herbs and vegetables.
+True self (hidden): Leif's true identity is that of a high-ranking Mafioso, sent to infiltrate the town and gather information. His past is shrouded in secrecy, with a history of violence and manipulation. He joined the Mafia at a young age, rising through the ranks with his brute strength and unyielding loyalty. His mission in the town is to maintain his cover while quietly exerting influence and control.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Aiden, Luka, Sara, Miguel, Yuki, Ammara, Leif. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Miguel): Your Mafia teammates are: Leif. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Leif): Your Mafia teammates are: Miguel. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Miguel points at Sara
+Leif points at Sara
+<kill>Sara — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Sara was killed last night. Sara was a Law-abiding Citizen.
+<round>
+Round 1.
+Miguel: Let's rise like dough and find out who among us is a yeast infection for our community!
+Avery: Nothing is settled yet, but I'm watching Leif most closely.
+Aiden: Miguel's metaphor is delightfully florid, but let's not let it rise too much. Any suspicious behaviour to report?
+Leif: Avery, you're quick to point fingers at me without cause. Let's see who else has something to hide.
+Ammara: Leif, if you're not the one stirring the pot, then who's adding the secret spices to our stew?
+Yuki: Might I suggest we examine recent interactions? For instance, Ammara's veiled accusation towards Leif—what secrets might it reveal?
+Luka: Yuki, your suggestion to look at recent interactions is keen. Let's not forget to consider the silence as well as the noise.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Ah, the thrill of the hunt. Time to see who's been sharpening their knives in the dark.</thought>
+<thought player="Luka">The wind's shifting, and the sea's getting choppy. Gotta keep an eye on Ammara and Leif, see if they crack under the pressure.</thought>
+<thought player="Miguel">Keep up the charm and subtly divert suspicion from Leif, while gathering intel on potential targets for the next night.</thought>
+<thought player="Yuki">With only two Mafiosos left, the pressure to discern the truth intensifies. I must scrutinize the nuances in the players' words and actions, particularly Ammara's and Leif's veiled exchanges, to uncover the deception.</thought>
+<thought player="Ammara">Time to paint a clearer picture of who's hiding in the shadows—let's see if I can stir up some truths with a splash of color.</thought>
+<thought player="Leif">Keep an eye on Avery and Yuki; they seem suspicious. Miguel and I need to coordinate our next target.</thought>
+</round>
+<round>
+Round 2.
+Miguel: Let's not let our suspicions sour like milk! How about we focus on recent interactions and see what secrets they might reveal?
+Leif: Ammara, your veiled accusation towards me is as transparent as glass. Let's focus on concrete evidence instead of vague insinuations.
+Avery: Nothing is settled yet, but I'm watching Leif most closely.
+Aiden: Ah, the sweet scent of suspicion in the air. I must say, Avery's laser focus on Leif is as subtle as a sledgehammer.
+Ammara: Avery, your laser focus on Leif is as persistent as a raindrop on a window—are you sure it's not just a pattern in the glass?
+Yuki: Might I suggest we delve deeper into the subtleties of Ammara and Leif's exchange? What might their veiled words be concealing?
+Luka: Yuki, your insistence on Ammara and Leif's exchange—what're you trying to hide in the shadows?
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Well, if Leif and Ammara keep batting their eyelashes at each other, I might just have to intervene—or at least enjoy the show from the sidelines.</thought>
+<thought player="Luka">The tides are turning; gotta keep pressing Ammara and Leif, see if they spill any secrets.</thought>
+<thought player="Miguel">Keep the energy high and the suspicion low, Miguel! Let's bake up some distractions and see who rises to the top as a potential target.</thought>
+<thought player="Yuki">The stage is set, and the players are in motion. Now, to carefully observe and decipher the subtle dance of words and actions.</thought>
+<thought player="Ammara">Time to add a twist to the canvas—maybe a hint of suspicion towards Luka could lead to some interesting brushstrokes.</thought>
+<thought player="Leif">Avery and Yuki are getting too nosy. Time to steer suspicion away from us.</thought>
+</round>
+<round>
+Round 3.
+Yuki: Let us not forget the importance of silence in our deliberations. What does the absence of a voice reveal about a player's intentions?
+Luka: Yuki, your suggestion to examine silence—it's like waiting for a storm to break. Let's see what secrets it might reveal.
+Ammara: Luka, your suggestion to examine silence—it's like waiting for a storm to break. Let's see what secrets it might reveal.
+Avery: Nothing is settled yet, but I'm watching Leif most closely.
+Miguel: Let's keep our eyes peeled for any more suspicious behavior! Remember, sometimes the quietest baker is the one with the most secrets.
+Leif: Avery, your constant scrutiny of me is getting tiresome. How about you turn that magnifying glass on someone else for a change?
+Aiden: Ah, the sweet scent of suspicion in the air. I must say, Avery's laser focus on Leif is as subtle as a sledgehammer.
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Avery's obsession with Leif is as transparent as a fishbowl. Perhaps it's time to stir the pot a bit and see what other secrets bubble to the surface.</thought>
+<thought player="Luka">The storm's brewing, and I've got a gut feeling about Ammara and Leif. Time to keep pressing them, see if they crack.</thought>
+<thought player="Miguel">Keep the energy high and subtly divert suspicion from Leif, while gathering intel on potential targets for the next night.</thought>
+<thought player="Yuki">Avery's persistent focus on Leif could be a distraction; I must consider if there are other players whose silence or subtle actions may reveal more about their true allegiance.</thought>
+<thought player="Ammara">Hmm, looks like Avery's got Leif under their artistic lens, but perhaps it's time to add a new hue to the mix and see if Luka's canvas holds any secrets.</thought>
+<thought player="Leif">Avery and Yuki are getting too nosy. Time to steer suspicion away from us and onto someone else.</thought>
+</round>
+<round>
+Round 4.
+Yuki: Avery's consistent focus on Leif may be a strategic diversion; let us consider other players' actions and silences for deeper insights.
+Aiden: Ah, the art of the subtle dig—it's like trying to find a needle in a haystack, isn't it?
+Miguel: Let's not let our suspicions sour like milk! How about we focus on recent interactions and see what secrets they might reveal?
+Avery: Nothing is settled yet, but I'm watching Leif most closely.
+Leif: Let's examine Luka's silence—it might hide more than he lets on.
+Ammara: Luka, your silence is as mysterious as a blank canvas—what secrets might it be hiding?
+Luka: Ammara, your veiled accusations—they're like a ship on the horizon, just out of reach. What're you trying to say without saying?
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">It seems Avery's fixation on Leif is a distraction; perhaps it's time to draw attention to Luka's conspicuous silence.</thought>
+<thought player="Luka">The pressure's mounting, but I'll keep my cards close, watch Ammara and Leif like a hawk.</thought>
+<thought player="Miguel">Keep the energy high and subtly divert suspicion from Leif, while gathering intel on potential targets for the next night.</thought>
+<thought player="Yuki">As the game unfolds, I must remain vigilant, examining the subtleties in each player's behavior and words, especially the silence of Luka and the persistent focus of Avery.</thought>
+<thought player="Ammara">Time to mix up the palette—let's see if Luka's silence speaks louder than words.</thought>
+<thought player="Leif">Need to keep pushing suspicion off Miguel and me, maybe suggest Luka next.</thought>
+</round>
+<round>
+Round 5.
+Miguel: Let's not let our suspicions sour like milk! How about we focus on recent interactions and see what secrets they might reveal?
+Yuki: Avery's unwavering attention on Leif may indeed be a strategic maneuver. Let us broaden our scope and consider the actions and silences of all players.
+Leif: Aiden's metaphors are as distracting as a carnival barker. Let's focus on concrete actions, not flowery words.
+Aiden: Ah, the art of the subtle dig—it's like trying to find a needle in a haystack, isn't it? Perhaps it's time we consider the silence of our dear Luka.
+Ammara: Luka, your silence is as mysterious as a blank canvas—what secrets might it be hiding?
+Luka: Yuki, your insistence on examining silence—it's like fishing in the dark. What're you trying to catch?
+Avery: Nothing is settled yet, but I'm watching Leif most closely.
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Avery's fixation on Leif is becoming as predictable as a children's storybook; perhaps it's time to draw attention to Luka's conspicuous silence and see if it reveals any hidden truths.</thought>
+<thought player="Luka">The storm's brewing, and I reckon it's high time to steer the ship towards Ammara and Leif, see if they've got any secrets tucked away.</thought>
+<thought player="Miguel">Keep the energy high and subtly divert suspicion from Leif, while gathering intel on potential targets for the next night.</thought>
+<thought player="Yuki">The game's dynamics are shifting; it's time to probe deeper into the silences and subtle actions of Luka and Ammara, while continuing to observe Avery's strategic focus.</thought>
+<thought player="Ammara">Time to add a splash of color to the conversation—let's see if Luka's silence can be painted with a brush of suspicion.</thought>
+<thought player="Leif">Time to steer suspicion away from us and onto Luka. Keep pushing it.</thought>
+</round>
+<round>
+Round 6.
+Miguel: Let's not let our suspicions sour like milk! How about we focus on recent interactions and see what secrets they might reveal?
+Yuki: Ammara's persistent questioning of Luka's silence could be a strategic move to divert attention from herself.
+<vote initiator="Avery" target="Leif">
+Avery: No
+Aiden: No
+Luka: No
+Miguel: No
+Yuki: Yes
+Ammara: No
+Leif: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Miguel: Let's not forget the power of a well-timed silence! Sometimes, the quiet ones hold the loudest secrets.
+Aiden: Ah, the quiet ones indeed hold the loudest secrets. Perhaps it's time we unravel the mystery of Luka's silence.
+<vote initiator="Avery" target="Leif">
+Avery: No
+Aiden: No
+Luka: No
+Miguel: No
+Yuki: Yes
+Ammara: No
+Leif: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Aiden: Ah, the quiet ones indeed hold the loudest secrets. Perhaps it's time we unravel the mystery of Luka's silence.
+Ammara: Luka, your silence is as mysterious as a blank canvas—what secrets might it be hiding?
+Yuki: Might I propose we scrutinize the nuances in Aiden's metaphors? They seem to be a smokescreen, diverting our attention from the true culprits.
+Miguel: Let's keep the heat on and see who else might be hiding in the shadows!
+<vote initiator="Avery" target="Leif">
+Avery: No
+Aiden: No
+Luka: No
+Miguel: No
+Yuki: Yes
+Ammara: No
+Leif: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Aiden" day="1">Ah, the first day of our little game of cat and mouse. Avery's fixation on Leif is as predictable as a children's storybook, but perhaps it's a strategic distraction. Meanwhile, Luka's silence is as conspicuous as a black sheep in a flock of white ones. Tonight, I shall observe the shadows and see what secrets they may reveal.</diary>
+<diary player="Luka" day="1">Another day in this storm-tossed game, and the winds ain't lettin' up. The crew's still on edge, especially with Ammara and Leif in the crosshairs. Three votes called on Leif, but the lad's still standin'. Gotta keep my wits about me, watch those two like a hawk. The night's comin', and I reckon it'll bring more squalls. Time to batten down the hatches and see what the dark reveals.</diary>
+<diary player="Miguel" day="1">Another thrilling day in Graphia! The energy was electric, and I managed to keep the mood light and suspicions low. Avery's relentless focus on Leif was amusing, but I managed to divert attention by stirring up some delicious distractions. Tonight, I'll be gathering intel on potential targets while keeping the charm up. Let's see who we can bake into our next move!</diary>
+<diary player="Yuki" day="1">Today's proceedings were a delicate dance of words and silences, with each player attempting to outmaneuver the other. Avery's relentless focus on Leif may be a strategic diversion, while Ammara and Luka's veiled exchanges hint at deeper secrets. The true challenge lies in deciphering the silences and subtle actions that reveal the Mafiosos' true nature. As night falls, I must remain vigilant, probing deeper into the players' behaviors and words to uncover the deception.</diary>
+<diary player="Ammara" day="1">Well, today was a whirlwind of colors and shadows! Avery's been painting Leif with a broad brush of suspicion, but I think it's time to add a new hue to the mix. Luka's silence is as mysterious as a blank canvas—what secrets might it be hiding? Yuki's metaphors are as flowery as a spring garden, but could they be hiding thorns? As the night falls, I'll be keeping my paintbrush ready for whatever secrets the darkness might reveal.</diary>
+<diary player="Leif" day="1">Another day done, and no one's been executed. Avery and Yuki are getting too nosy, need to keep pushing suspicion off Miguel and me. Time to steer it onto Luka. Night's coming, and we need to coordinate our next target.</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Leif points at Luka
+Miguel points at Luka
+<kill>Luka — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Luka was killed last night. Luka was a Law-abiding Citizen.
+<round>
+Round 1.
+Miguel: Let's keep the heat on and see who else might be hiding in the shadows!
+Leif: Aiden's metaphors are as distracting as a carnival barker. Let's focus on concrete actions, not flowery words.
+Aiden: Ah, the quiet ones indeed hold the loudest secrets. Perhaps it's time we unravel the mystery of Luka's silence.
+Avery: Nothing is settled yet, but I'm watching Leif most closely.
+Yuki: Aiden's persistent use of metaphors and analogies may be a strategic attempt to obfuscate his true intentions. Let us scrutinize his words more closely.
+Ammara: Avery, your laser focus on Leif is as persistent as a raindrop on a window—are you sure it's not just a pattern in the glass?
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Time to see if Yuki's insistence on examining silence is a strategic move or if there's something more sinister at play.</thought>
+<thought player="Miguel">Keep the energy high and subtly divert suspicion from Leif, while gathering intel on potential targets for the next night.</thought>
+<thought player="Yuki">As the game progresses, I must remain vigilant and scrutinize the subtleties in each player's behavior, especially the silence of Luka and the persistent focus of Avery.</thought>
+<thought player="Ammara">Hmm, Luka's silence seems to be the new canvas—perhaps it's time to add a bold stroke of suspicion and see what colors it reveals.</thought>
+<thought player="Leif">Need to keep pushing suspicion away from Miguel and me, maybe suggest Aiden next.</thought>
+</round>
+<round>
+Round 2.
+Miguel: Let's keep the energy high and the suspicion low, like a perfectly risen loaf of bread!
+Leif: Aiden's metaphors are as distracting as a carnival barker. Let's focus on concrete actions, not flowery words.
+Yuki: Leif's insistence on concrete actions, as opposed to Aiden's metaphors, may be a deliberate attempt to steer the conversation away from his own actions.
+Aiden: Ah, the quiet ones indeed hold the loudest secrets. Perhaps it's time we unravel the mystery of Luka's silence.
+Avery: Nothing is settled yet, but I'm watching Leif most closely.
+Ammara: Yuki, your metaphors are as flowery as a spring garden, but could they be hiding thorns?
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">It seems Avery's fixation on Leif is a distraction; perhaps it's time to draw attention to Yuki's persistent use of metaphors and see if it reveals any hidden truths.</thought>
+<thought player="Miguel">Keep the energy high and subtly divert suspicion from Leif, while gathering intel on potential targets for the next night.</thought>
+<thought player="Yuki">As the game tightens, I must scrutinize Aiden's metaphors and Ammara's veiled accusations more closely, while continuing to observe the strategic focus of Avery and the silence of Luka.</thought>
+<thought player="Ammara">Time to add a new layer to the canvas—perhaps it's Aiden's metaphors that need a closer inspection.</thought>
+<thought player="Leif">Keep pushing suspicion onto Aiden, steer clear of Avery and Yuki for now.</thought>
+</round>
+<round>
+Round 3.
+Aiden: Ah, the quiet ones indeed hold the loudest secrets. Perhaps it's time we unravel the mystery of Yuki's metaphors.
+Leif: Aiden's metaphors are getting as tiresome as a broken record. Let's focus on concrete evidence, not flowery words.
+Miguel: Let's keep the energy high and the suspicion low, like a perfectly risen loaf of bread!
+Ammara: Aiden, your metaphors are as distracting as a carnival barker. Let's focus on concrete actions, not flowery words.
+Avery: Nothing is settled yet, but I'm watching Leif most closely.
+Yuki: Avery's consistent focus on Leif may be a strategic diversion; let us consider other players' actions and silences for deeper insights.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Ah, the sweet scent of suspicion lingers, but it's time to see if Yuki's flowery metaphors are a smokescreen for something more sinister.</thought>
+<thought player="Miguel">Keep the energy high and subtly divert suspicion from Leif, while gathering intel on potential targets for the next night.</thought>
+<thought player="Yuki">As the game tightens, I must remain vigilant and scrutinize the subtleties in each player's behavior, especially the silence of Luka and the persistent focus of Avery.</thought>
+<thought player="Ammara">Time to mix things up and see if Aiden's metaphors can be unraveled like a tangled thread.</thought>
+<thought player="Leif">Time to keep the heat on Aiden, divert attention from Avery and Yuki.</thought>
+</round>
+<round>
+Round 4.
+Miguel: Let's keep the energy high and the suspicion low, like a perfectly risen loaf of bread!
+Leif: Ammara's persistent questioning of Luka's silence could be a strategic move to divert attention from herself.
+Aiden: Ah, the quiet ones indeed hold the loudest secrets. Perhaps it's time we unravel the mystery of Yuki's metaphors.
+Avery: Nothing is settled yet, but I'm watching Leif most closely.
+Yuki: Aiden's persistent use of metaphors and analogies may be a strategic attempt to obfuscate his true intentions. Let us scrutinize his words more closely.
+Ammara: Miguel, your metaphors are as abundant as a summer garden, but could they be hiding a few weeds among the flowers?
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">It seems Yuki's flowery metaphors and Ammara's persistent questioning are ripe for scrutiny; perhaps it's time to draw attention to their tactics and see if it reveals any hidden truths.</thought>
+<thought player="Miguel">Keep the energy high and subtly divert suspicion from Leif, while gathering intel on potential targets for the next night.</thought>
+<thought player="Yuki">As the game reaches its climax, I must dissect the layers of deception within Aiden's metaphors and Ammara's veiled accusations, while maintaining a watchful eye on Avery's strategic focus and the enigmatic silence of Luka.</thought>
+<thought player="Ammara">Time to add a new hue to the mix and see if Aiden's metaphors can be painted with a brush of suspicion.</thought>
+<thought player="Leif">Need to keep the pressure on Aiden and divert attention from Avery and Yuki.</thought>
+</round>
+<round>
+Round 5.
+Aiden: Ah, the sweet scent of suspicion lingers, but it's time to see if Yuki's flowery metaphors are a smokescreen for something more sinister.
+Ammara: Miguel, your metaphors are as abundant as a summer garden, but could they be hiding a few weeds among the flowers?
+Avery: Nothing is settled yet, but I'm watching Leif most closely.
+Yuki: Aiden's persistent use of metaphors and analogies may be a strategic attempt to obfuscate his true intentions. Let us scrutinize his words more closely.
+Miguel: Let's keep the energy high and the suspicion low, like a perfectly risen loaf of bread!
+Leif: Aiden's constant use of metaphors is as suspicious as a fox in a henhouse. Let's examine his actions more closely.
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Time to shift the focus from Avery's fixation on Leif to Yuki's flowery metaphors and see if it reveals any hidden truths.</thought>
+<thought player="Miguel">Keep the energy high and subtly divert suspicion from Leif, while gathering intel on potential targets for the next night.</thought>
+<thought player="Yuki">Aiden's persistent use of metaphors and Ammara's veiled accusations warrant closer scrutiny, but I must also consider the strategic implications of Avery's unwavering focus on Leif and the silence of Luka.</thought>
+<thought player="Ammara">Time to add a splash of color to the conversation—let's see if Yuki's metaphors can be painted with a brush of suspicion.</thought>
+<thought player="Leif">Keep the heat on Aiden and divert attention from Avery and Yuki, but be ready to switch targets if needed.</thought>
+</round>
+<round>
+Round 6.
+<vote initiator="Avery" target="Leif">
+Avery: No
+Aiden: No
+Miguel: No
+Yuki: Yes
+Ammara: No
+Leif: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+<vote initiator="Avery" target="Leif">
+Avery: No
+Aiden: No
+Miguel: No
+Yuki: Yes
+Ammara: No
+Leif: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Miguel: Let's keep the energy high and the suspicion low, like a perfectly risen loaf of bread!
+Yuki: Aiden's metaphors may be a smokescreen; let us scrutinize his words more closely.
+<vote initiator="Avery" target="Leif">
+Avery: No
+Aiden: No
+Miguel: No
+Yuki: Yes
+Ammara: No
+Leif: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Aiden" day="2">Ah, the second day of our delightful game of cat and mouse. Avery's fixation on Leif remains as predictable as a children's storybook, but perhaps it's a strategic distraction. Meanwhile, Yuki's flowery metaphors are as suspicious as a fox in a henhouse. Tonight, I shall observe the shadows and see what secrets they may reveal.</diary>
+<diary player="Miguel" day="2">Another exciting day in Graphia! I managed to keep the energy high and the suspicion low, all while subtly steering the conversation away from Leif. Avery's laser focus on him was as predictable as a sunrise, but I sprinkled in some delightful distractions to keep everyone guessing. As the night falls, I'll gather intel on potential targets and keep the charm up. Let's see who we can bake into our next move!</diary>
+<diary player="Yuki" day="2">As the game reaches its critical juncture, I must dissect the layers of deception within Aiden's metaphors and Ammara's veiled accusations, while maintaining a watchful eye on Avery's strategic focus and the enigmatic silence of Luka. The true challenge lies in deciphering the silences and subtle actions that reveal the Mafiosos' true nature. As night falls, I must remain vigilant, probing deeper into the players' behaviors and words to uncover the deception.</diary>
+<diary player="Ammara" day="2">Today was a kaleidoscope of colors and shadows! Avery's laser focus on Leif is as persistent as a raindrop on a window, but I think it's time to add a new hue to the mix. Yuki's metaphors are as flowery as a spring garden, but could they be hiding thorns? As the night falls, I'll be keeping my paintbrush ready for whatever secrets the darkness might reveal.</diary>
+<diary player="Leif" day="2">Another day done, and still no one's been executed. Avery and Yuki are getting too nosy, so I've been pushing suspicion onto Aiden. Miguel and I need to keep the heat on him and divert attention from us. Night's coming, and we need to coordinate our next move.</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Leif points at Aiden
+Miguel points at Yuki
+Pointing round 2:
+Leif points at Aiden
+Miguel points at Avery
+Pointing round 3:
+Miguel points at Avery
+Leif points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Leif: Ammara's persistent questioning of Luka's silence could be a strategic move to divert attention from herself.
+Aiden: Ah, the sweet scent of suspicion lingers, but it's time to see if Yuki's flowery metaphors are a smokescreen for something more sinister.
+Miguel: Let's keep the energy high and the suspicion low, like a perfectly risen loaf of bread!
+Ammara: Aiden, your metaphors are as distracting as a carnival barker. Let's focus on concrete actions, not flowery words.
+Yuki: Aiden's persistent use of metaphors and analogies may be a strategic attempt to obfuscate his true intentions. Let us scrutinize his words more closely.
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Time to see if Yuki's metaphors are a smokescreen or if they're just a fancy way of saying 'I'm innocent.'</thought>
+<thought player="Miguel">Keep the energy high and subtly divert suspicion from Leif, while gathering intel on potential targets for the next night.</thought>
+<thought player="Yuki">With Avery's demise, the dynamics have shifted; it's imperative to dissect Aiden's metaphors and Ammara's veiled accusations more meticulously.</thought>
+<thought player="Ammara">Time to mix up the palette and see if Yuki's metaphors can be unraveled like a tangled thread.</thought>
+<thought player="Leif">Keep the pressure on Aiden and divert attention from Avery and Yuki, but be ready to switch targets if needed.</thought>
+</round>
+<round>
+Round 2.
+Ammara: Aiden, your metaphors are as distracting as a carnival barker. Let's focus on concrete actions, not flowery words.
+Miguel: Let's keep the energy high and the suspicion low, like a perfectly risen loaf of bread!
+Yuki: Ammara, your persistent questioning of Luka's silence could be a strategic move to divert attention from yourself.
+Leif: Aiden's constant use of metaphors is as suspicious as a fox in a henhouse. Let's examine his actions more closely.
+Aiden: Ah, the sweet scent of suspicion lingers, but it's time to see if Yuki's flowery metaphors are a smokescreen for something more sinister.
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">With Avery and Luka gone, it's time to see if Yuki's metaphors are a smokescreen or if they're just a fancy way of saying 'I'm innocent.'</thought>
+<thought player="Miguel">Keep the energy high and subtly divert suspicion from Leif, while gathering intel on potential targets for the next night.</thought>
+<thought player="Yuki">With the game reaching its critical juncture, I must meticulously dissect Aiden's metaphors and Ammara's veiled accusations, while remaining ever-vigilant for any subtle shifts in the players' behaviors.</thought>
+<thought player="Ammara">Time to add a new shade to the canvas—perhaps it's Leif's constant defense that needs a closer inspection.</thought>
+<thought player="Leif">Keep the heat on Aiden and divert attention from Avery and Yuki, but be ready to switch targets if needed.</thought>
+</round>
+<round>
+Round 3.
+Aiden: Ah, the sweet scent of suspicion lingers, but it's time to see if Yuki's flowery metaphors are a smokescreen for something more sinister.
+Leif: Ammara's persistent questioning of Luka's silence could be a strategic move to divert attention from herself.
+Miguel: Let's keep the energy high and the suspicion low, like a perfectly risen loaf of bread!
+Ammara: Miguel, your metaphors are as abundant as a summer garden, but could they be hiding a few weeds among the flowers?
+Yuki: Ammara's persistent questioning of Luka's silence could indeed be a strategic move to divert attention from herself, or it may reveal a deeper suspicion we should explore.
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Ah, the plot thickens. Time to see if Yuki's metaphors are a smokescreen or if they're just a fancy way of saying 'I'm innocent.'</thought>
+<thought player="Miguel">Keep the energy high and subtly divert suspicion from Leif, while gathering intel on potential targets for the next night.</thought>
+<thought player="Yuki">With the game reaching its critical juncture, I must meticulously dissect Aiden's metaphors and Ammara's veiled accusations, while remaining ever-vigilant for any subtle shifts in the players' behaviors.</thought>
+<thought player="Ammara">Time to keep the brushstrokes light and playful, but maybe it's time to see if Aiden's metaphors are hiding more than just words.</thought>
+<thought player="Leif">Keep the pressure on Aiden and divert attention from Avery and Yuki, but be ready to switch targets if needed.</thought>
+</round>
+<round>
+Round 4.
+Ammara: Aiden, your metaphors are as distracting as a carnival barker. Let's focus on concrete actions, not flowery words.
+Leif: Aiden's constant use of metaphors is as suspicious as a fox in a henhouse. Let's examine his actions more closely.
+Yuki: Aiden's metaphors, though seemingly innocuous, may serve as a strategic smokescreen to obfuscate his true intentions.
+Aiden: Ah, the sweet scent of suspicion lingers, but it's time to see if Yuki's flowery metaphors are a smokescreen for something more sinister.
+Miguel: Let's keep the energy high and the suspicion low, like a perfectly risen loaf of bread!
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Time to see if Yuki's flowery metaphors are a smokescreen or if they're just a fancy way of saying 'I'm innocent.'</thought>
+<thought player="Miguel">Keep the energy high and subtly divert suspicion from Leif, while gathering intel on potential targets for the next night.</thought>
+<thought player="Yuki">With the game nearing its end, I must dissect Aiden's metaphors and Ammara's veiled accusations with surgical precision, while remaining vigilant for any subtle shifts in the players' behaviors.</thought>
+<thought player="Ammara">Time to keep the brushstrokes light and playful, but maybe it's time to see if Yuki's metaphors are hiding more than just words.</thought>
+<thought player="Leif">Time to keep the pressure on Aiden and divert attention from Avery and Yuki, but need to be ready to switch targets if the heat gets too close.</thought>
+</round>
+<round>
+Round 5.
+Leif: Ammara's persistent questioning of Luka's silence could indeed be a strategic move to divert attention from herself, or it may reveal a deeper suspicion we should explore.
+Miguel: Let's keep the energy high and the suspicion low, like a perfectly risen loaf of bread!
+Yuki: Aiden's persistent use of metaphors may serve as a smokescreen to obfuscate his true intentions; let us examine his actions more closely.
+Aiden: Ah, the sweet scent of suspicion lingers, but it's time to see if Yuki's flowery metaphors are a smokescreen for something more sinister.
+Ammara: Aiden, your metaphors are as distracting as a carnival barker. Let's focus on concrete actions, not flowery words.
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Aiden">Ah, the sweet scent of suspicion lingers, but it's time to see if Yuki's flowery metaphors are a smokescreen for something more sinister.</thought>
+<thought player="Miguel">Keep the energy high and subtly divert suspicion from Leif, while gathering intel on potential targets for the next night.</thought>
+<thought player="Yuki">With the game nearing its end, I must dissect Aiden's metaphors and Ammara's veiled accusations with surgical precision, while remaining vigilant for any subtle shifts in the players' behaviors.</thought>
+<thought player="Ammara">Time to keep the brushstrokes light and playful, but maybe it's time to see if Leif's constant defense is hiding more than just words.</thought>
+<thought player="Leif">Keep the heat on Aiden, divert attention from Avery and Yuki, but be ready to switch targets if the heat gets too close.</thought>
+</round>
+<round>
+Round 6.
+Leif: Aiden's constant use of metaphors is as suspicious as a fox in a henhouse. Let's examine his actions more closely.
+Ammara: Aiden, your metaphors are as distracting as a carnival barker. Let's focus on concrete actions, not flowery words.
+Yuki: Ammara, your persistent questioning of Luka's silence could be a strategic move to divert attention from yourself.
+Aiden: Ah, the sweet scent of suspicion lingers, but it's time to see if Yuki's flowery metaphors are a smokescreen for something more sinister.
+Miguel: Let's keep the energy high and the suspicion low, like a perfectly risen loaf of bread!
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<diary player="Aiden" day="3">Ah, the third day of our riveting game of cat and mouse. With Avery and Luka gone, the spotlight now shines on Yuki's flowery metaphors, which are as suspicious as a fox in a henhouse. Meanwhile, Ammara's persistent questioning seems to be a strategic move to divert attention. Tonight, I shall observe the shadows and see what secrets they may reveal.</diary>
+<diary player="Miguel" day="3">Another exhilarating day in Graphia! The energy was electric, and I managed to keep the mood light and suspicions low. Avery's relentless focus on Leif was amusing, but I sprinkled in some delightful distractions to keep everyone guessing. As the night falls, I'll gather intel on potential targets and keep the charm up. Let's see who we can bake into our next move! Keep the energy high and the suspicion low, like a perfectly risen loaf of bread!</diary>
+<diary player="Yuki" day="3">As the game tightens, I must dissect Aiden's metaphors and Ammara's veiled accusations with surgical precision, while remaining vigilant for any subtle shifts in the players' behaviors. The true challenge lies in deciphering the silences and subtle actions that reveal the Mafiosos' true nature. As night falls, I must remain vigilant, probing deeper into the players' behaviors and words to uncover the deception.</diary>
+<diary player="Ammara" day="3">Today was a symphony of suspicion and color! Avery's persistent focus on Leif was like a raindrop on a window, but the real mystery might be hidden in Aiden's flowery metaphors. Yuki's words danced like a spring garden, but I wonder if there are thorns beneath the petals. As night falls, I'll keep my paintbrush ready to uncover the secrets lurking in the shadows.</diary>
+<diary player="Leif" day="3">Another day done, and still no one's been executed. Kept the pressure on Aiden, diverting attention from Avery and Yuki. Need to keep this up, but be ready to switch targets if the heat gets too close. Night's coming, and Miguel and I need to coordinate our next move.</diary>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Leif points at Aiden
+Miguel points at Yuki
+Pointing round 2:
+Miguel points at Ammara
+Leif points at Aiden
+Pointing round 3:
+Leif points at Aiden
+Miguel points at Ammara
+<kill>Aiden — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Sara (Law-abiding Citizen)
+• Night 2: Luka (Law-abiding Citizen)
+• Night 3: Avery (Law-abiding Citizen)
+• Night 4: Aiden (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Aiden (Law-abiding Citizen), Luka (Law-abiding Citizen), Sara (Law-abiding Citizen), Miguel (Mafia), Yuki (Law-abiding Citizen), Ammara (Law-abiding Citizen), Leif (Mafia)
+
+Who they really were:
+• Aiden (Law-abiding Citizen) — dry and sardonic pacing is slow and measured, uses ironic understatement, frequent dry witticisms Aiden is a seasoned librarian with a penchant for dark humour. He spends his days surrounded by dusty tomes and lost causes, which has given him a unique perspective on the world. Despite his sardonic exterior, he cares deeply about the town and its people.
+• Luka (Law-abiding Citizen) — weary and world-worn speaks with a gravelly voice, often intersperses conversations with long pauses, uses colloquial language with a hint of bitterness Luka is a grizzled fisherman who has spent decades battling the tempestuous seas. His hands are calloused, his face lined with the salt of the ocean. He's seen his fair share of storms and knows the value of trust and camaraderie. Now retired, he spends his days mending nets and sharing tales of the sea with anyone who will listen.
+• Sara (Law-abiding Citizen) — vigilant and watchful speaks in a brisk, clipped manner, often interjects with quick, sharp observations, uses straightforward and no-nonsense vocabulary Sara is a retired nurse who has spent her life caring for others. With a keen eye for detail and a sharp mind, she has an uncanny ability to notice even the smallest changes in people's behavior. In her spare time, she volunteers at the local community center, where she keeps a watchful eye on the comings and goings of the townsfolk.
+• Miguel (Mafia) — publicly presented as Miguel is a beloved local baker known for his infectious smile and boundless energy. He has a knack for turning ordinary bread into works of art, delighting the townsfolk with his innovative recipes and warm hospitality. Born and raised in the town, Miguel has a deep love for his community and a talent for bringing people together over a shared loaf of bread. In his spare time, he loves to experiment with new flavors and techniques, always seeking to bring a little extra joy to his customers. (cheerful and irrepressible enthusiastic and quick-paced, often uses uplifting metaphors and exclamations) … but was really a Mafioso: Miguel joined the Mafia as a young man, drawn in by the promise of excitement and power. His natural charm and quick thinking made him a valuable asset to the organization, and he quickly rose through the ranks. Despite his public persona as a simple baker, Miguel operates as a key informant for the Mafia, using his position to gather information and maintain connections within the town. His cheerful demeanor is a carefully crafted mask, hiding the calculating mind of a seasoned Mafioso.
+• Yuki (Law-abiding Citizen) — shrewd and calculating measured, precise; deliberate pauses for effect, articulate language with occasional rhetorical questions Yuki is a retired detective with a sharp mind and an eye for detail. Having spent years solving the most complex cases, Yuki now enjoys a quiet life, though he can't resist lending his expertise when the need arises. He spends his days tending to his garden and practicing the art of bonsai, where he finds a new form of mental stimulation. Always observant, Yuki has a knack for piecing together information that others might overlook.
+• Ammara (Law-abiding Citizen) — playful and teasing; loves to poke fun in a good-natured way speaks with a light-hearted, almost sing-song rhythm; often uses playful metaphors and gentle taunts Ammara is the town's resident artist, known for her vibrant murals and quirky sense of humor. She believes in adding a splash of color to everyday life and often teases her friends with whimsical nicknames. In her studio, she creates magical worlds on canvas, inviting everyone to see the beauty in the ordinary. When she's not painting, Ammara loves to organize community art projects, bringing people together through the power of creativity.
+• Leif (Mafia) — publicly presented as Leif is a burly blacksmith known for his exceptional craftsmanship and no-nonsense attitude. He arrived in town a few years ago, drawn by the reputation of its skilled artisans. With strong hands and a keen eye for detail, Leif quickly established himself as a valuable member of the community. Despite his gruff exterior, he has a soft spot for the town's children, often crafting small trinkets and toys for them. In his downtime, he enjoys tending to his garden, where he grows a variety of herbs and vegetables. (gruff and blunt speaks in a straightforward, no-nonsense tone, uses curt and direct language, often sounds dismissive) … but was really a Mafioso: Leif's true identity is that of a high-ranking Mafioso, sent to infiltrate the town and gather information. His past is shrouded in secrecy, with a history of violence and manipulation. He joined the Mafia at a young age, rising through the ranks with his brute strength and unyielding loyalty. His mission in the town is to maintain his cover while quietly exerting influence and control.
+</endgame>
+<story>The game unfolded with a series of calculated moves and strategic distractions. Avery, Luka, and Sara fell to the Mafia's ruthless efficiency, while Yuki, Ammara, Miguel, and Leif remained. Avery's unwavering focus on Leif was a strategic diversion, masking the true danger lurking within the group. Yuki, with his sharp mind, meticulously scrutinized the players' words and actions, particularly the silences and subtle exchanges. Ammara, with her playful yet probing nature, attempted to stir up truths with her artistic flair. Meanwhile, Miguel and Leif, the Mafia operatives, worked tirelessly to divert suspicion from themselves, coordinating their next targets with precision. The game reached its climax as the Mafia, through their cunning and coordinated efforts, managed to outmaneuver the remaining citizens, securing their victory.</story>
+</transcript>

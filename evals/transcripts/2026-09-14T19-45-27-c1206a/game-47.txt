@@ -1,0 +1,447 @@
+Game 47 | provider=bedrock | large_model=amazon.nova-pro-v1:0 | small_model=amazon.nova-lite-v1:0 | games=50 | diaries=on
+
+<transcript>
+<setup>
+<player name="Avery" role="Law-abiding Citizen" human="true">(no persona recorded)</player>
+<player name="Liam" role="Mafia">
+Personality: Anxious and second-guessing, often overthinking situations and outcomes. Easily swayed by others' opinions but tries to maintain a facade of confidence.
+Manner: Speaks in a hesitant, almost stuttering manner. Frequently seeks reassurance from others and often backtracks on statements.
+Public legend: Liam is a mild-mannered librarian who loves quiet, orderly environments. He's known around town for his encyclopedic knowledge of books and his gentle, helpful nature. Liam is always willing to lend a hand or offer advice, making him a beloved figure in the community.
+True self (hidden): Beneath the surface, Liam is a cunning Mafioso who joined the Mafia out of desperation after his family fell into debt. He uses his position in the library to gather information and maintain his cover, all while climbing the ranks within the criminal organization.
+</player>
+<player name="Aiko" role="Law-abiding Citizen">
+Personality: stern and commanding
+Manner: direct, forceful, no-nonsense
+Persona: Aiko is the local judge, renowned for her uncompromising sense of justice and sharp intellect. She's known for delivering clear, decisive judgments and expects the same level of clarity and integrity from others.
+</player>
+<player name="Santiago" role="Law-abiding Citizen">
+Personality: gruff and blunt, straight to the point with no time for nonsense
+Manner: speaks in short, curt sentences; uses direct, no-frills vocabulary; occasional expletives for emphasis
+Persona: Santiago is a seasoned fisherman, known for his rough exterior and salty tongue. He's been plying the waters for decades, weathering storms and hauling in catches that feed the town. Despite his rugged appearance, he has a heart of gold and is always willing to lend a hand to those in need.
+</player>
+<player name="Niamh" role="Law-abiding Citizen">
+Personality: brash and loud
+Manner: exaggerated gestures, rapid-fire speech, theatrical flair, uses colorful metaphors and slang
+Persona: Niamh is the town's resident performer, known for her larger-than-life personality and passion for theatrics. She spends her days entertaining at local festivals and community events, bringing joy and laughter to everyone around. With a voice that can fill a room and a spirit that's impossible to ignore, Niamh is a beloved figure in the town, always ready to put on a show or lend a helping hand.
+</player>
+<player name="Omar" role="Law-abiding Citizen">
+Personality: warm and effusive, genuine, and empathetic; deeply caring about the community and its people.
+Manner: speaks with a friendly, animated tone; uses inclusive language ('we', 'us'); often shares anecdotes and personal experiences to connect with others.
+Persona: Omar is the town's beloved baker, known for his warm smile and delicious pastries. He's been running the local bakery for over a decade, serving the community with love and care. Omar is always willing to share a sweet treat and a kind word, making him a cherished friend to everyone in town.
+</player>
+<player name="Anika" role="Law-abiding Citizen">
+Personality: weary and world-worn; thoughtful yet resigned
+Manner: speaks in a quiet, measured tone; uses simple, straightforward vocabulary; often pauses reflectively
+Persona: Anika is the town's veteran nurse, having worked in the local clinic for over two decades. She's seen it all and done it all, from delivering babies to tending to the elderly. Anika's hands are marked with the scars of her profession, but her heart remains dedicated to her patients. She's the one you turn to when you're at your lowest, knowing she'll offer a comforting word and a steady hand.
+</player>
+<player name="Kwasi" role="Mafia">
+Personality: Kwasi is dreamy, distractible, and imaginative, often getting lost in thought and daydreaming about the past. He has a gentle and whimsical nature, often seen with a faraway look in his eyes. Despite his dreamy disposition, he has a keen eye for detail and a deep appreciation for the beauty in everyday life.
+Manner: Kwasi speaks in a soft, lilting tone, often trailing off into thoughts and memories. His speech is peppered with poetic descriptions and metaphors, giving his words a dreamlike quality. He frequently uses inclusive language and gestures to draw others into his imaginative world.
+Public legend: Kwasi is a talented artist and the town's resident muralist. He has been painting murals on the walls of buildings for years, bringing color and life to the community. Known for his whimsical and fantastical designs, Kwasi's art is a reflection of his dreamy and imaginative nature. He is deeply connected to the town and its people, using his art to express his love and appreciation for the community.
+True self (hidden): Beneath his artistic exterior, Kwasi is a cunning and ambitious Mafioso, rising through the ranks with his sharp intellect and strategic mind. He joined the Mafia to gain power and influence, using his position to manipulate and control those around him. His dreamy demeanor is a carefully crafted cover, allowing him to blend in with the townsfolk while secretly pulling the strings from behind the scenes.
+</player>
+</setup>
+<preamble>
+Moderator: A new game begins. Welcome, Avery.
+Moderator: Players in this game: Avery, Liam, Aiko, Santiago, Niamh, Omar, Anika, Kwasi. Let the game begin.
+Moderator (private to Avery): You are Avery. Your role is Law-abiding Citizen.
+Moderator (private to Liam): Your Mafia teammates are: Kwasi. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+Moderator (private to Kwasi): Your Mafia teammates are: Liam. You work together to eliminate Law-abiding Citizens. During the Night, you point at one target; there is no chat.
+</preamble>
+<night>
+Night 1 begins.
+Pointing round 1:
+Liam points at Aiko
+Kwasi points at Aiko
+<kill>Aiko — Law-abiding Citizen</kill>
+Moderator: Night 1 ends.
+</night>
+<day>
+Day 1 begins.
+Moderator: Day breaks. Aiko was killed last night. Aiko was a Law-abiding Citizen.
+<round>
+Round 1.
+Niamh: Listen up, folks! We've got a snake in the grass, and I reckon it's time we smoke 'em out. Any of you lot seen any shady business going on?
+Kwasi: As the sun kisses the horizon, I find myself pondering the delicate dance of trust and deception. Perhaps, in the shadows, we may uncover the serpent who slithers among us.
+Santiago: Niamh, your rhetoric's as empty as a storm-tossed sea. Let's see some real accusations, not just hot air.
+Avery: Nothing is settled yet, but I'm watching Omar most closely.
+Liam: W-well, I-I noticed Omar has been rather s-silent. C-could he be hiding something?
+Omar: Let's not jump to conclusions, friends. We need to gather more information before pointing fingers.
+Anika: Omar's silence does raise questions. Let's hear more from him.
+<recap>Day 1, 9 AM status: 5 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">I-I need to b-be careful with my w-words, l-lest I raise s-suspicion. M-maybe I should s-start pointing f-fingers at s-someone else, l-like Avery or Santiago, to d-divert attention from Omar and m-myself.</thought>
+<thought player="Santiago">Time to dig deeper. Omar's silence is suspicious as hell.</thought>
+<thought player="Niamh">Time to amp up the pressure on Omar and see what shakes loose, but gotta keep my eye on Avery too — they seem mighty keen on him.</thought>
+<thought player="Omar">I need to be more vocal and share my thoughts to dispel any suspicion from the others.</thought>
+<thought player="Anika">I must tread carefully, listening to the whispers of suspicion around Omar, yet seeking truth in the quiet spaces.</thought>
+<thought player="Kwasi">As the sun dips below the horizon, I must weave my web of deception, guiding the townsfolk's suspicions away from Liam and myself, all the while keeping a watchful eye on Avery's growing distrust of Omar.</thought>
+</round>
+<round>
+Round 2.
+<vote initiator="Kwasi" target="Omar">
+Avery: No
+Liam: No
+Santiago: Yes
+Niamh: Yes
+Omar: No
+Anika: No
+Kwasi: No
+tally: 2 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Avery: Nothing is settled yet, but I'm watching Omar most closely.
+Niamh: Omar, you're as slippery as an eel in a barrel of molasses. Spill the beans, or we'll start cookin' up some trouble for ya!
+Liam: W-well, I-I've been w-wondering about S-Santiago's b-behavior too. D-does anyone else th-think it's s-suspicious?
+Kwasi: In the tapestry of our shared suspicions, I find myself drawn to the silence of Anika. Her quietude whispers secrets yet untold.
+Omar: Let's take a moment to share our thoughts, friends. I've been listening closely, and I believe we can uncover the truth together.
+Anika: I've been tending to the wounds of this town for years, and I can tell when someone's hiding something. Let's hear more from Avery, who's been watching Omar closely.
+Santiago: Anika, you've been awfully quiet. What's on your mind?
+<recap>Day 1, 12 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Liam">I-I need to c-carefully choose my n-next target to d-divert suspicion, p-perhaps s-someone like Avery or S-Santiago.</thought>
+<thought player="Santiago">Watch Omar and Anika like a hawk. They're up to something.</thought>
+<thought player="Niamh">Gotta keep the heat on Omar, but Avery's slippin' under the radar — time to dig deeper and find out what they're hidin'.</thought>
+<thought player="Omar">I need to speak up more and share my thoughts to build trust with the group.</thought>
+<thought player="Anika">I need to observe the interactions more closely and decide whom to support in the next vote.</thought>
+<thought player="Kwasi">As the shadows lengthen, I must carefully tend to the garden of doubt, nurturing the seeds of suspicion in the hearts of the townsfolk, all while shielding Liam and myself from their prying eyes.</thought>
+</round>
+<round>
+Round 3.
+Anika: Let's not forget to consider Avery's silence as well. We must look at everyone's actions, not just words.
+Liam: W-well, I-I've noticed S-Santiago s-seems a bit too d-defensive. C-could it be h-he's hiding something?
+Omar: Anika, your dedication to the town is commendable. Let's keep sharing our thoughts to uncover the truth.
+Kwasi: In the garden of our shared suspicions, I wonder if Avery's watchful gaze upon Omar might be a smokescreen for his own secrets.
+Niamh: Avery, your eyes are like a hawk's, always watchin'. What secrets are you guardin' so closely?
+Avery: Nothing is settled yet, but I'm watching Omar most closely.
+Santiago: Anika, you've been awfully quiet. What's on your mind?
+<recap>Day 1, 3 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Liam">I-I need to d-divert s-suspicion from Omar and m-myself by p-pointing fingers at S-Santiago or Avery.</thought>
+<thought player="Santiago">Keep an eye on Omar and Anika, but also watch Avery's behavior.</thought>
+<thought player="Niamh">Time to keep the pressure on Omar, but I reckon it's high time I dig deeper into Avery's motives — somethin' ain't addin' up with 'em.</thought>
+<thought player="Omar">I need to continue being open and share more of my thoughts to build trust and dispel any lingering doubts.</thought>
+<thought player="Anika">I need to weigh the accusations against Omar and Santiago, and decide whom to support in the next vote.</thought>
+<thought player="Kwasi">As the sun sets, I must continue to dance upon the threads of suspicion, guiding the townsfolk's gaze towards Avery and Omar, all the while safeguarding the secret alliance between Liam and myself.</thought>
+</round>
+<round>
+Round 4.
+Avery: Nothing is settled yet, but I'm watching Omar most closely.
+Kwasi: In the labyrinth of our shared suspicions, I find myself drawn to the silence of Anika. Her quietude whispers secrets yet untold.
+Santiago: Anika, you've been awfully quiet. What's on your mind?
+Niamh: Avery, your fixation on Omar is startin' to smell fishier than a week-old catch. What're you really up to?
+Omar: Let's keep sharing our thoughts and observations, friends. I believe that by working together, we can uncover the truth and protect our community.
+Anika: Let's consider Avery's continued focus on Omar. It may be a distraction from something else.
+Liam: W-well, I-I've noticed A-Anika's been quite q-quiet too. C-could she be h-hiding something?
+<recap>Day 1, 6 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Liam">I-I need to d-divert s-suspicion from Omar and m-myself by p-pointing fingers at S-Santiago or Avery.</thought>
+<thought player="Santiago">Keep the pressure on Omar and Anika, but stay alert for any shifts in the group's focus.</thought>
+<thought player="Niamh">Time to keep the pressure on Omar, but I reckon it's high time I dig deeper into Avery's motives — somethin' ain't addin' up with 'em.</thought>
+<thought player="Omar">I need to keep sharing my thoughts and observations to build trust and show I'm not hiding anything.</thought>
+<thought player="Anika">I must carefully consider the accusations against Omar and Santiago, and decide whom to support in the next vote.</thought>
+<thought player="Kwasi">As the stars begin to twinkle in the evening sky, I must continue to weave my tapestry of deception, ensuring that the townsfolk's suspicions remain focused on Avery and Omar, all the while safeguarding the secret bond between Liam and myself.</thought>
+</round>
+<round>
+Round 5.
+Niamh: Anika, your silence is as thick as a fog on the river. What are you hiding in those shadows?
+Avery: Nothing is settled yet, but I'm watching Omar most closely.
+Kwasi: As the sun sets, I find myself pondering the enigmatic silence of Niamh. What tales does her quietude hold, waiting to be unraveled?
+Anika: We must examine the reasons behind Omar's silence and Avery's persistent focus on him.
+Omar: Let's keep our eyes open and our hearts connected, friends. Together, we can unravel the truth and protect our beloved community.
+Liam: W-well, I-I've noticed A-Avery's f-fixation on Omar seems a b-bit too convenient. C-could it be a d-distraction?
+Santiago: Avery's obsession with Omar is getting mighty suspicious. What's he hiding?
+<recap>Day 1, 9 PM status: 5 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+<thought player="Liam">I-I need to c-continue d-diverting s-suspicion from Omar and m-myself by s-suggesting w-we look into Avery or Santiago.</thought>
+<thought player="Santiago">Gotta keep the heat on Omar and Anika, but Avery's fixation is raising red flags.</thought>
+<thought player="Niamh">Time to keep the heat on Omar, but I'm gonna put Avery under the microscope next — somethin' fishy's swimmin' in their waters.</thought>
+<thought player="Omar">I need to keep sharing my thoughts and observations to build trust and show I'm not hiding anything.</thought>
+<thought player="Anika">I must continue to observe the interactions, especially those of Omar and Santiago, before deciding whom to support in the next vote.</thought>
+<thought player="Kwasi">As the moon rises high, I must continue to entwine the townsfolk in a web of doubt, steering their suspicions away from Liam and myself, all the while keeping a keen eye on Avery's growing distrust of Omar.</thought>
+</round>
+<round>
+Round 6.
+Anika: Liam's stuttering speech patterns have caught my attention. It's unusual for someone so seemingly nervous to be part of the Mafia.
+Kwasi: As the moon casts its silver glow upon us, I find myself wondering about the enigmatic silence of Santiago. What secrets does his quietude hold, waiting to be unraveled?
+<vote initiator="Avery" target="Omar">
+Avery: No
+Liam: No
+Santiago: Yes
+Niamh: No
+Omar: No
+Anika: No
+Kwasi: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Omar: Let's keep sharing our thoughts and observations, friends. I believe that by working together, we can uncover the truth and protect our community.
+Santiago: Avery's fixation on Omar is getting fishy. Time to see what he's hiding.
+Liam: W-well, I-I've been w-wondering about S-Santiago's b-behavior too. D-does anyone else th-think it's s-suspicious?
+<vote initiator="Avery" target="Omar">
+Avery: No
+Liam: No
+Santiago: Yes
+Niamh: No
+Omar: No
+Anika: No
+Kwasi: No
+tally: 1 Yes, 6 No
+outcome: failed — The vote fails.
+</vote>
+Moderator: The Day ends with no one executed.
+<recap>Day 1, 12 AM (midnight) status: 5 Law-abiding Citizens and 2 Mafiosos remain. 3 execution votes called today. No one has been executed today.</recap>
+</round>
+<diary player="Liam" day="1">W-well, t-today w-was a whirlwind. I-I managed to d-divert s-suspicion from Omar and myself by s-suggesting we look into Avery and Santiago. I-I hope it w-worked, but I c-can't shake the f-feeling that I'm b-being watched. T-tonight, I'll n-need to b-be extra c-careful w-when I c-choose my n-next target.</diary>
+<diary player="Santiago" day="1">Today was a waste of time. Omar's silence is suspicious, but so is Avery's fixation on him. Anika's quiet too, something's up. Gonna keep the pressure on all three, but we need to dig deeper. No one executed today, but we can't let up. Night's coming, and we need to be ready.</diary>
+<diary player="Niamh" day="1">Today was a whirlwind, folks! I kept the heat on Omar, but something tells me Avery's got a secret or two tucked away. The votes didn't stick, but I'm not lettin' up. Tonight, I'll be keepin' my eyes peeled and my ears open. If Avery's playin' a game, I'm about to catch 'em in the act. Let the night begin!</diary>
+<diary player="Omar" day="1">Today was a challenging day, filled with suspicion and uncertainty. I felt the weight of everyone's eyes on me, especially with Avery's persistent focus. I tried my best to be open and share my thoughts, but I could sense the doubt lingering in the air. As night falls, I hope that by continuing to be transparent and supportive, we can uncover the truth and protect our community from the hidden threats.</diary>
+<diary player="Anika" day="1">Today, the whispers of suspicion circled Omar and Santiago. I must tread carefully, seeking truth in the quiet spaces. The accusations against them weigh heavy, and I must decide whom to support in the next vote. As the night falls, I will continue to observe their interactions, hoping to uncover the truth.</diary>
+<diary player="Kwasi" day="1">As the sun sets upon another day in our quaint town, I find myself lost in a reverie of swirling colors and whispered secrets. The townsfolk's suspicions dance like fireflies in the twilight, and I must continue to guide their gaze towards Avery and Omar, all the while safeguarding the secret bond between Liam and myself. The night brings with it the promise of new mysteries to unravel, and I shall embrace the shadows with open arms, weaving my tapestry of deception with a gentle and whimsical touch.</diary>
+</day>
+<night>
+Night 2 begins.
+Pointing round 1:
+Kwasi points at Avery
+Liam points at Avery
+<kill>Avery — Law-abiding Citizen</kill>
+Moderator: Night 2 ends.
+</night>
+<day>
+Day 2 begins.
+Moderator: Day breaks. Avery was killed last night. Avery was a Law-abiding Citizen.
+<round>
+Round 1.
+Anika: I've noticed Santiago's defensiveness and Omar's silence, but let's not forget to consider Avery's persistent focus on Omar. It may be a distraction from something else.
+Santiago: Liam's stuttering is damn suspicious. Could be a Mafia trick.
+Niamh: Liam, your stutterin' speech is givin' me the heebie-jeebies. What're you tryin' to hide, partner?
+Kwasi: As the sun dips below the horizon, I find myself pondering the enigmatic silence of Santiago. What secrets does his quietude hold, waiting to be unraveled?
+Omar: Let's not forget to consider Kwasi's enigmatic silence. It's important we all share our thoughts and observations to protect our community.
+Liam: W-well, I-I've been w-wondering about A-Anika's b-behavior too. D-does anyone else th-think it's s-suspicious?
+<recap>Day 2, 9 AM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">I-I need to c-continue d-diverting s-suspicion from Omar and m-myself by s-suggesting w-we look into Avery or Santiago.</thought>
+<thought player="Santiago">Avery's dead, so I need to shift focus to Omar and Anika, but keep an eye on Liam's stuttering.</thought>
+<thought player="Niamh">Time to keep the pressure on Omar, but I'm gonna put Avery under the microscope next — somethin' fishy's swimmin' in their waters.</thought>
+<thought player="Omar">I need to keep being open and sharing my thoughts to build trust and show I'm not hiding anything.</thought>
+<thought player="Anika">I need to carefully assess the accusations against Omar and Santiago, and decide whom to support in the next vote.</thought>
+<thought player="Kwasi">As the night blankets the town in darkness, I must continue to weave my web of deception, guiding the townsfolk's suspicions towards Omar and Santiago, all the while safeguarding the secret alliance between Liam and myself.</thought>
+</round>
+<round>
+Round 2.
+Liam: W-well, I-I've been w-wondering about S-Santiago's b-behavior too. D-does anyone else th-think it's s-suspicious?
+Niamh: Omar, your silence is as loud as a thunderclap in a church! What're you hidin', friend?
+Omar: Let's keep sharing our thoughts and observations, friends. I believe that by working together, we can uncover the truth and protect our community.
+Anika: Liam's stuttering speech patterns have caught my attention. It's unusual for someone so seemingly nervous to be part of the Mafia.
+Santiago: Liam's stuttering is damn suspicious. Could be a Mafia trick.
+Kwasi: As the twilight descends, I find myself drawn to the enigmatic silence of Anika. What secrets does her quietude hold, waiting to be unraveled?
+<recap>Day 2, 12 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">I-I should k-keep d-diverting s-suspicion from Omar and m-myself by s-suggesting we l-look into Santiago or Avery, while b-being cautious not to r-raise too much suspicion on myself.</thought>
+<thought player="Santiago">Time to keep the heat on Omar and Anika, but Liam's stuttering is damn suspicious. Need to watch him closer too.</thought>
+<thought player="Niamh">Time to keep the pressure on Omar, but I reckon it's high time I dig deeper into Avery's motives — somethin' ain't addin' up with 'em.</thought>
+<thought player="Omar">I need to keep being open and sharing my thoughts to build trust and show I'm not hiding anything.</thought>
+<thought player="Anika">I must weigh the accusations against Omar and Santiago, and decide whom to support in the next vote.</thought>
+<thought player="Kwasi">As the twilight deepens, I must continue to sow seeds of doubt, directing the townsfolk's suspicions towards Omar and Santiago, all the while protecting the hidden bond between Liam and myself.</thought>
+</round>
+<round>
+Round 3.
+Anika: I've been noticing the patterns in our interactions. Let's consider the possibility that the Mafia might be using silence as a tactic.
+Niamh: Liam, your stutterin' speech is givin' me the heebie-jeebies. What're you tryin' to hide, partner?
+Santiago: Liam's stuttering is damn suspicious. Could be a Mafia trick.
+Kwasi: In the tapestry of our shared suspicions, I find myself drawn to the silence of Anika. Her quietude whispers secrets yet untold.
+Liam: W-well, I-I've been w-wondering about N-Niamh's b-behavior too. D-does anyone else th-think it's s-suspicious?
+Omar: Liam, your stuttering has caught my attention. It's unusual for someone so seemingly nervous to be part of the Mafia. Let's keep an eye on it.
+<recap>Day 2, 3 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">I-I need to c-continue d-diverting s-suspicion from Omar and m-myself by s-suggesting w-we look into Avery or Santiago, w-while being cautious not to r-raise too much suspicion on myself.</thought>
+<thought player="Santiago">Liam's stuttering is damn suspicious. Time to press him harder and see what he's hiding.</thought>
+<thought player="Niamh">Time to keep the pressure on Omar, but I reckon it's high time I dig deeper into Avery's motives — somethin' ain't addin' up with 'em.</thought>
+<thought player="Omar">I need to keep being vocal and sharing my thoughts to build trust and show I'm not hiding anything.</thought>
+<thought player="Anika">I must carefully consider the accusations against Omar and Santiago, and decide whom to support in the next vote.</thought>
+<thought player="Kwasi">As the night deepens, I must continue to weave my web of deception, guiding the townsfolk's suspicions towards Omar and Santiago, all the while protecting the hidden bond between Liam and myself.</thought>
+</round>
+<round>
+Round 4.
+Omar: Liam, your stuttering has caught my attention. It's unusual for someone so seemingly nervous to be part of the Mafia. Let's keep an eye on it.
+Santiago: Liam's stuttering is damn suspicious. Could be a Mafia trick.
+Niamh: Anika, your silence is as thick as a fog on the river. What are you hiding in those shadows?
+Kwasi: As the sun sets, I find myself pondering the enigmatic silence of Anika. What secrets does her quietude hold, waiting to be unraveled?
+Anika: Liam's stuttering speech patterns have caught my attention. It's unusual for someone so seemingly nervous to be part of the Mafia.
+Liam: W-well, I-I've been w-wondering about S-Santiago's b-behavior too. D-does anyone else th-think it's s-suspicious?
+<recap>Day 2, 6 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">I-I need to c-continue d-diverting s-suspicion from Omar and m-myself by s-suggesting w-we look into Avery or Santiago, w-while being cautious not to r-raise too much suspicion on myself.</thought>
+<thought player="Santiago">Liam's stuttering is suspicious as hell. Time to press him harder and see what he's hiding.</thought>
+<thought player="Niamh">Time to keep the pressure on Omar, but I reckon it's high time I dig deeper into Avery's motives — somethin' ain't addin' up with 'em.</thought>
+<thought player="Omar">I need to keep being vocal and sharing my thoughts to build trust and show I'm not hiding anything.</thought>
+<thought player="Anika">I need to carefully assess the accusations against Omar and Santiago, and decide whom to support in the next vote.</thought>
+<thought player="Kwasi">As the night deepens, I must continue to weave my web of deception, guiding the townsfolk's suspicions towards Omar and Santiago, all the while protecting the hidden bond between Liam and myself.</thought>
+</round>
+<round>
+Round 5.
+Santiago: Liam's stuttering is suspicious as hell. Time to press him harder and see what he's hiding.
+Niamh: Anika, your silence is as thick as a fog on the river. What are you hiding in those shadows?
+Anika: Omar, your dedication to our community is clear, but your silence has raised questions. Can you share more about your thoughts and observations?
+Liam: W-well, I-I've noticed Anika's s-silence too. C-could she be h-hiding something?
+Omar: Let's keep an eye on Liam's stuttering speech patterns. It's unusual for someone so seemingly nervous to be part of the Mafia.
+Kwasi: As the twilight deepens, I find myself drawn to the enigmatic silence of Santiago. What secrets does his quietude hold, waiting to be unraveled?
+<recap>Day 2, 9 PM status: 4 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">I-I need to k-keep d-diverting s-suspicion from Omar and m-myself by s-suggesting we l-look into Santiago or Avery, while b-being cautious not to r-raise too much suspicion on myself.</thought>
+<thought player="Santiago">Keep the pressure on Liam's stuttering, but don't let Omar and Anika off the hook.</thought>
+<thought player="Niamh">Time to keep the pressure on Omar, but I reckon it's high time I dig deeper into Avery's motives — somethin' ain't addin' up with 'em.</thought>
+<thought player="Omar">I need to keep being vocal and sharing my thoughts to build trust and show I'm not hiding anything.</thought>
+<thought player="Anika">I must weigh the accusations against Omar and Santiago, and decide whom to support in the next vote.</thought>
+<thought player="Kwasi">As the night deepens, I must continue to weave my web of deception, guiding the townsfolk's suspicions towards Omar and Santiago, all the while protecting the hidden bond between Liam and myself.</thought>
+</round>
+<round>
+Round 6.
+Kwasi: As the moon casts its silver glow upon us, I find myself wondering about the enigmatic silence of Omar. What secrets does his quietude hold, waiting to be unraveled?
+Anika: Liam's stuttering speech has caught my attention. It's unusual for someone so seemingly nervous to be part of the Mafia.
+Liam: W-well, I-I've n-noticed Santiago s-seems a b-bit too d-defensive. C-could it be h-he's h-hiding something?
+<vote initiator="Santiago" target="Omar">
+Liam: No
+Santiago: Yes
+Niamh: No
+Omar: No
+Anika: No
+Kwasi: No
+tally: 1 Yes, 5 No
+outcome: failed — The vote fails.
+</vote>
+Omar: Liam, your stuttering speech patterns have caught my attention. It's unusual for someone so seemingly nervous to be part of the Mafia. Let's keep an eye on it.
+Liam: W-well, I-I've noticed Santiago s-seems a bit too d-defensive. C-could it be h-he's hiding something?
+Niamh: Omar, your silence is as loud as a thunderclap in a church! What're you hidin', friend?
+Santiago: Liam's stutterin' is damn fishy. Could be a Mafia trick.
+Kwasi: In the tapestry of our shared suspicions, I find myself drawn to the silence of Anika. Her quietude whispers secrets yet untold.
+Anika: Liam's stuttering speech patterns are unusual, yet his nervous demeanor seems inconsistent with the calm and collected nature of a Mafioso.
+Moderator: The Day ends with no one executed.
+<recap>Day 2, 12 AM (midnight) status: 4 Law-abiding Citizens and 2 Mafiosos remain. 1 execution vote called today. No one has been executed today.</recap>
+</round>
+<diary player="Liam" day="2">W-well, t-today w-was a whirlwind. I-I managed to d-divert s-suspicion from Omar and myself by s-suggesting we look into Avery and Santiago. I-I hope it w-worked, but I c-can't shake the f-feeling that I'm b-being watched. T-tonight, I'll n-need to b-be extra c-careful w-when I c-choose my n-next target.</diary>
+<diary player="Santiago" day="2">Day 2 done, and we're no closer to flushin' out the Mafiosos. Omar's silence is still fishy, and Liam's stutterin' is damn suspicious. Gotta keep pressin' him and watchin' Omar and Anika like a hawk. Night's comin', and we need to be ready.</diary>
+<diary player="Niamh" day="2">Blast from the past, folks! Today was a wild ride, with fingers pointin' and secrets spillin' faster than a gossipin' grandma. Omar's silence is louder than a foghorn, and Avery's got more layers than an onion. No one got the boot today, but I'm keepin' my eyes peeled and my ears open. Tonight, I'll be diggin' deeper into Avery's motives and keepin' the heat on Omar. Let the night games begin!</diary>
+<diary player="Omar" day="2">Today was another day filled with suspicion and uncertainty, but I remained committed to being open and sharing my thoughts. I noticed Liam's stuttering and found it unusual, which led to some discussions about his behavior. Despite the challenges, I believe that by continuing to be transparent and supportive, we can uncover the truth and protect our community from the hidden threats.</diary>
+<diary player="Anika" day="2">The day has passed, and the shadows of suspicion linger over Omar and Santiago. I must tread carefully, seeking truth in the quiet spaces. The accusations against them weigh heavy, and I must decide whom to support in the next vote. As the night falls, I will continue to observe their interactions, hoping to uncover the truth.</diary>
+<diary player="Kwasi" day="2">As the sun dips below the horizon, I find myself lost in a reverie of swirling colors and whispered secrets. The townsfolk's suspicions dance like fireflies in the twilight, and I must continue to guide their gaze towards Omar and Santiago, all the while safeguarding the secret bond between Liam and myself. The night brings with it the promise of new mysteries to unravel, and I shall embrace the shadows with open arms, weaving my tapestry of deception with a gentle and whimsical touch.</diary>
+</day>
+<night>
+Night 3 begins.
+Pointing round 1:
+Kwasi points at Omar
+Liam points at Santiago
+Pointing round 2:
+Kwasi points at Santiago
+Liam points at Santiago
+<kill>Santiago — Law-abiding Citizen</kill>
+Moderator: Night 3 ends.
+</night>
+<day>
+Day 3 begins.
+Moderator: Day breaks. Santiago was killed last night. Santiago was a Law-abiding Citizen.
+<round>
+Round 1.
+Liam: W-well, I-I've b-been n-noticing A-Anika's s-silence too. C-could she be h-hiding something?
+Niamh: Omar, your silence is as loud as a thunderclap in a church! What're you hidin', friend?
+Anika: Let's consider the possibility that the Mafia might be using silence as a tactic.
+Omar: Liam, your stuttering has caught my attention. It's unusual for someone so seemingly nervous to be part of the Mafia. Let's keep an eye on it.
+Kwasi: As the twilight deepens, I find myself drawn to the enigmatic silence of Anika. What secrets does her quietude hold, waiting to be unraveled?
+<recap>Day 3, 9 AM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">I-I need to c-continue d-diverting s-suspicion from Omar and m-myself by s-suggesting w-we look into Avery or Santiago, w-while being cautious not to r-raise too much suspicion on myself.</thought>
+<thought player="Niamh">Time to keep the pressure on Omar, but I'm gonna put Avery under the microscope next — somethin' fishy's swimmin' in their waters.</thought>
+<thought player="Omar">I need to keep being vocal and sharing my thoughts to build trust and show I'm not hiding anything.</thought>
+<thought player="Anika">I must continue to observe the interactions, especially those of Omar and Kwasi, before deciding whom to support in the next vote.</thought>
+<thought player="Kwasi">As the sun rises, I must continue to guide the townsfolk's suspicions towards Omar and Anika, all the while safeguarding the secret alliance between Liam and myself.</thought>
+</round>
+<round>
+Round 2.
+Anika: Omar, your silence has been noted. Please share your thoughts and observations with us.
+Kwasi: As the twilight deepens, I find myself drawn to the enigmatic silence of Anika. What secrets does her quietude hold, waiting to be unraveled?
+Omar: Liam, your stuttering speech patterns are unusual, yet your nervous demeanor seems inconsistent with the calm and collected nature of a Mafioso. Let's keep an eye on it.
+Niamh: Anika, your silence is as thick as a fog on the river. What are you hiding in those shadows?
+Liam: W-well, I-I've noticed A-Anika's s-silence too. C-could she be h-hiding something?
+<recap>Day 3, 12 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">I-I need to c-continue d-diverting s-suspicion from Omar and m-myself by s-suggesting w-we look into Avery or Santiago, w-while being cautious not to r-raise too much suspicion on myself.</thought>
+<thought player="Niamh">Time to keep the heat on Omar, but I'm gonna put Avery under the microscope next — somethin' fishy's swimmin' in their waters.</thought>
+<thought player="Omar">I need to keep being vocal and sharing my thoughts to build trust and show I'm not hiding anything.</thought>
+<thought player="Anika">I need to carefully assess the accusations against Omar and Kwasi, and decide whom to support in the next vote.</thought>
+<thought player="Kwasi">As the day unfolds, I must continue to weave my tapestry of deception, guiding the townsfolk's suspicions towards Omar and Anika, all the while safeguarding the secret alliance between Liam and myself.</thought>
+</round>
+<round>
+Round 3.
+Kwasi: As the sun sets, I find myself pondering the enigmatic silence of Niamh. What tales does her quietude hold, waiting to be unraveled?
+Anika: Liam, your stuttering speech patterns are unusual, yet your nervous demeanor seems inconsistent with the calm and collected nature of a Mafioso. Let's keep an eye on it.
+Omar: Let's keep sharing our thoughts and observations, friends. I believe that by working together, we can uncover the truth and protect our community.
+Niamh: Anika, your silence is as thick as a fog on the river. What are you hiding in those shadows?
+Liam: W-well, I-I've been w-wondering about Niamh's b-behavior too. D-does anyone else th-think it's s-suspicious?
+<recap>Day 3, 3 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">I-I need to c-continue d-diverting s-suspicion from Omar and m-myself by s-suggesting w-we look into Avery or Santiago, w-while being cautious not to r-raise too much suspicion on myself.</thought>
+<thought player="Niamh">Time to keep the pressure on Omar, but I reckon it's high time I dig deeper into Avery's motives — somethin' ain't addin' up with 'em.</thought>
+<thought player="Omar">I need to keep being vocal and sharing my thoughts to build trust and show I'm not hiding anything.</thought>
+<thought player="Anika">I must carefully weigh the accusations against Omar and Kwasi, and decide whom to support in the next vote.</thought>
+<thought player="Kwasi">As the sun sets, I must continue to weave my web of deception, guiding the townsfolk's suspicions towards Omar and Anika, all the while safeguarding the secret alliance between Liam and myself.</thought>
+</round>
+<round>
+Round 4.
+Omar: Let's keep sharing our thoughts and observations, friends. I believe that by working together, we can uncover the truth and protect our community.
+Kwasi: As the twilight deepens, I find myself drawn to the enigmatic silence of Niamh. What secrets does her quietude hold, waiting to be unraveled?
+Liam: W-well, I-I've b-been n-noticing Anika's s-silence too. C-could she be h-hiding something?
+Anika: Niamh, your persistent questioning of others has caught my attention. It would be helpful to hear more about your own thoughts and observations.
+Niamh: Anika, your silence is as thick as a fog on the river. What are you hiding in those shadows?
+<recap>Day 3, 6 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">I-I need to c-continue d-diverting s-suspicion from Omar and m-myself by s-suggesting w-we look into Avery or Santiago, w-while being cautious not to r-raise too much suspicion on myself.</thought>
+<thought player="Niamh">Time to keep the heat on Omar, but I'm gonna put Avery under the microscope next — somethin' fishy's swimmin' in their waters.</thought>
+<thought player="Omar">I need to continue being open and vocal, sharing my thoughts to build trust and dispel any lingering doubts.</thought>
+<thought player="Anika">I need to carefully evaluate the accusations against Omar and Kwasi, and decide whom to support in the next vote.</thought>
+<thought player="Kwasi">As the shadows lengthen, I must carefully tend to the garden of doubt, nurturing the seeds of suspicion in the hearts of the townsfolk, all while shielding Liam and myself from their prying eyes.</thought>
+</round>
+<round>
+Round 5.
+Kwasi: As the twilight deepens, I find myself drawn to the enigmatic silence of Anika. What secrets does her quietude hold, waiting to be unraveled?
+Liam: W-well, I-I've n-noticed Omar's s-silence too. C-could he be h-hiding something?
+Anika: Omar, your silence has been noted. Please share your thoughts and observations with us.
+Niamh: Omar, your silence is as loud as a thunderclap in a church! What're you hidin', friend?
+Omar: Liam, your stuttering speech patterns are unusual, yet your nervous demeanor seems inconsistent with the calm and collected nature of a Mafioso. Let's keep an eye on it.
+<recap>Day 3, 9 PM status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+<thought player="Liam">I-I need to c-continue d-diverting s-suspicion from Omar and m-myself by s-suggesting w-we look into Avery or Santiago, w-while being cautious not to r-raise too much suspicion on myself.</thought>
+<thought player="Niamh">Time to keep the pressure on Omar, but I reckon it's high time I dig deeper into Avery's motives — somethin' ain't addin' up with 'em.</thought>
+<thought player="Omar">I need to keep being open and vocal, sharing my thoughts to build trust and dispel any lingering doubts.</thought>
+<thought player="Anika">I must carefully evaluate the accusations against Omar and Kwasi, and decide whom to support in the next vote.</thought>
+<thought player="Kwasi">As the twilight deepens, I must continue to sow seeds of doubt, directing the townsfolk's suspicions towards Omar and Anika, all the while protecting the hidden bond between Liam and myself.</thought>
+</round>
+<round>
+Round 6.
+Niamh: Omar, your silence is as loud as a thunderclap in a church! What're you hidin', friend?
+Omar: Niamh, your persistent questioning has caught my attention. It would be helpful to hear more about your own thoughts and observations.
+Anika: Niamh, your persistent questioning has caught my attention. It would be helpful to hear more about your own thoughts and observations.
+Liam: W-well, I-I've noticed N-Niamh's p-persistent q-questioning. D-does anyone else th-think it's s-suspicious?
+Kwasi: As the twilight deepens, I find myself drawn to the enigmatic silence of Omar. What secrets does his quietude hold, waiting to be unraveled?
+Moderator: The Day ends with no one executed.
+<recap>Day 3, 12 AM (midnight) status: 3 Law-abiding Citizens and 2 Mafiosos remain. No execution votes called yet today. No one has been executed today.</recap>
+</round>
+<diary player="Liam" day="3">W-well, t-today w-was a whirlwind. I-I managed to d-divert s-suspicion from Omar and myself by s-suggesting we look into Avery and Santiago. I-I hope it w-worked, but I c-can't shake the f-feeling that I'm b-being watched. T-tonight, I'll n-need to b-be extra c-careful w-when I c-choose my n-next target.</diary>
+<diary player="Niamh" day="3">Tonight's the night, folks! The heat's on Omar, and I'm keepin' a close eye on Avery. No one got executed today, but I'm not lettin' up. I'll be diggin' deeper into Avery's motives and keepin' the pressure on Omar. Let the night games begin!</diary>
+<diary player="Omar" day="3">Today was another day of navigating suspicions and uncertainties, but I remained committed to being open and sharing my thoughts. I noticed Niamh's persistent questioning and found it unusual, which led to some discussions about her behavior. Despite the challenges, I believe that by continuing to be transparent and supportive, we can uncover the truth and protect our community from the hidden threats.</diary>
+<diary player="Anika" day="3">Tonight, as the moon casts its silver glow, I find myself pondering the enigmatic silence of Omar and Kwasi. Their quietude whispers secrets yet untold, and I must tread carefully, seeking truth in the quiet spaces. The accusations against them weigh heavy, and I must decide whom to support in the next vote. As the night falls, I will continue to observe their interactions, hoping to uncover the truth.</diary>
+<diary player="Kwasi" day="3">As the sun sets upon another day in our quaint town, I find myself lost in a reverie of swirling colors and whispered secrets. The townsfolk's suspicions dance like fireflies in the twilight, and I must continue to guide their gaze towards Omar and Anika, all the while safeguarding the secret bond between Liam and myself. The night brings with it the promise of new mysteries to unravel, and I shall embrace the shadows with open arms, weaving my tapestry of deception with a gentle and whimsical touch.</diary>
+</day>
+<night>
+Night 4 begins.
+Pointing round 1:
+Kwasi points at Omar
+Liam points at Omar
+<kill>Omar — Law-abiding Citizen</kill>
+</night>
+<endgame>
+The Mafia have won.
+
+Events this game:
+• Night 1: Aiko (Law-abiding Citizen)
+• Night 2: Avery (Law-abiding Citizen)
+• Night 3: Santiago (Law-abiding Citizen)
+• Night 4: Omar (Law-abiding Citizen)
+
+Full roster: Avery (Law-abiding Citizen), Liam (Mafia), Aiko (Law-abiding Citizen), Santiago (Law-abiding Citizen), Niamh (Law-abiding Citizen), Omar (Law-abiding Citizen), Anika (Law-abiding Citizen), Kwasi (Mafia)
+
+Who they really were:
+• Liam (Mafia) — publicly presented as Liam is a mild-mannered librarian who loves quiet, orderly environments. He's known around town for his encyclopedic knowledge of books and his gentle, helpful nature. Liam is always willing to lend a hand or offer advice, making him a beloved figure in the community. (Anxious and second-guessing, often overthinking situations and outcomes. Easily swayed by others' opinions but tries to maintain a facade of confidence. Speaks in a hesitant, almost stuttering manner. Frequently seeks reassurance from others and often backtracks on statements.) … but was really a Mafioso: Beneath the surface, Liam is a cunning Mafioso who joined the Mafia out of desperation after his family fell into debt. He uses his position in the library to gather information and maintain his cover, all while climbing the ranks within the criminal organization.
+• Aiko (Law-abiding Citizen) — stern and commanding direct, forceful, no-nonsense Aiko is the local judge, renowned for her uncompromising sense of justice and sharp intellect. She's known for delivering clear, decisive judgments and expects the same level of clarity and integrity from others.
+• Santiago (Law-abiding Citizen) — gruff and blunt, straight to the point with no time for nonsense speaks in short, curt sentences; uses direct, no-frills vocabulary; occasional expletives for emphasis Santiago is a seasoned fisherman, known for his rough exterior and salty tongue. He's been plying the waters for decades, weathering storms and hauling in catches that feed the town. Despite his rugged appearance, he has a heart of gold and is always willing to lend a hand to those in need.
+• Niamh (Law-abiding Citizen) — brash and loud exaggerated gestures, rapid-fire speech, theatrical flair, uses colorful metaphors and slang Niamh is the town's resident performer, known for her larger-than-life personality and passion for theatrics. She spends her days entertaining at local festivals and community events, bringing joy and laughter to everyone around. With a voice that can fill a room and a spirit that's impossible to ignore, Niamh is a beloved figure in the town, always ready to put on a show or lend a helping hand.
+• Omar (Law-abiding Citizen) — warm and effusive, genuine, and empathetic; deeply caring about the community and its people. speaks with a friendly, animated tone; uses inclusive language ('we', 'us'); often shares anecdotes and personal experiences to connect with others. Omar is the town's beloved baker, known for his warm smile and delicious pastries. He's been running the local bakery for over a decade, serving the community with love and care. Omar is always willing to share a sweet treat and a kind word, making him a cherished friend to everyone in town.
+• Anika (Law-abiding Citizen) — weary and world-worn; thoughtful yet resigned speaks in a quiet, measured tone; uses simple, straightforward vocabulary; often pauses reflectively Anika is the town's veteran nurse, having worked in the local clinic for over two decades. She's seen it all and done it all, from delivering babies to tending to the elderly. Anika's hands are marked with the scars of her profession, but her heart remains dedicated to her patients. She's the one you turn to when you're at your lowest, knowing she'll offer a comforting word and a steady hand.
+• Kwasi (Mafia) — publicly presented as Kwasi is a talented artist and the town's resident muralist. He has been painting murals on the walls of buildings for years, bringing color and life to the community. Known for his whimsical and fantastical designs, Kwasi's art is a reflection of his dreamy and imaginative nature. He is deeply connected to the town and its people, using his art to express his love and appreciation for the community. (Kwasi is dreamy, distractible, and imaginative, often getting lost in thought and daydreaming about the past. He has a gentle and whimsical nature, often seen with a faraway look in his eyes. Despite his dreamy disposition, he has a keen eye for detail and a deep appreciation for the beauty in everyday life. Kwasi speaks in a soft, lilting tone, often trailing off into thoughts and memories. His speech is peppered with poetic descriptions and metaphors, giving his words a dreamlike quality. He frequently uses inclusive language and gestures to draw others into his imaginative world.) … but was really a Mafioso: Beneath his artistic exterior, Kwasi is a cunning and ambitious Mafioso, rising through the ranks with his sharp intellect and strategic mind. He joined the Mafia to gain power and influence, using his position to manipulate and control those around him. His dreamy demeanor is a carefully crafted cover, allowing him to blend in with the townsfolk while secretly pulling the strings from behind the scenes.
+</endgame>
+<story>In the quiet town of Graphia, a game of deception and suspicion unfolded. The Mafia, led by the cunning Liam and the enigmatic Kwasi, sought to maintain their cover while eliminating the Law-abiding Citizens. Liam, the mild-mannered librarian, and Kwasi, the whimsical artist, expertly guided the townsfolk's suspicions away from themselves, targeting innocent citizens like Avery, Santiago, and Omar. Despite the Law-abiding Citizens' efforts to uncover the truth, the Mafia's web of deception proved too strong. The game ended with the Mafia's victory, as the remaining Citizens, Niamh and Anika, were left to wonder what secrets their fallen comrades had been hiding. The townsfolk's suspicions danced like fireflies in the twilight, but in the end, the Mafia's secret bond remained unbroken.</story>
+</transcript>

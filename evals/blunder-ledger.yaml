@@ -5507,3 +5507,473 @@ metrics:
     ci_low: 0.0
     ci_high: 0.7934567085261071
 notes: 'spec 043 Slice 7 Task 7.1: the instrumented ten-game Nova measurement of the per-game re-scoring cost - the confirming run for the replay figures in technical-considerations 2.8 (Cost of re-scoring, and the one number to measure). Deliberately run on pre-mitigation code so it measures the cost that section is about. Comparable to record 47: same arm, same ten games, same current defaults. code.dirty is set by two uncommitted context/project-timeline docs, not by gameplay code.'
+---
+run:
+  date: '2026-09-14'
+  id: '2026-09-14T19-45-27-c1206a'
+  seq: 51
+  duration_seconds: 12937.326
+  metrics_version: 1
+  transcript_dir: '2026-09-14T19-45-27-c1206a'
+code:
+  commit: '3edec7c0a08623e7a78f58c7377e69e879bb2854'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'bedrock'
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  structured_output: 'tool_use'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'amazon.nova-pro-v1:0'
+  small_model: 'amazon.nova-lite-v1:0'
+  base_url: null
+  games: 50
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 50
+  games_completed: 50
+  games_failed_early: 0
+  diary_fallback_rate: 0.001310615989515072
+  diary_fallback_entries: 1
+  diary_entries_attempted: 763
+  story_missing_rate: 0.0
+  story_missing_games: 0
+  story_ending_games: 50
+  substitutions:
+    roster:
+      rate: 0.0
+      count: 0
+      attempted: 50
+    persona:
+      rate: 0.0
+      count: 0
+      attempted: 350
+    pointing:
+      rate: 0.0
+      count: 0
+      attempted: 517
+    ballot:
+      rate: 0.0
+      count: 0
+      attempted: 1317
+    day_action:
+      rate: 0.0
+      count: 0
+      attempted: 4837
+    reflection:
+      rate: 0.00025906735751295336
+      count: 1
+      attempted: 3860
+    diary:
+      rate: 0.001310615989515072
+      count: 1
+      attempted: 763
+  duration_seconds: 12937.326
+outcomes:
+  games: 50
+  law_abiding:
+    wins: 4
+    rate: 0.08
+    ci_low: 0.031549003255790686
+    ci_high: 0.18838502545063704
+  mafia:
+    wins: 46
+    rate: 0.92
+    ci_low: 0.8116149745493629
+    ci_high: 0.9684509967442093
+  scripted_side:
+    side: 'law_abiding'
+    wins: 4
+    rate: 0.08
+    ci_low: 0.031549003255790686
+    ci_high: 0.18838502545063704
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against an active rule-based scripted human (deterministic, no model call; when Law-abiding it supplies the vote a correct town majority needs) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 52
+    mafia: 8
+  by_day:
+    day_1: 10
+    day_2: 20
+    day_3: 26
+    day_4: 4
+metrics:
+  repetition:
+    rate: 0.7492149884864978
+    count: 3579
+    denominator: 4777
+    ci_low: 0.7367257614204648
+    ci_high: 0.7613037068639479
+  third_person_self_talk:
+    rate: 0.010048147372828135
+    count: 48
+    denominator: 4777
+    ci_low: 0.0075873802550991045
+    ci_high: 0.013296306834638403
+  self_vote.yes:
+    rate: 0.004098360655737705
+    count: 1
+    denominator: 244
+    ci_low: 0.0007238093800681408
+    ci_high: 0.02284608364838229
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 1050
+    ci_low: 0.0
+    ci_high: 0.003645329620694419
+  persona_lex_mean:
+    mean: 0.03300345173843665
+    denominator: 1050
+  persona_lex_peak:
+    peak: 0.22198275862068967
+    denominator: 1050
+  persona_sem_mean:
+    mean: 0.23960300980343807
+    denominator: 1050
+  persona_sem_peak:
+    peak: 0.6378451942866367
+    denominator: 1050
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 84
+    ci_low: 0.0
+    ci_high: 0.043733265332143306
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 43
+    ci_low: 0.0
+    ci_high: 0.08201257002322722
+  peer_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 8
+    ci_low: 0.0
+    ci_high: 0.3244156195108769
+notes: 'CR 007 re-baseline, bedrock/Nova arm at n=50, at the raised 80 dollar session ceiling. Launched concurrently with the bedrock-claude and ollama arms so the three records are comparable, which is the method the backlog prescribes. Also the first real concurrency test of the spec 043 optimistic-concurrency ledger write: three live runs splice one file, where the suite verifies that by injection only. Provenance clean at launch.'
+---
+run:
+  date: '2026-09-14'
+  id: '2026-09-14T19-45-34-e2318a'
+  seq: 51
+  duration_seconds: 10783.649
+  metrics_version: 1
+  transcript_dir: '2026-09-14T19-45-34-e2318a'
+code:
+  commit: '3edec7c0a08623e7a78f58c7377e69e879bb2854'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'bedrock-claude'
+  large_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  small_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  structured_output: 'tool_use'
+  note: 'provider-side model updates are not observable; run date is the only proxy.'
+settings:
+  large_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  small_model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+  base_url: null
+  games: 50
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 50
+  games_completed: 50
+  games_failed_early: 0
+  diary_fallback_rate: 0.0
+  diary_fallback_entries: 0
+  diary_entries_attempted: 396
+  story_missing_rate: 0.0
+  story_missing_games: 0
+  story_ending_games: 50
+  substitutions:
+    roster:
+      rate: 0.0
+      count: 0
+      attempted: 50
+    persona:
+      rate: 0.0
+      count: 0
+      attempted: 350
+    pointing:
+      rate: 0.0
+      count: 0
+      attempted: 238
+    ballot:
+      rate: 0.0
+      count: 0
+      attempted: 768
+    day_action:
+      rate: 0.0
+      count: 0
+      attempted: 1526
+    reflection:
+      rate: 0.0
+      count: 0
+      attempted: 1163
+    diary:
+      rate: 0.0
+      count: 0
+      attempted: 396
+  duration_seconds: 10783.649
+outcomes:
+  games: 50
+  law_abiding:
+    wins: 24
+    rate: 0.48
+    ci_low: 0.3479691239550571
+    ci_high: 0.6148848774119157
+  mafia:
+    wins: 26
+    rate: 0.52
+    ci_low: 0.3851151225880844
+    ci_high: 0.6520308760449429
+  scripted_side:
+    side: 'law_abiding'
+    wins: 24
+    rate: 0.48
+    ci_low: 0.3479691239550571
+    ci_high: 0.6148848774119157
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against an active rule-based scripted human (deterministic, no model call; when Law-abiding it supplies the vote a correct town majority needs) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 136
+    mafia: 17
+  by_day:
+    day_1: 59
+    day_2: 68
+    day_3: 26
+metrics:
+  repetition:
+    rate: 0.0029133284777858705
+    count: 4
+    denominator: 1373
+    ci_low: 0.0011334836053714529
+    ci_high: 0.007467070009510608
+  third_person_self_talk:
+    rate: 0.0029133284777858705
+    count: 4
+    denominator: 1373
+    ci_low: 0.0011334836053714529
+    ci_high: 0.007467070009510608
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 128
+    ci_low: 0.0
+    ci_high: 0.02913799589810803
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 37
+    ci_low: 0.0
+    ci_high: 0.09406095745514377
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 1050
+    ci_low: 0.0
+    ci_high: 0.003645329620694419
+  persona_lex_mean:
+    mean: 0.023173295554793114
+    denominator: 1050
+  persona_lex_peak:
+    peak: 0.07564646854496333
+    denominator: 1050
+  persona_sem_mean:
+    mean: 0.3725950683418018
+    denominator: 1050
+  persona_sem_peak:
+    peak: 0.6668574801173713
+    denominator: 1050
+  self_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 115
+    ci_low: 0.0
+    ci_high: 0.03232538101136302
+  peer_vote.initiation:
+    rate: 0.0
+    count: 0
+    denominator: 17
+    ci_low: 0.0
+    ci_high: 0.18432366037156456
+notes: 'CR 007 re-baseline, bedrock-claude arm (Claude Haiku 4.5, both tiers) at n=50, at the raised 80 dollar session ceiling. Launched concurrently with the bedrock/Nova and ollama arms so the three records are comparable, which is the method the backlog prescribes. Provenance clean at launch.'
+---
+run:
+  date: '2026-09-14'
+  id: '2026-09-14T19-40-56-df63a2'
+  seq: 51
+  duration_seconds: 50299.407
+  metrics_version: 1
+  transcript_dir: '2026-09-14T19-40-56-df63a2'
+code:
+  commit: '3edec7c0a08623e7a78f58c7377e69e879bb2854'
+  branch: 'main'
+  dirty: false
+provider:
+  name: 'ollama'
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  structured_output: 'json_schema'
+  models:
+    qwen3-coder:30b:
+      name: 'qwen3-coder:30b'
+      digest: '06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca'
+    qwen2.5:3b:
+      name: 'qwen2.5:3b'
+      digest: '357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b'
+  server_version: '0.32.14'
+settings:
+  large_model: 'qwen3-coder:30b'
+  small_model: 'qwen2.5:3b'
+  base_url: 'http://localhost:11434'
+  games: 50
+  seed: null
+  max_days: 12
+  scripted_player: 'active'
+  private_diaries_enabled: true
+  lineup:
+    num_citizens: 6
+    num_mafia: 2
+quality:
+  games_attempted: 50
+  games_completed: 50
+  games_failed_early: 0
+  diary_fallback_rate: 0.0
+  diary_fallback_entries: 0
+  diary_entries_attempted: 564
+  story_missing_rate: 0.0
+  story_missing_games: 0
+  story_ending_games: 50
+  substitutions:
+    roster:
+      rate: 0.0
+      count: 0
+      attempted: 50
+    persona:
+      rate: 0.0
+      count: 0
+      attempted: 350
+    pointing:
+      rate: 0.0
+      count: 0
+      attempted: 354
+    ballot:
+      rate: 0.0
+      count: 0
+      attempted: 888
+    day_action:
+      rate: 0.000534045393858478
+      count: 2
+      attempted: 3745
+    reflection:
+      rate: 0.0
+      count: 0
+      attempted: 3065
+    diary:
+      rate: 0.0
+      count: 0
+      attempted: 564
+  duration_seconds: 50299.407
+outcomes:
+  games: 50
+  law_abiding:
+    wins: 15
+    rate: 0.3
+    ci_low: 0.1910338908960936
+    ci_high: 0.4375061227736339
+  mafia:
+    wins: 35
+    rate: 0.7
+    ci_low: 0.562493877226366
+    ci_high: 0.8089661091039063
+  scripted_side:
+    side: 'law_abiding'
+    wins: 15
+    rate: 0.3
+    ci_low: 0.1910338908960936
+    ci_high: 0.4375061227736339
+  runaway: 0
+  draw: 0
+  no_winner: 0
+  note: 'win-rate is measured against an active rule-based scripted human (deterministic, no model call; when Law-abiding it supplies the vote a correct town majority needs) — a consistent comparable measure, not true game balance.'
+vote_activity:
+  by_side:
+    law_abiding: 32
+    mafia: 0
+  by_day:
+    day_1: 17
+    day_2: 11
+    day_3: 4
+metrics:
+  repetition:
+    rate: 0.6353353083759763
+    count: 2359
+    denominator: 3713
+    ci_low: 0.6197202707250657
+    ci_high: 0.6506705901606926
+  third_person_self_talk:
+    rate: 0.015351467815782387
+    count: 57
+    denominator: 3713
+    ci_low: 0.011868153796580577
+    ci_high: 0.019836614036409662
+  self_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 168
+    ci_low: 0.0
+    ci_high: 0.02235547155054422
+  peer_vote.yes:
+    rate: 0.0
+    count: 0
+    denominator: 75
+    ci_low: 0.0
+    ci_high: 0.04872554590470005
+  persona_near_dup:
+    rate: 0.0
+    count: 0
+    denominator: 1050
+    ci_low: 0.0
+    ci_high: 0.003645329620694419
+  persona_lex_mean:
+    mean: 0.026995455448728802
+    denominator: 1050
+  persona_lex_peak:
+    peak: 0.17947062621045837
+    denominator: 1050
+  persona_sem_mean:
+    mean: 0.337947656302346
+    denominator: 630
+  persona_sem_peak:
+    peak: 0.7873679588352208
+    denominator: 630
+  self_vote.initiation:
+    rate: 0.08333333333333333
+    count: 3
+    denominator: 36
+    ci_low: 0.0287480892712918
+    ci_high: 0.21827010276918848
+notes: 'CR 007 re-baseline, local arm at n=50. First real exercise of spec 043: at ~33 min/game this is a ~29-hour run, and before spec 043 a stopped one contributed nothing - a 50-game ollama run was killed after about four hours on 2026-09-09 and left no record at all. This one writes its record after every completed game, so whatever it reaches is kept and marked short-of-plan until it is not.'
