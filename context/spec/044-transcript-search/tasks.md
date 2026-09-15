@@ -2,7 +2,7 @@
 
 - **Functional Specification:** [`functional-spec.md`](./functional-spec.md) — 54 acceptance criteria across §2.1–§2.10 — 47 at authoring, +7 added during implementation (§2.6 and §2.8)
 - **Technical Considerations:** [`technical-considerations.md`](./technical-considerations.md)
-- **Status:** Not started
+- **Status:** Completed
 
 ---
 

@@ -1,7 +1,7 @@
 # Technical Specification: Searching Inside a Game Transcript
 
 - **Functional Specification:** [`functional-spec.md`](./functional-spec.md) (54 acceptance criteria across §2.1–§2.10 — 47 at authoring, +7 added during implementation (§2.6 and §2.8))
-- **Status:** Draft
+- **Status:** Completed
 - **Author(s):** Alexey Tigarev
 
 > **Every load-bearing claim below was measured against the installed packages** — Textual **8.2.4**, Rich **15.0.0**, Python 3.14 — not inferred from documentation. Numbers (wrap widths, row counts, contrast ratios, millisecond costs) came out of live `run_test()` sessions against the real 88 KB committed game `evals/transcripts/2026-09-05T17-58-24/game-01.txt` at 100×24, or from direct reads of the installed source. Where a measurement contradicted an assumption, the assumption is corrected here rather than quietly dropped.
